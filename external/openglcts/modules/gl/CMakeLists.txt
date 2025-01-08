@@ -131,10 +131,6 @@ set(GLCTS_GL_LIBS
 	tcutil
 	)
 
-if (DEQP_GTF_AVAILABLE)
-	list(APPEND GLCTS_GL_LIBS glcts-gtf)
-endif ()
-
 PCH(GLCTS_GL_SRCS ../pch.cpp)
 
 include_directories(${PROJECT_BINARY_DIR}/external/vulkancts/framework/vulkan)

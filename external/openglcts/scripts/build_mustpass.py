@@ -102,10 +102,6 @@ NOCTX_ES2_KHR_MODULE = getModuleByName("KHR-NOCTX-ES2")
 NOCTX_ES32_KHR_MODULE = getModuleByName("KHR-NOCTX-ES32")
 SINGLE_ES32_KHR_MODULE = getModuleByName("KHR-Single-GLES32")
 
-ES2GTF_MODULE = getModuleByName("GTF-GLES2")
-ES3GTF_MODULE = getModuleByName("GTF-GLES3")
-ES31GTF_MODULE = getModuleByName("GTF-GLES31")
-
 GLCTS_GLES2_PKG = Package(module = ES2CTS_MODULE, configurations = [
         # Main
         Configuration(name = "main",
@@ -612,42 +608,6 @@ GLCTS_GLES2_DEQP_PKG_1CFG = Package(module = ES2CTS_MODULE, configurations = [
                     filters = [include("gles2-deqp-main.txt")]),
     ])
 
-GLCTS_GLES2_GTF_PKG_1CFG = Package(module = ES2GTF_MODULE, configurations = [
-        # Main
-        Configuration(name = "gtf-main",
-                    surfacewidth = "64",
-                    surfaceheight = "64",
-                    baseseed = "1",
-                    filters = [include("gles2-gtf-main.txt")]),
-        Configuration(name = "gtf-main",
-                    surfacewidth = "113",
-                    surfaceheight = "47",
-                    baseseed = "2",
-                    filters = [include("gles2-gtf-main.txt")]),
-        Configuration(name = "gtf-main",
-                    surfacewidth = "64",
-                    surfaceheight = "-1",
-                    baseseed = "3",
-                    fboconfig = "rgba8888d24s8",
-                    filters = [include("gles2-gtf-main.txt")]),
-        Configuration(name = "gtf-main",
-                    surfacewidth = "-1",
-                    surfaceheight = "64",
-                    baseseed = "3",
-                    fboconfig = "rgba8888d24s8",
-                    filters = [include("gles2-gtf-main.txt")]),
-        Configuration(name = "gtf-egl",
-                    surfacewidth = "64",
-                    surfaceheight = "64",
-                    baseseed = "1",
-                    filters = [include("gles2-gtf-egl.txt")]),
-        Configuration(name = "gtf-egl",
-                    surfacewidth = "113",
-                    surfaceheight = "47",
-                    baseseed = "2",
-                    filters = [include("gles2-gtf-egl.txt")]),
-    ])
-
 GLCTS_GLES2_KHR_PKG_N1CFG = Package(module = ES2KHR_MODULE, useforfirsteglconfig = False, configurations = [
         # Main
         Configuration(name = "khr-main",
@@ -664,20 +624,6 @@ GLCTS_GLES2_DEQP_PKG_N1CFG = Package(module = ES2CTS_MODULE, useforfirsteglconfi
                     surfaceheight = "64",
                     baseseed = "1",
                     filters = [include("gles2-deqp-main.txt")]),
-    ])
-
-GLCTS_GLES2_GTF_PKG_N1CFG = Package(module = ES2GTF_MODULE, useforfirsteglconfig = False, configurations = [
-        # Main
-        Configuration(name = "gtf-main",
-                    surfacewidth = "64",
-                    surfaceheight = "64",
-                    baseseed = "1",
-                    filters = [include("gles2-gtf-main.txt")]),
-        Configuration(name = "gtf-main",
-                    surfacewidth = "113",
-                    surfaceheight = "47",
-                    baseseed = "2",
-                    filters = [include("gles2-gtf-main.txt")]),
     ])
 
 GLCTS_GLES3_DEQP_PKG_1CFG = Package(module = ES3CTS_MODULE, configurations = [
@@ -698,32 +644,6 @@ GLCTS_GLES3_KHR_PKG_1CFG = Package(module = ES3KHR_MODULE, configurations = [
                     filters = [include("gles3-khr-main.txt")]),
     ])
 
-GLCTS_GLES3_GTF_PKG_1CFG = Package(module = ES3GTF_MODULE, configurations = [
-        # Main
-        Configuration(name = "gtf-main",
-                    surfacewidth = "64",
-                    surfaceheight = "64",
-                    baseseed = "1",
-                    filters = [include("gles3-gtf-main.txt")]),
-        Configuration(name = "gtf-main",
-                    surfacewidth = "113",
-                    surfaceheight = "47",
-                    baseseed = "2",
-                    filters = [include("gles3-gtf-main.txt")]),
-        Configuration(name = "gtf-main",
-                    surfacewidth = "64",
-                    surfaceheight = "-1",
-                    baseseed = "3",
-                    fboconfig = "rgba8888d24s8",
-                    filters = [include("gles3-gtf-main.txt")]),
-        Configuration(name = "gtf-main",
-                    surfacewidth = "-1",
-                    surfaceheight = "64",
-                    baseseed = "3",
-                    fboconfig = "rgba8888d24s8",
-                    filters = [include("gles3-gtf-main.txt")]),
-    ])
-
 GLCTS_GLES3_DEQP_PKG_N1CFG = Package(module = ES3CTS_MODULE, useforfirsteglconfig = False, configurations = [
         # Main
         Configuration(name = "deqp-main",
@@ -740,19 +660,6 @@ GLCTS_GLES3_KHR_PKG_N1CFG = Package(module = ES3KHR_MODULE, useforfirsteglconfig
                     surfaceheight = "64",
                     baseseed = "1",
                     filters = [include("gles3-khr-main.txt")]),
-    ])
-GLCTS_GLES3_GTF_PKG_N1CFG = Package(module = ES3GTF_MODULE, useforfirsteglconfig = False, configurations = [
-        # Main
-        Configuration(name = "gtf-main",
-                    surfacewidth = "64",
-                    surfaceheight = "64",
-                    baseseed = "1",
-                    filters = [include("gles3-gtf-main.txt")]),
-        Configuration(name = "gtf-main",
-                    surfacewidth = "113",
-                    surfaceheight = "47",
-                    baseseed = "2",
-                    filters = [include("gles3-gtf-main.txt")]),
     ])
 
 GLCTS_GLES31_DEQP_PKG_1CFG = Package(module = ES31CTS_MODULE, configurations = [
@@ -773,32 +680,6 @@ GLCTS_GLES31_KHR_PKG_1CFG = Package(module = ES31KHR_MODULE, configurations = [
                     filters = [include("gles31-khr-main.txt")]),
     ])
 
-GLCTS_GLES31_GTF_PKG_1CFG = Package(module = ES31GTF_MODULE, configurations = [
-        # Main
-        Configuration(name = "gtf-main",
-                    surfacewidth = "64",
-                    surfaceheight = "64",
-                    baseseed = "1",
-                    filters = [include("gles31-gtf-main.txt")]),
-        Configuration(name = "gtf-main",
-                    surfacewidth = "113",
-                    surfaceheight = "47",
-                    baseseed = "2",
-                    filters = [include("gles31-gtf-main.txt")]),
-        Configuration(name = "gtf-main",
-                    surfacewidth = "64",
-                    surfaceheight = "-1",
-                    baseseed = "3",
-                    fboconfig = "rgba8888d24s8",
-                    filters = [include("gles31-gtf-main.txt")]),
-        Configuration(name = "gtf-main",
-                    surfacewidth = "-1",
-                    surfaceheight = "64",
-                    baseseed = "3",
-                    fboconfig = "rgba8888d24s8",
-                    filters = [include("gles31-gtf-main.txt")]),
-    ])
-
 GLCTS_GLES31_KHR_PKG_N1CFG = Package(module = ES31KHR_MODULE, useforfirsteglconfig = False, configurations = [
         # Main
         Configuration(name = "khr-main",
@@ -815,20 +696,6 @@ GLCTS_GLES31_DEQP_PKG_N1CFG = Package(module = ES31CTS_MODULE, useforfirsteglcon
                     surfaceheight = "64",
                     baseseed = "1",
                     filters = [include("gles31-deqp-main.txt")]),
-    ])
-
-GLCTS_GLES31_GTF_PKG_N1CFG = Package(module = ES31GTF_MODULE, useforfirsteglconfig = False, configurations = [
-        # Main
-        Configuration(name = "gtf-main",
-                    surfacewidth = "64",
-                    surfaceheight = "64",
-                    baseseed = "1",
-                    filters = [include("gles31-gtf-main.txt")]),
-        Configuration(name = "gtf-main",
-                    surfacewidth = "113",
-                    surfaceheight = "47",
-                    baseseed = "2",
-                    filters = [include("gles31-gtf-main.txt")]),
     ])
 
 MAIN_GLES32_COMMON_FILTERS             = [
@@ -919,22 +786,16 @@ ES_MUSTPASS_LISTS = [
     Mustpass(project = CTS_KHR_MP_ES_PROJECT, version = "3.2.2.x", isCurrent=False,
             packages = [GLCTS_GLES2_KHR_PKG_1CFG,
                         GLCTS_GLES2_DEQP_PKG_1CFG,
-                        GLCTS_GLES2_GTF_PKG_1CFG,
                         GLCTS_GLES2_KHR_PKG_N1CFG,
                         GLCTS_GLES2_DEQP_PKG_N1CFG,
-                        GLCTS_GLES2_GTF_PKG_N1CFG,
                         GLCTS_GLES3_KHR_PKG_1CFG,
                         GLCTS_GLES3_DEQP_PKG_1CFG,
-                        GLCTS_GLES3_GTF_PKG_1CFG,
                         GLCTS_GLES3_KHR_PKG_N1CFG,
                         GLCTS_GLES3_DEQP_PKG_N1CFG,
-                        GLCTS_GLES3_GTF_PKG_N1CFG,
                         GLCTS_GLES31_KHR_PKG_1CFG,
                         GLCTS_GLES31_DEQP_PKG_1CFG,
-                        GLCTS_GLES31_GTF_PKG_1CFG,
                         GLCTS_GLES31_KHR_PKG_N1CFG,
                         GLCTS_GLES31_DEQP_PKG_N1CFG,
-                        GLCTS_GLES31_GTF_PKG_N1CFG,
                         GLCTS_GLES32_KHR_PKG_1CFG,
                         GLCTS_GLES32_KHR_PKG_N1CFG,
                         ]),
@@ -945,17 +806,11 @@ ES_MUSTPASS_LISTS = [
     # 3.2.3.x
     Mustpass(project = CTS_KHR_MP_ES_PROJECT, version = "3.2.3.x", isCurrent=False,
             packages = [GLCTS_GLES2_KHR_PKG_1CFG,
-                        GLCTS_GLES2_GTF_PKG_1CFG,
                         GLCTS_GLES2_KHR_PKG_N1CFG,
-                        GLCTS_GLES2_GTF_PKG_N1CFG,
                         GLCTS_GLES3_KHR_PKG_1CFG,
-                        GLCTS_GLES3_GTF_PKG_1CFG,
                         GLCTS_GLES3_KHR_PKG_N1CFG,
-                        GLCTS_GLES3_GTF_PKG_N1CFG,
                         GLCTS_GLES31_KHR_PKG_1CFG,
-                        GLCTS_GLES31_GTF_PKG_1CFG,
                         GLCTS_GLES31_KHR_PKG_N1CFG,
-                        GLCTS_GLES31_GTF_PKG_N1CFG,
                         GLCTS_3_2_3_GLES32_KHR_PKG_1CFG,
                         GLCTS_3_2_3_GLES32_KHR_PKG_N1CFG,
                         ]),
@@ -1064,7 +919,7 @@ ES_MUSTPASS_LISTS = [
 
     ]
 
-ES_BUILD_CONFIG = BuildConfig(buildPath, "Debug", ["-DDEQP_TARGET=%s" % DEFAULT_TARGET, "-DGLCTS_GTF_TARGET=gles32"])
+ES_BUILD_CONFIG = BuildConfig(buildPath, "Debug", ["-DDEQP_TARGET=%s" % DEFAULT_TARGET])
 
 #-------------------------------------------------- GL MUSTPASS----------------------------------------------------------------------
 
@@ -1107,18 +962,7 @@ GL_MODULES = OrderedDict([
             ('KHR-GL33', ['main', [include('gl33-main.txt'), exclude('gl33-test-issues.txt')]]),
             ('KHR-GL32', ['main', [include('gl32-main.txt'), exclude('gl32-test-issues.txt')]]),
             ('KHR-GL31', ['main', [include('gl31-main.txt'), exclude('gl31-test-issues.txt')]]),
-            ('KHR-GL30', ['main', [include('gl30-main.txt'), exclude('gl30-test-issues.txt')]]),
-            ('GTF-GL46', ['gtf-main', [include('gl46-gtf-main.txt')]]),
-            ('GTF-GL45', ['gtf-main', [include('gl45-gtf-main.txt')]]),
-            ('GTF-GL44', ['gtf-main', [include('gl44-gtf-main.txt')]]),
-            ('GTF-GL43', ['gtf-main', [include('gl43-gtf-main.txt')]]),
-            ('GTF-GL42', ['gtf-main', [include('gl42-gtf-main.txt')]]),
-            ('GTF-GL41', ['gtf-main', [include('gl41-gtf-main.txt')]]),
-            ('GTF-GL40', ['gtf-main', [include('gl40-gtf-main.txt')]]),
-            ('GTF-GL33', ['gtf-main', [include('gl33-gtf-main.txt')]]),
-            ('GTF-GL32', ['gtf-main', [include('gl32-gtf-main.txt')]]),
-            ('GTF-GL31', ['gtf-main', [include('gl31-gtf-main.txt')]]),
-            ('GTF-GL30', ['gtf-main', [include('gl30-gtf-main.txt')]])
+            ('KHR-GL30', ['main', [include('gl30-main.txt'), exclude('gl30-test-issues.txt')]])
         ])
 
 NOCTX_GL30_KHR_MODULE = getModuleByName("KHR-NOCTX-GL30")
@@ -1263,12 +1107,9 @@ def generateGLMustpass():
                     ]
         return mustpass
 
-GL_BUILD_CONFIG = BuildConfig(buildPath, "Debug", ["-DDEQP_TARGET=%s" % DEFAULT_TARGET, "-DGLCTS_GTF_TARGET=gl"])
+GL_BUILD_CONFIG = BuildConfig(buildPath, "Debug", ["-DDEQP_TARGET=%s" % DEFAULT_TARGET])
 
 if __name__ == "__main__":
-    gtfCMakeLists = os.path.join(DEQP_DIR, "external", "kc-cts", "src", "GTF_ES", "CMakeLists.txt")
-    if os.path.isfile(gtfCMakeLists) == False:
-        raise Exception("GTF sources not found. GTF module is required to build the mustpass files. 'cd external && python fetch_kc_cts.py'")
     genMustpassLists(ES_MUSTPASS_LISTS, ANY_GENERATOR, ES_BUILD_CONFIG)
     gl_mustpass_lists = generateGLMustpass()
     genMustpassLists(gl_mustpass_lists, ANY_GENERATOR, GL_BUILD_CONFIG)
