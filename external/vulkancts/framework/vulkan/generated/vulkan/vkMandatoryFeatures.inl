@@ -213,6 +213,16 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceDepthClampControlFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceDepthClampZeroOneFeaturesKHR physicalDeviceDepthClampZeroOneFeaturesKHR;
+	deMemset(&physicalDeviceDepthClampZeroOneFeaturesKHR, 0, sizeof(physicalDeviceDepthClampZeroOneFeaturesKHR));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_depth_clamp_zero_one", "VK_EXT_depth_clamp_zero_one"))
+	{
+		physicalDeviceDepthClampZeroOneFeaturesKHR.sType = getStructureType<VkPhysicalDeviceDepthClampZeroOneFeaturesKHR>();
+		*nextPtr = &physicalDeviceDepthClampZeroOneFeaturesKHR;
+		nextPtr  = &physicalDeviceDepthClampZeroOneFeaturesKHR.pNext;
+	}
+
 	vk::VkPhysicalDeviceDepthClipControlFeaturesEXT physicalDeviceDepthClipControlFeaturesEXT;
 	deMemset(&physicalDeviceDepthClipControlFeaturesEXT, 0, sizeof(physicalDeviceDepthClipControlFeaturesEXT));
 
@@ -2364,6 +2374,24 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceComputeShaderDerivativesFeaturesKHR.computeDerivativeGroupLinear == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature computeDerivativeGroupLinear not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_depth_clamp_zero_one")) )
+	{
+		if ( physicalDeviceDepthClampZeroOneFeaturesKHR.depthClampZeroOne == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature depthClampZeroOne not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_depth_clamp_zero_one")) )
+	{
+		if ( physicalDeviceDepthClampZeroOneFeaturesKHR.depthClampZeroOne == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature depthClampZeroOne not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
