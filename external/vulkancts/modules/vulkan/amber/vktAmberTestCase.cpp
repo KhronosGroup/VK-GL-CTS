@@ -138,6 +138,8 @@ static bool isFeatureSupported(const vkt::Context &ctx, const std::string &featu
         return ctx.getAccelerationStructureFeatures().accelerationStructure;
     if (feature == "BufferDeviceAddressFeatures.bufferDeviceAddress")
         return ctx.getBufferDeviceAddressFeatures().bufferDeviceAddress;
+    if (feature == "DepthClampZeroOneFeatures.depthClampZeroOne")
+        return ctx.getDepthClampZeroOneFeaturesEXT().depthClampZeroOne;
 
     std::string message = std::string("Unexpected feature name: ") + feature;
     TCU_THROW(InternalError, message.c_str());
