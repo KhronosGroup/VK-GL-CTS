@@ -169,6 +169,12 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVer
             TCU_THROW(NotSupportedError, extName + " is not supported");
     }
 
+    for (const auto &ext : supportedExtensions)
+    {
+        if (strcmp(ext.extensionName, "VK_EXT_present_mode_fifo_latest_ready") == 0)
+            extensions.push_back("VK_EXT_present_mode_fifo_latest_ready");
+    }
+
     const void *pNext                       = nullptr;
     const VkPhysicalDeviceFeatures features = getDeviceFeaturesForWsi();
 
