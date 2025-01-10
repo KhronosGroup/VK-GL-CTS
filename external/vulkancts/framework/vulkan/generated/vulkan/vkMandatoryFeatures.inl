@@ -159,7 +159,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	vk::VkPhysicalDeviceCooperativeMatrix2FeaturesNV physicalDeviceCooperativeMatrix2FeaturesNV;
 	deMemset(&physicalDeviceCooperativeMatrix2FeaturesNV, 0, sizeof(physicalDeviceCooperativeMatrix2FeaturesNV));
 
-	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_cooperative_matrix2") )
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_cooperative_matrix2"))
 	{
 		physicalDeviceCooperativeMatrix2FeaturesNV.sType = getStructureType<VkPhysicalDeviceCooperativeMatrix2FeaturesNV>();
 		*nextPtr = &physicalDeviceCooperativeMatrix2FeaturesNV;
@@ -1092,7 +1092,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	vk::VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT physicalDeviceSwapchainMaintenance1FeaturesEXT;
 	deMemset(&physicalDeviceSwapchainMaintenance1FeaturesEXT, 0, sizeof(physicalDeviceSwapchainMaintenance1FeaturesEXT));
 
-	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_swapchain_maintenance1") )
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_swapchain_maintenance1"))
 	{
 		physicalDeviceSwapchainMaintenance1FeaturesEXT.sType = getStructureType<VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT>();
 		*nextPtr = &physicalDeviceSwapchainMaintenance1FeaturesEXT;
@@ -1197,7 +1197,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	vk::VkPhysicalDeviceVideoEncodeAV1FeaturesKHR physicalDeviceVideoEncodeAV1FeaturesKHR;
 	deMemset(&physicalDeviceVideoEncodeAV1FeaturesKHR, 0, sizeof(physicalDeviceVideoEncodeAV1FeaturesKHR));
 
-	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_video_encode_av1") )
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_video_encode_av1"))
 	{
 		physicalDeviceVideoEncodeAV1FeaturesKHR.sType = getStructureType<VkPhysicalDeviceVideoEncodeAV1FeaturesKHR>();
 		*nextPtr = &physicalDeviceVideoEncodeAV1FeaturesKHR;
@@ -1209,7 +1209,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	vk::VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR physicalDeviceVideoEncodeQuantizationMapFeaturesKHR;
 	deMemset(&physicalDeviceVideoEncodeQuantizationMapFeaturesKHR, 0, sizeof(physicalDeviceVideoEncodeQuantizationMapFeaturesKHR));
 
-	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_video_encode_quantization_map") )
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_video_encode_quantization_map"))
 	{
 		physicalDeviceVideoEncodeQuantizationMapFeaturesKHR.sType = getStructureType<VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR>();
 		*nextPtr = &physicalDeviceVideoEncodeQuantizationMapFeaturesKHR;
