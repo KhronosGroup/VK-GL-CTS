@@ -624,14 +624,24 @@ void PipelineLibraryInterpolateAtSampleTestInstance::runTest(BufferWithMemory &i
     multisampling.alphaToCoverageEnable                = VK_FALSE; // Optional
     multisampling.alphaToOneEnable                     = VK_FALSE; // Optional
 
+    static const VkPipelineColorBlendStateCreateInfo colorBlendState{
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType                                sType
+        nullptr,                 // const void*                                    pNext
+        0u,                      // VkPipelineColorBlendStateCreateFlags            flags
+        VK_FALSE,                // VkBool32                                        logicOpEnable
+        VK_LOGIC_OP_CLEAR,       // VkLogicOp                                    logicOp
+        0u,                      // uint32_t                                        attachmentCount
+        nullptr,                 // const VkPipelineColorBlendAttachmentState*    pAttachments
+        {0.0f, 0.0f, 0.0f, 0.0f} // float                                        blendConstants[4]
+    };
+
     pipeline1.setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
         .setDefaultRasterizationState()
         .setDefaultDepthStencilState()
-        .setDefaultColorBlendState()
         .setupVertexInputState(&vertexInputState)
         .setupPreRasterizationShaderState(viewports, scissors, graphicsPipelineLayout, VK_NULL_HANDLE, 0u, vtxshader)
         .setupFragmentShaderState(graphicsPipelineLayout, VK_NULL_HANDLE, 0u, frgshader)
-        .setupFragmentOutputState(VK_NULL_HANDLE, 0u, nullptr, &multisampling)
+        .setupFragmentOutputState(VK_NULL_HANDLE, 0u, &colorBlendState, &multisampling)
         .setMonolithicPipelineLayout(graphicsPipelineLayout)
         .buildPipeline();
 
@@ -669,7 +679,6 @@ void PipelineLibraryInterpolateAtSampleTestInstance::runTest(BufferWithMemory &i
 
     vkd.cmdBeginRendering(*commandBuffer, &render_info);
     pipeline1.bind(commandBuffer.get());
-    vkd.cmdSetPatchControlPointsEXT(commandBuffer.get(), 3);
     vkd.cmdDraw(commandBuffer.get(), 6, 1, 0, 0);
     vkd.cmdEndRendering(*commandBuffer);
 

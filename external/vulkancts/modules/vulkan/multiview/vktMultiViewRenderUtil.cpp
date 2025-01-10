@@ -283,26 +283,55 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
     vector<SubpassDep> subpassDependencies;
     for (uint32_t subpassNdx = 0u; subpassNdx < subpassCount; ++subpassNdx)
     {
-        const auto dependencyFlags = (subpassNdx == subpassCount - 1u) ?
-                                         (VK_DEPENDENCY_BY_REGION_BIT | VK_DEPENDENCY_VIEW_LOCAL_BIT) :
-                                         VK_DEPENDENCY_VIEW_LOCAL_BIT;
+        uint32_t viewMask = viewMasks[subpassNdx];
 
-        const SubpassDep
-            subpassDependency //  VkSubpassDependency                                            ||  VkSubpassDependency2KHR
-            (
-                //  || VkStructureType sType;
-                nullptr,    //   || const void* pNext;
-                subpassNdx, //  uint32_t srcSubpass; || uint32_t srcSubpass;
-                (subpassNdx == subpassCount - 1u) ? subpassNdx :
-                                                    subpassNdx + 1u, //  uint32_t dstSubpass; || uint32_t dstSubpass;
-                srcStageMask,    //  VkPipelineStageFlags srcStageMask; || VkPipelineStageFlags srcStageMask;
-                dstStageMask,    //  VkPipelineStageFlags dstStageMask; || VkPipelineStageFlags dstStageMask;
-                srcAccessMask,   //  VkAccessFlags srcAccessMask; || VkAccessFlags srcAccessMask;
-                dstAccessMask,   //  VkAccessFlags dstAccessMask; || VkAccessFlags dstAccessMask;
-                dependencyFlags, //  VkDependencyFlags dependencyFlags; || VkDependencyFlags dependencyFlags;
-                0                //    || int32_t viewOffset;
-            );
-        subpassDependencies.push_back(subpassDependency);
+        // For every view written in this subpass, there should be a dependency
+        // to the next subpass that writes to the same view.
+        for (uint32_t dstSubpassNdx = subpassNdx + 1; dstSubpassNdx < subpassCount; ++dstSubpassNdx)
+        {
+            if (viewMask & viewMasks[dstSubpassNdx])
+            {
+                viewMask &= ~viewMasks[dstSubpassNdx];
+
+                const SubpassDep
+                    subpassDependency //  VkSubpassDependency                                            ||  VkSubpassDependency2KHR
+                    (
+                        //  || VkStructureType sType;
+                        nullptr,       //   || const void* pNext;
+                        subpassNdx,    //  uint32_t srcSubpass; || uint32_t srcSubpass;
+                        dstSubpassNdx, //  uint32_t dstSubpass; || uint32_t dstSubpass;
+                        srcStageMask,  //  VkPipelineStageFlags srcStageMask; || VkPipelineStageFlags srcStageMask;
+                        dstStageMask,  //  VkPipelineStageFlags dstStageMask; || VkPipelineStageFlags dstStageMask;
+                        srcAccessMask, //  VkAccessFlags srcAccessMask; || VkAccessFlags srcAccessMask;
+                        dstAccessMask, //  VkAccessFlags dstAccessMask; || VkAccessFlags dstAccessMask;
+                        VK_DEPENDENCY_VIEW_LOCAL_BIT, //  VkDependencyFlags dependencyFlags; || VkDependencyFlags dependencyFlags;
+                        0                             //    || int32_t viewOffset;
+                    );
+                subpassDependencies.push_back(subpassDependency);
+            }
+        }
+
+        // If there are views left that are not written by any future subpasses,
+        // there should be a external dependency.
+        if (viewMask)
+        {
+            const SubpassDep
+                subpassDependency //  VkSubpassDependency                                            ||  VkSubpassDependency2KHR
+                (
+                    //  || VkStructureType sType;
+                    nullptr,             //   || const void* pNext;
+                    subpassNdx,          //  uint32_t srcSubpass; || uint32_t srcSubpass;
+                    VK_SUBPASS_EXTERNAL, //  uint32_t dstSubpass; || uint32_t dstSubpass;
+                    srcStageMask,        //  VkPipelineStageFlags srcStageMask; || VkPipelineStageFlags srcStageMask;
+                    dstStageMask,        //  VkPipelineStageFlags dstStageMask; || VkPipelineStageFlags dstStageMask;
+                    srcAccessMask,       //  VkAccessFlags srcAccessMask; || VkAccessFlags srcAccessMask;
+                    dstAccessMask,       //  VkAccessFlags dstAccessMask; || VkAccessFlags dstAccessMask;
+                    VK_DEPENDENCY_BY_REGION_BIT |
+                        VK_DEPENDENCY_VIEW_LOCAL_BIT, //  VkDependencyFlags dependencyFlags; || VkDependencyFlags dependencyFlags;
+                    0                                 //    || int32_t viewOffset;
+                );
+            subpassDependencies.push_back(subpassDependency);
+        }
     }
 
     const RenderPassCreateInfo
@@ -479,27 +508,57 @@ Move<VkRenderPass> makeRenderPassWithAttachments(const DeviceInterface &vk, cons
     vector<SubpassDep> subpassDependencies;
     for (uint32_t subpassNdx = 0u; subpassNdx < subpassCount; ++subpassNdx)
     {
-        const auto dependencyFlags = (subpassNdx == subpassCount - 1u) ?
-                                         (VK_DEPENDENCY_BY_REGION_BIT | VK_DEPENDENCY_VIEW_LOCAL_BIT) :
-                                         VK_DEPENDENCY_VIEW_LOCAL_BIT;
+        uint32_t viewMask = viewMasks[subpassNdx];
 
-        const SubpassDep
-            subpassDependency //  VkSubpassDependency                                            ||  VkSubpassDependency2KHR
-            (
-                //  || VkStructureType sType;
-                nullptr,    //   || const void* pNext;
-                subpassNdx, //  uint32_t srcSubpass; || uint32_t srcSubpass;
-                (subpassNdx == subpassCount - 1u) ? subpassNdx :
-                                                    subpassNdx + 1u, //  uint32_t dstSubpass; || uint32_t dstSubpass;
-                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, //  VkPipelineStageFlags srcStageMask; || VkPipelineStageFlags srcStageMask;
-                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, //  VkPipelineStageFlags dstStageMask; || VkPipelineStageFlags dstStageMask;
-                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, //  VkAccessFlags srcAccessMask; || VkAccessFlags srcAccessMask;
-                VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-                    VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, //  VkAccessFlags dstAccessMask; || VkAccessFlags dstAccessMask;
-                dependencyFlags, //  VkDependencyFlags dependencyFlags; || VkDependencyFlags dependencyFlags;
-                0                //    || int32_t viewOffset;
-            );
-        subpassDependencies.push_back(subpassDependency);
+        // For every view written in this subpass, there should be a dependency
+        // to the next subpass that writes to the same view.
+        for (uint32_t dstSubpassNdx = subpassNdx + 1; dstSubpassNdx < subpassCount; ++dstSubpassNdx)
+        {
+            if (viewMask & viewMasks[dstSubpassNdx])
+            {
+                viewMask &= ~viewMasks[dstSubpassNdx];
+
+                const SubpassDep
+                    subpassDependency //  VkSubpassDependency                                            ||  VkSubpassDependency2KHR
+                    (
+                        //  || VkStructureType sType;
+                        nullptr,                                       //   || const void* pNext;
+                        subpassNdx,                                    //  uint32_t srcSubpass; || uint32_t srcSubpass;
+                        dstSubpassNdx,                                 //  uint32_t dstSubpass; || uint32_t dstSubpass;
+                        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, //  VkPipelineStageFlags srcStageMask; || VkPipelineStageFlags srcStageMask;
+                        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, //  VkPipelineStageFlags dstStageMask; || VkPipelineStageFlags dstStageMask;
+                        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, //  VkAccessFlags srcAccessMask; || VkAccessFlags srcAccessMask;
+                        VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+                            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, //  VkAccessFlags dstAccessMask; || VkAccessFlags dstAccessMask;
+                        VK_DEPENDENCY_VIEW_LOCAL_BIT, //  VkDependencyFlags dependencyFlags; || VkDependencyFlags dependencyFlags;
+                        0                             //    || int32_t viewOffset;
+                    );
+                subpassDependencies.push_back(subpassDependency);
+            }
+        }
+
+        // If there are views left that are not written by any future subpasses,
+        // there should be a external dependency.
+        if (viewMask)
+        {
+            const SubpassDep
+                subpassDependency //  VkSubpassDependency                                            ||  VkSubpassDependency2KHR
+                (
+                    //  || VkStructureType sType;
+                    nullptr,                                       //   || const void* pNext;
+                    subpassNdx,                                    //  uint32_t srcSubpass; || uint32_t srcSubpass;
+                    VK_SUBPASS_EXTERNAL,                           //  uint32_t dstSubpass; || uint32_t dstSubpass;
+                    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, //  VkPipelineStageFlags srcStageMask; || VkPipelineStageFlags srcStageMask;
+                    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, //  VkPipelineStageFlags dstStageMask; || VkPipelineStageFlags dstStageMask;
+                    VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, //  VkAccessFlags srcAccessMask; || VkAccessFlags srcAccessMask;
+                    VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+                        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, //  VkAccessFlags dstAccessMask; || VkAccessFlags dstAccessMask;
+                    VK_DEPENDENCY_BY_REGION_BIT |
+                        VK_DEPENDENCY_VIEW_LOCAL_BIT, //  VkDependencyFlags dependencyFlags; || VkDependencyFlags dependencyFlags;
+                    0                                 //    || int32_t viewOffset;
+                );
+            subpassDependencies.push_back(subpassDependency);
+        }
     }
 
     const RenderPassCreateInfo
