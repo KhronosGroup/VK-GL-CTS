@@ -1175,7 +1175,7 @@ InstancedTests::InstancedTests(tcu::TestContext &testCtx, const SharedGroupParam
         {
             // reduce number of tests for dynamic rendering cases where secondary command buffer is used
             if (groupParams->useSecondaryCmdBuffer &&
-                ((topology % 2u) == groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass))
+                ((topology % 2u) == uint32_t(groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)))
                 continue;
 
             for (auto function : functions)
