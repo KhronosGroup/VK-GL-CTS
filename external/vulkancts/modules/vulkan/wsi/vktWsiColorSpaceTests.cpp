@@ -507,7 +507,7 @@ tcu::TestStatus colorspaceCompareTest(Context &context, TestParams params)
                 const VkPipelineStageFlags waitDstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
                 const VkSubmitInfo submitInfo           = {VK_STRUCTURE_TYPE_SUBMIT_INFO,
                                                            nullptr,
-                                                           0u,
+                                                           1u,
                                                            &imageReadySemaphore.get(),
                                                            &waitDstStage,
                                                            1u,
