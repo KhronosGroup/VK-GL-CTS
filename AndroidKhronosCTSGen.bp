@@ -1254,6 +1254,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/api/vktApiCommandBuffersTests.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiComputeInstanceResultBuffer.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiCopiesAndBlittingTests.cpp",
+        "external/vulkancts/modules/vulkan/api/vktApiDSColorBitCopyTests.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiDescriptorPoolTests.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiDescriptorSetTests.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiDeviceDrmPropertiesTests.cpp",

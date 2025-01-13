@@ -49,6 +49,7 @@
 #include "vktApiMaintenance6Check.hpp"
 #include "vktApiExtensionDuplicatesTests.hpp"
 #include "vktApiMaintenance7Tests.hpp"
+#include "vktApiDSColorBitCopyTests.hpp"
 
 #ifndef CTS_USES_VULKANSC
 #include "vktApiSmokeTests.hpp"
@@ -101,6 +102,7 @@ void createApiTests(tcu::TestCaseGroup *apiTests)
     apiTests->addChild(createTestGroup(testCtx, "buffer_view", createBufferViewTests));
     apiTests->addChild(createCommandBuffersTests(testCtx));
     apiTests->addChild(createCopiesAndBlittingTests(testCtx));
+    apiTests->addChild(createDSColorBitCopyTests(testCtx));
     apiTests->addChild(createImageClearingTests(testCtx));
     apiTests->addChild(createFillAndUpdateBufferTests(testCtx));
     apiTests->addChild(createDescriptorPoolTests(testCtx));
