@@ -641,7 +641,7 @@ void TestCaseExecutor::deinit(tcu::TestCase *testCase)
             {
                 m_context->getTestContext().getLog()
                     << TestLog::Message << "Fault recorded via vkGetFaultData: " << faultData[i] << TestLog::EndMessage;
-                if (Context::m_faultData[i].faultLevel != VK_FAULT_LEVEL_WARNING)
+                if (faultData[i].faultLevel != VK_FAULT_LEVEL_WARNING)
                     faultFail = true;
             }
         }
