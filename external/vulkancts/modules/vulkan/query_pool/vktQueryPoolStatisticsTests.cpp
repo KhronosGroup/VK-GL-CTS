@@ -57,9 +57,7 @@
 using std::pair;
 using std::vector;
 
-namespace vkt
-{
-namespace QueryPool
+namespace vkt::QueryPool
 {
 namespace
 {
@@ -528,6 +526,27 @@ vk::VkResult GetQueryPoolResultsVector(ResultsVectorWithAvailability &output, co
     return result;
 }
 
+void cmdCopyQueryPoolResults(const DeviceInterface &vk, VkCommandBuffer commandBuffer, VkQueryPool queryPool,
+                             uint32_t firstQuery, uint32_t queryCount, VkBuffer dstBuffer,
+                             VkDeviceAddress dstBufferDeviceAddress, VkDeviceSize dstOffset, VkDeviceSize stride,
+                             VkDeviceSize dstSize, VkQueryResultFlags flags)
+{
+    DE_UNREF(dstSize);
+
+    if (dstBufferDeviceAddress == 0ull)
+        vk.cmdCopyQueryPoolResults(commandBuffer, queryPool, firstQuery, queryCount, dstBuffer, dstOffset, stride,
+                                   flags);
+
+#ifndef CTS_USES_VULKANSC
+    if (dstBufferDeviceAddress != 0ull)
+    {
+        VkStridedDeviceAddressRangeKHR range{dstBufferDeviceAddress + dstOffset, stride, dstSize};
+        vk.cmdCopyQueryPoolResultsToMemoryKHR(commandBuffer, queryPool, firstQuery, queryCount, range,
+                                              VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR, flags);
+    }
+#endif
+}
+
 // Get query pool results as a vector. Note results are always converted to
 // uint64_t, but the actual vkCmdCopyQueryPoolResults call will use the 64-bits flag
 // or not depending on your preferences.
@@ -625,14 +644,16 @@ struct GenericParameters
     bool query64Bits;
     bool dstOffset;
     StrideType strideType;
+    bool useDeviceAddressCommands;
 
     GenericParameters(ResetType resetType_, CopyType copyType_, bool query64Bits_, bool dstOffset_,
-                      StrideType strideType_)
+                      StrideType strideType_, bool useDeviceAddressCommands_)
         : resetType{resetType_}
         , copyType{copyType_}
         , query64Bits{query64Bits_}
         , dstOffset{dstOffset_}
         , strideType{strideType_}
+        , useDeviceAddressCommands(useDeviceAddressCommands_)
     {
     }
 
@@ -750,7 +771,8 @@ void clearBuffer(const DeviceInterface &vk, const VkDevice device, const BufferP
 class StatisticQueryTestInstance : public TestInstance
 {
 public:
-    StatisticQueryTestInstance(Context &context, uint32_t queryCount, bool dstOffset, bool useComputeQueue);
+    StatisticQueryTestInstance(Context &context, uint32_t queryCount, bool dstOffset, bool useComputeQueue,
+                               bool useDeviceAddressCommands);
 
 protected:
     struct ValueAndAvailability
@@ -761,8 +783,10 @@ protected:
 
     VkDeviceSize m_resetBufferSize;
     BufferPtr m_resetBuffer;
+    VkDeviceAddress m_resetBufferDeviceAddress;
     bool dstOffset;
     const bool m_useComputeQueue;
+    const bool m_useDeviceAddressCommands;
 
     virtual void checkExtensions(bool hostResetQueryEnabled);
     BufferPtr createResetBuffer(void) const;
@@ -774,9 +798,16 @@ BufferPtr StatisticQueryTestInstance::createResetBuffer(void) const
 {
     const auto &deviceHelper = getDeviceHelper(m_context, m_useComputeQueue);
 
+    VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    if (m_useDeviceAddressCommands)
+        usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
+    MemoryRequirement memReq = m_useDeviceAddressCommands ?
+                                   MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress :
+                                   MemoryRequirement::HostVisible;
+
     return Buffer::createAndAlloc(deviceHelper.getDeviceInterface(), deviceHelper.getDevice(),
-                                  BufferCreateInfo(m_resetBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT),
-                                  deviceHelper.getAllocator(), vk::MemoryRequirement::HostVisible);
+                                  BufferCreateInfo(m_resetBufferSize, usage), deviceHelper.getAllocator(), memReq);
 }
 
 void StatisticQueryTestInstance::fillResetBuffer(const BufferPtr &buffer) const
@@ -790,15 +821,24 @@ void StatisticQueryTestInstance::fillResetBuffer(const BufferPtr &buffer) const
 }
 
 StatisticQueryTestInstance::StatisticQueryTestInstance(Context &context, uint32_t queryCount, bool dstOffset_,
-                                                       bool useComputeQueue)
+                                                       bool useComputeQueue, bool useDeviceAddressCommands)
     : TestInstance(context)
     , m_resetBufferSize((queryCount + (dstOffset_ ? 1u : 0u)) * sizeof(ValueAndAvailability))
     , m_resetBuffer()
+    , m_resetBufferDeviceAddress(0ull)
     , dstOffset(dstOffset_)
     , m_useComputeQueue(useComputeQueue)
+    , m_useDeviceAddressCommands(useDeviceAddressCommands)
 {
     m_resetBuffer = createResetBuffer();
     fillResetBuffer(m_resetBuffer);
+
+    if (m_useDeviceAddressCommands)
+    {
+        const auto &deviceHelper   = getDeviceHelper(m_context, m_useComputeQueue);
+        const auto &vk             = deviceHelper.getDeviceInterface();
+        m_resetBufferDeviceAddress = getBufferDeviceAddress(vk, deviceHelper.getDevice(), m_resetBuffer->object());
+    }
 }
 
 void StatisticQueryTestInstance::checkExtensions(bool hostResetQueryEnabled)
@@ -852,8 +892,8 @@ public:
     {
         ParametersCompute(const tcu::UVec3 &localSize_, const tcu::UVec3 &groupSize_, const std::string &shaderName_,
                           ResetType resetType_, CopyType copyType_, bool query64Bits_, bool dstOffset_,
-                          StrideType strideType_, bool useComputeQueue_)
-            : GenericParameters{resetType_, copyType_, query64Bits_, dstOffset_, strideType_}
+                          StrideType strideType_, bool useComputeQueue_, bool useDeviceAddressCommands_)
+            : GenericParameters{resetType_, copyType_, query64Bits_, dstOffset_, strideType_, useDeviceAddressCommands_}
             , localSize(localSize_)
             , groupSize(groupSize_)
             , shaderName(shaderName_)
@@ -883,7 +923,8 @@ protected:
 
 ComputeInvocationsTestInstance::ComputeInvocationsTestInstance(Context &context,
                                                                const std::vector<ParametersCompute> &parameters)
-    : StatisticQueryTestInstance(context, 1u, parameters[0].dstOffset, parameters[0].useComputeQueue)
+    : StatisticQueryTestInstance(context, 1u, parameters[0].dstOffset, parameters[0].useComputeQueue,
+                                 parameters[0].useDeviceAddressCommands)
     , m_parameters(parameters)
 {
 }
@@ -1291,8 +1332,8 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest(const VkCom
         if (m_parameters[0].strideType == STRIDE_TYPE_ZERO)
             copyStride = 0u;
 
-        vk.cmdCopyQueryPoolResults(*secondaryCmdBuffer, *queryPool, 0, 1u, m_resetBuffer->object(), dstOffsetQuery,
-                                   copyStride, flags);
+        cmdCopyQueryPoolResults(vk, *secondaryCmdBuffer, *queryPool, 0, 1u, m_resetBuffer->object(),
+                                m_resetBufferDeviceAddress, dstOffsetQuery, copyStride, m_resetBufferSize, flags);
 
         if (m_parameters[0].resetType == RESET_TYPE_AFTER_COPY)
             vk.cmdResetQueryPool(*secondaryCmdBuffer, *queryPool, 0u, 1u);
@@ -1637,8 +1678,8 @@ public:
                           const bool dstOffset_ = false, const ClearOperation clearOp_ = CLEAR_NOOP,
                           const bool noColorAttachments_ = false, const StrideType strideType_ = STRIDE_TYPE_VALID,
                           const bool hasTess_ = false, const uint32_t tessPatchSize_ = 0u,
-                          const uint32_t numTessPrimitives_ = 1u)
-            : GenericParameters{resetType_, copyType_, query64Bits_, dstOffset_, strideType_}
+                          const uint32_t numTessPrimitives_ = 1u, bool useDeviceAddressCommands_ = false)
+            : GenericParameters{resetType_, copyType_, query64Bits_, dstOffset_, strideType_, useDeviceAddressCommands_}
             , queryStatisticFlags(queryStatisticFlags_)
             , primitiveTopology(primitiveTopology_)
             , vertexOnlyPipe(vertexOnlyPipe_)
@@ -1693,7 +1734,8 @@ protected:
 GraphicBasicTestInstance::GraphicBasicTestInstance(vkt::Context &context, const std::vector<VertexData> &data,
                                                    const ParametersGraphic &parametersGraphic,
                                                    const std::vector<uint64_t> &drawRepeats)
-    : StatisticQueryTestInstance(context, static_cast<uint32_t>(drawRepeats.size()), parametersGraphic.dstOffset, false)
+    : StatisticQueryTestInstance(context, static_cast<uint32_t>(drawRepeats.size()), parametersGraphic.dstOffset, false,
+                                 parametersGraphic.useDeviceAddressCommands)
     , m_colorAttachmentFormat(VK_FORMAT_R8G8B8A8_UNORM)
     , m_data(data)
     , m_parametersGraphic(parametersGraphic)
@@ -2141,8 +2183,8 @@ tcu::TestStatus VertexShaderTestInstance::executeTest(void)
             }
 
             VkDeviceSize dstOffsetQuery = (m_parametersGraphic.dstOffset) ? stride : 0;
-            vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPool, 0, queryCount, m_resetBuffer->object(), dstOffsetQuery,
-                                       stride, flags);
+            cmdCopyQueryPoolResults(vk, *cmdBuffer, *queryPool, 0, queryCount, m_resetBuffer->object(),
+                                    m_resetBufferDeviceAddress, dstOffsetQuery, stride, m_resetBufferSize, flags);
 
             if (m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY)
                 vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, queryCount);
@@ -2500,8 +2542,8 @@ tcu::TestStatus VertexShaderSecondaryTestInstance::executeTest(void)
             }
 
             VkDeviceSize dstOffsetQuery = (m_parametersGraphic.dstOffset) ? stride : 0;
-            vk.cmdCopyQueryPoolResults(*primaryCmdBuffer, *queryPool, 0, queryCount, m_resetBuffer->object(),
-                                       dstOffsetQuery, stride, flags);
+            cmdCopyQueryPoolResults(vk, *primaryCmdBuffer, *queryPool, 0, queryCount, m_resetBuffer->object(),
+                                    m_resetBufferDeviceAddress, dstOffsetQuery, stride, m_resetBufferSize, flags);
 
             if (m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY)
                 vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, queryCount);
@@ -3520,8 +3562,8 @@ tcu::TestStatus TessellationShaderTestInstance::executeTest(void)
             }
 
             VkDeviceSize dstOffsetQuery = (m_parametersGraphic.dstOffset) ? stride : 0;
-            vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPool, 0, queryCount, m_resetBuffer->object(), dstOffsetQuery,
-                                       stride, flags);
+            cmdCopyQueryPoolResults(vk, *cmdBuffer, *queryPool, 0, queryCount, m_resetBuffer->object(),
+                                    m_resetBufferDeviceAddress, dstOffsetQuery, stride, m_resetBufferSize, flags);
 
             if (m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY)
                 vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, queryCount);
@@ -3961,9 +4003,11 @@ class QueryPoolComputeStatsTest : public TestCase
 public:
     QueryPoolComputeStatsTest(tcu::TestContext &context, const std::string &name, const ResetType resetType,
                               const CopyType copyType, bool query64Bits, const bool useComputeQueue,
-                              bool dstOffset = false, const StrideType strideType = STRIDE_TYPE_VALID)
+                              bool dstOffset = false, const StrideType strideType = STRIDE_TYPE_VALID,
+                              bool useDeviceAddressCommands = false)
         : TestCase(context, name.c_str())
         , m_useComputeQueue(useComputeQueue)
+        , m_useDeviceAddressCommands(useDeviceAddressCommands)
     {
         const tcu::UVec3 localSize[] = {
             tcu::UVec3(2u, 2u, 2u),
@@ -3985,7 +4029,7 @@ public:
             shaderName << "compute_" << shaderNdx;
             const ComputeInvocationsTestInstance::ParametersCompute parameters(
                 localSize[shaderNdx], groupSize[shaderNdx], shaderName.str(), resetType, copyType, query64Bits,
-                dstOffset, strideType, m_useComputeQueue);
+                dstOffset, strideType, m_useComputeQueue, m_useDeviceAddressCommands);
             m_parameters.push_back(parameters);
         }
     }
@@ -4004,6 +4048,8 @@ public:
 
             checkSupportForNonGraphicsQueueFamily(vki, physicalDevice);
         }
+        if (m_useDeviceAddressCommands)
+            context.requireDeviceFunctionality("VK_KHR_device_address_commands");
     }
 
     void initPrograms(SourceCollections &sourceCollections) const override
@@ -4036,6 +4082,7 @@ public:
 private:
     std::vector<ComputeInvocationsTestInstance::ParametersCompute> m_parameters;
     const bool m_useComputeQueue;
+    const bool m_useDeviceAddressCommands;
 };
 
 template <class Instance>
@@ -4167,6 +4214,8 @@ public:
             TCU_THROW(NotSupportedError,
                       "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
         }
+        if (m_parametersGraphic.useDeviceAddressCommands)
+            context.requireDeviceFunctionality("VK_KHR_device_address_commands");
 #else
         DE_UNREF(context);
 #endif // CTS_USES_VULKANSC
@@ -4465,9 +4514,9 @@ public:
         ParametersGraphic(const VkQueryPipelineStatisticFlags queryStatisticFlags_,
                           const VkQueryResultFlags queryFlags_, const uint32_t queryCount_, const bool vertexOnlyPipe_,
                           const CopyType copyType_, const uint32_t dstOffset_, const StrideType strideType_,
-                          const ClearOperation clearOp_ = CLEAR_NOOP)
-            : GenericParameters{RESET_TYPE_NORMAL, copyType_, (queryFlags_ & VK_QUERY_RESULT_64_BIT) != 0u,
-                                dstOffset_ != 0u, strideType_}
+                          const ClearOperation clearOp_ = CLEAR_NOOP, bool useDeviceAddressCommands_ = false)
+            : GenericParameters{RESET_TYPE_NORMAL, copyType_,   (queryFlags_ & VK_QUERY_RESULT_64_BIT) != 0u,
+                                dstOffset_ != 0u,  strideType_, useDeviceAddressCommands_}
             , queryStatisticFlags(queryStatisticFlags_)
             , vertexOnlyPipe(vertexOnlyPipe_)
             , queryFlags(queryFlags_)
@@ -5544,6 +5593,20 @@ void QueryPoolStatisticsTests::init(void)
 
                 if (copyType[copyTypeIdx] == COPY_TYPE_CMD)
                 {
+
+#ifndef CTS_USES_VULKANSC
+                    // limit number of tests repeated for device_address_commands
+                    if ((i == 1) && (computeQueue == false))
+                    {
+                        computeShaderInvocationsGroupResetBeforeCopy->addChild(
+                            new QueryPoolComputeStatsTest<ComputeInvocationsSecondaryTestInstance>(
+                                m_testCtx,
+                                prefix + copyTypeStr[copyTypeIdx] + "secondary" + cqSuffix + "_device_address",
+                                RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx], query64Bits, computeQueue, dstOffset,
+                                STRIDE_TYPE_VALID, true));
+                    }
+#endif
+
                     computeShaderInvocationsGroupResetAfterCopy->addChild(
                         new QueryPoolComputeStatsTest<ComputeInvocationsTestInstance>(
                             m_testCtx, prefix + copyTypeStr[copyTypeIdx] + "primary" + cqSuffix, RESET_TYPE_AFTER_COPY,
@@ -5588,6 +5651,7 @@ void QueryPoolStatisticsTests::init(void)
                 sixRepeats));
 
             if (copyType[copyTypeIdx] == COPY_TYPE_CMD)
+            {
                 inputAssemblyVerticesResetAfterCopy->addChild(
                     new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>(
                         m_testCtx, prefix + copyTypeStr[copyTypeIdx] + "primary_with_no_color_attachments",
@@ -5596,6 +5660,23 @@ void QueryPoolStatisticsTests::init(void)
                             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
                             query64Bits, false, dstOffset, CLEAR_NOOP, true),
                         sixRepeats));
+
+#ifndef CTS_USES_VULKANSC
+                // limit number of tests repeated for device_address_commands
+                if (i == 0)
+                {
+                    inputAssemblyVerticesResetAfterCopy->addChild(
+                        new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>(
+                            m_testCtx,
+                            prefix + copyTypeStr[copyTypeIdx] + "primary_with_no_color_attachments_device_address",
+                            GraphicBasicTestInstance::ParametersGraphic(
+                                VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT,
+                                VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
+                                query64Bits, false, dstOffset, CLEAR_NOOP, true, STRIDE_TYPE_VALID, false, 0, 1, true),
+                            sixRepeats));
+                }
+#endif
+            }
 
             /* Tests for clear operation within a statistics query activated.
              * The query shouldn't count internal driver operations relevant to the clear operations.
@@ -5816,6 +5897,23 @@ void QueryPoolStatisticsTests::init(void)
                                 (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
                                 query64Bits, false, dstOffset, CLEAR_NOOP, true),
                             sixRepeats));
+
+#ifndef CTS_USES_VULKANSC
+                    // limit number of tests repeated for device_address_commands
+                    if ((copyType[copyTypeIdx] == COPY_TYPE_GET) && (i == 2) &&
+                        (topologyNdx == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP))
+                    {
+                        primaryResetAfterCopy->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>(
+                            m_testCtx,
+                            prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                "_with_no_color_attachments_device_address",
+                            GraphicBasicTestInstance::ParametersGraphic(
+                                VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT,
+                                (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
+                                query64Bits, false, dstOffset, CLEAR_NOOP, true, STRIDE_TYPE_VALID, false, 0, 1, true),
+                            sixRepeats));
+                    }
+#endif
 
                     /* Tests for clear operation within a statistics query activated.
                      * Nothing for secondary_inherited cases can be done since it violates the specification.
@@ -6305,6 +6403,7 @@ void QueryPoolStatisticsTests::init(void)
                         sixRepeats));
 
                     if (copyType[copyTypeIdx] == COPY_TYPE_CMD)
+                    {
                         primaryResetAfterCopy->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>(
                             m_testCtx,
                             prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
@@ -6314,6 +6413,25 @@ void QueryPoolStatisticsTests::init(void)
                                 (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
                                 query64Bits, false, dstOffset, CLEAR_NOOP, true),
                             sixRepeats));
+
+#ifndef CTS_USES_VULKANSC
+                        // limit number of tests repeated for device_address_commands
+                        if ((i == 1) && (topologyNdx == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP))
+                        {
+                            primaryResetAfterCopy->addChild(
+                                new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>(
+                                    m_testCtx,
+                                    prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                        "_with_no_color_attachments_device_address",
+                                    GraphicBasicTestInstance::ParametersGraphic(
+                                        VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT,
+                                        (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
+                                        query64Bits, false, dstOffset, CLEAR_NOOP, true, STRIDE_TYPE_VALID, false, 0, 1,
+                                        true),
+                                    sixRepeats));
+                        }
+#endif
+                    }
 
                     /* Tests for clear operation within a statistics query activated.
                      * Nothing for secondary_inherited cases can be done since it violates the specification.
@@ -6630,6 +6748,24 @@ void QueryPoolStatisticsTests::init(void)
                                         (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
                                         query64Bits, false, dstOffset, CLEAR_SKIP),
                                     sixRepeats));
+
+#ifndef CTS_USES_VULKANSC
+                            // limit number of tests repeated for device_address_commands
+                            if ((i == 0) && (topologyNdx == VK_PRIMITIVE_TOPOLOGY_POINT_LIST))
+                            {
+                                secondaryResetAfterCopy->addChild(
+                                    new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>(
+                                        m_testCtx,
+                                        prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                            "_device_address",
+                                        GraphicBasicTestInstance::ParametersGraphic(
+                                            VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT,
+                                            (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY,
+                                            copyType[copyTypeIdx], query64Bits, false, dstOffset, CLEAR_SKIP, false,
+                                            STRIDE_TYPE_VALID, false, 0, 1, true),
+                                        sixRepeats));
+                            }
+#endif
                         }
                     }
 
@@ -7625,6 +7761,7 @@ void QueryPoolStatisticsTests::init(void)
                     sixRepeats));
 
             if (copyType[copyTypeIdx] == COPY_TYPE_CMD)
+            {
                 tesEvaluationShaderInvocationsResetAfterCopy->addChild(
                     new QueryPoolGraphicStatisticsTest<TessellationShaderTestInstance>(
                         m_testCtx,
@@ -7635,6 +7772,24 @@ void QueryPoolStatisticsTests::init(void)
                             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
                             query64Bits, false, dstOffset, CLEAR_NOOP, true, STRIDE_TYPE_VALID, true),
                         sixRepeats));
+
+#ifndef CTS_USES_VULKANSC
+                // limit number of tests repeated for device_address_commands
+                if (i == 0)
+                {
+                    tesEvaluationShaderInvocationsResetAfterCopy->addChild(
+                        new QueryPoolGraphicStatisticsTest<TessellationShaderTestInstance>(
+                            m_testCtx,
+                            prefix + copyTypeStr[copyTypeIdx] +
+                                "tes_evaluation_shader_invocations_with_no_color_attachments_device_address",
+                            GraphicBasicTestInstance::ParametersGraphic(
+                                VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT,
+                                VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
+                                query64Bits, false, dstOffset, CLEAR_NOOP, true, STRIDE_TYPE_VALID, true, 0, 1, true),
+                            sixRepeats));
+                }
+#endif
+            }
 
             /* Tests for clear operation within a statistics query activated.
              * Nothing for secondary_inherited cases can be done since it violates the specification.
@@ -8043,5 +8198,4 @@ void QueryPoolStatisticsTests::deinit(void)
     destroyDeviceHelpers();
 }
 
-} // namespace QueryPool
-} // namespace vkt
+} // namespace vkt::QueryPool
