@@ -165,11 +165,6 @@ uint32_t findNonGraphicsQueueFamilyIndex(const InstanceInterface &vki, const VkP
     return qfIndex;
 }
 
-void checkSupportForNonGraphicsQueueFamily(const InstanceInterface &vki, const VkPhysicalDevice physicalDevice)
-{
-    findNonGraphicsQueueFamilyIndex(vki, physicalDevice);
-}
-
 // Device helper: this is needed in some tests when we create custom devices.
 class DeviceHelper
 {
@@ -4001,8 +3996,13 @@ public:
         {
             const auto &vki           = context.getInstanceInterface();
             const auto physicalDevice = context.getPhysicalDevice();
-
-            checkSupportForNonGraphicsQueueFamily(vki, physicalDevice);
+            uint32_t computeQueueFamilyIdx = findNonGraphicsQueueFamilyIndex(vki, physicalDevice);
+            uint32_t counterCount;
+            VkResult result;
+			
+            result = vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, computeQueueFamilyIdx, &counterCount, NULL, NULL);
+            if (result != VK_SUCCESS || counterCount == 0)
+            	TCU_THROW(NotSupportedError, "Query not supported in compute queue");
         }
     }
 
