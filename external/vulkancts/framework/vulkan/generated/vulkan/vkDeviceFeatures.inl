@@ -379,6 +379,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceCudaKernelLaunchFeaturesNV>(
 template<> void initFeatureFromBlob<VkPhysicalDeviceSchedulingControlsFeaturesARM>(VkPhysicalDeviceSchedulingControlsFeaturesARM&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceRelaxedLineRasterizationFeaturesIMG>(VkPhysicalDeviceRelaxedLineRasterizationFeaturesIMG&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceRenderPassStripedFeaturesARM>(VkPhysicalDeviceRenderPassStripedFeaturesARM&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDevicePipelineOpacityMicromapFeaturesARM>(VkPhysicalDevicePipelineOpacityMicromapFeaturesARM&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR>(VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderQuadControlFeaturesKHR>(VkPhysicalDeviceShaderQuadControlFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV>(VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV&, const AllFeaturesBlobs&) {}
@@ -592,6 +593,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceImageAlignmentControlFeat
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceDepthClampControlFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_CONTROL_FEATURES_EXT, VK_EXT_DEPTH_CLAMP_CONTROL_EXTENSION_NAME, VK_EXT_DEPTH_CLAMP_CONTROL_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceHdrVividFeaturesHUAWEI>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HDR_VIVID_FEATURES_HUAWEI, VK_HUAWEI_HDR_VIVID_EXTENSION_NAME, VK_HUAWEI_HDR_VIVID_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCooperativeMatrix2FeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_FEATURES_NV, VK_NV_COOPERATIVE_MATRIX_2_EXTENSION_NAME, VK_NV_COOPERATIVE_MATRIX_2_SPEC_VERSION}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePipelineOpacityMicromapFeaturesARM>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_OPACITY_MICROMAP_FEATURES_ARM, VK_ARM_PIPELINE_OPACITY_MICROMAP_EXTENSION_NAME, VK_ARM_PIPELINE_OPACITY_MICROMAP_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT, VK_EXT_VERTEX_ATTRIBUTE_ROBUSTNESS_EXTENSION_NAME, VK_EXT_VERTEX_ATTRIBUTE_ROBUSTNESS_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceProtectedMemoryFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES, DECL_PROTECTED_MEMORY_EXTENSION_NAME, 0}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderDrawParametersFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES, DECL_SHADER_DRAW_PARAMETERS_EXTENSION_NAME, 0}; }
@@ -797,6 +799,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceDepthClampControlFeaturesEXT>, VK_EXT_DEPTH_CLAMP_CONTROL_EXTENSION_NAME, VK_EXT_DEPTH_CLAMP_CONTROL_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceHdrVividFeaturesHUAWEI>, VK_HUAWEI_HDR_VIVID_EXTENSION_NAME, VK_HUAWEI_HDR_VIVID_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceCooperativeMatrix2FeaturesNV>, VK_NV_COOPERATIVE_MATRIX_2_EXTENSION_NAME, VK_NV_COOPERATIVE_MATRIX_2_SPEC_VERSION },
+	{ createFeatureStructWrapper<VkPhysicalDevicePipelineOpacityMicromapFeaturesARM>, VK_ARM_PIPELINE_OPACITY_MICROMAP_EXTENSION_NAME, VK_ARM_PIPELINE_OPACITY_MICROMAP_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT>, VK_EXT_VERTEX_ATTRIBUTE_ROBUSTNESS_EXTENSION_NAME, VK_EXT_VERTEX_ATTRIBUTE_ROBUSTNESS_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceProtectedMemoryFeatures>, DECL_PROTECTED_MEMORY_EXTENSION_NAME, 0 },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderDrawParametersFeatures>, DECL_SHADER_DRAW_PARAMETERS_EXTENSION_NAME, 0 },

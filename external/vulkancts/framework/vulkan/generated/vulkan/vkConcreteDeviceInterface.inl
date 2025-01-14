@@ -528,7 +528,7 @@ virtual void				cmdFillMemoryKHR										(VkCommandBuffer commandBuffer, VkDevi
 virtual void				cmdCopyQueryPoolResultsToMemoryKHR						(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, VkStridedDeviceAddressRangeKHR dstRange, VkAddressCopyFlagsKHR dstCopyFlags, VkQueryResultFlags queryResultFlags) const;
 virtual void				cmdBeginConditionalRendering2EXT						(VkCommandBuffer commandBuffer, const VkConditionalRenderingBeginInfo2EXT* pConditionalRenderingBegin) const;
 virtual void				cmdBindTransformFeedbackBuffers2EXT						(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkDeviceAddressRangeKHR* pRanges) const;
-virtual void				cmdBeginTransformFeedback2EXT							(VkCommandBuffer commandBuffer, uint32_t firstCounterRange, uint32_t counterRangeCount, const VkDeviceAddressRangeKHR* pRanges) const;
+virtual void				cmdBeginTransformFeedback2EXT							(VkCommandBuffer commandBuffer, uint32_t firstCounterRange, uint32_t counterRangeCount, const VkDeviceAddressRangeKHR* pCounterRanges) const;
 virtual void				cmdEndTransformFeedback2EXT								(VkCommandBuffer commandBuffer, uint32_t firstCounterRange, uint32_t counterRangeCount, const VkDeviceAddressRangeKHR* pRanges) const;
 virtual void				cmdDrawIndirectByteCount2EXT							(VkCommandBuffer commandBuffer, uint32_t instanceCount, uint32_t firstInstance, VkDeviceAddressRangeKHR counterRange, uint32_t counterOffset, uint32_t vertexStride) const;
 virtual void				cmdWriteMarkerToMemoryAMD								(VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkDeviceAddressRangeKHR dstRange, VkAddressCopyFlagsKHR dstCopyFlags, uint32_t marker) const;
@@ -540,4 +540,4 @@ virtual void				cmdDrawIndirectCount2KHR								(VkCommandBuffer commandBuffer, 
 virtual void				cmdDrawIndexedIndirectCount2KHR							(VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, VkDeviceAddressRangeKHR countAddressRange, uint32_t maxDrawCount) const;
 virtual void				cmdDrawMeshTasksIndirect2EXT							(VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, uint32_t drawCount) const;
 virtual void				cmdDrawMeshTasksIndirectCount2EXT						(VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, VkDeviceAddressRangeKHR countAddressRange, uint32_t maxDrawCount) const;
-virtual void				cmdDispatchIndirect2KHR									(VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange) const;
+virtual void				cmdDispatchIndirect2KHR									(VkCommandBuffer commandBuffer, VkDeviceAddressRangeKHR addressRange) const;

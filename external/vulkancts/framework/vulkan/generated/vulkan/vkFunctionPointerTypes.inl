@@ -726,7 +726,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdFillMemoryKHRFunc)													(VkCo
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyQueryPoolResultsToMemoryKHRFunc)								(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, VkStridedDeviceAddressRangeKHR dstRange, VkAddressCopyFlagsKHR dstCopyFlags, VkQueryResultFlags queryResultFlags);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginConditionalRendering2EXTFunc)									(VkCommandBuffer commandBuffer, const VkConditionalRenderingBeginInfo2EXT* pConditionalRenderingBegin);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindTransformFeedbackBuffers2EXTFunc)								(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkDeviceAddressRangeKHR* pRanges);
-typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginTransformFeedback2EXTFunc)										(VkCommandBuffer commandBuffer, uint32_t firstCounterRange, uint32_t counterRangeCount, const VkDeviceAddressRangeKHR* pRanges);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginTransformFeedback2EXTFunc)										(VkCommandBuffer commandBuffer, uint32_t firstCounterRange, uint32_t counterRangeCount, const VkDeviceAddressRangeKHR* pCounterRanges);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndTransformFeedback2EXTFunc)										(VkCommandBuffer commandBuffer, uint32_t firstCounterRange, uint32_t counterRangeCount, const VkDeviceAddressRangeKHR* pRanges);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawIndirectByteCount2EXTFunc)										(VkCommandBuffer commandBuffer, uint32_t instanceCount, uint32_t firstInstance, VkDeviceAddressRangeKHR counterRange, uint32_t counterOffset, uint32_t vertexStride);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdWriteMarkerToMemoryAMDFunc)											(VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkDeviceAddressRangeKHR dstRange, VkAddressCopyFlagsKHR dstCopyFlags, uint32_t marker);
@@ -738,4 +738,4 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawIndirectCount2KHRFunc)										
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawIndexedIndirectCount2KHRFunc)									(VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, VkDeviceAddressRangeKHR countAddressRange, uint32_t maxDrawCount);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawMeshTasksIndirect2EXTFunc)										(VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, uint32_t drawCount);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawMeshTasksIndirectCount2EXTFunc)									(VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, VkDeviceAddressRangeKHR countAddressRange, uint32_t maxDrawCount);
-typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDispatchIndirect2KHRFunc)											(VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDispatchIndirect2KHRFunc)											(VkCommandBuffer commandBuffer, VkDeviceAddressRangeKHR addressRange);

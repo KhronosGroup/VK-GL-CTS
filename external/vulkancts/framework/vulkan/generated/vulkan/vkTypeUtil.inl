@@ -961,12 +961,12 @@ inline VkDeviceAddressRangeKHR makeDeviceAddressRangeKHR (VkDeviceAddress addres
 	return res;
 }
 
-inline VkStridedDeviceAddressRangeKHR makeStridedDeviceAddressRangeKHR (VkDeviceAddress address, VkDeviceSize size, VkDeviceSize stride)
+inline VkStridedDeviceAddressRangeKHR makeStridedDeviceAddressRangeKHR (VkDeviceAddress address, VkDeviceSize stride, VkDeviceSize size)
 {
 	VkStridedDeviceAddressRangeKHR res;
 	res.address	= address;
-	res.size	= size;
 	res.stride	= stride;
+	res.size	= size;
 	return res;
 }
 

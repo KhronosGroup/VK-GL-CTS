@@ -1663,6 +1663,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		functions.push_back("vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV");
 		return;
 	}
+	if (extName == "VK_ARM_pipeline_opacity_micromap")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_vertex_attribute_robustness")
 	{
 		return;
@@ -2560,7 +2564,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		functions.push_back("vkCmdDrawMeshTasksNV");
 		functions.push_back("vkCmdDrawMeshTasksIndirectNV");
-		functions.push_back("vkCmdDrawMeshTasksIndirectCountNV");
+		// Dependencies: VK_KHR_draw_indirect_count,VK_VERSION_1_2
+		if ((checkVersion(1, 2, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_draw_indirect_count"))) {
+			functions.push_back("vkCmdDrawMeshTasksIndirectCountNV");
+		}
 		return;
 	}
 	if (extName == "VK_NV_fragment_shader_barycentric")
@@ -3076,7 +3083,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		functions.push_back("vkCmdDrawMeshTasksEXT");
 		functions.push_back("vkCmdDrawMeshTasksIndirectEXT");
-		functions.push_back("vkCmdDrawMeshTasksIndirectCountEXT");
+		// Dependencies: VK_KHR_draw_indirect_count,VK_VERSION_1_2
+		if ((checkVersion(1, 2, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_draw_indirect_count"))) {
+			functions.push_back("vkCmdDrawMeshTasksIndirectCountEXT");
+		}
 		return;
 	}
 	if (extName == "VK_EXT_ycbcr_2plane_444_formats")
@@ -3893,6 +3903,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_ARM_pipeline_opacity_micromap")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_vertex_attribute_robustness")
 	{
 		return;
@@ -4333,5 +4347,6 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_depth_clamp_control",
 	"VK_HUAWEI_hdr_vivid",
 	"VK_NV_cooperative_matrix2",
+	"VK_ARM_pipeline_opacity_micromap",
 	"VK_EXT_vertex_attribute_robustness",
 };

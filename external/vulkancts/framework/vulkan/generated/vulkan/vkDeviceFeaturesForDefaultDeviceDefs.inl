@@ -201,6 +201,7 @@ const VkPhysicalDeviceImageAlignmentControlFeaturesMESA&				getImageAlignmentCon
 const VkPhysicalDeviceDepthClampControlFeaturesEXT&						getDepthClampControlFeaturesEXT						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceDepthClampControlFeaturesEXT>();					}
 const VkPhysicalDeviceHdrVividFeaturesHUAWEI&							getHdrVividFeaturesHUAWEI							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceHdrVividFeaturesHUAWEI>();						}
 const VkPhysicalDeviceCooperativeMatrix2FeaturesNV&						getCooperativeMatrix2FeaturesNV						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceCooperativeMatrix2FeaturesNV>();					}
+const VkPhysicalDevicePipelineOpacityMicromapFeaturesARM&				getPipelineOpacityMicromapFeaturesARM				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePipelineOpacityMicromapFeaturesARM>();			}
 const VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT&				getVertexAttributeRobustnessFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT>();			}
 const VkPhysicalDeviceProtectedMemoryFeatures&							getProtectedMemoryFeatures							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceProtectedMemoryFeatures>();						}
 const VkPhysicalDeviceShaderDrawParametersFeatures&						getShaderDrawParametersFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderDrawParametersFeatures>();					}

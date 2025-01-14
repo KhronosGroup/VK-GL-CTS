@@ -201,6 +201,7 @@ const vk::VkPhysicalDeviceImageAlignmentControlFeaturesMESA&				getImageAlignmen
 const vk::VkPhysicalDeviceDepthClampControlFeaturesEXT&						getDepthClampControlFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceHdrVividFeaturesHUAWEI&							getHdrVividFeaturesHUAWEI							(void) const;
 const vk::VkPhysicalDeviceCooperativeMatrix2FeaturesNV&						getCooperativeMatrix2FeaturesNV						(void) const;
+const vk::VkPhysicalDevicePipelineOpacityMicromapFeaturesARM&				getPipelineOpacityMicromapFeaturesARM				(void) const;
 const vk::VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT&				getVertexAttributeRobustnessFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							getProtectedMemoryFeatures							(void) const;
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						getShaderDrawParametersFeatures						(void) const;

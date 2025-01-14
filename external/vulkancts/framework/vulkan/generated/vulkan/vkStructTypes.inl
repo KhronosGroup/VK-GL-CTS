@@ -10007,6 +10007,13 @@ struct VkRenderPassStripeSubmitInfoARM
 	const VkSemaphoreSubmitInfo*	pStripeSemaphoreInfos;
 };
 
+struct VkPhysicalDevicePipelineOpacityMicromapFeaturesARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		pipelineOpacityMicromap;
+};
+
 struct VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR
 {
 	VkStructureType	sType;
@@ -10222,8 +10229,8 @@ struct VkDeviceAddressRangeKHR
 struct VkStridedDeviceAddressRangeKHR
 {
 	VkDeviceAddress	address;
-	VkDeviceSize	size;
 	VkDeviceSize	stride;
+	VkDeviceSize	size;
 };
 
 struct VkDeviceMemoryCopyKHR

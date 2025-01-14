@@ -3724,6 +3724,18 @@ bool check_VK_NV_cooperative_matrix2(const tcu::UVec2& v, const ExtPropVect& vIE
 	return isSupported(vDEP, "VK_KHR_cooperative_matrix");
 }
 
+bool check_VK_ARM_pipeline_opacity_micromap(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_ARM_pipeline_opacity_micromap"))
+		return true;
+
+	// depends attribute in xml: VK_EXT_opacity_micromap
+	return isSupported(vDEP, "VK_EXT_opacity_micromap");
+}
+
 bool check_VK_EXT_vertex_attribute_robustness(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -4005,6 +4017,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_depth_clamp_control",							&check_VK_EXT_depth_clamp_control),
 	std::make_pair("VK_HUAWEI_hdr_vivid",									&check_VK_HUAWEI_hdr_vivid),
 	std::make_pair("VK_NV_cooperative_matrix2",								&check_VK_NV_cooperative_matrix2),
+	std::make_pair("VK_ARM_pipeline_opacity_micromap",						&check_VK_ARM_pipeline_opacity_micromap),
 	std::make_pair("VK_EXT_vertex_attribute_robustness",					&check_VK_EXT_vertex_attribute_robustness),
 };
 
@@ -4406,5 +4419,6 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_depth_clamp_control"),
 	std::make_tuple(1, 0, "VK_HUAWEI_hdr_vivid"),
 	std::make_tuple(1, 0, "VK_NV_cooperative_matrix2"),
+	std::make_tuple(1, 0, "VK_ARM_pipeline_opacity_micromap"),
 	std::make_tuple(1, 0, "VK_EXT_vertex_attribute_robustness"),
 };

@@ -7,7 +7,7 @@
 #define VULKAN_VIDEO_CODECS_COMMON_H_ 1
 
 /*
-** Copyright 2015-2024 The Khronos Group Inc.
+** Copyright 2015-2025 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -43,7 +43,7 @@ extern "C" {
 #define VULKAN_VIDEO_CODEC_H264STD_H_ 1
 
 /*
-** Copyright 2015-2024 The Khronos Group Inc.
+** Copyright 2015-2025 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -355,7 +355,7 @@ typedef struct StdVideoH264PictureParameterSet {
 #define VULKAN_VIDEO_CODEC_H264STD_DECODE_H_ 1
 
 /*
-** Copyright 2015-2024 The Khronos Group Inc.
+** Copyright 2015-2025 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -432,7 +432,7 @@ typedef struct StdVideoDecodeH264ReferenceInfo {
 #define VULKAN_VIDEO_CODEC_H264STD_ENCODE_H_ 1
 
 /*
-** Copyright 2015-2024 The Khronos Group Inc.
+** Copyright 2015-2025 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -579,7 +579,7 @@ typedef struct StdVideoEncodeH264SliceHeader {
 #define VULKAN_VIDEO_CODEC_H265STD_H_ 1
 
 /*
-** Copyright 2015-2024 The Khronos Group Inc.
+** Copyright 2015-2025 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -1025,7 +1025,7 @@ typedef struct StdVideoH265PictureParameterSet {
 #define VULKAN_VIDEO_CODEC_H265STD_DECODE_H_ 1
 
 /*
-** Copyright 2015-2024 The Khronos Group Inc.
+** Copyright 2015-2025 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -1092,7 +1092,7 @@ typedef struct StdVideoDecodeH265ReferenceInfo {
 #define VULKAN_VIDEO_CODEC_H265STD_ENCODE_H_ 1
 
 /*
-** Copyright 2015-2024 The Khronos Group Inc.
+** Copyright 2015-2025 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -1249,7 +1249,7 @@ typedef struct StdVideoEncodeH265ReferenceInfo {
 #define VULKAN_VIDEO_CODEC_AV1STD_H_ 1
 
 /*
-** Copyright 2015-2024 The Khronos Group Inc.
+** Copyright 2015-2025 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -1643,7 +1643,7 @@ typedef struct StdVideoAV1SequenceHeader {
 #define VULKAN_VIDEO_CODEC_AV1STD_DECODE_H_ 1
 
 /*
-** Copyright 2015-2024 The Khronos Group Inc.
+** Copyright 2015-2025 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -1752,7 +1752,7 @@ typedef struct StdVideoDecodeAV1ReferenceInfo {
 #define VULKAN_VIDEO_CODEC_AV1STD_ENCODE_H_ 1
 
 /*
-** Copyright 2015-2024 The Khronos Group Inc.
+** Copyright 2015-2025 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -1895,7 +1895,7 @@ typedef struct StdVideoEncodeAV1ReferenceInfo {
 #define VULKAN_CORE_H_ 1
 
 /*
-** Copyright 2015-2024 The Khronos Group Inc.
+** Copyright 2015-2025 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -1962,7 +1962,7 @@ extern "C" {
 #define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)// Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 303
+#define VK_HEADER_VERSION 304
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 4, VK_HEADER_VERSION)
@@ -3096,6 +3096,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_FEATURES_NV = 1000593000,
     VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_FLEXIBLE_DIMENSIONS_PROPERTIES_NV = 1000593001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_PROPERTIES_NV = 1000593002,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_OPACITY_MICROMAP_FEATURES_ARM = 1000596000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT = 1000608000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
@@ -7855,7 +7856,7 @@ typedef enum VkDriverId {
     VK_DRIVER_ID_MESA_NVK = 24,
     VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA = 25,
     VK_DRIVER_ID_MESA_HONEYKRISP = 26,
-    VK_DRIVER_ID_RESERVED_27 = 27,
+    VK_DRIVER_ID_VULKAN_SC_EMULATION_ON_VULKAN = 27,
     VK_DRIVER_ID_AMD_PROPRIETARY_KHR = VK_DRIVER_ID_AMD_PROPRIETARY,
     VK_DRIVER_ID_AMD_OPEN_SOURCE_KHR = VK_DRIVER_ID_AMD_OPEN_SOURCE,
     VK_DRIVER_ID_MESA_RADV_KHR = VK_DRIVER_ID_MESA_RADV,
@@ -9738,6 +9739,7 @@ static const VkPipelineCreateFlagBits2 VK_PIPELINE_CREATE_2_NO_PROTECTED_ACCESS_
 static const VkPipelineCreateFlagBits2 VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT_EXT = 0x40000000ULL;
 static const VkPipelineCreateFlagBits2 VK_PIPELINE_CREATE_2_RAY_TRACING_DISPLACEMENT_MICROMAP_BIT_NV = 0x10000000ULL;
 static const VkPipelineCreateFlagBits2 VK_PIPELINE_CREATE_2_DESCRIPTOR_BUFFER_BIT_EXT = 0x20000000ULL;
+static const VkPipelineCreateFlagBits2 VK_PIPELINE_CREATE_2_DISALLOW_OPACITY_MICROMAP_BIT_ARM = 0x2000000000ULL;
 static const VkPipelineCreateFlagBits2 VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR = 0x80000000ULL;
 static const VkPipelineCreateFlagBits2 VK_PIPELINE_CREATE_2_INDIRECT_BINDABLE_BIT_EXT = 0x4000000000ULL;
 
@@ -13620,8 +13622,8 @@ typedef struct VkDeviceAddressRangeKHR {
 
 typedef struct VkStridedDeviceAddressRangeKHR {
     VkDeviceAddress    address;
-    VkDeviceSize       size;
     VkDeviceSize       stride;
+    VkDeviceSize       size;
 } VkStridedDeviceAddressRangeKHR;
 
 typedef struct VkDeviceMemoryCopyKHR {
@@ -13697,7 +13699,7 @@ typedef void (VKAPI_PTR *PFN_vkCmdBindIndexBuffer3KHR)(VkCommandBuffer   command
 typedef void (VKAPI_PTR *PFN_vkCmdBindVertexBuffers3KHR)(VkCommandBuffer commandBuffer, uint32_t                            firstBinding, uint32_t                            bindingCount, const VkStridedDeviceAddressRangeKHR* pRanges);
 typedef void (VKAPI_PTR *PFN_vkCmdDrawIndirect2KHR)(VkCommandBuffer   commandBuffer, VkStridedDeviceAddressRangeKHR      addressRange, uint32_t                            drawCount);
 typedef void (VKAPI_PTR *PFN_vkCmdDrawIndexedIndirect2KHR)(VkCommandBuffer   commandBuffer, VkStridedDeviceAddressRangeKHR      addressRange, uint32_t                            drawCount);
-typedef void (VKAPI_PTR *PFN_vkCmdDispatchIndirect2KHR)(VkCommandBuffer   commandBuffer, VkStridedDeviceAddressRangeKHR      addressRange);
+typedef void (VKAPI_PTR *PFN_vkCmdDispatchIndirect2KHR)(VkCommandBuffer   commandBuffer, VkDeviceAddressRangeKHR             addressRange);
 typedef void (VKAPI_PTR *PFN_vkCmdCopyMemoryKHR)(VkCommandBuffer commandBuffer, const VkCopyDeviceMemoryInfoKHR* pCopyMemoryInfo);
 typedef void (VKAPI_PTR *PFN_vkCmdCopyMemoryToImageKHR)(VkCommandBuffer commandBuffer, const VkCopyDeviceMemoryImageInfoKHR* pCopyMemoryInfo);
 typedef void (VKAPI_PTR *PFN_vkCmdCopyImageToMemoryKHR)(VkCommandBuffer commandBuffer, const VkCopyDeviceMemoryImageInfoKHR* pCopyMemoryInfo);
@@ -13708,7 +13710,7 @@ typedef void (VKAPI_PTR *PFN_vkCmdDrawIndirectCount2KHR)(VkCommandBuffer   comma
 typedef void (VKAPI_PTR *PFN_vkCmdDrawIndexedIndirectCount2KHR)(VkCommandBuffer   commandBuffer, VkStridedDeviceAddressRangeKHR      addressRange, VkDeviceAddressRangeKHR             countAddressRange, uint32_t                            maxDrawCount);
 typedef void (VKAPI_PTR *PFN_vkCmdBeginConditionalRendering2EXT)(VkCommandBuffer   commandBuffer, const VkConditionalRenderingBeginInfo2EXT* pConditionalRenderingBegin);
 typedef void (VKAPI_PTR *PFN_vkCmdBindTransformFeedbackBuffers2EXT)(VkCommandBuffer   commandBuffer, uint32_t                            firstBinding, uint32_t                            bindingCount, const VkDeviceAddressRangeKHR* pRanges);
-typedef void (VKAPI_PTR *PFN_vkCmdBeginTransformFeedback2EXT)(VkCommandBuffer   commandBuffer, uint32_t                            firstCounterRange, uint32_t            counterRangeCount, const VkDeviceAddressRangeKHR* pRanges);
+typedef void (VKAPI_PTR *PFN_vkCmdBeginTransformFeedback2EXT)(VkCommandBuffer   commandBuffer, uint32_t                            firstCounterRange, uint32_t            counterRangeCount, const VkDeviceAddressRangeKHR* pCounterRanges);
 typedef void (VKAPI_PTR *PFN_vkCmdEndTransformFeedback2EXT)(VkCommandBuffer   commandBuffer, uint32_t                            firstCounterRange, uint32_t            counterRangeCount, const VkDeviceAddressRangeKHR* pRanges);
 typedef void (VKAPI_PTR *PFN_vkCmdDrawIndirectByteCount2EXT)(VkCommandBuffer commandBuffer, uint32_t instanceCount, uint32_t firstInstance, VkDeviceAddressRangeKHR counterRange, uint32_t counterOffset, uint32_t vertexStride);
 typedef void (VKAPI_PTR *PFN_vkCmdDrawMeshTasksIndirect2EXT)(VkCommandBuffer   commandBuffer, VkStridedDeviceAddressRangeKHR      addressRange, uint32_t                            drawCount);
@@ -13739,7 +13741,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexedIndirect2KHR(
 
 VKAPI_ATTR void VKAPI_CALL vkCmdDispatchIndirect2KHR(
     VkCommandBuffer                             commandBuffer,
-    VkStridedDeviceAddressRangeKHR              addressRange);
+    VkDeviceAddressRangeKHR                     addressRange);
 
 VKAPI_ATTR void VKAPI_CALL vkCmdCopyMemoryKHR(
     VkCommandBuffer                             commandBuffer,
@@ -13801,7 +13803,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdBeginTransformFeedback2EXT(
     VkCommandBuffer                             commandBuffer,
     uint32_t                                    firstCounterRange,
     uint32_t                                    counterRangeCount,
-    const VkDeviceAddressRangeKHR*              pRanges);
+    const VkDeviceAddressRangeKHR*              pCounterRanges);
 
 VKAPI_ATTR void VKAPI_CALL vkCmdEndTransformFeedback2EXT(
     VkCommandBuffer                             commandBuffer,
@@ -22856,6 +22858,18 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceCooperativeMatrixFlexibleDimen
     uint32_t*                                   pPropertyCount,
     VkCooperativeMatrixFlexibleDimensionsPropertiesNV* pProperties);
 #endif
+
+
+// VK_ARM_pipeline_opacity_micromap is a preprocessor guard. Do not pass it to API calls.
+#define VK_ARM_pipeline_opacity_micromap 1
+#define VK_ARM_PIPELINE_OPACITY_MICROMAP_SPEC_VERSION 1
+#define VK_ARM_PIPELINE_OPACITY_MICROMAP_EXTENSION_NAME "VK_ARM_pipeline_opacity_micromap"
+typedef struct VkPhysicalDevicePipelineOpacityMicromapFeaturesARM {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           pipelineOpacityMicromap;
+} VkPhysicalDevicePipelineOpacityMicromapFeaturesARM;
+
 
 
 // VK_EXT_vertex_attribute_robustness is a preprocessor guard. Do not pass it to API calls.

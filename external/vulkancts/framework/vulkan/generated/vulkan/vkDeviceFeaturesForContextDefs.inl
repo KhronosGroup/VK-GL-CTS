@@ -201,6 +201,7 @@ const vk::VkPhysicalDeviceImageAlignmentControlFeaturesMESA&				Context::getImag
 const vk::VkPhysicalDeviceDepthClampControlFeaturesEXT&						Context::getDepthClampControlFeaturesEXT					(void) const { return m_device->getDepthClampControlFeaturesEXT();					}
 const vk::VkPhysicalDeviceHdrVividFeaturesHUAWEI&							Context::getHdrVividFeaturesHUAWEI							(void) const { return m_device->getHdrVividFeaturesHUAWEI();						}
 const vk::VkPhysicalDeviceCooperativeMatrix2FeaturesNV&						Context::getCooperativeMatrix2FeaturesNV					(void) const { return m_device->getCooperativeMatrix2FeaturesNV();					}
+const vk::VkPhysicalDevicePipelineOpacityMicromapFeaturesARM&				Context::getPipelineOpacityMicromapFeaturesARM				(void) const { return m_device->getPipelineOpacityMicromapFeaturesARM();			}
 const vk::VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT&				Context::getVertexAttributeRobustnessFeaturesEXT			(void) const { return m_device->getVertexAttributeRobustnessFeaturesEXT();			}
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							Context::getProtectedMemoryFeatures							(void) const { return m_device->getProtectedMemoryFeatures();						}
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						Context::getShaderDrawParametersFeatures					(void) const { return m_device->getShaderDrawParametersFeatures();					}

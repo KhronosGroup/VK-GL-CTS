@@ -2758,10 +2758,10 @@ void DeviceDriver::cmdBindTransformFeedbackBuffers2EXT (VkCommandBuffer commandB
     m_vk.cmdBindTransformFeedbackBuffers2EXT(commandBuffer, firstBinding, bindingCount, pRanges);
 }
 
-void DeviceDriver::cmdBeginTransformFeedback2EXT (VkCommandBuffer commandBuffer, uint32_t firstCounterRange, uint32_t counterRangeCount, const VkDeviceAddressRangeKHR* pRanges) const
+void DeviceDriver::cmdBeginTransformFeedback2EXT (VkCommandBuffer commandBuffer, uint32_t firstCounterRange, uint32_t counterRangeCount, const VkDeviceAddressRangeKHR* pCounterRanges) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdBeginTransformFeedback2EXT(commandBuffer, firstCounterRange, counterRangeCount, pRanges);
+    m_vk.cmdBeginTransformFeedback2EXT(commandBuffer, firstCounterRange, counterRangeCount, pCounterRanges);
 }
 
 void DeviceDriver::cmdEndTransformFeedback2EXT (VkCommandBuffer commandBuffer, uint32_t firstCounterRange, uint32_t counterRangeCount, const VkDeviceAddressRangeKHR* pRanges) const
@@ -2829,7 +2829,7 @@ void DeviceDriver::cmdDrawMeshTasksIndirectCount2EXT (VkCommandBuffer commandBuf
     m_vk.cmdDrawMeshTasksIndirectCount2EXT(commandBuffer, addressRange, countAddressRange, maxDrawCount);
 }
 
-void DeviceDriver::cmdDispatchIndirect2KHR (VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange) const
+void DeviceDriver::cmdDispatchIndirect2KHR (VkCommandBuffer commandBuffer, VkDeviceAddressRangeKHR addressRange) const
 {
     m_vk.cmdDispatchIndirect2KHR(commandBuffer, addressRange);
 }

@@ -4723,6 +4723,11 @@ template<> VkStructureType getStructureType<VkRenderPassStripeSubmitInfoARM> (vo
 	return VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_SUBMIT_INFO_ARM;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevicePipelineOpacityMicromapFeaturesARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_OPACITY_MICROMAP_FEATURES_ARM;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MAXIMAL_RECONVERGENCE_FEATURES_KHR;

@@ -4410,12 +4410,12 @@ VKAPI_ATTR void VKAPI_CALL cmdBindTransformFeedbackBuffers2EXT (VkCommandBuffer 
 	DE_UNREF(pRanges);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdBeginTransformFeedback2EXT (VkCommandBuffer commandBuffer, uint32_t firstCounterRange, uint32_t counterRangeCount, const VkDeviceAddressRangeKHR* pRanges)
+VKAPI_ATTR void VKAPI_CALL cmdBeginTransformFeedback2EXT (VkCommandBuffer commandBuffer, uint32_t firstCounterRange, uint32_t counterRangeCount, const VkDeviceAddressRangeKHR* pCounterRanges)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(firstCounterRange);
 	DE_UNREF(counterRangeCount);
-	DE_UNREF(pRanges);
+	DE_UNREF(pCounterRanges);
 }
 
 VKAPI_ATTR void VKAPI_CALL cmdEndTransformFeedback2EXT (VkCommandBuffer commandBuffer, uint32_t firstCounterRange, uint32_t counterRangeCount, const VkDeviceAddressRangeKHR* pRanges)
@@ -4505,7 +4505,7 @@ VKAPI_ATTR void VKAPI_CALL cmdDrawMeshTasksIndirectCount2EXT (VkCommandBuffer co
 	DE_UNREF(maxDrawCount);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDispatchIndirect2KHR (VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange)
+VKAPI_ATTR void VKAPI_CALL cmdDispatchIndirect2KHR (VkCommandBuffer commandBuffer, VkDeviceAddressRangeKHR addressRange)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(addressRange);

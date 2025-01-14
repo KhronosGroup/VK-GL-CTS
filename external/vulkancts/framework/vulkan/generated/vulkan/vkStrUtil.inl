@@ -1802,6 +1802,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRenderPassStrip
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassStripeInfoARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassStripeBeginInfoARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassStripeSubmitInfoARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineOpacityMicromapFeaturesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderSubgroupRotateFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderExpectAssumeFeatures& value);
