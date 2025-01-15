@@ -2185,11 +2185,11 @@ tcu::TestStatus InternallySynchronizedInstance::iterate(void)
     auto computeShaderModule = createShaderModule(vk, device, &shaderModuleCreateInfo);
 
     VkPipelineCacheCreateInfo pipelineCacheCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType             sType;
-        nullptr,                                      // const void*                 pNext;
-        0,                                            // VkPipelineCacheCreateFlags  flags;
-        0u,                                           // uintptr_t                   initialDataSize;
-        nullptr,                                      // const void*                 pInitialData;
+        VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,                   // VkStructureType             sType;
+        nullptr,                                                        // const void*                 pNext;
+        VK_PIPELINE_CACHE_CREATE_INTERNALLY_SYNCHRONIZED_MERGE_BIT_KHR, // VkPipelineCacheCreateFlags  flags;
+        0u,                                                             // uintptr_t                   initialDataSize;
+        nullptr,                                                        // const void*                 pInitialData;
     };
 
     vk::Move<VkPipelineCache> globalPipelineCache = createPipelineCache(vk, device, &pipelineCacheCreateInfo);
