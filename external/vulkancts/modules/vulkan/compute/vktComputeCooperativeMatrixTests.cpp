@@ -147,6 +147,7 @@ typedef enum
     TT_MULTICOMPONENT_LOAD,
     TT_MULTICOMPONENT_SAVE,
     TT_MATRIXMULADD_CROSS,
+    TT_MATRIXMULADD_PUSH_CONSTANTS,
     TT_TENSORLAYOUT_1D,
     TT_TENSORLAYOUT_2D,
     TT_TENSORLAYOUT_3D,
@@ -216,7 +217,8 @@ bool isMatrixMulAddOp(TestType testType)
 {
     return testType == TT_MATRIXMULADD || testType == TT_MATRIXMULADD_ARRAY || testType == TT_MATRIXMULADD_SATURATED ||
            testType == TT_MATRIXMULADD_WRAPPING || testType == TT_MATRIXMULADD_STRIDE0 ||
-           testType == TT_MATRIXMULADD_CROSS || testType == TT_MATRIXMULADD_DEQUANT;
+           testType == TT_MATRIXMULADD_CROSS || testType == TT_MATRIXMULADD_DEQUANT ||
+           testType == TT_MATRIXMULADD_PUSH_CONSTANTS;
 }
 
 bool isReduceRow(TestType testType)
@@ -1087,6 +1089,16 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
            "layout(constant_id = 8) const int K = 1;\n"
            "layout(local_size_x_id = 0, local_size_y_id = 1, local_size_z = 1) in;\n";
 
+    if (m_data.testType == TT_MATRIXMULADD_PUSH_CONSTANTS)
+    {
+        css << "layout (push_constant, std430) uniform PCBlock {\n"
+               "  int AStrideVar;\n"
+               "  int BStrideVar;\n"
+               "  int CStrideVar;\n"
+               "  int OStrideVar;\n"
+               "} pc;\n";
+    }
+
     if (m_data.storageClass == SC_BUFFER_VARIABLE_POINTERS || m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)
         css << "#pragma use_variable_pointers\n";
 
@@ -1485,6 +1497,14 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
         css << "   offset00 -= 3; offset01 -= 3;\n";
         css << "   offset10 -= 3; offset11 -= 3;\n";
         css << "   offset20 -= 3; offset21 -= 3;\n";
+    }
+
+    if (m_data.testType == TT_MATRIXMULADD_PUSH_CONSTANTS)
+    {
+        strides[0] = "pc.AStrideVar";
+        strides[1] = "pc.BStrideVar";
+        strides[2] = "pc.CStrideVar";
+        strides[3] = "pc.OStrideVar";
     }
 
     // element<i> is the starting element in buffer memory.
@@ -1903,6 +1923,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     case TT_MATRIXMULADD_STRIDE0:
     case TT_MATRIXMULADD_WRAPPING:
     case TT_MATRIXMULADD_SATURATED:
+    case TT_MATRIXMULADD_PUSH_CONSTANTS:
     case TT_MATRIXMULADD:
         css << "   matO = coopMatMulAdd" << suffix << "(matA, matB, matC" << sat << ");\n";
         break;
@@ -3306,10 +3327,10 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
         };
 
         const vk::VkSpecializationInfo specInfo = {
-            9,                // mapEntryCount
-            entries,          // pMapEntries
-            sizeof(specData), // dataSize
-            specData          // pData
+            DE_LENGTH_OF_ARRAY(entries), // mapEntryCount
+            entries,                     // pMapEntries
+            sizeof(specData),            // dataSize
+            specData                     // pData
         };
 
         for (uint32_t i = 0; i < 4; ++i)
@@ -3414,6 +3435,9 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
         ComputePipelineWrapper pipeline(vk, device, m_data.computePipelineConstructionType,
                                         m_context.getBinaryCollection().get("test"));
         pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+        if (m_data.testType == TT_MATRIXMULADD_PUSH_CONSTANTS)
+            pipeline.addPushConstantRange(makePushConstantRange(
+                vk::VK_SHADER_STAGE_COMPUTE_BIT, 0u, (uint32_t)(DE_LENGTH_OF_ARRAY(strides) * sizeof(strides[0]))));
         pipeline.setSpecializationInfo(specInfo);
         pipeline.setSubgroupSize(m_data.subgroupSizeMode == SUBGROUP_SIZE_NONE ?
                                      0 :
@@ -3428,6 +3452,10 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
 
         vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, pipeline.getPipelineLayout(), 0u, 1, &*descriptorSet, 0u,
                                  nullptr);
+        if (m_data.testType == TT_MATRIXMULADD_PUSH_CONSTANTS)
+            vk.cmdPushConstants(*cmdBuffer, pipeline.getPipelineLayout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
+                                (uint32_t)(DE_LENGTH_OF_ARRAY(strides) * sizeof(strides[0])), strides);
+
         pipeline.bind(*cmdBuffer);
 
         // tensorlayout test has larger number of workgroups to allocate more memory
@@ -5153,6 +5181,8 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
         {TT_MATRIXMULADD_CROSS, "matrixmuladd_cross"},
         // OpCooperativeMatrixMulAdd w/decode
         {TT_MATRIXMULADD_DEQUANT, "matrixmuladd_dequant"},
+        // OpCooperativeMatrixMulAdd
+        {TT_MATRIXMULADD_PUSH_CONSTANTS, "matrixmuladd_push"},
         // OpConvertCooperativeMatrixNV
         {TT_CONVERT_ACC_TO_A, "convert_acc_to_a"},
         {TT_CONVERT_ACC_TO_B, "convert_acc_to_b"},
@@ -5440,6 +5470,10 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
                                 if (testType == TT_LENGTH && useType != UT_NV &&
                                     (outputType == VK_COMPONENT_TYPE_SINT8_KHR ||
                                      outputType == VK_COMPONENT_TYPE_UINT8_KHR))
+                                    continue;
+
+                                if (testType == TT_MATRIXMULADD_PUSH_CONSTANTS &&
+                                    addrCases[addrNdx].value != ADDR_LINEAR)
                                     continue;
 
                                 if (useType == UT_NV && (addrCases[addrNdx].value != ADDR_LINEAR ||
