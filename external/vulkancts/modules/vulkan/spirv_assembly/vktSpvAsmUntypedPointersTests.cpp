@@ -48,7 +48,7 @@ namespace Constants
 {
 constexpr uint32_t numThreads         = 64;
 constexpr uint32_t uniformAlignment   = 16;
-constexpr uint32_t pushConstArraySize = 2;
+constexpr uint32_t pushConstArraySize = 4;
 } // namespace Constants
 
 enum class DataTypes : uint8_t
@@ -1198,16 +1198,18 @@ static uint32_t getMatrixBinaryLayout(MATRIX_LAYOUT layout)
     return DE_ENUM_INDEX(layout);
 }
 
-static void adjustSpecForMemoryModel(ComputeShaderSpec &spec, std::map<std::string, std::string> &specMap,
-                                     MEMORY_MODEL_TYPE memModel)
+static void adjustSpecForMemoryModel(MEMORY_MODEL_TYPE memModel, ComputeShaderSpec &spec, std::string &memModelOp,
+                                     std::vector<const char *> &spvExtensions,
+                                     std::vector<const char *> &spvCapabilities)
 {
     switch (memModel)
     {
     case MemoryModelTypes::VULKAN:
     {
-        specMap["memModelCap"] = "OpCapability VulkanMemoryModel\nOpCapability VulkanMemoryModelDeviceScopeKHR";
-        specMap["memModelExt"] = "OpExtension \"SPV_KHR_vulkan_memory_model\"";
-        specMap["memModelOp"]  = "OpMemoryModel Logical Vulkan";
+        spvCapabilities.push_back("OpCapability VulkanMemoryModel\n");
+        spvCapabilities.push_back("OpCapability VulkanMemoryModelDeviceScopeKHR\n");
+        spvExtensions.push_back("OpExtension \"SPV_KHR_vulkan_memory_model\"\n");
+        memModelOp = "OpMemoryModel Logical Vulkan";
 
         spec.extensions.push_back("VK_KHR_vulkan_memory_model");
 
@@ -1215,7 +1217,7 @@ static void adjustSpecForMemoryModel(ComputeShaderSpec &spec, std::map<std::stri
     }
     case MemoryModelTypes::GLSL:
     {
-        specMap["memModelOp"] = "OpMemoryModel Logical GLSL450";
+        memModelOp = "OpMemoryModel Logical GLSL450";
 
         break;
     }
@@ -1228,28 +1230,30 @@ static void adjustSpecForMemoryModel(ComputeShaderSpec &spec, std::map<std::stri
     }
 }
 
-static void adjustSpecForDataTypes(ComputeShaderSpec &spec, std::map<std::string, std::string> &specMap,
-                                   DATA_TYPE dataType)
+static void adjustSpecForDataTypes(DATA_TYPE dataType, ComputeShaderSpec &spec,
+                                   std::vector<const char *> &spvExtensions, std::vector<const char *> &spvCapabilities)
 {
+    DE_UNREF(spvExtensions);
+
     switch (dataType)
     {
     case DataTypes::UINT8:
     case DataTypes::INT8:
     {
-        specMap["baseTypeCap"]                                 = "OpCapability Int8";
+        spvCapabilities.push_back("OpCapability Int8\n");
         spec.requestedVulkanFeatures.extFloat16Int8.shaderInt8 = VK_TRUE;
         break;
     }
     case DataTypes::UINT16:
     case DataTypes::INT16:
     {
-        specMap["baseTypeCap"]                                = "OpCapability Int16";
+        spvCapabilities.push_back("OpCapability Int16\n");
         spec.requestedVulkanFeatures.coreFeatures.shaderInt16 = VK_TRUE;
         break;
     }
     case DataTypes::FLOAT16:
     {
-        specMap["baseTypeCap"]                                    = "OpCapability Float16";
+        spvCapabilities.push_back("OpCapability Float16\n");
         spec.requestedVulkanFeatures.extFloat16Int8.shaderFloat16 = VK_TRUE;
         break;
     }
@@ -1259,14 +1263,14 @@ static void adjustSpecForDataTypes(ComputeShaderSpec &spec, std::map<std::string
         break;
     case DataTypes::FLOAT64:
     {
-        specMap["baseTypeCap"]                                  = "OpCapability Float64";
+        spvCapabilities.push_back("OpCapability Float64\n");
         spec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = VK_TRUE;
         break;
     }
     case DataTypes::UINT64:
     case DataTypes::INT64:
     {
-        specMap["baseTypeCap"]                                = "OpCapability Int64";
+        spvCapabilities.push_back("OpCapability Int64\n");
         spec.requestedVulkanFeatures.coreFeatures.shaderInt64 = VK_TRUE;
         break;
     }
@@ -1279,9 +1283,12 @@ static void adjustSpecForDataTypes(ComputeShaderSpec &spec, std::map<std::string
     }
 }
 
-static void adjustSpecForAtomicOperations(ComputeShaderSpec &spec, std::map<std::string, std::string> &specMap,
-                                          DATA_TYPE dataType)
+static void adjustSpecForAtomicOperations(DATA_TYPE dataType, ComputeShaderSpec &spec,
+                                          std::vector<const char *> &spvExtensions,
+                                          std::vector<const char *> &spvCapabilities)
 {
+    DE_UNREF(spvExtensions);
+
     switch (dataType)
     {
     case DataTypes::UINT8:
@@ -1314,7 +1321,7 @@ static void adjustSpecForAtomicOperations(ComputeShaderSpec &spec, std::map<std:
     case DataTypes::UINT64:
     case DataTypes::INT64:
     {
-        specMap["atomicCap"] = "OpCapability Int64Atomics";
+        spvCapabilities.push_back("OpCapability Int64Atomics\n");
         spec.extensions.push_back("VK_KHR_shader_atomic_int64");
         spec.requestedVulkanFeatures.extShaderAtomicInt64.shaderBufferInt64Atomics = VK_TRUE;
         break;
@@ -1328,8 +1335,9 @@ static void adjustSpecForAtomicOperations(ComputeShaderSpec &spec, std::map<std:
     }
 }
 
-static void adjustSpecForAtomicAddOperations(ComputeShaderSpec &spec, std::map<std::string, std::string> &specMap,
-                                             DATA_TYPE dataType)
+static void adjustSpecForAtomicAddOperations(DATA_TYPE dataType, ComputeShaderSpec &spec,
+                                             std::vector<const char *> &spvExtensions,
+                                             std::vector<const char *> &spvCapabilities)
 {
     switch (dataType)
     {
@@ -1344,22 +1352,22 @@ static void adjustSpecForAtomicAddOperations(ComputeShaderSpec &spec, std::map<s
         break;
     case DataTypes::FLOAT16:
     {
-        specMap["atomicOtherExt"] = "OpExtension \"SPV_EXT_shader_atomic_float16_add\"";
-        specMap["atomicOtherCap"] = "OpCapability AtomicFloat16AddEXT";
+        spvExtensions.push_back("OpExtension \"SPV_EXT_shader_atomic_float16_add\"\n");
+        spvCapabilities.push_back("OpCapability AtomicFloat16AddEXT\n");
         spec.requestedVulkanFeatures.extShaderAtomicFloat2.shaderBufferFloat16AtomicAdd = VK_TRUE;
         break;
     }
     case DataTypes::FLOAT32:
     {
-        specMap["atomicOtherExt"] = "OpExtension \"SPV_EXT_shader_atomic_float_add\"";
-        specMap["atomicOtherCap"] = "OpCapability AtomicFloat32AddEXT";
+        spvExtensions.push_back("OpExtension \"SPV_EXT_shader_atomic_float_add\"\n");
+        spvCapabilities.push_back("OpCapability AtomicFloat32AddEXT\n");
         spec.requestedVulkanFeatures.extShaderAtomicFloat.shaderBufferFloat32AtomicAdd = VK_TRUE;
         break;
     }
     case DataTypes::FLOAT64:
     {
-        specMap["atomicOtherExt"] = "OpExtension \"SPV_EXT_shader_atomic_float_add\"";
-        specMap["atomicOtherCap"] = "OpCapability AtomicFloat64AddEXT";
+        spvExtensions.push_back("OpExtension \"SPV_EXT_shader_atomic_float_add\"\n");
+        spvCapabilities.push_back("OpCapability AtomicFloat64AddEXT\n");
         spec.requestedVulkanFeatures.extShaderAtomicFloat.shaderBufferFloat64AtomicAdd = VK_TRUE;
         break;
     }
@@ -1372,8 +1380,9 @@ static void adjustSpecForAtomicAddOperations(ComputeShaderSpec &spec, std::map<s
     }
 }
 
-static void adjustSpecForAtomicMinMaxOperations(ComputeShaderSpec &spec, std::map<std::string, std::string> &specMap,
-                                                DATA_TYPE dataType)
+static void adjustSpecForAtomicMinMaxOperations(DATA_TYPE dataType, ComputeShaderSpec &spec,
+                                                std::vector<const char *> &spvExtensions,
+                                                std::vector<const char *> &spvCapabilities)
 {
     switch (dataType)
     {
@@ -1388,23 +1397,24 @@ static void adjustSpecForAtomicMinMaxOperations(ComputeShaderSpec &spec, std::ma
         break;
     case DataTypes::FLOAT16:
     {
-        specMap["atomicOtherExt"] = "OpExtension \"SPV_EXT_shader_atomic_float_min_max\"";
-        specMap["atomicOtherCap"] = "OpCapability AtomicFloat16MinMaxEXT";
+        spvExtensions.push_back("OpExtension \"SPV_EXT_shader_atomic_float_min_max\"\n");
+        spvCapabilities.push_back("OpCapability AtomicFloat16MinMaxEXT\n");
         spec.requestedVulkanFeatures.extShaderAtomicFloat2.shaderBufferFloat16AtomicMinMax = VK_TRUE;
+
         break;
     }
     case DataTypes::FLOAT32:
     {
-        specMap["atomicOtherExt"] = "OpExtension \"SPV_EXT_shader_atomic_float_min_max\"";
-        specMap["atomicOtherCap"] = "OpCapability AtomicFloat32MinMaxEXT";
+        spvExtensions.push_back("OpExtension \"SPV_EXT_shader_atomic_float_min_max\"\n");
+        spvCapabilities.push_back("OpCapability AtomicFloat32MinMaxEXT\n");
         spec.requestedVulkanFeatures.extShaderAtomicFloat2.shaderBufferFloat32AtomicMinMax = VK_TRUE;
         spec.extensions.push_back("VK_EXT_shader_atomic_float2");
         break;
     }
     case DataTypes::FLOAT64:
     {
-        specMap["atomicOtherExt"] = "OpExtension \"SPV_EXT_shader_atomic_float_min_max\"";
-        specMap["atomicOtherCap"] = "OpCapability AtomicFloat64MinMaxEXT";
+        spvExtensions.push_back("OpExtension \"SPV_EXT_shader_atomic_float_min_max\"\n");
+        spvCapabilities.push_back("OpCapability AtomicFloat64MinMaxEXT\n");
         spec.requestedVulkanFeatures.extShaderAtomicFloat2.shaderBufferFloat64AtomicMinMax = VK_TRUE;
         spec.extensions.push_back("VK_EXT_shader_atomic_float2");
         break;
@@ -1418,37 +1428,44 @@ static void adjustSpecForAtomicMinMaxOperations(ComputeShaderSpec &spec, std::ma
     }
 }
 
-static void adjustSpecForUntypedPointers(ComputeShaderSpec &spec)
+static void adjustSpecForUntypedPointers(ComputeShaderSpec &spec, std::vector<const char *> &spvExtensions,
+                                         std::vector<const char *> &spvCapabilities)
 {
+    spvExtensions.push_back("OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n");
+    spvExtensions.push_back("OpExtension \"SPV_KHR_untyped_pointers\"\n");
+    spvCapabilities.push_back("OpCapability UntypedPointersKHR\n");
     spec.requestedVulkanFeatures.extShaderUntypedPointers.shaderUntypedPointers = VK_TRUE;
+    spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 }
 
-static void adjustSpecForSmallContainerType(ComputeShaderSpec &spec, std::map<std::string, std::string> &specMap,
-                                            CONTAINER_TYPE containerType, DATA_TYPE dataType)
+static void adjustSpecForSmallContainerType(CONTAINER_TYPE containerType, DATA_TYPE dataType, ComputeShaderSpec &spec,
+                                            std::vector<const char *> &spvExtensions,
+                                            std::vector<const char *> &spvCapabilities)
 {
     switch (dataType)
     {
     case DataTypes::UINT8:
     case DataTypes::INT8:
     {
-        specMap["smallStorageExt"] = "OpExtension \"SPV_KHR_8bit_storage\"";
+        spvExtensions.push_back("OpExtension \"SPV_KHR_8bit_storage\"\n");
+
         switch (containerType)
         {
         case ContainerTypes::STORAGE_BUFFER:
         {
-            specMap["smallStorageCap"] = "OpCapability StorageBuffer8BitAccess\n";
+            spvCapabilities.push_back("OpCapability StorageBuffer8BitAccess\n");
             spec.requestedVulkanFeatures.ext8BitStorage.storageBuffer8BitAccess = VK_TRUE;
             break;
         }
         case ContainerTypes::UNIFORM:
         {
-            specMap["smallStorageCap"] = "OpCapability UniformAndStorageBuffer8BitAccess\n";
+            spvCapabilities.push_back("OpCapability UniformAndStorageBuffer8BitAccess\n");
             spec.requestedVulkanFeatures.ext8BitStorage.uniformAndStorageBuffer8BitAccess = VK_TRUE;
             break;
         }
         case ContainerTypes::PUSH_CONSTANT:
         {
-            specMap["smallStorageCap"] = "OpCapability StoragePushConstant8BitAccess\n";
+            spvCapabilities.push_back("OpCapability StoragePushConstant8\n");
             spec.requestedVulkanFeatures.ext8BitStorage.storagePushConstant8 = VK_TRUE;
             break;
         }
@@ -1467,24 +1484,25 @@ static void adjustSpecForSmallContainerType(ComputeShaderSpec &spec, std::map<st
     case DataTypes::INT16:
     case DataTypes::FLOAT16:
     {
-        specMap["smallStorageExt"] = "OpExtension \"SPV_KHR_16bit_storage\"";
+        spvExtensions.push_back("OpExtension \"SPV_KHR_16bit_storage\"\n");
+
         switch (containerType)
         {
         case ContainerTypes::STORAGE_BUFFER:
         {
-            specMap["smallStorageCap"] = "OpCapability StorageBuffer16BitAccess\n";
+            spvCapabilities.push_back("OpCapability StorageBuffer16BitAccess\n");
             spec.requestedVulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = VK_TRUE;
             break;
         }
         case ContainerTypes::UNIFORM:
         {
-            specMap["smallStorageCap"] = "OpCapability UniformAndStorageBuffer16BitAccess\n";
+            spvCapabilities.push_back("OpCapability UniformAndStorageBuffer16BitAccess\n");
             spec.requestedVulkanFeatures.ext16BitStorage.uniformAndStorageBuffer16BitAccess = VK_TRUE;
             break;
         }
         case ContainerTypes::PUSH_CONSTANT:
         {
-            specMap["smallStorageCap"] = "OpCapability StoragePushConstant16BitAccess\n";
+            spvCapabilities.push_back("OpCapability StoragePushConstant16\n");
             spec.requestedVulkanFeatures.ext16BitStorage.storagePushConstant16 = VK_TRUE;
             break;
         }
@@ -1513,22 +1531,23 @@ static void adjustSpecForSmallContainerType(ComputeShaderSpec &spec, std::map<st
     }
 }
 
-static void adjustSpecForVariablePointers(ComputeShaderSpec &spec, std::map<std::string, std::string> &specMap)
+static void adjustSpecForVariablePointers(ComputeShaderSpec &spec, std::vector<const char *> &spvExtensions,
+                                          std::vector<const char *> &spvCapabilities)
 {
     spec.requestedVulkanFeatures.extVariablePointers.variablePointers              = VK_TRUE;
     spec.requestedVulkanFeatures.extVariablePointers.variablePointersStorageBuffer = VK_TRUE;
     spec.extensions.push_back("VK_KHR_variable_pointers");
-
-    specMap["otherCap"] = "OpCapability VariablePointersStorageBuffer\n"
-                          "OpCapability VariablePointers";
-    specMap["otherExt"] = "OpExtension \"SPV_KHR_variable_pointers\"";
+    spvCapabilities.push_back("OpCapability VariablePointersStorageBuffer\n");
+    spvCapabilities.push_back("OpCapability VariablePointers\n");
+    spvExtensions.push_back("OpExtension \"SPV_KHR_variable_pointers\"\n");
 }
 
-static void adjustSpecForPhysicalStorageBuffer(ComputeShaderSpec &spec, std::map<std::string, std::string> &specMap,
-                                               MEMORY_MODEL_TYPE memModel)
+static void adjustSpecForPhysicalStorageBuffer(MEMORY_MODEL_TYPE memModel, ComputeShaderSpec &spec,
+                                               std::string &memModelOp, std::vector<const char *> &spvExtensions,
+                                               std::vector<const char *> &spvCapabilities)
 {
-    specMap["otherCap"] = "OpCapability PhysicalStorageBufferAddresses";
-    specMap["otherExt"] = "OpExtension \"SPV_KHR_physical_storage_buffer\"";
+    spvCapabilities.push_back("OpCapability PhysicalStorageBufferAddresses\n");
+    spvExtensions.push_back("OpExtension \"SPV_KHR_physical_storage_buffer\"\n");
     spec.extensions.push_back("VK_KHR_buffer_device_address");
 
     // Memory model spec needs to be overwritten.
@@ -1536,12 +1555,12 @@ static void adjustSpecForPhysicalStorageBuffer(ComputeShaderSpec &spec, std::map
     {
     case MemoryModelTypes::VULKAN:
     {
-        specMap["memModelOp"] = "OpMemoryModel PhysicalStorageBuffer64 Vulkan";
+        memModelOp = "OpMemoryModel PhysicalStorageBuffer64 Vulkan";
         break;
     }
     case MemoryModelTypes::GLSL:
     {
-        specMap["memModelOp"] = "OpMemoryModel PhysicalStorageBuffer64 GLSL450";
+        memModelOp = "OpMemoryModel PhysicalStorageBuffer64 GLSL450";
         break;
     }
     default:
@@ -1553,17 +1572,16 @@ static void adjustSpecForPhysicalStorageBuffer(ComputeShaderSpec &spec, std::map
     }
 }
 
-static void adjustSpecForWorkgroupMemoryExplicitLayout(ComputeShaderSpec &spec,
-                                                       std::map<std::string, std::string> &specMap, DATA_TYPE dataType)
+static void adjustSpecForWorkgroupMemoryExplicitLayout(DATA_TYPE dataType, ComputeShaderSpec &spec,
+                                                       std::vector<const char *> &spvExtensions,
+                                                       std::vector<const char *> &spvCapabilities)
 {
     switch (dataType)
     {
     case DataTypes::UINT8:
     case DataTypes::INT8:
     {
-        specMap["otherCap"] = "OpCapability WorkgroupMemoryExplicitLayoutKHR\n"
-                              "OpCapability WorkgroupMemoryExplicitLayout8BitAccessKHR\n";
-
+        spvCapabilities.push_back("OpCapability WorkgroupMemoryExplicitLayout8BitAccessKHR\n");
         spec.requestedVulkanFeatures.extWorkgroupMemoryExplicitLayout.workgroupMemoryExplicitLayout8BitAccess = VK_TRUE;
         break;
     }
@@ -1571,9 +1589,7 @@ static void adjustSpecForWorkgroupMemoryExplicitLayout(ComputeShaderSpec &spec,
     case DataTypes::INT16:
     case DataTypes::FLOAT16:
     {
-        specMap["otherCap"] = "OpCapability WorkgroupMemoryExplicitLayoutKHR\n"
-                              "OpCapability WorkgroupMemoryExplicitLayout16BitAccessKHR\n";
-
+        spvCapabilities.push_back("OpCapability WorkgroupMemoryExplicitLayout16BitAccessKHR\n");
         spec.requestedVulkanFeatures.extWorkgroupMemoryExplicitLayout.workgroupMemoryExplicitLayout16BitAccess =
             VK_TRUE;
         break;
@@ -1585,7 +1601,6 @@ static void adjustSpecForWorkgroupMemoryExplicitLayout(ComputeShaderSpec &spec,
     case DataTypes::INT64:
     case DataTypes::FLOAT64:
     {
-        specMap["otherCap"] = "OpCapability WorkgroupMemoryExplicitLayoutKHR\n";
         break;
     }
     default:
@@ -1598,16 +1613,27 @@ static void adjustSpecForWorkgroupMemoryExplicitLayout(ComputeShaderSpec &spec,
 
     spec.requestedVulkanFeatures.extWorkgroupMemoryExplicitLayout.workgroupMemoryExplicitLayout = VK_TRUE;
     spec.extensions.push_back("VK_KHR_workgroup_memory_explicit_layout");
-
-    specMap["otherExt"] = "OpExtension \"SPV_KHR_workgroup_memory_explicit_layout\"";
+    spvCapabilities.push_back("OpCapability WorkgroupMemoryExplicitLayoutKHR\n");
+    spvExtensions.push_back("OpExtension \"SPV_KHR_workgroup_memory_explicit_layout\"\n");
 }
 
-static void adjustSpecForCooperativeMatrix(ComputeShaderSpec &spec, std::map<std::string, std::string> &specMap)
+static void adjustSpecForCooperativeMatrix(ComputeShaderSpec &spec, std::vector<const char *> &spvExtensions,
+                                           std::vector<const char *> &spvCapabilities)
 {
-    specMap["otherCap"] = "OpCapability CooperativeMatrixKHR\n";
-    specMap["otherExt"] = "OpExtension \"SPV_KHR_cooperative_matrix\"";
+    spvCapabilities.push_back("OpCapability CooperativeMatrixKHR\n");
+    spvExtensions.push_back("OpExtension \"SPV_KHR_cooperative_matrix\"\n");
     spec.extensions.push_back("VK_KHR_cooperative_matrix");
     spec.requestedVulkanFeatures.extCooperativeMatrix.cooperativeMatrix = VK_TRUE;
+}
+
+std::string toString(const std::vector<const char *> &vec)
+{
+    std::string result;
+    for (const auto &str : vec)
+    {
+        result += str;
+    }
+    return result;
 }
 
 enum class FillingTypes : uint8_t
@@ -1986,20 +2012,8 @@ static Resource createAtomicResource(const AtomicResourceDesc &desc, const std::
 std::string createShaderHeader(const char *pInterfaces = "")
 {
     std::string header = std::string("OpCapability Shader\n"
-                                     "OpCapability UntypedPointersKHR\n"
-                                     "${smallStorageCap:opt}\n"
-                                     "${additionalStorageCap:opt}\n"
-                                     "${baseTypeCap:opt}\n"
-                                     "${atomicCap:opt}\n"
-                                     "${atomicOtherCap:opt}\n"
-                                     "${otherCap:opt}\n"
-                                     "${memModelCap:opt}\n"
-                                     "${memModelExt:opt}\n"
-                                     "${smallStorageExt:opt}\n"
-                                     "OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n"
-                                     "OpExtension \"SPV_KHR_untyped_pointers\"\n"
-                                     "${otherExt:opt}\n"
-                                     "${atomicOtherExt:opt}\n"
+                                     "${capabilities}\n"
+                                     "${extensions}\n"
                                      "${memModelOp}\n"
                                      "OpEntryPoint GLCompute %main \"main\" %id ");
 
@@ -2137,7 +2151,10 @@ std::string createShaderAnnotations(ATOMIC_TEST_CASE testCase)
                                    "OpMemberDecorate %output_buffer           0             Offset 0\n"
                                    "OpDecorate       %output_buffer           Block\n"
                                    "OpDecorate       %output_data_untyped_var DescriptorSet 0\n"
-                                   "OpDecorate       %output_data_untyped_var Binding       1\n");
+                                   "OpDecorate       %output_data_untyped_var Binding       1\n"
+
+                                   "OpDecorate       %input_data_var          Aliased\n"
+                                   "OpDecorate       %output_data_untyped_var Aliased\n");
 
         break;
     }
@@ -2191,6 +2208,7 @@ std::string createShaderAnnotations(TYPE_PUNNING_TEST_CASE testCase)
     case TypePunningTestCases::LOAD_VECTOR_SCALAR:
     {
         annotations += std::string("OpMemberDecorate %input_buffer  0      Offset 0\n"
+                                   "OpMemberDecorate %input_buffer  1      Offset ${alignment}\n"
                                    "OpDecorate       %input_buffer  Block\n"
 
                                    "OpMemberDecorate %output_buffer 0       Offset 0\n"
@@ -3134,7 +3152,7 @@ std::string createShaderVariables(TYPE_PUNNING_TEST_CASE testCase)
             "%c_uint32_0    = OpConstant %uint32 0\n"
 
             /* Structs */
-            "%input_buffer  = OpTypeStruct %${baseType}\n"
+            "%input_buffer  = OpTypeStruct %${baseType} %${baseType}\n"
             "%output_buffer = OpTypeStruct %${otherVec}\n"
 
             /* Pointers */
@@ -3207,7 +3225,7 @@ std::string createShaderVariables(TYPE_PUNNING_TEST_CASE testCase)
             "%c_uint32_0    = OpConstant %uint32 0\n"
 
             /* Structs */
-            "%input_buffer  = OpTypeStruct %${baseVec}\n"
+            "%input_buffer  = OpTypeStruct %${baseVec} %${baseVec}\n"
             "%output_buffer = OpTypeStruct %${otherType}\n"
 
             /* Pointers */
@@ -5224,11 +5242,17 @@ void addOpArrayLengthTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
                                  shaderVariablesStr;
         }
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
 
+        specMap["memModelOp"]       = memModelOp;
+        specMap["extensions"]       = toString(spvExts);
+        specMap["capabilities"]     = toString(spvCaps);
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + shaderFunctions.specialize(specMap);
 
@@ -5251,7 +5275,6 @@ void addOpArrayLengthTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
         spec.inputs.push_back(input);
         spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
@@ -5309,11 +5332,17 @@ void addLoadTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
                                      shaderVariablesStr;
             }
 
+            std::string memModelOp;
+            std::vector<const char *> spvExts;
+            std::vector<const char *> spvCaps;
             ComputeShaderSpec spec;
-            adjustSpecForUntypedPointers(spec);
-            adjustSpecForMemoryModel(spec, specMap, memModel);
-            adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
+            adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+            adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+            adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
 
+            specMap["memModelOp"]       = memModelOp;
+            specMap["extensions"]       = toString(spvExts);
+            specMap["capabilities"]     = toString(spvCaps);
             const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                           shaderVariablesStr + shaderFunctions.specialize(specMap);
 
@@ -5350,7 +5379,6 @@ void addLoadTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
             spec.assembly      = shaderAsm;
             spec.numWorkGroups = tcu::IVec3(numWorkgroup, 1, 1);
             spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-            spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
             if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
             {
@@ -5405,12 +5433,18 @@ void addLoadAtomicTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMode
             shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
         }
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
-        adjustSpecForAtomicOperations(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(ATOMIC_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForAtomicOperations(ATOMIC_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
 
+        specMap["memModelOp"]       = memModelOp;
+        specMap["extensions"]       = toString(spvExts);
+        specMap["capabilities"]     = toString(spvCaps);
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + shaderFunctions.specialize(specMap);
 
@@ -5431,7 +5465,6 @@ void addLoadAtomicTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMode
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(numWorkgroup, 1, 1);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
@@ -5501,11 +5534,26 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
                                              shaderVariablesStr;
                     }
 
+                    std::string memModelOp;
+                    std::vector<const char *> spvExts;
+                    std::vector<const char *> spvCaps;
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec);
-                    adjustSpecForMemoryModel(spec, specMap, memModel);
-                    adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
+                    adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+                    adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+                    adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+                    if (BASE_DATA_TYPE_CASES[i] != dataType)
+                        adjustSpecForDataTypes(dataType, spec, spvExts, spvCaps);
+                    adjustSpecForSmallContainerType(LOAD_CONTAINER_TYPE_CASES[j], BASE_DATA_TYPE_CASES[i], spec,
+                                                    spvExts, spvCaps);
+                    if ((getSizeInBytes(BASE_DATA_TYPE_CASES[i]) !=
+                         getSizeInBytes(dataType)) ||                                     // diffrent size of data types
+                        (LOAD_CONTAINER_TYPE_CASES[j] != ContainerTypes::STORAGE_BUFFER)) // diffrent starage types
+                        adjustSpecForSmallContainerType(ContainerTypes::STORAGE_BUFFER, BASE_DATA_TYPE_CASES[i], spec,
+                                                        spvExts, spvCaps);
 
+                    specMap["memModelOp"]       = memModelOp;
+                    specMap["extensions"]       = toString(spvExts);
+                    specMap["capabilities"]     = toString(spvCaps);
                     const std::string shaderAsm = shaderHeader.specialize(specMap) +
                                                   shaderAnnotations.specialize(specMap) + shaderVariablesStr +
                                                   shaderFunctions.specialize(specMap);
@@ -5543,7 +5591,6 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
                     spec.assembly      = shaderAsm;
                     spec.numWorkGroups = tcu::IVec3(numWorkgroup, 1, 1);
                     spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-                    spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
                     if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
                     {
@@ -5622,18 +5669,34 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
                                              shaderVariablesStr;
                     }
 
+                    std::string memModelOp;
+                    std::vector<const char *> spvExts;
+                    std::vector<const char *> spvCaps;
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec);
-                    adjustSpecForMemoryModel(spec, specMap, memModel);
-                    adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
+                    adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+                    adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+                    adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+                    if (BASE_DATA_TYPE_CASES[i] != getCompositeBaseDataType(compositeType))
+                        adjustSpecForDataTypes(getCompositeBaseDataType(compositeType), spec, spvExts, spvCaps);
+                    adjustSpecForSmallContainerType(LOAD_CONTAINER_TYPE_CASES[j], BASE_DATA_TYPE_CASES[i], spec,
+                                                    spvExts, spvCaps);
+                    if ((getSizeInBytes(BASE_DATA_TYPE_CASES[i]) !=
+                         getSizeInBytes(getCompositeBaseDataType(compositeType))) ||      // diffrent size of data types
+                        (LOAD_CONTAINER_TYPE_CASES[j] != ContainerTypes::STORAGE_BUFFER)) // diffrent starage types
+                        adjustSpecForSmallContainerType(ContainerTypes::STORAGE_BUFFER,
+                                                        getCompositeBaseDataType(compositeType), spec, spvExts,
+                                                        spvCaps);
 
+                    specMap["memModelOp"]       = memModelOp;
+                    specMap["extensions"]       = toString(spvExts);
+                    specMap["capabilities"]     = toString(spvCaps);
                     const std::string shaderAsm = shaderHeader.specialize(specMap) +
                                                   shaderAnnotations.specialize(specMap) + shaderVariablesStr +
                                                   shaderFunctions.specialize(specMap);
 
                     FilledResourceDesc desc;
                     desc.dataType       = BASE_DATA_TYPE_CASES[i];
-                    desc.elemCount      = 1;
+                    desc.elemCount      = 2;
                     desc.padding        = 0;
                     desc.fillType       = FillingTypes::VALUE;
                     desc.value          = 1;
@@ -5642,6 +5705,7 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
                                               VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
                     Resource inputResource  = createFilledResource(desc);
+                    desc.elemCount          = 1;
                     desc.descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
                     Resource outputResource = createFilledResource(desc);
 
@@ -5658,7 +5722,6 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
                     spec.numWorkGroups = tcu::IVec3(1, 1, 1);
                     spec.outputs.push_back(outputResource);
                     spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-                    spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
                     if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
                     {
@@ -5734,18 +5797,36 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
                                              shaderVariablesStr;
                     }
 
+                    std::string memModelOp;
+                    std::vector<const char *> spvExts;
+                    std::vector<const char *> spvCaps;
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec);
-                    adjustSpecForMemoryModel(spec, specMap, memModel);
-                    adjustSpecForDataTypes(spec, specMap, getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
+                    adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+                    adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+                    adjustSpecForDataTypes(getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]), spec, spvExts,
+                                           spvCaps);
+                    if (getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]) != dataType)
+                        adjustSpecForDataTypes(dataType, spec, spvExts, spvCaps);
+                    adjustSpecForSmallContainerType(LOAD_CONTAINER_TYPE_CASES[j],
+                                                    getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]), spec,
+                                                    spvExts, spvCaps);
+                    if ((getSizeInBytes(getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i])) !=
+                         getSizeInBytes(dataType)) ||                                     // diffrent size of data types
+                        (LOAD_CONTAINER_TYPE_CASES[j] != ContainerTypes::STORAGE_BUFFER)) // diffrent starage types
+                        adjustSpecForSmallContainerType(ContainerTypes::STORAGE_BUFFER, dataType, spec, spvExts,
+                                                        spvCaps);
 
+                    specMap["memModelOp"]       = memModelOp;
+                    specMap["extensions"]       = toString(spvExts);
+                    specMap["capabilities"]     = toString(spvCaps);
                     const std::string shaderAsm = shaderHeader.specialize(specMap) +
                                                   shaderAnnotations.specialize(specMap) + shaderVariablesStr +
                                                   shaderFunctions.specialize(specMap);
 
                     FilledResourceDesc desc;
-                    desc.dataType       = getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]);
-                    desc.elemCount      = getElementCount(COMPOSITE_DATA_TYPE_CASES[i]);
+                    desc.dataType  = getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]);
+                    desc.elemCount = getElementCount(COMPOSITE_DATA_TYPE_CASES[i]) *
+                                     2 /* We use only first value to meet push constant requirements */;
                     desc.padding        = 0;
                     desc.fillType       = FillingTypes::VALUE;
                     desc.value          = 1;
@@ -5754,6 +5835,7 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
                                               VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
                     Resource inputResource  = createFilledResource(desc);
+                    desc.elemCount          = getElementCount(COMPOSITE_DATA_TYPE_CASES[i]);
                     desc.descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
                     Resource outputResource = createFilledResource(desc);
 
@@ -5770,7 +5852,6 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
                     spec.numWorkGroups = tcu::IVec3(1, 1, 1);
                     spec.outputs.push_back(outputResource);
                     spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-                    spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
                     if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
                     {
@@ -5826,11 +5907,19 @@ void addStoreTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
                                  shaderVariablesStr;
         }
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForSmallContainerType(ContainerTypes::STORAGE_BUFFER, BASE_DATA_TYPE_CASES[i], spec, spvExts,
+                                        spvCaps);
 
+        specMap["memModelOp"]       = memModelOp;
+        specMap["extensions"]       = toString(spvExts);
+        specMap["capabilities"]     = toString(spvCaps);
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + shaderFunctions.specialize(specMap);
 
@@ -5849,7 +5938,6 @@ void addStoreTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
         spec.inputs.push_back(inputOutputResource);
         spec.outputs.push_back(inputOutputResource);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
@@ -5885,12 +5973,18 @@ void addStoreAtomicTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMod
             shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
         }
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
-        adjustSpecForAtomicOperations(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(ATOMIC_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForAtomicOperations(ATOMIC_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
 
+        specMap["memModelOp"]       = memModelOp;
+        specMap["extensions"]       = toString(spvExts);
+        specMap["capabilities"]     = toString(spvCaps);
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + shaderFunctions.specialize(specMap);
 
@@ -5909,7 +6003,6 @@ void addStoreAtomicTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMod
         spec.inputs.push_back(inputOutputResource);
         spec.outputs.push_back(inputOutputResource);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
@@ -5959,11 +6052,23 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE mem
                                          shaderVariablesStr;
                 }
 
+                std::string memModelOp;
+                std::vector<const char *> spvExts;
+                std::vector<const char *> spvCaps;
                 ComputeShaderSpec spec;
-                adjustSpecForUntypedPointers(spec);
-                adjustSpecForMemoryModel(spec, specMap, memModel);
-                adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
+                adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+                adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+                adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+                if (BASE_DATA_TYPE_CASES[i] != dataType)
+                    adjustSpecForDataTypes(dataType, spec, spvExts, spvCaps);
+                adjustSpecForSmallContainerType(ContainerTypes::STORAGE_BUFFER, BASE_DATA_TYPE_CASES[i], spec, spvExts,
+                                                spvCaps);
+                if (getSizeInBytes(BASE_DATA_TYPE_CASES[i]) != getSizeInBytes(dataType))
+                    adjustSpecForSmallContainerType(ContainerTypes::STORAGE_BUFFER, dataType, spec, spvExts, spvCaps);
 
+                specMap["memModelOp"]       = memModelOp;
+                specMap["extensions"]       = toString(spvExts);
+                specMap["capabilities"]     = toString(spvCaps);
                 const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                               shaderVariablesStr + shaderFunctions.specialize(specMap);
 
@@ -5982,7 +6087,6 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE mem
                 spec.inputs.push_back(inputOutputResource);
                 spec.outputs.push_back(inputOutputResource);
                 spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-                spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
                 testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
             }
@@ -6036,11 +6140,24 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE mem
                                          shaderVariablesStr;
                 }
 
+                std::string memModelOp;
+                std::vector<const char *> spvExts;
+                std::vector<const char *> spvCaps;
                 ComputeShaderSpec spec;
-                adjustSpecForUntypedPointers(spec);
-                adjustSpecForMemoryModel(spec, specMap, memModel);
-                adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
+                adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+                adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+                adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+                if (BASE_DATA_TYPE_CASES[i] != getCompositeBaseDataType(compositeType))
+                    adjustSpecForDataTypes(getCompositeBaseDataType(compositeType), spec, spvExts, spvCaps);
+                adjustSpecForSmallContainerType(ContainerTypes::STORAGE_BUFFER, BASE_DATA_TYPE_CASES[i], spec, spvExts,
+                                                spvCaps);
+                if (getSizeInBytes(BASE_DATA_TYPE_CASES[i]) != getSizeInBytes(getCompositeBaseDataType(compositeType)))
+                    adjustSpecForSmallContainerType(ContainerTypes::STORAGE_BUFFER,
+                                                    getCompositeBaseDataType(compositeType), spec, spvExts, spvCaps);
 
+                specMap["memModelOp"]       = memModelOp;
+                specMap["extensions"]       = toString(spvExts);
+                specMap["capabilities"]     = toString(spvCaps);
                 const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                               shaderVariablesStr + shaderFunctions.specialize(specMap);
 
@@ -6059,7 +6176,6 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE mem
                 spec.inputs.push_back(inputOutputResource);
                 spec.outputs.push_back(inputOutputResource);
                 spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-                spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
                 testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
             }
@@ -6110,11 +6226,24 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE mem
                                          shaderVariablesStr;
                 }
 
+                std::string memModelOp;
+                std::vector<const char *> spvExts;
+                std::vector<const char *> spvCaps;
                 ComputeShaderSpec spec;
-                adjustSpecForUntypedPointers(spec);
-                adjustSpecForMemoryModel(spec, specMap, memModel);
-                adjustSpecForDataTypes(spec, specMap, getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
+                adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+                adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+                adjustSpecForDataTypes(getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]), spec, spvExts, spvCaps);
+                if (getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]) != dataType)
+                    adjustSpecForDataTypes(dataType, spec, spvExts, spvCaps);
+                adjustSpecForSmallContainerType(ContainerTypes::STORAGE_BUFFER,
+                                                getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]), spec, spvExts,
+                                                spvCaps);
+                if (getSizeInBytes(getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i])) != getSizeInBytes(dataType))
+                    adjustSpecForSmallContainerType(ContainerTypes::STORAGE_BUFFER, dataType, spec, spvExts, spvCaps);
 
+                specMap["memModelOp"]       = memModelOp;
+                specMap["extensions"]       = toString(spvExts);
+                specMap["capabilities"]     = toString(spvCaps);
                 const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                               shaderVariablesStr + shaderFunctions.specialize(specMap);
 
@@ -6133,7 +6262,6 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE mem
                 spec.inputs.push_back(inputOutputResource);
                 spec.outputs.push_back(inputOutputResource);
                 spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-                spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
                 testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
             }
@@ -6183,12 +6311,19 @@ void addCopyTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel, boo
                                      shaderVariablesStr;
             }
 
+            std::string memModelOp;
+            std::vector<const char *> spvExts;
+            std::vector<const char *> spvCaps;
             ComputeShaderSpec spec;
-            adjustSpecForUntypedPointers(spec);
-            adjustSpecForMemoryModel(spec, specMap, memModel);
-            adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-            adjustSpecForSmallContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER, BASE_DATA_TYPE_CASES[i]);
+            adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+            adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+            adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+            adjustSpecForSmallContainerType(ContainerTypes::STORAGE_BUFFER, BASE_DATA_TYPE_CASES[i], spec, spvExts,
+                                            spvCaps);
 
+            specMap["memModelOp"]       = memModelOp;
+            specMap["extensions"]       = toString(spvExts);
+            specMap["capabilities"]     = toString(spvCaps);
             const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                           shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
@@ -6207,7 +6342,6 @@ void addCopyTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel, boo
             spec.inputs.push_back(inputOutputResource);
             spec.outputs.push_back(inputOutputResource);
             spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-            spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
             if (COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_OBJECT)
             {
@@ -6283,13 +6417,21 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
                                              shaderVariablesStr;
                     }
 
+                    std::string memModelOp;
+                    std::vector<const char *> spvExts;
+                    std::vector<const char *> spvCaps;
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec);
-                    adjustSpecForMemoryModel(spec, specMap, memModel);
-                    adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-                    adjustSpecForSmallContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER,
-                                                    BASE_DATA_TYPE_CASES[i]);
+                    adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+                    adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+                    adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+                    if (BASE_DATA_TYPE_CASES[i] != dataType)
+                        adjustSpecForDataTypes(dataType, spec, spvExts, spvCaps);
+                    adjustSpecForSmallContainerType(ContainerTypes::STORAGE_BUFFER, BASE_DATA_TYPE_CASES[i], spec,
+                                                    spvExts, spvCaps);
 
+                    specMap["memModelOp"]       = memModelOp;
+                    specMap["extensions"]       = toString(spvExts);
+                    specMap["capabilities"]     = toString(spvCaps);
                     const std::string shaderAsm = shaderHeader.specialize(specMap) +
                                                   shaderAnnotations.specialize(specMap) + shaderVariablesStr +
                                                   tempShaderFunctions.specialize(specMap);
@@ -6309,7 +6451,6 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
                     spec.inputs.push_back(inputOutputResource);
                     spec.outputs.push_back(inputOutputResource);
                     spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-                    spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
                     if (COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_MEMORY)
                     {
@@ -6377,13 +6518,21 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
                                              shaderVariablesStr;
                     }
 
+                    std::string memModelOp;
+                    std::vector<const char *> spvExts;
+                    std::vector<const char *> spvCaps;
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec);
-                    adjustSpecForMemoryModel(spec, specMap, memModel);
-                    adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-                    adjustSpecForSmallContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER,
-                                                    BASE_DATA_TYPE_CASES[i]);
+                    adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+                    adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+                    adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+                    if (BASE_DATA_TYPE_CASES[i] != getCompositeBaseDataType(compositeType))
+                        adjustSpecForDataTypes(getCompositeBaseDataType(compositeType), spec, spvExts, spvCaps);
+                    adjustSpecForSmallContainerType(ContainerTypes::STORAGE_BUFFER, BASE_DATA_TYPE_CASES[i], spec,
+                                                    spvExts, spvCaps);
 
+                    specMap["memModelOp"]       = memModelOp;
+                    specMap["extensions"]       = toString(spvExts);
+                    specMap["capabilities"]     = toString(spvCaps);
                     const std::string shaderAsm = shaderHeader.specialize(specMap) +
                                                   shaderAnnotations.specialize(specMap) + shaderVariablesStr +
                                                   shaderFunctions.specialize(specMap);
@@ -6403,7 +6552,6 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
                     spec.inputs.push_back(inputOutputResource);
                     spec.outputs.push_back(inputOutputResource);
                     spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-                    spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
                     if (COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_MEMORY)
                     {
@@ -6469,13 +6617,23 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
                                              shaderVariablesStr;
                     }
 
+                    std::string memModelOp;
+                    std::vector<const char *> spvExts;
+                    std::vector<const char *> spvCaps;
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec);
-                    adjustSpecForMemoryModel(spec, specMap, memModel);
-                    adjustSpecForDataTypes(spec, specMap, getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
-                    adjustSpecForSmallContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER,
-                                                    getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
+                    adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+                    adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+                    adjustSpecForDataTypes(getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]), spec, spvExts,
+                                           spvCaps);
+                    if (getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]) != dataType)
+                        adjustSpecForDataTypes(dataType, spec, spvExts, spvCaps);
+                    adjustSpecForSmallContainerType(ContainerTypes::STORAGE_BUFFER,
+                                                    getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]), spec,
+                                                    spvExts, spvCaps);
 
+                    specMap["memModelOp"]       = memModelOp;
+                    specMap["extensions"]       = toString(spvExts);
+                    specMap["capabilities"]     = toString(spvCaps);
                     const std::string shaderAsm = shaderHeader.specialize(specMap) +
                                                   shaderAnnotations.specialize(specMap) + shaderVariablesStr +
                                                   shaderFunctions.specialize(specMap);
@@ -6495,7 +6653,6 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
                     spec.inputs.push_back(inputOutputResource);
                     spec.outputs.push_back(inputOutputResource);
                     spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-                    spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
                     if (COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_MEMORY)
                     {
@@ -6566,13 +6723,21 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
                                              shaderVariablesStr;
                     }
 
+                    std::string memModelOp;
+                    std::vector<const char *> spvExts;
+                    std::vector<const char *> spvCaps;
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec);
-                    adjustSpecForMemoryModel(spec, specMap, memModel);
-                    adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-                    adjustSpecForSmallContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER,
-                                                    BASE_DATA_TYPE_CASES[i]);
+                    adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+                    adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+                    adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+                    if (BASE_DATA_TYPE_CASES[i] != dataType)
+                        adjustSpecForDataTypes(dataType, spec, spvExts, spvCaps);
+                    adjustSpecForSmallContainerType(ContainerTypes::STORAGE_BUFFER, BASE_DATA_TYPE_CASES[i], spec,
+                                                    spvExts, spvCaps);
 
+                    specMap["memModelOp"]       = memModelOp;
+                    specMap["extensions"]       = toString(spvExts);
+                    specMap["capabilities"]     = toString(spvCaps);
                     const std::string shaderAsm = shaderHeader.specialize(specMap) +
                                                   shaderAnnotations.specialize(specMap) + shaderVariablesStr +
                                                   tempShaderFunctions.specialize(specMap);
@@ -6592,7 +6757,6 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
                     spec.inputs.push_back(inputOutputResource);
                     spec.outputs.push_back(inputOutputResource);
                     spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-                    spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
                     if (COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_MEMORY)
                     {
@@ -6659,13 +6823,21 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
                                              shaderVariablesStr;
                     }
 
+                    std::string memModelOp;
+                    std::vector<const char *> spvExts;
+                    std::vector<const char *> spvCaps;
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec);
-                    adjustSpecForMemoryModel(spec, specMap, memModel);
-                    adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-                    adjustSpecForSmallContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER,
-                                                    BASE_DATA_TYPE_CASES[i]);
+                    adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+                    adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+                    adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+                    if (BASE_DATA_TYPE_CASES[i] != getCompositeBaseDataType(compositeType))
+                        adjustSpecForDataTypes(getCompositeBaseDataType(compositeType), spec, spvExts, spvCaps);
+                    adjustSpecForSmallContainerType(ContainerTypes::STORAGE_BUFFER, BASE_DATA_TYPE_CASES[i], spec,
+                                                    spvExts, spvCaps);
 
+                    specMap["memModelOp"]       = memModelOp;
+                    specMap["extensions"]       = toString(spvExts);
+                    specMap["capabilities"]     = toString(spvCaps);
                     const std::string shaderAsm = shaderHeader.specialize(specMap) +
                                                   shaderAnnotations.specialize(specMap) + shaderVariablesStr +
                                                   tempShaderFunctions.specialize(specMap);
@@ -6685,7 +6857,6 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
                     spec.inputs.push_back(inputOutputResource);
                     spec.outputs.push_back(inputOutputResource);
                     spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-                    spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
                     if (COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_MEMORY)
                     {
@@ -6751,13 +6922,23 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
                                              shaderVariablesStr;
                     }
 
+                    std::string memModelOp;
+                    std::vector<const char *> spvExts;
+                    std::vector<const char *> spvCaps;
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec);
-                    adjustSpecForMemoryModel(spec, specMap, memModel);
-                    adjustSpecForDataTypes(spec, specMap, getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
-                    adjustSpecForSmallContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER,
-                                                    getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
+                    adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+                    adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+                    adjustSpecForDataTypes(getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]), spec, spvExts,
+                                           spvCaps);
+                    if (getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]) != dataType)
+                        adjustSpecForDataTypes(dataType, spec, spvExts, spvCaps);
+                    adjustSpecForSmallContainerType(ContainerTypes::STORAGE_BUFFER,
+                                                    getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]), spec,
+                                                    spvExts, spvCaps);
 
+                    specMap["memModelOp"]       = memModelOp;
+                    specMap["extensions"]       = toString(spvExts);
+                    specMap["capabilities"]     = toString(spvCaps);
                     const std::string shaderAsm = shaderHeader.specialize(specMap) +
                                                   shaderAnnotations.specialize(specMap) + shaderVariablesStr +
                                                   tempShaderFunctions.specialize(specMap);
@@ -6777,7 +6958,6 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
                     spec.inputs.push_back(inputOutputResource);
                     spec.outputs.push_back(inputOutputResource);
                     spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-                    spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
                     if (COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_MEMORY)
                     {
@@ -6818,13 +6998,6 @@ void addAtomicAddTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel
         specMap["opType"]   = getAtomicAddOperator(ATOMIC_DATA_TYPE_CASES[i]);
         specMap["opValue"]  = std::to_string(16);
 
-        ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
-        adjustSpecForAtomicOperations(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
-        adjustSpecForAtomicAddOperations(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
-
         const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
@@ -6835,6 +7008,19 @@ void addAtomicAddTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel
                                  shaderVariablesStr;
         }
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(ATOMIC_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForAtomicOperations(ATOMIC_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForAtomicAddOperations(ATOMIC_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]       = memModelOp;
+        specMap["extensions"]       = toString(spvExts);
+        specMap["capabilities"]     = toString(spvCaps);
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
@@ -6854,7 +7040,6 @@ void addAtomicAddTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel
         spec.spirvVersion  = SPIRV_VERSION_1_4;
         spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
@@ -6882,12 +7067,6 @@ void addAtomicSubtractTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE mem
         specMap["opType"]   = getAtomicSubtractOperator(ATOMIC_INT_DATA_TYPE_CASES[i]);
         specMap["opValue"]  = std::to_string(16);
 
-        ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
-        adjustSpecForAtomicOperations(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
-
         const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
@@ -6898,6 +7077,18 @@ void addAtomicSubtractTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE mem
                                  shaderVariablesStr;
         }
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(ATOMIC_INT_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForAtomicOperations(ATOMIC_INT_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]       = memModelOp;
+        specMap["extensions"]       = toString(spvExts);
+        specMap["capabilities"]     = toString(spvCaps);
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
@@ -6917,7 +7108,6 @@ void addAtomicSubtractTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE mem
         spec.spirvVersion  = SPIRV_VERSION_1_4;
         spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
@@ -6953,20 +7143,26 @@ void addAtomicIncrementDecrementTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
         specMap["baseType"] = toString(ATOMIC_INT_DATA_TYPE_CASES[i]);
         specMap["opType"]   = opStr;
 
-        ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
-        adjustSpecForAtomicOperations(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
-
         const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
         if (ATOMIC_INT_DATA_TYPE_CASES[i] != DataTypes::UINT32)
         {
-            shaderVariablesStr = "%uint32 = OpTypeInt 32 0\n" + shaderVariablesStr;
+            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
         }
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(ATOMIC_INT_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForAtomicOperations(ATOMIC_INT_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]       = memModelOp;
+        specMap["extensions"]       = toString(spvExts);
+        specMap["capabilities"]     = toString(spvCaps);
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
@@ -6985,7 +7181,6 @@ void addAtomicIncrementDecrementTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
         spec.spirvVersion  = SPIRV_VERSION_1_4;
         spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
@@ -7020,13 +7215,6 @@ void addAtomicMinMaxTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
         specMap["opType"]   = opStr;
         specMap["opValue"]  = std::to_string(getSignedUnsignedMinMaxTestValue(ATOMIC_DATA_TYPE_CASES[i]));
 
-        ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
-        adjustSpecForAtomicOperations(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
-        adjustSpecForAtomicMinMaxOperations(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
-
         const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
@@ -7037,6 +7225,19 @@ void addAtomicMinMaxTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
                                  shaderVariablesStr;
         }
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(ATOMIC_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForAtomicOperations(ATOMIC_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForAtomicMinMaxOperations(ATOMIC_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]       = memModelOp;
+        specMap["extensions"]       = toString(spvExts);
+        specMap["capabilities"]     = toString(spvCaps);
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
@@ -7056,7 +7257,6 @@ void addAtomicMinMaxTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
         spec.spirvVersion  = SPIRV_VERSION_1_4;
         spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
@@ -7123,12 +7323,6 @@ void addAtomicBooleanTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
         specMap["opType"]   = (*pAtomicOpFn)(ATOMIC_INT_DATA_TYPE_CASES[i]);
         specMap["opValue"]  = std::to_string(1);
 
-        ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
-        adjustSpecForAtomicOperations(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
-
         const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
@@ -7139,6 +7333,18 @@ void addAtomicBooleanTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
                                  shaderVariablesStr;
         }
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(ATOMIC_INT_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForAtomicOperations(ATOMIC_INT_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]       = memModelOp;
+        specMap["extensions"]       = toString(spvExts);
+        specMap["capabilities"]     = toString(spvCaps);
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
@@ -7158,7 +7364,6 @@ void addAtomicBooleanTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
         spec.spirvVersion  = SPIRV_VERSION_1_4;
         spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
@@ -7186,12 +7391,6 @@ void addAtomicExchangeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE mem
         specMap["opType"]   = getAtomicExchangeOperator(ATOMIC_DATA_TYPE_CASES[i]);
         specMap["opValue"]  = std::to_string(1);
 
-        ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
-        adjustSpecForAtomicOperations(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
-
         const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
@@ -7202,6 +7401,18 @@ void addAtomicExchangeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE mem
                                  shaderVariablesStr;
         }
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(ATOMIC_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForAtomicOperations(ATOMIC_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]       = memModelOp;
+        specMap["extensions"]       = toString(spvExts);
+        specMap["capabilities"]     = toString(spvCaps);
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
@@ -7221,7 +7432,6 @@ void addAtomicExchangeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE mem
         spec.spirvVersion  = SPIRV_VERSION_1_4;
         spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
@@ -7256,12 +7466,6 @@ void addAtomicCompareExchangeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_T
             specMap["compValue"] = std::to_string(j);
             specMap["opValue"]   = std::to_string(16);
 
-            ComputeShaderSpec spec;
-            adjustSpecForUntypedPointers(spec);
-            adjustSpecForMemoryModel(spec, specMap, memModel);
-            adjustSpecForDataTypes(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
-            adjustSpecForAtomicOperations(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
-
             const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
             std::string shaderVariablesStr = shaderVariables.specialize(specMap);
@@ -7273,6 +7477,18 @@ void addAtomicCompareExchangeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_T
                 shaderVariablesStr = "%uint32 = OpTypeInt 32 0\n" + shaderVariablesStr + compStr;
             }
 
+            std::string memModelOp;
+            std::vector<const char *> spvExts;
+            std::vector<const char *> spvCaps;
+            ComputeShaderSpec spec;
+            adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+            adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+            adjustSpecForDataTypes(ATOMIC_INT_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+            adjustSpecForAtomicOperations(ATOMIC_INT_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+
+            specMap["memModelOp"]       = memModelOp;
+            specMap["extensions"]       = toString(spvExts);
+            specMap["capabilities"]     = toString(spvCaps);
             const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                           shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
@@ -7298,7 +7514,6 @@ void addAtomicCompareExchangeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_T
             spec.spirvVersion  = SPIRV_VERSION_1_4;
             spec.outputs.push_back(output);
             spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-            spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
             if (j) // for 1 adding to exchange group
             {
@@ -7352,12 +7567,18 @@ void addVariablePtrOpSelectTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYP
             specMap["baseDecl"] = getDeclaration(BASE_DATA_TYPE_CASES[i]);
             specMap["baseType"] = toString(BASE_DATA_TYPE_CASES[i]);
 
+            std::string memModelOp;
+            std::vector<const char *> spvExts;
+            std::vector<const char *> spvCaps;
             ComputeShaderSpec spec;
-            adjustSpecForUntypedPointers(spec);
-            adjustSpecForMemoryModel(spec, specMap, memModel);
-            adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-            adjustSpecForVariablePointers(spec, specMap);
+            adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+            adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+            adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+            adjustSpecForVariablePointers(spec, spvExts, spvCaps);
 
+            specMap["memModelOp"]                         = memModelOp;
+            specMap["extensions"]                         = toString(spvExts);
+            specMap["capabilities"]                       = toString(spvCaps);
             const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
             std::string shaderVariablesStr = shaderVariables.specialize(specMap);
@@ -7401,7 +7622,6 @@ void addVariablePtrOpSelectTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYP
             spec.inputs.push_back(input0);
             spec.inputs.push_back(input1);
             spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-            spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
             if (j)
             {
@@ -7455,12 +7675,18 @@ void addPhysicalStorageOpSelectTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL
             specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
             specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
+            std::string memModelOp;
+            std::vector<const char *> spvExts;
+            std::vector<const char *> spvCaps;
             ComputeShaderSpec spec;
-            adjustSpecForUntypedPointers(spec);
-            adjustSpecForMemoryModel(spec, specMap, memModel);
-            adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-            adjustSpecForPhysicalStorageBuffer(spec, specMap, memModel);
+            adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+            adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+            adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+            adjustSpecForPhysicalStorageBuffer(memModel, spec, memModelOp, spvExts, spvCaps);
 
+            specMap["memModelOp"]                         = memModelOp;
+            specMap["extensions"]                         = toString(spvExts);
+            specMap["capabilities"]                       = toString(spvCaps);
             const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
             std::string shaderVariablesStr = shaderVariables.specialize(specMap);
@@ -7505,7 +7731,6 @@ void addPhysicalStorageOpSelectTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL
             spec.inputs.push_back(input0);
             spec.inputs.push_back(input1);
             spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-            spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
             if (j)
             {
@@ -7560,12 +7785,18 @@ void addVariablePtrOpPhiTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE m
             specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
             specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
+            std::string memModelOp;
+            std::vector<const char *> spvExts;
+            std::vector<const char *> spvCaps;
             ComputeShaderSpec spec;
-            adjustSpecForUntypedPointers(spec);
-            adjustSpecForMemoryModel(spec, specMap, memModel);
-            adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-            adjustSpecForVariablePointers(spec, specMap);
+            adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+            adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+            adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+            adjustSpecForVariablePointers(spec, spvExts, spvCaps);
 
+            specMap["memModelOp"]                         = memModelOp;
+            specMap["extensions"]                         = toString(spvExts);
+            specMap["capabilities"]                       = toString(spvCaps);
             const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
             std::string shaderVariablesStr = shaderVariables.specialize(specMap);
@@ -7610,7 +7841,6 @@ void addVariablePtrOpPhiTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE m
             spec.inputs.push_back(input0);
             spec.inputs.push_back(input1);
             spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-            spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
             if (j)
             {
@@ -7664,12 +7894,18 @@ void addPhysicalStorageOpPhiTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
             specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
             specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
+            std::string memModelOp;
+            std::vector<const char *> spvExts;
+            std::vector<const char *> spvCaps;
             ComputeShaderSpec spec;
-            adjustSpecForUntypedPointers(spec);
-            adjustSpecForMemoryModel(spec, specMap, memModel);
-            adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-            adjustSpecForPhysicalStorageBuffer(spec, specMap, memModel);
+            adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+            adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+            adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+            adjustSpecForPhysicalStorageBuffer(memModel, spec, memModelOp, spvExts, spvCaps);
 
+            specMap["memModelOp"]                         = memModelOp;
+            specMap["extensions"]                         = toString(spvExts);
+            specMap["capabilities"]                       = toString(spvCaps);
             const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
             std::string shaderVariablesStr = shaderVariables.specialize(specMap);
@@ -7715,7 +7951,6 @@ void addPhysicalStorageOpPhiTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
             spec.inputs.push_back(input0);
             spec.inputs.push_back(input1);
             spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-            spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
             if (j)
             {
@@ -7758,12 +7993,18 @@ void addVariablePtrOpPtrEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_T
             specMap["baseDecl"] = getDeclaration(BASE_DATA_TYPE_CASES[i]);
             specMap["baseType"] = toString(BASE_DATA_TYPE_CASES[i]);
 
+            std::string memModelOp;
+            std::vector<const char *> spvExts;
+            std::vector<const char *> spvCaps;
             ComputeShaderSpec spec;
-            adjustSpecForUntypedPointers(spec);
-            adjustSpecForMemoryModel(spec, specMap, memModel);
-            adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-            adjustSpecForVariablePointers(spec, specMap);
+            adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+            adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+            adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+            adjustSpecForVariablePointers(spec, spvExts, spvCaps);
 
+            specMap["memModelOp"]                         = memModelOp;
+            specMap["extensions"]                         = toString(spvExts);
+            specMap["capabilities"]                       = toString(spvCaps);
             const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
             std::string shaderVariablesStr = shaderVariables.specialize(specMap);
@@ -7807,7 +8048,6 @@ void addVariablePtrOpPtrEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_T
             spec.numWorkGroups = tcu::IVec3(1, 1, 1);
             spec.spirvVersion  = SPIRV_VERSION_1_4; // OpPtrEqual, OpPtrNotEqual and OpPtrDiff requires SPIR-V 1.4
             spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-            spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
             if (j)
             {
@@ -7850,12 +8090,18 @@ void addVariablePtrOpPtrNotEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
             specMap["baseDecl"] = getDeclaration(BASE_DATA_TYPE_CASES[i]);
             specMap["baseType"] = toString(BASE_DATA_TYPE_CASES[i]);
 
+            std::string memModelOp;
+            std::vector<const char *> spvExts;
+            std::vector<const char *> spvCaps;
             ComputeShaderSpec spec;
-            adjustSpecForUntypedPointers(spec);
-            adjustSpecForMemoryModel(spec, specMap, memModel);
-            adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-            adjustSpecForVariablePointers(spec, specMap);
+            adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+            adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+            adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+            adjustSpecForVariablePointers(spec, spvExts, spvCaps);
 
+            specMap["memModelOp"]                         = memModelOp;
+            specMap["extensions"]                         = toString(spvExts);
+            specMap["capabilities"]                       = toString(spvCaps);
             const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
             std::string shaderVariablesStr = shaderVariables.specialize(specMap);
@@ -7899,7 +8145,6 @@ void addVariablePtrOpPtrNotEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
             spec.numWorkGroups = tcu::IVec3(1, 1, 1);
             spec.spirvVersion  = SPIRV_VERSION_1_4; // OpPtrEqual, OpPtrNotEqual and OpPtrDiff requires SPIR-V 1.4
             spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-            spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
             if (j)
             {
@@ -7938,12 +8183,18 @@ void addVariablePtrOpPtrDiffTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
         specMap["threadCount"] = std::to_string(Constants::numThreads);
         specMap["alignment"]   = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-        adjustSpecForVariablePointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForVariablePointers(spec, spvExts, spvCaps);
 
+        specMap["memModelOp"]                         = memModelOp;
+        specMap["extensions"]                         = toString(spvExts);
+        specMap["capabilities"]                       = toString(spvCaps);
         const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
@@ -7976,7 +8227,6 @@ void addVariablePtrOpPtrDiffTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
         spec.inputs.push_back(input);
         spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
@@ -8005,12 +8255,18 @@ void addVariablePtrOpFunctionCallTests(tcu::TestCaseGroup *testGroup, MEMORY_MOD
         specMap["baseDecl"] = getDeclaration(BASE_DATA_TYPE_CASES[i]);
         specMap["baseType"] = toString(BASE_DATA_TYPE_CASES[i]);
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-        adjustSpecForVariablePointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForVariablePointers(spec, spvExts, spvCaps);
 
+        specMap["memModelOp"]                         = memModelOp;
+        specMap["extensions"]                         = toString(spvExts);
+        specMap["capabilities"]                       = toString(spvCaps);
         const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
@@ -8038,7 +8294,6 @@ void addVariablePtrOpFunctionCallTests(tcu::TestCaseGroup *testGroup, MEMORY_MOD
         spec.inputs.push_back(input);
         spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
@@ -8068,12 +8323,18 @@ void addPhysicalStorageOpFunctionCallTests(tcu::TestCaseGroup *testGroup, MEMORY
         specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
         specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-        adjustSpecForPhysicalStorageBuffer(spec, specMap, memModel);
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForPhysicalStorageBuffer(memModel, spec, memModelOp, spvExts, spvCaps);
 
+        specMap["memModelOp"]                         = memModelOp;
+        specMap["extensions"]                         = toString(spvExts);
+        specMap["capabilities"]                       = toString(spvCaps);
         const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
@@ -8102,7 +8363,6 @@ void addPhysicalStorageOpFunctionCallTests(tcu::TestCaseGroup *testGroup, MEMORY
         spec.inputs.push_back(input);
         spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
@@ -8130,12 +8390,18 @@ void addVariablePtrOpPtrAccessChain(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
         specMap["threadCount"] = std::to_string(Constants::numThreads);
         specMap["alignment"]   = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-        adjustSpecForVariablePointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForVariablePointers(spec, spvExts, spvCaps);
 
+        specMap["memModelOp"]                         = memModelOp;
+        specMap["extensions"]                         = toString(spvExts);
+        specMap["capabilities"]                       = toString(spvCaps);
         const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
@@ -8163,7 +8429,6 @@ void addVariablePtrOpPtrAccessChain(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
         spec.inputs.push_back(input);
         spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
@@ -8192,12 +8457,18 @@ void addPhysicalStorageOpPtrAccessChainTests(tcu::TestCaseGroup *testGroup, MEMO
         specMap["threadCount"] = std::to_string(Constants::numThreads);
         specMap["alignment"]   = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-        adjustSpecForPhysicalStorageBuffer(spec, specMap, memModel);
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForPhysicalStorageBuffer(memModel, spec, memModelOp, spvExts, spvCaps);
 
+        specMap["memModelOp"]                         = memModelOp;
+        specMap["extensions"]                         = toString(spvExts);
+        specMap["capabilities"]                       = toString(spvCaps);
         const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
@@ -8221,12 +8492,11 @@ void addPhysicalStorageOpPtrAccessChainTests(tcu::TestCaseGroup *testGroup, MEMO
         Resource output = createFilledResource(desc);
 
         spec.assembly              = shaderAsm;
-        spec.numWorkGroups         = tcu::IVec3(Constants::numThreads, 1, 1);
+        spec.numWorkGroups         = tcu::IVec3(1, 1, 1);
         spec.usesPhysStorageBuffer = true;
         spec.inputs.push_back(input);
         spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
@@ -8254,12 +8524,18 @@ void addVariablePtrFunctionVariableTests(tcu::TestCaseGroup *testGroup, MEMORY_M
         specMap["boolConst"] = "%c_bool_true = OpConstantTrue %bool";
         specMap["condition"] = "%c_bool_true";
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-        adjustSpecForVariablePointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForVariablePointers(spec, spvExts, spvCaps);
 
+        specMap["memModelOp"]                         = memModelOp;
+        specMap["extensions"]                         = toString(spvExts);
+        specMap["capabilities"]                       = toString(spvCaps);
         const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
@@ -8290,7 +8566,6 @@ void addVariablePtrFunctionVariableTests(tcu::TestCaseGroup *testGroup, MEMORY_M
         spec.inputs.push_back(input1);
         spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
@@ -8318,12 +8593,18 @@ void addVariablePtrPrivateVariableTests(tcu::TestCaseGroup *testGroup, MEMORY_MO
         specMap["boolConst"] = "%c_bool_true = OpConstantTrue %bool";
         specMap["condition"] = "%c_bool_true";
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-        adjustSpecForVariablePointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForVariablePointers(spec, spvExts, spvCaps);
 
+        specMap["memModelOp"]                         = memModelOp;
+        specMap["extensions"]                         = toString(spvExts);
+        specMap["capabilities"]                       = toString(spvCaps);
         const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
@@ -8354,7 +8635,6 @@ void addVariablePtrPrivateVariableTests(tcu::TestCaseGroup *testGroup, MEMORY_MO
         spec.inputs.push_back(input1);
         spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
@@ -8383,9 +8663,16 @@ void addStructAsTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
         specMap["inputLayout"]  = "%vec2_uint32 %vec2_float32";
         specMap["outputLayout"] = "%vec4_int32";
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
         ComputeShaderSpec spec;
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForUntypedPointers(spec);
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+
+        specMap["memModelOp"]   = memModelOp;
+        specMap["extensions"]   = toString(spvExts);
+        specMap["capabilities"] = toString(spvCaps);
 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariables.specialize(specMap) + shaderFunctions.specialize(specMap);
@@ -8423,7 +8710,6 @@ void addStructAsTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
         spec.inputs.push_back(inputResource);
         spec.outputs.push_back(outputResource);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, "vec2_uint32_vec2_float32_to_vec4_int32", spec));
     }
@@ -8437,10 +8723,18 @@ void addStructAsTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
         specMap["inputLayout"]   = "%uint32";
         specMap["outputLayout"]  = "%uint8 %uint8 %uint8 %uint8";
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
         ComputeShaderSpec spec;
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, DataTypes::UINT8);
-        adjustSpecForUntypedPointers(spec);
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(DataTypes::UINT8, spec, spvExts, spvCaps);
+        adjustSpecForSmallContainerType(ContainerTypes::STORAGE_BUFFER, DataTypes::UINT8, spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]   = memModelOp;
+        specMap["extensions"]   = toString(spvExts);
+        specMap["capabilities"] = toString(spvCaps);
 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariables.specialize(specMap) + shaderFunctions.specialize(specMap);
@@ -8477,7 +8771,6 @@ void addStructAsTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
         spec.inputs.push_back(inputResource);
         spec.outputs.push_back(outputResource);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, "uint32_to_uint8_uint8_uint8_uint8", spec));
     }
@@ -8497,10 +8790,18 @@ void addStructAsTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
         specMap["inputLayout"]   = "%vec4_float16 %vec2_int32";
         specMap["outputLayout"]  = "%float16 %vec2_float16 %float16 %int32 %int32";
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
         ComputeShaderSpec spec;
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForDataTypes(spec, specMap, DataTypes::FLOAT16);
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(DataTypes::FLOAT16, spec, spvExts, spvCaps);
+        adjustSpecForSmallContainerType(ContainerTypes::STORAGE_BUFFER, DataTypes::FLOAT16, spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]   = memModelOp;
+        specMap["extensions"]   = toString(spvExts);
+        specMap["capabilities"] = toString(spvCaps);
 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariables.specialize(specMap) + shaderFunctions.specialize(specMap);
@@ -8546,7 +8847,6 @@ void addStructAsTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
         spec.inputs.push_back(inputResource);
         spec.outputs.push_back(outputResource);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(
             testCtx, "vec4_float16_vec2_int32_to_float16_vec2_float16_float16_int32_int32", spec));
@@ -8565,9 +8865,16 @@ void addStructAsTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
         specMap["inputLayout"]   = "%int32_struct";
         specMap["outputLayout"]  = "%vec2_int32 %vec2_int32";
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
         ComputeShaderSpec spec;
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForUntypedPointers(spec);
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+
+        specMap["memModelOp"]   = memModelOp;
+        specMap["extensions"]   = toString(spvExts);
+        specMap["capabilities"] = toString(spvCaps);
 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariables.specialize(specMap) + shaderFunctions.specialize(specMap);
@@ -8613,7 +8920,6 @@ void addStructAsTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
         spec.inputs.push_back(inputResource);
         spec.outputs.push_back(outputResource);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(
             testCtx, "nested_struct_int32_int32_int32_int32_to_vec2_int32_vec2_int32", spec));
@@ -8632,12 +8938,19 @@ void addStructAsTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
                                    "%vec4_int64_struct = OpTypeStruct %vec4_int64";
         specMap["inputLayout"]   = "%int64 %uint64 %vec2_float64";
         specMap["outputLayout"]  = "%vec4_int64_struct";
-        specMap["baseTypeCap"]   = "OpCapability Int64\n"
-                                   "OpCapability Float64\n";
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
         ComputeShaderSpec spec;
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForUntypedPointers(spec);
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(DataTypes::INT64, spec, spvExts, spvCaps);
+        adjustSpecForDataTypes(DataTypes::FLOAT64, spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]   = memModelOp;
+        specMap["extensions"]   = toString(spvExts);
+        specMap["capabilities"] = toString(spvCaps);
 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariables.specialize(specMap) + shaderFunctions.specialize(specMap);
@@ -8664,10 +8977,7 @@ void addStructAsTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
             NestedStruct nested;
         } outputStruct;
 
-        outputStruct.nested.vec4_int64[0] = INT64_MAX;
-        outputStruct.nested.vec4_int64[1] = 1;
-        outputStruct.nested.vec4_int64[2] = 0;
-        outputStruct.nested.vec4_int64[3] = -112;
+        deMemcpy(&outputStruct, &inputStruct, sizeof(inputStruct));
 
         Resource inputResource =
             Resource(BufferSp(new Buffer<InputStruct>(std::vector<InputStruct>(1, inputStruct), 0)),
@@ -8681,9 +8991,6 @@ void addStructAsTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
         spec.inputs.push_back(inputResource);
         spec.outputs.push_back(outputResource);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
-        spec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = VK_TRUE;
-        spec.requestedVulkanFeatures.coreFeatures.shaderInt64   = VK_TRUE;
 
         testGroup->addChild(
             new SpvAsmComputeShaderCase(testCtx, "int64_uint64_vec2_float64_to_nested_struct_vec4_int64", spec));
@@ -8700,12 +9007,20 @@ void addStructAsTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
                                    "%uint16_struct = OpTypeStruct %uint16 %uint16 %uint16 %uint16";
         specMap["inputLayout"]   = "%uint64";
         specMap["outputLayout"]  = "%uint16_struct";
-        specMap["baseTypeCap"]   = "OpCapability Int64\n"
-                                   "OpCapability Int16\n";
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
         ComputeShaderSpec spec;
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForUntypedPointers(spec);
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(DataTypes::INT64, spec, spvExts, spvCaps);
+        adjustSpecForDataTypes(DataTypes::INT16, spec, spvExts, spvCaps);
+        adjustSpecForSmallContainerType(ContainerTypes::STORAGE_BUFFER, DataTypes::UINT16, spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]   = memModelOp;
+        specMap["extensions"]   = toString(spvExts);
+        specMap["capabilities"] = toString(spvCaps);
 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariables.specialize(specMap) + shaderFunctions.specialize(specMap);
@@ -8747,9 +9062,6 @@ void addStructAsTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
         spec.inputs.push_back(inputResource);
         spec.outputs.push_back(outputResource);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
-        spec.requestedVulkanFeatures.coreFeatures.shaderInt16 = VK_TRUE;
-        spec.requestedVulkanFeatures.coreFeatures.shaderInt64 = VK_TRUE;
 
         testGroup->addChild(
             new SpvAsmComputeShaderCase(testCtx, "uint64_to_nested_struct_uint16_uint16_uint16_uint16", spec));
@@ -8777,10 +9089,19 @@ void addMultipleAccessChainTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYP
         specMap["baseType"] = toString(BASE_DATA_TYPE_CASES[i]);
         specMap["size"]     = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForSmallContainerType(ContainerTypes::STORAGE_BUFFER, BASE_DATA_TYPE_CASES[i], spec, spvExts,
+                                        spvCaps);
+
+        specMap["memModelOp"]   = memModelOp;
+        specMap["extensions"]   = toString(spvExts);
+        specMap["capabilities"] = toString(spvCaps);
 
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
         if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
@@ -8809,7 +9130,6 @@ void addMultipleAccessChainTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYP
         spec.inputs.push_back(input);
         spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
@@ -8837,11 +9157,18 @@ void addVariablePointersMultipleAccessChainTests(tcu::TestCaseGroup *testGroup, 
         specMap["baseType"] = toString(BASE_DATA_TYPE_CASES[i]);
         specMap["size"]     = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-        adjustSpecForVariablePointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForVariablePointers(spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]   = memModelOp;
+        specMap["extensions"]   = toString(spvExts);
+        specMap["capabilities"] = toString(spvCaps);
 
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
         if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
@@ -8868,7 +9195,6 @@ void addVariablePointersMultipleAccessChainTests(tcu::TestCaseGroup *testGroup, 
         spec.inputs.push_back(input);
         spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
@@ -8898,12 +9224,18 @@ void addPhysicalStorageOpBitcastTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
         specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
         specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-        adjustSpecForPhysicalStorageBuffer(spec, specMap, memModel);
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForPhysicalStorageBuffer(memModel, spec, memModelOp, spvExts, spvCaps);
 
+        specMap["memModelOp"]                         = memModelOp;
+        specMap["extensions"]                         = toString(spvExts);
+        specMap["capabilities"]                       = toString(spvCaps);
         const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
@@ -8931,7 +9263,6 @@ void addPhysicalStorageOpBitcastTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
         spec.inputs.push_back(inputOutput);
         spec.outputs.push_back(inputOutput);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
@@ -8960,11 +9291,18 @@ void addWorkgroupMemoryExplicitLayoutInteractionTests(tcu::TestCaseGroup *testGr
         specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
         specMap["vecOffset"] = std::to_string(4 * getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec);
-        adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-        adjustSpecForWorkgroupMemoryExplicitLayout(spec, specMap, BASE_DATA_TYPE_CASES[i]);
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForWorkgroupMemoryExplicitLayout(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]   = memModelOp;
+        specMap["extensions"]   = toString(spvExts);
+        specMap["capabilities"] = toString(spvCaps);
 
         const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
@@ -8993,7 +9331,6 @@ void addWorkgroupMemoryExplicitLayoutInteractionTests(tcu::TestCaseGroup *testGr
         spec.inputs.push_back(inputOutput);
         spec.outputs.push_back(inputOutput);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
@@ -9036,12 +9373,18 @@ void addCooperativeMatrixInteractionBasicTests(tcu::TestCaseGroup *testGroup, ME
                     specMap["matrixUse"]    = std::to_string(getMatrixBinaryUse(MATRIX_USE_CASES[i]));
                     specMap["matrixLayout"] = std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
 
+                    std::string memModelOp;
+                    std::vector<const char *> spvExts;
+                    std::vector<const char *> spvCaps;
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec);
-                    adjustSpecForMemoryModel(spec, specMap, memModel);
-                    adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[k]);
-                    adjustSpecForCooperativeMatrix(spec, specMap);
+                    adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+                    adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+                    adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[k], spec, spvExts, spvCaps);
+                    adjustSpecForCooperativeMatrix(spec, spvExts, spvCaps);
 
+                    specMap["memModelOp"]   = memModelOp;
+                    specMap["extensions"]   = toString(spvExts);
+                    specMap["capabilities"] = toString(spvCaps);
                     const tcu::StringTemplate tempShaderFunctions =
                         tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
@@ -9071,7 +9414,6 @@ void addCooperativeMatrixInteractionBasicTests(tcu::TestCaseGroup *testGroup, ME
                     spec.inputs.push_back(inputOutput);
                     spec.outputs.push_back(inputOutput);
                     spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-                    spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
                     layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
                 }
@@ -9118,12 +9460,18 @@ void addCooperativeMatrixInteractionBasicTests(tcu::TestCaseGroup *testGroup, ME
                     specMap["matrixUse"]    = std::to_string(getMatrixBinaryUse(MATRIX_USE_CASES[i]));
                     specMap["matrixLayout"] = std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
 
+                    std::string memModelOp;
+                    std::vector<const char *> spvExts;
+                    std::vector<const char *> spvCaps;
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec);
-                    adjustSpecForMemoryModel(spec, specMap, memModel);
-                    adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[k]);
-                    adjustSpecForCooperativeMatrix(spec, specMap);
+                    adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+                    adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+                    adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[k], spec, spvExts, spvCaps);
+                    adjustSpecForCooperativeMatrix(spec, spvExts, spvCaps);
 
+                    specMap["memModelOp"]   = memModelOp;
+                    specMap["extensions"]   = toString(spvExts);
+                    specMap["capabilities"] = toString(spvCaps);
                     const tcu::StringTemplate tempShaderFunctions =
                         tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
@@ -9153,7 +9501,6 @@ void addCooperativeMatrixInteractionBasicTests(tcu::TestCaseGroup *testGroup, ME
                     spec.inputs.push_back(inputOutput);
                     spec.outputs.push_back(inputOutput);
                     spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-                    spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
                     layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
                 }
@@ -9212,12 +9559,18 @@ void addCooperativeMatrixInteractionTypePunningTests(tcu::TestCaseGroup *testGro
                         specMap["matrixUse"]    = std::to_string(getMatrixBinaryUse(MATRIX_USE_CASES[i]));
                         specMap["matrixLayout"] = std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
 
+                        std::string memModelOp;
+                        std::vector<const char *> spvExts;
+                        std::vector<const char *> spvCaps;
                         ComputeShaderSpec spec;
-                        adjustSpecForUntypedPointers(spec);
-                        adjustSpecForMemoryModel(spec, specMap, memModel);
-                        adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[k]);
-                        adjustSpecForCooperativeMatrix(spec, specMap);
+                        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+                        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+                        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[k], spec, spvExts, spvCaps);
+                        adjustSpecForCooperativeMatrix(spec, spvExts, spvCaps);
 
+                        specMap["memModelOp"]   = memModelOp;
+                        specMap["extensions"]   = toString(spvExts);
+                        specMap["capabilities"] = toString(spvCaps);
                         const tcu::StringTemplate tempShaderFunctions =
                             tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
@@ -9249,7 +9602,6 @@ void addCooperativeMatrixInteractionTypePunningTests(tcu::TestCaseGroup *testGro
                         spec.inputs.push_back(input);
                         spec.outputs.push_back(output);
                         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-                        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
                         layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
                     }
@@ -9304,12 +9656,18 @@ void addCooperativeMatrixInteractionTypePunningTests(tcu::TestCaseGroup *testGro
                         specMap["matrixUse"]    = std::to_string(getMatrixBinaryUse(MATRIX_USE_CASES[i]));
                         specMap["matrixLayout"] = std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
 
+                        std::string memModelOp;
+                        std::vector<const char *> spvExts;
+                        std::vector<const char *> spvCaps;
                         ComputeShaderSpec spec;
-                        adjustSpecForUntypedPointers(spec);
-                        adjustSpecForMemoryModel(spec, specMap, memModel);
-                        adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[k]);
-                        adjustSpecForCooperativeMatrix(spec, specMap);
+                        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+                        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+                        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[k], spec, spvExts, spvCaps);
+                        adjustSpecForCooperativeMatrix(spec, spvExts, spvCaps);
 
+                        specMap["memModelOp"]   = memModelOp;
+                        specMap["extensions"]   = toString(spvExts);
+                        specMap["capabilities"] = toString(spvCaps);
                         const tcu::StringTemplate tempShaderFunctions =
                             tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
@@ -9341,7 +9699,6 @@ void addCooperativeMatrixInteractionTypePunningTests(tcu::TestCaseGroup *testGro
                         spec.inputs.push_back(input);
                         spec.outputs.push_back(output);
                         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-                        spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
                         layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
                     }
@@ -9397,12 +9754,18 @@ void addCooperativeMatrixInteractionMixedTests(tcu::TestCaseGroup *testGroup, ME
                     specMap["matrixUse"]    = std::to_string(getMatrixBinaryUse(MATRIX_USE_CASES[i]));
                     specMap["matrixLayout"] = std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
 
+                    std::string memModelOp;
+                    std::vector<const char *> spvExts;
+                    std::vector<const char *> spvCaps;
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec);
-                    adjustSpecForMemoryModel(spec, specMap, memModel);
-                    adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[k]);
-                    adjustSpecForCooperativeMatrix(spec, specMap);
+                    adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+                    adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+                    adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[k], spec, spvExts, spvCaps);
+                    adjustSpecForCooperativeMatrix(spec, spvExts, spvCaps);
 
+                    specMap["memModelOp"]   = memModelOp;
+                    specMap["extensions"]   = toString(spvExts);
+                    specMap["capabilities"] = toString(spvCaps);
                     const tcu::StringTemplate tempShaderFunctions =
                         tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
@@ -9432,7 +9795,6 @@ void addCooperativeMatrixInteractionMixedTests(tcu::TestCaseGroup *testGroup, ME
                     spec.inputs.push_back(inputOutput);
                     spec.outputs.push_back(inputOutput);
                     spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-                    spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
                     layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
                 }
@@ -9482,12 +9844,18 @@ void addCooperativeMatrixInteractionMixedTests(tcu::TestCaseGroup *testGroup, ME
                     specMap["matrixUse"]    = std::to_string(getMatrixBinaryUse(MATRIX_USE_CASES[i]));
                     specMap["matrixLayout"] = std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
 
+                    std::string memModelOp;
+                    std::vector<const char *> spvExts;
+                    std::vector<const char *> spvCaps;
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec);
-                    adjustSpecForMemoryModel(spec, specMap, memModel);
-                    adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[k]);
-                    adjustSpecForCooperativeMatrix(spec, specMap);
+                    adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+                    adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+                    adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[k], spec, spvExts, spvCaps);
+                    adjustSpecForCooperativeMatrix(spec, spvExts, spvCaps);
 
+                    specMap["memModelOp"]   = memModelOp;
+                    specMap["extensions"]   = toString(spvExts);
+                    specMap["capabilities"] = toString(spvCaps);
                     const tcu::StringTemplate tempShaderFunctions =
                         tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
@@ -9517,7 +9885,6 @@ void addCooperativeMatrixInteractionMixedTests(tcu::TestCaseGroup *testGroup, ME
                     spec.inputs.push_back(inputOutput);
                     spec.outputs.push_back(inputOutput);
                     spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-                    spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
                     layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
                 }
