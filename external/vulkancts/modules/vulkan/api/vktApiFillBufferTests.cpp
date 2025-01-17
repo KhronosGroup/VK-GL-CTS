@@ -46,10 +46,7 @@
 #include "deSharedPtr.hpp"
 #include <limits>
 
-namespace vkt
-{
-
-namespace api
+namespace vkt::api
 {
 
 using namespace vk;
@@ -70,6 +67,7 @@ struct TestParams
     uint32_t testData[TEST_DATA_SIZE];
     de::SharedPtr<IBufferAllocator> bufferAllocator;
     bool useTransferOnlyQueue;
+    bool useDeviceAddressCommands;
 };
 
 // Creates a device that has transfer only operations
@@ -84,9 +82,9 @@ Move<VkDevice> createCustomDevice(Context &context,
     const vk::VkPhysicalDevice physicalDevice =
         chooseDevice(instanceDriver, customInstance, context.getTestContext().getCommandLine());
 #else
-    const vk::VkInstance customInstance         = context.getInstance();
-    const vk::InstanceInterface &instanceDriver = context.getInstanceInterface();
-    const vk::VkPhysicalDevice physicalDevice   = context.getPhysicalDevice();
+    const vk::VkInstance customInstance                    = context.getInstance();
+    const vk::InstanceInterface &instanceDriver            = context.getInstanceInterface();
+    const vk::VkPhysicalDevice physicalDevice              = context.getPhysicalDevice();
 #endif // CTS_USES_VULKANSC
 
     queueFamilyIndex = findQueueFamilyIndexWithCaps(instanceDriver, physicalDevice, VK_QUEUE_TRANSFER_BIT,
@@ -114,18 +112,23 @@ Move<VkDevice> createCustomDevice(Context &context,
     const auto extensionNames     = context.getDeviceCreationExtensions();
     auto synchronization2Features = context.getSynchronization2Features();
     auto deviceFeatures2          = context.getDeviceFeatures2();
-    const void *pNext             = &deviceFeatures2;
+    void *pNext                   = &deviceFeatures2;
 
-    if (context.isDeviceFunctionalitySupported("VK_KHR_synchronization2"))
+    if (context.isDeviceFunctionalitySupported("VK_KHR_synchronization2") &&
+        (context.getUsedApiVersion() < VK_API_VERSION_1_3))
     {
-        if (context.getUsedApiVersion() < VK_API_VERSION_1_3)
-        {
-            synchronization2Features.pNext = &deviceFeatures2;
-            pNext                          = &synchronization2Features;
-        }
+        synchronization2Features.pNext = &deviceFeatures2;
+        pNext                          = &synchronization2Features;
     }
 
-#ifdef CTS_USES_VULKANSC
+#ifndef CTS_USES_VULKANSC
+    auto deviceAddressCommandsFeatures = context.getDeviceAddressCommandsFeatures();
+    if (context.isDeviceFunctionalitySupported("VK_KHR_device_address_commands"))
+    {
+        deviceAddressCommandsFeatures.pNext = pNext;
+        pNext                               = &deviceAddressCommandsFeatures;
+    }
+#else
     VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ?
                                                                  context.getResourceInterface()->getStatMax() :
                                                                  resetDeviceObjectReservationCreateInfo();
@@ -216,8 +219,8 @@ FillWholeBufferTestInstance::FillWholeBufferTestInstance(Context &context, const
     const VkPhysicalDevice physDevice =
         vk::chooseDevice(vki, m_customInstance, m_context.getTestContext().getCommandLine());
 #else
-    const vk::InstanceInterface &vki            = m_context.getInstanceInterface();
-    const VkPhysicalDevice physDevice           = m_context.getPhysicalDevice();
+    const vk::InstanceInterface &vki  = m_context.getInstanceInterface();
+    const VkPhysicalDevice physDevice = m_context.getPhysicalDevice();
 #endif // CTS_USES_VULKANSC
     const DeviceInterface &vk = m_context.getDeviceInterface();
 
@@ -241,11 +244,18 @@ FillWholeBufferTestInstance::FillWholeBufferTestInstance(Context &context, const
         m_queueFamilyIndex = context.getUniversalQueueFamilyIndex();
     }
 
+    VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    if (m_params.useDeviceAddressCommands)
+        usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
+    MemoryRequirement memReq = m_params.useDeviceAddressCommands ?
+                                   MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress :
+                                   MemoryRequirement::HostVisible;
+
     m_cmdPool   = createCommandPool(vk, m_device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, m_queueFamilyIndex);
     m_cmdBuffer = allocateCommandBuffer(vk, m_device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-    testParams.bufferAllocator->createTestBuffer(vk, m_device, m_params.dstSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                                 context, *m_allocator, m_destination, MemoryRequirement::HostVisible,
-                                                 m_destinationBufferAlloc);
+    testParams.bufferAllocator->createTestBuffer(vk, m_device, m_params.dstSize, usage, context, *m_allocator,
+                                                 m_destination, memReq, m_destinationBufferAlloc);
 }
 
 tcu::TestStatus FillWholeBufferTestInstance::iterate(void)
@@ -287,12 +297,12 @@ tcu::TestStatus FillWholeBufferTestInstance::iterate(void)
     auto cmdPipelineBarrier2Fun   = &DeviceInterface::cmdPipelineBarrier2;
     auto queueSubmit2Fun          = &DeviceInterface::queueSubmit2;
 #else
-    using BufferMemoryBarrier2                  = VkBufferMemoryBarrier2KHR;
-    using DependencyInfo                        = VkDependencyInfoKHR;
-    using CommandBufferSubmitInfo               = VkCommandBufferSubmitInfoKHR;
-    using SubmitInfo2                           = VkSubmitInfo2KHR;
-    auto cmdPipelineBarrier2Fun                 = &DeviceInterface::cmdPipelineBarrier2KHR;
-    auto queueSubmit2Fun                        = &DeviceInterface::queueSubmit2KHR;
+    using BufferMemoryBarrier2        = VkBufferMemoryBarrier2KHR;
+    using DependencyInfo              = VkDependencyInfoKHR;
+    using CommandBufferSubmitInfo     = VkCommandBufferSubmitInfoKHR;
+    using SubmitInfo2                 = VkSubmitInfo2KHR;
+    auto cmdPipelineBarrier2Fun       = &DeviceInterface::cmdPipelineBarrier2KHR;
+    auto queueSubmit2Fun              = &DeviceInterface::queueSubmit2KHR;
 #endif // CTS_USES_VULKANSC
 
     BufferMemoryBarrier2 gpuToHostBarrier2 = initVulkanStructure();
@@ -308,6 +318,28 @@ tcu::TestStatus FillWholeBufferTestInstance::iterate(void)
     DependencyInfo depInfo           = initVulkanStructure();
     depInfo.bufferMemoryBarrierCount = 1;
     depInfo.pBufferMemoryBarriers    = &gpuToHostBarrier2;
+
+#ifndef CTS_USES_VULKANSC
+    VkMemoryRangeBarrierKHR memoryRangeBarrier = initVulkanStructure();
+    memoryRangeBarrier.srcStageMask            = gpuToHostBarrier2.srcStageMask;
+    memoryRangeBarrier.srcAccessMask           = gpuToHostBarrier2.srcAccessMask;
+    memoryRangeBarrier.dstStageMask            = gpuToHostBarrier2.dstStageMask;
+    memoryRangeBarrier.dstAccessMask           = gpuToHostBarrier2.dstAccessMask;
+    memoryRangeBarrier.srcQueueFamilyIndex     = VK_QUEUE_FAMILY_IGNORED;
+    memoryRangeBarrier.dstQueueFamilyIndex     = VK_QUEUE_FAMILY_IGNORED;
+
+    VkMemoryRangeBarriersInfoKHR memoryRangeBarriersInfo = initVulkanStructure();
+    memoryRangeBarriersInfo.memoryRangeBarrierCount      = 1u;
+    memoryRangeBarriersInfo.pMemoryRangeBarriers         = &memoryRangeBarrier;
+
+    if (m_params.useDeviceAddressCommands)
+    {
+        memoryRangeBarrier.addressRange.address = getBufferDeviceAddress(vk, m_device, *m_destination);
+        memoryRangeBarrier.addressRange.size    = m_params.dstSize;
+
+        depInfo = initVulkanStructure(&memoryRangeBarriersInfo);
+    }
+#endif
 
     // Fill buffer using VK_WHOLE_SIZE.
     beginCommandBuffer(vk, *m_cmdBuffer);
@@ -371,6 +403,12 @@ public:
     {
     }
 
+    void checkSupport(Context &context) const override
+    {
+        if (m_params.useDeviceAddressCommands)
+            context.requireDeviceFunctionality("VK_KHR_device_address_commands");
+    }
+
     virtual TestInstance *createInstance(Context &context) const override
     {
         return static_cast<TestInstance *>(new FillWholeBufferTestInstance(context, m_params));
@@ -406,6 +444,7 @@ protected:
     VkCommandBufferBeginInfo m_cmdBufferBeginInfo;
 
     Move<VkBuffer> m_destination;
+    VkDeviceAddress m_destinationDevicceAddress;
     de::MovePtr<Allocation> m_destinationBufferAlloc;
 
     void generateBuffer(tcu::PixelBufferAccess buffer, int width, int height, int depth = 1);
@@ -424,6 +463,7 @@ FillBufferTestInstance::FillBufferTestInstance(Context &context, TestParams test
 #ifdef CTS_USES_VULKANSC
     , m_customInstance(createCustomInstanceFromContext(context))
 #endif // CTS_USES_VULKANSC
+    , m_destinationDevicceAddress(0ull)
 {
     const InstanceInterface &vki      = m_context.getInstanceInterface();
     const DeviceInterface &vk         = m_context.getDeviceInterface();
@@ -449,15 +489,24 @@ FillBufferTestInstance::FillBufferTestInstance(Context &context, TestParams test
         m_queueFamilyIndex = context.getUniversalQueueFamilyIndex();
     }
 
+    VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    if (m_params.useDeviceAddressCommands)
+        usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
     // Create command pool
     m_cmdPool = createCommandPool(vk, m_device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, m_queueFamilyIndex);
 
     // Create command buffer
     m_cmdBuffer = allocateCommandBuffer(vk, m_device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-    testParams.bufferAllocator->createTestBuffer(vk, m_device, m_params.dstSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                                 context, *m_allocator, m_destination, MemoryRequirement::HostVisible,
-                                                 m_destinationBufferAlloc);
+    testParams.bufferAllocator->createTestBuffer(
+        vk, m_device, m_params.dstSize, usage, context, *m_allocator, m_destination,
+        m_params.useDeviceAddressCommands ? MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress :
+                                            MemoryRequirement::HostVisible,
+        m_destinationBufferAlloc);
+
+    if (m_params.useDeviceAddressCommands)
+        m_destinationDevicceAddress = getBufferDeviceAddress(vk, m_device, *m_destination);
 }
 
 tcu::TestStatus FillBufferTestInstance::iterate(void)
@@ -488,7 +537,18 @@ tcu::TestStatus FillBufferTestInstance::iterate(void)
     };
 
     beginCommandBuffer(vk, *m_cmdBuffer);
-    vk.cmdFillBuffer(*m_cmdBuffer, *m_destination, m_params.dstOffset, m_params.size, m_params.testData[0]);
+
+    if (!m_params.useDeviceAddressCommands)
+        vk.cmdFillBuffer(*m_cmdBuffer, *m_destination, m_params.dstOffset, m_params.size, m_params.testData[0]);
+
+#ifndef CTS_USES_VULKANSC
+    if (m_params.useDeviceAddressCommands)
+    {
+        VkDeviceAddressRangeKHR dstRange{m_destinationDevicceAddress + m_params.dstOffset, m_params.size};
+        vk.cmdFillMemoryKHR(*m_cmdBuffer, dstRange, VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR, m_params.testData[0]);
+    }
+#endif
+
     vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
                           (VkDependencyFlags)0, 0, nullptr, 1, &dstBufferBarrier, 0, nullptr);
     endCommandBuffer(vk, *m_cmdBuffer);
@@ -568,6 +628,12 @@ public:
     {
     }
 
+    virtual void checkSupport(Context &context) const
+    {
+        if (m_params.useDeviceAddressCommands)
+            context.requireDeviceFunctionality("VK_KHR_device_address_commands");
+    }
+
     virtual TestInstance *createInstance(Context &context) const
     {
         return static_cast<TestInstance *>(new FillBufferTestInstance(context, m_params));
@@ -619,7 +685,19 @@ tcu::TestStatus UpdateBufferTestInstance::iterate(void)
     };
 
     beginCommandBuffer(vk, *m_cmdBuffer);
-    vk.cmdUpdateBuffer(*m_cmdBuffer, *m_destination, m_params.dstOffset, m_params.size, m_params.testData);
+
+    if (!m_params.useDeviceAddressCommands)
+        vk.cmdUpdateBuffer(*m_cmdBuffer, *m_destination, m_params.dstOffset, m_params.size, m_params.testData);
+
+#ifndef CTS_USES_VULKANSC
+    if (m_params.useDeviceAddressCommands)
+    {
+        VkDeviceAddressRangeKHR dstRange{m_destinationDevicceAddress + m_params.dstOffset, m_params.size};
+        vk.cmdUpdateMemoryKHR(*m_cmdBuffer, dstRange, VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR,
+                              TestParams::TEST_DATA_SIZE * sizeof(uint32_t), &m_params.testData);
+    }
+#endif
+
     vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
                           (VkDependencyFlags)0, 0, nullptr, 1, &dstBufferBarrier, 0, nullptr);
     endCommandBuffer(vk, *m_cmdBuffer);
@@ -656,6 +734,12 @@ public:
         : vkt::TestCase(testCtx, name)
         , m_params(params)
     {
+    }
+
+    virtual void checkSupport(Context &context) const
+    {
+        if (m_params.useDeviceAddressCommands)
+            context.requireDeviceFunctionality("VK_KHR_device_address_commands");
     }
 
     virtual TestInstance *createInstance(Context &context) const
@@ -697,9 +781,10 @@ tcu::TestCaseGroup *createFillAndUpdateBufferTests(tcu::TestContext &testCtx)
     {
         de::MovePtr<tcu::TestCaseGroup> currentTestsGroup(new tcu::TestCaseGroup(testCtx, groupData.name));
 
-        params.dstSize              = TestParams::TEST_DATA_SIZE;
-        params.bufferAllocator      = bufferAllocators[groupData.useDedicatedAllocation];
-        params.useTransferOnlyQueue = groupData.useTransferOnlyQueue;
+        params.dstSize                  = TestParams::TEST_DATA_SIZE;
+        params.bufferAllocator          = bufferAllocators[groupData.useDedicatedAllocation];
+        params.useTransferOnlyQueue     = groupData.useTransferOnlyQueue;
+        params.useDeviceAddressCommands = false;
 
         uint8_t *data = (uint8_t *)params.testData;
         for (uint32_t b = 0u; b < (params.dstSize * sizeof(params.testData[0])); b++)
@@ -713,6 +798,20 @@ tcu::TestCaseGroup *createFillAndUpdateBufferTests(tcu::TestContext &testCtx)
 
             currentTestsGroup->addChild(new FillBufferTestCase(testCtx, "fill_" + testName, params));
             currentTestsGroup->addChild(new UpdateBufferTestCase(testCtx, "update_" + testName, params));
+        }
+
+        // limit number of tests repeated for device_address_commands
+        if (groupData.useDedicatedAllocation)
+        {
+            const std::string testName("buffer_whole_device_address");
+
+            params.dstOffset                = 0;
+            params.size                     = params.dstSize;
+            params.useDeviceAddressCommands = true;
+
+            currentTestsGroup->addChild(new FillBufferTestCase(testCtx, "fill_" + testName, params));
+            currentTestsGroup->addChild(new UpdateBufferTestCase(testCtx, "update_" + testName, params));
+            params.useDeviceAddressCommands = false;
         }
 
         {
@@ -745,8 +844,21 @@ tcu::TestCaseGroup *createFillAndUpdateBufferTests(tcu::TestContext &testCtx)
             currentTestsGroup->addChild(new UpdateBufferTestCase(testCtx, "update_" + testName, params));
         }
 
+        {
+            const std::string testName("buffer_second_part_device_address");
+
+            params.dstOffset                = params.dstSize / 2;
+            params.size                     = params.dstSize / 2;
+            params.useDeviceAddressCommands = true;
+
+            currentTestsGroup->addChild(new FillBufferTestCase(testCtx, "fill_" + testName, params));
+            currentTestsGroup->addChild(new UpdateBufferTestCase(testCtx, "update_" + testName, params));
+            params.useDeviceAddressCommands = false;
+        }
+
         // VK_WHOLE_SIZE tests.
         {
+            params.useDeviceAddressCommands = false;
             for (VkDeviceSize i = 0; i < sizeof(uint32_t); ++i)
             {
                 for (VkDeviceSize j = 0; j < sizeof(uint32_t); ++j)
@@ -762,6 +874,16 @@ tcu::TestCaseGroup *createFillAndUpdateBufferTests(tcu::TestContext &testCtx)
                     currentTestsGroup->addChild(new FillWholeBufferTestCase{testCtx, name, params});
                 }
             }
+
+            if (params.useTransferOnlyQueue)
+            {
+                params.dstSize                  = TestParams::TEST_DATA_SIZE;
+                params.dstOffset                = sizeof(uint32_t);
+                params.size                     = VK_WHOLE_SIZE;
+                params.useDeviceAddressCommands = true;
+                currentTestsGroup->addChild(
+                    new FillWholeBufferTestCase{testCtx, "fill_buffer_vk_whole_size_device_address", params});
+            }
         }
 
         fillAndUpdateBufferTests->addChild(currentTestsGroup.release());
@@ -770,5 +892,4 @@ tcu::TestCaseGroup *createFillAndUpdateBufferTests(tcu::TestContext &testCtx)
     return fillAndUpdateBufferTests.release();
 }
 
-} // namespace api
-} // namespace vkt
+} // namespace vkt::api
