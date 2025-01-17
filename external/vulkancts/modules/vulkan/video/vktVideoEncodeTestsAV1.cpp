@@ -337,6 +337,8 @@ protected:
 
 VkExtent2D VideoTestCase::codedPictureAlignment = VkExtent2D({0, 0});
 
+static void buildTestName(const TestDefinition &testDef, std::string &testName);
+
 static void buildClipName(tcu::TestContext &testCtx, const TestDefinition &testDef, std::string &clipName, bool output)
 {
     auto &cmdLine   = testCtx.getCommandLine();
@@ -348,6 +350,13 @@ static void buildClipName(tcu::TestContext &testCtx, const TestDefinition &testD
 
     clipName += "_" + std::string(testDef.subsampling.subName);
     clipName += "_" + std::string(testDef.bitDepth.subName);
+    clipName += "_" + std::string(testDef.gop.subName);
+    clipName += "_" + std::to_string(testDef.gop.frameCount);
+
+    std::string testName("");
+    buildTestName(testDef, testName);
+    clipName += "_" + testName;
+
     if (output)
         clipName += ".ivf";
     else

@@ -1007,8 +1007,9 @@ public:
         Allocator &allocator                   = context.getDefaultAllocator();
         const uint32_t queueFamilyIndex        = context.getUniversalQueueFamilyIndex();
 
-        const Move<VkCommandPool> cmdPoolPtr = createCommandPool(deviceInterface, deviceVk, 0, /* pCreateInfo */
-                                                                 queueFamilyIndex);
+        const Move<VkCommandPool> cmdPoolPtr = createCommandPool(
+            deviceInterface, deviceVk, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, /* pCreateInfo */
+            queueFamilyIndex);
         const Move<VkCommandBuffer> cmdBufferPtr =
             allocateCommandBuffer(deviceInterface, deviceVk, *cmdPoolPtr, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
