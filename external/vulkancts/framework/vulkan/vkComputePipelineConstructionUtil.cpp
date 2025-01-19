@@ -187,7 +187,8 @@ void ComputePipelineWrapper::buildPipeline(void)
     {
         DE_ASSERT(m_pipeline.get() == VK_NULL_HANDLE);
         const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, *m_programBinary));
-        buildPipelineLayout();
+        if (m_pipelineLayout.get() == VK_NULL_HANDLE)
+            buildPipelineLayout();
         m_pipeline =
             vk::makeComputePipeline(vk, device, *m_pipelineLayout, m_pipelineCreateFlags, m_pipelineCreatePNext,
                                     *shaderModule, 0u, specializationInfo, VK_NULL_HANDLE, m_subgroupSize);
@@ -261,6 +262,11 @@ void ComputePipelineWrapper::bind(VkCommandBuffer commandBuffer)
         m_internalData->vk.cmdBindShadersEXT(commandBuffer, 1, &stage, &*m_shader);
 #endif
     }
+}
+
+void ComputePipelineWrapper::setPipelineLayout(Move<VkPipelineLayout> pipelineLayout)
+{
+    m_pipelineLayout = pipelineLayout;
 }
 
 void ComputePipelineWrapper::buildPipelineLayout(void)

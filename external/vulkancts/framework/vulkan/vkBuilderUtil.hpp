@@ -85,7 +85,7 @@ public:
         return addBinding(descriptorType, descriptorCount, stageFlags, pImmutableSamplers);
     }
 
-private:
+protected:
     DescriptorSetLayoutBuilder(const DescriptorSetLayoutBuilder &);            // delete
     DescriptorSetLayoutBuilder &operator=(const DescriptorSetLayoutBuilder &); // delete
 

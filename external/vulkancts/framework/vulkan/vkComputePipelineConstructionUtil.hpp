@@ -88,6 +88,7 @@ public:
     void buildPipeline(void);
     void bind(VkCommandBuffer commandBuffer);
 
+    void setPipelineLayout(Move<VkPipelineLayout> pipelineLayout);
     VkPipelineLayout getPipelineLayout(void);
 
 private:

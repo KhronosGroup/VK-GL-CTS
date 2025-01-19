@@ -108,6 +108,7 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
         "VK_NV_cooperative_matrix2",
         "VK_NV_cooperative_vector",
         "VK_QCOM_fragment_density_map_offset",
+        "VK_QCOM_image_processing",
     };
 
     const char *exclusions[] = {"VK_EXT_device_address_binding_report", "VK_EXT_device_memory_report"};
