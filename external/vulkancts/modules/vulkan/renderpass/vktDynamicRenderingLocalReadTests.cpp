@@ -1916,7 +1916,9 @@ void LocalReadTestCase::checkSupport(Context &context) const
         if ((m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX) ||
             (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX) ||
             (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX) ||
-            (m_testType == TestType::DEPTH_MAPPING_STENCIL_NOT))
+            (m_testType == TestType::DEPTH_MAPPING_STENCIL_NOT) ||
+            (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_DEPTH_CLEAR) ||
+            (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_STENCIL_CLEAR))
             TCU_THROW(NotSupportedError, "dynamicRenderingLocalReadDepthStencilAttachments not supported");
     }
 }
