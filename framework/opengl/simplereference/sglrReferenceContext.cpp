@@ -4216,7 +4216,7 @@ int32_t ReferenceContext::getUniformLocation(uint32_t program, const char *name)
     std::vector<sglr::UniformSlot> &uniforms = shaderProg->m_program->m_uniforms;
 
     for (size_t i = 0; i < uniforms.size(); ++i)
-        if (name && deStringEqual(uniforms[i].name.c_str(), name))
+        if (name && uniforms[i].name == name)
             return (int)i;
 
     return -1;

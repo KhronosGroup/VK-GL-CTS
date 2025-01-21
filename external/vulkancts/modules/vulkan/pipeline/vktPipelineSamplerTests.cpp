@@ -887,7 +887,7 @@ static std::string getShortComponentSwizzleName(VkComponentSwizzle componentSwiz
 
     DE_ASSERT(de::beginsWith(fullName, prefix));
 
-    return de::toLower(fullName.substr(deStrnlen(prefix, -1)));
+    return de::toLower(fullName.substr(strlen(prefix)));
 }
 
 static std::string getComponentMappingGroupName(const VkComponentMapping &componentMapping)

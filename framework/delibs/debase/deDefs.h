@@ -201,15 +201,6 @@ typedef void (*deFunctionPtr)(void);
 #endif
 #endif
 
-/* Inline. */
-#if (DE_COMPILER == DE_COMPILER_MSC)
-#define DE_INLINE __forceinline
-#elif (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
-#define DE_INLINE static __inline__
-#else
-#define DE_INLINE inline /*!< Function inline.        */
-#endif
-
 /* DE_DEV_BUILD -- only define when building on a development machine. */
 #if !defined(DE_DEV_BUILD)
 #if (DE_COMPILER == DE_COMPILER_MSC)
@@ -341,15 +332,6 @@ extern "C"
 #define DE_BREAKPOINT() DE_FATAL("Software breakpoint encountered!")
 #endif
 
-/** Swap two values. */
-#define DE_SWAP(TYPE, A, B) \
-    do                      \
-    {                       \
-        TYPE _tmp_ = (A);   \
-        (A)        = (B);   \
-        (B)        = _tmp_; \
-    } while (false)
-
 /** Used in enum to easify declarations for struct serialization. Declares 'NAME'_OFFSET, 'NAME'_SIZE, and offsets counter for next enum value by SIZE. */
 #define DE_SERIALIZED_FIELD(NAME, SIZE) NAME##_OFFSET, NAME##_SIZE = (SIZE), _DE_TMP_##NAME = NAME##_OFFSET + (SIZE)-1
 
@@ -392,16 +374,6 @@ extern "C"
 #define DE_END_EXTERN_C
 #endif
 
-/** DE_NULL_STATEMENT */
-#if defined(DE_DEBUG)
-#define DE_NULL_STATEMENT \
-    do                    \
-    {                     \
-    } while (false)
-#else
-#define DE_NULL_STATEMENT (void)0
-#endif
-
 /** GCC format string attributes */
 #if (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
 #define DE_PRINTF_FUNC_ATTR(FORMAT_STRING, FIRST_ARG) __attribute__((format(printf, FORMAT_STRING, FIRST_ARG)))
@@ -424,7 +396,7 @@ extern "C"
 #define DE_PACKED
 #endif
 
-    DE_INLINE const char *deFatalStr(const char *reason)
+    static inline const char *deFatalStr(const char *reason)
     {
         DE_ASSERT(0);
         return reason;

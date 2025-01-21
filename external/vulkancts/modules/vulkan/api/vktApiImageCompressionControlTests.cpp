@@ -118,7 +118,7 @@ static void validate(const InstanceInterface &vki, const DeviceInterface &vkd, t
         VkImageSubresource2EXT subresource                    = initVulkanStructure();
         subresource.imageSubresource.aspectMask               = aspect;
         VkSubresourceLayout2EXT subresourceLayout             = initVulkanStructure(&compressionProperties);
-        vkd.getImageSubresourceLayout2KHR(device, image, &subresource, &subresourceLayout);
+        vkd.getImageSubresourceLayout2(device, image, &subresource, &subresourceLayout);
 
         VkImageCompressionControlEXT compressionEnabled       = initVulkanStructure();
         compressionEnabled.compressionControlPlaneCount       = testParams.control.compressionControlPlaneCount;

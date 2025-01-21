@@ -423,8 +423,17 @@ static string getAtomicFuncArgumentShaderStr(const tcu::TextureFormat format, co
         }
     case ATOMIC_OPERATION_EXCHANGE:
     case ATOMIC_OPERATION_COMPARE_EXCHANGE:
-        return string("((" + z + "*" + toString(gridSize.x()) + " + " + x + ")*" + toString(gridSize.y()) + " + " + y +
-                      ")");
+        if (format.type == tcu::TextureFormat::HALF_FLOAT)
+        {
+            // Only use values exactly representable with 10-bit mantissa.
+            return string("(((" + z + "*" + toString(gridSize.x()) + " + " + x + ")*" + toString(gridSize.y()) + " + " +
+                          y + ") % 1024)");
+        }
+        else
+        {
+            return string("((" + z + "*" + toString(gridSize.x()) + " + " + x + ")*" + toString(gridSize.y()) + " + " +
+                          y + ")");
+        }
     default:
         DE_ASSERT(false);
         return "";
@@ -622,7 +631,15 @@ static T getAtomicFuncArgument(const tcu::TextureFormat format, const AtomicOper
         break;
     case ATOMIC_OPERATION_EXCHANGE:
     case ATOMIC_OPERATION_COMPARE_EXCHANGE:
-        ret = (z * gridSize.x() + x) * gridSize.y() + y;
+        if (format.type == tcu::TextureFormat::HALF_FLOAT)
+        {
+            // Only use values exactly representable with 10-bit mantissa.
+            ret = ((z * gridSize.x() + x) * gridSize.y() + y) % 1024;
+        }
+        else
+        {
+            ret = (z * gridSize.x() + x) * gridSize.y() + y;
+        }
         break;
     default:
         DE_ASSERT(false);

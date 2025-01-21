@@ -374,9 +374,9 @@ if (usedApiVersion >= VK_MAKE_API_VERSION(1, 1, 0, 0))
     m_vk.getDeviceMemoryOpaqueCaptureAddress = (GetDeviceMemoryOpaqueCaptureAddressFunc) GET_PROC_ADDR("vkGetDeviceMemoryOpaqueCaptureAddress");
 if (!m_vk.getDeviceMemoryOpaqueCaptureAddress)
     m_vk.getDeviceMemoryOpaqueCaptureAddress = (GetDeviceMemoryOpaqueCaptureAddressFunc) GET_PROC_ADDR("vkGetDeviceMemoryOpaqueCaptureAddressKHR");
-m_vk.cmdSetLineStippleKHR = (CmdSetLineStippleKHRFunc) GET_PROC_ADDR("vkCmdSetLineStippleKHR");
-if (!m_vk.cmdSetLineStippleKHR)
-    m_vk.cmdSetLineStippleKHR = (CmdSetLineStippleKHRFunc) GET_PROC_ADDR("vkCmdSetLineStippleEXT");
+m_vk.cmdSetLineStippleEXT = (CmdSetLineStippleEXTFunc) GET_PROC_ADDR("vkCmdSetLineStippleEXT");
+if (!m_vk.cmdSetLineStippleEXT)
+    m_vk.cmdSetLineStippleEXT = (CmdSetLineStippleEXTFunc) GET_PROC_ADDR("vkCmdSetLineStippleKHR");
 if (usedApiVersion >= VK_MAKE_API_VERSION(1, 1, 0, 0))
     m_vk.getFaultData = (GetFaultDataFunc) GET_PROC_ADDR("vkGetFaultData");
 m_vk.cmdSetCullModeEXT = (CmdSetCullModeEXTFunc) GET_PROC_ADDR("vkCmdSetCullModeEXT");

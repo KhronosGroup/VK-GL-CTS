@@ -58,6 +58,49 @@ bool isSupportedByFramework(VkFormat format);
 void checkImageSupport(const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
                        const VkImageCreateInfo &imageCreateInfo);
 
+enum class ImageFeatureType
+{
+    OPTIMAL = 0,
+    LINEAR  = 1,
+    BUFFER  = 2
+};
+
+// Returns the first format that supports the required format features in the chosen type.
+// Returns VK_FORMAT_UNDEFINED if none does.
+template <class Iterator>
+VkFormat findFirstSupportedFormat(const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
+                                  VkFormatFeatureFlags features, ImageFeatureType imgFeatureType, Iterator first,
+                                  Iterator last)
+{
+    VkFormat format = VK_FORMAT_UNDEFINED;
+
+    while (first != last)
+    {
+        const auto properties = getPhysicalDeviceFormatProperties(vki, physicalDevice, *first);
+
+        const VkFormatFeatureFlags *flagsPtr = nullptr;
+
+        if (imgFeatureType == ImageFeatureType::OPTIMAL)
+            flagsPtr = &properties.optimalTilingFeatures;
+        else if (imgFeatureType == ImageFeatureType::LINEAR)
+            flagsPtr = &properties.linearTilingFeatures;
+        else if (imgFeatureType == ImageFeatureType::BUFFER)
+            flagsPtr = &properties.bufferFeatures;
+        else
+            DE_ASSERT(false);
+
+        if (((*flagsPtr) & features) == features)
+        {
+            format = *first;
+            break;
+        }
+
+        ++first;
+    }
+
+    return format;
+}
+
 tcu::TextureFormat mapVkFormat(VkFormat format);
 tcu::CompressedTexFormat mapVkCompressedFormat(VkFormat format);
 tcu::TextureFormat getDepthCopyFormat(VkFormat combinedFormat);

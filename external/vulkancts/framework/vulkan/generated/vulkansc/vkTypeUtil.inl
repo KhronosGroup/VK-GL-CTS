@@ -469,9 +469,9 @@ inline VkSampleLocationEXT makeSampleLocationEXT (float x, float y)
 	return res;
 }
 
-inline VkVertexInputBindingDivisorDescriptionKHR makeVertexInputBindingDivisorDescriptionKHR (uint32_t binding, uint32_t divisor)
+inline VkVertexInputBindingDivisorDescription makeVertexInputBindingDivisorDescription (uint32_t binding, uint32_t divisor)
 {
-	VkVertexInputBindingDivisorDescriptionKHR res;
+	VkVertexInputBindingDivisorDescription res;
 	res.binding	= binding;
 	res.divisor	= divisor;
 	return res;

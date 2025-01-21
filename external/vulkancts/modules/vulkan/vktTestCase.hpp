@@ -107,6 +107,7 @@ public:
     const vk::VkPhysicalDeviceVulkan12Features &getDeviceVulkan12Features(void) const;
 #ifndef CTS_USES_VULKANSC
     const vk::VkPhysicalDeviceVulkan13Features &getDeviceVulkan13Features(void) const;
+    const vk::VkPhysicalDeviceVulkan14Features &getDeviceVulkan14Features(void) const;
 #endif
 #ifdef CTS_USES_VULKANSC
     const vk::VkPhysicalDeviceVulkanSC10Features &getDeviceVulkanSC10Features(void) const;
@@ -124,6 +125,7 @@ public:
     const vk::VkPhysicalDeviceVulkan12Properties &getDeviceVulkan12Properties(void) const;
 #ifndef CTS_USES_VULKANSC
     const vk::VkPhysicalDeviceVulkan13Properties &getDeviceVulkan13Properties(void) const;
+    const vk::VkPhysicalDeviceVulkan14Properties &getDeviceVulkan14Properties(void) const;
 #endif
 #ifdef CTS_USES_VULKANSC
     const vk::VkPhysicalDeviceVulkanSC10Properties &getDeviceVulkanSC10Properties(void) const;

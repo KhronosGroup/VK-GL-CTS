@@ -12,6 +12,8 @@ set(DEQP_VK_VKSC_SHADEREXECUTOR_SRCS
 	vktShaderCommonFunctionTests.hpp
 	vktShaderFConvertTests.cpp
 	vktShaderFConvertTests.hpp
+	vktShaderHelperInvocationsTests.cpp
+	vktShaderHelperInvocationsTests.hpp
 	vktShaderIntegerFunctionTests.cpp
 	vktShaderIntegerFunctionTests.hpp
 	vktShaderPackingFunctionTests.cpp

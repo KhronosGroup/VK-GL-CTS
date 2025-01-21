@@ -843,21 +843,27 @@ tcu::TestStatus NormalDGCMixInstance::iterate(void)
     DGCShaderExtPtr meshPointsShader;
     DGCShaderExtPtr meshStripShader;
 
+    const auto &features   = m_context.getDeviceFeatures();
+    const auto tessFeature = (features.tessellationShader == VK_TRUE);
+    const auto geomFeature = (features.geometryShader == VK_TRUE);
+
     if (m_params.shaderObjects)
     {
         fragShader.reset(new DGCShaderExt(ctx.vkd, ctx.device, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, binaries.get("frag"),
-                                          setLayouts, pcRanges));
+                                          setLayouts, pcRanges, tessFeature, geomFeature));
         if (m_params.mesh)
         {
             const auto createFlags = VK_SHADER_CREATE_NO_TASK_SHADER_BIT_EXT;
             meshPointsShader.reset(new DGCShaderExt(ctx.vkd, ctx.device, VK_SHADER_STAGE_MESH_BIT_EXT, createFlags,
-                                                    binaries.get("mesh-points"), setLayouts, pcRanges));
+                                                    binaries.get("mesh-points"), setLayouts, pcRanges, tessFeature,
+                                                    geomFeature));
             meshStripShader.reset(new DGCShaderExt(ctx.vkd, ctx.device, VK_SHADER_STAGE_MESH_BIT_EXT, createFlags,
-                                                   binaries.get("mesh-strip"), setLayouts, pcRanges));
+                                                   binaries.get("mesh-strip"), setLayouts, pcRanges, tessFeature,
+                                                   geomFeature));
         }
         else
             vertShader.reset(new DGCShaderExt(ctx.vkd, ctx.device, VK_SHADER_STAGE_VERTEX_BIT, 0u, binaries.get("vert"),
-                                              setLayouts, pcRanges));
+                                              setLayouts, pcRanges, tessFeature, geomFeature));
     }
 
     const auto normalTopology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
@@ -2807,6 +2813,10 @@ tcu::TestStatus IfaceMatchingInstance::iterate(void)
     const std::vector<vk::VkDescriptorSetLayout> noLayouts;
     const std::vector<VkPushConstantRange> pcRanges{pcRange};
 
+    const auto &features   = m_context.getDeviceFeatures();
+    const auto tessFeature = (features.tessellationShader == VK_TRUE);
+    const auto geomFeature = (features.geometryShader == VK_TRUE);
+
     for (uint32_t i = 0u; i < MultiIfaceCase::kQuadrants; ++i)
     {
         const auto idx         = std::to_string(i);
@@ -2817,10 +2827,10 @@ tcu::TestStatus IfaceMatchingInstance::iterate(void)
 
         if (m_params.useShaderObjects)
         {
-            vertShaders.emplace_back(
-                new DGCShaderExt(ctx.vkd, ctx.device, VK_SHADER_STAGE_VERTEX_BIT, 0u, vertBinary, noLayouts, pcRanges));
+            vertShaders.emplace_back(new DGCShaderExt(ctx.vkd, ctx.device, VK_SHADER_STAGE_VERTEX_BIT, 0u, vertBinary,
+                                                      noLayouts, pcRanges, tessFeature, geomFeature));
             fragShaders.emplace_back(new DGCShaderExt(ctx.vkd, ctx.device, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, fragBinary,
-                                                      noLayouts, pcRanges));
+                                                      noLayouts, pcRanges, tessFeature, geomFeature));
         }
         else
         {
@@ -4871,7 +4881,7 @@ tcu::TestStatus sparseVBORun(Context &context)
     auto vertexBufferInfo              = makeBufferCreateInfo(vertexBufferSize, vertexBufferUsage);
     vertexBufferInfo.flags             = VK_BUFFER_CREATE_SPARSE_BINDING_BIT;
     const auto vertexBuffer            = makeBuffer(ctx.vkd, ctx.device, vertexBufferInfo);
-    const auto vertexBufferMemReqFlags = (MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+    const auto vertexBufferMemReqFlags = MemoryRequirement::DeviceAddress;
     const auto vertexBufferMemReqs     = getBufferMemoryRequirements(ctx.vkd, ctx.device, *vertexBuffer);
     const auto vertexBufferAlloc       = ctx.allocator.allocate(vertexBufferMemReqs, vertexBufferMemReqFlags);
 

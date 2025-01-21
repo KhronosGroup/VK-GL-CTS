@@ -998,8 +998,8 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest(Context &context, bool useKhr
         chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const vector<float> queuePriorities(1, 1.0f);
     const VkQueueGlobalPriorityEXT globalPriorities[] = {
-        VK_QUEUE_GLOBAL_PRIORITY_LOW_EXT, VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT, VK_QUEUE_GLOBAL_PRIORITY_HIGH_EXT,
-        VK_QUEUE_GLOBAL_PRIORITY_REALTIME_EXT};
+        VK_QUEUE_GLOBAL_PRIORITY_LOW_KHR, VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR, VK_QUEUE_GLOBAL_PRIORITY_HIGH_KHR,
+        VK_QUEUE_GLOBAL_PRIORITY_REALTIME_KHR};
 
 #ifndef CTS_USES_VULKANSC
     uint32_t queueFamilyPropertyCount = ~0u;
@@ -1029,7 +1029,7 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest(Context &context, bool useKhr
     if (useKhrGlobalPriority)
         enabledExtensions = {"VK_KHR_global_priority"};
 
-    VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT globalPriorityQueryFeatures{
+    VkPhysicalDeviceGlobalPriorityQueryFeatures globalPriorityQueryFeatures{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_EXT, //sType;
         nullptr,                                                              //pNext;
         VK_TRUE                                                               //globalPriorityQuery;
@@ -1089,7 +1089,7 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest(Context &context, bool useKhr
             nullptr,                              //pEnabledFeatures;
         };
 
-        const bool mayBeDenied = globalPriority > VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT;
+        const bool mayBeDenied = globalPriority > VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR;
 #ifndef CTS_USES_VULKANSC
         const bool mustFail =
             useKhrGlobalPriority &&
@@ -1186,7 +1186,7 @@ bool isValidGlobalPriority(VkQueueGlobalPriorityEXT priority)
 void checkGlobalPriorityProperties(const VkQueueFamilyGlobalPriorityPropertiesEXT &properties)
 {
     TCU_CHECK(properties.priorityCount > 0);
-    TCU_CHECK(properties.priorityCount <= VK_MAX_GLOBAL_PRIORITY_SIZE_KHR);
+    TCU_CHECK(properties.priorityCount <= VK_MAX_GLOBAL_PRIORITY_SIZE);
     TCU_CHECK(isValidGlobalPriority(properties.priorities[0]));
 
     for (uint32_t ndx = 1; ndx < properties.priorityCount; ndx++)
@@ -1245,7 +1245,7 @@ tcu::TestStatus createDeviceWithQueriedGlobalPriorityTest(Context &context, bool
 
         for (VkQueueGlobalPriorityEXT globalPriority : globalPriorities)
         {
-            const VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT globalPriorityQueryFeatures = {
+            const VkPhysicalDeviceGlobalPriorityQueryFeatures globalPriorityQueryFeatures = {
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_EXT, //sType;
                 nullptr,                                                              //pNext;
                 VK_TRUE                                                               //globalPriorityQuery;
@@ -1500,20 +1500,6 @@ void checkFeatures(const PlatformInterface &vkp, const VkInstance &instance, con
                 physicalDeviceFeaturesCopy.robustBufferAccess = true;
             }
         }
-        else if (structureType == vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_ATOMIC_INT64_FEATURES_EXT)
-        {
-            DE_ASSERT((std::is_same<VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT, StructType>::value));
-            // If sparseImageInt64Atomics is enabled, shaderImageInt64Atomics must be enabled.
-            if (features[featureNdx].offset ==
-                offsetof(VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT, sparseImageInt64Atomics))
-            {
-                auto *memberPtr = reinterpret_cast<VkBool32 *>(
-                    reinterpret_cast<uint8_t *>(&structCopy) +
-                    SAFE_OFFSET(StructType, VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT,
-                                shaderImageInt64Atomics));
-                *memberPtr = VK_TRUE;
-            }
-        }
         else if (structureType == vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT)
         {
             DE_ASSERT((std::is_same<VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, StructType>::value));
@@ -1549,6 +1535,42 @@ void checkFeatures(const PlatformInterface &vkp, const VkInstance &instance, con
                     reinterpret_cast<VkBool32 *>(reinterpret_cast<uint8_t *>(&structCopy) +
                                                  SAFE_OFFSET(StructType, VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT,
                                                              shaderImageFloat32AtomicMinMax));
+                *memberPtr = VK_TRUE;
+            }
+        }
+        else if (structureType == vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT)
+        {
+            DE_ASSERT((std::is_same<VkPhysicalDeviceMultiviewFeaturesKHR, StructType>::value));
+            // If multiviewMeshShader is enabled then multiview must also be enabled
+            if (features[featureNdx].offset == offsetof(VkPhysicalDeviceMeshShaderFeaturesEXT, multiviewMeshShader))
+            {
+                auto *memberPtr =
+                    reinterpret_cast<VkBool32 *>(reinterpret_cast<uint8_t *>(&structCopy) +
+                                                 SAFE_OFFSET(StructType, VkPhysicalDeviceMultiviewFeatures, multiview));
+                *memberPtr = VK_TRUE;
+            }
+            // If primitiveFragmentShadingRateMeshShader is enabled then primitiveFragmentShadingRate must also be enabled
+            if (features[featureNdx].offset ==
+                offsetof(VkPhysicalDeviceMeshShaderFeaturesEXT, primitiveFragmentShadingRateMeshShader))
+            {
+                auto *memberPtr =
+                    reinterpret_cast<VkBool32 *>(reinterpret_cast<uint8_t *>(&structCopy) +
+                                                 SAFE_OFFSET(StructType, VkPhysicalDeviceFragmentShadingRateFeaturesKHR,
+                                                             primitiveFragmentShadingRate));
+                *memberPtr = VK_TRUE;
+            }
+        }
+        else if (structureType == vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_ATOMIC_INT64_FEATURES_EXT)
+        {
+            DE_ASSERT((std::is_same<VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT, StructType>::value));
+            // If sparseImageInt64Atomics is enabled, shaderImageInt64Atomics must be enabled.
+            if (features[featureNdx].offset ==
+                offsetof(VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT, sparseImageInt64Atomics))
+            {
+                auto *memberPtr = reinterpret_cast<VkBool32 *>(
+                    reinterpret_cast<uint8_t *>(&structCopy) +
+                    SAFE_OFFSET(StructType, VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT,
+                                shaderImageInt64Atomics));
                 *memberPtr = VK_TRUE;
             }
         }

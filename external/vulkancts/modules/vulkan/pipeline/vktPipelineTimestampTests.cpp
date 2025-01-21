@@ -501,13 +501,13 @@ protected:
     void createCustomDeviceWithTransferOnlyQueue(void);
 
 protected:
+#ifdef CTS_USES_VULKANSC
+    const CustomInstance m_customInstance;
+#endif // CTS_USES_VULKANSC
     Move<VkDevice> m_customDevice;
     de::MovePtr<Allocator> m_customAllocator;
 
     VkDevice m_device;
-#ifdef CTS_USES_VULKANSC
-    const CustomInstance m_customInstance;
-#endif // CTS_USES_VULKANSC
     Allocator *m_allocator;
     uint32_t m_queueFamilyIndex;
 
@@ -571,6 +571,11 @@ TimestampTestInstance::TimestampTestInstance(Context &context, const StageFlagVe
 #ifdef CTS_USES_VULKANSC
     , m_customInstance(createCustomInstanceFromContext(context))
 #endif // CTS_USES_VULKANSC
+    , m_customDevice()
+    , m_customAllocator()
+    , m_device(VK_NULL_HANDLE)
+    , m_allocator(nullptr)
+    , m_queueFamilyIndex(std::numeric_limits<uint32_t>::max())
     , m_stages(stages)
     , m_inRenderPass(inRenderPass)
     , m_hostQueryReset(hostQueryReset)
@@ -3375,6 +3380,59 @@ tcu::TestStatus ConsistentQueryResultsTestInstance::iterate(void)
     return tcu::TestStatus::fail(msg.str());
 }
 
+class CheckTimestampComputeAndGraphicsTest : public vkt::TestCase
+{
+public:
+    CheckTimestampComputeAndGraphicsTest(tcu::TestContext &testContext, const std::string &name)
+        : vkt::TestCase(testContext, name)
+    {
+    }
+    virtual ~CheckTimestampComputeAndGraphicsTest(void) = default;
+    void checkSupport(Context &context) const;
+    TestInstance *createInstance(Context &context) const;
+};
+
+class CheckTimestampComputeAndGraphicsTestInstance : public vkt::TestInstance
+{
+public:
+    CheckTimestampComputeAndGraphicsTestInstance(Context &context) : vkt::TestInstance(context)
+    {
+    }
+    virtual ~CheckTimestampComputeAndGraphicsTestInstance(void) = default;
+    virtual tcu::TestStatus iterate(void);
+};
+
+void CheckTimestampComputeAndGraphicsTest::checkSupport(Context &context) const
+{
+    if (!context.getDeviceProperties().limits.timestampComputeAndGraphics)
+        TCU_THROW(NotSupportedError, "timestampComputeAndGraphics is not supported");
+}
+
+TestInstance *CheckTimestampComputeAndGraphicsTest::createInstance(Context &context) const
+{
+    return new CheckTimestampComputeAndGraphicsTestInstance(context);
+}
+
+tcu::TestStatus CheckTimestampComputeAndGraphicsTestInstance::iterate(void)
+{
+    const InstanceInterface &vki          = m_context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
+    const VkQueueFlags gcQueueFlags       = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
+
+    // When timestampComputeAndGraphics is true then all queues that advertise
+    // the VK_QUEUE_GRAPHICS_BIT or VK_QUEUE_COMPUTE_BIT in the queueFlags support
+    // VkQueueFamilyProperties::timestampValidBits of at least 36.
+
+    const auto queueProps = getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
+    for (const auto &qp : queueProps)
+    {
+        if ((qp.queueFlags & gcQueueFlags) && (qp.timestampValidBits < 36))
+            return tcu::TestStatus::fail("Fail");
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createTimestampTests(tcu::TestContext &testCtx, PipelineConstructionType pipelineConstructionType)
@@ -3636,6 +3694,11 @@ tcu::TestCaseGroup *createTimestampTests(tcu::TestContext &testCtx, PipelineCons
 
         // Check consistency between 32 and 64 bits.
         miscTests->addChild(new ConsistentQueryResultsTest(testCtx, "consistent_results"));
+
+        // Check if timestamps are supported by every queue family that supports either graphics or compute operations
+        if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+            miscTests->addChild(
+                new CheckTimestampComputeAndGraphicsTest(testCtx, "check_timestamp_compute_and_graphics"));
 
         timestampTests->addChild(miscTests.release());
     }

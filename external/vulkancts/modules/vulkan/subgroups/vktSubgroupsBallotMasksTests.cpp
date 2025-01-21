@@ -1277,17 +1277,8 @@ void supportedCheck(Context &context, CaseDefinition caseDef)
     {
         context.requireDeviceFunctionality("VK_EXT_subgroup_size_control");
 
-#ifndef CTS_USES_VULKANSC
-        const VkPhysicalDeviceSubgroupSizeControlFeatures &subgroupSizeControlFeatures =
-            context.getSubgroupSizeControlFeatures();
-        const VkPhysicalDeviceSubgroupSizeControlProperties &subgroupSizeControlProperties =
-            context.getSubgroupSizeControlProperties();
-#else
-        const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT &subgroupSizeControlFeatures =
-            context.getSubgroupSizeControlFeatures();
-        const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-            context.getSubgroupSizeControlProperties();
-#endif // CTS_USES_VULKANSC
+        const auto &subgroupSizeControlFeatures   = context.getSubgroupSizeControlFeatures();
+        const auto &subgroupSizeControlProperties = context.getSubgroupSizeControlProperties();
 
         if (subgroupSizeControlFeatures.subgroupSizeControl == false)
             TCU_THROW(NotSupportedError, "Device does not support varying subgroup sizes nor required subgroup size");
@@ -1350,20 +1341,14 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
 #ifndef CTS_USES_VULKANSC
     const bool isMesh = isAllMeshShadingStages(caseDef.shaderStage);
 #else
-    const bool isMesh = false;
+    const bool isMesh          = false;
 #endif // CTS_USES_VULKANSC
     DE_ASSERT(!(isCompute && isMesh));
 
     if (isCompute || isMesh)
     {
-#ifndef CTS_USES_VULKANSC
-        const VkPhysicalDeviceSubgroupSizeControlProperties &subgroupSizeControlProperties =
-            context.getSubgroupSizeControlProperties();
-#else
-        const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-            context.getSubgroupSizeControlProperties();
-#endif // CTS_USES_VULKANSC
-        TestLog &log = context.getTestContext().getLog();
+        const auto &subgroupSizeControlProperties = context.getSubgroupSizeControlProperties();
+        TestLog &log                              = context.getTestContext().getLog();
 
         if (caseDef.requiredSubgroupSize == false)
         {
@@ -1373,13 +1358,14 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
                 return subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr, checkComputeOrMesh);
         }
 
+        // gl_SubGroup*MaskARB are uint64_t, so we limit max subgroup size to 64 for this test
+        uint32_t maxSubgroupSize = min(subgroupSizeControlProperties.maxSubgroupSize, 64U);
+
         log << TestLog::Message << "Testing required subgroup size range ["
-            << subgroupSizeControlProperties.minSubgroupSize << ", " << subgroupSizeControlProperties.maxSubgroupSize
-            << "]" << TestLog::EndMessage;
+            << subgroupSizeControlProperties.minSubgroupSize << ", " << maxSubgroupSize << "]" << TestLog::EndMessage;
 
         // According to the spec, requiredSubgroupSize must be a power-of-two integer.
-        for (uint32_t size = subgroupSizeControlProperties.minSubgroupSize;
-             size <= subgroupSizeControlProperties.maxSubgroupSize; size *= 2)
+        for (uint32_t size = subgroupSizeControlProperties.minSubgroupSize; size <= maxSubgroupSize; size *= 2)
         {
             TestStatus result(QP_TEST_RESULT_INTERNAL_ERROR, "Internal Error");
 

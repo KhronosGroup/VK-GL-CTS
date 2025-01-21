@@ -548,7 +548,7 @@ tcu::TestStatus querySurfaceCapabilities2Test(Context &context, Type wsiType)
                 VK_CHECK(instHelper.vki.getPhysicalDeviceSurfaceCapabilities2KHR(physicalDevices[deviceNdx],
                                                                                  &surfaceInfo, &extCapabilities));
 
-                results.check(deMemoryEqual(&surfaceInfo, &infoCopy, sizeof(VkPhysicalDeviceSurfaceInfo2KHR)) == true,
+                results.check(memcmp(&surfaceInfo, &infoCopy, sizeof(VkPhysicalDeviceSurfaceInfo2KHR)) == 0,
                               "Driver wrote into input struct");
             }
 
@@ -607,7 +607,7 @@ tcu::TestStatus querySurfaceProtectedCapabilitiesTest(Context &context, Type wsi
                 VK_CHECK(instHelper.vki.getPhysicalDeviceSurfaceCapabilities2KHR(physicalDevices[deviceNdx],
                                                                                  &surfaceInfo, &extCapabilities));
 
-                results.check(deMemoryEqual(&surfaceInfo, &infoCopy, sizeof(VkPhysicalDeviceSurfaceInfo2KHR)) == true,
+                results.check(memcmp(&surfaceInfo, &infoCopy, sizeof(VkPhysicalDeviceSurfaceInfo2KHR)) == 0,
                               "Driver wrote into input struct");
             }
 

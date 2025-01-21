@@ -154,10 +154,7 @@ uint32_t binaryHash(const ProgramBinary *binary)
 
 bool binaryEqual(const ProgramBinary *a, const ProgramBinary *b)
 {
-    if (a->getSize() == b->getSize())
-        return deMemoryEqual(a->getBinary(), b->getBinary(), a->getSize());
-    else
-        return false;
+    return a->getSize() == b->getSize() && memcmp(a->getBinary(), b->getBinary(), a->getSize()) == 0;
 }
 
 std::vector<uint32_t> getSearchPath(const ProgramIdentifier &id)

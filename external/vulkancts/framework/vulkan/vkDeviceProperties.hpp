@@ -49,6 +49,7 @@ struct AllPropertiesBlobs
     VkPhysicalDeviceVulkan12Properties &vk12;
 #ifndef CTS_USES_VULKANSC
     VkPhysicalDeviceVulkan13Properties &vk13;
+    VkPhysicalDeviceVulkan14Properties &vk14;
 #endif // CTS_USES_VULKANSC
     // add blobs from future vulkan versions here
 };
@@ -69,7 +70,7 @@ using PropertyStructWrapperCreator = PropertyStructWrapperBase *(*)(void);
 struct PropertyStructCreationData
 {
     PropertyStructWrapperCreator creatorFunction;
-    const char *name;
+    const std::string name;
     uint32_t specVersion;
 };
 
@@ -122,6 +123,10 @@ public:
     {
         return m_vulkan13Properties;
     }
+    const VkPhysicalDeviceVulkan14Properties &getVulkan14Properties(void) const
+    {
+        return m_vulkan14Properties;
+    }
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
     const VkPhysicalDeviceVulkanSC10Properties &getVulkanSC10Properties(void) const
@@ -135,6 +140,8 @@ public:
     bool isDevicePropertyInitialized(VkStructureType sType) const;
 
 private:
+    static bool verifyPropertyAddCriteria(const PropertyStructCreationData &item,
+                                          const std::vector<std::string> &allDeviceExtensions);
     static void addToChainStructWrapper(void ***chainPNextPtr, PropertyStructWrapperBase *structWrapper);
 
 private:
@@ -144,6 +151,9 @@ private:
     VkPhysicalDeviceVulkan12Properties m_vulkan12Properties;
 #ifndef CTS_USES_VULKANSC
     VkPhysicalDeviceVulkan13Properties m_vulkan13Properties;
+    VkPhysicalDeviceVulkan14Properties m_vulkan14Properties;
+
+    std::vector<VkImageLayout> m_vulkan14CopyLayouts;
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
     VkPhysicalDeviceVulkanSC10Properties m_vulkanSC10Properties;

@@ -52,9 +52,7 @@ include_directories(../framework/xexml)
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX OR DE_OS_IS_ANDROID)
 	add_executable(executor tools/xeCommandLineExecutor.cpp)
 	target_link_libraries(executor xecore)
-endif ()
 
-if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX)
 	add_executable(testlog-to-csv tools/xeTestLogCompare.cpp)
 	target_link_libraries(testlog-to-csv xecore)
 

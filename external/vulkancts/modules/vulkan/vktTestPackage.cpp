@@ -112,6 +112,7 @@
 #include "vktFragmentShaderInterlockTests.hpp"
 #include "vktShaderClockTests.hpp"
 #include "vktShaderExpectAssumeTests.hpp"
+#include "vktShaderHelperInvocationsTests.hpp"
 #include "vktModifiersTests.hpp"
 #include "vktRayTracingTests.hpp"
 #include "vktRayQueryTests.hpp"
@@ -193,11 +194,11 @@ private:
     tcu::WaiverUtil m_waiverMechanism;
 
     TestInstance *m_instance; //!< Current test case instance
-    std::vector<std::string> m_testsForSubprocess;
     tcu::TestRunStatus m_status;
 
 #ifdef CTS_USES_VULKANSC
     int m_subprocessCount;
+    std::vector<std::string> m_testsForSubprocess;
 
     std::unique_ptr<vksc_server::ipc::Parent> m_parentIPC;
     std::vector<DetailedSubprocessTestCount> m_detailedSubprocessTestCount;
@@ -268,8 +269,10 @@ std::string trim(const std::string &original)
 }
 
 TestCaseExecutor::TestCaseExecutor(tcu::TestContext &testCtx)
-    : m_prebuiltBinRegistry(testCtx.getArchive(), "vulkan/prebuilt")
+    : m_progCollection()
+    , m_prebuiltBinRegistry(testCtx.getArchive(), "vulkan/prebuilt")
     , m_library(createLibrary(testCtx))
+    , m_context()
     , m_renderDoc(testCtx.getCommandLine().isRenderDocEnabled() ? MovePtr<vk::RenderDocUtil>(new vk::RenderDocUtil()) :
                                                                   MovePtr<vk::RenderDocUtil>(nullptr))
 #if defined CTS_USES_VULKANSC
@@ -277,7 +280,10 @@ TestCaseExecutor::TestCaseExecutor(tcu::TestContext &testCtx)
 #else
     , m_resourceInterface(new vk::ResourceInterfaceStandard(testCtx))
 #endif // CTS_USES_VULKANSC
+    , m_deviceProperties()
+    , m_waiverMechanism()
     , m_instance(nullptr)
+    , m_status()
 #if defined CTS_USES_VULKANSC
     , m_subprocessCount(0)
 #endif // CTS_USES_VULKANSC
@@ -416,7 +422,12 @@ TestCaseExecutor::~TestCaseExecutor(void)
 void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath)
 {
     if (m_waiverMechanism.isOnWaiverList(casePath))
+    {
+#ifdef CTS_USES_VULKANSC
+        m_testsForSubprocess.push_back(casePath);
+#endif
         throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
+    }
 
     TestCase *vktCase                           = dynamic_cast<TestCase *>(testCase);
     tcu::TestLog &log                           = m_context->getTestContext().getLog();
@@ -454,14 +465,11 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
             m_context->getTestContext().getLog().supressLogging(true);
         }
         m_subprocessCount = currentSubprocessCount;
-#endif // CTS_USES_VULKANSC
         m_testsForSubprocess.push_back(casePath);
+#endif // CTS_USES_VULKANSC
     }
 
     m_resourceInterface->initTestCase(casePath);
-
-    if (m_waiverMechanism.isOnWaiverList(casePath))
-        throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
 
     vktCase->checkSupport(*m_context);
 
@@ -633,7 +641,7 @@ void TestCaseExecutor::deinit(tcu::TestCase *testCase)
             {
                 m_context->getTestContext().getLog()
                     << TestLog::Message << "Fault recorded via vkGetFaultData: " << faultData[i] << TestLog::EndMessage;
-                if (Context::m_faultData[i].faultLevel != VK_FAULT_LEVEL_WARNING)
+                if (faultData[i].faultLevel != VK_FAULT_LEVEL_WARNING)
                     faultFail = true;
             }
         }
@@ -1130,6 +1138,7 @@ void createGlslTests(tcu::TestCaseGroup *glslTests)
     glslTests->addChild(sr::createLoopTests(testCtx));
     glslTests->addChild(sr::createMatrixTests(testCtx));
     glslTests->addChild(sr::createOperatorTests(testCtx));
+    glslTests->addChild(sr::createShaderPreciseTests(testCtx));
     glslTests->addChild(sr::createReturnTests(testCtx));
     glslTests->addChild(sr::createStructTests(testCtx));
     glslTests->addChild(sr::createSwitchTests(testCtx));
@@ -1142,6 +1151,7 @@ void createGlslTests(tcu::TestCaseGroup *glslTests)
     glslTests->addChild(shaderexecutor::createOpaqueTypeIndexingTests(testCtx));
     glslTests->addChild(shaderexecutor::createAtomicOperationTests(testCtx));
     glslTests->addChild(shaderexecutor::createShaderClockTests(testCtx));
+    glslTests->addChild(shaderexecutor::createShaderHelperInvocationsTests(testCtx));
 
 #ifndef CTS_USES_VULKANSC
     // Amber GLSL tests.

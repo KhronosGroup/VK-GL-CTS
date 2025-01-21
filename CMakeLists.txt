@@ -150,6 +150,10 @@ include_directories(external/renderdoc/src)
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
    # Some of the parsing / codec code is used from here.
    add_subdirectory(external/nvidia-video-samples EXCLUDE_FROM_ALL)
+   # Video encoder library
+   add_subdirectory(external/vulkan-video-samples EXCLUDE_FROM_ALL)
+   # YUV Video generator library
+   add_subdirectory(external/video_generator EXCLUDE_FROM_ALL)
 endif()
 
 include_directories(${PNG_INCLUDE_PATH})
@@ -401,6 +405,11 @@ add_subdirectory(external/vulkancts/framework/vulkan ${MAYBE_EXCLUDE_FROM_ALL})
 
 if (DE_COMPILER_IS_MSC)
 	add_compile_options(/bigobj) # Required by glsBuiltinPrecisionTests.cpp
+endif ()
+
+if (DE_COMPILER_IS_GCC)
+	# Should reduce memory usage by the GCC linker, which sometimes gets killed with -9
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-keep-memory")
 endif ()
 
 add_subdirectory(modules ${MAYBE_EXCLUDE_FROM_ALL})

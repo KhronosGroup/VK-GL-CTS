@@ -1510,6 +1510,14 @@ bool TextureSizeCase::testTextureSize(const TestSize &testSize)
         gl.texParameteri(textureTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         gl.texParameteri(textureTarget, GL_TEXTURE_BASE_LEVEL, testSize.lodBase);
 
+        if (m_textureSpec.format == GL_DEPTH_COMPONENT16 &&
+            std::string(m_samplerTypeStr).find("Shadow") != std::string::npos)
+        {
+            gl.texParameteri(textureTarget, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+            gl.texParameteri(textureTarget, GL_TEXTURE_COMPARE_FUNC,
+                             glu::getGLCompareFunc(m_textureSpec.sampler.compare));
+        }
+
         // set up texture
 
         switch (m_textureSpec.type)

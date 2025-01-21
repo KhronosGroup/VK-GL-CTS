@@ -1014,6 +1014,15 @@ int32_t NvPerFrameDecodeImageSet::init(DeviceContext &vkDevCtx, const VkVideoPro
     if (useImageViewArray)
     {
         useImageArray = true;
+
+        VkImageFormatProperties imgaeFormatProperties = getPhysicalDeviceImageFormatProperties(
+            vkDevCtx.getInstanceInterface(), vkDevCtx.phys, dpbImageFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
+            dpbImageUsage, resourcesWithoutProfiles ? VK_IMAGE_CREATE_VIDEO_PROFILE_INDEPENDENT_BIT_KHR : 0);
+
+        if (imgaeFormatProperties.maxArrayLayers < numImages)
+        {
+            TCU_THROW(NotSupportedError, "Requested number of array layers is unsupported");
+        }
     }
 
     m_videoProfile.InitFromProfile(pDecodeProfile);

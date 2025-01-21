@@ -145,22 +145,26 @@ static void createTests(tcu::TestCaseGroup *g)
 {
     static const std::vector<TestInfo> tests = {
         {"fs_clamp",
-         {"VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics", "Features.depthClamp"},
+         {"DepthClampZeroOneFeatures.depthClampZeroOne", "Features.fragmentStoresAndAtomics", "Features.depthClamp"},
          false},
-        {"out_of_range", {"VK_EXT_depth_clamp_zero_one"}, false},
+        {"out_of_range", {"DepthClampZeroOneFeatures.depthClampZeroOne"}, false},
         {"ez_fs_clamp",
-         {"VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics", "Features.depthClamp"},
+         {"DepthClampZeroOneFeatures.depthClampZeroOne", "Features.fragmentStoresAndAtomics", "Features.depthClamp"},
          false},
         {"bias_fs_clamp",
-         {"VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics", "Features.depthClamp"},
+         {"DepthClampZeroOneFeatures.depthClampZeroOne", "Features.fragmentStoresAndAtomics", "Features.depthClamp"},
          false},
-        {"bias_outside_range", {"VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics"}, false},
-        {"bias_outside_range_fs_clamp", {"VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics"}, false},
+        {"bias_outside_range",
+         {"DepthClampZeroOneFeatures.depthClampZeroOne", "Features.fragmentStoresAndAtomics"},
+         false},
+        {"bias_outside_range_fs_clamp",
+         {"DepthClampZeroOneFeatures.depthClampZeroOne", "Features.fragmentStoresAndAtomics"},
+         false},
 
         // Rerun any tests that will get different results with VK_EXT_depth_range_unrestricted
-        {"out_of_range_unrestricted", {"VK_EXT_depth_clamp_zero_one"}, true},
+        {"out_of_range_unrestricted", {"DepthClampZeroOneFeatures.depthClampZeroOne"}, true},
         {"bias_outside_range_fs_clamp_unrestricted",
-         {"VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics"},
+         {"DepthClampZeroOneFeatures.depthClampZeroOne", "Features.fragmentStoresAndAtomics"},
          true},
     };
 

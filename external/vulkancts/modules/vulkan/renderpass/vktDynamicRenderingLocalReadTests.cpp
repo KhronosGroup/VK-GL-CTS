@@ -46,9 +46,7 @@
 #include <iostream>
 #include <algorithm>
 
-namespace vkt
-{
-namespace renderpass
+namespace vkt::renderpass
 {
 namespace
 {
@@ -214,24 +212,31 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context &context, TestTyp
             physicalDevice, m_dsFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, 0,
             &imageFormatProperties))
+    {
         m_dsFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
+    }
+
+    // by default all test read from depth attachment and some from stencil
+    // but after promoting DRLR to vk1.4 reading depth/stencil is guarded by property
+    bool readDepthStencil = (context.getUsedApiVersion() < VK_MAKE_API_VERSION(0, 1, 4, 0)) ||
+                            context.getDeviceVulkan14Properties().dynamicRenderingLocalReadDepthStencilAttachments;
 
     // setup test configuration - all test cases use same test instance code but with diferent parameters
     switch (m_testType)
     {
     case TestType::MAX_INPUT_ATTACHMENTS:
     {
-        m_colorAttachmentCount = deMinu32(properties.limits.maxColorAttachments,
-                                          properties.limits.maxPerStageDescriptorInputAttachments - 2u);
+        uint32_t dsAttachmentsCount = 2u * readDepthStencil;
+        m_colorAttachmentCount      = deMinu32(properties.limits.maxColorAttachments,
+                                               properties.limits.maxPerStageDescriptorInputAttachments - dsAttachmentsCount);
 
         // if this assert is trigered then shader for number m_colorAttachmentCount+2 was not prepared;
         // to fix this just add value of m_colorAttachmentCount+2 to the inputAttachmentsPossibleValues array on top of this file
         DE_ASSERT(std::find(std::begin(inputAttachmentsPossibleValues), std::end(inputAttachmentsPossibleValues),
-                            m_colorAttachmentCount + 2) != std::end(inputAttachmentsPossibleValues));
+                            m_colorAttachmentCount + dsAttachmentsCount) != std::end(inputAttachmentsPossibleValues));
 
         m_writeFragName += "_" + std::to_string(m_colorAttachmentCount);
-        m_readFragName +=
-            "_" + std::to_string(m_colorAttachmentCount + 2u); // +2 because depth and stencil are read too
+        m_readFragName += "_" + std::to_string(m_colorAttachmentCount + dsAttachmentsCount);
         m_depthInputAttachmentIndex   = m_colorAttachmentCount;
         m_stencilInputAttachmentIndex = m_colorAttachmentCount + 1;
 
@@ -246,13 +251,13 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context &context, TestTyp
     }
     case TestType::MAX_ATTACHMENTS_REMAPPED_REPEATEDLY:
     {
-        m_colorAttachmentCount = deMinu32(properties.limits.maxColorAttachments,
-                                          properties.limits.maxPerStageDescriptorInputAttachments - 2u);
-        m_inputDrawsCount      = m_colorAttachmentCount / 2u;
-        m_colorAttachmentCount = m_inputDrawsCount * 2u;
-        m_outputDrawsCount     = 3;
-        m_readFragName +=
-            "_" + std::to_string(m_colorAttachmentCount + 2u); // +2 because depth and stencil are read too
+        uint32_t dsAttachmentsCount = 2u * readDepthStencil;
+        m_colorAttachmentCount      = deMinu32(properties.limits.maxColorAttachments,
+                                               properties.limits.maxPerStageDescriptorInputAttachments - dsAttachmentsCount);
+        m_inputDrawsCount           = m_colorAttachmentCount / 2u;
+        m_colorAttachmentCount      = m_inputDrawsCount * 2u;
+        m_outputDrawsCount          = 3;
+        m_readFragName += "_" + std::to_string(m_colorAttachmentCount + dsAttachmentsCount);
         m_depthInputAttachmentIndex   = m_colorAttachmentCount;
         m_stencilInputAttachmentIndex = m_colorAttachmentCount + 1;
 
@@ -377,6 +382,19 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context &context, TestTyp
         break;
     }
 
+    // overwrite some of configuration for vk1.4 when dynamicRenderingLocalReadDepthStencilAttachments
+    // property is not available to allow some test to be executed without depth/stencil attachment
+    if (!readDepthStencil)
+    {
+        if (m_useDepthInReadFrag || m_useStencilInReadFrag)
+            m_readFragName += "_no_ds";
+
+        m_useDepthInReadFrag          = false;
+        m_useStencilInReadFrag        = false;
+        m_depthInputAttachmentIndex   = VK_ATTACHMENT_UNUSED;
+        m_stencilInputAttachmentIndex = VK_ATTACHMENT_UNUSED;
+    }
+
     CalculateExpectedValues();
 }
 
@@ -466,7 +484,8 @@ void BasicLocalReadTestInstance::CalculateExpectedValues()
         }
         else
         {
-            m_expectedValues[outputDraw] = depthRead + ((m_useStencilInReadFrag) ? (stencilRead * 1000) : 0);
+            m_expectedValues[outputDraw] =
+                (m_useDepthInReadFrag * depthRead) + (m_useStencilInReadFrag * stencilRead * 1000);
         }
 
         // each output draw uses all attachments but remaped differently
@@ -526,6 +545,10 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     VkImageMemoryBarrier dsImageBarrier =
         makeImageMemoryBarrier(0, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
                                VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR, VK_NULL_HANDLE, dsSRR);
+    VkMemoryBarrier memoryBarrier =
+        makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                          VK_ACCESS_INPUT_ATTACHMENT_READ_BIT);
+
     VkRenderingAttachmentInfo depthStencilAttachment{
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO, // VkStructureType sType;
         nullptr,                                     // const void* pNext;
@@ -674,9 +697,9 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     Move<VkPipelineLayout> writePipelineLayout = makePipelineLayout(vk, device, 0, nullptr, 1u, &pushConstantRange);
     Move<VkPipelineLayout> readPipelineLayout  = makePipelineLayout(vk, device, descriptorSetLayouts);
     auto &bc                                   = m_context.getBinaryCollection();
-    Move<VkShaderModule> vertShaderModule      = createShaderModule(vk, device, bc.get("vert"), 0);
-    Move<VkShaderModule> writeFragShaderModule = createShaderModule(vk, device, bc.get(m_writeFragName), 0);
-    Move<VkShaderModule> readFragShaderModule  = createShaderModule(vk, device, bc.get(m_readFragName), 0);
+    Move<VkShaderModule> vertShaderModule      = createShaderModule(vk, device, bc.get("vert"));
+    Move<VkShaderModule> writeFragShaderModule = createShaderModule(vk, device, bc.get(m_writeFragName));
+    Move<VkShaderModule> readFragShaderModule  = createShaderModule(vk, device, bc.get(m_readFragName));
 
     // define empty VertexInputState, full screen quad will be generated in vertex shader
     const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
@@ -806,10 +829,8 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
             0, &vertexInputState, nullptr, nullptr, nullptr, &colorBlendStateCreateInfo, nullptr, &renderingCreateInfo);
     }
 
-    Move<VkCommandPool> commandPool =
-        createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
-    Move<VkCommandBuffer> commandBuffer =
-        allocateCommandBuffer(vk, device, *commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    auto commandPool = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
+    auto commandBuffer        = allocateCommandBuffer(vk, device, *commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
     VkCommandBuffer cmdBuffer = *commandBuffer;
 
     VkRenderingInfo renderingInfo      = initVulkanStructure();
@@ -842,7 +863,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
         vk.cmdPushConstants(cmdBuffer, *writePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 4, &pipelineIndex);
 
         if (m_useMapping)
-            vk.cmdSetRenderingAttachmentLocationsKHR(cmdBuffer, &renderingAttachmentLocationInfo);
+            vk.cmdSetRenderingAttachmentLocations(cmdBuffer, &renderingAttachmentLocationInfo);
         if (useColorWriteEnable)
             vk.cmdSetColorWriteEnableEXT(cmdBuffer, 4u, m_colorWriteEnables);
         if (useUseExtendedDynamicState3)
@@ -851,23 +872,10 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
         vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
     }
 
-    // reuse existing barrier structures to finish rendering before next subpass
-    dsImageBarrier.oldLayout     = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
-    dsImageBarrier.newLayout     = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
-    dsImageBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    dsImageBarrier.dstAccessMask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
-    for (auto &barrier : colorImageBarriers)
-    {
-        barrier.oldLayout     = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
-        barrier.newLayout     = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
-        barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        barrier.dstAccessMask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
-    }
-    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr,
-                          (uint32_t)colorImageBarriers.size(), colorImageBarriers.data());
-    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                          VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1u, &dsImageBarrier);
+    // finish rendering before next subpass
+    vk.cmdPipelineBarrier(
+        cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 1u, &memoryBarrier, 0, 0, 0, 0);
 
     // draw using read pipelines
     for (uint32_t pipelineIndex = 0; pipelineIndex < m_outputDrawsCount; ++pipelineIndex)
@@ -881,8 +889,8 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
         vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *readPipelineLayout, 0u, 2u,
                                  descriptorSets, 0u, nullptr);
 
-        if (m_useMapping)
-            vk.cmdSetRenderingInputAttachmentIndicesKHR(cmdBuffer, &renderingInputAttachmentIndexInfo);
+        if (m_useMapping && m_colorAttachmentInputIndices[pipelineIndex].size() > 0)
+            vk.cmdSetRenderingInputAttachmentIndices(cmdBuffer, &renderingInputAttachmentIndexInfo);
 
         vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
     }
@@ -1075,11 +1083,9 @@ tcu::TestStatus MappingWithBlendStateTestInstance::iterate()
             new BufferWithMemory(vk, device, memAlloc, outputBufferInfo, MemoryRequirement::HostVisible));
     }
 
-    Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device, VK_NULL_HANDLE);
-    Move<VkShaderModule> vertShaderModule =
-        createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0);
-    Move<VkShaderModule> fragShaderModule =
-        createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0);
+    auto pipelineLayout   = makePipelineLayout(vk, device, VK_NULL_HANDLE);
+    auto vertShaderModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"));
+    auto fragShaderModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"));
 
     // define empty VertexInputState, full screen quad will be generated in vertex shader
     const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
@@ -1128,7 +1134,7 @@ tcu::TestStatus MappingWithBlendStateTestInstance::iterate()
     vk.cmdBeginRendering(cmdBuffer, &renderingInfo);
 
     // remaping should affect to which attachments shader writes but not blend state
-    vk.cmdSetRenderingAttachmentLocationsKHR(cmdBuffer, &renderingAttachmentLocations);
+    vk.cmdSetRenderingAttachmentLocations(cmdBuffer, &renderingAttachmentLocations);
 
     vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
     vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
@@ -1592,19 +1598,19 @@ tcu::TestStatus MappingWithShaderObjectTestInstance::iterate()
     vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
     pipelineWrapper.bind(*cmdBuffer);
 
-    vk.cmdSetRenderingAttachmentLocationsKHR(*cmdBuffer, &renderingAttachmentLocations);
+    vk.cmdSetRenderingAttachmentLocations(*cmdBuffer, &renderingAttachmentLocations);
     vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
 
     VkRect2D localScissor(makeRect2D(2 * drawWidth, 0, drawWidth, imageSize));
     renderingAttachmentLocations.pColorAttachmentLocations = colorAttachmentLocations[1];
     vk.cmdSetScissorWithCount(*cmdBuffer, 1u, &localScissor);
-    vk.cmdSetRenderingAttachmentLocationsKHR(*cmdBuffer, &renderingAttachmentLocations);
+    vk.cmdSetRenderingAttachmentLocations(*cmdBuffer, &renderingAttachmentLocations);
     vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
 
     localScissor.offset.x += drawWidth;
     renderingAttachmentLocations.pColorAttachmentLocations = colorAttachmentLocations[2];
     vk.cmdSetScissorWithCount(*cmdBuffer, 1u, &localScissor);
-    vk.cmdSetRenderingAttachmentLocationsKHR(*cmdBuffer, &renderingAttachmentLocations);
+    vk.cmdSetRenderingAttachmentLocations(*cmdBuffer, &renderingAttachmentLocations);
     vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
 
     vk.cmdEndRendering(*cmdBuffer);
@@ -1890,6 +1896,16 @@ void LocalReadTestCase::checkSupport(Context &context) const
         if (!context.getExtendedDynamicState3FeaturesEXT().extendedDynamicState3RasterizationSamples)
             TCU_THROW(NotSupportedError, "extendedDynamicState3RasterizationSamples not supported");
     }
+
+    if (context.getUsedApiVersion() > VK_MAKE_API_VERSION(0, 1, 3, 0) &&
+        !context.getDeviceVulkan14Properties().dynamicRenderingLocalReadDepthStencilAttachments)
+    {
+        if ((m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX) ||
+            (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX) ||
+            (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX) ||
+            (m_testType == TestType::DEPTH_MAPPING_STENCIL_NOT))
+            TCU_THROW(NotSupportedError, "dynamicRenderingLocalReadDepthStencilAttachments not supported");
+    }
 }
 
 void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
@@ -1927,17 +1943,18 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
     };
 
     // helper lambda that generates fragment shader that reads from specified number of input attachments
-    auto generateReadFragSource = [](uint32_t inputAttachmentCount, bool useStencil = true)
+    auto generateReadFragSource = [](uint32_t inputAttachmentCount, bool useDepth = true, bool useStencil = true)
     {
-        uint32_t colorInputAttachmentCount = inputAttachmentCount - 1u - useStencil;
+        uint32_t colorInputAttachmentCount = inputAttachmentCount - useDepth - useStencil;
         std::stringstream fragSrc;
         fragSrc << "#version 450\n";
         for (uint32_t i = 0; i < colorInputAttachmentCount; ++i)
             fragSrc << "layout(input_attachment_index=" << i << ", binding=" << i << ") uniform usubpassInput inColor"
                     << i << ";\n";
 
-        fragSrc << "layout(input_attachment_index = " << colorInputAttachmentCount
-                << ", binding = " << colorInputAttachmentCount << ") uniform subpassInput inDepth;\n";
+        if (useDepth)
+            fragSrc << "layout(input_attachment_index = " << colorInputAttachmentCount
+                    << ", binding = " << colorInputAttachmentCount << ") uniform subpassInput inDepth;\n";
         if (useStencil)
             fragSrc << "layout(input_attachment_index = " << colorInputAttachmentCount + 1
                     << ", binding = " << colorInputAttachmentCount + 1 << ") uniform usubpassInput inStencil;\n";
@@ -1949,9 +1966,12 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
                    "  uint result = 0;\n";
         for (uint32_t i = 0; i < colorInputAttachmentCount; ++i)
             fragSrc << "  result = result + " << (i + 1) << " * subpassLoad(inColor" << i << ").x; \n";
-        fragSrc << "  result = result + uint(subpassLoad(inDepth).x * 1000);\n"; // 0.6*1000
+
+        if (useDepth)
+            fragSrc << "  result = result + uint(subpassLoad(inDepth).x * 1000);\n"; // 0.6*1000
         if (useStencil)
             fragSrc << "  result = result + uint(subpassLoad(inStencil).x * 1000);\n"; // 1 * 1000
+
         fragSrc << "  const uvec2 i = uvec2(trunc(gl_FragCoord.xy));\n"
                    "  outBuffer.v[i.x+i.y*16] = result;\n"
                    "}\n";
@@ -1979,6 +1999,7 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
     {
         glslSources.add("frag0") << glu::FragmentSource(generateWriteFragSource(4));
         glslSources.add("frag1") << glu::FragmentSource(generateReadFragSource(6));
+        glslSources.add("frag1_no_ds") << glu::FragmentSource(generateReadFragSource(4, false, false));
     }
     else if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX)
     {
@@ -2222,12 +2243,17 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
                                                           "OpReturn\n"
                                                           "OpFunctionEnd\n";
     }
-    else if ((m_testType == TestType::DEPTH_MAPPING_STENCIL_NOT) ||
-             (m_testType == TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE) ||
+    else if (m_testType == TestType::DEPTH_MAPPING_STENCIL_NOT)
+    {
+        glslSources.add("frag0") << glu::FragmentSource(generateWriteFragSource(4));
+        glslSources.add("frag1") << glu::FragmentSource(generateReadFragSource(5, true, false));
+    }
+    else if ((m_testType == TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE) ||
              (m_testType == TestType::INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3))
     {
         glslSources.add("frag0") << glu::FragmentSource(generateWriteFragSource(4));
-        glslSources.add("frag1") << glu::FragmentSource(generateReadFragSource(5, false));
+        glslSources.add("frag1") << glu::FragmentSource(generateReadFragSource(5, true, false));
+        glslSources.add("frag1_no_ds") << glu::FragmentSource(generateReadFragSource(4, false, false));
     }
     else if (m_testType == TestType::INPUT_ATTACHMENTS_WITHOUT_MAPPING)
     {
@@ -2252,106 +2278,116 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
         //    "}\n");
         //glslSources.add("frag1") << glu::FragmentSource(fragSrc);
 
-        programCollection.spirvAsmSources.add("frag1") << "OpCapability Shader\n"
-                                                          "OpCapability InputAttachment\n"
-                                                          "%1 = OpExtInstImport \"GLSL.std.450\"\n"
-                                                          "OpMemoryModel Logical GLSL450\n"
-                                                          "OpEntryPoint Fragment %4 \"main\" %13\n"
-                                                          "OpExecutionMode %4 OriginUpperLeft\n"
-                                                          "OpDecorate %13 BuiltIn FragCoord\n"
-                                                          "OpDecorate %23 DescriptorSet 0\n"
-                                                          "OpDecorate %23 Binding 0\n"
-                                                          "OpDecorate %23 InputAttachmentIndex 0\n"
-                                                          "OpDecorate %34 DescriptorSet 0\n"
-                                                          "OpDecorate %34 Binding 1\n"
-                                                          "OpDecorate %34 InputAttachmentIndex 1\n"
-                                                          "OpDecorate %41 DescriptorSet 0\n"
-                                                          "OpDecorate %41 Binding 2\n"
-                                                          "OpDecorate %41 InputAttachmentIndex 2\n"
-                                                          "OpDecorate %47 ArrayStride 4\n"
-                                                          "OpMemberDecorate %48 0 NonReadable\n"
-                                                          "OpMemberDecorate %48 0 Offset 0\n"
-                                                          "OpDecorate %48 BufferBlock\n"
-                                                          "OpDecorate %50 DescriptorSet 1\n"
-                                                          "OpDecorate %50 Binding 0\n"
-                                                          "OpDecorate %62 DescriptorSet 0\n"
-                                                          "OpDecorate %62 Binding 3\n"
-                                                          //"OpDecorate %62 InputAttachmentIndex 3\n"
-                                                          "%2 = OpTypeVoid\n"
-                                                          "%3 = OpTypeFunction %2\n"
-                                                          "%6 = OpTypeInt 32 0\n"
-                                                          "%7 = OpTypeVector %6 2\n"
-                                                          "%8 = OpTypePointer Function %7\n"
-                                                          "%10 = OpTypeFloat 32\n"
-                                                          "%11 = OpTypeVector %10 4\n"
-                                                          "%12 = OpTypePointer Input %11\n"
-                                                          "%13 = OpVariable %12 Input\n"
-                                                          "%14 = OpTypeVector %10 2\n"
-                                                          "%19 = OpTypePointer Function %6\n"
-                                                          "%21 = OpTypeImage %6 SubpassData 0 0 0 2 Unknown\n"
-                                                          "%22 = OpTypePointer UniformConstant %21\n"
-                                                          "%23 = OpVariable %22 UniformConstant\n"
-                                                          "%25 = OpTypeInt 32 1\n"
-                                                          "%26 = OpConstant %25 0\n"
-                                                          "%27 = OpTypeVector %25 2\n"
-                                                          "%28 = OpConstantComposite %27 %26 %26\n"
-                                                          "%29 = OpTypeVector %6 4\n"
-                                                          "%31 = OpConstant %6 0\n"
-                                                          "%33 = OpConstant %6 2\n"
-                                                          "%34 = OpVariable %22 UniformConstant\n"
-                                                          "%40 = OpConstant %6 3\n"
-                                                          "%41 = OpVariable %22 UniformConstant\n"
-                                                          "%47 = OpTypeRuntimeArray %6\n"
-                                                          "%48 = OpTypeStruct %47\n"
-                                                          "%49 = OpTypePointer Uniform %48\n"
-                                                          "%50 = OpVariable %49 Uniform\n"
-                                                          "%53 = OpConstant %6 1\n"
-                                                          "%56 = OpConstant %6 16\n"
-                                                          "%60 = OpTypeImage %10 SubpassData 0 0 0 2 Unknown\n"
-                                                          "%61 = OpTypePointer UniformConstant %60\n"
-                                                          "%62 = OpVariable %61 UniformConstant\n"
-                                                          "%66 = OpConstant %10 1000\n"
-                                                          "%70 = OpTypePointer Uniform %6\n"
-                                                          "%4 = OpFunction %2 None %3\n"
-                                                          "%5 = OpLabel\n"
-                                                          "%9 = OpVariable %8 Function\n"
-                                                          "%20 = OpVariable %19 Function\n"
-                                                          "%15 = OpLoad %11 %13\n"
-                                                          "%16 = OpVectorShuffle %14 %15 %15 0 1\n"
-                                                          "%17 = OpExtInst %14 %1 Trunc %16\n"
-                                                          "%18 = OpConvertFToU %7 %17\n"
-                                                          "OpStore %9 %18\n"
-                                                          "%24 = OpLoad %21 %23\n"
-                                                          "%30 = OpImageRead %29 %24 %28\n"
-                                                          "%32 = OpCompositeExtract %6 %30 0\n"
-                                                          "%35 = OpLoad %21 %34\n"
-                                                          "%36 = OpImageRead %29 %35 %28\n"
-                                                          "%37 = OpCompositeExtract %6 %36 0\n"
-                                                          "%38 = OpIMul %6 %33 %37\n"
-                                                          "%39 = OpIAdd %6 %32 %38\n"
-                                                          "%42 = OpLoad %21 %41\n"
-                                                          "%43 = OpImageRead %29 %42 %28\n"
-                                                          "%44 = OpCompositeExtract %6 %43 0\n"
-                                                          "%45 = OpIMul %6 %40 %44\n"
-                                                          "%46 = OpIAdd %6 %39 %45\n"
-                                                          "OpStore %20 %46\n"
-                                                          "%51 = OpAccessChain %19 %9 %31\n"
-                                                          "%52 = OpLoad %6 %51\n"
-                                                          "%54 = OpAccessChain %19 %9 %53\n"
-                                                          "%55 = OpLoad %6 %54\n"
-                                                          "%57 = OpIMul %6 %55 %56\n"
-                                                          "%58 = OpIAdd %6 %52 %57\n"
-                                                          "%59 = OpLoad %6 %20\n"
-                                                          "%63 = OpLoad %60 %62\n"
-                                                          "%64 = OpImageRead %11 %63 %28\n"
-                                                          "%65 = OpCompositeExtract %10 %64 0\n"
-                                                          "%67 = OpFMul %10 %65 %66\n"
-                                                          "%68 = OpConvertFToU %6 %67\n"
-                                                          "%69 = OpIAdd %6 %59 %68\n"
-                                                          "%71 = OpAccessChain %70 %50 %26 %58\n"
-                                                          "OpStore %71 %69\n"
-                                                          "OpReturn\n"
-                                                          "OpFunctionEnd\n";
+        tcu::StringTemplate fragTemplate(R"(OpCapability Shader
+                                            OpCapability InputAttachment
+                                           %1 = OpExtInstImport "GLSL.std.450"
+                                           OpMemoryModel Logical GLSL450
+                                           OpEntryPoint Fragment %4 "main" %13
+                                           OpExecutionMode %4 OriginUpperLeft
+                                           OpDecorate %13 BuiltIn FragCoord
+                                           OpDecorate %23 DescriptorSet 0
+                                           OpDecorate %23 Binding 0
+                                           OpDecorate %23 InputAttachmentIndex 0
+                                           OpDecorate %34 DescriptorSet 0
+                                           OpDecorate %34 Binding 1
+                                           OpDecorate %34 InputAttachmentIndex 1
+                                           OpDecorate %41 DescriptorSet 0
+                                           OpDecorate %41 Binding 2
+                                           OpDecorate %41 InputAttachmentIndex 2
+                                           OpDecorate %47 ArrayStride 4
+                                           OpMemberDecorate %48 0 NonReadable
+                                           OpMemberDecorate %48 0 Offset 0
+                                           OpDecorate %48 BufferBlock
+                                           OpDecorate %50 DescriptorSet 1
+                                           OpDecorate %50 Binding 0
+                                           ${DECORATIONS:default=}
+                                           %2 = OpTypeVoid
+                                           %3 = OpTypeFunction %2
+                                           %6 = OpTypeInt 32 0
+                                           %7 = OpTypeVector %6 2
+                                           %8 = OpTypePointer Function %7
+                                           %10 = OpTypeFloat 32
+                                           %11 = OpTypeVector %10 4
+                                           %12 = OpTypePointer Input %11
+                                           %13 = OpVariable %12 Input
+                                           %14 = OpTypeVector %10 2
+                                           %19 = OpTypePointer Function %6
+                                           %21 = OpTypeImage %6 SubpassData 0 0 0 2 Unknown
+                                           %22 = OpTypePointer UniformConstant %21
+                                           %23 = OpVariable %22 UniformConstant
+                                           %25 = OpTypeInt 32 1
+                                           %26 = OpConstant %25 0
+                                           %27 = OpTypeVector %25 2
+                                           %28 = OpConstantComposite %27 %26 %26
+                                           %29 = OpTypeVector %6 4
+                                           %31 = OpConstant %6 0
+                                           %33 = OpConstant %6 2
+                                           %34 = OpVariable %22 UniformConstant
+                                           %40 = OpConstant %6 3
+                                           %41 = OpVariable %22 UniformConstant
+                                           %47 = OpTypeRuntimeArray %6
+                                           %48 = OpTypeStruct %47
+                                           %49 = OpTypePointer Uniform %48
+                                           %50 = OpVariable %49 Uniform
+                                           %53 = OpConstant %6 1
+                                           %56 = OpConstant %6 16
+                                           ${DECLARATIONS:default=}
+                                           %70 = OpTypePointer Uniform %6
+                                           %4 = OpFunction %2 None %3
+                                           %5 = OpLabel
+                                           %9 = OpVariable %8 Function
+                                           %20 = OpVariable %19 Function
+                                           %15 = OpLoad %11 %13
+                                           %16 = OpVectorShuffle %14 %15 %15 0 1
+                                           %17 = OpExtInst %14 %1 Trunc %16
+                                           %18 = OpConvertFToU %7 %17
+                                           OpStore %9 %18
+                                           %24 = OpLoad %21 %23
+                                           %30 = OpImageRead %29 %24 %28
+                                           %32 = OpCompositeExtract %6 %30 0
+                                           %35 = OpLoad %21 %34
+                                           %36 = OpImageRead %29 %35 %28
+                                           %37 = OpCompositeExtract %6 %36 0
+                                           %38 = OpIMul %6 %33 %37
+                                           %39 = OpIAdd %6 %32 %38
+                                           %42 = OpLoad %21 %41
+                                           %43 = OpImageRead %29 %42 %28
+                                           %44 = OpCompositeExtract %6 %43 0
+                                           %45 = OpIMul %6 %40 %44
+                                           %46 = OpIAdd %6 %39 %45
+                                           OpStore %20 %46
+                                           %51 = OpAccessChain %19 %9 %31
+                                           %52 = OpLoad %6 %51
+                                           %54 = OpAccessChain %19 %9 %53
+                                           %55 = OpLoad %6 %54
+                                           %57 = OpIMul %6 %55 %56
+                                           %58 = OpIAdd %6 %52 %57
+                                           %59 = OpLoad %6 %20
+                                           ${OPERATIONS:default=}
+                                           %71 = OpAccessChain %70 %50 %26 %58
+                                           OpStore %71 ${RESULT_ID:default=%59}
+                                           OpReturn
+                                           OpFunctionEnd)");
+
+        using SpecMap = std::map<std::string, std::string>;
+        const SpecMap specializationMap{{"DECORATIONS", "OpDecorate %62 DescriptorSet 0\n"
+                                                        "OpDecorate %62 Binding 3\n"},
+                                        {"DECLARATIONS", "%60 = OpTypeImage %10 SubpassData 0 0 0 2 Unknown\n"
+                                                         "%61 = OpTypePointer UniformConstant %60\n"
+                                                         "%62 = OpVariable %61 UniformConstant\n"
+                                                         "%66 = OpConstant %10 1000\n"},
+                                        {"OPERATIONS", "%63 = OpLoad %60 %62\n"
+                                                       "%64 = OpImageRead %11 %63 %28\n"
+                                                       "%65 = OpCompositeExtract %10 %64 0\n"
+                                                       "%67 = OpFMul %10 %65 %66\n"
+                                                       "%68 = OpConvertFToU %6 %67\n"
+                                                       "%69 = OpIAdd %6 %59 %68\n"},
+                                        {"RESULT_ID", "%69"}};
+        const SpecMap noDepthSpecializationMap; // use default values
+
+        auto &spirv = programCollection.spirvAsmSources;
+        spirv.add("frag1") << fragTemplate.specialize(specializationMap);
+        spirv.add("frag1_no_ds") << fragTemplate.specialize(noDepthSpecializationMap);
     }
     else if ((m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX) ||
              (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX))
@@ -2444,8 +2480,12 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
         // generate fragment shaders for all posible number of input attachments;
         // during test execution proper shader will be picked
         for (uint32_t inputAttachmentCount : inputAttachmentsPossibleValues)
-            glslSources.add(std::string("frag1_") + std::to_string(inputAttachmentCount))
-                << glu::FragmentSource(generateReadFragSource(inputAttachmentCount));
+        {
+            std::string name = std::string("frag1_") + std::to_string(inputAttachmentCount);
+            glslSources.add(name) << glu::FragmentSource(generateReadFragSource(inputAttachmentCount));
+            glslSources.add(name + "_no_ds")
+                << glu::FragmentSource(generateReadFragSource(inputAttachmentCount, false, false));
+        }
     }
 }
 
@@ -2501,5 +2541,4 @@ tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testC
     return mainGroup.release();
 }
 
-} // namespace renderpass
-} // namespace vkt
+} // namespace vkt::renderpass

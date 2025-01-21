@@ -38,7 +38,7 @@ namespace vk
 struct FeatureDesc
 {
     VkStructureType sType;
-    const char *name;
+    const std::string name;
     const uint32_t specVersion;
 };
 
@@ -49,6 +49,7 @@ struct AllFeaturesBlobs
     VkPhysicalDeviceVulkan12Features &vk12;
 #ifndef CTS_USES_VULKANSC
     VkPhysicalDeviceVulkan13Features &vk13;
+    VkPhysicalDeviceVulkan14Features &vk14;
 #endif // CTS_USES_VULKANSC
     // add blobs from future vulkan versions here
 };
@@ -57,9 +58,7 @@ struct AllFeaturesBlobs
 class FeatureStructWrapperBase
 {
 public:
-    virtual ~FeatureStructWrapperBase(void)
-    {
-    }
+    virtual ~FeatureStructWrapperBase(void)                                          = default;
     virtual void initializeFeatureFromBlob(const AllFeaturesBlobs &allFeaturesBlobs) = 0;
     virtual FeatureDesc getFeatureDesc(void) const                                   = 0;
     virtual void **getFeatureTypeNext(void)                                          = 0;
@@ -70,7 +69,7 @@ using FeatureStructWrapperCreator = FeatureStructWrapperBase *(*)(void);
 struct FeatureStructCreationData
 {
     FeatureStructWrapperCreator creatorFunction;
-    const char *name;
+    const std::string name;
     uint32_t specVersion;
 };
 
@@ -123,6 +122,10 @@ public:
     {
         return m_vulkan13Features;
     }
+    const VkPhysicalDeviceVulkan14Features &getVulkan14Features(void) const
+    {
+        return m_vulkan14Features;
+    }
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
     const VkPhysicalDeviceVulkanSC10Features &getVulkanSC10Features(void) const
@@ -137,6 +140,7 @@ public:
 
 private:
     static bool verifyFeatureAddCriteria(const FeatureStructCreationData &item,
+                                         const std::vector<std::string> &allDeviceExtensions,
                                          const std::vector<VkExtensionProperties> &properties);
 
 private:
@@ -146,6 +150,7 @@ private:
     VkPhysicalDeviceVulkan12Features m_vulkan12Features;
 #ifndef CTS_USES_VULKANSC
     VkPhysicalDeviceVulkan13Features m_vulkan13Features;
+    VkPhysicalDeviceVulkan14Features m_vulkan14Features;
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
     VkPhysicalDeviceVulkanSC10Features m_vulkanSC10Features;

@@ -62,48 +62,48 @@ void deMath_selfTest(void);
 
 /* Float properties */
 
-DE_INLINE uint32_t deFloatBitsToUint32(float x)
+static inline uint32_t deFloatBitsToUint32(float x)
 {
     uint32_t bits;
     deMemcpy((void *)&bits, (void *)&x, 4);
     return bits;
 }
 
-DE_INLINE uint64_t deDoubleBitsToUint64(double x)
+static inline uint64_t deDoubleBitsToUint64(double x)
 {
     uint64_t bits;
     deMemcpy((void *)&bits, (void *)&x, 8);
     return bits;
 }
 
-DE_INLINE bool deFloatIsPositiveZero(float x)
+static inline bool deFloatIsPositiveZero(float x)
 {
     return x == 0 && (deFloatBitsToUint32(x) >> 31) == 0;
 }
 
-DE_INLINE bool deDoubleIsPositiveZero(double x)
+static inline bool deDoubleIsPositiveZero(double x)
 {
     return x == 0 && (deDoubleBitsToUint64(x) >> 63) == 0;
 }
 
-DE_INLINE bool deFloatIsNegativeZero(float x)
+static inline bool deFloatIsNegativeZero(float x)
 {
     return x == 0 && (deFloatBitsToUint32(x) >> 31) != 0;
 }
 
-DE_INLINE bool deDoubleIsNegativeZero(double x)
+static inline bool deDoubleIsNegativeZero(double x)
 {
     return x == 0 && (deDoubleBitsToUint64(x) >> 63) != 0;
 }
 
-DE_INLINE bool deFloatIsIEEENaN(float x)
+static inline bool deFloatIsIEEENaN(float x)
 {
     uint32_t e = (deFloatBitsToUint32(x) & 0x7f800000u) >> 23;
     uint32_t m = (deFloatBitsToUint32(x) & 0x007fffffu);
     return e == 0xff && m != 0;
 }
 
-DE_INLINE bool deDoubleIsIEEENaN(double x)
+static inline bool deDoubleIsIEEENaN(double x)
 {
     uint64_t e = (deDoubleBitsToUint64(x) & 0x7ff0000000000000ull) >> 52;
     uint64_t m = (deDoubleBitsToUint64(x) & 0x000fffffffffffffull);
@@ -118,163 +118,163 @@ DE_INLINE bool deDoubleIsIEEENaN(double x)
  * on a signaling NaN.  We don't use deIsNan in these helpers because they
  * do a comparison operation which may also trigger exceptions.
  */
-DE_INLINE bool deFloatIsSignalingNaN(float x)
+static inline bool deFloatIsSignalingNaN(float x)
 {
     return deFloatIsIEEENaN(x) && (deFloatBitsToUint32(x) & (1u << 22)) == 0;
 }
 
-DE_INLINE bool deDoubleIsSignalingNaN(double x)
+static inline bool deDoubleIsSignalingNaN(double x)
 {
     return deDoubleIsIEEENaN(x) && (deDoubleBitsToUint64(x) & (1ull << 51)) == 0;
 }
 
-DE_INLINE bool deFloatIsQuietNaN(float x)
+static inline bool deFloatIsQuietNaN(float x)
 {
     return deFloatIsIEEENaN(x) && (deFloatBitsToUint32(x) & (1u << 22)) != 0;
 }
 
-DE_INLINE bool deDoubleIsQuietNaN(double x)
+static inline bool deDoubleIsQuietNaN(double x)
 {
     return deDoubleIsIEEENaN(x) && (deDoubleBitsToUint64(x) & (1ull << 51)) != 0;
 }
 
 /* Basic utilities. */
 
-DE_INLINE float deFloatAbs(float x)
+static inline float deFloatAbs(float x)
 {
     return (x >= 0.0f) ? x : -x;
 }
-DE_INLINE float deFloatMin(float a, float b)
+static inline float deFloatMin(float a, float b)
 {
     return (a <= b) ? a : b;
 }
-DE_INLINE float deFloatMax(float a, float b)
+static inline float deFloatMax(float a, float b)
 {
     return (a >= b) ? a : b;
 }
-DE_INLINE float deFloatClamp(float x, float mn, float mx)
+static inline float deFloatClamp(float x, float mn, float mx)
 {
     return (x <= mn) ? mn : ((x >= mx) ? mx : x);
 }
 
-DE_INLINE double deAbs(double x)
+static inline double deAbs(double x)
 {
     return (x >= 0.0) ? x : -x;
 }
-DE_INLINE double deMin(double a, double b)
+static inline double deMin(double a, double b)
 {
     return (a <= b) ? a : b;
 }
-DE_INLINE double deMax(double a, double b)
+static inline double deMax(double a, double b)
 {
     return (a >= b) ? a : b;
 }
-DE_INLINE double deClamp(double x, double mn, double mx)
+static inline double deClamp(double x, double mn, double mx)
 {
     return (x <= mn) ? mn : ((x >= mx) ? mx : x);
 }
 
 /* Utility functions. */
 
-DE_INLINE float deFloatSign(float a)
+static inline float deFloatSign(float a)
 {
     return (a == 0.0f) ? 0.0f : ((a > 0.0f) ? +1.0f : -1.0f);
 }
-DE_INLINE int deFloatIntSign(float a)
+static inline int deFloatIntSign(float a)
 {
     return (a == 0.0f) ? 0 : ((a > 0.0f) ? +1 : -1);
 }
-DE_INLINE float deFloatFloor(float a)
+static inline float deFloatFloor(float a)
 {
     return (float)floor(a);
 }
-DE_INLINE float deFloatCeil(float a)
+static inline float deFloatCeil(float a)
 {
     return (float)ceil(a);
 }
-DE_INLINE float deFloatRound(float a)
+static inline float deFloatRound(float a)
 {
     return deFloatFloor(a + 0.5f);
 }
-DE_INLINE float deFloatFrac(float a)
+static inline float deFloatFrac(float a)
 {
     return a - deFloatFloor(a);
 }
-DE_INLINE float deFloatMod(float a, float b)
+static inline float deFloatMod(float a, float b)
 {
     return (float)fmod(a, b);
 }
-DE_INLINE float deFloatModf(float x, float *i)
+static inline float deFloatModf(float x, float *i)
 {
     double j   = 0;
     double ret = modf(x, &j);
     *i         = (float)j;
     return (float)ret;
 }
-DE_INLINE float deFloatMadd(float a, float b, float c)
+static inline float deFloatMadd(float a, float b, float c)
 {
     return (a * b) + c;
 }
-DE_INLINE float deFloatTrunc(float a)
+static inline float deFloatTrunc(float a)
 {
     return deFloatSign(a) * deFloatFloor(deFloatAbs(a));
 }
-DE_INLINE float deFloatLdExp(float a, int exponent)
+static inline float deFloatLdExp(float a, int exponent)
 {
     return (float)ldexp(a, exponent);
 }
-DE_INLINE float deFloatFrExp(float x, int *exponent)
+static inline float deFloatFrExp(float x, int *exponent)
 {
     return (float)frexp(x, exponent);
 }
 float deFloatFractExp(float x, int *exponent);
 
-DE_INLINE double deSign(double x)
+static inline double deSign(double x)
 {
     return deDoubleIsIEEENaN(x) ? x : (double)((x > 0.0) - (x < 0.0));
 }
-DE_INLINE int deIntSign(double x)
+static inline int deIntSign(double x)
 {
     return (x > 0.0) - (x < 0.0);
 }
-DE_INLINE double deFloor(double a)
+static inline double deFloor(double a)
 {
     return floor(a);
 }
-DE_INLINE double deCeil(double a)
+static inline double deCeil(double a)
 {
     return ceil(a);
 }
-DE_INLINE double deRound(double a)
+static inline double deRound(double a)
 {
     return floor(a + 0.5);
 }
-DE_INLINE double deFrac(double a)
+static inline double deFrac(double a)
 {
     return a - deFloor(a);
 }
-DE_INLINE double deMod(double a, double b)
+static inline double deMod(double a, double b)
 {
     return fmod(a, b);
 }
-DE_INLINE double deModf(double x, double *i)
+static inline double deModf(double x, double *i)
 {
     return modf(x, i);
 }
-DE_INLINE double deMadd(double a, double b, double c)
+static inline double deMadd(double a, double b, double c)
 {
     return (a * b) + c;
 }
-DE_INLINE double deTrunc(double a)
+static inline double deTrunc(double a)
 {
     return deSign(a) * floor(fabs(a));
 }
-DE_INLINE double deLdExp(double a, int exponent)
+static inline double deLdExp(double a, int exponent)
 {
     return ldexp(a, exponent);
 }
 double deRoundEven(double a);
-DE_INLINE double deFrExp(double x, int *exponent)
+static inline double deFrExp(double x, int *exponent)
 {
     return frexp(x, exponent);
 }
@@ -283,196 +283,196 @@ double deFractExp(double x, int *exponent);
 
 /* Exponential functions. */
 
-DE_INLINE float deFloatPow(float a, float b)
+static inline float deFloatPow(float a, float b)
 {
     return (float)pow(a, b);
 }
-DE_INLINE float deFloatExp(float a)
+static inline float deFloatExp(float a)
 {
     return (float)exp(a);
 }
-DE_INLINE float deFloatLog(float a)
+static inline float deFloatLog(float a)
 {
     return (float)log(a);
 }
-DE_INLINE float deFloatExp2(float a)
+static inline float deFloatExp2(float a)
 {
     return (float)exp(a * DE_LOG_2);
 }
-DE_INLINE float deFloatLog2(float a)
+static inline float deFloatLog2(float a)
 {
     return (float)log(a) * DE_INV_LOG_2;
 }
-DE_INLINE float deFloatSqrt(float a)
+static inline float deFloatSqrt(float a)
 {
     return (float)sqrt(a);
 }
-DE_INLINE float deFloatRcp(float a)
+static inline float deFloatRcp(float a)
 {
     return (1.0f / a);
 }
-DE_INLINE float deFloatRsq(float a)
+static inline float deFloatRsq(float a)
 {
     float s = (float)sqrt(a);
     return (s == 0.0f) ? 0.0f : (1.0f / s);
 }
 
-DE_INLINE double dePow(double a, double b)
+static inline double dePow(double a, double b)
 {
     return pow(a, b);
 }
-DE_INLINE double deExp(double a)
+static inline double deExp(double a)
 {
     return exp(a);
 }
-DE_INLINE double deLog(double a)
+static inline double deLog(double a)
 {
     return log(a);
 }
-DE_INLINE double deExp2(double a)
+static inline double deExp2(double a)
 {
     return exp(a * log(2.0));
 }
-DE_INLINE double deLog2(double a)
+static inline double deLog2(double a)
 {
     return log(a) / log(2.0);
 }
-DE_INLINE double deSqrt(double a)
+static inline double deSqrt(double a)
 {
     return sqrt(a);
 }
-DE_INLINE double deCbrt(double a)
+static inline double deCbrt(double a)
 {
     return deSign(a) * dePow(deAbs(a), 1.0 / 3.0);
 }
 
 /* Geometric functions. */
 
-DE_INLINE float deFloatRadians(float a)
+static inline float deFloatRadians(float a)
 {
     return a * (DE_PI / 180.0f);
 }
-DE_INLINE float deFloatDegrees(float a)
+static inline float deFloatDegrees(float a)
 {
     return a * (180.0f / DE_PI);
 }
-DE_INLINE float deFloatSin(float a)
+static inline float deFloatSin(float a)
 {
     return (float)sin(a);
 }
-DE_INLINE float deFloatCos(float a)
+static inline float deFloatCos(float a)
 {
     return (float)cos(a);
 }
-DE_INLINE float deFloatTan(float a)
+static inline float deFloatTan(float a)
 {
     return (float)tan(a);
 }
-DE_INLINE float deFloatAsin(float a)
+static inline float deFloatAsin(float a)
 {
     return (float)asin(a);
 }
-DE_INLINE float deFloatAcos(float a)
+static inline float deFloatAcos(float a)
 {
     return (float)acos(a);
 }
-DE_INLINE float deFloatAtan2(float y, float x)
+static inline float deFloatAtan2(float y, float x)
 {
     return (float)atan2(y, x);
 }
-DE_INLINE float deFloatAtanOver(float yOverX)
+static inline float deFloatAtanOver(float yOverX)
 {
     return (float)atan(yOverX);
 }
-DE_INLINE float deFloatSinh(float a)
+static inline float deFloatSinh(float a)
 {
     return (float)sinh(a);
 }
-DE_INLINE float deFloatCosh(float a)
+static inline float deFloatCosh(float a)
 {
     return (float)cosh(a);
 }
-DE_INLINE float deFloatTanh(float a)
+static inline float deFloatTanh(float a)
 {
     return (float)tanh(a);
 }
-DE_INLINE float deFloatAsinh(float a)
+static inline float deFloatAsinh(float a)
 {
     return deFloatLog(a + deFloatSqrt(a * a + 1));
 }
-DE_INLINE float deFloatAcosh(float a)
+static inline float deFloatAcosh(float a)
 {
     return deFloatLog(a + deFloatSqrt(a * a - 1));
 }
-DE_INLINE float deFloatAtanh(float a)
+static inline float deFloatAtanh(float a)
 {
     return 0.5f * deFloatLog((1.0f + a) / (1.0f - a));
 }
 
-DE_INLINE double deSin(double a)
+static inline double deSin(double a)
 {
     return sin(a);
 }
-DE_INLINE double deCos(double a)
+static inline double deCos(double a)
 {
     return cos(a);
 }
-DE_INLINE double deTan(double a)
+static inline double deTan(double a)
 {
     return tan(a);
 }
-DE_INLINE double deAsin(double a)
+static inline double deAsin(double a)
 {
     return asin(a);
 }
-DE_INLINE double deAcos(double a)
+static inline double deAcos(double a)
 {
     return acos(a);
 }
-DE_INLINE double deAtan2(double y, double x)
+static inline double deAtan2(double y, double x)
 {
     return atan2(y, x);
 }
-DE_INLINE double deAtanOver(double yOverX)
+static inline double deAtanOver(double yOverX)
 {
     return atan(yOverX);
 }
-DE_INLINE double deSinh(double a)
+static inline double deSinh(double a)
 {
     return sinh(a);
 }
-DE_INLINE double deCosh(double a)
+static inline double deCosh(double a)
 {
     return cosh(a);
 }
-DE_INLINE double deTanh(double a)
+static inline double deTanh(double a)
 {
     return tanh(a);
 }
-DE_INLINE double deAsinh(double a)
+static inline double deAsinh(double a)
 {
     return deLog(a + deSqrt(a * a + 1));
 }
-DE_INLINE double deAcosh(double a)
+static inline double deAcosh(double a)
 {
     return deLog(a + deSqrt(a * a - 1));
 }
-DE_INLINE double deAtanh(double a)
+static inline double deAtanh(double a)
 {
     return 0.5 * deLog((1.0 + a) / (1.0 - a));
 }
 
 /* Interpolation. */
 
-DE_INLINE float deFloatMix(float a, float b, float t)
+static inline float deFloatMix(float a, float b, float t)
 {
     return a * (1.0f - t) + b * t;
 }
-DE_INLINE float deFloatStep(float limit, float val)
+static inline float deFloatStep(float limit, float val)
 {
     return (val < limit) ? 0.0f : 1.0f;
 }
-DE_INLINE float deFloatSmoothStep(float e0, float e1, float v)
+static inline float deFloatSmoothStep(float e0, float e1, float v)
 {
     float t;
     if (v <= e0)
@@ -483,11 +483,11 @@ DE_INLINE float deFloatSmoothStep(float e0, float e1, float v)
     return t * t * (3.0f - 2.0f * t);
 }
 
-DE_INLINE double deMix(double a, double b, double t)
+static inline double deMix(double a, double b, double t)
 {
     return a * (1.0 - t) + b * t;
 }
-DE_INLINE double deStep(double limit, double val)
+static inline double deStep(double limit, double val)
 {
     return (val < limit) ? 0.0 : 1.0;
 }
@@ -500,7 +500,7 @@ DE_INLINE double deStep(double limit, double val)
  * \note Value returned is in native single precision format. For example with x86 extended precision, the value
  *       returned might not be representable in IEEE single precision float.
  */
-DE_INLINE float deInt32ToFloat(int32_t x)
+static inline float deInt32ToFloat(int32_t x)
 {
     return (float)x;
 }
@@ -515,48 +515,48 @@ float deInt32ToFloatRoundToPosInf(int32_t x);
 
 /* Conversion to integer. */
 
-DE_INLINE int32_t deChopFloatToInt32(float x)
+static inline int32_t deChopFloatToInt32(float x)
 {
     return (int32_t)x;
 }
-DE_INLINE int32_t deFloorFloatToInt32(float x)
+static inline int32_t deFloorFloatToInt32(float x)
 {
     return (int32_t)(deFloatFloor(x));
 }
-DE_INLINE int32_t deCeilFloatToInt32(float x)
+static inline int32_t deCeilFloatToInt32(float x)
 {
     return (int32_t)(deFloatCeil(x));
 }
 
-DE_INLINE int32_t deChopToInt32(double x)
+static inline int32_t deChopToInt32(double x)
 {
     return (int32_t)x;
 }
-DE_INLINE int32_t deFloorToInt32(double x)
+static inline int32_t deFloorToInt32(double x)
 {
     return (int32_t)(deFloor(x));
 }
-DE_INLINE int32_t deCeilToInt32(double x)
+static inline int32_t deCeilToInt32(double x)
 {
     return (int32_t)(deCeil(x));
 }
 
 /* Arithmetic round */
-DE_INLINE int16_t deRoundFloatToInt16(float x)
+static inline int16_t deRoundFloatToInt16(float x)
 {
     if (x >= 0.0f)
         return (int16_t)(x + 0.5f);
     else
         return (int16_t)(x - 0.5f);
 }
-DE_INLINE int32_t deRoundFloatToInt32(float x)
+static inline int32_t deRoundFloatToInt32(float x)
 {
     if (x >= 0.0f)
         return (int32_t)(x + 0.5f);
     else
         return (int32_t)(x - 0.5f);
 }
-DE_INLINE int64_t deRoundFloatToInt64(float x)
+static inline int64_t deRoundFloatToInt64(float x)
 {
     if (x >= 0.0f)
         return (int64_t)(x + 0.5f);
@@ -564,21 +564,21 @@ DE_INLINE int64_t deRoundFloatToInt64(float x)
         return (int64_t)(x - 0.5f);
 }
 
-DE_INLINE int16_t deRoundToInt16(double x)
+static inline int16_t deRoundToInt16(double x)
 {
     if (x >= 0.0)
         return (int16_t)(x + 0.5);
     else
         return (int16_t)(x - 0.5);
 }
-DE_INLINE int32_t deRoundToInt32(double x)
+static inline int32_t deRoundToInt32(double x)
 {
     if (x >= 0.0)
         return (int32_t)(x + 0.5);
     else
         return (int32_t)(x - 0.5);
 }
-DE_INLINE int64_t deRoundToInt64(double x)
+static inline int64_t deRoundToInt64(double x)
 {
     if (x >= 0.0)
         return (int64_t)(x + 0.5);

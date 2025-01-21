@@ -10880,7 +10880,11 @@ static void parse_VkPhysicalDeviceShaderClockFeaturesKHR(const Json::Value &obj,
     parse_VkBool32(obj["shaderDeviceClock"], (o.shaderDeviceClock));
 }
 
-static std::map<std::string, int> VkQueueGlobalPriorityKHR_map = {
+static std::map<std::string, int> VkQueueGlobalPriority_map = {
+    std::make_pair("VK_QUEUE_GLOBAL_PRIORITY_LOW", 128),
+    std::make_pair("VK_QUEUE_GLOBAL_PRIORITY_MEDIUM", 256),
+    std::make_pair("VK_QUEUE_GLOBAL_PRIORITY_HIGH", 512),
+    std::make_pair("VK_QUEUE_GLOBAL_PRIORITY_REALTIME", 1024),
     std::make_pair("VK_QUEUE_GLOBAL_PRIORITY_LOW_KHR", 128),
     std::make_pair("VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR", 256),
     std::make_pair("VK_QUEUE_GLOBAL_PRIORITY_HIGH_KHR", 512),
@@ -10890,10 +10894,10 @@ static std::map<std::string, int> VkQueueGlobalPriorityKHR_map = {
     std::make_pair("VK_QUEUE_GLOBAL_PRIORITY_HIGH_EXT", 512),
     std::make_pair("VK_QUEUE_GLOBAL_PRIORITY_REALTIME_EXT", 1024),
 };
-static void parse_VkQueueGlobalPriorityKHR(const Json::Value &obj, VkQueueGlobalPriorityKHR &o)
+static void parse_VkQueueGlobalPriority(const Json::Value &obj, VkQueueGlobalPriority &o)
 {
     const std::string &_res = obj.asString();
-    o                       = (VkQueueGlobalPriorityKHR)VkQueueGlobalPriorityKHR_map[std::string(_res)];
+    o                       = (VkQueueGlobalPriority)VkQueueGlobalPriority_map[std::string(_res)];
 }
 
 static void parse_VkDeviceQueueGlobalPriorityCreateInfoKHR(const Json::Value &obj,
@@ -10904,7 +10908,7 @@ static void parse_VkDeviceQueueGlobalPriorityCreateInfoKHR(const Json::Value &ob
 
     o.pNext = (VkDeviceQueueGlobalPriorityCreateInfoKHR *)parsePNextChain(obj);
 
-    parse_VkQueueGlobalPriorityKHR(obj["globalPriority"], (o.globalPriority));
+    parse_VkQueueGlobalPriority(obj["globalPriority"], (o.globalPriority));
 }
 
 static void parse_VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR(const Json::Value &obj,
@@ -10931,8 +10935,7 @@ static void parse_VkQueueFamilyGlobalPriorityPropertiesKHR(const Json::Value &ob
     const Json::Value &obj_priorities_arr = obj["priorities"];
     for (unsigned int i = 0; i < obj_priorities_arr.size(); i++)
     {
-        parse_VkQueueGlobalPriorityKHR(obj_priorities_arr[i],
-                                       const_cast<VkQueueGlobalPriorityKHR &>((o.priorities[i])));
+        parse_VkQueueGlobalPriority(obj_priorities_arr[i], const_cast<VkQueueGlobalPriority &>((o.priorities[i])));
     }
 }
 
@@ -12053,20 +12056,24 @@ static void parse_VkPhysicalDeviceIndexTypeUint8FeaturesKHR(const Json::Value &o
     parse_VkBool32(obj["indexTypeUint8"], (o.indexTypeUint8));
 }
 
-static std::map<std::string, int> VkLineRasterizationModeKHR_map = {
+static std::map<std::string, int> VkLineRasterizationMode_map = {
+    std::make_pair("VK_LINE_RASTERIZATION_MODE_DEFAULT", 0),
     std::make_pair("VK_LINE_RASTERIZATION_MODE_DEFAULT_KHR", 0),
     std::make_pair("VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT", 0),
+    std::make_pair("VK_LINE_RASTERIZATION_MODE_RECTANGULAR", 1),
     std::make_pair("VK_LINE_RASTERIZATION_MODE_RECTANGULAR_KHR", 1),
     std::make_pair("VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT", 1),
+    std::make_pair("VK_LINE_RASTERIZATION_MODE_BRESENHAM", 2),
     std::make_pair("VK_LINE_RASTERIZATION_MODE_BRESENHAM_KHR", 2),
     std::make_pair("VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT", 2),
+    std::make_pair("VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH", 3),
     std::make_pair("VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_KHR", 3),
     std::make_pair("VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT", 3),
 };
-static void parse_VkLineRasterizationModeKHR(const Json::Value &obj, VkLineRasterizationModeKHR &o)
+static void parse_VkLineRasterizationMode(const Json::Value &obj, VkLineRasterizationMode &o)
 {
     const std::string &_res = obj.asString();
-    o                       = (VkLineRasterizationModeKHR)VkLineRasterizationModeKHR_map[std::string(_res)];
+    o                       = (VkLineRasterizationMode)VkLineRasterizationMode_map[std::string(_res)];
 }
 
 static void parse_VkPhysicalDeviceLineRasterizationFeaturesKHR(const Json::Value &obj,
@@ -12109,7 +12116,7 @@ static void parse_VkPipelineRasterizationLineStateCreateInfoKHR(const Json::Valu
 
     o.pNext = (VkPipelineRasterizationLineStateCreateInfoKHR *)parsePNextChain(obj);
 
-    parse_VkLineRasterizationModeKHR(obj["lineRasterizationMode"], (o.lineRasterizationMode));
+    parse_VkLineRasterizationMode(obj["lineRasterizationMode"], (o.lineRasterizationMode));
 
     parse_VkBool32(obj["stippledLineEnable"], (o.stippledLineEnable));
 

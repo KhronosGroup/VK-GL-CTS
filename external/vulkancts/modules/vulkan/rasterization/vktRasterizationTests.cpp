@@ -816,8 +816,9 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
     const VkQueue queue             = m_context.getUniversalQueue();
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     Allocator &allocator            = m_context.getDefaultAllocator();
-    const size_t attributeBatchSize = de::dataSize(positionData);
     const auto offscreenData        = getOffScreenPoints();
+    const size_t attributeBatchSize = std::max(de::dataSize(positionData), de::dataSize(offscreenData));
+    const size_t totalAttributeSize = attributeBatchSize * 2u; // Position and color.
 
     Move<VkCommandBuffer> commandBuffer;
     Move<VkPipeline> graphicsPipeline;
@@ -844,12 +845,14 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
         };
 
         const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2] = {
+            // Positions.
             {
                 0u,                            // uint32_t location;
                 0u,                            // uint32_t binding;
                 VK_FORMAT_R32G32B32A32_SFLOAT, // VkFormat format;
                 0u                             // uint32_t offsetInBytes;
             },
+            // Colors.
             {
                 1u,                            // uint32_t location;
                 0u,                            // uint32_t binding;
@@ -944,7 +947,7 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
             nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
-            attributeBatchSize * 2,               // VkDeviceSize size;
+            totalAttributeSize,                   // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             1u,                                   // uint32_t queueFamilyCount;
@@ -959,18 +962,29 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
                                       vertexBufferMemory->getOffset()));
 
         // Load vertices into vertex buffer
-        deMemcpy(vertexBufferMemory->getHostPtr(), positionData.data(), attributeBatchSize);
-        deMemcpy(reinterpret_cast<uint8_t *>(vertexBufferMemory->getHostPtr()) + attributeBatchSize, colorData.data(),
-                 attributeBatchSize);
+        deMemcpy(vertexBufferMemory->getHostPtr(), de::dataOrNull(positionData), de::dataSize(positionData));
+        deMemcpy(reinterpret_cast<uint8_t *>(vertexBufferMemory->getHostPtr()) + attributeBatchSize,
+                 de::dataOrNull(colorData), de::dataSize(colorData));
         flushAlloc(vkd, vkDevice, *vertexBufferMemory);
     }
 
-    if (!offscreenData.empty())
+    if (!offscreenData.empty() && isDynamicTopology())
     {
-        // Concatenate positions with vertex colors.
-        const std::vector<tcu::Vec4> colors(offscreenData.size(), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-        std::vector<tcu::Vec4> fullOffscreenData(offscreenData);
-        fullOffscreenData.insert(fullOffscreenData.end(), colors.begin(), colors.end());
+        const std::vector<tcu::Vec4> offscreenColors(offscreenData.size(), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+        // Concatenate positions with vertex colors, respecting the color attribute offset. Positions come first and
+        // color are supposed to start at attributeBatchSize offset. See vertexInputAttributeDescriptions.
+        DE_ASSERT(attributeBatchSize >= de::dataSize(offscreenData));
+        DE_ASSERT(attributeBatchSize % sizeof(tcu::Vec4) == 0u);
+
+        const auto itemsPerAttribute = static_cast<uint32_t>(attributeBatchSize / sizeof(tcu::Vec4));
+        const auto totalItemCount    = itemsPerAttribute * 2u; // positions and colors.
+
+        // Positions at the start, colors at attributeBatchSize offset.
+        std::vector<tcu::Vec4> fullOffscreenData(totalItemCount, tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f));
+        deMemcpy(de::dataOrNull(fullOffscreenData), de::dataOrNull(offscreenData), de::dataSize(offscreenData));
+        deMemcpy(&fullOffscreenData.at(itemsPerAttribute), de::dataOrNull(offscreenColors),
+                 de::dataSize(offscreenColors));
 
         // Copy full data to offscreen data buffer.
         const auto offscreenBufferSizeSz = de::dataSize(fullOffscreenData);
@@ -1023,20 +1037,21 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
                               &m_descriptorSet.get(), 0u, nullptr);
     if (getLineStippleDynamic())
     {
-        vkd.cmdSetLineStippleKHR(*commandBuffer, lineStippleFactor, lineStipplePattern);
 #ifndef CTS_USES_VULKANSC
-        if (isDynamicTopology())
+        vkd.cmdSetLineStipple(*commandBuffer, lineStippleFactor, lineStipplePattern);
+        if (isDynamicTopology() && (!!offscreenDataBuffer))
         {
-            // Using a dynamic topology can interact with the dynamic line stipple set above on some implementations, so we try to
-            // check nothing breaks here. We set a wrong topology, draw some offscreen data and go back to the right topology
-            // _without_ re-setting the line stipple again. Side effects should not be visible.
-            DE_ASSERT(!!offscreenDataBuffer);
+            // Using a dynamic topology can interact with the dynamic line stipple set above on some implementations, so
+            // we try to check nothing breaks here. We set a wrong topology, draw some offscreen data and go back to the
+            // right topology _without_ re-setting the line stipple again. Side effects should not be visible.
 
             vkd.cmdSetPrimitiveTopology(*commandBuffer, getWrongTopology());
             vkd.cmdBindVertexBuffers(*commandBuffer, 0, 1, &offscreenDataBuffer->get(), &vertexBufferOffset);
             vkd.cmdDraw(*commandBuffer, static_cast<uint32_t>(offscreenData.size()), 1u, 0u, 0u);
             vkd.cmdSetPrimitiveTopology(*commandBuffer, getRightTopology());
         }
+#else
+        vkd.cmdSetLineStippleEXT(*commandBuffer, lineStippleFactor, lineStipplePattern);
 #endif // CTS_USES_VULKANSC
     }
 
@@ -1078,14 +1093,13 @@ void BaseRenderingTestInstance::drawPrimitives(
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     Allocator &allocator            = m_context.getDefaultAllocator();
     const size_t attributeBatchSize = de::dataSize(positionData);
-    const auto offscreenData        = getOffScreenPoints();
+    const size_t totalAttributeSize = attributeBatchSize * 2u;
 
     Move<VkCommandBuffer> commandBuffer;
     Move<VkPipeline> graphicsPipeline;
     Move<VkPipeline> noStippleGraphicsPipeline;
     Move<VkBuffer> vertexBuffer;
     de::MovePtr<Allocation> vertexBufferMemory;
-    std::unique_ptr<BufferWithMemory> offscreenDataBuffer;
     const VkPhysicalDeviceProperties properties = m_context.getDeviceProperties();
 
     if (attributeBatchSize > properties.limits.maxVertexInputAttributeOffset)
@@ -1239,7 +1253,7 @@ void BaseRenderingTestInstance::drawPrimitives(
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
             nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
-            attributeBatchSize * 2,               // VkDeviceSize size;
+            totalAttributeSize,                   // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             1u,                                   // uint32_t queueFamilyCount;
@@ -1254,32 +1268,10 @@ void BaseRenderingTestInstance::drawPrimitives(
                                       vertexBufferMemory->getOffset()));
 
         // Load vertices into vertex buffer
-        deMemcpy(vertexBufferMemory->getHostPtr(), positionData.data(), attributeBatchSize);
-        deMemcpy(reinterpret_cast<uint8_t *>(vertexBufferMemory->getHostPtr()) + attributeBatchSize, colorData.data(),
-                 attributeBatchSize);
+        deMemcpy(vertexBufferMemory->getHostPtr(), de::dataOrNull(positionData), de::dataSize(positionData));
+        deMemcpy(reinterpret_cast<uint8_t *>(vertexBufferMemory->getHostPtr()) + attributeBatchSize,
+                 de::dataOrNull(colorData), de::dataSize(colorData));
         flushAlloc(vkd, vkDevice, *vertexBufferMemory);
-    }
-
-    if (!offscreenData.empty())
-    {
-        // Concatenate positions with vertex colors.
-        const std::vector<tcu::Vec4> colors(offscreenData.size(), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-        std::vector<tcu::Vec4> fullOffscreenData(offscreenData);
-        fullOffscreenData.insert(fullOffscreenData.end(), colors.begin(), colors.end());
-
-        // Copy full data to offscreen data buffer.
-        const auto offscreenBufferSizeSz = de::dataSize(fullOffscreenData);
-        const auto offscreenBufferSize   = static_cast<VkDeviceSize>(offscreenBufferSizeSz);
-        const auto offscreenDataCreateInfo =
-            makeBufferCreateInfo(offscreenBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-
-        offscreenDataBuffer.reset(
-            new BufferWithMemory(vkd, vkDevice, allocator, offscreenDataCreateInfo, MemoryRequirement::HostVisible));
-        auto &bufferAlloc = offscreenDataBuffer->getAllocation();
-        void *dataPtr     = bufferAlloc.getHostPtr();
-
-        deMemcpy(dataPtr, fullOffscreenData.data(), offscreenBufferSizeSz);
-        flushAlloc(vkd, vkDevice, bufferAlloc);
     }
 
     // Create Command Buffer
@@ -1620,15 +1612,19 @@ BaseLineTestInstance::BaseLineTestInstance(Context &context, VkPrimitiveTopology
 {
     DE_ASSERT(m_primitiveWideness < PRIMITIVEWIDENESS_LAST);
 
-    if (m_lineRasterizationMode != VK_LINE_RASTERIZATION_MODE_KHR_LAST)
+    if (m_lineRasterizationMode != VK_LINE_RASTERIZATION_MODE_LAST)
     {
         if (context.isDeviceFunctionalitySupported("VK_KHR_line_rasterization") ||
             context.isDeviceFunctionalitySupported("VK_EXT_line_rasterization"))
         {
             VkPhysicalDeviceLineRasterizationPropertiesKHR lineRasterizationProperties = {
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_KHR, // VkStructureType sType;
-                nullptr,                                                             // void* pNext;
-                0u, // uint32_t lineSubPixelPrecisionBits;
+#ifndef CTS_USES_VULKANSC
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES, // VkStructureType sType;
+#else
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT, // VkStructureType sType;
+#endif                   // #ifndef CTS_USES_VULKANSC
+                nullptr, // void* pNext;
+                0u,      // uint32_t lineSubPixelPrecisionBits;
             };
 
             VkPhysicalDeviceProperties2 deviceProperties2;
@@ -2271,7 +2267,7 @@ VkPipelineRasterizationLineStateCreateInfoEXT BaseLineTestInstance::initLineRast
 
 const VkPipelineRasterizationLineStateCreateInfoEXT *BaseLineTestInstance::getLineRasterizationStateCreateInfo(void)
 {
-    if (m_lineRasterizationMode == VK_LINE_RASTERIZATION_MODE_KHR_LAST)
+    if (m_lineRasterizationMode == VK_LINE_RASTERIZATION_MODE_LAST)
         return nullptr;
 
     if (m_lineRasterizationStateInfo.sType != VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT)
@@ -3384,8 +3380,7 @@ uint32_t ConservativeTestCase<ConcreteTestInstance>::getSubPixelResolution(Conte
 {
     if (isUseLineSubPixel(context))
     {
-        const VkPhysicalDeviceLineRasterizationPropertiesKHR lineRasterizationProperties =
-            context.getLineRasterizationProperties();
+        const auto &lineRasterizationProperties = context.getLineRasterizationProperties();
 
         return lineRasterizationProperties.lineSubPixelPrecisionBits;
     }
@@ -5530,12 +5525,14 @@ public:
             if (m_wideness == PRIMITIVEWIDENESS_WIDE)
                 context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_WIDE_LINES);
 
+            const auto &lineRasterizationFeatures = context.getLineRasterizationFeatures();
+
             switch (m_lineRasterizationMode)
             {
             default:
                 TCU_THROW(InternalError, "Unknown line rasterization mode");
 
-            case VK_LINE_RASTERIZATION_MODE_KHR_LAST:
+            case VK_LINE_RASTERIZATION_MODE_LAST:
             {
                 if (m_strictness == PRIMITIVESTRICTNESS_STRICT)
                     if (!context.getDeviceProperties().limits.strictLines)
@@ -5553,37 +5550,37 @@ public:
                 if (!context.getDeviceProperties().limits.strictLines)
                     TCU_THROW(NotSupportedError, "Strict rasterization is not supported");
 
-                if (getLineStippleEnable() && !context.getLineRasterizationFeatures().stippledRectangularLines)
+                if (getLineStippleEnable() && !lineRasterizationFeatures.stippledRectangularLines)
                     TCU_THROW(NotSupportedError, "Stippled rectangular lines not supported");
                 break;
             }
 
             case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT:
             {
-                if (!context.getLineRasterizationFeatures().rectangularLines)
+                if (!lineRasterizationFeatures.rectangularLines)
                     TCU_THROW(NotSupportedError, "Rectangular lines not supported");
 
-                if (getLineStippleEnable() && !context.getLineRasterizationFeatures().stippledRectangularLines)
+                if (getLineStippleEnable() && !lineRasterizationFeatures.stippledRectangularLines)
                     TCU_THROW(NotSupportedError, "Stippled rectangular lines not supported");
                 break;
             }
 
             case VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT:
             {
-                if (!context.getLineRasterizationFeatures().bresenhamLines)
+                if (!lineRasterizationFeatures.bresenhamLines)
                     TCU_THROW(NotSupportedError, "Bresenham lines not supported");
 
-                if (getLineStippleEnable() && !context.getLineRasterizationFeatures().stippledBresenhamLines)
+                if (getLineStippleEnable() && !lineRasterizationFeatures.stippledBresenhamLines)
                     TCU_THROW(NotSupportedError, "Stippled Bresenham lines not supported");
                 break;
             }
 
             case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT:
             {
-                if (!context.getLineRasterizationFeatures().smoothLines)
+                if (!lineRasterizationFeatures.smoothLines)
                     TCU_THROW(NotSupportedError, "Smooth lines not supported");
 
-                if (getLineStippleEnable() && !context.getLineRasterizationFeatures().stippledSmoothLines)
+                if (getLineStippleEnable() && !lineRasterizationFeatures.stippledSmoothLines)
                     TCU_THROW(NotSupportedError, "Stippled smooth lines not supported");
                 break;
             }
@@ -8920,7 +8917,7 @@ class NonStrictLinesMaintenance5TestInstance : public LinesTestInstance
 public:
     NonStrictLinesMaintenance5TestInstance(Context &context, PrimitiveWideness wideness, uint32_t additionalRenderSize)
         : LinesTestInstance(context, wideness, PRIMITIVESTRICTNESS_NONSTRICT, VK_SAMPLE_COUNT_1_BIT,
-                            LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST, LineStippleFactorCase::DEFAULT,
+                            LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST, LineStippleFactorCase::DEFAULT,
                             additionalRenderSize)
         , m_amIWide(PRIMITIVEWIDENESS_WIDE == wideness)
     {
@@ -8946,8 +8943,8 @@ public:
     NonStrictLineStripMaintenance5TestInstance(Context &context, PrimitiveWideness wideness,
                                                uint32_t additionalRenderSize)
         : LineStripTestInstance(context, wideness, PRIMITIVESTRICTNESS_NONSTRICT, VK_SAMPLE_COUNT_1_BIT,
-                                LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
-                                LineStippleFactorCase::DEFAULT, additionalRenderSize)
+                                LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST, LineStippleFactorCase::DEFAULT,
+                                additionalRenderSize)
         , m_amIWide(PRIMITIVEWIDENESS_WIDE == wideness)
     {
     }
@@ -9047,75 +9044,75 @@ void createRasterizationTests(tcu::TestCaseGroup *rasterizationTests)
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
             testCtx, "strict_lines", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT,
-            LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY in strict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>(
             testCtx, "strict_lines_with_adjacency", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_STRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in strict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>(
             testCtx, "strict_line_strip", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_STRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY in strict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>(
             testCtx, "strict_line_strip_with_adjacency", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_STRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
             testCtx, "strict_lines_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_STRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY in strict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>(
             testCtx, "strict_lines_with_adjacency_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_STRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in strict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>(
             testCtx, "strict_line_strip_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_STRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY in strict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>(
             testCtx, "strict_line_strip_with_adjacency_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_STRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
 
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
             testCtx, "non_strict_lines", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_NONSTRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY in nonstrict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>(
             testCtx, "non_strict_lines_with_adjacency", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_NONSTRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in nonstrict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>(
             testCtx, "non_strict_line_strip", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_NONSTRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY in nonstrict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>(
             testCtx, "non_strict_line_strip_with_adjacency", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_NONSTRICT,
-            true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
             testCtx, "non_strict_lines_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_NONSTRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY in nonstrict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>(
             testCtx, "non_strict_lines_with_adjacency_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_NONSTRICT,
-            true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in nonstrict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>(
             testCtx, "non_strict_line_strip_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_NONSTRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY in nonstrict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>(
             testCtx, "non_strict_line_strip_with_adjacency_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_NONSTRICT,
-            true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
 
         for (int i = 0; i < static_cast<int>(LINESTIPPLE_LAST); ++i)
@@ -10076,20 +10073,20 @@ void createRasterizationTests(tcu::TestCaseGroup *rasterizationTests)
             // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode, verify rasterization result
             nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
                 testCtx, "strict_lines", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_STRICT, true,
-                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
             // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode with wide lines, verify rasterization result
             nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
                 testCtx, "strict_lines_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_STRICT, true,
-                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
 
             // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode, verify rasterization result
             nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
                 testCtx, "non_strict_lines", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_NONSTRICT, true,
-                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
             // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode with wide lines, verify rasterization result
             nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
                 testCtx, "non_strict_lines_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_NONSTRICT, true,
-                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
 
             for (int i = 0; i < static_cast<int>(LINESTIPPLE_LAST); ++i)
             {

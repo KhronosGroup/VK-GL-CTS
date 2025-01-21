@@ -4592,7 +4592,6 @@ dEQP-VKSC.protected_memory.ssbo.ssbo_write.default.none.fragment.static.write_3
 dEQP-VKSC.protected_memory.ssbo.ssbo_write.default.none.fragment.static.write_4
 dEQP-VKSC.protected_memory.ssbo.ssbo_write.default.none.fragment.static.write_5
 dEQP-VKSC.protected_memory.ssbo.ssbo_write.default.none.fragment.static.write_6
-dEQP-VKSC.protected_memory.stack.stacksize_1024
 dEQP-VKSC.protected_memory.stack.stacksize_128
 dEQP-VKSC.protected_memory.stack.stacksize_256
 dEQP-VKSC.protected_memory.stack.stacksize_32

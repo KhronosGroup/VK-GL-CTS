@@ -56,57 +56,57 @@ DE_END_EXTERN_C
  * bool      HashArray_copyToArray       (Hash* hashArray, KeyArray* keys, ValueArray* values);
  * \endcode
 *//*--------------------------------------------------------------------*/
-#define DE_DECLARE_POOL_HASH_ARRAY(TYPENAME, KEYTYPE, VALUETYPE, KEYARRAYTYPE, VALUEARRAYTYPE)       \
-                                                                                                     \
-    DE_DECLARE_POOL_ARRAY(TYPENAME##Array, VALUETYPE);                                               \
-    DE_DECLARE_POOL_HASH(TYPENAME##Hash, KEYTYPE, int);                                              \
-                                                                                                     \
-    typedef struct TYPENAME_s                                                                        \
-    {                                                                                                \
-        TYPENAME##Hash *hash;                                                                        \
-        TYPENAME##Array *array;                                                                      \
-    } TYPENAME; /* NOLINT(TYPENAME) */                                                               \
-                                                                                                     \
-    TYPENAME *TYPENAME##_create(deMemPool *pool);                                                    \
-    bool TYPENAME##_insert(DE_PTR_TYPE(TYPENAME) hashArray, KEYTYPE key, VALUETYPE value);           \
-    bool TYPENAME##_copyToArray(const TYPENAME *hashArray, DE_PTR_TYPE(KEYARRAYTYPE) keys,           \
-                                DE_PTR_TYPE(VALUEARRAYTYPE) values);                                 \
-                                                                                                     \
-    DE_INLINE int TYPENAME##_getNumElements(const TYPENAME *hashArray) DE_UNUSED_FUNCTION;           \
-    DE_INLINE VALUETYPE *TYPENAME##_find(const TYPENAME *hashArray, KEYTYPE key) DE_UNUSED_FUNCTION; \
-    DE_INLINE void TYPENAME##_reset(DE_PTR_TYPE(TYPENAME) hashArray) DE_UNUSED_FUNCTION;             \
-                                                                                                     \
-    DE_INLINE int TYPENAME##_getNumElements(const TYPENAME *hashArray)                               \
-    {                                                                                                \
-        return TYPENAME##Array_getNumElements(hashArray->array);                                     \
-    }                                                                                                \
-                                                                                                     \
-    DE_INLINE VALUETYPE *TYPENAME##_find(const TYPENAME *hashArray, KEYTYPE key)                     \
-    {                                                                                                \
-        int *ndxPtr = TYPENAME##Hash_find(hashArray->hash, key);                                     \
-        if (!ndxPtr)                                                                                 \
-            return NULL;                                                                             \
-        else                                                                                         \
-        {                                                                                            \
-            int ndx = *ndxPtr;                                                                       \
-            DE_ASSERT(ndx >= 0 && ndx < hashArray->array->numElements);                              \
-            {                                                                                        \
-                int pageNdx = (ndx >> DE_ARRAY_ELEMENTS_PER_PAGE_LOG2);                              \
-                int subNdx  = ndx & ((1 << DE_ARRAY_ELEMENTS_PER_PAGE_LOG2) - 1);                    \
-                return &((VALUETYPE *)hashArray->array->pageTable[pageNdx])[subNdx];                 \
-            }                                                                                        \
-        }                                                                                            \
-    }                                                                                                \
-                                                                                                     \
-    DE_INLINE void TYPENAME##_reset(DE_PTR_TYPE(TYPENAME) hashArray)                                 \
-    {                                                                                                \
-        TYPENAME##Hash_reset(hashArray->hash);                                                       \
-        TYPENAME##Array_reset(hashArray->array);                                                     \
-    }                                                                                                \
-                                                                                                     \
-    struct TYPENAME##Unused_s                                                                        \
-    {                                                                                                \
-        int unused;                                                                                  \
+#define DE_DECLARE_POOL_HASH_ARRAY(TYPENAME, KEYTYPE, VALUETYPE, KEYARRAYTYPE, VALUEARRAYTYPE)           \
+                                                                                                         \
+    DE_DECLARE_POOL_ARRAY(TYPENAME##Array, VALUETYPE);                                                   \
+    DE_DECLARE_POOL_HASH(TYPENAME##Hash, KEYTYPE, int);                                                  \
+                                                                                                         \
+    typedef struct TYPENAME_s                                                                            \
+    {                                                                                                    \
+        TYPENAME##Hash *hash;                                                                            \
+        TYPENAME##Array *array;                                                                          \
+    } TYPENAME; /* NOLINT(TYPENAME) */                                                                   \
+                                                                                                         \
+    TYPENAME *TYPENAME##_create(deMemPool *pool);                                                        \
+    bool TYPENAME##_insert(DE_PTR_TYPE(TYPENAME) hashArray, KEYTYPE key, VALUETYPE value);               \
+    bool TYPENAME##_copyToArray(const TYPENAME *hashArray, DE_PTR_TYPE(KEYARRAYTYPE) keys,               \
+                                DE_PTR_TYPE(VALUEARRAYTYPE) values);                                     \
+                                                                                                         \
+    static inline int TYPENAME##_getNumElements(const TYPENAME *hashArray) DE_UNUSED_FUNCTION;           \
+    static inline VALUETYPE *TYPENAME##_find(const TYPENAME *hashArray, KEYTYPE key) DE_UNUSED_FUNCTION; \
+    static inline void TYPENAME##_reset(DE_PTR_TYPE(TYPENAME) hashArray) DE_UNUSED_FUNCTION;             \
+                                                                                                         \
+    static inline int TYPENAME##_getNumElements(const TYPENAME *hashArray)                               \
+    {                                                                                                    \
+        return TYPENAME##Array_getNumElements(hashArray->array);                                         \
+    }                                                                                                    \
+                                                                                                         \
+    static inline VALUETYPE *TYPENAME##_find(const TYPENAME *hashArray, KEYTYPE key)                     \
+    {                                                                                                    \
+        int *ndxPtr = TYPENAME##Hash_find(hashArray->hash, key);                                         \
+        if (!ndxPtr)                                                                                     \
+            return NULL;                                                                                 \
+        else                                                                                             \
+        {                                                                                                \
+            int ndx = *ndxPtr;                                                                           \
+            DE_ASSERT(ndx >= 0 && ndx < hashArray->array->numElements);                                  \
+            {                                                                                            \
+                int pageNdx = (ndx >> DE_ARRAY_ELEMENTS_PER_PAGE_LOG2);                                  \
+                int subNdx  = ndx & ((1 << DE_ARRAY_ELEMENTS_PER_PAGE_LOG2) - 1);                        \
+                return &((VALUETYPE *)hashArray->array->pageTable[pageNdx])[subNdx];                     \
+            }                                                                                            \
+        }                                                                                                \
+    }                                                                                                    \
+                                                                                                         \
+    static inline void TYPENAME##_reset(DE_PTR_TYPE(TYPENAME) hashArray)                                 \
+    {                                                                                                    \
+        TYPENAME##Hash_reset(hashArray->hash);                                                           \
+        TYPENAME##Array_reset(hashArray->array);                                                         \
+    }                                                                                                    \
+                                                                                                         \
+    struct TYPENAME##Unused_s                                                                            \
+    {                                                                                                    \
+        int unused;                                                                                      \
     }
 
 /*--------------------------------------------------------------------*//*!
