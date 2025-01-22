@@ -55,6 +55,7 @@ vk-default/mesh-shader.txt
 vk-default/multiview.txt
 vk-default/pipeline/fast-linked-library.txt
 vk-default/pipeline/monolithic.txt
+vk-default/pipeline/no-queues.txt
 vk-default/pipeline/pipeline-library.txt
 vk-default/pipeline/shader-object-linked-binary.txt
 vk-default/pipeline/shader-object-linked-spirv.txt

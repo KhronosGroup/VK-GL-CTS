@@ -77,7 +77,7 @@ inline std::string updateRayTracingGLSL(const std::string &str)
     return str;
 }
 
-std::string getCommonRayGenerationShader(void);
+std::string getCommonRayGenerationShader(uint32_t set = 0, uint32_t binding = 1);
 
 // Get lowercase version of the format name with no VK_FORMAT_ prefix.
 std::string getFormatSimpleName(vk::VkFormat format);
@@ -1136,7 +1136,7 @@ public:
     Move<VkPipeline> createPipeline(const DeviceInterface &vk, const VkDevice device,
                                     const VkPipelineLayout pipelineLayout,
                                     const std::vector<VkPipeline> &pipelineLibraries,
-                                    const VkPipelineCache pipelineCache);
+                                    const VkPipelineCache pipelineCache, const void *pNext = nullptr);
     std::vector<de::SharedPtr<Move<VkPipeline>>> createPipelineWithLibraries(const DeviceInterface &vk,
                                                                              const VkDevice device,
                                                                              const VkPipelineLayout pipelineLayout);
@@ -1177,7 +1177,8 @@ protected:
     Move<VkPipeline> createPipelineKHR(const DeviceInterface &vk, const VkDevice device,
                                        const VkPipelineLayout pipelineLayout,
                                        const std::vector<VkPipeline> &pipelineLibraries,
-                                       const VkPipelineCache pipelineCache = VK_NULL_HANDLE);
+                                       const VkPipelineCache pipelineCache = VK_NULL_HANDLE,
+                                       const void *pNext                   = nullptr);
 
     std::vector<de::SharedPtr<Move<VkShaderModule>>> m_shadersModules;
     std::vector<de::SharedPtr<de::MovePtr<RayTracingPipeline>>> m_pipelineLibraries;

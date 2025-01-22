@@ -32,6 +32,7 @@ vk-main-2024-03-01/mesh-shader.txt
 vk-main-2024-03-01/multiview.txt
 vk-main-2024-03-01/pipeline/fast-linked-library.txt
 vk-main-2024-03-01/pipeline/monolithic.txt
+vk-main-2024-03-01/pipeline/no-queues.txt
 vk-main-2024-03-01/pipeline/pipeline-library.txt
 vk-main-2024-03-01/pipeline/shader-object-linked-binary.txt
 vk-main-2024-03-01/pipeline/shader-object-linked-spirv.txt

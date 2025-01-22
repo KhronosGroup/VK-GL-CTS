@@ -111,24 +111,26 @@ void checkAccelerationStructureVertexBufferFormat(const vk::InstanceInterface &v
     }
 }
 
-std::string getCommonRayGenerationShader(void)
+std::string getCommonRayGenerationShader(uint32_t set, uint32_t binding)
 {
-    return "#version 460 core\n"
-           "#extension GL_EXT_ray_tracing : require\n"
-           "layout(location = 0) rayPayloadEXT vec3 hitValue;\n"
-           "layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;\n"
-           "\n"
-           "void main()\n"
-           "{\n"
-           "  uint  rayFlags = 0;\n"
-           "  uint  cullMask = 0xFF;\n"
-           "  float tmin     = 0.0;\n"
-           "  float tmax     = 9.0;\n"
-           "  vec3  origin   = vec3((float(gl_LaunchIDEXT.x) + 0.5f) / float(gl_LaunchSizeEXT.x), "
-           "(float(gl_LaunchIDEXT.y) + 0.5f) / float(gl_LaunchSizeEXT.y), 0.0);\n"
-           "  vec3  direct   = vec3(0.0, 0.0, -1.0);\n"
-           "  traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin, tmin, direct, tmax, 0);\n"
-           "}\n";
+    return std::string("#version 460 core\n"
+                       "#extension GL_EXT_ray_tracing : require\n"
+                       "layout(location = 0) rayPayloadEXT vec3 hitValue;\n"
+                       "layout(set = ") +
+           std::to_string(set) + std::string(", binding = ") + std::to_string(binding) +
+           std::string(") uniform accelerationStructureEXT topLevelAS;\n"
+                       "\n"
+                       "void main()\n"
+                       "{\n"
+                       "  uint  rayFlags = 0;\n"
+                       "  uint  cullMask = 0xFF;\n"
+                       "  float tmin     = 0.0;\n"
+                       "  float tmax     = 9.0;\n"
+                       "  vec3  origin   = vec3((float(gl_LaunchIDEXT.x) + 0.5f) / float(gl_LaunchSizeEXT.x), "
+                       "(float(gl_LaunchIDEXT.y) + 0.5f) / float(gl_LaunchSizeEXT.y), 0.0);\n"
+                       "  vec3  direct   = vec3(0.0, 0.0, -1.0);\n"
+                       "  traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin, tmin, direct, tmax, 0);\n"
+                       "}\n");
 }
 
 RaytracedGeometryBase::RaytracedGeometryBase(VkGeometryTypeKHR geometryType, VkFormat vertexFormat,
@@ -3963,7 +3965,7 @@ uint32_t RayTracingPipeline::getFullShaderGroupCount(void)
 Move<VkPipeline> RayTracingPipeline::createPipelineKHR(const DeviceInterface &vk, const VkDevice device,
                                                        const VkPipelineLayout pipelineLayout,
                                                        const std::vector<VkPipeline> &pipelineLibraries,
-                                                       const VkPipelineCache pipelineCache)
+                                                       const VkPipelineCache pipelineCache, const void *pNext)
 {
     for (size_t groupNdx = 0; groupNdx < m_shadersGroupCreateInfos.size(); ++groupNdx)
         DE_ASSERT(m_shadersGroupCreateInfos[groupNdx].sType ==
@@ -4001,7 +4003,7 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR(const DeviceInterface &vk
 
     VkRayTracingPipelineCreateInfoKHR pipelineCreateInfo{
         VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR, //  VkStructureType sType;
-        nullptr,                                                //  const void* pNext;
+        pNext,                                                  //  const void* pNext;
         m_pipelineCreateFlags,                                  //  VkPipelineCreateFlags flags;
         de::sizeU32(m_shaderCreateInfos),                       //  uint32_t stageCount;
         de::dataOrNull(m_shaderCreateInfos),                    //  const VkPipelineShaderStageCreateInfo* pStages;
@@ -4059,9 +4061,9 @@ Move<VkPipeline> RayTracingPipeline::createPipeline(
 Move<VkPipeline> RayTracingPipeline::createPipeline(const DeviceInterface &vk, const VkDevice device,
                                                     const VkPipelineLayout pipelineLayout,
                                                     const std::vector<VkPipeline> &pipelineLibraries,
-                                                    const VkPipelineCache pipelineCache)
+                                                    const VkPipelineCache pipelineCache, const void *pNext)
 {
-    return createPipelineKHR(vk, device, pipelineLayout, pipelineLibraries, pipelineCache);
+    return createPipelineKHR(vk, device, pipelineLayout, pipelineLibraries, pipelineCache, pNext);
 }
 
 std::vector<de::SharedPtr<Move<VkPipeline>>> RayTracingPipeline::createPipelineWithLibraries(

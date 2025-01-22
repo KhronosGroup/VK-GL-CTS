@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktDGCGraphicsDrawTestsExt.hpp"
+#include "util/vktShaderObjectUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktDGCUtilCommon.hpp"
@@ -1738,9 +1739,9 @@ tcu::TestStatus DGCDrawInstance::iterate(void)
         if (m_params.isShaderObjects())
         {
             // Bind state for shader objects. This is needed with and without execution sets.
-            bindShaderObjectState(ctx.vkd, getDeviceCreationExtensions(m_context), recCmdBuffer, viewports, scissors,
-                                  primitiveTopology, patchControlPoints, &vertexInputStateCreateInfo, nullptr, nullptr,
-                                  nullptr, nullptr);
+            vkt::shaderobjutil::bindShaderObjectState(
+                ctx.vkd, vkt::shaderobjutil::getDeviceCreationExtensions(m_context), recCmdBuffer, viewports, scissors,
+                primitiveTopology, patchControlPoints, &vertexInputStateCreateInfo, nullptr, nullptr, nullptr, nullptr);
         }
 
         if (isIndexed(m_params.testType) || m_params.testType == TestType::DRAW_SIMPLE)

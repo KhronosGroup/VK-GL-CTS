@@ -24,6 +24,7 @@
 
 #include "vktDGCGraphicsMeshTestsExt.hpp"
 #include "vktDGCGraphicsMeshConditionalTestsExt.hpp"
+#include "util/vktShaderObjectUtil.hpp"
 
 #include "vkBarrierUtil.hpp"
 #include "vkBuilderUtil.hpp"
@@ -1356,8 +1357,9 @@ tcu::TestStatus DGCMeshDrawInstance::iterate(void)
             for (const auto &stageShader : shaderMap)
                 ctx.vkd.cmdBindShadersEXT(recCmdBuffer, 1u, &stageShader.first, &stageShader.second);
 
-            bindShaderObjectState(ctx.vkd, getDeviceCreationExtensions(m_context), recCmdBuffer, viewports, scissors,
-                                  VK_PRIMITIVE_TOPOLOGY_LAST, 0u, nullptr, nullptr, nullptr, nullptr, nullptr);
+            vkt::shaderobjutil::bindShaderObjectState(
+                ctx.vkd, vkt::shaderobjutil::getDeviceCreationExtensions(m_context), recCmdBuffer, viewports, scissors,
+                VK_PRIMITIVE_TOPOLOGY_LAST, 0u, nullptr, nullptr, nullptr, nullptr, nullptr);
         }
         else
         {
