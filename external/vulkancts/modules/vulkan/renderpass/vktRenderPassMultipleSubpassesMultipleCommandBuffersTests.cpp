@@ -228,8 +228,9 @@ Move<VkRenderPass> createRenderPass(const DeviceInterface &vk, VkDevice vkDevice
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // VkPipelineStageFlags        srcStageMask
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // VkPipelineStageFlags        dstStageMask
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,          // VkAccessFlags            srcAccessMask
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,          // VkAccessFlags            dstAccessMask
-            0u                                             // VkDependencyFlags        dependencyFlags
+            VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // VkAccessFlags            dstAccessMask
+            0u                                        // VkDependencyFlags        dependencyFlags
         };
         subpassDependencies.emplace_back(subpassDependency);
         subpassDependency.srcSubpass = 1u;
