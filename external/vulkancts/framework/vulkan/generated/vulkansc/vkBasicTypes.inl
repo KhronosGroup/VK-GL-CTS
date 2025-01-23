@@ -2699,7 +2699,7 @@ enum VkDriverId
 	VK_DRIVER_ID_MESA_NVK						= 24,
 	VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA	= 25,
 	VK_DRIVER_ID_MESA_HONEYKRISP				= 26,
-	VK_DRIVER_ID_RESERVED_27					= 27,
+	VK_DRIVER_ID_VULKAN_SC_EMULATION_ON_VULKAN	= 27,
 	VK_DRIVER_ID_MAX_ENUM						= 0x7FFFFFFF
 };
 typedef VkDriverId VkDriverIdKHR;
@@ -3154,6 +3154,8 @@ typedef uint32_t VkVideoEncodeAV1StdFlagsKHR;
 typedef uint32_t VkVideoEncodeAV1RateControlFlagsKHR;
 
 typedef uint32_t VkVideoEncodeAV1SuperblockSizeFlagsKHR;
+
+typedef uint64_t VkAccessFlags3KHR;
 
 
 VK_DEFINE_PLATFORM_TYPE(XlibDisplayPtr,				void*)

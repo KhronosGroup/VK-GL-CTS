@@ -1333,6 +1333,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceLayeredApiVulkanProp
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_VULKAN_PROPERTIES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceMaintenance8FeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_8_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkRenderingAreaInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_RENDERING_AREA_INFO;
@@ -2923,6 +2928,11 @@ template<> VkStructureType getStructureType<VkBufferMemoryBarrier2> (void)
 	return VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
 }
 
+template<> VkStructureType getStructureType<VkMemoryBarrierAccessFlags3KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_BARRIER_ACCESS_FLAGS_3_KHR;
+}
+
 template<> VkStructureType getStructureType<VkDependencyInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
@@ -4178,11 +4188,6 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceAttachmentFeedbackLo
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_FEATURES_EXT;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceDepthClampZeroOneFeaturesEXT> (void)
-{
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_EXT;
-}
-
 template<> VkStructureType getStructureType<VkPhysicalDeviceAddressBindingReportFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ADDRESS_BINDING_REPORT_FEATURES_EXT;
@@ -4723,6 +4728,11 @@ template<> VkStructureType getStructureType<VkRenderPassStripeSubmitInfoARM> (vo
 	return VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_SUBMIT_INFO_ARM;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevicePipelineOpacityMicromapFeaturesARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_OPACITY_MICROMAP_FEATURES_ARM;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MAXIMAL_RECONVERGENCE_FEATURES_KHR;
@@ -4841,5 +4851,10 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceHdrVividFeaturesHUAW
 template<> VkStructureType getStructureType<VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDepthClampZeroOneFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_KHR;
 }
 

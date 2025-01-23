@@ -423,6 +423,7 @@ tcu::Format::Bitfield<32>	getVideoEncodeAV1CapabilityFlagsKHRStr						(VkVideoEn
 tcu::Format::Bitfield<32>	getVideoEncodeAV1StdFlagsKHRStr								(VkVideoEncodeAV1StdFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoEncodeAV1RateControlFlagsKHRStr						(VkVideoEncodeAV1RateControlFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoEncodeAV1SuperblockSizeFlagsKHRStr					(VkVideoEncodeAV1SuperblockSizeFlagsKHR value);
+tcu::Format::Bitfield<64>	getAccessFlags3KHRStr										(VkAccessFlags3KHR value);
 
 std::ostream&	operator<<	(std::ostream& s, const VkBaseOutStructure& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBaseInStructure& value);

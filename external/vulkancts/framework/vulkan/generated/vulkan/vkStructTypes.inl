@@ -3337,6 +3337,13 @@ struct VkPhysicalDeviceLayeredApiVulkanPropertiesKHR
 	VkPhysicalDeviceProperties2	properties;
 };
 
+struct VkPhysicalDeviceMaintenance8FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		maintenance8;
+};
+
 struct VkRenderingAreaInfo
 {
 	VkStructureType	sType;
@@ -6754,6 +6761,14 @@ struct VkBufferMemoryBarrier2
 	VkDeviceSize			size;
 };
 
+struct VkMemoryBarrierAccessFlags3KHR
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkAccessFlags3KHR	srcAccessMask3;
+	VkAccessFlags3KHR	dstAccessMask3;
+};
+
 struct VkDependencyInfo
 {
 	VkStructureType					sType;
@@ -9014,13 +9029,6 @@ struct VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT
 	VkBool32		attachmentFeedbackLoopLayout;
 };
 
-struct VkPhysicalDeviceDepthClampZeroOneFeaturesEXT
-{
-	VkStructureType	sType;
-	void*			pNext;
-	VkBool32		depthClampZeroOne;
-};
-
 struct VkPhysicalDeviceAddressBindingReportFeaturesEXT
 {
 	VkStructureType	sType;
@@ -10007,6 +10015,13 @@ struct VkRenderPassStripeSubmitInfoARM
 	const VkSemaphoreSubmitInfo*	pStripeSemaphoreInfos;
 };
 
+struct VkPhysicalDevicePipelineOpacityMicromapFeaturesARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		pipelineOpacityMicromap;
+};
+
 struct VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR
 {
 	VkStructureType	sType;
@@ -10211,6 +10226,13 @@ struct VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		vertexAttributeRobustness;
+};
+
+struct VkPhysicalDeviceDepthClampZeroOneFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		depthClampZeroOne;
 };
 
 struct StdVideoH264SpsVuiFlags
