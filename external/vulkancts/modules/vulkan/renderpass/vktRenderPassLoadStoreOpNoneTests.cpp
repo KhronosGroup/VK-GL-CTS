@@ -856,8 +856,8 @@ void LoadStoreOpNoneTestInstance::drawCommands(VkCommandBuffer cmdBuffer,
                 renderingInputAttachmentIndexInfo.colorAttachmentCount    = (uint32_t)colorAttachmentInputs.size();
                 renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices = colorAttachmentInputs.data();
 
-                vk.cmdSetRenderingAttachmentLocationsKHR(cmdBuffer, &renderingAttachmentLocationInfo);
-                vk.cmdSetRenderingInputAttachmentIndicesKHR(cmdBuffer, &renderingInputAttachmentIndexInfo);
+                vk.cmdSetRenderingAttachmentLocations(cmdBuffer, &renderingAttachmentLocationInfo);
+                vk.cmdSetRenderingInputAttachmentIndices(cmdBuffer, &renderingInputAttachmentIndexInfo);
             }
             else
                 vk.cmdNextSubpass(cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);

@@ -4471,7 +4471,7 @@ void generateRayQueryShaders(SourceCollections &programCollection, RayQueryTestP
                         "{\n"
                         "  vec4 gl_Position;\n"
                         "} gl_in[];\n"
-                        "layout(vertices = 4) out;\n"
+                        "layout(vertices = 3) out;\n"
                         "out gl_PerVertex\n"
                         "{\n"
                         "  vec4 gl_Position;\n"

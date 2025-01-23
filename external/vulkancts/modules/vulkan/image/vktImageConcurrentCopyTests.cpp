@@ -95,15 +95,15 @@ public:
     virtual void run()
     {
         vk::VkCopyMemoryToImageInfoEXT copyInfo = {
-            vk::VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO_EXT, // VkStructureType					sType;
-            nullptr,                                             // const void*						pNext;
-            0u,                                                  // VkHostImageCopyFlagsEXT			flags;
-            m_image,                                             // VkImage							dstImage;
-            m_imageLayout,                                       // VkImageLayout					dstImageLayout;
-            1u,                                                  // uint32_t						regionCount;
-            &m_region,                                           // const VkMemoryToImageCopyEXT*	pRegions;
+            vk::VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO_EXT, // VkStructureType sType;
+            nullptr,                                             // const void* pNext;
+            0u,                                                  // VkHostImageCopyFlagsEXT flags;
+            m_image,                                             // VkImage dstImage;
+            m_imageLayout,                                       // VkImageLayout dstImageLayout;
+            1u,                                                  // uint32_t regionCount;
+            &m_region,                                           // const VkMemoryToImageCopyEXT* pRegions;
         };
-        m_vk.copyMemoryToImageEXT(m_device, &copyInfo);
+        m_vk.copyMemoryToImage(m_device, &copyInfo);
 
         if (m_read)
         {
@@ -111,26 +111,26 @@ public:
                                       m_region.imageExtent.depth * m_pixelSize);
 
             vk::VkImageToMemoryCopyEXT readRegion = {
-                vk::VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY_EXT, // VkStructureType				sType;
-                nullptr,                                        // const void*					pNext;
-                data.data(),                                    // void*						pHostPointer;
-                0u,                                             // uint32_t					memoryRowLength;
-                0u,                                             // uint32_t					memoryImageHeight;
-                m_region.imageSubresource,                      // VkImageSubresourceLayers	imageSubresource;
-                m_region.imageOffset,                           // VkOffset3D					imageOffset;
-                m_region.imageExtent,                           // VkExtent3D					imageExtent;
+                vk::VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY_EXT, // VkStructureType sType;
+                nullptr,                                        // const void* pNext;
+                data.data(),                                    // void* pHostPointer;
+                0u,                                             // uint32_t memoryRowLength;
+                0u,                                             // uint32_t memoryImageHeight;
+                m_region.imageSubresource,                      // VkImageSubresourceLayers imageSubresource;
+                m_region.imageOffset,                           // VkOffset3D imageOffset;
+                m_region.imageExtent,                           // VkExtent3D imageExtent;
             };
             vk::VkCopyImageToMemoryInfoEXT readInfo = {
-                vk::VK_STRUCTURE_TYPE_COPY_IMAGE_TO_MEMORY_INFO_EXT, // VkStructureType					sType;
-                nullptr,                                             // const void*						pNext;
-                0u,                                                  // VkHostImageCopyFlagsEXT			flags;
-                m_image,                                             // VkImage							srcImage;
-                m_imageLayout,                                       // VkImageLayout					srcImageLayout;
-                1u,                                                  // uint32_t						regionCount;
-                &readRegion,                                         // const VkImageToMemoryCopyEXT*	pRegions;
+                vk::VK_STRUCTURE_TYPE_COPY_IMAGE_TO_MEMORY_INFO_EXT, // VkStructureType sType;
+                nullptr,                                             // const void* pNext;
+                0u,                                                  // VkHostImageCopyFlagsEXT flags;
+                m_image,                                             // VkImage srcImage;
+                m_imageLayout,                                       // VkImageLayout srcImageLayout;
+                1u,                                                  // uint32_t regionCount;
+                &readRegion,                                         // const VkImageToMemoryCopyEXT* pRegions;
             };
 
-            m_vk.copyImageToMemoryEXT(m_device, &readInfo);
+            m_vk.copyImageToMemory(m_device, &readInfo);
 
             const uint32_t rowLength = m_region.imageExtent.width * m_pixelSize;
             for (uint32_t k = 0; k < m_region.imageExtent.depth; ++k)
@@ -200,8 +200,8 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
     const vk::Move<vk::VkCommandBuffer> cmdBuffer(
         allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-    const uint32_t width  = 256u;
-    const uint32_t height = 256u;
+    const uint32_t width  = 128u;
+    const uint32_t height = 128u;
     const uint32_t depth  = m_parameters.type == vk::VK_IMAGE_TYPE_3D ? 32u : 1u;
 
     const vk::VkImageLayout imageLayout =
@@ -287,14 +287,14 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
     {
 #ifndef CTS_USES_VULKANSC
         vk::VkHostImageLayoutTransitionInfoEXT transition = {
-            vk::VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO_EXT, // VkStructureType			sType;
-            nullptr,                                                     // const void*				pNext;
-            **image,                                                     // VkImage					image;
-            vk::VK_IMAGE_LAYOUT_UNDEFINED,                               // VkImageLayout			oldLayout;
-            imageLayout,                                                 // VkImageLayout			newLayout;
-            subresourceRange,                                            // VkImageSubresourceRange	subresourceRange;
+            vk::VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO_EXT, // VkStructureType sType;
+            nullptr,                                                     // const void* pNext;
+            **image,                                                     // VkImage image;
+            vk::VK_IMAGE_LAYOUT_UNDEFINED,                               // VkImageLayout oldLayout;
+            imageLayout,                                                 // VkImageLayout newLayout;
+            subresourceRange,                                            // VkImageSubresourceRange subresourceRange;
         };
-        vk.transitionImageLayoutEXT(device, 1u, &transition);
+        vk.transitionImageLayout(device, 1u, &transition);
 #endif
     }
     else
@@ -359,14 +359,14 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
             void *hostPointer  = (uint8_t *)srcBufferAlloc.getHostPtr() + region.bufferOffset;
 
             vk::VkMemoryToImageCopyEXT regionInfo = {
-                vk::VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY_EXT, // VkStructureType				sType;
-                nullptr,                                        // const void*					pNext;
-                hostPointer,                                    // const void*					pHostPointer;
-                region.bufferRowLength,                         // uint32_t					    memoryRowLength;
-                region.bufferImageHeight,                       // uint32_t					    memoryImageHeight;
-                region.imageSubresource,                        // VkImageSubresourceLayers	    imageSubresource;
-                region.imageOffset,                             // VkOffset3D					imageOffset;
-                region.imageExtent,                             // VkExtent3D					imageExtent;
+                vk::VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY_EXT, // VkStructureType sType;
+                nullptr,                                        // const void* pNext;
+                hostPointer,                                    // const void* pHostPointer;
+                region.bufferRowLength,                         // uint32_t     memoryRowLength;
+                region.bufferImageHeight,                       // uint32_t     memoryImageHeight;
+                region.imageSubresource,                        // VkImageSubresourceLayers     imageSubresource;
+                region.imageOffset,                             // VkOffset3D imageOffset;
+                region.imageExtent,                             // VkExtent3D imageExtent;
             };
 
             memoryToImageCopies.push_back(regionInfo);
@@ -375,15 +375,15 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
         if (m_parameters.singleCommand)
         {
             vk::VkCopyMemoryToImageInfoEXT copyInfo = {
-                vk::VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO_EXT, // VkStructureType					sType;
-                nullptr,                                             // const void*						pNext;
-                0u,                                                  // VkHostImageCopyFlagsEXT			flags;
-                **image,                                             // VkImage							dstImage;
-                imageLayout,                                         // VkImageLayout					dstImageLayout;
-                (uint32_t)memoryToImageCopies.size(),                // uint32_t						regionCount;
-                memoryToImageCopies.data(),                          // const VkMemoryToImageCopyEXT*	pRegions;
+                vk::VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO_EXT, // VkStructureType sType;
+                nullptr,                                             // const void* pNext;
+                0u,                                                  // VkHostImageCopyFlagsEXT flags;
+                **image,                                             // VkImage dstImage;
+                imageLayout,                                         // VkImageLayout dstImageLayout;
+                (uint32_t)memoryToImageCopies.size(),                // uint32_t regionCount;
+                memoryToImageCopies.data(),                          // const VkMemoryToImageCopyEXT* pRegions;
             };
-            vk.copyMemoryToImageEXT(device, &copyInfo);
+            vk.copyMemoryToImage(device, &copyInfo);
         }
         else
         {
@@ -506,8 +506,38 @@ void ConcurrentCopyTestCase::checkSupport(vkt::Context &context) const
         TCU_THROW(NotSupportedError, "Format unsupported");
     }
 
+#ifndef CTS_USES_VULKANSC
     if (m_parameters.hostCopy)
+    {
         context.requireDeviceFunctionality("VK_EXT_host_image_copy");
+
+        const vk::VkImageLayout requiredDstLayout =
+            m_parameters.read ? vk::VK_IMAGE_LAYOUT_GENERAL : vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+        vk::VkPhysicalDeviceHostImageCopyProperties hostImageCopyProperties = vk::initVulkanStructure();
+        vk::VkPhysicalDeviceProperties2 properties2 = vk::initVulkanStructure(&hostImageCopyProperties);
+        vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
+        std::vector<vk::VkImageLayout> srcLayouts(hostImageCopyProperties.copySrcLayoutCount);
+        std::vector<vk::VkImageLayout> dstLayouts(hostImageCopyProperties.copyDstLayoutCount);
+        hostImageCopyProperties.pCopySrcLayouts = srcLayouts.data();
+        hostImageCopyProperties.pCopyDstLayouts = dstLayouts.data();
+        vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
+        bool hasRequiredLayout = false;
+        for (const auto &dstLayout : dstLayouts)
+        {
+            if (dstLayout == requiredDstLayout)
+            {
+                hasRequiredLayout = true;
+                break;
+            }
+        }
+        if (!hasRequiredLayout)
+        {
+            TCU_THROW(NotSupportedError, "Required layout not supported in "
+                                         "VkPhysicalDeviceHostImageCopyPropertiesEXT::pCopyDstLayouts");
+        }
+    }
+#endif
 }
 
 } // namespace

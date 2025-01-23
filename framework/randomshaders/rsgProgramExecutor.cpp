@@ -269,7 +269,7 @@ void ProgramExecutor::execute(const Shader &vertexShader, const Shader &fragment
             {
                 const Variable *output = *i;
 
-                if (deStringEqual(output->getName(), "gl_Position"))
+                if (strcmp(output->getName(), "gl_Position") == 0)
                     continue; // Do not store position
 
                 ExecConstValueAccess access = execCtx.getValue(output);

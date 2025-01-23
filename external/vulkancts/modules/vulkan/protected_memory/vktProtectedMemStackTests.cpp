@@ -408,7 +408,7 @@ tcu::TestCaseGroup *createStackTests(tcu::TestContext &testCtx)
     // Protected memory stack tests
     de::MovePtr<tcu::TestCaseGroup> stackGroup(new tcu::TestCaseGroup(testCtx, "stack"));
 
-    static const uint32_t stackMemSizes[] = {32, 64, 128, 256, 512, 1024};
+    static const uint32_t stackMemSizes[] = {32, 64, 128, 256, 512};
 
     for (int stackMemSizeIdx = 0; stackMemSizeIdx < DE_LENGTH_OF_ARRAY(stackMemSizes); ++stackMemSizeIdx)
     {

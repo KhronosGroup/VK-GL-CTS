@@ -2654,6 +2654,8 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo &testCa
     csSpec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = float64FeatureRequired;
     csSpec.requestedVulkanFeatures.ext16BitStorage.storageBuffer16BitAccess =
         float16FeatureRequired && !testCase.fp16Without16BitStorage;
+    csSpec.requestedVulkanFeatures.ext16BitStorage.uniformAndStorageBuffer16BitAccess =
+        csSpec.requestedVulkanFeatures.ext16BitStorage.storageBuffer16BitAccess;
     csSpec.requestedVulkanFeatures.extFloat16Int8.shaderFloat16 =
         float16CapabilityAlreadyAdded || usesFP16Constants ||
         (float16FeatureRequired && !testCase.fp16Without16BitStorage && testOperation.floatUsage == FLOAT_ARITHMETIC);
@@ -3297,7 +3299,10 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
     vulkanFeatures.extFloatControls2.shaderFloatControls2 = true;
     vulkanFeatures.extFloat16Int8.shaderFloat16           = needsShaderFloat16;
     vulkanFeatures.ext16BitStorage.storageBuffer16BitAccess =
-        float16FeatureRequired && !testCase.fp16Without16BitStorage;
+        float16FeatureRequired &&
+        (!testCase.fp16Without16BitStorage || testCaseInfo.testedStage == VK_SHADER_STAGE_VERTEX_BIT);
+    vulkanFeatures.ext16BitStorage.uniformAndStorageBuffer16BitAccess =
+        vulkanFeatures.ext16BitStorage.storageBuffer16BitAccess;
 
     // Float controls 2 still requires that the original float controls properties are supported
     FillFloatControlsProperties(vulkanFeatures.floatControlsProperties, testCase, inFloatType);

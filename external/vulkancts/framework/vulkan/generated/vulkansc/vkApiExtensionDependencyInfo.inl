@@ -385,7 +385,9 @@ bool check_VK_KHR_shader_clock(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 
 bool check_VK_KHR_global_priority(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	DE_UNREF(v);
+	if (isCompatibile(1, 4, v))
+		return true;
+
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_KHR_global_priority"))
@@ -767,7 +769,9 @@ bool check_VK_NV_external_sci_sync2(const tcu::UVec2& v, const ExtPropVect& vIEP
 
 bool check_VK_KHR_vertex_attribute_divisor(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	DE_UNREF(v);
+	if (isCompatibile(1, 4, v))
+		return true;
+
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_KHR_vertex_attribute_divisor"))
@@ -791,7 +795,9 @@ bool check_VK_QNX_external_memory_screen_buffer(const tcu::UVec2& v, const ExtPr
 
 bool check_VK_KHR_index_type_uint8(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	DE_UNREF(v);
+	if (isCompatibile(1, 4, v))
+		return true;
+
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_KHR_index_type_uint8"))
@@ -803,7 +809,9 @@ bool check_VK_KHR_index_type_uint8(const tcu::UVec2& v, const ExtPropVect& vIEP,
 
 bool check_VK_KHR_line_rasterization(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	DE_UNREF(v);
+	if (isCompatibile(1, 4, v))
+		return true;
+
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_KHR_line_rasterization"))
@@ -943,6 +951,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 static const std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>	releasedApiVersions[]	=
 {
 	std::make_tuple(541065216, 1, 1, 0),
+	std::make_tuple(541081600, 1, 1, 4),
 	std::make_tuple(541077504, 1, 1, 3),
 	std::make_tuple(541073408, 1, 1, 2),
 	std::make_tuple(541069312, 1, 1, 1),

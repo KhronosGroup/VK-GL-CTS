@@ -159,7 +159,7 @@ static void testParse(const char *cmdLine, const char *const *refArgs, int numAr
     DE_TEST_ASSERT(parsedCmdLine->numArgs == numArgs);
 
     for (argNdx = 0; argNdx < numArgs; argNdx++)
-        DE_TEST_ASSERT(deStringEqual(parsedCmdLine->args[argNdx], refArgs[argNdx]));
+        DE_TEST_ASSERT(strcmp(parsedCmdLine->args[argNdx], refArgs[argNdx]) == 0);
 
     deCommandLine_destroy(parsedCmdLine);
 }

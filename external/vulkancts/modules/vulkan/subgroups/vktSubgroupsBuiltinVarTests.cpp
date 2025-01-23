@@ -1634,17 +1634,8 @@ void supportedCheck(Context &context, CaseDefinition caseDef)
     {
         context.requireDeviceFunctionality("VK_EXT_subgroup_size_control");
 
-#ifndef CTS_USES_VULKANSC
-        const VkPhysicalDeviceSubgroupSizeControlFeatures &subgroupSizeControlFeatures =
-            context.getSubgroupSizeControlFeatures();
-        const VkPhysicalDeviceSubgroupSizeControlProperties &subgroupSizeControlProperties =
-            context.getSubgroupSizeControlProperties();
-#else
-        const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT &subgroupSizeControlFeatures =
-            context.getSubgroupSizeControlFeatures();
-        const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-            context.getSubgroupSizeControlProperties();
-#endif // CTS_USES_VULKANSC
+        const auto &subgroupSizeControlFeatures   = context.getSubgroupSizeControlFeatures();
+        const auto &subgroupSizeControlProperties = context.getSubgroupSizeControlProperties();
 
         if (subgroupSizeControlFeatures.subgroupSizeControl == false)
             TCU_THROW(NotSupportedError, "Device does not support varying subgroup sizes nor required subgroup size");
@@ -1743,14 +1734,8 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
 
     if (isCompute || isMesh)
     {
-#ifndef CTS_USES_VULKANSC
-        const VkPhysicalDeviceSubgroupSizeControlProperties &subgroupSizeControlProperties =
-            context.getSubgroupSizeControlProperties();
-#else
-        const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-            context.getSubgroupSizeControlProperties();
-#endif // CTS_USES_VULKANSC
-        TestLog &log = context.getTestContext().getLog();
+        const auto &subgroupSizeControlProperties = context.getSubgroupSizeControlProperties();
+        TestLog &log                              = context.getTestContext().getLog();
 
         switch (caseDef.testType)
         {

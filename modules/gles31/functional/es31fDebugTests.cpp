@@ -1797,7 +1797,7 @@ LabelCase::IterateResult LabelCase::iterate(void)
 
     if (outlen == 0)
         m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Failed to query debug label from object");
-    else if (deStringEqual(msg, buffer))
+    else if (strcmp(msg, buffer) == 0)
     {
         m_testCtx.getLog() << TestLog::Message << "Query returned string: \"" << buffer << "\"" << TestLog::EndMessage;
         m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -1897,7 +1897,7 @@ SyncLabelCase::IterateResult SyncLabelCase::iterate(void)
 
     if (outlen == 0)
         m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Failed to query debug label from object");
-    else if (deStringEqual(msg, buffer))
+    else if (strcmp(msg, buffer) == 0)
     {
         m_testCtx.getLog() << TestLog::Message << "Query returned string: \"" << buffer << "\"" << TestLog::EndMessage;
         m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -2136,7 +2136,7 @@ SpecifyWithLengthCase::IterateResult SpecifyWithLengthCase::iterate(void)
 
         if (outlen != 12)
             result.fail("'length' was not 12, got " + de::toString(outlen));
-        else if (deStringEqual(clipMsg, buffer))
+        else if (strcmp(clipMsg, buffer) == 0)
         {
             m_testCtx.getLog() << TestLog::Message << "Query returned string: \"" << buffer << "\""
                                << TestLog::EndMessage;
@@ -2165,7 +2165,7 @@ SpecifyWithLengthCase::IterateResult SpecifyWithLengthCase::iterate(void)
 
         if (outlen != 12)
             result.fail("'length' was not 12, got " + de::toString(outlen));
-        else if (deStringEqual(clipMsg, buffer))
+        else if (strcmp(clipMsg, buffer) == 0)
         {
             m_testCtx.getLog() << TestLog::Message << "Query returned string: \"" << buffer << "\""
                                << TestLog::EndMessage;
@@ -2258,7 +2258,7 @@ BufferLimitedLabelCase::IterateResult BufferLimitedLabelCase::iterate(void)
                 result.fail("Buffer was not null-terminated");
             else if (buffer[outlen + 1] != 'X')
                 result.fail("Query wrote over buffer bound");
-            else if (!deStringEqual(msg, buffer))
+            else if (strcmp(msg, buffer) != 0)
             {
                 buffer[63] = '\0'; // make sure buffer is null terminated before printing
                 m_testCtx.getLog() << TestLog::Message << "Query returned string: \"" << buffer << "\""
@@ -2285,7 +2285,7 @@ BufferLimitedLabelCase::IterateResult BufferLimitedLabelCase::iterate(void)
                 result.fail("Buffer was not null-terminated");
             else if (buffer[22] != 'X')
                 result.fail("Query wrote over buffer bound");
-            else if (!deStringEqual(msg, buffer))
+            else if (strcmp(msg, buffer) != 0)
             {
                 m_testCtx.getLog() << TestLog::Message << "Query returned string: \"" << buffer << "\""
                                    << TestLog::EndMessage;
@@ -2361,7 +2361,7 @@ BufferLimitedLabelCase::IterateResult BufferLimitedLabelCase::iterate(void)
                 result.fail("Buffer was not null-terminated");
             else if (buffer[outlen + 1] != 'X')
                 result.fail("Query wrote over buffer bound");
-            else if (!deStringEqual(msg, buffer))
+            else if (strcmp(msg, buffer) != 0)
             {
                 buffer[63] = '\0'; // make sure buffer is null terminated before printing
                 m_testCtx.getLog() << TestLog::Message << "Query returned string: \"" << buffer << "\""
@@ -2388,7 +2388,7 @@ BufferLimitedLabelCase::IterateResult BufferLimitedLabelCase::iterate(void)
                 result.fail("Buffer was not null-terminated");
             else if (buffer[22] != 'X')
                 result.fail("Query wrote over buffer bound");
-            else if (!deStringEqual(msg, buffer))
+            else if (strcmp(msg, buffer) != 0)
             {
                 m_testCtx.getLog() << TestLog::Message << "Query returned string: \"" << buffer << "\""
                                    << TestLog::EndMessage;

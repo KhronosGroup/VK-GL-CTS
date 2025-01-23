@@ -65,7 +65,8 @@ struct TwoCmdBuffersParams
 
 void generalCheckSupport(Context &context, bool pipelineBinds, bool computeQueue)
 {
-    checkDGCExtComputeSupport(context, pipelineBinds);
+    const auto supportType = (pipelineBinds ? DGCComputeSupportType::BIND_PIPELINE : DGCComputeSupportType::BASIC);
+    checkDGCExtComputeSupport(context, supportType);
 
     if (computeQueue)
         context.getComputeQueue();
@@ -417,8 +418,14 @@ tcu::TestStatus manyExecutesRun(Context &context, ManyDispatchesParams params)
 
             preprocessBufferCreateInfo.pNext = &usageFlags2CreateInfo;
 
-            preprocessBuffer      = createBuffer(ctx.vkd, ctx.device, &preprocessBufferCreateInfo);
-            preprocessBufferAlloc = ctx.allocator.allocate(preprocessBufferReqs, MemoryRequirement::DeviceAddress);
+            preprocessBuffer = createBuffer(ctx.vkd, ctx.device, &preprocessBufferCreateInfo);
+
+            VkMemoryRequirements bufferMemReqs;
+            ctx.vkd.getBufferMemoryRequirements(ctx.device, *preprocessBuffer, &bufferMemReqs);
+            bufferMemReqs.memoryTypeBits &= preprocessBufferReqs.memoryTypeBits;
+            bufferMemReqs.alignment = de::lcm(bufferMemReqs.alignment, preprocessBufferReqs.alignment);
+
+            preprocessBufferAlloc = ctx.allocator.allocate(bufferMemReqs, MemoryRequirement::DeviceAddress);
             VK_CHECK(ctx.vkd.bindBufferMemory(ctx.device, *preprocessBuffer, preprocessBufferAlloc->getMemory(),
                                               preprocessBufferAlloc->getOffset()));
 
@@ -664,7 +671,7 @@ public:
 
 void ScratchSpaceCase::checkSupport(Context &context) const
 {
-    checkDGCExtComputeSupport(context, true);
+    checkDGCExtComputeSupport(context, DGCComputeSupportType::BIND_PIPELINE);
     context.getComputeQueue(); // Throws NotSupportedError if not available.
 }
 
@@ -952,7 +959,9 @@ void MaxPushConstantRangeCase::checkSupport(Context &context) const
     if (m_params.useComputeQueue)
         context.getComputeQueue(); // Will throw if not available.
 
-    checkDGCExtComputeSupport(context, m_params.useExecutionSet);
+    const auto supportType =
+        (m_params.useExecutionSet ? DGCComputeSupportType::BIND_PIPELINE : DGCComputeSupportType::BASIC);
+    checkDGCExtComputeSupport(context, supportType);
 
     const auto &properties = context.getDeviceProperties();
     if (properties.limits.maxPushConstantsSize < m_params.pcBytes)
@@ -1139,7 +1148,7 @@ tcu::TestStatus MaxPushConstantRangeInstance::iterate(void)
             &bufferDescInfo,                        //  const VkDescriptorBufferInfo*   pBufferInfo;
             nullptr,                                //  const VkBufferView*             pTexelBufferView;
         };
-        ctx.vkd.cmdPushDescriptorSetKHR(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &pushWrite);
+        ctx.vkd.cmdPushDescriptorSet(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &pushWrite);
     }
     else
     {
@@ -1246,7 +1255,7 @@ void MultipleSetsCase::checkSupport(Context &context) const
     if (m_params.useComputeQueue)
         context.getComputeQueue(); // Will throw if not available.
 
-    checkDGCExtComputeSupport(context, true);
+    checkDGCExtComputeSupport(context, DGCComputeSupportType::BIND_PIPELINE);
 
     const auto &properties = context.getDeviceProperties();
 
@@ -1494,7 +1503,9 @@ protected:
 
 void IUBUsageCase::checkSupport(Context &context) const
 {
-    checkDGCExtComputeSupport(context, m_params.useExecutionSet);
+    const auto supportType =
+        (m_params.useExecutionSet ? DGCComputeSupportType::BIND_PIPELINE : DGCComputeSupportType::BASIC);
+    checkDGCExtComputeSupport(context, supportType);
     context.requireDeviceFunctionality("VK_EXT_inline_uniform_block");
 }
 
@@ -2148,8 +2159,8 @@ tcu::TestStatus DBPDInstance::iterate(void)
             nullptr,
         });
     }
-    ctx.vkd.cmdPushDescriptorSetKHR(cmdBuffer, bindPoint, *pipelineLayout, 0u, de::sizeU32(pushWrites),
-                                    de::dataOrNull(pushWrites));
+    ctx.vkd.cmdPushDescriptorSet(cmdBuffer, bindPoint, *pipelineLayout, 0u, de::sizeU32(pushWrites),
+                                 de::dataOrNull(pushWrites));
 
     IndirectCommandsLayoutBuilderExt cmdsLayoutBuilder(0u, stages, *pipelineLayout);
     if (m_params.useExecutionSet)

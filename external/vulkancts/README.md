@@ -306,6 +306,10 @@ It informs deqp-vksc application that it works as subprocess:
 
 	--deqp-subprocess=[enable|disable]
 
+For platforms where it is needed to override the default loader library path, this option can be used (e.g. loader library vulkan-1.dll):
+
+	--deqp-vk-library-path=<path>
+
 No other command line options are allowed.
 
 ### Win32

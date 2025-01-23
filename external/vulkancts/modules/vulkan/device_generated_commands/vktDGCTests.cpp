@@ -48,6 +48,7 @@
 #include "vktDGCGraphicsMeshTestsExt.hpp"
 #include "vktDGCGraphicsMiscTestsExt.hpp"
 #include "vktDGCGraphicsXfbTestsExt.hpp"
+#include "vktDGCGraphicsTessStateTestsExt.hpp"
 
 #include "vktDGCRayTracingTestsExt.hpp"
 
@@ -106,6 +107,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     extGraphicsGroup->addChild(createDGCGraphicsMeshTestsExt(testCtx));
     extGraphicsGroup->addChild(createDGCGraphicsMiscTestsExt(testCtx));
     extGraphicsGroup->addChild(createDGCGraphicsXfbTestsExt(testCtx));
+    extGraphicsGroup->addChild(createDGCGraphicsTessStateTestsExt(testCtx));
 
     extGroup->addChild(extComputeGroup.release());
     extGroup->addChild(extMiscGroup.release());

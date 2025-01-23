@@ -67,6 +67,7 @@ enum class TestType
     RAY_TRACING_PIPELINE_FROM_BINARY_DATA,
     RAY_TRACING_PIPELINE_WITH_ZERO_BINARY_COUNT,
     UNIQUE_KEY_PAIRS,
+    VALID_KEY,
 };
 
 enum class BinariesStatus
@@ -82,6 +83,8 @@ struct TestParams
     TestType type;
     bool usePipelineLibrary;
 };
+
+const uint32_t kNumPipelineLibs = 4;
 
 namespace
 {
@@ -1068,6 +1071,158 @@ tcu::TestStatus UniqueKayPairsTestInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+class PipelineBinaryTestWrapper : public PipelineBinaryWrapper
+{
+public:
+    PipelineBinaryTestWrapper(const DeviceInterface &vk, const VkDevice vkDevice) : PipelineBinaryWrapper(vk, vkDevice)
+    {
+    }
+
+    void getPipelineBinaryKeyOnly();
+};
+
+void PipelineBinaryTestWrapper::getPipelineBinaryKeyOnly()
+{
+    // for graphics pipeline libraries not all pipeline stages have to have binaries
+    const std::size_t binaryCount = m_binariesRaw.size();
+    if (binaryCount == 0)
+        return;
+
+    m_binaryKeys.resize(binaryCount);
+
+    for (std::size_t i = 0; i < binaryCount; ++i)
+    {
+        VkPipelineBinaryDataInfoKHR binaryInfo = initVulkanStructure();
+        binaryInfo.pipelineBinary              = m_binariesRaw[i];
+
+        // get binary key and data size
+        size_t binaryDataSize = 0;
+        m_binaryKeys[i]       = initVulkanStructure();
+        VK_CHECK(m_vk.getPipelineBinaryDataKHR(m_device, &binaryInfo, &m_binaryKeys[i], &binaryDataSize, NULL));
+        DE_ASSERT(binaryDataSize > 0);
+    }
+}
+
+class PipelineBinaryKeyTestInstance : public vkt::TestInstance
+{
+public:
+    PipelineBinaryKeyTestInstance(Context &context, const TestParams &testParams);
+    virtual ~PipelineBinaryKeyTestInstance(void) = default;
+    virtual tcu::TestStatus iterate(void) override;
+
+private:
+    const TestParams m_testParams;
+
+protected:
+    PipelineBinaryTestWrapper m_testBinaries[kNumPipelineLibs];
+};
+
+PipelineBinaryKeyTestInstance::PipelineBinaryKeyTestInstance(Context &context, const TestParams &testParams)
+    : TestInstance(context)
+    , m_testParams(testParams)
+    , m_testBinaries{
+          {context.getDeviceInterface(), context.getDevice()},
+          {context.getDeviceInterface(), context.getDevice()},
+          {context.getDeviceInterface(), context.getDevice()},
+          {context.getDeviceInterface(), context.getDevice()},
+      }
+{
+}
+
+tcu::TestStatus PipelineBinaryKeyTestInstance::iterate(void)
+{
+    const InstanceInterface &vki           = m_context.getInstanceInterface();
+    const DeviceInterface &vkd             = m_context.getDeviceInterface();
+    const VkDevice vkDevice                = m_context.getDevice();
+    VkPhysicalDevice vkPhysicalDevice      = m_context.getPhysicalDevice();
+    vk::BinaryCollection &binaryCollection = m_context.getBinaryCollection();
+    tcu::TestLog &log                      = m_context.getTestContext().getLog();
+    const auto Message                     = tcu::TestLog::Message;
+    const auto EndMessage                  = tcu::TestLog::EndMessage;
+    const auto pipelineConstructionType    = m_testParams.pipelineConstructionType;
+    const uint32_t renderSize              = 16;
+    bool testOk                            = true;
+
+    const std::vector<VkViewport> viewport{makeViewport(renderSize, renderSize)};
+    const std::vector<VkRect2D> scissor{makeRect2D(renderSize, renderSize)};
+    const Move<VkRenderPass> renderPass                 = makeRenderPass(vkd, vkDevice, VK_FORMAT_R8G8B8A8_UNORM);
+    const VkPipelineLayoutCreateInfo pipelineLayoutInfo = initVulkanStructure();
+    const PipelineLayoutWrapper pipelineLayout(pipelineConstructionType, vkd, vkDevice, &pipelineLayoutInfo);
+
+    ShaderWrapper vertShaderModule = ShaderWrapper(vkd, vkDevice, binaryCollection.get("vert"), 0);
+    ShaderWrapper fragShaderModule = ShaderWrapper(vkd, vkDevice, binaryCollection.get("frag"), 0);
+    GraphicsPipelineWrapper pipelineWrapper(vki, vkd, vkPhysicalDevice, vkDevice, m_context.getDeviceExtensions(),
+                                            pipelineConstructionType);
+
+    pipelineWrapper.setPipelineCreateFlags2(VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR)
+        .setDefaultRasterizationState()
+        .setDefaultColorBlendState()
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setMonolithicPipelineLayout(pipelineLayout)
+        .setupVertexInputState()
+        .setupPreRasterizationShaderState(viewport, scissor, pipelineLayout, *renderPass, 0u, vertShaderModule)
+        .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragShaderModule, 0, 0)
+        .setupFragmentOutputState(*renderPass)
+        .buildPipeline();
+
+    if (m_testParams.pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+    {
+        VkPipeline pipeline = pipelineWrapper.getPipeline();
+        m_testBinaries[0].createPipelineBinariesFromPipeline(pipeline);
+        // read key
+        m_testBinaries[0].getPipelineBinaryKeyOnly();
+
+        const uint32_t keyCount = m_testBinaries[0].getKeyCount();
+        if (!keyCount)
+            log << Message << "Pipeline binary: 0 has no keys" << EndMessage;
+
+        const VkPipelineBinaryKeyKHR *keys = m_testBinaries[0].getBinaryKeys();
+        for (uint32_t keyIdx = 0; keyIdx < keyCount; keyIdx++)
+        {
+            const uint32_t keySize = keys[keyIdx].keySize;
+            log << Message << "Pipeline binary: 0, key: " << keyIdx << " has key size: " << keySize << EndMessage;
+            if ((keySize <= 0u) || (keySize > VK_MAX_PIPELINE_BINARY_KEY_SIZE_KHR))
+            {
+                testOk = false;
+                break;
+            }
+        }
+    }
+    else
+    {
+        for (uint32_t libIdx = 0; libIdx < kNumPipelineLibs; ++libIdx)
+        {
+            VkPipeline partialPipeline = pipelineWrapper.getPartialPipeline(libIdx);
+            m_testBinaries[libIdx].createPipelineBinariesFromPipeline(partialPipeline);
+            // read key
+            m_testBinaries[libIdx].getPipelineBinaryKeyOnly();
+
+            const uint32_t keyCount = m_testBinaries[libIdx].getKeyCount();
+            if (!keyCount)
+                log << Message << "Pipeline binary: " << libIdx << " has no keys" << EndMessage;
+
+            const VkPipelineBinaryKeyKHR *keys = m_testBinaries[libIdx].getBinaryKeys();
+            for (uint32_t keyIdx = 0; keyIdx < keyCount; keyIdx++)
+            {
+                const uint32_t keySize = keys[keyIdx].keySize;
+                log << Message << "Pipeline binary: " << libIdx << ", key: " << keyIdx << " has key size: " << keySize
+                    << EndMessage;
+                if ((keys[keyIdx].keySize <= 0u) || (keys[keyIdx].keySize > VK_MAX_PIPELINE_BINARY_KEY_SIZE_KHR))
+                {
+                    testOk = false;
+                    break;
+                }
+            }
+
+            if (!testOk)
+                break;
+        }
+    }
+
+    return testOk ? tcu::TestStatus::pass("Passed") : tcu::TestStatus::pass("Failed");
+}
+
 class BaseTestCase : public vkt::TestCase
 {
 public:
@@ -1201,7 +1356,7 @@ void BaseTestCase::initPrograms(SourceCollections &programCollection) const
                                "}\n")
             << buildOptions;
     }
-    else if (m_testParams.type == TestType::UNIQUE_KEY_PAIRS)
+    else if ((m_testParams.type == TestType::UNIQUE_KEY_PAIRS) || (m_testParams.type == TestType::VALID_KEY))
     {
         programCollection.glslSources.add("vert")
             << glu::VertexSource("#version 450\n"
@@ -1273,6 +1428,8 @@ TestInstance *BaseTestCase::createInstance(Context &context) const
         (m_testParams.type == TestType::RAY_TRACING_PIPELINE_FROM_BINARY_DATA) ||
         (m_testParams.type == TestType::RAY_TRACING_PIPELINE_WITH_ZERO_BINARY_COUNT))
         return new RayTracingPipelineTestInstance(context, m_testParams);
+    if (m_testParams.type == TestType::VALID_KEY)
+        return new PipelineBinaryKeyTestInstance(context, m_testParams);
 
     return new UniqueKayPairsTestInstance(context, m_testParams);
 }
@@ -1289,6 +1446,9 @@ de::MovePtr<tcu::TestCaseGroup> addPipelineBinaryDedicatedTests(tcu::TestContext
     dedicatedTests->addChild(
         new BaseTestCase(testCtx, "graphics_pipeline_from_internal_cache",
                          {pipelineConstructionType, TestType::GRAPHICS_PIPELINE_FROM_INTERNAL_CACHE, false}));
+
+    dedicatedTests->addChild(
+        new BaseTestCase(testCtx, "valid_key", {pipelineConstructionType, TestType::VALID_KEY, false}));
 
     if (pipelineConstructionType == PipelineConstructionType::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
     {

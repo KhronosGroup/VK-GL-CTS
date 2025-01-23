@@ -52,10 +52,10 @@ public:
     ~AssetResource(void);
 
     void read(uint8_t *dst, int numBytes);
-    int getPosition(void) const;
-    void setPosition(int position);
+    uint32_t getPosition(void) const;
+    void setPosition(uint32_t position);
     bool isFinished(void) const;
-    int getSize(void) const;
+    uint32_t getSize(void) const;
 
 private:
     AssetResource(const AssetResource &other);

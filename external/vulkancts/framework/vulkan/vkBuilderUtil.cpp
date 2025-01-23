@@ -295,7 +295,7 @@ void DescriptorSetUpdateBuilder::updateWithPush(const DeviceInterface &vk, VkCom
 
     const VkWriteDescriptorSet *const writePtr = (m_writes.empty()) ? (nullptr) : (&writes[descriptorIdx]);
 
-    vk.cmdPushDescriptorSetKHR(cmd, bindPoint, pipelineLayout, setIdx, count, writePtr);
+    vk.cmdPushDescriptorSet(cmd, bindPoint, pipelineLayout, setIdx, count, writePtr);
 }
 
 #endif // CTS_USES_VULKANSC

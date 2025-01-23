@@ -1,0 +1,21 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR": [
+            {
+                "features": [
+                    "videoEncodeQuantizationMap"
+                ],
+                "requirements": [
+                    "VK_KHR_video_encode_quantization_map"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            }
+        ]
+    }
+}

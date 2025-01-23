@@ -910,7 +910,7 @@ public:
 
     DeviceContext *m_deviceContext{};
     VkVideoCoreProfile m_profile{};
-    uint32_t m_framesToCheck{};
+    size_t m_framesToCheck{};
     // Parser fields
     int32_t m_nCurrentPictureID{};
     uint32_t m_dpbSlotsMask{};
@@ -949,7 +949,7 @@ public:
     // becomes equal to m_pictureParameterUpdateCount, it will forcibly reset the current picture parameters.
     // This could be more general by taking a modulo formula, or a list of trigger numbers. But it is currently
     // only required for the h264_resolution_change_dpb test plan, so no need for complication.
-    int m_resetPictureParametersFrameTriggerHack{};
+    size_t m_resetPictureParametersFrameTriggerHack{};
     void triggerPictureParameterSequenceCount()
     {
         ++m_pictureParameterUpdateCount;
@@ -1011,7 +1011,7 @@ public:
     void parseNextChunk();
     int getNextFrame(DecodedFrame *pFrame);
     void bufferFrames(int framesToDecode);
-    int getBufferedDisplayCount() const
+    size_t getBufferedDisplayCount() const
     {
         return m_decoder->GetVideoFrameBuffer()->GetDisplayedFrameCount();
     }
@@ -1025,6 +1025,12 @@ public:
     std::shared_ptr<Demuxer> m_demuxer{};
     bool m_eos{false};
 };
+
+shared_ptr<VideoBaseDecoder> createBasicDecoder(DeviceContext *deviceContext, const VkVideoCoreProfile *profile,
+                                                size_t framesToCheck, bool resolutionChange);
+de::MovePtr<vkt::ycbcr::MultiPlaneImageData> getDecodedImageFromContext(DeviceContext &deviceContext,
+                                                                        VkImageLayout layout,
+                                                                        const DecodedFrame *frame);
 
 } // namespace video
 } // namespace vkt

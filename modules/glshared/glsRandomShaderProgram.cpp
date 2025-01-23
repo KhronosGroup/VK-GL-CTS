@@ -117,7 +117,7 @@ static const rsg::Variable *findShaderOutputByName(const rsg::Shader &shader, co
 
     for (vector<const rsg::Variable *>::const_iterator iter = outputs.begin(); iter != outputs.end(); ++iter)
     {
-        if (deStringEqual((*iter)->getName(), name))
+        if (strcmp((*iter)->getName(), name) == 0)
             return *iter;
     }
 

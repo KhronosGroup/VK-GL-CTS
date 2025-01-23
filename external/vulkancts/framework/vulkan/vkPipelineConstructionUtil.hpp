@@ -219,15 +219,20 @@ public:
     RenderPassWrapper(RenderPassWrapper &&rhs) noexcept;
     RenderPassWrapper &operator=(RenderPassWrapper &&rhs) noexcept;
 
+    // Clones the existing render pass by internally storing the same VkRenderPass handle. The new render pass wrapper
+    // will not manage the lifetime of the VkRenderPass object, but it will allow you to create new framebuffers
+    // sharing the same render pass.
+    RenderPassWrapper clone() const;
+
     ~RenderPassWrapper() = default;
 
     const VkRenderPass operator*(void) const
     {
-        return *m_renderPass;
+        return m_renderPass;
     }
     const VkRenderPass get(void) const
     {
-        return *m_renderPass;
+        return m_renderPass;
     }
     const VkFramebuffer getFramebuffer(void) const
     {
@@ -268,8 +273,9 @@ public:
 private:
     void beginRendering(const DeviceInterface &vk, const VkCommandBuffer commandBuffer) const;
 
-    bool m_isDynamicRendering;
-    vk::Move<vk::VkRenderPass> m_renderPass;
+    bool m_isDynamicRendering = false;
+    vk::Move<vk::VkRenderPass> m_renderPassPtr;
+    vk::VkRenderPass m_renderPass = VK_NULL_HANDLE;
     vk::Move<vk::VkFramebuffer> m_framebuffer;
 
 #ifndef CTS_USES_VULKANSC

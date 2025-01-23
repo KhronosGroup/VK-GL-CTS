@@ -2394,8 +2394,13 @@ const std::string TestConfigurationGetRayTMin::getShaderBodyText(const TestParam
             "  while (rayQueryProceedEXT(rayQuery))\n"
             "  {\n"
             "      if (rayQueryGetIntersectionTypeEXT(rayQuery, false) == gl_RayQueryCandidateIntersectionAABBEXT)\n"
-            "      {\n"
-            "          rayQueryConfirmIntersectionEXT(rayQuery);\n"
+            "      {\n" +
+            std::string((testParams.geomType == GEOM_TYPE_AABBS) ?
+                            "          rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n" :
+                            "") +
+            std::string((testParams.geomType == GEOM_TYPE_TRIANGLES) ?
+                            "          rayQueryConfirmIntersectionEXT(rayQuery);\n" :
+                            "") +
             "      }\n"
             "  }\n"
             "\n"
@@ -2552,8 +2557,13 @@ const std::string TestConfigurationGetWorldRayOrigin::getShaderBodyText(const Te
             "  while (rayQueryProceedEXT(rayQuery))\n"
             "  {\n"
             "      intersection_found = true;\n"
-            "\n"
-            "      rayQueryConfirmIntersectionEXT(rayQuery);\n"
+            "\n" +
+            std::string((testParams.geomType == GEOM_TYPE_AABBS) ?
+                            "      rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n" :
+                            "") +
+            std::string((testParams.geomType == GEOM_TYPE_TRIANGLES) ?
+                            "      rayQueryConfirmIntersectionEXT(rayQuery);\n" :
+                            "") +
             "  }\n"
             "\n"
             "  vec3 result_fp32 = (intersection_found) ? rayQueryGetWorldRayOriginEXT(rayQuery)\n"
@@ -2722,8 +2732,13 @@ const std::string TestConfigurationGetWorldRayDirection::getShaderBodyText(const
             "tmin, direct, tmax);\n"
             "\n"
             "  while (rayQueryProceedEXT(rayQuery))\n"
-            "  {\n"
-            "      rayQueryConfirmIntersectionEXT(rayQuery);\n"
+            "  {\n" +
+            std::string((testParams.geomType == GEOM_TYPE_AABBS) ?
+                            "      rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n" :
+                            "") +
+            std::string((testParams.geomType == GEOM_TYPE_TRIANGLES) ?
+                            "      rayQueryConfirmIntersectionEXT(rayQuery);\n" :
+                            "") +
             "\n"
             "      intersection_found = true;\n"
             "  }\n"
@@ -4351,6 +4366,8 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionCandidateAABBO
     DE_ASSERT(instancesGroupCount == 1);
     DE_ASSERT(geometriesGroupCount == 1);
     DE_ASSERT(squaresGroupCount == width * height);
+    DE_ASSERT(!usesTriangles);
+    DE_UNREF(usesTriangles); // For release builds.
 
     m_topAccelerationStructure =
         de::SharedPtr<TopLevelAccelerationStructure>(rayQueryTopLevelAccelerationStructure.release());
@@ -4380,23 +4397,10 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionCandidateAABBO
                 const float x1 = float(squareX + 1) / float(width);
                 const float y1 = float(squareY + 1) / float(height);
 
-                if (usesTriangles)
-                {
-                    geometryData.push_back(tcu::Vec3(x0, y0, 0.0));
-                    geometryData.push_back(tcu::Vec3(x0, y1, 0.0));
-                    geometryData.push_back(tcu::Vec3(x1, y1, 0.0));
+                geometryData.push_back(tcu::Vec3(x0, y0, 0.0));
+                geometryData.push_back(tcu::Vec3(x1, y1, 0.0));
 
-                    geometryData.push_back(tcu::Vec3(x1, y1, 0.0));
-                    geometryData.push_back(tcu::Vec3(x1, y0, 0.0));
-                    geometryData.push_back(tcu::Vec3(x0, y0, 0.0));
-                }
-                else
-                {
-                    geometryData.push_back(tcu::Vec3(x0, y0, 0.0));
-                    geometryData.push_back(tcu::Vec3(x1, y1, 0.0));
-                }
-
-                rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, usesTriangles, flags);
+                rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, false /* triangles */, flags);
             }
         }
 
@@ -4419,7 +4423,7 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionCandidateAABBO
 
 const std::string TestConfigurationGetIntersectionCandidateAABBOpaque::getShaderBodyText(const TestParams &testParams)
 {
-    if (testParams.geomType == GEOM_TYPE_AABBS || testParams.geomType == GEOM_TYPE_TRIANGLES)
+    if (testParams.geomType == GEOM_TYPE_AABBS)
     {
         const std::string result =
             "  uint        rayFlags = 0;\n"
@@ -4441,8 +4445,7 @@ const std::string TestConfigurationGetIntersectionCandidateAABBOpaque::getShader
             "      if (rayQueryGetIntersectionTypeEXT(rayQuery, false) == gl_RayQueryCandidateIntersectionAABBEXT)\n"
             "      {\n"
             "          result_i32 |= rayQueryGetIntersectionCandidateAABBOpaqueEXT(rayQuery) ? 1 : 0;\n"
-            "\n"
-            "          rayQueryConfirmIntersectionEXT(rayQuery);\n"
+            "          rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n"
             "      }\n"
             "  }\n"
             "\n"
@@ -4534,6 +4537,7 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionFrontFace::ini
                     geometryData.push_back(tcu::Vec3(x1, y1, 0.0));
                 }
 
+                // Note we always use triangles because FrontFace does not make sense for AABBs.
                 rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, true /* triangles */);
             }
         }
@@ -4557,7 +4561,7 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionFrontFace::ini
 
 const std::string TestConfigurationGetIntersectionFrontFace::getShaderBodyTextCandidate(const TestParams &testParams)
 {
-    if (testParams.geomType == GEOM_TYPE_AABBS || testParams.geomType == GEOM_TYPE_TRIANGLES)
+    if (testParams.geomType == GEOM_TYPE_TRIANGLES)
     {
         const std::string result = "  uint        rayFlags = 0;\n"
                                    "  uint        cullMask = 0xFF;\n"
@@ -4576,7 +4580,6 @@ const std::string TestConfigurationGetIntersectionFrontFace::getShaderBodyTextCa
                                    "  while (rayQueryProceedEXT(rayQuery))\n"
                                    "  {\n"
                                    "      result_i32 = rayQueryGetIntersectionFrontFaceEXT(rayQuery, false) ? 1 : 0;\n"
-                                   "\n"
                                    "      rayQueryConfirmIntersectionEXT(rayQuery);\n"
                                    "  }\n"
                                    "\n"
@@ -4592,7 +4595,7 @@ const std::string TestConfigurationGetIntersectionFrontFace::getShaderBodyTextCa
 
 const std::string TestConfigurationGetIntersectionFrontFace::getShaderBodyTextCommitted(const TestParams &testParams)
 {
-    if (testParams.geomType == GEOM_TYPE_AABBS || testParams.geomType == GEOM_TYPE_TRIANGLES)
+    if (testParams.geomType == GEOM_TYPE_TRIANGLES)
     {
         const std::string result =
             "  uint        rayFlags = 0;\n"
@@ -4613,7 +4616,6 @@ const std::string TestConfigurationGetIntersectionFrontFace::getShaderBodyTextCo
             "  while (rayQueryProceedEXT(rayQuery))\n"
             "  {\n"
             "      intersection_found = true;\n"
-            "\n"
             "      rayQueryConfirmIntersectionEXT(rayQuery);\n"
             "  }\n"
             "\n"
@@ -4654,6 +4656,7 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionGeometryIndex:
     const uint32_t instancesGroupCount  = testParams.instancesGroupCount;
     const uint32_t geometriesGroupCount = testParams.geometriesGroupCount;
     const uint32_t squaresGroupCount    = testParams.squaresGroupCount;
+    const bool usesTriangles            = (testParams.geomType == GeomType::GEOM_TYPE_TRIANGLES);
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
 
@@ -4687,28 +4690,36 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionGeometryIndex:
                 const float x1 = float(squareX + 1) / float(width);
                 const float y1 = float(squareY + 1) / float(height);
 
-                if ((squareNdx % 2) == 0)
+                if (usesTriangles)
                 {
-                    geometryData.push_back(tcu::Vec3(x0, y0, 0.0));
-                    geometryData.push_back(tcu::Vec3(x0, y1, 0.0));
-                    geometryData.push_back(tcu::Vec3(x1, y1, 0.0));
+                    if ((squareNdx % 2) == 0)
+                    {
+                        geometryData.push_back(tcu::Vec3(x0, y0, 0.0));
+                        geometryData.push_back(tcu::Vec3(x0, y1, 0.0));
+                        geometryData.push_back(tcu::Vec3(x1, y1, 0.0));
 
-                    geometryData.push_back(tcu::Vec3(x1, y1, 0.0));
-                    geometryData.push_back(tcu::Vec3(x1, y0, 0.0));
-                    geometryData.push_back(tcu::Vec3(x0, y0, 0.0));
+                        geometryData.push_back(tcu::Vec3(x1, y1, 0.0));
+                        geometryData.push_back(tcu::Vec3(x1, y0, 0.0));
+                        geometryData.push_back(tcu::Vec3(x0, y0, 0.0));
+                    }
+                    else
+                    {
+                        geometryData.push_back(tcu::Vec3(x1, y1, 0.0));
+                        geometryData.push_back(tcu::Vec3(x0, y1, 0.0));
+                        geometryData.push_back(tcu::Vec3(x0, y0, 0.0));
+
+                        geometryData.push_back(tcu::Vec3(x0, y0, 0.0));
+                        geometryData.push_back(tcu::Vec3(x1, y0, 0.0));
+                        geometryData.push_back(tcu::Vec3(x1, y1, 0.0));
+                    }
                 }
                 else
                 {
-                    geometryData.push_back(tcu::Vec3(x1, y1, 0.0));
-                    geometryData.push_back(tcu::Vec3(x0, y1, 0.0));
-                    geometryData.push_back(tcu::Vec3(x0, y0, 0.0));
-
-                    geometryData.push_back(tcu::Vec3(x0, y0, 0.0));
-                    geometryData.push_back(tcu::Vec3(x1, y0, 0.0));
-                    geometryData.push_back(tcu::Vec3(x1, y1, 0.0));
+                    geometryData.push_back(tcu::Vec3(x0, y0, 0.0f));
+                    geometryData.push_back(tcu::Vec3(x1, y1, 0.0f));
                 }
 
-                rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, true /* triangles */);
+                rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, usesTriangles);
             }
         }
 
@@ -4751,8 +4762,13 @@ const std::string TestConfigurationGetIntersectionGeometryIndex::getShaderBodyTe
                                    "  while (rayQueryProceedEXT(rayQuery))\n"
                                    "  {\n"
                                    "      result_i32 = rayQueryGetIntersectionGeometryIndexEXT(rayQuery, false);\n"
-                                   "\n"
-                                   "      rayQueryConfirmIntersectionEXT(rayQuery);\n"
+                                   "\n" +
+                                   std::string((testParams.geomType == GEOM_TYPE_AABBS) ?
+                                                   "      rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n" :
+                                                   "") +
+                                   std::string((testParams.geomType == GEOM_TYPE_TRIANGLES) ?
+                                                   "      rayQueryConfirmIntersectionEXT(rayQuery);\n" :
+                                                   "") +
                                    "  }\n"
                                    "\n"
                                    "  imageStore(result, pos, ivec4(result_i32, 0, 0, 0));\n";
@@ -4789,8 +4805,13 @@ const std::string TestConfigurationGetIntersectionGeometryIndex::getShaderBodyTe
             "  while (rayQueryProceedEXT(rayQuery))\n"
             "  {\n"
             "      intersection_found = true;\n"
-            "\n"
-            "      rayQueryConfirmIntersectionEXT(rayQuery);\n"
+            "\n" +
+            std::string((testParams.geomType == GEOM_TYPE_AABBS) ?
+                            "      rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n" :
+                            "") +
+            std::string((testParams.geomType == GEOM_TYPE_TRIANGLES) ?
+                            "      rayQueryConfirmIntersectionEXT(rayQuery);\n" :
+                            "") +
             "  }\n"
             "\n"
             "  result_i32 = (intersection_found) ? (rayQueryGetIntersectionGeometryIndexEXT(rayQuery, true) )\n"
@@ -4909,7 +4930,7 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionBarycentrics::
 
 const std::string TestConfigurationGetIntersectionBarycentrics::getShaderBodyTextCandidate(const TestParams &testParams)
 {
-    if (testParams.geomType == GEOM_TYPE_AABBS || testParams.geomType == GEOM_TYPE_TRIANGLES)
+    if (testParams.geomType == GEOM_TYPE_TRIANGLES)
     {
         const std::string result =
             "  uint        rayFlags = 0;\n"
@@ -4942,7 +4963,6 @@ const std::string TestConfigurationGetIntersectionBarycentrics::getShaderBodyTex
             "  while (rayQueryProceedEXT(rayQuery))\n"
             "  {\n"
             "      result_fp32 = rayQueryGetIntersectionBarycentricsEXT(rayQuery, false);\n"
-            "\n"
             "      rayQueryConfirmIntersectionEXT(rayQuery);\n"
             "  }\n"
             "\n"
@@ -4965,7 +4985,7 @@ const std::string TestConfigurationGetIntersectionBarycentrics::getShaderBodyTex
 
 const std::string TestConfigurationGetIntersectionBarycentrics::getShaderBodyTextCommitted(const TestParams &testParams)
 {
-    if (testParams.geomType == GEOM_TYPE_AABBS || testParams.geomType == GEOM_TYPE_TRIANGLES)
+    if (testParams.geomType == GEOM_TYPE_TRIANGLES)
     {
         const std::string result =
             "  uint        rayFlags = 0;\n"
@@ -4999,7 +5019,6 @@ const std::string TestConfigurationGetIntersectionBarycentrics::getShaderBodyTex
             "  while (rayQueryProceedEXT(rayQuery))\n"
             "  {\n"
             "      intersection_found = true;\n"
-            "\n"
             "      rayQueryConfirmIntersectionEXT(rayQuery);\n"
             "  }\n"
             "\n"
@@ -5051,6 +5070,7 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionInstanceShader
     const uint32_t instancesGroupCount  = testParams.instancesGroupCount;
     const uint32_t geometriesGroupCount = testParams.geometriesGroupCount;
     const uint32_t squaresGroupCount    = testParams.squaresGroupCount;
+    const bool usesTriangles            = (testParams.geomType == GeomType::GEOM_TYPE_TRIANGLES);
     uint32_t squareNdx                  = 0;
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
@@ -5082,30 +5102,38 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionInstanceShader
                 const float x1 = float(squareX + 1) / float(width);
                 const float y1 = float(squareY + 1) / float(height);
 
-                if ((squareNdx % 2) == 0)
+                if (usesTriangles)
                 {
-                    geometryData.push_back(tcu::Vec3(x0, y0, 0.0));
-                    geometryData.push_back(tcu::Vec3(x0, y1, 0.0));
-                    geometryData.push_back(tcu::Vec3(x1, y1, 0.0));
+                    if ((squareNdx % 2) == 0)
+                    {
+                        geometryData.push_back(tcu::Vec3(x0, y0, 0.0));
+                        geometryData.push_back(tcu::Vec3(x0, y1, 0.0));
+                        geometryData.push_back(tcu::Vec3(x1, y1, 0.0));
 
-                    geometryData.push_back(tcu::Vec3(x1, y1, 0.0));
-                    geometryData.push_back(tcu::Vec3(x1, y0, 0.0));
-                    geometryData.push_back(tcu::Vec3(x0, y0, 0.0));
+                        geometryData.push_back(tcu::Vec3(x1, y1, 0.0));
+                        geometryData.push_back(tcu::Vec3(x1, y0, 0.0));
+                        geometryData.push_back(tcu::Vec3(x0, y0, 0.0));
+                    }
+                    else
+                    {
+                        geometryData.push_back(tcu::Vec3(x1, y1, 0.0));
+                        geometryData.push_back(tcu::Vec3(x0, y1, 0.0));
+                        geometryData.push_back(tcu::Vec3(x0, y0, 0.0));
+
+                        geometryData.push_back(tcu::Vec3(x0, y0, 0.0));
+                        geometryData.push_back(tcu::Vec3(x1, y0, 0.0));
+                        geometryData.push_back(tcu::Vec3(x1, y1, 0.0));
+                    }
                 }
                 else
                 {
-                    geometryData.push_back(tcu::Vec3(x1, y1, 0.0));
-                    geometryData.push_back(tcu::Vec3(x0, y1, 0.0));
-                    geometryData.push_back(tcu::Vec3(x0, y0, 0.0));
-
-                    geometryData.push_back(tcu::Vec3(x0, y0, 0.0));
-                    geometryData.push_back(tcu::Vec3(x1, y0, 0.0));
-                    geometryData.push_back(tcu::Vec3(x1, y1, 0.0));
+                    geometryData.push_back(tcu::Vec3(x0, y0, 0.0f));
+                    geometryData.push_back(tcu::Vec3(x1, y1, 0.0f));
                 }
 
                 m_expected.at(squareNdx) = ((1 << 24) - 1) / static_cast<uint32_t>(m_expected.size()) * squareNdx;
 
-                rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, true /* triangles */);
+                rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, usesTriangles);
 
                 rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
                 m_bottomAccelerationStructures.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(
@@ -5146,8 +5174,13 @@ const std::string TestConfigurationGetIntersectionInstanceShaderBindingTableReco
             "  {\n"
             "      result_i32 = int(rayQueryGetIntersectionInstanceShaderBindingTableRecordOffsetEXT(rayQuery, false) "
             ");\n"
-            "\n"
-            "      rayQueryConfirmIntersectionEXT(rayQuery);\n"
+            "\n" +
+            std::string((testParams.geomType == GEOM_TYPE_AABBS) ?
+                            "      rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n" :
+                            "") +
+            std::string((testParams.geomType == GEOM_TYPE_TRIANGLES) ?
+                            "      rayQueryConfirmIntersectionEXT(rayQuery);\n" :
+                            "") +
             "  }\n"
             "\n"
             "  imageStore(result, pos, ivec4(result_i32, 0, 0, 0));\n";
@@ -5184,8 +5217,13 @@ const std::string TestConfigurationGetIntersectionInstanceShaderBindingTableReco
             "  while (rayQueryProceedEXT(rayQuery))\n"
             "  {\n"
             "      intersection_found = true;\n"
-            "\n"
-            "      rayQueryConfirmIntersectionEXT(rayQuery);\n"
+            "\n" +
+            std::string((testParams.geomType == GEOM_TYPE_AABBS) ?
+                            "      rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n" :
+                            "") +
+            std::string((testParams.geomType == GEOM_TYPE_TRIANGLES) ?
+                            "      rayQueryConfirmIntersectionEXT(rayQuery);\n" :
+                            "") +
             "  }\n"
             "\n"
             "  result_i32 = (intersection_found) ? "
@@ -5231,6 +5269,7 @@ const VkAccelerationStructureKHR *TestConfigurationRayQueryTerminate::initAccele
     const uint32_t instancesGroupCount  = testParams.instancesGroupCount;
     const uint32_t geometriesGroupCount = testParams.geometriesGroupCount;
     const uint32_t squaresGroupCount    = testParams.squaresGroupCount;
+    const bool usesTriangles            = (testParams.geomType == GeomType::GEOM_TYPE_TRIANGLES);
     uint32_t squareNdx                  = 0;
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
@@ -5264,7 +5303,7 @@ const VkAccelerationStructureKHR *TestConfigurationRayQueryTerminate::initAccele
                     const float x1 = float(squareX + 1) / float(width);
                     const float y1 = float(squareY + 1) / float(height);
 
-                    if (testParams.geomType == GeomType::GEOM_TYPE_TRIANGLES)
+                    if (usesTriangles)
                     {
                         if ((squareNdx % 2) == 0)
                         {
@@ -5297,8 +5336,7 @@ const VkAccelerationStructureKHR *TestConfigurationRayQueryTerminate::initAccele
                 m_expected.at(squareNdx) = (1 << N_RAY_QUERIES_TO_USE) - 1;
 
                 rayQueryBottomLevelAccelerationStructure->addGeometry(
-                    geometryData, (testParams.geomType == GeomType::GEOM_TYPE_TRIANGLES),
-                    VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
+                    geometryData, usesTriangles, VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
 
                 rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
                 m_bottomAccelerationStructures.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(
@@ -5417,6 +5455,7 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionType::initAcce
     const uint32_t instancesGroupCount  = testParams.instancesGroupCount;
     const uint32_t geometriesGroupCount = testParams.geometriesGroupCount;
     const uint32_t squaresGroupCount    = testParams.squaresGroupCount;
+    const bool usesTriangles            = (testParams.geomType == GEOM_TYPE_TRIANGLES);
     uint32_t squareNdx                  = 0;
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
@@ -5450,7 +5489,7 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionType::initAcce
 
                 if ((squareNdx % 2) == 0)
                 {
-                    if (testParams.geomType == GEOM_TYPE_TRIANGLES)
+                    if (usesTriangles)
                     {
                         geometryData.push_back(tcu::Vec3(x0, y0, 0.0));
                         geometryData.push_back(tcu::Vec3(x0, y1, 0.0));
@@ -5467,18 +5506,16 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionType::initAcce
                     }
 
                     m_expected.at(squareNdx) = (testParams.testType == TEST_TYPE_GET_INTERSECTION_TYPE_CANDIDATE) ?
-                                                   (testParams.geomType == GEOM_TYPE_TRIANGLES) ?
+                                                   (usesTriangles) ?
                                                    0 /* gl_RayQueryCandidateIntersectionTriangleEXT  */
                                                    :
                                                    1 /* gl_RayQueryCandidateIntersectionAABBEXT      */
                                                :
-                                               (testParams.geomType == GEOM_TYPE_TRIANGLES) ?
-                                                   1 /* gl_RayQueryCommittedIntersectionTriangleEXT  */
-                                                   :
-                                                   2; /* gl_RayQueryCommittedIntersectionGeneratedEXT */
+                                               (usesTriangles) ? 1 /* gl_RayQueryCommittedIntersectionTriangleEXT  */
+                                                                 :
+                                                                 2; /* gl_RayQueryCommittedIntersectionGeneratedEXT */
 
-                    rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData,
-                                                                          (testParams.geomType == GEOM_TYPE_TRIANGLES));
+                    rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, usesTriangles);
 
                     rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
                     m_bottomAccelerationStructures.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(
@@ -5700,7 +5737,13 @@ const std::string TestConfigurationUsingWrapperFunction::getShaderBodyText(const
     //    imageStore(result, pos, ivec4(rayQueryWrapper(rayQuery, 0, rayQuery), 0, 0, 0));
     // }
 
-    return "OpCapability Shader\n"
+    // The statement to confirm intersections is different depending on the geometry type.
+    const std::string confirmationOp =
+        ((testParams.geomType == GEOM_TYPE_AABBS) ? "OpRayQueryGenerateIntersectionKHR %local_var_ray_query_ptr %59\n" :
+                                                    "OpRayQueryConfirmIntersectionKHR %local_var_ray_query_ptr\n");
+
+    return std::string() +
+           "OpCapability Shader\n"
            "OpCapability RayQueryKHR\n"
            "OpExtension \"SPV_KHR_ray_query\"\n"
            "%1 = OpExtInstImport \"GLSL.std.450\"\n"
@@ -5838,8 +5881,8 @@ const std::string TestConfigurationUsingWrapperFunction::getShaderBodyText(const
            "OpBranchConditional %24 %19 %20\n"
            "%19 = OpLabel\n"
            "OpStore %16 %25\n"
-           "OpStore %local_var_ray_query_ptr %13\n"
-           "OpRayQueryConfirmIntersectionKHR %local_var_ray_query_ptr\n"
+           "OpStore %local_var_ray_query_ptr %13\n" +
+           confirmationOp +
            "OpBranch %21\n"
            "%21 = OpLabel\n"
            "OpBranch %18\n"

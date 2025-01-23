@@ -11228,5 +11228,6 @@ KHR-GL42.texture_view.view_classes
 KHR-GL42.texture_view.coherency
 KHR-GL42.texture_view.base_and_max_levels
 KHR-GL42.texture_view.reference_counting
+KHR-GL42.bind_image_texture.single_layer
 KHR-GL42.shaders42.declarations.declarations.layout_qualifier_on_image_function_parameter_vertex
 KHR-GL42.shaders42.declarations.declarations.layout_qualifier_on_image_function_parameter_fragment

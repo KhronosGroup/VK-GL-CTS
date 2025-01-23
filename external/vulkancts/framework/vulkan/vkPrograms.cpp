@@ -624,7 +624,8 @@ void shadercacheSave(const vk::ProgramBinary *binary, const std::string &shaders
             cacheFileMutex->unlock();
             return;
         }
-        fclose(file);
+        if (file)
+            fclose(file);
     }
 
     if (!de::FilePath(filePath.getDirName()).exists())

@@ -353,7 +353,7 @@ void DrawIndexed::cmdBindIndexBufferImpl(vk::VkCommandBuffer commandBuffer, vk::
 {
 #ifndef CTS_USES_VULKANSC
     if (m_testSpec.useMaintenance5Ext)
-        m_vk.cmdBindIndexBuffer2KHR(commandBuffer, indexBuffer, offset, dataSize, indexType);
+        m_vk.cmdBindIndexBuffer2(commandBuffer, indexBuffer, offset, dataSize, indexType);
     else
 #endif
     {
@@ -761,7 +761,7 @@ tcu::TestStatus DrawIndexedMaintenance6::iterate(void)
 #ifndef CTS_USES_VULKANSC
     if (m_testSpec.bindIndexBuffer2)
     {
-        m_vk.cmdBindIndexBuffer2KHR(*m_cmdBuffer, VK_NULL_HANDLE, 0, 0, vk::VK_INDEX_TYPE_UINT32);
+        m_vk.cmdBindIndexBuffer2(*m_cmdBuffer, VK_NULL_HANDLE, 0, 0, vk::VK_INDEX_TYPE_UINT32);
     }
     else
 #endif

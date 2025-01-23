@@ -32124,35 +32124,36 @@ static void print_VkPhysicalDeviceShaderClockFeaturesKHR(const VkPhysicalDeviceS
         _OUT << "}" << std::endl;
 }
 
-static std::map<uint64_t, std::string> VkQueueGlobalPriorityKHR_map = {
+static std::map<uint64_t, std::string> VkQueueGlobalPriority_map = {
+    std::make_pair(128, "VK_QUEUE_GLOBAL_PRIORITY_LOW"),
+    std::make_pair(256, "VK_QUEUE_GLOBAL_PRIORITY_MEDIUM"),
     std::make_pair(128, "VK_QUEUE_GLOBAL_PRIORITY_LOW_KHR"),
     std::make_pair(256, "VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR"),
     std::make_pair(512, "VK_QUEUE_GLOBAL_PRIORITY_HIGH_KHR"),
     std::make_pair(1024, "VK_QUEUE_GLOBAL_PRIORITY_REALTIME_KHR"),
 };
-static void print_VkQueueGlobalPriorityKHR(VkQueueGlobalPriorityKHR obj, const std::string &str,
-                                           bool commaNeeded = true)
+static void print_VkQueueGlobalPriority(VkQueueGlobalPriority obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
         _OUT << "\"" << str << "\""
              << " : ";
     if (commaNeeded)
-        _OUT << "\"" << VkQueueGlobalPriorityKHR_map[obj] << "\"," << std::endl;
+        _OUT << "\"" << VkQueueGlobalPriority_map[obj] << "\"," << std::endl;
     else
-        _OUT << "\"" << VkQueueGlobalPriorityKHR_map[obj] << "\"" << std::endl;
+        _OUT << "\"" << VkQueueGlobalPriority_map[obj] << "\"" << std::endl;
 }
-static void print_VkQueueGlobalPriorityKHR(const VkQueueGlobalPriorityKHR *obj, const std::string &str,
-                                           bool commaNeeded = true)
+static void print_VkQueueGlobalPriority(const VkQueueGlobalPriority *obj, const std::string &str,
+                                        bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
         _OUT << "\"" << str << "\""
              << " : ";
     if (commaNeeded)
-        _OUT << "\"" << VkQueueGlobalPriorityKHR_map[*obj] << "\"," << std::endl;
+        _OUT << "\"" << VkQueueGlobalPriority_map[*obj] << "\"," << std::endl;
     else
-        _OUT << "\"" << VkQueueGlobalPriorityKHR_map[*obj] << "\"" << std::endl;
+        _OUT << "\"" << VkQueueGlobalPriority_map[*obj] << "\"" << std::endl;
 }
 
 static void print_VkDeviceQueueGlobalPriorityCreateInfoKHR(VkDeviceQueueGlobalPriorityCreateInfoKHR obj,
@@ -32176,7 +32177,7 @@ static void print_VkDeviceQueueGlobalPriorityCreateInfoKHR(VkDeviceQueueGlobalPr
              << "," << std::endl;
     }
 
-    print_VkQueueGlobalPriorityKHR(obj.globalPriority, "globalPriority", 0);
+    print_VkQueueGlobalPriority(obj.globalPriority, "globalPriority", 0);
 
     INDENT(-4);
     PRINT_SPACE
@@ -32206,7 +32207,7 @@ static void print_VkDeviceQueueGlobalPriorityCreateInfoKHR(const VkDeviceQueueGl
              << "," << std::endl;
     }
 
-    print_VkQueueGlobalPriorityKHR(obj->globalPriority, "globalPriority", 0);
+    print_VkQueueGlobalPriority(obj->globalPriority, "globalPriority", 0);
 
     INDENT(-4);
     PRINT_SPACE
@@ -32304,10 +32305,10 @@ static void print_VkQueueFamilyGlobalPriorityPropertiesKHR(VkQueueFamilyGlobalPr
     _OUT << "\"priorities\":" << std::endl;
     PRINT_SPACE
     _OUT << "[" << std::endl;
-    for (unsigned int i = 0; i < VK_MAX_GLOBAL_PRIORITY_SIZE_KHR; i++)
+    for (unsigned int i = 0; i < VK_MAX_GLOBAL_PRIORITY_SIZE; i++)
     {
-        bool isCommaNeeded = (i + 1) != VK_MAX_GLOBAL_PRIORITY_SIZE_KHR;
-        print_VkQueueGlobalPriorityKHR(obj.priorities[i], "", isCommaNeeded);
+        bool isCommaNeeded = (i + 1) != VK_MAX_GLOBAL_PRIORITY_SIZE;
+        print_VkQueueGlobalPriority(obj.priorities[i], "", isCommaNeeded);
     }
     PRINT_SPACE
     _OUT << "]"
@@ -32347,10 +32348,10 @@ static void print_VkQueueFamilyGlobalPriorityPropertiesKHR(const VkQueueFamilyGl
     _OUT << "\"priorities\":" << std::endl;
     PRINT_SPACE
     _OUT << "[" << std::endl;
-    for (unsigned int i = 0; i < VK_MAX_GLOBAL_PRIORITY_SIZE_KHR; i++)
+    for (unsigned int i = 0; i < VK_MAX_GLOBAL_PRIORITY_SIZE; i++)
     {
-        bool isCommaNeeded = (i + 1) != VK_MAX_GLOBAL_PRIORITY_SIZE_KHR;
-        print_VkQueueGlobalPriorityKHR(obj->priorities[i], "", isCommaNeeded);
+        bool isCommaNeeded = (i + 1) != VK_MAX_GLOBAL_PRIORITY_SIZE;
+        print_VkQueueGlobalPriority(obj->priorities[i], "", isCommaNeeded);
     }
     PRINT_SPACE
     _OUT << "]"
@@ -36377,7 +36378,7 @@ static std::map<uint64_t, std::string> VkLineRasterizationModeKHR_map = {
     std::make_pair(2, "VK_LINE_RASTERIZATION_MODE_BRESENHAM_KHR"),
     std::make_pair(3, "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_KHR"),
 };
-static void print_VkLineRasterizationModeKHR(VkLineRasterizationModeKHR obj, const std::string &str,
+static void print_VkLineRasterizationModeKHR(VkLineRasterizationMode obj, const std::string &str,
                                              bool commaNeeded = true)
 {
     PRINT_SPACE
@@ -36389,7 +36390,7 @@ static void print_VkLineRasterizationModeKHR(VkLineRasterizationModeKHR obj, con
     else
         _OUT << "\"" << VkLineRasterizationModeKHR_map[obj] << "\"" << std::endl;
 }
-static void print_VkLineRasterizationModeKHR(const VkLineRasterizationModeKHR *obj, const std::string &str,
+static void print_VkLineRasterizationModeKHR(const VkLineRasterizationMode *obj, const std::string &str,
                                              bool commaNeeded = true)
 {
     PRINT_SPACE

@@ -659,19 +659,19 @@ string getSpirvCapabilityStr(const char *spirvCapability, InputWidth inputWidth)
 
     if (spirvCapability)
     {
-        if (has8BitInputWidth(inputWidth) || deStringEqual("Int8", spirvCapability))
+        if (has8BitInputWidth(inputWidth) || strcmp("Int8", spirvCapability) == 0)
             str += "OpCapability Int8\n";
 
-        if (has16BitInputWidth(inputWidth) || deStringEqual("Int16", spirvCapability))
+        if (has16BitInputWidth(inputWidth) || strcmp("Int16", spirvCapability) == 0)
             str += "OpCapability Int16\n";
 
-        if (has64BitInputWidth(inputWidth) || deStringEqual("Int64", spirvCapability))
+        if (has64BitInputWidth(inputWidth) || strcmp("Int64", spirvCapability) == 0)
             str += "OpCapability Int64\n";
 
-        if (deStringEqual("Int8", spirvCapability))
+        if (strcmp("Int8", spirvCapability) == 0)
             str += "OpCapability UniformAndStorageBuffer8BitAccess\n";
 
-        if (deStringEqual("Int16", spirvCapability))
+        if (strcmp("Int16", spirvCapability) == 0)
             str += "OpCapability UniformAndStorageBuffer16BitAccess\n";
     }
     else
@@ -1563,9 +1563,8 @@ void SpvAsmTypeTests<T>::createStageTests(const char *testName, GraphicsResource
         (inputWidth == WIDTH_DEFAULT) ? ("") : getOtherSizeTypes(m_inputType, m_vectorSize, inputWidth);
 
     specs["u32_function_pointer"] =
-        deStringEqual(m_spirvTestType.c_str(), "i32") ?
-            ("") :
-            ("%fp_" + m_spirvTestType + " = OpTypePointer Function %" + m_spirvTestType + "\n");
+        m_spirvTestType == "i32" ? ("") :
+                                   ("%fp_" + m_spirvTestType + " = OpTypePointer Function %" + m_spirvTestType + "\n");
 
     if (spirvExtension)
         spirvExtensions += "%ext1 = OpExtInstImport \"" + string(spirvExtension) + "\"";

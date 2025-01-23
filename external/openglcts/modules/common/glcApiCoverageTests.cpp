@@ -1774,11 +1774,11 @@ tcu::TestNode::IterateResult ApiCoverageTestCase::iterate()
         switch (currElement)
         {
         case xe::xml::ELEMENT_START:
-            if (deStringEqual(elemName, "func"))
+            if (strcmp(elemName, "func") == 0)
             {
                 skan_funcs = true;
             }
-            else if (deStringEqual(elemName, "enum"))
+            else if (strcmp(elemName, "enum") == 0)
             {
                 skan_enums = true;
             }
@@ -1787,18 +1787,18 @@ tcu::TestNode::IterateResult ApiCoverageTestCase::iterate()
         case xe::xml::ELEMENT_DATA:
             if (skan_funcs)
             {
-                if (name.empty() && deStringEqual(elemName, "name"))
+                if (name.empty() && strcmp(elemName, "name") == 0)
                 {
                     xmlParser.getDataStr(name);
                 }
             }
             else if (skan_enums)
             {
-                if (name.empty() && deStringEqual(elemName, "name"))
+                if (name.empty() && strcmp(elemName, "name") == 0)
                 {
                     xmlParser.getDataStr(name);
                 }
-                else if (value.empty() && deStringEqual(elemName, "value"))
+                else if (value.empty() && strcmp(elemName, "value") == 0)
                 {
                     xmlParser.getDataStr(value);
                 }
@@ -1807,7 +1807,7 @@ tcu::TestNode::IterateResult ApiCoverageTestCase::iterate()
 
         case xe::xml::ELEMENT_END:
 
-            if (deStringEqual(elemName, "func"))
+            if (strcmp(elemName, "func") == 0)
             {
                 skan_funcs = false;
                 if (!verifyFunc(name))
@@ -1820,7 +1820,7 @@ tcu::TestNode::IterateResult ApiCoverageTestCase::iterate()
 
                 name.clear();
             }
-            else if (deStringEqual(elemName, "enum"))
+            else if (strcmp(elemName, "enum") == 0)
             {
                 skan_enums = false;
 

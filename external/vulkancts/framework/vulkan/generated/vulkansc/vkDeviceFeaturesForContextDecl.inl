@@ -9,7 +9,7 @@ const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&				getDepthClipEnableFeatu
 const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&				getPerformanceQueryFeatures					(void) const;
 const vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&		getBlendOperationAdvancedFeaturesEXT		(void) const;
 const vk::VkPhysicalDeviceShaderClockFeaturesKHR&					getShaderClockFeatures						(void) const;
-const vk::VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR&			getGlobalPriorityQueryFeatures				(void) const;
+const vk::VkPhysicalDeviceGlobalPriorityQueryFeatures&				getGlobalPriorityQueryFeatures				(void) const;
 const vk::VkPhysicalDeviceShaderTerminateInvocationFeatures&		getShaderTerminateInvocationFeatures		(void) const;
 const vk::VkPhysicalDeviceSubgroupSizeControlFeatures&				getSubgroupSizeControlFeatures				(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR&			getFragmentShadingRateFeatures				(void) const;
@@ -32,10 +32,10 @@ const vk::VkPhysicalDeviceExternalMemorySciBufFeaturesNV&			getExternalMemorySci
 const vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT&			getExtendedDynamicState2FeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceColorWriteEnableFeaturesEXT&				getColorWriteEnableFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceExternalSciSync2FeaturesNV&				getExternalSciSync2FeaturesNV				(void) const;
-const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR&		getVertexAttributeDivisorFeatures			(void) const;
+const vk::VkPhysicalDeviceVertexAttributeDivisorFeatures&			getVertexAttributeDivisorFeatures			(void) const;
 const vk::VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&	getExternalMemoryScreenBufferFeaturesQNX	(void) const;
-const vk::VkPhysicalDeviceIndexTypeUint8FeaturesKHR&				getIndexTypeUint8Features					(void) const;
-const vk::VkPhysicalDeviceLineRasterizationFeaturesKHR&				getLineRasterizationFeatures				(void) const;
+const vk::VkPhysicalDeviceIndexTypeUint8Features&					getIndexTypeUint8Features					(void) const;
+const vk::VkPhysicalDeviceLineRasterizationFeatures&				getLineRasterizationFeatures				(void) const;
 const vk::VkPhysicalDeviceVariablePointersFeatures&					getVariablePointersFeatures					(void) const;
 const vk::VkPhysicalDeviceMultiviewFeatures&						getMultiviewFeatures						(void) const;
 const vk::VkPhysicalDevice16BitStorageFeatures&						get16BitStorageFeatures						(void) const;
@@ -55,4 +55,3 @@ const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeatures&		getUniformBuffer
 const vk::VkPhysicalDeviceBufferDeviceAddressFeatures&				getBufferDeviceAddressFeatures				(void) const;
 const vk::VkPhysicalDeviceImagelessFramebufferFeatures&				getImagelessFramebufferFeatures				(void) const;
 const vk::VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures&		getSeparateDepthStencilLayoutsFeatures		(void) const;
-const vk::VkPhysicalDeviceVulkanSC10Features&						getVulkanSC10Features						(void) const;
