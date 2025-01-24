@@ -6951,6 +6951,7 @@ public:
         bool alphaToCoverage;
         bool useIES;
         bool usePreprocess;
+        bool useSampleMask;
 
         VkShaderStageFlags getShaderStages() const
         {
@@ -7122,13 +7123,22 @@ void DynamicA2CCase::initPrograms(vk::SourceCollections &programCollection) cons
     const auto fragColors = m_params.getFragColors();
     const auto colorCount = de::sizeU32(fragColors);
 
+    std::string sampleMaskUsage;
+    if (m_params.useSampleMask)
+    {
+        std::ostringstream sampleMaskUsageStream;
+        sampleMaskUsageStream << "    const bool isTopLeftPixel = (gl_FragCoord.x < 1.0 && gl_FragCoord.y < 1.0);\n"
+                              << "    gl_SampleMask[0] = (isTopLeftPixel ? 0 : 0xFF);\n";
+        sampleMaskUsage = sampleMaskUsageStream.str();
+    }
+
     for (uint32_t i = 0u; i < colorCount; ++i)
     {
         std::ostringstream frag;
         frag << "#version 460\n"
              << "layout (location=0) out vec4 outColor;\n"
              << "void main (void) {\n"
-             << "    outColor = vec4" << fragColors.at(i) << ";\n"
+             << sampleMaskUsage << "    outColor = vec4" << fragColors.at(i) << ";\n"
              << "}\n";
         const auto shaderName = "frag" + std::to_string(i);
         programCollection.glslSources.add(shaderName) << glu::FragmentSource(frag.str());
@@ -8457,19 +8467,18 @@ tcu::TestCaseGroup *createDGCGraphicsMiscTestsExt(tcu::TestContext &testCtx)
             for (const bool useIES : {false, true})
                 for (const bool preprocess : {false, true})
                     for (const bool useA2C : {false, true})
-                    {
-                        const DynamicA2CInstance::Params params{
-                            constructionTypeCase.constructionType,
-                            useA2C,
-                            useIES,
-                            preprocess,
-                        };
-                        const auto testName = constructionTypeCase.suffix + std::string("_dynamic_a2c") +
-                                              (useA2C ? "_enabled" : "_disabled") + (useIES ? "_ies" : "") +
-                                              (preprocess ? "_preprocess" : "");
+                        for (const bool useSampleMask : {false, true})
+                        {
+                            const DynamicA2CInstance::Params params{
+                                constructionTypeCase.constructionType, useA2C, useIES, preprocess, useSampleMask,
+                            };
+                            const auto testName = constructionTypeCase.suffix + std::string("_dynamic_a2c") +
+                                                  (useA2C ? "_enabled" : "_disabled") + (useIES ? "_ies" : "") +
+                                                  (preprocess ? "_preprocess" : "") +
+                                                  (useSampleMask ? "_sample_mask" : "");
 
-                        mainGroup->addChild(new DynamicA2CCase(testCtx, testName, params));
-                    }
+                            mainGroup->addChild(new DynamicA2CCase(testCtx, testName, params));
+                        }
         }
     }
 
