@@ -139,18 +139,21 @@ public:
         m_hasOpacityMicromap      = true;
         m_opacityGeometryMicromap = *opacityGeometryMicromap;
     }
-    virtual uint32_t getVertexCount(void) const         = 0;
-    virtual const uint8_t *getVertexPointer(void) const = 0;
-    virtual VkDeviceSize getVertexStride(void) const    = 0;
-    virtual VkDeviceSize getAABBStride(void) const      = 0;
-    virtual size_t getVertexByteSize(void) const        = 0;
-    virtual uint32_t getIndexCount(void) const          = 0;
-    virtual const uint8_t *getIndexPointer(void) const  = 0;
-    virtual VkDeviceSize getIndexStride(void) const     = 0;
-    virtual size_t getIndexByteSize(void) const         = 0;
-    virtual uint32_t getPrimitiveCount(void) const      = 0;
-    virtual void addVertex(const tcu::Vec3 &vertex)     = 0;
-    virtual void addIndex(const uint32_t &index)        = 0;
+    virtual uint32_t getVertexCount(void) const                           = 0;
+    virtual const uint8_t *getVertexPointer(void) const                   = 0;
+    virtual VkDeviceSize getVertexStride(void) const                      = 0;
+    virtual VkDeviceSize getAABBStride(void) const                        = 0;
+    virtual size_t getVertexByteSize(void) const                          = 0;
+    virtual uint32_t getIndexCount(void) const                            = 0;
+    virtual const uint8_t *getIndexPointer(void) const                    = 0;
+    virtual VkDeviceSize getIndexStride(void) const                       = 0;
+    virtual size_t getIndexByteSize(void) const                           = 0;
+    virtual const uint8_t *getTransformPointer(void) const                = 0;
+    virtual size_t getTransformByteSize(void) const                       = 0;
+    virtual uint32_t getPrimitiveCount(void) const                        = 0;
+    virtual void addVertex(const tcu::Vec3 &vertex)                       = 0;
+    virtual void addIndex(const uint32_t &index)                          = 0;
+    virtual void setTransformMatrix(VkTransformMatrixKHR transformMatrix) = 0;
 
 private:
     VkGeometryTypeKHR m_geometryType;
@@ -432,10 +435,13 @@ public:
     const uint8_t *getIndexPointer(void) const override;
     VkDeviceSize getIndexStride(void) const override;
     size_t getIndexByteSize(void) const override;
+    const uint8_t *getTransformPointer(void) const override;
+    size_t getTransformByteSize(void) const override;
     uint32_t getPrimitiveCount(void) const override;
 
     void addVertex(const tcu::Vec3 &vertex) override;
     void addIndex(const uint32_t &index) override;
+    void setTransformMatrix(VkTransformMatrixKHR transformMatrix) override;
 
 private:
     void init();                           // To be run in constructors.
@@ -452,18 +458,18 @@ private:
     //
     //    struct Vertex
     //    {
-    // V vertex;
-    // uint8_t padding[m_paddingBlocks * sizeof(V)];
-    // };
+    //        V vertex;
+    //        uint8_t padding[m_paddingBlocks * sizeof(V)];
+    //    };
     //
     // For AABBs, the padding block has a size that is a multiple of kAABBPadBaseSize (see below) and vertices are stored in pairs
     // before the padding block. This is equivalent to:
     //
-    //        struct VertexPair
-    //        {
-    // V vertices[2];
-    // uint8_t padding[m_paddingBlocks * kAABBPadBaseSize];
-    // };
+    //    struct VertexPair
+    //    {
+    //        V vertices[2];
+    //        uint8_t padding[m_paddingBlocks * kAABBPadBaseSize];
+    //    };
     //
     // The size of each pseudo-structure above is saved to one of the correspoding union members below.
     union BlockSize
@@ -474,9 +480,10 @@ private:
 
     const uint32_t m_paddingBlocks;
     size_t m_vertexCount;
-    std::vector<uint8_t> m_vertices; // Vertices are stored as byte blocks.
-    std::vector<I> m_indices;        // Indices are stored natively.
-    BlockSize m_blockSize;           // For m_vertices.
+    std::vector<uint8_t> m_vertices;               // Vertices are stored as byte blocks.
+    std::vector<I> m_indices;                      // Indices are stored natively.
+    de::MovePtr<VkTransformMatrixKHR> m_transform; // Transform matrix is stored natively.
+    BlockSize m_blockSize;                         // For m_vertices.
 
     // Data sizes.
     static constexpr size_t kVertexSize      = sizeof(V);
@@ -570,6 +577,18 @@ size_t RaytracedGeometry<V, I>::getIndexByteSize(void) const
 }
 
 template <typename V, typename I>
+const uint8_t *RaytracedGeometry<V, I>::getTransformPointer(void) const
+{
+    return reinterpret_cast<const uint8_t *>(m_transform.get());
+}
+
+template <typename V, typename I>
+size_t RaytracedGeometry<V, I>::getTransformByteSize(void) const
+{
+    return sizeof(VkTransformMatrixKHR);
+}
+
+template <typename V, typename I>
 uint32_t RaytracedGeometry<V, I>::getPrimitiveCount(void) const
 {
     return static_cast<uint32_t>(isTrianglesType() ? (usesIndices() ? m_indices.size() / 3 : m_vertexCount / 3) :
@@ -627,6 +646,12 @@ template <typename V, typename I>
 void RaytracedGeometry<V, I>::addIndex(const uint32_t &index)
 {
     m_indices.push_back(convertIndexTo<I>(index));
+}
+
+template <typename V, typename I>
+void RaytracedGeometry<V, I>::setTransformMatrix(VkTransformMatrixKHR transformMatrix)
+{
+    m_transform = de::MovePtr<VkTransformMatrixKHR>(new VkTransformMatrixKHR(transformMatrix));
 }
 
 template <typename V, typename I>
@@ -832,6 +857,11 @@ public:
                                   Allocator &allocator, SerialStorage *storage, VkDeviceAddress deviceAddress = 0u);
     virtual const VkAccelerationStructureKHR *getPtr(void) const                                               = 0;
     virtual void updateGeometry(size_t geometryIndex, de::SharedPtr<RaytracedGeometryBase> &raytracedGeometry) = 0;
+    virtual void setGeometryTransform(size_t geometryIndex, VkTransformMatrixKHR transformMatrix)              = 0;
+
+    virtual void setVertexBufferAddressOffset(int32_t vertexBufferOffset)       = 0;
+    virtual void setIndexBufferAddressOffset(int32_t indexBufferOffset)         = 0;
+    virtual void setTransformBufferAddressOffset(int32_t transformBufferOffset) = 0;
 
 protected:
     std::vector<de::SharedPtr<RaytracedGeometryBase>> m_geometriesData;
@@ -914,8 +944,8 @@ public:
                     qpWatchDog *watchDog);
     size_t getAllocationCount() const;
     size_t getAllocationCount(const DeviceInterface &vk, const VkDevice device, const VkDeviceSize maxBufferSize) const;
-    auto getAllocationSizes(const DeviceInterface &vk, // (strBuff, scratchBuff, vertBuff, indexBuff)
-                            const VkDevice device) const -> tcu::Vector<VkDeviceSize, 4>;
+    auto getAllocationSizes(const DeviceInterface &vk, // (strBuff, scratchBuff, vertBuff, indexBuff, transformBuff)
+                            const VkDevice device) const -> tcu::Vector<VkDeviceSize, 5>;
 
 protected:
     uint32_t m_batchStructCount; // default is 4
@@ -929,6 +959,7 @@ protected:
     VkDeviceSize m_buildsScratchSize;
     VkDeviceSize m_verticesSize;
     VkDeviceSize m_indicesSize;
+    VkDeviceSize m_transformsSize;
 
 protected:
     struct Impl;
@@ -1030,6 +1061,8 @@ public:
 
     virtual void updateInstanceMatrix(const DeviceInterface &vk, const VkDevice device, size_t instanceIndex,
                                       const VkTransformMatrixKHR &matrix) = 0;
+
+    virtual void setInstanceBufferAddressOffset(int32_t instanceBufferAddressOffset) = 0;
 
 protected:
     std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> m_bottomLevelInstances;
@@ -1545,7 +1578,10 @@ std::vector<T> rayQueryRayTracingTestSetup(const vk::DeviceInterface &vkd, const
     {
         hitGroup  = 1;
         missGroup = 2;
-        rt_pipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR, shaderModules[1].get()->get(), hitGroup);
+        if (params.triangles == false)
+        {
+            rt_pipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR, shaderModules[1].get()->get(), hitGroup);
+        }
         rt_pipeline->addShader(VK_SHADER_STAGE_ANY_HIT_BIT_KHR, shaderModules[2].get()->get(), hitGroup);
         rt_pipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, shaderModules[3].get()->get(), hitGroup);
         rt_pipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, shaderModules[4].get()->get(), missGroup);

@@ -22,7 +22,7 @@
  */ /*-------------------------------------------------------------------*/
 
 #include "deInt32.h"
-#include "es31cShaderStorageBufferObjectTests.hpp"
+#include "glcShaderStorageBufferObjectTests.hpp"
 #include "glwEnums.hpp"
 #include "tcuMatrix.hpp"
 #include "tcuMatrixUtil.hpp"

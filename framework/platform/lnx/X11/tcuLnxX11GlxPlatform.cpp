@@ -147,6 +147,7 @@ private:
     GlxDisplay &m_display;
     ::Visual *m_visual;
     const GLXFBConfig m_fbConfig;
+    glu::ResetNotificationStrategy resetStrategy;
 };
 
 class GlxDrawable
@@ -219,6 +220,7 @@ public:
     virtual const tcu::RenderTarget &getRenderTarget(void) const;
     virtual glw::GenericFuncType getProcAddress(const char *name) const;
     const GLXContext &getGLXContext(void) const;
+    const GlxVisual &getGLXVisual(void) const;
 
 private:
     GlxDisplay m_glxDisplay;
@@ -410,23 +412,31 @@ GLXContext GlxVisual::createContext(const GlxContextFactory &factory, const Cont
         }
     }
 
-    if (resetNotificationStrategy != glu::RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED)
+    const GlxRenderContext *sharedGlxRenderContext = dynamic_cast<const GlxRenderContext *>(sharedContext);
+
+    /* If there is a shared context, use same reset notification strategy. */
+    glu::ResetNotificationStrategy usedResetNotificationStrategy =
+        sharedGlxRenderContext ? sharedGlxRenderContext->getGLXVisual().resetStrategy : resetNotificationStrategy;
+
+    if (usedResetNotificationStrategy != glu::RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED)
     {
         checkGlxExtension(m_display, "GLX_ARB_create_context_robustness");
         attribs.push_back(GLX_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB);
 
-        if (resetNotificationStrategy == glu::RESET_NOTIFICATION_STRATEGY_NO_RESET_NOTIFICATION)
+        if (usedResetNotificationStrategy == glu::RESET_NOTIFICATION_STRATEGY_NO_RESET_NOTIFICATION)
             attribs.push_back(GLX_NO_RESET_NOTIFICATION_ARB);
-        else if (resetNotificationStrategy == glu::RESET_NOTIFICATION_STRATEGY_LOSE_CONTEXT_ON_RESET)
+        else if (usedResetNotificationStrategy == glu::RESET_NOTIFICATION_STRATEGY_LOSE_CONTEXT_ON_RESET)
             attribs.push_back(GLX_LOSE_CONTEXT_ON_RESET_ARB);
         else
             TCU_THROW(InternalError, "Unknown reset notification strategy");
     }
 
+    // Reset notification strategy used with this visual.
+    resetStrategy = resetNotificationStrategy;
+
     // Terminate attrib list
     attribs.push_back(None);
 
-    const GlxRenderContext *sharedGlxRenderContext = dynamic_cast<const GlxRenderContext *>(sharedContext);
     const GLXContext &sharedGLXContext = sharedGlxRenderContext ? sharedGlxRenderContext->getGLXContext() : nullptr;
 
     return TCU_CHECK_GLX(
@@ -803,6 +813,11 @@ const glw::Functions &GlxRenderContext::getFunctions(void) const
 const GLXContext &GlxRenderContext::getGLXContext(void) const
 {
     return m_GLXContext;
+}
+
+const GlxVisual &GlxRenderContext::getGLXVisual(void) const
+{
+    return m_glxVisual;
 }
 
 MovePtr<ContextFactory> createContextFactory(EventState &eventState)

@@ -127,7 +127,7 @@ typedef struct AlignedAllocHeader_s
     size_t numBytes;
 } AlignedAllocHeader;
 
-DE_INLINE AlignedAllocHeader *getAlignedAllocHeader(void *ptr)
+static inline AlignedAllocHeader *getAlignedAllocHeader(void *ptr)
 {
     const size_t hdrSize    = sizeof(AlignedAllocHeader);
     const uintptr_t hdrAddr = (uintptr_t)ptr - hdrSize;

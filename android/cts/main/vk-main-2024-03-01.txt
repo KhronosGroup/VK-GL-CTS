@@ -14,11 +14,14 @@ vk-main-2024-03-01/fragment-shading-barycentric.txt
 vk-main-2024-03-01/fragment-shading-rate.txt
 vk-main-2024-03-01/glsl.txt
 vk-main-2024-03-01/image/atomic-operations.txt
+vk-main-2024-03-01/image/concurrent-copy.txt
 vk-main-2024-03-01/image/depth-stencil-separate-access.txt
+vk-main-2024-03-01/image/device-scope-access.txt
 vk-main-2024-03-01/image/format-reinterpret.txt
 vk-main-2024-03-01/image/host-image-copy.txt
 vk-main-2024-03-01/image/load-store.txt
 vk-main-2024-03-01/image/load-store-multisample.txt
+vk-main-2024-03-01/image/mutable.txt
 vk-main-2024-03-01/image/non-uniform-offset-sample.txt
 vk-main-2024-03-01/image/queue-transfer.txt
 vk-main-2024-03-01/image/store.txt
@@ -60,4 +63,5 @@ vk-main-2024-03-01/synchronization2.txt
 vk-main-2024-03-01/tessellation.txt
 vk-main-2024-03-01/texture.txt
 vk-main-2024-03-01/transform-feedback.txt
+vk-main-2024-03-01/wsi.txt
 vk-main-2024-03-01/ycbcr.txt

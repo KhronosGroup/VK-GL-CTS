@@ -53,6 +53,8 @@ static spv_target_env getSpirvToolsEnvForValidatorOptions(SpirvValidatorOptions 
         return SPV_ENV_VULKAN_1_2;
     case VK_MAKE_API_VERSION(0, 1, 3, 0):
         return SPV_ENV_VULKAN_1_3;
+    case VK_MAKE_API_VERSION(0, 1, 4, 0):
+        return SPV_ENV_VULKAN_1_4;
     default:
         break;
     }
@@ -211,12 +213,13 @@ bool validateSpirV(size_t binarySizeInWords, const uint32_t *binary, std::ostrea
         }
 
         if (val_options.flags & SpirvValidatorOptions::FLAG_SPIRV_VALIDATOR_WORKGROUP_SCALAR_BLOCK_LAYOUT)
-        {
             spvValidatorOptionsSetWorkgroupScalarBlockLayout(options, true);
-        }
 
         if (val_options.flags & SpirvValidatorOptions::FLAG_SPIRV_VALIDATOR_ALLOW_LOCALSIZEID)
             spvValidatorOptionsSetAllowLocalSizeId(options, true);
+
+        if (val_options.flags & SpirvValidatorOptions::FLAG_SPIRV_VALIDATOR_ALLOW_NON_CONST_OFFSETS)
+            spvValidatorOptionsSetAllowOffsetTextureOperand(options, true);
 
         const spv_result_t valid = spvValidateWithOptions(context, options, &cbinary, &diagnostic);
         const bool passed        = (valid == SPV_SUCCESS);

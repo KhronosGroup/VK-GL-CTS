@@ -799,6 +799,36 @@ void MultisampleRenderPassTestInstance::submit(void)
     const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(nullptr);
     RenderpassSubpass::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
 
+    // Memory barriers between rendering and copying image to buffer
+    if (m_baseLayer > 0)
+    {
+        std::vector<VkImageMemoryBarrier> barriers;
+
+        for (size_t dstNdx = 0; dstNdx < m_singlesampleImages.size(); dstNdx++)
+        {
+            const VkImageMemoryBarrier barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                                                  nullptr,
+
+                                                  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                                                  VK_ACCESS_TRANSFER_READ_BIT,
+
+                                                  VK_IMAGE_LAYOUT_UNDEFINED,
+                                                  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+
+                                                  VK_QUEUE_FAMILY_IGNORED,
+                                                  VK_QUEUE_FAMILY_IGNORED,
+
+                                                  **m_singlesampleImages[dstNdx],
+                                                  {VK_IMAGE_ASPECT_COLOR_BIT, m_renderLevel, 1u, 0u, m_baseLayer}};
+
+            barriers.push_back(barrier);
+        }
+
+        vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, (uint32_t)barriers.size(),
+                               &barriers[0]);
+    }
+
     for (size_t dstNdx = 0; dstNdx < m_singlesampleImages.size(); dstNdx++)
     {
         // assume that buffer(s) have enough memory to store desired amount of mipmaps
@@ -2091,8 +2121,8 @@ void MaxAttachmenstsRenderPassTestInstance::submitDynamicRendering()
         // record secondary command buffer for second subpass
         beginSecondaryCmdBuffer(vk, *secCmdBuffers[1], (uint32_t)m_multisampleImages.size(), VK_SAMPLE_COUNT_1_BIT);
         vk.cmdBeginRendering(*secCmdBuffers[1], &secondRenderingInfo);
-        vk.cmdSetRenderingAttachmentLocationsKHR(*secCmdBuffers[1], &renderingAttachmentLocationInfo);
-        vk.cmdSetRenderingInputAttachmentIndicesKHR(*secCmdBuffers[1], &renderingInputAttachmentIndexInfo);
+        vk.cmdSetRenderingAttachmentLocations(*secCmdBuffers[1], &renderingAttachmentLocationInfo);
+        vk.cmdSetRenderingInputAttachmentIndices(*secCmdBuffers[1], &renderingInputAttachmentIndexInfo);
         drawSecondSubpass(vk, *secCmdBuffers[1]);
         vk.cmdEndRendering(*secCmdBuffers[1]);
         endCommandBuffer(vk, *secCmdBuffers[1]);
@@ -2123,8 +2153,8 @@ void MaxAttachmenstsRenderPassTestInstance::submitDynamicRendering()
 
         // Second dynamic render pass - merge resolved attachments
         vk.cmdBeginRendering(*cmdBuffer, &secondRenderingInfo);
-        vk.cmdSetRenderingAttachmentLocationsKHR(*cmdBuffer, &renderingAttachmentLocationInfo);
-        vk.cmdSetRenderingInputAttachmentIndicesKHR(*cmdBuffer, &renderingInputAttachmentIndexInfo);
+        vk.cmdSetRenderingAttachmentLocations(*cmdBuffer, &renderingAttachmentLocationInfo);
+        vk.cmdSetRenderingInputAttachmentIndices(*cmdBuffer, &renderingInputAttachmentIndexInfo);
         drawSecondSubpass(vk, *cmdBuffer);
         vk.cmdEndRendering(*cmdBuffer);
 

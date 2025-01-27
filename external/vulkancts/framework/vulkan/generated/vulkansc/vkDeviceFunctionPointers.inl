@@ -185,7 +185,7 @@ GetImageDrmFormatModifierPropertiesEXTFunc	getImageDrmFormatModifierPropertiesEX
 GetBufferOpaqueCaptureAddressFunc			getBufferOpaqueCaptureAddress;
 GetBufferDeviceAddressFunc					getBufferDeviceAddress;
 GetDeviceMemoryOpaqueCaptureAddressFunc		getDeviceMemoryOpaqueCaptureAddress;
-CmdSetLineStippleKHRFunc					cmdSetLineStippleKHR;
+CmdSetLineStippleEXTFunc					cmdSetLineStippleEXT;
 GetFaultDataFunc							getFaultData;
 CmdSetCullModeEXTFunc						cmdSetCullModeEXT;
 CmdSetFrontFaceEXTFunc						cmdSetFrontFaceEXT;

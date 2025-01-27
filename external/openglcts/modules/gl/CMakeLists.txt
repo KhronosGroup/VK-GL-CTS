@@ -3,6 +3,8 @@
 set(GLCTS_GL_SRCS
 	gl3cCommonBugsTests.cpp
 	gl3cCommonBugsTests.hpp
+    gl3cDrawBuffers.cpp
+    gl3cDrawBuffers.hpp
 	gl3cTestPackages.cpp
 	gl3cTestPackages.hpp
 	gl3cGetUniform.cpp
@@ -45,9 +47,6 @@ set(GLCTS_GL_SRCS
 	gl4cEnhancedLayoutsTests.hpp
 	gl4cGetTextureSubImageTests.cpp
 	gl4cGetTextureSubImageTests.hpp
-	gl4cES31CompatibilitySampleVariablesTests.cpp
-	gl4cES31CompatibilityShaderImageLoadStoreTests.cpp
-	gl4cES31CompatibilityShaderStorageBufferObjectTests.cpp
 	gl4cES31CompatibilityTests.cpp
 	gl4cES31CompatibilityTests.hpp
 	gl4cMapBufferAlignmentTests.cpp

@@ -897,14 +897,14 @@ void runExecServerTests(int argc, const char *const *argv)
             testCtx.logFileName = arg + 20;
         else if (deStringBeginsWith(arg, "--deqp-caselist="))
             testCtx.caseList = arg + 16;
-        else if (deStringEqual(arg, "--deqp-stdin-caselist"))
+        else if (strcmp(arg, "--deqp-stdin-caselist") == 0)
         {
             // \todo [pyry] This is rather brute-force solution...
             char c;
             while (fread(&c, 1, 1, stdin) == 1 && c != 0)
                 testCtx.caseList += c;
         }
-        else if (deStringEqual(arg, "--start-server"))
+        else if (strcmp(arg, "--start-server") == 0)
             testCtx.startServer = true;
         else
         {

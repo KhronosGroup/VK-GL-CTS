@@ -3,7 +3,7 @@
  * ------------------------
  *
  * Copyright (c) 2019 The Khronos Group Inc.
- * Copyright (c) 2018-2019 NVIDIA Corporation
+ * Copyright (c) 2018-2024 NVIDIA Corporation
  * Copyright (c) 2023 LunarG, Inc.
  * Copyright (c) 2023 Nintendo
  *
@@ -52,6 +52,7 @@
 #include <sstream>
 #include <set>
 #include <algorithm>
+#include <functional>
 
 namespace vkt
 {
@@ -95,6 +96,24 @@ typedef enum
     TT_LENGTH = 0,
     TT_CONSTANT,
     TT_CONVERT,
+    TT_CONVERT_ACC_TO_A,
+    TT_CONVERT_ACC_TO_B,
+    TT_TRANSPOSE_ACC_TO_B,
+    TT_REDUCE_SUM_ROW,
+    TT_REDUCE_SUM_COL,
+    TT_REDUCE_SUM_ROWCOL,
+    TT_REDUCE_SUM_2X2,
+    TT_REDUCE_SUM_ROW_CHANGEDIM,
+    TT_REDUCE_SUM_COL_CHANGEDIM,
+    TT_REDUCE_SUM_ROWCOL_CHANGEDIM,
+    TT_REDUCE_MIN_ROW,
+    TT_REDUCE_MIN_COL,
+    TT_REDUCE_MIN_ROWCOL,
+    TT_REDUCE_MIN_2X2,
+    TT_PER_ELEMENT_OP,
+    TT_PER_ELEMENT_OP_ROW_COL,
+    TT_PER_ELEMENT_OP_STRUCT,
+    TT_PER_ELEMENT_OP_MAT,
     TT_COMPOSITE,
     TT_COMPOSITE_RVALUE,
     TT_ADD,
@@ -104,15 +123,32 @@ typedef enum
     TT_NEGATE,
     TT_MATRIXTIMESSCALAR,
     TT_FUNC,
+    TT_CLAMPCONSTANT,
+    TT_CLAMPTOEDGE,
+    TT_CLAMPREPEAT,
+    TT_CLAMPMIRRORREPEAT,
     TT_MATRIXMULADD,
     TT_COMPOSITE_ARRAY,
     TT_MATRIXMULADD_ARRAY,
     TT_MATRIXMULADD_SATURATED,
     TT_MATRIXMULADD_WRAPPING,
     TT_MATRIXMULADD_STRIDE0,
+    TT_MATRIXMULADD_DEQUANT,
     TT_MULTICOMPONENT_LOAD,
     TT_MULTICOMPONENT_SAVE,
     TT_MATRIXMULADD_CROSS,
+    TT_TENSORLAYOUT_1D,
+    TT_TENSORLAYOUT_2D,
+    TT_TENSORLAYOUT_3D,
+    TT_TENSORLAYOUT_4D,
+    TT_TENSORLAYOUT_5D,
+    TT_TENSORLAYOUT_1D_CLIP,
+    TT_TENSORLAYOUT_2D_CLIP,
+    TT_TENSORLAYOUT_3D_CLIP,
+    TT_TENSORLAYOUT_4D_CLIP,
+    TT_TENSORLAYOUT_5D_CLIP,
+    TT_SPACETODEPTH,
+    TT_CONV,
 } TestType;
 
 typedef enum
@@ -123,6 +159,14 @@ typedef enum
     SC_BUFFER_VARIABLE_POINTERS,
     SC_PHYSICAL_STORAGE_BUFFER,
 } StorageClass;
+
+typedef enum
+{
+    ADDR_LINEAR = 0,
+    ADDR_TENSORLAYOUT,
+    ADDR_BLOCKSIZE,
+    ADDR_DECODE,
+} AddrMethod;
 
 enum SubgroupSizeMode
 {
@@ -136,6 +180,7 @@ const VkFlags allShaderStages = VK_SHADER_STAGE_COMPUTE_BIT;
 struct CaseDef
 {
     TestType testType;
+    VkScopeKHR scope;
     uint32_t subgroupsPerWorkgroupX;
     uint32_t subgroupsPerWorkgroupY;
     uint32_t workgroupsX;
@@ -143,6 +188,7 @@ struct CaseDef
     VkComponentTypeKHR inputType;
     VkComponentTypeKHR outputType;
     bool colMajor;
+    AddrMethod addrMethod;
     StorageClass storageClass;
     UseType useType;
     SubgroupSizeMode subgroupSizeMode;
@@ -160,8 +206,353 @@ bool isMatrixMulAddOp(TestType testType)
 {
     return testType == TT_MATRIXMULADD || testType == TT_MATRIXMULADD_ARRAY || testType == TT_MATRIXMULADD_SATURATED ||
            testType == TT_MATRIXMULADD_WRAPPING || testType == TT_MATRIXMULADD_STRIDE0 ||
-           testType == TT_MATRIXMULADD_CROSS;
+           testType == TT_MATRIXMULADD_CROSS || testType == TT_MATRIXMULADD_DEQUANT;
 }
+
+bool isReduceRow(TestType testType)
+{
+    return testType == TT_REDUCE_SUM_ROW || testType == TT_REDUCE_MIN_ROW || testType == TT_REDUCE_SUM_ROW_CHANGEDIM;
+}
+
+bool isReduceCol(TestType testType)
+{
+    return testType == TT_REDUCE_SUM_COL || testType == TT_REDUCE_MIN_COL || testType == TT_REDUCE_SUM_COL_CHANGEDIM;
+}
+
+bool isReduceRowCol(TestType testType)
+{
+    return testType == TT_REDUCE_SUM_ROWCOL || testType == TT_REDUCE_MIN_ROWCOL ||
+           testType == TT_REDUCE_SUM_ROWCOL_CHANGEDIM;
+}
+
+bool isReduce2x2(TestType testType)
+{
+    return testType == TT_REDUCE_SUM_2X2 || testType == TT_REDUCE_MIN_2X2;
+}
+
+bool isReduceSum(TestType testType)
+{
+    return testType == TT_REDUCE_SUM_ROW || testType == TT_REDUCE_SUM_COL || testType == TT_REDUCE_SUM_ROWCOL ||
+           testType == TT_REDUCE_SUM_2X2 || testType == TT_REDUCE_SUM_ROW_CHANGEDIM ||
+           testType == TT_REDUCE_SUM_COL_CHANGEDIM || testType == TT_REDUCE_SUM_ROWCOL_CHANGEDIM;
+}
+
+bool isReduceMin(TestType testType)
+{
+    return testType == TT_REDUCE_MIN_ROW || testType == TT_REDUCE_MIN_COL || testType == TT_REDUCE_MIN_ROWCOL ||
+           testType == TT_REDUCE_MIN_2X2;
+}
+
+bool isReduceOp(TestType testType)
+{
+    return isReduceRow(testType) || isReduceCol(testType) || isReduceRowCol(testType) || isReduce2x2(testType);
+}
+
+bool isReduceChangeDim(TestType testType)
+{
+    return testType == TT_REDUCE_SUM_ROW_CHANGEDIM || testType == TT_REDUCE_SUM_COL_CHANGEDIM ||
+           testType == TT_REDUCE_SUM_ROWCOL_CHANGEDIM;
+}
+
+uint32_t reduceMScale(TestType testType)
+{
+    if (testType == TT_REDUCE_SUM_COL_CHANGEDIM || testType == TT_REDUCE_SUM_ROWCOL_CHANGEDIM)
+    {
+        return 3;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+uint32_t reduceNScale(TestType testType)
+{
+    if (testType == TT_REDUCE_SUM_ROW_CHANGEDIM || testType == TT_REDUCE_SUM_ROWCOL_CHANGEDIM)
+    {
+        return 3;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+bool isClampTest(TestType testType)
+{
+    return testType == TT_CLAMPCONSTANT || testType == TT_CLAMPTOEDGE || testType == TT_CLAMPREPEAT ||
+           testType == TT_CLAMPMIRRORREPEAT;
+}
+
+bool isTensorLayoutClipTest(TestType testType)
+{
+    return testType == TT_TENSORLAYOUT_1D_CLIP || testType == TT_TENSORLAYOUT_2D_CLIP ||
+           testType == TT_TENSORLAYOUT_3D_CLIP || testType == TT_TENSORLAYOUT_4D_CLIP ||
+           testType == TT_TENSORLAYOUT_5D_CLIP;
+}
+
+bool isTensorLayoutTest(TestType testType)
+{
+    return testType == TT_TENSORLAYOUT_1D || testType == TT_TENSORLAYOUT_2D || testType == TT_TENSORLAYOUT_3D ||
+           testType == TT_TENSORLAYOUT_4D || testType == TT_TENSORLAYOUT_5D || isTensorLayoutClipTest(testType) ||
+           testType == TT_SPACETODEPTH;
+}
+
+bool isPerElemOp(TestType testType)
+{
+    return testType == TT_PER_ELEMENT_OP || testType == TT_PER_ELEMENT_OP_ROW_COL ||
+           testType == TT_PER_ELEMENT_OP_STRUCT || testType == TT_PER_ELEMENT_OP_MAT;
+}
+
+int32_t tensorLayout1dMatrixSize[][5] = {
+    {32, 32},
+    {64, 64},
+};
+
+int32_t tensorLayout1dDim[5] = {65536, 1, 1, 1, 1};
+
+int32_t tensorLayout1dSpan[][5] = {
+    {1024},
+    {4096},
+};
+
+int32_t tensorLayout1dLoadOffsets[][5] = {
+    {10000},
+    {-1},
+};
+int32_t tensorLayout1dStoreOffsets[][5] = {
+    {-1},
+    {4321},
+};
+
+uint32_t tensorLayout1dNumCoords = sizeof(tensorLayout1dLoadOffsets) / sizeof(tensorLayout1dLoadOffsets[0]);
+
+int32_t tensorLayout2dMatrixSize[][5] = {
+    {32, 32},
+    {64, 64},
+};
+
+int32_t tensorLayout2dDim[5] = {512, 512, 1, 1, 1};
+
+int32_t tensorLayout2dSpan[][5] = {
+    {32, 32},
+    {64, 64},
+};
+
+int32_t tensorLayout2dLoadOffsets[][5] = {
+    {7, 13},
+    {0 + 128, 0 + 128},
+};
+int32_t tensorLayout2dStoreOffsets[][5] = {
+    {13, 7},
+    {20 + 128, 0},
+};
+
+uint32_t tensorLayout2dNumCoords = sizeof(tensorLayout2dLoadOffsets) / sizeof(tensorLayout2dLoadOffsets[0]);
+
+int32_t tensorLayout3dDim[5] = {33, 44, 55, 1, 1};
+
+int32_t tensorLayout3dMatrixSize[][5] = {
+    {64, 32},
+    {32, 32},
+};
+
+int32_t tensorLayout3dSpan[][5] = {
+    {16, 16, 8},
+    {8, 4, 32},
+};
+int32_t tensorLayout3dLoadOffsets[][5] = {
+    {1, 1, 1},
+    {-1, -1, -1},
+};
+int32_t tensorLayout3dStoreOffsets[][5] = {
+    {2, 2, 2},
+    {23, 2, 1},
+};
+
+uint32_t tensorLayout3dNumCoords = sizeof(tensorLayout3dLoadOffsets) / sizeof(tensorLayout3dLoadOffsets[0]);
+
+int32_t tensorLayout4dDim[5] = {20, 25, 40, 10, 1};
+
+int32_t tensorLayout4dMatrixSize[][5] = {
+    {64, 64},
+};
+
+int32_t tensorLayout4dSpan[][5] = {
+    {16, 8, 8, 4},
+};
+int32_t tensorLayout4dLoadOffsets[][5] = {
+    {-1, -1, -1, -1},
+};
+int32_t tensorLayout4dStoreOffsets[][5] = {
+    {1, 2, 1, 2},
+};
+
+uint32_t tensorLayout4dNumCoords = sizeof(tensorLayout4dLoadOffsets) / sizeof(tensorLayout4dLoadOffsets[0]);
+
+int32_t tensorLayout5dDim[5] = {4, 4, 32, 16, 8};
+
+int32_t tensorLayout5dMatrixSize[][5] = {
+    {32, 32},
+};
+
+int32_t tensorLayout5dSpan[][5] = {
+    {1, 4, 8, 4, 8},
+};
+int32_t tensorLayout5dLoadOffsets[][5] = {
+    {-1, -1, -1, -1, -1},
+};
+int32_t tensorLayout5dStoreOffsets[][5] = {
+    {1, 2, 1, 0, 1},
+};
+
+uint32_t tensorLayout5dNumCoords = sizeof(tensorLayout5dLoadOffsets) / sizeof(tensorLayout5dLoadOffsets[0]);
+
+int32_t *GetTensorLayoutMatrixSizes(uint32_t dim, uint32_t index)
+{
+    switch (dim)
+    {
+    case 1:
+        return tensorLayout1dMatrixSize[index];
+    case 2:
+        return tensorLayout2dMatrixSize[index];
+    case 3:
+        return tensorLayout3dMatrixSize[index];
+    case 4:
+        return tensorLayout4dMatrixSize[index];
+    case 5:
+        return tensorLayout5dMatrixSize[index];
+    }
+    DE_ASSERT(0);
+    return nullptr;
+}
+
+int32_t *GetTensorLayoutDim(uint32_t dim)
+{
+    switch (dim)
+    {
+    case 1:
+        return tensorLayout1dDim;
+    case 2:
+        return tensorLayout2dDim;
+    case 3:
+        return tensorLayout3dDim;
+    case 4:
+        return tensorLayout4dDim;
+    case 5:
+        return tensorLayout5dDim;
+    }
+    DE_ASSERT(0);
+    return nullptr;
+}
+
+int32_t *GetTensorLayoutSpan(uint32_t dim, uint32_t index)
+{
+    switch (dim)
+    {
+    case 1:
+        return tensorLayout1dSpan[index];
+    case 2:
+        return tensorLayout2dSpan[index];
+    case 3:
+        return tensorLayout3dSpan[index];
+    case 4:
+        return tensorLayout4dSpan[index];
+    case 5:
+        return tensorLayout5dSpan[index];
+    }
+    DE_ASSERT(0);
+    return nullptr;
+}
+
+int32_t *GetTensorLayoutLoadOffsets(uint32_t dim, uint32_t index)
+{
+    switch (dim)
+    {
+    case 1:
+        return tensorLayout1dLoadOffsets[index];
+    case 2:
+        return tensorLayout2dLoadOffsets[index];
+    case 3:
+        return tensorLayout3dLoadOffsets[index];
+    case 4:
+        return tensorLayout4dLoadOffsets[index];
+    case 5:
+        return tensorLayout5dLoadOffsets[index];
+    }
+    DE_ASSERT(0);
+    return nullptr;
+}
+
+int32_t *GetTensorLayoutStoreOffsets(uint32_t dim, uint32_t index)
+{
+    switch (dim)
+    {
+    case 1:
+        return tensorLayout1dStoreOffsets[index];
+    case 2:
+        return tensorLayout2dStoreOffsets[index];
+    case 3:
+        return tensorLayout3dStoreOffsets[index];
+    case 4:
+        return tensorLayout4dStoreOffsets[index];
+    case 5:
+        return tensorLayout5dStoreOffsets[index];
+    }
+    DE_ASSERT(0);
+    return nullptr;
+}
+
+uint32_t GetTensorLayoutNumCoords(uint32_t dim)
+{
+    switch (dim)
+    {
+    case 1:
+        return tensorLayout1dNumCoords;
+    case 2:
+        return tensorLayout2dNumCoords;
+    case 3:
+        return tensorLayout3dNumCoords;
+    case 4:
+        return tensorLayout4dNumCoords;
+    case 5:
+        return tensorLayout5dNumCoords;
+    }
+    DE_ASSERT(0);
+    return 0;
+}
+
+uint32_t GetDim(TestType testType)
+{
+    switch (testType)
+    {
+    case TT_TENSORLAYOUT_1D:
+        return 1;
+    case TT_TENSORLAYOUT_2D:
+        return 2;
+    case TT_TENSORLAYOUT_3D:
+        return 3;
+    case TT_TENSORLAYOUT_4D:
+        return 4;
+    case TT_TENSORLAYOUT_5D:
+        return 5;
+    case TT_TENSORLAYOUT_1D_CLIP:
+        return 1;
+    case TT_TENSORLAYOUT_2D_CLIP:
+        return 2;
+    case TT_TENSORLAYOUT_3D_CLIP:
+        return 3;
+    case TT_TENSORLAYOUT_4D_CLIP:
+        return 4;
+    case TT_TENSORLAYOUT_5D_CLIP:
+        return 5;
+    default:
+        DE_ASSERT(0);
+        return 0;
+    }
+}
+
+static constexpr uint32_t blockSize[2] = {2, 4};
 
 template <typename T>
 VkResult getCooperativeMatrixProperties(const InstanceInterface &, VkPhysicalDevice, uint32_t *, T *)
@@ -369,6 +760,48 @@ void CooperativeMatrixTestCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "shaderFloat16 not supported");
     }
 
+#define REQUIRE(FEATURE)                                             \
+    context.requireDeviceFunctionality("VK_NV_cooperative_matrix2"); \
+    if (!context.getCooperativeMatrix2FeaturesNV().FEATURE)          \
+    {                                                                \
+        TCU_THROW(NotSupportedError, #FEATURE " not supported");     \
+    }
+
+    if (m_data.scope == VK_SCOPE_WORKGROUP_KHR)
+    {
+        REQUIRE(cooperativeMatrixWorkgroupScope)
+    }
+    if (isReduceOp(m_data.testType))
+    {
+        REQUIRE(cooperativeMatrixReductions)
+    }
+
+    if (m_data.testType == TT_CONVERT_ACC_TO_A || m_data.testType == TT_CONVERT_ACC_TO_B ||
+        m_data.testType == TT_TRANSPOSE_ACC_TO_B)
+    {
+        REQUIRE(cooperativeMatrixConversions)
+    }
+
+    if (isPerElemOp(m_data.testType))
+    {
+        REQUIRE(cooperativeMatrixPerElementOperations)
+    }
+
+    if (m_data.addrMethod != ADDR_LINEAR || isTensorLayoutTest(m_data.testType) || isClampTest(m_data.testType))
+    {
+        REQUIRE(cooperativeMatrixTensorAddressing);
+    }
+
+    if (isTensorLayoutTest(m_data.testType))
+    {
+        REQUIRE(cooperativeMatrixFlexibleDimensions);
+    }
+
+    if (m_data.addrMethod == ADDR_BLOCKSIZE || m_data.addrMethod == ADDR_DECODE)
+    {
+        REQUIRE(cooperativeMatrixBlockLoads);
+    }
+
     std::vector<VkCooperativeMatrixPropertiesKHR> properties =
         getCooperativeMatrixPropertiesConverted(context, isKhr(m_data.useType));
     bool supported[2]   = {false, false};
@@ -379,7 +812,7 @@ void CooperativeMatrixTestCase::checkSupport(Context &context) const
     {
         const VkCooperativeMatrixPropertiesKHR *p = &properties[i];
 
-        if (p->scope != VK_SCOPE_SUBGROUP_KHR)
+        if (p->scope != m_data.scope)
             continue;
 
         if (isMMA && isMMASat != static_cast<bool>(p->saturatingAccumulation))
@@ -396,10 +829,19 @@ void CooperativeMatrixTestCase::checkSupport(Context &context) const
         else
         {
             const VkComponentTypeKHR types[2] = {m_data.inputType, m_data.outputType};
+            UseType uses[2]                   = {m_data.useType, m_data.useType};
+            if (m_data.testType == TT_CONVERT_ACC_TO_A)
+            {
+                uses[1] = UT_KHR_A;
+            }
+            else if (m_data.testType == TT_CONVERT_ACC_TO_B || m_data.testType == TT_TRANSPOSE_ACC_TO_B)
+            {
+                uses[1] = UT_KHR_B;
+            }
 
             for (uint32_t j = 0; j < 2; ++j)
             {
-                switch (m_data.useType)
+                switch (uses[j])
                 {
                 case UT_NV:
                 {
@@ -432,6 +874,95 @@ void CooperativeMatrixTestCase::checkSupport(Context &context) const
                 }
                 default:
                     TCU_THROW(InternalError, "Unsupported use type");
+                }
+            }
+        }
+    }
+
+    if (context.getCooperativeMatrix2FeaturesNV().cooperativeMatrixFlexibleDimensions)
+    {
+        uint32_t flexiblePropertyCount = 0;
+        std::vector<VkCooperativeMatrixFlexibleDimensionsPropertiesNV> flexibleProperties;
+
+        const InstanceInterface &vki = context.getInstanceInterface();
+        VK_CHECK(vki.getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV(context.getPhysicalDevice(),
+                                                                                      &flexiblePropertyCount, nullptr));
+
+        if (flexiblePropertyCount > 0)
+        {
+            const VkCooperativeMatrixFlexibleDimensionsPropertiesNV sample = initVulkanStructureConst();
+
+            flexibleProperties.resize(flexiblePropertyCount, sample);
+
+            VK_CHECK(vki.getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV(
+                context.getPhysicalDevice(), &flexiblePropertyCount, flexibleProperties.data()));
+        }
+        else
+        {
+            flexibleProperties.clear();
+        }
+
+        for (size_t i = 0; i < flexibleProperties.size(); ++i)
+        {
+            const VkCooperativeMatrixFlexibleDimensionsPropertiesNV *p = &flexibleProperties[i];
+
+            if (p->scope != m_data.scope)
+                continue;
+
+            if (isMMA && isMMASat != static_cast<bool>(p->saturatingAccumulation))
+                continue;
+
+            if (isMMA)
+            {
+                if (p->AType == m_data.inputType && p->BType == m_data.inputType && p->CType == m_data.outputType &&
+                    p->ResultType == m_data.outputType)
+                {
+                    supported[0] = supported[1] = true;
+                }
+            }
+            else
+            {
+                const VkComponentTypeKHR types[2] = {m_data.inputType, m_data.outputType};
+                UseType uses[2]                   = {m_data.useType, m_data.useType};
+                if (m_data.testType == TT_CONVERT_ACC_TO_A)
+                {
+                    uses[1] = UT_KHR_A;
+                }
+                else if (m_data.testType == TT_CONVERT_ACC_TO_B || m_data.testType == TT_TRANSPOSE_ACC_TO_B)
+                {
+                    uses[1] = UT_KHR_B;
+                }
+
+                for (uint32_t j = 0; j < 2; ++j)
+                {
+                    switch (uses[j])
+                    {
+                    case UT_NV:
+                        break;
+                    case UT_KHR_A:
+                    {
+                        if (p->AType == types[j])
+                            supported[j] = true;
+
+                        break;
+                    }
+                    case UT_KHR_B:
+                    {
+                        if (p->BType == types[j])
+                            supported[j] = true;
+
+                        break;
+                    }
+                    case UT_KHR_Result:
+                    {
+                        if (p->ResultType == types[j])
+                            supported[j] = true;
+
+                        break;
+                    }
+                    default:
+                        TCU_THROW(InternalError, "Unsupported use type");
+                    }
                 }
             }
         }
@@ -499,6 +1030,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
         << ext
         << "#extension GL_EXT_shader_explicit_arithmetic_types : enable\n"
            "#extension GL_EXT_buffer_reference : enable\n"
+           "#extension GL_NV_cooperative_matrix2 : enable\n"
            "// strides overriden by spec constants\n"
            "layout(constant_id = 2) const int AStride = 1;\n"
            "layout(constant_id = 3) const int BStride = 1;\n"
@@ -530,14 +1062,37 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     }
     else
     {
-        dims[0].rows = "M";
-        dims[0].cols = "N";
+        if (isReduce2x2(m_data.testType))
+        {
+            dims[0].rows = "(M*2)";
+            dims[0].cols = "(N*2)";
+        }
+        else
+        {
+            dims[0].rows = "M";
+            dims[0].cols = "N";
+        }
         dims[1].rows = "M";
         dims[1].cols = "N";
         dims[2].rows = "M";
         dims[2].cols = "N";
-        dims[3].rows = "M";
-        dims[3].cols = "N";
+        if (isReduceChangeDim(m_data.testType))
+        {
+            dims[3].rows = "(M*" + std::to_string(reduceMScale(m_data.testType)) + ")";
+            dims[3].cols = "(N*" + std::to_string(reduceNScale(m_data.testType)) + ")";
+        }
+        else if (m_data.testType == TT_TRANSPOSE_ACC_TO_B)
+        {
+            dims[2].rows = "N";
+            dims[2].cols = "M";
+            dims[3].rows = "N";
+            dims[3].cols = "M";
+        }
+        else
+        {
+            dims[3].rows = "M";
+            dims[3].cols = "N";
+        }
     }
 
     const char *typeStrA = componentTypeInfo[m_data.inputType].typeName;
@@ -551,6 +1106,8 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     string divisorC;
     string divisorO;
     string *divisors[4] = {&divisorA, &divisorB, &divisorC, &divisorO};
+
+    string scopeStr = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ? "gl_ScopeWorkgroup" : "gl_ScopeSubgroup";
 
     if (m_data.testType == TT_MULTICOMPONENT_LOAD)
     {
@@ -583,12 +1140,24 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     }
 
     css << "const int workgroupsX = " << m_data.workgroupsX << ";\n";
-    css << "const uvec2 subgroupsPerWG = uvec2(" << m_data.subgroupsPerWorkgroupX << ", "
-        << m_data.subgroupsPerWorkgroupY << ");\n";
+    if (m_data.scope != VK_SCOPE_WORKGROUP_KHR)
+    {
+        css << "const uvec2 subgroupsPerWG = uvec2(" << m_data.subgroupsPerWorkgroupX << ", "
+            << m_data.subgroupsPerWorkgroupY << ");\n";
+    }
+
+    // Test loading from a struct
+    string typeStrAStruct = typeStrA;
+    if (m_data.storageClass != SC_WORKGROUP && m_data.storageClass != SC_WORKGROUP_VARIABLE_POINTERS &&
+        m_data.addrMethod != ADDR_LINEAR)
+    {
+        css << "struct StructA { " << typeStrA << " y; };\n";
+        typeStrAStruct = "StructA";
+    }
 
     if (m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER)
     {
-        css << "layout(buffer_reference) buffer InputA { " << typeStrA << " x[]; };\n";
+        css << "layout(buffer_reference) buffer InputA { " << typeStrAStruct << " x[]; };\n";
         css << "layout(buffer_reference) buffer InputB { " << typeStrB << " x[]; };\n";
         css << "layout(buffer_reference) buffer InputC { " << typeStrC << " x[]; };\n";
         css << "layout(buffer_reference) buffer Output { " << typeStrO << " x[]; };\n";
@@ -597,7 +1166,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     }
     else
     {
-        css << "layout(set=0, binding=0) coherent buffer InputA { " << typeStrA << " x[]; } inputA;\n";
+        css << "layout(set=0, binding=0) coherent buffer InputA { " << typeStrAStruct << " x[]; } inputA;\n";
         css << "layout(set=0, binding=1) coherent buffer InputB { " << typeStrB << " x[]; } inputB;\n";
         css << "layout(set=0, binding=2) coherent buffer InputC { " << typeStrC << " x[]; } inputC;\n";
         css << "layout(set=0, binding=3) coherent buffer Output { " << typeStrO << " x[]; } outputO;\n";
@@ -605,53 +1174,93 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
 
     if (m_data.storageClass == SC_WORKGROUP || m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)
     {
-        css << "shared " << typeStrA << " sharedA[" << dims[0].rows << " * " << dims[0].cols
-            << " * subgroupsPerWG.x * subgroupsPerWG.y];\n";
-        css << "shared " << typeStrB << " sharedB[" << dims[1].rows << " * " << dims[1].cols
-            << " * subgroupsPerWG.x * subgroupsPerWG.y];\n";
-        css << "shared " << typeStrC << " sharedC[" << dims[2].rows << " * " << dims[2].cols
-            << " * subgroupsPerWG.x * subgroupsPerWG.y];\n";
-        css << "shared " << typeStrO << " sharedO[" << dims[3].rows << " * " << dims[3].cols
-            << " * subgroupsPerWG.x * subgroupsPerWG.y];\n";
+        string scale = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ? "1" : "subgroupsPerWG.x * subgroupsPerWG.y";
+        css << "shared " << typeStrA << " sharedA[" << dims[0].rows << " * " << dims[0].cols << " * " << scale
+            << "];\n";
+        css << "shared " << typeStrB << " sharedB[" << dims[1].rows << " * " << dims[1].cols << " * " << scale
+            << "];\n";
+        css << "shared " << typeStrC << " sharedC[" << dims[2].rows << " * " << dims[2].cols << " * " << scale
+            << "];\n";
+        css << "shared " << typeStrO << " sharedO[" << dims[3].rows << " * " << dims[3].cols << " * " << scale
+            << "];\n";
     }
 
     std::stringstream matAType, matBType, matCType, outputMatType;
 
+    // GLSL only considers types the same if any spec constants are the same and have
+    // no operations. So for 2x2 reductions, where A has M*2/N*2 rows and cols, we need
+    // to put that in a variable. But we can't for other tests, where we e.g. want to
+    // assign matA to matO.
+    if (isReduce2x2(m_data.testType))
+    {
+        css << "const int ARows = " << dims[0].rows << ";\n";
+        css << "const int ACols = " << dims[0].cols << ";\n";
+    }
+    else
+    {
+        css << "#define ARows " << dims[0].rows << "\n";
+        css << "#define ACols " << dims[0].cols << "\n";
+    }
+    if (isReduceChangeDim(m_data.testType))
+    {
+        css << "const int ORows = " << dims[3].rows << ";\n";
+        css << "const int OCols = " << dims[3].cols << ";\n";
+    }
+    else
+    {
+        css << "#define ORows " << dims[3].rows << "\n";
+        css << "#define OCols " << dims[3].cols << "\n";
+    }
+
+    const char *sameType = m_data.useType == UT_KHR_A      ? "gl_MatrixUseA" :
+                           m_data.useType == UT_KHR_B      ? "gl_MatrixUseB" :
+                           m_data.useType == UT_KHR_Result ? "gl_MatrixUseAccumulator" :
+                                                             "Invalid use";
+
     if (isKhr(m_data.useType))
     {
-        const bool useSame   = !isMatrixMulAddOp(m_data.testType);
-        const char *sameType = m_data.useType == UT_KHR_A      ? "gl_MatrixUseA" :
-                               m_data.useType == UT_KHR_B      ? "gl_MatrixUseB" :
-                               m_data.useType == UT_KHR_Result ? "gl_MatrixUseAccumulator" :
-                                                                 "Invalid use";
-        const char *atype    = useSame ? sameType : "gl_MatrixUseA";
-        const char *btype    = useSame ? sameType : "gl_MatrixUseB";
-        const char *ctype    = useSame ? sameType : "gl_MatrixUseAccumulator";
-        const char *rtype    = useSame ? sameType : "gl_MatrixUseAccumulator";
+        const bool useSame = !isMatrixMulAddOp(m_data.testType);
+        const char *atype  = useSame ? sameType : "gl_MatrixUseA";
+        const char *btype  = useSame ? sameType : "gl_MatrixUseB";
+        const char *ctype  = useSame ? sameType : "gl_MatrixUseAccumulator";
+        const char *rtype  = useSame ? sameType : "gl_MatrixUseAccumulator";
 
-        matAType << "coopmat<" << componentTypeInfo[m_data.inputType].typeName << ", gl_ScopeSubgroup, " << dims[0].rows
-                 << ", " << dims[0].cols << ", " << atype << ">";
-        matBType << "coopmat<" << componentTypeInfo[m_data.inputType].typeName << ", gl_ScopeSubgroup, " << dims[1].rows
-                 << ", " << dims[1].cols << ", " << btype << ">";
-        matCType << "coopmat<" << componentTypeInfo[m_data.outputType].typeName << ", gl_ScopeSubgroup, "
+        if (m_data.testType == TT_CONVERT_ACC_TO_A)
+        {
+            atype = "gl_MatrixUseAccumulator";
+            btype = "gl_MatrixUseAccumulator";
+            ctype = "gl_MatrixUseA";
+            rtype = "gl_MatrixUseA";
+        }
+        else if (m_data.testType == TT_CONVERT_ACC_TO_B || m_data.testType == TT_TRANSPOSE_ACC_TO_B)
+        {
+            atype = "gl_MatrixUseAccumulator";
+            btype = "gl_MatrixUseAccumulator";
+            ctype = "gl_MatrixUseB";
+            rtype = "gl_MatrixUseB";
+        }
+
+        matAType << "coopmat<" << componentTypeInfo[m_data.inputType].typeName << ", " << scopeStr << ", ARows, ACols, "
+                 << atype << ">";
+        matBType << "coopmat<" << componentTypeInfo[m_data.inputType].typeName << ", " << scopeStr << ", "
+                 << dims[1].rows << ", " << dims[1].cols << ", " << btype << ">";
+        matCType << "coopmat<" << componentTypeInfo[m_data.outputType].typeName << ", " << scopeStr << ", "
                  << dims[2].rows << ", " << dims[2].cols << ", " << ctype << ">";
-        outputMatType << "coopmat<" << componentTypeInfo[m_data.outputType].typeName << ", gl_ScopeSubgroup, "
-                      << dims[3].rows << ", " << dims[3].cols << ", " << rtype << ">";
+        outputMatType << "coopmat<" << componentTypeInfo[m_data.outputType].typeName << ", " << scopeStr
+                      << ", ORows, OCols, " << rtype << ">";
     }
     else
     {
         matAType << componentTypeInfo[m_data.inputType].coopmatTypeName << "<"
-                 << componentTypeInfo[m_data.inputType].bits << ", gl_ScopeSubgroup, " << dims[0].rows << ", "
-                 << dims[0].cols << ">";
+                 << componentTypeInfo[m_data.inputType].bits << ", " << scopeStr << ", ARows, ACols>";
         matBType << componentTypeInfo[m_data.inputType].coopmatTypeName << "<"
-                 << componentTypeInfo[m_data.inputType].bits << ", gl_ScopeSubgroup, " << dims[1].rows << ", "
+                 << componentTypeInfo[m_data.inputType].bits << ", " << scopeStr << ", " << dims[1].rows << ", "
                  << dims[1].cols << ">";
         matCType << componentTypeInfo[m_data.outputType].coopmatTypeName << "<"
-                 << componentTypeInfo[m_data.outputType].bits << ", gl_ScopeSubgroup, " << dims[2].rows << ", "
+                 << componentTypeInfo[m_data.outputType].bits << ", " << scopeStr << ", " << dims[2].rows << ", "
                  << dims[2].cols << ">";
         outputMatType << componentTypeInfo[m_data.outputType].coopmatTypeName << "<"
-                      << componentTypeInfo[m_data.outputType].bits << ", gl_ScopeSubgroup, " << dims[3].rows << ", "
-                      << dims[3].cols << ">";
+                      << componentTypeInfo[m_data.outputType].bits << ", " << scopeStr << ", ORows, OCols>";
     }
 
     css << matAType.str() << " matA;\n";
@@ -665,11 +1274,108 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     if (m_data.testType == TT_FUNC)
         css << matAType.str() << " f(" << matAType.str() << " m) { return -m; }\n";
 
+    if (m_data.testType == TT_PER_ELEMENT_OP || m_data.testType == TT_PER_ELEMENT_OP_MAT)
+    {
+        std::string type = componentTypeInfo[m_data.inputType].typeName;
+        css << type << " elemOp(const in uint32_t row, const in uint32_t col, const in " << type << " elem, const in "
+            << type
+            << " other) {\n"
+               "    return elem + other;\n"
+               "}\n";
+    }
+    else if (m_data.testType == TT_PER_ELEMENT_OP_ROW_COL)
+    {
+        std::string type = componentTypeInfo[m_data.inputType].typeName;
+        css << type << " elemOpRowCol(const in uint32_t row, const in uint32_t col, const in " << type
+            << " elem) {\n"
+               "    return elem + "
+            << type
+            << "(row*3 + col);\n"
+               "}\n";
+    }
+    else if (m_data.testType == TT_PER_ELEMENT_OP_STRUCT)
+    {
+        std::string type = componentTypeInfo[m_data.inputType].typeName;
+        css << "struct ParamType { " << type << " x; };\n";
+        std::string paramType = "ParamType";
+        css << type << " elemOp(const in uint32_t row, const in uint32_t col, const in " << type << " elem, const in "
+            << paramType
+            << " other) {\n"
+               "    return elem + other.x;\n"
+               "}\n";
+    }
+    else if (isReduceOp(m_data.testType))
+    {
+        std::string type = componentTypeInfo[m_data.inputType].typeName;
+        css << type << " combineOp(const in " << type << " a, const in " << type << " b) {\n";
+        if (isReduceSum(m_data.testType))
+        {
+            css << "    return a + b;\n";
+        }
+        else if (isReduceMin(m_data.testType))
+        {
+            css << "    return min(a, b);\n";
+        }
+        css << "}\n";
+    }
+
+    if (m_data.testType == TT_MATRIXMULADD_DEQUANT)
+    {
+        // 4-bit elements [0,15) with -4 bias and scale of 0.5.
+        css << "layout(buffer_reference, std430, buffer_reference_align = 1) buffer decodeBuf {\n"
+               "   uint8_t bits["
+            << blockSize[0] * blockSize[1] / 2
+            << "];\n"
+               "};\n";
+
+        css << typeStrA
+            << " decodeFunc(const in decodeBuf b, const in uint32_t blockCoords[2], const in uint32_t coordInBlock[2]) "
+               "{\n"
+               "   uint32_t idx = coordInBlock[0] * "
+            << blockSize[1]
+            << " + coordInBlock[1];\n"
+               "   uint32_t arrayidx = idx / 2;\n"
+               "   uint32_t shift = (idx & 1) * 4;\n"
+               "   int32_t bits = int32_t(b.bits[arrayidx]);\n"
+               "   bits = (bits >> shift) & 0xF;\n"
+               "   return "
+            << typeStrA
+            << "(0.5 * float(bits - 4));\n"
+               "}\n";
+    }
+    else if (m_data.addrMethod == ADDR_DECODE)
+    {
+        css << "layout(buffer_reference, std430, buffer_reference_align = "
+            << (componentTypeInfo[m_data.inputType].bits / 8)
+            << ") buffer decodeBuf {\n"
+               "   "
+            << typeStrA << " f[" << blockSize[0] * blockSize[1]
+            << "];\n"
+               "};\n";
+
+        // Lookup from coord in block, and add f(blockCoords)
+        css << typeStrA
+            << " decodeFunc(const in decodeBuf b, const in uint32_t blockCoords[2], const in uint32_t coordInBlock[2]) "
+               "{\n"
+               "   return b.f[coordInBlock[0] * "
+            << blockSize[1] << " + coordInBlock[1]] + " << typeStrA
+            << "((2*blockCoords[0] + blockCoords[1]) & 3);\n"
+               "}\n";
+    }
+
     css << "void main()\n"
-           "{\n"
-           // matrixID is the x,y index of the matrix owned by this subgroup.
-           "   uvec2 subgroupXY = uvec2(gl_SubgroupID % subgroupsPerWG.x, gl_SubgroupID / subgroupsPerWG.x);\n"
-           "   uvec2 matrixID = uvec2(gl_WorkGroupID.xy) * subgroupsPerWG + subgroupXY;\n";
+           "{\n";
+    if (m_data.scope == VK_SCOPE_WORKGROUP_KHR)
+    {
+        css << "   uvec2 matrixID = uvec2(gl_WorkGroupID.xy);\n";
+    }
+    else
+    {
+        css <<
+            // matrixID is the x,y index of the matrix owned by this subgroup.
+            "   uvec2 subgroupXY = uvec2(gl_SubgroupID % subgroupsPerWG.x, gl_SubgroupID / subgroupsPerWG.x);\n"
+            "   uvec2 matrixID = uvec2(gl_WorkGroupID.xy) * subgroupsPerWG + subgroupXY;\n";
+    }
 
     if (m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER)
     {
@@ -680,10 +1386,56 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     }
 
     string strides[4];
+    string heights[4];
     for (uint32_t i = 0; i < 4; ++i)
     {
-        strides[i] = (m_data.colMajor ? dims[i].rows : dims[i].cols) + string(" * ") +
-                     de::toString(m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
+        if (m_data.scope == VK_SCOPE_WORKGROUP_KHR)
+        {
+            strides[i] =
+                (m_data.colMajor ? dims[i].rows : dims[i].cols) + string(" * ") + de::toString(m_data.workgroupsX);
+            heights[i] =
+                (m_data.colMajor ? dims[i].cols : dims[i].rows) + string(" * ") + de::toString(m_data.workgroupsY);
+        }
+        else
+        {
+            strides[i] = (m_data.colMajor ? dims[i].rows : dims[i].cols) + string(" * ") +
+                         de::toString(m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
+            heights[i] = (m_data.colMajor ? dims[i].cols : dims[i].rows) + string(" * ") +
+                         de::toString(m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
+        }
+    }
+
+    if (m_data.addrMethod != ADDR_LINEAR)
+    {
+        css << "   int offset00 = int(" << (m_data.colMajor ? dims[0].cols : dims[0].rows)
+            << " * matrixID.y); int offset01 = int(" << (m_data.colMajor ? dims[0].rows : dims[0].cols)
+            << " * matrixID.x);\n";
+        css << "   int offset10 = int(" << (m_data.colMajor ? dims[1].cols : dims[1].rows)
+            << " * matrixID.y); int offset11 = int(" << (m_data.colMajor ? dims[1].rows : dims[1].cols)
+            << " * matrixID.x);\n";
+        css << "   int offset20 = int(" << (m_data.colMajor ? dims[2].cols : dims[2].rows)
+            << " * matrixID.y); int offset21 = int(" << (m_data.colMajor ? dims[2].rows : dims[2].cols)
+            << " * matrixID.x);\n";
+        css << "   int offset30 = int(" << (m_data.colMajor ? dims[3].cols : dims[3].rows)
+            << " * matrixID.y); int offset31 = int(" << (m_data.colMajor ? dims[3].rows : dims[3].cols)
+            << " * matrixID.x);\n";
+
+        css << "   uint span00 = " << (m_data.colMajor ? dims[0].cols : dims[0].rows)
+            << "; uint span01 = " << (m_data.colMajor ? dims[0].rows : dims[0].cols) << ";\n";
+        css << "   uint span10 = " << (m_data.colMajor ? dims[1].cols : dims[1].rows)
+            << "; uint span11 = " << (m_data.colMajor ? dims[1].rows : dims[1].cols) << ";\n";
+        css << "   uint span20 = " << (m_data.colMajor ? dims[2].cols : dims[2].rows)
+            << "; uint span21 = " << (m_data.colMajor ? dims[2].rows : dims[2].cols) << ";\n";
+        css << "   uint span30 = " << (m_data.colMajor ? dims[3].cols : dims[3].rows)
+            << "; uint span31 = " << (m_data.colMajor ? dims[3].rows : dims[3].cols) << ";\n";
+    }
+
+    if (isClampTest(m_data.testType))
+    {
+        // Clamp tests adjust offset and dimensions to shrink the load boundary by 3 on each edge
+        css << "   offset00 -= 3; offset01 -= 3;\n";
+        css << "   offset10 -= 3; offset11 -= 3;\n";
+        css << "   offset20 -= 3; offset21 -= 3;\n";
     }
 
     // element<i> is the starting element in buffer memory.
@@ -722,14 +1474,61 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
         for (uint32_t m = 0; m < 4; ++m)
         {
             string sharedStride = strides[m] + " / workgroupsX";
-            css << "       elementS" << m << " = (" << sharedStride << " * "
-                << (m_data.colMajor ? dims[m].cols : dims[m].rows) << " * subgroupXY.y + "
-                << (m_data.colMajor ? dims[m].rows : dims[m].cols) << " * subgroupXY.x)" << *divisors[m] << ";\n";
+            if (m_data.scope == VK_SCOPE_WORKGROUP_KHR)
+            {
+                css << "       elementS" << m << " = 0;\n";
+            }
+            else
+            {
+                css << "       elementS" << m << " = (" << sharedStride << " * "
+                    << (m_data.colMajor ? dims[m].cols : dims[m].rows) << " * subgroupXY.y + "
+                    << (m_data.colMajor ? dims[m].rows : dims[m].cols) << " * subgroupXY.x)" << *divisors[m] << ";\n";
+            }
         }
         css << "   if (subgroupElect()) {\n";
         // copy all three input buffers.
         for (uint32_t m = 0; m < 3; ++m)
         {
+            if (m == 0 && (m_data.testType == TT_LENGTH || m_data.testType == TT_CONSTANT))
+            {
+                // A matrix not needed
+                continue;
+            }
+            if (m == 1)
+            {
+                // B matrix not needed
+                if (isReduceOp(m_data.testType) || isClampTest(m_data.testType))
+                {
+                    continue;
+                }
+                switch (m_data.testType)
+                {
+                case TT_CONSTANT:
+                case TT_LENGTH:
+                case TT_CONVERT:
+                case TT_NEGATE:
+                case TT_FUNC:
+                case TT_MATRIXTIMESSCALAR:
+                case TT_MULTICOMPONENT_LOAD:
+                case TT_MULTICOMPONENT_SAVE:
+                case TT_CONVERT_ACC_TO_A:
+                case TT_CONVERT_ACC_TO_B:
+                case TT_TRANSPOSE_ACC_TO_B:
+                case TT_PER_ELEMENT_OP:
+                case TT_PER_ELEMENT_OP_MAT:
+                case TT_PER_ELEMENT_OP_STRUCT:
+                case TT_PER_ELEMENT_OP_ROW_COL:
+                case TT_SPACETODEPTH:
+                    continue;
+                default:
+                    break;
+                }
+            }
+            if (m == 2 && !isMatrixMulAddOp(m_data.testType))
+            {
+                // C matrix only needed for matmul
+                continue;
+            }
             string sharedStride = strides[m] + " / workgroupsX";
             css << "       for (int i = 0; i < " << dims[m].rows
                 << "; ++i) {\n"
@@ -752,8 +1551,8 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
             strides[m] = sharedStride;
         }
         css << "   }\n";
-        css << "   controlBarrier(gl_ScopeSubgroup, gl_ScopeSubgroup, gl_StorageSemanticsShared, "
-               "gl_SemanticsAcquireRelease);\n";
+        css << "   controlBarrier(" << scopeStr << ", " << scopeStr
+            << ", gl_StorageSemanticsShared, gl_SemanticsAcquireRelease);\n";
     }
 
     const char *colMajorNV = (m_data.colMajor ? "true" : "false");
@@ -766,25 +1565,201 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     if (m_data.testType == TT_MATRIXMULADD_STRIDE0)
         loadStrides[0] = loadStrides[1] = loadStrides[2] = "0";
 
-    if (m_data.storageClass == SC_WORKGROUP || m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)
+    std::string clampString;
+    switch (m_data.testType)
     {
-        css << "   coopMatLoad" << suffix << "(matA, sharedA, elementS0, " << loadStrides[0] << ", " << colMajor
-            << ");\n"
-               "   coopMatLoad"
-            << suffix << "(matB, sharedB, elementS1, " << loadStrides[1] << ", " << colMajor
-            << ");\n"
-               "   coopMatLoad"
-            << suffix << "(matC, sharedC, elementS2, " << loadStrides[2] << ", " << colMajor << ");\n";
+    default:
+        break;
+    case TT_CLAMPCONSTANT:
+        clampString = "gl_CooperativeMatrixClampModeConstantNV";
+        break;
+    case TT_CLAMPTOEDGE:
+        clampString = "gl_CooperativeMatrixClampModeClampToEdgeNV";
+        break;
+    case TT_CLAMPREPEAT:
+        clampString = "gl_CooperativeMatrixClampModeRepeatNV";
+        break;
+    case TT_CLAMPMIRRORREPEAT:
+        clampString = "gl_CooperativeMatrixClampModeMirrorRepeatNV";
+        break;
     }
-    else
+
+    if (!isTensorLayoutTest(m_data.testType))
     {
-        css << "   coopMatLoad" << suffix << "(matA, inputA.x, element0, " << loadStrides[0] << ", " << colMajor
-            << ");\n"
-               "   coopMatLoad"
-            << suffix << "(matB, inputB.x, element1, " << loadStrides[1] << ", " << colMajor
-            << ");\n"
-               "   coopMatLoad"
-            << suffix << "(matC, inputC.x, element2, " << loadStrides[2] << ", " << colMajor << ");\n";
+        if (m_data.addrMethod != ADDR_LINEAR)
+        {
+
+            if (m_data.testType == TT_MATRIXMULADD_STRIDE0)
+            {
+                heights[0] = heights[1] = heights[2] = "1";
+            }
+
+            if (isClampTest(m_data.testType))
+            {
+                css << "   tensorLayoutNV<2, " << clampString << "> tensorLayout0 = createTensorLayoutNV(2, "
+                    << clampString
+                    << ");\n"
+                       "   tensorLayoutNV<2, "
+                    << clampString << "> tensorLayout1 = createTensorLayoutNV(2, " << clampString
+                    << ");\n"
+                       "   tensorLayoutNV<2, "
+                    << clampString << "> tensorLayout2 = createTensorLayoutNV(2, " << clampString << ");\n";
+
+                css << "   tensorLayout0 = setTensorLayoutDimensionNV(tensorLayout0, " << heights[0] << " - 6, "
+                    << strides[0]
+                    << " - 6);\n"
+                       "   tensorLayout1 = setTensorLayoutDimensionNV(tensorLayout1, "
+                    << heights[1] << " - 6, " << strides[1]
+                    << " - 6);\n"
+                       "   tensorLayout2 = setTensorLayoutDimensionNV(tensorLayout2, "
+                    << heights[2] << " - 6, " << strides[2] << " - 6);\n";
+                css << "   tensorLayout0 = setTensorLayoutStrideNV(tensorLayout0, " << strides[0]
+                    << ", 1);\n"
+                       "   tensorLayout1 = setTensorLayoutStrideNV(tensorLayout1, "
+                    << strides[1]
+                    << ", 1);\n"
+                       "   tensorLayout2 = setTensorLayoutStrideNV(tensorLayout2, "
+                    << strides[2] << ", 1);\n";
+                if (m_data.inputType == VK_COMPONENT_TYPE_FLOAT32_KHR)
+                {
+                    css << "   tensorLayout0 = setTensorLayoutClampValueNV(tensorLayout0, floatBitsToUint(0.5));\n";
+                }
+                else if (m_data.inputType == VK_COMPONENT_TYPE_FLOAT16_KHR)
+                {
+                    // 0x3800 == 0.5f in fp16
+                    css << "   tensorLayout0 = setTensorLayoutClampValueNV(tensorLayout0, 0x3800);\n";
+                }
+                else
+                {
+                    css << "   tensorLayout0 = setTensorLayoutClampValueNV(tensorLayout0, 17);\n";
+                }
+            }
+            else
+            {
+                css << "   tensorLayoutNV<2> tensorLayout0 = createTensorLayoutNV(2);\n"
+                       "   tensorLayoutNV<2> tensorLayout1 = createTensorLayoutNV(2);\n"
+                       "   tensorLayoutNV<2> tensorLayout2 = createTensorLayoutNV(2);\n";
+
+                if (m_data.addrMethod == ADDR_BLOCKSIZE || m_data.addrMethod == ADDR_DECODE)
+                {
+                    css << "   tensorLayout0 = setTensorLayoutBlockSizeNV(tensorLayout0, " << blockSize[0] << ", "
+                        << blockSize[1]
+                        << ");\n"
+                           "   tensorLayout1 = setTensorLayoutBlockSizeNV(tensorLayout1, "
+                        << blockSize[0] << ", " << blockSize[1] << ");\n";
+                }
+
+                css << "   tensorLayout0 = setTensorLayoutDimensionNV(tensorLayout0, " << heights[0] << ", "
+                    << strides[0]
+                    << ");\n"
+                       "   tensorLayout1 = setTensorLayoutDimensionNV(tensorLayout1, "
+                    << heights[1] << ", " << strides[1]
+                    << ");\n"
+                       "   tensorLayout2 = setTensorLayoutDimensionNV(tensorLayout2, "
+                    << heights[2] << ", " << strides[2] << ");\n";
+            }
+
+            string viewParam0, viewParam1, viewParam2;
+            string decodeFunc;
+
+            if (m_data.testType == TT_MATRIXMULADD_STRIDE0)
+            {
+                if (m_data.colMajor)
+                {
+                    css << "   tensorViewNV<2, true, 1, 0> stride0View0 = createTensorViewNV(2, true, 1, 0);\n"
+                           "   tensorViewNV<2, true, 1, 0> stride0View1 = createTensorViewNV(2, true, 1, 0);\n"
+                           "   tensorViewNV<2, true, 1, 0> stride0View2 = createTensorViewNV(2, true, 1, 0);\n";
+                }
+                else
+                {
+                    css << "   tensorViewNV<2, true> stride0View0 = createTensorViewNV(2, true);\n"
+                           "   tensorViewNV<2, true> stride0View1 = createTensorViewNV(2, true);\n"
+                           "   tensorViewNV<2, true> stride0View2 = createTensorViewNV(2, true);\n";
+                }
+                css << "   stride0View0 = setTensorViewDimensionsNV(stride0View0, span00, span01);\n"
+                       "   stride0View1 = setTensorViewDimensionsNV(stride0View1, span10, span11);\n"
+                       "   stride0View2 = setTensorViewDimensionsNV(stride0View2, span20, span21);\n"
+                       "   stride0View0 = setTensorViewStrideNV(stride0View0, 0, 1);\n"
+                       "   stride0View1 = setTensorViewStrideNV(stride0View1, 0, 1);\n"
+                       "   stride0View2 = setTensorViewStrideNV(stride0View2, 0, 1);\n";
+
+                viewParam0 = ", stride0View0";
+                viewParam1 = ", stride0View1";
+                viewParam2 = ", stride0View2";
+            }
+            else if (m_data.colMajor)
+            {
+                css << "   tensorViewNV<2, true, 1, 0> colMajorView0 = createTensorViewNV(2, true, 1, 0);\n"
+                       "   tensorViewNV<2, true, 1, 0> colMajorView1 = createTensorViewNV(2, true, 1, 0);\n"
+                       "   tensorViewNV<2, true, 1, 0> colMajorView2 = createTensorViewNV(2, true, 1, 0);\n"
+                       "   colMajorView0 = setTensorViewDimensionsNV(colMajorView0, span00, span01);\n"
+                       "   colMajorView1 = setTensorViewDimensionsNV(colMajorView1, span10, span11);\n"
+                       "   colMajorView2 = setTensorViewDimensionsNV(colMajorView2, span20, span21);\n";
+
+                viewParam0 = ", colMajorView0";
+                viewParam1 = ", colMajorView1";
+                viewParam2 = ", colMajorView2";
+            }
+
+            if (m_data.addrMethod == ADDR_DECODE)
+            {
+                decodeFunc = ", decodeFunc";
+            }
+
+            if (m_data.storageClass == SC_WORKGROUP || m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)
+            {
+                if (m_data.scope == VK_SCOPE_WORKGROUP_KHR)
+                {
+                    css << "   elementS0 = elementS1 = elementS2 = 0;\n";
+                }
+                css << "   tensorLayout0 = sliceTensorLayoutNV(tensorLayout0, 0, span00, 0, span01);\n"
+                       "   tensorLayout1 = sliceTensorLayoutNV(tensorLayout1, 0, span10, 0, span11);\n"
+                       "   tensorLayout2 = sliceTensorLayoutNV(tensorLayout2, 0, span20, 0, span21);\n";
+                css << "   coopMatLoadTensorNV(matA, sharedA, elementS0, tensorLayout0" << viewParam0
+                    << ");\n"
+                       "   coopMatLoadTensorNV(matB, sharedB, elementS1, tensorLayout1"
+                    << viewParam1
+                    << ");\n"
+                       "   coopMatLoadTensorNV(matC, sharedC, elementS2, tensorLayout2"
+                    << viewParam2 << ");\n";
+            }
+            else
+            {
+                css << "   tensorLayout0 = sliceTensorLayoutNV(tensorLayout0, offset00, span00, offset01, span01);\n"
+                       "   tensorLayout1 = sliceTensorLayoutNV(tensorLayout1, offset10, span10, offset11, span11);\n"
+                       "   tensorLayout2 = sliceTensorLayoutNV(tensorLayout2, offset20, span20, offset21, span21);\n";
+                css << "   coopMatLoadTensorNV(matA, inputA.x, 0, tensorLayout0" << viewParam0 << decodeFunc
+                    << ");\n"
+                       "   coopMatLoadTensorNV(matB, inputB.x, 0, tensorLayout1"
+                    << viewParam1 << decodeFunc
+                    << ");\n"
+                       "   coopMatLoadTensorNV(matC, inputC.x, 0, tensorLayout2"
+                    << viewParam2 << ");\n";
+            }
+        }
+        else
+        {
+            if (m_data.storageClass == SC_WORKGROUP || m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)
+            {
+                css << "   coopMatLoad" << suffix << "(matA, sharedA, elementS0, " << loadStrides[0] << ", " << colMajor
+                    << ");\n"
+                       "   coopMatLoad"
+                    << suffix << "(matB, sharedB, elementS1, " << loadStrides[1] << ", " << colMajor
+                    << ");\n"
+                       "   coopMatLoad"
+                    << suffix << "(matC, sharedC, elementS2, " << loadStrides[2] << ", " << colMajor << ");\n";
+            }
+            else
+            {
+                css << "   coopMatLoad" << suffix << "(matA, inputA.x, element0, " << loadStrides[0] << ", " << colMajor
+                    << ");\n"
+                       "   coopMatLoad"
+                    << suffix << "(matB, inputB.x, element1, " << loadStrides[1] << ", " << colMajor
+                    << ");\n"
+                       "   coopMatLoad"
+                    << suffix << "(matC, inputC.x, element2, " << loadStrides[2] << ", " << colMajor << ");\n";
+            }
+        }
     }
 
     if (m_data.testType == TT_COMPOSITE_ARRAY || m_data.testType == TT_MATRIXMULADD_ARRAY)
@@ -858,9 +1833,16 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     case TT_FUNC:
         css << "   matO = f(matA);\n";
         break;
+    case TT_CLAMPTOEDGE:
+    case TT_CLAMPCONSTANT:
+    case TT_CLAMPREPEAT:
+    case TT_CLAMPMIRRORREPEAT:
+        css << "   matO = matA;\n";
+        break;
     case TT_MATRIXTIMESSCALAR:
         css << "   matO = (" << typeStrA << "(2.0)*matA)*" << typeStrA << "(3.0);\n";
         break;
+    case TT_MATRIXMULADD_DEQUANT:
     case TT_MATRIXMULADD_CROSS:
     case TT_MATRIXMULADD_STRIDE0:
     case TT_MATRIXMULADD_WRAPPING:
@@ -877,49 +1859,240 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     case TT_MULTICOMPONENT_SAVE:
         css << "   matO = matA;\n";
         break;
+    case TT_CONVERT_ACC_TO_A:
+    case TT_CONVERT_ACC_TO_B:
+        css << "   matO = " << outputMatType.str() << "(matA);\n";
+        break;
+    case TT_TRANSPOSE_ACC_TO_B:
+        css << "   coopMatTransposeNV(matO, matA);\n";
+        break;
+    case TT_REDUCE_SUM_ROW:
+    case TT_REDUCE_SUM_COL:
+    case TT_REDUCE_SUM_ROWCOL:
+    case TT_REDUCE_SUM_2X2:
+    case TT_REDUCE_SUM_ROW_CHANGEDIM:
+    case TT_REDUCE_SUM_COL_CHANGEDIM:
+    case TT_REDUCE_SUM_ROWCOL_CHANGEDIM:
+    case TT_REDUCE_MIN_ROW:
+    case TT_REDUCE_MIN_COL:
+    case TT_REDUCE_MIN_ROWCOL:
+    case TT_REDUCE_MIN_2X2:
+    {
+        string rowCol = isReduce2x2(m_data.testType) ? "gl_CooperativeMatrixReduce2x2NV" :
+                        isReduceRow(m_data.testType) ? "gl_CooperativeMatrixReduceRowNV" :
+                        isReduceCol(m_data.testType) ? "gl_CooperativeMatrixReduceColumnNV" :
+                                                       "gl_CooperativeMatrixReduceRowAndColumnNV";
+
+        css << "   coopMatReduceNV(matO, matA, " << rowCol << ", combineOp);\n";
+    }
+    break;
+    case TT_PER_ELEMENT_OP:
+        css << "   coopMatPerElementNV(matO, matA, elemOp, " << componentTypeInfo[m_data.inputType].typeName
+            << "(2.0));\n";
+        break;
+    case TT_PER_ELEMENT_OP_MAT:
+        css << "   coopMatPerElementNV(matO, matA, elemOp, " << componentTypeInfo[m_data.inputType].typeName
+            << "(2.0) * matA);\n";
+        break;
+    case TT_PER_ELEMENT_OP_ROW_COL:
+        css << "   coopMatPerElementNV(matO, matA, elemOpRowCol);\n";
+        break;
+    case TT_PER_ELEMENT_OP_STRUCT:
+        css << "   ParamType p; p.x = " << componentTypeInfo[m_data.inputType].typeName << "(2.0);\n";
+        css << "   coopMatPerElementNV(matO, matA, elemOp, p);\n";
+        break;
+    case TT_TENSORLAYOUT_1D:
+    case TT_TENSORLAYOUT_2D:
+    case TT_TENSORLAYOUT_3D:
+    case TT_TENSORLAYOUT_4D:
+    case TT_TENSORLAYOUT_5D:
+    case TT_TENSORLAYOUT_1D_CLIP:
+    case TT_TENSORLAYOUT_2D_CLIP:
+    case TT_TENSORLAYOUT_3D_CLIP:
+    case TT_TENSORLAYOUT_4D_CLIP:
+    case TT_TENSORLAYOUT_5D_CLIP:
+    {
+        uint32_t dim = GetDim(m_data.testType);
+
+        css << "   tensorLayoutNV<" << dim << ", gl_CooperativeMatrixClampModeConstantNV> t = createTensorLayoutNV("
+            << dim << ", gl_CooperativeMatrixClampModeConstantNV);\n";
+        if (isTensorLayoutClipTest(m_data.testType))
+        {
+            css << "   tensorViewNV<" << dim << "> v = createTensorViewNV(" << dim << ");\n";
+        }
+        for (uint32_t i = 0; i < GetTensorLayoutNumCoords(dim); ++i)
+        {
+            uint32_t dimFactor = isTensorLayoutClipTest(m_data.testType) ? 2 : 1;
+
+            stringstream mattype;
+            mattype << "coopmat<" << componentTypeInfo[m_data.inputType].typeName << ", " << scopeStr << ", "
+                    << dimFactor * GetTensorLayoutMatrixSizes(dim, i)[0] << ", "
+                    << dimFactor * GetTensorLayoutMatrixSizes(dim, i)[1] << ", " << sameType << ">";
+            css << "   " << mattype.str() << " tempmat" << i << ";\n";
+
+            css << "   tempmat" << i << " = " << mattype.str() << "(0.5);\n";
+
+            if (isTensorLayoutClipTest(m_data.testType))
+            {
+                // clip the double-size matrix to the requested size
+                css << "   v = setTensorViewClipNV(v, 1, " << GetTensorLayoutMatrixSizes(dim, i)[0] << ", 1, "
+                    << GetTensorLayoutMatrixSizes(dim, i)[1] << ");\n";
+            }
+
+            css << "   t = setTensorLayoutDimensionNV(t";
+            for (uint32_t j = 0; j < dim; ++j)
+            {
+                css << ", " << GetTensorLayoutDim(dim)[j];
+            }
+            css << ");\n";
+
+            css << "   t = sliceTensorLayoutNV(t";
+            for (uint32_t j = 0; j < dim; ++j)
+            {
+                css << ", " << GetTensorLayoutLoadOffsets(dim, i)[j] << ", " << GetTensorLayoutSpan(dim, i)[j];
+            }
+            css << ");\n";
+            css << "   coopMatLoadTensorNV(tempmat" << i << ", inputA.x, 0, t"
+                << (isTensorLayoutClipTest(m_data.testType) ? ", v" : "") << ");\n";
+
+            css << "   t = setTensorLayoutDimensionNV(t";
+            for (uint32_t j = 0; j < dim; ++j)
+            {
+                css << ", " << GetTensorLayoutDim(dim)[j];
+            }
+            css << ");\n";
+
+            css << "   t = sliceTensorLayoutNV(t";
+            for (uint32_t j = 0; j < dim; ++j)
+            {
+                css << ", " << GetTensorLayoutStoreOffsets(dim, i)[j] << ", " << GetTensorLayoutSpan(dim, i)[j];
+            }
+            css << ");\n";
+            css << "   coopMatStoreTensorNV(tempmat" << i << ", outputO.x, 0, t"
+                << (isTensorLayoutClipTest(m_data.testType) ? ", v" : "") << ");\n";
+        }
+    }
+    break;
+    case TT_SPACETODEPTH:
+        css << "   const uint32_t H = 32;\n"
+               "   const uint32_t W = 32;\n"
+               "   const uint32_t NumCh = 16;\n";
+        css << "   tensorLayoutNV<3> t = createTensorLayoutNV(3);\n";
+        css << "   tensorViewNV<5, true, 0, 2, 1, 3, 4> v = createTensorViewNV(5, true, 0, 2, 1, 3, 4);\n";
+
+        {
+            stringstream mattype;
+            mattype << "coopmat<" << componentTypeInfo[m_data.inputType].typeName << ", " << scopeStr
+                    << ", (H/2 * W/2), (4*NumCh)," << sameType << ">";
+            css << "   " << mattype.str() << " tempmat;\n";
+            css << "   tempmat = " << mattype.str() << "(0.5);\n";
+        }
+
+        css << "   t = setTensorLayoutDimensionNV(t, H, W, NumCh);\n";
+        css << "   v = setTensorViewDimensionsNV(v, H/2, 2, W/2, 2, NumCh);\n";
+
+        css << "   coopMatLoadTensorNV(tempmat, inputA.x, 0, t, v);\n";
+
+        css << "   tensorLayoutNV<2> t2 = createTensorLayoutNV(2);\n";
+        css << "   t2 = setTensorLayoutDimensionNV(t2, H/2 * W/2, 4*NumCh);";
+
+        css << "   coopMatStoreTensorNV(tempmat, outputO.x, 0, t2);\n";
+        break;
     }
 
-    if (m_data.testType == TT_COMPOSITE_ARRAY || m_data.testType == TT_MATRIXMULADD_ARRAY)
+    if (!isTensorLayoutTest(m_data.testType))
     {
-        css << "   matOArr[0] = " << outputMatType.str() << "(0.0);\n";
-        css << "   matO = matOArr[1];\n";
-    }
+        if (m_data.testType == TT_COMPOSITE_ARRAY || m_data.testType == TT_MATRIXMULADD_ARRAY)
+        {
+            css << "   matOArr[0] = " << outputMatType.str() << "(0.0);\n";
+            css << "   matO = matOArr[1];\n";
+        }
 
-    if (m_data.storageClass == SC_WORKGROUP || m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)
-    {
-        string sharedStride = strides[3] + " / workgroupsX";
-        css << "   coopMatStore" << suffix << "(matO, sharedO, elementS3, " << sharedStride << divisorO << ", "
-            << colMajor << ");\n";
-        css << "   controlBarrier(gl_ScopeSubgroup, gl_ScopeSubgroup, gl_StorageSemanticsShared, "
-               "gl_SemanticsAcquireRelease);\n";
-        css << "   if (subgroupElect()) {\n";
-        css << "       for (int i = 0; i < " << dims[3].rows
-            << "; ++i) {\n"
-               "       for (int j = 0; j < "
-            << dims[3].cols
-            << "; ++j) {\n"
-               "           int localElementInput = ("
-            << strides[3] << " * " << (m_data.colMajor ? "j" : "i") << " + " << (m_data.colMajor ? "i" : "j") << ")"
-            << *divisors[3]
-            << ";\n"
-               "           int localElementShared = ("
-            << sharedStride << " * " << (m_data.colMajor ? "j" : "i") << " + " << (m_data.colMajor ? "i" : "j") << ")"
-            << *divisors[3]
-            << ";\n"
-               "           outputO.x[element3 + localElementInput] = sharedO[elementS3 + localElementShared];\n"
-               "       }\n"
-               "       }\n";
-        css << "   }\n";
-    }
-    else
-    {
-        css << "   coopMatStore" << suffix << "(matO, outputO.x, element3, " << strides[3] << divisorO << ", "
-            << colMajor << ");\n";
+        if (m_data.storageClass == SC_WORKGROUP || m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)
+        {
+            string sharedStride = strides[3] + " / workgroupsX";
+            if (m_data.addrMethod != ADDR_LINEAR)
+            {
+                css << "   tensorLayoutNV<2> tensorLayout3 = createTensorLayoutNV(2);\n"
+                       "   tensorLayout3 = setTensorLayoutDimensionNV(tensorLayout3, "
+                    << heights[3] << ", " << sharedStride
+                    << ");\n"
+                       "   tensorLayout3 = sliceTensorLayoutNV(tensorLayout3, 0, span30, 0, span31);\n";
+
+                css << "   tensorViewNV<2, false, 1, 0> colMajorView3 = createTensorViewNV(2, false, 1, 0);\n";
+
+                if (m_data.scope == VK_SCOPE_WORKGROUP_KHR)
+                {
+                    css << "   elementS3 = 0;\n";
+                }
+                css << "   coopMatStoreTensorNV(matO, sharedO, elementS3, tensorLayout3"
+                    << (m_data.colMajor ? ", colMajorView3" : "") << ");\n";
+            }
+            else
+            {
+                css << "   coopMatStore" << suffix << "(matO, sharedO, elementS3, " << sharedStride << divisorO << ", "
+                    << colMajor << ");\n";
+            }
+            css << "   controlBarrier(" << scopeStr << ", " << scopeStr
+                << ", gl_StorageSemanticsShared, gl_SemanticsAcquireRelease);\n";
+            css << "   if (subgroupElect()) {\n";
+            css << "       for (int i = 0; i < " << dims[3].rows
+                << "; ++i) {\n"
+                   "       for (int j = 0; j < "
+                << dims[3].cols
+                << "; ++j) {\n"
+                   "           int localElementInput = ("
+                << strides[3] << " * " << (m_data.colMajor ? "j" : "i") << " + " << (m_data.colMajor ? "i" : "j") << ")"
+                << *divisors[3]
+                << ";\n"
+                   "           int localElementShared = ("
+                << sharedStride << " * " << (m_data.colMajor ? "j" : "i") << " + " << (m_data.colMajor ? "i" : "j")
+                << ")" << *divisors[3]
+                << ";\n"
+                   "           outputO.x[element3 + localElementInput] = sharedO[elementS3 + localElementShared];\n"
+                   "       }\n"
+                   "       }\n";
+            css << "   }\n";
+            strides[3] = sharedStride;
+        }
+        else
+        {
+            if (m_data.addrMethod != ADDR_LINEAR)
+            {
+                if (isClampTest(m_data.testType))
+                {
+                    css << "   tensorLayoutNV<2, " << clampString << "> tensorLayout3 = createTensorLayoutNV(2, "
+                        << clampString << ");\n";
+
+                    // Shrink the width/height by 1
+                    css << "   tensorLayout3 = setTensorLayoutDimensionNV(tensorLayout3, " << heights[3] << " - 1, "
+                        << strides[3] << " - 1);\n";
+                    css << "   tensorLayout3 = setTensorLayoutStrideNV(tensorLayout3, " << strides[3] << ", 1);\n";
+                }
+                else
+                {
+                    css << "   tensorLayoutNV<2> tensorLayout3 = createTensorLayoutNV(2);\n"
+                           "   tensorLayout3 = setTensorLayoutDimensionNV(tensorLayout3, "
+                        << heights[3] << ", " << strides[3] << ");\n";
+                }
+
+                css << "   tensorLayout3 = sliceTensorLayoutNV(tensorLayout3, offset30, span30, offset31, span31);\n";
+
+                css << "   tensorViewNV<2, false, 1, 0> colMajorView3 = createTensorViewNV(2, false, 1, 0);\n";
+                css << "   coopMatStoreTensorNV(matO, outputO.x, 0, tensorLayout3"
+                    << (m_data.colMajor ? ", colMajorView3" : "") << ");\n";
+            }
+            else
+            {
+                css << "   coopMatStore" << suffix << "(matO, outputO.x, element3, " << strides[3] << divisorO << ", "
+                    << colMajor << ");\n";
+            }
+        }
     }
 
     css << "}\n";
 
-    const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+    const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_6, 0u);
 
     programCollection.glslSources.add("test") << glu::ComputeSource(css.str()) << buildOptions;
 }
@@ -1483,6 +2656,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
     const uint32_t subgroupSize = getSubgroupSizeFromMode(m_context, m_data.subgroupSizeMode);
     const float epsilon         = 1.0f / float(1ull << 17); // 131072 is epsilon circa 1e-5
     vk::VkPhysicalDeviceProperties vkproperties;
+    const bool coopMat2Supported = m_context.isDeviceFunctionalitySupported("VK_NV_cooperative_matrix2");
 
     m_context.getInstanceInterface().getPhysicalDeviceProperties(m_context.getPhysicalDevice(), &vkproperties);
 
@@ -1497,78 +2671,331 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
         TestTuple()
         {
         }
-        TestTuple(uint32_t m, uint32_t n, uint32_t k) : M(m), N(n), K(k)
+        TestTuple(uint32_t m, uint32_t n, uint32_t k, uint32_t w) : M(m), N(n), K(k), workgroupSize(w)
         {
         }
 
         bool operator<(const TestTuple &other) const
         {
-            return M < other.M || (M == other.M && N < other.N) || (M == other.M && N == other.N && K < other.K);
+            return workgroupSize < other.workgroupSize || (workgroupSize == other.workgroupSize && M < other.M) ||
+                   (workgroupSize == other.workgroupSize && M == other.M && N < other.N) ||
+                   (workgroupSize == other.workgroupSize && M == other.M && N == other.N && K < other.K);
         }
 
-        uint32_t M, N, K;
+        uint32_t M, N, K, workgroupSize;
     };
 
-    vector<TestTuple> testSizes;
-
-    if (isMatrixMulAddOp(m_data.testType))
+    std::vector<VkCooperativeMatrixFlexibleDimensionsPropertiesNV> flexibleProperties;
+    if (m_context.getCooperativeMatrix2FeaturesNV().cooperativeMatrixFlexibleDimensions)
     {
-        for (size_t i = 0; i < properties.size(); ++i)
-        {
-            VkCooperativeMatrixPropertiesKHR *p = &properties[i];
+        uint32_t flexiblePropertyCount = 0;
 
-            if (p->AType == m_data.inputType && p->BType == m_data.inputType && p->CType == m_data.outputType &&
-                p->ResultType == m_data.outputType && p->scope == VK_SCOPE_SUBGROUP_KHR)
+        const InstanceInterface &vki = m_context.getInstanceInterface();
+        VK_CHECK(vki.getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV(m_context.getPhysicalDevice(),
+                                                                                      &flexiblePropertyCount, nullptr));
+
+        if (flexiblePropertyCount > 0)
+        {
+            const VkCooperativeMatrixFlexibleDimensionsPropertiesNV sample = initVulkanStructureConst();
+
+            flexibleProperties.resize(flexiblePropertyCount, sample);
+
+            VK_CHECK(vki.getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV(
+                m_context.getPhysicalDevice(), &flexiblePropertyCount, flexibleProperties.data()));
+        }
+        else
+        {
+            flexibleProperties.clear();
+        }
+    }
+
+    set<TestTuple> testSizes;
+
+    if (isTensorLayoutTest(m_data.testType))
+    {
+        for (auto const &prop : flexibleProperties)
+        {
+            auto const *p = &prop;
+            if (m_data.scope == p->scope)
             {
-                testSizes.push_back(TestTuple(p->MSize, p->NSize, p->KSize));
+                // placeholder matrix size. The test defines the real sizes elsewhere
+                testSizes.insert(TestTuple(32, 32, 32, p->workgroupInvocations));
             }
         }
     }
-    else
+    else if (m_data.useType != UT_NV)
     {
-        set<TestTuple> typeSizes[2];
-        VkComponentTypeKHR types[2] = {m_data.inputType, m_data.outputType};
-        const bool aType            = (m_data.useType == UT_KHR_A) || (m_data.useType == UT_NV);
-        const bool bType            = (m_data.useType == UT_KHR_B) || (m_data.useType == UT_NV);
-        const bool rType            = (m_data.useType == UT_KHR_Result) || (m_data.useType == UT_NV);
-
-        for (uint32_t i = 0; i < properties.size(); ++i)
+        auto shmemOK = [&](uint32_t M, uint32_t N, uint32_t K) -> bool
         {
-            VkCooperativeMatrixPropertiesKHR *p = &properties[i];
+            uint32_t maxMatrixElements = max(M * N, max(M * K, K * N));
 
-            if (p->scope != VK_SCOPE_SUBGROUP_KHR)
-                continue;
-
-            for (uint32_t j = 0; j < 2; ++j)
+            if (isReduce2x2(m_data.testType))
             {
-                // For these tests, m_data.M/N are always the matrix size. Check if they match
-                // any input or output in the list.
-                if (aType && p->AType == types[j])
-                    typeSizes[j].insert(TestTuple(p->MSize, p->KSize, 0));
-                if (bType && p->BType == types[j])
-                    typeSizes[j].insert(TestTuple(p->KSize, p->NSize, 0));
-                if (rType && (p->CType == types[j] || p->ResultType == types[j]))
-                    typeSizes[j].insert(TestTuple(p->MSize, p->NSize, 0));
+                // A matrix is 4x larger
+                maxMatrixElements *= 4;
+            }
+            if (isReduceChangeDim(m_data.testType))
+            {
+                // A matrix is 3-9x larger
+                maxMatrixElements *= reduceMScale(m_data.testType) * reduceNScale(m_data.testType);
+            }
+
+            if (m_data.scope == VK_SCOPE_SUBGROUP_KHR)
+            {
+                maxMatrixElements *= m_data.subgroupsPerWorkgroupX * m_data.subgroupsPerWorkgroupY;
+            }
+
+            int32_t maxSharedMem = m_context.getDeviceProperties().limits.maxComputeSharedMemorySize;
+
+            if (coopMat2Supported && m_data.scope == VK_SCOPE_WORKGROUP_KHR)
+            {
+                // reserved for implementation
+                maxSharedMem -=
+                    m_context.getCooperativeMatrix2PropertiesNV().cooperativeMatrixWorkgroupScopeReservedSharedMemory;
+            }
+
+            if (m_data.storageClass == SC_WORKGROUP || m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)
+            {
+                return (int32_t)(maxMatrixElements * 2 *
+                                 (componentTypeInfo[m_data.inputType].bits * m_data.inputComponentCount +
+                                  componentTypeInfo[m_data.outputType].bits * m_data.outputComponentCount) /
+                                 8) <= maxSharedMem;
+            }
+
+            return true;
+        };
+        if (m_context.getCooperativeMatrix2FeaturesNV().cooperativeMatrixFlexibleDimensions)
+        {
+            const auto isMMA    = isMatrixMulAddOp(m_data.testType);
+            const auto isMMASat = m_data.testType == TT_MATRIXMULADD_SATURATED;
+
+            std::vector<TestTuple> sizes;
+            for (auto const &prop : flexibleProperties)
+            {
+                auto const *p = &prop;
+
+                uint32_t MGranularity = 0;
+                uint32_t NGranularity = 0;
+                uint32_t KGranularity = 0;
+                bool ok               = false;
+
+                if (p->scope != m_data.scope)
+                    continue;
+
+                if (isMMA && isMMASat != static_cast<bool>(p->saturatingAccumulation))
+                    continue;
+
+                if (isMMA)
+                {
+                    if (p->AType == m_data.inputType && p->BType == m_data.inputType && p->CType == m_data.outputType &&
+                        p->ResultType == m_data.outputType)
+                    {
+                        ok           = true;
+                        MGranularity = p->MGranularity;
+                        NGranularity = p->NGranularity;
+                        KGranularity = p->KGranularity;
+                    }
+                }
+                else
+                {
+                    const VkComponentTypeKHR types[2] = {m_data.inputType, m_data.outputType};
+                    UseType uses[2]                   = {m_data.useType, m_data.useType};
+                    if (m_data.testType == TT_CONVERT_ACC_TO_A)
+                    {
+                        uses[1] = UT_KHR_A;
+                    }
+                    else if (m_data.testType == TT_CONVERT_ACC_TO_B || m_data.testType == TT_TRANSPOSE_ACC_TO_B)
+                    {
+                        uses[1] = UT_KHR_B;
+                    }
+
+                    auto const &SetGranularity = [&](const VkCooperativeMatrixFlexibleDimensionsPropertiesNV *p2,
+                                                     VkComponentTypeKHR type, UseType use)
+                    {
+                        ok = false;
+                        switch (use)
+                        {
+                        case UT_NV:
+                            break;
+                        case UT_KHR_A:
+                        {
+                            if (p2->AType == type)
+                            {
+                                ok           = true;
+                                MGranularity = std::max(MGranularity, p2->MGranularity);
+                                NGranularity = std::max(NGranularity, p2->KGranularity);
+                            }
+
+                            break;
+                        }
+                        case UT_KHR_B:
+                        {
+                            if (p2->BType == type)
+                            {
+                                ok = true;
+                                if (m_data.testType == TT_TRANSPOSE_ACC_TO_B)
+                                {
+                                    MGranularity = std::max(MGranularity, p2->NGranularity);
+                                    NGranularity = std::max(NGranularity, p2->KGranularity);
+                                }
+                                else
+                                {
+                                    MGranularity = std::max(MGranularity, p2->KGranularity);
+                                    NGranularity = std::max(NGranularity, p2->NGranularity);
+                                }
+                            }
+
+                            break;
+                        }
+                        case UT_KHR_Result:
+                        {
+                            if (p2->ResultType == type)
+                            {
+                                ok           = true;
+                                MGranularity = std::max(MGranularity, p2->MGranularity);
+                                NGranularity = std::max(NGranularity, p2->NGranularity);
+                            }
+
+                            break;
+                        }
+                        default:
+                            TCU_THROW(InternalError, "Unsupported use type");
+                        }
+                    };
+
+                    SetGranularity(p, types[0], uses[0]);
+
+                    if (!ok)
+                    {
+                        continue;
+                    }
+
+                    // Need to find a "matching" property for the other use/type
+                    // and take the max of the granularities
+                    for (auto const &prop2 : flexibleProperties)
+                    {
+                        auto const *p2 = &prop2;
+
+                        if (p2->scope != m_data.scope || p2->workgroupInvocations != p->workgroupInvocations)
+                            continue;
+
+                        SetGranularity(p2, types[1], uses[1]);
+
+                        if (ok)
+                        {
+                            break;
+                        }
+                    }
+                }
+                if (ok)
+                {
+                    DE_ASSERT(MGranularity && NGranularity && (!isMMA || KGranularity));
+
+                    sizes.emplace_back(1U * MGranularity, 1U * NGranularity, 1U * KGranularity,
+                                       p->workgroupInvocations);
+                    if (m_data.storageClass != SC_WORKGROUP && m_data.storageClass != SC_WORKGROUP_VARIABLE_POINTERS)
+                    {
+                        sizes.emplace_back(3U * MGranularity, 1U * NGranularity, 1U * KGranularity,
+                                           p->workgroupInvocations);
+                        sizes.emplace_back(1U * MGranularity, 3U * NGranularity, 1U * KGranularity,
+                                           p->workgroupInvocations);
+                        if (isMatrixMulAddOp(m_data.testType))
+                        {
+                            sizes.emplace_back(2U * MGranularity, 2U * NGranularity, 3U * KGranularity,
+                                               p->workgroupInvocations);
+                            sizes.emplace_back(1U * MGranularity, 1U * NGranularity, 3U * KGranularity,
+                                               p->workgroupInvocations);
+                        }
+                    }
+                }
+            }
+
+            for (auto &s : sizes)
+            {
+                if (shmemOK(s.M, s.N, s.K))
+                {
+                    testSizes.insert(s);
+                }
             }
         }
-        // Test those sizes that are supported for both the input and output type.
-        std::set_intersection(typeSizes[0].begin(), typeSizes[0].end(), typeSizes[1].begin(), typeSizes[1].end(),
-                              std::back_inserter(testSizes));
+    }
+    if (!isTensorLayoutTest(m_data.testType))
+    {
+        if (isMatrixMulAddOp(m_data.testType))
+        {
+            for (size_t i = 0; i < properties.size(); ++i)
+            {
+                VkCooperativeMatrixPropertiesKHR *p = &properties[i];
+
+                if (p->AType == m_data.inputType && p->BType == m_data.inputType && p->CType == m_data.outputType &&
+                    p->ResultType == m_data.outputType && p->scope == m_data.scope)
+                {
+                    testSizes.insert(TestTuple(p->MSize, p->NSize, p->KSize, 0));
+                }
+            }
+        }
+        else
+        {
+            set<TestTuple> typeSizes[2];
+            VkComponentTypeKHR types[2] = {m_data.inputType, m_data.outputType};
+            UseType uses[2]             = {m_data.useType, m_data.useType};
+            if (m_data.testType == TT_CONVERT_ACC_TO_A)
+            {
+                uses[1] = UT_KHR_A;
+            }
+            else if (m_data.testType == TT_CONVERT_ACC_TO_B || m_data.testType == TT_TRANSPOSE_ACC_TO_B)
+            {
+                uses[1] = UT_KHR_B;
+            }
+
+            for (uint32_t i = 0; i < properties.size(); ++i)
+            {
+                VkCooperativeMatrixPropertiesKHR *p = &properties[i];
+
+                if (p->scope != m_data.scope)
+                    continue;
+
+                for (uint32_t j = 0; j < 2; ++j)
+                {
+                    // For these tests, m_data.M/N are always the matrix size. Check if they match
+                    // any input or output in the list.
+                    if ((uses[j] == UT_KHR_A || uses[j] == UT_NV) && p->AType == types[j])
+                        typeSizes[j].insert(TestTuple(p->MSize, p->KSize, 0, 0));
+                    if ((uses[j] == UT_KHR_B || uses[j] == UT_NV) && p->BType == types[j])
+                    {
+                        if (m_data.testType == TT_TRANSPOSE_ACC_TO_B)
+                        {
+                            typeSizes[j].insert(TestTuple(p->NSize, p->KSize, 0, 0));
+                        }
+                        else
+                        {
+                            typeSizes[j].insert(TestTuple(p->KSize, p->NSize, 0, 0));
+                        }
+                    }
+                    if ((uses[j] == UT_KHR_Result || uses[j] == UT_NV) &&
+                        (p->CType == types[j] || p->ResultType == types[j]))
+                        typeSizes[j].insert(TestTuple(p->MSize, p->NSize, 0, 0));
+                }
+            }
+            // Test those sizes that are supported for both the input and output type.
+            std::set_intersection(typeSizes[0].begin(), typeSizes[0].end(), typeSizes[1].begin(), typeSizes[1].end(),
+                                  std::inserter(testSizes, testSizes.begin()));
+        }
     }
 
     properties.resize(0);
 
-    for (unsigned int s = 0; s < testSizes.size(); ++s)
+    for (auto &testSize : testSizes)
     {
         // When testing a multiply, MxNxK is the type of matrix multiply.
         // Otherwise, MxN is the size of the input/output matrices
         uint32_t M, N, K;
-        M = testSizes[s].M;
-        N = testSizes[s].N;
-        K = testSizes[s].K;
+        M = testSize.M;
+        N = testSize.N;
+        K = testSize.K;
 
         log << tcu::TestLog::Message << "Testing M = " << M << ", N = " << N << ", K = " << K
-            << tcu::TestLog::EndMessage;
+            << ", WG = " << testSize.workgroupSize << tcu::TestLog::EndMessage;
 
         struct
         {
@@ -1588,14 +3015,37 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
         }
         else
         {
-            dims[0].rows = M;
-            dims[0].cols = N;
+            if (isReduce2x2(m_data.testType))
+            {
+                dims[0].rows = M * 2;
+                dims[0].cols = N * 2;
+            }
+            else
+            {
+                dims[0].rows = M;
+                dims[0].cols = N;
+            }
             dims[1].rows = M;
             dims[1].cols = N;
             dims[2].rows = M;
             dims[2].cols = N;
-            dims[3].rows = M;
-            dims[3].cols = N;
+            if (isReduceChangeDim(m_data.testType))
+            {
+                dims[3].rows = M * reduceMScale(m_data.testType);
+                dims[3].cols = N * reduceNScale(m_data.testType);
+            }
+            else if (m_data.testType == TT_TRANSPOSE_ACC_TO_B)
+            {
+                dims[2].rows = N;
+                dims[2].cols = M;
+                dims[3].rows = N;
+                dims[3].cols = M;
+            }
+            else
+            {
+                dims[3].rows = M;
+                dims[3].cols = N;
+            }
         }
 
         VkComponentTypeKHR dataTypes[4];
@@ -1606,8 +3056,6 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
         uint32_t strides[4]; // in elements
         uint32_t loadStrides[4];
         uint32_t totalElements[4];
-        size_t sharedMemoryUsage[4];
-        size_t totalSharedMemoryUsage = 0;
 
         for (uint32_t i = 0; i < 5; ++i)
         {
@@ -1617,25 +3065,33 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                 dataTypes[i]   = (i < 2) ? m_data.inputType : m_data.outputType;
                 elementSize[i] = componentTypeInfo[dataTypes[i]].bits / 8;
 
-                strides[i] = (m_data.colMajor ? dims[i].rows : dims[i].cols) * m_data.subgroupsPerWorkgroupX *
-                             m_data.workgroupsX;
+                strides[i] = (m_data.colMajor ? dims[i].rows : dims[i].cols) * m_data.workgroupsX;
+                if (m_data.scope != VK_SCOPE_WORKGROUP_KHR)
+                {
+                    strides[i] *= m_data.subgroupsPerWorkgroupX;
+                }
                 loadStrides[i]   = strides[i];
-                totalElements[i] = strides[i] * (m_data.colMajor ? dims[i].cols : dims[i].rows) *
-                                   m_data.subgroupsPerWorkgroupY * m_data.workgroupsY;
-                sharedMemoryUsage[i] = dims[i].cols * dims[i].rows * m_data.subgroupsPerWorkgroupX *
-                                       m_data.subgroupsPerWorkgroupY * elementSize[i] *
-                                       ((i < 2) ? m_data.inputComponentCount : m_data.outputComponentCount);
+                totalElements[i] = strides[i] * (m_data.colMajor ? dims[i].cols : dims[i].rows) * m_data.workgroupsY;
+
+                if (m_data.testType == TT_MATRIXMULADD_DEQUANT && i < 2)
+                {
+                    // logical type is fp16, but encoded as 4bpp so takes 1/4 the storage
+                    DE_ASSERT(m_data.inputType == VK_COMPONENT_TYPE_FLOAT16_KHR);
+                    totalElements[i] /= 4;
+                }
+
+                if (m_data.scope != VK_SCOPE_WORKGROUP_KHR)
+                {
+                    totalElements[i] *= m_data.subgroupsPerWorkgroupY;
+                }
+
+                if (isTensorLayoutTest(m_data.testType))
+                {
+                    // sized for 128x128 matrix, scaled up by 4 workgroups in x and y
+                    totalElements[i] = 512 * 512;
+                }
 
                 bufferSizes[i] = totalElements[i] * elementSize[i];
-
-                // Check there is enough shared memory supported
-                if ((m_data.useType != UT_NV) &&
-                    ((m_data.storageClass == SC_WORKGROUP) || (m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)))
-                {
-                    totalSharedMemoryUsage += sharedMemoryUsage[i];
-                    if (totalSharedMemoryUsage > vkproperties.limits.maxComputeSharedMemorySize)
-                        throw tcu::NotSupportedError("Not enough shared memory supported.");
-                }
             }
             else
             {
@@ -1733,8 +3189,9 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
         VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
 
         const uint32_t specData[9] = {
-            subgroupSize * m_data.subgroupsPerWorkgroupX,
-            m_data.subgroupsPerWorkgroupY,
+            (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ? testSize.workgroupSize :
+                                                       (subgroupSize * m_data.subgroupsPerWorkgroupX),
+            (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ? 1 : m_data.subgroupsPerWorkgroupY,
             strides[0],
             strides[1],
             strides[2],
@@ -1768,9 +3225,20 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
             {
                 if (isFloatType(dataTypes[i]))
                 {
-                    if (!isMatrixMulAddOp(m_data.testType))
+                    if ((isTensorLayoutTest(m_data.testType) || isClampTest(m_data.testType)) && i == 3)
+                    {
+                        setDataFloat(ptrs[i], dataTypes[i], j, 123.0);
+                    }
+                    else if (!isMatrixMulAddOp(m_data.testType) && !isReduceSum(m_data.testType))
                         setDataFloat(ptrs[i], dataTypes[i], j,
                                      ((float)(deRandom_getUint32(&rnd) & 0xff) - 64.0f) / 2.0f);
+                    else if (m_data.testType == TT_MATRIXMULADD_DEQUANT && i < 2)
+                    {
+                        // Each "element" still accounts for 16bpp, but it's stored quantized
+                        // so we just want a random 16b pattern.
+                        uint32_t value = (deRandom_getUint32(&rnd) & 0xffff);
+                        setDataInt(ptrs[i], VK_COMPONENT_TYPE_UINT16_KHR, j, value);
+                    }
                     else
                         setDataFloat(ptrs[i], dataTypes[i], j, ((float)(deRandom_getUint32(&rnd) & 0xf) - 4.0f) / 2.0f);
                 }
@@ -1800,6 +3268,10 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                     else if (m_data.testType == TT_MATRIXMULADD_SATURATED)
                     {
                         setDataInt(ptrs[i], dataTypes[i], j, 0);
+                    }
+                    else if ((isTensorLayoutTest(m_data.testType) || isClampTest(m_data.testType)) && i == 3)
+                    {
+                        setDataInt(ptrs[i], dataTypes[i], j, 123);
                     }
                     else
                     {
@@ -1860,7 +3332,26 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                  nullptr);
         pipeline.bind(*cmdBuffer);
 
-        vk.cmdDispatch(*cmdBuffer, m_data.workgroupsX, m_data.workgroupsY, 1);
+        // tensorlayout test has larger number of workgroups to allocate more memory
+        // but only needs to launch one workgroup
+        uint32_t workgroupsX = m_data.workgroupsX;
+        uint32_t workgroupsY = m_data.workgroupsY;
+        if (isTensorLayoutTest(m_data.testType))
+        {
+            workgroupsX = 1u;
+            workgroupsY = 1u;
+        }
+
+        vk.cmdDispatch(*cmdBuffer, workgroupsX, workgroupsY, 1);
+
+        const VkMemoryBarrier barrier = {
+            VK_STRUCTURE_TYPE_MEMORY_BARRIER, // sType
+            nullptr,                          // pNext
+            VK_ACCESS_SHADER_WRITE_BIT,       // srcAccessMask
+            VK_ACCESS_HOST_READ_BIT,          // dstAccessMask
+        };
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                              (VkDependencyFlags)0, 1, &barrier, 0, nullptr, 0, nullptr);
 
         endCommandBuffer(vk, *cmdBuffer);
 
@@ -1953,7 +3444,528 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
         }
         else if (isFloatType(dataTypes[0]))
         {
-            if (!isMatrixMulAddOp(m_data.testType))
+            if (isReduceOp(m_data.testType))
+            {
+                uint32_t numMatrixX = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsX :
+                                          (m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
+                uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsY :
+                                          (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
+                for (uint32_t mX = 0; mX < numMatrixX; ++mX)
+                {
+                    for (uint32_t mY = 0; mY < numMatrixY; ++mY)
+                    {
+                        auto const getA = [&](uint32_t i, uint32_t j) -> float
+                        {
+                            uint32_t ij;
+                            if (m_data.colMajor)
+                                ij = mX * dims[0].rows + i + strides[0] * mY * dims[0].cols + loadStrides[0] * j;
+                            else
+                                ij = mX * dims[0].cols + j + strides[0] * mY * dims[0].rows + loadStrides[0] * i;
+
+                            float Aij = getDataFloat(ptrs[0], dataTypes[0], ij);
+                            return Aij;
+                        };
+
+                        auto const getD = [&](uint32_t i, uint32_t j) -> float
+                        {
+                            uint32_t ij;
+                            // When loading with stride 0, ij for matrix D is different from matrix C
+                            if (m_data.colMajor)
+                                ij = mX * dims[3].rows + i + strides[3] * (mY * dims[3].cols + j);
+                            else
+                                ij = mX * dims[3].cols + j + strides[3] * (mY * dims[3].rows + i);
+
+                            float Dij = getDataFloat(ptrs[3], dataTypes[3], ij);
+                            return Dij;
+                        };
+
+                        std::function<float(float, float)> Combine;
+                        float identity;
+                        if (isReduceSum(m_data.testType))
+                        {
+                            Combine  = [](float a, float b) { return a + b; };
+                            identity = 0;
+                        }
+                        else if (isReduceMin(m_data.testType))
+                        {
+                            Combine  = [](float a, float b) { return std::min(a, b); };
+                            identity = std::numeric_limits<float>::max();
+                        }
+                        else
+                        {
+                            Combine  = [](float a, float b) { return std::max(a, b); };
+                            identity = -std::numeric_limits<float>::max();
+                        }
+
+                        uint32_t outputM = M * reduceMScale(m_data.testType);
+                        uint32_t outputN = N * reduceNScale(m_data.testType);
+                        if (isReduceRow(m_data.testType))
+                        {
+                            for (uint32_t i = 0; i < M; ++i)
+                            {
+                                float ref = identity;
+                                for (uint32_t j = 0; j < N; ++j)
+                                {
+                                    ref = Combine(ref, getA(i, j));
+                                }
+                                for (uint32_t j = 0; j < outputN; ++j)
+                                {
+                                    float Dij = getD(i, j);
+                                    if (fabs(ref - Dij) / (fabs(ref) + 0.001) > 3.0 / 1024)
+                                    {
+                                        //printf("mX %d mY %d i %d j %d ref %f Dij %f\n", mX, mY, i, j, ref, Dij);
+                                        res = QP_TEST_RESULT_FAIL;
+                                    }
+                                    float Di0 = getD(i, 0);
+                                    if (Dij != Di0)
+                                    {
+                                        //printf("mX %d mY %d i %d j %d Di0 %f Dij %f\n", mX, mY, i, j, Di0, Dij);
+                                        res = QP_TEST_RESULT_FAIL;
+                                    }
+                                }
+                            }
+                        }
+                        else if (isReduceCol(m_data.testType))
+                        {
+                            for (uint32_t j = 0; j < N; ++j)
+                            {
+                                float ref = identity;
+                                for (uint32_t i = 0; i < M; ++i)
+                                {
+                                    ref = Combine(ref, getA(i, j));
+                                }
+                                for (uint32_t i = 0; i < outputM; ++i)
+                                {
+                                    float Dij = getD(i, j);
+                                    if (fabs(ref - Dij) / (fabs(ref) + 0.001) > 3.0 / 1024)
+                                    {
+                                        //printf("mX %d mY %d i %d j %d ref %f Dij %f\n", mX, mY, i, j, ref, Dij);
+                                        res = QP_TEST_RESULT_FAIL;
+                                    }
+                                    float D0j = getD(0, j);
+                                    if (Dij != D0j)
+                                    {
+                                        //printf("mX %d mY %d i %d j %d D0j %f Dij %f\n", mX, mY, i, j, D0j, Dij);
+                                        res = QP_TEST_RESULT_FAIL;
+                                    }
+                                }
+                            }
+                        }
+                        else if (isReduceRowCol(m_data.testType))
+                        {
+                            float ref = identity;
+                            for (uint32_t i = 0; i < M; ++i)
+                            {
+                                for (uint32_t j = 0; j < N; ++j)
+                                {
+                                    ref = Combine(ref, getA(i, j));
+                                }
+                            }
+                            for (uint32_t i = 0; i < outputM; ++i)
+                            {
+                                for (uint32_t j = 0; j < outputN; ++j)
+                                {
+                                    float Dij = getD(i, j);
+                                    if (fabs(ref - Dij) / (fabs(ref) + 0.001) > 3.0 / 1024)
+                                    {
+                                        //printf("mX %d mY %d i %d j %d ref %f Dij %f\n", mX, mY, i, j, ref, Dij);
+                                        res = QP_TEST_RESULT_FAIL;
+                                    }
+                                    float D00 = getD(0, 0);
+                                    if (Dij != D00)
+                                    {
+                                        //printf("mX %d mY %d i %d j %d D00 %f Dij %f\n", mX, mY, i, j, D00, Dij);
+                                        res = QP_TEST_RESULT_FAIL;
+                                    }
+                                }
+                            }
+                        }
+                        else if (isReduce2x2(m_data.testType))
+                        {
+                            for (uint32_t j = 0; j < N; ++j)
+                            {
+                                for (uint32_t i = 0; i < M; ++i)
+                                {
+                                    float ref = identity;
+                                    ref       = Combine(ref, getA(i * 2 + 0, j * 2 + 0));
+                                    ref       = Combine(ref, getA(i * 2 + 0, j * 2 + 1));
+                                    ref       = Combine(ref, getA(i * 2 + 1, j * 2 + 0));
+                                    ref       = Combine(ref, getA(i * 2 + 1, j * 2 + 1));
+
+                                    float Dij = getD(i, j);
+                                    if (ref != Dij)
+                                    {
+                                        //printf("mX %d mY %d i %d j %d ref %f Dij %f\n", mX, mY, i, j, ref, Dij);
+                                        res = QP_TEST_RESULT_FAIL;
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            DE_ASSERT(0);
+                        }
+                    }
+                }
+            }
+            else if (m_data.testType == TT_TRANSPOSE_ACC_TO_B)
+            {
+                uint32_t ij;
+                uint32_t numMatrixX = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsX :
+                                          (m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
+                uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsY :
+                                          (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
+                for (uint32_t mX = 0; mX < numMatrixX; ++mX)
+                {
+                    for (uint32_t mY = 0; mY < numMatrixY; ++mY)
+                    {
+                        for (uint32_t i = 0; i < M; ++i)
+                        {
+                            for (uint32_t j = 0; j < N; ++j)
+                            {
+                                // for row-major, src is MxN, so row,col = i,j
+                                if (m_data.colMajor)
+                                    ij = mX * M + i + strides[0] * mY * N + loadStrides[0] * j;
+                                else
+                                    ij = mX * N + j + strides[0] * mY * M + loadStrides[0] * i;
+
+                                float ref = getDataFloat(ptrs[0], dataTypes[0], ij);
+
+                                // for row-major, dst is NxM, so row,col = j,i
+                                if (m_data.colMajor)
+                                    ij = mX * N + j + strides[3] * (mY * M + i);
+                                else
+                                    ij = mX * M + i + strides[3] * (mY * N + j);
+
+                                float Dij = getDataFloat(ptrs[3], dataTypes[3], ij);
+
+                                if (ref != Dij)
+                                {
+                                    res = QP_TEST_RESULT_FAIL;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else if (m_data.testType == TT_SPACETODEPTH)
+            {
+                uint32_t H = 32;
+                uint32_t W = 32;
+                uint32_t C = 16;
+                for (uint32_t h = 0; h < H; ++h)
+                {
+                    for (uint32_t w = 0; w < W; ++w)
+                    {
+                        for (uint32_t c = 0; c < C; ++c)
+                        {
+                            uint32_t inputIndex  = (h * W + w) * C + c;
+                            uint32_t outputIndex = ((h / 2) * W / 2 + w / 2) * 4 * C + ((h & 1) * 2 + (w & 1)) * C + c;
+                            float ref            = getDataFloat(ptrs[0], dataTypes[0], inputIndex);
+                            float output         = getDataFloat(ptrs[3], dataTypes[3], outputIndex);
+                            if (ref != output)
+                            {
+                                //printf("h %d w %d c %d ref %f output %f\n", h, w, c, ref, output);
+                                res = QP_TEST_RESULT_FAIL;
+                            }
+                        }
+                    }
+                }
+            }
+            else if (isTensorLayoutTest(m_data.testType))
+            {
+                uint32_t dim = GetDim(m_data.testType);
+                for (int32_t i0 = 0; i0 < GetTensorLayoutDim(dim)[0]; ++i0)
+                {
+                    for (int32_t i1 = 0; i1 < GetTensorLayoutDim(dim)[1]; ++i1)
+                    {
+                        for (int32_t i2 = 0; i2 < GetTensorLayoutDim(dim)[2]; ++i2)
+                        {
+                            for (int32_t i3 = 0; i3 < GetTensorLayoutDim(dim)[3]; ++i3)
+                            {
+                                for (int32_t i4 = 0; i4 < GetTensorLayoutDim(dim)[4]; ++i4)
+                                {
+                                    int32_t tensorCoord[5] = {i0, i1, i2, i3, i4};
+                                    uint32_t index         = 0;
+                                    for (uint32_t k = 0; k < dim; ++k)
+                                    {
+                                        index = index * GetTensorLayoutDim(dim)[k] + tensorCoord[k];
+                                    }
+                                    float ref    = 123.0f;
+                                    float output = getDataFloat(ptrs[3], dataTypes[3], index);
+                                    // If the dest coord is in one of the store rectangles, compute
+                                    // a different reference value.
+                                    for (uint32_t r = 0; r < GetTensorLayoutNumCoords(dim); ++r)
+                                    {
+                                        bool inStoreRect = true;
+                                        for (uint32_t k = 0; k < dim; ++k)
+                                        {
+                                            if ((int32_t)tensorCoord[k] < GetTensorLayoutStoreOffsets(dim, r)[k] ||
+                                                (int32_t)tensorCoord[k] >= GetTensorLayoutStoreOffsets(dim, r)[k] +
+                                                                               GetTensorLayoutSpan(dim, r)[k])
+                                            {
+                                                inStoreRect = false;
+                                            }
+                                        }
+
+                                        if (inStoreRect)
+                                        {
+                                            int32_t loadCoord[5] = {i0, i1, i2, i3, i4};
+                                            for (uint32_t k = 0; k < dim; ++k)
+                                            {
+                                                loadCoord[k] = loadCoord[k] - GetTensorLayoutStoreOffsets(dim, r)[k] +
+                                                               GetTensorLayoutLoadOffsets(dim, r)[k];
+                                            }
+                                            bool OOB = false;
+                                            // gl_CooperativeMatrixClampModeConstant bounds checking
+                                            for (uint32_t k = 0; k < dim; ++k)
+                                            {
+                                                if (loadCoord[k] < 0 || loadCoord[k] >= GetTensorLayoutDim(dim)[k])
+                                                {
+                                                    OOB = true;
+                                                }
+                                            }
+                                            if (OOB)
+                                            {
+                                                ref = 0.0f;
+                                            }
+                                            else
+                                            {
+                                                index = 0;
+                                                for (uint32_t k = 0; k < dim; ++k)
+                                                {
+                                                    index = index * GetTensorLayoutDim(dim)[k] + loadCoord[k];
+                                                }
+                                                ref = getDataFloat(ptrs[0], dataTypes[0], index);
+                                            }
+                                            break;
+                                        }
+                                    }
+                                    if (ref != output)
+                                    {
+                                        //printf("tensorCoord {%d, %d, %d, %d, %d} ref %f output %f\n", tensorCoord[0], tensorCoord[1], tensorCoord[2], tensorCoord[3], tensorCoord[4], ref, output);
+                                        res = QP_TEST_RESULT_FAIL;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else if (m_data.testType == TT_PER_ELEMENT_OP_ROW_COL)
+            {
+                uint32_t ij;
+                uint32_t numMatrixX = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsX :
+                                          (m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
+                uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsY :
+                                          (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
+                for (uint32_t mX = 0; mX < numMatrixX; ++mX)
+                {
+                    for (uint32_t mY = 0; mY < numMatrixY; ++mY)
+                    {
+                        for (uint32_t i = 0; i < M; ++i)
+                        {
+                            for (uint32_t j = 0; j < N; ++j)
+                            {
+                                if (m_data.colMajor)
+                                    ij = mX * M + i + strides[0] * mY * N + loadStrides[0] * j;
+                                else
+                                    ij = mX * N + j + strides[0] * mY * M + loadStrides[0] * i;
+
+                                float ref = getDataFloat(ptrs[0], dataTypes[0], ij);
+
+                                float Dij = getDataFloat(ptrs[3], dataTypes[3], ij);
+
+                                if (ref + (float)(i * 3 + j) != Dij)
+                                {
+                                    res = QP_TEST_RESULT_FAIL;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else if (isClampTest(m_data.testType))
+            {
+                uint32_t ij;
+                uint32_t numMatrixX = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsX :
+                                          (m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
+                uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsY :
+                                          (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
+                uint32_t fullDimX   = numMatrixX * (m_data.colMajor ? dims[0].rows : dims[0].cols);
+                uint32_t fullDimY   = numMatrixY * (m_data.colMajor ? dims[0].cols : dims[0].rows);
+                uint32_t dimX       = fullDimX - 6;
+                uint32_t dimY       = fullDimY - 6;
+                for (uint32_t mX = 0; mX < numMatrixX; ++mX)
+                {
+                    for (uint32_t mY = 0; mY < numMatrixY; ++mY)
+                    {
+                        for (uint32_t i = 0; i < M; ++i)
+                        {
+                            for (uint32_t j = 0; j < N; ++j)
+                            {
+                                int32_t i2;
+                                int32_t j2;
+                                bool OOBLoad  = false;
+                                bool OOBStore = false;
+
+                                if (m_data.colMajor)
+                                {
+                                    i2       = mX * M + i;
+                                    j2       = mY * N + j;
+                                    ij       = i2 + strides[3] * j2;
+                                    OOBStore = i2 == (int32_t)fullDimX - 1 || j2 == (int32_t)fullDimY - 1;
+                                }
+                                else
+                                {
+                                    i2       = mY * M + i;
+                                    j2       = mX * N + j;
+                                    ij       = j2 + strides[3] * i2;
+                                    OOBStore = i2 == (int32_t)fullDimY - 1 || j2 == (int32_t)fullDimX - 1;
+                                }
+
+                                float Dij = getDataFloat(ptrs[3], dataTypes[3], ij);
+
+                                auto const mod = [](int32_t n, int32_t d) -> int32_t
+                                {
+                                    // works for the range of values we use
+                                    return (n + d) % d;
+                                };
+
+                                i2 -= 3;
+                                j2 -= 3;
+                                uint32_t dimI = m_data.colMajor ? dimX : dimY;
+                                uint32_t dimJ = m_data.colMajor ? dimY : dimX;
+                                switch (m_data.testType)
+                                {
+                                case TT_CLAMPCONSTANT:
+                                    OOBLoad = i2 < 0 || j2 < 0 || i2 >= (int32_t)dimI || j2 >= (int32_t)dimJ;
+                                    break;
+                                case TT_CLAMPTOEDGE:
+                                    i2 = std::min(std::max(i2, 0), (int32_t)dimI - 1);
+                                    j2 = std::min(std::max(j2, 0), (int32_t)dimJ - 1);
+                                    break;
+                                case TT_CLAMPREPEAT:
+                                    i2 = mod(i2, dimI);
+                                    j2 = mod(j2, dimJ);
+                                    break;
+                                case TT_CLAMPMIRRORREPEAT:
+                                    i2 = mod(i2, (2 * dimI - 2));
+                                    i2 = (i2 >= (int32_t)dimI) ? (2 * dimI - 2 - i2) : i2;
+                                    j2 = mod(j2, (2 * dimJ - 2));
+                                    j2 = (j2 >= (int32_t)dimJ) ? (2 * dimJ - 2 - j2) : j2;
+                                    break;
+                                default:
+                                    DE_ASSERT(0);
+                                    break;
+                                }
+
+                                if (m_data.colMajor)
+                                {
+                                    ij = i2 + strides[0] * j2;
+                                }
+                                else
+                                {
+                                    ij = j2 + strides[0] * i2;
+                                }
+
+                                float ref = OOBStore ? 123.0f :
+                                            OOBLoad  ? 0.5f :
+                                                       getDataFloat(ptrs[0], dataTypes[0], ij);
+
+                                if (ref != Dij)
+                                {
+                                    //printf("fail ");
+                                    res = QP_TEST_RESULT_FAIL;
+                                }
+                                //printf("i %d j %d ref %f Dij %f\n", i, j, ref, Dij);
+                            }
+                        }
+                    }
+                }
+            }
+            else if ((m_data.addrMethod == ADDR_BLOCKSIZE || m_data.addrMethod == ADDR_DECODE) &&
+                     m_data.testType != TT_MATRIXMULADD_DEQUANT)
+            {
+                uint32_t ij, blockij;
+                uint32_t numMatrixX = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsX :
+                                          (m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
+                uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsY :
+                                          (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
+                for (uint32_t mX = 0; mX < numMatrixX; ++mX)
+                {
+                    for (uint32_t mY = 0; mY < numMatrixY; ++mY)
+                    {
+                        for (uint32_t i = 0; i < M; ++i)
+                        {
+                            for (uint32_t j = 0; j < N; ++j)
+                            {
+                                uint32_t blockCoords[2];
+                                if (m_data.colMajor)
+                                {
+                                    blockCoords[0] = (mY * N + j) / blockSize[0];
+                                    blockCoords[1] = (mX * M + i) / blockSize[1];
+                                    blockij        = blockCoords[1] + (strides[0] / blockSize[1]) * blockCoords[0];
+                                    if (m_data.addrMethod == ADDR_DECODE)
+                                    {
+                                        blockij *= blockSize[0] * blockSize[1];
+                                        blockij += (j % blockSize[0]) * blockSize[1] + (i % blockSize[1]);
+                                    }
+                                    ij = mX * M + i + strides[0] * mY * N + loadStrides[0] * j;
+                                }
+                                else
+                                {
+                                    blockCoords[0] = (mY * M + i) / blockSize[0];
+                                    blockCoords[1] = (mX * N + j) / blockSize[1];
+                                    blockij        = blockCoords[1] + (strides[0] / blockSize[1]) * blockCoords[0];
+                                    if (m_data.addrMethod == ADDR_DECODE)
+                                    {
+                                        blockij *= blockSize[0] * blockSize[1];
+                                        blockij += (i % blockSize[0]) * blockSize[1] + (j % blockSize[1]);
+                                    }
+                                    ij = mX * N + j + strides[0] * mY * M + loadStrides[0] * i;
+                                }
+
+                                float ref = getDataFloat(ptrs[0], dataTypes[0], blockij);
+
+                                if (m_data.addrMethod == ADDR_DECODE)
+                                {
+                                    ref += (float)((2 * blockCoords[0] + blockCoords[1]) & 3);
+                                }
+
+                                float Dij = getDataFloat(ptrs[3], dataTypes[3], ij);
+
+                                if (m_data.testType == TT_NEGATE)
+                                {
+                                    ref = -ref;
+                                }
+                                else
+                                {
+                                    DE_ASSERT(0);
+                                }
+
+                                if (ref != Dij)
+                                {
+                                    //printf("fail ");
+                                    res = QP_TEST_RESULT_FAIL;
+                                }
+                                //printf("mX %d mY %d i %d j %d ref %f D %f\n", mX, mY, i, j, ref, Dij);
+                            }
+                        }
+                    }
+                }
+            }
+            else if (!isMatrixMulAddOp(m_data.testType))
             {
                 for (uint32_t i = 0; i < totalElements[3]; ++i)
                 {
@@ -1965,10 +3977,15 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                     case TT_LENGTH:
                         if (output < 1.0f || output > (float)(N * M))
                             res = QP_TEST_RESULT_FAIL;
-                        // We expect the matrix to be spread evenly across invocations, it is
-                        // surprising (but not necessarily illegal) if not
-                        if (output != (float)(N * M / subgroupSize) && res == QP_TEST_RESULT_PASS)
-                            res = QP_TEST_RESULT_QUALITY_WARNING;
+                        if (m_data.scope == VK_SCOPE_SUBGROUP_KHR)
+                        {
+                            // We expect the matrix to be spread evenly across invocations, it is
+                            // surprising (but not necessarily illegal) if not
+                            if (output != (float)(N * M / subgroupSize) && res == QP_TEST_RESULT_PASS)
+                            {
+                                res = QP_TEST_RESULT_QUALITY_WARNING;
+                            }
+                        }
                         break;
                     case TT_CONSTANT:
                         if (output != 1.0f)
@@ -2030,11 +4047,25 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                         break;
                     }
                     case TT_MULTICOMPONENT_SAVE:
+                    case TT_CONVERT_ACC_TO_A:
+                    case TT_CONVERT_ACC_TO_B:
                     {
                         if (output != inputA)
+                        {
+                            //printf("i %d inputA %f output %f\n", i, inputA, output);
                             res = QP_TEST_RESULT_FAIL;
+                        }
                         break;
                     }
+                    case TT_PER_ELEMENT_OP:
+                    case TT_PER_ELEMENT_OP_STRUCT:
+                        if (output != inputA + 2.0)
+                            res = QP_TEST_RESULT_FAIL;
+                        break;
+                    case TT_PER_ELEMENT_OP_MAT:
+                        if (output != 3 * inputA)
+                            res = QP_TEST_RESULT_FAIL;
+                        break;
                     default:
                         TCU_THROW(InternalError, "Unimplemented");
                     }
@@ -2043,9 +4074,15 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
             else
             {
                 uint32_t ik, kj, ij;
-                for (uint32_t mX = 0; mX < m_data.subgroupsPerWorkgroupX * m_data.workgroupsX; ++mX)
+                uint32_t numMatrixX = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsX :
+                                          (m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
+                uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsY :
+                                          (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
+                for (uint32_t mX = 0; mX < numMatrixX; ++mX)
                 {
-                    for (uint32_t mY = 0; mY < m_data.subgroupsPerWorkgroupY * m_data.workgroupsY; ++mY)
+                    for (uint32_t mY = 0; mY < numMatrixY; ++mY)
                     {
                         for (uint32_t i = 0; i < M; ++i)
                         {
@@ -2054,19 +4091,58 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                 float ref = 0;
                                 for (uint32_t k = 0; k < K; ++k)
                                 {
-                                    if (m_data.colMajor)
-                                        ik = mX * M + i + strides[0] * mY * K + loadStrides[0] * k;
+                                    float Aik, Bkj;
+                                    if (m_data.testType == TT_MATRIXMULADD_DEQUANT)
+                                    {
+                                        uint32_t idxInBlock, idx, arrayidx, shift;
+                                        int32_t value;
+
+                                        // Blocks are stored in row-major order. Compute index of the block
+                                        // and index within block.
+                                        DE_ASSERT(!m_data.colMajor);
+                                        uint32_t blockik = ((mX * K + k) / blockSize[1]) +
+                                                           (strides[0] / blockSize[1]) * ((mY * M + i) / blockSize[0]);
+
+                                        idxInBlock = (i % blockSize[0]) * blockSize[1] + (k % blockSize[1]);
+
+                                        // Compute block index (idx) and extract a 4bpp element from the block
+                                        idx      = blockik * blockSize[0] * blockSize[1] + idxInBlock;
+                                        arrayidx = idx / 2;
+                                        shift    = (idx & 1) * 4;
+                                        value    = getDataInt(ptrs[0], VK_COMPONENT_TYPE_UINT8_KHR, arrayidx);
+                                        value    = (value >> shift) & 0xF;
+                                        // decode
+                                        Aik = 0.5f * (float)(value - 4);
+
+                                        // Repeat for B matrix
+                                        uint32_t blockkj = ((mX * N + j) / blockSize[1]) +
+                                                           (strides[1] / blockSize[1]) * ((mY * K + k) / blockSize[0]);
+
+                                        idxInBlock = (k % blockSize[0]) * blockSize[1] + (j % blockSize[1]);
+
+                                        idx      = blockkj * blockSize[0] * blockSize[1] + idxInBlock;
+                                        arrayidx = idx / 2;
+                                        shift    = (idx & 1) * 4;
+                                        value    = getDataInt(ptrs[1], VK_COMPONENT_TYPE_UINT8_KHR, arrayidx);
+                                        value    = (value >> shift) & 0xF;
+                                        Bkj      = 0.5f * (float)(value - 4);
+                                    }
                                     else
-                                        ik = mX * K + k + strides[0] * mY * M + loadStrides[0] * i;
+                                    {
+                                        if (m_data.colMajor)
+                                            ik = mX * M + i + strides[0] * mY * K + loadStrides[0] * k;
+                                        else
+                                            ik = mX * K + k + strides[0] * mY * M + loadStrides[0] * i;
 
-                                    float Aik = getDataFloat(ptrs[0], dataTypes[0], ik);
+                                        Aik = getDataFloat(ptrs[0], dataTypes[0], ik);
 
-                                    if (m_data.colMajor)
-                                        kj = mX * K + k + strides[1] * mY * N + loadStrides[1] * j;
-                                    else
-                                        kj = mX * N + j + strides[1] * mY * K + loadStrides[1] * k;
+                                        if (m_data.colMajor)
+                                            kj = mX * K + k + strides[1] * mY * N + loadStrides[1] * j;
+                                        else
+                                            kj = mX * N + j + strides[1] * mY * K + loadStrides[1] * k;
 
-                                    float Bkj = getDataFloat(ptrs[1], dataTypes[1], kj);
+                                        Bkj = getDataFloat(ptrs[1], dataTypes[1], kj);
+                                    }
 
                                     ref += Aik * Bkj;
                                 }
@@ -2088,9 +4164,23 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
 
                                 float Dij = getDataFloat(ptrs[3], dataTypes[3], ij);
 
+                                //printf("i %d j %d ref %f Dij %f\n", i, j, ref, Dij);
+
                                 if (fabs(ref - Dij) > epsilon)
                                 {
-                                    res = QP_TEST_RESULT_FAIL;
+                                    if (max(max(M, N), K) >= 48)
+                                    {
+                                        if (fabs(ref - Dij) / (fabs(ref) + 0.001) > 3.0 / 1024)
+                                        {
+                                            //printf("ref %f Dij %f\n", ref, Dij);
+                                            res = QP_TEST_RESULT_FAIL;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        //printf("i %d j %d ref %f Dij %f\n", i, j, ref, Dij);
+                                        res = QP_TEST_RESULT_FAIL;
+                                    }
                                 }
                             }
                         }
@@ -2100,7 +4190,546 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
         }
         else
         {
-            if (!isMatrixMulAddOp(m_data.testType))
+            if (isReduceOp(m_data.testType))
+            {
+                uint32_t numMatrixX = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsX :
+                                          (m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
+                uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsY :
+                                          (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
+                int resultSize      = componentTypeInfo[dataTypes[3]].bits;
+                uint32_t mask       = resultSize == 32 ? ~0 : ((1 << resultSize) - 1);
+                for (uint32_t mX = 0; mX < numMatrixX; ++mX)
+                {
+                    for (uint32_t mY = 0; mY < numMatrixY; ++mY)
+                    {
+                        bool isSigned   = componentTypeInfo[dataTypes[0]].isSigned;
+                        auto const getA = [&](uint32_t i, uint32_t j) -> int64_t
+                        {
+                            uint32_t ij;
+                            if (m_data.colMajor)
+                                ij = mX * dims[0].rows + i + strides[0] * mY * dims[0].cols + loadStrides[0] * j;
+                            else
+                                ij = mX * dims[0].cols + j + strides[0] * mY * dims[0].rows + loadStrides[0] * i;
+
+                            uint32_t Aij = getDataInt(ptrs[0], dataTypes[0], ij);
+                            if (isSigned)
+                            {
+                                return (int64_t)(int32_t)Aij;
+                            }
+                            else
+                            {
+                                return (int64_t)Aij;
+                            }
+                        };
+
+                        auto const getD = [&](uint32_t i, uint32_t j) -> int64_t
+                        {
+                            uint32_t ij;
+                            // When loading with stride 0, ij for matrix D is different from matrix C
+                            if (m_data.colMajor)
+                                ij = mX * dims[3].rows + i + strides[3] * (mY * dims[3].cols + j);
+                            else
+                                ij = mX * dims[3].cols + j + strides[3] * (mY * dims[3].rows + i);
+
+                            uint32_t Dij = getDataInt(ptrs[3], dataTypes[3], ij);
+                            if (isSigned)
+                            {
+                                return (int64_t)(int32_t)Dij;
+                            }
+                            else
+                            {
+                                return (int64_t)Dij;
+                            }
+                        };
+
+                        std::function<int64_t(int64_t, int64_t)> Combine;
+                        int64_t identity;
+                        if (isReduceSum(m_data.testType))
+                        {
+                            Combine  = [](int64_t a, int64_t b) { return a + b; };
+                            identity = 0;
+                        }
+                        else if (isReduceMin(m_data.testType))
+                        {
+                            Combine  = [](int64_t a, int64_t b) { return std::min(a, b); };
+                            identity = std::numeric_limits<int64_t>::max();
+                        }
+                        else
+                        {
+                            Combine  = [](int64_t a, int64_t b) { return std::max(a, b); };
+                            identity = -std::numeric_limits<int64_t>::max();
+                        }
+
+                        uint32_t outputM = M * reduceMScale(m_data.testType);
+                        uint32_t outputN = N * reduceNScale(m_data.testType);
+                        if (isReduceRow(m_data.testType))
+                        {
+                            for (uint32_t i = 0; i < M; ++i)
+                            {
+                                int64_t ref = identity;
+                                for (uint32_t j = 0; j < N; ++j)
+                                {
+                                    ref = Combine(ref, getA(i, j));
+                                }
+                                for (uint32_t j = 0; j < outputN; ++j)
+                                {
+                                    int64_t Dij = getD(i, j);
+                                    if ((ref & mask) != (Dij & mask))
+                                    {
+                                        //printf("mX %d mY %d i %d j %d ref %d Dij %d\n", mX, mY, i, j, (int)ref, (int)Dij);
+                                        res = QP_TEST_RESULT_FAIL;
+                                    }
+                                    int64_t Di0 = getD(i, 0);
+                                    if (Dij != Di0)
+                                    {
+                                        //printf("mX %d mY %d i %d j %d Di0 %d Dij %d\n", mX, mY, i, j, (int)Di0, (int)Dij);
+                                        res = QP_TEST_RESULT_FAIL;
+                                    }
+                                }
+                            }
+                        }
+                        else if (isReduceCol(m_data.testType))
+                        {
+                            for (uint32_t j = 0; j < N; ++j)
+                            {
+                                int64_t ref = identity;
+                                for (uint32_t i = 0; i < M; ++i)
+                                {
+                                    ref = Combine(ref, getA(i, j));
+                                }
+                                for (uint32_t i = 0; i < outputM; ++i)
+                                {
+                                    int64_t Dij = getD(i, j);
+                                    if ((ref & mask) != (Dij & mask))
+                                    {
+                                        //printf("mX %d mY %d i %d j %d ref %d Dij %d\n", mX, mY, i, j, (int)ref, (int)Dij);
+                                        res = QP_TEST_RESULT_FAIL;
+                                    }
+                                    int64_t D0j = getD(0, j);
+                                    if (Dij != D0j)
+                                    {
+                                        //printf("mX %d mY %d i %d j %d D0j %d Dij %d\n", mX, mY, i, j, (int)D0j, (int)Dij);
+                                        res = QP_TEST_RESULT_FAIL;
+                                    }
+                                }
+                            }
+                        }
+                        else if (isReduceRowCol(m_data.testType))
+                        {
+                            int64_t ref = identity;
+                            for (uint32_t i = 0; i < M; ++i)
+                            {
+                                for (uint32_t j = 0; j < N; ++j)
+                                {
+                                    ref = Combine(ref, getA(i, j));
+                                }
+                            }
+                            for (uint32_t i = 0; i < outputM; ++i)
+                            {
+                                for (uint32_t j = 0; j < outputN; ++j)
+                                {
+                                    int64_t Dij = getD(i, j);
+                                    if ((ref & mask) != (Dij & mask))
+                                    {
+                                        //printf("mX %d mY %d i %d j %d ref %d Dij %d\n", mX, mY, i, j, (int)ref, (int)Dij);
+                                        res = QP_TEST_RESULT_FAIL;
+                                    }
+                                    int64_t D00 = getD(0, 0);
+                                    if (Dij != D00)
+                                    {
+                                        //printf("mX %d mY %d i %d j %d D00 %d Dij %d\n", mX, mY, i, j, (int)D00, (int)Dij);
+                                        res = QP_TEST_RESULT_FAIL;
+                                    }
+                                }
+                            }
+                        }
+                        else if (isReduce2x2(m_data.testType))
+                        {
+                            for (uint32_t j = 0; j < N; ++j)
+                            {
+                                for (uint32_t i = 0; i < M; ++i)
+                                {
+                                    int64_t ref = identity;
+                                    ref         = Combine(ref, getA(i * 2 + 0, j * 2 + 0));
+                                    ref         = Combine(ref, getA(i * 2 + 0, j * 2 + 1));
+                                    ref         = Combine(ref, getA(i * 2 + 1, j * 2 + 0));
+                                    ref         = Combine(ref, getA(i * 2 + 1, j * 2 + 1));
+
+                                    int64_t Dij = getD(i, j);
+                                    if ((ref & mask) != (Dij & mask))
+                                    {
+                                        //printf("mX %d mY %d i %d j %d ref %d Dij %d\n", mX, mY, i, j, (int)ref, (int)Dij);
+                                        res = QP_TEST_RESULT_FAIL;
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            DE_ASSERT(0);
+                        }
+                    }
+                }
+            }
+            else if (m_data.testType == TT_TRANSPOSE_ACC_TO_B)
+            {
+                uint32_t ij;
+                uint32_t numMatrixX = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsX :
+                                          (m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
+                uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsY :
+                                          (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
+                int resultSize      = componentTypeInfo[dataTypes[3]].bits;
+                uint32_t mask       = resultSize == 32 ? ~0 : ((1 << resultSize) - 1);
+
+                for (uint32_t mX = 0; mX < numMatrixX; ++mX)
+                {
+                    for (uint32_t mY = 0; mY < numMatrixY; ++mY)
+                    {
+                        for (uint32_t i = 0; i < M; ++i)
+                        {
+                            for (uint32_t j = 0; j < N; ++j)
+                            {
+                                // for row-major, src is MxN, so row,col = i,j
+                                if (m_data.colMajor)
+                                    ij = mX * M + i + strides[0] * mY * N + loadStrides[0] * j;
+                                else
+                                    ij = mX * N + j + strides[0] * mY * M + loadStrides[0] * i;
+
+                                uint32_t ref = getDataInt(ptrs[0], dataTypes[0], ij);
+
+                                // for row-major, dst is NxM, so row,col = j,i
+                                if (m_data.colMajor)
+                                    ij = mX * N + j + strides[3] * (mY * M + i);
+                                else
+                                    ij = mX * M + i + strides[3] * (mY * N + j);
+
+                                uint32_t Dij = getDataInt(ptrs[3], dataTypes[3], ij);
+
+                                if ((ref & mask) != (Dij & mask))
+                                {
+                                    res = QP_TEST_RESULT_FAIL;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else if (m_data.testType == TT_SPACETODEPTH)
+            {
+                uint32_t H = 32;
+                uint32_t W = 32;
+                uint32_t C = 16;
+                for (uint32_t h = 0; h < H; ++h)
+                {
+                    for (uint32_t w = 0; w < W; ++w)
+                    {
+                        for (uint32_t c = 0; c < C; ++c)
+                        {
+                            uint32_t inputIndex  = (h * W + w) * C + c;
+                            uint32_t outputIndex = ((h / 2) * W / 2 + w / 2) * 4 * C + ((h & 1) * 2 + (w & 1)) * C + c;
+                            uint32_t ref         = getDataInt(ptrs[0], dataTypes[0], inputIndex);
+                            uint32_t output      = getDataInt(ptrs[3], dataTypes[3], outputIndex);
+                            if (ref != output)
+                            {
+                                //printf("h %d w %d c %d ref %d output %d\n", h, w, c, ref, output);
+                                res = QP_TEST_RESULT_FAIL;
+                            }
+                        }
+                    }
+                }
+            }
+            else if (isTensorLayoutTest(m_data.testType))
+            {
+                uint32_t dim = GetDim(m_data.testType);
+                for (int32_t i0 = 0; i0 < GetTensorLayoutDim(dim)[0]; ++i0)
+                {
+                    for (int32_t i1 = 0; i1 < GetTensorLayoutDim(dim)[1]; ++i1)
+                    {
+                        for (int32_t i2 = 0; i2 < GetTensorLayoutDim(dim)[2]; ++i2)
+                        {
+                            for (int32_t i3 = 0; i3 < GetTensorLayoutDim(dim)[3]; ++i3)
+                            {
+                                for (int32_t i4 = 0; i4 < GetTensorLayoutDim(dim)[4]; ++i4)
+                                {
+                                    int32_t tensorCoord[5] = {i0, i1, i2, i3, i4};
+                                    uint32_t index         = 0;
+                                    for (uint32_t k = 0; k < dim; ++k)
+                                    {
+                                        index = index * GetTensorLayoutDim(dim)[k] + tensorCoord[k];
+                                    }
+                                    uint32_t ref    = 123;
+                                    uint32_t output = getDataInt(ptrs[3], dataTypes[3], index);
+                                    // If the dest coord is in one of the store rectangles, compute
+                                    // a different reference value.
+                                    for (uint32_t r = 0; r < GetTensorLayoutNumCoords(dim); ++r)
+                                    {
+                                        bool inStoreRect = true;
+                                        for (uint32_t k = 0; k < dim; ++k)
+                                        {
+                                            if ((int32_t)tensorCoord[k] < GetTensorLayoutStoreOffsets(dim, r)[k] ||
+                                                (int32_t)tensorCoord[k] >= GetTensorLayoutStoreOffsets(dim, r)[k] +
+                                                                               GetTensorLayoutSpan(dim, r)[k])
+                                            {
+                                                inStoreRect = false;
+                                            }
+                                        }
+
+                                        if (inStoreRect)
+                                        {
+                                            int32_t loadCoord[5] = {i0, i1, i2, i3, i4};
+                                            for (uint32_t k = 0; k < dim; ++k)
+                                            {
+                                                loadCoord[k] = loadCoord[k] - GetTensorLayoutStoreOffsets(dim, r)[k] +
+                                                               GetTensorLayoutLoadOffsets(dim, r)[k];
+                                            }
+                                            bool OOB = false;
+                                            // gl_CooperativeMatrixClampModeConstant bounds checking
+                                            for (uint32_t k = 0; k < dim; ++k)
+                                            {
+                                                if (loadCoord[k] < 0 || loadCoord[k] >= GetTensorLayoutDim(dim)[k])
+                                                {
+                                                    OOB = true;
+                                                }
+                                            }
+                                            if (OOB)
+                                            {
+                                                ref = 0;
+                                            }
+                                            else
+                                            {
+                                                index = 0;
+                                                for (uint32_t k = 0; k < dim; ++k)
+                                                {
+                                                    index = index * GetTensorLayoutDim(dim)[k] + loadCoord[k];
+                                                }
+                                                ref = getDataInt(ptrs[0], dataTypes[0], index);
+                                            }
+                                            break;
+                                        }
+                                    }
+                                    if (ref != output)
+                                    {
+                                        //printf("tensorCoord {%d, %d, %d, %d, %d} ref %d output %d\n", tensorCoord[0], tensorCoord[1], tensorCoord[2], tensorCoord[3], tensorCoord[4], ref, output);
+                                        res = QP_TEST_RESULT_FAIL;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else if (m_data.testType == TT_PER_ELEMENT_OP_ROW_COL)
+            {
+                uint32_t ij;
+                uint32_t numMatrixX = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsX :
+                                          (m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
+                uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsY :
+                                          (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
+                int resultSize      = componentTypeInfo[dataTypes[3]].bits;
+                uint32_t mask       = resultSize == 32 ? ~0 : ((1 << resultSize) - 1);
+                for (uint32_t mX = 0; mX < numMatrixX; ++mX)
+                {
+                    for (uint32_t mY = 0; mY < numMatrixY; ++mY)
+                    {
+                        for (uint32_t i = 0; i < M; ++i)
+                        {
+                            for (uint32_t j = 0; j < N; ++j)
+                            {
+                                if (m_data.colMajor)
+                                    ij = mX * M + i + strides[0] * mY * N + loadStrides[0] * j;
+                                else
+                                    ij = mX * N + j + strides[0] * mY * M + loadStrides[0] * i;
+
+                                uint32_t ref = getDataInt(ptrs[0], dataTypes[0], ij);
+
+                                uint32_t Dij = getDataInt(ptrs[3], dataTypes[3], ij);
+
+                                if (((ref + (i * 3 + j)) & mask) != (Dij & mask))
+                                {
+                                    res = QP_TEST_RESULT_FAIL;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else if (isClampTest(m_data.testType))
+            {
+                uint32_t ij;
+                uint32_t numMatrixX = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsX :
+                                          (m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
+                uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsY :
+                                          (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
+                uint32_t fullDimX   = numMatrixX * (m_data.colMajor ? dims[0].rows : dims[0].cols);
+                uint32_t fullDimY   = numMatrixY * (m_data.colMajor ? dims[0].cols : dims[0].rows);
+                uint32_t dimX       = fullDimX - 6;
+                uint32_t dimY       = fullDimY - 6;
+                for (uint32_t mX = 0; mX < numMatrixX; ++mX)
+                {
+                    for (uint32_t mY = 0; mY < numMatrixY; ++mY)
+                    {
+                        for (uint32_t i = 0; i < M; ++i)
+                        {
+                            for (uint32_t j = 0; j < N; ++j)
+                            {
+                                int32_t i2;
+                                int32_t j2;
+                                bool OOBLoad  = false;
+                                bool OOBStore = false;
+
+                                if (m_data.colMajor)
+                                {
+                                    i2       = mX * M + i;
+                                    j2       = mY * N + j;
+                                    ij       = i2 + strides[3] * j2;
+                                    OOBStore = i2 == (int32_t)fullDimX - 1 || j2 == (int32_t)fullDimY - 1;
+                                }
+                                else
+                                {
+                                    i2       = mY * M + i;
+                                    j2       = mX * N + j;
+                                    ij       = j2 + strides[3] * i2;
+                                    OOBStore = i2 == (int32_t)fullDimY - 1 || j2 == (int32_t)fullDimX - 1;
+                                }
+
+                                uint32_t Dij = getDataInt(ptrs[3], dataTypes[3], ij);
+
+                                auto const mod = [](int32_t n, int32_t d) -> int32_t
+                                {
+                                    // works for the range of values we use
+                                    return (n + d) % d;
+                                };
+
+                                i2 -= 3;
+                                j2 -= 3;
+                                uint32_t dimI = m_data.colMajor ? dimX : dimY;
+                                uint32_t dimJ = m_data.colMajor ? dimY : dimX;
+                                switch (m_data.testType)
+                                {
+                                case TT_CLAMPCONSTANT:
+                                    OOBLoad = i2 < 0 || j2 < 0 || i2 >= (int32_t)dimI || j2 >= (int32_t)dimJ;
+                                    break;
+                                case TT_CLAMPTOEDGE:
+                                    i2 = std::min(std::max(i2, 0), (int32_t)dimI - 1);
+                                    j2 = std::min(std::max(j2, 0), (int32_t)dimJ - 1);
+                                    break;
+                                case TT_CLAMPREPEAT:
+                                    i2 = mod(i2, dimI);
+                                    j2 = mod(j2, dimJ);
+                                    break;
+                                case TT_CLAMPMIRRORREPEAT:
+                                    i2 = mod(i2, (2 * dimI - 2));
+                                    i2 = (i2 >= (int32_t)dimI) ? (2 * dimI - 2 - i2) : i2;
+                                    j2 = mod(j2, (2 * dimJ - 2));
+                                    j2 = (j2 >= (int32_t)dimJ) ? (2 * dimJ - 2 - j2) : j2;
+                                    break;
+                                default:
+                                    DE_ASSERT(0);
+                                    break;
+                                }
+
+                                if (m_data.colMajor)
+                                {
+                                    ij = i2 + strides[0] * j2;
+                                }
+                                else
+                                {
+                                    ij = j2 + strides[0] * i2;
+                                }
+
+                                uint32_t ref = OOBStore ? 123 : OOBLoad ? 17 : getDataInt(ptrs[0], dataTypes[0], ij);
+
+                                if (ref != Dij)
+                                {
+                                    res = QP_TEST_RESULT_FAIL;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else if (m_data.addrMethod == ADDR_BLOCKSIZE || m_data.addrMethod == ADDR_DECODE)
+            {
+                uint32_t ij;
+                uint32_t blockij;
+                uint32_t numMatrixX = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsX :
+                                          (m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
+                uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsY :
+                                          (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
+                int resultSize      = componentTypeInfo[dataTypes[3]].bits;
+                uint32_t mask       = resultSize == 32 ? ~0 : ((1 << resultSize) - 1);
+                for (uint32_t mX = 0; mX < numMatrixX; ++mX)
+                {
+                    for (uint32_t mY = 0; mY < numMatrixY; ++mY)
+                    {
+                        for (uint32_t i = 0; i < M; ++i)
+                        {
+                            for (uint32_t j = 0; j < N; ++j)
+                            {
+                                uint32_t blockCoords[2];
+                                if (m_data.colMajor)
+                                {
+                                    blockCoords[0] = (mY * N + j) / blockSize[0];
+                                    blockCoords[1] = (mX * M + i) / blockSize[1];
+                                    blockij        = blockCoords[1] + (strides[0] / blockSize[1]) * blockCoords[0];
+                                    if (m_data.addrMethod == ADDR_DECODE)
+                                    {
+                                        blockij *= blockSize[0] * blockSize[1];
+                                        blockij += (j % blockSize[0]) * blockSize[1] + (i % blockSize[1]);
+                                    }
+                                    ij = mX * M + i + strides[0] * mY * N + loadStrides[0] * j;
+                                }
+                                else
+                                {
+                                    blockCoords[0] = (mY * M + i) / blockSize[0];
+                                    blockCoords[1] = (mX * N + j) / blockSize[1];
+                                    blockij        = blockCoords[1] + (strides[0] / blockSize[1]) * blockCoords[0];
+                                    if (m_data.addrMethod == ADDR_DECODE)
+                                    {
+                                        blockij *= blockSize[0] * blockSize[1];
+                                        blockij += (i % blockSize[0]) * blockSize[1] + (j % blockSize[1]);
+                                    }
+                                    ij = mX * N + j + strides[0] * mY * M + loadStrides[0] * i;
+                                }
+
+                                uint32_t ref = getDataInt(ptrs[0], dataTypes[0], blockij);
+
+                                if (m_data.addrMethod == ADDR_DECODE)
+                                {
+                                    ref += (2 * blockCoords[0] + blockCoords[1]) & 3;
+                                }
+
+                                uint32_t Dij = getDataInt(ptrs[3], dataTypes[3], ij);
+
+                                if (m_data.testType == TT_NEGATE)
+                                {
+                                    ref = -(int32_t)ref;
+                                }
+                                else
+                                {
+                                    DE_ASSERT(0);
+                                }
+
+                                if ((ref & mask) != (Dij & mask))
+                                {
+                                    res = QP_TEST_RESULT_FAIL;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else if (!isMatrixMulAddOp(m_data.testType))
             {
                 for (uint32_t i = 0; i < totalElements[3]; ++i)
                 {
@@ -2114,10 +4743,15 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                     case TT_LENGTH:
                         if (output < 1 || output > N * M)
                             res = QP_TEST_RESULT_FAIL;
-                        // We expect the matrix to be spread evenly across invocations, it is
-                        // surprising (but not necessarily illegal) if not
-                        if (output != N * M / subgroupSize && res == QP_TEST_RESULT_PASS)
-                            res = QP_TEST_RESULT_QUALITY_WARNING;
+                        if (m_data.scope == VK_SCOPE_SUBGROUP_KHR)
+                        {
+                            // We expect the matrix to be spread evenly across invocations, it is
+                            // surprising (but not necessarily illegal) if not
+                            if (output != N * M / subgroupSize && res == QP_TEST_RESULT_PASS)
+                            {
+                                res = QP_TEST_RESULT_QUALITY_WARNING;
+                            }
+                        }
                         break;
                     case TT_CONSTANT:
                         if (output != 1)
@@ -2176,12 +4810,31 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                             res = QP_TEST_RESULT_FAIL;
                         break;
                     }
+                    case TT_CONVERT_ACC_TO_A:
+                    case TT_CONVERT_ACC_TO_B:
                     case TT_MULTICOMPONENT_SAVE:
                     {
-                        if (output != inputA)
+                        if ((output & mask) != (inputA & mask))
+                        {
+                            //printf("fail ");
                             res = QP_TEST_RESULT_FAIL;
+                        }
+                        //printf("i %d inputA %d output %d\n", i, inputA, output);
                         break;
                     }
+                    case TT_PER_ELEMENT_OP:
+                    case TT_PER_ELEMENT_OP_STRUCT:
+                        if ((output & mask) != ((inputA + 2) & mask))
+                        {
+                            res = QP_TEST_RESULT_FAIL;
+                        }
+                        break;
+                    case TT_PER_ELEMENT_OP_MAT:
+                        if ((output & mask) != ((inputA * 3) & mask))
+                        {
+                            res = QP_TEST_RESULT_FAIL;
+                        }
+                        break;
                     default:
                         TCU_THROW(InternalError, "Unimplemented");
                     }
@@ -2190,9 +4843,15 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
             else
             {
                 uint32_t ik, kj, ij;
-                for (uint32_t mX = 0; mX < m_data.subgroupsPerWorkgroupX * m_data.workgroupsX; ++mX)
+                uint32_t numMatrixX = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsX :
+                                          (m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
+                uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                          m_data.workgroupsY :
+                                          (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
+                for (uint32_t mX = 0; mX < numMatrixX; ++mX)
                 {
-                    for (uint32_t mY = 0; mY < m_data.subgroupsPerWorkgroupY * m_data.workgroupsY; ++mY)
+                    for (uint32_t mY = 0; mY < numMatrixY; ++mY)
                     {
                         for (uint32_t i = 0; i < M; ++i)
                         {
@@ -2263,7 +4922,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
             finalres = res;
 
             log << tcu::TestLog::Message << "failed with M = " << M << ", N = " << N << ", K = " << K
-                << tcu::TestLog::EndMessage;
+                << ", WG = " << testSize.workgroupSize << tcu::TestLog::EndMessage;
 
 #ifdef COOPERATIVE_MATRIX_EXTENDED_DEBUG
             for (int i = 0; i < 4; i++)
@@ -2381,6 +5040,47 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
         {TT_MATRIXMULADD_STRIDE0, "matrixmuladd_stride0"},
         // OpCooperativeMatrixMulAdd
         {TT_MATRIXMULADD_CROSS, "matrixmuladd_cross"},
+        // OpCooperativeMatrixMulAdd w/decode
+        {TT_MATRIXMULADD_DEQUANT, "matrixmuladd_dequant"},
+        // OpConvertCooperativeMatrixNV
+        {TT_CONVERT_ACC_TO_A, "convert_acc_to_a"},
+        {TT_CONVERT_ACC_TO_B, "convert_acc_to_b"},
+        // OpTransposeCooperativeMatrixNV
+        {TT_TRANSPOSE_ACC_TO_B, "transpose_acc_to_b"},
+        // OpCooperativeMatrixReduceNV
+        {TT_REDUCE_SUM_ROW, "reduce_sum_row"},
+        {TT_REDUCE_SUM_COL, "reduce_sum_col"},
+        {TT_REDUCE_SUM_ROWCOL, "reduce_sum_rowcol"},
+        {TT_REDUCE_SUM_2X2, "reduce_sum_2x2"},
+        {TT_REDUCE_SUM_ROW_CHANGEDIM, "reduce_sum_row_changedim"},
+        {TT_REDUCE_SUM_COL_CHANGEDIM, "reduce_sum_col_changedim"},
+        {TT_REDUCE_SUM_ROWCOL_CHANGEDIM, "reduce_sum_rowcol_changedim"},
+        {TT_REDUCE_MIN_ROW, "reduce_min_row"},
+        {TT_REDUCE_MIN_COL, "reduce_min_col"},
+        {TT_REDUCE_MIN_ROWCOL, "reduce_min_rowcol"},
+        {TT_REDUCE_MIN_2X2, "reduce_min_2x2"},
+
+        {TT_PER_ELEMENT_OP, "per_element_op"},
+        {TT_PER_ELEMENT_OP_ROW_COL, "per_element_op_row_col"},
+        {TT_PER_ELEMENT_OP_STRUCT, "per_element_op_struct"},
+        {TT_PER_ELEMENT_OP_MAT, "per_element_op_mat"},
+
+        {TT_TENSORLAYOUT_1D, "tensorlayout1d"},
+        {TT_TENSORLAYOUT_2D, "tensorlayout2d"},
+        {TT_TENSORLAYOUT_3D, "tensorlayout3d"},
+        {TT_TENSORLAYOUT_4D, "tensorlayout4d"},
+        {TT_TENSORLAYOUT_5D, "tensorlayout5d"},
+        {TT_TENSORLAYOUT_1D_CLIP, "tensorlayout1dclip"},
+        {TT_TENSORLAYOUT_2D_CLIP, "tensorlayout2dclip"},
+        {TT_TENSORLAYOUT_3D_CLIP, "tensorlayout3dclip"},
+        {TT_TENSORLAYOUT_4D_CLIP, "tensorlayout4dclip"},
+        {TT_TENSORLAYOUT_5D_CLIP, "tensorlayout5dclip"},
+        {TT_SPACETODEPTH, "spacetodepth"},
+
+        {TT_CLAMPCONSTANT, "clampconstant"},
+        {TT_CLAMPTOEDGE, "clamptoedge"},
+        {TT_CLAMPREPEAT, "clamprepeat"},
+        {TT_CLAMPMIRRORREPEAT, "clampmirrorrepeat"},
     };
     TestGroupCase2 dtCases[] = {
         // A/B are fp32 C/D are fp32
@@ -2424,6 +5124,18 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
         {1, "colmajor"},
     };
 
+    TestGroupCase addrCases[] = {
+        {ADDR_LINEAR, "linear"},
+        {ADDR_TENSORLAYOUT, "tensorlayout"},
+        {ADDR_BLOCKSIZE, "blocksize"},
+        {ADDR_DECODE, "decode"},
+    };
+
+    TestGroupCase scopeCases[] = {
+        {VK_SCOPE_SUBGROUP_KHR, "subgroupscope"},
+        {VK_SCOPE_WORKGROUP_KHR, "workgroupscope"},
+    };
+
     TestGroupCase scCases[] = {
         // SSBO
         {SC_BUFFER, "buffer"},
@@ -2456,222 +5168,387 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
         {"save", "Test multicomponent type as output in store operation", TT_MULTICOMPONENT_SAVE},
     };
 
-    for (int ttNdx = 0; ttNdx < DE_LENGTH_OF_ARRAY(ttCases); ttNdx++)
+    for (int scopeNdx = 0; scopeNdx < DE_LENGTH_OF_ARRAY(scopeCases); scopeNdx++)
     {
-        const TestType testType = (TestType)ttCases[ttNdx].value;
-
-        for (int sgsNdx = 0; sgsNdx < DE_LENGTH_OF_ARRAY(sgsCases); sgsNdx++)
+        de::MovePtr<tcu::TestCaseGroup> scopeGroup(new tcu::TestCaseGroup(testCtx, scopeCases[scopeNdx].name));
+        if (useType == UT_NV && scopeCases[scopeNdx].value == VK_SCOPE_WORKGROUP_KHR)
         {
-            if (testType != TT_MATRIXMULADD && sgsCases[sgsNdx].value != SUBGROUP_SIZE_NONE)
-                continue;
-
-            if (testType == TT_MATRIXMULADD && sgsCases[sgsNdx].value != SUBGROUP_SIZE_NONE && useType == UT_NV)
-                continue;
-
-            const string name = string(ttCases[ttNdx].name) + sgsCases[sgsNdx].name;
-            de::MovePtr<tcu::TestCaseGroup> ttGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
-
-            for (int dtNdx = 0; dtNdx < DE_LENGTH_OF_ARRAY(dtCases); dtNdx++)
-            {
-                de::MovePtr<tcu::TestCaseGroup> dtGroup(new tcu::TestCaseGroup(testCtx, dtCases[dtNdx].name));
-                for (int scNdx = 0; scNdx < DE_LENGTH_OF_ARRAY(scCases); scNdx++)
-                {
-                    de::MovePtr<tcu::TestCaseGroup> scGroup(new tcu::TestCaseGroup(testCtx, scCases[scNdx].name));
-                    for (int colNdx = 0; colNdx < DE_LENGTH_OF_ARRAY(colCases); colNdx++)
-                    {
-                        const VkComponentTypeKHR inputType  = (VkComponentTypeKHR)dtCases[dtNdx].value[0];
-                        const VkComponentTypeKHR outputType = (VkComponentTypeKHR)dtCases[dtNdx].value[1];
-                        const bool isMatrixMul              = isMatrixMulAddOp(testType);
-
-                        if (testType == TT_MATRIXMULADD_CROSS)
-                        {
-                            if (isFloatType(inputType) || isFloatType(outputType) || useType == UT_NV ||
-                                scCases[scNdx].value != SC_BUFFER)
-                                continue;
-                        }
-                        else
-                        {
-                            // Rest of tests do not run on matrix C
-                            if (useType == UT_KHR_C)
-                            {
-                                continue;
-                            }
-
-                            // useType isn't used for matrixmul shaders. Don't generate 3 copies of those tests.
-                            if (isMatrixMul && (useType == UT_KHR_A || useType == UT_KHR_B))
-                            {
-                                continue;
-                            }
-
-                            // NV extension doesn't support mixing signedness
-                            if (isMatrixMul && (useType == UT_NV) && isSIntType(inputType) != isSIntType(outputType))
-                            {
-                                continue;
-                            }
-
-                            if (isMatrixMul && componentTypeInfo[inputType].bits > componentTypeInfo[outputType].bits)
-                                continue;
-                        }
-
-                        if (!isMatrixMul && inputType != outputType)
-                            continue;
-
-                        if (testType == TT_MUL && useType == UT_NV)
-                            continue;
-
-                        if (testType == TT_MATRIXMULADD_SATURATED && (isFloatType(inputType) || useType == UT_NV))
-                            continue;
-
-                        if (testType == TT_MATRIXMULADD_WRAPPING && (isFloatType(inputType) || useType == UT_NV))
-                            continue;
-
-                        if (testType == TT_MATRIXMULADD_STRIDE0 && useType == UT_NV)
-                            continue;
-
-                        if (testType == TT_LENGTH && useType != UT_NV &&
-                            (outputType == VK_COMPONENT_TYPE_SINT8_KHR || outputType == VK_COMPONENT_TYPE_UINT8_KHR))
-                            continue;
-
-                        CaseDef c = {
-                            testType,                           //  TestType testtype;
-                            2u,                                 //  uint32_t subgroupsPerWorkgroupX;
-                            2u,                                 //  uint32_t subgroupsPerWorkgroupY;
-                            4u,                                 //  uint32_t workgroupsX;
-                            4u,                                 //  uint32_t workgroupsY;
-                            inputType,                          //  VkComponentTypeKHR inputType;
-                            outputType,                         //  VkComponentTypeKHR outputType;
-                            !!colCases[colNdx].value,           //  bool colMajor;
-                            (StorageClass)scCases[scNdx].value, //  StorageClass storageClass;
-                            useType,                            //  UseType useType;
-                            sgsCases[sgsNdx].value,             //  SubgroupSizeMode subgroupSizeMode;
-                            computePipelineConstructionType, //  vk::ComputePipelineConstructionType computePipelineConstructionType;
-                            1,                               //  uint32_t inputComponentCount;
-                            1,                               //  uint32_t outputComponentCount;
-                        };
-
-                        scGroup->addChild(new CooperativeMatrixTestCase(testCtx, colCases[colNdx].name, c));
-                    }
-                    dtGroup->addChild(scGroup.release());
-                }
-                ttGroup->addChild(dtGroup.release());
-            }
-            group->addChild(ttGroup.release());
+            continue;
         }
-    }
 
-    if (useType == UT_KHR_C)
-        return group.release();
-
-    {
-        const string name = string("convert");
-        const string desc = string("OpFConvert/OpSConvert/OpUConvert/OpBitcast");
-        de::MovePtr<tcu::TestCaseGroup> ttGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
-
-        for (int dtNdx1 = 0; dtNdx1 < DE_LENGTH_OF_ARRAY(allTypes); dtNdx1++)
+        for (int ttNdx = 0; ttNdx < DE_LENGTH_OF_ARRAY(ttCases); ttNdx++)
         {
-            for (int dtNdx2 = 0; dtNdx2 < DE_LENGTH_OF_ARRAY(allTypes); dtNdx2++)
+            const TestType testType = (TestType)ttCases[ttNdx].value;
+
+            for (int sgsNdx = 0; sgsNdx < DE_LENGTH_OF_ARRAY(sgsCases); sgsNdx++)
             {
-                const VkComponentTypeKHR inputType  = (VkComponentTypeKHR)allTypes[dtNdx1];
-                const VkComponentTypeKHR outputType = (VkComponentTypeKHR)allTypes[dtNdx2];
-                const string name2                  = string("input_") + string(componentTypeInfo[inputType].typeName) +
-                                     string("_output_") + string(componentTypeInfo[outputType].typeName);
-                de::MovePtr<tcu::TestCaseGroup> dtGroup(new tcu::TestCaseGroup(testCtx, name2.c_str()));
-                for (int scNdx = 0; scNdx < DE_LENGTH_OF_ARRAY(scCases); scNdx++)
+                if (testType != TT_MATRIXMULADD && sgsCases[sgsNdx].value != SUBGROUP_SIZE_NONE)
+                    continue;
+
+                if (testType == TT_MATRIXMULADD && sgsCases[sgsNdx].value != SUBGROUP_SIZE_NONE && useType == UT_NV)
+                    continue;
+
+                const string name = string(ttCases[ttNdx].name) + sgsCases[sgsNdx].name;
+                de::MovePtr<tcu::TestCaseGroup> ttGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
+
+                for (int dtNdx = 0; dtNdx < DE_LENGTH_OF_ARRAY(dtCases); dtNdx++)
                 {
-                    de::MovePtr<tcu::TestCaseGroup> scGroup(new tcu::TestCaseGroup(testCtx, scCases[scNdx].name));
-                    for (int colNdx = 0; colNdx < DE_LENGTH_OF_ARRAY(colCases); colNdx++)
-                    {
-
-                        CaseDef c = {
-                            TT_CONVERT,                         //  TestType testtype;
-                            2u,                                 //  uint32_t subgroupsPerWorkgroupX;
-                            2u,                                 //  uint32_t subgroupsPerWorkgroupY;
-                            4u,                                 //  uint32_t workgroupsX;
-                            4u,                                 //  uint32_t workgroupsY;
-                            inputType,                          //  VkComponentTypeKHR inputType;
-                            outputType,                         //  VkComponentTypeKHR outputType;
-                            !!colCases[colNdx].value,           //  bool colMajor;
-                            (StorageClass)scCases[scNdx].value, //  StorageClass storageClass;
-                            useType,                            //  UseType useType;
-                            SUBGROUP_SIZE_NONE,                 //  SubgroupSizeMode subgroupSizeMode;
-                            computePipelineConstructionType, //  vk::ComputePipelineConstructionType computePipelineConstructionType;
-                            1,                               //  uint32_t inputComponentCount;
-                            1,                               //  uint32_t outputComponentCount;
-                        };
-
-                        scGroup->addChild(new CooperativeMatrixTestCase(testCtx, colCases[colNdx].name, c));
-                    }
-                    dtGroup->addChild(scGroup.release());
-                }
-                ttGroup->addChild(dtGroup.release());
-            }
-        }
-        group->addChild(ttGroup.release());
-    }
-
-    if (useType != UT_NV)
-    {
-        de::MovePtr<tcu::TestCaseGroup> ttGroup(
-            new tcu::TestCaseGroup(testCtx, "multicomponent", "Multicomponent types tests"));
-        for (int ctNdx = 0; ctNdx < DE_LENGTH_OF_ARRAY(multicomponentTypes); ctNdx++)
-        {
-            de::MovePtr<tcu::TestCaseGroup> ctGroup(new tcu::TestCaseGroup(testCtx, multicomponentTypes[ctNdx].name,
-                                                                           multicomponentTypes[ctNdx].description));
-            const uint32_t componentCount = multicomponentTypes[ctNdx].componentCount;
-
-            for (int ioNdx = 0; ioNdx < DE_LENGTH_OF_ARRAY(ioTypes); ioNdx++)
-            {
-                de::MovePtr<tcu::TestCaseGroup> ioGroup(
-                    new tcu::TestCaseGroup(testCtx, ioTypes[ioNdx].name, ioTypes[ioNdx].description));
-                const TestType testType             = ioTypes[ioNdx].testType;
-                const uint32_t inputComponentCount  = testType == TT_MULTICOMPONENT_LOAD ? componentCount : 1;
-                const uint32_t outputComponentCount = testType == TT_MULTICOMPONENT_LOAD ? 1 : componentCount;
-
-                for (int dtNdx = 0; dtNdx < DE_LENGTH_OF_ARRAY(allTypes); dtNdx++)
-                {
-                    const VkComponentTypeKHR inputType = allTypes[dtNdx];
-                    const string name                  = componentTypeInfo[inputType].typeName;
-
-                    de::MovePtr<tcu::TestCaseGroup> dtGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+                    de::MovePtr<tcu::TestCaseGroup> dtGroup(new tcu::TestCaseGroup(testCtx, dtCases[dtNdx].name));
                     for (int scNdx = 0; scNdx < DE_LENGTH_OF_ARRAY(scCases); scNdx++)
                     {
-                        de::MovePtr<tcu::TestCaseGroup> scGroup(
-                            new tcu::TestCaseGroup(testCtx, scCases[scNdx].name, ""));
+                        de::MovePtr<tcu::TestCaseGroup> scGroup(new tcu::TestCaseGroup(testCtx, scCases[scNdx].name));
                         for (int colNdx = 0; colNdx < DE_LENGTH_OF_ARRAY(colCases); colNdx++)
                         {
+                            de::MovePtr<tcu::TestCaseGroup> colGroup(
+                                new tcu::TestCaseGroup(testCtx, colCases[colNdx].name));
+                            for (int addrNdx = 0; addrNdx < DE_LENGTH_OF_ARRAY(addrCases); addrNdx++)
+                            {
+
+                                const VkComponentTypeKHR inputType  = (VkComponentTypeKHR)dtCases[dtNdx].value[0];
+                                const VkComponentTypeKHR outputType = (VkComponentTypeKHR)dtCases[dtNdx].value[1];
+                                const bool isMatrixMul              = isMatrixMulAddOp(testType);
+
+                                if (testType == TT_MATRIXMULADD_CROSS)
+                                {
+                                    if (isFloatType(inputType) || isFloatType(outputType) || useType == UT_NV ||
+                                        scCases[scNdx].value != SC_BUFFER)
+                                        continue;
+
+                                    // handwritten spir-v would need to be ported
+                                    if (scopeCases[scopeNdx].value == VK_SCOPE_WORKGROUP_KHR)
+                                        continue;
+                                }
+                                else
+                                {
+                                    // Rest of tests do not run on matrix C
+                                    if (useType == UT_KHR_C)
+                                    {
+                                        continue;
+                                    }
+
+                                    // useType isn't used for matrixmul shaders. Don't generate 3 copies of those tests.
+                                    if (isMatrixMul && (useType == UT_KHR_A || useType == UT_KHR_B))
+                                    {
+                                        continue;
+                                    }
+
+                                    // NV extension doesn't support mixing signedness
+                                    if (isMatrixMul && (useType == UT_NV) &&
+                                        isSIntType(inputType) != isSIntType(outputType))
+                                    {
+                                        continue;
+                                    }
+
+                                    if (isMatrixMul &&
+                                        componentTypeInfo[inputType].bits > componentTypeInfo[outputType].bits)
+                                        continue;
+                                }
+
+                                if (testType == TT_MATRIXMULADD_DEQUANT)
+                                {
+                                    if (inputType != VK_COMPONENT_TYPE_FLOAT16_KHR)
+                                    {
+                                        continue;
+                                    }
+                                    if (addrCases[addrNdx].value != ADDR_DECODE)
+                                    {
+                                        continue;
+                                    }
+                                    if (colCases[colNdx].value)
+                                    {
+                                        // row major only, for now
+                                        continue;
+                                    }
+                                }
+
+                                if ((addrCases[addrNdx].value == ADDR_BLOCKSIZE ||
+                                     addrCases[addrNdx].value == ADDR_DECODE) &&
+                                    testType != TT_NEGATE && testType != TT_MATRIXMULADD_DEQUANT)
+                                {
+                                    // only certain tests ported to handle blocksize
+                                    continue;
+                                }
+
+                                if ((addrCases[addrNdx].value == ADDR_BLOCKSIZE ||
+                                     addrCases[addrNdx].value == ADDR_DECODE) &&
+                                    (scCases[scNdx].value == SC_WORKGROUP ||
+                                     scCases[scNdx].value == SC_WORKGROUP_VARIABLE_POINTERS))
+                                {
+                                    // copying into shared memory not ported to handle block size
+                                    continue;
+                                }
+
+                                if (!isMatrixMul && testType != TT_CONVERT_ACC_TO_A &&
+                                    testType != TT_CONVERT_ACC_TO_B && testType != TT_TRANSPOSE_ACC_TO_B &&
+                                    inputType != outputType)
+                                    continue;
+
+                                if (testType == TT_MUL && useType == UT_NV)
+                                    continue;
+
+                                if (testType == TT_MATRIXMULADD_SATURATED &&
+                                    (isFloatType(inputType) || useType == UT_NV))
+                                    continue;
+
+                                if (testType == TT_MATRIXMULADD_WRAPPING &&
+                                    (isFloatType(inputType) || useType == UT_NV))
+                                    continue;
+
+                                if (testType == TT_MATRIXMULADD_STRIDE0 && useType == UT_NV)
+                                    continue;
+
+                                if (testType == TT_LENGTH && useType != UT_NV &&
+                                    (outputType == VK_COMPONENT_TYPE_SINT8_KHR ||
+                                     outputType == VK_COMPONENT_TYPE_UINT8_KHR))
+                                    continue;
+
+                                if (useType == UT_NV && (addrCases[addrNdx].value != ADDR_LINEAR ||
+                                                         isReduceOp(testType) || isPerElemOp(testType)))
+                                {
+                                    continue;
+                                }
+
+                                if ((testType == TT_CONVERT_ACC_TO_A || testType == TT_CONVERT_ACC_TO_B ||
+                                     testType == TT_TRANSPOSE_ACC_TO_B) &&
+                                    useType != UT_KHR_Result)
+                                {
+                                    // These tests hardcode the use, no need to repeat them three times
+                                    continue;
+                                }
+
+                                if (isReduceOp(testType) && (useType == UT_KHR_A || useType == UT_KHR_B))
+                                {
+                                    continue;
+                                }
+
+                                if (isReduceOp(testType) && inputType != outputType)
+                                {
+                                    continue;
+                                }
+
+                                if (isTensorLayoutTest(testType) &&
+                                    (colCases[colNdx].value || scCases[scNdx].value == SC_WORKGROUP ||
+                                     scCases[scNdx].value == SC_WORKGROUP_VARIABLE_POINTERS ||
+                                     scCases[scNdx].value == SC_PHYSICAL_STORAGE_BUFFER ||
+                                     addrCases[addrNdx].value == ADDR_LINEAR))
+                                {
+                                    continue;
+                                }
+
+                                if ((scCases[scNdx].value == SC_BUFFER_VARIABLE_POINTERS ||
+                                     scCases[scNdx].value == SC_WORKGROUP_VARIABLE_POINTERS) &&
+                                    (!(testType == TT_MATRIXMULADD || testType == TT_MUL) ||
+                                     sgsCases[sgsNdx].value != SUBGROUP_SIZE_NONE))
+                                {
+                                    // trim test count
+                                    continue;
+                                }
+
+                                if (colCases[colNdx].value && !(isMatrixMul || testType == TT_MUL))
+                                {
+                                    // trim test count
+                                    continue;
+                                }
+
+                                if (scCases[scNdx].value == SC_WORKGROUP ||
+                                    scCases[scNdx].value == SC_WORKGROUP_VARIABLE_POINTERS ||
+                                    addrCases[addrNdx].value == ADDR_LINEAR)
+                                {
+                                    if (isClampTest(testType))
+                                    {
+                                        continue;
+                                    }
+                                }
+
+                                uint32_t workgroupsX = 4u;
+                                uint32_t workgroupsY = 4u;
+
+                                uint32_t subgroupsPerWorkgroupX = 2;
+                                uint32_t subgroupsPerWorkgroupY = 2;
+
+                                // The program is meant to be run once
+                                if (isTensorLayoutTest(testType))
+                                {
+                                    subgroupsPerWorkgroupX = 1;
+                                    subgroupsPerWorkgroupY = 1;
+                                    workgroupsX            = 1u;
+                                    workgroupsY            = 1u;
+                                }
+
+                                CaseDef c = {
+                                    testType, //  TestType testtype;
+                                    (VkScopeKHR)scopeCases[scopeNdx]
+                                        .value,                           //  VkScopeKHR                          scope;
+                                    subgroupsPerWorkgroupX,               //  uint32_t subgroupsPerWorkgroupX;
+                                    subgroupsPerWorkgroupY,               //  uint32_t subgroupsPerWorkgroupY;
+                                    workgroupsX,                          //  uint32_t workgroupsX;
+                                    workgroupsY,                          //  uint32_t workgroupsY;
+                                    inputType,                            //  VkComponentTypeKHR inputType;
+                                    outputType,                           //  VkComponentTypeKHR outputType;
+                                    !!colCases[colNdx].value,             //  bool colMajor;
+                                    (AddrMethod)addrCases[addrNdx].value, //  AddrMethod addrMethod;
+                                    (StorageClass)scCases[scNdx].value,   //  StorageClass storageClass;
+                                    useType,                              //  UseType useType;
+                                    sgsCases[sgsNdx].value,               //  SubgroupSizeMode subgroupSizeMode;
+                                    computePipelineConstructionType, //  vk::ComputePipelineConstructionType computePipelineConstructionType;
+                                    1,                               //  uint32_t inputComponentCount;
+                                    1,                               //  uint32_t outputComponentCount;
+                                };
+                                colGroup->addChild(new CooperativeMatrixTestCase(testCtx, addrCases[addrNdx].name, c));
+                            }
+                            scGroup->addChild(colGroup.release());
+                        }
+                        dtGroup->addChild(scGroup.release());
+                    }
+                    ttGroup->addChild(dtGroup.release());
+                }
+                scopeGroup->addChild(ttGroup.release());
+            }
+        }
+
+        if (useType != UT_KHR_C)
+        {
+            const string name = string("convert");
+            const string desc = string("OpFConvert/OpSConvert/OpUConvert/OpBitcast");
+            de::MovePtr<tcu::TestCaseGroup> ttGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
+
+            for (int dtNdx1 = 0; dtNdx1 < DE_LENGTH_OF_ARRAY(allTypes); dtNdx1++)
+            {
+                for (int dtNdx2 = 0; dtNdx2 < DE_LENGTH_OF_ARRAY(allTypes); dtNdx2++)
+                {
+                    const VkComponentTypeKHR inputType  = (VkComponentTypeKHR)allTypes[dtNdx1];
+                    const VkComponentTypeKHR outputType = (VkComponentTypeKHR)allTypes[dtNdx2];
+                    const string name2 = string("input_") + string(componentTypeInfo[inputType].typeName) +
+                                         string("_output_") + string(componentTypeInfo[outputType].typeName);
+                    de::MovePtr<tcu::TestCaseGroup> dtGroup(new tcu::TestCaseGroup(testCtx, name2.c_str()));
+                    for (int scNdx = 0; scNdx < DE_LENGTH_OF_ARRAY(scCases); scNdx++)
+                    {
+                        de::MovePtr<tcu::TestCaseGroup> scGroup(new tcu::TestCaseGroup(testCtx, scCases[scNdx].name));
+                        for (int colNdx = 0; colNdx < DE_LENGTH_OF_ARRAY(colCases); colNdx++)
+                        {
+
+                            if (scCases[scNdx].value == SC_BUFFER_VARIABLE_POINTERS ||
+                                scCases[scNdx].value == SC_WORKGROUP_VARIABLE_POINTERS)
+                            {
+                                // trim test count
+                                continue;
+                            }
+
+                            if (colCases[colNdx].value)
+                            {
+                                // trim test count
+                                continue;
+                            }
+
+                            AddrMethod addrMethod = (scopeCases[scopeNdx].value == VK_SCOPE_WORKGROUP_KHR) ?
+                                                        ADDR_TENSORLAYOUT :
+                                                        ADDR_LINEAR;
+
                             CaseDef c = {
-                                testType,                           //  TestType testtype;
-                                2u,                                 //  uint32_t subgroupsPerWorkgroupX;
-                                2u,                                 //  uint32_t subgroupsPerWorkgroupY;
-                                4u,                                 //  uint32_t workgroupsX;
-                                4u,                                 //  uint32_t workgroupsY;
-                                inputType,                          //  VkComponentTypeKHR inputType;
-                                inputType,                          //  VkComponentTypeKHR outputType;
-                                !!colCases[colNdx].value,           //  bool colMajor;
-                                (StorageClass)scCases[scNdx].value, //  StorageClass storageClass;
-                                useType,                            //  UseType useType;
-                                SUBGROUP_SIZE_NONE,                 //  SubgroupSizeMode subgroupSizeMode;
+                                TT_CONVERT,                             //  TestType testtype;
+                                (VkScopeKHR)scopeCases[scopeNdx].value, //  VkScopeKHR                      scope;
+                                2u,                                     //  uint32_t subgroupsPerWorkgroupX;
+                                2u,                                     //  uint32_t subgroupsPerWorkgroupY;
+                                4u,                                     //  uint32_t workgroupsX;
+                                4u,                                     //  uint32_t workgroupsY;
+                                inputType,                              //  VkComponentTypeKHR inputType;
+                                outputType,                             //  VkComponentTypeKHR outputType;
+                                !!colCases[colNdx].value,               //  bool colMajor;
+                                addrMethod,                             //  AddrMethod addrMethod;
+                                (StorageClass)scCases[scNdx].value,     //  StorageClass storageClass;
+                                useType,                                //  UseType useType;
+                                SUBGROUP_SIZE_NONE,                     //  SubgroupSizeMode subgroupSizeMode;
                                 computePipelineConstructionType, //  vk::ComputePipelineConstructionType computePipelineConstructionType;
-                                inputComponentCount,  //  uint32_t inputComponentCount;
-                                outputComponentCount, //  uint32_t outputComponentCount;
+                                1,                               //  uint32_t inputComponentCount;
+                                1,                               //  uint32_t outputComponentCount;
                             };
 
                             scGroup->addChild(new CooperativeMatrixTestCase(testCtx, colCases[colNdx].name, c));
                         }
                         dtGroup->addChild(scGroup.release());
                     }
-                    ioGroup->addChild(dtGroup.release());
+                    ttGroup->addChild(dtGroup.release());
                 }
-                ctGroup->addChild(ioGroup.release());
             }
-            ttGroup->addChild(ctGroup.release());
+            scopeGroup->addChild(ttGroup.release());
         }
-        group->addChild(ttGroup.release());
+
+        if (useType != UT_NV && useType != UT_KHR_C)
+        {
+            de::MovePtr<tcu::TestCaseGroup> ttGroup(
+                new tcu::TestCaseGroup(testCtx, "multicomponent", "Multicomponent types tests"));
+            for (int ctNdx = 0; ctNdx < DE_LENGTH_OF_ARRAY(multicomponentTypes); ctNdx++)
+            {
+                de::MovePtr<tcu::TestCaseGroup> ctGroup(new tcu::TestCaseGroup(testCtx, multicomponentTypes[ctNdx].name,
+                                                                               multicomponentTypes[ctNdx].description));
+                const uint32_t componentCount = multicomponentTypes[ctNdx].componentCount;
+
+                for (int ioNdx = 0; ioNdx < DE_LENGTH_OF_ARRAY(ioTypes); ioNdx++)
+                {
+                    de::MovePtr<tcu::TestCaseGroup> ioGroup(
+                        new tcu::TestCaseGroup(testCtx, ioTypes[ioNdx].name, ioTypes[ioNdx].description));
+                    const TestType testType             = ioTypes[ioNdx].testType;
+                    const uint32_t inputComponentCount  = testType == TT_MULTICOMPONENT_LOAD ? componentCount : 1;
+                    const uint32_t outputComponentCount = testType == TT_MULTICOMPONENT_LOAD ? 1 : componentCount;
+
+                    for (int dtNdx = 0; dtNdx < DE_LENGTH_OF_ARRAY(allTypes); dtNdx++)
+                    {
+                        const VkComponentTypeKHR inputType = allTypes[dtNdx];
+                        const string name                  = componentTypeInfo[inputType].typeName;
+
+                        de::MovePtr<tcu::TestCaseGroup> dtGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+                        for (int scNdx = 0; scNdx < DE_LENGTH_OF_ARRAY(scCases); scNdx++)
+                        {
+                            de::MovePtr<tcu::TestCaseGroup> scGroup(
+                                new tcu::TestCaseGroup(testCtx, scCases[scNdx].name, ""));
+                            for (int colNdx = 0; colNdx < DE_LENGTH_OF_ARRAY(colCases); colNdx++)
+                            {
+                                AddrMethod addrMethod = (scopeCases[scopeNdx].value == VK_SCOPE_WORKGROUP_KHR) ?
+                                                            ADDR_TENSORLAYOUT :
+                                                            ADDR_LINEAR;
+
+                                if (colCases[colNdx].value)
+                                {
+                                    // trim test count
+                                    continue;
+                                }
+
+                                CaseDef c = {
+                                    testType,                               //  TestType testtype;
+                                    (VkScopeKHR)scopeCases[scopeNdx].value, //  VkScopeKHR                      scope;
+                                    2u,                                     //  uint32_t subgroupsPerWorkgroupX;
+                                    2u,                                     //  uint32_t subgroupsPerWorkgroupY;
+                                    4u,                                     //  uint32_t workgroupsX;
+                                    4u,                                     //  uint32_t workgroupsY;
+                                    inputType,                              //  VkComponentTypeKHR inputType;
+                                    inputType,                              //  VkComponentTypeKHR outputType;
+                                    !!colCases[colNdx].value,               //  bool colMajor;
+                                    addrMethod,                             //  AddrMethod addrMethod;
+                                    (StorageClass)scCases[scNdx].value,     //  StorageClass storageClass;
+                                    useType,                                //  UseType useType;
+                                    SUBGROUP_SIZE_NONE,                     //  SubgroupSizeMode subgroupSizeMode;
+                                    computePipelineConstructionType, //  vk::ComputePipelineConstructionType computePipelineConstructionType;
+                                    inputComponentCount,  //  uint32_t inputComponentCount;
+                                    outputComponentCount, //  uint32_t outputComponentCount;
+                                };
+
+                                scGroup->addChild(new CooperativeMatrixTestCase(testCtx, colCases[colNdx].name, c));
+                            }
+                            dtGroup->addChild(scGroup.release());
+                        }
+                        ioGroup->addChild(dtGroup.release());
+                    }
+                    ctGroup->addChild(ioGroup.release());
+                }
+                ttGroup->addChild(ctGroup.release());
+            }
+            scopeGroup->addChild(ttGroup.release());
+        }
+        group->addChild(scopeGroup.release());
     }
 
     return group.release();
 }
-
 } // namespace
 
 tcu::TestCaseGroup *createCooperativeMatrixTests(tcu::TestContext &testCtx,

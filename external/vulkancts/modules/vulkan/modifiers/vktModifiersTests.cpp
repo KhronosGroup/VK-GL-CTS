@@ -1014,7 +1014,7 @@ bool exportImportMemoryExplicitModifiersCase(Context &context, const VkFormat fo
     invalidateAlloc(vkd, device, outputBuffer->getAllocation());
 
     return tcu::intThresholdCompare(context.getTestContext().getLog(), "Compare", "Result comparison", referenceImage,
-                                    result, threshold, tcu::COMPARE_LOG_RESULT);
+                                    result, threshold, tcu::COMPARE_LOG_ON_ERROR);
 }
 
 template <typename ModifierList, typename ModifierProps, VkStructureType modifierListSType>
@@ -1231,8 +1231,8 @@ bool exportImportMemoryExplicitModifiersWithSuballocationCase(Context &context, 
     const VkImageMemoryBarrier exportImageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
         DE_NULL,                                // const void* pNext;
-        VK_ACCESS_TRANSFER_READ_BIT,            // VkAccessFlags dstAccessMask;
-        VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags srcAccessMask;
+        VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags dstAccessMask;
+        VK_ACCESS_TRANSFER_READ_BIT,            // VkAccessFlags srcAccessMask;
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout oldLayout;
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,   // VkImageLayout newLayout;
         context.getUniversalQueueFamilyIndex(), // uint32_t dstQueueFamilyIndex;
@@ -1468,10 +1468,10 @@ bool exportImportMemoryExplicitModifiersWithSuballocationCase(Context &context, 
 
     bool primeResult =
         tcu::intThresholdCompare(context.getTestContext().getLog(), "Prime image compare", "Result comparison",
-                                 referenceImage, primeImageResult, threshold, tcu::COMPARE_LOG_RESULT);
+                                 referenceImage, primeImageResult, threshold, tcu::COMPARE_LOG_ON_ERROR);
     bool subResult =
         tcu::intThresholdCompare(context.getTestContext().getLog(), "Suballocated image compare", "Result comparison",
-                                 referenceImage, subImageResult, threshold, tcu::COMPARE_LOG_RESULT);
+                                 referenceImage, subImageResult, threshold, tcu::COMPARE_LOG_ON_ERROR);
 
     return primeResult && subResult;
 }
@@ -1485,38 +1485,50 @@ tcu::TestStatus exportImportMemoryExplicitModifiersWithSuballocationCase(Context
     if (compatibleModifiers.empty())
         TCU_FAIL("Expected non-empty list of compatible modifiers for the given format");
 
-    std::ostringstream failureReasons;
-    bool nonPassed = true;
+    std::vector<std::string> loggedLines;
+    loggedLines.reserve(compatibleModifiers.size());
+
+    bool noneSupported = true;
+    bool fail          = false;
 
     for (size_t i = 0; i < compatibleModifiers.size(); ++i)
     {
-        const auto &modifier = compatibleModifiers[i];
+        const auto &modifier         = compatibleModifiers[i];
+        const auto formatModifierStr = std::to_string(modifier.drmFormatModifier);
+
         try
         {
-            if (exportImportMemoryExplicitModifiersWithSuballocationCase(context, format, modifier))
+            if (!exportImportMemoryExplicitModifiersWithSuballocationCase(context, format, modifier))
             {
-                nonPassed = false;
+                loggedLines.push_back("Modifier " + formatModifierStr + " failed: unexpected copy image result");
+                fail = true;
             }
-            else
-            {
-                failureReasons << "Modifier " << modifier.drmFormatModifier << " failed: Unexpected copy image result";
-                if (i < compatibleModifiers.size() - 1)
-                    failureReasons << "\n";
-            }
+
+            noneSupported = false;
         }
         catch (const tcu::NotSupportedError &e)
         {
-            failureReasons << "Modifier " << modifier.drmFormatModifier << " not supported: " << e.what();
-            if (i < compatibleModifiers.size() - 1)
-                failureReasons << "\n";
+            loggedLines.push_back("Modifier " + formatModifierStr + " not supported: " + e.what());
         }
     }
 
-    if (nonPassed)
-        TCU_THROW(NotSupportedError, "None of DRM modifiers for " + de::toString(format) +
-                                         " format can be used in a suballocated image:\n" + failureReasons.str());
+    if (!loggedLines.empty())
+    {
+        auto &log = context.getTestContext().getLog();
+        for (const auto &line : loggedLines)
+            log << tcu::TestLog::Message << line << tcu::TestLog::EndMessage;
+    }
 
-    return tcu::TestStatus::pass("OK");
+    if (noneSupported)
+    {
+        DE_ASSERT(!fail);
+        TCU_THROW(NotSupportedError, "None of DRM modifiers for " + de::toString(format) +
+                                         " can be used in a suballocated image; check log for details");
+    }
+    else if (fail)
+        TCU_FAIL("Unexpected copy image results; check log for details");
+
+    return tcu::TestStatus::pass("OK; check log for details");
 }
 
 } // namespace

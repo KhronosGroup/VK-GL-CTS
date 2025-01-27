@@ -36,6 +36,7 @@ DeviceProperties::DeviceProperties(const InstanceInterface &vki, const uint32_t 
     m_vulkan12Properties = initVulkanStructure();
 #ifndef CTS_USES_VULKANSC
     m_vulkan13Properties = initVulkanStructure();
+    m_vulkan14Properties = initVulkanStructure();
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
     m_vulkanSC10Properties = initVulkanStructure();
@@ -43,19 +44,21 @@ DeviceProperties::DeviceProperties(const InstanceInterface &vki, const uint32_t 
 
     if (isInstanceExtensionSupported(apiVersion, instanceExtensions, "VK_KHR_get_physical_device_properties2"))
     {
-        const std::vector<VkExtensionProperties> deviceExtensionProperties =
-            enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
-        void **nextPtr = &m_coreProperties2.pNext;
+        const auto deviceExtensionProperties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+        void **nextPtr                       = &m_coreProperties2.pNext;
         std::vector<PropertyStructWrapperBase *> propertiesToFillFromBlob;
         std::vector<PropertyStructWrapperBase *> propertiesAddedWithVK;
         bool vk11Supported = (apiVersion >= VK_MAKE_API_VERSION(0, 1, 1, 0));
         bool vk12Supported = (apiVersion >= VK_MAKE_API_VERSION(0, 1, 2, 0));
 #ifndef CTS_USES_VULKANSC
         bool vk13Supported = (apiVersion >= VK_MAKE_API_VERSION(0, 1, 3, 0));
+        bool vk14Supported = (apiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0));
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
         bool vksc10Supported = (apiVersion >= VK_MAKE_API_VERSION(1, 1, 0, 0));
 #endif // CTS_USES_VULKANSC
+
+        m_properties.reserve(std::size(propertyStructCreationArray));
 
         // there are 3 properies structures that were added with vk11 (without being first part of extension)
         if (vk11Supported)
@@ -83,17 +86,19 @@ DeviceProperties::DeviceProperties(const InstanceInterface &vki, const uint32_t 
 #ifndef CTS_USES_VULKANSC
             if (vk13Supported)
                 addToChainVulkanStructure(&nextPtr, m_vulkan13Properties);
+            if (vk14Supported)
+                addToChainVulkanStructure(&nextPtr, m_vulkan14Properties);
 #endif // CTS_USES_VULKANSC
         }
 
         std::vector<std::string> allDeviceExtensions = deviceExtensions;
-#ifdef CTS_USES_VULKANSC
-        // VulkanSC: add missing core extensions to the list
         std::vector<const char *> coreExtensions;
         getCoreDeviceExtensions(apiVersion, coreExtensions);
         for (const auto &coreExt : coreExtensions)
-            if (!de::contains(allDeviceExtensions.begin(), allDeviceExtensions.end(), std::string(coreExt)))
+            if (!isExtensionStructSupported(allDeviceExtensions, coreExt))
                 allDeviceExtensions.push_back(coreExt);
+
+#ifdef CTS_USES_VULKANSC
         if (vksc10Supported)
             addToChainVulkanStructure(&nextPtr, m_vulkanSC10Properties);
 #endif // CTS_USES_VULKANSC
@@ -101,23 +106,13 @@ DeviceProperties::DeviceProperties(const InstanceInterface &vki, const uint32_t 
         // iterate over data for all property that are defined in specification
         for (const auto &propertyStructCreationData : propertyStructCreationArray)
         {
-            const char *propertyName = propertyStructCreationData.name;
-
-            // check if this property is available on current device.
-            if (de::contains(allDeviceExtensions.begin(), allDeviceExtensions.end(), propertyName) ||
-                std::string(propertyName) == "core_property")
+            if (verifyPropertyAddCriteria(propertyStructCreationData, allDeviceExtensions))
             {
                 PropertyStructWrapperBase *p = (*propertyStructCreationData.creatorFunction)();
                 if (p == nullptr)
                     continue;
 
-#ifdef CTS_USES_VULKANSC
-                // m_vulkanSC10Properties was already added above
-                if (p->getPropertyDesc().sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_PROPERTIES)
-                    continue;
-#endif // CTS_USES_VULKANSC
-
-                // if property struct is part of VkPhysicalDeviceVulkan1{1,2}Properties
+                // if property struct is part of VkPhysicalDeviceVulkan1{1,2,3,4}Properties
                 // we dont add it to the chain but store and fill later from blob data
                 bool propertyFilledFromBlob = false;
                 if (vk12Supported)
@@ -138,15 +133,31 @@ DeviceProperties::DeviceProperties(const InstanceInterface &vki, const uint32_t 
             }
         }
 
+#ifndef CTS_USES_VULKANSC
+        // special handling for the copyDstLayoutCount/pCopyDstLayouts fields
+        // we need to query again to fill allocated arrays with layouts
+        if (vk14Supported)
+        {
+            VkPhysicalDeviceVulkan14Properties vulkan14Properties = initVulkanStructure();
+            VkPhysicalDeviceProperties2 coreProperties2           = initVulkanStructure();
+            coreProperties2.pNext                                 = &vulkan14Properties;
+            vki.getPhysicalDeviceProperties2(physicalDevice, &coreProperties2);
+
+            m_vulkan14Properties.pCopySrcLayouts = m_vulkan14CopyLayouts.data();
+            m_vulkan14Properties.pCopyDstLayouts =
+                m_vulkan14CopyLayouts.data() + m_vulkan14Properties.copySrcLayoutCount;
+        }
+#endif // CTS_USES_VULKANSC
+
         vki.getPhysicalDeviceProperties2(physicalDevice, &m_coreProperties2);
 
-        // fill data from VkPhysicalDeviceVulkan1{1,2,3}Properties
+        // fill data from VkPhysicalDeviceVulkan1{1,2,3,4}Properties
         if (vk12Supported)
         {
             AllPropertiesBlobs allBlobs = {
                 m_vulkan11Properties, m_vulkan12Properties,
 #ifndef CTS_USES_VULKANSC
-                m_vulkan13Properties,
+                m_vulkan13Properties, m_vulkan14Properties,
 #endif // CTS_USES_VULKANSC
                 // add blobs from future vulkan versions here
             };
@@ -163,6 +174,29 @@ DeviceProperties::DeviceProperties(const InstanceInterface &vki, const uint32_t 
         m_coreProperties2.properties = getPhysicalDeviceProperties(vki, physicalDevice);
 }
 
+bool DeviceProperties::verifyPropertyAddCriteria(const PropertyStructCreationData &item,
+                                                 const std::vector<std::string> &allDeviceExtensions)
+{
+    const auto &propertyName = item.name;
+
+    // check if this is core property
+    bool isPropertyAvailable = (propertyName == "core_property");
+
+    // check if this property is available on current device
+    if (!isPropertyAvailable)
+        isPropertyAvailable = isExtensionStructSupported(allDeviceExtensions, propertyName);
+
+    // if this is promoted property and it is not available then check also older version
+    // e.g. if VK_KHR_line_rasterization is not supported try VK_EXT_line_rasterization
+    if (!isPropertyAvailable)
+    {
+        const auto previousPropertyExtName = getPreviousPropertyExtName(propertyName);
+        isPropertyAvailable                = isExtensionStructSupported(allDeviceExtensions, previousPropertyExtName);
+    }
+
+    return isPropertyAvailable;
+}
+
 void DeviceProperties::addToChainStructWrapper(void ***chainPNextPtr, PropertyStructWrapperBase *structWrapper)
 {
     DE_ASSERT(chainPNextPtr != nullptr);
@@ -175,7 +209,7 @@ bool DeviceProperties::contains(const std::string &property, bool throwIfNotExis
 {
     for (const auto f : m_properties)
     {
-        if (deStringEqual(f->getPropertyDesc().name, property.c_str()))
+        if (strcmp(f->getPropertyDesc().name, property.c_str()) == 0)
             return true;
     }
 

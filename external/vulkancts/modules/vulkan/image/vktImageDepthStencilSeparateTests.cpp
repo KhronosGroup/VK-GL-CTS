@@ -697,15 +697,11 @@ Move<VkRenderPass> makeSeparateRenderPass(const DeviceInterface &vkd, VkDevice d
         }
 
 #ifndef CTS_USES_VULKANSC
-        const auto depthResolveMode = (params.readsDepth() ? VK_RESOLVE_MODE_NONE : VK_RESOLVE_MODE_SAMPLE_ZERO_BIT);
-        const auto stencilResolveMode =
-            (params.readsStencil() ? VK_RESOLVE_MODE_NONE : VK_RESOLVE_MODE_SAMPLE_ZERO_BIT);
-
         const VkSubpassDescriptionDepthStencilResolve dsResolve = {
             VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE, // VkStructureType sType;
             nullptr,                                                     // const void* pNext;
-            depthResolveMode,                                            // VkResolveModeFlagBits depthResolveMode;
-            stencilResolveMode,                                          // VkResolveModeFlagBits stencilResolveMode;
+            VK_RESOLVE_MODE_SAMPLE_ZERO_BIT,                             // VkResolveModeFlagBits depthResolveMode;
+            VK_RESOLVE_MODE_SAMPLE_ZERO_BIT,                             // VkResolveModeFlagBits stencilResolveMode;
             (isMultisample ? &references.at(3u) :
                              nullptr), // const VkAttachmentReference2* pDepthStencilResolveAttachment;
         };

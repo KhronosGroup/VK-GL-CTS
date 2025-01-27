@@ -189,6 +189,9 @@ struct PushConstantBlock
 
 void NonUniformOffsetCase::initPrograms(vk::SourceCollections &programCollection) const
 {
+    const auto spvValFlags = ShaderBuildOptions::FLAG_ALLOW_NON_CONST_OFFSETS;
+    const ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_0, spvValFlags);
+
     const auto fbSize     = getSize();
     const auto pixelCount = fbSize.x() * fbSize.y() * fbSize.z();
 
@@ -244,7 +247,7 @@ void NonUniformOffsetCase::initPrograms(vk::SourceCollections &programCollection
              << "    " << coordsDecl << "    " << readTexture
              << "    imageStore(outColor, ivec2(gl_LocalInvocationID.xy), pixel);\n"
              << "}\n";
-        programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str());
+        programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str()) << buildOptions;
     }
     else if (m_params.testStage == VK_SHADER_STAGE_FRAGMENT_BIT)
     {
@@ -266,7 +269,7 @@ void NonUniformOffsetCase::initPrograms(vk::SourceCollections &programCollection
              << "    const ivec2 offset = offsetData.offsets[offsetIndex].xy;\n"
              << "    " << coordsDecl << "    " << readTexture << "    outColor = pixel;\n"
              << "}\n";
-        programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+        programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str()) << buildOptions;
     }
     else if (m_params.testStage == VK_SHADER_STAGE_VERTEX_BIT)
     {
@@ -283,7 +286,7 @@ void NonUniformOffsetCase::initPrograms(vk::SourceCollections &programCollection
              << "    gl_Position = inPos;\n"
              << "    gl_PointSize = 1.0;\n"
              << "}\n";
-        programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+        programCollection.glslSources.add("vert") << glu::VertexSource(vert.str()) << buildOptions;
 
         std::ostringstream frag;
         frag << "#version 460\n"

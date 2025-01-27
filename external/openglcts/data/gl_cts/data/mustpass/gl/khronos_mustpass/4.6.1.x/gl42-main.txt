@@ -861,7 +861,8 @@ KHR-GL42.ext_texture_shadow_lod.texturelod.samplercubeshadow_fragment
 KHR-GL42.ext_texture_shadow_lod.texturelod.samplercubearrayshadow_fragment
 KHR-GL42.ext_texture_shadow_lod.texturelodoffset.sampler2darrayshadow_vertex
 KHR-GL42.ext_texture_shadow_lod.texturelodoffset.sampler2darrayshadow_fragment
-KHR-GL42.framebuffer_blit.multisampled_to_singlesampled_blit
+KHR-GL42.framebuffer_blit.multisampled_to_singlesampled_blit_color_config_test
+KHR-GL42.framebuffer_blit.multisampled_to_singlesampled_blit_depth_config_test
 KHR-GL42.framebuffer_blit.scissor_blit
 KHR-GL42.texture_lod_bias.texture_lod_bias_all
 KHR-GL42.buffer_objects.gen_buffers
@@ -872,6 +873,9 @@ KHR-GL42.buffer_objects.sub_data
 KHR-GL42.transform_feedback2.transform_feedback2_states
 KHR-GL42.api.coverage
 KHR-GL42.get_uniform_tests.get_uniform
+KHR-GL42.frag_coord_conventions.multisample
+KHR-GL42.texture_storage.compressed_data
+KHR-GL42.draw_buffers.draw_buffers_1
 KHR-GL42.CommonBugs.CommonBug_GetProgramivActiveUniformBlockMaxNameLength
 KHR-GL42.CommonBugs.CommonBug_InputVariablesCannotBeModified
 KHR-GL42.CommonBugs.CommonBug_InvalidUseCasesForAllNotFuncsAndExclMarkOp
@@ -11224,5 +11228,6 @@ KHR-GL42.texture_view.view_classes
 KHR-GL42.texture_view.coherency
 KHR-GL42.texture_view.base_and_max_levels
 KHR-GL42.texture_view.reference_counting
+KHR-GL42.bind_image_texture.single_layer
 KHR-GL42.shaders42.declarations.declarations.layout_qualifier_on_image_function_parameter_vertex
 KHR-GL42.shaders42.declarations.declarations.layout_qualifier_on_image_function_parameter_fragment

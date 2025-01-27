@@ -7583,6 +7583,12 @@ bool TextureTestBase::testCase(GLuint test_case_index)
             return testSeparable(test_case_index);
         }
     }
+    catch (tcu::NotSupportedError &exc)
+    {
+        // Write message to log and return true to continue with rest of test cases
+        m_context.getTestContext().getLog().writeMessage(exc.what());
+        return true;
+    }
     catch (Utils::Shader::InvalidSourceException &exc)
     {
         exc.log(m_context);
@@ -12438,7 +12444,11 @@ bool SSBAlignmentTest::isDrawRelevant(GLuint /* test_case_index */)
  **/
 VaryingLocationsTest::VaryingLocationsTest(deqp::Context &context)
     : TextureTestBase(context, "varying_locations", "Test verifies that input and output locations are respected")
+    , m_gl_max_geometry_input_components(0)
 {
+    const Functions &gl = m_context.getRenderContext().getFunctions();
+    gl.getIntegerv(GL_MAX_GEOMETRY_INPUT_COMPONENTS, &m_gl_max_geometry_input_components);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
 }
 
 /** Constructor
@@ -12464,6 +12474,16 @@ void VaryingLocationsTest::getProgramInterface(GLuint test_case_index, Utils::Pr
 {
     const Utils::Type type = getType(test_case_index);
 
+    GLint totalComponents = 2 * type.m_n_columns * type.m_n_rows;
+    if (type.m_basic_type == Utils::Type::Double)
+    {
+        totalComponents = totalComponents * 2;
+    }
+    if (totalComponents >= m_gl_max_geometry_input_components)
+    {
+        throw tcu::NotSupportedError("Test case index " + std::to_string(test_case_index) + " for type " +
+                                     type.GetGLSLTypeName() + " not supported");
+    }
     m_first_data = type.GenerateDataPacked();
     m_last_data  = type.GenerateDataPacked();
 
@@ -14277,14 +14297,21 @@ std::string VaryingBlockAutomaticMemberLocationsTest::getShaderSource(GLuint tes
         var_use   = output_use;
     }
 
-    if (test_case.m_stage == stage)
+    bool needs_vertex_output =
+        stage == Utils::Shader::VERTEX && true == test_case.m_is_input && test_case.m_stage != Utils::Shader::VERTEX;
+    bool needs_fragment_input = stage == Utils::Shader::FRAGMENT && false == test_case.m_is_input &&
+                                test_case.m_stage != Utils::Shader::FRAGMENT;
+
+    if (test_case.m_stage == stage || needs_vertex_output || needs_fragment_input)
     {
         size_t position = 0;
 
         switch (stage)
         {
         case Utils::Shader::FRAGMENT:
-            source = fs_tested;
+            direction = "in";
+            var_use   = input_use;
+            source    = fs_tested;
             break;
         case Utils::Shader::GEOMETRY:
             source = gs_tested;
@@ -14302,7 +14329,9 @@ std::string VaryingBlockAutomaticMemberLocationsTest::getShaderSource(GLuint tes
             index  = test_case.m_is_input ? "[0]" : "";
             break;
         case Utils::Shader::VERTEX:
-            source = vs_tested;
+            direction = "out";
+            var_use   = output_use;
+            source    = vs_tested;
             break;
         default:
             TCU_FAIL("Invalid enum");
@@ -14651,7 +14680,12 @@ std::string VaryingLocationLimitTest::getShaderSource(GLuint test_case_index, Ut
                                                                "};\n"
                                                                "\n";
 
-    if (test_case.m_stage == stage)
+    bool needs_vertex_output =
+        stage == Utils::Shader::VERTEX && true == test_case.m_is_input && test_case.m_stage != Utils::Shader::VERTEX;
+    bool needs_fragment_input = stage == Utils::Shader::FRAGMENT && false == test_case.m_is_input &&
+                                test_case.m_stage != Utils::Shader::FRAGMENT;
+
+    if (test_case.m_stage == stage || needs_fragment_input || needs_vertex_output)
     {
         const GLchar *array = "";
         GLchar buffer[16];
@@ -14663,7 +14697,7 @@ std::string VaryingLocationLimitTest::getShaderSource(GLuint test_case_index, Ut
         Utils::Variable::STORAGE storage = Utils::Variable::VARYING_INPUT;
         const GLchar *var_use            = input_use;
 
-        if (false == test_case.m_is_input)
+        if (false == test_case.m_is_input && !needs_fragment_input)
         {
             direction = "out";
             last      = getLastOutputLocation(stage, test_case.m_type, 0, true);
@@ -14681,6 +14715,11 @@ std::string VaryingLocationLimitTest::getShaderSource(GLuint test_case_index, Ut
         switch (stage)
         {
         case Utils::Shader::FRAGMENT:
+            direction = "in ";
+            last      = getLastInputLocation(stage, test_case.m_type, 0, true);
+            storage   = Utils::Variable::VARYING_INPUT;
+            var_use   = input_use;
+
             source = fs_tested;
             break;
         case Utils::Shader::GEOMETRY:
@@ -14700,6 +14739,11 @@ std::string VaryingLocationLimitTest::getShaderSource(GLuint test_case_index, Ut
             index  = test_case.m_is_input ? "[0]" : "";
             break;
         case Utils::Shader::VERTEX:
+            direction = "out";
+            last      = getLastOutputLocation(stage, test_case.m_type, 0, true);
+            storage   = Utils::Variable::VARYING_OUTPUT;
+            var_use   = output_use;
+
             source = vs_tested;
             break;
         default:
@@ -14814,7 +14858,10 @@ void VaryingLocationLimitTest::testInit()
     testCase test_case_in  = {true, type, (Utils::Shader::STAGES)m_stage};
     testCase test_case_out = {false, type, (Utils::Shader::STAGES)m_stage};
 
-    m_test_cases.push_back(test_case_in);
+    if (Utils::Shader::VERTEX != m_stage)
+    {
+        m_test_cases.push_back(test_case_in);
+    }
 
     if (Utils::Shader::FRAGMENT != m_stage)
     {

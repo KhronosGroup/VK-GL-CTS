@@ -50,6 +50,7 @@
 #include "deUniquePtr.hpp"
 #include "deRandom.hpp"
 
+#include <mutex>
 #include <vector>
 #include <utility>
 #include <string>
@@ -238,6 +239,8 @@ enum class GraphicsShaderType
     TESS_EVAL,
     GEOMETRY,
     FRAG,
+    MESH,
+    TASK,
 };
 
 enum class RayTracingShaderType
@@ -271,6 +274,12 @@ std::ostream &operator<<(std::ostream &out, GraphicsShaderType type)
         break;
     case GraphicsShaderType::FRAG:
         out << "frag";
+        break;
+    case GraphicsShaderType::MESH:
+        out << "mesh";
+        break;
+    case GraphicsShaderType::TASK:
+        out << "task";
         break;
     default:
         DE_ASSERT(false);
@@ -682,6 +691,21 @@ public:
         return hasGraphicsStage(GraphicsShaderType::FRAG);
     }
 
+    bool hasMesh(void) const
+    {
+        return hasGraphicsStage(GraphicsShaderType::MESH);
+    }
+
+    bool hasTask(void) const
+    {
+        return hasGraphicsStage(GraphicsShaderType::TASK);
+    }
+
+    bool hasMeshShading(void) const
+    {
+        return (hasTask() || hasMesh());
+    }
+
     bool hasRayTracing(void) const
     {
         return (pipelineType == PipelineType::RAY_TRACING);
@@ -733,6 +757,12 @@ public:
                     break;
                 case GraphicsShaderType::FRAG:
                     stageFlags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+                    break;
+                case GraphicsShaderType::MESH:
+                    stageFlags |= VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT;
+                    break;
+                case GraphicsShaderType::TASK:
+                    stageFlags |= VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT;
                     break;
                 default:
                     DE_ASSERT(false);
@@ -809,6 +839,12 @@ public:
                     break;
                 case GraphicsShaderType::FRAG:
                     stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
+                    break;
+                case GraphicsShaderType::MESH:
+                    stageFlags |= VK_SHADER_STAGE_MESH_BIT_EXT;
+                    break;
+                case GraphicsShaderType::TASK:
+                    stageFlags |= VK_SHADER_STAGE_TASK_BIT_EXT;
                     break;
                 default:
                     DE_ASSERT(false);
@@ -987,6 +1023,8 @@ void generateSources(SourceCollections &programCollection, const BaseParams *par
         bool hasTessEval    = false;
         bool hasGeom        = false;
         bool hasFrag        = false;
+        bool hasMesh        = false;
+        bool hasTask        = false;
 
         // Assign a unique index to each active shader type.
         size_t vertShaderIdx = 0u;
@@ -994,6 +1032,8 @@ void generateSources(SourceCollections &programCollection, const BaseParams *par
         size_t teseShaderIdx = 0u;
         size_t geomShaderIdx = 0u;
         size_t fragShaderIdx = 0u;
+        size_t meshShaderIdx = 0u;
+        size_t taskShaderIdx = 0u;
         size_t curShaderIdx  = 0u;
 
         const std::set<GraphicsShaderType> uniqueStages(begin(params.graphicsShaders), end(params.graphicsShaders));
@@ -1021,6 +1061,14 @@ void generateSources(SourceCollections &programCollection, const BaseParams *par
             case GraphicsShaderType::FRAG:
                 hasFrag       = true;
                 fragShaderIdx = curShaderIdx++;
+                break;
+            case GraphicsShaderType::MESH:
+                hasMesh       = true;
+                meshShaderIdx = curShaderIdx++;
+                break;
+            case GraphicsShaderType::TASK:
+                hasTask       = true;
+                taskShaderIdx = curShaderIdx++;
                 break;
             default:
                 DE_ASSERT(false);
@@ -1175,6 +1223,59 @@ void generateSources(SourceCollections &programCollection, const BaseParams *par
                 geom << "}\n";
 
                 programCollection.glslSources.add(shaderName) << glu::GeometrySource(geom.str());
+            }
+
+            const auto meshBuildOpts =
+                ShaderBuildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_4, 0u, true);
+
+            if (hasMesh)
+            {
+                const std::string localSize =
+                    (params.useSpecializationConstants ?
+                         "layout (local_size_x_id=1, local_size_y_id=2, local_size_z_id=3) in;\n" :
+                         "layout (local_size_x=1, local_size_y=1, local_size_z=1) in;\n");
+
+                const std::string shaderName = "mesh_" + std::to_string(plIdxSz);
+                const auto shaderIdx         = getShaderIdx(pipelineIdx, meshShaderIdx, stageCount);
+
+                std::ostringstream mesh;
+                mesh << "#version 450\n"
+                     << "#extension GL_EXT_mesh_shader : enable\n"
+                     << localSize << ssboDecl << uboDecls << constantDecls.at(shaderIdx) << "layout(points) out;\n"
+                     << "layout(max_vertices=1, max_primitives=1) out;\n"
+                     << "void main (void) {\n"
+                     << outValueDecl << pipelineAdds.at(plIdxSz) << "    SetMeshOutputsEXT(1, 1);\n"
+                     << "    if (gl_LocalInvocationIndex == 0u) {\n"
+                     << stageStores.at(meshShaderIdx)
+                     << "        gl_MeshVerticesEXT[0].gl_Position = vec4(0.0f, 0.0f, 0.0f, 1.0f);\n"
+                     << "        gl_MeshVerticesEXT[0].gl_PointSize = 1.0f;\n"
+                     << "        gl_PrimitivePointIndicesEXT[0] = 0;\n"
+                     << "    }\n"
+                     << "}\n";
+
+                programCollection.glslSources.add(shaderName) << glu::MeshSource(mesh.str()) << meshBuildOpts;
+            }
+
+            if (hasTask)
+            {
+                const std::string localSize =
+                    (params.useSpecializationConstants ?
+                         "layout (local_size_x_id=1, local_size_y_id=2, local_size_z_id=3) in;\n" :
+                         "layout (local_size_x=1, local_size_y=1, local_size_z=1) in;\n");
+
+                const std::string shaderName = "task_" + std::to_string(plIdxSz);
+                const auto shaderIdx         = getShaderIdx(pipelineIdx, taskShaderIdx, stageCount);
+
+                std::ostringstream task;
+                task << "#version 450\n"
+                     << "#extension GL_EXT_mesh_shader : enable\n"
+                     << localSize << ssboDecl << uboDecls << constantDecls.at(shaderIdx) << "void main (void) {\n"
+                     << outValueDecl << pipelineAdds.at(plIdxSz) << "    if (gl_LocalInvocationIndex == 0u) {\n"
+                     << stageStores.at(taskShaderIdx) << "    }\n"
+                     << "    EmitMeshTasksEXT(1u, 1u, 1u);\n"
+                     << "}\n";
+
+                programCollection.glslSources.add(shaderName) << glu::TaskSource(task.str()) << meshBuildOpts;
             }
         }
     }
@@ -1407,6 +1508,9 @@ void SourcesAndSupportFromParamsBase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
         context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
     }
+
+    if (m_params->hasMeshShading())
+        context.requireDeviceFunctionality("VK_EXT_mesh_shader");
 }
 
 // Check shader module identifiers are constant across different API calls.
@@ -1523,35 +1627,58 @@ struct DeviceHelper
     DeviceHelper(const DeviceHelper &)                 = delete;
     DeviceHelper &operator=(const DeviceHelper &other) = delete;
 
-    DeviceHelper(Context &context, bool enableRayTracing = false)
+    DeviceHelper(Context &context)
     {
-        const auto &vkp           = context.getPlatformInterface();
-        const auto &vki           = context.getInstanceInterface();
-        const auto instance       = context.getInstance();
-        const auto physicalDevice = context.getPhysicalDevice();
-
+        const auto ctx   = context.getContextCommonData();
         queueFamilyIndex = context.getUniversalQueueFamilyIndex();
 
         // Get device features (these have to be checked in the test case).
-        VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT shaderIdFeatures = initVulkanStructure();
-        VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT cacheControlFeatures =
-            initVulkanStructure(&shaderIdFeatures);
+        // Note multiview interacts with multiviewMeshShader
+        // Note fragment shading rate interacts with primitiveFragmentShadingRateMeshShader.
+        VkPhysicalDeviceFeatures2 features2                                          = initVulkanStructure();
+        VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT shaderIdFeatures           = initVulkanStructure();
+        VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT cacheControlFeatures = initVulkanStructure();
+        VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeatures                     = initVulkanStructure();
+        VkPhysicalDeviceMultiviewFeatures multiviewFeatures                          = initVulkanStructure();
+        VkPhysicalDeviceFragmentShadingRateFeaturesKHR fsrFeatures                   = initVulkanStructure();
+        VkPhysicalDeviceRayTracingPipelineFeaturesKHR rtFeatures                     = initVulkanStructure();
+        VkPhysicalDeviceAccelerationStructureFeaturesKHR asFeatures                  = initVulkanStructure();
+        VkPhysicalDeviceBufferDeviceAddressFeatures bdaFeatures                      = initVulkanStructure();
 
-        VkPhysicalDeviceDescriptorIndexingFeaturesEXT descriptorIdxFeatures =
-            initVulkanStructure(&cacheControlFeatures);
-        VkPhysicalDeviceBufferDeviceAddressFeaturesKHR deviceAddressFeatures =
-            initVulkanStructure(&descriptorIdxFeatures);
-        VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures =
-            initVulkanStructure(&deviceAddressFeatures);
+        const auto meshShaderSupport = context.isDeviceFunctionalitySupported("VK_EXT_mesh_shader");
+        const auto multiviewSupport  = context.isDeviceFunctionalitySupported("VK_KHR_multiview");
+        const auto fsrSupport        = context.isDeviceFunctionalitySupported("VK_KHR_fragment_shading_rate");
+        const auto rtSupport         = context.isDeviceFunctionalitySupported("VK_KHR_ray_tracing_pipeline");
+        const auto asSupport         = context.isDeviceFunctionalitySupported("VK_KHR_acceleration_structure");
+        const auto bdaSupport        = context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 
-        VkPhysicalDeviceFeatures2 deviceFeatures =
-            initVulkanStructure(enableRayTracing ? reinterpret_cast<void *>(&rayTracingPipelineFeatures) :
-                                                   reinterpret_cast<void *>(&cacheControlFeatures));
+        const auto addFeatures = makeStructChainAdder(&features2);
 
-        vki.getPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures);
+        addFeatures(&shaderIdFeatures);
+        addFeatures(&cacheControlFeatures);
+
+        if (meshShaderSupport)
+            addFeatures(&meshShaderFeatures);
+
+        if (multiviewSupport)
+            addFeatures(&multiviewFeatures);
+
+        if (fsrSupport)
+            addFeatures(&fsrFeatures);
+
+        if (rtSupport)
+            addFeatures(&rtFeatures);
+
+        if (asSupport)
+            addFeatures(&asFeatures);
+
+        if (bdaSupport)
+            addFeatures(&bdaFeatures);
+
+        ctx.vki.getPhysicalDeviceFeatures2(ctx.physicalDevice, &features2);
 
         // Make sure robust buffer access is disabled as in the default device.
-        deviceFeatures.features.robustBufferAccess = VK_FALSE;
+        features2.features.robustBufferAccess = VK_FALSE;
 
         const auto queuePriority = 1.0f;
         const VkDeviceQueueCreateInfo queueInfo{
@@ -1564,26 +1691,11 @@ struct DeviceHelper
         };
 
         // Required extensions. Note: many of these require VK_KHR_get_physical_device_properties2, which is an instance extension.
-        std::vector<const char *> requiredExtensions{
-            "VK_EXT_pipeline_creation_cache_control",
-            "VK_EXT_shader_module_identifier",
-        };
-
-        if (enableRayTracing)
-        {
-            requiredExtensions.push_back("VK_KHR_maintenance3");
-            requiredExtensions.push_back("VK_EXT_descriptor_indexing");
-            requiredExtensions.push_back("VK_KHR_buffer_device_address");
-            requiredExtensions.push_back("VK_KHR_deferred_host_operations");
-            requiredExtensions.push_back("VK_KHR_acceleration_structure");
-            requiredExtensions.push_back("VK_KHR_shader_float_controls");
-            requiredExtensions.push_back("VK_KHR_spirv_1_4");
-            requiredExtensions.push_back("VK_KHR_ray_tracing_pipeline");
-        }
+        const auto &requiredExtensions = context.getDeviceCreationExtensions();
 
         const VkDeviceCreateInfo createInfo{
             VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, // VkStructureType sType;
-            deviceFeatures.pNext,                 // const void* pNext;
+            &features2,                           // const void* pNext;
             0u,                                   // VkDeviceCreateFlags flags;
             1u,                                   // uint32_t queueCreateInfoCount;
             &queueInfo,                           // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
@@ -1591,33 +1703,58 @@ struct DeviceHelper
             nullptr,                              // const char* const* ppEnabledLayerNames;
             de::sizeU32(requiredExtensions),      // uint32_t enabledExtensionCount;
             de::dataOrNull(requiredExtensions),   // const char* const* ppEnabledExtensionNames;
-            &deviceFeatures.features,             // const VkPhysicalDeviceFeatures* pEnabledFeatures;
+            nullptr,                              // const VkPhysicalDeviceFeatures* pEnabledFeatures;
         };
 
         // Create custom device and related objects
-        device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki,
-                                    physicalDevice, &createInfo);
-        vkd.reset(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion(),
+        device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), ctx.vkp,
+                                    ctx.instance, ctx.vki, ctx.physicalDevice, &createInfo);
+        vkd.reset(new DeviceDriver(ctx.vkp, ctx.instance, device.get(), context.getUsedApiVersion(),
                                    context.getTestContext().getCommandLine()));
         queue = getDeviceQueue(*vkd, *device, queueFamilyIndex, 0u);
         allocator.reset(
-            new SimpleAllocator(*vkd, device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
+            new SimpleAllocator(*vkd, device.get(), getPhysicalDeviceMemoryProperties(ctx.vki, ctx.physicalDevice)));
     }
 };
+
+enum class DeviceHelperOp
+{
+    GET = 0,
+    DELETE,
+};
+
+DeviceHelper *deviceHelperManage(Context *context, DeviceHelperOp op)
+{
+    static std::unique_ptr<DeviceHelper> altDevice;
+    static std::mutex altDeviceMutex;
+
+    std::lock_guard<std::mutex> altDeviceLock(altDeviceMutex);
+
+    if (op == DeviceHelperOp::DELETE)
+        altDevice.reset(nullptr);
+    else if (op == DeviceHelperOp::GET)
+    {
+        DE_ASSERT(context != nullptr);
+        if (!altDevice)
+            altDevice.reset(new DeviceHelper(*context));
+    }
+    else
+        DE_ASSERT(false);
+
+    return altDevice.get();
+}
 
 tcu::TestStatus ConstantModuleIdentifiersInstance::iterate(void)
 {
     // The second device may be the one from the context or a new device for the cases that require different devices.
-    const auto &vkd   = m_context.getDeviceInterface();
-    const auto device = m_context.getDevice();
-    const std::unique_ptr<DeviceHelper> helper(
-        m_params->differentDevices ? new DeviceHelper(m_context, m_params->pipelineType == PipelineType::RAY_TRACING) :
-                                     nullptr);
+    const auto &vkd    = m_context.getDeviceInterface();
+    const auto device  = m_context.getDevice();
+    const auto &helper = *deviceHelperManage(&m_context, DeviceHelperOp::GET);
 
     const auto &di1 = vkd;
     const auto dev1 = device;
-    const auto &di2 = (m_params->differentDevices ? *helper->vkd : vkd);
-    const auto dev2 = (m_params->differentDevices ? helper->device.get() : device);
+    const auto &di2 = (m_params->differentDevices ? *helper.vkd : vkd);
+    const auto dev2 = (m_params->differentDevices ? helper.device.get() : device);
 
     return runTest(di1, dev1, di2, dev2);
 }
@@ -1848,12 +1985,12 @@ public:
     PipelineStageInfo &operator=(const PipelineStageInfo &) = delete;
 };
 
-std::vector<uint32_t> makeComputeSpecConstants(uint32_t stageConstant)
+std::vector<uint32_t> makeComputeLikeSpecConstants(uint32_t stageConstant)
 {
     return std::vector<uint32_t>{stageConstant, 1u, 1u, 1u};
 }
 
-SCMapEntryVec makeComputeSpecMapEntries(void)
+SCMapEntryVec makeComputeLikeSpecMapEntries(void)
 {
     const auto kNumEntries = 4u; // Matches the vector above.
     const auto entrySizeSz = sizeof(uint32_t);
@@ -1874,7 +2011,7 @@ SCMapEntryVec makeComputeSpecMapEntries(void)
     return entries;
 }
 
-SpecInfoPtr makeComputeSpecInfo(const SCMapEntryVec &scEntries, const std::vector<uint32_t> &scData)
+SpecInfoPtr makeComputeLikeSpecInfo(const SCMapEntryVec &scEntries, const std::vector<uint32_t> &scData)
 {
     SpecInfoPtr scInfo(new VkSpecializationInfo);
 
@@ -2135,6 +2272,8 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate(void)
     ModuleVec teseModules;
     ModuleVec geomModules;
     ModuleVec fragModules;
+    ModuleVec meshModules;
+    ModuleVec taskModules;
 
     ModuleVec compModules;
 
@@ -2204,6 +2343,16 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate(void)
         PipelineStageInfo teseToRun;
         PipelineStageInfo geomToRun;
         PipelineStageInfo fragToRun;
+        PipelineStageInfo meshToRun;
+        PipelineStageInfo taskToRun;
+
+        // Spec constants for mesh and task need some special values, like in compute shaders, due to the constant
+        // ids used for workgroup sizes, and they need to be preserved after the loop.
+        std::vector<std::vector<uint32_t>> meshScData;
+        std::vector<std::vector<uint32_t>> taskScData;
+
+        std::vector<std::vector<VkSpecializationMapEntry>> meshScEntries;
+        std::vector<std::vector<VkSpecializationMapEntry>> taskScEntries;
 
         for (uint32_t i = 0; i < pipelineCount32; ++i)
         {
@@ -2214,6 +2363,8 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate(void)
             const auto teseName = "tese" + suffix;
             const auto geomName = "geom" + suffix;
             const auto fragName = "frag" + suffix;
+            const auto meshName = "mesh" + suffix;
+            const auto taskName = "task" + suffix;
 
             pipelineWrappers.emplace_back(new GraphicsPipelineWrapper(vki, vkd, physicalDevice, device,
                                                                       m_context.getDeviceExtensions(),
@@ -2225,16 +2376,23 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate(void)
             ShaderWrapper teseModule;
             ShaderWrapper geomModule;
             ShaderWrapper fragModule;
+            ShaderWrapper meshModule;
+            ShaderWrapper taskModule;
 
             SpecInfoPtr vertSpecInfo;
             SpecInfoPtr tescSpecInfo;
             SpecInfoPtr teseSpecInfo;
             SpecInfoPtr geomSpecInfo;
             SpecInfoPtr fragSpecInfo;
+            SpecInfoPtr meshSpecInfo;
+            SpecInfoPtr taskSpecInfo;
 
-            vertModules.push_back(ShaderWrapper(vkd, device, binaries.get(vertName)));
-            vertModule   = vertModules.back();
-            vertSpecInfo = maybeMakeSpecializationInfo(useSCs, &scMapEntry, shaderConstIt);
+            if (binaries.contains(vertName))
+            {
+                vertModules.push_back(ShaderWrapper(vkd, device, binaries.get(vertName)));
+                vertModule   = vertModules.back();
+                vertSpecInfo = maybeMakeSpecializationInfo(useSCs, &scMapEntry, shaderConstIt);
+            }
 
             if (binaries.contains(tescName))
             {
@@ -2264,17 +2422,56 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate(void)
                 fragSpecInfo = maybeMakeSpecializationInfo(useSCs, &scMapEntry, shaderConstIt);
             }
 
+            if (binaries.contains(meshName))
+            {
+                meshModules.push_back(ShaderWrapper(vkd, device, binaries.get(meshName)));
+                meshModule = meshModules.back();
+
+                if (useSCs)
+                {
+                    meshScData.push_back(makeComputeLikeSpecConstants(*(shaderConstIt++)));
+                    meshScEntries.push_back(makeComputeLikeSpecMapEntries());
+                    meshSpecInfo = makeComputeLikeSpecInfo(meshScEntries.back(), meshScData.back());
+                }
+            }
+
+            if (binaries.contains(taskName))
+            {
+                taskModules.push_back(ShaderWrapper(vkd, device, binaries.get(taskName)));
+                taskModule = taskModules.back();
+
+                if (useSCs)
+                {
+                    taskScData.push_back(makeComputeLikeSpecConstants(*(shaderConstIt++)));
+                    taskScEntries.push_back(makeComputeLikeSpecMapEntries());
+                    taskSpecInfo = makeComputeLikeSpecInfo(taskScEntries.back(), taskScData.back());
+                }
+            }
+
             const auto rasterizationState = makeRasterizationState(!fragModule.isSet());
 
             if (m_params->useMaintenance5)
                 wrapper.setPipelineCreateFlags2(translateCreateFlag(captureFlags));
 
-            wrapper.setDefaultPatchControlPoints(patchCPs)
-                .setupVertexInputState(&vertexInputState, &inputAssemblyState, pipelineCache.get())
-                .setupPreRasterizationShaderState2(viewports, scissors, pipelineLayout, renderPass.get(), 0u,
-                                                   vertModule, &rasterizationState, tescModule, teseModule, geomModule,
-                                                   vertSpecInfo.get(), tescSpecInfo.get(), teseSpecInfo.get(),
-                                                   geomSpecInfo.get(), nullptr, nullptr, pipelineCache.get())
+            wrapper.setDefaultPatchControlPoints(patchCPs);
+
+            if (m_params->hasMeshShading())
+            {
+                wrapper.setupPreRasterizationMeshShaderState(viewports, scissors, pipelineLayout, renderPass.get(), 0u,
+                                                             taskModule, meshModule, &rasterizationState,
+                                                             taskSpecInfo.get(), meshSpecInfo.get(), nullptr,
+                                                             PipelineRenderingCreateInfoWrapper(), pipelineCache.get());
+            }
+            else
+            {
+                wrapper.setupVertexInputState(&vertexInputState, &inputAssemblyState, pipelineCache.get())
+                    .setupPreRasterizationShaderState2(
+                        viewports, scissors, pipelineLayout, renderPass.get(), 0u, vertModule, &rasterizationState,
+                        tescModule, teseModule, geomModule, vertSpecInfo.get(), tescSpecInfo.get(), teseSpecInfo.get(),
+                        geomSpecInfo.get(), nullptr, nullptr, pipelineCache.get());
+            }
+
+            wrapper
                 .setupFragmentShaderState(pipelineLayout, renderPass.get(), 0u, fragModule, &depthStencilState,
                                           &multisampleState, fragSpecInfo.get(), pipelineCache.get())
                 .setupFragmentOutputState(*renderPass, 0u, &colorBlendState, &multisampleState, pipelineCache.get())
@@ -2290,8 +2487,11 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate(void)
 
             if (runThis)
             {
-                vertToRun.setModule(vkd, device, vertModule, m_params->moduleUseCase, m_params->getRndGen());
-                vertToRun.setSpecInfo(std::move(vertSpecInfo));
+                if (vertModule.isSet())
+                {
+                    vertToRun.setModule(vkd, device, vertModule, m_params->moduleUseCase, m_params->getRndGen());
+                    vertToRun.setSpecInfo(std::move(vertSpecInfo));
+                }
 
                 if (tescModule.isSet())
                 {
@@ -2316,6 +2516,18 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate(void)
                     fragToRun.setModule(vkd, device, fragModule, m_params->moduleUseCase, m_params->getRndGen());
                     fragToRun.setSpecInfo(std::move(fragSpecInfo));
                 }
+
+                if (meshModule.isSet())
+                {
+                    meshToRun.setModule(vkd, device, meshModule, m_params->moduleUseCase, m_params->getRndGen());
+                    meshToRun.setSpecInfo(std::move(meshSpecInfo));
+                }
+
+                if (taskModule.isSet())
+                {
+                    taskToRun.setModule(vkd, device, taskModule, m_params->moduleUseCase, m_params->getRndGen());
+                    taskToRun.setSpecInfo(std::move(taskSpecInfo));
+                }
             }
         }
 
@@ -2332,20 +2544,38 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate(void)
 
             try
             {
-                wrapper.setDefaultPatchControlPoints(patchCPs)
-                    .setupVertexInputState(&vertexInputState, &inputAssemblyState, pipelineCache.get())
-                    .setupPreRasterizationShaderState3(
+                wrapper.setDefaultPatchControlPoints(patchCPs);
+
+                if (m_params->hasMeshShading())
+                {
+                    wrapper.setupPreRasterizationMeshShaderState2(
                         viewports, scissors, pipelineLayout, renderPass.get(), 0u,
-                        *vertToRun.getUsedModule(m_params->moduleUseCase),
-                        PipelineShaderStageModuleIdentifierCreateInfoWrapper(vertToRun.getModuleIdCreateInfo()),
-                        &rasterizationState, *tescToRun.getUsedModule(m_params->moduleUseCase),
-                        PipelineShaderStageModuleIdentifierCreateInfoWrapper(tescToRun.getModuleIdCreateInfo()),
-                        *teseToRun.getUsedModule(m_params->moduleUseCase),
-                        PipelineShaderStageModuleIdentifierCreateInfoWrapper(teseToRun.getModuleIdCreateInfo()),
-                        *geomToRun.getUsedModule(m_params->moduleUseCase),
-                        PipelineShaderStageModuleIdentifierCreateInfoWrapper(geomToRun.getModuleIdCreateInfo()),
-                        vertToRun.getSpecInfo(), tescToRun.getSpecInfo(), teseToRun.getSpecInfo(),
-                        geomToRun.getSpecInfo(), nullptr, PipelineRenderingCreateInfoWrapper(), pipelineCache.get())
+                        *taskToRun.getUsedModule(m_params->moduleUseCase),
+                        PipelineShaderStageModuleIdentifierCreateInfoWrapper(taskToRun.getModuleIdCreateInfo()),
+                        *meshToRun.getUsedModule(m_params->moduleUseCase),
+                        PipelineShaderStageModuleIdentifierCreateInfoWrapper(meshToRun.getModuleIdCreateInfo()),
+                        &rasterizationState, taskToRun.getSpecInfo(), meshToRun.getSpecInfo(), nullptr,
+                        PipelineRenderingCreateInfoWrapper(), pipelineCache.get());
+                }
+                else
+                {
+                    wrapper.setupVertexInputState(&vertexInputState, &inputAssemblyState, pipelineCache.get())
+                        .setupPreRasterizationShaderState3(
+                            viewports, scissors, pipelineLayout, renderPass.get(), 0u,
+                            *vertToRun.getUsedModule(m_params->moduleUseCase),
+                            PipelineShaderStageModuleIdentifierCreateInfoWrapper(vertToRun.getModuleIdCreateInfo()),
+                            &rasterizationState, *tescToRun.getUsedModule(m_params->moduleUseCase),
+                            PipelineShaderStageModuleIdentifierCreateInfoWrapper(tescToRun.getModuleIdCreateInfo()),
+                            *teseToRun.getUsedModule(m_params->moduleUseCase),
+                            PipelineShaderStageModuleIdentifierCreateInfoWrapper(teseToRun.getModuleIdCreateInfo()),
+                            *geomToRun.getUsedModule(m_params->moduleUseCase),
+                            PipelineShaderStageModuleIdentifierCreateInfoWrapper(geomToRun.getModuleIdCreateInfo()),
+                            vertToRun.getSpecInfo(), tescToRun.getSpecInfo(), teseToRun.getSpecInfo(),
+                            geomToRun.getSpecInfo(), nullptr, PipelineRenderingCreateInfoWrapper(),
+                            pipelineCache.get());
+                }
+
+                wrapper
                     .setupFragmentShaderState2(pipelineLayout, renderPass.get(), 0u,
                                                *fragToRun.getUsedModule(m_params->moduleUseCase),
                                                fragToRun.getModuleIdCreateInfo(), &depthStencilState, &multisampleState,
@@ -2386,9 +2616,10 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate(void)
             const auto suffix   = "_" + std::to_string(i);
             const auto compName = "comp" + suffix;
 
-            const auto scData    = (useSCs ? makeComputeSpecConstants(shaderConstants.at(i)) : std::vector<uint32_t>());
-            const auto scEntries = (useSCs ? makeComputeSpecMapEntries() : std::vector<VkSpecializationMapEntry>());
-            const auto scInfo    = (useSCs ? makeComputeSpecInfo(scEntries, scData) : nullptr);
+            const auto scData =
+                (useSCs ? makeComputeLikeSpecConstants(shaderConstants.at(i)) : std::vector<uint32_t>());
+            const auto scEntries = (useSCs ? makeComputeLikeSpecMapEntries() : std::vector<VkSpecializationMapEntry>());
+            const auto scInfo    = (useSCs ? makeComputeLikeSpecInfo(scEntries, scData) : nullptr);
 
             compModules.push_back(ShaderWrapper(vkd, device, binaries.get(compName)));
             pipelinePtrs.push_back(makeComputePipeline(vkd, device, pipelineLayout.get(), captureFlags, nullptr,
@@ -2414,9 +2645,9 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate(void)
             const auto modInfo =
                 makeShaderStageModuleIdentifierCreateInfo(moduleId, m_params->moduleUseCase, &(m_params->getRndGen()));
             const auto scData =
-                (useSCs ? makeComputeSpecConstants(shaderConstants.at(idxToRun)) : std::vector<uint32_t>());
-            const auto scEntries = (useSCs ? makeComputeSpecMapEntries() : std::vector<VkSpecializationMapEntry>());
-            const auto scInfo    = (useSCs ? makeComputeSpecInfo(scEntries, scData) : nullptr);
+                (useSCs ? makeComputeLikeSpecConstants(shaderConstants.at(idxToRun)) : std::vector<uint32_t>());
+            const auto scEntries = (useSCs ? makeComputeLikeSpecMapEntries() : std::vector<VkSpecializationMapEntry>());
+            const auto scInfo    = (useSCs ? makeComputeLikeSpecInfo(scEntries, scData) : nullptr);
 
             // Append the pipeline to run at the end of the vector.
             {
@@ -2882,7 +3113,10 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate(void)
         vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, pipelineLayout.get(), 0u, de::sizeU32(rawDescriptorSets),
                                   de::dataOrNull(rawDescriptorSets), 0u, nullptr);
         vkd.cmdBindPipeline(cmdBuffer, bindPoint, pipelines.back());
-        vkd.cmdDraw(cmdBuffer, vertexCount, 1u, 0u, 0u);
+        if (m_params->hasMeshShading())
+            vkd.cmdDrawMeshTasksEXT(cmdBuffer, 1u, 1u, 1u);
+        else
+            vkd.cmdDraw(cmdBuffer, vertexCount, 1u, 0u, 0u);
         renderPass.end(vkd, cmdBuffer);
 
         const auto copyRegion = makeBufferImageCopy(fbExtent, colorSRL);
@@ -3482,13 +3716,26 @@ tcu::TestStatus HLSLTessellationInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+class TestGroupWithClean : public tcu::TestCaseGroup
+{
+public:
+    TestGroupWithClean(tcu::TestContext &testCtx, const char *name) : tcu::TestCaseGroup(testCtx, name)
+    {
+    }
+
+    void deinit(void) override
+    {
+        deviceHelperManage(nullptr, DeviceHelperOp::DELETE);
+    }
+};
+
 } // anonymous namespace
 
 tcu::TestCaseGroup *createShaderModuleIdentifierTests(tcu::TestContext &testCtx,
                                                       vk::PipelineConstructionType constructionType)
 {
     // No pipelines are actually constructed in some of these variants, so adding them to a single group is fine.
-    GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "shader_module_identifier"));
+    GroupPtr mainGroup(new TestGroupWithClean(testCtx, "shader_module_identifier"));
 
     if (constructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
     {
@@ -3523,6 +3770,9 @@ tcu::TestCaseGroup *createShaderModuleIdentifierTests(tcu::TestContext &testCtx,
         {GraphicsShaderType::VERTEX, GraphicsShaderType::GEOMETRY, GraphicsShaderType::FRAG},
         {GraphicsShaderType::VERTEX, GraphicsShaderType::TESS_CONTROL, GraphicsShaderType::TESS_EVAL,
          GraphicsShaderType::GEOMETRY, GraphicsShaderType::FRAG},
+        {GraphicsShaderType::MESH},
+        {GraphicsShaderType::MESH, GraphicsShaderType::FRAG},
+        {GraphicsShaderType::TASK, GraphicsShaderType::MESH, GraphicsShaderType::FRAG},
     };
 
     const std::vector<RTShaderVec> rtShadersCases{

@@ -5276,15 +5276,26 @@ tcu::TestStatus ReconvergenceTestComputeInstance::iterate(void)
     invalidateAlloc(vk, device, buffers[1]->getAllocation());
 
     // Simulate execution on the CPU, and compare against the GPU result
-    try
     {
-        ref.resize(maxLoc, tcu::UVec4());
-    }
-    catch (const std::bad_alloc &)
-    {
-        // Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
-        return tcu::TestStatus(QP_TEST_RESULT_NOT_SUPPORTED,
-                               "Failed system memory allocation " + de::toString(maxLoc * sizeof(uint64_t)) + " bytes");
+        typedef decltype(ref) ref_t;
+        const typename ref_t::size_type allocSize = maxLoc * sizeof(ref_t::value_type);
+        // Allocation size is unpredictable and can be too large for some systems.
+        // Don't treat allocation failure as a test failure.
+        const tcu::TestStatus failAlloc(QP_TEST_RESULT_NOT_SUPPORTED,
+                                        "Failed system memory allocation " + de::toString(allocSize) + " bytes");
+        if (maxLoc > ref.max_size())
+        {
+            return failAlloc;
+        }
+
+        try
+        {
+            ref.resize(maxLoc, tcu::UVec4());
+        }
+        catch (const std::exception &)
+        {
+            return failAlloc;
+        }
     }
 
     program.execute(m_context.getTestContext().getWatchDog(), false, m_subgroupSize, 0u, invocationStride, ref, log);

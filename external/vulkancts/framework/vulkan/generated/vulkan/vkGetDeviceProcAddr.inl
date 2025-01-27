@@ -121,6 +121,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkDestroyCuFunctionNVX",
 		"vkCmdCuLaunchKernelNVX",
 		"vkGetImageViewHandleNVX",
+		"vkGetImageViewHandle64NVX",
 		"vkGetImageViewAddressNVX",
 		"vkCmdDrawIndirectCountAMD",
 		"vkCmdDrawIndexedIndirectCountAMD",
@@ -279,6 +280,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdDrawIndexedIndirectCountKHR",
 		"vkGetMemoryHostPointerPropertiesEXT",
 		"vkCmdWriteBufferMarkerAMD",
+		"vkCmdWriteBufferMarker2AMD",
 		"vkGetPhysicalDeviceCalibrateableTimeDomainsEXT",
 		"vkGetCalibratedTimestampsEXT",
 		"vkCmdDrawMeshTasksNV",
@@ -288,6 +290,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdSetExclusiveScissorNV",
 		"vkCmdSetCheckpointNV",
 		"vkGetQueueCheckpointDataNV",
+		"vkGetQueueCheckpointData2NV",
 		"vkGetSemaphoreCounterValueKHR",
 		"vkWaitSemaphoresKHR",
 		"vkSignalSemaphoreKHR",
@@ -379,8 +382,6 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdPipelineBarrier2KHR",
 		"vkCmdWriteTimestamp2KHR",
 		"vkQueueSubmit2KHR",
-		"vkCmdWriteBufferMarker2AMD",
-		"vkGetQueueCheckpointData2NV",
 		"vkGetDescriptorSetLayoutSizeEXT",
 		"vkGetDescriptorSetLayoutBindingOffsetEXT",
 		"vkGetDescriptorEXT",
@@ -592,6 +593,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkUpdateIndirectExecutionSetPipelineEXT",
 		"vkUpdateIndirectExecutionSetShaderEXT",
 		"vkCmdSetDepthClampRangeEXT",
+		"vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV",
     };
 
     bool fail = false;

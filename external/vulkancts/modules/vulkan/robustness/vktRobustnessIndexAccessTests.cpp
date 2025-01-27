@@ -817,7 +817,7 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer.get(), &static_cast<const VkDeviceSize &>(0));
 
 #ifndef CTS_USES_VULKANSC
-    vk.cmdBindIndexBuffer2KHR(*cmdBuffer, indexBuffer.get(), bindingOffset, bindingSize, VK_INDEX_TYPE_UINT32);
+    vk.cmdBindIndexBuffer2(*cmdBuffer, indexBuffer.get(), bindingOffset, bindingSize, VK_INDEX_TYPE_UINT32);
 #else
     DE_UNREF(bindingOffset);
     DE_UNREF(bindingSize);

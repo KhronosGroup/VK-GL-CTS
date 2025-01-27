@@ -2544,6 +2544,7 @@ class BasicAtomicCase2 : public ShaderStorageBufferObjectBase
                "} g_uint_tes;" NL "layout(std430, binding = 3) buffer TESint {" NL "  int data[1];" NL "} g_int_tes;" NL
                "uniform uint g_uint_value[8] = uint[8](3u, 1u, 2u, 0x1u, 0x3u, 0x1u, 0x2u, 0x7u);" NL "void main() {" NL
                "  gl_Position = gl_in[0].gl_Position;" NL NL
+               "if (gl_TessCoord.x >= 0.5 || gl_TessCoord.y >= 0.5) return;" NL
                "  if (atomicExchange(g_uint_tes.data[gl_PrimitiveID], g_uint_value[1]) != 0u) return;" NL
                "  if (atomicAdd(g_uint_tes.data[gl_PrimitiveID], g_uint_value[2]) != 1u) return;" NL
                "  if (atomicMin(g_uint_tes.data[gl_PrimitiveID], g_uint_value[1]) != 3u) return;" NL

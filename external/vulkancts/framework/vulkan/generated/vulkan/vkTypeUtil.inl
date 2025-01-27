@@ -606,9 +606,9 @@ inline VkShaderResourceUsageAMD makeShaderResourceUsageAMD (uint32_t numUsedVgpr
 	return res;
 }
 
-inline VkVertexInputBindingDivisorDescriptionKHR makeVertexInputBindingDivisorDescriptionKHR (uint32_t binding, uint32_t divisor)
+inline VkVertexInputBindingDivisorDescription makeVertexInputBindingDivisorDescription (uint32_t binding, uint32_t divisor)
 {
-	VkVertexInputBindingDivisorDescriptionKHR res;
+	VkVertexInputBindingDivisorDescription res;
 	res.binding	= binding;
 	res.divisor	= divisor;
 	return res;
@@ -851,6 +851,24 @@ inline VkVideoEncodeH265FrameSizeKHR makeVideoEncodeH265FrameSizeKHR (uint32_t f
 	return res;
 }
 
+inline VkVideoEncodeAV1QIndexKHR makeVideoEncodeAV1QIndexKHR (uint32_t intraQIndex, uint32_t predictiveQIndex, uint32_t bipredictiveQIndex)
+{
+	VkVideoEncodeAV1QIndexKHR res;
+	res.intraQIndex			= intraQIndex;
+	res.predictiveQIndex	= predictiveQIndex;
+	res.bipredictiveQIndex	= bipredictiveQIndex;
+	return res;
+}
+
+inline VkVideoEncodeAV1FrameSizeKHR makeVideoEncodeAV1FrameSizeKHR (uint32_t intraFrameSize, uint32_t predictiveFrameSize, uint32_t bipredictiveFrameSize)
+{
+	VkVideoEncodeAV1FrameSizeKHR res;
+	res.intraFrameSize			= intraFrameSize;
+	res.predictiveFrameSize		= predictiveFrameSize;
+	res.bipredictiveFrameSize	= bipredictiveFrameSize;
+	return res;
+}
+
 inline VkSRTDataNV makeSRTDataNV (float sx, float a, float b, float pvx, float sy, float c, float pvy, float sz, float pvz, float qx, float qy, float qz, float qw, float tx, float ty, float tz)
 {
 	VkSRTDataNV res;
@@ -972,5 +990,24 @@ inline StdVideoEncodeH265WeightTableFlags makeStdVideoEncodeH265WeightTableFlags
 	res.chroma_weight_l0_flag	= chroma_weight_l0_flag;
 	res.luma_weight_l1_flag		= luma_weight_l1_flag;
 	res.chroma_weight_l1_flag	= chroma_weight_l1_flag;
+	return res;
+}
+
+inline StdVideoEncodeAV1ExtensionHeader makeStdVideoEncodeAV1ExtensionHeader (uint8_t temporal_id, uint8_t spatial_id)
+{
+	StdVideoEncodeAV1ExtensionHeader res;
+	res.temporal_id	= temporal_id;
+	res.spatial_id	= spatial_id;
+	return res;
+}
+
+inline StdVideoEncodeAV1DecoderModelInfo makeStdVideoEncodeAV1DecoderModelInfo (uint8_t buffer_delay_length_minus_1, uint8_t buffer_removal_time_length_minus_1, uint8_t frame_presentation_time_length_minus_1, uint8_t reserved1, uint32_t num_units_in_decoding_tick)
+{
+	StdVideoEncodeAV1DecoderModelInfo res;
+	res.buffer_delay_length_minus_1				= buffer_delay_length_minus_1;
+	res.buffer_removal_time_length_minus_1		= buffer_removal_time_length_minus_1;
+	res.frame_presentation_time_length_minus_1	= frame_presentation_time_length_minus_1;
+	res.reserved1								= reserved1;
+	res.num_units_in_decoding_tick				= num_units_in_decoding_tick;
 	return res;
 }

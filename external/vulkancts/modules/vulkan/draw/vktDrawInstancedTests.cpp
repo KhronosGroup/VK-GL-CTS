@@ -350,6 +350,7 @@ public:
             context.requireDeviceFunctionality("VK_EXT_vertex_attribute_divisor");
 
             const auto &vertexAttributeDivisorFeatures = context.getVertexAttributeDivisorFeatures();
+
             if (m_params.attribDivisor != 1 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor)
                 TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisor");
 
@@ -361,8 +362,7 @@ public:
         {
             context.requireDeviceFunctionality("VK_KHR_vertex_attribute_divisor");
 
-            const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR &vertexAttributeDivisorFeatures =
-                context.getVertexAttributeDivisorFeatures();
+            const auto &vertexAttributeDivisorFeatures = context.getVertexAttributeDivisorFeatures();
 
             if (m_params.attribDivisor != 1 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor)
                 TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisor");
@@ -753,15 +753,6 @@ tcu::TestStatus InstancedDrawInstance::iterate()
                 endCommandBuffer(m_vk, *m_cmdBuffer);
             }
 
-            /*
-
-            void InstancedDrawInstance::beginRender(vk::VkCommandBuffer cmdBuffer, const vk::VkClearValue& clearColor, vk::VkRenderingFlagsKHR renderingFlags)
-            {
-
-                if (m_params.groupParams->useDynamicRendering)
-                else
-            */
-
             submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
             m_context.resetCommandPoolForVKSC(device, *m_cmdPool);
 
@@ -976,7 +967,7 @@ void InstancedDrawInstance::cmdBindIndexBufferImpl(vk::VkCommandBuffer commandBu
 {
 #ifndef CTS_USES_VULKANSC
     if (m_params.useMaintenance5Ext)
-        m_vk.cmdBindIndexBuffer2KHR(commandBuffer, indexBuffer, offset, size, indexType);
+        m_vk.cmdBindIndexBuffer2(commandBuffer, indexBuffer, offset, size, indexType);
     else
 #endif
     {

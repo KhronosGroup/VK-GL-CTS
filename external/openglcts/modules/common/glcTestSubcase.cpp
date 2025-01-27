@@ -233,6 +233,11 @@ TestSubcase::IterateResult TestSubcase::iterate(void)
         if (subError == ERROR)
             log.writeMessage("Test Setup() failed");
     }
+    catch (const tcu::NotSupportedError &ex)
+    {
+        log.writeMessage(ex.what());
+        subError = NOT_SUPPORTED;
+    }
     catch (const runtime_error &ex)
     {
         log.writeMessage(ex.what());
@@ -252,6 +257,11 @@ TestSubcase::IterateResult TestSubcase::iterate(void)
             subError = subcase->Run();
             if (subError == ERROR)
                 log.writeMessage("Test Run() failed");
+        }
+        catch (const tcu::NotSupportedError &ex)
+        {
+            log.writeMessage(ex.what());
+            subError = NOT_SUPPORTED;
         }
         catch (const runtime_error &ex)
         {

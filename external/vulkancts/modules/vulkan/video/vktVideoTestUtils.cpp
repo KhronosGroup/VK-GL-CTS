@@ -23,6 +23,10 @@
 
 #include "vktVideoTestUtils.hpp"
 
+#ifdef DE_BUILD_VIDEO
+#include "vktVideoBaseDecodeUtils.hpp"
+#endif
+
 #include "vkDefs.hpp"
 #include "vkMemUtil.hpp"
 #include "vkRefUtil.hpp"
@@ -40,6 +44,14 @@
 #include "vktVideoDecodeTests.hpp"
 
 #include "vkMd5Sum.hpp"
+
+#ifdef DE_BUILD_VIDEO
+#include "video_generator.h"
+#endif
+
+#ifndef STREAM_DUMP_DEBUG
+#define STREAM_DUMP_DEBUG 0
+#endif
 
 using namespace vk;
 using namespace std;
@@ -88,7 +100,7 @@ void cmdPipelineImageMemoryBarrier2(const DeviceInterface &vk, const VkCommandBu
 
 static VkExtensionProperties makeExtensionProperties(const char *extensionName, uint32_t specVersion)
 {
-    const uint32_t extensionNameLen = static_cast<uint32_t>(deStrnlen(extensionName, VK_MAX_EXTENSION_NAME_SIZE));
+    const uint32_t extensionNameLen = static_cast<uint32_t>(strlen(extensionName));
     VkExtensionProperties result;
 
     deMemset(&result, 0, sizeof(result));
@@ -104,6 +116,8 @@ static const VkExtensionProperties EXTENSION_PROPERTIES_H264_DECODE = makeExtens
     VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_SPEC_VERSION);
 static const VkExtensionProperties EXTENSION_PROPERTIES_H264_ENCODE = makeExtensionProperties(
     VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_SPEC_VERSION);
+static const VkExtensionProperties EXTENSION_PROPERTIES_AV1_ENCODE = makeExtensionProperties(
+    VK_STD_VULKAN_VIDEO_CODEC_AV1_ENCODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_AV1_ENCODE_SPEC_VERSION);
 static const VkExtensionProperties EXTENSION_PROPERTIES_H265_DECODE = makeExtensionProperties(
     VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION);
 static const VkExtensionProperties EXTENSION_PROPERTIES_H265_ENCODE = makeExtensionProperties(
@@ -333,6 +347,151 @@ de::MovePtr<vector<uint8_t>> VideoBaseTestInstance::loadVideoData(const string &
 
     return result;
 }
+#ifdef DE_BUILD_VIDEO
+tcu::TestStatus VideoBaseTestInstance::validateEncodedContent(
+    VkVideoCodecOperationFlagBitsKHR videoCodecEncodeOperation, StdVideoAV1Profile profile, const char *encodedFileName,
+    const char *yuvFileName, int32_t numberOfFrames, int32_t inputWidth, int32_t inputHeight,
+    const VkExtent2D expectedOutputExtent, VkVideoChromaSubsamplingFlagsKHR chromaSubsampling,
+    VkVideoComponentBitDepthFlagsKHR lumaBitDepth, VkVideoComponentBitDepthFlagsKHR chromaBitDepth,
+    double psnrThresholdLowerLimit)
+{
+    double criticalPsnrThreshold                               = 10.0;
+    VkVideoCodecOperationFlagBitsKHR videoCodecDecodeOperation = VK_VIDEO_CODEC_OPERATION_NONE_KHR;
+    ElementaryStreamFraming framing                            = ElementaryStreamFraming::UNKNOWN;
+
+    switch (videoCodecEncodeOperation)
+    {
+    case VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR:
+        videoCodecDecodeOperation = VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR;
+        framing                   = ElementaryStreamFraming::H26X_BYTE_STREAM;
+        break;
+    case VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR:
+        videoCodecDecodeOperation = VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR;
+        framing                   = ElementaryStreamFraming::H26X_BYTE_STREAM;
+        break;
+    case VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR:
+        videoCodecDecodeOperation = VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR;
+        framing                   = ElementaryStreamFraming::IVF;
+        break;
+    default:
+        tcu::TestStatus::fail("Unable to validate the encoded content, the decode operation is not supported.");
+    };
+
+    VideoDevice::VideoDeviceFlags videoDeviceFlags = VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED;
+    const VkPhysicalDevice physicalDevice          = m_context.getPhysicalDevice();
+    const VkDevice videoDevice =
+        getDeviceSupportingQueue(VK_QUEUE_VIDEO_ENCODE_BIT_KHR | VK_QUEUE_VIDEO_DECODE_BIT_KHR | VK_QUEUE_TRANSFER_BIT,
+                                 videoCodecDecodeOperation | videoCodecEncodeOperation, videoDeviceFlags);
+    const DeviceInterface &videoDeviceDriver = getDeviceDriver();
+
+    const uint32_t encodeQueueFamilyIndex   = getQueueFamilyIndexEncode();
+    const uint32_t decodeQueueFamilyIndex   = getQueueFamilyIndexDecode();
+    const uint32_t transferQueueFamilyIndex = getQueueFamilyIndexTransfer();
+
+    const VkQueue encodeQueue   = getDeviceQueue(videoDeviceDriver, videoDevice, encodeQueueFamilyIndex, 0u);
+    const VkQueue decodeQueue   = getDeviceQueue(videoDeviceDriver, videoDevice, decodeQueueFamilyIndex, 0u);
+    const VkQueue transferQueue = getDeviceQueue(videoDeviceDriver, videoDevice, transferQueueFamilyIndex, 0u);
+
+    DeviceContext deviceContext(&m_context, &m_videoDevice, physicalDevice, videoDevice, decodeQueue, encodeQueue,
+                                transferQueue);
+    auto decodeProfile =
+        VkVideoCoreProfile(videoCodecDecodeOperation, chromaSubsampling, lumaBitDepth, chromaBitDepth, profile);
+    auto basicDecoder = createBasicDecoder(&deviceContext, &decodeProfile, numberOfFrames, false);
+
+    Demuxer::Params demuxParams = {};
+    demuxParams.data            = std::make_unique<BufferedReader>(static_cast<const char *>(encodedFileName));
+    demuxParams.codecOperation  = videoCodecDecodeOperation;
+
+    demuxParams.framing = framing;
+    auto demuxer        = Demuxer::create(std::move(demuxParams));
+
+    VkVideoParser parser;
+    // TODO: Check for decoder extension support before attempting validation!
+    createParser(demuxer->codecOperation(), basicDecoder, parser, demuxer->framing());
+
+    FrameProcessor processor(std::move(demuxer), basicDecoder);
+    std::vector<int> incorrectFrames;
+    std::vector<int> correctFrames;
+    for (int frameIdx = 0; frameIdx < numberOfFrames; frameIdx++)
+    {
+        DecodedFrame frame;
+        TCU_CHECK_AND_THROW(
+            InternalError, processor.getNextFrame(&frame) > 0,
+            "Expected more frames from the bitstream. Most likely an internal CTS bug, or maybe an invalid bitstream");
+
+        auto resultImage =
+            getDecodedImageFromContext(deviceContext,
+                                       basicDecoder->dpbAndOutputCoincide() ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR :
+                                                                              VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR,
+                                       &frame);
+
+        if (frame.displayWidth != expectedOutputExtent.width || frame.displayHeight != expectedOutputExtent.height)
+        {
+            return tcu::TestStatus::fail(
+                "Decoded frame resolution (" + std::to_string(frame.displayWidth) + "," +
+                std::to_string(frame.displayHeight) + ")" + " doesn't match expected resolution (" +
+                std::to_string(expectedOutputExtent.width) + "," + std::to_string(expectedOutputExtent.height) + ")");
+        }
+
+        double psnr;
+        if (lumaBitDepth == VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR)
+        {
+            de::MovePtr<std::vector<uint8_t>> out =
+                vkt::ycbcr::YCbCrConvUtil<uint8_t>::MultiPlanarNV12toI420(resultImage.get());
+            de::MovePtr<std::vector<uint8_t>> inputFrame =
+                vkt::ycbcr::YCbCrContent<uint8_t>::getFrame(yuvFileName, inputWidth, inputHeight, frameIdx);
+            psnr = util::PSNRImplicitCrop(*inputFrame, inputWidth, inputHeight, *out, expectedOutputExtent.width,
+                                          expectedOutputExtent.height);
+#if STREAM_DUMP_DEBUG
+            const string outputFileName = "out_" + std::to_string(frameIdx) + ".yuv";
+            vkt::ycbcr::YCbCrContent<uint8_t>::save(*out, outputFileName);
+            const string refFileName = "ref_" + std::to_string(frameIdx) + ".yuv";
+            vkt::ycbcr::YCbCrContent<uint8_t>::save(*inputFrame, refFileName);
+#endif
+        }
+        else
+        {
+            de::MovePtr<std::vector<uint16_t>> out =
+                vkt::ycbcr::YCbCrConvUtil<uint16_t>::MultiPlanarNV12toI420(resultImage.get());
+            de::MovePtr<std::vector<uint16_t>> inputFrame =
+                vkt::ycbcr::YCbCrContent<uint16_t>::getFrame(yuvFileName, inputWidth, inputHeight, frameIdx);
+            psnr = util::PSNRImplicitCrop(*inputFrame, inputWidth, inputHeight, *out, expectedOutputExtent.width,
+                                          expectedOutputExtent.height);
+#if STREAM_DUMP_DEBUG
+            const string outputFileName = "out_" + std::to_string(frameIdx) + ".yuv";
+            vkt::ycbcr::YCbCrContent<uint16_t>::save(*out, outputFileName);
+            const string refFileName = "ref_" + std::to_string(frameIdx) + ".yuv";
+            vkt::ycbcr::YCbCrContent<uint16_t>::save(*inputFrame, refFileName);
+#endif
+        }
+#if STREAM_DUMP_DEBUG
+        cout << "Current PSNR: " << psnr << endl;
+#endif
+
+        string failMessage;
+
+        if (psnr < psnrThresholdLowerLimit)
+        {
+            double difference = psnrThresholdLowerLimit - psnr;
+
+            if (psnr > criticalPsnrThreshold)
+            {
+                failMessage = "Frame " + std::to_string(frameIdx) + " with PSNR " + std::to_string(psnr) + " is " +
+                              std::to_string(difference) + " points below the lower threshold";
+                return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, failMessage);
+            }
+            else
+            {
+                failMessage = "Frame " + std::to_string(frameIdx) + " with PSNR " + std::to_string(psnr) + " is " +
+                              std::to_string(difference) + " points below the critical threshold";
+                return tcu::TestStatus::fail(failMessage);
+            }
+        }
+    }
+
+    return tcu::TestStatus::pass("Video encoding completed successfully");
+}
+#endif
 
 de::MovePtr<VkVideoDecodeCapabilitiesKHR> getVideoDecodeCapabilities(void *pNext)
 {
@@ -358,11 +517,11 @@ de::MovePtr<VkVideoDecodeH264CapabilitiesKHR> getVideoCapabilitiesExtensionH264D
         new VkVideoDecodeH264CapabilitiesKHR(videoCapabilitiesExtension));
 }
 
-de::MovePtr<VkVideoEncodeH264CapabilitiesKHR> getVideoCapabilitiesExtensionH264E(void)
+de::MovePtr<VkVideoEncodeH264CapabilitiesKHR> getVideoCapabilitiesExtensionH264E(void *pNext)
 {
     const VkVideoEncodeH264CapabilitiesKHR videoCapabilitiesExtension = {
         vk::VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_CAPABILITIES_KHR, //  VkStructureType sType;
-        nullptr,                                                  //  const void* pNext;
+        pNext,                                                    //  const void* pNext;
         0u,                                                       //  VkVideoEncodeH264CapabilityFlagsKHR flags;
         static_cast<StdVideoH264LevelIdc>(0u),                    //  StdVideoH264LevelIdc maxLevelIdc;
         0u,                                                       //  uint32_t maxSliceCount;
@@ -380,6 +539,18 @@ de::MovePtr<VkVideoEncodeH264CapabilitiesKHR> getVideoCapabilitiesExtensionH264E
 
     return de::MovePtr<VkVideoEncodeH264CapabilitiesKHR>(
         new VkVideoEncodeH264CapabilitiesKHR(videoCapabilitiesExtension));
+}
+
+de::MovePtr<VkVideoEncodeH264QuantizationMapCapabilitiesKHR> getVideoEncodeH264QuantizationMapCapabilities(void)
+{
+    const VkVideoEncodeH264QuantizationMapCapabilitiesKHR quantizationMapCapabilities = {
+        VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_QUANTIZATION_MAP_CAPABILITIES_KHR, // VkStructureType sType
+        nullptr,                                                               // void* pNext
+        0,                                                                     // int32_t minQpDelta
+        0                                                                      // int32_t maxQpDelta
+    };
+    return de::MovePtr<VkVideoEncodeH264QuantizationMapCapabilitiesKHR>(
+        new VkVideoEncodeH264QuantizationMapCapabilitiesKHR(quantizationMapCapabilities));
 }
 
 de::MovePtr<VkVideoEncodeCapabilitiesKHR> getVideoEncodeCapabilities(void *pNext)
@@ -411,11 +582,11 @@ de::MovePtr<VkVideoDecodeH265CapabilitiesKHR> getVideoCapabilitiesExtensionH265D
         new VkVideoDecodeH265CapabilitiesKHR(videoCapabilitiesExtension));
 }
 
-de::MovePtr<VkVideoEncodeH265CapabilitiesKHR> getVideoCapabilitiesExtensionH265E(void)
+de::MovePtr<VkVideoEncodeH265CapabilitiesKHR> getVideoCapabilitiesExtensionH265E(void *pNext)
 {
     const VkVideoEncodeH265CapabilitiesKHR videoCapabilitiesExtension = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_CAPABILITIES_KHR, //  VkStructureType sType;
-        nullptr,                                              //  const void* pNext;
+        pNext,                                                //  const void* pNext;
         0u,                                                   //  VkVideoEncodeH265CapabilityFlagsKHR flags;
         static_cast<StdVideoH265LevelIdc>(0),                 //  StdVideoH265LevelIdc maxLevelIdc;
         0u,                                                   //  uint32_t maxSliceSegmentCount;
@@ -436,6 +607,54 @@ de::MovePtr<VkVideoEncodeH265CapabilitiesKHR> getVideoCapabilitiesExtensionH265E
 
     return de::MovePtr<VkVideoEncodeH265CapabilitiesKHR>(
         new VkVideoEncodeH265CapabilitiesKHR(videoCapabilitiesExtension));
+}
+
+de::MovePtr<VkVideoEncodeH265QuantizationMapCapabilitiesKHR> getVideoEncodeH265QuantizationMapCapabilities(void)
+{
+    const VkVideoEncodeH265QuantizationMapCapabilitiesKHR quantizationMapCapabilities = {
+        VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_QUANTIZATION_MAP_CAPABILITIES_KHR, // VkStructureType sType
+        nullptr,                                                               // void* pNext
+        0,                                                                     // int32_t minQpDelta
+        0                                                                      // int32_t maxQpDelta
+    };
+    return de::MovePtr<VkVideoEncodeH265QuantizationMapCapabilitiesKHR>(
+        new VkVideoEncodeH265QuantizationMapCapabilitiesKHR(quantizationMapCapabilities));
+}
+
+de::MovePtr<VkVideoEncodeAV1CapabilitiesKHR> getVideoCapabilitiesExtensionAV1E(void)
+{
+    const VkVideoEncodeAV1CapabilitiesKHR videoCapabilitiesExtension = {
+        VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_CAPABILITIES_KHR, // VkStructureType sType
+        nullptr,                                             // void* pNext
+        0u,                                                  // VkVideoEncodeAV1CapabilityFlagsKHR flags
+        static_cast<StdVideoAV1Level>(0),                    // StdVideoAV1Level maxLevel
+        {0, 0},                                              // codedPictureAlignment
+        {0, 0},                                              // VkExtent2D maxTiles
+        {0, 0},                                              // VkExtent2D minTileSize
+        {0, 0},                                              // VkExtent2D maxTileSize
+        static_cast<VkVideoEncodeAV1SuperblockSizeFlagsKHR>(
+            0),                                     // VkVideoEncodeAV1SuperblockSizeFlagsKHR superblockSizes
+        0u,                                         // uint32_t maxSingleReferenceCount
+        0u,                                         // uint32_t singleReferenceNameMask
+        0u,                                         // uint32_t maxUnidirectionalCompoundReferenceCount
+        0u,                                         // uint32_t maxUnidirectionalCompoundGroup1ReferenceCount
+        0u,                                         // uint32_t unidirectionalCompoundReferenceNameMask
+        0u,                                         // uint32_t maxBidirectionalCompoundReferenceCount
+        0u,                                         // uint32_t maxBidirectionalCompoundGroup1ReferenceCount
+        0u,                                         // uint32_t maxBidirectionalCompoundGroup2ReferenceCount
+        0u,                                         // uint32_t bidirectionalCompoundReferenceNameMask
+        0u,                                         // uint32_t maxTemporalLayerCount
+        0u,                                         // uint32_t maxSpatialLayerCount
+        0u,                                         // uint32_t maxOperatingPoints
+        0u,                                         // uint32_t minQIndex
+        0u,                                         // uint32_t maxQIndex
+        VK_FALSE,                                   // VkBool32 prefersGopRemainingFrames
+        VK_FALSE,                                   // VkBool32 requiresGopRemainingFrames
+        static_cast<VkVideoEncodeAV1StdFlagsKHR>(0) // VkVideoEncodeAV1StdFlagsKHR stdSyntaxFlags
+    };
+
+    return de::MovePtr<VkVideoEncodeAV1CapabilitiesKHR>(
+        new VkVideoEncodeAV1CapabilitiesKHR(videoCapabilitiesExtension));
 }
 
 de::MovePtr<VkVideoCapabilitiesKHR> getVideoCapabilities(const InstanceInterface &vk, VkPhysicalDevice physicalDevice,
@@ -560,6 +779,8 @@ const VkExtensionProperties *getVideoExtensionProperties(const VkVideoCodecOpera
         return &EXTENSION_PROPERTIES_H264_ENCODE;
     case VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR:
         return &EXTENSION_PROPERTIES_H265_ENCODE;
+    case VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR:
+        return &EXTENSION_PROPERTIES_AV1_ENCODE;
     case VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR:
         return &EXTENSION_PROPERTIES_H264_DECODE;
     case VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR:
@@ -879,9 +1100,21 @@ VkVideoDecodeAV1ProfileInfoKHR getProfileOperationAV1Decode(StdVideoAV1Profile s
     return videoProfileOperation;
 }
 
+VkVideoEncodeAV1ProfileInfoKHR getProfileOperationAV1Encode(StdVideoAV1Profile stdProfile)
+{
+    const VkVideoEncodeAV1ProfileInfoKHR videoProfileOperation = {
+        VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_PROFILE_INFO_KHR,
+        nullptr,
+        stdProfile,
+    };
+
+    return videoProfileOperation;
+}
+
 VkImageCreateInfo makeImageCreateInfo(VkFormat format, const VkExtent2D &extent, const VkImageCreateFlags flags,
                                       const uint32_t *queueFamilyIndex, const VkImageUsageFlags usage, void *pNext,
-                                      const uint32_t arrayLayers, const VkImageLayout initialLayout)
+                                      const uint32_t arrayLayers, const VkImageLayout initialLayout,
+                                      const VkImageTiling tiling)
 {
 
     const VkExtent3D extent3D = makeExtent3D(extent.width, extent.height, 1u);
@@ -896,7 +1129,7 @@ VkImageCreateInfo makeImageCreateInfo(VkFormat format, const VkExtent2D &extent,
         1,                                   //  uint32_t mipLevels;
         arrayLayers,                         //  uint32_t arrayLayers;
         VK_SAMPLE_COUNT_1_BIT,               //  VkSampleCountFlagBits samples;
-        VK_IMAGE_TILING_OPTIMAL,             //  VkImageTiling tiling;
+        tiling,                              //  VkImageTiling tiling;
         usage,                               //  VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           //  VkSharingMode sharingMode;
         1u,                                  //  uint32_t queueFamilyIndexCount;
@@ -1524,12 +1757,12 @@ de::MovePtr<VkVideoEncodeH265SessionParametersCreateInfoKHR> getVideoEncodeH265S
 }
 
 de::MovePtr<VkVideoSessionParametersCreateInfoKHR> getVideoSessionParametersCreateInfoKHR(
-    const void *pNext, VkVideoSessionKHR videoSession)
+    const void *pNext, const VkVideoSessionParametersCreateFlagsKHR flags, VkVideoSessionKHR videoSession)
 {
     VkVideoSessionParametersCreateInfoKHR sessionParametersCreateInfo = {
         VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_CREATE_INFO_KHR, //  VkStructureType sType;
         pNext,                                                      //  const void* pNext;
-        static_cast<VkVideoSessionParametersCreateFlagsKHR>(0u),    //  VkVideoSessionParametersCreateFlagsKHR flags;
+        flags,                                                      //  VkVideoSessionParametersCreateFlagsKHR flags;
         VK_NULL_HANDLE, //  VkVideoSessionParametersKHR videoEncodeSessionParametersTemplate;
         videoSession,   //  VkVideoSessionKHR videoEncodeSession;
     };
@@ -1934,6 +2167,35 @@ de::MovePtr<VkVideoInlineQueryInfoKHR> getVideoInlineQueryInfo(VkQueryPool query
     return de::MovePtr<VkVideoInlineQueryInfoKHR>(new VkVideoInlineQueryInfoKHR(videoInlineQueryInfo));
 }
 
+de::MovePtr<VkVideoEncodeQuantizationMapSessionParametersCreateInfoKHR> getVideoEncodeH264QuantizationMapParameters(
+    VkExtent2D quantizationMapTexelSize)
+{
+
+    const VkVideoEncodeQuantizationMapSessionParametersCreateInfoKHR quantizationMapParameters = {
+        VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_SESSION_PARAMETERS_CREATE_INFO_KHR, // VkStructureType sType;
+        nullptr,                                                                            // void* pNext;
+        quantizationMapTexelSize, // VkExtent2D quantizationMapTexelSize;
+    };
+
+    return de::MovePtr<VkVideoEncodeQuantizationMapSessionParametersCreateInfoKHR>(
+        new VkVideoEncodeQuantizationMapSessionParametersCreateInfoKHR(quantizationMapParameters));
+}
+
+de::MovePtr<VkVideoEncodeQuantizationMapInfoKHR> getQuantizationMapInfo(VkImageView quantizationMap,
+                                                                        VkExtent2D quantizationMapExtent,
+                                                                        const void *pNext)
+{
+    const VkVideoEncodeQuantizationMapInfoKHR quantizationMapInfo = {
+        VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_INFO_KHR, //  VkStructureType sType;
+        pNext,                                                    //  const void* pNext;
+        quantizationMap,                                          //  VkImageView quantizationMap;
+        quantizationMapExtent,                                    //  VkExtent2D quantizationMapTexelSize;
+    };
+
+    return de::MovePtr<VkVideoEncodeQuantizationMapInfoKHR>(
+        new VkVideoEncodeQuantizationMapInfoKHR(quantizationMapInfo));
+}
+
 de::MovePtr<StdVideoH264PictureParameterSet> getStdVideoH264DecodePictureParameterSet(void)
 {
     const StdVideoH264PpsFlags stdVideoH264PpsFlags = {
@@ -1965,8 +2227,8 @@ de::MovePtr<StdVideoH264PictureParameterSet> getStdVideoH264DecodePictureParamet
         new StdVideoH264PictureParameterSet(stdVideoH264PictureParameterSet));
 }
 
-de::MovePtr<VkVideoEncodeInfoKHR> getVideoEncodeInfo(const void *pNext, const VkBuffer &dstBuffer,
-                                                     const VkDeviceSize &dstBufferOffset,
+de::MovePtr<VkVideoEncodeInfoKHR> getVideoEncodeInfo(const void *pNext, const VkVideoEncodeFlagsKHR encodeFlags,
+                                                     const VkBuffer &dstBuffer, const VkDeviceSize &dstBufferOffset,
                                                      const VkVideoPictureResourceInfoKHR &srcPictureResource,
                                                      const VkVideoReferenceSlotInfoKHR *pSetupReferenceSlot,
                                                      const uint32_t &referenceSlotCount,
@@ -1975,7 +2237,7 @@ de::MovePtr<VkVideoEncodeInfoKHR> getVideoEncodeInfo(const void *pNext, const Vk
     const VkVideoEncodeInfoKHR videoEncodeFrameInfo = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_INFO_KHR, //  VkStructureType sType;
         pNext,                                   //  const void* pNext;
-        static_cast<VkVideoEncodeFlagsKHR>(0),   //  VkVideoEncodeFlagsKHR flags;
+        encodeFlags,                             //  VkVideoEncodeFlagsKHR flags;
         dstBuffer,                               //  VkBuffer dstBuffer;
         dstBufferOffset,                         //  VkDeviceSize dstBufferOffset;
         0u,                                      //  VkDeviceSize dstBufferRange;
@@ -2023,6 +2285,46 @@ bool imageMatchesReferenceChecksum(const ycbcr::MultiPlaneImageData &multiPlaneI
 
 namespace util
 {
+#ifdef DE_BUILD_VIDEO
+void generateYCbCrFile(std::string fileName, uint32_t n_frames, uint32_t width, uint32_t height, uint32_t format,
+                       uint8_t bitdepth)
+{
+    video_generator gen;
+    video_generator_settings cfg;
+    uint32_t max_frames;
+    std::ofstream outFile(fileName, std::ios::binary | std::ios::out);
+
+    if (!outFile.is_open())
+    {
+        TCU_THROW(NotSupportedError, "Unable to create the file to generate the YUV content");
+    }
+
+    max_frames = n_frames;
+    memset(&cfg, 0, sizeof(cfg));
+    cfg.width    = width;
+    cfg.height   = height;
+    cfg.format   = format;
+    cfg.bitdepth = bitdepth;
+
+    if (video_generator_init(&cfg, &gen))
+    {
+        TCU_THROW(NotSupportedError, "Unable to create the video generator");
+    }
+
+    while (gen.frame < max_frames)
+    {
+        video_generator_update(&gen);
+        // write video planes to a file
+        outFile.write((char *)gen.y, gen.ybytes);
+        outFile.write((char *)gen.u, gen.ubytes);
+        outFile.write((char *)gen.v, gen.vbytes);
+    }
+
+    outFile.close();
+    video_generator_clear(&gen);
+}
+#endif
+
 const char *getVideoCodecString(VkVideoCodecOperationFlagBitsKHR codec)
 {
     static struct
@@ -2222,6 +2524,8 @@ const char *codecToName(VkVideoCodecOperationFlagBitsKHR codec)
         return "encode h.264";
     case VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR:
         return "encode h.265";
+    case VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR:
+        return "encode av1";
     default:
         tcu::die("Unknown video codec");
     }
@@ -2497,6 +2801,50 @@ double PSNR(const std::vector<uint8_t> &img1, const std::vector<uint8_t> &img2)
     return 10 * std::log10((255.0 * 255.0) / mse);
 }
 
+double calculatePSNRdifference(const std::vector<uint8_t> &inVector, const std::vector<uint8_t> &out,
+                               const VkExtent2D &codedExtent, const VkExtent2D &quantizationMapExtent,
+                               const VkExtent2D &quantizationMapTexelSize)
+{
+    uint32_t halfWidthInPixels = (quantizationMapExtent.width / 2) * quantizationMapTexelSize.width;
+    halfWidthInPixels          = std::min(halfWidthInPixels, codedExtent.width);
+
+    std::vector<uint8_t> inLeftHalfRef =
+        util::cropImage(inVector, codedExtent.width, codedExtent.height, 0, 0, halfWidthInPixels, codedExtent.height);
+    std::vector<uint8_t> inRightHalfRef =
+        util::cropImage(inVector, codedExtent.width, codedExtent.height, halfWidthInPixels, 0,
+                        codedExtent.width - halfWidthInPixels, codedExtent.height);
+    std::vector<uint8_t> outLeftHalf =
+        util::cropImage(out, codedExtent.width, codedExtent.height, 0, 0, halfWidthInPixels, codedExtent.height);
+    std::vector<uint8_t> outRightHalf = util::cropImage(out, codedExtent.width, codedExtent.height, halfWidthInPixels,
+                                                        0, codedExtent.width - halfWidthInPixels, codedExtent.height);
+
+    double leftPSNR  = PSNR(inLeftHalfRef, outLeftHalf);
+    double rightPSNR = PSNR(inRightHalfRef, outRightHalf);
+
+    return rightPSNR - leftPSNR;
+}
+
+std::vector<uint8_t> cropImage(const std::vector<uint8_t> &imageData, int imageWidth, int imageHeight, int roiX,
+                               int roiY, int roiWidth, int roiHeight)
+{
+    DE_ASSERT(roiX >= 0 && roiY >= 0 && roiWidth > 0 && roiHeight > 0);
+    DE_ASSERT(roiX + roiWidth <= imageWidth && roiY + roiHeight <= imageHeight);
+    DE_UNREF(imageHeight);
+
+    std::vector<uint8_t> croppedImage;
+    croppedImage.reserve(roiWidth * roiHeight);
+
+    for (int y = roiY; y < roiY + roiHeight; ++y)
+    {
+        for (int x = roiX; x < roiX + roiWidth; ++x)
+        {
+            croppedImage.push_back((imageData)[y * imageWidth + x]);
+        }
+    }
+
+    return croppedImage;
+}
+
 } // namespace util
 
 de::MovePtr<StdVideoDecodeH264PictureInfo> getStdVideoDecodeH264PictureInfo(void)
@@ -2575,9 +2923,9 @@ de::MovePtr<VkVideoEncodeH264RateControlLayerInfoKHR> getVideoEncodeH264RateCont
         new VkVideoEncodeH264RateControlLayerInfoKHR(videoEncodeH264RateControlLayerInfo));
 }
 
-de::MovePtr<VkVideoEncodeH265RateControlLayerInfoKHR> getVideoEncodeH265RateControlLayerInfo(VkBool32 useQp,
-                                                                                             int32_t qpI, int32_t qpP,
-                                                                                             int32_t qpB)
+de::MovePtr<VkVideoEncodeH265RateControlLayerInfoKHR> getVideoEncodeH265RateControlLayerInfo(
+    VkBool32 useMinQp, int32_t minQpI, int32_t minQpP, int32_t minQpB, VkBool32 useMaxQp, int32_t maxQpI,
+    int32_t maxQpP, int32_t maxQpB)
 {
     const VkVideoEncodeH265FrameSizeKHR videoEncodeH265FrameSize = {
         0, //  uint32_t frameISize;
@@ -2585,19 +2933,25 @@ de::MovePtr<VkVideoEncodeH265RateControlLayerInfoKHR> getVideoEncodeH265RateCont
         0, //  uint32_t frameBSize;
     };
 
-    const VkVideoEncodeH265QpKHR videoEncodeH265Qp = {
-        qpI, //  int32_t qpI;
-        qpP, //  int32_t qpP;
-        qpB, //  int32_t qpB;
+    const VkVideoEncodeH265QpKHR videoEncodeH265MinQp = {
+        minQpI, //  int32_t qpI;
+        minQpP, //  int32_t qpP;
+        minQpB, //  int32_t qpB;
+    };
+
+    const VkVideoEncodeH265QpKHR videoEncodeH265MaxQp = {
+        maxQpI, //  int32_t qpI;
+        maxQpP, //  int32_t qpP;
+        maxQpB, //  int32_t qpB;
     };
 
     const VkVideoEncodeH265RateControlLayerInfoKHR videoEncodeH265RateControlLayerInfo = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_LAYER_INFO_KHR, //  VkStructureType sType;
-        nullptr,                                                         //  const void* pNext;
-        useQp,                                                           //  VkBool32 useMinQp;
-        videoEncodeH265Qp,                                               //  VkVideoEncodeH265QpKHR minQp;
-        useQp,                                                           //  VkBool32 useMaxQp;
-        videoEncodeH265Qp,                                               //  VkVideoEncodeH265QpKHR maxQp;
+        DE_NULL,                                                         //  const void* pNext;
+        useMinQp,                                                        //  VkBool32 useMinQp;
+        videoEncodeH265MinQp,                                            //  VkVideoEncodeH265QpKHR minQp;
+        useMaxQp,                                                        //  VkBool32 useMaxQp;
+        videoEncodeH265MaxQp,                                            //  VkVideoEncodeH265QpKHR maxQp;
         true,                                                            //  VkBool32 useMaxFrameSize;
         videoEncodeH265FrameSize,                                        //  VkVideoEncodeH265FrameSizeKHR maxFrameSize;
     };

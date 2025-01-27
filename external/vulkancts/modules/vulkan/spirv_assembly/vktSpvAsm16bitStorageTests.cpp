@@ -7622,7 +7622,7 @@ void addCompute16bitStorageUniform64To16Group(tcu::TestCaseGroup *group)
                     else
                         specs["stride"] += cTypes[tyIdx].stride64SSBO;
 
-                    if (deStringEqual(cTypes[tyIdx].name, "matrix"))
+                    if (strcmp(cTypes[tyIdx].name, "matrix") == 0)
                     {
                         if (strcmp(rndModes[rndModeIdx].name, "rtz") == 0)
                             specs["rounding"] += "\nOpDecorate %val16_1  FPRoundingMode RTZ\n";
@@ -8373,7 +8373,7 @@ void addCompute16bitStorageUniform16To64Group(tcu::TestCaseGroup *group)
                 // reset input data (for matrix type we need to use float16MatrixData)
                 inputData = &float16Data;
 
-                if (deStringEqual(cTypes[tyIdx].name, "matrix"))
+                if (strcmp(cTypes[tyIdx].name, "matrix") == 0)
                 {
                     specs["index0"]        = "%zero";
                     specs["matrix_prefix"] = "m4";

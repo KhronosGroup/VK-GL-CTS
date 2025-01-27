@@ -24,6 +24,7 @@
 
 #include "gl3cTestPackages.hpp"
 #include "gl3cCommonBugsTests.hpp"
+#include "gl3cDrawBuffers.hpp"
 #include "gl3cGetUniform.hpp"
 #include "gl3cGLSLnoperspectiveTests.hpp"
 #include "gl3cGPUShader5Tests.hpp"
@@ -38,6 +39,7 @@
 #include "glcClipDistance.hpp"
 #include "glcCullDistance.hpp"
 #include "glcBufferObjectsTests.hpp"
+#include "glcFragCoordConventionsTests.hpp"
 #include "glcFragDepthTests.hpp"
 #include "glcFramebufferBlitTests.hpp"
 #include "glcGLSLVectorConstructorTests.hpp"
@@ -56,6 +58,7 @@
 #include "glcTextureLodBasicTests.hpp"
 #include "glcTextureLodBiasTests.hpp"
 #include "glcTextureRepeatModeTests.hpp"
+#include "glcTextureStorageTests.hpp"
 #include "glcTransformFeedbackTests.hpp"
 #include "glcUniformBlockTests.hpp"
 #include "glcUniformBlockNegativeTests.hpp"
@@ -193,6 +196,9 @@ void GL30TestPackage::init(void)
         addChild(new glcts::TransformFeedbackTests(getContext()));
         addChild(new glcts::ApiCoverageTests(getContext()));
         addChild(new gl3cts::GetUniformTests(getContext()));
+        addChild(new glcts::FragCoordConventionsTests(getContext()));
+        addChild(new glcts::TextureStorageTests(getContext()));
+        addChild(new gl3cts::DrawBuffersTests(getContext()));
     }
     catch (...)
     {

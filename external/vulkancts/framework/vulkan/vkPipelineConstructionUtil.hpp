@@ -104,6 +104,7 @@ typedef PointerWrapper<VkPipelineRepresentativeFragmentTestStateCreateInfoNV>
     PipelineRepresentativeFragmentTestCreateInfoWrapper;
 typedef PointerWrapper<VkPipelineBinaryInfoKHR> PipelineBinaryInfoWrapper;
 typedef VkPipelineCreateFlags2KHR PipelineCreateFlags2;
+typedef VkShaderCreateFlagsEXT ShaderCreateFlags;
 typedef PointerWrapper<VkPipelineRobustnessCreateInfoEXT> PipelineRobustnessCreateInfoWrapper;
 #else
 typedef PointerWrapper<void> PipelineViewportDepthClipControlCreateInfoWrapper;
@@ -115,6 +116,7 @@ typedef ConstPointerWrapper<void> PipelineShaderStageModuleIdentifierCreateInfoW
 typedef PointerWrapper<void> PipelineRepresentativeFragmentTestCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineBinaryInfoWrapper;
 typedef uint64_t PipelineCreateFlags2;
+typedef uint32_t ShaderCreateFlags;
 typedef PointerWrapper<void> PipelineRobustnessCreateInfoWrapper;
 #endif
 
@@ -217,20 +219,26 @@ public:
     RenderPassWrapper(RenderPassWrapper &&rhs) noexcept;
     RenderPassWrapper &operator=(RenderPassWrapper &&rhs) noexcept;
 
+    // Clones the existing render pass by internally storing the same VkRenderPass handle. The new render pass wrapper
+    // will not manage the lifetime of the VkRenderPass object, but it will allow you to create new framebuffers
+    // sharing the same render pass.
+    RenderPassWrapper clone() const;
+
     ~RenderPassWrapper() = default;
 
     const VkRenderPass operator*(void) const
     {
-        return *m_renderPass;
+        return m_renderPass;
     }
     const VkRenderPass get(void) const
     {
-        return *m_renderPass;
+        return m_renderPass;
     }
     const VkFramebuffer getFramebuffer(void) const
     {
         return m_framebuffer ? *m_framebuffer : VK_NULL_HANDLE;
     }
+    void resetLayouts(void);
 
     void begin(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkRect2D &renderArea,
                const uint32_t clearValueCount, const VkClearValue *clearValues,
@@ -265,8 +273,9 @@ public:
 private:
     void beginRendering(const DeviceInterface &vk, const VkCommandBuffer commandBuffer) const;
 
-    bool m_isDynamicRendering;
-    vk::Move<vk::VkRenderPass> m_renderPass;
+    bool m_isDynamicRendering = false;
+    vk::Move<vk::VkRenderPass> m_renderPassPtr;
+    vk::VkRenderPass m_renderPass = VK_NULL_HANDLE;
     vk::Move<vk::VkFramebuffer> m_framebuffer;
 
 #ifndef CTS_USES_VULKANSC
@@ -444,6 +453,10 @@ public:
     // Specifying how a pipeline is created using VkPipelineCreateFlags2CreateInfoKHR.
     GraphicsPipelineWrapper &setPipelineCreateFlags2(PipelineCreateFlags2 pipelineFlags2);
 
+    // Specify how shaders should be created with explicit flags. Note we could try to unify this with
+    // setPipelineCreateFlags2 but the equivalence is not direct and some flags do not map.
+    GraphicsPipelineWrapper &setShaderCreateFlags(ShaderCreateFlags shaderFlags);
+
     // Specify topology that is used by default InputAssemblyState in vertex input state. This needs to be
     // specified only when there is no custom InputAssemblyState provided in setupVertexInputState and when
     // topology is diferent then VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST which is used by default.
@@ -572,6 +585,19 @@ public:
         PipelineRenderingCreateInfoWrapper rendering                  = PipelineRenderingCreateInfoWrapper(),
         const VkPipelineCache partPipelineCache                       = VK_NULL_HANDLE,
         VkPipelineCreationFeedbackCreateInfoEXT *partCreationFeedback = nullptr);
+
+    GraphicsPipelineWrapper &setupPreRasterizationMeshShaderState2(
+        const std::vector<VkViewport> &viewports, const std::vector<VkRect2D> &scissors,
+        const PipelineLayoutWrapper &layout, const VkRenderPass renderPass, const uint32_t subpass,
+        const ShaderWrapper taskShader, PipelineShaderStageModuleIdentifierCreateInfoWrapper taskShaderModuleId,
+        const ShaderWrapper meshShader, PipelineShaderStageModuleIdentifierCreateInfoWrapper meshShaderModuleId,
+        const VkPipelineRasterizationStateCreateInfo *rasterizationState          = nullptr,
+        const VkSpecializationInfo *taskSpecializationInfo                        = nullptr,
+        const VkSpecializationInfo *meshSpecializationInfo                        = nullptr,
+        VkPipelineFragmentShadingRateStateCreateInfoKHR *fragmentShadingRateState = nullptr,
+        PipelineRenderingCreateInfoWrapper rendering                  = PipelineRenderingCreateInfoWrapper(),
+        const VkPipelineCache partPipelineCache                       = VK_NULL_HANDLE,
+        VkPipelineCreationFeedbackCreateInfoEXT *partCreationFeedback = nullptr);
 #endif // CTS_USES_VULKANSC
 
     // Setup fragment shader state.
@@ -647,6 +673,11 @@ public:
     // Get partial pipeline create info.
     const VkGraphicsPipelineCreateInfo &getPartialPipelineCreateInfo(uint32_t part) const;
 
+#ifndef CTS_USES_VULKANSC
+    // Get particular shader. GraphicsPipelineWrapper preserves ovnership and will destroy shaders in its destructor.
+    vk::VkShaderEXT getShader(VkShaderStageFlagBits stage) const;
+#endif
+
     // Destroy compleate pipeline - pipeline parts are not destroyed.
     void destroyPipeline(void);
 
@@ -672,6 +703,8 @@ protected:
     // Store internal data that is needed only for pipeline construction.
     de::SharedPtr<InternalData> m_internalData;
 };
+
+std::vector<VkDynamicState> getShaderObjectDynamicStatesFromExtensions(const std::vector<std::string> &extensions);
 
 } // namespace vk
 

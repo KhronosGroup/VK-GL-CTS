@@ -4992,9 +4992,8 @@ TestStatus ASUpdateInstance::iterate(void)
             for (auto &blas : bottomLevelAccelerationStructures)
             {
                 const std::vector<tcu::Vec3> vertices = {
-                    tcu::Vec3(0.0f, 0.0f, -0.5f),
-                    tcu::Vec3(0.5f, 0.0f, -0.5f),
-                    tcu::Vec3(0.0f, 0.5f, -0.5f),
+                    tcu::Vec3(0.0f, 0.0f, -0.5f), tcu::Vec3(0.5f, 0.0f, -0.5f), tcu::Vec3(0.0f, 0.5f, -0.5f),
+                    tcu::Vec3(0.0f, 0.0f, -0.5f), tcu::Vec3(0.5f, 0.0f, -0.5f), tcu::Vec3(0.0f, 0.5f, -0.5f),
                 };
                 const std::vector<uint32_t> indices = {0, 1, 2};
                 de::SharedPtr<RaytracedGeometryBase> geometry;

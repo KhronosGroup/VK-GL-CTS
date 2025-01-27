@@ -76,23 +76,6 @@ uint32_t deMemoryHash(const void *ptr, size_t numBytes)
     return hash;
 }
 
-bool deMemoryEqual(const void *ptr, const void *cmp, size_t numBytes)
-{
-    return memcmp(ptr, cmp, numBytes) == 0;
-}
-
-/*--------------------------------------------------------------------*//*!
- * \brief Compare two strings for equality.
- * \param a        First string.
- * \param b        Second string.
- * \return True if strings equal, false otherwise.
- *//*--------------------------------------------------------------------*/
-bool deStringEqual(const char *a, const char *b)
-{
-    DE_ASSERT(a && b);
-    return (strcmp(a, b) == 0);
-}
-
 bool deStringBeginsWith(const char *str, const char *lead)
 {
     const char *a = str;
@@ -105,86 +88,6 @@ bool deStringBeginsWith(const char *str, const char *lead)
     }
 
     return true;
-}
-
-int deVsprintf(char *string, size_t size, const char *format, va_list list)
-{
-    int res;
-
-    DE_ASSERT(string && format);
-
-#if (DE_COMPILER == DE_COMPILER_MSC)
-#if (DE_OS == DE_OS_WINCE)
-    res = _vsnprintf(string, size, format, list);
-#else
-    res = vsnprintf_s(string, size, _TRUNCATE, format, list);
-#endif
-#else
-    res = vsnprintf(string, size, format, list);
-#endif
-
-    return res;
-}
-
-/*--------------------------------------------------------------------*//*!
- * \brief    Safe string print
- * \note    This has the new safe signature, i.e., string length is a
- *            required parameter.
- *//*--------------------------------------------------------------------*/
-int deSprintf(char *string, size_t size, const char *format, ...)
-{
-    va_list list;
-    int res;
-
-    DE_ASSERT(string && format);
-
-    va_start(list, format);
-
-    res = deVsprintf(string, size, format, list);
-
-    va_end(list);
-
-    return res;
-}
-
-/*--------------------------------------------------------------------*//*!
- * \note    This has the new safe signature, i.e., string length is a
- *            required parameter.
- *//*--------------------------------------------------------------------*/
-char *deStrcpy(char *dst, size_t size, const char *src)
-{
-#if (DE_COMPILER == DE_COMPILER_MSC) && (DE_OS != DE_OS_WINCE)
-    (void)strcpy_s(dst, size, src);
-    return dst;
-#else
-    return strncpy(dst, src, size);
-#endif
-}
-
-/*--------------------------------------------------------------------*//*!
- * \note    This has the new safe signature, i.e., string length is a
- *            required parameter.
- *//*--------------------------------------------------------------------*/
-char *deStrcat(char *s1, size_t size, const char *s2)
-{
-#if (DE_COMPILER == DE_COMPILER_MSC) && (DE_OS != DE_OS_WINCE)
-    (void)strcat_s(s1, size, s2);
-    return s1;
-#else
-    return strncat(s1, s2, size);
-#endif
-}
-
-size_t deStrnlen(const char *string, size_t maxSize)
-{
-#if ((DE_COMPILER == DE_COMPILER_MSC) && (DE_OS != DE_OS_WINCE))
-    return strnlen_s(string, maxSize);
-#else
-    size_t len = 0;
-    while (len < maxSize && string[len] != 0)
-        ++len;
-    return len;
-#endif
 }
 
 DE_END_EXTERN_C

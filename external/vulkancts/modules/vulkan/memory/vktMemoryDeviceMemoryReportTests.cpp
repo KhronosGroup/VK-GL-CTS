@@ -1573,7 +1573,7 @@ static void checkSupport(Context &context)
 
     for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
     {
-        if (deStringEqual("VK_EXT_device_memory_report", extensions[extNdx].extensionName))
+        if (strcmp("VK_EXT_device_memory_report", extensions[extNdx].extensionName) == 0)
         {
             VkPhysicalDeviceDeviceMemoryReportFeaturesEXT deviceMemoryReportFeatures = {
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_MEMORY_REPORT_FEATURES_EXT, nullptr, VK_FALSE};

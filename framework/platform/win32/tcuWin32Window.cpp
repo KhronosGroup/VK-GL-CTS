@@ -98,10 +98,11 @@ void Window::setVisible(bool visible)
     processEvents();
 }
 
-void Window::setForeground(void)
+bool Window::setForeground(void)
 {
-    SetForegroundWindow(m_window);
+    const bool result = SetForegroundWindow(m_window);
     processEvents();
+    return result;
 }
 
 void Window::setSize(int width, int height)

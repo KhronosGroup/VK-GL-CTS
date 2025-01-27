@@ -72,12 +72,17 @@ public:
                 &queuePriority                              // pQueuePriorities
             };
 
-            const char *ext = "VK_EXT_depth_clamp_zero_one";
+            // Unless some version of depth_clamp_zero_one is available then the test is not supported and
+            // this code is never run. Unfortunately we have to pass a supported extenion name to device
+            // creation, so we need to work out which one. Use the KHR if both are supported.
+            std::vector<std::string> devExts = ctx.getDeviceExtensions();
+            bool khrSupported = de::contains(devExts.begin(), devExts.end(), "VK_KHR_depth_clamp_zero_one");
+            const char *ext   = khrSupported ? "VK_KHR_depth_clamp_zero_one" : "VK_EXT_depth_clamp_zero_one";
 
             VkPhysicalDeviceFeatures2 features2 = initVulkanStructure();
 
-            VkPhysicalDeviceDepthClampZeroOneFeaturesEXT clampParams = {
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_EXT, // sType
+            VkPhysicalDeviceDepthClampZeroOneFeaturesKHR clampParams = {
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_KHR, // sType
                 nullptr,                                                             // pNext
                 VK_TRUE,                                                             // depthClampZeroOne
             };
@@ -145,22 +150,26 @@ static void createTests(tcu::TestCaseGroup *g)
 {
     static const std::vector<TestInfo> tests = {
         {"fs_clamp",
-         {"VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics", "Features.depthClamp"},
+         {"DepthClampZeroOneFeatures.depthClampZeroOne", "Features.fragmentStoresAndAtomics", "Features.depthClamp"},
          false},
-        {"out_of_range", {"VK_EXT_depth_clamp_zero_one"}, false},
+        {"out_of_range", {"DepthClampZeroOneFeatures.depthClampZeroOne"}, false},
         {"ez_fs_clamp",
-         {"VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics", "Features.depthClamp"},
+         {"DepthClampZeroOneFeatures.depthClampZeroOne", "Features.fragmentStoresAndAtomics", "Features.depthClamp"},
          false},
         {"bias_fs_clamp",
-         {"VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics", "Features.depthClamp"},
+         {"DepthClampZeroOneFeatures.depthClampZeroOne", "Features.fragmentStoresAndAtomics", "Features.depthClamp"},
          false},
-        {"bias_outside_range", {"VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics"}, false},
-        {"bias_outside_range_fs_clamp", {"VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics"}, false},
+        {"bias_outside_range",
+         {"DepthClampZeroOneFeatures.depthClampZeroOne", "Features.fragmentStoresAndAtomics"},
+         false},
+        {"bias_outside_range_fs_clamp",
+         {"DepthClampZeroOneFeatures.depthClampZeroOne", "Features.fragmentStoresAndAtomics"},
+         false},
 
         // Rerun any tests that will get different results with VK_EXT_depth_range_unrestricted
-        {"out_of_range_unrestricted", {"VK_EXT_depth_clamp_zero_one"}, true},
+        {"out_of_range_unrestricted", {"DepthClampZeroOneFeatures.depthClampZeroOne"}, true},
         {"bias_outside_range_fs_clamp_unrestricted",
-         {"VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics"},
+         {"DepthClampZeroOneFeatures.depthClampZeroOne", "Features.fragmentStoresAndAtomics"},
          true},
     };
 

@@ -49,7 +49,7 @@ typedef struct qpXmlAttribute_s
     bool boolValue;
 } qpXmlAttribute;
 
-DE_INLINE qpXmlAttribute qpSetStringAttrib(const char *name, const char *value)
+static inline qpXmlAttribute qpSetStringAttrib(const char *name, const char *value)
 {
     qpXmlAttribute attrib;
     attrib.name        = name;
@@ -60,7 +60,7 @@ DE_INLINE qpXmlAttribute qpSetStringAttrib(const char *name, const char *value)
     return attrib;
 }
 
-DE_INLINE qpXmlAttribute qpSetIntAttrib(const char *name, int value)
+static inline qpXmlAttribute qpSetIntAttrib(const char *name, int value)
 {
     qpXmlAttribute attrib;
     attrib.name        = name;
@@ -71,7 +71,7 @@ DE_INLINE qpXmlAttribute qpSetIntAttrib(const char *name, int value)
     return attrib;
 }
 
-DE_INLINE qpXmlAttribute qpSetBoolAttrib(const char *name, bool value)
+static inline qpXmlAttribute qpSetBoolAttrib(const char *name, bool value)
 {
     qpXmlAttribute attrib;
     attrib.name        = name;

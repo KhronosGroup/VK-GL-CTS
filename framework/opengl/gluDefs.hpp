@@ -58,7 +58,7 @@
 namespace glu
 {
 
-DE_INLINE void *BufferOffsetAsPointer(uintptr_t byteOffset)
+inline void *BufferOffsetAsPointer(uintptr_t byteOffset)
 {
     return reinterpret_cast<void *>(byteOffset);
 }

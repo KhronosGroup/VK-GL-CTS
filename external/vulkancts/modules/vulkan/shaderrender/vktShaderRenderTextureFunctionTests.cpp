@@ -2278,6 +2278,16 @@ void ShaderTextureFunctionCase::initShaderSources(void)
 
     m_vertShaderSource = vert.str();
     m_fragShaderSource = frag.str();
+
+    if (m_lookupSpec.pcOffset)
+    {
+        vk::ShaderBuildOptions buildOptions;
+        buildOptions.flags |= vk::ShaderBuildOptions::FLAG_ALLOW_NON_CONST_OFFSETS;
+
+        de::MovePtr<vk::ShaderBuildOptions> &targetOptions =
+            (isVtxCase ? m_vertShaderBuildOptions : m_fragShaderBuildOptions);
+        targetOptions = de::MovePtr<vk::ShaderBuildOptions>(new vk::ShaderBuildOptions(buildOptions));
+    }
 }
 
 enum QueryFunction
@@ -2296,15 +2306,16 @@ using TestMode = uint32_t;
 
 enum QueryLodTestModes
 {
-    QLODTM_DEFAULT = 0,  // uv coords have different values
-    QLODTM_ZERO_UV_WIDTH // all uv coords are 0; there were implementations that incorrectly returned 0 in that case instead of -maxSamplerLodBias or less
+    QLODTM_DEFAULT = 0,   // uv coords have different values
+    QLODTM_ZERO_UV_WIDTH, // all uv coords are 0; there were implementations that incorrectly returned 0 in that case instead of -maxSamplerLodBias or less
+    QLODTM_WITH_NON_ZERO_BASE_LEVEL, // test texture LoD query in combination with base leve that is != 0
 };
 
 class TextureQueryInstance : public ShaderRenderCaseInstance
 {
 public:
     TextureQueryInstance(Context &context, const bool isVertexCase, const TextureSpec &textureSpec);
-    virtual ~TextureQueryInstance(void);
+    virtual ~TextureQueryInstance(void) = default;
 
 protected:
     virtual void setupDefaultInputs(void);
@@ -2323,10 +2334,6 @@ TextureQueryInstance::TextureQueryInstance(Context &context, const bool isVertex
     m_colorFormat = vk::VK_FORMAT_R32G32B32A32_SFLOAT;
 
     checkDeviceFeatures(m_context, m_textureSpec.type);
-}
-
-TextureQueryInstance::~TextureQueryInstance(void)
-{
 }
 
 void TextureQueryInstance::setupDefaultInputs(void)
@@ -3445,7 +3452,7 @@ class TextureQueryLodInstance : public TextureQueryInstance
 public:
     TextureQueryLodInstance(Context &context, const bool isVertexCase, const TextureSpec &textureSpec,
                             const TestMode mode);
-    virtual ~TextureQueryLodInstance(void);
+    virtual ~TextureQueryLodInstance(void) = default;
 
     virtual tcu::TestStatus iterate(void);
 
@@ -3453,7 +3460,7 @@ protected:
     virtual void setupDefaultInputs(void);
 
 private:
-    void initTexture(void);
+    void initTexture(int baseMipLevel);
     float computeLevelFromLod(float computedLod) const;
     vector<float> computeQuadTexCoord(void) const;
 
@@ -3473,10 +3480,13 @@ TextureQueryLodInstance::TextureQueryLodInstance(Context &context, const bool is
     , m_lodBounds()
     , m_levelBounds()
 {
-    // setup texture
-    initTexture();
+    int lodBase    = (m_mode == QLODTM_WITH_NON_ZERO_BASE_LEVEL) ? 2 : 0;
+    float lodBaseF = float(lodBase);
 
-    if (m_mode == QLODTM_DEFAULT)
+    // setup texture
+    initTexture(lodBase);
+
+    if (m_mode != QLODTM_ZERO_UV_WIDTH)
     {
         const tcu::UVec2 &viewportSize = getViewportSize();
         const float lodEps = (1.0f / float(1u << m_context.getDeviceProperties().limits.mipmapPrecisionBits)) + 0.008f;
@@ -3492,8 +3502,8 @@ TextureQueryLodInstance::TextureQueryLodInstance(Context &context, const bool is
 
             const float dudx = (m_maxCoord[0] - m_minCoord[0]) * (float)m_textureSpec.width / (float)viewportSize[0];
 
-            m_lodBounds[0] = computeLodFromDerivates(LODMODE_MIN_BOUND, dudx, 0.0f) - lodEps;
-            m_lodBounds[1] = computeLodFromDerivates(LODMODE_MAX_BOUND, dudx, 0.0f) + lodEps;
+            m_lodBounds[0] = computeLodFromDerivates(LODMODE_MIN_BOUND, dudx, 0.0f) - lodEps - lodBaseF;
+            m_lodBounds[1] = computeLodFromDerivates(LODMODE_MAX_BOUND, dudx, 0.0f) + lodEps - lodBaseF;
             break;
         }
 
@@ -3506,8 +3516,8 @@ TextureQueryLodInstance::TextureQueryLodInstance(Context &context, const bool is
             const float dudx = (m_maxCoord[0] - m_minCoord[0]) * (float)m_textureSpec.width / (float)viewportSize[0];
             const float dvdy = (m_maxCoord[1] - m_minCoord[1]) * (float)m_textureSpec.height / (float)viewportSize[1];
 
-            m_lodBounds[0] = computeLodFromDerivates(LODMODE_MIN_BOUND, dudx, 0.0f, 0.0f, dvdy) - lodEps;
-            m_lodBounds[1] = computeLodFromDerivates(LODMODE_MAX_BOUND, dudx, 0.0f, 0.0f, dvdy) + lodEps;
+            m_lodBounds[0] = computeLodFromDerivates(LODMODE_MIN_BOUND, dudx, 0.0f, 0.0f, dvdy) - lodEps - lodBaseF;
+            m_lodBounds[1] = computeLodFromDerivates(LODMODE_MAX_BOUND, dudx, 0.0f, 0.0f, dvdy) + lodEps - lodBaseF;
             break;
         }
 
@@ -3530,8 +3540,8 @@ TextureQueryLodInstance::TextureQueryLodInstance(Context &context, const bool is
             float dudx                   = (c10.s - c00.s) * (float)m_textureSpec.width / (float)viewportSize[0];
             float dvdy                   = (c01.t - c00.t) * (float)m_textureSpec.height / (float)viewportSize[1];
 
-            m_lodBounds[0] = computeLodFromDerivates(LODMODE_MIN_BOUND, dudx, 0.0f, 0.0f, dvdy) - lodEps;
-            m_lodBounds[1] = computeLodFromDerivates(LODMODE_MAX_BOUND, dudx, 0.0f, 0.0f, dvdy) + lodEps;
+            m_lodBounds[0] = computeLodFromDerivates(LODMODE_MIN_BOUND, dudx, 0.0f, 0.0f, dvdy) - lodEps - lodBaseF;
+            m_lodBounds[1] = computeLodFromDerivates(LODMODE_MAX_BOUND, dudx, 0.0f, 0.0f, dvdy) + lodEps - lodBaseF;
             break;
         }
 
@@ -3547,8 +3557,10 @@ TextureQueryLodInstance::TextureQueryLodInstance(Context &context, const bool is
             const float dwdy =
                 (m_maxCoord[2] - m_minCoord[2]) * 0.5f * (float)m_textureSpec.depth / (float)viewportSize[1];
 
-            m_lodBounds[0] = computeLodFromDerivates(LODMODE_MIN_BOUND, dudx, 0.0f, dwdx, 0.0f, dvdy, dwdy) - lodEps;
-            m_lodBounds[1] = computeLodFromDerivates(LODMODE_MAX_BOUND, dudx, 0.0f, dwdx, 0.0f, dvdy, dwdy) + lodEps;
+            m_lodBounds[0] =
+                computeLodFromDerivates(LODMODE_MIN_BOUND, dudx, 0.0f, dwdx, 0.0f, dvdy, dwdy) - lodEps - lodBaseF;
+            m_lodBounds[1] =
+                computeLodFromDerivates(LODMODE_MAX_BOUND, dudx, 0.0f, dwdx, 0.0f, dvdy, dwdy) + lodEps - lodBaseF;
             break;
         }
 
@@ -3562,8 +3574,7 @@ TextureQueryLodInstance::TextureQueryLodInstance(Context &context, const bool is
 
         return;
     }
-
-    if (m_mode == QLODTM_ZERO_UV_WIDTH)
+    else
     {
         // setup same texture coordinates that will result in pmax
         // beeing 0 and as a result lambda being -inf; on most
@@ -3583,10 +3594,6 @@ TextureQueryLodInstance::TextureQueryLodInstance(Context &context, const bool is
     }
 
     DE_ASSERT(false);
-}
-
-TextureQueryLodInstance::~TextureQueryLodInstance(void)
-{
 }
 
 tcu::TestStatus TextureQueryLodInstance::iterate(void)
@@ -3641,7 +3648,7 @@ void TextureQueryLodInstance::setupDefaultInputs(void)
                  texCoord.data());
 }
 
-void TextureQueryLodInstance::initTexture(void)
+void TextureQueryLodInstance::initTexture(int baseMipLevel)
 {
     tcu::TestLog &log = m_context.getTestContext().getLog();
     tcu::IVec3 textureSize(m_textureSpec.width, m_textureSpec.height, m_textureSpec.depth);
@@ -3653,7 +3660,7 @@ void TextureQueryLodInstance::initTexture(void)
         << tcu::TestLog::EndMessage;
 
     textureBinding = createEmptyTexture(m_textureSpec.format, m_textureSpec.type, textureSize, m_textureSpec.numLevels,
-                                        0 /* lodBase */, m_textureSpec.sampler);
+                                        baseMipLevel, m_textureSpec.sampler);
 
     m_textures.push_back(textureBinding);
 }
@@ -7427,6 +7434,10 @@ void ShaderTextureFunctionTests::init(void)
                 group->addChild(new TextureQueryCase(
                     m_testCtx, (std::string(caseSpec.name) + "_zero_uv_width_fragment"), caseSpec.samplerName,
                     caseSpec.textureSpec, false, QUERYFUNCTION_TEXTUREQUERYLOD, QLODTM_ZERO_UV_WIDTH));
+
+                group->addChild(new TextureQueryCase(
+                    m_testCtx, (std::string(caseSpec.name) + "non_zero_base_level_fragment"), caseSpec.samplerName,
+                    caseSpec.textureSpec, false, QUERYFUNCTION_TEXTUREQUERYLOD, QLODTM_WITH_NON_ZERO_BASE_LEVEL));
             }
 
             queryGroup->addChild(group.release());

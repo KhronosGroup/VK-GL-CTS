@@ -24,6 +24,7 @@
 
 #include "vktDGCComputeConditionalTests.hpp"
 #include "vkBarrierUtil.hpp"
+#include "vktDGCUtilCommon.hpp"
 #include "vktDGCUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkBufferWithMemory.hpp"
@@ -241,7 +242,7 @@ tcu::TestStatus conditionalDispatchRun(Context &context, TestParams params)
     std::vector<uint32_t> genCmdsData;
     genCmdsData.reserve(6u /*pipeline address, push constant and dispatch*/);
     if (params.pipelineToken)
-        pushBackDeviceAddress(genCmdsData, dgcPipeline->getIndirectDeviceAddress());
+        pushBackElement(genCmdsData, dgcPipeline->getIndirectDeviceAddress());
     genCmdsData.push_back(pcValue);
     genCmdsData.push_back(1u); // VkDispatchIndirectCommand::x
     genCmdsData.push_back(1u); // VkDispatchIndirectCommand::y
@@ -463,7 +464,7 @@ tcu::TestStatus conditionalPreprocessRun(Context &context, ConditionalPreprocess
     // Pipeline, multiple options.
     const auto normalPipeline = makeComputePipeline(ctx.vkd, ctx.device, *pipelineLayout, *compModule);
 
-    // Indirect commands layout. Push constant followed by dispatch, optionally preceded by a pipeline bind.
+    // Indirect commands layout. Push constant followed by dispatch.
     IndirectCommandsLayoutBuilder cmdsLayoutBuilder(VK_INDIRECT_COMMANDS_LAYOUT_USAGE_EXPLICIT_PREPROCESS_BIT_NV,
                                                     bindPoint);
     cmdsLayoutBuilder.addPushConstantToken(0u, cmdsLayoutBuilder.getStreamRange(0u), *pipelineLayout, stageFlags, 0u,
@@ -584,7 +585,11 @@ tcu::TestStatus conditionalPreprocessRun(Context &context, ConditionalPreprocess
         ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *normalPipeline);
     }
 
+    // Conditional rendering state must match between preprocess and execute.
+    beginConditionalRendering(ctx.vkd, cmdBuffer, *conditionBuffer, params.inverted);
     ctx.vkd.cmdExecuteGeneratedCommandsNV(cmdBuffer, VK_TRUE, &cmdsInfo);
+    ctx.vkd.cmdEndConditionalRenderingEXT(cmdBuffer);
+
     endCommandBuffer(ctx.vkd, cmdBuffer);
     submitCommandsAndWait(ctx.vkd, ctx.device, queue, cmdBuffer);
 
@@ -593,8 +598,9 @@ tcu::TestStatus conditionalPreprocessRun(Context &context, ConditionalPreprocess
     invalidateAlloc(ctx.vkd, ctx.device, outputBufferAlloc);
     deMemcpy(&outputValue, outputBufferData, sizeof(outputValue));
 
-    // In these cases, we expect conditional rendering to not affect preprocessing.
-    const auto expectedValue = pcValue;
+    // Note the expected value is a logical xor of the condition value and the inverted flag.
+    const auto expectedValue = ((params.conditionValue != params.inverted) ? pcValue : 0u);
+
     if (outputValue != expectedValue)
     {
         std::ostringstream msg;

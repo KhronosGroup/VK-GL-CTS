@@ -87,21 +87,21 @@ void TestLogParser::parse(const uint8_t *bytes, size_t numBytes)
             const char *attribute = m_containerParser.getSessionInfoAttribute();
             const char *value     = m_containerParser.getSessionInfoValue();
 
-            if (deStringEqual(attribute, "releaseName"))
+            if (strcmp(attribute, "releaseName") == 0)
                 m_sessionInfo.releaseName = value;
-            else if (deStringEqual(attribute, "releaseId"))
+            else if (strcmp(attribute, "releaseId") == 0)
                 m_sessionInfo.releaseId = value;
-            else if (deStringEqual(attribute, "targetName"))
+            else if (strcmp(attribute, "targetName") == 0)
                 m_sessionInfo.targetName = value;
-            else if (deStringEqual(attribute, "candyTargetName"))
+            else if (strcmp(attribute, "candyTargetName") == 0)
                 m_sessionInfo.candyTargetName = value;
-            else if (deStringEqual(attribute, "configName"))
+            else if (strcmp(attribute, "configName") == 0)
                 m_sessionInfo.configName = value;
-            else if (deStringEqual(attribute, "resultName"))
+            else if (strcmp(attribute, "resultName") == 0)
                 m_sessionInfo.resultName = value;
-            else if (deStringEqual(attribute, "timestamp"))
+            else if (strcmp(attribute, "timestamp") == 0)
                 m_sessionInfo.timestamp = value;
-            else if (deStringEqual(attribute, "commandLineParameters"))
+            else if (strcmp(attribute, "commandLineParameters") == 0)
                 m_sessionInfo.qpaCommandLineParameters = value;
 
             // \todo [2012-06-09 pyry] What to do with unknown/duplicate attributes? Currently just ignored.

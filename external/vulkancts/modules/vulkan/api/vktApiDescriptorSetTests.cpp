@@ -312,9 +312,8 @@ tcu::TestStatus emptyDescriptorSetLayoutTest(Context &context,
     const VkDevice device     = context.getDevice();
 
 #ifndef CTS_USES_VULKANSC
-    if (descriptorSetLayoutCreateFlags == VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR)
-        if (!context.isDeviceFunctionalitySupported("VK_KHR_push_descriptor"))
-            TCU_THROW(NotSupportedError, "VK_KHR_push_descriptor extension not supported");
+    if (descriptorSetLayoutCreateFlags & VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR)
+        context.requireDeviceFunctionality("VK_KHR_push_descriptor");
 #endif // CTS_USES_VULKANSC
 
     const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {

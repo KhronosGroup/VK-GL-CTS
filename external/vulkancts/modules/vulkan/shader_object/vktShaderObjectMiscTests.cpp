@@ -133,8 +133,8 @@ tcu::TestStatus ShaderObjectMiscInstance::iterate(void)
         m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
     const bool tessellationSupported = m_context.getDeviceFeatures().tessellationShader;
     const bool geometrySupported     = m_context.getDeviceFeatures().geometryShader;
-    const bool taskSupported         = m_context.getMeshShaderFeatures().taskShader;
-    const bool meshSupported         = m_context.getMeshShaderFeatures().meshShader;
+    const bool taskSupported         = m_context.getMeshShaderFeaturesEXT().taskShader;
+    const bool meshSupported         = m_context.getMeshShaderFeaturesEXT().meshShader;
 
     vk::VkFormat colorAttachmentFormat = vk::VK_FORMAT_R8G8B8A8_UNORM;
     const auto subresourceRange        = vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -702,7 +702,7 @@ void ShaderObjectStateInstance::createDevice(void)
     vk::VkPhysicalDeviceDepthClipControlFeaturesEXT depthClipControlFeatures   = vk::initVulkanStructure();
     vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT depthClipEnableFeatures     = vk::initVulkanStructure();
     vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT transformFeedbackFeatures = vk::initVulkanStructure();
-    vk::VkPhysicalDeviceLineRasterizationFeaturesEXT lineRasterizationFeatures = vk::initVulkanStructure();
+    vk::VkPhysicalDeviceLineRasterizationFeatures lineRasterizationFeatures    = vk::initVulkanStructure();
 
     vk::VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures = m_context.getDynamicRenderingFeatures();
     vk::VkPhysicalDeviceShaderObjectFeaturesEXT shaderObjectFeatures      = m_context.getShaderObjectFeaturesEXT();
@@ -720,8 +720,9 @@ void ShaderObjectStateInstance::createDevice(void)
     eds3Features.pNext             = nullptr;
     viFeatures.pNext               = nullptr;
 
-    vk::VkPhysicalDeviceFeatures2 features2 = vk::initVulkanStructure();
-    void *pNext                             = &dynamicRenderingFeatures;
+    vk::VkPhysicalDeviceFeatures2 features2           = vk::initVulkanStructure();
+    features2.features.vertexPipelineStoresAndAtomics = VK_TRUE;
+    void *pNext                                       = &dynamicRenderingFeatures;
 
     const float queuePriority                  = 1.0f;
     std::vector<const char *> deviceExtensions = {"VK_KHR_dynamic_rendering"};
@@ -1176,7 +1177,7 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
         if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_STIPPLE_ENABLE_EXT))
             vk.cmdSetLineStippleEnableEXT(cmdBuffer, m_params.stippledLineEnable ? VK_TRUE : VK_FALSE);
         if (m_params.stippledLineEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_STIPPLE_EXT))
-            vk.cmdSetLineStippleKHR(cmdBuffer, 1u, 0x1);
+            vk.cmdSetLineStipple(cmdBuffer, 1u, 0x1);
     }
     if (m_params.depthClipControl &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_CLIP_NEGATIVE_ONE_TO_ONE_EXT))
@@ -1256,8 +1257,8 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
     const vk::VkRect2D renderArea = vk::makeRect2D(0, 0, 32, 32);
     vk::VkExtent3D extent         = {renderArea.extent.width, renderArea.extent.height, 1};
 
-    const bool taskSupported = m_context.getMeshShaderFeatures().taskShader;
-    const bool meshSupported = m_context.getMeshShaderFeatures().meshShader;
+    const bool taskSupported = m_context.getMeshShaderFeaturesEXT().taskShader;
+    const bool meshSupported = m_context.getMeshShaderFeaturesEXT().meshShader;
 
     const vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
@@ -2008,6 +2009,9 @@ void ShaderObjectStateCase::checkSupport(Context &context) const
     else
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
+    if (!context.getDeviceFeatures().vertexPipelineStoresAndAtomics)
+        TCU_THROW(NotSupportedError, "vertexPipelineStoresAndAtomics not supported");
+
     if (m_params.logicOp)
     {
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_LOGIC_OP);
@@ -2365,8 +2369,8 @@ tcu::TestStatus ShaderObjectUnusedBuiltinInstance::iterate(void)
         m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
     const bool tessellationSupported = m_context.getDeviceFeatures().tessellationShader;
     const bool geometrySupported     = m_context.getDeviceFeatures().geometryShader;
-    const bool taskSupported         = m_context.getMeshShaderFeatures().taskShader;
-    const bool meshSupported         = m_context.getMeshShaderFeatures().meshShader;
+    const bool taskSupported         = m_context.getMeshShaderFeaturesEXT().taskShader;
+    const bool meshSupported         = m_context.getMeshShaderFeaturesEXT().meshShader;
 
     vk::VkFormat colorAttachmentFormat = vk::VK_FORMAT_R8G8B8A8_UNORM;
     const auto subresourceRange        = makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -2702,8 +2706,8 @@ tcu::TestStatus ShaderObjectTessellationModesInstance::iterate(void)
         m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
     const bool tessellationSupported = m_context.getDeviceFeatures().tessellationShader;
     const bool geometrySupported     = m_context.getDeviceFeatures().geometryShader;
-    const bool taskSupported         = m_context.getMeshShaderFeatures().taskShader;
-    const bool meshSupported         = m_context.getMeshShaderFeatures().meshShader;
+    const bool taskSupported         = m_context.getMeshShaderFeaturesEXT().taskShader;
+    const bool meshSupported         = m_context.getMeshShaderFeaturesEXT().meshShader;
 
     vk::VkFormat colorAttachmentFormat = vk::VK_FORMAT_R8G8B8A8_UNORM;
     const auto subresourceRange        = makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);

@@ -55,31 +55,52 @@ namespace sparse
 namespace
 {
 
+enum BindType
+{
+    MULTIPLE_SPARSE_MEMORY_BIND = 0,
+    MULTIPLE_SPARSE_IMAGE_OPAQUE_MEMORY_BIND_INFO,
+    MULTIPLE_BIND_SPARSE_INFO,
+};
+
+struct TestParams
+{
+    ImageType imageType;
+    tcu::UVec3 imageSize;
+    VkFormat format;
+    BindType bindType;
+};
+
+const char *toString(BindType type)
+{
+    const char *strTable[] = {
+        "multiple_sparse_memory_bind",                   // MULTIPLE_SPARSE_MEMORY_BIND
+        "multiple_sparse_image_opaque_memory_bind_info", // MULTIPLE_SPARSE_IMAGE_OPAQUE_MEMORY_BIND_INFO
+        "multiple_bind_sparse_info",                     // MULTIPLE_BIND_SPARSE_INFO
+    };
+
+    return strTable[type];
+}
+
 class ImageSparseBindingCase : public TestCase
 {
 public:
-    ImageSparseBindingCase(tcu::TestContext &testCtx, const std::string &name, const ImageType imageType,
-                           const tcu::UVec3 &imageSize, const VkFormat format, const bool useDeviceGroups = false);
+    ImageSparseBindingCase(tcu::TestContext &testCtx, const std::string &name, const TestParams &testParams,
+                           const bool useDeviceGroups = false);
 
     TestInstance *createInstance(Context &context) const;
     virtual void checkSupport(Context &context) const;
 
 private:
     const bool m_useDeviceGroups;
-    const ImageType m_imageType;
-    const tcu::UVec3 m_imageSize;
-    const VkFormat m_format;
+    const TestParams m_params;
 };
 
 ImageSparseBindingCase::ImageSparseBindingCase(tcu::TestContext &testCtx, const std::string &name,
-                                               const ImageType imageType, const tcu::UVec3 &imageSize,
-                                               const VkFormat format, const bool useDeviceGroups)
+                                               const TestParams &testParams, const bool useDeviceGroups)
 
     : TestCase(testCtx, name)
     , m_useDeviceGroups(useDeviceGroups)
-    , m_imageType(imageType)
-    , m_imageSize(imageSize)
-    , m_format(format)
+    , m_params(testParams)
 {
 }
 
@@ -88,14 +109,15 @@ void ImageSparseBindingCase::checkSupport(Context &context) const
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
 
 #ifndef CTS_USES_VULKANSC
-    if (m_format == VK_FORMAT_A8_UNORM_KHR)
+    if (m_params.format == VK_FORMAT_A8_UNORM_KHR)
         context.requireDeviceFunctionality("VK_KHR_maintenance5");
 #endif // CTS_USES_VULKANSC
 
-    if (!isImageSizeSupported(context.getInstanceInterface(), context.getPhysicalDevice(), m_imageType, m_imageSize))
+    if (!isImageSizeSupported(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.imageType,
+                              m_params.imageSize))
         TCU_THROW(NotSupportedError, "Image size not supported for device");
 
-    if (formatIsR64(m_format))
+    if (formatIsR64(m_params.format))
     {
         context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
 
@@ -109,27 +131,21 @@ void ImageSparseBindingCase::checkSupport(Context &context) const
 class ImageSparseBindingInstance : public SparseResourcesBaseInstance
 {
 public:
-    ImageSparseBindingInstance(Context &context, const ImageType imageType, const tcu::UVec3 &imageSize,
-                               const VkFormat format, const bool useDeviceGroups);
+    ImageSparseBindingInstance(Context &context, const TestParams &testParams, const bool useDeviceGroups);
 
     tcu::TestStatus iterate(void);
 
 private:
     const bool m_useDeviceGroups;
-    const ImageType m_imageType;
-    const tcu::UVec3 m_imageSize;
-    const VkFormat m_format;
+    const TestParams m_params;
 };
 
-ImageSparseBindingInstance::ImageSparseBindingInstance(Context &context, const ImageType imageType,
-                                                       const tcu::UVec3 &imageSize, const VkFormat format,
+ImageSparseBindingInstance::ImageSparseBindingInstance(Context &context, const TestParams &testParams,
                                                        const bool useDeviceGroups)
 
     : SparseResourcesBaseInstance(context, useDeviceGroups)
     , m_useDeviceGroups(useDeviceGroups)
-    , m_imageType(imageType)
-    , m_imageSize(imageSize)
-    , m_format(format)
+    , m_params(testParams)
 {
 }
 
@@ -143,7 +159,7 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
         queueRequirements.push_back(QueueRequirements(VK_QUEUE_SPARSE_BINDING_BIT, 1u));
         queueRequirements.push_back(QueueRequirements(VK_QUEUE_COMPUTE_BIT, 1u));
 
-        createDeviceSupportingQueues(queueRequirements, false, m_format == VK_FORMAT_A8_UNORM_KHR);
+        createDeviceSupportingQueues(queueRequirements, false, m_params.format == VK_FORMAT_A8_UNORM_KHR);
     }
 
     const VkPhysicalDevice physicalDevice = getPhysicalDevice();
@@ -153,7 +169,7 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
     const DeviceInterface &deviceInterface          = getDeviceInterface();
     const Queue &sparseQueue                        = getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);
     const Queue &computeQueue                       = getQueue(VK_QUEUE_COMPUTE_BIT, 0);
-    const PlanarFormatDescription formatDescription = getPlanarFormatDescription(m_format);
+    const PlanarFormatDescription formatDescription = getPlanarFormatDescription(m_params.format);
 
     // Go through all physical devices
     for (uint32_t physDevID = 0; physDevID < m_numPhysicalDevices; ++physDevID)
@@ -161,13 +177,14 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
         const uint32_t firstDeviceID  = physDevID;
         const uint32_t secondDeviceID = (firstDeviceID + 1) % m_numPhysicalDevices;
 
-        imageSparseInfo.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO; //VkStructureType sType;
-        imageSparseInfo.pNext         = nullptr;                             //const void* pNext;
-        imageSparseInfo.flags         = VK_IMAGE_CREATE_SPARSE_BINDING_BIT;  //VkImageCreateFlags flags;
-        imageSparseInfo.imageType     = mapImageType(m_imageType);           //VkImageType imageType;
-        imageSparseInfo.format        = m_format;                            //VkFormat format;
-        imageSparseInfo.extent        = makeExtent3D(getLayerSize(m_imageType, m_imageSize)); //VkExtent3D extent;
-        imageSparseInfo.arrayLayers   = getNumLayers(m_imageType, m_imageSize);               //uint32_t arrayLayers;
+        imageSparseInfo.sType     = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO; //VkStructureType sType;
+        imageSparseInfo.pNext     = nullptr;                             //const void* pNext;
+        imageSparseInfo.flags     = VK_IMAGE_CREATE_SPARSE_BINDING_BIT;  //VkImageCreateFlags flags;
+        imageSparseInfo.imageType = mapImageType(m_params.imageType);    //VkImageType imageType;
+        imageSparseInfo.format    = m_params.format;                     //VkFormat format;
+        imageSparseInfo.extent =
+            makeExtent3D(getLayerSize(m_params.imageType, m_params.imageSize));               //VkExtent3D extent;
+        imageSparseInfo.arrayLayers   = getNumLayers(m_params.imageType, m_params.imageSize); //uint32_t arrayLayers;
         imageSparseInfo.samples       = VK_SAMPLE_COUNT_1_BIT;     //VkSampleCountFlagBits samples;
         imageSparseInfo.tiling        = VK_IMAGE_TILING_OPTIMAL;   //VkImageTiling tiling;
         imageSparseInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; //VkImageLayout initialLayout;
@@ -177,7 +194,7 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
         imageSparseInfo.queueFamilyIndexCount = 0u;                            //uint32_t queueFamilyIndexCount;
         imageSparseInfo.pQueueFamilyIndices   = nullptr;                       //const uint32_t* pQueueFamilyIndices;
 
-        if (m_imageType == IMAGE_TYPE_CUBE || m_imageType == IMAGE_TYPE_CUBE_ARRAY)
+        if (m_params.imageType == IMAGE_TYPE_CUBE || m_params.imageType == IMAGE_TYPE_CUBE_ARRAY)
         {
             imageSparseInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
         }
@@ -193,14 +210,13 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
             }
 
             imageSparseInfo.mipLevels =
-                getMipmapCount(m_format, formatDescription, imageFormatProperties, imageSparseInfo.extent);
+                getMipmapCount(m_params.format, formatDescription, imageFormatProperties, imageSparseInfo.extent);
         }
 
         // Create sparse image
         const Unique<VkImage> imageSparse(createImage(deviceInterface, getDevice(), &imageSparseInfo));
 
-        // Create sparse image memory bind semaphore
-        const Unique<VkSemaphore> imageMemoryBindSemaphore(createSemaphore(deviceInterface, getDevice()));
+        const Unique<VkFence> imageSparseBindFence(createFence(deviceInterface, getDevice()));
 
         // Get sparse image general memory requirements
         const VkMemoryRequirements imageMemoryRequirements =
@@ -213,31 +229,34 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
 
         DE_ASSERT((imageMemoryRequirements.size % imageMemoryRequirements.alignment) == 0);
 
+        const uint32_t numSparseBinds =
+            static_cast<uint32_t>(imageMemoryRequirements.size / imageMemoryRequirements.alignment);
+        const uint32_t memoryType = findMatchingMemoryType(instance, getPhysicalDevice(secondDeviceID),
+                                                           imageMemoryRequirements, MemoryRequirement::Any);
+
+        if (memoryType == NO_MATCH_FOUND)
+            return tcu::TestStatus::fail("No matching memory type found");
+
+        if (firstDeviceID != secondDeviceID)
+        {
+            VkPeerMemoryFeatureFlags peerMemoryFeatureFlags = (VkPeerMemoryFeatureFlags)0;
+            const uint32_t heapIndex =
+                getHeapIndexForMemoryType(instance, getPhysicalDevice(secondDeviceID), memoryType);
+            deviceInterface.getDeviceGroupPeerMemoryFeatures(getDevice(), heapIndex, firstDeviceID, secondDeviceID,
+                                                             &peerMemoryFeatureFlags);
+
+            if (((peerMemoryFeatureFlags & VK_PEER_MEMORY_FEATURE_COPY_SRC_BIT) == 0) ||
+                ((peerMemoryFeatureFlags & VK_PEER_MEMORY_FEATURE_COPY_DST_BIT) == 0))
+            {
+                TCU_THROW(NotSupportedError, "Peer memory does not support COPY_SRC and COPY_DST");
+            }
+        }
+
+        switch (m_params.bindType)
+        {
+        case MULTIPLE_SPARSE_MEMORY_BIND:
         {
             std::vector<VkSparseMemoryBind> sparseMemoryBinds;
-            const uint32_t numSparseBinds =
-                static_cast<uint32_t>(imageMemoryRequirements.size / imageMemoryRequirements.alignment);
-            const uint32_t memoryType = findMatchingMemoryType(instance, getPhysicalDevice(secondDeviceID),
-                                                               imageMemoryRequirements, MemoryRequirement::Any);
-
-            if (memoryType == NO_MATCH_FOUND)
-                return tcu::TestStatus::fail("No matching memory type found");
-
-            if (firstDeviceID != secondDeviceID)
-            {
-                VkPeerMemoryFeatureFlags peerMemoryFeatureFlags = (VkPeerMemoryFeatureFlags)0;
-                const uint32_t heapIndex =
-                    getHeapIndexForMemoryType(instance, getPhysicalDevice(secondDeviceID), memoryType);
-                deviceInterface.getDeviceGroupPeerMemoryFeatures(getDevice(), heapIndex, firstDeviceID, secondDeviceID,
-                                                                 &peerMemoryFeatureFlags);
-
-                if (((peerMemoryFeatureFlags & VK_PEER_MEMORY_FEATURE_COPY_SRC_BIT) == 0) ||
-                    ((peerMemoryFeatureFlags & VK_PEER_MEMORY_FEATURE_COPY_DST_BIT) == 0))
-                {
-                    TCU_THROW(NotSupportedError, "Peer memory does not support COPY_SRC and COPY_DST");
-                }
-            }
-
             for (uint32_t sparseBindNdx = 0; sparseBindNdx < numSparseBinds; ++sparseBindNdx)
             {
                 const VkSparseMemoryBind sparseMemoryBind =
@@ -251,6 +270,7 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
                 sparseMemoryBinds.push_back(sparseMemoryBind);
             }
 
+            // Create sparse image memory bind semaphore
             const VkSparseImageOpaqueMemoryBindInfo opaqueBindInfo = makeSparseImageOpaqueMemoryBindInfo(
                 *imageSparse, static_cast<uint32_t>(sparseMemoryBinds.size()), sparseMemoryBinds.data());
 
@@ -267,18 +287,142 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
                 0u,                                                    //uint32_t waitSemaphoreCount;
                 nullptr,                                               //const VkSemaphore* pWaitSemaphores;
                 0u,                                                    //uint32_t bufferBindCount;
-                nullptr,                        //const VkSparseBufferMemoryBindInfo* pBufferBinds;
-                1u,                             //uint32_t imageOpaqueBindCount;
-                &opaqueBindInfo,                //const VkSparseImageOpaqueMemoryBindInfo* pImageOpaqueBinds;
-                0u,                             //uint32_t imageBindCount;
-                nullptr,                        //const VkSparseImageMemoryBindInfo* pImageBinds;
-                1u,                             //uint32_t signalSemaphoreCount;
-                &imageMemoryBindSemaphore.get() //const VkSemaphore* pSignalSemaphores;
+                nullptr,         //const VkSparseBufferMemoryBindInfo* pBufferBinds;
+                1u,              //uint32_t imageOpaqueBindCount;
+                &opaqueBindInfo, //const VkSparseImageOpaqueMemoryBindInfo* pImageOpaqueBinds;
+                0u,              //uint32_t imageBindCount;
+                nullptr,         //const VkSparseImageMemoryBindInfo* pImageBinds;
+                0u,              //uint32_t signalSemaphoreCount;
+                nullptr,         //const VkSemaphore* pSignalSemaphores;
             };
 
             // Submit sparse bind commands for execution
-            VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, VK_NULL_HANDLE));
+            VK_CHECK(
+                deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, *imageSparseBindFence));
+
+            break;
         }
+        case MULTIPLE_SPARSE_IMAGE_OPAQUE_MEMORY_BIND_INFO:
+        {
+            std::vector<VkSparseMemoryBind> sparseMemoryBinds;
+            for (uint32_t sparseBindNdx = 0; sparseBindNdx < numSparseBinds; ++sparseBindNdx)
+            {
+                const VkSparseMemoryBind sparseMemoryBind =
+                    makeSparseMemoryBind(deviceInterface, getDevice(), imageMemoryRequirements.alignment, memoryType,
+                                         imageMemoryRequirements.alignment * sparseBindNdx);
+
+                deviceMemUniquePtrVec.push_back(makeVkSharedPtr(
+                    Move<VkDeviceMemory>(check<VkDeviceMemory>(sparseMemoryBind.memory),
+                                         Deleter<VkDeviceMemory>(deviceInterface, getDevice(), nullptr))));
+
+                sparseMemoryBinds.push_back(sparseMemoryBind);
+            }
+
+            std::vector<VkSparseImageOpaqueMemoryBindInfo> opaqueBindInfos;
+            for (uint32_t sparseBindNdx = 0; sparseBindNdx < numSparseBinds; ++sparseBindNdx)
+            {
+                const VkSparseImageOpaqueMemoryBindInfo opaqueBindInfo =
+                    makeSparseImageOpaqueMemoryBindInfo(*imageSparse, 1u, &sparseMemoryBinds[sparseBindNdx]);
+
+                opaqueBindInfos.push_back(opaqueBindInfo);
+            }
+
+            const VkDeviceGroupBindSparseInfo devGroupBindSparseInfo = {
+                VK_STRUCTURE_TYPE_DEVICE_GROUP_BIND_SPARSE_INFO, //VkStructureType sType;
+                nullptr,                                         //const void* pNext;
+                firstDeviceID,                                   //uint32_t resourceDeviceIndex;
+                secondDeviceID,                                  //uint32_t memoryDeviceIndex;
+            };
+
+            const VkBindSparseInfo bindSparseInfo = {
+                VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,                    //VkStructureType sType;
+                m_useDeviceGroups ? &devGroupBindSparseInfo : nullptr, //const void* pNext;
+                0u,                                                    //uint32_t waitSemaphoreCount;
+                nullptr,                                               //const VkSemaphore* pWaitSemaphores;
+                0u,                                                    //uint32_t bufferBindCount;
+                nullptr,                //const VkSparseBufferMemoryBindInfo* pBufferBinds;
+                numSparseBinds,         //uint32_t imageOpaqueBindCount;
+                opaqueBindInfos.data(), //const VkSparseImageOpaqueMemoryBindInfo* pImageOpaqueBinds;
+                0u,                     //uint32_t imageBindCount;
+                nullptr,                //const VkSparseImageMemoryBindInfo* pImageBinds;
+                0u,                     //uint32_t signalSemaphoreCount;
+                nullptr,                //const VkSemaphore* pSignalSemaphores;
+            };
+
+            // Submit sparse bind commands for execution
+            VK_CHECK(
+                deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, *imageSparseBindFence));
+
+            break;
+        }
+        case MULTIPLE_BIND_SPARSE_INFO:
+        {
+            std::vector<VkSparseMemoryBind> sparseMemoryBinds;
+            for (uint32_t sparseBindNdx = 0; sparseBindNdx < numSparseBinds; ++sparseBindNdx)
+            {
+                const VkSparseMemoryBind sparseMemoryBind =
+                    makeSparseMemoryBind(deviceInterface, getDevice(), imageMemoryRequirements.alignment, memoryType,
+                                         imageMemoryRequirements.alignment * sparseBindNdx);
+
+                deviceMemUniquePtrVec.push_back(makeVkSharedPtr(
+                    Move<VkDeviceMemory>(check<VkDeviceMemory>(sparseMemoryBind.memory),
+                                         Deleter<VkDeviceMemory>(deviceInterface, getDevice(), nullptr))));
+
+                sparseMemoryBinds.push_back(sparseMemoryBind);
+            }
+
+            std::vector<VkSparseImageOpaqueMemoryBindInfo> opaqueBindInfos;
+            for (uint32_t sparseBindNdx = 0; sparseBindNdx < numSparseBinds; ++sparseBindNdx)
+            {
+                const VkSparseImageOpaqueMemoryBindInfo opaqueBindInfo =
+                    makeSparseImageOpaqueMemoryBindInfo(*imageSparse, 1u, &sparseMemoryBinds[sparseBindNdx]);
+
+                opaqueBindInfos.push_back(opaqueBindInfo);
+            }
+
+            const VkDeviceGroupBindSparseInfo devGroupBindSparseInfo = {
+                VK_STRUCTURE_TYPE_DEVICE_GROUP_BIND_SPARSE_INFO, //VkStructureType sType;
+                nullptr,                                         //const void* pNext;
+                firstDeviceID,                                   //uint32_t resourceDeviceIndex;
+                secondDeviceID,                                  //uint32_t memoryDeviceIndex;
+            };
+
+            std::vector<VkBindSparseInfo> bindSparseInfos;
+            for (uint32_t sparseBindNdx = 0; sparseBindNdx < numSparseBinds; ++sparseBindNdx)
+            {
+                const VkBindSparseInfo bindSparseInfo = {
+                    VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,                    //VkStructureType sType;
+                    m_useDeviceGroups ? &devGroupBindSparseInfo : nullptr, //const void* pNext;
+                    0u,                                                    //uint32_t waitSemaphoreCount;
+                    nullptr,                                               //const VkSemaphore* pWaitSemaphores;
+                    0u,                                                    //uint32_t bufferBindCount;
+                    nullptr,                         //const VkSparseBufferMemoryBindInfo* pBufferBinds;
+                    1u,                              //uint32_t imageOpaqueBindCount;
+                    &opaqueBindInfos[sparseBindNdx], //const VkSparseImageOpaqueMemoryBindInfo* pImageOpaqueBinds;
+                    0u,                              //uint32_t imageBindCount;
+                    nullptr,                         //const VkSparseImageMemoryBindInfo* pImageBinds;
+                    0u,                              //uint32_t signalSemaphoreCount;
+                    nullptr,                         //const VkSemaphore* pSignalSemaphores;
+                };
+
+                bindSparseInfos.push_back(bindSparseInfo);
+            }
+
+            // Submit sparse bind commands for execution
+            VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, numSparseBinds, bindSparseInfos.data(),
+                                                     *imageSparseBindFence));
+
+            break;
+        }
+        default:
+        {
+            break;
+            DE_ASSERT(false);
+        }
+        }
+
+        // Waiting for resources to be bound
+        VK_CHECK(deviceInterface.waitForFences(getDevice(), 1u, &imageSparseBindFence.get(), VK_TRUE, ~0ull));
 
         uint32_t imageSizeInBytes = 0;
 
@@ -417,11 +561,9 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
         // End recording commands
         endCommandBuffer(deviceInterface, *commandBuffer);
 
-        const VkPipelineStageFlags stageBits[] = {VK_PIPELINE_STAGE_TRANSFER_BIT};
-
         // Submit commands for execution and wait for completion
-        submitCommandsAndWait(deviceInterface, getDevice(), computeQueue.queueHandle, *commandBuffer, 1u,
-                              &imageMemoryBindSemaphore.get(), stageBits, 0, nullptr, m_useDeviceGroups, firstDeviceID);
+        submitCommandsAndWait(deviceInterface, getDevice(), computeQueue.queueHandle, *commandBuffer, 0u, nullptr,
+                              nullptr, 0, nullptr, m_useDeviceGroups, firstDeviceID);
 
         // Retrieve data from buffer to host memory
         invalidateAlloc(deviceInterface, getDevice(), *outputBufferAlloc);
@@ -469,7 +611,7 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
 
 TestInstance *ImageSparseBindingCase::createInstance(Context &context) const
 {
-    return new ImageSparseBindingInstance(context, m_imageType, m_imageSize, m_format, m_useDeviceGroups);
+    return new ImageSparseBindingInstance(context, m_params, m_useDeviceGroups);
 }
 
 std::vector<TestFormat> getSparseBindingTestFormats(ImageType imageType, bool addExtraFormat)
@@ -511,39 +653,54 @@ tcu::TestCaseGroup *createImageSparseBindingTestsCommon(tcu::TestContext &testCt
          {tcu::UVec3(256u, 256u, 6u), tcu::UVec3(128u, 128u, 8u), tcu::UVec3(137u, 137u, 3u)},
          getSparseBindingTestFormats(IMAGE_TYPE_CUBE_ARRAY, !useDeviceGroup)}};
 
-    for (size_t imageTypeNdx = 0; imageTypeNdx < imageParameters.size(); ++imageTypeNdx)
+    const BindType bindTypes[] = {MULTIPLE_SPARSE_MEMORY_BIND, MULTIPLE_SPARSE_IMAGE_OPAQUE_MEMORY_BIND_INFO,
+                                  MULTIPLE_BIND_SPARSE_INFO};
+
+    for (uint32_t bindTypeNdx = 0; bindTypeNdx < DE_LENGTH_OF_ARRAY(bindTypes); ++bindTypeNdx)
     {
-        const ImageType imageType = imageParameters[imageTypeNdx].imageType;
-        de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(
-            new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str()));
+        de::MovePtr<tcu::TestCaseGroup> bindTypeGroup(
+            new tcu::TestCaseGroup(testCtx, toString(bindTypes[bindTypeNdx])));
 
-        for (size_t formatNdx = 0; formatNdx < imageParameters[imageTypeNdx].formats.size(); ++formatNdx)
+        for (size_t imageTypeNdx = 0; imageTypeNdx < imageParameters.size(); ++imageTypeNdx)
         {
-            VkFormat format               = imageParameters[imageTypeNdx].formats[formatNdx].format;
-            tcu::UVec3 imageSizeAlignment = getImageSizeAlignment(format);
-            de::MovePtr<tcu::TestCaseGroup> formatGroup(
-                new tcu::TestCaseGroup(testCtx, getImageFormatID(format).c_str()));
+            const ImageType imageType = imageParameters[imageTypeNdx].imageType;
+            de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(
+                new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str()));
 
-            for (size_t imageSizeNdx = 0; imageSizeNdx < imageParameters[imageTypeNdx].imageSizes.size();
-                 ++imageSizeNdx)
+            for (size_t formatNdx = 0; formatNdx < imageParameters[imageTypeNdx].formats.size(); ++formatNdx)
             {
-                const tcu::UVec3 imageSize = imageParameters[imageTypeNdx].imageSizes[imageSizeNdx];
+                VkFormat format               = imageParameters[imageTypeNdx].formats[formatNdx].format;
+                tcu::UVec3 imageSizeAlignment = getImageSizeAlignment(format);
+                de::MovePtr<tcu::TestCaseGroup> formatGroup(
+                    new tcu::TestCaseGroup(testCtx, getImageFormatID(format).c_str()));
 
-                // skip test for images with odd sizes for some YCbCr formats
-                if ((imageSize.x() % imageSizeAlignment.x()) != 0)
-                    continue;
-                if ((imageSize.y() % imageSizeAlignment.y()) != 0)
-                    continue;
+                for (size_t imageSizeNdx = 0; imageSizeNdx < imageParameters[imageTypeNdx].imageSizes.size();
+                     ++imageSizeNdx)
+                {
+                    const tcu::UVec3 imageSize = imageParameters[imageTypeNdx].imageSizes[imageSizeNdx];
 
-                std::ostringstream stream;
-                stream << imageSize.x() << "_" << imageSize.y() << "_" << imageSize.z();
+                    // skip test for images with odd sizes for some YCbCr formats
+                    if ((imageSize.x() % imageSizeAlignment.x()) != 0)
+                        continue;
+                    if ((imageSize.y() % imageSizeAlignment.y()) != 0)
+                        continue;
 
-                formatGroup->addChild(
-                    new ImageSparseBindingCase(testCtx, stream.str(), imageType, imageSize, format, useDeviceGroup));
+                    std::ostringstream stream;
+                    stream << imageSize.x() << "_" << imageSize.y() << "_" << imageSize.z();
+
+                    TestParams params;
+                    params.format    = format;
+                    params.imageSize = imageSize;
+                    params.imageType = imageType;
+                    params.bindType  = bindTypes[bindTypeNdx];
+
+                    formatGroup->addChild(new ImageSparseBindingCase(testCtx, stream.str(), params, useDeviceGroup));
+                }
+                imageTypeGroup->addChild(formatGroup.release());
             }
-            imageTypeGroup->addChild(formatGroup.release());
+            bindTypeGroup->addChild(imageTypeGroup.release());
         }
-        testGroup->addChild(imageTypeGroup.release());
+        testGroup->addChild(bindTypeGroup.release());
     }
 
     return testGroup.release();

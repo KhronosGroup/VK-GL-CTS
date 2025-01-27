@@ -1317,7 +1317,14 @@ void FragmentDensityMapTest::checkSupport(Context &context) const
     {
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
         if (m_testParams.makeCopy)
+        {
             context.requireDeviceFunctionality("VK_KHR_dynamic_rendering_local_read");
+
+            if ((m_testParams.colorSamples != VK_SAMPLE_COUNT_1_BIT) &&
+                (context.getUsedApiVersion() > VK_MAKE_API_VERSION(0, 1, 3, 0)) &&
+                !context.getDeviceVulkan14Properties().dynamicRenderingLocalReadMultisampledAttachments)
+                TCU_THROW(NotSupportedError, "dynamicRenderingLocalReadMultisampledAttachments not supported");
+        }
     }
 
     if (m_testParams.imagelessFramebuffer)
@@ -2101,7 +2108,7 @@ void FragmentDensityMapTestInstance::remapingBeforeCopySubsampledImage(VkCommand
     uint32_t colorAttachmentLocations[] = {VK_ATTACHMENT_UNUSED, 0};
     VkRenderingAttachmentLocationInfoKHR renderingAttachmentLocationInfo{
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_LOCATION_INFO_KHR, nullptr, 2, colorAttachmentLocations};
-    vk.cmdSetRenderingAttachmentLocationsKHR(cmdBuffer, &renderingAttachmentLocationInfo);
+    vk.cmdSetRenderingAttachmentLocations(cmdBuffer, &renderingAttachmentLocationInfo);
 }
 
 void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPassWrapperBasePtr renderPassWrapper,

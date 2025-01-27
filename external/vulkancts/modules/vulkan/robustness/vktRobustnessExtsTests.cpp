@@ -258,6 +258,21 @@ PipelineConstructionType getConstructionTypeFromRobustnessCase(PipelineRobustnes
     return PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC;
 }
 
+VkFlags getAllShaderStages(tcu::TestContext &testCtx)
+{
+    return testCtx.getCommandLine().isComputeOnly() ?
+               VK_SHADER_STAGE_COMPUTE_BIT :
+               VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+}
+
+VkFlags getAllPipelineStages(tcu::TestContext &testCtx)
+{
+    return testCtx.getCommandLine().isComputeOnly() ?
+               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT :
+               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
+                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
+}
+
 struct CaseDef
 {
     VkFormat format;
@@ -545,8 +560,15 @@ void RobustnessExtsTestCase::checkSupport(Context &context) const
                 VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT)
                 TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT is not supported");
 #ifndef CTS_USES_VULKANSC
-            if ((formatProperties3.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR) !=
-                VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR)
+            if ((!m_data.formatQualifier) &&
+                ((formatProperties3.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR) !=
+                 VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR))
+                TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT is not supported");
+            break;
+        case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+            if ((!m_data.formatQualifier) &&
+                ((formatProperties3.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR) !=
+                 VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR))
                 TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT is not supported");
 #endif // CTS_USES_VULKANSC
             break;
@@ -2460,7 +2482,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                             clearValue.uint32[0] += 1;
                     }
                 }
-                vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+                vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, m_data.allPipelineStages,
                                       (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &postImageBarrier);
             }
             else
@@ -2516,9 +2538,8 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
                     vk.cmdDispatch(*cmdBuffer, imageInfo.extent.width, imageInfo.extent.height, clearLayers);
 
-                    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                          VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (VkDependencyFlags)0, 0, nullptr, 0,
-                                          nullptr, 1, &imageBarrierPost);
+                    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_data.allPipelineStages,
+                                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &imageBarrierPost);
                 }
                 else
                 {
@@ -2528,7 +2549,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                                                                                             0, 0, clearLayers)));
 
                     copyBufferToImage(vk, *cmdBuffer, bufferR64, size, bufferImageCopy, VK_IMAGE_ASPECT_COLOR_BIT, 1,
-                                      clearLayers, img, VK_IMAGE_LAYOUT_GENERAL, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+                                      clearLayers, img, VK_IMAGE_LAYOUT_GENERAL, m_data.allPipelineStages);
                 }
             }
         }
@@ -2734,8 +2755,8 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                         templateCreateInfo.pDescriptorUpdateEntries   = templateVectorsBefore[i]->data();
                         Move<VkDescriptorUpdateTemplate> descriptorUpdateTemplate =
                             createDescriptorUpdateTemplate(vk, device, &templateCreateInfo, NULL);
-                        vk.cmdPushDescriptorSetWithTemplateKHR(*cmdBuffer, *descriptorUpdateTemplate, *pipelineLayout,
-                                                               0, templateVectorData[i]);
+                        vk.cmdPushDescriptorSetWithTemplate(*cmdBuffer, *descriptorUpdateTemplate, *pipelineLayout, 0,
+                                                            templateVectorData[i]);
                     }
                 }
             }
@@ -2766,8 +2787,8 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 #ifndef CTS_USES_VULKANSC
                 if (writesBeforeBindVec.size())
                 {
-                    vk.cmdPushDescriptorSetKHR(*cmdBuffer, bindPoint, *pipelineLayout, 0,
-                                               (uint32_t)writesBeforeBindVec.size(), &writesBeforeBindVec[0]);
+                    vk.cmdPushDescriptorSet(*cmdBuffer, bindPoint, *pipelineLayout, 0,
+                                            (uint32_t)writesBeforeBindVec.size(), &writesBeforeBindVec[0]);
                 }
 #endif
             }
@@ -3285,7 +3306,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                                    makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1)));
         copyBufferToImage(vk, *cmdBuffer, *(*bufferOutputImageR64), sizeOutputR64, bufferImageCopy,
                           VK_IMAGE_ASPECT_COLOR_BIT, 1, 1, **images[0], VK_IMAGE_LAYOUT_GENERAL,
-                          VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+                          m_data.allPipelineStages);
     }
 
     VkMemoryBarrier memBarrier = {
@@ -3296,8 +3317,9 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
     };
 
     memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    memBarrier.dstAccessMask =
-        VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+    memBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+    if (!m_context.getTestContext().getCommandLine().isComputeOnly())
+        memBarrier.dstAccessMask |= VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, m_data.allPipelineStages, 0, 1, &memBarrier, 0,
                           nullptr, 0, nullptr);
 
@@ -3631,10 +3653,28 @@ tcu::TestStatus OutOfBoundsStrideInstance::iterate(void)
         de::dataOrNull(dynamicStates),                        // const VkDynamicState* pDynamicStates;
     };
 
+    const void *pNext = nullptr;
+
+#ifndef CTS_USES_VULKANSC
+    if (m_params.pipelineRobustness)
+    {
+        const VkPipelineRobustnessCreateInfoEXT pipelineRobustnessCreateInfo = {
+            VK_STRUCTURE_TYPE_PIPELINE_ROBUSTNESS_CREATE_INFO_EXT, //VkStructureType sType;
+            nullptr,                                               //const void *pNext;
+            VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2_EXT, //VkPipelineRobustnessBufferBehaviorEXT storageBuffers;
+            VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2_EXT, //VkPipelineRobustnessBufferBehaviorEXT uniformBuffers;
+            VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2_EXT, //VkPipelineRobustnessBufferBehaviorEXT vertexInputs;
+            VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_ROBUST_IMAGE_ACCESS_2_EXT, //VkPipelineRobustnessImageBehaviorEXT images;
+        };
+
+        pNext = &pipelineRobustnessCreateInfo;
+    }
+#endif // CTS_USES_VULKANSC
+
     const auto pipeline = makeGraphicsPipeline(
         vkd, device, pipelineLayout.get(), vertModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
         fragModule.get(), renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, 0u,
-        &inputStateCreateInfo, nullptr, nullptr, nullptr, nullptr, &dynamicStateCreateInfo);
+        &inputStateCreateInfo, nullptr, nullptr, nullptr, nullptr, &dynamicStateCreateInfo, pNext);
 
     // Command pool and buffer.
     const CommandPoolWithBuffer cmd(vkd, device, qfIndex);
@@ -4007,13 +4047,8 @@ static void createTests(tcu::TestCaseGroup *group, bool robustness2, bool pipeli
                                                      stageNdx++)
                                                 {
                                                     Stage currentStage = static_cast<Stage>(stageCases[stageNdx].count);
-                                                    VkFlags allShaderStages = VK_SHADER_STAGE_COMPUTE_BIT |
-                                                                              VK_SHADER_STAGE_VERTEX_BIT |
-                                                                              VK_SHADER_STAGE_FRAGMENT_BIT;
-                                                    VkFlags allPipelineStages = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-                                                                                VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
-                                                                                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
-                                                                                VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
+                                                    VkFlags allShaderStages   = getAllShaderStages(testCtx);
+                                                    VkFlags allPipelineStages = getAllPipelineStages(testCtx);
 #ifndef CTS_USES_VULKANSC
                                                     if ((Stage)stageCases[stageNdx].count == STAGE_RAYGEN)
                                                     {

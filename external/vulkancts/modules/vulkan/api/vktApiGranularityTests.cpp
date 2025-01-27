@@ -357,7 +357,7 @@ tcu::TestStatus GranularityInstance::iterate(void)
             stencilAttachmentFormat                    // VkFormat stencilAttachmentFormat;
         };
 
-        vk.getRenderingAreaGranularityKHR(device, &renderingAreaInfo, &prePassGranularity);
+        vk.getRenderingAreaGranularity(device, &renderingAreaInfo, &prePassGranularity);
 
         // start dynamic render pass
         VkRenderingInfoKHR renderingInfo{
@@ -376,7 +376,7 @@ tcu::TestStatus GranularityInstance::iterate(void)
         };
         vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
 
-        vk.getRenderingAreaGranularityKHR(device, &renderingAreaInfo, &granularity);
+        vk.getRenderingAreaGranularity(device, &renderingAreaInfo, &granularity);
     }
 #endif
 

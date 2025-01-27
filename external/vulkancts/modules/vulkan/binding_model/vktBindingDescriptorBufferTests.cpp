@@ -206,6 +206,14 @@ enum class SubCase : uint32_t
     YCBCR_SAMPLER_ARRAY, // a more complex case with arrayed combined image samplers
 };
 
+// Indicates residency of resource on GPU memory
+enum class ResourceResidency : uint32_t
+{
+    TRADITIONAL,      // descriptor buffer resource bound to memory in traditional way
+    SPARSE_BINDING,   // descriptor buffer is sparse resource fully bound to memory
+    SPARSE_RESIDENCY, // descriptor buffer is sparse resource not fully bound to memory
+};
+
 // A simplified descriptor binding, used to define the test case behavior at a high level.
 struct SimpleBinding
 {
@@ -366,6 +374,8 @@ struct TestParams
     DescriptorMask mutableDescriptorTypes; // determines the descriptor types for VkMutableDescriptorTypeListEXT
 
     bool commands2; // Use vkCmd* commands from VK_KHR_maintenance6
+
+    ResourceResidency resourceResidency; // Create descriptor buffer as sparse resource
 
     bool isCompute() const
     {
@@ -2278,6 +2288,18 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_maintenance5");
 
     // Optional
+    if ((m_params.resourceResidency == ResourceResidency::SPARSE_BINDING) &&
+        (context.getDeviceFeatures().sparseBinding == VK_FALSE))
+    {
+        TCU_THROW(NotSupportedError, "sparseBinding feature is not supported");
+    }
+
+    if ((m_params.resourceResidency == ResourceResidency::SPARSE_RESIDENCY) &&
+        ((context.getDeviceFeatures().sparseBinding == VK_FALSE) ||
+         (context.getDeviceFeatures().sparseResidencyBuffer == VK_FALSE)))
+    {
+        TCU_THROW(NotSupportedError, "sparseResidencyBuffer feature is not supported");
+    }
 
     if ((m_params.descriptor == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK) &&
         !context.isDeviceFunctionalitySupported("VK_EXT_inline_uniform_block"))
@@ -2285,10 +2307,8 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "VK_EXT_inline_uniform_block is not supported");
     }
 
-    const auto &descriptorBufferFeatures =
-        *findStructure<VkPhysicalDeviceDescriptorBufferFeaturesEXT>(&context.getDeviceFeatures2());
-    const auto &descriptorBufferProps =
-        *findStructure<VkPhysicalDeviceDescriptorBufferPropertiesEXT>(&context.getDeviceProperties2());
+    const auto &descriptorBufferFeatures = context.getDescriptorBufferFeaturesEXT();
+    const auto &descriptorBufferProps    = context.getDescriptorBufferPropertiesEXT();
 
     if (!descriptorBufferFeatures.descriptorBuffer)
     {
@@ -2584,6 +2604,8 @@ protected:
     MovePtr<DeviceDriver> m_deviceInterface;
     VkQueue m_queue;
     uint32_t m_queueFamilyIndex;
+    VkQueue m_sparseQueue;
+    uint32_t m_sparseQueueFamilyIndex;
     MovePtr<Allocator> m_allocatorPtr;
 
     VkPhysicalDeviceMemoryProperties m_memoryProperties;
@@ -2645,6 +2667,8 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     , m_deviceInterface()
     , m_queue()
     , m_queueFamilyIndex()
+    , m_sparseQueue()
+    , m_sparseQueueFamilyIndex()
     , m_allocatorPtr(nullptr)
     , m_memoryProperties()
     , m_descriptorBufferFeatures()
@@ -2769,16 +2793,26 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
 #undef VALIDATE_PER_STAGE_LIMIT
     }
 
-    auto &inst      = context.getInstanceInterface();
-    auto physDevice = context.getPhysicalDevice();
-    auto queueProps = getPhysicalDeviceQueueFamilyProperties(inst, physDevice);
-
-    m_queueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    auto &inst                           = context.getInstanceInterface();
+    auto physDevice                      = context.getPhysicalDevice();
+    auto queueProps                      = getPhysicalDeviceQueueFamilyProperties(inst, physDevice);
+    const bool sparseCompatibilityDevice = !(m_params.resourceResidency == ResourceResidency::TRADITIONAL);
 
     uint32_t graphicsComputeQueue = VK_QUEUE_FAMILY_IGNORED;
+    m_queueFamilyIndex            = VK_QUEUE_FAMILY_IGNORED;
+    m_sparseQueueFamilyIndex      = VK_QUEUE_FAMILY_IGNORED;
 
     for (uint32_t i = 0; i < queueProps.size(); ++i)
     {
+        // Looking for queue that supports sparse resource operations
+        if (sparseCompatibilityDevice)
+        {
+            if ((queueProps[i].queueFlags & VK_QUEUE_SPARSE_BINDING_BIT) != 0)
+            {
+                m_sparseQueueFamilyIndex = i;
+            }
+        }
+
         if (m_params.queue == VK_QUEUE_GRAPHICS_BIT)
         {
             if ((queueProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0)
@@ -2815,12 +2849,10 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
         TCU_THROW(NotSupportedError, "Queue not supported");
     }
 
-    const float priority[1] = {0.5f};
-
-    VkDeviceQueueCreateInfo queueInfo = initVulkanStructure();
-    queueInfo.queueFamilyIndex        = m_queueFamilyIndex;
-    queueInfo.queueCount              = 1;
-    queueInfo.pQueuePriorities        = priority;
+    if (sparseCompatibilityDevice && m_sparseQueueFamilyIndex == VK_QUEUE_FAMILY_IGNORED)
+    {
+        TCU_THROW(NotSupportedError, "Sparse operations not supported by any queue");
+    }
 
     VkPhysicalDeviceFeatures2 features2                                            = initVulkanStructure();
     VkPhysicalDeviceDescriptorBufferFeaturesEXT descriptorBufferFeatures           = initVulkanStructure();
@@ -2837,6 +2869,26 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     VkPhysicalDeviceMaintenance4Features maintenance4Features                      = initVulkanStructure();
     VkPhysicalDeviceMaintenance5FeaturesKHR maintenance5Features                   = initVulkanStructure();
     VkPhysicalDeviceMaintenance6FeaturesKHR maintenance6Features                   = initVulkanStructure();
+
+    const float priority[1] = {0.5f};
+
+    uint32_t queueCiCnt = 1;
+    VkDeviceQueueCreateInfo
+        queueInfos[2]; // Needed when sparse binding is supported on other queue than descriptor buffer
+    queueInfos[0]                  = initVulkanStructure();
+    queueInfos[0].queueFamilyIndex = m_queueFamilyIndex;
+    queueInfos[0].queueCount       = 1;
+    queueInfos[0].pQueuePriorities = priority;
+
+    if (sparseCompatibilityDevice && m_sparseQueueFamilyIndex != m_queueFamilyIndex)
+    {
+        queueInfos[1]                  = initVulkanStructure();
+        queueInfos[1].queueFamilyIndex = m_sparseQueueFamilyIndex;
+        queueInfos[1].queueCount       = 1;
+        queueInfos[1].pQueuePriorities = priority;
+
+        ++queueCiCnt;
+    }
 
     void **nextPtr = &features2.pNext;
     addToChainVulkanStructure(&nextPtr, synchronization2Features);
@@ -3005,21 +3057,25 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     m_descriptorBufferFeatures       = descriptorBufferFeatures;
     m_descriptorBufferFeatures.pNext = nullptr;
 
-    m_descriptorBufferProperties =
-        *findStructure<VkPhysicalDeviceDescriptorBufferPropertiesEXT>(&context.getDeviceProperties2());
+    m_descriptorBufferProperties       = context.getDescriptorBufferPropertiesEXT();
     m_descriptorBufferProperties.pNext = nullptr;
 
     VkDeviceCreateInfo createInfo      = initVulkanStructure(&features2);
     createInfo.pEnabledFeatures        = nullptr;
     createInfo.enabledExtensionCount   = u32(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
-    createInfo.queueCreateInfoCount    = 1;
-    createInfo.pQueueCreateInfos       = &queueInfo;
+    createInfo.queueCreateInfoCount    = queueCiCnt;
+    createInfo.pQueueCreateInfos       = queueInfos;
 
     m_device =
         createCustomDevice(false, context.getPlatformInterface(), context.getInstance(), inst, physDevice, &createInfo);
 
     context.getDeviceInterface().getDeviceQueue(*m_device, m_queueFamilyIndex, 0, &m_queue);
+
+    if (sparseCompatibilityDevice)
+    {
+        context.getDeviceInterface().getDeviceQueue(*m_device, m_sparseQueueFamilyIndex, 0, &m_sparseQueue);
+    }
 
     m_deviceInterface =
         newMovePtr<DeviceDriver>(context.getPlatformInterface(), context.getInstance(), *m_device,
@@ -3281,11 +3337,12 @@ void DescriptorBufferTestInstance::createDescriptorBuffers()
 {
     DE_ASSERT(m_descriptorBuffers.empty());
 
-    const uint8_t bufferInitialMemory             = 0xcc;  // descriptor buffer memory is initially set to this
+    const uint32_t bufferInitialMemory            = 0xcc;  // descriptor buffer memory is initially set to this
     bool allocateStagingBuffer                    = false; // determined after descriptors are created
     VkDeviceSize stagingBufferDescriptorSetOffset = 0;
     const uint32_t setsPerBuffer =
         m_params.subcase == SubCase::SINGLE_BUFFER ? m_params.bufferBindingCount + 1 : m_params.setsPerBuffer;
+    const bool sparseCompatibilityDevice = !(m_params.resourceResidency == ResourceResidency::TRADITIONAL);
 
     // Data tracked per buffer creation
     struct
@@ -3333,7 +3390,8 @@ void DescriptorBufferTestInstance::createDescriptorBuffers()
             }
             else
             {
-                currentBuffer.usage |= VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT;
+                currentBuffer.usage |=
+                    VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
             }
         }
 
@@ -3363,6 +3421,22 @@ void DescriptorBufferTestInstance::createDescriptorBuffers()
         {
             vk::VkBufferCreateInfo bufferCreateInfo =
                 makeBufferCreateInfo(currentBuffer.setOffset, currentBuffer.usage);
+
+            const uint32_t queueFamilyIndices[] = {m_queueFamilyIndex, m_sparseQueueFamilyIndex};
+
+            if (sparseCompatibilityDevice)
+            {
+                bufferCreateInfo.flags |= VK_BUFFER_CREATE_SPARSE_BINDING_BIT;
+
+                // Overrides sharing mode if compute queue does not support sparse operations
+                if (m_queueFamilyIndex != m_sparseQueueFamilyIndex)
+                {
+
+                    bufferCreateInfo.sharingMode           = VK_SHARING_MODE_CONCURRENT;
+                    bufferCreateInfo.queueFamilyIndexCount = 2u;
+                    bufferCreateInfo.pQueueFamilyIndices   = queueFamilyIndices;
+                }
+            }
 
             if (bufferCreateInfo.size != 0)
             {
@@ -3405,7 +3479,18 @@ void DescriptorBufferTestInstance::createDescriptorBuffers()
 
                     if (compatMask != 0)
                     {
-                        bufferAlloc.alloc = allocate(bufferMemReqs, memReqs, &allocFlagsInfo);
+                        if (m_params.resourceResidency == ResourceResidency::SPARSE_RESIDENCY)
+                        {
+                            bufferMemReqs.size +=
+                                bufferMemReqs
+                                    .alignment; // Allocating bigger chunk to be able to bind not a whole resource at once
+                            bufferAlloc.alloc = allocate(bufferMemReqs, memReqs, &allocFlagsInfo);
+                            bufferMemReqs.size -= bufferMemReqs.alignment;
+                        }
+                        else
+                        {
+                            bufferAlloc.alloc = allocate(bufferMemReqs, memReqs, &allocFlagsInfo);
+                        }
                     }
                     else
                     {
@@ -3441,8 +3526,43 @@ void DescriptorBufferTestInstance::createDescriptorBuffers()
                     }
                 }
 
-                VK_CHECK(m_deviceInterface->bindBufferMemory(
-                    *m_device, *bufferAlloc.buffer, bufferAlloc.alloc->getMemory(), bufferAlloc.alloc->getOffset()));
+                if (!sparseCompatibilityDevice)
+                {
+                    VK_CHECK(m_deviceInterface->bindBufferMemory(*m_device, *bufferAlloc.buffer,
+                                                                 bufferAlloc.alloc->getMemory(),
+                                                                 bufferAlloc.alloc->getOffset()));
+                }
+                else // Bind sparse
+                {
+                    // Fence to signal when sparse binding operation ends
+                    const vk::Unique<vk::VkFence> sparseBindFence(vk::createFence(*m_deviceInterface, *m_device));
+
+                    const VkSparseMemoryBind sparseMemBind = {
+                        0,                              // VkDeviceSize               resourceOffset;
+                        bufferMemReqs.size,             // VkDeviceSize               size;
+                        bufferAlloc.alloc->getMemory(), // VkDeviceMemory             memory;
+                        bufferAlloc.alloc->getOffset(), // VkDeviceSize               memoryOffset;
+                        0,                              // VkSparseMemoryBindFlags    flags;
+                    };
+
+                    const VkSparseBufferMemoryBindInfo sparseBufferMemBindInfo = {
+                        *bufferAlloc.buffer, // VkBuffer                     buffer;
+                        1,                   // uint32_t                     bindCount;
+                        &sparseMemBind,      // const VkSparseMemoryBind*    pBinds;
+                    };
+
+                    VkBindSparseInfo bindSparseInfo = initVulkanStructure();
+                    bindSparseInfo.bufferBindCount  = 1;
+                    bindSparseInfo.pBufferBinds     = &sparseBufferMemBindInfo;
+
+                    vk::VkResult res = VK_SUCCESS;
+
+                    res = m_deviceInterface->queueBindSparse(m_sparseQueue, 1, &bindSparseInfo, *sparseBindFence);
+
+                    VK_CHECK(res);
+
+                    VK_CHECK(m_deviceInterface->waitForFences(*m_device, 1u, &sparseBindFence.get(), true, ~0ull));
+                }
 
                 bufferAlloc.loadDeviceAddress(*m_deviceInterface, *m_device);
 
@@ -4671,32 +4791,36 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
                            m_descriptorBufferProperties.samplerDescriptorSize) ==
                           m_descriptorBufferProperties.combinedImageSamplerDescriptorSize);
 
-                std::vector<uint8_t> scratchSpace(arrayCount *
-                                                  m_descriptorBufferProperties.combinedImageSamplerDescriptorSize);
+                // Needed buffer memory size depends on combinedImageSamplerDescriptorCount
+                auto sampledImageDescriptorSizeInBuffer =
+                    m_descriptorBufferProperties.sampledImageDescriptorSize * m_combinedImageSamplerDescriptorCount;
+                auto samplerDescriptorSizeInBuffer =
+                    m_descriptorBufferProperties.samplerDescriptorSize * m_combinedImageSamplerDescriptorCount;
+                auto combinedImageSamplerDescriptorSizeInBuffer =
+                    m_descriptorBufferProperties.combinedImageSamplerDescriptorSize *
+                    m_combinedImageSamplerDescriptorCount;
 
-                const auto descriptorArraySize = static_cast<std::size_t>(
-                    arrayCount * m_descriptorBufferProperties.combinedImageSamplerDescriptorSize);
+                std::vector<uint8_t> scratchSpace(arrayCount * combinedImageSamplerDescriptorSizeInBuffer);
+
+                const auto descriptorArraySize =
+                    static_cast<std::size_t>(arrayCount * combinedImageSamplerDescriptorSizeInBuffer);
 
                 deMemcpy(scratchSpace.data(), bindingHostPtr, descriptorArraySize);
                 deMemset(bindingHostPtr, 0, descriptorArraySize);
 
                 const void *combinedReadPtr = scratchSpace.data();
                 void *imageWritePtr         = bindingHostPtr;
-                void *samplerWritePtr =
-                    offsetPtr(bindingHostPtr, arrayCount * m_descriptorBufferProperties.sampledImageDescriptorSize);
+                void *samplerWritePtr = offsetPtr(bindingHostPtr, arrayCount * sampledImageDescriptorSizeInBuffer);
 
                 for (uint32_t i = 0; i < arrayCount; ++i)
                 {
-                    deMemcpy(imageWritePtr, offsetPtr(combinedReadPtr, 0),
-                             m_descriptorBufferProperties.sampledImageDescriptorSize);
-                    deMemcpy(samplerWritePtr,
-                             offsetPtr(combinedReadPtr, m_descriptorBufferProperties.sampledImageDescriptorSize),
-                             m_descriptorBufferProperties.samplerDescriptorSize);
+                    deMemcpy(imageWritePtr, offsetPtr(combinedReadPtr, 0), sampledImageDescriptorSizeInBuffer);
+                    deMemcpy(samplerWritePtr, offsetPtr(combinedReadPtr, sampledImageDescriptorSizeInBuffer),
+                             samplerDescriptorSizeInBuffer);
 
-                    combinedReadPtr =
-                        offsetPtr(combinedReadPtr, m_descriptorBufferProperties.combinedImageSamplerDescriptorSize);
-                    imageWritePtr   = offsetPtr(imageWritePtr, m_descriptorBufferProperties.sampledImageDescriptorSize);
-                    samplerWritePtr = offsetPtr(samplerWritePtr, m_descriptorBufferProperties.samplerDescriptorSize);
+                    combinedReadPtr = offsetPtr(combinedReadPtr, combinedImageSamplerDescriptorSizeInBuffer);
+                    imageWritePtr   = offsetPtr(imageWritePtr, sampledImageDescriptorSizeInBuffer);
+                    samplerWritePtr = offsetPtr(samplerWritePtr, samplerDescriptorSizeInBuffer);
                 }
             }
 
@@ -4833,12 +4957,12 @@ void DescriptorBufferTestInstance::pushDescriptorSet(VkCommandBuffer cmdBuf, VkP
                 u32(descriptorWrites.size()),                   // uint32_t descriptorWriteCount;
                 descriptorWrites.data()                         // const VkWriteDescriptorSet* pDescriptorWrites;
             };
-            m_deviceInterface->cmdPushDescriptorSet2KHR(cmdBuf, &pushDescriptorSetInfo);
+            m_deviceInterface->cmdPushDescriptorSet2(cmdBuf, &pushDescriptorSetInfo);
         }
         else
         {
-            m_deviceInterface->cmdPushDescriptorSetKHR(cmdBuf, bindPoint, *m_pipelineLayout, setIndex,
-                                                       u32(descriptorWrites.size()), descriptorWrites.data());
+            m_deviceInterface->cmdPushDescriptorSet(cmdBuf, bindPoint, *m_pipelineLayout, setIndex,
+                                                    u32(descriptorWrites.size()), descriptorWrites.data());
         }
     }
     else if (m_params.variant == TestVariant::PUSH_TEMPLATE)
@@ -4913,12 +5037,12 @@ void DescriptorBufferTestInstance::pushDescriptorSet(VkCommandBuffer cmdBuf, VkP
                 setIndex,                  // uint32_t set;
                 dataBasePtr                // const void* pData;
             };
-            m_deviceInterface->cmdPushDescriptorSetWithTemplate2KHR(cmdBuf, &pushDescriptorSetWithTemplateInfo);
+            m_deviceInterface->cmdPushDescriptorSetWithTemplate2(cmdBuf, &pushDescriptorSetWithTemplateInfo);
         }
         else
         {
-            m_deviceInterface->cmdPushDescriptorSetWithTemplateKHR(cmdBuf, *descriptorUpdateTemplate, *m_pipelineLayout,
-                                                                   setIndex, dataBasePtr);
+            m_deviceInterface->cmdPushDescriptorSetWithTemplate(cmdBuf, *descriptorUpdateTemplate, *m_pipelineLayout,
+                                                                setIndex, dataBasePtr);
         }
     }
 }
@@ -5696,11 +5820,9 @@ tcu::TestStatus testLimits(Context &context)
 
     if (context.isDeviceFunctionalitySupported("VK_EXT_descriptor_buffer"))
     {
-        const auto &features =
-            *findStructure<VkPhysicalDeviceDescriptorBufferFeaturesEXT>(&context.getDeviceFeatures2());
-        const auto &props =
-            *findStructure<VkPhysicalDeviceDescriptorBufferPropertiesEXT>(&context.getDeviceProperties2());
-        const bool hasRT = context.isDeviceFunctionalitySupported("VK_KHR_ray_tracing_pipeline") ||
+        const auto &features = context.getDescriptorBufferFeaturesEXT();
+        const auto &props    = context.getDescriptorBufferPropertiesEXT();
+        const bool hasRT     = context.isDeviceFunctionalitySupported("VK_KHR_ray_tracing_pipeline") ||
                            context.isDeviceFunctionalitySupported("VK_KHR_ray_query");
         const size_t maxResourceDescriptorSize = std::max(
             props.storageImageDescriptorSize,
@@ -5795,7 +5917,290 @@ tcu::TestStatus testLimits(Context &context)
 #undef CHECK_MAX_LIMIT_NON_ZERO
 }
 
-void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
+enum class CaptureReplyTestMode
+{
+    Image = 0,
+    Sparse_Image,
+    Buffer,
+    Sparse_Buffer,
+};
+
+class CaptureReplyTestInstance : public TestInstance
+{
+public:
+    CaptureReplyTestInstance(Context &context, CaptureReplyTestMode mode);
+
+    tcu::TestStatus iterate() override;
+
+protected:
+    const CaptureReplyTestMode m_mode;
+};
+
+CaptureReplyTestInstance::CaptureReplyTestInstance(Context &context, CaptureReplyTestMode mode)
+    : TestInstance(context)
+    , m_mode(mode)
+{
+}
+
+tcu::TestStatus CaptureReplyTestInstance::iterate()
+{
+    const auto &vki           = m_context.getInstanceInterface();
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+    auto physicalDevice       = m_context.getPhysicalDevice();
+    MovePtr<Allocation> allocation;
+    const auto &dbProperties = m_context.getDescriptorBufferPropertiesEXT();
+    const bool useSparseImage(m_mode == CaptureReplyTestMode::Sparse_Image);
+    const bool useSparseBuffer(m_mode == CaptureReplyTestMode::Sparse_Buffer);
+
+    VkMemoryOpaqueCaptureAddressAllocateInfo opaqueCaptureAddressAllocateInfo = initVulkanStructure();
+    VkMemoryAllocateFlagsInfo allocFlagsInfo = initVulkanStructure(&opaqueCaptureAddressAllocateInfo);
+    uint64_t opaqueCaptureAddress{};
+    VkMemoryRequirements memoryRequirements;
+
+    if (useSparseImage || (m_mode == CaptureReplyTestMode::Image))
+    {
+        const VkImageCreateFlags sparseFlag =
+            useSparseImage * (VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
+
+        VkImageCreateInfo imageCreateInfo = initVulkanStructure();
+        imageCreateInfo.flags             = sparseFlag | VK_IMAGE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT;
+        imageCreateInfo.imageType         = VK_IMAGE_TYPE_2D;
+        imageCreateInfo.format            = VK_FORMAT_R8G8B8A8_UNORM;
+        imageCreateInfo.extent            = {16, 16, 1};
+        imageCreateInfo.mipLevels         = 1;
+        imageCreateInfo.arrayLayers       = 1;
+        imageCreateInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
+        imageCreateInfo.usage             = VK_IMAGE_USAGE_STORAGE_BIT;
+
+        // create image with VK_IMAGE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT
+        auto image(createImage(vk, device, &imageCreateInfo));
+
+        if (!useSparseImage)
+        {
+            memoryRequirements = getImageMemoryRequirements(vk, device, *image);
+            allocFlagsInfo.flags =
+                VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT | VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+
+            // allocate memory with VkMemoryOpaqueCaptureAddressAllocateInfo
+            allocation = allocateExtended(vki, vk, physicalDevice, device, memoryRequirements,
+                                          MemoryRequirement::DeviceAddressCaptureReplay, &allocFlagsInfo);
+
+            // get data from vkGetDeviceMemoryOpaqueCaptureAddressKHR
+            VkDeviceMemoryOpaqueCaptureAddressInfo memoryOpaqueCaptureAddressInfo = initVulkanStructure();
+            memoryOpaqueCaptureAddressInfo.memory                                 = allocation->getMemory();
+            opaqueCaptureAddress = vk.getDeviceMemoryOpaqueCaptureAddress(device, &memoryOpaqueCaptureAddressInfo);
+
+            // bind image & memory
+            VK_CHECK(vk.bindImageMemory(device, *image, allocation->getMemory(), allocation->getOffset()));
+        }
+
+        VkImageViewCreateInfo imageViewCreateInfo = initVulkanStructure();
+        imageViewCreateInfo.flags                 = VK_IMAGE_VIEW_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT;
+        imageViewCreateInfo.image                 = *image;
+        imageViewCreateInfo.viewType              = VK_IMAGE_VIEW_TYPE_2D;
+        imageViewCreateInfo.format                = VK_FORMAT_R8G8B8A8_UNORM;
+        imageViewCreateInfo.components            = makeComponentMappingRGBA();
+        imageViewCreateInfo.subresourceRange      = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1);
+        auto imageView                            = createImageView(vk, device, &imageViewCreateInfo);
+
+        // get data from vkGetImageOpaqueCaptureDescriptorDataEXT
+        VkImageCaptureDescriptorDataInfoEXT imageCaptureDescriptorDataInfo = initVulkanStructure();
+        imageCaptureDescriptorDataInfo.image                               = *image;
+        std::vector<uint8_t> imageCaptureReplayData(
+            de::max(dbProperties.imageCaptureReplayDescriptorDataSize, std::size_t(64)));
+        VK_CHECK(vk.getImageOpaqueCaptureDescriptorDataEXT(device, &imageCaptureDescriptorDataInfo,
+                                                           imageCaptureReplayData.data()));
+
+        // get data from vkGetImageViewOpaqueCaptureDescriptorDataEXT
+        VkImageViewCaptureDescriptorDataInfoEXT imageViewCaptureDescriptorDataInfo = initVulkanStructure();
+        imageViewCaptureDescriptorDataInfo.imageView                               = *imageView;
+        std::vector<uint8_t> imageViewCaptureReplayData(
+            de::max(dbProperties.imageViewCaptureReplayDescriptorDataSize, std::size_t(64)));
+        VK_CHECK(vk.getImageViewOpaqueCaptureDescriptorDataEXT(device, &imageViewCaptureDescriptorDataInfo,
+                                                               imageViewCaptureReplayData.data()));
+
+        // call vkGetDescriptorEXT() with the image and store the write descriptor data
+        const auto descriptorSize = dbProperties.storageImageDescriptorSize;
+        std::vector<uint8_t> firstDescriptorData(descriptorSize);
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageView                = *imageView;
+        VkDescriptorGetInfoEXT descGetInfo = initVulkanStructure();
+        descGetInfo.type                   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        descGetInfo.data.pStorageImage     = &imageInfo;
+        vk.getDescriptorEXT(device, &descGetInfo, descriptorSize, firstDescriptorData.data());
+
+        // destroy image and free memory
+        imageView = Move<VkImageView>();
+        if (!useSparseImage)
+            allocation = MovePtr<Allocation>();
+        image = Move<VkImage>();
+
+        // recreate image with VkOpaqueCaptureDescriptorDataCreateInfoEXT with data from imageCaptureDescriptorDataInfo
+        VkOpaqueCaptureDescriptorDataCreateInfoEXT opaqueCaptureDescriptorDataCreateInfo = initVulkanStructure();
+        opaqueCaptureDescriptorDataCreateInfo.opaqueCaptureDescriptorData = imageCaptureReplayData.data();
+        imageCreateInfo.pNext                                             = &opaqueCaptureDescriptorDataCreateInfo;
+        image                                                             = createImage(vk, device, &imageCreateInfo);
+
+        if (!useSparseImage)
+        {
+            // allocate memory with VkMemoryOpaqueCaptureAddressAllocateInfo with data from opaqueCaptureAddress
+            opaqueCaptureAddressAllocateInfo.opaqueCaptureAddress = opaqueCaptureAddress;
+            allocation = allocateExtended(vki, vk, physicalDevice, device, memoryRequirements,
+                                          MemoryRequirement::DeviceAddressCaptureReplay, &allocFlagsInfo);
+
+            // bind image & memory
+            VK_CHECK(vk.bindImageMemory(device, *image, allocation->getMemory(), allocation->getOffset()));
+        }
+
+        // recreate imageView with VkOpaqueCaptureDescriptorDataCreateInfoEXT with data from imageViewCaptureDescriptorDataInfo
+        opaqueCaptureDescriptorDataCreateInfo.opaqueCaptureDescriptorData = imageViewCaptureReplayData.data();
+        imageViewCreateInfo.pNext                                         = &opaqueCaptureDescriptorDataCreateInfo;
+        imageViewCreateInfo.image                                         = *image;
+        imageView = createImageView(vk, device, &imageViewCreateInfo);
+
+        // call vkGetDescriptorEXT() for the second time
+        std::vector<uint8_t> secondDescriptorData(descriptorSize);
+        imageInfo.imageView = *imageView;
+        vk.getDescriptorEXT(device, &descGetInfo, descriptorSize, secondDescriptorData.data());
+
+        if (deMemCmp(firstDescriptorData.data(), secondDescriptorData.data(), descriptorSize) == 0)
+            return tcu::TestStatus::pass("Pass");
+    }
+    else
+    {
+        auto bufferCreateInfo =
+            makeBufferCreateInfo(64, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+        const VkBufferCreateFlags sparseFlag =
+            useSparseBuffer * (VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT);
+        bufferCreateInfo.flags = sparseFlag | VK_BUFFER_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT;
+
+        // create buffer with VK_BUFFER_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT
+        auto buffer(createBuffer(vk, device, &bufferCreateInfo));
+
+        if (!useSparseBuffer)
+        {
+            memoryRequirements = getBufferMemoryRequirements(vk, device, *buffer);
+            allocFlagsInfo.flags =
+                VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT | VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+
+            // allocate memory with VkMemoryOpaqueCaptureAddressAllocateInfo
+            allocation = allocateExtended(vki, vk, physicalDevice, device, memoryRequirements,
+                                          MemoryRequirement::DeviceAddressCaptureReplay, &allocFlagsInfo);
+
+            // get data from vkGetDeviceMemoryOpaqueCaptureAddressKHR
+            VkDeviceMemoryOpaqueCaptureAddressInfo memoryOpaqueCaptureAddressInfo = initVulkanStructure();
+            memoryOpaqueCaptureAddressInfo.memory                                 = allocation->getMemory();
+            opaqueCaptureAddress = vk.getDeviceMemoryOpaqueCaptureAddress(device, &memoryOpaqueCaptureAddressInfo);
+
+            // bind buffer & memory
+            VK_CHECK(vk.bindBufferMemory(device, *buffer, allocation->getMemory(), allocation->getOffset()));
+        }
+
+        // get data from vkGetBufferOpaqueCaptureDescriptorDataEXT
+        VkBufferCaptureDescriptorDataInfoEXT captureDescriptorDataInfo = initVulkanStructure();
+        captureDescriptorDataInfo.buffer                               = *buffer;
+        std::vector<uint8_t> captureReplayData(
+            de::max(dbProperties.bufferCaptureReplayDescriptorDataSize, std::size_t(64)));
+        VK_CHECK(
+            vk.getBufferOpaqueCaptureDescriptorDataEXT(device, &captureDescriptorDataInfo, captureReplayData.data()));
+
+        // call vkGetDescriptorEXT() with the buffer and store the write descriptor data
+        const auto descriptorSize = dbProperties.storageBufferDescriptorSize;
+        std::vector<uint8_t> firstDescriptorData(descriptorSize);
+        VkBufferDeviceAddressInfo bdaInfo                = initVulkanStructure();
+        bdaInfo.buffer                                   = *buffer;
+        VkDescriptorAddressInfoEXT descriptorAddressInfo = initVulkanStructure();
+        descriptorAddressInfo.address                    = vk.getBufferDeviceAddress(device, &bdaInfo);
+        descriptorAddressInfo.range                      = 64;
+        VkDescriptorGetInfoEXT descGetInfo               = initVulkanStructure();
+        descGetInfo.type                                 = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        descGetInfo.data.pStorageBuffer                  = &descriptorAddressInfo;
+        vk.getDescriptorEXT(device, &descGetInfo, descriptorSize, firstDescriptorData.data());
+
+        // destroy buffer and free memory
+        buffer = Move<VkBuffer>();
+        if (!useSparseBuffer)
+            allocation = MovePtr<Allocation>();
+
+        // recreate buffer with VkOpaqueCaptureDescriptorDataCreateInfoEXT with data from captureDescriptorDataInfo
+        VkOpaqueCaptureDescriptorDataCreateInfoEXT opaqueCaptureDescriptorDataCreateInfo = initVulkanStructure();
+        opaqueCaptureDescriptorDataCreateInfo.opaqueCaptureDescriptorData                = captureReplayData.data();
+        bufferCreateInfo.pNext = &opaqueCaptureDescriptorDataCreateInfo;
+        buffer                 = createBuffer(vk, device, &bufferCreateInfo);
+
+        if (!useSparseBuffer)
+        {
+            // allocate memory with VkMemoryOpaqueCaptureAddressAllocateInfo with data from opaqueCaptureAddress
+            opaqueCaptureAddressAllocateInfo.opaqueCaptureAddress = opaqueCaptureAddress;
+            allocation = allocateExtended(vki, vk, physicalDevice, device, memoryRequirements,
+                                          MemoryRequirement::DeviceAddressCaptureReplay, &allocFlagsInfo);
+
+            // bind image & memory
+            VK_CHECK(vk.bindBufferMemory(device, *buffer, allocation->getMemory(), allocation->getOffset()));
+        }
+
+        // call vkGetDescriptorEXT() for the second time
+        std::vector<uint8_t> secondDescriptorData(descriptorSize);
+        bdaInfo.buffer                = *buffer;
+        descriptorAddressInfo.address = vk.getBufferDeviceAddress(device, &bdaInfo);
+        vk.getDescriptorEXT(device, &descGetInfo, descriptorSize, secondDescriptorData.data());
+
+        if (deMemCmp(firstDescriptorData.data(), secondDescriptorData.data(), descriptorSize) == 0)
+            return tcu::TestStatus::pass("Pass");
+    }
+
+    return tcu::TestStatus::fail("descriptor data is not the same between both getDescriptorEXT calls");
+}
+
+class CaptureReplyTestCase : public TestCase
+{
+public:
+    CaptureReplyTestCase(tcu::TestContext &testCtx, const std::string &name, CaptureReplyTestMode mode);
+
+    TestInstance *createInstance(Context &context) const override;
+    void checkSupport(Context &context) const override;
+
+private:
+    const CaptureReplyTestMode m_mode;
+};
+
+CaptureReplyTestCase::CaptureReplyTestCase(tcu::TestContext &testCtx, const std::string &name,
+                                           CaptureReplyTestMode mode)
+    : TestCase(testCtx, name)
+    , m_mode(mode)
+{
+}
+
+TestInstance *CaptureReplyTestCase::createInstance(Context &context) const
+{
+    return new CaptureReplyTestInstance(context, m_mode);
+}
+
+void CaptureReplyTestCase::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_EXT_descriptor_buffer");
+
+    const auto &vki     = context.getInstanceInterface();
+    auto physicalDevice = context.getPhysicalDevice();
+
+    const auto &descriptorBufferFeatures = context.getDescriptorBufferFeaturesEXT();
+    if (!descriptorBufferFeatures.descriptorBufferCaptureReplay)
+        TCU_THROW(NotSupportedError, "descriptorBufferCaptureReplay feature is not supported");
+
+    if (m_mode == CaptureReplyTestMode::Sparse_Image)
+    {
+        const auto sparseImageFormatPropVec = getPhysicalDeviceSparseImageFormatProperties(
+            vki, physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TYPE_2D, VK_SAMPLE_COUNT_1_BIT,
+            VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL);
+        if (sparseImageFormatPropVec.size() == 0)
+            TCU_THROW(NotSupportedError, "Format does not support sparse operations.");
+    }
+    else if (m_mode == CaptureReplyTestMode::Sparse_Buffer)
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
+}
+
+void populateDescriptorBufferTestGroup(tcu::TestCaseGroup *topGroup, ResourceResidency resourceResidency)
 {
     tcu::TestContext &testCtx = topGroup->getTestContext();
     const uint32_t baseSeed   = static_cast<uint32_t>(testCtx.getCommandLine().getBaseSeed());
@@ -5859,6 +6264,7 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
         params.bufferBindingCount = 1;
         params.setsPerBuffer      = 1;
         params.useMaintenance5    = false;
+        params.resourceResidency  = resourceResidency;
 
         for (auto pQueue = choiceQueues; pQueue < DE_ARRAY_END(choiceQueues); ++pQueue)
             for (auto pStage = choiceStages; pStage < DE_ARRAY_END(choiceStages); ++pStage)
@@ -5943,7 +6349,8 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
                     params.setsPerBuffer              = pOptions->setsPerBuffer;
                     params.descriptor =
                         VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR; // Optional, will be tested if supported
-                    params.useMaintenance5 = false;
+                    params.useMaintenance5   = false;
+                    params.resourceResidency = resourceResidency;
 
                     subGroup->addChild(
                         new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
@@ -6004,9 +6411,10 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
                     params.resourceBufferBindingCount = pOptions->resourceBufferBindingCount;
                     params.bufferBindingCount =
                         pOptions->samplerBufferBindingCount + pOptions->resourceBufferBindingCount;
-                    params.setsPerBuffer   = 1;
-                    params.descriptor      = VK_DESCRIPTOR_TYPE_MAX_ENUM;
-                    params.useMaintenance5 = false;
+                    params.setsPerBuffer     = 1;
+                    params.descriptor        = VK_DESCRIPTOR_TYPE_MAX_ENUM;
+                    params.useMaintenance5   = false;
+                    params.resourceResidency = resourceResidency;
 
                     subGroup->addChild(
                         new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
@@ -6055,6 +6463,7 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
                         params.embeddedImmutableSamplersPerBuffer         = pOptions->samplersPerBuffer;
                         params.descriptor                                 = VK_DESCRIPTOR_TYPE_MAX_ENUM;
                         params.useMaintenance5                            = false;
+                        params.resourceResidency                          = resourceResidency;
                         params.commands2                                  = *pCommands2;
 
                         subGroup->addChild(
@@ -6111,8 +6520,9 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
                         params.pushDescriptorSetIndex     = pOptions->pushDescriptorSetIndex;
                         params.descriptor =
                             VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR; // Optional, will be tested if supported
-                        params.useMaintenance5 = false;
-                        params.commands2       = *pCommands2;
+                        params.useMaintenance5   = false;
+                        params.resourceResidency = resourceResidency;
+                        params.commands2         = *pCommands2;
 
                         subGroupPush->addChild(new DescriptorBufferTestCase(
                             testCtx, getCaseNameUpdateHash(params, subGroupPushHash), params));
@@ -6178,6 +6588,7 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
                 params.bufferBindingCount = 1;
                 params.setsPerBuffer      = 1;
                 params.useMaintenance5    = false;
+                params.resourceResidency  = resourceResidency;
 
                 subGroupBuffer->addChild(
                     new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupBufferHash), params));
@@ -6251,6 +6662,7 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
                     params.bufferBindingCount = 1;
                     params.setsPerBuffer      = 1;
                     params.useMaintenance5    = false;
+                    params.resourceResidency  = resourceResidency;
 
                     subGroup->addChild(
                         new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
@@ -6265,6 +6677,19 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
                             new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
                     }
                 }
+
+        std::pair<std::string, CaptureReplyTestMode> captureReplyModes[]{
+            {"image", CaptureReplyTestMode::Image},
+            {"sparse_image", CaptureReplyTestMode::Sparse_Image},
+            {"buffer", CaptureReplyTestMode::Buffer},
+            {"sparse_buffer", CaptureReplyTestMode::Sparse_Buffer},
+        };
+
+        for (const auto &captureReplyMode : captureReplyModes)
+        {
+            std::string name = captureReplyMode.first + "_descriptor_data_consistency";
+            subGroup->addChild(new CaptureReplyTestCase(testCtx, name, captureReplyMode.second));
+        }
 
         topGroup->addChild(subGroup.release());
     }
@@ -6346,6 +6771,7 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
                     params.bufferBindingCount     = 1;
                     params.setsPerBuffer          = 1;
                     params.mutableDescriptorTypes = *pMask;
+                    params.resourceResidency      = resourceResidency;
 
                     subGroup->addChild(
                         new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
@@ -6378,6 +6804,7 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
                 params.descriptor         = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 params.bufferBindingCount = 1;
                 params.setsPerBuffer      = 1;
+                params.resourceResidency  = resourceResidency;
 
                 subGroup->addChild(
                     new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
@@ -6390,6 +6817,26 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
 
         topGroup->addChild(subGroup.release());
     }
+}
+
+void populateDescriptorBufferTests(tcu::TestCaseGroup *testGroup)
+{
+    tcu::TestContext &testCtx = testGroup->getTestContext();
+
+    MovePtr<tcu::TestCaseGroup> traditionalGroup(
+        new tcu::TestCaseGroup(testCtx, "traditional_buffer", "Traditional descriptor buffer tests"));
+    populateDescriptorBufferTestGroup(traditionalGroup.get(), ResourceResidency::TRADITIONAL);
+    testGroup->addChild(traditionalGroup.release());
+
+    MovePtr<tcu::TestCaseGroup> sparseBindingGroup(
+        new tcu::TestCaseGroup(testCtx, "sparse_binding_buffer", "Sparse binding descriptor buffer tests"));
+    populateDescriptorBufferTestGroup(sparseBindingGroup.get(), ResourceResidency::SPARSE_BINDING);
+    testGroup->addChild(sparseBindingGroup.release());
+
+    MovePtr<tcu::TestCaseGroup> sparseResidencyGroup(
+        new tcu::TestCaseGroup(testCtx, "sparse_residency_buffer", "Sparse residency descriptor buffer tests"));
+    populateDescriptorBufferTestGroup(sparseResidencyGroup.get(), ResourceResidency::SPARSE_RESIDENCY);
+    testGroup->addChild(sparseResidencyGroup.release());
 }
 
 } // namespace

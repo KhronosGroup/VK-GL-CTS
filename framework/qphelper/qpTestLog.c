@@ -66,7 +66,7 @@ typedef enum ContainerType_e
     CONTAINERTYPE_LAST
 } ContainerType;
 
-DE_INLINE bool childContainersOk(ContainerType type)
+bool childContainersOk(ContainerType type)
 {
     return type == CONTAINERTYPE_SECTION || type == CONTAINERTYPE_SAMPLELIST;
 }
@@ -82,17 +82,17 @@ typedef struct ContainerStack_s
     ContainerType elements[MAX_CONTAINER_STACK_DEPTH];
 } ContainerStack;
 
-DE_INLINE void ContainerStack_reset(ContainerStack *stack)
+void ContainerStack_reset(ContainerStack *stack)
 {
     deMemset(stack, 0, sizeof(ContainerStack));
 }
 
-DE_INLINE bool ContainerStack_isEmpty(const ContainerStack *stack)
+bool ContainerStack_isEmpty(const ContainerStack *stack)
 {
     return stack->numElements == 0;
 }
 
-DE_INLINE bool ContainerStack_push(ContainerStack *stack, ContainerType type)
+bool ContainerStack_push(ContainerStack *stack, ContainerType type)
 {
     if (stack->numElements == MAX_CONTAINER_STACK_DEPTH)
         return false;
@@ -106,14 +106,14 @@ DE_INLINE bool ContainerStack_push(ContainerStack *stack, ContainerType type)
     return true;
 }
 
-DE_INLINE ContainerType ContainerStack_pop(ContainerStack *stack)
+ContainerType ContainerStack_pop(ContainerStack *stack)
 {
     DE_ASSERT(stack->numElements > 0);
     stack->numElements -= 1;
     return stack->elements[stack->numElements];
 }
 
-DE_INLINE ContainerType ContainerStack_getTop(const ContainerStack *stack)
+ContainerType ContainerStack_getTop(const ContainerStack *stack)
 {
     if (stack->numElements > 0)
         return stack->elements[stack->numElements - 1];
@@ -264,24 +264,24 @@ static const char *qpLookupString(const qpKeyStringMap *keyMap, int keyMapSize, 
     return keyMap[key].string;
 }
 
-DE_INLINE void int32ToString(int val, char buf[32])
+void int32ToString(int val, char buf[32])
 {
-    deSprintf(&buf[0], 32, "%d", val);
+    snprintf(&buf[0], 32, "%d", val);
 }
 
-DE_INLINE void int64ToString(int64_t val, char buf[32])
+void int64ToString(int64_t val, char buf[32])
 {
-    deSprintf(&buf[0], 32, "%lld", (long long int)val);
+    snprintf(&buf[0], 32, "%lld", (long long int)val);
 }
 
-DE_INLINE void floatToString(float value, char *buf, size_t bufSize)
+void floatToString(float value, char *buf, size_t bufSize)
 {
-    deSprintf(buf, bufSize, "%f", value);
+    snprintf(buf, bufSize, "%f", value);
 }
 
-DE_INLINE void doubleToString(double value, char *buf, size_t bufSize)
+void doubleToString(double value, char *buf, size_t bufSize)
 {
-    deSprintf(buf, bufSize, "%f", value);
+    snprintf(buf, bufSize, "%f", value);
 }
 
 static bool endSession(qpTestLog *log)

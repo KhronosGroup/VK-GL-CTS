@@ -861,7 +861,8 @@ KHR-GL32.ext_texture_shadow_lod.texturelod.samplercubeshadow_fragment
 KHR-GL32.ext_texture_shadow_lod.texturelod.samplercubearrayshadow_fragment
 KHR-GL32.ext_texture_shadow_lod.texturelodoffset.sampler2darrayshadow_vertex
 KHR-GL32.ext_texture_shadow_lod.texturelodoffset.sampler2darrayshadow_fragment
-KHR-GL32.framebuffer_blit.multisampled_to_singlesampled_blit
+KHR-GL32.framebuffer_blit.multisampled_to_singlesampled_blit_color_config_test
+KHR-GL32.framebuffer_blit.multisampled_to_singlesampled_blit_depth_config_test
 KHR-GL32.framebuffer_blit.scissor_blit
 KHR-GL32.texture_lod_bias.texture_lod_bias_all
 KHR-GL32.buffer_objects.gen_buffers
@@ -872,6 +873,9 @@ KHR-GL32.buffer_objects.sub_data
 KHR-GL32.transform_feedback2.transform_feedback2_states
 KHR-GL32.api.coverage
 KHR-GL32.get_uniform_tests.get_uniform
+KHR-GL32.frag_coord_conventions.multisample
+KHR-GL32.texture_storage.compressed_data
+KHR-GL32.draw_buffers.draw_buffers_1
 KHR-GL32.CommonBugs.CommonBug_GetProgramivActiveUniformBlockMaxNameLength
 KHR-GL32.CommonBugs.CommonBug_InputVariablesCannotBeModified
 KHR-GL32.CommonBugs.CommonBug_InvalidUseCasesForAllNotFuncsAndExclMarkOp

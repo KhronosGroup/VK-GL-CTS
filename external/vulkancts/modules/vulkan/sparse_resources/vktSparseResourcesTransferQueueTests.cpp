@@ -58,6 +58,36 @@ namespace sparse
 namespace
 {
 
+std::vector<TestFormat> getBasicTestFormats()
+{
+    std::vector<TestFormat> results = {
+        // Float formats
+        {VK_FORMAT_R32G32B32A32_SFLOAT},
+        {VK_FORMAT_R16G16B16A16_SFLOAT},
+        {VK_FORMAT_R32_SFLOAT},
+
+        // Uint formats
+        {VK_FORMAT_R32G32B32A32_UINT},
+        {VK_FORMAT_R16G16B16A16_UINT},
+        {VK_FORMAT_R8G8B8A8_UINT},
+        {VK_FORMAT_R32_UINT},
+
+        // Sint formats
+        {VK_FORMAT_R32G32B32A32_SINT},
+        {VK_FORMAT_R16G16B16A16_SINT},
+        {VK_FORMAT_R8G8B8A8_SINT},
+        {VK_FORMAT_R32_SINT},
+
+        // Unorm
+        {VK_FORMAT_R8G8B8A8_UNORM},
+
+        // Snorm
+        {VK_FORMAT_R8G8B8A8_SNORM},
+    };
+
+    return results;
+}
+
 class SparseResourceTransferQueueCase : public TestCase
 {
 public:
@@ -126,7 +156,7 @@ SparseResourceTransferQueueInstance::SparseResourceTransferQueueInstance(Context
                                                                          const tcu::UVec3 &imageSize,
                                                                          const VkFormat format)
 
-    : SparseResourcesBaseInstance(context, false)
+    : SparseResourcesBaseInstance(context, false, true)
     , m_imageType(imageType)
     , m_imageSize(imageSize)
     , m_format(format)
@@ -143,16 +173,14 @@ tcu::TestStatus SparseResourceTransferQueueInstance::iterate(void)
     {
         // Create logical device supporting both sparse and compute queues
         QueueRequirementsVec queueRequirements;
-        queueRequirements.push_back(QueueRequirements(VK_QUEUE_SPARSE_BINDING_BIT | VK_QUEUE_GRAPHICS_BIT, 1u));
-        queueRequirements.push_back(QueueRequirements(VK_QUEUE_COMPUTE_BIT, 1u));
+        queueRequirements.push_back(QueueRequirements(VK_QUEUE_SPARSE_BINDING_BIT | VK_QUEUE_TRANSFER_BIT, 1u));
 
         createDeviceSupportingQueues(queueRequirements);
     }
 
     const VkPhysicalDevice physicalDevice  = getPhysicalDevice();
     const DeviceInterface &deviceInterface = getDeviceInterface();
-    const Queue &universalQueue            = getQueue(VK_QUEUE_SPARSE_BINDING_BIT | VK_QUEUE_GRAPHICS_BIT, 0);
-    const Queue &transferQueue             = getQueue(VK_QUEUE_COMPUTE_BIT, 0);
+    const Queue &transferQueue             = getQueue(VK_QUEUE_SPARSE_BINDING_BIT | VK_QUEUE_TRANSFER_BIT, 0);
 
     const PlanarFormatDescription formatDescription = getPlanarFormatDescription(m_format);
 
@@ -244,7 +272,7 @@ tcu::TestStatus SparseResourceTransferQueueInstance::iterate(void)
         };
 
         // Submit sparse bind commands for execution
-        VK_CHECK(deviceInterface.queueBindSparse(universalQueue.queueHandle, 1u, &bindSparseInfo, VK_NULL_HANDLE));
+        VK_CHECK(deviceInterface.queueBindSparse(transferQueue.queueHandle, 1u, &bindSparseInfo, VK_NULL_HANDLE));
     }
 
     // Uploading
@@ -326,10 +354,7 @@ tcu::TestStatus SparseResourceTransferQueueInstance::iterate(void)
                 0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 *m_sparseImage,
                 makeImageSubresourceRange(aspect, 0u, m_sparseInfo.mipLevels, 0u, m_sparseInfo.arrayLayers),
-                universalQueue.queueFamilyIndex != transferQueue.queueFamilyIndex ? universalQueue.queueFamilyIndex :
-                                                                                    VK_QUEUE_FAMILY_IGNORED,
-                universalQueue.queueFamilyIndex != transferQueue.queueFamilyIndex ? transferQueue.queueFamilyIndex :
-                                                                                    VK_QUEUE_FAMILY_IGNORED));
+                VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED));
         }
         deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                            VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr,
@@ -391,7 +416,7 @@ tcu::TestStatus SparseResourceTransferQueueInstance::iterate(void)
     invalidateAlloc(deviceInterface, getDevice(), *outputBufferAlloc);
 
     // Wait for sparse queue to become idle
-    deviceInterface.queueWaitIdle(universalQueue.queueHandle);
+    deviceInterface.queueWaitIdle(transferQueue.queueHandle);
 
     const uint8_t *outputData = static_cast<const uint8_t *>(outputBufferAlloc->getHostPtr());
     bool ignoreLsb6Bits       = areLsb6BitsDontCare(m_sparseInfo.format);
@@ -440,27 +465,8 @@ TestInstance *SparseResourceTransferQueueCase::createInstance(Context &context) 
 tcu::TestCaseGroup *createTransferQueueTests(tcu::TestContext &testCtx)
 {
     const std::vector<TestImageParameters> imageParameters{
-        {IMAGE_TYPE_1D,
-         {tcu::UVec3(512u, 1u, 1u), tcu::UVec3(1024u, 1u, 1u), tcu::UVec3(11u, 1u, 1u)},
-         getTestFormats(IMAGE_TYPE_1D)},
-        {IMAGE_TYPE_1D_ARRAY,
-         {tcu::UVec3(512u, 1u, 64u), tcu::UVec3(1024u, 1u, 8u), tcu::UVec3(11u, 1u, 3u)},
-         getTestFormats(IMAGE_TYPE_1D_ARRAY)},
-        {IMAGE_TYPE_2D,
-         {tcu::UVec3(512u, 256u, 1u), tcu::UVec3(1024u, 128u, 1u), tcu::UVec3(11u, 137u, 1u)},
-         getTestFormats(IMAGE_TYPE_2D)},
-        {IMAGE_TYPE_2D_ARRAY,
-         {tcu::UVec3(512u, 256u, 6u), tcu::UVec3(1024u, 128u, 8u), tcu::UVec3(11u, 137u, 3u)},
-         getTestFormats(IMAGE_TYPE_2D_ARRAY)},
-        {IMAGE_TYPE_3D,
-         {tcu::UVec3(512u, 256u, 6u), tcu::UVec3(1024u, 128u, 8u), tcu::UVec3(11u, 137u, 3u)},
-         getTestFormats(IMAGE_TYPE_3D)},
-        {IMAGE_TYPE_CUBE,
-         {tcu::UVec3(256u, 256u, 1u), tcu::UVec3(128u, 128u, 1u), tcu::UVec3(137u, 137u, 1u)},
-         getTestFormats(IMAGE_TYPE_CUBE)},
-        {IMAGE_TYPE_CUBE_ARRAY,
-         {tcu::UVec3(256u, 256u, 6u), tcu::UVec3(128u, 128u, 8u), tcu::UVec3(137u, 137u, 3u)},
-         getTestFormats(IMAGE_TYPE_CUBE_ARRAY)}};
+        {IMAGE_TYPE_2D, {tcu::UVec3(512u, 256u, 1u)}, getBasicTestFormats()},
+    };
 
     // Sparse resources on transfer queue operation tests.
     de::MovePtr<tcu::TestCaseGroup> transferGroup(new tcu::TestCaseGroup(testCtx, "transfer_queue"));

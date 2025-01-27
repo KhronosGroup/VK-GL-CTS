@@ -97,6 +97,7 @@ enum FillMode
     FILL_MODE_WHITE,
     FILL_MODE_BLACK,
     FILL_MODE_RED,
+    FILL_MODE_RANDOM_GRAY,
     FILL_MODE_MULTISAMPLE,
     FILL_MODE_BLUE_RED_X,
     FILL_MODE_BLUE_RED_Y,
@@ -573,8 +574,6 @@ protected:
     Move<VkCommandBuffer> m_otherCmdBuffer;
     Move<VkCommandPool> m_secondaryCmdPool;
     Move<VkCommandBuffer> m_secondaryCmdBuffer;
-    Move<VkCommandPool> m_sparseCmdPool;
-    Move<VkCommandBuffer> m_sparseCmdBuffer;
 
     de::MovePtr<tcu::TextureLevel> m_sourceTextureLevel;
     de::MovePtr<tcu::TextureLevel> m_destinationTextureLevel;
@@ -589,7 +588,7 @@ protected:
     virtual void generateExpectedResult(void);
     void uploadBuffer(const tcu::ConstPixelBufferAccess &bufferAccess, const Allocation &bufferAlloc);
     void uploadImage(const tcu::ConstPixelBufferAccess &src, VkImage dst, const ImageParms &parms,
-                     const uint32_t mipLevels = 1u);
+                     const uint32_t mipLevels, Move<VkSemaphore> *semaphore);
     virtual tcu::TestStatus checkTestResult(tcu::ConstPixelBufferAccess result);
     virtual void copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst,
                                           CopyRegion region, uint32_t mipLevel = 0u) = 0;
@@ -598,8 +597,8 @@ protected:
         return src.getWidth() * src.getHeight() * src.getDepth() * tcu::getPixelSize(src.getFormat());
     }
 
-    de::MovePtr<tcu::TextureLevel> readImage(vk::VkImage image, const ImageParms &imageParms,
-                                             const uint32_t mipLevel = 0u);
+    de::MovePtr<tcu::TextureLevel> readImage(vk::VkImage image, const ImageParms &imageParms, const uint32_t mipLevel,
+                                             Move<VkSemaphore> *semaphore);
 
     using ExecutionCtx = std::tuple<VkQueue, VkCommandBuffer, VkCommandPool>;
     ExecutionCtx activeExecutionCtx()
@@ -635,9 +634,9 @@ protected:
 
 private:
     void uploadImageAspect(const tcu::ConstPixelBufferAccess &src, const VkImage &dst, const ImageParms &parms,
-                           const uint32_t mipLevels = 1u);
+                           const uint32_t mipLevels, Move<VkSemaphore> *semaphore);
     void readImageAspect(vk::VkImage src, const tcu::PixelBufferAccess &dst, const ImageParms &parms,
-                         const uint32_t mipLevel = 0u);
+                         const uint32_t mipLevel, Move<VkSemaphore> *semaphore);
 };
 
 CopiesAndBlittingTestInstance::CopiesAndBlittingTestInstance(Context &context, TestParams testParams)
@@ -739,6 +738,7 @@ void CopiesAndBlittingTestInstance::generateBuffer(tcu::PixelBufferAccess buffer
         return;
     }
 
+    de::Random randomGen(deInt32Hash((uint32_t)buffer.getFormat().type));
     const tcu::Vec4 redColor(maxValue.x(), 0.0, 0.0, maxValue.w());
     const tcu::Vec4 greenColor(0.0, maxValue.y(), 0.0, maxValue.w());
     const tcu::Vec4 blueColor(0.0, 0.0, maxValue.z(), maxValue.w());
@@ -783,6 +783,16 @@ void CopiesAndBlittingTestInstance::generateBuffer(tcu::PixelBufferAccess buffer
                     else
                         buffer.setPixel(redColor, x, y, z);
                     break;
+
+                case FILL_MODE_RANDOM_GRAY:
+                {
+                    // generate random gray color but multiply it by 0.95 to not generate
+                    // value that can be interpreted as NaNs when copied to float formats
+                    tcu::Vec4 randomGrayColor(randomGen.getFloat() * 0.95f);
+                    randomGrayColor.w() = maxValue.w();
+                    buffer.setPixel(randomGrayColor, x, y, z);
+                    break;
+                }
 
                 case FILL_MODE_BLUE_RED_X:
                 case FILL_MODE_BLUE_RED_Y:
@@ -840,9 +850,42 @@ void CopiesAndBlittingTestInstance::uploadBuffer(const tcu::ConstPixelBufferAcce
     flushAlloc(vk, m_device, bufferAlloc);
 }
 
+// Submits commands maybe waiting for a semaphore in a set of stages.
+// If the semaphore to wait on is not VK_NULL_HANDLE, it will be destroyed after the wait to avoid accidental reuse.
+// This is a wrapper to handle the need to use a sparse semaphore in some of these tests.
+void submitCommandsAndWaitWithSync(const DeviceInterface &vkd, VkDevice device, VkQueue queue,
+                                   VkCommandBuffer cmdBuffer, Move<VkSemaphore> *waitSemaphore = nullptr,
+                                   VkPipelineStageFlags waitStages = 0u)
+{
+    std::vector<VkSemaphore> waitSemaphores;
+    std::vector<VkPipelineStageFlags> waitStagesVec;
+
+    if (waitSemaphore != nullptr && waitSemaphore->get() != VK_NULL_HANDLE)
+    {
+        waitSemaphores.push_back(**waitSemaphore);
+        waitStagesVec.push_back(waitStages);
+    }
+
+    DE_ASSERT(waitSemaphores.size() == waitStagesVec.size());
+
+    submitCommandsAndWait(vkd, device, queue, cmdBuffer, false, 1u, de::sizeU32(waitSemaphores),
+                          de::dataOrNull(waitSemaphores), de::dataOrNull(waitStagesVec));
+
+    // Destroy semaphore after work completes.
+    if (waitSemaphore != nullptr)
+        *waitSemaphore = Move<VkSemaphore>();
+}
+
+void submitCommandsAndWaitWithTransferSync(const DeviceInterface &vkd, VkDevice device, VkQueue queue,
+                                           VkCommandBuffer cmdBuffer, Move<VkSemaphore> *waitSemaphore = nullptr)
+{
+    const auto waitStages = static_cast<VkPipelineStageFlags>(VK_PIPELINE_STAGE_TRANSFER_BIT);
+    submitCommandsAndWaitWithSync(vkd, device, queue, cmdBuffer, waitSemaphore, waitStages);
+}
+
 void CopiesAndBlittingTestInstance::uploadImageAspect(const tcu::ConstPixelBufferAccess &imageAccess,
                                                       const VkImage &image, const ImageParms &parms,
-                                                      const uint32_t mipLevels)
+                                                      const uint32_t mipLevels, Move<VkSemaphore> *semaphore)
 {
     const InstanceInterface &vki        = m_context.getInstanceInterface();
     const DeviceInterface &vk           = m_context.getDeviceInterface();
@@ -938,12 +981,14 @@ void CopiesAndBlittingTestInstance::uploadImageAspect(const tcu::ConstPixelBuffe
                           (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &postImageBarrier);
     endCommandBuffer(vk, *m_universalCmdBuffer);
 
-    submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
+    submitCommandsAndWaitWithTransferSync(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer, semaphore);
+
     m_context.resetCommandPoolForVKSC(vkDevice, *m_universalCmdPool);
 }
 
 void CopiesAndBlittingTestInstance::uploadImage(const tcu::ConstPixelBufferAccess &src, VkImage dst,
-                                                const ImageParms &parms, const uint32_t mipLevels)
+                                                const ImageParms &parms, const uint32_t mipLevels,
+                                                Move<VkSemaphore> *semaphore)
 {
     if (tcu::isCombinedDepthStencilType(src.getFormat().type))
     {
@@ -952,7 +997,7 @@ void CopiesAndBlittingTestInstance::uploadImage(const tcu::ConstPixelBufferAcces
             tcu::TextureLevel depthTexture(mapCombinedToDepthTransferFormat(src.getFormat()), src.getWidth(),
                                            src.getHeight(), src.getDepth());
             tcu::copy(depthTexture.getAccess(), tcu::getEffectiveDepthStencilAccess(src, tcu::Sampler::MODE_DEPTH));
-            uploadImageAspect(depthTexture.getAccess(), dst, parms, mipLevels);
+            uploadImageAspect(depthTexture.getAccess(), dst, parms, mipLevels, semaphore);
         }
 
         if (tcu::hasStencilComponent(src.getFormat().order))
@@ -961,11 +1006,11 @@ void CopiesAndBlittingTestInstance::uploadImage(const tcu::ConstPixelBufferAcces
                 tcu::getEffectiveDepthStencilTextureFormat(src.getFormat(), tcu::Sampler::MODE_STENCIL), src.getWidth(),
                 src.getHeight(), src.getDepth());
             tcu::copy(stencilTexture.getAccess(), tcu::getEffectiveDepthStencilAccess(src, tcu::Sampler::MODE_STENCIL));
-            uploadImageAspect(stencilTexture.getAccess(), dst, parms, mipLevels);
+            uploadImageAspect(stencilTexture.getAccess(), dst, parms, mipLevels, semaphore);
         }
     }
     else
-        uploadImageAspect(src, dst, parms, mipLevels);
+        uploadImageAspect(src, dst, parms, mipLevels, semaphore);
 }
 
 tcu::TestStatus CopiesAndBlittingTestInstance::checkTestResult(tcu::ConstPixelBufferAccess result)
@@ -1013,7 +1058,8 @@ void CopiesAndBlittingTestInstance::generateExpectedResult(void)
 }
 
 void CopiesAndBlittingTestInstance::readImageAspect(vk::VkImage image, const tcu::PixelBufferAccess &dst,
-                                                    const ImageParms &imageParms, const uint32_t mipLevel)
+                                                    const ImageParms &imageParms, const uint32_t mipLevel,
+                                                    Move<VkSemaphore> *semaphore)
 {
     const InstanceInterface &vki      = m_context.getInstanceInterface();
     const DeviceInterface &vk         = m_context.getDeviceInterface();
@@ -1135,7 +1181,8 @@ void CopiesAndBlittingTestInstance::readImageAspect(vk::VkImage image, const tcu
                           1, &bufferBarrier, 1, &postImageBarrier);
     endCommandBuffer(vk, *m_universalCmdBuffer);
 
-    submitCommandsAndWait(vk, device, m_universalQueue, *m_universalCmdBuffer);
+    submitCommandsAndWaitWithTransferSync(vk, device, m_universalQueue, *m_universalCmdBuffer, semaphore);
+
     m_context.resetCommandPoolForVKSC(device, *m_universalCmdPool);
 
     // Read buffer data
@@ -1144,7 +1191,8 @@ void CopiesAndBlittingTestInstance::readImageAspect(vk::VkImage image, const tcu
 }
 
 de::MovePtr<tcu::TextureLevel> CopiesAndBlittingTestInstance::readImage(vk::VkImage image, const ImageParms &parms,
-                                                                        const uint32_t mipLevel)
+                                                                        const uint32_t mipLevel,
+                                                                        Move<VkSemaphore> *semaphore)
 {
     const tcu::TextureFormat imageFormat = getSizeCompatibleTcuTextureFormat(parms.format);
     de::MovePtr<tcu::TextureLevel> resultLevel(new tcu::TextureLevel(
@@ -1157,7 +1205,7 @@ de::MovePtr<tcu::TextureLevel> CopiesAndBlittingTestInstance::readImage(vk::VkIm
             tcu::TextureLevel depthTexture(mapCombinedToDepthTransferFormat(imageFormat),
                                            parms.extent.width >> mipLevel, parms.extent.height >> mipLevel,
                                            parms.extent.depth);
-            readImageAspect(image, depthTexture.getAccess(), parms, mipLevel);
+            readImageAspect(image, depthTexture.getAccess(), parms, mipLevel, semaphore);
             tcu::copy(tcu::getEffectiveDepthStencilAccess(resultLevel->getAccess(), tcu::Sampler::MODE_DEPTH),
                       depthTexture.getAccess());
         }
@@ -1167,20 +1215,52 @@ de::MovePtr<tcu::TextureLevel> CopiesAndBlittingTestInstance::readImage(vk::VkIm
             tcu::TextureLevel stencilTexture(
                 tcu::getEffectiveDepthStencilTextureFormat(imageFormat, tcu::Sampler::MODE_STENCIL),
                 parms.extent.width >> mipLevel, parms.extent.height >> mipLevel, parms.extent.depth);
-            readImageAspect(image, stencilTexture.getAccess(), parms, mipLevel);
+            readImageAspect(image, stencilTexture.getAccess(), parms, mipLevel, semaphore);
             tcu::copy(tcu::getEffectiveDepthStencilAccess(resultLevel->getAccess(), tcu::Sampler::MODE_STENCIL),
                       stencilTexture.getAccess());
         }
     }
     else
-        readImageAspect(image, resultLevel->getAccess(), parms, mipLevel);
+        readImageAspect(image, resultLevel->getAccess(), parms, mipLevel, semaphore);
 
     return resultLevel;
 }
 
+class CopiesAndBlittingTestInstanceWithSparseSemaphore : public CopiesAndBlittingTestInstance
+{
+public:
+    CopiesAndBlittingTestInstanceWithSparseSemaphore(Context &context, TestParams params)
+        : CopiesAndBlittingTestInstance(context, params)
+        , m_sparseSemaphore()
+    {
+    }
+
+    void uploadImage(const tcu::ConstPixelBufferAccess &src, VkImage dst, const ImageParms &parms,
+                     const uint32_t mipLevels = 1u);
+
+    de::MovePtr<tcu::TextureLevel> readImage(vk::VkImage image, const ImageParms &imageParms,
+                                             const uint32_t mipLevel = 0u);
+
+protected:
+    Move<VkSemaphore> m_sparseSemaphore;
+};
+
+void CopiesAndBlittingTestInstanceWithSparseSemaphore::uploadImage(const tcu::ConstPixelBufferAccess &src, VkImage dst,
+                                                                   const ImageParms &parms, const uint32_t mipLevels)
+{
+    CopiesAndBlittingTestInstance::uploadImage(src, dst, parms, mipLevels, &m_sparseSemaphore);
+}
+
+de::MovePtr<tcu::TextureLevel> CopiesAndBlittingTestInstanceWithSparseSemaphore::readImage(vk::VkImage image,
+                                                                                           const ImageParms &imageParms,
+                                                                                           const uint32_t mipLevel)
+{
+    return CopiesAndBlittingTestInstance::readImage(image, imageParms, mipLevel, &m_sparseSemaphore);
+}
+
 // Copy from image to image.
 
-class CopyImageToImage final : public CopiesAndBlittingTestInstance
+class CopyImageToImage final : public CopiesAndBlittingTestInstanceWithSparseSemaphore
 {
 public:
     CopyImageToImage(Context &context, TestParams params);
@@ -1196,10 +1276,10 @@ private:
     Move<VkImage> m_destination;
     de::MovePtr<Allocation> m_destinationImageAlloc;
     std::vector<de::SharedPtr<Allocation>> m_sparseAllocations;
-    Move<VkSemaphore> m_sparseSemaphore;
 };
 
-CopyImageToImage::CopyImageToImage(Context &context, TestParams params) : CopiesAndBlittingTestInstance(context, params)
+CopyImageToImage::CopyImageToImage(Context &context, TestParams params)
+    : CopiesAndBlittingTestInstanceWithSparseSemaphore(context, params)
 {
     const InstanceInterface &vki        = context.getInstanceInterface();
     const DeviceInterface &vk           = context.getDeviceInterface();
@@ -1473,15 +1553,8 @@ tcu::TestStatus CopyImageToImage::iterate(void)
         endCommandBuffer(vk, cmdbuf);
     }
 
-    if (m_params.useSparseBinding)
-    {
-        const VkPipelineStageFlags stageBits[] = {VK_PIPELINE_STAGE_TRANSFER_BIT};
-        submitCommandsAndWait(vk, vkDevice, queue, cmdbuf, false, 1u, 1u, &*m_sparseSemaphore, stageBits);
-    }
-    else
-    {
-        submitCommandsAndWait(vk, vkDevice, queue, cmdbuf);
-    }
+    submitCommandsAndWaitWithTransferSync(vk, vkDevice, queue, cmdbuf, &m_sparseSemaphore);
+
     m_context.resetCommandPoolForVKSC(vkDevice, cmdpool);
 
     if (m_params.useSecondaryCmdBuffer)
@@ -1772,7 +1845,7 @@ private:
     TestParams m_params;
 };
 
-class CopyImageToImageMipmap : public CopiesAndBlittingTestInstance
+class CopyImageToImageMipmap : public CopiesAndBlittingTestInstanceWithSparseSemaphore
 {
 public:
     CopyImageToImageMipmap(Context &context, TestParams params);
@@ -1787,14 +1860,13 @@ private:
     Move<VkImage> m_destination;
     de::MovePtr<Allocation> m_destinationImageAlloc;
     std::vector<de::SharedPtr<Allocation>> m_sparseAllocations;
-    Move<VkSemaphore> m_sparseSemaphore;
 
     virtual void copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst,
                                           CopyRegion region, uint32_t mipLevel = 0u);
 };
 
 CopyImageToImageMipmap::CopyImageToImageMipmap(Context &context, TestParams params)
-    : CopiesAndBlittingTestInstance(context, params)
+    : CopiesAndBlittingTestInstanceWithSparseSemaphore(context, params)
 {
     const InstanceInterface &vki        = context.getInstanceInterface();
     const DeviceInterface &vk           = context.getDeviceInterface();
@@ -2013,15 +2085,7 @@ tcu::TestStatus CopyImageToImageMipmap::iterate(void)
 
     endCommandBuffer(vk, commandBuffer);
 
-    if (m_params.useSparseBinding)
-    {
-        const VkPipelineStageFlags stageBits[] = {VK_PIPELINE_STAGE_TRANSFER_BIT};
-        submitCommandsAndWait(vk, vkDevice, queue, commandBuffer, false, 1u, 1u, &*m_sparseSemaphore, stageBits);
-    }
-    else
-    {
-        submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
-    }
+    submitCommandsAndWaitWithTransferSync(vk, vkDevice, queue, commandBuffer, &m_sparseSemaphore);
 
     m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 
@@ -2453,7 +2517,7 @@ tcu::TestStatus CopyBufferToBuffer::iterate(void)
     vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
                           (VkDependencyFlags)0, 0, nullptr, 1, &dstBufferBarrier, 0, nullptr);
     endCommandBuffer(vk, commandBuffer);
-    submitCommandsAndWait(vk, m_device, queue, commandBuffer);
+    submitCommandsAndWaitWithSync(vk, m_device, queue, commandBuffer);
     m_context.resetCommandPoolForVKSC(m_device, commandPool);
 
     // Read buffer data
@@ -2500,7 +2564,7 @@ private:
 
 // Copy from image to buffer.
 
-class CopyImageToBuffer : public CopiesAndBlittingTestInstance
+class CopyImageToBuffer : public CopiesAndBlittingTestInstanceWithSparseSemaphore
 {
 public:
     CopyImageToBuffer(Context &context, TestParams testParams);
@@ -2519,11 +2583,10 @@ private:
     de::MovePtr<Allocation> m_destinationBufferAlloc;
 
     std::vector<de::SharedPtr<Allocation>> m_sparseAllocations;
-    Move<VkSemaphore> m_sparseSemaphore;
 };
 
 CopyImageToBuffer::CopyImageToBuffer(Context &context, TestParams testParams)
-    : CopiesAndBlittingTestInstance(context, testParams)
+    : CopiesAndBlittingTestInstanceWithSparseSemaphore(context, testParams)
     , m_textureFormat(mapVkFormat(testParams.src.image.format))
     , m_bufferSize(m_params.dst.buffer.size * tcu::getPixelSize(m_textureFormat))
 {
@@ -2708,15 +2771,7 @@ tcu::TestStatus CopyImageToBuffer::iterate(void)
                           (VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier, 0, nullptr);
     endCommandBuffer(vk, commandBuffer);
 
-    if (m_params.useSparseBinding)
-    {
-        const VkPipelineStageFlags stageBits[] = {VK_PIPELINE_STAGE_TRANSFER_BIT};
-        submitCommandsAndWait(vk, vkDevice, queue, commandBuffer, false, 1u, 1u, &*m_sparseSemaphore, stageBits);
-    }
-    else
-    {
-        submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
-    }
+    submitCommandsAndWaitWithTransferSync(vk, vkDevice, queue, commandBuffer, &m_sparseSemaphore);
 
     m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 
@@ -2971,7 +3026,7 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate(void)
                                   (VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier, 0, nullptr);
             endCommandBuffer(vk, commandBuffer);
 
-            submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
+            submitCommandsAndWaitWithSync(vk, vkDevice, queue, commandBuffer);
             m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 
             invalidateAlloc(vk, vkDevice, m_destination->getAllocation());
@@ -3039,7 +3094,7 @@ void CopyCompressedImageToBufferTestCase::checkSupport(Context &context) const
 
 // Copy from buffer to image.
 
-class CopyBufferToImage : public CopiesAndBlittingTestInstance
+class CopyBufferToImage : public CopiesAndBlittingTestInstanceWithSparseSemaphore
 {
 public:
     CopyBufferToImage(Context &context, TestParams testParams);
@@ -3057,11 +3112,10 @@ private:
     Move<VkImage> m_destination;
     de::MovePtr<Allocation> m_destinationImageAlloc;
     std::vector<de::SharedPtr<Allocation>> m_sparseAllocations;
-    Move<VkSemaphore> m_sparseSemaphore;
 };
 
 CopyBufferToImage::CopyBufferToImage(Context &context, TestParams testParams)
-    : CopiesAndBlittingTestInstance(context, testParams)
+    : CopiesAndBlittingTestInstanceWithSparseSemaphore(context, testParams)
     , m_textureFormat(mapVkFormat(testParams.dst.image.format))
     , m_bufferSize(m_params.src.buffer.size * tcu::getPixelSize(m_textureFormat))
 {
@@ -3230,15 +3284,7 @@ tcu::TestStatus CopyBufferToImage::iterate(void)
 
     endCommandBuffer(vk, commandBuffer);
 
-    if (m_params.useSparseBinding)
-    {
-        const VkPipelineStageFlags stageBits[] = {VK_PIPELINE_STAGE_TRANSFER_BIT};
-        submitCommandsAndWait(vk, vkDevice, queue, commandBuffer, false, 1u, 1u, &*m_sparseSemaphore, stageBits);
-    }
-    else
-    {
-        submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
-    }
+    submitCommandsAndWaitWithTransferSync(vk, vkDevice, queue, commandBuffer, &m_sparseSemaphore);
 
     m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 
@@ -3317,7 +3363,7 @@ void CopyBufferToImage::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src
     }
 }
 
-class CopyBufferToDepthStencil : public CopiesAndBlittingTestInstance
+class CopyBufferToDepthStencil : public CopiesAndBlittingTestInstanceWithSparseSemaphore
 {
 public:
     CopyBufferToDepthStencil(Context &context, TestParams testParams);
@@ -3335,7 +3381,6 @@ private:
     Move<VkImage> m_destination;
     de::MovePtr<Allocation> m_destinationImageAlloc;
     std::vector<de::SharedPtr<Allocation>> m_sparseAllocations;
-    Move<VkSemaphore> m_sparseSemaphore;
 };
 
 void CopyBufferToDepthStencil::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst,
@@ -3389,7 +3434,7 @@ bool isSupportedDepthStencilFormat(const InstanceInterface &vki, const VkPhysica
 }
 
 CopyBufferToDepthStencil::CopyBufferToDepthStencil(Context &context, TestParams testParams)
-    : CopiesAndBlittingTestInstance(context, testParams)
+    : CopiesAndBlittingTestInstanceWithSparseSemaphore(context, testParams)
     , m_textureFormat(mapVkFormat(testParams.dst.image.format))
     , m_bufferSize(0)
 {
@@ -3400,6 +3445,15 @@ CopyBufferToDepthStencil::CopyBufferToDepthStencil(Context &context, TestParams 
     Allocator &memAlloc                 = context.getDefaultAllocator();
     const bool hasDepth                 = tcu::hasDepthComponent(mapVkFormat(m_params.dst.image.format).order);
     const bool hasStencil               = tcu::hasStencilComponent(mapVkFormat(m_params.dst.image.format).order);
+
+    // As copying depth/stencil requires queue that supports graphics operations we need to throw NotSupported for compute only implementations
+    {
+        const bool isComputeOnly = m_context.getTestContext().getCommandLine().isComputeOnly();
+        if (isComputeOnly)
+        {
+            TCU_THROW(NotSupportedError, "Universal queue does not support graphics operations.");
+        }
+    }
 
     if (!isSupportedDepthStencilFormat(vki, vkPhysDevice, testParams.dst.image.format))
     {
@@ -3699,16 +3753,7 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 
     endCommandBuffer(vk, *m_universalCmdBuffer);
 
-    if (m_params.useSparseBinding)
-    {
-        const VkPipelineStageFlags stageBits[] = {VK_PIPELINE_STAGE_TRANSFER_BIT};
-        submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer, false, 1u, 1u, &*m_sparseSemaphore,
-                              stageBits);
-    }
-    else
-    {
-        submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
-    }
+    submitCommandsAndWaitWithTransferSync(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer, &m_sparseSemaphore);
 
     m_context.resetCommandPoolForVKSC(vkDevice, *m_universalCmdPool);
 
@@ -3866,7 +3911,7 @@ const tcu::CompressedTexture &CompressedTextureForBlit::getCompressedTexture() c
 
 // Copy from image to image with scaling.
 
-class BlittingImages : public CopiesAndBlittingTestInstance
+class BlittingImages : public CopiesAndBlittingTestInstanceWithSparseSemaphore
 {
 public:
     BlittingImages(Context &context, TestParams params);
@@ -3900,7 +3945,6 @@ private:
     Move<VkImage> m_destination;
     de::MovePtr<Allocation> m_destinationImageAlloc;
     std::vector<de::SharedPtr<Allocation>> m_sparseAllocations;
-    Move<VkSemaphore> m_sparseSemaphore;
 
     de::MovePtr<tcu::TextureLevel> m_unclampedExpectedTextureLevel;
 
@@ -3939,7 +3983,8 @@ VkImageBlit make3Dto2DArrayBlit(VkExtent3D srcBaseSize, VkExtent3D dstBaseSize, 
     return blit;
 }
 
-BlittingImages::BlittingImages(Context &context, TestParams params) : CopiesAndBlittingTestInstance(context, params)
+BlittingImages::BlittingImages(Context &context, TestParams params)
+    : CopiesAndBlittingTestInstanceWithSparseSemaphore(context, params)
 {
     const InstanceInterface &vki        = context.getInstanceInterface();
     const DeviceInterface &vk           = context.getDeviceInterface();
@@ -4214,16 +4259,9 @@ tcu::TestStatus BlittingImages::iterate(void)
     }
 
     endCommandBuffer(vk, *m_universalCmdBuffer);
-    if (m_params.useSparseBinding)
-    {
-        const VkPipelineStageFlags stageBits[] = {VK_PIPELINE_STAGE_TRANSFER_BIT};
-        submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer, false, 1u, 1u, &*m_sparseSemaphore,
-                              stageBits);
-    }
-    else
-    {
-        submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
-    }
+
+    submitCommandsAndWaitWithTransferSync(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer, &m_sparseSemaphore);
+
     m_context.resetCommandPoolForVKSC(vkDevice, *m_universalCmdPool);
 
     de::MovePtr<tcu::TextureLevel> resultLevel = readImage(*m_destination, dstImageParams);
@@ -5544,7 +5582,8 @@ void BlittingImages::uploadCompressedImage(const VkImage &image, const ImageParm
                           (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &postImageBarrier);
     endCommandBuffer(vk, *m_universalCmdBuffer);
 
-    submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
+    submitCommandsAndWaitWithTransferSync(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer, &m_sparseSemaphore);
+
     m_context.resetCommandPoolForVKSC(vkDevice, *m_universalCmdPool);
 }
 
@@ -5636,7 +5675,7 @@ private:
     TestParams m_params;
 };
 
-class BlittingMipmaps : public CopiesAndBlittingTestInstance
+class BlittingMipmaps : public CopiesAndBlittingTestInstanceWithSparseSemaphore
 {
 public:
     BlittingMipmaps(Context &context, TestParams params);
@@ -5657,12 +5696,12 @@ private:
     Move<VkImage> m_destination;
     de::MovePtr<Allocation> m_destinationImageAlloc;
     std::vector<de::SharedPtr<Allocation>> m_sparseAllocations;
-    Move<VkSemaphore> m_sparseSemaphore;
 
     de::MovePtr<tcu::TextureLevel> m_unclampedExpectedTextureLevel[16];
 };
 
-BlittingMipmaps::BlittingMipmaps(Context &context, TestParams params) : CopiesAndBlittingTestInstance(context, params)
+BlittingMipmaps::BlittingMipmaps(Context &context, TestParams params)
+    : CopiesAndBlittingTestInstanceWithSparseSemaphore(context, params)
 {
     const InstanceInterface &vki        = context.getInstanceInterface();
     const DeviceInterface &vk           = context.getDeviceInterface();
@@ -6016,16 +6055,7 @@ tcu::TestStatus BlittingMipmaps::iterate(void)
 
     endCommandBuffer(vk, *m_universalCmdBuffer);
 
-    if (m_params.useSparseBinding)
-    {
-        const VkPipelineStageFlags stageBits[] = {VK_PIPELINE_STAGE_TRANSFER_BIT};
-        submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer, false, 1u, 1u, &*m_sparseSemaphore,
-                              stageBits);
-    }
-    else
-    {
-        submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
-    }
+    submitCommandsAndWaitWithTransferSync(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer, &m_sparseSemaphore);
 
     m_context.resetCommandPoolForVKSC(vkDevice, *m_universalCmdPool);
 
@@ -6502,7 +6532,7 @@ enum ResolveImageToImageOptions
     COPY_MS_IMAGE_TO_MS_IMAGE_TRANSFER
 };
 
-class ResolveImageToImage : public CopiesAndBlittingTestInstance
+class ResolveImageToImage : public CopiesAndBlittingTestInstanceWithSparseSemaphore
 {
 public:
     ResolveImageToImage(Context &context, TestParams params, ResolveImageToImageOptions options);
@@ -6528,7 +6558,6 @@ private:
     Move<VkImage> m_destination;
     de::MovePtr<Allocation> m_destinationImageAlloc;
     std::vector<de::SharedPtr<Allocation>> m_sparseAllocations;
-    Move<VkSemaphore> m_sparseSemaphore;
 
     Move<VkImage> m_multisampledCopyImage;
     de::MovePtr<Allocation> m_multisampledCopyImageAlloc;
@@ -6543,7 +6572,7 @@ private:
 };
 
 ResolveImageToImage::ResolveImageToImage(Context &context, TestParams params, const ResolveImageToImageOptions options)
-    : CopiesAndBlittingTestInstance(context, params)
+    : CopiesAndBlittingTestInstanceWithSparseSemaphore(context, params)
     , m_params(params)
     , m_options(options)
 {
@@ -7026,16 +7055,8 @@ ResolveImageToImage::ResolveImageToImage(Context &context, TestParams params, co
             endCommandBuffer(vk, *m_universalCmdBuffer);
         }
 
-        if (m_params.useSparseBinding)
-        {
-            const VkPipelineStageFlags stageBits[] = {VK_PIPELINE_STAGE_TRANSFER_BIT};
-            submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer, false, 1u, 1u,
-                                  &*m_sparseSemaphore, stageBits);
-        }
-        else
-        {
-            submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
-        }
+        submitCommandsAndWaitWithTransferSync(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer,
+                                              &m_sparseSemaphore);
 
         m_context.resetCommandPoolForVKSC(vkDevice, *m_universalCmdPool);
     }
@@ -7217,7 +7238,7 @@ tcu::TestStatus ResolveImageToImage::iterate(void)
     vk.cmdPipelineBarrier(*m_universalCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
                           (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &postImageBarrier);
     endCommandBuffer(vk, *m_universalCmdBuffer);
-    submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
+    submitCommandsAndWaitWithTransferSync(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer, &m_sparseSemaphore);
     m_context.resetCommandPoolForVKSC(vkDevice, *m_universalCmdPool);
 
     de::MovePtr<tcu::TextureLevel> resultTextureLevel = readImage(*m_destination, m_params.dst.image);
@@ -7598,7 +7619,7 @@ tcu::TestStatus ResolveImageToImage::checkIntermediateCopy(void)
     vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u,
                            &bufferBarrier, 0u, nullptr, 0u, nullptr);
     endCommandBuffer(vkd, cmdBuffer);
-    submitCommandsAndWait(vkd, device, m_universalQueue, cmdBuffer);
+    submitCommandsAndWaitWithTransferSync(vkd, device, m_universalQueue, cmdBuffer, &m_sparseSemaphore);
     m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
     // Verify intermediate results.
@@ -7850,7 +7871,10 @@ void ResolveImageToImage::copyMSImageToMSImage(uint32_t copyArraySize)
                                   VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, (VkDependencyFlags)0, 0, nullptr, 0, nullptr,
                                   (uint32_t)barriers.size(), barriers.data());
             endCommandBuffer(vk, *m_universalCmdBuffer);
-            submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
+
+            // As this is a queue ownership transfer, we do not bother with the sparse semaphore here.
+            submitCommandsAndWaitWithSync(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
+
             m_context.resetCommandPoolForVKSC(vkDevice, *m_universalCmdPool);
         }
 
@@ -7878,7 +7902,10 @@ void ResolveImageToImage::copyMSImageToMSImage(uint32_t copyArraySize)
                                   (VkDependencyFlags)0, 0, nullptr, 0, nullptr, (uint32_t)barriers.size(),
                                   barriers.data());
             endCommandBuffer(vk, commandBuffer);
-            submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
+
+            // As this is a queue ownership transfer, we do not bother with the sparse semaphore here.
+            submitCommandsAndWaitWithSync(vk, vkDevice, queue, commandBuffer);
+
             m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
         }
 
@@ -7977,7 +8004,7 @@ void ResolveImageToImage::copyMSImageToMSImage(uint32_t copyArraySize)
     if (m_params.queueSelection != QueueSelectionOptions::Universal)
     {
         endCommandBuffer(vk, commandBuffer);
-        submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
+        submitCommandsAndWaitWithTransferSync(vk, vkDevice, queue, commandBuffer, &m_sparseSemaphore);
         m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 
         VkImageMemoryBarrier srcImageBarrier = makeImageMemoryBarrier(
@@ -8004,7 +8031,10 @@ void ResolveImageToImage::copyMSImageToMSImage(uint32_t copyArraySize)
                                   (VkDependencyFlags)0, 0, nullptr, 0, nullptr, (uint32_t)barriers.size(),
                                   barriers.data());
             endCommandBuffer(vk, commandBuffer);
-            submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
+
+            // Queue ownership transfer, so we do not bother with the sparse semaphore here.
+            submitCommandsAndWaitWithSync(vk, vkDevice, queue, commandBuffer);
+
             m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
         }
 
@@ -8029,7 +8059,10 @@ void ResolveImageToImage::copyMSImageToMSImage(uint32_t copyArraySize)
                                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0, 0, nullptr, 0, nullptr,
                                   (uint32_t)barriers.size(), barriers.data());
             endCommandBuffer(vk, *m_universalCmdBuffer);
-            submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
+
+            // Queue ownership transfer, so we do not bother with the sparse semaphore here.
+            submitCommandsAndWaitWithSync(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
+
             m_context.resetCommandPoolForVKSC(vkDevice, *m_universalCmdPool);
         }
     }
@@ -8038,7 +8071,7 @@ void ResolveImageToImage::copyMSImageToMSImage(uint32_t copyArraySize)
         vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                               (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1u, &multisampledCopyImagePostBarrier);
         endCommandBuffer(vk, commandBuffer);
-        submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
+        submitCommandsAndWaitWithTransferSync(vk, vkDevice, queue, commandBuffer, &m_sparseSemaphore);
         m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
     }
 }
@@ -8700,17 +8733,21 @@ tcu::TestStatus DepthStencilMSAA::iterate(void)
                     &subResourceRange);                   // const VkImageSubresourceRange*    pRanges
 
                 // Post clear barrier
+                const auto dstAccess = static_cast<VkAccessFlags>(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                                                  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+                const auto dstStages = static_cast<VkPipelineStageFlags>(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                                                                         VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+
                 const VkImageMemoryBarrier postClearBarrier = makeImageMemoryBarrier(
                     VK_ACCESS_TRANSFER_WRITE_BIT,                     // VkAccessFlags            srcAccessMask
-                    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,     // VkAccessFlags            dstAccessMask
+                    dstAccess,                                        // VkAccessFlags            dstAccessMask
                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,             // VkImageLayout            oldLayout
                     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout            newLayout
                     srcImage.get(),                                   // VkImage                    image
                     subResourceRange);                                // VkImageSubresourceRange    subresourceRange
 
-                vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                      VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT, (VkDependencyFlags)0, 0, nullptr, 0,
-                                      nullptr, 1, &postClearBarrier);
+                vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, dstStages, (VkDependencyFlags)0, 0,
+                                      nullptr, 0, nullptr, 1, &postClearBarrier);
 
                 beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer,
                                 makeRect2D(0, 0, m_srcImage.extent.width, m_srcImage.extent.height), 1u,
@@ -8726,7 +8763,7 @@ tcu::TestStatus DepthStencilMSAA::iterate(void)
                 endCommandBuffer(vk, *cmdBuffer);
             }
 
-            submitCommandsAndWait(vk, vkDevice, queue, *cmdBuffer);
+            submitCommandsAndWaitWithSync(vk, vkDevice, queue, *cmdBuffer);
             m_context.resetCommandPoolForVKSC(vkDevice, *cmdPool);
         }
     }
@@ -8808,7 +8845,7 @@ tcu::TestStatus DepthStencilMSAA::iterate(void)
         }
     }
     endCommandBuffer(vk, *cmdBuffer);
-    submitCommandsAndWait(vk, vkDevice, queue, *cmdBuffer);
+    submitCommandsAndWaitWithSync(vk, vkDevice, queue, *cmdBuffer);
     m_context.resetCommandPoolForVKSC(vkDevice, *cmdPool);
 
     // Verify that all samples have been copied properly from all aspects.
@@ -9110,7 +9147,7 @@ tcu::TestStatus DepthStencilMSAA::checkCopyResults(VkCommandBuffer cmdBuffer,
     vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u,
                            &bufferBarrier, 0u, nullptr, 0u, nullptr);
     endCommandBuffer(vkd, cmdBuffer);
-    submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+    submitCommandsAndWaitWithSync(vkd, device, queue, cmdBuffer);
 
     // Verify intermediate results.
     invalidateAlloc(vkd, device, bufferOriginalAlloc);
@@ -9417,7 +9454,7 @@ tcu::TestStatus bufferOffsetTest(Context &ctx, BufferOffsetParams params)
     vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &barrier, 0u,
                            nullptr, 0u, nullptr);
     endCommandBuffer(vkd, cmdBuffer);
-    submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+    submitCommandsAndWaitWithSync(vkd, device, queue, cmdBuffer);
     invalidateAlloc(vkd, device, dstAlloc);
 
     // Verify destination buffer data.
@@ -10282,7 +10319,6 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
 
     // 1D to 1D tests.
     {
-        // 1D to 1D copies
         de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_1d"));
 
         TestParams params;
@@ -10339,7 +10375,6 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
 
     // 1D to 2D tests.
     {
-        // 1D to 2D copies
         de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_2d"));
 
         TestParams params;
@@ -10523,7 +10558,7 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
         params.dst.image.extent    = defaultExtent;
         params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
         params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.fillMode  = FILL_MODE_WHITE;
+        params.src.image.fillMode  = FILL_MODE_RANDOM_GRAY;
         params.dst.image.fillMode  = FILL_MODE_GRADIENT;
         params.allocationKind      = testGroupParams->allocationKind;
         params.extensionFlags      = testGroupParams->extensionFlags;
@@ -10579,7 +10614,7 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
         params.dst.image.extent    = default3dSmallExtent;
         params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
         params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.fillMode  = FILL_MODE_WHITE;
+        params.src.image.fillMode  = FILL_MODE_RANDOM_GRAY;
         params.dst.image.fillMode  = FILL_MODE_GRADIENT;
         params.allocationKind      = testGroupParams->allocationKind;
         params.extensionFlags      = testGroupParams->extensionFlags;
@@ -10878,6 +10913,7 @@ void addImageToImageDimensionsTests(tcu::TestCaseGroup *group, TestGroupParamsPt
         testParams.params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
         testParams.params.src.image.imageType = VK_IMAGE_TYPE_2D;
         testParams.params.src.image.extent    = extent;
+        testParams.params.src.image.fillMode  = FILL_MODE_PYRAMID;
 
         testParams.params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
         testParams.params.dst.image.imageType = VK_IMAGE_TYPE_2D;
@@ -11019,6 +11055,7 @@ void addImageToImageAllFormatsDepthStencilTests(tcu::TestCaseGroup *group, TestG
             params.extensionFlags      = testGroupParams->extensionFlags;
             params.queueSelection      = testGroupParams->queueSelection;
             params.useSparseBinding    = testGroupParams->useSparseBinding;
+            params.queueSelection      = testGroupParams->queueSelection;
 
             bool hasDepth   = tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
             bool hasStencil = tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
@@ -11816,8 +11853,7 @@ void addImageToImageAllFormatsDepthStencilTests(tcu::TestCaseGroup *group, TestG
 void addImageToImageAllFormatsTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testGroupParams)
 {
     addTestGroup(group, "color", addImageToImageAllFormatsColorTests, testGroupParams);
-    if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
-        addTestGroup(group, "depth_stencil", addImageToImageAllFormatsDepthStencilTests, testGroupParams);
+    addTestGroup(group, "depth_stencil", addImageToImageAllFormatsDepthStencilTests, testGroupParams);
 }
 
 void addImageToImage3dImagesTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testGroupParams)
@@ -17980,7 +18016,7 @@ tcu::TestStatus testCopies(Context &context, TestConfig config)
 
             endCommandBuffer(vkd, *transferCmdBuffer);
 
-            submitCommandsAndWait(vkd, device, transferQueue, *transferCmdBuffer);
+            submitCommandsAndWaitWithSync(vkd, device, transferQueue, *transferCmdBuffer);
         }
 
         if (config.dst.tiling == vk::VK_IMAGE_TILING_OPTIMAL)

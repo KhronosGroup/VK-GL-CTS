@@ -60,6 +60,29 @@ uint32_t findMatchingQueueFamilyIndex(const std::vector<VkQueueFamilyProperties>
     return NO_MATCH_FOUND;
 }
 
+uint32_t findSpecificQueueFamilyIndex(const std::vector<VkQueueFamilyProperties> &queueFamilyProperties,
+                                      const VkQueueFlags requestedFlags, const uint32_t startIndex)
+{
+    for (uint32_t queueNdx = startIndex; queueNdx < queueFamilyProperties.size(); ++queueNdx)
+    {
+        const VkQueueFlags queueFlags         = queueFamilyProperties[queueNdx].queueFlags;
+        const VkQueueFlags coreFlags          = (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT);
+        const VkQueueFlags coreQueueFlags     = queueFlags & coreFlags;
+        const VkQueueFlags coreRequestedFlags = requestedFlags & coreFlags;
+
+        bool isUniversal   = (coreQueueFlags & VK_QUEUE_GRAPHICS_BIT) != 0;
+        bool needUniversal = (coreRequestedFlags & VK_QUEUE_GRAPHICS_BIT) != 0;
+
+        if (isUniversal && needUniversal)
+            return queueNdx;
+
+        if ((coreQueueFlags == coreRequestedFlags) && ((queueFlags & requestedFlags) == requestedFlags))
+            return queueNdx;
+    }
+
+    return NO_MATCH_FOUND;
+}
+
 } // namespace
 
 void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequirementsVec &queueRequirements,
@@ -139,7 +162,9 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
         do
         {
             queueFamilyIndex =
-                findMatchingQueueFamilyIndex(queueFamilyProperties, queueRequirement.queueFlags, queueFamilyIndex);
+                m_forceSpecificQueue ?
+                    findSpecificQueueFamilyIndex(queueFamilyProperties, queueRequirement.queueFlags, queueFamilyIndex) :
+                    findMatchingQueueFamilyIndex(queueFamilyProperties, queueRequirement.queueFlags, queueFamilyIndex);
 
             if (queueFamilyIndex == NO_MATCH_FOUND)
                 TCU_THROW(NotSupportedError, "No match found for queue requirements");

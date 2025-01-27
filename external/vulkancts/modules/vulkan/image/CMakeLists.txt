@@ -54,6 +54,8 @@ set(DEQP_VK_VKSC_IMAGE_SRCS
 	vktImageDepthStencilSeparateTests.hpp
 	vktImageNonUniformOffsetSampleTests.cpp
 	vktImageNonUniformOffsetSampleTests.hpp
+	vktImageConcurrentCopyTests.cpp
+	vktImageConcurrentCopyTests.hpp
 	)
 
 set(DEQP_VK_IMAGE_SRCS

@@ -55,6 +55,7 @@
 #include <set>
 #include <string>
 #include <limits>
+#include <optional>
 
 namespace vkt
 {
@@ -595,7 +596,7 @@ void checkApiVersionSupport(Context &context)
 
 typedef struct FeatureLimitTableItem_
 {
-    const void *cond;
+    const VkBool32 *cond;
     const char *condName;
     const void *ptr;
     const char *name;
@@ -664,10 +665,10 @@ bool validateBitmaskLimit(const T limitToCheck, const T reportedValue, const Lim
 
 bool validateLimit(FeatureLimitTableItem limit, TestLog &log)
 {
-    if (*((VkBool32 *)limit.cond) == false)
+    if (*limit.cond == VK_FALSE)
     {
         log << TestLog::Message << "Limit validation skipped '" << limit.name << "' due to " << limit.condName
-            << " == false'" << TestLog::EndMessage;
+            << " == VK_FALSE'" << TestLog::EndMessage;
 
         return true;
     }
@@ -1077,6 +1078,85 @@ tcu::TestStatus validateLimits12(Context &context)
 }
 
 #ifndef CTS_USES_VULKANSC
+
+tcu::TestStatus validateLimits14(Context &context)
+{
+    TestLog &log  = context.getTestContext().getLog();
+    bool limitsOk = true;
+
+    const auto &features2 = context.getDeviceFeatures2();
+    const auto &features  = features2.features;
+
+    const auto vk11Properties = context.getDeviceVulkan11Properties();
+    const auto vk12Properties = context.getDeviceVulkan12Properties();
+    const auto vk12Features   = context.getDeviceVulkan12Features();
+    const auto &properties2   = context.getDeviceProperties2();
+    const auto &limits        = properties2.properties.limits;
+
+    const VkBool32 checkAlways                = VK_TRUE;
+    const VkBool32 checkShaderSZINPreserve    = vk11Properties.subgroupSize > 1;
+    const VkBool32 checkShaderSZINPreserveF16 = (checkShaderSZINPreserve && vk12Features.shaderFloat16);
+
+    VkShaderStageFlags subgroupSupportedStages = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    VkSubgroupFeatureFlags subgroupFeatureFlags =
+        VK_SUBGROUP_FEATURE_BASIC_BIT | VK_SUBGROUP_FEATURE_VOTE_BIT | VK_SUBGROUP_FEATURE_ARITHMETIC_BIT |
+        VK_SUBGROUP_FEATURE_BALLOT_BIT | VK_SUBGROUP_FEATURE_SHUFFLE_BIT | VK_SUBGROUP_FEATURE_SHUFFLE_RELATIVE_BIT;
+    if (vk11Properties.subgroupSize > 3)
+        subgroupFeatureFlags |= VK_SUBGROUP_FEATURE_QUAD_BIT;
+
+    FeatureLimitTableItem featureLimitTable[] = {
+        {PN(checkAlways), PN(limits.maxImageDimension1D), LIM_MIN_UINT32(8192)},
+        {PN(checkAlways), PN(limits.maxImageDimension2D), LIM_MIN_UINT32(8192)},
+        {PN(checkAlways), PN(limits.maxImageDimension3D), LIM_MIN_UINT32(512)},
+        {PN(checkAlways), PN(limits.maxImageDimensionCube), LIM_MIN_UINT32(8192)},
+        {PN(checkAlways), PN(limits.maxImageArrayLayers), LIM_MIN_UINT32(2048)},
+        {PN(checkAlways), PN(limits.maxUniformBufferRange), LIM_MIN_UINT32(65536)},
+        {PN(checkAlways), PN(limits.maxPushConstantsSize), LIM_MIN_UINT32(256)},
+        {PN(checkAlways), PN(limits.bufferImageGranularity), LIM_MIN_DEVSIZE(1)},
+        {PN(checkAlways), PN(limits.bufferImageGranularity), LIM_MAX_DEVSIZE(4096)},
+        {PN(checkAlways), PN(limits.maxBoundDescriptorSets), LIM_MIN_UINT32(7)},
+        {PN(checkAlways), PN(limits.maxPerStageDescriptorUniformBuffers), LIM_MIN_UINT32(15)},
+        {PN(checkAlways), PN(limits.maxPerStageResources), LIM_MIN_UINT32(200)},
+        {PN(checkAlways), PN(limits.maxDescriptorSetUniformBuffers), LIM_MIN_UINT32(90)},
+        {PN(checkAlways), PN(limits.maxDescriptorSetStorageBuffers), LIM_MIN_UINT32(96)},
+        {PN(checkAlways), PN(limits.maxDescriptorSetStorageImages), LIM_MIN_UINT32(144)},
+        {PN(checkAlways), PN(limits.maxFragmentCombinedOutputResources), LIM_MIN_UINT32(16)},
+        {PN(checkAlways), PN(limits.maxComputeWorkGroupInvocations), LIM_MIN_UINT32(256)},
+        {PN(checkAlways), PN(limits.maxComputeWorkGroupSize[0]), LIM_MIN_UINT32(256)},
+        {PN(checkAlways), PN(limits.maxComputeWorkGroupSize[1]), LIM_MIN_UINT32(256)},
+        {PN(checkAlways), PN(limits.maxComputeWorkGroupSize[2]), LIM_MIN_UINT32(64)},
+        {PN(checkAlways), PN(limits.subTexelPrecisionBits), LIM_MIN_UINT32(8)},
+        {PN(checkAlways), PN(limits.mipmapPrecisionBits), LIM_MIN_UINT32(6)},
+        {PN(checkAlways), PN(limits.maxSamplerLodBias), LIM_MIN_FLOAT(14.0f)},
+        {PN(checkAlways), PN(limits.maxColorAttachments), LIM_MIN_UINT32(8)},
+        {PN(checkAlways), PN(limits.timestampComputeAndGraphics), LIM_MIN_UINT32(1)},
+        {PN(checkAlways), PN(limits.standardSampleLocations), LIM_MIN_UINT32(1)},
+        {PN(features.largePoints), PN(limits.pointSizeRange[0]), LIM_MIN_FLOAT(0.0f)},
+        {PN(features.largePoints), PN(limits.pointSizeRange[0]), LIM_MAX_FLOAT(1.0f)},
+        {PN(features.largePoints), PN(limits.pointSizeRange[1]), LIM_MIN_FLOAT(256.0f - limits.pointSizeGranularity)},
+        {PN(features.largePoints), PN(limits.pointSizeGranularity), LIM_MIN_FLOAT(0.0f)},
+        {PN(features.largePoints), PN(limits.pointSizeGranularity), LIM_MAX_FLOAT(0.125f)},
+        {PN(features.wideLines), PN(limits.lineWidthGranularity), LIM_MIN_FLOAT(0.0f)},
+        {PN(features.wideLines), PN(limits.lineWidthGranularity), LIM_MAX_FLOAT(0.5f)},
+        {PN(checkAlways), PN(vk11Properties.subgroupSupportedStages), LIM_MIN_UINT32(subgroupSupportedStages)},
+        {PN(checkAlways), PN(vk11Properties.subgroupSupportedOperations), LIM_MIN_UINT32(subgroupFeatureFlags)},
+        {PN(checkShaderSZINPreserveF16), PN(vk12Properties.shaderSignedZeroInfNanPreserveFloat16), LIM_MIN_UINT32(1)},
+        {PN(checkShaderSZINPreserve), PN(vk12Properties.shaderSignedZeroInfNanPreserveFloat32), LIM_MIN_UINT32(1)},
+    };
+
+    log << TestLog::Message << limits << TestLog::EndMessage;
+
+    for (uint32_t ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+    {
+        if (!validateLimit(featureLimitTable[ndx], log))
+            limitsOk = false;
+    }
+
+    if (limitsOk)
+        return tcu::TestStatus::pass("pass");
+
+    return tcu::TestStatus::fail("fail");
+}
 
 void checkSupportKhrPushDescriptor(Context &context)
 {
@@ -1753,11 +1833,10 @@ void checkSupportKhrLineRasterization(Context &context)
 
 tcu::TestStatus validateLimitsLineRasterization(Context &context)
 {
-    const VkBool32 checkAlways = VK_TRUE;
-    vk::VkPhysicalDeviceLineRasterizationPropertiesKHR lineRasterizationProperties =
-        context.getLineRasterizationProperties();
+    const VkBool32 checkAlways                  = VK_TRUE;
     TestLog &log                                = context.getTestContext().getLog();
     bool limitsOk                               = true;
+    auto lineRasterizationProperties            = context.getLineRasterizationProperties();
     vk::VkPhysicalDeviceProperties2 properties2 = vk::initVulkanStructure(&lineRasterizationProperties);
     const InstanceInterface &vk                 = context.getInstanceInterface();
 
@@ -1833,154 +1912,34 @@ tcu::TestStatus validateLimitsMaxInlineUniformTotalSize(Context &context)
         return tcu::TestStatus::fail("fail");
 }
 
-tcu::TestStatus validateRoadmap2022(Context &context)
-{
-    if (context.getUsedApiVersion() < VK_API_VERSION_1_3)
-        TCU_THROW(NotSupportedError, "Profile not supported");
-
-    const VkBool32 checkAlways     = VK_TRUE;
-    VkBool32 oneOrMoreChecksFailed = VK_FALSE;
-    TestLog &log                   = context.getTestContext().getLog();
-
-    auto vk10Features = context.getDeviceFeatures();
-    auto vk11Features = context.getDeviceVulkan11Features();
-    auto vk12Features = context.getDeviceVulkan12Features();
-
-    const auto &vk10Properties = context.getDeviceProperties2();
-    const auto &vk11Properties = context.getDeviceVulkan11Properties();
-    const auto &vk12Properties = context.getDeviceVulkan12Properties();
-    const auto &vk13Properties = context.getDeviceVulkan13Properties();
-    const auto &limits         = vk10Properties.properties.limits;
-
 #define ROADMAP_FEATURE_ITEM(STRUC, FIELD)          \
     {                                               \
         &(STRUC), &(STRUC.FIELD), #STRUC "." #FIELD \
     }
 
-    struct FeatureTable
-    {
-        void *structPtr;
-        VkBool32 *fieldPtr;
-        const char *fieldName;
-    };
+struct FeatureEntry
+{
+    void *structPtr;
+    VkBool32 *fieldPtr;
+    const char *fieldName;
+};
 
-    std::vector<FeatureTable> featureTable{
-        // Vulkan 1.0 Features
-        ROADMAP_FEATURE_ITEM(vk10Features, fullDrawIndexUint32),
-        ROADMAP_FEATURE_ITEM(vk10Features, imageCubeArray),
-        ROADMAP_FEATURE_ITEM(vk10Features, independentBlend),
-        ROADMAP_FEATURE_ITEM(vk10Features, sampleRateShading),
-        ROADMAP_FEATURE_ITEM(vk10Features, drawIndirectFirstInstance),
-        ROADMAP_FEATURE_ITEM(vk10Features, depthClamp),
-        ROADMAP_FEATURE_ITEM(vk10Features, depthBiasClamp),
-        ROADMAP_FEATURE_ITEM(vk10Features, samplerAnisotropy),
-        ROADMAP_FEATURE_ITEM(vk10Features, occlusionQueryPrecise),
-        ROADMAP_FEATURE_ITEM(vk10Features, fragmentStoresAndAtomics),
-        ROADMAP_FEATURE_ITEM(vk10Features, shaderStorageImageExtendedFormats),
-        ROADMAP_FEATURE_ITEM(vk10Features, shaderUniformBufferArrayDynamicIndexing),
-        ROADMAP_FEATURE_ITEM(vk10Features, shaderSampledImageArrayDynamicIndexing),
-        ROADMAP_FEATURE_ITEM(vk10Features, shaderStorageBufferArrayDynamicIndexing),
-        ROADMAP_FEATURE_ITEM(vk10Features, shaderStorageImageArrayDynamicIndexing),
+struct FormatEntry
+{
+    VkFormat format;
+    const std::string name;
+    VkFormatProperties properties;
+};
 
-        // Vulkan 1.1 Features
-        ROADMAP_FEATURE_ITEM(vk11Features, samplerYcbcrConversion),
+struct ProfileEntry
+{
+    std::string name;
+    void (*checkSupportFunction)(Context &);
+    tcu::TestStatus (*validateFunction)(Context &);
+};
 
-        // Vulkan 1.2 Features
-        ROADMAP_FEATURE_ITEM(vk12Features, samplerMirrorClampToEdge),
-        ROADMAP_FEATURE_ITEM(vk12Features, descriptorIndexing),
-        ROADMAP_FEATURE_ITEM(vk12Features, shaderUniformTexelBufferArrayDynamicIndexing),
-        ROADMAP_FEATURE_ITEM(vk12Features, shaderStorageTexelBufferArrayDynamicIndexing),
-        ROADMAP_FEATURE_ITEM(vk12Features, shaderUniformBufferArrayNonUniformIndexing),
-        ROADMAP_FEATURE_ITEM(vk12Features, shaderSampledImageArrayNonUniformIndexing),
-        ROADMAP_FEATURE_ITEM(vk12Features, shaderStorageBufferArrayNonUniformIndexing),
-        ROADMAP_FEATURE_ITEM(vk12Features, shaderStorageImageArrayNonUniformIndexing),
-        ROADMAP_FEATURE_ITEM(vk12Features, shaderUniformTexelBufferArrayNonUniformIndexing),
-        ROADMAP_FEATURE_ITEM(vk12Features, shaderStorageTexelBufferArrayNonUniformIndexing),
-        ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingSampledImageUpdateAfterBind),
-        ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingStorageImageUpdateAfterBind),
-        ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingStorageBufferUpdateAfterBind),
-        ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingUniformTexelBufferUpdateAfterBind),
-        ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingStorageTexelBufferUpdateAfterBind),
-        ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingUpdateUnusedWhilePending),
-        ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingPartiallyBound),
-        ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingVariableDescriptorCount),
-        ROADMAP_FEATURE_ITEM(vk12Features, runtimeDescriptorArray),
-        ROADMAP_FEATURE_ITEM(vk12Features, scalarBlockLayout),
-    };
+#include "vkProfileTests.inl"
 
-    for (FeatureTable &testedFeature : featureTable)
-    {
-        if (!testedFeature.fieldPtr[0])
-        {
-            log << TestLog::Message << "Feature " << testedFeature.fieldName << "is not supported"
-                << TestLog::EndMessage;
-            oneOrMoreChecksFailed = VK_TRUE;
-        }
-    }
-
-    std::vector<FeatureLimitTableItem> featureLimitTable{
-        // Vulkan 1.0 limits
-        {PN(checkAlways), PN(limits.maxImageDimension1D), LIM_MIN_UINT32(8192)},
-        {PN(checkAlways), PN(limits.maxImageDimension2D), LIM_MIN_UINT32(8192)},
-        {PN(checkAlways), PN(limits.maxImageDimensionCube), LIM_MIN_UINT32(8192)},
-        {PN(checkAlways), PN(limits.maxImageArrayLayers), LIM_MIN_UINT32(2048)},
-        {PN(checkAlways), PN(limits.maxUniformBufferRange), LIM_MIN_UINT32(65536)},
-        {PN(checkAlways), PN(limits.bufferImageGranularity), LIM_MAX_DEVSIZE(4096)},
-        {PN(checkAlways), PN(limits.maxPerStageDescriptorSamplers), LIM_MIN_UINT32(64)},
-        {PN(checkAlways), PN(limits.maxPerStageDescriptorUniformBuffers), LIM_MIN_UINT32(15)},
-        {PN(checkAlways), PN(limits.maxPerStageDescriptorStorageBuffers), LIM_MIN_UINT32(30)},
-        {PN(checkAlways), PN(limits.maxPerStageDescriptorSampledImages), LIM_MIN_UINT32(200)},
-        {PN(checkAlways), PN(limits.maxPerStageDescriptorStorageImages), LIM_MIN_UINT32(16)},
-        {PN(checkAlways), PN(limits.maxPerStageResources), LIM_MIN_UINT32(200)},
-        {PN(checkAlways), PN(limits.maxDescriptorSetSamplers), LIM_MIN_UINT32(576)},
-        {PN(checkAlways), PN(limits.maxDescriptorSetUniformBuffers), LIM_MIN_UINT32(90)},
-        {PN(checkAlways), PN(limits.maxDescriptorSetStorageBuffers), LIM_MIN_UINT32(96)},
-        {PN(checkAlways), PN(limits.maxDescriptorSetSampledImages), LIM_MIN_UINT32(1800)},
-        {PN(checkAlways), PN(limits.maxDescriptorSetStorageImages), LIM_MIN_UINT32(144)},
-        {PN(checkAlways), PN(limits.maxFragmentCombinedOutputResources), LIM_MIN_UINT32(16)},
-        {PN(checkAlways), PN(limits.maxComputeWorkGroupInvocations), LIM_MIN_UINT32(256)},
-        {PN(checkAlways), PN(limits.maxComputeWorkGroupSize[0]), LIM_MIN_UINT32(256)},
-        {PN(checkAlways), PN(limits.maxComputeWorkGroupSize[1]), LIM_MIN_UINT32(256)},
-        {PN(checkAlways), PN(limits.maxComputeWorkGroupSize[2]), LIM_MIN_UINT32(64)},
-        {PN(checkAlways), PN(limits.subPixelPrecisionBits), LIM_MIN_UINT32(8)},
-        {PN(checkAlways), PN(limits.mipmapPrecisionBits), LIM_MIN_UINT32(6)},
-        {PN(checkAlways), PN(limits.maxSamplerLodBias), LIM_MIN_FLOAT(14.0f)},
-        {PN(checkAlways), PN(limits.pointSizeGranularity), LIM_MAX_FLOAT(0.125f)},
-        {PN(checkAlways), PN(limits.lineWidthGranularity), LIM_MAX_FLOAT(0.5f)},
-        {PN(checkAlways), PN(limits.standardSampleLocations), LIM_MIN_UINT32(1)},
-        {PN(checkAlways), PN(limits.maxColorAttachments), LIM_MIN_UINT32(7)},
-
-        // Vulkan 1.1 limits
-        {PN(checkAlways), PN(vk11Properties.subgroupSize), LIM_MIN_UINT32(4)},
-        {PN(checkAlways), PN(vk11Properties.subgroupSupportedStages),
-         LIM_MIN_UINT32(VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)},
-        {PN(checkAlways), PN(vk11Properties.subgroupSupportedOperations),
-         LIM_MIN_UINT32(VK_SUBGROUP_FEATURE_BASIC_BIT | VK_SUBGROUP_FEATURE_VOTE_BIT |
-                        VK_SUBGROUP_FEATURE_ARITHMETIC_BIT | VK_SUBGROUP_FEATURE_BALLOT_BIT |
-                        VK_SUBGROUP_FEATURE_SHUFFLE_BIT | VK_SUBGROUP_FEATURE_SHUFFLE_RELATIVE_BIT |
-                        VK_SUBGROUP_FEATURE_QUAD_BIT)},
-        // Vulkan 1.2 limits
-        {PN(checkAlways), PN(vk12Properties.shaderSignedZeroInfNanPreserveFloat16), LIM_MIN_UINT32(1)},
-        {PN(checkAlways), PN(vk12Properties.shaderSignedZeroInfNanPreserveFloat32), LIM_MIN_UINT32(1)},
-
-        // Vulkan 1.3 limits
-        {PN(checkAlways), PN(vk13Properties.maxSubgroupSize), LIM_MIN_UINT32(4)},
-    };
-
-    for (const auto &featureLimit : featureLimitTable)
-        oneOrMoreChecksFailed |= !validateLimit(featureLimit, log);
-
-    if (!context.isDeviceFunctionalitySupported("VK_KHR_global_priority"))
-    {
-        log << TestLog::Message << "VK_KHR_global_priority is not supported" << TestLog::EndMessage;
-        oneOrMoreChecksFailed = VK_TRUE;
-    }
-
-    if (oneOrMoreChecksFailed)
-        TCU_THROW(NotSupportedError, "Profile not supported");
-
-    return tcu::TestStatus::pass("Profile supported");
-}
 #endif // CTS_USES_VULKANSC
 
 void createTestDevice(Context &context, void *pNext, const char *const *ppEnabledExtensionNames,
@@ -3181,7 +3140,7 @@ tcu::TestStatus deviceProperties(Context &context)
     }
 
     // Check if deviceName string is properly terminated.
-    if (deStrnlen(props->deviceName, VK_MAX_PHYSICAL_DEVICE_NAME_SIZE) == VK_MAX_PHYSICAL_DEVICE_NAME_SIZE)
+    if (memchr(props->deviceName, '\0', VK_MAX_PHYSICAL_DEVICE_NAME_SIZE) == nullptr)
     {
         log << TestLog::Message << "deviceProperties - VkPhysicalDeviceProperties deviceName not properly initialized"
             << TestLog::EndMessage;
@@ -3191,7 +3150,7 @@ tcu::TestStatus deviceProperties(Context &context)
     {
         const ApiVersion deviceVersion = unpackVersion(props->apiVersion);
 #ifndef CTS_USES_VULKANSC
-        const ApiVersion deqpVersion = unpackVersion(VK_API_VERSION_1_3);
+        const ApiVersion deqpVersion = unpackVersion(VK_API_MAX_FRAMEWORK_VERSION);
 #else
         const ApiVersion deqpVersion = unpackVersion(VK_API_VERSION_1_2);
 #endif // CTS_USES_VULKANSC
@@ -3608,8 +3567,48 @@ namespace
 
 tcu::TestStatus deviceMandatoryFeatures(Context &context)
 {
-    if (checkMandatoryFeatures(context))
+    bool result = checkBasicMandatoryFeatures(context);
+
+#if defined(CTS_USES_VULKAN)
+    // for vulkan 1.4+ we need to check complex cases that were not generated in vkMandatoryFeatures.inl
+    if (context.contextSupports(vk::ApiVersion(0, 1, 4, 0)))
+    {
+        const InstanceInterface &vki    = context.getInstanceInterface();
+        VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+        const auto &cmdLine             = context.getTestContext().getCommandLine();
+        const auto &vulkan14Features    = context.getDeviceVulkan14Features();
+        tcu::TestLog &log               = context.getTestContext().getLog();
+
+        if (!cmdLine.isComputeOnly() && (vulkan14Features.hostImageCopy == VK_FALSE))
+        {
+            // find graphics and transfer queues
+            std::optional<size_t> graphicsQueueNdx;
+            std::optional<size_t> transferQueueNdx;
+            const auto queuePropsVect = getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
+            for (size_t queueNdx = 0; queueNdx < queuePropsVect.size(); queueNdx++)
+            {
+                uint32_t queueFlags = queuePropsVect[queueNdx].queueFlags;
+                if ((queueFlags & VK_QUEUE_GRAPHICS_BIT) && !graphicsQueueNdx.has_value())
+                    graphicsQueueNdx = (uint32_t)queueNdx;
+                else if ((queueFlags & VK_QUEUE_TRANSFER_BIT) && !transferQueueNdx.has_value())
+                    transferQueueNdx = (uint32_t)queueNdx;
+            }
+
+            if (!graphicsQueueNdx.has_value() || !transferQueueNdx.has_value())
+            {
+                log << tcu::TestLog::Message
+                    << "Implementation that has a VK_QUEUE_GRAPHICS_BIT queue must support "
+                       "either the hostImageCopy feature or an additional queue that supports VK_QUEUE_TRANSFER_BIT"
+                    << tcu::TestLog::EndMessage;
+                result = false;
+            }
+        }
+    }
+#endif // defined(CTS_USES_VULKAN)
+
+    if (result)
         return tcu::TestStatus::pass("Passed");
+
     return tcu::TestStatus::fail("Not all mandatory features are supported ( see: vkspec.html#features-requirements )");
 }
 
@@ -4519,7 +4518,8 @@ bool isRequiredImageParameterCombination(const VkPhysicalDeviceFeatures &deviceF
     return true;
 }
 
-VkSampleCountFlags getRequiredOptimalTilingSampleCounts(const VkPhysicalDeviceLimits &deviceLimits,
+VkSampleCountFlags getRequiredOptimalTilingSampleCounts(const VkPhysicalDeviceLimits &deviceLimits, bool hasVulkan12,
+                                                        const VkPhysicalDeviceVulkan12Properties &vulkan12Properties,
                                                         const VkFormat format, const VkImageUsageFlags usageFlags)
 {
     if (isCompressedFormat(format))
@@ -4570,7 +4570,16 @@ VkSampleCountFlags getRequiredOptimalTilingSampleCounts(const VkPhysicalDeviceLi
     }
 
     if ((usageFlags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) != 0)
-        sampleCounts &= deviceLimits.framebufferColorSampleCounts;
+    {
+        const tcu::TextureFormat tcuFormat      = mapVkFormat(format);
+        const tcu::TextureChannelClass chnClass = tcu::getTextureChannelClass(tcuFormat.type);
+
+        if (hasVulkan12 && (chnClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER ||
+                            chnClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER))
+            sampleCounts &= vulkan12Properties.framebufferIntegerColorSampleCounts;
+        else
+            sampleCounts &= deviceLimits.framebufferColorSampleCounts;
+    }
 
     if ((usageFlags & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0)
     {
@@ -4623,12 +4632,14 @@ tcu::TestStatus imageFormatProperties(Context &context, const VkFormat format, c
         // check if Ycbcr format enums are valid given the version and extensions
         checkYcbcrApiSupport(context);
 
-    TestLog &log                                   = context.getTestContext().getLog();
-    const VkPhysicalDeviceFeatures &deviceFeatures = context.getDeviceFeatures();
-    const VkPhysicalDeviceLimits &deviceLimits     = context.getDeviceProperties().limits;
+    TestLog &log                                                 = context.getTestContext().getLog();
+    const VkPhysicalDeviceFeatures &deviceFeatures               = context.getDeviceFeatures();
+    const VkPhysicalDeviceLimits &deviceLimits                   = context.getDeviceProperties().limits;
+    const VkPhysicalDeviceVulkan12Properties &vulkan12Properties = context.getDeviceVulkan12Properties();
     const VkFormatProperties formatProperties =
         getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
     const bool hasKhrMaintenance1 = context.isDeviceFunctionalitySupported("VK_KHR_maintenance1");
+    const bool hasVulkan12        = context.contextSupports(VK_API_VERSION_1_2);
 
     const VkFormatFeatureFlags supportedFeatures = tiling == VK_IMAGE_TILING_LINEAR ?
                                                        formatProperties.linearTilingFeatures :
@@ -4714,8 +4725,8 @@ tcu::TestStatus imageFormatProperties(Context &context, const VkFormat format, c
                     (supportedFeatures &
                      (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)))
                 {
-                    const VkSampleCountFlags requiredSampleCounts =
-                        getRequiredOptimalTilingSampleCounts(deviceLimits, format, curUsageFlags);
+                    const VkSampleCountFlags requiredSampleCounts = getRequiredOptimalTilingSampleCounts(
+                        deviceLimits, hasVulkan12, vulkan12Properties, format, curUsageFlags);
                     results.check((properties.sampleCounts & requiredSampleCounts) == requiredSampleCounts,
                                   "Required sample counts not supported");
                 }
@@ -6145,6 +6156,103 @@ tcu::TestStatus deviceFeaturesVulkan13(Context &context)
 
     return tcu::TestStatus::pass("Querying Vulkan 1.3 device features succeeded");
 }
+
+tcu::TestStatus deviceFeaturesVulkan14(Context &context)
+{
+    using namespace ValidateQueryBits;
+
+    const QueryMemberTableEntry feature14OffsetTable[] = {
+
+        // VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, dynamicRenderingLocalRead),
+
+        // VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, globalPriorityQuery),
+
+        // VkPhysicalDeviceIndexTypeUint8FeaturesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, indexTypeUint8),
+
+        // VkPhysicalDeviceLineRasterizationFeaturesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, rectangularLines),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, bresenhamLines),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, smoothLines),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, stippledRectangularLines),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, stippledBresenhamLines),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, stippledSmoothLines),
+
+        // VkPhysicalDeviceMaintenance5FeaturesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, maintenance5),
+
+        // VkPhysicalDeviceMaintenance6FeaturesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, maintenance6),
+
+        // VkPhysicalDeviceShaderExpectAssumeFeaturesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, shaderExpectAssume),
+
+        // VkPhysicalDeviceShaderFloatControls2FeaturesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, shaderFloatControls2),
+
+        // VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, shaderSubgroupRotate),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, shaderSubgroupRotateClustered),
+
+        // VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, vertexAttributeInstanceRateDivisor),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, vertexAttributeInstanceRateZeroDivisor),
+
+        // VkPhysicalDeviceHostImageCopyFeaturesEXT
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, hostImageCopy),
+
+        // VkPhysicalDevicePipelineProtectedAccessFeaturesEXT
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, pipelineProtectedAccess),
+
+        // VkPhysicalDevicePipelineRobustnessFeaturesEXT
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, pipelineRobustness),
+        {0, 0}};
+    TestLog &log                          = context.getTestContext().getLog();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const CustomInstance instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver &vki                 = instance.getDriver();
+    const uint32_t vulkan14FeaturesBufferSize = sizeof(VkPhysicalDeviceVulkan14Features) + GUARD_SIZE;
+    VkPhysicalDeviceFeatures2 extFeatures;
+    uint8_t buffer14a[vulkan14FeaturesBufferSize];
+    uint8_t buffer14b[vulkan14FeaturesBufferSize];
+    const int count                                           = 2u;
+    VkPhysicalDeviceVulkan14Features *vulkan14Features[count] = {(VkPhysicalDeviceVulkan14Features *)(buffer14a),
+                                                                 (VkPhysicalDeviceVulkan14Features *)(buffer14b)};
+
+    if (!context.contextSupports(vk::ApiVersion(0, 1, 4, 0)))
+        TCU_THROW(NotSupportedError, "At least Vulkan 1.4 required to run test");
+
+    deMemset(buffer14a, GUARD_VALUE, sizeof(buffer14a));
+    deMemset(buffer14b, GUARD_VALUE, sizeof(buffer14b));
+
+    // Validate all fields initialized
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&extFeatures.features, 0x00, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = vulkan14Features[ndx];
+
+        deMemset(vulkan14Features[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVulkan14Features));
+        vulkan14Features[ndx]->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES;
+        vulkan14Features[ndx]->pNext = DE_NULL;
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << *vulkan14Features[0] << TestLog::EndMessage;
+
+    if (!validateStructsWithGuard(feature14OffsetTable, vulkan14Features, GUARD_VALUE, GUARD_SIZE))
+    {
+        log << TestLog::Message << "deviceFeatures - VkPhysicalDeviceVulkan14Features initialization failure"
+            << TestLog::EndMessage;
+
+        return tcu::TestStatus::fail("VkPhysicalDeviceVulkan14Features initialization failure");
+    }
+
+    return tcu::TestStatus::pass("Querying Vulkan 1.4 device features succeeded");
+}
 #endif // CTS_USES_VULKANSC
 
 tcu::TestStatus devicePropertiesVulkan12(Context &context)
@@ -6432,6 +6540,113 @@ tcu::TestStatus devicePropertiesVulkan13(Context &context)
 
     return tcu::TestStatus::pass("Querying Vulkan 1.3 device properties succeeded");
 }
+
+tcu::TestStatus devicePropertiesVulkan14(Context &context)
+{
+    using namespace ValidateQueryBits;
+
+    const QueryMemberTableEntry properties14OffsetTable[] = {
+
+        // VkPhysicalDeviceLineRasterizationPropertiesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, lineSubPixelPrecisionBits),
+
+        // VkPhysicalDeviceMaintenance5PropertiesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, earlyFragmentMultisampleCoverageAfterSampleCounting),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, earlyFragmentSampleMaskTestBeforeSampleCounting),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, depthStencilSwizzleOneSupport),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, polygonModePointSize),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, nonStrictSinglePixelWideLinesUseParallelogram),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, nonStrictWideLinesUseParallelogram),
+
+        // VkPhysicalDeviceMaintenance6PropertiesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, blockTexelViewCompatibleMultipleLayers),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, maxCombinedImageSamplerDescriptorCount),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, fragmentShadingRateClampCombinerInputs),
+
+        // VkPhysicalDevicePushDescriptorPropertiesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, maxPushDescriptors),
+
+        // VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, maxVertexAttribDivisor),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, supportsNonZeroFirstInstance),
+
+        // VkPhysicalDeviceHostImageCopyPropertiesEXT
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, copySrcLayoutCount),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, copyDstLayoutCount),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, optimalTilingLayoutUUID),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, identicalMemoryTypeRequirements),
+
+        // VkPhysicalDevicePipelineRobustnessPropertiesEXT
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, defaultRobustnessStorageBuffers),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, defaultRobustnessUniformBuffers),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, defaultRobustnessVertexInputs),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, defaultRobustnessImages),
+        {0, 0}};
+
+    TestLog &log                          = context.getTestContext().getLog();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const CustomInstance instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver &vki                   = instance.getDriver();
+    const uint32_t vulkan14PropertiesBufferSize = sizeof(VkPhysicalDeviceVulkan14Properties) + GUARD_SIZE;
+    VkPhysicalDeviceProperties2 extProperties;
+    uint8_t buffer14a[vulkan14PropertiesBufferSize];
+    uint8_t buffer14b[vulkan14PropertiesBufferSize];
+    const int count                                               = 2u;
+    VkPhysicalDeviceVulkan14Properties *vulkan14Properties[count] = {(VkPhysicalDeviceVulkan14Properties *)(buffer14a),
+                                                                     (VkPhysicalDeviceVulkan14Properties *)(buffer14b)};
+    std::vector<VkImageLayout> copyLayouts[count];
+
+    if (!context.contextSupports(vk::ApiVersion(0, 1, 4, 0)))
+        TCU_THROW(NotSupportedError, "At least Vulkan 1.4 required to run test");
+
+    deMemset(buffer14a, GUARD_VALUE, sizeof(buffer14a));
+    deMemset(buffer14b, GUARD_VALUE, sizeof(buffer14b));
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(vulkan14Properties[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVulkan14Properties));
+        vulkan14Properties[ndx]->sType           = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_PROPERTIES;
+        vulkan14Properties[ndx]->pNext           = DE_NULL;
+        vulkan14Properties[ndx]->pCopySrcLayouts = DE_NULL;
+        vulkan14Properties[ndx]->pCopyDstLayouts = DE_NULL;
+
+        extProperties = initVulkanStructure(vulkan14Properties[ndx]);
+
+        vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+
+        // safety check in case large array counts are returned
+        if ((vulkan14Properties[ndx]->copyDstLayoutCount + vulkan14Properties[ndx]->copySrcLayoutCount) > GUARD_VALUE)
+            return tcu::TestStatus::fail("Wrong layouts count");
+
+        // set pCopySrcLayouts / pCopyDstLayouts to allocated array and query again
+        copyLayouts[ndx].resize(vulkan14Properties[ndx]->copyDstLayoutCount +
+                                vulkan14Properties[ndx]->copySrcLayoutCount);
+        vulkan14Properties[ndx]->pCopySrcLayouts = copyLayouts[ndx].data();
+        vulkan14Properties[ndx]->pCopyDstLayouts =
+            copyLayouts[ndx].data() + vulkan14Properties[ndx]->copySrcLayoutCount;
+        vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+    }
+
+    log << TestLog::Message << *vulkan14Properties[0] << TestLog::EndMessage;
+
+    if (!validateStructsWithGuard(properties14OffsetTable, vulkan14Properties, GUARD_VALUE, GUARD_SIZE))
+    {
+        log << TestLog::Message << "deviceProperties - VkPhysicalDeviceVulkan14Properties initialization failure"
+            << TestLog::EndMessage;
+
+        return tcu::TestStatus::fail("VkPhysicalDeviceVulkan14Properties initialization failure");
+    }
+
+    // validation of pCopySrcLayouts / pCopyDstLayouts needs to be done separately
+    // because the size of those arrays is not know at compile time
+    if ((deMemCmp(vulkan14Properties[0]->pCopySrcLayouts, vulkan14Properties[1]->pCopySrcLayouts,
+                  vulkan14Properties[0]->copySrcLayoutCount * sizeof(VkImageLayout)) != 0) ||
+        (deMemCmp(vulkan14Properties[0]->pCopyDstLayouts, vulkan14Properties[1]->pCopyDstLayouts,
+                  vulkan14Properties[0]->copyDstLayoutCount * sizeof(VkImageLayout)) != 0))
+        return tcu::TestStatus::fail("VkPhysicalDeviceVulkan14Properties initialization failure");
+
+    return tcu::TestStatus::pass("Querying Vulkan 1.4 device properties succeeded");
+}
 #endif // CTS_USES_VULKANSC
 
 tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan12(Context &context)
@@ -6453,7 +6668,9 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan12(Context &context)
     log << TestLog::Message << vulkan11Features << TestLog::EndMessage;
     log << TestLog::Message << vulkan12Features << TestLog::EndMessage;
 
-    // Validate if proper VkPhysicalDeviceVulkanXXFeatures fields are set when corresponding extensions are present
+    // Where promoted extensions didn't originally have feature structs, validate that the feature bits are set
+    // when the extension is supported. (These checks could go in the extension's mandatory_features check, but
+    // they're checked here because the extensions came first, so adding the extra dependency there seems odd.
     std::pair<std::pair<const char *, const char *>, VkBool32> extensions2validate[] = {
         {{"VK_KHR_sampler_mirror_clamp_to_edge", "VkPhysicalDeviceVulkan12Features.samplerMirrorClampToEdge"},
          vulkan12Features.samplerMirrorClampToEdge},
@@ -6534,6 +6751,7 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan12(Context &context)
         log << TestLog::Message << bufferDeviceAddressFeatures << TestLog::EndMessage;
         log << TestLog::Message << vulkanMemoryModelFeatures << TestLog::EndMessage;
 
+        // First verify the 1.1 feature struct consistency because that struct is newly added in 1.2
         if ((device16BitStorageFeatures.storageBuffer16BitAccess != vulkan11Features.storageBuffer16BitAccess ||
              device16BitStorageFeatures.uniformAndStorageBuffer16BitAccess !=
                  vulkan11Features.uniformAndStorageBuffer16BitAccess ||
@@ -6573,6 +6791,7 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan12(Context &context)
             TCU_FAIL("Mismatch between VkPhysicalDeviceVariablePointersFeatures and VkPhysicalDeviceVulkan11Features");
         }
 
+        // Now check the consistency of the 1.2 feature struct
         if ((device8BitStorageFeatures.storageBuffer8BitAccess != vulkan12Features.storageBuffer8BitAccess ||
              device8BitStorageFeatures.uniformAndStorageBuffer8BitAccess !=
                  vulkan12Features.uniformAndStorageBuffer8BitAccess ||
@@ -6593,46 +6812,45 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan12(Context &context)
             TCU_FAIL("Mismatch between VkPhysicalDeviceShaderFloat16Int8Features and VkPhysicalDeviceVulkan12Features");
         }
 
-        if ((vulkan12Features.descriptorIndexing) &&
-            (descriptorIndexingFeatures.shaderInputAttachmentArrayDynamicIndexing !=
-                 vulkan12Features.shaderInputAttachmentArrayDynamicIndexing ||
-             descriptorIndexingFeatures.shaderUniformTexelBufferArrayDynamicIndexing !=
-                 vulkan12Features.shaderUniformTexelBufferArrayDynamicIndexing ||
-             descriptorIndexingFeatures.shaderStorageTexelBufferArrayDynamicIndexing !=
-                 vulkan12Features.shaderStorageTexelBufferArrayDynamicIndexing ||
-             descriptorIndexingFeatures.shaderUniformBufferArrayNonUniformIndexing !=
-                 vulkan12Features.shaderUniformBufferArrayNonUniformIndexing ||
-             descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing !=
-                 vulkan12Features.shaderSampledImageArrayNonUniformIndexing ||
-             descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing !=
-                 vulkan12Features.shaderStorageBufferArrayNonUniformIndexing ||
-             descriptorIndexingFeatures.shaderStorageImageArrayNonUniformIndexing !=
-                 vulkan12Features.shaderStorageImageArrayNonUniformIndexing ||
-             descriptorIndexingFeatures.shaderInputAttachmentArrayNonUniformIndexing !=
-                 vulkan12Features.shaderInputAttachmentArrayNonUniformIndexing ||
-             descriptorIndexingFeatures.shaderUniformTexelBufferArrayNonUniformIndexing !=
-                 vulkan12Features.shaderUniformTexelBufferArrayNonUniformIndexing ||
-             descriptorIndexingFeatures.shaderStorageTexelBufferArrayNonUniformIndexing !=
-                 vulkan12Features.shaderStorageTexelBufferArrayNonUniformIndexing ||
-             descriptorIndexingFeatures.descriptorBindingUniformBufferUpdateAfterBind !=
-                 vulkan12Features.descriptorBindingUniformBufferUpdateAfterBind ||
-             descriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind !=
-                 vulkan12Features.descriptorBindingSampledImageUpdateAfterBind ||
-             descriptorIndexingFeatures.descriptorBindingStorageImageUpdateAfterBind !=
-                 vulkan12Features.descriptorBindingStorageImageUpdateAfterBind ||
-             descriptorIndexingFeatures.descriptorBindingStorageBufferUpdateAfterBind !=
-                 vulkan12Features.descriptorBindingStorageBufferUpdateAfterBind ||
-             descriptorIndexingFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind !=
-                 vulkan12Features.descriptorBindingUniformTexelBufferUpdateAfterBind ||
-             descriptorIndexingFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind !=
-                 vulkan12Features.descriptorBindingStorageTexelBufferUpdateAfterBind ||
-             descriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending !=
-                 vulkan12Features.descriptorBindingUpdateUnusedWhilePending ||
-             descriptorIndexingFeatures.descriptorBindingPartiallyBound !=
-                 vulkan12Features.descriptorBindingPartiallyBound ||
-             descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount !=
-                 vulkan12Features.descriptorBindingVariableDescriptorCount ||
-             descriptorIndexingFeatures.runtimeDescriptorArray != vulkan12Features.runtimeDescriptorArray))
+        if (descriptorIndexingFeatures.shaderInputAttachmentArrayDynamicIndexing !=
+                vulkan12Features.shaderInputAttachmentArrayDynamicIndexing ||
+            descriptorIndexingFeatures.shaderUniformTexelBufferArrayDynamicIndexing !=
+                vulkan12Features.shaderUniformTexelBufferArrayDynamicIndexing ||
+            descriptorIndexingFeatures.shaderStorageTexelBufferArrayDynamicIndexing !=
+                vulkan12Features.shaderStorageTexelBufferArrayDynamicIndexing ||
+            descriptorIndexingFeatures.shaderUniformBufferArrayNonUniformIndexing !=
+                vulkan12Features.shaderUniformBufferArrayNonUniformIndexing ||
+            descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing !=
+                vulkan12Features.shaderSampledImageArrayNonUniformIndexing ||
+            descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing !=
+                vulkan12Features.shaderStorageBufferArrayNonUniformIndexing ||
+            descriptorIndexingFeatures.shaderStorageImageArrayNonUniformIndexing !=
+                vulkan12Features.shaderStorageImageArrayNonUniformIndexing ||
+            descriptorIndexingFeatures.shaderInputAttachmentArrayNonUniformIndexing !=
+                vulkan12Features.shaderInputAttachmentArrayNonUniformIndexing ||
+            descriptorIndexingFeatures.shaderUniformTexelBufferArrayNonUniformIndexing !=
+                vulkan12Features.shaderUniformTexelBufferArrayNonUniformIndexing ||
+            descriptorIndexingFeatures.shaderStorageTexelBufferArrayNonUniformIndexing !=
+                vulkan12Features.shaderStorageTexelBufferArrayNonUniformIndexing ||
+            descriptorIndexingFeatures.descriptorBindingUniformBufferUpdateAfterBind !=
+                vulkan12Features.descriptorBindingUniformBufferUpdateAfterBind ||
+            descriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind !=
+                vulkan12Features.descriptorBindingSampledImageUpdateAfterBind ||
+            descriptorIndexingFeatures.descriptorBindingStorageImageUpdateAfterBind !=
+                vulkan12Features.descriptorBindingStorageImageUpdateAfterBind ||
+            descriptorIndexingFeatures.descriptorBindingStorageBufferUpdateAfterBind !=
+                vulkan12Features.descriptorBindingStorageBufferUpdateAfterBind ||
+            descriptorIndexingFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind !=
+                vulkan12Features.descriptorBindingUniformTexelBufferUpdateAfterBind ||
+            descriptorIndexingFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind !=
+                vulkan12Features.descriptorBindingStorageTexelBufferUpdateAfterBind ||
+            descriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending !=
+                vulkan12Features.descriptorBindingUpdateUnusedWhilePending ||
+            descriptorIndexingFeatures.descriptorBindingPartiallyBound !=
+                vulkan12Features.descriptorBindingPartiallyBound ||
+            descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount !=
+                vulkan12Features.descriptorBindingVariableDescriptorCount ||
+            descriptorIndexingFeatures.runtimeDescriptorArray != vulkan12Features.runtimeDescriptorArray)
         {
             TCU_FAIL(
                 "Mismatch between VkPhysicalDeviceDescriptorIndexingFeatures and VkPhysicalDeviceVulkan12Features");
@@ -6703,6 +6921,131 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan12(Context &context)
 }
 
 #ifndef CTS_USES_VULKANSC
+tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan14(Context &context)
+{
+    TestLog &log                          = context.getTestContext().getLog();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const CustomInstance instance =
+        createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2");
+    const InstanceDriver &vki = instance.getDriver();
+
+    if (!context.contextSupports(vk::ApiVersion(0, 1, 4, 0)))
+        TCU_THROW(NotSupportedError, "At least Vulkan 1.4 required to run test");
+
+    VkPhysicalDeviceVulkan14Features vulkan14Features = initVulkanStructure();
+    VkPhysicalDeviceFeatures2 extFeatures             = initVulkanStructure(&vulkan14Features);
+
+    vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+
+    log << TestLog::Message << vulkan14Features << TestLog::EndMessage;
+
+    // collect all extension features
+    {
+        VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR dynamicRenderingLocalReadFeatures = initVulkanStructure();
+        VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR globalPriorityQueryFeatures =
+            initVulkanStructure(&dynamicRenderingLocalReadFeatures);
+        VkPhysicalDeviceIndexTypeUint8FeaturesKHR indexTypeUint8Features =
+            initVulkanStructure(&globalPriorityQueryFeatures);
+        VkPhysicalDeviceLineRasterizationFeaturesKHR lineRasterizationFeatures =
+            initVulkanStructure(&indexTypeUint8Features);
+        VkPhysicalDeviceMaintenance5FeaturesKHR maintenance5Features = initVulkanStructure(&lineRasterizationFeatures);
+        VkPhysicalDeviceMaintenance6FeaturesKHR maintenance6Features = initVulkanStructure(&maintenance5Features);
+        VkPhysicalDeviceShaderExpectAssumeFeaturesKHR shaderExpectAssumeFeatures =
+            initVulkanStructure(&maintenance6Features);
+        VkPhysicalDeviceShaderFloatControls2FeaturesKHR shaderFloatControls2Features =
+            initVulkanStructure(&shaderExpectAssumeFeatures);
+        VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR shaderSubgroupRotateFeatures =
+            initVulkanStructure(&shaderFloatControls2Features);
+        VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR vertexAttributeDivisorFeatures =
+            initVulkanStructure(&shaderSubgroupRotateFeatures);
+        VkPhysicalDeviceHostImageCopyFeaturesEXT hostImageCopyFeatures =
+            initVulkanStructure(&vertexAttributeDivisorFeatures);
+        VkPhysicalDevicePipelineProtectedAccessFeaturesEXT pipelineProtectedAccessFeatures =
+            initVulkanStructure(&hostImageCopyFeatures);
+        VkPhysicalDevicePipelineRobustnessFeaturesEXT pipelineRobustnessFeatures =
+            initVulkanStructure(&pipelineProtectedAccessFeatures);
+
+        extFeatures = initVulkanStructure(&pipelineRobustnessFeatures);
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+
+        log << TestLog::Message << extFeatures << TestLog::EndMessage;
+        log << TestLog::Message << dynamicRenderingLocalReadFeatures << TestLog::EndMessage;
+        log << TestLog::Message << globalPriorityQueryFeatures << TestLog::EndMessage;
+        log << TestLog::Message << indexTypeUint8Features << TestLog::EndMessage;
+        log << TestLog::Message << lineRasterizationFeatures << TestLog::EndMessage;
+        log << TestLog::Message << maintenance5Features << TestLog::EndMessage;
+        log << TestLog::Message << maintenance6Features << TestLog::EndMessage;
+        log << TestLog::Message << shaderExpectAssumeFeatures << TestLog::EndMessage;
+        log << TestLog::Message << shaderFloatControls2Features << TestLog::EndMessage;
+        log << TestLog::Message << shaderSubgroupRotateFeatures << TestLog::EndMessage;
+        log << TestLog::Message << vertexAttributeDivisorFeatures << TestLog::EndMessage;
+        log << TestLog::Message << hostImageCopyFeatures << TestLog::EndMessage;
+        log << TestLog::Message << pipelineProtectedAccessFeatures << TestLog::EndMessage;
+        log << TestLog::Message << pipelineRobustnessFeatures << TestLog::EndMessage;
+
+        if (dynamicRenderingLocalReadFeatures.dynamicRenderingLocalRead != vulkan14Features.dynamicRenderingLocalRead)
+            TCU_FAIL("Mismatch between VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR and "
+                     "VkPhysicalDeviceVulkan14Features");
+
+        if (globalPriorityQueryFeatures.globalPriorityQuery != vulkan14Features.globalPriorityQuery)
+            TCU_FAIL(
+                "Mismatch between VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR and VkPhysicalDeviceVulkan14Features");
+
+        if (indexTypeUint8Features.indexTypeUint8 != vulkan14Features.indexTypeUint8)
+            TCU_FAIL("Mismatch between VkPhysicalDeviceIndexTypeUint8FeaturesKHR and VkPhysicalDeviceVulkan14Features");
+
+        if ((lineRasterizationFeatures.rectangularLines != vulkan14Features.rectangularLines) ||
+            (lineRasterizationFeatures.bresenhamLines != vulkan14Features.bresenhamLines) ||
+            (lineRasterizationFeatures.smoothLines != vulkan14Features.smoothLines) ||
+            (lineRasterizationFeatures.stippledRectangularLines != vulkan14Features.stippledRectangularLines) ||
+            (lineRasterizationFeatures.stippledBresenhamLines != vulkan14Features.stippledBresenhamLines) ||
+            (lineRasterizationFeatures.stippledSmoothLines != vulkan14Features.stippledSmoothLines))
+            TCU_FAIL(
+                "Mismatch between VkPhysicalDeviceLineRasterizationFeaturesKHR and VkPhysicalDeviceVulkan14Features");
+
+        if (maintenance5Features.maintenance5 != vulkan14Features.maintenance5)
+            TCU_FAIL("Mismatch between VkPhysicalDeviceMaintenance5FeaturesKHR and VkPhysicalDeviceVulkan14Features");
+
+        if (maintenance6Features.maintenance6 != vulkan14Features.maintenance6)
+            TCU_FAIL("Mismatch between VkPhysicalDeviceMaintenance6FeaturesKHR and VkPhysicalDeviceVulkan14Features");
+
+        if (shaderExpectAssumeFeatures.shaderExpectAssume != vulkan14Features.shaderExpectAssume)
+            TCU_FAIL(
+                "Mismatch between VkPhysicalDeviceShaderExpectAssumeFeatures and VkPhysicalDeviceVulkan14Features");
+
+        if (shaderFloatControls2Features.shaderFloatControls2 != vulkan14Features.shaderFloatControls2)
+            TCU_FAIL("Mismatch between VkPhysicalDeviceShaderFloatControls2FeaturesKHR and "
+                     "VkPhysicalDeviceVulkan14Features");
+
+        if ((shaderSubgroupRotateFeatures.shaderSubgroupRotate != vulkan14Features.shaderSubgroupRotate) ||
+            (shaderSubgroupRotateFeatures.shaderSubgroupRotateClustered !=
+             vulkan14Features.shaderSubgroupRotateClustered))
+            TCU_FAIL("Mismatch between VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR and "
+                     "VkPhysicalDeviceVulkan14Features");
+
+        if ((vertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor !=
+             vulkan14Features.vertexAttributeInstanceRateDivisor) ||
+            (vertexAttributeDivisorFeatures.vertexAttributeInstanceRateZeroDivisor !=
+             vulkan14Features.vertexAttributeInstanceRateZeroDivisor))
+            TCU_FAIL("Mismatch between VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR and "
+                     "VkPhysicalDeviceVulkan14Features");
+
+        if (hostImageCopyFeatures.hostImageCopy != vulkan14Features.hostImageCopy)
+            TCU_FAIL("Mismatch between VkPhysicalDeviceHostImageCopyFeaturesEXT and VkPhysicalDeviceVulkan14Features");
+
+        if (pipelineProtectedAccessFeatures.pipelineProtectedAccess != vulkan14Features.pipelineProtectedAccess)
+            TCU_FAIL("Mismatch between VkPhysicalDevicePipelineProtectedAccessFeaturesEXT and "
+                     "VkPhysicalDeviceVulkan14Features");
+
+        if (pipelineRobustnessFeatures.pipelineRobustness != vulkan14Features.pipelineRobustness)
+            TCU_FAIL(
+                "Mismatch between VkPhysicalDevicePipelineRobustnessFeaturesEXT and VkPhysicalDeviceVulkan14Features");
+    }
+
+    return tcu::TestStatus::pass("Vulkan 1.4 device features are consistent with extensions");
+}
+
 tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan13(Context &context)
 {
     TestLog &log                          = context.getTestContext().getLog();
@@ -6721,31 +7064,6 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan13(Context &context)
 
     log << TestLog::Message << vulkan13Features << TestLog::EndMessage;
 
-    // Validate if required VkPhysicalDeviceVulkan13Features fields are set
-    std::pair<const char *, VkBool32> features2validate[]{
-        {{"VkPhysicalDeviceVulkan13Features.robustImageAccess"}, vulkan13Features.robustImageAccess},
-        {{"VkPhysicalDeviceVulkan13Features.inlineUniformBlock"}, vulkan13Features.inlineUniformBlock},
-        {{"VkPhysicalDeviceVulkan13Features.pipelineCreationCacheControl"},
-         vulkan13Features.pipelineCreationCacheControl},
-        {{"VkPhysicalDeviceVulkan13Features.privateData"}, vulkan13Features.privateData},
-        {{"VkPhysicalDeviceVulkan13Features.shaderDemoteToHelperInvocation"},
-         vulkan13Features.shaderDemoteToHelperInvocation},
-        {{"VkPhysicalDeviceVulkan13Features.shaderTerminateInvocation"}, vulkan13Features.shaderTerminateInvocation},
-        {{"VkPhysicalDeviceVulkan13Features.subgroupSizeControl"}, vulkan13Features.subgroupSizeControl},
-        {{"VkPhysicalDeviceVulkan13Features.computeFullSubgroups"}, vulkan13Features.computeFullSubgroups},
-        {{"VkPhysicalDeviceVulkan13Features.synchronization2"}, vulkan13Features.synchronization2},
-        {{"VkPhysicalDeviceVulkan13Features.shaderZeroInitializeWorkgroupMemory"},
-         vulkan13Features.shaderZeroInitializeWorkgroupMemory},
-        {{"VkPhysicalDeviceVulkan13Features.dynamicRendering"}, vulkan13Features.dynamicRendering},
-        {{"VkPhysicalDeviceVulkan13Features.shaderIntegerDotProduct"}, vulkan13Features.shaderIntegerDotProduct},
-        {{"VkPhysicalDeviceVulkan13Features.maintenance4"}, vulkan13Features.maintenance4},
-    };
-    for (const auto &feature : features2validate)
-    {
-        if (!feature.second)
-            TCU_FAIL(string("Required feature ") + feature.first + " is not set");
-    }
-
     // collect all extension features
     {
         VkPhysicalDeviceImageRobustnessFeatures imageRobustnessFeatures = initVulkanStructure();
@@ -6763,8 +7081,10 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan13(Context &context)
             initVulkanStructure(&shaderTerminateInvocationFeatures);
         VkPhysicalDeviceSynchronization2Features synchronization2Features =
             initVulkanStructure(&subgroupSizeControlFeatures);
-        VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeatures zeroInitializeWorkgroupMemoryFeatures =
+        VkPhysicalDeviceTextureCompressionASTCHDRFeatures textureCompressionASTCHDRFeatures =
             initVulkanStructure(&synchronization2Features);
+        VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeatures zeroInitializeWorkgroupMemoryFeatures =
+            initVulkanStructure(&textureCompressionASTCHDRFeatures);
         VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures =
             initVulkanStructure(&zeroInitializeWorkgroupMemoryFeatures);
         VkPhysicalDeviceShaderIntegerDotProductFeatures shaderIntegerDotProductFeatures =
@@ -6772,13 +7092,7 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan13(Context &context)
         VkPhysicalDeviceMaintenance4Features maintenance4Features =
             initVulkanStructure(&shaderIntegerDotProductFeatures);
 
-        // those two structures are part of extensions promoted in vk1.2 but now in 1.3 have required features
-        VkPhysicalDeviceVulkanMemoryModelFeatures vulkanMemoryModelFeatures =
-            initVulkanStructure(&maintenance4Features);
-        VkPhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures =
-            initVulkanStructure(&vulkanMemoryModelFeatures);
-
-        extFeatures = initVulkanStructure(&bufferDeviceAddressFeatures);
+        extFeatures = initVulkanStructure(&maintenance4Features);
 
         vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
 
@@ -6791,6 +7105,7 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan13(Context &context)
         log << TestLog::Message << shaderTerminateInvocationFeatures << TestLog::EndMessage;
         log << TestLog::Message << subgroupSizeControlFeatures << TestLog::EndMessage;
         log << TestLog::Message << synchronization2Features << TestLog::EndMessage;
+        log << TestLog::Message << textureCompressionASTCHDRFeatures << TestLog::EndMessage;
         log << TestLog::Message << zeroInitializeWorkgroupMemoryFeatures << TestLog::EndMessage;
         log << TestLog::Message << dynamicRenderingFeatures << TestLog::EndMessage;
         log << TestLog::Message << shaderIntegerDotProductFeatures << TestLog::EndMessage;
@@ -6834,6 +7149,10 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan13(Context &context)
         if (synchronization2Features.synchronization2 != vulkan13Features.synchronization2)
             TCU_FAIL("Mismatch between VkPhysicalDeviceSynchronization2Features and VkPhysicalDeviceVulkan13Features");
 
+        if (textureCompressionASTCHDRFeatures.textureCompressionASTC_HDR != vulkan13Features.textureCompressionASTC_HDR)
+            TCU_FAIL("Mismatch between VkPhysicalDeviceTextureCompressionASTCHDRFeatures and "
+                     "VkPhysicalDeviceVulkan13Features");
+
         if (zeroInitializeWorkgroupMemoryFeatures.shaderZeroInitializeWorkgroupMemory !=
             vulkan13Features.shaderZeroInitializeWorkgroupMemory)
             TCU_FAIL("Mismatch between VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeatures and "
@@ -6848,14 +7167,6 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan13(Context &context)
 
         if (maintenance4Features.maintenance4 != vulkan13Features.maintenance4)
             TCU_FAIL("Mismatch between VkPhysicalDeviceMaintenance4Features and VkPhysicalDeviceVulkan13Features");
-
-        // check required features from extensions that were promoted in earlier vulkan version
-        if (!vulkanMemoryModelFeatures.vulkanMemoryModel)
-            TCU_FAIL("vulkanMemoryModel feature from VkPhysicalDeviceVulkanMemoryModelFeatures is required");
-        if (!vulkanMemoryModelFeatures.vulkanMemoryModelDeviceScope)
-            TCU_FAIL("vulkanMemoryModelDeviceScope feature from VkPhysicalDeviceVulkanMemoryModelFeatures is required");
-        if (!bufferDeviceAddressFeatures.bufferDeviceAddress)
-            TCU_FAIL("bufferDeviceAddress feature from VkPhysicalDeviceBufferDeviceAddressFeatures is required");
     }
 
     return tcu::TestStatus::pass("Vulkan 1.3 device features are consistent with extensions");
@@ -7269,6 +7580,134 @@ tcu::TestStatus devicePropertyExtensionsConsistencyVulkan13(Context &context)
     }
 
     return tcu::TestStatus::pass("Vulkan 1.3 device properties are consistent with extension properties");
+}
+
+tcu::TestStatus devicePropertyExtensionsConsistencyVulkan14(Context &context)
+{
+    TestLog &log                          = context.getTestContext().getLog();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const CustomInstance instance =
+        createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2");
+    const InstanceDriver &vki = instance.getDriver();
+
+    if (!context.contextSupports(vk::ApiVersion(0, 1, 4, 0)))
+        TCU_THROW(NotSupportedError, "At least Vulkan 1.4 required to run test");
+
+    VkPhysicalDeviceVulkan14Properties vulkan14Properties = initVulkanStructure();
+    VkPhysicalDeviceProperties2 extProperties             = initVulkanStructure(&vulkan14Properties);
+    std::vector<VkImageLayout> vulkan14CopyLayouts;
+    std::vector<VkImageLayout> extCopyLayouts;
+
+    vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+
+    vulkan14CopyLayouts.resize(vulkan14Properties.copySrcLayoutCount + vulkan14Properties.copyDstLayoutCount);
+    vulkan14Properties.pCopySrcLayouts = vulkan14CopyLayouts.data();
+    vulkan14Properties.pCopyDstLayouts = vulkan14CopyLayouts.data() + vulkan14Properties.copySrcLayoutCount;
+    vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+
+    log << TestLog::Message << vulkan14Properties << TestLog::EndMessage;
+
+    // Validate all fields initialized matching to extension structures
+    {
+        VkPhysicalDeviceLineRasterizationPropertiesKHR lineRasterizationProperties = initVulkanStructure();
+        VkPhysicalDeviceMaintenance5PropertiesKHR maintenance5Properties =
+            initVulkanStructure(&lineRasterizationProperties);
+        VkPhysicalDeviceMaintenance6PropertiesKHR maintenance6Properties = initVulkanStructure(&maintenance5Properties);
+        VkPhysicalDevicePushDescriptorPropertiesKHR pushDescriptorProperties =
+            initVulkanStructure(&maintenance6Properties);
+        VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR vertexAttributeDivisorProperties =
+            initVulkanStructure(&pushDescriptorProperties);
+        VkPhysicalDeviceHostImageCopyPropertiesEXT hostImageCopyProperties =
+            initVulkanStructure(&vertexAttributeDivisorProperties);
+        VkPhysicalDevicePipelineRobustnessPropertiesEXT pipelineRobustnessProperties =
+            initVulkanStructure(&hostImageCopyProperties);
+        extProperties = initVulkanStructure(&pipelineRobustnessProperties);
+
+        vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+
+        // alocate and fill pCopySrcLayouts/pCopyDstLayouts data
+        extCopyLayouts.resize(hostImageCopyProperties.copySrcLayoutCount + hostImageCopyProperties.copyDstLayoutCount);
+        hostImageCopyProperties.pCopySrcLayouts = extCopyLayouts.data();
+        hostImageCopyProperties.pCopyDstLayouts = extCopyLayouts.data() + hostImageCopyProperties.copySrcLayoutCount;
+        hostImageCopyProperties.pNext           = nullptr;
+        extProperties.pNext                     = &hostImageCopyProperties;
+        vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+
+        if (lineRasterizationProperties.lineSubPixelPrecisionBits != vulkan14Properties.lineSubPixelPrecisionBits)
+        {
+            TCU_FAIL("Mismatch between VkPhysicalDeviceLineRasterizationPropertiesKHR and "
+                     "VkPhysicalDeviceVulkan14Properties");
+        }
+
+        if (maintenance5Properties.earlyFragmentMultisampleCoverageAfterSampleCounting !=
+                vulkan14Properties.earlyFragmentMultisampleCoverageAfterSampleCounting ||
+            maintenance5Properties.earlyFragmentSampleMaskTestBeforeSampleCounting !=
+                vulkan14Properties.earlyFragmentSampleMaskTestBeforeSampleCounting ||
+            maintenance5Properties.depthStencilSwizzleOneSupport != vulkan14Properties.depthStencilSwizzleOneSupport ||
+            maintenance5Properties.polygonModePointSize != vulkan14Properties.polygonModePointSize ||
+            maintenance5Properties.nonStrictSinglePixelWideLinesUseParallelogram !=
+                vulkan14Properties.nonStrictSinglePixelWideLinesUseParallelogram ||
+            maintenance5Properties.nonStrictWideLinesUseParallelogram !=
+                vulkan14Properties.nonStrictWideLinesUseParallelogram)
+        {
+            TCU_FAIL(
+                "Mismatch between VkPhysicalDeviceMaintenance5PropertiesKHR and VkPhysicalDeviceVulkan14Properties");
+        }
+
+        if (maintenance6Properties.blockTexelViewCompatibleMultipleLayers !=
+                vulkan14Properties.blockTexelViewCompatibleMultipleLayers ||
+            maintenance6Properties.maxCombinedImageSamplerDescriptorCount !=
+                vulkan14Properties.maxCombinedImageSamplerDescriptorCount ||
+            maintenance6Properties.fragmentShadingRateClampCombinerInputs !=
+                vulkan14Properties.fragmentShadingRateClampCombinerInputs)
+        {
+            TCU_FAIL(
+                "Mismatch between VkPhysicalDeviceMaintenance6PropertiesKHR and VkPhysicalDeviceVulkan14Properties");
+        }
+
+        if (pushDescriptorProperties.maxPushDescriptors != vulkan14Properties.maxPushDescriptors)
+        {
+            TCU_FAIL(
+                "Mismatch between VkPhysicalDevicePushDescriptorPropertiesKHR and VkPhysicalDeviceVulkan14Properties");
+        }
+
+        if (vertexAttributeDivisorProperties.maxVertexAttribDivisor != vulkan14Properties.maxVertexAttribDivisor ||
+            vertexAttributeDivisorProperties.supportsNonZeroFirstInstance !=
+                vulkan14Properties.supportsNonZeroFirstInstance)
+        {
+            TCU_FAIL("Mismatch between VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR and "
+                     "VkPhysicalDeviceVulkan14Properties");
+        }
+
+        if (hostImageCopyProperties.copySrcLayoutCount != vulkan14Properties.copySrcLayoutCount ||
+            (deMemCmp(hostImageCopyProperties.pCopySrcLayouts, vulkan14Properties.pCopySrcLayouts,
+                      vulkan14Properties.copySrcLayoutCount) != 0) ||
+            hostImageCopyProperties.copyDstLayoutCount != vulkan14Properties.copyDstLayoutCount ||
+            (deMemCmp(hostImageCopyProperties.pCopyDstLayouts, vulkan14Properties.pCopyDstLayouts,
+                      vulkan14Properties.copyDstLayoutCount) != 0) ||
+            (deMemCmp(hostImageCopyProperties.optimalTilingLayoutUUID, vulkan14Properties.optimalTilingLayoutUUID,
+                      VK_LUID_SIZE) != 0) ||
+            hostImageCopyProperties.identicalMemoryTypeRequirements !=
+                vulkan14Properties.identicalMemoryTypeRequirements)
+        {
+            TCU_FAIL(
+                "Mismatch between VkPhysicalDeviceHostImageCopyPropertiesEXT and VkPhysicalDeviceVulkan14Properties");
+        }
+
+        if (pipelineRobustnessProperties.defaultRobustnessStorageBuffers !=
+                vulkan14Properties.defaultRobustnessStorageBuffers ||
+            pipelineRobustnessProperties.defaultRobustnessUniformBuffers !=
+                vulkan14Properties.defaultRobustnessUniformBuffers ||
+            pipelineRobustnessProperties.defaultRobustnessVertexInputs !=
+                vulkan14Properties.defaultRobustnessVertexInputs ||
+            pipelineRobustnessProperties.defaultRobustnessImages != vulkan14Properties.defaultRobustnessImages)
+        {
+            TCU_FAIL("Mismatch between VkPhysicalDevicePipelineRobustnessPropertiesEXT and "
+                     "VkPhysicalDeviceVulkan14Properties");
+        }
+    }
+
+    return tcu::TestStatus::pass("Vulkan 1.4 device properties are consistent with extension properties");
 }
 #endif // CTS_USES_VULKANSC
 
@@ -7822,6 +8261,21 @@ tcu::TestCaseGroup *createFeatureInfoTests(tcu::TestContext &testCtx)
 
         infoTests->addChild(extendedPropertiesTests.release());
     }
+    {
+        // Vulkan 1.4 related tests
+        de::MovePtr<tcu::TestCaseGroup> extendedPropertiesTests(new tcu::TestCaseGroup(testCtx, "vulkan1p4"));
+
+        addFunctionCase(extendedPropertiesTests.get(), "features", deviceFeaturesVulkan14);
+        addFunctionCase(extendedPropertiesTests.get(), "properties", devicePropertiesVulkan14);
+        addFunctionCase(extendedPropertiesTests.get(), "feature_extensions_consistency",
+                        deviceFeatureExtensionsConsistencyVulkan14);
+        addFunctionCase(extendedPropertiesTests.get(), "property_extensions_consistency",
+                        devicePropertyExtensionsConsistencyVulkan14);
+        addFunctionCase(extendedPropertiesTests.get(), "feature_bits_influence", checkApiVersionSupport<1, 4>,
+                        featureBitInfluenceOnDeviceCreate<VK_API_VERSION_1_4>);
+
+        infoTests->addChild(extendedPropertiesTests.release());
+    }
 #endif // CTS_USES_VULKANSC
 
     {
@@ -7895,6 +8349,17 @@ tcu::TestCaseGroup *createFeatureInfoTests(tcu::TestContext &testCtx)
         infoTests->addChild(limitsValidationTests.release());
     }
 
+    {
+        de::MovePtr<tcu::TestCaseGroup> limitsValidationTests(
+            new tcu::TestCaseGroup(testCtx, "vulkan1p4_limits_validation"));
+
+#ifndef CTS_USES_VULKANSC
+        addFunctionCase(limitsValidationTests.get(), "general", checkApiVersionSupport<1, 4>, validateLimits14);
+#endif // CTS_USES_VULKANSC
+
+        infoTests->addChild(limitsValidationTests.release());
+    }
+
     infoTests->addChild(
         createTestGroup(testCtx, "image_format_properties2", createImageFormatTests, imageFormatProperties2));
 #ifndef CTS_USES_VULKANSC
@@ -7904,9 +8369,8 @@ tcu::TestCaseGroup *createFeatureInfoTests(tcu::TestContext &testCtx)
     {
         de::MovePtr<tcu::TestCaseGroup> profilesValidationTests(new tcu::TestCaseGroup(testCtx, "profiles"));
 
-        // Limits and features check for roadmap 2022
-        addFunctionCase(profilesValidationTests.get(), "roadmap_2022", checkApiVersionSupport<1, 3>,
-                        validateRoadmap2022);
+        for (const auto &[name, checkSupportFun, validateFun] : profileEntries)
+            addFunctionCase(profilesValidationTests.get(), name, *checkSupportFun, *validateFun);
 
         infoTests->addChild(profilesValidationTests.release());
     }

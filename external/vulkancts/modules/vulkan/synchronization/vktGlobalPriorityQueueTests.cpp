@@ -68,8 +68,8 @@ struct TestConfig
 {
     VkQueueFlagBits transitionFrom;
     VkQueueFlagBits transitionTo;
-    VkQueueGlobalPriorityKHR priorityFrom;
-    VkQueueGlobalPriorityKHR priorityTo;
+    VkQueueGlobalPriority priorityFrom;
+    VkQueueGlobalPriority priorityTo;
     bool enableProtected;
     bool enableSparseBinding;
     SyncType syncType;
@@ -268,7 +268,7 @@ Move<VkPipeline> GPQInstanceBase::createGraphicsPipeline(VkPipelineLayout pipeli
     const std::vector<VkViewport> viewports{makeViewport(m_config.width, m_config.height)};
     const std::vector<VkRect2D> scissors{makeRect2D(m_config.width, m_config.height)};
     const auto vertexBinding =
-        makeVertexInputBindingDescription(0u, static_cast<uint32_t>(2 * sizeof(float)), VK_VERTEX_INPUT_RATE_VERTEX);
+        makeVertexInputBindingDescription(0u, static_cast<uint32_t>(sizeof(tcu::Vec2)), VK_VERTEX_INPUT_RATE_VERTEX);
     const auto vertexAttrib = makeVertexInputAttributeDescription(0u, 0u, VK_FORMAT_R32G32_SFLOAT, 0u);
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo{
         vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
@@ -507,7 +507,7 @@ void GPQCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "Queue families with VK_QUEUE_SPARSE_BINDING_BIT not supported");
     }
 
-    auto assertUnavailableQueue = [](const uint32_t qIdx, VkQueueFlagBits qfb, VkQueueGlobalPriorityKHR qgp)
+    auto assertUnavailableQueue = [](const uint32_t qIdx, VkQueueFlagBits qfb, VkQueueGlobalPriority qgp)
     {
         if (qIdx == INVALID_UINT32)
         {
@@ -552,8 +552,8 @@ void GPQCase::initPrograms(SourceCollections &programs) const
 {
     const std::string producerComp(R"glsl(
     #version 450
-    layout(binding=0) buffer S { float src[]; };
-    layout(binding=1) buffer D { float dst[]; };
+    layout(binding=0, std430) buffer S { vec2 src[]; };
+    layout(binding=1, std430) buffer D { vec2 dst[]; };
     layout(binding=2) buffer ProtectedHelper
     {
         highp uint zero; // set to 0
@@ -678,11 +678,11 @@ tcu::TestStatus GPQInstance<VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT>::iterat
     const VkQueue consumerQueue = m_device.queueTo;
 
     // stagging buffer for vertices
-    const std::vector<float> positions{+1.f, -1.f, -1.f, -1.f, 0.f, +1.f};
+    const std::vector<tcu::Vec2> positions{tcu::Vec2(+1.f, -1.f), tcu::Vec2(-1.f, -1.f), tcu::Vec2(0.f, +1.f)};
     const VkBufferCreateInfo posBuffInfo =
-        makeBufferCreateInfo(positions.size() * sizeof(float), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, producerIndices);
+        makeBufferCreateInfo(de::dataSize(positions), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, producerIndices);
     BufferWithMemory positionsBuffer(vki, vkd, phys, device, allocator, posBuffInfo, MemoryRequirement::HostVisible);
-    std::copy_n(positions.data(), positions.size(), begin<float>(positionsBuffer.getHostPtr()));
+    std::copy_n(positions.data(), positions.size(), begin<tcu::Vec2>(positionsBuffer.getHostPtr()));
     const VkDescriptorBufferInfo posDsBuffInfo =
         makeDescriptorBufferInfo(positionsBuffer.get(), 0, positionsBuffer.getSize());
 
@@ -797,7 +797,7 @@ tcu::TestStatus GPQInstance<VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT>::iterat
     vkd.cmdBindPipeline(*producerCmd, VK_PIPELINE_BIND_POINT_COMPUTE, *producerPipeline);
     vkd.cmdBindDescriptorSets(*producerCmd, VK_PIPELINE_BIND_POINT_COMPUTE, *producerLayout, 0, 1, &(*producerDs), 0,
                               nullptr);
-    vkd.cmdDispatch(*producerCmd, uint32_t(positions.size()), 1, 1);
+    vkd.cmdDispatch(*producerCmd, de::sizeU32(positions), 1, 1);
     endCommandBuffer(vkd, *producerCmd);
 
     beginCommandBuffer(vkd, *consumerCmd);
@@ -811,7 +811,7 @@ tcu::TestStatus GPQInstance<VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT>::iterat
 
     beginRenderPass(vkd, *consumerCmd, *renderPass, *framebuffer, makeRect2D(m_config.width, m_config.height),
                     clearColor);
-    vkd.cmdDraw(*consumerCmd, uint32_t(positions.size()), 1, 0, 0);
+    vkd.cmdDraw(*consumerCmd, de::sizeU32(positions), 1, 0, 0);
     endRenderPass(vkd, *consumerCmd);
     vkd.cmdPipelineBarrier(*consumerCmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &imageReadyBarrier);
@@ -873,12 +873,12 @@ tcu::TestStatus GPQInstance<VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT>::iterat
     const VkQueue producerQueue = m_device.queueFrom;
 
     // stagging buffer for vertices
-    const std::vector<float> positions{+1.f, -1.f, -1.f, -1.f, 0.f, +1.f};
+    const std::vector<tcu::Vec2> positions{tcu::Vec2(+1.f, -1.f), tcu::Vec2(-1.f, -1.f), tcu::Vec2(0.f, +1.f)};
     const VkBufferCreateInfo positionBuffInfo =
-        makeBufferCreateInfo(positions.size() * sizeof(float), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, producerIndices);
+        makeBufferCreateInfo(de::dataSize(positions), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, producerIndices);
     BufferWithMemory positionsBuffer(vki, vkd, phys, device, allocator, positionBuffInfo,
                                      MemoryRequirement::HostVisible);
-    std::copy_n(positions.data(), positions.size(), begin<float>(positionsBuffer.getHostPtr()));
+    std::copy_n(positions.data(), positions.size(), begin<tcu::Vec2>(positionsBuffer.getHostPtr()));
     const VkDescriptorBufferInfo posDsBuffInfo =
         makeDescriptorBufferInfo(positionsBuffer.get(), 0, positionsBuffer.getSize());
 
@@ -999,12 +999,12 @@ tcu::TestStatus GPQInstance<VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT>::iterat
     vkd.cmdBindVertexBuffers(*producerCmd, 0, 1, vertexBuffer.getPtr(), &static_cast<const VkDeviceSize &>(0));
     vkd.cmdBindDescriptorSets(*producerCmd, VK_PIPELINE_BIND_POINT_COMPUTE, *producer1Layout, 0, 1, &producerDs.get(),
                               0, nullptr);
-    vkd.cmdDispatch(*producerCmd, uint32_t(positions.size()), 1, 1);
+    vkd.cmdDispatch(*producerCmd, de::sizeU32(positions), 1, 1);
     vkd.cmdPipelineBarrier(*producerCmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0, 0,
                            nullptr, 1, &producerReadyBarrier, 0, nullptr);
     beginRenderPass(vkd, *producerCmd, *renderPass, *framebuffer, makeRect2D(m_config.width, m_config.height),
                     clearColor);
-    vkd.cmdDraw(*producerCmd, uint32_t(positions.size()), 1, 0, 0);
+    vkd.cmdDraw(*producerCmd, de::sizeU32(positions), 1, 0, 0);
     endRenderPass(vkd, *producerCmd);
     vkd.cmdPipelineBarrier(*producerCmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                            VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0, 0u, nullptr, 0u, nullptr, 1u, &imageReadyBarrier);
@@ -1065,10 +1065,10 @@ public:
     struct Params
     {
         QueueType queueA;
-        VkQueueGlobalPriorityKHR priorityA;
+        VkQueueGlobalPriority priorityA;
 
         QueueType queueB;
-        VkQueueGlobalPriorityKHR priorityB;
+        VkQueueGlobalPriority priorityB;
 
         bool doublePreemption;
 
@@ -1192,8 +1192,7 @@ void PreemptionCase::initPrograms(vk::SourceCollections &programCollection) cons
 }
 
 tcu::Maybe<uint32_t> findQueueByTypeAndPriority(const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
-                                                PreemptionInstance::QueueType queueType,
-                                                VkQueueGlobalPriorityKHR priority)
+                                                PreemptionInstance::QueueType queueType, VkQueueGlobalPriority priority)
 {
     std::vector<VkQueueFamilyProperties2> qfProperties2;
     std::vector<VkQueueFamilyGlobalPriorityPropertiesKHR> qfGlobalPriorities;
@@ -1294,9 +1293,9 @@ std::string getQueueTypeName(PreemptionInstance::QueueType queueType)
     return capabilityIter->second;
 }
 
-std::string getPriorityName(VkQueueGlobalPriorityKHR priority)
+std::string getPriorityName(VkQueueGlobalPriority priority)
 {
-    static const std::map<VkQueueGlobalPriorityKHR, std::string> priorityNames{
+    static const std::map<VkQueueGlobalPriority, std::string> priorityNames{
         std::make_pair(VK_QUEUE_GLOBAL_PRIORITY_LOW_KHR, std::string("low")),
         std::make_pair(VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR, std::string("medium")),
         std::make_pair(VK_QUEUE_GLOBAL_PRIORITY_HIGH_KHR, std::string("high")),
@@ -1309,7 +1308,7 @@ std::string getPriorityName(VkQueueGlobalPriorityKHR priority)
     return priorityNameIter->second;
 }
 
-void throwNotSupported(PreemptionInstance::QueueType queueType, VkQueueGlobalPriorityKHR priority)
+void throwNotSupported(PreemptionInstance::QueueType queueType, VkQueueGlobalPriority priority)
 {
     const auto queueTypeName = getQueueTypeName(queueType);
     const auto priorityName  = getPriorityName(priority);
@@ -1359,7 +1358,7 @@ protected:
     }
 
 public:
-    DeviceHelper(Context &context, PreemptionInstance::QueueType queueType, VkQueueGlobalPriorityKHR priority)
+    DeviceHelper(Context &context, PreemptionInstance::QueueType queueType, VkQueueGlobalPriority priority)
         : DeviceHelper()
     {
         const float numericPriority = 1.0f; // This is the classic priority.
@@ -1965,7 +1964,7 @@ tcu::TestCaseGroup *createGlobalPriorityQueueTests(tcu::TestContext &testCtx)
     std::pair<VkQueueFlags, const char *> const modifiers[]{
         {0, "no_modifiers"}, {VK_QUEUE_SPARSE_BINDING_BIT, "sparse"}, {VK_QUEUE_PROTECTED_BIT, "protected"}};
 
-    std::pair<VkQueueGlobalPriorityKHR, const char *> const prios[]{
+    std::pair<VkQueueGlobalPriority, const char *> const prios[]{
         {VK_QUEUE_GLOBAL_PRIORITY_LOW_KHR, "low"},
         {VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR, "medium"},
         {VK_QUEUE_GLOBAL_PRIORITY_HIGH_KHR, "high"},
@@ -2042,7 +2041,7 @@ tcu::TestCaseGroup *createGlobalPriorityQueueTests(tcu::TestContext &testCtx)
         constexpr auto PRIORITY_REALTIME = VK_QUEUE_GLOBAL_PRIORITY_REALTIME_KHR;
 
         using QueueTypeVec = std::vector<PreemptionInstance::QueueType>;
-        using PriorityVec  = std::vector<VkQueueGlobalPriorityKHR>;
+        using PriorityVec  = std::vector<VkQueueGlobalPriority>;
 
         const QueueTypeVec kQueueTypes{GRAPHICS, COMPUTE, COMPUTE_EXCLUSIVE, TRANSFER, TRANSFER_EXCLUSIVE};
         const PriorityVec kPriorities{PRIORITY_LOW, PRIORITY_MEDIUM, PRIORITY_HIGH, PRIORITY_REALTIME};

@@ -24,6 +24,7 @@
  */ /*-------------------------------------------------------------------*/
 
 #include "glwDefs.hpp"
+#include "glwFunctions.hpp"
 
 namespace glcts
 {
@@ -35,6 +36,11 @@ glw::GLuint floatToUnisgnedF10(float f);
 float halfFloatToFloat(glw::GLhalf hf);
 float unsignedF11ToFloat(glw::GLuint value);
 float unsignedF10ToFloat(glw::GLuint value);
+
+bool getBits(const glw::Functions &gl, bool isContextES, const glw::GLenum target, const glw::GLenum bits,
+             glw::GLint *value);
+bool getReadbufferBits(const glw::Functions &gl, bool isContextES, glw::GLenum bits, glw::GLint *value);
+bool getDrawbufferBits(const glw::Functions &gl, bool isContextES, glw::GLenum bits, glw::GLint *value);
 
 } // namespace glcts
 

@@ -78,13 +78,19 @@ bool TessellationShaderVertexSpacing::_tess_coordinate_cartesian::operator==(
  *
  * @param context Test context
  **/
-TessellationShaderVertexSpacing::TessellationShaderVertexSpacing(Context &context, const ExtParameters &extParams)
+TessellationShaderVertexSpacing::TessellationShaderVertexSpacing(Context &context, const ExtParameters &extParams,
+                                                                 _tessellation_primitive_mode primitive_mode,
+                                                                 _tessellation_shader_vertex_spacing vs_mode)
     : TestCaseBase(context, extParams, "vertex_spacing", "Verifies vertex spacing qualifier behaves as specified")
     , m_gl_max_tess_gen_level_value(0)
     , m_vao_id(0)
     , m_utils(nullptr)
+    , m_primitive_mode(primitive_mode)
+    , m_vs_mode(vs_mode)
 {
-    /* Left blank on purpose */
+    TestCaseBase::m_name.append("_primitive_mode_" +
+                                TessellationShaderUtils::getESTokenForPrimitiveMode(m_primitive_mode) + "_vs_mode_" +
+                                TessellationShaderUtils::getESTokenForVertexSpacingMode(m_vs_mode));
 }
 
 /** Comparator function, used to compare two _tess_coordinate_cartesian
@@ -917,114 +923,86 @@ void TessellationShaderVertexSpacing::initTest()
     gl.getIntegerv(m_glExtTokens.MAX_TESS_GEN_LEVEL, &m_gl_max_tess_gen_level_value);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv() call failed for GL_MAX_TESS_GEN_LEVEL_EXT pname");
 
-    const _tessellation_shader_vertex_spacing vs_modes[] = {
-        TESSELLATION_SHADER_VERTEX_SPACING_EQUAL, TESSELLATION_SHADER_VERTEX_SPACING_FRACTIONAL_EVEN,
-        TESSELLATION_SHADER_VERTEX_SPACING_FRACTIONAL_ODD, TESSELLATION_SHADER_VERTEX_SPACING_DEFAULT};
-    const unsigned int n_vs_modes = sizeof(vs_modes) / sizeof(vs_modes[0]);
+    _tessellation_levels_set tess_levels_set;
+    tess_levels_set = TessellationShaderUtils::getTessellationLevelSetForPrimitiveMode(
+        m_primitive_mode, m_gl_max_tess_gen_level_value,
+        TESSELLATION_LEVEL_SET_FILTER_INNER_AND_OUTER_LEVELS_USE_DIFFERENT_VALUES);
 
-    const _tessellation_primitive_mode primitive_modes[] = {TESSELLATION_SHADER_PRIMITIVE_MODE_ISOLINES,
-                                                            TESSELLATION_SHADER_PRIMITIVE_MODE_TRIANGLES,
-                                                            TESSELLATION_SHADER_PRIMITIVE_MODE_QUADS};
-    const unsigned int n_primitive_modes                 = sizeof(primitive_modes) / sizeof(primitive_modes[0]);
-
-    /* Iterate through all primitive modes */
-    for (unsigned int n_primitive_mode = 0; n_primitive_mode < n_primitive_modes; ++n_primitive_mode)
+    /* Iterate through all tessellation level combinations */
+    for (_tessellation_levels_set_const_iterator tess_levels_set_iterator = tess_levels_set.begin();
+         tess_levels_set_iterator != tess_levels_set.end(); tess_levels_set_iterator++)
     {
-        _tessellation_primitive_mode primitive_mode = primitive_modes[n_primitive_mode];
+        const _tessellation_levels &tess_levels = *tess_levels_set_iterator;
 
-        /* Generate tessellation level set for current primitive mode */
-        _tessellation_levels_set tess_levels_set;
-
-        tess_levels_set = TessellationShaderUtils::getTessellationLevelSetForPrimitiveMode(
-            primitive_mode, m_gl_max_tess_gen_level_value,
-            TESSELLATION_LEVEL_SET_FILTER_INNER_AND_OUTER_LEVELS_USE_DIFFERENT_VALUES);
-
-        /* Iterate through all vertex spacing modes */
-        for (unsigned int n_vs_mode = 0; n_vs_mode < n_vs_modes; ++n_vs_mode)
+        if (m_primitive_mode == TESSELLATION_SHADER_PRIMITIVE_MODE_QUADS &&
+            m_vs_mode == TESSELLATION_SHADER_VERTEX_SPACING_FRACTIONAL_ODD &&
+            (tess_levels.inner[0] <= 1 || tess_levels.inner[1] <= 1))
         {
-            _tessellation_shader_vertex_spacing vs_mode = vs_modes[n_vs_mode];
+            continue;
+        }
 
-            /* Iterate through all tessellation level combinations */
-            for (_tessellation_levels_set_const_iterator tess_levels_set_iterator = tess_levels_set.begin();
-                 tess_levels_set_iterator != tess_levels_set.end(); tess_levels_set_iterator++)
+        _run run;
+        /* Fill run descriptor */
+        memcpy(run.inner, tess_levels.inner, sizeof(run.inner));
+        memcpy(run.outer, tess_levels.outer, sizeof(run.outer));
+
+        run.primitive_mode = m_primitive_mode;
+        run.vertex_spacing = m_vs_mode;
+
+        /* Retrieve vertex data for both passes */
+        run.n_vertices = m_utils->getAmountOfVerticesGeneratedByTessellator(
+            run.primitive_mode, run.inner, run.outer, run.vertex_spacing, true); /* is_point_mode_enabled */
+
+        if (run.n_vertices == 0)
+        {
+            std::string primitive_mode_string = TessellationShaderUtils::getESTokenForPrimitiveMode(m_primitive_mode);
+            std::string vs_mode_string        = TessellationShaderUtils::getESTokenForVertexSpacingMode(m_vs_mode);
+
+            m_testCtx.getLog() << tcu::TestLog::Message
+                               << "No vertices were generated by tessellator for: "
+                                  "inner tess levels:"
+                                  "["
+                               << run.inner[0] << ", " << run.inner[1]
+                               << "]"
+                                  ", outer tess levels:"
+                                  "["
+                               << run.outer[0] << ", " << run.outer[1] << ", " << run.outer[2] << ", " << run.outer[3]
+                               << "]"
+                                  ", primitive mode: "
+                               << primitive_mode_string << ", vertex spacing: " << vs_mode_string
+                               << tcu::TestLog::EndMessage;
+
+            TCU_FAIL("Zero vertices were generated by tessellator");
+        }
+
+        /* Retrieve the data buffers */
+        run.data = m_utils->getDataGeneratedByTessellator(run.inner, true, /* is_point_mode_enabled */
+                                                          run.primitive_mode, TESSELLATION_SHADER_VERTEX_ORDERING_CCW,
+                                                          run.vertex_spacing, run.outer);
+
+        /* 'triangles' tessellation data is expressed in barycentric coordinates. Before we can
+         * continue, we need to convert the data to Euclidean space */
+        if (run.primitive_mode == TESSELLATION_SHADER_PRIMITIVE_MODE_TRIANGLES)
+        {
+            run.data_cartesian.resize(run.n_vertices * 2 /* components */);
+
+            for (unsigned int n_vertex = 0; n_vertex < run.n_vertices; ++n_vertex)
             {
-                const _tessellation_levels &tess_levels = *tess_levels_set_iterator;
-                _run run;
+                const float *barycentric_vertex_data = (const float *)(&run.data[0]) + n_vertex * 3;    /* components */
+                float *cartesian_vertex_data         = (float *)(&run.data_cartesian.at(n_vertex * 2)); /* components */
 
-                /* Skip border cases that this test cannot handle */
-                if (primitive_mode == TESSELLATION_SHADER_PRIMITIVE_MODE_QUADS &&
-                    vs_mode == TESSELLATION_SHADER_VERTEX_SPACING_FRACTIONAL_ODD &&
-                    (tess_levels.inner[0] <= 1 || tess_levels.inner[1] <= 1))
-                {
-                    continue;
-                }
+                TessellationShaderUtils::convertBarycentricCoordinatesToCartesian(barycentric_vertex_data,
+                                                                                  cartesian_vertex_data);
+            }
+        } /* if (run.primitive_mode == TESSELLATION_SHADER_PRIMITIVE_MODE_TRIANGLES) */
+        else
+        {
+            run.data_cartesian.clear();
+        }
 
-                /* Fill run descriptor */
-                memcpy(run.inner, tess_levels.inner, sizeof(run.inner));
-                memcpy(run.outer, tess_levels.outer, sizeof(run.outer));
-
-                run.primitive_mode = primitive_mode;
-                run.vertex_spacing = vs_mode;
-
-                /* Retrieve vertex data for both passes */
-                run.n_vertices = m_utils->getAmountOfVerticesGeneratedByTessellator(
-                    run.primitive_mode, run.inner, run.outer, run.vertex_spacing, true); /* is_point_mode_enabled */
-
-                if (run.n_vertices == 0)
-                {
-                    std::string primitive_mode_string =
-                        TessellationShaderUtils::getESTokenForPrimitiveMode(primitive_mode);
-                    std::string vs_mode_string = TessellationShaderUtils::getESTokenForVertexSpacingMode(vs_mode);
-
-                    m_testCtx.getLog() << tcu::TestLog::Message
-                                       << "No vertices were generated by tessellator for: "
-                                          "inner tess levels:"
-                                          "["
-                                       << run.inner[0] << ", " << run.inner[1]
-                                       << "]"
-                                          ", outer tess levels:"
-                                          "["
-                                       << run.outer[0] << ", " << run.outer[1] << ", " << run.outer[2] << ", "
-                                       << run.outer[3]
-                                       << "]"
-                                          ", primitive mode: "
-                                       << primitive_mode_string << ", vertex spacing: " << vs_mode_string
-                                       << tcu::TestLog::EndMessage;
-
-                    TCU_FAIL("Zero vertices were generated by tessellator");
-                }
-
-                /* Retrieve the data buffers */
-                run.data = m_utils->getDataGeneratedByTessellator(
-                    run.inner, true, /* is_point_mode_enabled */
-                    run.primitive_mode, TESSELLATION_SHADER_VERTEX_ORDERING_CCW, run.vertex_spacing, run.outer);
-
-                /* 'triangles' tessellation data is expressed in barycentric coordinates. Before we can
-                 * continue, we need to convert the data to Euclidean space */
-                if (run.primitive_mode == TESSELLATION_SHADER_PRIMITIVE_MODE_TRIANGLES)
-                {
-                    run.data_cartesian.resize(run.n_vertices * 2 /* components */);
-
-                    for (unsigned int n_vertex = 0; n_vertex < run.n_vertices; ++n_vertex)
-                    {
-                        const float *barycentric_vertex_data =
-                            (const float *)(&run.data[0]) + n_vertex * 3;                               /* components */
-                        float *cartesian_vertex_data = (float *)(&run.data_cartesian.at(n_vertex * 2)); /* components */
-
-                        TessellationShaderUtils::convertBarycentricCoordinatesToCartesian(barycentric_vertex_data,
-                                                                                          cartesian_vertex_data);
-                    }
-                } /* if (run.primitive_mode == TESSELLATION_SHADER_PRIMITIVE_MODE_TRIANGLES) */
-                else
-                {
-                    run.data_cartesian.clear();
-                }
-
-                /* Store the run data */
-                m_runs.emplace_back(std::move(run));
-            } /* for (all tessellation level values ) */
-        }     /* for (all primitive modes) */
-    }         /* for (all vertex spacing modes) */
+        /* Store the run data */
+        m_runs.emplace_back(std::move(run));
+    }
 }
 
 /** Executes the test.

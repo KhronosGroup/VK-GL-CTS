@@ -43,7 +43,9 @@ namespace
 {
 
 using namespace vk;
-constexpr float MAX_T_VALUE = 10000000.0;
+constexpr float MAX_T_VALUE                    = 10000000.0;
+constexpr uint32_t STRESS_NUM_LEVELS           = 20000;
+constexpr uint32_t STRESS_NUM_PRIMS_PER_LEVELS = 3;
 
 enum class TestType
 {
@@ -54,6 +56,7 @@ enum class TestType
 struct StressTestParams
 {
     TestType testType;
+    uint32_t raySize;
 };
 
 struct ResultData
@@ -176,6 +179,9 @@ void RayQueryStressCase::checkSupport(Context &context) const
         if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == false)
             TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
     }
+    if (m_rayQueryParams.pipelineType != RayQueryShaderSourcePipeline::GRAPHICS &&
+        m_stressParams.raySize > context.getDeviceProperties().limits.maxComputeWorkGroupCount[0])
+        TCU_THROW(NotSupportedError, "Num of rays is not supported");
 }
 
 void RayQueryStressCase::initPrograms(vk::SourceCollections &programCollection) const
@@ -211,7 +217,7 @@ void RayQueryStressCase::initPrograms(vk::SourceCollections &programCollection) 
                "gl_RayQueryCandidateIntersectionAABBEXT)\n"
                "       {\n"
                "           float t = rayQueryGetIntersectionPrimitiveIndexEXT(rayQuery, false) - index + 0.5f;\n"
-               "           if (t < rayQueryGetIntersectionTEXT(rayQuery, true))"
+               "           if (t > 0 && t < rayQueryGetIntersectionTEXT(rayQuery, true))"
                "           {\n"
                "                rayQueryGenerateIntersectionEXT(rayQuery, t);\n"
                "           }\n"
@@ -303,8 +309,8 @@ tcu::TestStatus RayQueryStressInstance::iterate(void)
               X--------X--------X
     */
 
-    const uint32_t numLevels        = 20000;
-    const uint32_t numPrimsPerLevel = 3;
+    const uint32_t numLevels        = STRESS_NUM_LEVELS;
+    const uint32_t numPrimsPerLevel = STRESS_NUM_PRIMS_PER_LEVELS;
     const float alfa                = 2.0f * static_cast<float>(M_PI) / static_cast<float>(numPrimsPerLevel);
     const uint32_t totalNumPrims    = numPrimsPerLevel * numLevels;
     const float incrZ               = 1.0f;
@@ -316,7 +322,7 @@ tcu::TestStatus RayQueryStressInstance::iterate(void)
     tcu::Vec2 p2(-tanAlfaOver2, 1);
     float z = 0;
 
-    m_rayQueryParams.rays.resize(totalNumPrims);
+    m_rayQueryParams.rays.resize(m_stressParams.raySize);
     std::vector<ResultData> expectedResults(totalNumPrims);
     std::vector<tcu::Vec3> instance1(m_stressParams.testType == TestType::TRIANGLES ? totalNumPrims * 3 :
                                                                                       totalNumPrims * 2);
@@ -382,11 +388,13 @@ tcu::TestStatus RayQueryStressInstance::iterate(void)
     {
         m_rayQueryParams.verts.push_back(instance1);
         m_rayQueryParams.aabbs.push_back(emptyVerts);
+        m_rayQueryParams.triangles = true;
     }
     else
     {
         m_rayQueryParams.verts.push_back(emptyVerts);
         m_rayQueryParams.aabbs.push_back(instance1);
+        m_rayQueryParams.triangles = false;
     }
 
     std::vector<ResultData> resultData;
@@ -546,6 +554,13 @@ tcu::TestCaseGroup *createRayQueryStressTests(tcu::TestContext &testCtx)
             rayQueryTestParams.shaderSourceType = shaderSourceTypes[shaderSourceNdx].shaderSourceType;
             rayQueryTestParams.pipelineType     = shaderSourceTypes[shaderSourceNdx].shaderSourcePipeline;
             StressTestParams testParams{};
+            testParams.raySize = STRESS_NUM_LEVELS * STRESS_NUM_PRIMS_PER_LEVELS;
+            if (rayQueryTestParams.pipelineType != RayQueryShaderSourcePipeline::RAYTRACING)
+            {
+                int power          = static_cast<int>(ceil(log2(testParams.raySize)));
+                power              = (power % 2 == 0) ? power : power + 1;
+                testParams.raySize = de::max<int>(static_cast<int>(pow(2, power)), 64);
+            }
             testParams.testType = bottomTestTypes[bottomTestNdx].testType;
             sourceTypeGroup->addChild(new RayQueryStressCase(
                 group->getTestContext(), bottomTestTypes[bottomTestNdx].name, rayQueryTestParams, testParams));

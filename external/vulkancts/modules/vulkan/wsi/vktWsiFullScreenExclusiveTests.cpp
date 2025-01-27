@@ -315,10 +315,11 @@ tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
         TCU_THROW(NotSupportedError, "Extension VK_EXT_full_screen_exclusive not supported");
 
     native.window->setVisible(true);
+    bool isForeground = true;
 
     if (testParams.wsiType == TYPE_WIN32)
     {
-        native.window->setForeground();
+        isForeground = native.window->setForeground();
     }
 
     // add information about full screen exclusive to VkSwapchainCreateInfoKHR
@@ -585,7 +586,8 @@ tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
 
     native.window->setVisible(false);
 
-    if (fullScreenAcquired && !fullScreenLost)
+    if ((fullScreenAcquired && !fullScreenLost) ||
+        (!isForeground && testParams.fseType == VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT))
     {
         return tcu::TestStatus::pass("Rendering tests succeeded");
     }

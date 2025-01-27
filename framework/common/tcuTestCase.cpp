@@ -95,7 +95,7 @@ void TestNode::addChild(TestNode *node)
     {
         for (int i = 0; i < (int)m_children.size(); i++)
         {
-            if (deStringEqual(node->getName(), m_children[i]->getName()))
+            if (strcmp(node->getName(), m_children[i]->getName()) == 0)
                 throw tcu::InternalError(std::string("Test case with non-unique name '") + node->getName() +
                                          "' added to group '" + getName() + "'.");
         }

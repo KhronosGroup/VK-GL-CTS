@@ -30,6 +30,7 @@
 #include "deMath.h"
 
 #include "glcFramebufferBlitTests.hpp"
+#include "glcMisc.hpp"
 #include "gluContextInfo.hpp"
 #include "gluDefs.hpp"
 #include "gluTextureUtil.hpp"
@@ -47,7 +48,7 @@
 #define CHECK(actual, expected, info)                                                                          \
     {                                                                                                          \
         result &= ((actual) != (expected)) ? false : true;                                                     \
-        if ((actual) != (expected))                                                                            \
+        if (!result)                                                                                           \
         {                                                                                                      \
             m_testCtx.getLog() << tcu::TestLog::Message << #info << ": " << __FILE__ << ":" << __LINE__ << ":" \
                                << "expected " << getEnumName((GLenum)(expected)) << "but got "                 \
@@ -58,7 +59,7 @@
 #define CHECK_COLOR(actual, expected, info)                                                             \
     {                                                                                                   \
         result &= ((actual) != (expected)) ? false : true;                                              \
-        if ((actual) != (expected))                                                                     \
+        if (!result)                                                                                    \
         {                                                                                               \
             m_testCtx.getLog() << tcu::TestLog::Message << #info << ": " << __FILE__ << ":" << __LINE__ \
                                << tcu::TestLog::EndMessage;                                             \
@@ -69,7 +70,7 @@
 #define CHECK_CONTINUE(actual, expected, info)                                                                 \
     {                                                                                                          \
         result &= ((actual) != (expected)) ? false : true;                                                     \
-        if ((actual) != (expected))                                                                            \
+        if (!result)                                                                                           \
         {                                                                                                      \
             m_testCtx.getLog() << tcu::TestLog::Message << #info << ": " << __FILE__ << ":" << __LINE__ << ":" \
                                << "expected " << getEnumName((GLenum)(expected)) << "but got "                 \
@@ -442,8 +443,8 @@ bool FramebufferBlitBaseTestCase::GetDefaultFramebufferBlitFormat(bool *noDepth,
     gl.bindFramebuffer(GL_FRAMEBUFFER, m_defaultFBO);
     GLU_EXPECT_NO_ERROR(gl.getError(), "bindFramebuffer");
 
-    GetBits(GL_DRAW_FRAMEBUFFER, GL_DEPTH_BITS, &depthBits);
-    GetBits(GL_DRAW_FRAMEBUFFER, GL_STENCIL_BITS, &stencilBits);
+    getBits(gl, m_isContextES, GL_DRAW_FRAMEBUFFER, GL_DEPTH_BITS, &depthBits);
+    getBits(gl, m_isContextES, GL_DRAW_FRAMEBUFFER, GL_STENCIL_BITS, &stencilBits);
 
     m_depth_internalFormat = 0;
     m_depth_type           = 0;
@@ -527,115 +528,6 @@ bool FramebufferBlitBaseTestCase::GetDefaultFramebufferBlitFormat(bool *noDepth,
     }
 
     return false;
-}
-
-bool FramebufferBlitBaseTestCase::GetBits(GLenum target, GLenum bits, GLint *value)
-{
-    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
-    if (!m_isContextES)
-    {
-        GLint colorAttachment    = 0;
-        GLenum depthAttachment   = GL_DEPTH;
-        GLenum stencilAttachment = GL_STENCIL;
-        GLint fbo                = 0;
-        if (target == GL_READ_FRAMEBUFFER)
-        {
-            gl.getIntegerv(GL_READ_FRAMEBUFFER_BINDING, &fbo);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-        }
-        else
-        {
-            gl.getIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-        }
-
-        if (fbo)
-        {
-            depthAttachment   = GL_DEPTH_ATTACHMENT;
-            stencilAttachment = GL_STENCIL_ATTACHMENT;
-        }
-        if (target == GL_READ_FRAMEBUFFER)
-        {
-            gl.getIntegerv(GL_READ_BUFFER, &colorAttachment);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-        }
-        else
-        {
-            gl.getIntegerv(GL_DRAW_BUFFER, &colorAttachment);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-        }
-
-        if (colorAttachment == GL_BACK)
-            colorAttachment = GL_BACK_LEFT;
-        else if (colorAttachment == GL_FRONT)
-            colorAttachment = GL_FRONT_LEFT;
-
-        switch (bits)
-        {
-        case GL_RED_BITS:
-            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_RED_SIZE, value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-            break;
-        case GL_GREEN_BITS:
-            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_GREEN_SIZE,
-                                                   value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-            break;
-        case GL_BLUE_BITS:
-            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_BLUE_SIZE, value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-            break;
-        case GL_ALPHA_BITS:
-            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE,
-                                                   value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-            break;
-        case GL_DEPTH_BITS:
-        case GL_STENCIL_BITS:
-            /*
-             * OPENGL SPECS 4.5: Paragraph  9.2. BINDING AND MANAGING FRAMEBUFFER OBJECTS p.335
-             * If the value of GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE is GL_NONE, then either no framebuffer is bound to target;
-             * or a default framebuffer is queried, attachment is GL_DEPTH or GL_STENCIL,
-             * and the number of depth or stencil bits, respectively, is zero....
-             * and all other queries will generate an INVALID_OPERATION error.
-             * */
-            if (fbo == 0)
-            { //default framebuffer
-                gl.getFramebufferAttachmentParameteriv(target, (bits == GL_DEPTH_BITS ? GL_DEPTH : GL_STENCIL),
-                                                       GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, value);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-                if (*value == GL_NONE)
-                {
-                    *value = 0;
-                    break;
-                }
-            }
-            switch (bits)
-            {
-            case GL_DEPTH_BITS:
-                gl.getFramebufferAttachmentParameteriv(target, depthAttachment, GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE,
-                                                       value);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-                break;
-            case GL_STENCIL_BITS:
-                gl.getFramebufferAttachmentParameteriv(target, stencilAttachment,
-                                                       GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE, value);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-                break;
-            }
-            break;
-        default:
-            gl.getIntegerv(bits, value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-            break;
-        }
-    }
-    else
-    {
-        gl.getIntegerv(bits, value);
-        GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-    }
-    return true;
 }
 
 bool FramebufferBlitBaseTestCase::GetDrawbuffer32DepthComponentType(glw::GLint *value)
@@ -1767,6 +1659,13 @@ FramebufferBlitMultiToSingleSampledTestCase::FramebufferBlitMultiToSingleSampled
 {
 }
 
+FramebufferBlitMultiToSingleSampledTestCase::FramebufferBlitMultiToSingleSampledTestCase(deqp::Context &context,
+                                                                                         const char *name,
+                                                                                         const char *desc)
+    : FramebufferBlitBaseTestCase(context, name, desc)
+{
+}
+
 /** Stub deinit method. */
 void FramebufferBlitMultiToSingleSampledTestCase::deinit()
 {
@@ -1809,16 +1708,24 @@ void FramebufferBlitMultiToSingleSampledTestCase::init()
     // clang-format on
 }
 
+FramebufferBlitMultiToSingleSampledColorConfigTestCase::FramebufferBlitMultiToSingleSampledColorConfigTestCase(
+    deqp::Context &context)
+    : FramebufferBlitMultiToSingleSampledTestCase(context, "multisampled_to_singlesampled_blit_color_config_test",
+                                                  "Confirm that blits from multisampled to single sampled framebuffers "
+                                                  "of various types are properly resolved using color config.")
+{
+}
+
 /** Executes color configuration framebuffer blit tests.
  *
  *  @return Returns false if test went wrong.
  */
 template <GLuint samples>
-bool FramebufferBlitMultiToSingleSampledTestCase::testColorBlitConfig(const tcu::IVec2 &ul_center,
-                                                                      const tcu::IVec2 &ur_center,
-                                                                      const tcu::IVec2 &ll_center,
-                                                                      const tcu::IVec2 &lr_center,
-                                                                      const glw::GLint max_color_attachments)
+bool FramebufferBlitMultiToSingleSampledColorConfigTestCase::testColorBlitConfig(const tcu::IVec2 &ul_center,
+                                                                                 const tcu::IVec2 &ur_center,
+                                                                                 const tcu::IVec2 &ll_center,
+                                                                                 const tcu::IVec2 &lr_center,
+                                                                                 const glw::GLint max_color_attachments)
 {
     bool result  = true;
     GLint status = 0;
@@ -2226,15 +2133,23 @@ bool FramebufferBlitMultiToSingleSampledTestCase::testColorBlitConfig(const tcu:
     return result;
 }
 
+FramebufferBlitMultiToSingleSampledDepthConfigTestCase::FramebufferBlitMultiToSingleSampledDepthConfigTestCase(
+    deqp::Context &context)
+    : FramebufferBlitMultiToSingleSampledTestCase(context, "multisampled_to_singlesampled_blit_depth_config_test",
+                                                  "Confirm that blits from multisampled to single sampled framebuffers "
+                                                  "of various types are properly resolved using depth config.")
+{
+}
+
 /** Executes depth configuration framebuffer blit tests.
  *
  *  @return Returns false if test went wrong.
  */
 template <GLuint samples>
-bool FramebufferBlitMultiToSingleSampledTestCase::testDepthBlitConfig(const tcu::IVec2 &ul_center,
-                                                                      const tcu::IVec2 &ur_center,
-                                                                      const tcu::IVec2 &ll_center,
-                                                                      const tcu::IVec2 &lr_center)
+bool FramebufferBlitMultiToSingleSampledDepthConfigTestCase::testDepthBlitConfig(const tcu::IVec2 &ul_center,
+                                                                                 const tcu::IVec2 &ur_center,
+                                                                                 const tcu::IVec2 &ll_center,
+                                                                                 const tcu::IVec2 &lr_center)
 {
     bool result       = true;
     GLint status      = 0;
@@ -2534,12 +2449,12 @@ bool FramebufferBlitMultiToSingleSampledTestCase::testDepthBlitConfig(const tcu:
                 if (buf_config.src_type)
                     srcPreBits = GetDepthPrecisionBits(depth_config.internal_format);
                 else
-                    GetBits(GL_READ_FRAMEBUFFER, GL_DEPTH_BITS, &srcPreBits);
+                    getBits(gl, m_isContextES, GL_READ_FRAMEBUFFER, GL_DEPTH_BITS, &srcPreBits);
 
                 if (buf_config.dst_type)
                     dstPreBits = GetDepthPrecisionBits(depth_config.internal_format);
                 else
-                    GetBits(GL_READ_FRAMEBUFFER, GL_DEPTH_BITS, &dstPreBits);
+                    getBits(gl, m_isContextES, GL_READ_FRAMEBUFFER, GL_DEPTH_BITS, &dstPreBits);
 
                 getDepth(m_setup.ul_coord, &tmp_depth, &resultPreBits,
                          buf_config.dst_type == 0 ? m_defaultFBO : *buf_config.dst_fbo, depth_config.internal_format,
@@ -2631,8 +2546,7 @@ bool FramebufferBlitMultiToSingleSampledTestCase::testDepthBlitConfig(const tcu:
  */
 tcu::TestNode::IterateResult FramebufferBlitMultiToSingleSampledTestCase::iterate()
 {
-    bool result                 = true;
-    GLint max_color_attachments = 0;
+    bool result = true;
     /* quadrant centers for verifying initial colors */
     tcu::IVec2 ul_center, ur_center, ll_center, lr_center;
     constexpr GLuint samples = 4;
@@ -2647,34 +2561,49 @@ tcu::TestNode::IterateResult FramebufferBlitMultiToSingleSampledTestCase::iterat
     lr_center[0] = m_setup.lr_rect.x + m_setup.lr_rect.w / 2;
     lr_center[1] = m_setup.lr_rect.y + m_setup.lr_rect.h / 2;
 
-    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
-
-    gl.getIntegerv(GL_MAX_COLOR_ATTACHMENTS, &max_color_attachments);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-
-    CHECK_RET(max_color_attachments >= m_minColorAttachments, GL_TRUE, glGetIntegerv);
-
-    if (m_isContextES)
+    FramebufferBlitMultiToSingleSampledColorConfigTestCase *colorTestCaseConfig =
+        dynamic_cast<FramebufferBlitMultiToSingleSampledColorConfigTestCase *>(this);
+    if (colorTestCaseConfig != nullptr)
     {
-        GLint max_draw_buffers = 0;
-        gl.getIntegerv(GL_MAX_DRAW_BUFFERS, &max_draw_buffers);
+        GLint max_color_attachments = 0;
+        const glw::Functions &gl    = m_context.getRenderContext().getFunctions();
+
+        gl.getIntegerv(GL_MAX_COLOR_ATTACHMENTS, &max_color_attachments);
         GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
 
-        CHECK_RET(max_draw_buffers >= m_minDrawBuffers, GL_TRUE, glGetIntegerv);
-        if (max_draw_buffers < max_color_attachments)
+        CHECK_RET(max_color_attachments >= m_minColorAttachments, GL_TRUE, glGetIntegerv);
+
+        if (m_isContextES)
         {
-            max_color_attachments = max_draw_buffers;
+            GLint max_draw_buffers = 0;
+            gl.getIntegerv(GL_MAX_DRAW_BUFFERS, &max_draw_buffers);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
+
+            CHECK_RET(max_draw_buffers >= m_minDrawBuffers, GL_TRUE, glGetIntegerv);
+            if (max_draw_buffers < max_color_attachments)
+            {
+                max_color_attachments = max_draw_buffers;
+            }
+        }
+
+        /* 1. Test all color buffer formats, no depth or stencil buffers
+         * attached here */
+        CHECK_RET(colorTestCaseConfig->testColorBlitConfig<samples>(ul_center, ur_center, ll_center, lr_center,
+                                                                    max_color_attachments),
+                  true, "color blit test failed");
+    }
+    else
+    {
+        FramebufferBlitMultiToSingleSampledDepthConfigTestCase *depthTestCaseConfig =
+            dynamic_cast<FramebufferBlitMultiToSingleSampledDepthConfigTestCase *>(this);
+        if (depthTestCaseConfig != nullptr)
+        {
+            /* 2. Test all depth buffer formats, no color or stencil buffers
+             * attached here */
+            CHECK_RET(depthTestCaseConfig->testDepthBlitConfig<samples>(ul_center, ur_center, ll_center, lr_center),
+                      true, "depth blit test failed");
         }
     }
-
-    /* 1. Test all color buffer formats, no depth or stencil buffers
-     * attached here */
-    CHECK_RET(testColorBlitConfig<samples>(ul_center, ur_center, ll_center, lr_center, max_color_attachments), true,
-              "color blit test failed");
-
-    /* 2. Test all depth buffer formats, no color or stencil buffers
-     * attached here */
-    CHECK_RET(testDepthBlitConfig<samples>(ul_center, ur_center, ll_center, lr_center), true, "depth blit test failed");
 
     if (result)
         m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -3714,7 +3643,8 @@ FramebufferBlitTests::FramebufferBlitTests(deqp::Context &context)
 /** Initializes the test group contents. */
 void FramebufferBlitTests::init()
 {
-    addChild(new FramebufferBlitMultiToSingleSampledTestCase(m_context));
+    addChild(new FramebufferBlitMultiToSingleSampledColorConfigTestCase(m_context));
+    addChild(new FramebufferBlitMultiToSingleSampledDepthConfigTestCase(m_context));
     addChild(new FramebufferBlitScissorTestCase(m_context));
 }
 

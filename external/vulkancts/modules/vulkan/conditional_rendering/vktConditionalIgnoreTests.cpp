@@ -230,8 +230,7 @@ tcu::TestStatus ConditionalIgnoreClearTestInstance::iterate(void)
     if (m_data.secondaryCommandBufferNested)
     {
         m_context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
-        const auto &features =
-            *findStructure<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&m_context.getDeviceFeatures2());
+        const auto &features = m_context.getNestedCommandBufferFeaturesEXT();
         if (!features.nestedCommandBuffer)
             TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
     }

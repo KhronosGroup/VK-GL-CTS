@@ -59,14 +59,14 @@ void AssetResource::read(uint8_t *dst, int numBytes)
     TCU_CHECK(AAsset_read(m_asset, dst, numBytes) == numBytes);
 }
 
-int AssetResource::getPosition(void) const
+uint32_t AssetResource::getPosition(void) const
 {
     return (int)AAsset_getLength(m_asset) - (int)AAsset_getRemainingLength(m_asset);
 }
 
-void AssetResource::setPosition(int position)
+void AssetResource::setPosition(uint32_t position)
 {
-    TCU_CHECK(AAsset_seek(m_asset, position, SEEK_SET) == position);
+    TCU_CHECK(AAsset_seek(m_asset, position, SEEK_SET) == (off_t)position);
 }
 
 bool AssetResource::isFinished(void) const
@@ -74,7 +74,7 @@ bool AssetResource::isFinished(void) const
     return AAsset_getRemainingLength(m_asset) <= 0;
 }
 
-int AssetResource::getSize(void) const
+uint32_t AssetResource::getSize(void) const
 {
     return (int)AAsset_getLength(m_asset);
 }

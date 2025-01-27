@@ -181,8 +181,8 @@ tcu::TestStatus eventSetResetNoneStage(Context &context, TestConfig)
         nullptr,                                // const void*                            pNext
         VK_PIPELINE_STAGE_NONE_KHR,             // VkPipelineStageFlags2KHR    srcStageMask
         VK_ACCESS_2_NONE_KHR,                   // VkAccessFlags2KHR                srcAccessMask
-        VK_PIPELINE_STAGE_2_HOST_BIT_KHR,       // VkPipelineStageFlags2KHR    dstStageMask
-        VK_ACCESS_2_HOST_READ_BIT_KHR           // VkAccessFlags2KHR                dstAccessMask
+        VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT, // VkPipelineStageFlags2KHR    dstStageMask
+        VK_ACCESS_2_MEMORY_WRITE_BIT            // VkAccessFlags2KHR                dstAccessMask
     };
     const VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(&memoryBarrier2, nullptr, nullptr, true);
 
@@ -367,8 +367,12 @@ tcu::TestStatus secondaryCommandBufferCase(Context &context, TestConfig config)
         WAIT,
         COUNT
     };
-    de::MovePtr<VideoDevice> videoDevice(
-        config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : nullptr);
+    VideoDevice::VideoDeviceFlags videoFlags = 0u;
+    if (config.type == SynchronizationType::SYNCHRONIZATION2)
+        videoFlags |= VideoDevice::VideoDeviceFlagBits::VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED;
+    de::MovePtr<VideoDevice> videoDevice(config.videoCodecOperationFlags != 0 ?
+                                             new VideoDevice(context, config.videoCodecOperationFlags, videoFlags) :
+                                             nullptr);
     const DeviceInterface &vk       = getSyncDeviceInterface(videoDevice, context);
     const VkDevice device           = getSyncDevice(videoDevice, context);
     const VkQueue queue             = getSyncQueue(videoDevice, context);

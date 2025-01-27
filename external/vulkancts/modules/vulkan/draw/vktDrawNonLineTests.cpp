@@ -86,7 +86,7 @@ struct Params
     VertexTopology vertexTopology;
     GeometryOutput geometryOutput;
     VkPolygonMode polygonMode;
-    VkLineRasterizationModeKHR lineRasterizationMode;
+    VkLineRasterizationMode lineRasterizationMode;
 
     bool useGeometryShader(void) const
     {
@@ -626,7 +626,7 @@ tcu::TestCaseGroup *createDrawNonLineTests(tcu::TestContext &testCtx)
 
     const struct
     {
-        VkLineRasterizationModeKHR lineRasterMode;
+        VkLineRasterizationMode lineRasterMode;
         const char *suffix;
     } lineRasterModeCases[] = {
         {VK_LINE_RASTERIZATION_MODE_RECTANGULAR_KHR, "_line_raster_rect"},

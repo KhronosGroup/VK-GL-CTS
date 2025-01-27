@@ -68,7 +68,6 @@ struct BindingDrawParams
     bool bindUnsupported;
     bool setStateAfter;
     bool unbindWithNullpShaders;
-    bool noNextStage;
 };
 
 struct MeshBindingDrawParams
@@ -161,10 +160,6 @@ vk::Move<vk::VkShaderEXT> ShaderObjectBindingDrawInstance::createShader(
 
     auto shaderCreateInfo = vk::makeShaderCreateInfo(stage, binaries.get(name), tessellationSupported,
                                                      geometrySupported, descriptorSetLayout);
-    if (m_params.noNextStage)
-    {
-        shaderCreateInfo.nextStage = 0u;
-    }
 
     if (m_params.binaryStage == stage)
     {
@@ -225,8 +220,8 @@ tcu::TestStatus ShaderObjectBindingDrawInstance::iterate(void)
 
     const bool tessellationSupported = m_context.getDeviceFeatures().tessellationShader;
     const bool geometrySupported     = m_context.getDeviceFeatures().geometryShader;
-    const bool taskSupported         = m_context.getMeshShaderFeatures().taskShader;
-    const bool meshSupported         = m_context.getMeshShaderFeatures().meshShader;
+    const bool taskSupported         = m_context.getMeshShaderFeaturesEXT().taskShader;
+    const bool meshSupported         = m_context.getMeshShaderFeaturesEXT().meshShader;
 
     vk::VkFormat colorAttachmentFormat = vk::VK_FORMAT_R8G8B8A8_UNORM;
     const auto subresourceRange        = makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -907,7 +902,7 @@ tcu::TestStatus ShaderObjectBindingInstance::iterate(void)
     const vk::VkQueue queue         = m_context.getUniversalQueue();
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
 
-    const auto meshShaderFeatures    = m_context.getMeshShaderFeatures();
+    const auto meshShaderFeatures    = m_context.getMeshShaderFeaturesEXT();
     const bool tessellationSupported = m_context.getDeviceFeatures().tessellationShader;
     const bool geometrySupported     = m_context.getDeviceFeatures().geometryShader;
     const auto &binaries             = m_context.getBinaryCollection();
@@ -2088,7 +2083,6 @@ tcu::TestCaseGroup *createShaderObjectBindingTests(tcu::TestContext &testCtx)
     params.bindUnsupported        = false;
     params.setStateAfter          = false;
     params.unbindWithNullpShaders = false;
-    params.noNextStage            = false;
 
     bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, "unbind_passthrough_geom", params));
 
@@ -2103,45 +2097,34 @@ tcu::TestCaseGroup *createShaderObjectBindingTests(tcu::TestContext &testCtx)
         {vk::VK_SHADER_STAGE_GEOMETRY_BIT, "geom"},
         {vk::VK_SHADER_STAGE_FRAGMENT_BIT, "frag"},
     };
-    const struct
-    {
-        bool noNextStage;
-        const char *name;
-    } nextStageTest[] = {{false, "next_stage"}, {true, "no_next_stage"}};
-    params.testType   = SWAP;
+    params.testType = SWAP;
 
-    for (const auto &nextStage : nextStageTest)
+    for (const auto &stage : stageTest)
     {
-        params.noNextStage = nextStage.noNextStage;
-        for (const auto &stage : stageTest)
+        params.stage         = stage.stage;
+        params.unusedOutputs = vk::VK_SHADER_STAGE_ALL; // Unused
+        params.binaryStage   = vk::VK_SHADER_STAGE_ALL; // Unused
+        params.setStateAfter = false;
+        std::string name     = "swap_" + std::string(stage.name);
+        bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, name.c_str(), params));
+        for (const auto &unusedOutputs : stageTest)
         {
-            params.stage         = stage.stage;
-            params.unusedOutputs = vk::VK_SHADER_STAGE_ALL; // Unused
-            params.binaryStage   = vk::VK_SHADER_STAGE_ALL; // Unused
-            params.setStateAfter = false;
-            std::string name     = "swap_" + std::string(stage.name) + "_" + std::string(nextStage.name);
-            bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, name.c_str(), params));
-            for (const auto &unusedOutputs : stageTest)
+            for (const auto &binaryStage : stageTest)
             {
-                for (const auto &binaryStage : stageTest)
+                for (uint32_t i = 0; i < 2; ++i)
                 {
-                    for (uint32_t i = 0; i < 2; ++i)
-                    {
-                        params.stage         = stage.stage;
-                        params.unusedOutputs = unusedOutputs.stage;
-                        params.binaryStage   = binaryStage.stage;
-                        params.setStateAfter = (bool)i;
-                        std::string name2    = "swap_" + std::string(stage.name) + "_unused_output_" +
-                                            std::string(unusedOutputs.name) + "_binary_" +
-                                            std::string(binaryStage.name) + "_" + ((i == 0) ? "before" : "after") +
-                                            "_" + std::string(nextStage.name);
-                        bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, name2.c_str(), params));
-                    }
+                    params.stage         = stage.stage;
+                    params.unusedOutputs = unusedOutputs.stage;
+                    params.binaryStage   = binaryStage.stage;
+                    params.setStateAfter = (bool)i;
+                    std::string name2    = "swap_" + std::string(stage.name) + "_unused_output_" +
+                                        std::string(unusedOutputs.name) + "_binary_" + std::string(binaryStage.name) +
+                                        "_" + ((i == 0) ? "before" : "after");
+                    bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, name2.c_str(), params));
                 }
             }
         }
     }
-    params.noNextStage = false;
 
     params.unusedOutputs = vk::VK_SHADER_STAGE_ALL;
     params.binaryStage   = vk::VK_SHADER_STAGE_ALL;

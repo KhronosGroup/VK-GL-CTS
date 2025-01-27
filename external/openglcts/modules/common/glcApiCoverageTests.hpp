@@ -58,9 +58,6 @@ public:
     bool verifyEnum(const std::string &name, const std::string &value);
     bool verifyFunc(const std::string &name);
 
-    bool GetBits(glw::GLenum target, glw::GLenum bits, glw::GLint *value);
-    bool GetReadbufferBits(glw::GLenum bits, glw::GLint *value);
-    bool GetDrawbufferBits(glw::GLenum bits, glw::GLint *value);
     glw::GLenum TestCoverageGLGuessColorBufferFormat(void);
     glw::GLsizei TestCoverageGLCalcTargetFormats(glw::GLenum colorBufferFormat, glw::GLenum *textureFormats);
 

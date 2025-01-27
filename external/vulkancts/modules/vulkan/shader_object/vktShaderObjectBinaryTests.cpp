@@ -677,7 +677,7 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
     auto multiviewFeatures                          = m_context.getMultiviewFeatures();
     auto shaderDrawParametersFeatures               = m_context.getShaderDrawParametersFeatures();
     auto textureCompressionAstrHdrFeatures          = m_context.getTextureCompressionASTCHDRFeatures();
-    auto pipelineRobustnessFeatures                 = m_context.getPipelineRobustnessFeaturesEXT();
+    auto pipelineRobustnessFeatures                 = m_context.getPipelineRobustnessFeatures();
     auto conditionalRenderingFeatures               = m_context.getConditionalRenderingFeaturesEXT();
     auto shaderFloat16Int8Features                  = m_context.getShaderFloat16Int8Features();
     auto f16BitStorageFeatures                      = m_context.get16BitStorageFeatures();
@@ -792,7 +792,7 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
     auto maintenance4Features                       = m_context.getMaintenance4Features();
     auto imageSlicedViewOf3DFeatures                = m_context.getImageSlicedViewOf3DFeaturesEXT();
     auto descriptorSetHostMappingFeatures           = m_context.getDescriptorSetHostMappingFeaturesVALVE();
-    auto depthClampZeroOneFeatures                  = m_context.getDepthClampZeroOneFeaturesEXT();
+    auto depthClampZeroOneFeatures                  = m_context.getDepthClampZeroOneFeatures();
     auto nonSeamlessCubeMapFeatures                 = m_context.getNonSeamlessCubeMapFeaturesEXT();
     auto fragmentDensityMapOffsetFeatures           = m_context.getFragmentDensityMapOffsetFeaturesQCOM();
     auto copyMemoryIndirectFeatures                 = m_context.getCopyMemoryIndirectFeatures();
@@ -806,7 +806,7 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
     auto shaderModuleIdentifierFeatures             = m_context.getShaderModuleIdentifierFeaturesEXT();
     auto opticalFlowFeatures                        = m_context.getOpticalFlowFeatures();
     auto legacyDitheringFeatures                    = m_context.getLegacyDitheringFeaturesEXT();
-    auto pipelineProtectedAccessFeatures            = m_context.getPipelineProtectedAccessFeaturesEXT();
+    auto pipelineProtectedAccessFeatures            = m_context.getPipelineProtectedAccessFeatures();
     auto tilePropertiesFeatures                     = m_context.getTilePropertiesFeaturesQCOM();
     auto multivewPerViewViewportsFeatures           = m_context.getMultiviewPerViewViewportsFeaturesQCOM();
     auto rayTracingInvocationReorderFeatures        = m_context.getRayTracingInvocationReorderFeatures();

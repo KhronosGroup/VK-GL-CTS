@@ -797,8 +797,8 @@ tcu::TestStatus SampleReadTestInstance::iterateInternalDynamicRendering()
 
         drawFirstSubpass(vk, *secCmdBuffer);
         inbetweenRenderCommands(vk, *secCmdBuffer);
-        vk.cmdSetRenderingAttachmentLocationsKHR(*secCmdBuffer, &renderingAttachmentLocationInfo);
-        vk.cmdSetRenderingInputAttachmentIndicesKHR(*secCmdBuffer, &renderingInputAttachmentIndexInfo);
+        vk.cmdSetRenderingAttachmentLocations(*secCmdBuffer, &renderingAttachmentLocationInfo);
+        vk.cmdSetRenderingInputAttachmentIndices(*secCmdBuffer, &renderingInputAttachmentIndexInfo);
         drawSecondSubpass(vk, *secCmdBuffer);
 
         vk.cmdEndRendering(*secCmdBuffer);
@@ -820,8 +820,8 @@ tcu::TestStatus SampleReadTestInstance::iterateInternalDynamicRendering()
         vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
         drawFirstSubpass(vk, *cmdBuffer);
         inbetweenRenderCommands(vk, *cmdBuffer);
-        vk.cmdSetRenderingAttachmentLocationsKHR(*cmdBuffer, &renderingAttachmentLocationInfo);
-        vk.cmdSetRenderingInputAttachmentIndicesKHR(*cmdBuffer, &renderingInputAttachmentIndexInfo);
+        vk.cmdSetRenderingAttachmentLocations(*cmdBuffer, &renderingAttachmentLocationInfo);
+        vk.cmdSetRenderingInputAttachmentIndices(*cmdBuffer, &renderingInputAttachmentIndexInfo);
         drawSecondSubpass(vk, *cmdBuffer);
         vk.cmdEndRendering(*cmdBuffer);
 
@@ -1123,7 +1123,15 @@ void checkSupport(vkt::Context &context, TestConfig config)
     if (config.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
         context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
     else if (config.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+    {
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering_local_read");
+
+#ifndef CTS_USES_VULKANSC
+        if (context.getUsedApiVersion() > VK_MAKE_API_VERSION(0, 1, 3, 0) &&
+            !context.getDeviceVulkan14Properties().dynamicRenderingLocalReadMultisampledAttachments)
+            TCU_THROW(NotSupportedError, "dynamicRenderingLocalReadMultisampledAttachments not supported");
+#endif
+    }
 }
 
 void initTests(tcu::TestCaseGroup *group, const SharedGroupParams groupParams)

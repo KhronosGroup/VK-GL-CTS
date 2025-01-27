@@ -2387,12 +2387,7 @@ void SeparateChannelsTestInstance::setup(void)
     };
 
     // When testing color formats the same attachment is used as input and output.
-    // This requires general layout to be used for render pass object or local_read for dynamic rendering.
     VkImageLayout colorImageLayout = isDSFormat ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
-#ifndef CTS_USES_VULKANSC
-    if (m_groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING && !isDSFormat)
-        colorImageLayout = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
-#endif
 
     // Create image used for both input and output in case of color test, and as a color output in depth/stencil test.
     {
@@ -3952,7 +3947,18 @@ void checkSupport(Context &context, TestConfig config)
     if (config.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
         context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
     else if (config.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+    {
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering_local_read");
+
+#ifndef CTS_USES_VULKANSC
+        if (context.getUsedApiVersion() > VK_MAKE_API_VERSION(0, 1, 3, 0) &&
+            !context.getDeviceVulkan14Properties().dynamicRenderingLocalReadDepthStencilAttachments)
+        {
+            if ((config.format == VK_FORMAT_D24_UNORM_S8_UINT) || (config.format == VK_FORMAT_D32_SFLOAT_S8_UINT))
+                TCU_THROW(NotSupportedError, "dynamicRenderingLocalReadDepthStencilAttachments not supported");
+        }
+#endif
+    }
 }
 
 // Shader programs for testing dependencies between subpasses

@@ -307,7 +307,7 @@ PACKAGES = [
         "b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30",
         "zlib"),
     SourcePackage(
-        "http://prdownloads.sourceforge.net/libpng/libpng-1.6.27.tar.gz",
+        "https://prdownloads.sourceforge.net/libpng/libpng-1.6.27.tar.gz",
         "c9d164ec247f426a525a7b89936694aefbc91fb7a50182b198898b8fc91174b4",
         "libpng",
         postExtract = postExtractLibpng),
@@ -317,35 +317,35 @@ PACKAGES = [
         "e7b5f0aa5b1b0eadc63a1c624c0ca7f5af133aa857d6a4271b0ef3d0bdb6868e",
         "renderdoc"),
     GitRepo(
-        "https://gitlab.khronos.org/spirv/spirv-tools.git",
-        "git@gitlab.khronos.org:spirv/spirv-tools.git",
-        "9281d1c540a55a8c077de0bcf7b72e1bf02136d5",
+        "https://github.com/KhronosGroup/SPIRV-Tools.git",
+        "git@github.com:KhronosGroup/SPIRV-Tools.git",
+        "e02275ec02b68e3d175528f768871c97ae9eee90",
         "spirv-tools"),
     GitRepo(
-        "https://github.com/rg3igalia/glslang.git",
-        "git@github.com:rg3igalia/glslang.git",
-        "2dcce0ba3f6fd41297a91d622fb7d4e332fe5ce2",
+        "https://github.com/KhronosGroup/glslang.git",
+        "git@github.com:KhronosGroup/glslang.git",
+        "bd1f1c263fc10969eb4a4b393e774a75ffcb2673",
         "glslang",
         removeTags = ["main-tot", "master-tot"]),
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Headers.git",
         "git@github.com:KhronosGroup/SPIRV-Headers.git",
-        "2a9b6f951c7d6b04b6c21fe1bf3f475b68b84801",
+        "2b2e05e088841c63c0b6fd4c9fb380d8688738d3",
         "spirv-headers"),
     GitRepo(
-        "https://gitlab.khronos.org/vulkan/vulkan.git",
-        "git@gitlab.khronos.org:vulkan/vulkan.git",
-        "c760e01c4e2d77d4147c7efeae6e91efe9fbe043",
+        "https://github.com/KhronosGroup/Vulkan-Docs.git",
+        "git@github.com:KhronosGroup/Vulkan-Docs.git",
+        "840c7b817f7ff0e61a047a842c2569a1ecf5d807",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
         "git@github.com:KhronosGroup/Vulkan-ValidationLayers.git",
-        "9a46ae006fa5c92e2d2af7944187f7794210844b",
+        "6cf616f131e9870c499a50441bca2d07ccda9733",
         "vulkan-validationlayers"),
     GitRepo(
         "https://github.com/google/amber.git",
         "git@github.com:google/amber.git",
-        "6bb8b9979d12122c3ac2e627bcad965129556d12",
+        "6fa5ac1fb3b01c93eef3caa2aeb8841565e38d90",
         "amber"),
     GitRepo(
         "https://github.com/open-source-parsers/jsoncpp.git",
@@ -358,8 +358,21 @@ PACKAGES = [
     GitRepo(
         "https://github.com/Igalia/vk_video_samples.git",
         "git@github.com:Igalia/vk_video_samples.git",
-        "6821adf11eb4f84a2168264b954c170d03237699",
+        "45fe88b456c683120138f052ea81f0a958ff3ec4",
         "nvidia-video-samples"),
+    # NOTE: Temporary vk_video_samples repo and branch where AV1
+    # encoder library is being developed by NVidia.
+    GitRepo(
+        "https://github.com/KhronosGroup/Vulkan-Video-Samples.git",
+        "git@github.com:KhronosGroup/Vulkan-Video-Samples.git",
+        "70dfd5a6007680ddb8970d7e71bf7af9ee173f3c",
+        "vulkan-video-samples"),
+    # NOTE: Temporary video generator repo .
+    GitRepo(
+        "https://github.com/Igalia/video_generator.git",
+        "git@github.com:Igalia/video_generator.git",
+        "426300e12a5cc5d4676807039a1be237a2b68187",
+        "video_generator"),
 ]
 
 def parseArgs ():
