@@ -31,7 +31,7 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
                                const std::vector<std::string> &instanceExtensions,
                                const std::vector<std::string> &deviceExtensions, const bool enableAllFeatures)
 {
-    VkPhysicalDeviceRobustness2FeaturesKHR *robustness2Features         = nullptr;
+    VkPhysicalDeviceRobustness2FeaturesEXT *robustness2Features         = nullptr;
     VkPhysicalDeviceImageRobustnessFeaturesEXT *imageRobustnessFeatures = nullptr;
 #ifndef CTS_USES_VULKANSC
     VkPhysicalDeviceFragmentShadingRateFeaturesKHR *fragmentShadingRateFeatures             = nullptr;

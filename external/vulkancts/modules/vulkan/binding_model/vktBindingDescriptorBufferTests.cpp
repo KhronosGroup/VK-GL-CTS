@@ -2392,7 +2392,8 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
     if ((m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS) ||
         (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR))
     {
-        if (context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+        if (context.isDeviceFunctionalitySupported("VK_EXT_robustness2") ||
+            context.isDeviceFunctionalitySupported("VK_KHR_robustness2"))
         {
             VkPhysicalDeviceFeatures2 features2                        = initVulkanStructure();
             VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = initVulkanStructure();
@@ -2411,7 +2412,7 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
         }
         else if (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR)
         {
-            TCU_THROW(NotSupportedError, "VK_EXT_robustness2 is not supported");
+            TCU_THROW(NotSupportedError, "VK_EXT_robustness2 and VK_KHR_robustness2 are not supported");
         }
         else if (m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS)
         {
@@ -2922,7 +2923,12 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     else if (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR ||
              m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS)
     {
-        if (context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+        if (context.isDeviceFunctionalitySupported("VK_KHR_robustness2"))
+        {
+            extensions.push_back("VK_KHR_robustness2");
+            addToChainVulkanStructure(&nextPtr, robustness2Features);
+        }
+        else if (context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
         {
             extensions.push_back("VK_EXT_robustness2");
             addToChainVulkanStructure(&nextPtr, robustness2Features);

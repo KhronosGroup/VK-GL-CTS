@@ -1859,7 +1859,10 @@ tcu::TestStatus validateLimitsLineRasterization(Context &context)
 
 void checkSupportRobustness2(Context &context)
 {
-    context.requireDeviceFunctionality("VK_EXT_robustness2");
+    if (!context.isDeviceFunctionalitySupported("VK_EXT_robustness2") &&
+        !context.isDeviceFunctionalitySupported("VK_KHR_robustness2"))
+
+        TCU_THROW(NotSupportedError, "VK_EXT_robustness2 and VK_KHR_robustness2 are not supported");
 }
 
 tcu::TestStatus validateLimitsRobustness2(Context &context)
