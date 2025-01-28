@@ -36,6 +36,7 @@
 #include "vkRef.hpp"
 
 #include <set>
+#include <algorithm>
 
 namespace vkt
 {
@@ -387,24 +388,33 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
         }
         else
         {
-            std::vector<de::SharedPtr<HostCopyThread>> threads;
-            for (uint32_t i = 0; i < (uint32_t)memoryToImageCopies.size(); ++i)
+            const uint32_t batch_size  = 256;
+            const uint32_t num_batches = ((uint32_t)(memoryToImageCopies.size()) / batch_size) + 1;
+
+            for (uint32_t batch = 0; batch < num_batches; ++batch)
             {
-                threads.push_back(de::SharedPtr<HostCopyThread>(new HostCopyThread(
-                    vk, device, **image, imageLayout, memoryToImageCopies[i], m_parameters.read, pixelSize)));
-            }
+                std::vector<de::SharedPtr<HostCopyThread>> threads;
+                const uint32_t from = batch * batch_size;
+                const uint32_t to   = std::min((batch + 1) * batch_size, (uint32_t)memoryToImageCopies.size());
 
-            for (auto &thread : threads)
-                thread->start();
-
-            for (auto &thread : threads)
-                thread->join();
-
-            for (const auto &thread : threads)
-            {
-                if (thread->hasFailed())
+                for (uint32_t i = from; i < to; ++i)
                 {
-                    return tcu::TestStatus::fail("Fail");
+                    threads.push_back(de::SharedPtr<HostCopyThread>(new HostCopyThread(
+                        vk, device, **image, imageLayout, memoryToImageCopies[i], m_parameters.read, pixelSize)));
+                }
+
+                for (auto &thread : threads)
+                    thread->start();
+
+                for (auto &thread : threads)
+                    thread->join();
+
+                for (const auto &thread : threads)
+                {
+                    if (thread->hasFailed())
+                    {
+                        return tcu::TestStatus::fail("Fail");
+                    }
                 }
             }
         }
