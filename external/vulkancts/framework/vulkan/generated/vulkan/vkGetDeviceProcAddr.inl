@@ -594,6 +594,8 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkUpdateIndirectExecutionSetShaderEXT",
 		"vkCmdSetDepthClampRangeEXT",
 		"vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV",
+		"vkGetMemoryMetalHandleEXT",
+		"vkGetMemoryMetalHandlePropertiesEXT",
     };
 
     bool fail = false;

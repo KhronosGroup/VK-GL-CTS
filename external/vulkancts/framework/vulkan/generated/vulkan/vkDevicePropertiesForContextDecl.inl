@@ -45,7 +45,6 @@ const vk::VkPhysicalDeviceMapMemoryPlacedPropertiesEXT&				getMapMemoryPlacedPro
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&		getDeviceGeneratedCommandsProperties		(void) const;
 const vk::VkPhysicalDeviceShaderIntegerDotProductProperties&		getShaderIntegerDotProductProperties		(void) const;
 const vk::VkPhysicalDeviceTexelBufferAlignmentProperties&			getTexelBufferAlignmentProperties			(void) const;
-const vk::VkPhysicalDeviceRobustness2PropertiesEXT&					getRobustness2PropertiesEXT					(void) const;
 const vk::VkPhysicalDeviceCustomBorderColorPropertiesEXT&			getCustomBorderColorPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceCudaKernelLaunchPropertiesNV&				getCudaKernelLaunchPropertiesNV				(void) const;
 const vk::VkPhysicalDeviceDescriptorBufferPropertiesEXT&			getDescriptorBufferPropertiesEXT			(void) const;
@@ -92,5 +91,6 @@ const vk::VkPhysicalDeviceMaintenance7PropertiesKHR&				getMaintenance7Propertie
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT&		getDeviceGeneratedCommandsPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceImageAlignmentControlPropertiesMESA&		getImageAlignmentControlPropertiesMESA		(void) const;
 const vk::VkPhysicalDeviceCooperativeMatrix2PropertiesNV&			getCooperativeMatrix2PropertiesNV			(void) const;
+const vk::VkPhysicalDeviceRobustness2PropertiesKHR&					getRobustness2Properties					(void) const;
 const vk::VkPhysicalDeviceSubgroupProperties&						getSubgroupProperties						(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				getProtectedMemoryProperties				(void) const;

@@ -2156,6 +2156,29 @@ struct VkWin32KeyedMutexAcquireReleaseInfoKHR
 	const uint64_t*			pReleaseKeys;
 };
 
+struct VkImportMemoryMetalHandleInfoEXT
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkExternalMemoryHandleTypeFlagBits	handleType;
+	void*								handle;
+};
+
+struct VkMemoryMetalHandlePropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		memoryTypeBits;
+};
+
+struct VkMemoryGetMetalHandleInfoEXT
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkDeviceMemory						memory;
+	VkExternalMemoryHandleTypeFlagBits	handleType;
+};
+
 struct VkPhysicalDeviceExternalSemaphoreInfo
 {
 	VkStructureType							sType;
@@ -6071,7 +6094,7 @@ struct VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR
 	VkBool32		shaderSubgroupUniformControlFlow;
 };
 
-struct VkPhysicalDeviceRobustness2FeaturesEXT
+struct VkPhysicalDeviceRobustness2FeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -6080,7 +6103,7 @@ struct VkPhysicalDeviceRobustness2FeaturesEXT
 	VkBool32		nullDescriptor;
 };
 
-struct VkPhysicalDeviceRobustness2PropertiesEXT
+struct VkPhysicalDeviceRobustness2PropertiesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -7170,6 +7193,13 @@ struct VkPhysicalDeviceVideoMaintenance1FeaturesKHR
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		videoMaintenance1;
+};
+
+struct VkPhysicalDeviceVideoMaintenance2FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		videoMaintenance2;
 };
 
 struct VkVideoInlineQueryInfoKHR
@@ -10380,6 +10410,14 @@ struct VkVideoDecodeH264SessionParametersAddInfoKHR
 	const StdVideoH264PictureParameterSet*	pStdPPSs;
 };
 
+struct VkVideoDecodeH264InlineSessionParametersInfoKHR
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	const StdVideoH264SequenceParameterSet*	pStdSPS;
+	const StdVideoH264PictureParameterSet*	pStdPPS;
+};
+
 struct VkVideoEncodeH264SessionParametersAddInfoKHR
 {
 	VkStructureType							sType;
@@ -10958,6 +10996,15 @@ struct VkVideoDecodeH265SessionParametersAddInfoKHR
 	const StdVideoH265PictureParameterSet*	pStdPPSs;
 };
 
+struct VkVideoDecodeH265InlineSessionParametersInfoKHR
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	const StdVideoH265VideoParameterSet*	pStdVPS;
+	const StdVideoH265SequenceParameterSet*	pStdSPS;
+	const StdVideoH265PictureParameterSet*	pStdPPS;
+};
+
 struct VkVideoEncodeH265SessionParametersAddInfoKHR
 {
 	VkStructureType							sType;
@@ -11277,6 +11324,13 @@ struct StdVideoAV1SequenceHeader
 };
 
 struct VkVideoDecodeAV1SessionParametersCreateInfoKHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	const StdVideoAV1SequenceHeader*	pStdSequenceHeader;
+};
+
+struct VkVideoDecodeAV1InlineSessionParametersInfoKHR
 {
 	VkStructureType						sType;
 	const void*							pNext;
@@ -11998,6 +12052,10 @@ typedef VkTransformMatrixKHR VkTransformMatrixNV;
 typedef VkAccelerationStructureInstanceKHR VkAccelerationStructureInstanceNV;
 
 typedef VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeatures VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR;
+
+typedef VkPhysicalDeviceRobustness2FeaturesKHR VkPhysicalDeviceRobustness2FeaturesEXT;
+
+typedef VkPhysicalDeviceRobustness2PropertiesKHR VkPhysicalDeviceRobustness2PropertiesEXT;
 
 typedef VkPhysicalDeviceImageRobustnessFeatures VkPhysicalDeviceImageRobustnessFeaturesEXT;
 

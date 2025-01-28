@@ -520,3 +520,5 @@ virtual void				queueNotifyOutOfBandNV									(VkQueue queue, const VkOutOfBand
 virtual void				cmdSetRenderingAttachmentLocations						(VkCommandBuffer commandBuffer, const VkRenderingAttachmentLocationInfo* pLocationInfo) const = 0;
 virtual void				cmdSetRenderingInputAttachmentIndices					(VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfo* pInputAttachmentIndexInfo) const = 0;
 virtual void				cmdSetDepthClampRangeEXT								(VkCommandBuffer commandBuffer, VkDepthClampModeEXT depthClampMode, const VkDepthClampRangeEXT* pDepthClampRange) const = 0;
+virtual VkResult			getMemoryMetalHandleEXT									(VkDevice device, const VkMemoryGetMetalHandleInfoEXT* pGetMetalHandleInfo, void** pHandle) const = 0;
+virtual VkResult			getMemoryMetalHandlePropertiesEXT						(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHandle, VkMemoryMetalHandlePropertiesEXT* pMemoryMetalHandleProperties) const = 0;

@@ -1654,6 +1654,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_video_maintenance2")
+	{
+		return;
+	}
 	if (extName == "VK_HUAWEI_hdr_vivid")
 	{
 		return;
@@ -1667,11 +1671,19 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_external_memory_metal")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_depth_clamp_zero_one")
 	{
 		return;
 	}
 	if (extName == "VK_EXT_vertex_attribute_robustness")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_robustness2")
 	{
 		return;
 	}
@@ -3860,6 +3872,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdSetDepthClampRangeEXT");
 		return;
 	}
+	if (extName == "VK_KHR_video_maintenance2")
+	{
+		return;
+	}
 	if (extName == "VK_HUAWEI_hdr_vivid")
 	{
 		return;
@@ -3872,11 +3888,21 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_external_memory_metal")
+	{
+		functions.push_back("vkGetMemoryMetalHandleEXT");
+		functions.push_back("vkGetMemoryMetalHandlePropertiesEXT");
+		return;
+	}
 	if (extName == "VK_KHR_depth_clamp_zero_one")
 	{
 		return;
 	}
 	if (extName == "VK_EXT_vertex_attribute_robustness")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_robustness2")
 	{
 		return;
 	}
@@ -4314,9 +4340,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_maintenance8",
 	"VK_MESA_image_alignment_control",
 	"VK_EXT_depth_clamp_control",
+	"VK_KHR_video_maintenance2",
 	"VK_HUAWEI_hdr_vivid",
 	"VK_NV_cooperative_matrix2",
 	"VK_ARM_pipeline_opacity_micromap",
+	"VK_EXT_external_memory_metal",
 	"VK_KHR_depth_clamp_zero_one",
 	"VK_EXT_vertex_attribute_robustness",
+	"VK_KHR_robustness2",
 };

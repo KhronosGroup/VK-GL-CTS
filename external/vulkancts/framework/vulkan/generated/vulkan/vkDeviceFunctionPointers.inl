@@ -520,3 +520,5 @@ QueueNotifyOutOfBandNVFunc									queueNotifyOutOfBandNV;
 CmdSetRenderingAttachmentLocationsFunc						cmdSetRenderingAttachmentLocations;
 CmdSetRenderingInputAttachmentIndicesFunc					cmdSetRenderingInputAttachmentIndices;
 CmdSetDepthClampRangeEXTFunc								cmdSetDepthClampRangeEXT;
+GetMemoryMetalHandleEXTFunc									getMemoryMetalHandleEXT;
+GetMemoryMetalHandlePropertiesEXTFunc						getMemoryMetalHandlePropertiesEXT;

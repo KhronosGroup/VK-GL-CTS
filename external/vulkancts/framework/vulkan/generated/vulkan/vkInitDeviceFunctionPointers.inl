@@ -905,3 +905,5 @@ if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
 if (!m_vk.cmdSetRenderingInputAttachmentIndices)
     m_vk.cmdSetRenderingInputAttachmentIndices = (CmdSetRenderingInputAttachmentIndicesFunc) GET_PROC_ADDR("vkCmdSetRenderingInputAttachmentIndicesKHR");
 m_vk.cmdSetDepthClampRangeEXT = (CmdSetDepthClampRangeEXTFunc) GET_PROC_ADDR("vkCmdSetDepthClampRangeEXT");
+m_vk.getMemoryMetalHandleEXT = (GetMemoryMetalHandleEXTFunc) GET_PROC_ADDR("vkGetMemoryMetalHandleEXT");
+m_vk.getMemoryMetalHandlePropertiesEXT = (GetMemoryMetalHandlePropertiesEXTFunc) GET_PROC_ADDR("vkGetMemoryMetalHandlePropertiesEXT");

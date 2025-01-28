@@ -45,7 +45,6 @@ const vk::VkPhysicalDeviceMapMemoryPlacedPropertiesEXT&				Context::getMapMemory
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&		Context::getDeviceGeneratedCommandsProperties		(void) const { return m_device->getDeviceGeneratedCommandsProperties();			}
 const vk::VkPhysicalDeviceShaderIntegerDotProductProperties&		Context::getShaderIntegerDotProductProperties		(void) const { return m_device->getShaderIntegerDotProductProperties();			}
 const vk::VkPhysicalDeviceTexelBufferAlignmentProperties&			Context::getTexelBufferAlignmentProperties			(void) const { return m_device->getTexelBufferAlignmentProperties();			}
-const vk::VkPhysicalDeviceRobustness2PropertiesEXT&					Context::getRobustness2PropertiesEXT				(void) const { return m_device->getRobustness2PropertiesEXT();					}
 const vk::VkPhysicalDeviceCustomBorderColorPropertiesEXT&			Context::getCustomBorderColorPropertiesEXT			(void) const { return m_device->getCustomBorderColorPropertiesEXT();			}
 const vk::VkPhysicalDeviceCudaKernelLaunchPropertiesNV&				Context::getCudaKernelLaunchPropertiesNV			(void) const { return m_device->getCudaKernelLaunchPropertiesNV();				}
 const vk::VkPhysicalDeviceDescriptorBufferPropertiesEXT&			Context::getDescriptorBufferPropertiesEXT			(void) const { return m_device->getDescriptorBufferPropertiesEXT();				}
@@ -92,5 +91,6 @@ const vk::VkPhysicalDeviceMaintenance7PropertiesKHR&				Context::getMaintenance7
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT&		Context::getDeviceGeneratedCommandsPropertiesEXT	(void) const { return m_device->getDeviceGeneratedCommandsPropertiesEXT();		}
 const vk::VkPhysicalDeviceImageAlignmentControlPropertiesMESA&		Context::getImageAlignmentControlPropertiesMESA		(void) const { return m_device->getImageAlignmentControlPropertiesMESA();		}
 const vk::VkPhysicalDeviceCooperativeMatrix2PropertiesNV&			Context::getCooperativeMatrix2PropertiesNV			(void) const { return m_device->getCooperativeMatrix2PropertiesNV();			}
+const vk::VkPhysicalDeviceRobustness2PropertiesKHR&					Context::getRobustness2Properties					(void) const { return m_device->getRobustness2Properties();						}
 const vk::VkPhysicalDeviceSubgroupProperties&						Context::getSubgroupProperties						(void) const { return m_device->getSubgroupProperties();						}
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				Context::getProtectedMemoryProperties				(void) const { return m_device->getProtectedMemoryProperties();					}

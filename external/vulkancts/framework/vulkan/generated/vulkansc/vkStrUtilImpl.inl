@@ -8256,9 +8256,9 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineOfflineCreateInfo& va
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRobustness2FeaturesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRobustness2FeaturesKHR& value)
 {
-	s << "VkPhysicalDeviceRobustness2FeaturesEXT = {\n";
+	s << "VkPhysicalDeviceRobustness2FeaturesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\trobustBufferAccess2 = " << value.robustBufferAccess2 << '\n';
@@ -8268,9 +8268,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRobustness2Feat
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRobustness2PropertiesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRobustness2PropertiesKHR& value)
 {
-	s << "VkPhysicalDeviceRobustness2PropertiesEXT = {\n";
+	s << "VkPhysicalDeviceRobustness2PropertiesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\trobustStorageBufferAccessSizeAlignment = " << value.robustStorageBufferAccessSizeAlignment << '\n';

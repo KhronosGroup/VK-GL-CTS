@@ -68,6 +68,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_KHR_ray_tracing_position_fetch",
 	"VK_KHR_relaxed_block_layout",
+	"VK_KHR_robustness2",
 	"VK_KHR_sampler_mirror_clamp_to_edge",
 	"VK_KHR_sampler_ycbcr_conversion",
 	"VK_KHR_separate_depth_stencil_layouts",
