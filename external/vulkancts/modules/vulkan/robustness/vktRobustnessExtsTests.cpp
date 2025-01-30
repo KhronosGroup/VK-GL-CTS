@@ -3645,9 +3645,10 @@ tcu::TestStatus OutOfBoundsStrideInstance::iterate(void)
     const void *pNext = nullptr;
 
 #ifndef CTS_USES_VULKANSC
+    VkPipelineRobustnessCreateInfoEXT pipelineRobustnessCreateInfo;
     if (m_params.pipelineRobustness)
     {
-        const VkPipelineRobustnessCreateInfoEXT pipelineRobustnessCreateInfo = {
+        pipelineRobustnessCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_ROBUSTNESS_CREATE_INFO_EXT, //VkStructureType sType;
             nullptr,                                               //const void *pNext;
             VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2_EXT, //VkPipelineRobustnessBufferBehaviorEXT storageBuffers;
