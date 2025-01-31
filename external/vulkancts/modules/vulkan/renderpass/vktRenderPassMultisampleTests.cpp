@@ -1714,7 +1714,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::verifyResult(void)
                         for (size_t bitNdx = 0; bitNdx < 10; bitNdx++)
                         {
                             depth += (range / (float)divider) *
-                                     (((bitNdx % 2 == 0 ? x1 : y1) & (0x1u << (bitNdx / 2u))) == 0u ? 0u : 1u);
+                                     (((bitNdx % 2 == 0 ? x1 : y1) & (0x1u << (bitNdx / 2u))) == 0u ? 0.0f : 1.0f);
                             divider *= 2;
                         }
 
@@ -1880,7 +1880,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::verifyResult(void)
 
                                 color[compNdx] +=
                                     (range[compNdx] / (float)divider) *
-                                    (((nextSrcBit % 2 == 0 ? x1 : y1) & (0x1u << (nextSrcBit / 2u))) == 0u ? 0u : 1u);
+                                    (((nextSrcBit % 2 == 0 ? x1 : y1) & (0x1u << (nextSrcBit / 2u))) == 0u ? 0.f : 1.f);
 
                                 nextSrcBit++;
                                 dstBitsUsed[compNdx]++;
