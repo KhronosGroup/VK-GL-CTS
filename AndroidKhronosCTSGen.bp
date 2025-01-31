@@ -974,6 +974,7 @@ cc_library_static {
         "external/openglcts/modules/gl/gl3cTransformFeedbackOverflowQueryTests.cpp",
         "external/openglcts/modules/gl/gl3cTransformFeedbackTests.cpp",
         "external/openglcts/modules/gl/gl4cBufferStorageTests.cpp",
+        "external/openglcts/modules/gl/gl4cClearTexImageAndSubImageTests.cpp",
         "external/openglcts/modules/gl/gl4cClipControlTests.cpp",
         "external/openglcts/modules/gl/gl4cComputeShaderTests.cpp",
         "external/openglcts/modules/gl/gl4cConditionalRenderInvertedTests.cpp",

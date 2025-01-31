@@ -6808,3 +6808,4 @@ KHR-GL44.texture_buffer.texture_buffer_active_uniform_validation_compute_shader
 KHR-GL44.texture_buffer.texture_buffer_buffer_parameters
 KHR-GL44.texture_buffer.texture_buffer_precision
 KHR-GL44.texture_buffer_size_clamping.*
+KHR-GL44.clear_tex_image.*

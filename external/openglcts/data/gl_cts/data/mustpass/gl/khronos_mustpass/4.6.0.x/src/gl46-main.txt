@@ -7402,3 +7402,4 @@ KHR-GL46.gl_spirv.spirv_glsl_to_spirv_builtin_functions_test
 KHR-GL46.gl_spirv.spirv_glsl_to_spirv_specialization_constants_test
 KHR-GL46.gl_spirv.spirv_validation_builtin_variable_decorations_test
 KHR-GL46.texture_buffer_size_clamping.*
+KHR-GL46.clear_tex_image.*
