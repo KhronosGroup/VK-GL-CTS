@@ -2473,6 +2473,8 @@ def writeTypeUtil (api, filename):
             "StdVideoEncodeAV1OperatingPointInfoFlags",
             "StdVideoEncodeAV1PictureInfoFlags",
             "StdVideoEncodeAV1ReferenceInfoFlags",
+            "VkClusterAccelerationStructureGeometryIndexAndGeometryFlagsNV",
+            "VkClusterAccelerationStructureBuildTriangleClusterInfoNV",
         ])
 
     def isSimpleStruct (type):

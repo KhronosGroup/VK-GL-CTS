@@ -1545,6 +1545,16 @@ void DeviceDriver::cmdTraceRaysIndirect2KHR (VkCommandBuffer commandBuffer, VkDe
     m_vk.cmdTraceRaysIndirect2KHR(commandBuffer, indirectDeviceAddress);
 }
 
+void DeviceDriver::getClusterAccelerationStructureBuildSizesNV (VkDevice device, const VkClusterAccelerationStructureInputInfoNV* pInfo, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo) const
+{
+    m_vk.getClusterAccelerationStructureBuildSizesNV(device, pInfo, pSizeInfo);
+}
+
+void DeviceDriver::cmdBuildClusterAccelerationStructureIndirectNV (VkCommandBuffer commandBuffer, const VkClusterAccelerationStructureCommandsInfoNV* pCommandInfos) const
+{
+    m_vk.cmdBuildClusterAccelerationStructureIndirectNV(commandBuffer, pCommandInfos);
+}
+
 void DeviceDriver::getDeviceAccelerationStructureCompatibilityKHR (VkDevice device, const VkAccelerationStructureVersionInfoKHR* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility) const
 {
     m_vk.getDeviceAccelerationStructureCompatibilityKHR(device, pVersionInfo, pCompatibility);
@@ -2261,6 +2271,16 @@ void DeviceDriver::cmdDecompressMemoryIndirectCountNV (VkCommandBuffer commandBu
     m_vk.cmdDecompressMemoryIndirectCountNV(commandBuffer, indirectCommandsAddress, indirectCommandsCountAddress, stride);
 }
 
+void DeviceDriver::getPartitionedAccelerationStructuresBuildSizesNV (VkDevice device, const VkPartitionedAccelerationStructureInstancesInputNV* pInfo, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo) const
+{
+    m_vk.getPartitionedAccelerationStructuresBuildSizesNV(device, pInfo, pSizeInfo);
+}
+
+void DeviceDriver::cmdBuildPartitionedAccelerationStructuresNV (VkCommandBuffer commandBuffer, const VkBuildPartitionedAccelerationStructureInfoNV* pBuildInfo) const
+{
+    m_vk.cmdBuildPartitionedAccelerationStructuresNV(commandBuffer, pBuildInfo);
+}
+
 VkResult DeviceDriver::createCuModuleNVX (VkDevice device, const VkCuModuleCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCuModuleNVX* pModule) const
 {
     return m_vk.createCuModuleNVX(device, pCreateInfo, pAllocator, pModule);
@@ -2715,4 +2735,24 @@ void DeviceDriver::cmdSetDepthClampRangeEXT (VkCommandBuffer commandBuffer, VkDe
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetDepthClampRangeEXT(commandBuffer, depthClampMode, pDepthClampRange);
+}
+
+VkResult DeviceDriver::getMemoryMetalHandleEXT (VkDevice device, const VkMemoryGetMetalHandleInfoEXT* pGetMetalHandleInfo, void** pHandle) const
+{
+    return m_vk.getMemoryMetalHandleEXT(device, pGetMetalHandleInfo, pHandle);
+}
+
+VkResult DeviceDriver::getMemoryMetalHandlePropertiesEXT (VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHandle, VkMemoryMetalHandlePropertiesEXT* pMemoryMetalHandleProperties) const
+{
+    return m_vk.getMemoryMetalHandlePropertiesEXT(device, handleType, pHandle, pMemoryMetalHandleProperties);
+}
+
+VkResult DeviceDriver::convertCooperativeVectorMatrixNV (VkDevice device, const VkConvertCooperativeVectorMatrixInfoNV* pInfo) const
+{
+    return m_vk.convertCooperativeVectorMatrixNV(device, pInfo);
+}
+
+void DeviceDriver::cmdConvertCooperativeVectorMatrixNV (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkConvertCooperativeVectorMatrixInfoNV* pInfos) const
+{
+    m_vk.cmdConvertCooperativeVectorMatrixNV(commandBuffer, infoCount, pInfos);
 }
