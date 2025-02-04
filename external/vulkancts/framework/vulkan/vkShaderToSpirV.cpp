@@ -37,6 +37,9 @@
 #include "glslang/MachineIndependent/localintermediate.h"
 #include "glslang/Public/ShaderLang.h"
 
+#include "vkShaderToSpirV_slang.h"
+
+
 namespace vk
 {
 
@@ -276,6 +279,18 @@ bool compileShaderToSpirV(const std::vector<std::string> *sources, const ShaderB
     prepareGlslang();
     getDefaultBuiltInResources(&builtinRes);
 
+#if defined(ENABLE_SLANG_COMPILATION) && defined(_WIN32)
+    bool enableSlang = true;
+    char lpBuffer[128];
+    DWORD ret = GetEnvironmentVariable("DISABLE_CTS_SLANG", lpBuffer, 128);
+    if (ret > 0 && strcmp(lpBuffer, "1") == 0) {
+        enableSlang = false;
+    }
+
+    if (enableSlang) {
+        return Slang::compileShaderToSpirV(sources, buildOptions, shaderLanguage, dst, buildInfo);
+    }
+#endif
     // \note Compiles only first found shader
     for (int shaderType = 0; shaderType < glu::SHADERTYPE_LAST; shaderType++)
     {
@@ -385,3 +400,12 @@ void stripSpirVDebugInfo(const size_t numSrcInstrs, const uint32_t *srcInstrs, s
 }
 
 } // namespace vk
+
+namespace Slang
+{
+	std::string getShaderStageSource(const std::vector<std::string>* sources, const vk::ShaderBuildOptions buildOptions,
+		glu::ShaderType shaderType)
+	{
+		return vk::getShaderStageSource(sources, buildOptions, shaderType);
+	}
+} // namespace Slang

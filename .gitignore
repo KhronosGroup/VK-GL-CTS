@@ -8,3 +8,5 @@
 !.editorconfig
 !.travis.yml
 !.github
+build/*
+BUILD_DIRECTORY

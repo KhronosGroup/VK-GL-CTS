@@ -479,3 +479,21 @@ if (DE_OS_IS_FUCHSIA)
 	# least 2**20 bytes, but 2**24 is chosen for safety.
 	set_target_properties(deqp-vk PROPERTIES LINK_FLAGS "-Wl,-z,stack-size=0x1000000")
 endif ()
+
+# slang
+add_subdirectory(external/slang EXCLUDE_FROM_ALL)
+
+target_include_directories(vkutil PRIVATE
+    ${CMAKE_SOURCE_DIR}/external/slang/src/include
+    ${CMAKE_SOURCE_DIR}/external/slang/src/source
+    ${CMAKE_SOURCE_DIR}/external/slang/src/tools
+)
+target_include_directories(vkscutil PRIVATE
+    ${CMAKE_SOURCE_DIR}/external/slang/src/include
+    ${CMAKE_SOURCE_DIR}/external/slang/src/source
+    ${CMAKE_SOURCE_DIR}/external/slang/src/tools
+)
+
+target_compile_definitions(vkutil PRIVATE ENABLE_SLANG_COMPILATION)
+target_compile_definitions(vkscutil PRIVATE ENABLE_SLANG_COMPILATION)
+

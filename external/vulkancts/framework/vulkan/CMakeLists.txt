@@ -190,6 +190,7 @@ set(VKUTIL_SRCS
 	vkPrograms.hpp
 	vkShaderToSpirV.cpp
 	vkShaderToSpirV.hpp
+	vkShaderToSpirV_slang.cpp
 	vkSpirVAsm.hpp
 	vkSpirVAsm.cpp
 	vkSpirVProgram.hpp
@@ -209,6 +210,9 @@ include_directories(${DEQP_VULKAN_INL_GEN_OUTPUTS_DIR})
 if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 	set_source_files_properties(
 		FILES vkShaderToSpirV.cpp
+		PROPERTIES COMPILE_FLAGS "${DE_3RD_PARTY_CXX_FLAGS}")
+	set_source_files_properties(
+		FILES vkShaderToSpirV_slang.cpp
 		PROPERTIES COMPILE_FLAGS "${DE_3RD_PARTY_CXX_FLAGS}")
 endif ()
 
