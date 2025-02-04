@@ -65,17 +65,17 @@ typedef void(CALLBACK *PFNSPSETCOMMANDLINECOMPILERMODE)(SlangCompileRequest *);
 typedef SlangResult(CALLBACK *PFNSPPROCESSCOMMANDLINEARG)(SlangCompileRequest *,
                                                           char const *, int);
 typedef SlangResult(CALLBACK *PFNSPCOMPILE)(SlangCompileRequest *request);
-typedef SlangResult(CALLBACK *PFNCREATEGLOBALSESSION)(SlangInt,
+typedef SlangResult(CALLBACK *PFNCREATEGLOBALSESSION2)(const SlangGlobalSessionDesc *,
                                                       slang::IGlobalSession **);
 
 typedef struct _slangLibFuncs {
 	PFNSPSETDIAGONSTICCB pfnspSetDiagnosticCallback = nullptr;
 	PFNSPPROCESSCOMMANDLINEARG pfnspProcessCommandLineArguments = nullptr;
 	PFNSPCOMPILE pfnspCompile = nullptr;
-	PFNCREATEGLOBALSESSION pfnslang_createGlobalSession = nullptr;
+    PFNCREATEGLOBALSESSION2 pfnslang_createGlobalSession2        = nullptr;
 	bool isInitialized() {
 		return (pfnspSetDiagnosticCallback && pfnspProcessCommandLineArguments &&
-			pfnspCompile && pfnslang_createGlobalSession);
+			pfnspCompile && pfnslang_createGlobalSession2);
 	}
 } slangLibFuncs;
 
@@ -433,8 +433,9 @@ public:
 	}
 
 	void getSlangFunctionHandles() {
-		m_sfn.pfnslang_createGlobalSession = (PFNCREATEGLOBALSESSION)GetProcAddress(
-			handle, "slang_createGlobalSession");
+        m_sfn.pfnslang_createGlobalSession2 =
+            (PFNCREATEGLOBALSESSION2)GetProcAddress(
+			handle, "slang_createGlobalSession2");
 		m_sfn.pfnspCompile = (PFNSPCOMPILE)GetProcAddress(handle, "spCompile");
 		m_sfn.pfnspSetDiagnosticCallback =
 			(PFNSPSETDIAGONSTICCB)GetProcAddress(handle, "spSetDiagnosticCallback");
@@ -883,8 +884,7 @@ public:
 			static bool s_needToPrintOnce = true;
 			if (s_needToPrintOnce)
 			{
-				SLANG_LOG(std::cout << lpBuffer << "\n";)
-				SLANG_LOG(std::cout << "Disabled SLANG SERVER MODE\n";)
+				SLANG_LOG(std::cout << "Disabled SLANG SERVER MODE: " << lpBuffer << "\n";)
 				s_needToPrintOnce = false;
 			}
 			enableServerMode = false;
@@ -903,8 +903,10 @@ public:
 					SLANG_LOG(std::cout << "Failed to get function pointers";)
 						break;
 				}
-				result = m_sfn.pfnslang_createGlobalSession(
-					SLANG_API_VERSION, slangGlobalSession.writeRef());
+                SlangGlobalSessionDesc desc;
+                desc.enableGLSL = true;
+				result = m_sfn.pfnslang_createGlobalSession2(
+					&desc, slangGlobalSession.writeRef());
 				if (result != SLANG_OK) {
 					SLANG_LOG(std::cout << "Failed to create global session: " << std::hex
 						<< result << "\n";)
@@ -1062,7 +1064,7 @@ public:
 				SLANG_LOG(std::cout << "failed to load slang.dll\n";)
 					return SLANG_FAIL;
 			}
-			typedef UINT(CALLBACK* LPFNDLLFUNC1)(SlangInt, slang::IGlobalSession**);
+            typedef UINT(CALLBACK * LPFNDLLFUNC1)(const SlangGlobalSessionDesc *, slang::IGlobalSession **);
 			LPFNDLLFUNC1 pfnslang_createGlobalSessionWithoutStdLib =
 				(LPFNDLLFUNC1)GetProcAddress(
 					handle, "slang_createGlobalSessionWithoutStdLib");
@@ -1072,9 +1074,9 @@ public:
 					FreeLibrary(handle);
 				return SLANG_FAIL;
 			};
-			LPFNDLLFUNC1 pfnslang_createGlobalSession =
-				(LPFNDLLFUNC1)GetProcAddress(handle, "slang_createGlobalSession");
-			if (!pfnslang_createGlobalSession) {
+			LPFNDLLFUNC1 pfnslang_createGlobalSession2 =
+				(LPFNDLLFUNC1)GetProcAddress(handle, "slang_createGlobalSession2");
+			if (!pfnslang_createGlobalSession2) {
 				// handle the error
 				SLANG_LOG(std::cout << "failed to get create global session method\n";)
 					FreeLibrary(handle);
@@ -1085,7 +1087,9 @@ public:
 			// result = slang::createGlobalSession(slangGlobalSession.writeRef());
 			// result = slang_createGlobalSessionWithoutStdLib(SLANG_API_VERSION,
 			// slangGlobalSession.writeRef());
-			result = pfnslang_createGlobalSession(SLANG_API_VERSION,
+            SlangGlobalSessionDesc desc;
+            desc.enableGLSL = true;
+			result = pfnslang_createGlobalSession2(&desc,
 				slangGlobalSession.writeRef());
 			if (result != SLANG_OK) {
 				SLANG_LOG(std::cout << "Failed to create global session: " << std::hex
