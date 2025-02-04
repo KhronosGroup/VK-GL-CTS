@@ -3,14 +3,15 @@
 <waiver vendorName="nvidia" vendorId="0x10de" url="https://github.com/shader-slang/slang/issues/4233">
     <description>Known failure tests for slang. Github issue (#4233) is created to track the fix. Once the issue is fixed, we will remove the list.</description>
     <device_list>
-        <d>0xa7a0</d>
-        <d>0x2206</d>
-        <d>0x2208</d>
-        <d>0x26b1</d>
-        <d>0x1E04</d>
-        <d>0x1E07</d>
-        <d>0x1E2D</d>
-        <d>0x1E2E</d>
+        <d>0xa7a0</d>  <!-- NVIDIA GeForce RTX 4090 Laptop GPU -->
+        <d>0x2206</d>  <!-- NVIDIA GeForce RTX 3090 -->
+        <d>0x2204</d>  <!-- NVIDIA GeForce RTX 3080 Ti -->
+        <d>0x2208</d>  <!-- NVIDIA GeForce RTX 3080 -->
+        <d>0x26b1</d>  <!-- NVIDIA GeForce RTX 4060 -->
+        <d>0x1E04</d>  <!-- NVIDIA GeForce RTX 2080 -->
+        <d>0x1E07</d>  <!-- NVIDIA GeForce RTX 2080 Ti -->
+        <d>0x1E2D</d>  <!-- NVIDIA TITAN RTX -->
+        <d>0x1E2E</d>  <!-- NVIDIA GeForce RTX 2070 SUPER -->
     </device_list>
     <t>dEQP-VK.glsl.functions.array_arguments.copy_local_inout_on_call_vertex</t>
     <t>dEQP-VK.glsl.functions.array_arguments.copy_local_inout_on_call_fragment</t>
