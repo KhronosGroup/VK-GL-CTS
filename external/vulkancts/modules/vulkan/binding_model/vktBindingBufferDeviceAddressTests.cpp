@@ -770,7 +770,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
         buffers[i] = VkBufferSp(new Unique<VkBuffer>(createBuffer(vk, device, &bufferCreateInfo)));
 
         // query opaque capture address before binding memory
-        if (useKHR)
+        if (useKHR && m_data.bufType == BT_REPLAY)
         {
             bufferDeviceAddressInfo.buffer = **buffers[i];
             opaqueBufferAddrs[i]           = vk.getBufferOpaqueCaptureAddress(device, &bufferDeviceAddressInfo);
