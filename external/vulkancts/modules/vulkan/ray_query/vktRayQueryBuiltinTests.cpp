@@ -104,21 +104,6 @@ const uint32_t FIXED_POINT_ALLOWED_ERROR = static_cast<uint32_t>(float(1e-3f) * 
 
 struct TestParams;
 
-// Similar to a subset of the test context but allows us to plug in a custom device when needed.
-// Note TestEnvironment objects do not own the resources they point to.
-struct TestEnvironment
-{
-    const InstanceInterface *vki;
-    VkPhysicalDevice physicalDevice;
-    const DeviceInterface *vkd;
-    VkDevice device;
-    Allocator *allocator;
-    VkQueue queue;
-    uint32_t queueFamilyIndex;
-    BinaryCollection *binaryCollection;
-    tcu::TestLog *log;
-};
-
 typedef void (*CheckSupportFunc)(Context &context, const TestParams &testParams);
 typedef void (*InitProgramsFunc)(SourceCollections &programCollection, const TestParams &testParams);
 typedef const std::string (*ShaderBodyTextFunc)(const TestParams &testParams);
@@ -126,17 +111,13 @@ typedef const std::string (*ShaderBodyTextFunc)(const TestParams &testParams);
 class PipelineConfiguration
 {
 public:
-    PipelineConfiguration()
-    {
-    }
-    virtual ~PipelineConfiguration()
-    {
-    }
+    PipelineConfiguration()          = default;
+    virtual ~PipelineConfiguration() = default;
 
-    virtual void initConfiguration(const TestEnvironment &env, TestParams &testParams) = 0;
-    virtual void fillCommandBuffer(const TestEnvironment &env, TestParams &testParams, VkCommandBuffer commandBuffer,
+    virtual void initConfiguration(Context &context, TestParams &testParams)     = 0;
+    virtual void fillCommandBuffer(Context &context, TestParams &testParams, VkCommandBuffer commandBuffer,
                                    const VkAccelerationStructureKHR *rayQueryTopAccelerationStructurePtr,
-                                   const VkDescriptorImageInfo &resultImageInfo)       = 0;
+                                   const VkDescriptorImageInfo &resultImageInfo) = 0;
 };
 
 class TestConfiguration
@@ -146,26 +127,20 @@ public:
         : m_bottomAccelerationStructures()
         , m_topAccelerationStructure()
         , m_expected()
-        , m_testEnvironment()
-    {
-        prepareTestEnvironment(context);
-    }
-    virtual ~TestConfiguration()
+        , m_context(context)
     {
     }
+    virtual ~TestConfiguration() = default;
 
-    const TestEnvironment &getTestEnvironment() const;
     virtual const VkAccelerationStructureKHR *initAccelerationStructures(TestParams &testParams,
                                                                          VkCommandBuffer cmdBuffer) = 0;
     virtual bool verify(BufferWithMemory *resultBuffer, TestParams &testParams);
 
 protected:
-    void prepareTestEnvironment(Context &context);
-
     std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> m_bottomAccelerationStructures;
     de::SharedPtr<TopLevelAccelerationStructure> m_topAccelerationStructure;
     std::vector<int32_t> m_expected;
-    de::MovePtr<TestEnvironment> m_testEnvironment;
+    Context &m_context;
 };
 
 class TestConfigurationFloat : public TestConfiguration
@@ -347,10 +322,10 @@ public:
     {
     }
 
-    void initVertexBuffer(const TestEnvironment &env, TestParams &testParams);
-    Move<VkPipeline> makeGraphicsPipeline(const TestEnvironment &env, TestParams &testParams);
-    virtual void initConfiguration(const TestEnvironment &env, TestParams &testParams) override;
-    virtual void fillCommandBuffer(const TestEnvironment &env, TestParams &testParams, VkCommandBuffer commandBuffer,
+    void initVertexBuffer(Context &context, TestParams &testParams);
+    Move<VkPipeline> makeGraphicsPipeline(Context &context, TestParams &testParams);
+    virtual void initConfiguration(Context &context, TestParams &testParams) override;
+    virtual void fillCommandBuffer(Context &context, TestParams &testParams, VkCommandBuffer commandBuffer,
                                    const VkAccelerationStructureKHR *rayQueryTopAccelerationStructurePtr,
                                    const VkDescriptorImageInfo &resultImageInfo) override;
 
@@ -722,11 +697,11 @@ void GraphicsConfiguration::initPrograms(SourceCollections &programCollection, c
     }
 }
 
-void GraphicsConfiguration::initVertexBuffer(const TestEnvironment &env, TestParams &testParams)
+void GraphicsConfiguration::initVertexBuffer(Context &context, TestParams &testParams)
 {
-    const DeviceInterface &vkd = *env.vkd;
-    const VkDevice device      = env.device;
-    Allocator &allocator       = *env.allocator;
+    const DeviceInterface &vkd = context.getDeviceInterface();
+    const VkDevice device      = context.getDevice();
+    Allocator &allocator       = context.getDefaultAllocator();
     const uint32_t width       = testParams.width;
     const uint32_t height      = testParams.height;
     std::vector<tcu::Vec4> vertices;
@@ -856,10 +831,10 @@ void GraphicsConfiguration::initVertexBuffer(const TestEnvironment &env, TestPar
     }
 }
 
-Move<VkPipeline> GraphicsConfiguration::makeGraphicsPipeline(const TestEnvironment &env, TestParams &testParams)
+Move<VkPipeline> GraphicsConfiguration::makeGraphicsPipeline(Context &context, TestParams &testParams)
 {
-    const DeviceInterface &vkd = *env.vkd;
-    const VkDevice device      = env.device;
+    const DeviceInterface &vkd = context.getDeviceInterface();
+    const VkDevice device      = context.getDevice();
     const bool tessStageTest   = (testParams.stage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT ||
                                 testParams.stage == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
     const VkPrimitiveTopology topology =
@@ -873,14 +848,14 @@ Move<VkPipeline> GraphicsConfiguration::makeGraphicsPipeline(const TestEnvironme
                                     viewports, scissors, topology, 0, patchControlPoints);
 }
 
-void GraphicsConfiguration::initConfiguration(const TestEnvironment &env, TestParams &testParams)
+void GraphicsConfiguration::initConfiguration(Context &context, TestParams &testParams)
 {
-    const InstanceInterface &vki          = *env.vki;
-    const DeviceInterface &vkd            = *env.vkd;
-    const VkPhysicalDevice physicalDevice = env.physicalDevice;
-    const VkDevice device                 = env.device;
-    Allocator &allocator                  = *env.allocator;
-    vk::BinaryCollection &collection      = *env.binaryCollection;
+    const InstanceInterface &vki          = context.getInstanceInterface();
+    const DeviceInterface &vkd            = context.getDeviceInterface();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const VkDevice device                 = context.getDevice();
+    Allocator &allocator                  = context.getDefaultAllocator();
+    vk::BinaryCollection &collection      = context.getBinaryCollection();
     VkShaderStageFlags shaders            = static_cast<VkShaderStageFlags>(0);
     uint32_t shaderCount                  = 0;
 
@@ -940,19 +915,18 @@ void GraphicsConfiguration::initConfiguration(const TestEnvironment &env, TestPa
     m_framebuffer =
         makeFramebuffer(vkd, device, *m_renderPass, *m_framebufferAttachment, testParams.width, testParams.height);
     m_pipelineLayout = makePipelineLayout(vkd, device, m_descriptorSetLayout.get());
-    m_pipeline       = makeGraphicsPipeline(env, testParams);
+    m_pipeline       = makeGraphicsPipeline(context, testParams);
 
-    initVertexBuffer(env, testParams);
+    initVertexBuffer(context, testParams);
 }
 
-void GraphicsConfiguration::fillCommandBuffer(const TestEnvironment &env, TestParams &testParams,
-                                              VkCommandBuffer cmdBuffer,
+void GraphicsConfiguration::fillCommandBuffer(Context &context, TestParams &testParams, VkCommandBuffer cmdBuffer,
                                               const VkAccelerationStructureKHR *rayQueryTopAccelerationStructurePtr,
                                               const VkDescriptorImageInfo &resultImageInfo)
 {
-    const DeviceInterface &vkd                                                                         = *env.vkd;
-    const VkDevice device                                                                              = env.device;
-    const VkDeviceSize vertexBufferOffset                                                              = 0;
+    const DeviceInterface &vkd            = context.getDeviceInterface();
+    const VkDevice device                 = context.getDevice();
+    const VkDeviceSize vertexBufferOffset = 0;
     const VkWriteDescriptorSetAccelerationStructureKHR rayQueryAccelerationStructureWriteDescriptorSet = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
         nullptr,                                                           //  const void* pNext;
@@ -991,8 +965,8 @@ public:
     static void checkSupport(Context &context, const TestParams &testParams);
     static void initPrograms(SourceCollections &programCollection, const TestParams &testParams);
 
-    virtual void initConfiguration(const TestEnvironment &env, TestParams &testParams) override;
-    virtual void fillCommandBuffer(const TestEnvironment &env, TestParams &testParams, VkCommandBuffer commandBuffer,
+    virtual void initConfiguration(Context &context, TestParams &testParams) override;
+    virtual void fillCommandBuffer(Context &context, TestParams &testParams, VkCommandBuffer commandBuffer,
                                    const VkAccelerationStructureKHR *rayQueryTopAccelerationStructurePtr,
                                    const VkDescriptorImageInfo &resultImageInfo) override;
 
@@ -1061,13 +1035,13 @@ void ComputeConfiguration::initPrograms(SourceCollections &programCollection, co
     }
 }
 
-void ComputeConfiguration::initConfiguration(const TestEnvironment &env, TestParams &testParams)
+void ComputeConfiguration::initConfiguration(Context &context, TestParams &testParams)
 {
     DE_UNREF(testParams);
 
-    const DeviceInterface &vkd       = *env.vkd;
-    const VkDevice device            = env.device;
-    vk::BinaryCollection &collection = *env.binaryCollection;
+    const DeviceInterface &vkd       = context.getDeviceInterface();
+    const VkDevice device            = context.getDevice();
+    vk::BinaryCollection &collection = context.getBinaryCollection();
 
     m_descriptorSetLayout =
         DescriptorSetLayoutBuilder()
@@ -1084,13 +1058,12 @@ void ComputeConfiguration::initConfiguration(const TestEnvironment &env, TestPar
     m_pipeline       = makeComputePipeline(vkd, device, *m_pipelineLayout, *m_shaderModule);
 }
 
-void ComputeConfiguration::fillCommandBuffer(const TestEnvironment &env, TestParams &testParams,
-                                             VkCommandBuffer cmdBuffer,
+void ComputeConfiguration::fillCommandBuffer(Context &context, TestParams &testParams, VkCommandBuffer cmdBuffer,
                                              const VkAccelerationStructureKHR *rayQueryTopAccelerationStructurePtr,
                                              const VkDescriptorImageInfo &resultImageInfo)
 {
-    const DeviceInterface &vkd                                                                         = *env.vkd;
-    const VkDevice device                                                                              = env.device;
+    const DeviceInterface &vkd = context.getDeviceInterface();
+    const VkDevice device      = context.getDevice();
     const VkWriteDescriptorSetAccelerationStructureKHR rayQueryAccelerationStructureWriteDescriptorSet = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
         nullptr,                                                           //  const void* pNext;
@@ -1124,8 +1097,8 @@ public:
     static void checkSupport(Context &context, const TestParams &testParams);
     static void initPrograms(SourceCollections &programCollection, const TestParams &testParams);
 
-    virtual void initConfiguration(const TestEnvironment &env, TestParams &testParams) override;
-    virtual void fillCommandBuffer(const TestEnvironment &env, TestParams &testParams, VkCommandBuffer commandBuffer,
+    virtual void initConfiguration(Context &context, TestParams &testParams) override;
+    virtual void fillCommandBuffer(Context &context, TestParams &testParams, VkCommandBuffer commandBuffer,
                                    const VkAccelerationStructureKHR *rayQueryTopAccelerationStructurePtr,
                                    const VkDescriptorImageInfo &resultImageInfo) override;
 
@@ -1439,16 +1412,16 @@ de::MovePtr<BufferWithMemory> RayTracingConfiguration::createShaderBindingTable(
     return shaderBindingTable;
 }
 
-void RayTracingConfiguration::initConfiguration(const TestEnvironment &env, TestParams &testParams)
+void RayTracingConfiguration::initConfiguration(Context &context, TestParams &testParams)
 {
     DE_UNREF(testParams);
 
-    const InstanceInterface &vki          = *env.vki;
-    const DeviceInterface &vkd            = *env.vkd;
-    const VkDevice device                 = env.device;
-    const VkPhysicalDevice physicalDevice = env.physicalDevice;
-    vk::BinaryCollection &collection      = *env.binaryCollection;
-    Allocator &allocator                  = *env.allocator;
+    const InstanceInterface &vki          = context.getInstanceInterface();
+    const DeviceInterface &vkd            = context.getDeviceInterface();
+    const VkDevice device                 = context.getDevice();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    vk::BinaryCollection &collection      = context.getBinaryCollection();
+    Allocator &allocator                  = context.getDefaultAllocator();
     const uint32_t shaderGroupHandleSize  = getShaderGroupHandleSize(vki, physicalDevice);
     const VkShaderStageFlags hitStages =
         VK_SHADER_STAGE_ANY_HIT_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
@@ -1557,14 +1530,13 @@ void RayTracingConfiguration::initConfiguration(const TestEnvironment &env, Test
             makeStridedDeviceAddressRegionKHR(0, 0, 0);
 }
 
-void RayTracingConfiguration::fillCommandBuffer(const TestEnvironment &env, TestParams &testParams,
-                                                VkCommandBuffer commandBuffer,
+void RayTracingConfiguration::fillCommandBuffer(Context &context, TestParams &testParams, VkCommandBuffer commandBuffer,
                                                 const VkAccelerationStructureKHR *rayQueryTopAccelerationStructurePtr,
                                                 const VkDescriptorImageInfo &resultImageInfo)
 {
-    const DeviceInterface &vkd = *env.vkd;
-    const VkDevice device      = env.device;
-    Allocator &allocator       = *env.allocator;
+    const DeviceInterface &vkd = context.getDeviceInterface();
+    const VkDevice device      = context.getDevice();
+    Allocator &allocator       = context.getDefaultAllocator();
     de::MovePtr<BottomLevelAccelerationStructure> bottomLevelAccelerationStructure =
         makeBottomLevelAccelerationStructure();
     de::MovePtr<TopLevelAccelerationStructure> topLevelAccelerationStructure = makeTopLevelAccelerationStructure();
@@ -1616,30 +1588,9 @@ void RayTracingConfiguration::fillCommandBuffer(const TestEnvironment &env, Test
                  testParams.height, 1);
 }
 
-void TestConfiguration::prepareTestEnvironment(Context &context)
-{
-    // By default, all data comes from the context.
-    m_testEnvironment = de::MovePtr<TestEnvironment>(new TestEnvironment{
-        &context.getInstanceInterface(),        // const InstanceInterface* vki;
-        context.getPhysicalDevice(),            // VkPhysicalDevice physicalDevice;
-        &context.getDeviceInterface(),          // const DeviceInterface* vkd;
-        context.getDevice(),                    // VkDevice device;
-        &context.getDefaultAllocator(),         // Allocator* allocator;
-        context.getUniversalQueue(),            // VkQueue queue;
-        context.getUniversalQueueFamilyIndex(), // uint32_t queueFamilyIndex;
-        &context.getBinaryCollection(),         // BinaryCollection* binaryCollection;
-        &context.getTestContext().getLog(),     // tcu::TestLog* log;
-    });
-}
-
-const TestEnvironment &TestConfiguration::getTestEnvironment() const
-{
-    return *m_testEnvironment;
-}
-
 bool TestConfiguration::verify(BufferWithMemory *resultBuffer, TestParams &testParams)
 {
-    tcu::TestLog &log          = *(m_testEnvironment->log);
+    tcu::TestLog &log          = m_context.getTestContext().getLog();
     const uint32_t width       = testParams.width;
     const uint32_t height      = testParams.height;
     const int32_t *resultPtr   = (int32_t *)resultBuffer->getAllocation().getHostPtr();
@@ -1691,7 +1642,7 @@ bool TestConfiguration::verify(BufferWithMemory *resultBuffer, TestParams &testP
 
 bool TestConfigurationFloat::verify(BufferWithMemory *resultBuffer, TestParams &testParams)
 {
-    tcu::TestLog &log          = *(m_testEnvironment->log);
+    tcu::TestLog &log          = m_context.getTestContext().getLog();
     const float eps            = float(FIXED_POINT_ALLOWED_ERROR) / float(FIXED_POINT_DIVISOR);
     const uint32_t width       = testParams.width;
     const uint32_t height      = testParams.height;
@@ -1751,7 +1702,7 @@ bool TestConfigurationFloat::verify(BufferWithMemory *resultBuffer, TestParams &
 
 bool TestConfigurationVector::verify(BufferWithMemory *resultBuffer, TestParams &testParams)
 {
-    tcu::TestLog &log          = *(m_testEnvironment->log);
+    tcu::TestLog &log          = m_context.getTestContext().getLog();
     const float eps            = float(FIXED_POINT_ALLOWED_ERROR) / float(FIXED_POINT_DIVISOR);
     const uint32_t width       = testParams.width;
     const uint32_t height      = testParams.height;
@@ -1871,7 +1822,7 @@ bool TestConfigurationVector::verify(BufferWithMemory *resultBuffer, TestParams 
 
 bool TestConfigurationMatrix::verify(BufferWithMemory *resultBuffer, TestParams &testParams)
 {
-    tcu::TestLog &log          = *(m_testEnvironment->log);
+    tcu::TestLog &log          = m_context.getTestContext().getLog();
     const float eps            = float(FIXED_POINT_ALLOWED_ERROR) / float(FIXED_POINT_DIVISOR);
     const uint32_t width       = testParams.width;
     const uint32_t height      = testParams.height;
@@ -1955,9 +1906,9 @@ public:
 const VkAccelerationStructureKHR *TestConfigurationFlow::initAccelerationStructures(TestParams &testParams,
                                                                                     VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vkd          = *m_testEnvironment->vkd;
-    const VkDevice device               = m_testEnvironment->device;
-    Allocator &allocator                = *m_testEnvironment->allocator;
+    const DeviceInterface &vkd          = m_context.getDeviceInterface();
+    const VkDevice device               = m_context.getDevice();
+    Allocator &allocator                = m_context.getDefaultAllocator();
     const uint32_t width                = testParams.width;
     const uint32_t height               = testParams.height;
     const uint32_t instancesGroupCount  = testParams.instancesGroupCount;
@@ -2126,9 +2077,9 @@ public:
 const VkAccelerationStructureKHR *TestConfigurationPrimitiveId::initAccelerationStructures(TestParams &testParams,
                                                                                            VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vkd          = *m_testEnvironment->vkd;
-    const VkDevice device               = m_testEnvironment->device;
-    Allocator &allocator                = *m_testEnvironment->allocator;
+    const DeviceInterface &vkd          = m_context.getDeviceInterface();
+    const VkDevice device               = m_context.getDevice();
+    Allocator &allocator                = m_context.getDefaultAllocator();
     const uint32_t width                = testParams.width;
     const uint32_t height               = testParams.height;
     const uint32_t instancesGroupCount  = testParams.instancesGroupCount;
@@ -2302,9 +2253,9 @@ public:
 const VkAccelerationStructureKHR *TestConfigurationGetRayTMin::initAccelerationStructures(TestParams &testParams,
                                                                                           VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vkd          = *m_testEnvironment->vkd;
-    const VkDevice device               = m_testEnvironment->device;
-    Allocator &allocator                = *m_testEnvironment->allocator;
+    const DeviceInterface &vkd          = m_context.getDeviceInterface();
+    const VkDevice device               = m_context.getDevice();
+    Allocator &allocator                = m_context.getDefaultAllocator();
     const uint32_t width                = testParams.width;
     const uint32_t height               = testParams.height;
     const uint32_t instancesGroupCount  = testParams.instancesGroupCount;
@@ -2443,9 +2394,9 @@ public:
 const VkAccelerationStructureKHR *TestConfigurationGetWorldRayOrigin::initAccelerationStructures(
     TestParams &testParams, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vkd          = *m_testEnvironment->vkd;
-    const VkDevice device               = m_testEnvironment->device;
-    Allocator &allocator                = *m_testEnvironment->allocator;
+    const DeviceInterface &vkd          = m_context.getDeviceInterface();
+    const VkDevice device               = m_context.getDevice();
+    Allocator &allocator                = m_context.getDefaultAllocator();
     const uint32_t width                = testParams.width;
     const uint32_t height               = testParams.height;
     const uint32_t instancesGroupCount  = testParams.instancesGroupCount;
@@ -2616,9 +2567,9 @@ public:
 const VkAccelerationStructureKHR *TestConfigurationGetWorldRayDirection::initAccelerationStructures(
     TestParams &testParams, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vkd          = *m_testEnvironment->vkd;
-    const VkDevice device               = m_testEnvironment->device;
-    Allocator &allocator                = *m_testEnvironment->allocator;
+    const DeviceInterface &vkd          = m_context.getDeviceInterface();
+    const VkDevice device               = m_context.getDevice();
+    Allocator &allocator                = m_context.getDefaultAllocator();
     const uint32_t width                = testParams.width;
     const uint32_t height               = testParams.height;
     const uint32_t instancesGroupCount  = testParams.instancesGroupCount;
@@ -2796,9 +2747,9 @@ public:
 const VkAccelerationStructureKHR *TestConfigurationInstanceId::initAccelerationStructures(TestParams &testParams,
                                                                                           VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vkd          = *m_testEnvironment->vkd;
-    const VkDevice device               = m_testEnvironment->device;
-    Allocator &allocator                = *m_testEnvironment->allocator;
+    const DeviceInterface &vkd          = m_context.getDeviceInterface();
+    const VkDevice device               = m_context.getDevice();
+    Allocator &allocator                = m_context.getDefaultAllocator();
     const uint32_t width                = testParams.width;
     const uint32_t height               = testParams.height;
     const uint32_t instancesGroupCount  = testParams.instancesGroupCount;
@@ -2972,9 +2923,9 @@ public:
 const VkAccelerationStructureKHR *TestConfigurationInstanceCustomIndex::initAccelerationStructures(
     TestParams &testParams, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vkd          = *m_testEnvironment->vkd;
-    const VkDevice device               = m_testEnvironment->device;
-    Allocator &allocator                = *m_testEnvironment->allocator;
+    const DeviceInterface &vkd          = m_context.getDeviceInterface();
+    const VkDevice device               = m_context.getDevice();
+    Allocator &allocator                = m_context.getDefaultAllocator();
     const uint32_t width                = testParams.width;
     const uint32_t height               = testParams.height;
     const uint32_t instancesGroupCount  = testParams.instancesGroupCount;
@@ -3148,9 +3099,9 @@ public:
 const VkAccelerationStructureKHR *TestConfigurationIntersectionT::initAccelerationStructures(TestParams &testParams,
                                                                                              VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vkd          = *m_testEnvironment->vkd;
-    const VkDevice device               = m_testEnvironment->device;
-    Allocator &allocator                = *m_testEnvironment->allocator;
+    const DeviceInterface &vkd          = m_context.getDeviceInterface();
+    const VkDevice device               = m_context.getDevice();
+    Allocator &allocator                = m_context.getDefaultAllocator();
     const uint32_t width                = testParams.width;
     const uint32_t height               = testParams.height;
     const bool triangles                = (testParams.geomType == GEOM_TYPE_TRIANGLES);
@@ -3329,9 +3280,9 @@ public:
 const VkAccelerationStructureKHR *TestConfigurationObjectRayOrigin::initAccelerationStructures(
     TestParams &testParams, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vkd          = *m_testEnvironment->vkd;
-    const VkDevice device               = m_testEnvironment->device;
-    Allocator &allocator                = *m_testEnvironment->allocator;
+    const DeviceInterface &vkd          = m_context.getDeviceInterface();
+    const VkDevice device               = m_context.getDevice();
+    Allocator &allocator                = m_context.getDefaultAllocator();
     const uint32_t width                = testParams.width;
     const uint32_t height               = testParams.height;
     const uint32_t depth                = testParams.depth;
@@ -3524,9 +3475,9 @@ public:
 const VkAccelerationStructureKHR *TestConfigurationObjectRayDirection::initAccelerationStructures(
     TestParams &testParams, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vkd          = *m_testEnvironment->vkd;
-    const VkDevice device               = m_testEnvironment->device;
-    Allocator &allocator                = *m_testEnvironment->allocator;
+    const DeviceInterface &vkd          = m_context.getDeviceInterface();
+    const VkDevice device               = m_context.getDevice();
+    Allocator &allocator                = m_context.getDefaultAllocator();
     const uint32_t width                = testParams.width;
     const uint32_t height               = testParams.height;
     const uint32_t depth                = testParams.depth;
@@ -3719,9 +3670,9 @@ public:
 const VkAccelerationStructureKHR *TestConfigurationObjectToWorld::initAccelerationStructures(TestParams &testParams,
                                                                                              VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vkd          = *m_testEnvironment->vkd;
-    const VkDevice device               = m_testEnvironment->device;
-    Allocator &allocator                = *m_testEnvironment->allocator;
+    const DeviceInterface &vkd          = m_context.getDeviceInterface();
+    const VkDevice device               = m_context.getDevice();
+    Allocator &allocator                = m_context.getDefaultAllocator();
     const uint32_t width                = testParams.width;
     const uint32_t height               = testParams.height;
     const bool triangles                = (testParams.geomType == GEOM_TYPE_TRIANGLES);
@@ -3951,9 +3902,9 @@ public:
 const VkAccelerationStructureKHR *TestConfigurationWorldToObject::initAccelerationStructures(TestParams &testParams,
                                                                                              VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vkd          = *m_testEnvironment->vkd;
-    const VkDevice device               = m_testEnvironment->device;
-    Allocator &allocator                = *m_testEnvironment->allocator;
+    const DeviceInterface &vkd          = m_context.getDeviceInterface();
+    const VkDevice device               = m_context.getDevice();
+    Allocator &allocator                = m_context.getDefaultAllocator();
     const uint32_t width                = testParams.width;
     const uint32_t height               = testParams.height;
     const bool triangles                = (testParams.geomType == GEOM_TYPE_TRIANGLES);
@@ -4172,7 +4123,7 @@ class TestConfigurationNullASStruct : public TestConfiguration
 {
 public:
     TestConfigurationNullASStruct(Context &context);
-    ~TestConfigurationNullASStruct();
+    ~TestConfigurationNullASStruct() = default;
 
     static const std::string getShaderBodyText(const TestParams &testParams);
     static void checkSupport(Context &context, const TestParams &testParams);
@@ -4181,7 +4132,6 @@ public:
                                                                          VkCommandBuffer cmdBuffer) override;
 
 protected:
-    void prepareTestEnvironment(Context &context);
     Move<VkAccelerationStructureKHR> m_emptyAccelerationStructure;
 
     Move<VkDevice> m_device;
@@ -4195,11 +4145,6 @@ TestConfigurationNullASStruct::TestConfigurationNullASStruct(Context &context)
     , m_device()
     , m_vkd()
     , m_allocator()
-{
-    prepareTestEnvironment(context);
-}
-
-TestConfigurationNullASStruct::~TestConfigurationNullASStruct()
 {
 }
 
@@ -4234,7 +4179,8 @@ void TestConfigurationNullASStruct::checkSupport(Context &context, const TestPar
     if (!robustness2Features.nullDescriptor)
         TCU_THROW(NotSupportedError, "VkPhysicalDeviceRobustness2FeaturesEXT::nullDescriptor not supported");
 }
-
+/*
+<<<<<<< HEAD
 void TestConfigurationNullASStruct::prepareTestEnvironment(Context &context)
 {
     // Check if the physical device supports VK_EXT_robustness2 and the nullDescriptor feature.
@@ -4349,6 +4295,10 @@ void TestConfigurationNullASStruct::prepareTestEnvironment(Context &context)
     });
 }
 
+=======
+>>>>>>> cb033b4df (Port selected tests to new capabilities system)
+*/
+
 const std::string TestConfigurationNullASStruct::getShaderBodyText(const TestParams &testParams)
 {
     DE_UNREF(testParams);
@@ -4393,9 +4343,9 @@ public:
 const VkAccelerationStructureKHR *TestConfigurationGetIntersectionCandidateAABBOpaque::initAccelerationStructures(
     TestParams &testParams, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vkd          = *m_testEnvironment->vkd;
-    const VkDevice device               = m_testEnvironment->device;
-    Allocator &allocator                = *m_testEnvironment->allocator;
+    const DeviceInterface &vkd          = m_context.getDeviceInterface();
+    const VkDevice device               = m_context.getDevice();
+    Allocator &allocator                = m_context.getDefaultAllocator();
     const uint32_t width                = testParams.width;
     const uint32_t height               = testParams.height;
     const uint32_t instancesGroupCount  = testParams.instancesGroupCount;
@@ -4520,9 +4470,9 @@ public:
 const VkAccelerationStructureKHR *TestConfigurationGetIntersectionFrontFace::initAccelerationStructures(
     TestParams &testParams, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vkd          = *m_testEnvironment->vkd;
-    const VkDevice device               = m_testEnvironment->device;
-    Allocator &allocator                = *m_testEnvironment->allocator;
+    const DeviceInterface &vkd          = m_context.getDeviceInterface();
+    const VkDevice device               = m_context.getDevice();
+    Allocator &allocator                = m_context.getDefaultAllocator();
     const uint32_t width                = testParams.width;
     const uint32_t height               = testParams.height;
     const uint32_t instancesGroupCount  = testParams.instancesGroupCount;
@@ -4696,9 +4646,9 @@ public:
 const VkAccelerationStructureKHR *TestConfigurationGetIntersectionGeometryIndex::initAccelerationStructures(
     TestParams &testParams, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vkd          = *m_testEnvironment->vkd;
-    const VkDevice device               = m_testEnvironment->device;
-    Allocator &allocator                = *m_testEnvironment->allocator;
+    const DeviceInterface &vkd          = m_context.getDeviceInterface();
+    const VkDevice device               = m_context.getDevice();
+    Allocator &allocator                = m_context.getDefaultAllocator();
     const uint32_t width                = testParams.width;
     const uint32_t height               = testParams.height;
     const uint32_t instancesGroupCount  = testParams.instancesGroupCount;
@@ -4896,9 +4846,9 @@ public:
 const VkAccelerationStructureKHR *TestConfigurationGetIntersectionBarycentrics::initAccelerationStructures(
     TestParams &testParams, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vkd          = *m_testEnvironment->vkd;
-    const VkDevice device               = m_testEnvironment->device;
-    Allocator &allocator                = *m_testEnvironment->allocator;
+    const DeviceInterface &vkd          = m_context.getDeviceInterface();
+    const VkDevice device               = m_context.getDevice();
+    Allocator &allocator                = m_context.getDefaultAllocator();
     const uint32_t width                = testParams.width;
     const uint32_t height               = testParams.height;
     const uint32_t instancesGroupCount  = testParams.instancesGroupCount;
@@ -5116,9 +5066,9 @@ public:
 const VkAccelerationStructureKHR *TestConfigurationGetIntersectionInstanceShaderBindingTableRecordOffset::
     initAccelerationStructures(TestParams &testParams, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vkd          = *m_testEnvironment->vkd;
-    const VkDevice device               = m_testEnvironment->device;
-    Allocator &allocator                = *m_testEnvironment->allocator;
+    const DeviceInterface &vkd          = m_context.getDeviceInterface();
+    const VkDevice device               = m_context.getDevice();
+    Allocator &allocator                = m_context.getDefaultAllocator();
     const uint32_t width                = testParams.width;
     const uint32_t height               = testParams.height;
     const uint32_t instancesGroupCount  = testParams.instancesGroupCount;
@@ -5319,9 +5269,9 @@ const uint32_t TestConfigurationRayQueryTerminate::N_RAY_QUERIES_TO_USE = 8;
 const VkAccelerationStructureKHR *TestConfigurationRayQueryTerminate::initAccelerationStructures(
     TestParams &testParams, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vkd          = *m_testEnvironment->vkd;
-    const VkDevice device               = m_testEnvironment->device;
-    Allocator &allocator                = *m_testEnvironment->allocator;
+    const DeviceInterface &vkd          = m_context.getDeviceInterface();
+    const VkDevice device               = m_context.getDevice();
+    Allocator &allocator                = m_context.getDefaultAllocator();
     const uint32_t width                = testParams.width;
     const uint32_t height               = testParams.height;
     const uint32_t instancesGroupCount  = testParams.instancesGroupCount;
@@ -5509,9 +5459,9 @@ public:
 const VkAccelerationStructureKHR *TestConfigurationGetIntersectionType::initAccelerationStructures(
     TestParams &testParams, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vkd          = *m_testEnvironment->vkd;
-    const VkDevice device               = m_testEnvironment->device;
-    Allocator &allocator                = *m_testEnvironment->allocator;
+    const DeviceInterface &vkd          = m_context.getDeviceInterface();
+    const VkDevice device               = m_context.getDevice();
+    Allocator &allocator                = m_context.getDefaultAllocator();
     const uint32_t width                = testParams.width;
     const uint32_t height               = testParams.height;
     const uint32_t instancesGroupCount  = testParams.instancesGroupCount;
@@ -5707,9 +5657,9 @@ public:
 const VkAccelerationStructureKHR *TestConfigurationUsingWrapperFunction::initAccelerationStructures(
     TestParams &testParams, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vkd         = *m_testEnvironment->vkd;
-    const VkDevice device              = m_testEnvironment->device;
-    Allocator &allocator               = *m_testEnvironment->allocator;
+    const DeviceInterface &vkd         = m_context.getDeviceInterface();
+    const VkDevice device              = m_context.getDevice();
+    Allocator &allocator               = m_context.getDefaultAllocator();
     const uint32_t width               = testParams.width;
     const uint32_t height              = testParams.height;
     const uint32_t instancesGroupCount = testParams.instancesGroupCount;
@@ -6105,12 +6055,11 @@ RayQueryBuiltinTestInstance::~RayQueryBuiltinTestInstance(void)
 
 tcu::TestStatus RayQueryBuiltinTestInstance::iterate(void)
 {
-    const TestEnvironment &testEnv  = m_testConfig->getTestEnvironment();
-    const DeviceInterface &vkd      = *testEnv.vkd;
-    const VkDevice device           = testEnv.device;
-    const VkQueue queue             = testEnv.queue;
-    Allocator &allocator            = *testEnv.allocator;
-    const uint32_t queueFamilyIndex = testEnv.queueFamilyIndex;
+    const DeviceInterface &vkd      = m_context.getDeviceInterface();
+    const VkDevice device           = m_context.getDevice();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    Allocator &allocator            = m_context.getDefaultAllocator();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
 
     const uint32_t width                    = m_data.width;
     const uint32_t height                   = m_data.height;
@@ -6141,7 +6090,7 @@ tcu::TestStatus RayQueryBuiltinTestInstance::iterate(void)
         allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
     const VkAccelerationStructureKHR *topAccelerationStructurePtr = nullptr;
 
-    m_pipelineConfig->initConfiguration(testEnv, m_data);
+    m_pipelineConfig->initConfiguration(m_context, m_data);
 
     beginCommandBuffer(vkd, *cmdBuffer, 0u);
     {
@@ -6167,7 +6116,8 @@ tcu::TestStatus RayQueryBuiltinTestInstance::iterate(void)
 
         topAccelerationStructurePtr = m_testConfig->initAccelerationStructures(m_data, *cmdBuffer);
 
-        m_pipelineConfig->fillCommandBuffer(testEnv, m_data, *cmdBuffer, topAccelerationStructurePtr, resultImageInfo);
+        m_pipelineConfig->fillCommandBuffer(m_context, m_data, *cmdBuffer, topAccelerationStructurePtr,
+                                            resultImageInfo);
 
         cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                  &postTestMemoryBarrier);
@@ -6197,9 +6147,11 @@ public:
     RayQueryBuiltinTestCase(tcu::TestContext &context, const char *name, const TestParams data);
     ~RayQueryBuiltinTestCase(void);
 
-    virtual void checkSupport(Context &context) const;
-    virtual void initPrograms(SourceCollections &programCollection) const;
-    virtual TestInstance *createInstance(Context &context) const;
+    void checkSupport(Context &context) const;
+    std::string getRequiredCapabilitiesId() const;
+    void initDeviceCapabilities(DevCaps &caps);
+    void initPrograms(SourceCollections &programCollection) const;
+    TestInstance *createInstance(Context &context) const;
 
 private:
     TestParams m_data;
@@ -6234,6 +6186,53 @@ void RayQueryBuiltinTestCase::checkSupport(Context &context) const
 
     if (m_data.testConfigCheckSupport != nullptr)
         m_data.testConfigCheckSupport(context, m_data);
+}
+
+std::string RayQueryBuiltinTestCase::getRequiredCapabilitiesId() const
+{
+    std::string name = typeid(RayQueryBuiltinTestCase).name();
+
+    if (m_data.testType == TEST_TYPE_NULL_ACCELERATION_STRUCTURE)
+        return (name + "_null_acceleration");
+
+    return DevCaps::DefDevId;
+}
+
+void RayQueryBuiltinTestCase::initDeviceCapabilities(DevCaps &caps)
+{
+    if (m_data.testType == TEST_TYPE_NULL_ACCELERATION_STRUCTURE)
+    {
+        caps.addExtension("VK_EXT_robustness2");
+        caps.addExtension("VK_KHR_deferred_host_operations");
+
+        caps.addFeature<VkPhysicalDeviceFeatures>();
+        caps.addFeature(&VkPhysicalDeviceRobustness2FeaturesEXT::nullDescriptor);
+
+        if (caps.addExtension("VK_KHR_buffer_device_address"))
+        {
+            caps.addFeature<VkPhysicalDeviceBufferDeviceAddressFeaturesKHR>();
+        }
+
+        if (caps.addExtension("VK_KHR_acceleration_structure"))
+        {
+            caps.addFeature<VkPhysicalDeviceAccelerationStructureFeaturesKHR>();
+
+            // Not promoted yet in Vulkan 1.1.
+            caps.addExtension("VK_EXT_descriptor_indexing");
+            caps.addExtension("VK_KHR_spirv_1_4");
+            caps.addExtension("VK_KHR_shader_float_controls");
+        }
+
+        if (caps.addExtension("VK_KHR_ray_query"))
+        {
+            caps.addFeature<VkPhysicalDeviceRayQueryFeaturesKHR>();
+        }
+
+        if (caps.addExtension("VK_KHR_ray_tracing_pipeline"))
+        {
+            caps.addFeature<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>();
+        }
+    }
 }
 
 TestInstance *RayQueryBuiltinTestCase::createInstance(Context &context) const
