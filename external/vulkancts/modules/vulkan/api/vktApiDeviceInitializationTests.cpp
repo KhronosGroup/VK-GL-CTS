@@ -1540,7 +1540,7 @@ void checkFeatures(const PlatformInterface &vkp, const VkInstance &instance, con
         }
         else if (structureType == vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT)
         {
-            DE_ASSERT((std::is_same<VkPhysicalDeviceMultiviewFeaturesKHR, StructType>::value));
+            DE_ASSERT((std::is_same<VkPhysicalDeviceMeshShaderFeaturesEXT, StructType>::value));
             // If multiviewMeshShader is enabled then multiview must also be enabled
             if (features[featureNdx].offset == offsetof(VkPhysicalDeviceMeshShaderFeaturesEXT, multiviewMeshShader))
             {
