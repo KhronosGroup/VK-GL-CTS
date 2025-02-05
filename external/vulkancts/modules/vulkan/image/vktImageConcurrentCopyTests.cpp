@@ -232,12 +232,12 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
                     if (pixelSize == 1)
                         testData[p] = uint8_t(v % 256);
                     else if (pixelSize == 2)
-                        ((uint16_t *)testData.data())[i] = uint16_t(v);
+                        ((uint16_t *)testData.data())[p] = uint16_t(v);
                     else
                     {
                         for (uint32_t l = 0; l < pixelSize / 4; ++l)
                         {
-                            ((uint32_t *)testData.data())[i * pixelSize / 4 + l] = v + l;
+                            ((uint32_t *)testData.data())[p * pixelSize / 4 + l] = v + l;
                         }
                     }
                 }
