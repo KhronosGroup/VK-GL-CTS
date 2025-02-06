@@ -3056,6 +3056,8 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
         uint32_t strides[4]; // in elements
         uint32_t loadStrides[4];
         uint32_t totalElements[4];
+        size_t sharedMemoryUsage[4];
+        size_t totalSharedMemoryUsage = 0;
 
         for (uint32_t i = 0; i < 5; ++i)
         {
@@ -3072,6 +3074,18 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                 }
                 loadStrides[i]   = strides[i];
                 totalElements[i] = strides[i] * (m_data.colMajor ? dims[i].cols : dims[i].rows) * m_data.workgroupsY;
+                sharedMemoryUsage[i] = dims[i].cols * dims[i].rows * m_data.subgroupsPerWorkgroupX *
+                                       m_data.subgroupsPerWorkgroupY * elementSize[i] *
+                                       ((i < 2) ? m_data.inputComponentCount : m_data.outputComponentCount);
+
+                // Check there is enough shared memory supported
+                if ((m_data.useType != UT_NV) &&
+                    ((m_data.storageClass == SC_WORKGROUP) || (m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)))
+                {
+                    totalSharedMemoryUsage += sharedMemoryUsage[i];
+                    if (totalSharedMemoryUsage > vkproperties.limits.maxComputeSharedMemorySize)
+                        throw tcu::NotSupportedError("Not enough shared memory supported.");
+                }
 
                 if (m_data.testType == TT_MATRIXMULADD_DEQUANT && i < 2)
                 {

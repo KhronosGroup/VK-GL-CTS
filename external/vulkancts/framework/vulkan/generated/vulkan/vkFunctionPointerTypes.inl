@@ -425,6 +425,8 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateRayTracingPipelinesKHRFunc)			
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCooperativeMatrixPropertiesNVFunc)					(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdTraceRaysIndirectKHRFunc)											(VkCommandBuffer commandBuffer, const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable, VkDeviceAddress indirectDeviceAddress);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdTraceRaysIndirect2KHRFunc)											(VkCommandBuffer commandBuffer, VkDeviceAddress indirectDeviceAddress);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetClusterAccelerationStructureBuildSizesNVFunc)						(VkDevice device, const VkClusterAccelerationStructureInputInfoNV* pInfo, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBuildClusterAccelerationStructureIndirectNVFunc)					(VkCommandBuffer commandBuffer, const VkClusterAccelerationStructureCommandsInfoNV* pCommandInfos);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetDeviceAccelerationStructureCompatibilityKHRFunc)					(VkDevice device, const VkAccelerationStructureVersionInfoKHR* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility);
 typedef VKAPI_ATTR VkDeviceSize			(VKAPI_CALL* GetRayTracingShaderGroupStackSizeKHRFunc)								(VkDevice device, VkPipeline pipeline, uint32_t group, VkShaderGroupShaderKHR groupShader);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetRayTracingPipelineStackSizeKHRFunc)								(VkCommandBuffer commandBuffer, uint32_t pipelineStackSize);
@@ -610,6 +612,8 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndVideoCodingKHRFunc)												(V
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEncodeVideoKHRFunc)													(VkCommandBuffer commandBuffer, const VkVideoEncodeInfoKHR* pEncodeInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDecompressMemoryNVFunc)												(VkCommandBuffer commandBuffer, uint32_t decompressRegionCount, const VkDecompressMemoryRegionNV* pDecompressMemoryRegions);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDecompressMemoryIndirectCountNVFunc)								(VkCommandBuffer commandBuffer, VkDeviceAddress indirectCommandsAddress, VkDeviceAddress indirectCommandsCountAddress, uint32_t stride);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetPartitionedAccelerationStructuresBuildSizesNVFunc)					(VkDevice device, const VkPartitionedAccelerationStructureInstancesInputNV* pInfo, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBuildPartitionedAccelerationStructuresNVFunc)						(VkCommandBuffer commandBuffer, const VkBuildPartitionedAccelerationStructureInfoNV* pBuildInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateCuModuleNVXFunc)													(VkDevice device, const VkCuModuleCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCuModuleNVX* pModule);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateCuFunctionNVXFunc)												(VkDevice device, const VkCuFunctionCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCuFunctionNVX* pFunction);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyCuModuleNVXFunc)												(VkDevice device, VkCuModuleNVX module, const VkAllocationCallbacks* pAllocator);
@@ -720,3 +724,6 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDepthClampRangeEXTFunc)										
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNVFunc)	(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixFlexibleDimensionsPropertiesNV* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryMetalHandleEXTFunc)											(VkDevice device, const VkMemoryGetMetalHandleInfoEXT* pGetMetalHandleInfo, void** pHandle);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryMetalHandlePropertiesEXTFunc)									(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHandle, VkMemoryMetalHandlePropertiesEXT* pMemoryMetalHandleProperties);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCooperativeVectorPropertiesNVFunc)					(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeVectorPropertiesNV* pProperties);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ConvertCooperativeVectorMatrixNVFunc)									(VkDevice device, const VkConvertCooperativeVectorMatrixInfoNV* pInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdConvertCooperativeVectorMatrixNVFunc)								(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkConvertCooperativeVectorMatrixInfoNV* pInfos);

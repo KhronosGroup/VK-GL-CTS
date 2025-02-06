@@ -484,35 +484,35 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
 
     vk::VkPipelineRasterizationStateCreateInfo *rasterizationStateCreateInfoDefault = nullptr;
 
+    vk::VkPipelineRasterizationConservativeStateCreateInfoEXT rasterizationConservativeStateCreateInfo = {
+        vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT, //  VkStructureType sType;
+        nullptr,                                                                         //  const void* pNext;
+        (vk::VkPipelineRasterizationConservativeStateCreateFlagsEXT)0, //  VkPipelineRasterizationConservativeStateCreateFlagsEXT flags;
+        vk::VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT, //  VkConservativeRasterizationModeEXT conservativeRasterizationMode;
+        0.0f                                                 //  float extraPrimitiveOverestimationSize;
+    };
+
+    vk::VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
+        vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                            sType
+        //nullptr,                             // const void*                                pNext
+        &rasterizationConservativeStateCreateInfo, // const void*                                pNext
+        0u,                                        // VkPipelineRasterizationStateCreateFlags    flags
+        VK_FALSE,                                  // VkBool32                                   depthClampEnable
+        VK_FALSE,                                  // VkBool32                                   rasterizerDiscardEnable
+        vk::VK_POLYGON_MODE_FILL,                  // VkPolygonMode                              polygonMode
+        vk::VK_CULL_MODE_NONE,                     // VkCullModeFlags                            cullMode
+        vk::VK_FRONT_FACE_COUNTER_CLOCKWISE,       // VkFrontFace                                frontFace
+        VK_FALSE,                                  // VkBool32                                   depthBiasEnable
+        0.0f,                                      // float                                      depthBiasConstantFactor
+        0.0f,                                      // float                                      depthBiasClamp
+        0.0f,                                      // float                                      depthBiasSlopeFactor
+        1.0f                                       // float                                      lineWidth
+    };
+
     if (extensionEnabled(deviceExtensions, "VK_EXT_conservative_rasterization") &&
         eds3Features.extendedDynamicState3ConservativeRasterizationMode)
     {
-        vk::VkPipelineRasterizationConservativeStateCreateInfoEXT rasterizationConservativeStateCreateInfo = {
-            vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT, //  VkStructureType sType;
-            nullptr,                                                                         //  const void* pNext;
-            (vk::VkPipelineRasterizationConservativeStateCreateFlagsEXT)0, //  VkPipelineRasterizationConservativeStateCreateFlagsEXT flags;
-            vk::VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT, //  VkConservativeRasterizationModeEXT conservativeRasterizationMode;
-            0.0f                                                 //  float extraPrimitiveOverestimationSize;
-        };
-
-        vk::VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
-            vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                            sType
-            //nullptr,                             // const void*                                pNext
-            &rasterizationConservativeStateCreateInfo, // const void*                                pNext
-            0u,                                        // VkPipelineRasterizationStateCreateFlags    flags
-            VK_FALSE,                                  // VkBool32                                   depthClampEnable
-            VK_FALSE,                            // VkBool32                                   rasterizerDiscardEnable
-            vk::VK_POLYGON_MODE_FILL,            // VkPolygonMode                              polygonMode
-            vk::VK_CULL_MODE_NONE,               // VkCullModeFlags                            cullMode
-            vk::VK_FRONT_FACE_COUNTER_CLOCKWISE, // VkFrontFace                                frontFace
-            VK_FALSE,                            // VkBool32                                   depthBiasEnable
-            0.0f,                                // float                                      depthBiasConstantFactor
-            0.0f,                                // float                                      depthBiasClamp
-            0.0f,                                // float                                      depthBiasSlopeFactor
-            1.0f                                 // float                                      lineWidth
-        };
-
-        // VUID-VkGraphicsPipelineCreateInfo-pDynamicState-09639(
+        // VUID-VkGraphicsPipelineCreateInfo-pDynamicState-09639
         rasterizationStateCreateInfoDefault = &rasterizationStateCreateInfo;
     }
 

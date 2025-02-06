@@ -404,6 +404,8 @@ VideoBaseDecoder::VideoBaseDecoder(Parameters &&params)
     , m_forceDisableFilmGrain(params.forceDisableFilmGrain)
     , m_queryResultWithStatus(params.queryDecodeStatus)
     , m_useInlineQueries(params.useInlineQueries)
+    , m_useInlineSessionParams(params.useInlineSessionParams)
+    , m_resetCodecNoSessionParams(params.resetCodecNoSessionParams)
     , m_resourcesWithoutProfiles(params.resourcesWithoutProfiles)
     , m_outOfOrderDecoding(params.outOfOrderDecoding)
     , m_alwaysRecreateDPB(params.alwaysRecreateDPB)
@@ -546,7 +548,7 @@ void VideoBaseDecoder::StartVideoSequence(const VkParserDetectedVideoFormat *pVi
         VK_CHECK(VulkanVideoSession::Create(*m_deviceContext, m_deviceContext->decodeQueueFamilyIdx(), &videoProfile,
                                             m_outImageFormat, imageExtent, m_dpbImageFormat, maxDpbSlotCount,
                                             std::min<uint32_t>(maxDpbSlotCount, m_videoCaps.maxActiveReferencePictures),
-                                            m_useInlineQueries, m_videoSession));
+                                            m_useInlineQueries, m_useInlineSessionParams, m_videoSession));
         // after creating a new video session, we need codec reset.
         m_resetDecoder = true;
     }
@@ -1753,6 +1755,39 @@ void VideoBaseDecoder::WaitForFrameFences(de::MovePtr<CachedDecodeParameters> &c
     TCU_CHECK_MSG(result == VK_SUCCESS || result == VK_NOT_READY, "Bad fence status");
 }
 
+void VideoBaseDecoder::AddInlineSessionParameters(de::MovePtr<CachedDecodeParameters> &cachedParameters,
+                                                  union InlineSessionParameters &inlineSessionParams,
+                                                  const void *currentNext)
+{
+    if ((m_profile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR))
+    {
+        inlineSessionParams.h264.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_INLINE_SESSION_PARAMETERS_INFO_KHR;
+        inlineSessionParams.h264.pNext = currentNext;
+        inlineSessionParams.h264.pStdSPS =
+            cachedParameters->currentPictureParameterObject->currentStdPictureParameters.h264Sps;
+        inlineSessionParams.h264.pStdPPS =
+            cachedParameters->currentPictureParameterObject->currentStdPictureParameters.h264Pps;
+    }
+    else if ((m_profile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR))
+    {
+        inlineSessionParams.h265.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_INLINE_SESSION_PARAMETERS_INFO_KHR;
+        inlineSessionParams.h265.pNext = currentNext;
+        inlineSessionParams.h265.pStdVPS =
+            cachedParameters->currentPictureParameterObject->currentStdPictureParameters.h265Vps;
+        inlineSessionParams.h265.pStdSPS =
+            cachedParameters->currentPictureParameterObject->currentStdPictureParameters.h265Sps;
+        inlineSessionParams.h265.pStdPPS =
+            cachedParameters->currentPictureParameterObject->currentStdPictureParameters.h265Pps;
+    }
+    else if ((m_profile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR))
+    {
+        inlineSessionParams.av1.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_INLINE_SESSION_PARAMETERS_INFO_KHR;
+        inlineSessionParams.av1.pNext = cachedParameters->pictureParams.decodeFrameInfo.pNext;
+        inlineSessionParams.av1.pStdSequenceHeader =
+            cachedParameters->currentPictureParameterObject->currentStdPictureParameters.av1SequenceHeader;
+    }
+}
+
 void VideoBaseDecoder::RecordCommandBuffer(de::MovePtr<CachedDecodeParameters> &cachedParameters)
 {
     auto &vk = m_deviceContext->getDeviceDriver();
@@ -1776,13 +1811,35 @@ void VideoBaseDecoder::RecordCommandBuffer(de::MovePtr<CachedDecodeParameters> &
                              cachedParameters->frameSynchronizationInfo.numQueries);
     }
 
+    auto videoSessionParameters = cachedParameters->decodeBeginInfo.videoSessionParameters;
+    DE_UNREF(videoSessionParameters);
+    if (m_useInlineSessionParams || m_resetCodecNoSessionParams)
+        cachedParameters->decodeBeginInfo.videoSessionParameters = VK_NULL_HANDLE;
+
     vk.cmdBeginVideoCodingKHR(commandBuffer, &cachedParameters->decodeBeginInfo);
 
-    if (cachedParameters->performCodecReset)
+    if (cachedParameters->performCodecReset || m_resetCodecNoSessionParams)
     {
         VkVideoCodingControlInfoKHR codingControlInfo = {VK_STRUCTURE_TYPE_VIDEO_CODING_CONTROL_INFO_KHR, nullptr,
                                                          VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR};
         vk.cmdControlVideoCodingKHR(commandBuffer, &codingControlInfo);
+    }
+
+    // If we just want to test codec reset without session parameters
+    // specified (relaxed session params requirement of VK_KHR_video_maintenance2),
+    // we need to restart video coding with valid session params for
+    // the decode to continue, unless we are also testing inline
+    // session params.
+    if (m_resetCodecNoSessionParams && !m_useInlineSessionParams)
+    {
+        // End video coding first
+        VkVideoEndCodingInfoKHR decodeEndInfo{};
+        decodeEndInfo.sType = VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR;
+        vk.cmdEndVideoCodingKHR(commandBuffer, &decodeEndInfo);
+
+        // Restart video coding with a valid session params
+        cachedParameters->decodeBeginInfo.videoSessionParameters = videoSessionParameters;
+        vk.cmdBeginVideoCodingKHR(commandBuffer, &cachedParameters->decodeBeginInfo);
     }
 
     const VkDependencyInfoKHR dependencyInfo = {
@@ -1812,6 +1869,17 @@ void VideoBaseDecoder::RecordCommandBuffer(de::MovePtr<CachedDecodeParameters> &
     {
         vk.cmdBeginQuery(commandBuffer, cachedParameters->frameSynchronizationInfo.queryPool,
                          cachedParameters->frameSynchronizationInfo.startQueryId, VkQueryControlFlags());
+    }
+
+    union InlineSessionParameters inlineSessionParams
+    {
+    };
+
+    if (m_useInlineSessionParams)
+    {
+        AddInlineSessionParameters(cachedParameters, inlineSessionParams,
+                                   cachedParameters->pictureParams.decodeFrameInfo.pNext);
+        cachedParameters->pictureParams.decodeFrameInfo.pNext = &inlineSessionParams;
     }
 
     vk.cmdDecodeVideoKHR(commandBuffer, &cachedParameters->pictureParams.decodeFrameInfo);
@@ -2619,7 +2687,8 @@ VkResult VulkanVideoSession::Create(DeviceContext &vkDevCtx, uint32_t videoQueue
                                     VkVideoCoreProfile *pVideoProfile, VkFormat pictureFormat,
                                     const VkExtent2D &maxCodedExtent, VkFormat referencePicturesFormat,
                                     uint32_t maxDpbSlots, uint32_t maxActiveReferencePictures,
-                                    bool useInlineVideoQueries, VkSharedBaseObj<VulkanVideoSession> &videoSession)
+                                    bool useInlineVideoQueries, bool useInlineParameters,
+                                    VkSharedBaseObj<VulkanVideoSession> &videoSession)
 {
     auto &vk    = vkDevCtx.getDeviceDriver();
     auto device = vkDevCtx.device;
@@ -2637,15 +2706,17 @@ VkResult VulkanVideoSession::Create(DeviceContext &vkDevCtx, uint32_t videoQueue
     static const VkExtensionProperties h265EncodeStdExtensionVersion = {
         VK_STD_VULKAN_VIDEO_CODEC_H265_ENCODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_H265_ENCODE_SPEC_VERSION};
 
+    const auto flags = (useInlineVideoQueries ? VK_VIDEO_SESSION_CREATE_INLINE_QUERIES_BIT_KHR : 0) |
+                       (useInlineParameters ? VK_VIDEO_SESSION_CREATE_INLINE_SESSION_PARAMETERS_BIT_KHR : 0);
     VkVideoSessionCreateInfoKHR &createInfo = pNewVideoSession->m_createInfo;
-    createInfo.flags                      = useInlineVideoQueries ? VK_VIDEO_SESSION_CREATE_INLINE_QUERIES_BIT_KHR : 0;
-    createInfo.pVideoProfile              = pVideoProfile->GetProfile();
-    createInfo.queueFamilyIndex           = videoQueueFamily;
-    createInfo.pictureFormat              = pictureFormat;
-    createInfo.maxCodedExtent             = maxCodedExtent;
-    createInfo.maxDpbSlots                = maxDpbSlots;
-    createInfo.maxActiveReferencePictures = maxActiveReferencePictures;
-    createInfo.referencePictureFormat     = referencePicturesFormat;
+    createInfo.flags                        = flags;
+    createInfo.pVideoProfile                = pVideoProfile->GetProfile();
+    createInfo.queueFamilyIndex             = videoQueueFamily;
+    createInfo.pictureFormat                = pictureFormat;
+    createInfo.maxCodedExtent               = maxCodedExtent;
+    createInfo.maxDpbSlots                  = maxDpbSlots;
+    createInfo.maxActiveReferencePictures   = maxActiveReferencePictures;
+    createInfo.referencePictureFormat       = referencePicturesFormat;
 
     switch ((int32_t)pVideoProfile->GetCodecType())
     {
@@ -2945,6 +3016,9 @@ VkResult VkParserVideoPictureParameters::CreateParametersObject(
         h264SessionParametersCreateInfo.pParametersAddInfo = &h264SessionParametersAddInfo;
 
         currentId = PopulateH264UpdateFields(pStdVideoPictureParametersSet, h264SessionParametersAddInfo);
+
+        currentStdPictureParameters.h264Sps = h264SessionParametersAddInfo.pStdSPSs;
+        currentStdPictureParameters.h264Pps = h264SessionParametersAddInfo.pStdPPSs;
     }
     break;
     case StdVideoPictureParametersSet::TYPE_H265_VPS:
@@ -2958,6 +3032,10 @@ VkResult VkParserVideoPictureParameters::CreateParametersObject(
         h265SessionParametersCreateInfo.pParametersAddInfo = &h265SessionParametersAddInfo;
 
         currentId = PopulateH265UpdateFields(pStdVideoPictureParametersSet, h265SessionParametersAddInfo);
+
+        currentStdPictureParameters.h265Vps = h265SessionParametersAddInfo.pStdVPSs;
+        currentStdPictureParameters.h265Sps = h265SessionParametersAddInfo.pStdSPSs;
+        currentStdPictureParameters.h265Pps = h265SessionParametersAddInfo.pStdPPSs;
     }
     break;
     case StdVideoPictureParametersSet::TYPE_AV1_SPS:
@@ -2977,6 +3055,8 @@ VkResult VkParserVideoPictureParameters::CreateParametersObject(
             bool isAv1Sps = false;
             currentId     = pStdVideoPictureParametersSet->GetAv1SpsId(isAv1Sps);
             DE_ASSERT(isAv1Sps);
+
+            currentStdPictureParameters.av1SequenceHeader = av1SessionParametersCreateInfo.pStdSequenceHeader;
         }
         createInfo.videoSessionParametersTemplate =
             VK_NULL_HANDLE; // TODO: The parameter set code is legacy from the sample app, it could be radically simplified.
@@ -3051,6 +3131,17 @@ VkResult VkParserVideoPictureParameters::UpdateParametersObject(
     {
         updateInfo.pNext = &h264SessionParametersAddInfo;
         currentId        = PopulateH264UpdateFields(pStdVideoPictureParametersSet, h264SessionParametersAddInfo);
+
+        if (h264SessionParametersAddInfo.stdSPSCount == 1)
+        {
+            DE_ASSERT(h264SessionParametersAddInfo.stdSPSCount == 1);
+            currentStdPictureParameters.h264Sps = h264SessionParametersAddInfo.pStdSPSs;
+        }
+        if (h264SessionParametersAddInfo.stdPPSCount == 1)
+        {
+            DE_ASSERT(h264SessionParametersAddInfo.stdPPSCount == 1);
+            currentStdPictureParameters.h264Pps = h264SessionParametersAddInfo.pStdPPSs;
+        }
     }
     break;
     case StdVideoPictureParametersSet::TYPE_H265_VPS:
@@ -3059,6 +3150,22 @@ VkResult VkParserVideoPictureParameters::UpdateParametersObject(
     {
         updateInfo.pNext = &h265SessionParametersAddInfo;
         currentId        = PopulateH265UpdateFields(pStdVideoPictureParametersSet, h265SessionParametersAddInfo);
+
+        if (h265SessionParametersAddInfo.stdVPSCount > 0)
+        {
+            DE_ASSERT(h265SessionParametersAddInfo.stdVPSCount == 1);
+            currentStdPictureParameters.h265Vps = h265SessionParametersAddInfo.pStdVPSs;
+        }
+        if (h265SessionParametersAddInfo.stdSPSCount > 0)
+        {
+            DE_ASSERT(h265SessionParametersAddInfo.stdSPSCount == 1);
+            currentStdPictureParameters.h265Sps = h265SessionParametersAddInfo.pStdSPSs;
+        }
+        if (h265SessionParametersAddInfo.stdPPSCount > 0)
+        {
+            DE_ASSERT(h265SessionParametersAddInfo.stdPPSCount == 1);
+            currentStdPictureParameters.h265Pps = h265SessionParametersAddInfo.pStdPPSs;
+        }
     }
     break;
     case StdVideoPictureParametersSet::TYPE_AV1_SPS:

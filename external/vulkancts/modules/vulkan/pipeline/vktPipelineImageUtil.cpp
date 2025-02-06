@@ -436,7 +436,7 @@ de::MovePtr<tcu::TextureLevel> readStencilAttachment(const vk::DeviceInterface &
 void uploadTestTextureInternal(const DeviceInterface &vk, VkDevice device, VkQueue queue, uint32_t queueFamilyIndex,
                                Allocator &allocator, const TestTexture &srcTexture,
                                const TestTexture *srcStencilTexture, tcu::TextureFormat format, VkImage destImage,
-                               VkImageLayout destImageLayout)
+                               VkImageLayout destImageLayout, VkPipelineStageFlags destStageFlags)
 {
     Move<VkBuffer> buffer;
     de::MovePtr<Allocation> bufferAlloc;
@@ -500,7 +500,7 @@ void uploadTestTextureInternal(const DeviceInterface &vk, VkDevice device, VkQue
     }
 
     copyBufferToImage(vk, device, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, nullptr, imageAspectFlags,
-                      srcTexture.getNumLevels(), srcTexture.getArraySize(), destImage, destImageLayout);
+                      srcTexture.getNumLevels(), srcTexture.getArraySize(), destImage, destImageLayout, destStageFlags);
 }
 
 bool checkSparseImageFormatSupport(const VkPhysicalDevice physicalDevice, const InstanceInterface &instance,
@@ -610,7 +610,7 @@ void uploadTestTextureInternalSparse(const DeviceInterface &vk, VkDevice device,
 
 void uploadTestTexture(const DeviceInterface &vk, VkDevice device, VkQueue queue, uint32_t queueFamilyIndex,
                        Allocator &allocator, const TestTexture &srcTexture, VkImage destImage,
-                       VkImageLayout destImageLayout)
+                       VkImageLayout destImageLayout, VkPipelineStageFlags destStageFlags)
 {
     if (tcu::isCombinedDepthStencilType(srcTexture.getTextureFormat().type))
     {
@@ -643,11 +643,12 @@ void uploadTestTexture(const DeviceInterface &vk, VkDevice device, VkQueue queue
                 tcu::getEffectiveDepthStencilTextureFormat(srcTexture.getTextureFormat(), tcu::Sampler::MODE_STENCIL));
 
         uploadTestTextureInternal(vk, device, queue, queueFamilyIndex, allocator, *srcDepthTexture,
-                                  srcStencilTexture.get(), srcTexture.getTextureFormat(), destImage, destImageLayout);
+                                  srcStencilTexture.get(), srcTexture.getTextureFormat(), destImage, destImageLayout,
+                                  destStageFlags);
     }
     else
         uploadTestTextureInternal(vk, device, queue, queueFamilyIndex, allocator, srcTexture, nullptr,
-                                  srcTexture.getTextureFormat(), destImage, destImageLayout);
+                                  srcTexture.getTextureFormat(), destImage, destImageLayout, destStageFlags);
 }
 
 void uploadTestTextureSparse(const DeviceInterface &vk, VkDevice device, const VkPhysicalDevice physicalDevice,

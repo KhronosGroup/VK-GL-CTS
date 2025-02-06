@@ -251,30 +251,28 @@ class GitRepo (Source):
         self.patch = patch
 
     def checkout(self, url, fullDstPath, force):
-        if not os.path.exists(os.path.join(fullDstPath, '.git')):
-            run(["git", "clone", "--no-checkout", url, fullDstPath])
-
-        pushWorkingDir(fullDstPath)
         print("Directory: " + fullDstPath)
+        for tag in self.removeTags:
+            proc = subprocess.Popen(['git', 'tag', '-l', tag], stdout=subprocess.PIPE)
+            (stdout, stderr) = proc.communicate()
+            if len(stdout) > 0:
+                run(["git", "tag", "-d",tag])
+
+        force_arg = ['--force'] if force else []
         try:
-            for tag in self.removeTags:
-                proc = subprocess.Popen(['git', 'tag', '-l', tag], stdout=subprocess.PIPE)
-                (stdout, stderr) = proc.communicate()
-                if len(stdout) > 0:
-                    run(["git", "tag", "-d",tag])
-            force_arg = ['--force'] if force else []
+            run(["git", "checkout"] + force_arg + [self.revision])
+        except KeyboardInterrupt:
+            # Propagate the exception to stop the process if possible.
+            raise
+        except:
+            logging.debug("couldn't find revision " + self.revision + " locally; fetching")
             run(["git", "fetch"] + force_arg + ["--tags", url, "+refs/heads/*:refs/remotes/origin/*"])
             run(["git", "checkout"] + force_arg + [self.revision])
 
-            if(self.patch != ""):
-                patchFile = os.path.join(EXTERNAL_DIR, self.patch)
-                run(["git", "reset", "--hard", "HEAD"])
-                run(["git", "apply", patchFile])
-        except:
-            # This might be a KeyboardInterrupt or other error, propagate.
-            raise
-        finally:
-            popWorkingDir()
+        if(self.patch != ""):
+            patchFile = os.path.join(EXTERNAL_DIR, self.patch)
+            run(["git", "reset", "--hard", "HEAD"])
+            run(["git", "apply", patchFile])
 
     def update (self, cmdProtocol, force = False):
         fullDstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
@@ -286,16 +284,23 @@ class GitRepo (Source):
             url       = self.sshUrl
             backupUrl = self.httpsUrl
 
+        if not os.path.exists(os.path.join(fullDstPath, '.git')):
+            logging.debug("git repository does not exist; performing full clone")
+            try:
+                run(["git", "clone", "--no-checkout", url, fullDstPath])
+            except:
+                if backupUrl != None:
+                    run(["git", "clone", "--no-checkout", backupUrl, fullDstPath])
+
+        pushWorkingDir(fullDstPath)
+
         try:
             self.checkout(url, fullDstPath, force)
         except KeyboardInterrupt:
             # Propagate the exception to stop the process if possible.
             raise
-        except:
-            # For any other kind of exception, including subprocess errors, we
-            # try the backup URL.
-            if backupUrl != None:
-                self.checkout(backupUrl, fullDstPath, force)
+        finally:
+            popWorkingDir()
 
 def postExtractLibpng (path):
     shutil.copy(os.path.join(path, "scripts", "pnglibconf.h.prebuilt"),
@@ -319,23 +324,23 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Tools.git",
         "git@github.com:KhronosGroup/SPIRV-Tools.git",
-        "e02275ec02b68e3d175528f768871c97ae9eee90",
+        "04b4a204aa501992ae85a207be1e200e195c98e1",
         "spirv-tools"),
     GitRepo(
         "https://github.com/KhronosGroup/glslang.git",
         "git@github.com:KhronosGroup/glslang.git",
-        "bd1f1c263fc10969eb4a4b393e774a75ffcb2673",
+        "0549c7127c2fbab2904892c9d6ff491fa1e93751",
         "glslang",
         removeTags = ["main-tot", "master-tot"]),
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Headers.git",
         "git@github.com:KhronosGroup/SPIRV-Headers.git",
-        "2b2e05e088841c63c0b6fd4c9fb380d8688738d3",
+        "e7294a8ebed84f8c5bd3686c68dbe12a4e65b644",
         "spirv-headers"),
     GitRepo(
         "https://gitlab.khronos.org/vulkan/vulkan.git",
         "git@gitlab.khronos.org:vulkan/vulkan.git",
-        "2005a47fe2ae27f8c5c6c385b989965fe4775f58",
+        "f0e84d8c7f147f885930d2abb411c7e3c14a1236",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
@@ -365,7 +370,7 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Video-Samples.git",
         "git@github.com:KhronosGroup/Vulkan-Video-Samples.git",
-        "70dfd5a6007680ddb8970d7e71bf7af9ee173f3c",
+        "0e87744edbb84c9c56c3fc8de9ea5150af5ee4ea",
         "vulkan-video-samples"),
     # NOTE: Temporary video generator repo .
     GitRepo(

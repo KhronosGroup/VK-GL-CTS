@@ -109,6 +109,10 @@ dEQP-VK.mesh_shader.ext.query.no_queries.lines.no_reset.copy.no_wait.draw.32bit.
 dEQP-VK.mesh_shader.ext.query.no_queries.lines.no_reset.copy.no_wait.draw.32bit.no_availability.multiple_blocks.task_mesh.inside_rp.multi_view.with_secondary
 dEQP-VK.mesh_shader.ext.query.no_queries.lines.no_reset.copy.no_wait.draw.32bit.no_availability.multiple_blocks.task_mesh.inside_rp.single_view.only_primary
 dEQP-VK.mesh_shader.ext.query.no_queries.lines.no_reset.copy.no_wait.draw.32bit.no_availability.multiple_blocks.task_mesh.inside_rp.single_view.with_secondary
+dEQP-VK.mesh_shader.ext.smoke.fast_lib.depth_only_points
+dEQP-VK.mesh_shader.ext.smoke.fast_lib.depth_only_points_position_components
+dEQP-VK.mesh_shader.ext.smoke.fast_lib.depth_only_triangles
+dEQP-VK.mesh_shader.ext.smoke.fast_lib.depth_only_triangles_position_components
 dEQP-VK.mesh_shader.ext.smoke.fast_lib.shared_frag_library_extra_input
 dEQP-VK.mesh_shader.ext.smoke.fast_lib.shared_frag_library_mesh_first
 dEQP-VK.mesh_shader.ext.smoke.fast_lib.shared_frag_library_mesh_first_extra_input
@@ -116,6 +120,14 @@ dEQP-VK.mesh_shader.ext.smoke.fast_lib.shared_frag_library_primid
 dEQP-VK.mesh_shader.ext.smoke.fast_lib.shared_frag_library_primid_extra_input
 dEQP-VK.mesh_shader.ext.smoke.fast_lib.shared_frag_library_primid_mesh_first
 dEQP-VK.mesh_shader.ext.smoke.fast_lib.shared_frag_library_primid_mesh_first_extra_input
+dEQP-VK.mesh_shader.ext.smoke.monolithic.depth_only_points
+dEQP-VK.mesh_shader.ext.smoke.monolithic.depth_only_points_position_components
+dEQP-VK.mesh_shader.ext.smoke.monolithic.depth_only_triangles
+dEQP-VK.mesh_shader.ext.smoke.monolithic.depth_only_triangles_position_components
+dEQP-VK.mesh_shader.ext.smoke.optimized_lib.depth_only_points
+dEQP-VK.mesh_shader.ext.smoke.optimized_lib.depth_only_points_position_components
+dEQP-VK.mesh_shader.ext.smoke.optimized_lib.depth_only_triangles
+dEQP-VK.mesh_shader.ext.smoke.optimized_lib.depth_only_triangles_position_components
 dEQP-VK.mesh_shader.ext.smoke.optimized_lib.shared_frag_library_extra_input
 dEQP-VK.mesh_shader.ext.smoke.optimized_lib.shared_frag_library_mesh_first
 dEQP-VK.mesh_shader.ext.smoke.optimized_lib.shared_frag_library_mesh_first_extra_input
@@ -123,6 +135,10 @@ dEQP-VK.mesh_shader.ext.smoke.optimized_lib.shared_frag_library_primid
 dEQP-VK.mesh_shader.ext.smoke.optimized_lib.shared_frag_library_primid_extra_input
 dEQP-VK.mesh_shader.ext.smoke.optimized_lib.shared_frag_library_primid_mesh_first
 dEQP-VK.mesh_shader.ext.smoke.optimized_lib.shared_frag_library_primid_mesh_first_extra_input
+dEQP-VK.mesh_shader.ext.smoke.shader_objects.depth_only_points
+dEQP-VK.mesh_shader.ext.smoke.shader_objects.depth_only_points_position_components
+dEQP-VK.mesh_shader.ext.smoke.shader_objects.depth_only_triangles
+dEQP-VK.mesh_shader.ext.smoke.shader_objects.depth_only_triangles_position_components
 dEQP-VK.mesh_shader.ext.smoke.shader_objects.shared_frag_shader
 dEQP-VK.mesh_shader.ext.smoke.shader_objects.shared_frag_shader_extra_input
 dEQP-VK.mesh_shader.ext.smoke.shader_objects.shared_frag_shader_mesh_first

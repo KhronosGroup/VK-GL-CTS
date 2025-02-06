@@ -178,8 +178,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "deDefs_kc_cts.h"
-
 /* Function pointer type. */
 typedef void (*deFunctionPtr)(void);
 
@@ -404,6 +402,13 @@ extern "C"
 
 #ifdef __cplusplus
 }
+#endif
+
+/* Null pointer.  DEPRECATED: use NULL in C and nullptr in C++. */
+#if defined(__cplusplus)
+#define DE_NULL 0
+#else
+#define DE_NULL ((void *)0)
 #endif
 
 #endif /* _DEDEFS_H */
