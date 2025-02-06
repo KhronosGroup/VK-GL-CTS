@@ -251,30 +251,28 @@ class GitRepo (Source):
         self.patch = patch
 
     def checkout(self, url, fullDstPath, force):
-        if not os.path.exists(os.path.join(fullDstPath, '.git')):
-            run(["git", "clone", "--no-checkout", url, fullDstPath])
-
-        pushWorkingDir(fullDstPath)
         print("Directory: " + fullDstPath)
+        for tag in self.removeTags:
+            proc = subprocess.Popen(['git', 'tag', '-l', tag], stdout=subprocess.PIPE)
+            (stdout, stderr) = proc.communicate()
+            if len(stdout) > 0:
+                run(["git", "tag", "-d",tag])
+
+        force_arg = ['--force'] if force else []
         try:
-            for tag in self.removeTags:
-                proc = subprocess.Popen(['git', 'tag', '-l', tag], stdout=subprocess.PIPE)
-                (stdout, stderr) = proc.communicate()
-                if len(stdout) > 0:
-                    run(["git", "tag", "-d",tag])
-            force_arg = ['--force'] if force else []
+            run(["git", "checkout"] + force_arg + [self.revision])
+        except KeyboardInterrupt:
+            # Propagate the exception to stop the process if possible.
+            raise
+        except:
+            logging.debug("couldn't find revision " + self.revision + " locally; fetching")
             run(["git", "fetch"] + force_arg + ["--tags", url, "+refs/heads/*:refs/remotes/origin/*"])
             run(["git", "checkout"] + force_arg + [self.revision])
 
-            if(self.patch != ""):
-                patchFile = os.path.join(EXTERNAL_DIR, self.patch)
-                run(["git", "reset", "--hard", "HEAD"])
-                run(["git", "apply", patchFile])
-        except:
-            # This might be a KeyboardInterrupt or other error, propagate.
-            raise
-        finally:
-            popWorkingDir()
+        if(self.patch != ""):
+            patchFile = os.path.join(EXTERNAL_DIR, self.patch)
+            run(["git", "reset", "--hard", "HEAD"])
+            run(["git", "apply", patchFile])
 
     def update (self, cmdProtocol, force = False):
         fullDstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
@@ -286,16 +284,23 @@ class GitRepo (Source):
             url       = self.sshUrl
             backupUrl = self.httpsUrl
 
+        if not os.path.exists(os.path.join(fullDstPath, '.git')):
+            logging.debug("git repository does not exist; performing full clone")
+            try:
+                run(["git", "clone", "--no-checkout", url, fullDstPath])
+            except:
+                if backupUrl != None:
+                    run(["git", "clone", "--no-checkout", url, backupPath])
+
+        pushWorkingDir(fullDstPath)
+
         try:
             self.checkout(url, fullDstPath, force)
         except KeyboardInterrupt:
             # Propagate the exception to stop the process if possible.
             raise
-        except:
-            # For any other kind of exception, including subprocess errors, we
-            # try the backup URL.
-            if backupUrl != None:
-                self.checkout(backupUrl, fullDstPath, force)
+        finally:
+            popWorkingDir()
 
 def postExtractLibpng (path):
     shutil.copy(os.path.join(path, "scripts", "pnglibconf.h.prebuilt"),
