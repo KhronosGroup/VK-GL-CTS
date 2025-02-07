@@ -35,7 +35,7 @@ Move<VkPipelineBinaryKHR> makeMovablePipelineBinary(const DeviceInterface &vk, c
                                                     VkPipelineBinaryKHR rawPipelineBinary)
 {
     return Move<VkPipelineBinaryKHR>(check<VkPipelineBinaryKHR>(rawPipelineBinary),
-                                     Deleter<VkPipelineBinaryKHR>(vk, device, DE_NULL));
+                                     Deleter<VkPipelineBinaryKHR>(vk, device, nullptr));
 }
 
 PipelineBinaryWrapper::PipelineBinaryWrapper(const DeviceInterface &vk, const VkDevice device)
@@ -104,7 +104,7 @@ VkResult PipelineBinaryWrapper::createPipelineBinariesFromCreateInfo(const VkPip
     std::size_t binaryCount = binaryHandlesInfo.pipelineBinaryCount;
     m_binariesRaw.resize(binaryCount);
     binaryHandlesInfo.pPipelineBinaries = m_binariesRaw.data();
-    result = m_vk.createPipelineBinariesKHR(m_device, &createInfos, DE_NULL, &binaryHandlesInfo);
+    result = m_vk.createPipelineBinariesKHR(m_device, &createInfos, nullptr, &binaryHandlesInfo);
     if (result != VK_SUCCESS)
         return result;
 
@@ -167,7 +167,7 @@ VkPipelineBinaryInfoKHR PipelineBinaryWrapper::preparePipelineBinaryInfo(void) c
     const std::size_t binaryCount = m_binariesRaw.size();
 
     return {
-        VK_STRUCTURE_TYPE_PIPELINE_BINARY_INFO_KHR, DE_NULL,
+        VK_STRUCTURE_TYPE_PIPELINE_BINARY_INFO_KHR, nullptr,
         static_cast<uint32_t>(binaryCount), // uint32_t binaryCount;
         de::dataOrNull(m_binariesRaw)       // const VkPipelineBinaryKHR* pPipelineBinaries;
     };

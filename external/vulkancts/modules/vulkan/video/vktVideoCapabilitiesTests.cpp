@@ -1028,7 +1028,7 @@ tcu::TestStatus VideoCapabilitiesQueryAV1EncodeTestInstance::iterate(void)
     const VkVideoCodecOperationFlagBitsKHR videoCodecOperation = VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR;
     const VkVideoEncodeAV1ProfileInfoKHR videoProfileOperation = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_PROFILE_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                             //  const void* pNext;
+        nullptr,                                             //  const void* pNext;
         STD_VIDEO_AV1_PROFILE_MAIN,                          //  StdVideoAV1ProfileIdc stdProfileIdc;
     };
     const VkVideoProfileInfoKHR videoProfile = {
@@ -1056,7 +1056,7 @@ tcu::TestStatus VideoCapabilitiesQueryAV1EncodeTestInstance::iterate(void)
         videoEncodeCapabilities[ndx].sType    = VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR;
         videoEncodeCapabilities[ndx].pNext    = &videoEncodeAV1Capabilities[ndx];
         videoEncodeAV1Capabilities[ndx].sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_CAPABILITIES_KHR;
-        videoEncodeAV1Capabilities[ndx].pNext = DE_NULL;
+        videoEncodeAV1Capabilities[ndx].pNext = nullptr;
 
         VkResult result =
             vk.getPhysicalDeviceVideoCapabilitiesKHR(physicalDevice, &videoProfile, &videoCapabilites[ndx]);

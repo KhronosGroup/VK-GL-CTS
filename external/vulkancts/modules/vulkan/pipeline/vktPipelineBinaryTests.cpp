@@ -616,13 +616,13 @@ tcu::TestStatus RayTracingPipelineTestInstance::iterate(void)
     // define three shader groups
     const VkRayTracingShaderGroupCreateInfoKHR defaultShaderGroupCreateInfo{
         VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,               // VkRayTracingShaderGroupTypeKHR type;
         VK_SHADER_UNUSED_KHR,                                       // uint32_t generalShader;
         VK_SHADER_UNUSED_KHR,                                       // uint32_t closestHitShader;
         VK_SHADER_UNUSED_KHR,                                       // uint32_t anyHitShader;
         VK_SHADER_UNUSED_KHR,                                       // uint32_t intersectionShader;
-        DE_NULL,                                                    // const void* pShaderGroupCaptureReplayHandle;
+        nullptr,                                                    // const void* pShaderGroupCaptureReplayHandle;
     };
     std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroupCreateInfoVect(3, defaultShaderGroupCreateInfo);
     shaderGroupCreateInfoVect[0].generalShader      = 0u;
@@ -669,9 +669,9 @@ tcu::TestStatus RayTracingPipelineTestInstance::iterate(void)
         3u,                               // uint32_t                                    groupCount;
         shaderGroupCreateInfoVect.data(), // const VkRayTracingShaderGroupCreateInfoKHR* pGroups;
         1u,                               // uint32_t                                    maxPipelineRayRecursionDepth;
-        DE_NULL,                          // VkPipelineLibraryCreateInfoKHR*             pLibraryInfo;
+        nullptr,                          // VkPipelineLibraryCreateInfoKHR*             pLibraryInfo;
         pLibraryInterface,                // VkRayTracingPipelineInterfaceCreateInfoKHR* pLibraryInterface;
-        DE_NULL,                          // const VkPipelineDynamicStateCreateInfo*     pDynamicState;
+        nullptr,                          // const VkPipelineDynamicStateCreateInfo*     pDynamicState;
         *pipelineLayout,                  // VkPipelineLayout                            layout;
         VK_NULL_HANDLE,                   // VkPipeline                                  basePipelineHandle;
         0,                                // int32_t                                     basePipelineIndex;
@@ -792,7 +792,7 @@ tcu::TestStatus RayTracingPipelineTestInstance::iterate(void)
     const auto rgenSBTR     = makeSDARegion(getBufferDeviceAddress(**rgenShaderBT), sgHandleSize, sgHandleSize);
     const auto chitSBTR     = makeSDARegion(getBufferDeviceAddress(**chitShaderBT), sgHandleSize, sgHandleSize);
     const auto missSBTR     = makeSDARegion(getBufferDeviceAddress(**missShaderBT), sgHandleSize, sgHandleSize);
-    const auto callableSBTR = makeSDARegion(DE_NULL, 0, 0);
+    const auto callableSBTR = makeSDARegion(0, 0, 0);
 
     auto tlas      = makeTopLevelAccelerationStructure();
     auto cmdPool   = createCommandPool(vk, device, 0, m_context.getUniversalQueueFamilyIndex());
@@ -844,7 +844,7 @@ tcu::TestStatus RayTracingPipelineTestInstance::iterate(void)
 
     // generate result
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1, &*descriptorSet,
-                             0, DE_NULL);
+                             0, nullptr);
     cmdTraceRays(vk, *cmdBuffer, &rgenSBTR, &missSBTR, &chitSBTR, &callableSBTR, imageSize, imageSize, 1);
 
     const VkMemoryBarrier postTraceMemoryBarrier =
@@ -1010,7 +1010,7 @@ tcu::TestStatus UniqueKayPairsTestInstance::iterate(void)
         2u,                                                    // uint32_t mapEntryCount;
         specializationMap,                                     // const VkSpecializationMapEntry* pMapEntries;
         static_cast<uintptr_t>(sizeof(specializationData[0])), // uintptr_t dataSize;
-        DE_NULL,                                               // const void* pData;
+        nullptr,                                               // const void* pData;
     };
 
     for (int32_t i = 0; i < 4; ++i)

@@ -3639,7 +3639,7 @@ tcu::TestStatus CompatibleRenderPassTestInstance::iterate(void)
 
     vk::VkImageCreateInfo colorImageParams = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                       // VkStructureType sType;
-        DE_NULL,                                                                       // const void* pNext;
+        nullptr,                                                                       // const void* pNext;
         (vk::VkImageCreateFlags)0u,                                                    // VkImageCreateFlags flags;
         vk::VK_IMAGE_TYPE_2D,                                                          // VkImageType imageType;
         vk::VK_FORMAT_R8G8B8A8_UNORM,                                                  // VkFormat format;
@@ -3651,7 +3651,7 @@ tcu::TestStatus CompatibleRenderPassTestInstance::iterate(void)
         vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags usage;
         vk::VK_SHARING_MODE_EXCLUSIVE,                                                 // VkSharingMode sharingMode;
         1u,                        // uint32_t queueFamilyIndexCount;
-        DE_NULL,                   // const uint32_t* pQueueFamilyIndices;
+        nullptr,                   // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED, // VkImageLayout initialLayout;
     };
 
@@ -3661,7 +3661,7 @@ tcu::TestStatus CompatibleRenderPassTestInstance::iterate(void)
 
     vk::VkImageViewCreateInfo colorAttachmentViewParams = {
         vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                      // const void* pNext;
+        nullptr,                                      // const void* pNext;
         0u,                                           // VkImageViewCreateFlags flags;
         *colorAttachment,                             // VkImage image;
         vk::VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -3717,25 +3717,25 @@ tcu::TestStatus CompatibleRenderPassTestInstance::iterate(void)
         0u,                                  // VkSubpassDescriptionFlags       flags
         vk::VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint             pipelineBindPoint
         0u,                                  // uint32_t                        inputAttachmentCount
-        DE_NULL,                             // const VkAttachmentReference*    pInputAttachments
+        nullptr,                             // const VkAttachmentReference*    pInputAttachments
         1u,                                  // uint32_t                        colorAttachmentCount
         &colorAttachmentReference,           // const VkAttachmentReference*    pColorAttachments
         &resolveAttachmentReference,         // const VkAttachmentReference*    pResolveAttachments
-        DE_NULL,                             // const VkAttachmentReference*    pDepthStencilAttachment
+        nullptr,                             // const VkAttachmentReference*    pDepthStencilAttachment
         0u,                                  // uint32_t                        preserveAttachmentCount
-        DE_NULL                              // const VkAttachmentReference*    pPreserveAttachments
+        nullptr                              // const VkAttachmentReference*    pPreserveAttachments
     };
 
     vk::VkRenderPassCreateInfo renderPassParams = {
         vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                       // const void* pNext;
+        nullptr,                                       // const void* pNext;
         0u,                                            // VkRenderPassCreateFlags flags;
         2u,                                            // uint32_t attachmentCount;
         attachmentDescriptions.data(),                 // const VkAttachmentDescription* pAttachments;
         1u,                                            // uint32_t subpassCount;
         &subpassDescription,                           // const VkSubpassDescription* pSubpasses;
         0u,                                            // uint32_t dependencyCount;
-        DE_NULL                                        // const VkSubpassDependency* pDependencies;
+        nullptr                                        // const VkSubpassDependency* pDependencies;
     };
 
     auto renderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, &renderPassParams);
@@ -3744,7 +3744,7 @@ tcu::TestStatus CompatibleRenderPassTestInstance::iterate(void)
 
     const VkFramebufferCreateInfo framebufferParams = {
         VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                   // const void* pNext;
+        nullptr,                                   // const void* pNext;
         0u,                                        // VkFramebufferCreateFlags flags;
         *renderPass,                               // VkRenderPass renderPass;
         2u,                                        // uint32_t attachmentCount;
@@ -3757,7 +3757,7 @@ tcu::TestStatus CompatibleRenderPassTestInstance::iterate(void)
     renderPass.createFramebuffer(vk, vkDevice, &framebufferParams, *colorAttachment);
 
     renderPassParams.attachmentCount       = 1;
-    subpassDescription.pResolveAttachments = DE_NULL;
+    subpassDescription.pResolveAttachments = nullptr;
     auto compatibleRenderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, &renderPassParams);
 
     const std::vector<VkViewport> viewports{vk::makeViewport(32u, 32u)};
@@ -3777,12 +3777,12 @@ tcu::TestStatus CompatibleRenderPassTestInstance::iterate(void)
 
     const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                       // const void* pNext;
+        nullptr,                                       // const void* pNext;
         0u,                                            // VkPipelineLayoutCreateFlags flags;
         0u,                                            // uint32_t setLayoutCount;
-        DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+        nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
         0u,                                            // uint32_t pushConstantRangeCount;
-        DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+        nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
     };
 
     const auto &binaries  = m_context.getBinaryCollection();
@@ -3792,12 +3792,12 @@ tcu::TestStatus CompatibleRenderPassTestInstance::iterate(void)
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                   // const void* pNext;
+        nullptr,                                                   // const void* pNext;
         0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
         0u,                                                        // uint32_t vertexBindingDescriptionCount;
-        DE_NULL, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+        nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
         0u,      // uint32_t vertexAttributeDescriptionCount;
-        DE_NULL  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+        nullptr  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
     };
 
     const auto &edsFeatures = m_context.getExtendedDynamicStateFeaturesEXT();
@@ -3849,7 +3849,7 @@ tcu::TestStatus CompatibleRenderPassTestInstance::iterate(void)
         makeGraphicsPipeline(vk, vkDevice, pipelineLayout.get(), vertModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE,
                              VK_NULL_HANDLE, fragModule.get(), compatibleRenderPass.get(), staticViewports,
                              staticScissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, 0u, &vertexInputStateParams,
-                             DE_NULL, &multisampleStateCreateInfo, DE_NULL, DE_NULL, &dynamicStateInfo);
+                             nullptr, &multisampleStateCreateInfo, nullptr, nullptr, &dynamicStateInfo);
 
     auto cmdPool   = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueIndex);
     auto cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);

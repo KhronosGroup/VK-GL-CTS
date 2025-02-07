@@ -906,7 +906,7 @@ void GraphicsTestInstance::preparePipelinesForBinaries(bool createFromBlobs = fa
             binaryInfoPtr[i]           = &pipelinePartsBinaryInfo[i];
         };
 
-        preparePipelineWrapper(*m_pipeline[PIPELINE_NDX_USE_BLOBS], VK_NULL_HANDLE, false, false, DE_NULL,
+        preparePipelineWrapper(*m_pipeline[PIPELINE_NDX_USE_BLOBS], VK_NULL_HANDLE, false, false, nullptr,
                                binaryInfoPtr[0], binaryInfoPtr[1], binaryInfoPtr[2], binaryInfoPtr[3]);
     }
 }
@@ -1321,7 +1321,7 @@ TestInstance *PipelineFromBlobsTest::createInstance(Context &context) const
 
 PipelineFromBlobsTestInstance::PipelineFromBlobsTestInstance(Context &context, const TestParam *param)
     : GraphicsTestInstance(context, param)
-    , m_data(DE_NULL)
+    , m_data(nullptr)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice vkDevice   = m_context.getDevice();
@@ -1400,7 +1400,7 @@ TestInstance *PipelineFromIncompleteBlobsTest::createInstance(Context &context) 
 PipelineFromIncompleteBlobsTestInstance::PipelineFromIncompleteBlobsTestInstance(Context &context,
                                                                                  const TestParam *param)
     : GraphicsTestInstance(context, param)
-    , m_data(DE_NULL)
+    , m_data(nullptr)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice vkDevice   = m_context.getDevice();

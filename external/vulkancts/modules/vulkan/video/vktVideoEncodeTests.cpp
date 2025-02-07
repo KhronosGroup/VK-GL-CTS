@@ -1314,9 +1314,9 @@ void copyBufferToImage(const DeviceInterface &vk, VkDevice device, VkQueue queue
 
     const VkCommandBufferBeginInfo cmdBufferBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, // VkCommandBufferUsageFlags flags;
-        (const VkCommandBufferInheritanceInfo *)DE_NULL,
+        (const VkCommandBufferInheritanceInfo *)nullptr,
     };
 
     const VkBufferImageCopy copyRegion = {
@@ -1366,10 +1366,10 @@ void copyBufferToImage(const DeviceInterface &vk, VkDevice device, VkQueue queue
 
     VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
-                          0, (const VkMemoryBarrier *)DE_NULL, 1, &preBufferBarrier, 1, &preImageBarrier);
+                          0, (const VkMemoryBarrier *)nullptr, 1, &preBufferBarrier, 1, &preImageBarrier);
     vk.cmdCopyBufferToImage(*cmdBuffer, buffer, destImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, destImageDstStageFlags, (VkDependencyFlags)0, 0,
-                          (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1,
+                          (const VkMemoryBarrier *)nullptr, 0, (const VkBufferMemoryBarrier *)nullptr, 1,
                           &postImageBarrier);
     VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
@@ -1377,14 +1377,14 @@ void copyBufferToImage(const DeviceInterface &vk, VkDevice device, VkQueue queue
 
     const VkSubmitInfo submitInfo = {
         VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
-        DE_NULL,                       // const void* pNext;
+        nullptr,                       // const void* pNext;
         0u,                            // uint32_t waitSemaphoreCount;
-        DE_NULL,                       // const VkSemaphore* pWaitSemaphores;
+        nullptr,                       // const VkSemaphore* pWaitSemaphores;
         &pipelineStageFlags,           // const VkPipelineStageFlags* pWaitDstStageMask;
         1u,                            // uint32_t commandBufferCount;
         &cmdBuffer.get(),              // const VkCommandBuffer* pCommandBuffers;
         0u,                            // uint32_t signalSemaphoreCount;
-        DE_NULL                        // const VkSemaphore* pSignalSemaphores;
+        nullptr                        // const VkSemaphore* pSignalSemaphores;
     };
 
     try
@@ -1790,15 +1790,15 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 
         VkVideoFormatPropertiesKHR videoFormatPropertiesKHR = {};
         videoFormatPropertiesKHR.sType                      = VK_STRUCTURE_TYPE_VIDEO_FORMAT_PROPERTIES_KHR;
-        videoFormatPropertiesKHR.pNext                      = DE_NULL;
+        videoFormatPropertiesKHR.pNext                      = nullptr;
 
         VkVideoFormatQuantizationMapPropertiesKHR quantizationMapPropertiesKHR = {};
         quantizationMapPropertiesKHR.sType = VK_STRUCTURE_TYPE_VIDEO_FORMAT_QUANTIZATION_MAP_PROPERTIES_KHR;
-        quantizationMapPropertiesKHR.pNext = DE_NULL;
+        quantizationMapPropertiesKHR.pNext = nullptr;
 
         VkVideoFormatH265QuantizationMapPropertiesKHR H265QuantizationMapFormatProperty = {};
         H265QuantizationMapFormatProperty.sType = VK_STRUCTURE_TYPE_VIDEO_FORMAT_H265_QUANTIZATION_MAP_PROPERTIES_KHR;
-        H265QuantizationMapFormatProperty.pNext = DE_NULL;
+        H265QuantizationMapFormatProperty.pNext = nullptr;
 
         vector<VkVideoFormatPropertiesKHR> videoFormatProperties;
         vector<VkVideoFormatQuantizationMapPropertiesKHR> quantizationMapProperties;
@@ -1806,7 +1806,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
         de::MovePtr<vector<VkFormat>> result;
 
         VK_CHECK(vki.getPhysicalDeviceVideoFormatPropertiesKHR(physicalDevice, &videoFormatInfo,
-                                                               &videoFormatPropertiesCount, DE_NULL));
+                                                               &videoFormatPropertiesCount, nullptr));
 
         videoFormatProperties.resize(videoFormatPropertiesCount, videoFormatPropertiesKHR);
         quantizationMapProperties.resize(videoFormatPropertiesCount, quantizationMapPropertiesKHR);
@@ -1851,7 +1851,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
             getBufferSize(quantizationImageFormat, quantizationMapExtent.width, quantizationMapExtent.height);
 
         const VkBufferCreateInfo quantizationMapBufferCreateInfo = makeBufferCreateInfo(
-            quantizationMapBufferSize, quantizationMapBufferUsageFlags, transaferQueueFamilyIndices, 0, DE_NULL);
+            quantizationMapBufferSize, quantizationMapBufferUsageFlags, transaferQueueFamilyIndices, 0, nullptr);
 
         BufferWithMemory quantizationMapBuffer(videoDeviceDriver, videoDevice, getAllocator(),
                                                quantizationMapBufferCreateInfo,
@@ -2403,8 +2403,8 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
     DE_ASSERT(videoEncodeRateControlInfoPtr);
 
     const de::MovePtr<VkVideoEncodeRateControlInfoKHR> videoEncodeRateControlInfo = getVideoEncodeRateControlInfo(
-        disableRateControl ? DE_NULL : videoEncodeRateControlInfoPtr, rateControlMode,
-        (useConstantBitrate || useVariableBitrate) ? videoEncodeRateControlLayerInfo.get() : DE_NULL);
+        disableRateControl ? nullptr : videoEncodeRateControlInfoPtr, rateControlMode,
+        (useConstantBitrate || useVariableBitrate) ? videoEncodeRateControlLayerInfo.get() : nullptr);
     // End coding
     const VkVideoEndCodingInfoKHR videoEndCodingInfo = {
         VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR, //  VkStructureType sType;
@@ -2454,7 +2454,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
                 *videoEncodeSession,
                 resolutionChange ? videoEncodeSessionParameters[GOPIdx].get() : videoEncodeSessionParameters[0].get(),
                 dpbSlots, &dpbImageVideoReferenceSlots[0],
-                (activeRateControl && NALIdx > 0) ? videoEncodeRateControlInfo.get() : DE_NULL);
+                (activeRateControl && NALIdx > 0) ? videoEncodeRateControlInfo.get() : nullptr);
 
             videoDeviceDriver.cmdBeginVideoCodingKHR(encodeCmdBuffer, videoBeginCodingFrameInfoKHR.get());
 
@@ -2656,7 +2656,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
             videoEncodeFrameInfos.push_back(
                 getVideoEncodeInfo(videoEncodePictureInfoPtr, encodeFlags, *encodeBuffer, dstBufferOffset,
                                    (*imagePictureResourceVector[srcPictureResourceIdx]), setupReferenceSlotPtr,
-                                   refsCount, (refsPool == 0) ? DE_NULL : referenceSlots));
+                                   refsCount, (refsPool == 0) ? nullptr : referenceSlots));
 
             if (!useInlineQueries)
                 videoDeviceDriver.cmdBeginQuery(encodeCmdBuffer, encodeQueryPool.get(), queryId, 0);
