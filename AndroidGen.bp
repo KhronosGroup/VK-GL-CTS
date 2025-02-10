@@ -260,6 +260,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/image/vktImageDepthStencilDescriptorTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageDepthStencilSeparateTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageExtendedUsageBitTests.cpp",
+        "external/vulkancts/modules/vulkan/image/vktImageGeneralLayoutTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageHostImageCopyTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageLoadStoreTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageLoadStoreUtil.cpp",
