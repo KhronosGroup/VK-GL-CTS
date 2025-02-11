@@ -1557,12 +1557,12 @@ uint32_t packRGB999E5(const tcu::Vec4 &color)
 
 static const void *addOffset(const void *ptr, int numBytes)
 {
-    return (const uint8_t *)ptr + numBytes;
+    return (ptr) ? (const uint8_t *)ptr + numBytes : reinterpret_cast<uint8_t*>(numBytes);
 }
 
 static void *addOffset(void *ptr, int numBytes)
 {
-    return (uint8_t *)ptr + numBytes;
+    return (ptr) ? (uint8_t *)ptr + numBytes : reinterpret_cast<uint8_t*>(numBytes);
 }
 
 template <typename AccessType>
