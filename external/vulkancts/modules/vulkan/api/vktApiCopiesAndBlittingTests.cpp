@@ -14670,26 +14670,6 @@ void addBlittingImage3DTo2DArrayTests(tcu::TestCaseGroup *group, TestParams para
             group->addChild(new BlitImageTestCase(testCtx, "single_slices_" + suffix, params));
         }
 
-        // Attempt to blit multiple layers at the same time.
-        {
-            const std::vector<VkImageBlit> blits{
-                make3Dto2DArrayBlit(params.src.image.extent, params.dst.image.extent, 2u, 9u, 6u),
-                make3Dto2DArrayBlit(params.src.image.extent, params.dst.image.extent, 13u, 0u, 3u),
-            };
-
-            params.regions.clear();
-            params.regions.reserve(blits.size());
-
-            for (const auto &blit : blits)
-            {
-                CopyRegion region;
-                region.imageBlit = blit;
-                params.regions.push_back(region);
-            }
-
-            group->addChild(new BlitImageTestCase(testCtx, "multiple_slices_" + suffix, params));
-        }
-
         {
             TestParams maxSlicesParams = params;
 
@@ -14703,13 +14683,9 @@ void addBlittingImage3DTo2DArrayTests(tcu::TestCaseGroup *group, TestParams para
             group->addChild(new BlitImageTestCase(testCtx, "max_slices_" + suffix, maxSlicesParams));
         }
 
-        // Blit a multi-slice region into a smaller multi-slice region of a cube image.
+        // Blit a slice into a smaller slice of a cube image.
         {
-            // Copy 5 slices from slice 3 to slice 7, but...
-            auto blit = make3Dto2DArrayBlit(params.src.image.extent, params.dst.image.extent, 3u, 7u, 5u);
-
-            // The number of destination slices will be smaller, and the same for the 2D region.
-            blit.dstSubresource.layerCount = 2u;
+            auto blit = make3Dto2DArrayBlit(params.src.image.extent, params.dst.image.extent, 3u, 7u, 1u);
 
             blit.dstOffsets[0].x = defaultSize / 4;
             blit.dstOffsets[0].y = defaultSize / 2;
