@@ -676,6 +676,9 @@ public:
         if (hasOption(DecoderOption::UseInlineStatusQueries) || hasOption(DecoderOption::ResourcesWithoutProfiles))
             flags |= VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_MAINTENANCE_1;
 
+        if (hasOption(DecoderOption::UseInlineSessionParams) || hasOption(DecoderOption::ResetCodecNoSessionParams))
+            flags |= VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_MAINTENANCE_2;
+
         return flags;
     }
 
