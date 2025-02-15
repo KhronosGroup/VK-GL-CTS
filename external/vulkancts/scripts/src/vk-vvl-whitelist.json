@@ -57,6 +57,15 @@
                 "VUID-vkCmdDispatch-None-08114"
             ],
             "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline was destroyed before copying to destination set. Producing this error is intentional."
+        },
+        {
+            "groups": [
+                "dEQP-VK.image.mismatched_formats.image_read.*"
+             ],
+            "messages": [
+                "Undefined-Value-StorageImage-FormatMismatch-ImageView"
+             ],
+            "description": "Warning about mismatched format handling in storage images. This is intentional for testing purposes."
         }
     ]
 }

@@ -455,9 +455,13 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
     // Create sampled image
     {
         sampledImageUsage = vk::VK_IMAGE_USAGE_SAMPLED_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
         if (m_parameters.action == MEMORY_TO_IMAGE || m_parameters.action == MEMCPY)
             sampledImageUsage |= vk::VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT;
-        if (m_parameters.intermediateLayout == vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+        // VUID-VkImageMemoryBarrier-oldLayout-0120
+        if (m_parameters.intermediateLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+            sampledImageUsage |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        else if (m_parameters.intermediateLayout == vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
             sampledImageUsage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         else if (m_parameters.intermediateLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
             sampledImageUsage |= vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
@@ -488,6 +492,8 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
         if (m_parameters.sparse)
         {
             createInfo.flags |= (vk::VK_IMAGE_CREATE_SPARSE_BINDING_BIT | vk::VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
+            // VUID-VkImageCreateInfo-tiling-04121
+            createInfo.tiling  = vk::VK_IMAGE_TILING_OPTIMAL;
             sparseSampledImage = de::MovePtr<SparseImage>(new SparseImage(vk, device, physicalDevice, vki, createInfo,
                                                                           m_context.getSparseQueue(), alloc,
                                                                           mapVkFormat(createInfo.format)));
@@ -4404,6 +4410,10 @@ void testGenerator(tcu::TestCaseGroup *group)
                                         if (layouts.srcLayout == VK_IMAGE_LAYOUT_GENERAL)
                                             continue;
                                         if (intermediateLayout.layout != VK_IMAGE_LAYOUT_GENERAL)
+                                            continue;
+                                        if (intermediateLayout.layout ==
+                                                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL &&
+                                            !isDepthStencilFormat(formatAndCommand.sampled))
                                             continue;
 
                                         // Linear tiling covered by R16.
