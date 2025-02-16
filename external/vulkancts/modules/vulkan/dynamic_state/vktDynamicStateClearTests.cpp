@@ -121,11 +121,11 @@ public:
 
         transition2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_ASPECT_COLOR_BIT,
                           vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_GENERAL, 0u,
-                          vk::VK_ACCESS_TRANSFER_READ_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                          vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                           vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
         transition2DImage(m_vk, *m_cmdBuffer, m_image->object(), vk::VK_IMAGE_ASPECT_COLOR_BIT,
                           vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_GENERAL, 0u,
-                          vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                          vk::VK_ACCESS_TRANSFER_READ_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                           vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
 
         // should not interfere with dynamic state
