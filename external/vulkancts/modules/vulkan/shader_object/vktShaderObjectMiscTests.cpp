@@ -1266,6 +1266,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
 
     const bool taskSupported = m_context.getMeshShaderFeaturesEXT().taskShader;
     const bool meshSupported = m_context.getMeshShaderFeaturesEXT().meshShader;
+    const bool secondDraw    = !m_params.depthClamp && !m_params.depthClip;
 
     const vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
@@ -1332,21 +1333,32 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
 
     const vk::Unique<vk::VkDescriptorPool> descriptorPool(
         vk::DescriptorPoolBuilder()
-            .addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-            .build(vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+            .addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2u)
+            .build(vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 2u));
 
     const vk::VkDeviceSize bufferSizeBytes = sizeof(uint32_t) * 8;
-    const vk::Unique<vk::VkDescriptorSet> descriptorSet(
+    const vk::Unique<vk::VkDescriptorSet> descriptorSet1(
         makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
-    const vk::BufferWithMemory outputBuffer(
+    const vk::Unique<vk::VkDescriptorSet> descriptorSet2(
+        makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+    const vk::BufferWithMemory outputBuffer1(
+        vk, device, alloc, vk::makeBufferCreateInfo(bufferSizeBytes, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+        vk::MemoryRequirement::HostVisible);
+    const vk::BufferWithMemory outputBuffer2(
         vk, device, alloc, vk::makeBufferCreateInfo(bufferSizeBytes, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
         vk::MemoryRequirement::HostVisible);
 
-    const vk::VkDescriptorBufferInfo descriptorInfo =
-        vk::makeDescriptorBufferInfo(*outputBuffer, 0ull, bufferSizeBytes);
+    const vk::VkDescriptorBufferInfo descriptorInfo1 =
+        vk::makeDescriptorBufferInfo(*outputBuffer1, 0ull, bufferSizeBytes);
+    const vk::VkDescriptorBufferInfo descriptorInfo2 =
+        vk::makeDescriptorBufferInfo(*outputBuffer2, 0ull, bufferSizeBytes);
     vk::DescriptorSetUpdateBuilder()
-        .writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
-                     vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo)
+        .writeSingle(*descriptorSet1, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
+                     vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo1)
+        .update(vk, device);
+    vk::DescriptorSetUpdateBuilder()
+        .writeSingle(*descriptorSet2, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
+                     vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo2)
         .update(vk, device);
 
     const auto pipelineLayout = makePipelineLayout(vk, device, *descriptorSetLayout);
@@ -1518,16 +1530,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
         vk::VkViewport viewport = {
             0, 0, 32, 32, 0.0f, 1.0f,
         };
-        vk::VkRect2D scissor = {
-            {
-                0,
-                0,
-            },
-            {
-                32,
-                32,
-            },
-        };
+        vk::VkRect2D scissor = {{0, 0}, {32, 32}};
 
         const auto &edsFeatures          = m_context.getExtendedDynamicStateFeaturesEXT();
         uint32_t viewportAndScissorCount = edsFeatures.extendedDynamicState ? 0u : 1u;
@@ -1638,7 +1641,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
     vk::beginCommandBuffer(vk, *cmdBuffer);
 
     vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0, 1,
-                             &descriptorSet.get(), 0, DE_NULL);
+                             &descriptorSet1.get(), 0, DE_NULL);
 
     vk::VkImageMemoryBarrier preImageBarrier = vk::makeImageMemoryBarrier(
         vk::VK_ACCESS_NONE, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
@@ -1693,7 +1696,6 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
         vk.cmdBeginTransformFeedbackEXT(*cmdBuffer, 0, 0u, DE_NULL, DE_NULL);
     }
 
-    bool secondDraw = !m_params.depthClamp && !m_params.depthClip;
     if (m_params.meshShader)
     {
         if (secondDraw)
@@ -1705,7 +1707,11 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
     {
         vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
         if (secondDraw)
+        {
+            vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0, 1,
+                                     &descriptorSet2.get(), 0, DE_NULL);
             vk.cmdDraw(*cmdBuffer, 4, 1, 0, 1);
+        }
     }
     if (m_params.geometryStreams)
         vk.cmdEndTransformFeedbackEXT(*cmdBuffer, 0, 0u, DE_NULL, DE_NULL);
@@ -1727,10 +1733,17 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
                           (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u, &postDepthImageBarrier);
 
     vk::VkBufferMemoryBarrier bufferBarrier = vk::makeBufferMemoryBarrier(
-        vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, *outputBuffer, 0u, bufferSizeBytes);
+        vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, *outputBuffer1, 0u, bufferSizeBytes);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
                           (vk::VkDependencyFlags)0u, 0u, (const vk::VkMemoryBarrier *)DE_NULL, 1u, &bufferBarrier, 0u,
                           (const vk::VkImageMemoryBarrier *)DE_NULL);
+    if (secondDraw)
+    {
+        bufferBarrier.buffer = *outputBuffer2;
+        vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
+                              (vk::VkDependencyFlags)0u, 0u, (const vk::VkMemoryBarrier *)DE_NULL, 1u, &bufferBarrier,
+                              0u, (const vk::VkImageMemoryBarrier *)DE_NULL);
+    }
 
     if (m_params.geometryStreams)
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,
@@ -1752,7 +1765,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
     tcu::Vec4 whiteColor  = tcu::Vec4(0.75f);
     tcu::Vec4 blackColor  = tcu::Vec4(0.0f);
 
-    const vk::Allocation &outputBufferAllocation = outputBuffer.getAllocation();
+    const vk::Allocation &outputBufferAllocation = outputBuffer1.getAllocation();
     invalidateAlloc(vk, device, outputBufferAllocation);
 
     const uint32_t *bufferPtr = static_cast<uint32_t *>(outputBufferAllocation.getHostPtr());
