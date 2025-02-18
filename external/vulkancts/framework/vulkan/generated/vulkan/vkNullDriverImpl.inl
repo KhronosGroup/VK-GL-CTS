@@ -2820,19 +2820,6 @@ VKAPI_ATTR void VKAPI_CALL cmdTraceRaysIndirect2KHR (VkCommandBuffer commandBuff
 	DE_UNREF(indirectDeviceAddress);
 }
 
-VKAPI_ATTR void VKAPI_CALL getClusterAccelerationStructureBuildSizesNV (VkDevice device, const VkClusterAccelerationStructureInputInfoNV* pInfo, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo)
-{
-	DE_UNREF(device);
-	DE_UNREF(pInfo);
-	DE_UNREF(pSizeInfo);
-}
-
-VKAPI_ATTR void VKAPI_CALL cmdBuildClusterAccelerationStructureIndirectNV (VkCommandBuffer commandBuffer, const VkClusterAccelerationStructureCommandsInfoNV* pCommandInfos)
-{
-	DE_UNREF(commandBuffer);
-	DE_UNREF(pCommandInfos);
-}
-
 VKAPI_ATTR void VKAPI_CALL getDeviceAccelerationStructureCompatibilityKHR (VkDevice device, const VkAccelerationStructureVersionInfoKHR* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility)
 {
 	DE_UNREF(device);
@@ -3773,19 +3760,6 @@ VKAPI_ATTR void VKAPI_CALL cmdDecompressMemoryIndirectCountNV (VkCommandBuffer c
 	DE_UNREF(stride);
 }
 
-VKAPI_ATTR void VKAPI_CALL getPartitionedAccelerationStructuresBuildSizesNV (VkDevice device, const VkPartitionedAccelerationStructureInstancesInputNV* pInfo, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo)
-{
-	DE_UNREF(device);
-	DE_UNREF(pInfo);
-	DE_UNREF(pSizeInfo);
-}
-
-VKAPI_ATTR void VKAPI_CALL cmdBuildPartitionedAccelerationStructuresNV (VkCommandBuffer commandBuffer, const VkBuildPartitionedAccelerationStructureInfoNV* pBuildInfo)
-{
-	DE_UNREF(commandBuffer);
-	DE_UNREF(pBuildInfo);
-}
-
 VKAPI_ATTR void VKAPI_CALL cmdCuLaunchKernelNVX (VkCommandBuffer commandBuffer, const VkCuLaunchInfoNVX* pLaunchInfo)
 {
 	DE_UNREF(commandBuffer);
@@ -4393,28 +4367,6 @@ VKAPI_ATTR VkResult VKAPI_CALL getMemoryMetalHandlePropertiesEXT (VkDevice devic
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCooperativeVectorPropertiesNV (VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeVectorPropertiesNV* pProperties)
-{
-	DE_UNREF(physicalDevice);
-	DE_UNREF(pPropertyCount);
-	DE_UNREF(pProperties);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL convertCooperativeVectorMatrixNV (VkDevice device, const VkConvertCooperativeVectorMatrixInfoNV* pInfo)
-{
-	DE_UNREF(device);
-	DE_UNREF(pInfo);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR void VKAPI_CALL cmdConvertCooperativeVectorMatrixNV (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkConvertCooperativeVectorMatrixInfoNV* pInfos)
-{
-	DE_UNREF(commandBuffer);
-	DE_UNREF(infoCount);
-	DE_UNREF(pInfos);
-}
-
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -4516,7 +4468,6 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceOpticalFlowImageFormatsNV,						getPhysicalDeviceOpticalFlowImageFormatsNV),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR,					getPhysicalDeviceCooperativeMatrixPropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV,	getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeVectorPropertiesNV,					getPhysicalDeviceCooperativeVectorPropertiesNV),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
@@ -4816,8 +4767,6 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCreateRayTracingPipelinesKHR,								createRayTracingPipelinesKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdTraceRaysIndirectKHR,									cmdTraceRaysIndirectKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdTraceRaysIndirect2KHR,									cmdTraceRaysIndirect2KHR),
-	VK_NULL_FUNC_ENTRY(vkGetClusterAccelerationStructureBuildSizesNV,				getClusterAccelerationStructureBuildSizesNV),
-	VK_NULL_FUNC_ENTRY(vkCmdBuildClusterAccelerationStructureIndirectNV,			cmdBuildClusterAccelerationStructureIndirectNV),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceAccelerationStructureCompatibilityKHR,			getDeviceAccelerationStructureCompatibilityKHR),
 	VK_NULL_FUNC_ENTRY(vkGetRayTracingShaderGroupStackSizeKHR,						getRayTracingShaderGroupStackSizeKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdSetRayTracingPipelineStackSizeKHR,						cmdSetRayTracingPipelineStackSizeKHR),
@@ -4950,8 +4899,6 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdEncodeVideoKHR,											cmdEncodeVideoKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdDecompressMemoryNV,										cmdDecompressMemoryNV),
 	VK_NULL_FUNC_ENTRY(vkCmdDecompressMemoryIndirectCountNV,						cmdDecompressMemoryIndirectCountNV),
-	VK_NULL_FUNC_ENTRY(vkGetPartitionedAccelerationStructuresBuildSizesNV,			getPartitionedAccelerationStructuresBuildSizesNV),
-	VK_NULL_FUNC_ENTRY(vkCmdBuildPartitionedAccelerationStructuresNV,				cmdBuildPartitionedAccelerationStructuresNV),
 	VK_NULL_FUNC_ENTRY(vkCreateCuModuleNVX,											createCuModuleNVX),
 	VK_NULL_FUNC_ENTRY(vkCreateCuFunctionNVX,										createCuFunctionNVX),
 	VK_NULL_FUNC_ENTRY(vkDestroyCuModuleNVX,										destroyCuModuleNVX),
@@ -5044,7 +4991,5 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdSetDepthClampRangeEXT,									cmdSetDepthClampRangeEXT),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryMetalHandleEXT,									getMemoryMetalHandleEXT),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryMetalHandlePropertiesEXT,							getMemoryMetalHandlePropertiesEXT),
-	VK_NULL_FUNC_ENTRY(vkConvertCooperativeVectorMatrixNV,							convertCooperativeVectorMatrixNV),
-	VK_NULL_FUNC_ENTRY(vkCmdConvertCooperativeVectorMatrixNV,						cmdConvertCooperativeVectorMatrixNV),
 };
 

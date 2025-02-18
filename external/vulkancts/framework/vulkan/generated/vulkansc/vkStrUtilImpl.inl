@@ -211,6 +211,15 @@ tcu::Format::Bitfield<32> getFramebufferCreateFlagsStr (VkFramebufferCreateFlags
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+tcu::Format::Bitfield<32> getQueryPoolCreateFlagsStr (VkQueryPoolCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(0, "0")
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getRenderPassCreateFlagsStr (VkRenderPassCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -2883,11 +2892,6 @@ const char* getDriverIdName (VkDriverId value)
 	}
 }
 
-tcu::Format::Bitfield<32> getQueryPoolCreateFlagsStr (VkQueryPoolCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
 tcu::Format::Bitfield<32> getPipelineDepthStencilStateCreateFlagsStr (VkPipelineDepthStencilStateCreateFlags value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
@@ -2974,21 +2978,6 @@ tcu::Format::Bitfield<32> getGeometryFlagsKHRStr (VkGeometryFlagsKHR value)
 }
 
 tcu::Format::Bitfield<32> getGeometryInstanceFlagsKHRStr (VkGeometryInstanceFlagsKHR value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getClusterAccelerationStructureGeometryFlagsNVStr (VkClusterAccelerationStructureGeometryFlagsNV value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getClusterAccelerationStructureClusterFlagsNVStr (VkClusterAccelerationStructureClusterFlagsNV value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getClusterAccelerationStructureAddressResolutionFlagsNVStr (VkClusterAccelerationStructureAddressResolutionFlagsNV value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
@@ -3163,11 +3152,6 @@ tcu::Format::Bitfield<32> getExternalMemoryHandleTypeFlagsNVStr (VkExternalMemor
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
-tcu::Format::Bitfield<32> getClusterAccelerationStructureIndexFormatFlagsNVStr (VkClusterAccelerationStructureIndexFormatFlagsNV value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
 tcu::Format::Bitfield<32> getExternalMemoryFeatureFlagsNVStr (VkExternalMemoryFeatureFlagsNV value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
@@ -3244,11 +3228,6 @@ tcu::Format::Bitfield<32> getSwapchainImageUsageFlagsANDROIDStr (VkSwapchainImag
 }
 
 tcu::Format::Bitfield<32> getImageFormatConstraintsFlagsFUCHSIAStr (VkImageFormatConstraintsFlagsFUCHSIA value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getPartitionedAccelerationStructureInstanceFlagsNVStr (VkPartitionedAccelerationStructureInstanceFlagsNV value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }

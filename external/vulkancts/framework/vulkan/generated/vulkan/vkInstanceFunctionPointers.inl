@@ -106,4 +106,3 @@ GetDrmDisplayEXTFunc													getDrmDisplayEXT;
 GetPhysicalDeviceOpticalFlowImageFormatsNVFunc							getPhysicalDeviceOpticalFlowImageFormatsNV;
 GetPhysicalDeviceCooperativeMatrixPropertiesKHRFunc						getPhysicalDeviceCooperativeMatrixPropertiesKHR;
 GetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNVFunc	getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV;
-GetPhysicalDeviceCooperativeVectorPropertiesNVFunc						getPhysicalDeviceCooperativeVectorPropertiesNV;
