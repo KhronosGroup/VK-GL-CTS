@@ -215,6 +215,7 @@ enum class PointerTestCases : uint8_t
     FUNCTION_VARIABLE_VARIABLE_PTR,
     PRIVATE_VARIABLE_VARIABLE_PTR,
     MULTIPLE_ACCESS_CHAINS_VARIABLE_PTR,
+    WORKGROUP_MEMORY_VARIABLE_PTR,
     _ENUM_COUNT,
 };
 using POINTER_TEST_CASE = PointerTestCases;
@@ -677,6 +678,7 @@ const char *toString(POINTER_TEST_CASE testCase)
         "function_variable",       // FUNCTION_VARIABLE_VARIABLE_PTR
         "private_variable",        // PRIVATE_VARIABLE_VARIABLE_PTR
         "multiple_access_chains",  // MULTIPLE_ACCESS_CHAINS_VARIABLE_PTR
+        "workgroup_memory",        // WORKGROUP_MEMORY_VARIABLE_PTR
     };
 
     return translateTable[DE_ENUM_INDEX(testCase)];
@@ -1193,6 +1195,139 @@ std::string getScalarVectorResourceDecorations(CONTAINER_TYPE containerType)
     return decorations;
 }
 
+const char *getNameStrForVarPtrs(DATA_TYPE type)
+{
+    static const char *const translateTable[DE_ENUM_COUNT(DataTypes)] = {
+        "_to_int16", // UINT8
+        "_to_int16", // INT8
+        "_to_int32", // UINT16
+        "_to_int32", // INT16
+        "_to_int32", // FLOAT16
+        "_to_int16", // UINT32
+        "_to_int16", // INT32
+        "_to_int16", // FLOAT32
+        "_to_int32", // UINT64
+        "_to_int32", // INT64
+        "_to_int32", // FLOAT64
+    };
+
+    return translateTable[DE_ENUM_INDEX(type)];
+}
+
+const char *getSecondTypeDefinitionForVarPtrs(DATA_TYPE type)
+{
+    static const char *const translateTable[DE_ENUM_COUNT(DataTypes)] = {
+        "%int16 = OpTypeInt 16 1", // UINT8
+        "%int16 = OpTypeInt 16 1", // INT8
+        "%int32 = OpTypeInt 32 1", // UINT16
+        "%int32 = OpTypeInt 32 1", // INT16
+        "%int32 = OpTypeInt 32 1", // FLOAT16
+        "%int16 = OpTypeInt 16 1", // UINT32
+        "%int16 = OpTypeInt 16 1", // INT32
+        "%int16 = OpTypeInt 16 1", // FLOAT32
+        "%int32 = OpTypeInt 32 1", // UINT64
+        "%int32 = OpTypeInt 32 1", // INT64
+        "%int32 = OpTypeInt 32 1", // FLOAT64
+    };
+
+    return translateTable[DE_ENUM_INDEX(type)];
+}
+
+static DATA_TYPE getSecondTypeForVarPtrs(DATA_TYPE type)
+{
+    static const DATA_TYPE translateTable[DE_ENUM_COUNT(DataTypes)] = {
+        DataTypes::INT16, // UINT8
+        DataTypes::INT16, // INT8
+        DataTypes::INT32, // UINT16
+        DataTypes::INT32, // INT16
+        DataTypes::INT32, // FLOAT16
+        DataTypes::INT16, // UINT32
+        DataTypes::INT16, // INT32
+        DataTypes::INT16, // FLOAT32
+        DataTypes::INT32, // UINT64
+        DataTypes::INT32, // INT64
+        DataTypes::INT32, // FLOAT64
+    };
+
+    return translateTable[DE_ENUM_INDEX(type)];
+}
+
+const char *getSecondArrayDefinitionForVarPtrs(DATA_TYPE type)
+{
+    static const char *const translateTable[DE_ENUM_COUNT(DataTypes)] = {
+        "%array_second_32 = OpTypeArray %int16 %c_uint32_32", // UINT8
+        "%array_second_32 = OpTypeArray %int16 %c_uint32_32", // INT8
+        "%array_second_32 = OpTypeArray %int32 %c_uint32_32", // UINT16
+        "%array_second_32 = OpTypeArray %int32 %c_uint32_32", // INT16
+        "%array_second_32 = OpTypeArray %int32 %c_uint32_32", // FLOAT16
+        "%array_second_32 = OpTypeArray %int16 %c_uint32_32", // UINT32
+        "%array_second_32 = OpTypeArray %int16 %c_uint32_32", // INT32
+        "%array_second_32 = OpTypeArray %int16 %c_uint32_32", // FLOAT32
+        "%array_second_32 = OpTypeArray %int32 %c_uint32_32", // UINT64
+        "%array_second_32 = OpTypeArray %int32 %c_uint32_32", // INT64
+        "%array_second_32 = OpTypeArray %int32 %c_uint32_32", // FLOAT64
+    };
+
+    return translateTable[DE_ENUM_INDEX(type)];
+}
+
+const char *getSecondArrayDecorationForVarPtrs(DATA_TYPE type)
+{
+    static const char *const translateTable[DE_ENUM_COUNT(DataTypes)] = {
+        "OpDecorate       %array_second_32   ArrayStride   2\n", // UINT8
+        "OpDecorate       %array_second_32   ArrayStride   2\n", // INT8
+        "OpDecorate       %array_second_32   ArrayStride   4\n", // UINT16
+        "OpDecorate       %array_second_32   ArrayStride   4\n", // INT16
+        "OpDecorate       %array_second_32   ArrayStride   4\n", // FLOAT16
+        "OpDecorate       %array_second_32   ArrayStride   2\n", // UINT32
+        "OpDecorate       %array_second_32   ArrayStride   2\n", // INT32
+        "OpDecorate       %array_second_32   ArrayStride   2\n", // FLOAT32
+        "OpDecorate       %array_second_32   ArrayStride   4\n", // UINT64
+        "OpDecorate       %array_second_32   ArrayStride   4\n", // INT64
+        "OpDecorate       %array_second_32   ArrayStride   4\n", // FLOAT64
+    };
+
+    return translateTable[DE_ENUM_INDEX(type)];
+}
+
+static uint32_t getSecondAlignmentForVarPtrs(DATA_TYPE type)
+{
+    static const uint32_t translateTable[DE_ENUM_COUNT(DataTypes)] = {
+        2, // UINT8
+        2, // INT8
+        4, // UINT16
+        4, // INT16
+        4, // FLOAT16
+        2, // UINT32
+        2, // INT32
+        2, // FLOAT32
+        4, // UINT64
+        4, // INT64
+        4, // FLOAT64
+    };
+
+    return translateTable[DE_ENUM_INDEX(type)];
+}
+
+const char *getSameByteIndexForVarPtrs(DATA_TYPE type)
+{
+    static const char *const translateTable[DE_ENUM_COUNT(DataTypes)] = {
+        "%c_uint32_2\n", // UINT8
+        "%c_uint32_2\n", // INT8
+        "%c_uint32_2\n", // UINT16
+        "%c_uint32_2\n", // INT16
+        "%c_uint32_2\n", // FLOAT16
+        "%c_uint32_8\n", // UINT32
+        "%c_uint32_8\n", // INT32
+        "%c_uint32_8\n", // FLOAT32
+        "%c_uint32_8\n", // UINT64
+        "%c_uint32_8\n", // INT64
+        "%c_uint32_8\n", // FLOAT64
+    };
+
+    return translateTable[DE_ENUM_INDEX(type)];
+}
+
 static uint32_t getMatrixBinaryUse(MATRIX_TYPE type)
 {
     return DE_ENUM_INDEX(type);
@@ -1542,6 +1677,7 @@ static void adjustSpecForVariablePointers(ComputeShaderSpec &spec, std::vector<c
     spec.requestedVulkanFeatures.extVariablePointers.variablePointers              = VK_TRUE;
     spec.requestedVulkanFeatures.extVariablePointers.variablePointersStorageBuffer = VK_TRUE;
     spec.extensions.push_back("VK_KHR_variable_pointers");
+
     spvCapabilities.push_back("OpCapability VariablePointersStorageBuffer\n");
     spvCapabilities.push_back("OpCapability VariablePointers\n");
     spvExtensions.push_back("OpExtension \"SPV_KHR_variable_pointers\"\n");
@@ -1618,6 +1754,7 @@ static void adjustSpecForWorkgroupMemoryExplicitLayout(DATA_TYPE dataType, Compu
 
     spec.requestedVulkanFeatures.extWorkgroupMemoryExplicitLayout.workgroupMemoryExplicitLayout = VK_TRUE;
     spec.extensions.push_back("VK_KHR_workgroup_memory_explicit_layout");
+
     spvCapabilities.push_back("OpCapability WorkgroupMemoryExplicitLayoutKHR\n");
     spvExtensions.push_back("OpExtension \"SPV_KHR_workgroup_memory_explicit_layout\"\n");
 }
@@ -1645,6 +1782,7 @@ enum class FillingTypes : uint8_t
 {
     RANDOM,
     VALUE,
+    INCREMENTED,
     _ENUM_COUNT
 };
 using FILLING_TYPE = FillingTypes;
@@ -1684,6 +1822,16 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
                 BufferSp(new Buffer<uint8_t>(std::vector<uint8_t>(desc.elemCount, converted), desc.padding)),
                 desc.descriptorType);
         }
+        else if (desc.fillType == FillingTypes::INCREMENTED)
+        {
+            std::vector<uint8_t> data;
+            data.resize(desc.elemCount);
+            for (uint32_t ndx = 0; ndx < desc.elemCount; ++ndx)
+            {
+                data[ndx] = static_cast<uint8_t>(ndx);
+            }
+            return Resource(BufferSp(new Buffer<uint8_t>(data, desc.padding)), desc.descriptorType);
+        }
         else
         {
             de::Random rnd(desc.seed);
@@ -1707,6 +1855,16 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             const int8_t converted = static_cast<int8_t>(desc.value);
             return Resource(BufferSp(new Buffer<int8_t>(std::vector<int8_t>(desc.elemCount, converted), desc.padding)),
                             desc.descriptorType);
+        }
+        else if (desc.fillType == FillingTypes::INCREMENTED)
+        {
+            std::vector<int8_t> data;
+            data.resize(desc.elemCount);
+            for (uint32_t ndx = 0; ndx < desc.elemCount; ++ndx)
+            {
+                data[ndx] = static_cast<int8_t>(ndx);
+            }
+            return Resource(BufferSp(new Buffer<int8_t>(data, desc.padding)), desc.descriptorType);
         }
         else
         {
@@ -1733,6 +1891,16 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
                 BufferSp(new Buffer<uint16_t>(std::vector<uint16_t>(desc.elemCount, converted), desc.padding)),
                 desc.descriptorType);
         }
+        else if (desc.fillType == FillingTypes::INCREMENTED)
+        {
+            std::vector<uint16_t> data;
+            data.resize(desc.elemCount);
+            for (uint32_t ndx = 0; ndx < desc.elemCount; ++ndx)
+            {
+                data[ndx] = static_cast<uint16_t>(ndx);
+            }
+            return Resource(BufferSp(new Buffer<uint16_t>(data, desc.padding)), desc.descriptorType);
+        }
         else
         {
             de::Random rnd(desc.seed);
@@ -1757,6 +1925,16 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             return Resource(
                 BufferSp(new Buffer<int16_t>(std::vector<int16_t>(desc.elemCount, converted), desc.padding)),
                 desc.descriptorType);
+        }
+        else if (desc.fillType == FillingTypes::INCREMENTED)
+        {
+            std::vector<int16_t> data;
+            data.resize(desc.elemCount);
+            for (uint32_t ndx = 0; ndx < desc.elemCount; ++ndx)
+            {
+                data[ndx] = static_cast<int16_t>(ndx);
+            }
+            return Resource(BufferSp(new Buffer<int16_t>(data, desc.padding)), desc.descriptorType);
         }
         else
         {
@@ -1783,6 +1961,16 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
                 BufferSp(new Buffer<deFloat16>(std::vector<deFloat16>(desc.elemCount, converted), desc.padding)),
                 desc.descriptorType);
         }
+        else if (desc.fillType == FillingTypes::INCREMENTED)
+        {
+            std::vector<deFloat16> data;
+            data.resize(desc.elemCount);
+            for (uint32_t ndx = 0; ndx < desc.elemCount; ++ndx)
+            {
+                data[ndx] = static_cast<deFloat16>(ndx);
+            }
+            return Resource(BufferSp(new Buffer<deFloat16>(data, desc.padding)), desc.descriptorType);
+        }
         else
         {
             de::Random rnd(desc.seed);
@@ -1807,6 +1995,16 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             return Resource(
                 BufferSp(new Buffer<uint32_t>(std::vector<uint32_t>(desc.elemCount, converted), desc.padding)),
                 desc.descriptorType);
+        }
+        else if (desc.fillType == FillingTypes::INCREMENTED)
+        {
+            std::vector<uint32_t> data;
+            data.resize(desc.elemCount);
+            for (uint32_t ndx = 0; ndx < desc.elemCount; ++ndx)
+            {
+                data[ndx] = static_cast<uint32_t>(ndx);
+            }
+            return Resource(BufferSp(new Buffer<uint32_t>(data, desc.padding)), desc.descriptorType);
         }
         else
         {
@@ -1833,6 +2031,16 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
                 BufferSp(new Buffer<int32_t>(std::vector<int32_t>(desc.elemCount, converted), desc.padding)),
                 desc.descriptorType);
         }
+        else if (desc.fillType == FillingTypes::INCREMENTED)
+        {
+            std::vector<int32_t> data;
+            data.resize(desc.elemCount);
+            for (uint32_t ndx = 0; ndx < desc.elemCount; ++ndx)
+            {
+                data[ndx] = static_cast<int32_t>(ndx);
+            }
+            return Resource(BufferSp(new Buffer<int32_t>(data, desc.padding)), desc.descriptorType);
+        }
         else
         {
             de::Random rnd(desc.seed);
@@ -1856,6 +2064,16 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             const float converted = static_cast<float>(desc.value);
             return Resource(BufferSp(new Buffer<float>(std::vector<float>(desc.elemCount, converted), desc.padding)),
                             desc.descriptorType);
+        }
+        else if (desc.fillType == FillingTypes::INCREMENTED)
+        {
+            std::vector<float> data;
+            data.resize(desc.elemCount);
+            for (uint32_t ndx = 0; ndx < desc.elemCount; ++ndx)
+            {
+                data[ndx] = static_cast<float>(ndx);
+            }
+            return Resource(BufferSp(new Buffer<float>(data, desc.padding)), desc.descriptorType);
         }
         else
         {
@@ -1882,6 +2100,16 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
                 BufferSp(new Buffer<uint64_t>(std::vector<uint64_t>(desc.elemCount, converted), desc.padding)),
                 desc.descriptorType);
         }
+        else if (desc.fillType == FillingTypes::INCREMENTED)
+        {
+            std::vector<uint64_t> data;
+            data.resize(desc.elemCount);
+            for (uint32_t ndx = 0; ndx < desc.elemCount; ++ndx)
+            {
+                data[ndx] = static_cast<uint64_t>(ndx);
+            }
+            return Resource(BufferSp(new Buffer<uint64_t>(data, desc.padding)), desc.descriptorType);
+        }
         else
         {
             de::Random rnd(desc.seed);
@@ -1907,6 +2135,16 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
                 BufferSp(new Buffer<int64_t>(std::vector<int64_t>(desc.elemCount, converted), desc.padding)),
                 desc.descriptorType);
         }
+        else if (desc.fillType == FillingTypes::INCREMENTED)
+        {
+            std::vector<int64_t> data;
+            data.resize(desc.elemCount);
+            for (uint32_t ndx = 0; ndx < desc.elemCount; ++ndx)
+            {
+                data[ndx] = static_cast<int64_t>(ndx);
+            }
+            return Resource(BufferSp(new Buffer<int64_t>(data, desc.padding)), desc.descriptorType);
+        }
         else
         {
             de::Random rnd(desc.seed);
@@ -1929,6 +2167,16 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
         {
             return Resource(BufferSp(new Buffer<double>(std::vector<double>(desc.elemCount, desc.value), desc.padding)),
                             desc.descriptorType);
+        }
+        else if (desc.fillType == FillingTypes::INCREMENTED)
+        {
+            std::vector<double> data;
+            data.resize(desc.elemCount);
+            for (uint32_t ndx = 0; ndx < desc.elemCount; ++ndx)
+            {
+                data[ndx] = static_cast<double>(ndx);
+            }
+            return Resource(BufferSp(new Buffer<double>(data, desc.padding)), desc.descriptorType);
         }
         else
         {
@@ -2401,12 +2649,13 @@ std::string createShaderAnnotations(POINTER_TEST_CASE testCase)
     }
     case PointerTestCases::OP_SELECT_VARIABLE_PTR:
     case PointerTestCases::OP_PHI_VARIABLE_PTR:
-    case PointerTestCases::OP_PTR_EQUAL_VARIABLE_PTR:
-    case PointerTestCases::OP_PTR_NOT_EQUAL_VARIABLE_PTR:
     case PointerTestCases::FUNCTION_VARIABLE_VARIABLE_PTR:
     case PointerTestCases::PRIVATE_VARIABLE_VARIABLE_PTR:
     {
-        annotations += std::string("OpMemberDecorate %input_buffer_0           0             Offset 0\n"
+        annotations += std::string("OpMemberDecorate %push_constant            0             Offset 0\n"
+                                   "OpDecorate       %push_constant            Block\n"
+
+                                   "OpMemberDecorate %input_buffer_0           0             Offset 0\n"
                                    "OpDecorate       %input_buffer_0           Block\n"
                                    "OpDecorate       %input_data_0_untyped_var DescriptorSet 0\n"
                                    "OpDecorate       %input_data_0_untyped_var Binding       0\n"
@@ -2422,14 +2671,32 @@ std::string createShaderAnnotations(POINTER_TEST_CASE testCase)
                                    "OpDecorate       %output_data_var          Binding       2\n");
         break;
     }
+    case PointerTestCases::OP_PTR_EQUAL_VARIABLE_PTR:
+    case PointerTestCases::OP_PTR_NOT_EQUAL_VARIABLE_PTR:
+    {
+        annotations += std::string("OpDecorate       %array_first_32         ArrayStride   ${alignment}\n"
+                                   "${secondArrayDecoration:opt}\n"
+
+                                   "OpMemberDecorate %input_buffer           0             Offset 0\n"
+                                   "OpDecorate       %input_buffer           Block\n"
+                                   "OpDecorate       %input_data_var         DescriptorSet 0\n"
+                                   "OpDecorate       %input_data_var         Binding       0\n"
+
+                                   "OpMemberDecorate %output_buffer          0             Offset 0\n"
+                                   "OpDecorate       %output_buffer          Block\n"
+                                   "OpDecorate       %output_data_var        DescriptorSet 0\n"
+                                   "OpDecorate       %output_data_var        Binding       1\n");
+        break;
+    }
     case PointerTestCases::OP_PTR_DIFF_VARIABLE_PTR:
     {
-        annotations += std::string("OpDecorate       %array_${baseType}_32       ArrayStride ${alignment}\n"
+        annotations += std::string("OpDecorate       %array_first_32           ArrayStride   ${alignment}\n"
+                                   "${secondArrayDecoration:opt}\n"
 
                                    "OpMemberDecorate %input_buffer             0             Offset 0\n"
                                    "OpDecorate       %input_buffer             Block\n"
-                                   "OpDecorate       %input_data_untyped_var   DescriptorSet 0\n"
-                                   "OpDecorate       %input_data_untyped_var   Binding       0\n"
+                                   "OpDecorate       %input_data_var           DescriptorSet 0\n"
+                                   "OpDecorate       %input_data_var           Binding       0\n"
 
                                    "OpMemberDecorate %output_buffer            0             Offset 0\n"
                                    "OpDecorate       %output_buffer            Block\n"
@@ -2439,8 +2706,8 @@ std::string createShaderAnnotations(POINTER_TEST_CASE testCase)
     }
     case PointerTestCases::OP_PTR_ACCESS_CHAIN_VARIABLE_PTR:
     {
-        annotations += std::string("OpDecorate       %array_${baseType}_${threadCount} ArrayStride ${alignment}\n"
-                                   "OpDecorate       %storage_buffer_untyped_ptr       ArrayStride ${alignment}\n"
+        annotations += std::string("OpDecorate       %array_${baseType}_${threadCount}       ArrayStride ${alignment}\n"
+                                   "OpDecorate       %strided_storage_buffer_untyped_ptr     ArrayStride ${alignment}\n"
 
                                    "OpMemberDecorate %input_buffer             0             Offset 0\n"
                                    "OpDecorate       %input_buffer             Block\n"
@@ -2455,8 +2722,23 @@ std::string createShaderAnnotations(POINTER_TEST_CASE testCase)
     }
     case PointerTestCases::MULTIPLE_ACCESS_CHAINS_VARIABLE_PTR:
     {
-        annotations += std::string("OpMemberDecorate %data_buffer            0             Offset 0\n"
-                                   "OpMemberDecorate %data_buffer            1             Offset ${size}\n"
+        annotations += std::string("OpDecorate       %array_first_32           ArrayStride   ${alignment0}\n"
+                                   "OpDecorate       %array_second_32          ArrayStride   ${alignment1}\n"
+
+                                   "OpMemberDecorate %input_buffer             0             Offset 0\n"
+                                   "OpDecorate       %input_buffer             Block\n"
+                                   "OpDecorate       %input_data_var           DescriptorSet 0\n"
+                                   "OpDecorate       %input_data_var           Binding       0\n"
+
+                                   "OpMemberDecorate %output_buffer            0             Offset 0\n"
+                                   "OpDecorate       %output_buffer            Block\n"
+                                   "OpDecorate       %output_data_var          DescriptorSet 0\n"
+                                   "OpDecorate       %output_data_var          Binding       1\n");
+        break;
+    }
+    case PointerTestCases::OP_FUNCTION_CALL_VARIABLE_PTR:
+    {
+        annotations += std::string("OpDecorate       %array_32               ArrayStride   ${alignment}\n"
 
                                    "OpMemberDecorate %input_buffer           0             Offset 0\n"
                                    "OpDecorate       %input_buffer           Block\n"
@@ -2469,17 +2751,22 @@ std::string createShaderAnnotations(POINTER_TEST_CASE testCase)
                                    "OpDecorate       %output_data_var        Binding       1\n");
         break;
     }
-    case PointerTestCases::OP_FUNCTION_CALL_VARIABLE_PTR:
+    case PointerTestCases::WORKGROUP_MEMORY_VARIABLE_PTR:
     {
-        annotations += std::string("OpMemberDecorate %input_buffer           0             Offset 0\n"
-                                   "OpDecorate       %input_buffer           Block\n"
-                                   "OpDecorate       %input_data_untyped_var DescriptorSet 0\n"
-                                   "OpDecorate       %input_data_untyped_var Binding       0\n"
+        annotations += std::string("OpDecorate       %array_base               ArrayStride   ${alignment}\n"
 
-                                   "OpMemberDecorate %output_buffer          0             Offset 0\n"
-                                   "OpDecorate       %output_buffer          Block\n"
-                                   "OpDecorate       %output_data_var        DescriptorSet 0\n"
-                                   "OpDecorate       %output_data_var        Binding       1\n");
+                                   "OpMemberDecorate %input_buffer             0             Offset 0\n"
+                                   "OpDecorate       %input_buffer             Block\n"
+                                   "OpDecorate       %input_data_var           DescriptorSet 0\n"
+                                   "OpDecorate       %input_data_var           Binding       0\n"
+
+                                   "OpMemberDecorate %output_buffer            0             Offset 0\n"
+                                   "OpDecorate       %output_buffer            Block\n"
+                                   "OpDecorate       %output_data_var          DescriptorSet 0\n"
+                                   "OpDecorate       %output_data_var          Binding       1\n"
+
+                                   "OpMemberDecorate %shared_buffer             0             Offset 0\n"
+                                   "OpDecorate       %shared_buffer             Block\n");
         break;
     }
     default:
@@ -3623,16 +3910,22 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
         "%void         = OpTypeVoid\n"
         "%bool         = OpTypeBool\n"
         "%${baseType}  = ${baseDecl}\n"
+        "${secondType:opt}\n"
         "%vec3_uint32  = OpTypeVector %uint32 3\n"
 
         /* Function types */
         "%void_func   = OpTypeFunction %void\n"
 
         /* Constants */
-        "%c_uint32_0  = OpConstant %uint32 0\n"
-        "%c_uint32_1  = OpConstant %uint32 1\n"
-        "%c_uint32_2  = OpConstant %uint32 2\n"
-        "%c_uint32_16 = OpConstant %uint32 16\n"
+        "%c_uint32_0   = OpConstant %uint32 0\n"
+        "%c_uint32_1   = OpConstant %uint32 1\n"
+        "%c_uint32_2   = OpConstant %uint32 2\n"
+        "%c_uint32_4   = OpConstant %uint32 4\n"
+        "%c_uint32_8   = OpConstant %uint32 8\n"
+        "%c_uint32_16  = OpConstant %uint32 16\n"
+        "%c_uint32_32  = OpConstant %uint32 32\n"
+        "%c_uint32_64  = OpConstant %uint32 64\n"
+        "%c_uint32_264 = OpConstant %uint32 264\n"
         "${boolConst:opt}\n"
 
         /* Pointers */
@@ -3711,9 +4004,6 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
     case PointerTestCases::OP_PTR_ACCESS_CHAIN_PHYSICAL_STORAGE:
     {
         variables += std::string(
-            /* Contants */
-            "%c_uint32_${threadCount}          = OpConstant  %uint32      ${threadCount}\n"
-
             /* Arrays */
             "%array_${baseType}_${threadCount} = OpTypeArray %${baseType} %c_uint32_${threadCount}\n"
 
@@ -3758,23 +4048,24 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
     }
     case PointerTestCases::OP_SELECT_VARIABLE_PTR:
     case PointerTestCases::OP_PHI_VARIABLE_PTR:
-    case PointerTestCases::OP_PTR_EQUAL_VARIABLE_PTR:
-    case PointerTestCases::OP_PTR_NOT_EQUAL_VARIABLE_PTR:
     {
         variables += std::string(
             /* Structs */
+            "%push_constant                    = OpTypeStruct %uint32\n"
             "%input_buffer_0                   = OpTypeStruct %${baseType}\n"
             "%input_buffer_1                   = OpTypeStruct %${baseType}\n"
             "%output_buffer                    = OpTypeStruct %${baseType}\n"
 
             /* Pointers */
-            "%${baseType}_storage_buffer_ptr   = OpTypePointer           StorageBuffer                     "
-            "%${baseType}\n"
-            "%output_buffer_storage_buffer_ptr = OpTypePointer           StorageBuffer                     "
-            "%output_buffer\n"
+            "%push_constant_ptr                = OpTypePointer           PushConstant  %push_constant\n"
+            "%uint32_push_constant_ptr         = OpTypePointer           PushConstant  %uint32\n"
+            "%${baseType}_storage_buffer_ptr   = OpTypePointer           StorageBuffer %${baseType}\n"
+            "%output_buffer_storage_buffer_ptr = OpTypePointer           StorageBuffer %output_buffer\n"
             "%storage_buffer_untyped_ptr       = OpTypeUntypedPointerKHR StorageBuffer\n"
 
             /* Objects */
+            "%push_constant_var                = OpVariable              %push_constant_ptr                "
+            "PushConstant\n"
             "%input_data_0_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       "
             "StorageBuffer %input_buffer_0\n"
             "%input_data_1_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       "
@@ -3783,29 +4074,59 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
             "StorageBuffer\n");
         break;
     }
-    case PointerTestCases::OP_PTR_DIFF_VARIABLE_PTR:
+    case PointerTestCases::OP_PTR_EQUAL_VARIABLE_PTR:
+    case PointerTestCases::OP_PTR_NOT_EQUAL_VARIABLE_PTR:
     {
         variables += std::string(
-            /* Contants */
-            "%c_uint32_32          = OpConstant  %uint32      32\n"
-
             /* Arrays */
-            "%array_${baseType}_32 = OpTypeArray %${baseType} %c_uint32_32\n"
+            "%array_first_32 = OpTypeArray %${baseType} %c_uint32_32\n"
+            "${secondArray:opt}\n"
 
-            /* Struct */
-            "%input_buffer                     = OpTypeStruct            %array_${baseType}_32\n"
-            "%output_buffer                    = OpTypeStruct            %uint32\n"
+            /* Structs */
+            "%input_buffer                   = OpTypeStruct %array_first_32\n"
+            "%output_buffer                  = OpTypeStruct %uint32\n"
 
             /* Pointers */
-
-            "%uint32_storage_buffer_ptr        = OpTypePointer           StorageBuffer                     %uint32\n"
+            "%${baseType}_storage_buffer_ptr   = OpTypePointer           StorageBuffer                     "
+            "%${baseType}\n"
+            "%output_uint32_storage_buffer_ptr = OpTypePointer           StorageBuffer                     "
+            "%uint32\n"
+            "%input_buffer_storage_buffer_ptr  = OpTypePointer           StorageBuffer                     "
+            "%input_buffer\n"
             "%output_buffer_storage_buffer_ptr = OpTypePointer           StorageBuffer                     "
             "%output_buffer\n"
             "%storage_buffer_untyped_ptr       = OpTypeUntypedPointerKHR StorageBuffer\n"
 
+            /* Constants */
+            "%c_null_untyped_ptr               = OpConstantNull          %storage_buffer_untyped_ptr\n     "
+
             /* Objects */
-            "%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       "
-            "StorageBuffer %input_buffer\n"
+            "%input_data_var                   = OpVariable              %input_buffer_storage_buffer_ptr  "
+            "StorageBuffer\n"
+            "%output_data_var                  = OpVariable              %output_buffer_storage_buffer_ptr "
+            "StorageBuffer\n");
+        break;
+    }
+    case PointerTestCases::OP_PTR_DIFF_VARIABLE_PTR:
+    {
+        variables += std::string(
+            /* Arrays */
+            "%array_first_32                   = OpTypeArray %${baseType} %c_uint32_32\n"
+            "${secondArray:opt}\n"
+
+            /* Struct */
+            "%input_buffer                     = OpTypeStruct             %array_first_32\n"
+            "%output_buffer                    = OpTypeStruct             %uint32\n"
+
+            /* Pointers */
+            "%uint32_storage_buffer_ptr        = OpTypePointer            StorageBuffer     %uint32\n"
+            "%input_buffer_storage_buffer_ptr  = OpTypePointer            StorageBuffer     %input_buffer\n"
+            "%output_buffer_storage_buffer_ptr = OpTypePointer            StorageBuffer     %output_buffer\n"
+            "%storage_buffer_untyped_ptr       = OpTypeUntypedPointerKHR  StorageBuffer\n"
+
+            /* Objects */
+            "%input_data_var                   = OpVariable              %input_buffer_storage_buffer_ptr  "
+            "StorageBuffer\n"
             "%output_data_var                  = OpVariable              %output_buffer_storage_buffer_ptr "
             "StorageBuffer\n");
         break;
@@ -3813,9 +4134,6 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
     case PointerTestCases::OP_PTR_ACCESS_CHAIN_VARIABLE_PTR:
     {
         variables += std::string(
-            /* Contants */
-            "%c_uint32_${threadCount}          = OpConstant  %uint32      ${threadCount}\n"
-
             /* Arrays */
             "%array_${baseType}_${threadCount} = OpTypeArray %${baseType} %c_uint32_${threadCount}\n"
 
@@ -3824,11 +4142,12 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
             "%output_buffer                    = OpTypeStruct            %array_${baseType}_${threadCount}\n"
 
             /* Pointers */
-            "%${baseType}_storage_buffer_ptr   = OpTypePointer           StorageBuffer                     "
+            "%${baseType}_storage_buffer_ptr     = OpTypePointer           StorageBuffer                     "
             "%${baseType}\n"
-            "%output_buffer_storage_buffer_ptr = OpTypePointer           StorageBuffer                     "
+            "%output_buffer_storage_buffer_ptr   = OpTypePointer           StorageBuffer                     "
             "%output_buffer\n"
-            "%storage_buffer_untyped_ptr       = OpTypeUntypedPointerKHR StorageBuffer\n"
+            "%strided_storage_buffer_untyped_ptr = OpTypeUntypedPointerKHR StorageBuffer\n"
+            "%storage_buffer_untyped_ptr =         OpTypeUntypedPointerKHR StorageBuffer\n"
 
             /* Objects */
             "%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       "
@@ -3840,8 +4159,11 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
     case PointerTestCases::OP_FUNCTION_CALL_VARIABLE_PTR:
     {
         variables += std::string(
+            /* Arrays */
+            "%array_32 = OpTypeArray %${baseType} %c_uint32_32\n"
+
             /* Struct */
-            "%input_buffer                     = OpTypeStruct %${baseType}\n"
+            "%input_buffer                     = OpTypeStruct %array_32\n"
             "%output_buffer                    = OpTypeStruct %${baseType}\n"
 
             /* Pointers */
@@ -3861,24 +4183,23 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
     case PointerTestCases::MULTIPLE_ACCESS_CHAINS_VARIABLE_PTR:
     {
         variables += std::string(
-            /* Base types */
-            "%vec2_${baseType}                 = OpTypeVector %${baseType} 2\n"
+            /* Arrays */
+            "%array_first_32                   = OpTypeArray %${baseType}  %c_uint32_32\n"
+            "${secondArray}\n"
 
             /* Struct */
-            "%data_buffer                      = OpTypeStruct %${baseType} %${baseType}\n"
-            "%input_buffer                     = OpTypeStruct %vec2_${baseType}\n"
-            "%output_buffer                    = OpTypeStruct %data_buffer\n"
+            "%input_buffer                     = OpTypeStruct             %array_first_32\n"
+            "%output_buffer                    = OpTypeStruct             %${otherType}\n"
 
             /* Pointers */
-            "%${baseType}_storage_buffer_ptr   = OpTypePointer           StorageBuffer                     "
-            "%${baseType}\n"
-            "%output_buffer_storage_buffer_ptr = OpTypePointer           StorageBuffer                     "
-            "%output_buffer\n"
-            "%storage_buffer_untyped_ptr       = OpTypeUntypedPointerKHR StorageBuffer\n"
+            "%other_type_storage_buffer_ptr    = OpTypePointer            StorageBuffer     %${otherType}\n"
+            "%input_buffer_storage_buffer_ptr  = OpTypePointer            StorageBuffer     %input_buffer\n"
+            "%output_buffer_storage_buffer_ptr = OpTypePointer            StorageBuffer     %output_buffer\n"
+            "%storage_buffer_untyped_ptr       = OpTypeUntypedPointerKHR  StorageBuffer\n"
 
             /* Objects */
-            "%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       "
-            "StorageBuffer %input_buffer\n"
+            "%input_data_var                   = OpVariable              %input_buffer_storage_buffer_ptr  "
+            "StorageBuffer\n"
             "%output_data_var                  = OpVariable              %output_buffer_storage_buffer_ptr "
             "StorageBuffer\n");
         break;
@@ -3887,11 +4208,14 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
     {
         variables += std::string(
             /* Struct */
+            "%push_constant                           = OpTypeStruct %uint32\n"
             "%input_buffer_0                          = OpTypeStruct %${baseType}\n"
             "%input_buffer_1                          = OpTypeStruct %${baseType}\n"
             "%output_buffer                           = OpTypeStruct %${baseType}\n"
 
             /* Pointers */
+            "%push_constant_ptr                       = OpTypePointer           PushConstant  %push_constant\n"
+            "%uint32_push_constant_ptr                = OpTypePointer           PushConstant  %uint32\n"
             "%${baseType}_storage_buffer_ptr          = OpTypePointer           StorageBuffer                     "
             "%${baseType}\n"
             "%output_buffer_storage_buffer_ptr        = OpTypePointer           StorageBuffer                     "
@@ -3901,6 +4225,8 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
             "%storage_buffer_untyped_ptr\n"
 
             /* Objects */
+            "%push_constant_var                       = OpVariable              %push_constant_ptr                "
+            "PushConstant\n"
             "%input_data_0_untyped_var                = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       "
             "StorageBuffer %input_buffer_0\n"
             "%input_data_1_untyped_var                = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       "
@@ -3913,11 +4239,14 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
     {
         variables += std::string(
             /* Struct */
+            "%push_constant                           = OpTypeStruct %uint32\n"
             "%input_buffer_0                          = OpTypeStruct %${baseType}\n"
             "%input_buffer_1                          = OpTypeStruct %${baseType}\n"
             "%output_buffer                           = OpTypeStruct %${baseType}\n"
 
             /* Pointers */
+            "%push_constant_ptr                       = OpTypePointer           PushConstant  %push_constant\n"
+            "%uint32_push_constant_ptr                = OpTypePointer           PushConstant  %uint32\n"
             "%${baseType}_storage_buffer_ptr          = OpTypePointer           StorageBuffer                     "
             "%${baseType}\n"
             "%output_buffer_storage_buffer_ptr        = OpTypePointer           StorageBuffer                     "
@@ -3927,6 +4256,8 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
             "%storage_buffer_untyped_ptr\n"
 
             /* Objects */
+            "%push_constant_var                       = OpVariable              %push_constant_ptr                "
+            "PushConstant\n"
             "%input_data_0_untyped_var                = OpUntypedVariableKHR    %storage_buffer_untyped_ptr            "
             " StorageBuffer %input_buffer_0\n"
             "%input_data_1_untyped_var                = OpUntypedVariableKHR    %storage_buffer_untyped_ptr            "
@@ -3935,6 +4266,30 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
             " StorageBuffer\n"
             "%output_copy_private_var                 = OpVariable              "
             "%storage_buffer_untyped_ptr_private_ptr Private\n");
+        break;
+    }
+    case PointerTestCases::WORKGROUP_MEMORY_VARIABLE_PTR:
+    {
+        variables += std::string(
+            /* Arrays */
+            "%array_base                      = OpTypeArray %${baseType}  %c_uint32_64\n"
+
+            /* Struct */
+            "%input_buffer                     = OpTypeStruct             %array_base\n"
+            "%output_buffer                    = OpTypeStruct             %array_base\n"
+            "%shared_buffer                    = OpTypeStruct             %array_base\n"
+
+            /* Pointers */
+            "%${baseType}_storage_buffer_ptr   = OpTypePointer            StorageBuffer     %${baseType}\n"
+            "%input_buffer_storage_buffer_ptr  = OpTypePointer            StorageBuffer     %input_buffer\n"
+            "%output_buffer_storage_buffer_ptr = OpTypePointer            StorageBuffer     %output_buffer\n"
+            "%storage_buffer_untyped_ptr       = OpTypeUntypedPointerKHR  StorageBuffer\n"
+            "%workgroup_untyped_ptr            = OpTypeUntypedPointerKHR  Workgroup\n"
+
+            /* Objects */
+            "%input_data_var        = OpVariable %input_buffer_storage_buffer_ptr  StorageBuffer\n"
+            "%output_data_var       = OpVariable %output_buffer_storage_buffer_ptr StorageBuffer\n"
+            "%workgroup_untyped_var = OpUntypedVariableKHR  %workgroup_untyped_ptr Workgroup %shared_buffer\n");
         break;
     }
     default:
@@ -4365,7 +4720,9 @@ std::string createSimpleFunction(POINTER_TEST_CASE opType)
             "%simple_function       = OpFunction          %storage_buffer_untyped_ptr None %simple_function_type\n"
             "%input_ptr             = OpFunctionParameter %storage_buffer_untyped_ptr\n"
             "%label_simple_function = OpLabel\n"
-            "                         OpReturnValue       %input_ptr\n"
+            "%offseted_ptr          = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr   %array_32    "
+            "                                                 %input_ptr                    %c_uint32_4\n"
+            "                         OpReturnValue           %offseted_ptr\n"
             "                         OpFunctionEnd\n");
     }
 
@@ -4904,6 +5261,10 @@ std::string createShaderMain(POINTER_TEST_CASE testCase)
     case PointerTestCases::OP_SELECT_VARIABLE_PTR:
     {
         main += std::string(
+            "%push_const_loc   = OpAccessChain           %uint32_push_constant_ptr                    "
+            "%push_constant_var        %c_uint32_0\n"
+            "%condition_int    = OpLoad                  %uint32                         %push_const_loc\n"
+            "%condition_bool   = OpIEqual                %bool            %condition_int %c_uint32_1\n"
             "%input_loc_first  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer_0    "
             "%input_data_0_untyped_var %c_uint32_0\n"
             "%input_loc_second = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer_1    "
@@ -4911,7 +5272,8 @@ std::string createShaderMain(POINTER_TEST_CASE testCase)
             "%output_loc       = OpAccessChain           %${baseType}_storage_buffer_ptr                    "
             "%output_data_var          %c_uint32_0\n"
 
-            "%selected_ptr     = OpSelect %storage_buffer_untyped_ptr ${condition} %input_loc_first %input_loc_second\n"
+            "%selected_ptr     = OpSelect %storage_buffer_untyped_ptr %condition_bool %input_loc_first "
+            "%input_loc_second\n"
 
             "%selected_ptr_loc = OpLoad  %${baseType} %selected_ptr\n"
             "                    OpStore %output_loc  %selected_ptr_loc\n");
@@ -4920,6 +5282,10 @@ std::string createShaderMain(POINTER_TEST_CASE testCase)
     case PointerTestCases::OP_PHI_VARIABLE_PTR:
     {
         main += std::string(
+            "%push_const_loc   = OpAccessChain           %uint32_push_constant_ptr                    "
+            "%push_constant_var        %c_uint32_0\n"
+            "%condition_int    = OpLoad                  %uint32                         %push_const_loc\n"
+            "%condition_bool   = OpIEqual                %bool            %condition_int %c_uint32_1\n"
             "%input_loc_first  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer_0    "
             "%input_data_0_untyped_var %c_uint32_0\n"
             "%input_loc_second = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer_1    "
@@ -4928,7 +5294,7 @@ std::string createShaderMain(POINTER_TEST_CASE testCase)
             "%output_data_var          %c_uint32_0\n"
 
             "                    OpSelectionMerge        %end_label                      None\n"
-            "                    OpBranchConditional     ${condition}                    %take_input_0      "
+            "                    OpBranchConditional     %condition_bool                 %take_input_0      "
             "%take_input_1\n"
             "%take_input_0     = OpLabel\n"
             "                    OpBranch                %end_label\n"
@@ -4945,46 +5311,29 @@ std::string createShaderMain(POINTER_TEST_CASE testCase)
     case PointerTestCases::OP_PTR_EQUAL_VARIABLE_PTR:
     {
         main += std::string(
-            "%input_loc_first  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer_0    "
-            "%input_data_0_untyped_var %c_uint32_0\n"
-            "%input_loc_second = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer_1    "
-            "%input_data_1_untyped_var %c_uint32_0\n"
-            "%output_loc       = OpAccessChain           %${baseType}_storage_buffer_ptr                    "
-            "%output_data_var          %c_uint32_0\n"
+            "${mainLogic}\n"
+            "%output_loc       = OpAccessChain           %output_uint32_storage_buffer_ptr                    "
+            "                    %output_data_var        %c_uint32_0\n"
 
-            "%are_equal        = OpPtrEqual              %bool                           %input_loc_first   "
-            "%input_loc_second\n"
-            "%selected_ptr     = OpSelect                %storage_buffer_untyped_ptr     %are_equal         "
-            "%input_loc_first          %input_loc_second\n"
-            "%selected_ptr_loc = OpLoad                  %${baseType}                    %selected_ptr\n"
-            "                    OpStore                 %output_loc                     %selected_ptr_loc\n");
+            "%selected         = OpSelect                %uint32  %are_equal %c_uint32_1 %c_uint32_0\n"
+            "                    OpStore                 %output_loc                     %selected\n");
         break;
     }
     case PointerTestCases::OP_PTR_NOT_EQUAL_VARIABLE_PTR:
     {
         main += std::string(
-            "%input_loc_first  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer_0    "
-            "%input_data_0_untyped_var %c_uint32_0\n"
-            "%input_loc_second = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer_1    "
-            "%input_data_1_untyped_var %c_uint32_0\n"
-            "%output_loc       = OpAccessChain           %${baseType}_storage_buffer_ptr                    "
-            "%output_data_var          %c_uint32_0\n"
+            "${mainLogic}\n"
+            "%output_loc       = OpAccessChain           %output_uint32_storage_buffer_ptr                    "
+            "                    %output_data_var        %c_uint32_0\n"
 
-            "%are_not_equal    = OpPtrNotEqual           %bool                           %input_loc_first   "
-            "%input_loc_second\n"
-            "%selected_ptr     = OpSelect                %storage_buffer_untyped_ptr     %are_not_equal     "
-            "%input_loc_first          %input_loc_second\n"
-            "%selected_ptr_loc = OpLoad                  %${baseType}                    %selected_ptr\n"
-            "                    OpStore                 %output_loc                     %selected_ptr_loc\n");
+            "%selected         = OpSelect                %uint32  %are_equal %c_uint32_1 %c_uint32_0\n"
+            "                    OpStore                 %output_loc                     %selected\n");
         break;
     }
     case PointerTestCases::OP_PTR_DIFF_VARIABLE_PTR:
     {
         main += std::string(
-            "%input_loc_first_ptr   = OpUntypedAccessChainKHR    %storage_buffer_untyped_ptr     %input_buffer         "
-            "%input_data_untyped_var %c_uint32_0 %c_uint32_0\n"
-            "%input_loc_second_ptr =  OpUntypedAccessChainKHR    %storage_buffer_untyped_ptr     %input_buffer         "
-            "%input_data_untyped_var %c_uint32_0 %c_uint32_16\n"
+            "${mainLogic}\n"
             "%output_loc           = OpAccessChain              %uint32_storage_buffer_ptr                            "
             "%output_data_var        %c_uint32_0\n"
 
@@ -4999,12 +5348,12 @@ std::string createShaderMain(POINTER_TEST_CASE testCase)
             "%id_loc          = OpAccessChain %uint32_input_ptr %id %c_uint32_0\n"
             "%x               = OpLoad %uint32 %id_loc\n"
 
-            "%input_loc       = OpUntypedAccessChainKHR    %storage_buffer_untyped_ptr     %input_buffer      "
-            "%input_data_untyped_var   %c_uint32_0 %c_uint32_0\n"
-            "%input_loc_ptr   = OpUntypedPtrAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer      "
-            "%input_loc                %x\n"
+            "%input_loc       = OpUntypedAccessChainKHR    %strided_storage_buffer_untyped_ptr  %input_buffer      "
+            "                   %input_data_untyped_var    %c_uint32_0  %c_uint32_0\n"
+            "%input_loc_ptr   = OpUntypedPtrAccessChainKHR %storage_buffer_untyped_ptr     %${baseType}      "
+            "                   %input_loc                 %x\n"
             "%output_loc      = OpAccessChain              %${baseType}_storage_buffer_ptr                    "
-            "%output_data_var          %c_uint32_0 %x\n"
+            "                   %output_data_var           %c_uint32_0 %x\n"
 
             "%input_ptr_loc   = OpLoad                     %${baseType}                    %input_loc_ptr\n"
             "                   OpStore                    %output_loc                     %input_ptr_loc\n");
@@ -5013,8 +5362,10 @@ std::string createShaderMain(POINTER_TEST_CASE testCase)
     case PointerTestCases::OP_FUNCTION_CALL_VARIABLE_PTR:
     {
         main += std::string(
-            "%input_loc        = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer      "
+            "%input_array_loc  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer      "
             "%input_data_untyped_var   %c_uint32_0\n"
+            "%input_loc        = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr     %array_32      "
+            "%input_array_loc   %c_uint32_4\n"
             "%output_loc       = OpAccessChain           %${baseType}_storage_buffer_ptr                    "
             "%output_data_var          %c_uint32_0\n"
 
@@ -5027,14 +5378,17 @@ std::string createShaderMain(POINTER_TEST_CASE testCase)
     }
     case PointerTestCases::MULTIPLE_ACCESS_CHAINS_VARIABLE_PTR:
     {
-        main += std::string(
-            "%input_data_var_loc  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr         %input_buffer        "
-            "%input_data_untyped_var\n"
-            "%data_var_loc        = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr         %output_buffer       "
-            "%input_data_var_loc\n"
-            "%loaded_data         = OpLoad                  %output_buffer                      %data_var_loc\n"
-            "%output_data_var_loc = OpAccessChain           %output_buffer_storage_buffer_ptr   %output_data_var\n"
-            "                       OpStore                 %output_data_var_loc                %loaded_data\n");
+        main +=
+            std::string("%output_loc       = OpAccessChain          %other_type_storage_buffer_ptr "
+                        "%output_data_var          %c_uint32_0\n"
+                        "%input_array_loc  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr %input_buffer "
+                        "%input_data_var %c_uint32_0\n"
+                        "%elem_4th_first   = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr "
+                        "%array_first_32 %input_array_loc %c_uint32_4\n"
+                        "%elem_8th_second  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr "
+                        "%array_second_32 %elem_4th_first %c_uint32_8\n"
+                        "%elem_loc         = OpLoad                  %${otherType}                %elem_8th_second\n"
+                        "                    OpStore                 %output_loc                  %elem_loc\n");
         break;
     }
     case PointerTestCases::FUNCTION_VARIABLE_VARIABLE_PTR:
@@ -5042,6 +5396,10 @@ std::string createShaderMain(POINTER_TEST_CASE testCase)
         main += std::string(
             "%output_copy_function_var = OpVariable                 %storage_buffer_untyped_ptr_function_ptr Function\n"
 
+            "%push_const_loc           = OpAccessChain           %uint32_push_constant_ptr                    "
+            "%push_constant_var        %c_uint32_0\n"
+            "%condition_int            = OpLoad                  %uint32                         %push_const_loc\n"
+            "%condition_bool           = OpIEqual                %bool            %condition_int %c_uint32_1\n"
             "%input_loc_first          = OpUntypedAccessChainKHR    %storage_buffer_untyped_ptr              "
             "%input_buffer_0           %input_data_0_untyped_var %c_uint32_0\n"
             "%input_loc_second         = OpUntypedAccessChainKHR    %storage_buffer_untyped_ptr              "
@@ -5050,7 +5408,7 @@ std::string createShaderMain(POINTER_TEST_CASE testCase)
             "                %output_data_var          %c_uint32_0\n"
 
             "%selected_ptr             = OpSelect                   %storage_buffer_untyped_ptr              "
-            "${condition}              %input_loc_first          %input_loc_second\n"
+            "%condition_bool              %input_loc_first          %input_loc_second\n"
 
             "                            OpStore                    %output_copy_function_var                "
             "%selected_ptr\n"
@@ -5064,24 +5422,49 @@ std::string createShaderMain(POINTER_TEST_CASE testCase)
     }
     case PointerTestCases::PRIVATE_VARIABLE_VARIABLE_PTR:
     {
-        main += std::string("%input_loc_first          = OpUntypedAccessChainKHR    %storage_buffer_untyped_ptr        "
-                            "      %input_buffer_0           %input_data_0_untyped_var %c_uint32_0\n"
-                            "%input_loc_second         = OpUntypedAccessChainKHR    %storage_buffer_untyped_ptr        "
-                            "      %input_buffer_1           %input_data_1_untyped_var %c_uint32_0\n"
-                            "%output_loc               = OpAccessChain              %${baseType}_storage_buffer_ptr    "
-                            "                                %output_data_var          %c_uint32_0\n"
+        main += std::string(
+            "%push_const_loc           = OpAccessChain              %uint32_push_constant_ptr                    "
+            "%push_constant_var        %c_uint32_0\n"
+            "%condition_int            = OpLoad                     %uint32          %push_const_loc\n"
+            "%condition_bool           = OpIEqual                   %bool            %condition_int %c_uint32_1\n"
+            "%input_loc_first          = OpUntypedAccessChainKHR    %storage_buffer_untyped_ptr        "
+            "      %input_buffer_0           %input_data_0_untyped_var %c_uint32_0\n"
+            "%input_loc_second         = OpUntypedAccessChainKHR    %storage_buffer_untyped_ptr        "
+            "      %input_buffer_1           %input_data_1_untyped_var %c_uint32_0\n"
+            "%output_loc               = OpAccessChain              %${baseType}_storage_buffer_ptr    "
+            "                                %output_data_var          %c_uint32_0\n"
 
-                            "%selected_ptr             = OpSelect                   %storage_buffer_untyped_ptr        "
-                            "      ${condition}              %input_loc_first          %input_loc_second\n"
+            "%selected_ptr             = OpSelect                   %storage_buffer_untyped_ptr        "
+            "      %condition_bool        %input_loc_first          %input_loc_second\n"
 
-                            "                            OpStore                    %output_copy_private_var           "
-                            "      %selected_ptr\n"
-                            "%output_copy_loc_unty_ptr = OpLoad                     %storage_buffer_untyped_ptr        "
-                            "      %output_copy_private_var\n"
-                            "%output_copy_loc          = OpLoad                     %${baseType}                       "
-                            "      %output_copy_loc_unty_ptr\n"
-                            "                            OpStore                    %output_loc                        "
-                            "      %output_copy_loc\n");
+            "                            OpStore                    %output_copy_private_var           "
+            "      %selected_ptr\n"
+            "%output_copy_loc_unty_ptr = OpLoad                     %storage_buffer_untyped_ptr        "
+            "      %output_copy_private_var\n"
+            "%output_copy_loc          = OpLoad                     %${baseType}                       "
+            "      %output_copy_loc_unty_ptr\n"
+            "                            OpStore                    %output_loc                        "
+            "      %output_copy_loc\n");
+        break;
+    }
+    case PointerTestCases::WORKGROUP_MEMORY_VARIABLE_PTR:
+    {
+        main += std::string(
+            "%id_loc          = OpAccessChain %uint32_input_ptr %id %c_uint32_0\n"
+            "%x               = OpLoad        %uint32           %id_loc\n"
+
+            "%input_loc       = OpAccessChain %${baseType}_storage_buffer_ptr %input_data_var %c_uint32_0 %x\n"
+            "%input_elem      = OpLoad        %${baseType}                    %input_loc\n"
+
+            "%shared_loc      = OpUntypedAccessChainKHR %workgroup_untyped_ptr %shared_buffer %workgroup_untyped_var "
+            "                   %c_uint32_0 %x\n"
+            "                   OpStore                 %shared_loc            %input_elem\n"
+
+            "                   OpControlBarrier %c_uint32_2 %c_uint32_2 %c_uint32_264\n"
+
+            "%output_elem     = OpLoad        %${baseType}                    %shared_loc\n"
+            "%output_loc      = OpAccessChain %${baseType}_storage_buffer_ptr %output_data_var %c_uint32_0 %x\n"
+            "                   OpStore       %output_loc                     %output_elem\n");
         break;
     }
     default:
@@ -7602,7 +7985,7 @@ void addVariablePtrOpSelectTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYP
     de::MovePtr<tcu::TestCaseGroup> secondGroup(new tcu::TestCaseGroup(testCtx, "second", ""));
 
     tcu::StringTemplate shaderHeader(
-        createShaderHeader("%input_data_0_untyped_var %input_data_1_untyped_var %output_data_var"));
+        createShaderHeader("%push_constant_var %input_data_0_untyped_var %input_data_1_untyped_var %output_data_var"));
 
     tcu::StringTemplate shaderAnnotations(createShaderAnnotations(PointerTestCases::OP_SELECT_VARIABLE_PTR));
 
@@ -7617,17 +8000,6 @@ void addVariablePtrOpSelectTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYP
             std::string testName = toString(BASE_DATA_TYPE_CASES[i]);
 
             std::map<std::string, std::string> specMap;
-            if (j)
-            {
-                specMap["boolConst"] = "%c_bool_true = OpConstantTrue %bool";
-                specMap["condition"] = "%c_bool_true";
-            }
-            else
-            {
-                specMap["boolConst"] = "%c_bool_false = OpConstantFalse %bool";
-                specMap["condition"] = "%c_bool_false";
-            }
-
             specMap["baseDecl"] = getDeclaration(BASE_DATA_TYPE_CASES[i]);
             specMap["baseType"] = toString(BASE_DATA_TYPE_CASES[i]);
 
@@ -7680,9 +8052,14 @@ void addVariablePtrOpSelectTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYP
                 spec.outputs.push_back(output);
             }
 
+            desc.dataType      = DataTypes::UINT32;
+            desc.value         = j;
+            Resource pushConst = createFilledResource(desc);
+
             spec.assembly      = shaderAsm;
             spec.numWorkGroups = tcu::IVec3(1, 1, 1);
             spec.spirvVersion  = SPIRV_VERSION_1_4;
+            spec.pushConstants = pushConst.getBuffer();
             spec.inputs.push_back(input0);
             spec.inputs.push_back(input1);
             spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
@@ -7819,7 +8196,7 @@ void addVariablePtrOpPhiTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE m
     de::MovePtr<tcu::TestCaseGroup> secondGroup(new tcu::TestCaseGroup(testCtx, "second", ""));
 
     tcu::StringTemplate shaderHeader(
-        createShaderHeader("%input_data_0_untyped_var %input_data_1_untyped_var %output_data_var"));
+        createShaderHeader("%push_constant_var %input_data_0_untyped_var %input_data_1_untyped_var %output_data_var"));
 
     tcu::StringTemplate shaderAnnotations(createShaderAnnotations(PointerTestCases::OP_PHI_VARIABLE_PTR));
 
@@ -7834,17 +8211,6 @@ void addVariablePtrOpPhiTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE m
             std::string testName = toString(BASE_DATA_TYPE_CASES[i]);
 
             std::map<std::string, std::string> specMap;
-            if (j)
-            {
-                specMap["boolConst"] = "%c_bool_true = OpConstantTrue %bool";
-                specMap["condition"] = "%c_bool_true";
-            }
-            else
-            {
-                specMap["boolConst"] = "%c_bool_false = OpConstantFalse %bool";
-                specMap["condition"] = "%c_bool_false";
-            }
-
             specMap["baseDecl"]  = getDeclaration(BASE_DATA_TYPE_CASES[i]);
             specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
             specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
@@ -7898,10 +8264,15 @@ void addVariablePtrOpPhiTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE m
                 spec.outputs.push_back(output);
             }
 
+            desc.dataType      = DataTypes::UINT32;
+            desc.value         = j;
+            Resource pushConst = createFilledResource(desc);
+
             spec.assembly      = shaderAsm;
             spec.numWorkGroups = tcu::IVec3(1, 1, 1);
             spec.spirvVersion =
                 SPIRV_VERSION_1_4; // After spir-v version 1.6 OpBranchConditional labels nust not be the same.
+            spec.pushConstants = pushConst.getBuffer();
             spec.inputs.push_back(input0);
             spec.inputs.push_back(input1);
             spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
@@ -8038,8 +8409,7 @@ void addVariablePtrOpPtrEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_T
     de::MovePtr<tcu::TestCaseGroup> equalGroup(new tcu::TestCaseGroup(testCtx, "equal", ""));
     de::MovePtr<tcu::TestCaseGroup> notEqualGroup(new tcu::TestCaseGroup(testCtx, "not_equal", ""));
 
-    tcu::StringTemplate shaderHeader(
-        createShaderHeader("%input_data_0_untyped_var %input_data_1_untyped_var %output_data_var"));
+    tcu::StringTemplate shaderHeader(createShaderHeader("%input_data_var %output_data_var"));
 
     tcu::StringTemplate shaderAnnotations(createShaderAnnotations(PointerTestCases::OP_PTR_EQUAL_VARIABLE_PTR));
 
@@ -8047,81 +8417,410 @@ void addVariablePtrOpPtrEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_T
 
     tcu::StringTemplate shaderFunctions(createShaderMain(PointerTestCases::OP_PTR_EQUAL_VARIABLE_PTR));
 
+    // Equal - same buffer same index
     for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
     {
-        for (uint32_t j = 0; j < 2; ++j)
+        std::string testName = toString(BASE_DATA_TYPE_CASES[i]);
+
+        std::map<std::string, std::string> specMap;
+        specMap["baseDecl"]  = getDeclaration(BASE_DATA_TYPE_CASES[i]);
+        specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
+        specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+        specMap["mainLogic"] =
+            "%input_loc_first  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer    "
+            "%input_data_var %c_uint32_0 %c_uint32_2\n"
+            "%input_loc_second = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer    "
+            "%input_data_var %c_uint32_0 %c_uint32_2\n"
+            "%are_equal        = OpPtrEqual              %bool                           %input_loc_first   "
+            "%input_loc_second\n";
+
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForVariablePointers(spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]                         = memModelOp;
+        specMap["extensions"]                         = toString(spvExts);
+        specMap["capabilities"]                       = toString(spvCaps);
+        const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
+
+        std::string shaderVariablesStr = shaderVariables.specialize(specMap);
+        if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
         {
-            std::string testName = toString(BASE_DATA_TYPE_CASES[i]);
-
-            std::map<std::string, std::string> specMap;
-            specMap["baseDecl"] = getDeclaration(BASE_DATA_TYPE_CASES[i]);
-            specMap["baseType"] = toString(BASE_DATA_TYPE_CASES[i]);
-
-            std::string memModelOp;
-            std::vector<const char *> spvExts;
-            std::vector<const char *> spvCaps;
-            ComputeShaderSpec spec;
-            adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
-            adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
-            adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
-            adjustSpecForVariablePointers(spec, spvExts, spvCaps);
-
-            specMap["memModelOp"]                         = memModelOp;
-            specMap["extensions"]                         = toString(spvExts);
-            specMap["capabilities"]                       = toString(spvCaps);
-            const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
-
-            std::string shaderVariablesStr = shaderVariables.specialize(specMap);
-            if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
-            {
-                shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
-            }
-
-            const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
-                                          shaderVariablesStr + tempShaderFunctions.specialize(specMap);
-
-            FilledResourceDesc desc;
-            desc.dataType       = BASE_DATA_TYPE_CASES[i];
-            desc.elemCount      = 1;
-            desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            desc.padding        = 0;
-            desc.fillType       = FillingTypes::VALUE;
-            desc.value          = 1.0;
-
-            if (j)
-            {
-                Resource input0 = createFilledResource(desc);
-                Resource input1 = createFilledResource(desc);
-                Resource output = createFilledResource(desc);
-                spec.inputs.push_back(input0);
-                spec.inputs.push_back(input1);
-                spec.outputs.push_back(output);
-            }
-            else
-            {
-                Resource input0 = createFilledResource(desc);
-                desc.value      = 0.0;
-                Resource input1 = createFilledResource(desc);
-                Resource output = createFilledResource(desc);
-                spec.inputs.push_back(input0);
-                spec.inputs.push_back(input1);
-                spec.outputs.push_back(output);
-            }
-
-            spec.assembly      = shaderAsm;
-            spec.numWorkGroups = tcu::IVec3(1, 1, 1);
-            spec.spirvVersion  = SPIRV_VERSION_1_4; // OpPtrEqual, OpPtrNotEqual and OpPtrDiff requires SPIR-V 1.4
-            spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-
-            if (j)
-            {
-                equalGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
-            }
-            else
-            {
-                notEqualGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
-            }
+            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
         }
+
+        const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
+                                      shaderVariablesStr + tempShaderFunctions.specialize(specMap);
+
+        FilledResourceDesc desc;
+        desc.dataType       = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount      = 32;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::INCREMENTED;
+        Resource input      = createFilledResource(desc);
+
+        desc.dataType       = DataTypes::UINT32;
+        desc.elemCount      = 1;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::VALUE;
+        desc.value          = 1;
+        Resource output     = createFilledResource(desc);
+
+        spec.assembly      = shaderAsm;
+        spec.numWorkGroups = tcu::IVec3(1, 1, 1);
+        spec.spirvVersion  = SPIRV_VERSION_1_4; // OpPtrEqual, OpPtrNotEqual and OpPtrDiff requires SPIR-V 1.4
+        spec.inputs.push_back(input);
+        spec.outputs.push_back(output);
+        spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
+
+        equalGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+    }
+
+    // Equal - same byte offset indexed as different types
+    for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
+    {
+        std::string testName =
+            toString(BASE_DATA_TYPE_CASES[i]) + std::string(getNameStrForVarPtrs(BASE_DATA_TYPE_CASES[i]));
+
+        std::map<std::string, std::string> specMap;
+        specMap["baseDecl"]              = getDeclaration(BASE_DATA_TYPE_CASES[i]);
+        specMap["baseType"]              = toString(BASE_DATA_TYPE_CASES[i]);
+        specMap["secondType"]            = getSecondTypeDefinitionForVarPtrs(BASE_DATA_TYPE_CASES[i]);
+        specMap["secondArray"]           = getSecondArrayDefinitionForVarPtrs(BASE_DATA_TYPE_CASES[i]);
+        specMap["alignment"]             = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+        specMap["secondArrayDecoration"] = getSecondArrayDecorationForVarPtrs(BASE_DATA_TYPE_CASES[i]);
+        specMap["mainLogic"] = "%input_array_loc = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr %input_buffer "
+                               "%input_data_var %c_uint32_0\n"
+                               "%input_loc_first = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr "
+                               "%array_first_32 %input_array_loc %c_uint32_4\n"
+                               "%input_loc_second = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr "
+                               "%array_second_32 %input_array_loc " +
+                               std::string(getSameByteIndexForVarPtrs(BASE_DATA_TYPE_CASES[i])) +
+                               "%are_equal        = OpPtrEqual              %bool       "
+                               "                    %input_loc_first   "
+                               "%input_loc_second\n";
+
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForDataTypes(DataTypes::INT16, spec, spvExts, spvCaps);
+        adjustSpecForVariablePointers(spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]                         = memModelOp;
+        specMap["extensions"]                         = toString(spvExts);
+        specMap["capabilities"]                       = toString(spvCaps);
+        const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
+
+        std::string shaderVariablesStr = shaderVariables.specialize(specMap);
+        if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+        {
+            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
+        }
+
+        const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
+                                      shaderVariablesStr + tempShaderFunctions.specialize(specMap);
+
+        FilledResourceDesc desc;
+        desc.dataType       = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount      = 32;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::INCREMENTED;
+        Resource input      = createFilledResource(desc);
+
+        desc.dataType       = DataTypes::UINT32;
+        desc.elemCount      = 1;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::VALUE;
+        desc.value          = 1;
+        Resource output     = createFilledResource(desc);
+
+        spec.assembly      = shaderAsm;
+        spec.numWorkGroups = tcu::IVec3(1, 1, 1);
+        spec.spirvVersion  = SPIRV_VERSION_1_4; // OpPtrEqual, OpPtrNotEqual and OpPtrDiff requires SPIR-V 1.4
+        spec.inputs.push_back(input);
+        spec.outputs.push_back(output);
+        spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
+
+        equalGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+    }
+
+    // Equal - typed and untyped pointer
+    for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
+    {
+        std::string testName = toString(BASE_DATA_TYPE_CASES[i]) + std::string("_typed_and_untyped");
+
+        std::map<std::string, std::string> specMap;
+        specMap["baseDecl"]  = getDeclaration(BASE_DATA_TYPE_CASES[i]);
+        specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
+        specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+        specMap["mainLogic"] =
+            "%input_loc_first  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr       %input_buffer    "
+            "%input_data_var  %c_uint32_0 %c_uint32_2\n"
+            "%input_loc_second = OpAccessChain           %" +
+            std::string(toString(BASE_DATA_TYPE_CASES[i])) +
+            "_storage_buffer_ptr                    "
+            "%input_data_var %c_uint32_0 %c_uint32_2\n"
+            "%are_equal        = OpPtrEqual              %bool                           %input_loc_first   "
+            "%input_loc_second\n";
+
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForVariablePointers(spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]                         = memModelOp;
+        specMap["extensions"]                         = toString(spvExts);
+        specMap["capabilities"]                       = toString(spvCaps);
+        const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
+
+        std::string shaderVariablesStr = shaderVariables.specialize(specMap);
+        if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+        {
+            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
+        }
+
+        const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
+                                      shaderVariablesStr + tempShaderFunctions.specialize(specMap);
+
+        FilledResourceDesc desc;
+        desc.dataType       = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount      = 32;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::INCREMENTED;
+        Resource input      = createFilledResource(desc);
+
+        desc.dataType       = DataTypes::UINT32;
+        desc.elemCount      = 1;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::VALUE;
+        desc.value          = 1;
+        Resource output     = createFilledResource(desc);
+
+        spec.assembly      = shaderAsm;
+        spec.numWorkGroups = tcu::IVec3(1, 1, 1);
+        spec.spirvVersion  = SPIRV_VERSION_1_4; // OpPtrEqual, OpPtrNotEqual and OpPtrDiff requires SPIR-V 1.4
+        spec.inputs.push_back(input);
+        spec.outputs.push_back(output);
+        spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
+
+        equalGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+    }
+
+    // Not equal - same buffer different indices
+    for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
+    {
+        std::string testName = toString(BASE_DATA_TYPE_CASES[i]);
+
+        std::map<std::string, std::string> specMap;
+        specMap["baseDecl"]  = getDeclaration(BASE_DATA_TYPE_CASES[i]);
+        specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
+        specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+        specMap["mainLogic"] =
+            "%input_loc_first  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer    "
+            "%input_data_var %c_uint32_0 %c_uint32_2\n"
+            "%input_loc_second = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer    "
+            "%input_data_var %c_uint32_0 %c_uint32_4\n"
+            "%are_equal        = OpPtrEqual              %bool                           %input_loc_first   "
+            "%input_loc_second\n";
+
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForVariablePointers(spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]                         = memModelOp;
+        specMap["extensions"]                         = toString(spvExts);
+        specMap["capabilities"]                       = toString(spvCaps);
+        const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
+
+        std::string shaderVariablesStr = shaderVariables.specialize(specMap);
+        if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+        {
+            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
+        }
+
+        const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
+                                      shaderVariablesStr + tempShaderFunctions.specialize(specMap);
+
+        FilledResourceDesc desc;
+        desc.dataType       = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount      = 32;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::INCREMENTED;
+        Resource input      = createFilledResource(desc);
+
+        desc.dataType       = DataTypes::UINT32;
+        desc.elemCount      = 1;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::VALUE;
+        desc.value          = 0;
+        Resource output     = createFilledResource(desc);
+
+        spec.assembly      = shaderAsm;
+        spec.numWorkGroups = tcu::IVec3(1, 1, 1);
+        spec.spirvVersion  = SPIRV_VERSION_1_4; // OpPtrEqual, OpPtrNotEqual and OpPtrDiff requires SPIR-V 1.4
+        spec.inputs.push_back(input);
+        spec.outputs.push_back(output);
+        spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
+
+        notEqualGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+    }
+
+    // Not equal - same buffer different indices one typed one untyped pointer
+    for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
+    {
+        std::string testName = toString(BASE_DATA_TYPE_CASES[i]) + std::string("_typed_and_untyped");
+
+        std::map<std::string, std::string> specMap;
+        specMap["baseDecl"]  = getDeclaration(BASE_DATA_TYPE_CASES[i]);
+        specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
+        specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+        specMap["mainLogic"] =
+            "%input_loc_first  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr       %input_buffer    "
+            "%input_data_var  %c_uint32_0 %c_uint32_2\n"
+            "%input_loc_second = OpAccessChain           %" +
+            std::string(toString(BASE_DATA_TYPE_CASES[i])) +
+            "_storage_buffer_ptr                    "
+            "%input_data_var %c_uint32_0 %c_uint32_4\n"
+            "%are_equal        = OpPtrEqual              %bool                           %input_loc_first   "
+            "%input_loc_second\n";
+
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForVariablePointers(spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]                         = memModelOp;
+        specMap["extensions"]                         = toString(spvExts);
+        specMap["capabilities"]                       = toString(spvCaps);
+        const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
+
+        std::string shaderVariablesStr = shaderVariables.specialize(specMap);
+        if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+        {
+            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
+        }
+
+        const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
+                                      shaderVariablesStr + tempShaderFunctions.specialize(specMap);
+
+        FilledResourceDesc desc;
+        desc.dataType       = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount      = 32;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::INCREMENTED;
+        Resource input      = createFilledResource(desc);
+
+        desc.dataType       = DataTypes::UINT32;
+        desc.elemCount      = 1;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::VALUE;
+        desc.value          = 0;
+        Resource output     = createFilledResource(desc);
+
+        spec.assembly      = shaderAsm;
+        spec.numWorkGroups = tcu::IVec3(1, 1, 1);
+        spec.spirvVersion  = SPIRV_VERSION_1_4; // OpPtrEqual, OpPtrNotEqual and OpPtrDiff requires SPIR-V 1.4
+        spec.inputs.push_back(input);
+        spec.outputs.push_back(output);
+        spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
+
+        notEqualGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+    }
+
+    // Not equal - comparsion to null pointers
+    for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
+    {
+        std::string testName = toString(BASE_DATA_TYPE_CASES[i]) + std::string("_null_ptr");
+
+        std::map<std::string, std::string> specMap;
+        specMap["baseDecl"]  = getDeclaration(BASE_DATA_TYPE_CASES[i]);
+        specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
+        specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+        specMap["mainLogic"] =
+            "%input_loc_first  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer    "
+            "%input_data_var %c_uint32_0 %c_uint32_2\n"
+            "%are_equal        = OpPtrEqual              %bool                           %input_loc_first   "
+            "%c_null_untyped_ptr\n";
+
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForVariablePointers(spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]                         = memModelOp;
+        specMap["extensions"]                         = toString(spvExts);
+        specMap["capabilities"]                       = toString(spvCaps);
+        const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
+
+        std::string shaderVariablesStr = shaderVariables.specialize(specMap);
+        if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+        {
+            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
+        }
+
+        const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
+                                      shaderVariablesStr + tempShaderFunctions.specialize(specMap);
+
+        FilledResourceDesc desc;
+        desc.dataType       = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount      = 32;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::INCREMENTED;
+        Resource input      = createFilledResource(desc);
+
+        desc.dataType       = DataTypes::UINT32;
+        desc.elemCount      = 1;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::VALUE;
+        desc.value          = 0;
+        Resource output     = createFilledResource(desc);
+
+        spec.assembly      = shaderAsm;
+        spec.numWorkGroups = tcu::IVec3(1, 1, 1);
+        spec.spirvVersion  = SPIRV_VERSION_1_4; // OpPtrEqual, OpPtrNotEqual and OpPtrDiff requires SPIR-V 1.4
+        spec.inputs.push_back(input);
+        spec.outputs.push_back(output);
+        spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
+
+        notEqualGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
 
     testGroup->addChild(equalGroup.release());
@@ -8135,8 +8834,7 @@ void addVariablePtrOpPtrNotEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
     de::MovePtr<tcu::TestCaseGroup> equalGroup(new tcu::TestCaseGroup(testCtx, "equal", ""));
     de::MovePtr<tcu::TestCaseGroup> notEqualGroup(new tcu::TestCaseGroup(testCtx, "not_equal", ""));
 
-    tcu::StringTemplate shaderHeader(
-        createShaderHeader("%input_data_0_untyped_var %input_data_1_untyped_var %output_data_var"));
+    tcu::StringTemplate shaderHeader(createShaderHeader("%input_data_var %output_data_var"));
 
     tcu::StringTemplate shaderAnnotations(createShaderAnnotations(PointerTestCases::OP_PTR_NOT_EQUAL_VARIABLE_PTR));
 
@@ -8144,81 +8842,410 @@ void addVariablePtrOpPtrNotEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
 
     tcu::StringTemplate shaderFunctions(createShaderMain(PointerTestCases::OP_PTR_NOT_EQUAL_VARIABLE_PTR));
 
+    // Equal - same buffer same index
     for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
     {
-        for (uint32_t j = 0; j < 2; ++j)
+        std::string testName = toString(BASE_DATA_TYPE_CASES[i]);
+
+        std::map<std::string, std::string> specMap;
+        specMap["baseDecl"]  = getDeclaration(BASE_DATA_TYPE_CASES[i]);
+        specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
+        specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+        specMap["mainLogic"] =
+            "%input_loc_first  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer    "
+            "%input_data_var %c_uint32_0 %c_uint32_2\n"
+            "%input_loc_second = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer    "
+            "%input_data_var %c_uint32_0 %c_uint32_2\n"
+            "%are_equal        = OpPtrNotEqual           %bool                           %input_loc_first   "
+            "%input_loc_second\n";
+
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForVariablePointers(spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]                         = memModelOp;
+        specMap["extensions"]                         = toString(spvExts);
+        specMap["capabilities"]                       = toString(spvCaps);
+        const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
+
+        std::string shaderVariablesStr = shaderVariables.specialize(specMap);
+        if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
         {
-            std::string testName = toString(BASE_DATA_TYPE_CASES[i]);
-
-            std::map<std::string, std::string> specMap;
-            specMap["baseDecl"] = getDeclaration(BASE_DATA_TYPE_CASES[i]);
-            specMap["baseType"] = toString(BASE_DATA_TYPE_CASES[i]);
-
-            std::string memModelOp;
-            std::vector<const char *> spvExts;
-            std::vector<const char *> spvCaps;
-            ComputeShaderSpec spec;
-            adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
-            adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
-            adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
-            adjustSpecForVariablePointers(spec, spvExts, spvCaps);
-
-            specMap["memModelOp"]                         = memModelOp;
-            specMap["extensions"]                         = toString(spvExts);
-            specMap["capabilities"]                       = toString(spvCaps);
-            const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
-
-            std::string shaderVariablesStr = shaderVariables.specialize(specMap);
-            if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
-            {
-                shaderVariablesStr = "%uint32 = OpTypeInt 32 0\n" + shaderVariablesStr;
-            }
-
-            const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
-                                          shaderVariablesStr + tempShaderFunctions.specialize(specMap);
-
-            FilledResourceDesc desc;
-            desc.dataType       = BASE_DATA_TYPE_CASES[i];
-            desc.elemCount      = 1;
-            desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            desc.padding        = 0;
-            desc.fillType       = FillingTypes::VALUE;
-            desc.value          = 1.0;
-
-            if (j)
-            {
-                Resource input0 = createFilledResource(desc);
-                Resource input1 = createFilledResource(desc);
-                Resource output = createFilledResource(desc);
-                spec.inputs.push_back(input0);
-                spec.inputs.push_back(input1);
-                spec.outputs.push_back(output);
-            }
-            else
-            {
-                Resource input1 = createFilledResource(desc);
-                desc.value      = 0.0;
-                Resource input0 = createFilledResource(desc);
-                Resource output = createFilledResource(desc);
-                spec.inputs.push_back(input0);
-                spec.inputs.push_back(input1);
-                spec.outputs.push_back(output);
-            }
-
-            spec.assembly      = shaderAsm;
-            spec.numWorkGroups = tcu::IVec3(1, 1, 1);
-            spec.spirvVersion  = SPIRV_VERSION_1_4; // OpPtrEqual, OpPtrNotEqual and OpPtrDiff requires SPIR-V 1.4
-            spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-
-            if (j)
-            {
-                equalGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
-            }
-            else
-            {
-                notEqualGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
-            }
+            shaderVariablesStr = "%uint32 = OpTypeInt 32 0\n" + shaderVariablesStr;
         }
+
+        const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
+                                      shaderVariablesStr + tempShaderFunctions.specialize(specMap);
+
+        FilledResourceDesc desc;
+        desc.dataType       = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount      = 32;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::INCREMENTED;
+        Resource input      = createFilledResource(desc);
+
+        desc.dataType       = DataTypes::UINT32;
+        desc.elemCount      = 1;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::VALUE;
+        desc.value          = 0;
+        Resource output     = createFilledResource(desc);
+
+        spec.assembly      = shaderAsm;
+        spec.numWorkGroups = tcu::IVec3(1, 1, 1);
+        spec.spirvVersion  = SPIRV_VERSION_1_4; // OpPtrEqual, OpPtrNotEqual and OpPtrDiff requires SPIR-V 1.4
+        spec.inputs.push_back(input);
+        spec.outputs.push_back(output);
+        spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
+
+        equalGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+    }
+
+    // Equal - same byte offset indexed as different types
+    for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
+    {
+        std::string testName =
+            toString(BASE_DATA_TYPE_CASES[i]) + std::string(getNameStrForVarPtrs(BASE_DATA_TYPE_CASES[i]));
+
+        std::map<std::string, std::string> specMap;
+        specMap["baseDecl"]              = getDeclaration(BASE_DATA_TYPE_CASES[i]);
+        specMap["baseType"]              = toString(BASE_DATA_TYPE_CASES[i]);
+        specMap["secondType"]            = getSecondTypeDefinitionForVarPtrs(BASE_DATA_TYPE_CASES[i]);
+        specMap["secondArray"]           = getSecondArrayDefinitionForVarPtrs(BASE_DATA_TYPE_CASES[i]);
+        specMap["alignment"]             = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+        specMap["secondArrayDecoration"] = getSecondArrayDecorationForVarPtrs(BASE_DATA_TYPE_CASES[i]);
+        specMap["mainLogic"] = "%input_array_loc = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr %input_buffer "
+                               "%input_data_var %c_uint32_0\n"
+                               "%input_loc_first = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr "
+                               "%array_first_32 %input_array_loc %c_uint32_4\n"
+                               "%input_loc_second = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr "
+                               "%array_second_32 %input_array_loc " +
+                               std::string(getSameByteIndexForVarPtrs(BASE_DATA_TYPE_CASES[i])) +
+                               "%are_equal        = OpPtrNotEqual           %bool       "
+                               "                    %input_loc_first   "
+                               "%input_loc_second\n";
+
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForDataTypes(DataTypes::INT16, spec, spvExts, spvCaps);
+        adjustSpecForVariablePointers(spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]                         = memModelOp;
+        specMap["extensions"]                         = toString(spvExts);
+        specMap["capabilities"]                       = toString(spvCaps);
+        const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
+
+        std::string shaderVariablesStr = shaderVariables.specialize(specMap);
+        if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+        {
+            shaderVariablesStr = "%uint32 = OpTypeInt 32 0\n" + shaderVariablesStr;
+        }
+
+        const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
+                                      shaderVariablesStr + tempShaderFunctions.specialize(specMap);
+
+        FilledResourceDesc desc;
+        desc.dataType       = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount      = 32;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::INCREMENTED;
+        Resource input      = createFilledResource(desc);
+
+        desc.dataType       = DataTypes::UINT32;
+        desc.elemCount      = 1;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::VALUE;
+        desc.value          = 0;
+        Resource output     = createFilledResource(desc);
+
+        spec.assembly      = shaderAsm;
+        spec.numWorkGroups = tcu::IVec3(1, 1, 1);
+        spec.spirvVersion  = SPIRV_VERSION_1_4; // OpPtrEqual, OpPtrNotEqual and OpPtrDiff requires SPIR-V 1.4
+        spec.inputs.push_back(input);
+        spec.outputs.push_back(output);
+        spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
+
+        equalGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+    }
+
+    // Equal - typed and untyped pointer
+    for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
+    {
+        std::string testName = toString(BASE_DATA_TYPE_CASES[i]) + std::string("_typed_and_untyped");
+
+        std::map<std::string, std::string> specMap;
+        specMap["baseDecl"]  = getDeclaration(BASE_DATA_TYPE_CASES[i]);
+        specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
+        specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+        specMap["mainLogic"] =
+            "%input_loc_first  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr       %input_buffer    "
+            "%input_data_var  %c_uint32_0 %c_uint32_2\n"
+            "%input_loc_second = OpAccessChain           %" +
+            std::string(toString(BASE_DATA_TYPE_CASES[i])) +
+            "_storage_buffer_ptr                    "
+            "%input_data_var %c_uint32_0 %c_uint32_2\n"
+            "%are_equal        = OpPtrNotEqual           %bool                           %input_loc_first   "
+            "%input_loc_second\n";
+
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForVariablePointers(spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]                         = memModelOp;
+        specMap["extensions"]                         = toString(spvExts);
+        specMap["capabilities"]                       = toString(spvCaps);
+        const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
+
+        std::string shaderVariablesStr = shaderVariables.specialize(specMap);
+        if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+        {
+            shaderVariablesStr = "%uint32 = OpTypeInt 32 0\n" + shaderVariablesStr;
+        }
+
+        const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
+                                      shaderVariablesStr + tempShaderFunctions.specialize(specMap);
+
+        FilledResourceDesc desc;
+        desc.dataType       = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount      = 32;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::INCREMENTED;
+        Resource input      = createFilledResource(desc);
+
+        desc.dataType       = DataTypes::UINT32;
+        desc.elemCount      = 1;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::VALUE;
+        desc.value          = 0;
+        Resource output     = createFilledResource(desc);
+
+        spec.assembly      = shaderAsm;
+        spec.numWorkGroups = tcu::IVec3(1, 1, 1);
+        spec.spirvVersion  = SPIRV_VERSION_1_4; // OpPtrEqual, OpPtrNotEqual and OpPtrDiff requires SPIR-V 1.4
+        spec.inputs.push_back(input);
+        spec.outputs.push_back(output);
+        spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
+
+        equalGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+    }
+
+    // Not equal - same buffer different indices
+    for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
+    {
+        std::string testName = toString(BASE_DATA_TYPE_CASES[i]);
+
+        std::map<std::string, std::string> specMap;
+        specMap["baseDecl"]  = getDeclaration(BASE_DATA_TYPE_CASES[i]);
+        specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
+        specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+        specMap["mainLogic"] =
+            "%input_loc_first  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer    "
+            "%input_data_var %c_uint32_0 %c_uint32_2\n"
+            "%input_loc_second = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer    "
+            "%input_data_var %c_uint32_0 %c_uint32_4\n"
+            "%are_equal        = OpPtrNotEqual           %bool                           %input_loc_first   "
+            "%input_loc_second\n";
+
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForVariablePointers(spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]                         = memModelOp;
+        specMap["extensions"]                         = toString(spvExts);
+        specMap["capabilities"]                       = toString(spvCaps);
+        const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
+
+        std::string shaderVariablesStr = shaderVariables.specialize(specMap);
+        if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+        {
+            shaderVariablesStr = "%uint32 = OpTypeInt 32 0\n" + shaderVariablesStr;
+        }
+
+        const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
+                                      shaderVariablesStr + tempShaderFunctions.specialize(specMap);
+
+        FilledResourceDesc desc;
+        desc.dataType       = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount      = 32;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::INCREMENTED;
+        Resource input      = createFilledResource(desc);
+
+        desc.dataType       = DataTypes::UINT32;
+        desc.elemCount      = 1;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::VALUE;
+        desc.value          = 1;
+        Resource output     = createFilledResource(desc);
+
+        spec.assembly      = shaderAsm;
+        spec.numWorkGroups = tcu::IVec3(1, 1, 1);
+        spec.spirvVersion  = SPIRV_VERSION_1_4; // OpPtrEqual, OpPtrNotEqual and OpPtrDiff requires SPIR-V 1.4
+        spec.inputs.push_back(input);
+        spec.outputs.push_back(output);
+        spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
+
+        notEqualGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+    }
+
+    // Not equal - same buffer different indices one typed one untyped pointer
+    for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
+    {
+        std::string testName = toString(BASE_DATA_TYPE_CASES[i]) + std::string("_typed_and_untyped");
+
+        std::map<std::string, std::string> specMap;
+        specMap["baseDecl"]  = getDeclaration(BASE_DATA_TYPE_CASES[i]);
+        specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
+        specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+        specMap["mainLogic"] =
+            "%input_loc_first  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr       %input_buffer    "
+            "%input_data_var  %c_uint32_0 %c_uint32_2\n"
+            "%input_loc_second = OpAccessChain           %" +
+            std::string(toString(BASE_DATA_TYPE_CASES[i])) +
+            "_storage_buffer_ptr                    "
+            "%input_data_var %c_uint32_0 %c_uint32_4\n"
+            "%are_equal        = OpPtrNotEqual           %bool                           %input_loc_first   "
+            "%input_loc_second\n";
+
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForVariablePointers(spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]                         = memModelOp;
+        specMap["extensions"]                         = toString(spvExts);
+        specMap["capabilities"]                       = toString(spvCaps);
+        const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
+
+        std::string shaderVariablesStr = shaderVariables.specialize(specMap);
+        if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+        {
+            shaderVariablesStr = "%uint32 = OpTypeInt 32 0\n" + shaderVariablesStr;
+        }
+
+        const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
+                                      shaderVariablesStr + tempShaderFunctions.specialize(specMap);
+
+        FilledResourceDesc desc;
+        desc.dataType       = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount      = 32;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::INCREMENTED;
+        Resource input      = createFilledResource(desc);
+
+        desc.dataType       = DataTypes::UINT32;
+        desc.elemCount      = 1;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::VALUE;
+        desc.value          = 1;
+        Resource output     = createFilledResource(desc);
+
+        spec.assembly      = shaderAsm;
+        spec.numWorkGroups = tcu::IVec3(1, 1, 1);
+        spec.spirvVersion  = SPIRV_VERSION_1_4; // OpPtrEqual, OpPtrNotEqual and OpPtrDiff requires SPIR-V 1.4
+        spec.inputs.push_back(input);
+        spec.outputs.push_back(output);
+        spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
+
+        notEqualGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+    }
+
+    // Not equal - comparsion to null pointers
+    for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
+    {
+        std::string testName = toString(BASE_DATA_TYPE_CASES[i]) + std::string("_null_ptr");
+
+        std::map<std::string, std::string> specMap;
+        specMap["baseDecl"]  = getDeclaration(BASE_DATA_TYPE_CASES[i]);
+        specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
+        specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+        specMap["mainLogic"] =
+            "%input_loc_first  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer    "
+            "%input_data_var %c_uint32_0 %c_uint32_2\n"
+            "%are_equal        = OpPtrNotEqual           %bool                           %input_loc_first   "
+            "%c_null_untyped_ptr\n";
+
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForVariablePointers(spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]                         = memModelOp;
+        specMap["extensions"]                         = toString(spvExts);
+        specMap["capabilities"]                       = toString(spvCaps);
+        const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
+
+        std::string shaderVariablesStr = shaderVariables.specialize(specMap);
+        if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+        {
+            shaderVariablesStr = "%uint32 = OpTypeInt 32 0\n" + shaderVariablesStr;
+        }
+
+        const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
+                                      shaderVariablesStr + tempShaderFunctions.specialize(specMap);
+
+        FilledResourceDesc desc;
+        desc.dataType       = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount      = 32;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::INCREMENTED;
+        Resource input      = createFilledResource(desc);
+
+        desc.dataType       = DataTypes::UINT32;
+        desc.elemCount      = 1;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::VALUE;
+        desc.value          = 1;
+        Resource output     = createFilledResource(desc);
+
+        spec.assembly      = shaderAsm;
+        spec.numWorkGroups = tcu::IVec3(1, 1, 1);
+        spec.spirvVersion  = SPIRV_VERSION_1_4; // OpPtrEqual, OpPtrNotEqual and OpPtrDiff requires SPIR-V 1.4
+        spec.inputs.push_back(input);
+        spec.outputs.push_back(output);
+        spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
+
+        notEqualGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
     }
 
     testGroup->addChild(equalGroup.release());
@@ -8229,7 +9256,7 @@ void addVariablePtrOpPtrDiffTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
 {
     tcu::TestContext &testCtx = testGroup->getTestContext();
 
-    tcu::StringTemplate shaderHeader(createShaderHeader("%input_data_untyped_var %output_data_var"));
+    tcu::StringTemplate shaderHeader(createShaderHeader("%input_data_var %output_data_var"));
 
     tcu::StringTemplate shaderAnnotations(createShaderAnnotations(PointerTestCases::OP_PTR_DIFF_VARIABLE_PTR));
 
@@ -8237,6 +9264,7 @@ void addVariablePtrOpPtrDiffTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
 
     tcu::StringTemplate shaderFunctions(createShaderMain(PointerTestCases::OP_PTR_DIFF_VARIABLE_PTR));
 
+    // Same types
     for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
     {
         std::string testName = toString(BASE_DATA_TYPE_CASES[i]);
@@ -8246,6 +9274,11 @@ void addVariablePtrOpPtrDiffTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
         specMap["baseType"]    = toString(BASE_DATA_TYPE_CASES[i]);
         specMap["threadCount"] = std::to_string(Constants::numThreads);
         specMap["alignment"]   = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+        specMap["mainLogic"] =
+            "%input_loc_first_ptr  = OpUntypedAccessChainKHR    %storage_buffer_untyped_ptr     %input_buffer         "
+            "                        %input_data_var            %c_uint32_0 %c_uint32_4\n"
+            "%input_loc_second_ptr = OpUntypedAccessChainKHR    %storage_buffer_untyped_ptr     %input_buffer         "
+            "                        %input_data_var            %c_uint32_0 %c_uint32_16\n";
 
         std::string memModelOp;
         std::vector<const char *> spvExts;
@@ -8282,7 +9315,79 @@ void addVariablePtrOpPtrDiffTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
         desc.dataType   = DataTypes::UINT32;
         desc.elemCount  = 1;
         desc.fillType   = FillingTypes::VALUE;
-        desc.value      = 16 * getSizeInBytes(BASE_DATA_TYPE_CASES[i]);
+        desc.value      = 12 * getSizeInBytes(BASE_DATA_TYPE_CASES[i]);
+        Resource output = createFilledResource(desc);
+
+        spec.assembly      = shaderAsm;
+        spec.numWorkGroups = tcu::IVec3(1, 1, 1);
+        spec.spirvVersion  = SPIRV_VERSION_1_4;
+        spec.inputs.push_back(input);
+        spec.outputs.push_back(output);
+        spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
+
+        testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+    }
+
+    // Different types
+    for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
+    {
+        std::string testName =
+            toString(BASE_DATA_TYPE_CASES[i]) + std::string(getNameStrForVarPtrs(BASE_DATA_TYPE_CASES[i]));
+
+        std::map<std::string, std::string> specMap;
+        specMap["baseDecl"]              = getDeclaration(BASE_DATA_TYPE_CASES[i]);
+        specMap["baseType"]              = toString(BASE_DATA_TYPE_CASES[i]);
+        specMap["threadCount"]           = std::to_string(Constants::numThreads);
+        specMap["secondType"]            = getSecondTypeDefinitionForVarPtrs(BASE_DATA_TYPE_CASES[i]);
+        specMap["secondArray"]           = getSecondArrayDefinitionForVarPtrs(BASE_DATA_TYPE_CASES[i]);
+        specMap["alignment"]             = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+        specMap["secondArrayDecoration"] = getSecondArrayDecorationForVarPtrs(BASE_DATA_TYPE_CASES[i]);
+        specMap["mainLogic"] =
+            "%input_array_loc      = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr %input_buffer "
+            "                        %input_data_var %c_uint32_0\n"
+            "%input_loc_first_ptr  = OpUntypedAccessChainKHR    %storage_buffer_untyped_ptr %array_first_32  "
+            "                        %input_array_loc           %c_uint32_4\n"
+            "%input_loc_second_ptr = OpUntypedAccessChainKHR    %storage_buffer_untyped_ptr %array_second_32 "
+            "                        %input_array_loc " +
+            std::string(getSameByteIndexForVarPtrs(BASE_DATA_TYPE_CASES[i]));
+
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForDataTypes(DataTypes::INT16, spec, spvExts, spvCaps);
+        adjustSpecForVariablePointers(spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]                         = memModelOp;
+        specMap["extensions"]                         = toString(spvExts);
+        specMap["capabilities"]                       = toString(spvCaps);
+        const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
+
+        std::string shaderVariablesStr = shaderVariables.specialize(specMap);
+        if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+        {
+            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
+        }
+
+        const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
+                                      shaderVariablesStr + tempShaderFunctions.specialize(specMap);
+
+        FilledResourceDesc desc;
+        desc.dataType       = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount      = 32;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.fillType       = FillingTypes::RANDOM;
+        desc.seed           = deStringHash(testGroup->getName());
+
+        Resource input  = createFilledResource(desc);
+        desc.dataType   = DataTypes::UINT32;
+        desc.elemCount  = 1;
+        desc.fillType   = FillingTypes::VALUE;
+        desc.value      = 0 * getSizeInBytes(BASE_DATA_TYPE_CASES[i]);
         Resource output = createFilledResource(desc);
 
         spec.assembly      = shaderAsm;
@@ -8316,8 +9421,9 @@ void addVariablePtrOpFunctionCallTests(tcu::TestCaseGroup *testGroup, MEMORY_MOD
         std::string testName = toString(BASE_DATA_TYPE_CASES[i]);
 
         std::map<std::string, std::string> specMap;
-        specMap["baseDecl"] = getDeclaration(BASE_DATA_TYPE_CASES[i]);
-        specMap["baseType"] = toString(BASE_DATA_TYPE_CASES[i]);
+        specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+        specMap["baseDecl"]  = getDeclaration(BASE_DATA_TYPE_CASES[i]);
+        specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
 
         std::string memModelOp;
         std::vector<const char *> spvExts;
@@ -8344,13 +9450,15 @@ void addVariablePtrOpFunctionCallTests(tcu::TestCaseGroup *testGroup, MEMORY_MOD
 
         FilledResourceDesc desc;
         desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 1;
+        desc.elemCount      = 32;
         desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         desc.padding        = 0;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.value          = 1.0;
+        desc.fillType       = FillingTypes::INCREMENTED;
+        Resource input      = createFilledResource(desc);
 
-        Resource input  = createFilledResource(desc);
+        desc.elemCount  = 1;
+        desc.fillType   = FillingTypes::VALUE;
+        desc.value      = 8;
         Resource output = createFilledResource(desc);
 
         spec.assembly      = shaderAsm;
@@ -8479,7 +9587,7 @@ void addVariablePtrOpPtrAccessChain(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
 
         FilledResourceDesc desc;
         desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 1;
+        desc.elemCount      = Constants::numThreads;
         desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         desc.padding        = 0;
         desc.fillType       = FillingTypes::RANDOM;
@@ -8489,7 +9597,7 @@ void addVariablePtrOpPtrAccessChain(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
         Resource output = createFilledResource(desc);
 
         spec.assembly      = shaderAsm;
-        spec.numWorkGroups = tcu::IVec3(1, 1, 1);
+        spec.numWorkGroups = tcu::IVec3(Constants::numThreads, 1, 1);
         spec.inputs.push_back(input);
         spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
@@ -8583,10 +9691,8 @@ void addVariablePtrFunctionVariableTests(tcu::TestCaseGroup *testGroup, MEMORY_M
         std::string testName = toString(BASE_DATA_TYPE_CASES[i]);
 
         std::map<std::string, std::string> specMap;
-        specMap["baseDecl"]  = getDeclaration(BASE_DATA_TYPE_CASES[i]);
-        specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
-        specMap["boolConst"] = "%c_bool_true = OpConstantTrue %bool";
-        specMap["condition"] = "%c_bool_true";
+        specMap["baseDecl"] = getDeclaration(BASE_DATA_TYPE_CASES[i]);
+        specMap["baseType"] = toString(BASE_DATA_TYPE_CASES[i]);
 
         std::string memModelOp;
         std::vector<const char *> spvExts;
@@ -8624,8 +9730,13 @@ void addVariablePtrFunctionVariableTests(tcu::TestCaseGroup *testGroup, MEMORY_M
         desc.value      = 0.0;
         Resource input1 = createFilledResource(desc);
 
+        desc.dataType      = DataTypes::UINT32;
+        desc.value         = 1u;
+        Resource pushConst = createFilledResource(desc);
+
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(1, 1, 1);
+        spec.pushConstants = pushConst.getBuffer();
         spec.inputs.push_back(input0);
         spec.inputs.push_back(input1);
         spec.outputs.push_back(output);
@@ -8652,10 +9763,8 @@ void addVariablePtrPrivateVariableTests(tcu::TestCaseGroup *testGroup, MEMORY_MO
         std::string testName = toString(BASE_DATA_TYPE_CASES[i]);
 
         std::map<std::string, std::string> specMap;
-        specMap["baseDecl"]  = getDeclaration(BASE_DATA_TYPE_CASES[i]);
-        specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
-        specMap["boolConst"] = "%c_bool_true = OpConstantTrue %bool";
-        specMap["condition"] = "%c_bool_true";
+        specMap["baseDecl"] = getDeclaration(BASE_DATA_TYPE_CASES[i]);
+        specMap["baseType"] = toString(BASE_DATA_TYPE_CASES[i]);
 
         std::string memModelOp;
         std::vector<const char *> spvExts;
@@ -8693,8 +9802,13 @@ void addVariablePtrPrivateVariableTests(tcu::TestCaseGroup *testGroup, MEMORY_MO
         desc.value      = 0.0;
         Resource input1 = createFilledResource(desc);
 
+        desc.dataType      = DataTypes::UINT32;
+        desc.value         = 1u;
+        Resource pushConst = createFilledResource(desc);
+
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(1, 1, 1);
+        spec.pushConstants = pushConst.getBuffer();
         spec.inputs.push_back(input0);
         spec.inputs.push_back(input1);
         spec.outputs.push_back(output);
@@ -9217,9 +10331,14 @@ void addVariablePointersMultipleAccessChainTests(tcu::TestCaseGroup *testGroup, 
         std::string testName = toString(BASE_DATA_TYPE_CASES[i]);
 
         std::map<std::string, std::string> specMap;
-        specMap["baseDecl"] = getDeclaration(BASE_DATA_TYPE_CASES[i]);
-        specMap["baseType"] = toString(BASE_DATA_TYPE_CASES[i]);
-        specMap["size"]     = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+        specMap["baseDecl"]    = getDeclaration(BASE_DATA_TYPE_CASES[i]);
+        specMap["baseType"]    = toString(BASE_DATA_TYPE_CASES[i]);
+        specMap["secondType"]  = getSecondTypeDefinitionForVarPtrs(BASE_DATA_TYPE_CASES[i]);
+        specMap["otherType"]   = toString(getSecondTypeForVarPtrs(BASE_DATA_TYPE_CASES[i]));
+        specMap["secondArray"] = getSecondArrayDefinitionForVarPtrs(BASE_DATA_TYPE_CASES[i]);
+        specMap["alignment0"]  = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+        specMap["alignment1"]  = std::to_string(getSecondAlignmentForVarPtrs(BASE_DATA_TYPE_CASES[i]));
+        specMap["elemNdx"]     = getSameByteIndexForVarPtrs(BASE_DATA_TYPE_CASES[i]);
 
         std::string memModelOp;
         std::vector<const char *> spvExts;
@@ -9228,6 +10347,7 @@ void addVariablePointersMultipleAccessChainTests(tcu::TestCaseGroup *testGroup, 
         adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
         adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
         adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForDataTypes(DataTypes::INT16, spec, spvExts, spvCaps);
         adjustSpecForVariablePointers(spec, spvExts, spvCaps);
 
         specMap["memModelOp"]   = memModelOp;
@@ -9245,17 +10365,27 @@ void addVariablePointersMultipleAccessChainTests(tcu::TestCaseGroup *testGroup, 
 
         FilledResourceDesc desc;
         desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 2;
+        desc.elemCount      = 32;
         desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         desc.padding        = 0;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.value          = 2;
+        desc.fillType       = FillingTypes::INCREMENTED;
         Resource input      = createFilledResource(desc);
-        desc.value          = 2;
-        Resource output     = createFilledResource(desc);
+
+        std::vector<uint8_t> inputBytes(input.getByteSize());
+        input.getBytes(inputBytes);
+
+        const uint32_t byteOffset =                     // calculating byte offset returned bu OpUntypedAccessChainKHR
+            4 * getSizeInBytes(BASE_DATA_TYPE_CASES[i]) // 4 elem offset in first array
+            + 8 * getSizeInBytes(getSecondTypeForVarPtrs(BASE_DATA_TYPE_CASES[i])); // 8 elem offset in second array
+        std::vector<uint8_t> outputBytes(inputBytes.begin() + byteOffset,
+                                         inputBytes.begin() + byteOffset +
+                                             getSecondAlignmentForVarPtrs(BASE_DATA_TYPE_CASES[i]));
+
+        Resource output =
+            Resource(BufferSp(new Buffer<uint8_t>(outputBytes, 0)), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
         spec.assembly      = shaderAsm;
-        spec.numWorkGroups = tcu::IVec3(Constants::numThreads, 1, 1);
+        spec.numWorkGroups = tcu::IVec3(1, 1, 1);
         spec.inputs.push_back(input);
         spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
@@ -9326,6 +10456,71 @@ void addPhysicalStorageOpBitcastTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
         spec.usesPhysStorageBuffer = true;
         spec.inputs.push_back(inputOutput);
         spec.outputs.push_back(inputOutput);
+        spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
+
+        testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+    }
+}
+
+void addVariablePointersWorkgroupMemoryTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
+{
+    tcu::TestContext &testCtx = testGroup->getTestContext();
+
+    tcu::StringTemplate shaderHeader(createShaderHeader("%input_data_var %output_data_var %workgroup_untyped_var"));
+
+    tcu::StringTemplate shaderAnnotations(createShaderAnnotations(PointerTestCases::WORKGROUP_MEMORY_VARIABLE_PTR));
+
+    tcu::StringTemplate shaderVariables(createShaderVariables(PointerTestCases::WORKGROUP_MEMORY_VARIABLE_PTR));
+
+    tcu::StringTemplate shaderFunctions(createShaderMain(PointerTestCases::WORKGROUP_MEMORY_VARIABLE_PTR));
+
+    for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
+    {
+        std::string testName = toString(BASE_DATA_TYPE_CASES[i]);
+
+        std::map<std::string, std::string> specMap;
+        specMap["baseDecl"]  = getDeclaration(BASE_DATA_TYPE_CASES[i]);
+        specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
+        specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForVariablePointers(spec, spvExts, spvCaps);
+        adjustSpecForWorkgroupMemoryExplicitLayout(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]   = memModelOp;
+        specMap["extensions"]   = toString(spvExts);
+        specMap["capabilities"] = toString(spvCaps);
+
+        std::string shaderVariablesStr = shaderVariables.specialize(specMap);
+        if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+        {
+            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
+        }
+
+        const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
+                                      shaderVariablesStr + shaderFunctions.specialize(specMap);
+
+        FilledResourceDesc desc;
+        desc.dataType       = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount      = Constants::numThreads;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+        desc.seed           = deStringHash(testGroup->getName());
+        desc.fillType       = FillingTypes::RANDOM;
+        Resource input      = createFilledResource(desc);
+        Resource output     = createFilledResource(desc);
+
+        spec.assembly      = shaderAsm;
+        spec.numWorkGroups = tcu::IVec3(Constants::numThreads, 1, 1);
+        spec.spirvVersion  = SPIRV_VERSION_1_4; // workgroup memory explicit layout requires SPIR-V 1.4
+        spec.inputs.push_back(input);
+        spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
@@ -10158,6 +11353,7 @@ void addVariablePointersInteractionTestGroup(tcu::TestCaseGroup *testGroup, MEMO
     addTestGroup(testGroup, "function_variable", addVariablePtrFunctionVariableTests, memModel);
     addTestGroup(testGroup, "private_variable", addVariablePtrPrivateVariableTests, memModel);
     addTestGroup(testGroup, "multiple_access_chains", addVariablePointersMultipleAccessChainTests, memModel);
+    addTestGroup(testGroup, "workgroup_memory", addVariablePointersWorkgroupMemoryTests, memModel);
 }
 
 void addWorkgroupMemoryExplicitLayoutInteractionTestGroup(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
