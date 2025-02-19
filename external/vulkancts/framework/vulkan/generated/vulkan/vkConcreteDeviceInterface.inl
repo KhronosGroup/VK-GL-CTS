@@ -120,7 +120,9 @@ virtual void				cmdBlitImage											(VkCommandBuffer commandBuffer, VkImage s
 virtual void				cmdCopyBufferToImage									(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkBufferImageCopy* pRegions) const;
 virtual void				cmdCopyImageToBuffer									(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferImageCopy* pRegions) const;
 virtual void				cmdCopyMemoryIndirectNV									(VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride) const;
+virtual void				cmdCopyMemoryIndirectKHR								(VkCommandBuffer commandBuffer, const VkCopyMemoryIndirectInfoKHR* pCopyMemoryIndirectInfo) const;
 virtual void				cmdCopyMemoryToImageIndirectNV							(VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride, VkImage dstImage, VkImageLayout dstImageLayout, const VkImageSubresourceLayers* pImageSubresources) const;
+virtual void				cmdCopyMemoryToImageIndirectKHR							(VkCommandBuffer commandBuffer, const VkCopyMemoryToImageIndirectInfoKHR* pCopyMemoryToImageIndirectInfo) const;
 virtual void				cmdUpdateBuffer											(VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize dataSize, const void* pData) const;
 virtual void				cmdFillBuffer											(VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize size, uint32_t data) const;
 virtual void				cmdClearColorImage										(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout imageLayout, const VkClearColorValue* pColor, uint32_t rangeCount, const VkImageSubresourceRange* pRanges) const;
@@ -465,6 +467,7 @@ virtual void				destroyCudaFunctionNV									(VkDevice device, VkCudaFunctionNV
 virtual void				cmdCudaLaunchKernelNV									(VkCommandBuffer commandBuffer, const VkCudaLaunchInfoNV* pLaunchInfo) const;
 virtual void				cmdBeginRendering										(VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo) const;
 virtual void				cmdEndRendering											(VkCommandBuffer commandBuffer) const;
+virtual void				cmdEndRendering2EXT										(VkCommandBuffer commandBuffer, const VkRenderingEndInfoEXT* pRenderingEndInfo) const;
 virtual void				getDescriptorSetLayoutHostMappingInfoVALVE				(VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping) const;
 virtual void				getDescriptorSetHostMappingVALVE						(VkDevice device, VkDescriptorSet descriptorSet, void** ppData) const;
 virtual VkResult			createMicromapEXT										(VkDevice device, const VkMicromapCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkMicromapEXT* pMicromap) const;
@@ -486,6 +489,7 @@ virtual void				getShaderModuleCreateInfoIdentifierEXT					(VkDevice device, con
 virtual void				getImageSubresourceLayout2								(VkDevice device, VkImage image, const VkImageSubresource2* pSubresource, VkSubresourceLayout2* pLayout) const;
 virtual VkResult			getPipelinePropertiesEXT								(VkDevice device, const VkPipelineInfoEXT* pPipelineInfo, VkBaseOutStructure* pPipelineProperties) const;
 virtual void				exportMetalObjectsEXT									(VkDevice device, VkExportMetalObjectsInfoEXT* pMetalObjectsInfo) const;
+virtual void				cmdBindTileMemoryQCOM									(VkCommandBuffer commandBuffer, const VkTileMemoryBindInfoQCOM* pTileMemoryBindInfo) const;
 virtual VkResult			getFramebufferTilePropertiesQCOM						(VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties) const;
 virtual VkResult			getDynamicRenderingTilePropertiesQCOM					(VkDevice device, const VkRenderingInfo* pRenderingInfo, VkTilePropertiesQCOM* pProperties) const;
 virtual VkResult			createOpticalFlowSessionNV								(VkDevice device, const VkOpticalFlowSessionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkOpticalFlowSessionNV* pSession) const;
@@ -528,3 +532,8 @@ virtual VkResult			getMemoryMetalHandleEXT									(VkDevice device, const VkMem
 virtual VkResult			getMemoryMetalHandlePropertiesEXT						(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHandle, VkMemoryMetalHandlePropertiesEXT* pMemoryMetalHandleProperties) const;
 virtual VkResult			convertCooperativeVectorMatrixNV						(VkDevice device, const VkConvertCooperativeVectorMatrixInfoNV* pInfo) const;
 virtual void				cmdConvertCooperativeVectorMatrixNV						(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkConvertCooperativeVectorMatrixInfoNV* pInfos) const;
+virtual void				cmdDispatchTileQCOM										(VkCommandBuffer commandBuffer) const;
+virtual void				cmdBeginPerTileExecutionQCOM							(VkCommandBuffer commandBuffer, const VkPerTileBeginInfoQCOM* pPerTileBeginInfo) const;
+virtual void				cmdEndPerTileExecutionQCOM								(VkCommandBuffer commandBuffer, const VkPerTileEndInfoQCOM* pPerTileEndInfo) const;
+virtual VkResult			createExternalComputeQueueNV							(VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkExternalComputeQueueNV* pExternalQueue) const;
+virtual void				destroyExternalComputeQueueNV							(VkDevice device, VkExternalComputeQueueNV externalQueue, const VkAllocationCallbacks* pAllocator) const;

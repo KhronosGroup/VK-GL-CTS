@@ -623,9 +623,19 @@ void DeviceDriver::cmdCopyMemoryIndirectNV (VkCommandBuffer commandBuffer, VkDev
     m_vk.cmdCopyMemoryIndirectNV(commandBuffer, copyBufferAddress, copyCount, stride);
 }
 
+void DeviceDriver::cmdCopyMemoryIndirectKHR (VkCommandBuffer commandBuffer, const VkCopyMemoryIndirectInfoKHR* pCopyMemoryIndirectInfo) const
+{
+    m_vk.cmdCopyMemoryIndirectKHR(commandBuffer, pCopyMemoryIndirectInfo);
+}
+
 void DeviceDriver::cmdCopyMemoryToImageIndirectNV (VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride, VkImage dstImage, VkImageLayout dstImageLayout, const VkImageSubresourceLayers* pImageSubresources) const
 {
     m_vk.cmdCopyMemoryToImageIndirectNV(commandBuffer, copyBufferAddress, copyCount, stride, dstImage, dstImageLayout, pImageSubresources);
+}
+
+void DeviceDriver::cmdCopyMemoryToImageIndirectKHR (VkCommandBuffer commandBuffer, const VkCopyMemoryToImageIndirectInfoKHR* pCopyMemoryToImageIndirectInfo) const
+{
+    m_vk.cmdCopyMemoryToImageIndirectKHR(commandBuffer, pCopyMemoryToImageIndirectInfo);
 }
 
 void DeviceDriver::cmdUpdateBuffer (VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize dataSize, const void* pData) const
@@ -2438,6 +2448,12 @@ void DeviceDriver::cmdEndRendering (VkCommandBuffer commandBuffer) const
     m_vk.cmdEndRendering(commandBuffer);
 }
 
+void DeviceDriver::cmdEndRendering2EXT (VkCommandBuffer commandBuffer, const VkRenderingEndInfoEXT* pRenderingEndInfo) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdEndRendering2EXT(commandBuffer, pRenderingEndInfo);
+}
+
 void DeviceDriver::getDescriptorSetLayoutHostMappingInfoVALVE (VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping) const
 {
     m_vk.getDescriptorSetLayoutHostMappingInfoVALVE(device, pBindingReference, pHostMapping);
@@ -2541,6 +2557,11 @@ VkResult DeviceDriver::getPipelinePropertiesEXT (VkDevice device, const VkPipeli
 void DeviceDriver::exportMetalObjectsEXT (VkDevice device, VkExportMetalObjectsInfoEXT* pMetalObjectsInfo) const
 {
     m_vk.exportMetalObjectsEXT(device, pMetalObjectsInfo);
+}
+
+void DeviceDriver::cmdBindTileMemoryQCOM (VkCommandBuffer commandBuffer, const VkTileMemoryBindInfoQCOM* pTileMemoryBindInfo) const
+{
+    m_vk.cmdBindTileMemoryQCOM(commandBuffer, pTileMemoryBindInfo);
 }
 
 VkResult DeviceDriver::getFramebufferTilePropertiesQCOM (VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties) const
@@ -2755,4 +2776,29 @@ VkResult DeviceDriver::convertCooperativeVectorMatrixNV (VkDevice device, const 
 void DeviceDriver::cmdConvertCooperativeVectorMatrixNV (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkConvertCooperativeVectorMatrixInfoNV* pInfos) const
 {
     m_vk.cmdConvertCooperativeVectorMatrixNV(commandBuffer, infoCount, pInfos);
+}
+
+void DeviceDriver::cmdDispatchTileQCOM (VkCommandBuffer commandBuffer) const
+{
+    m_vk.cmdDispatchTileQCOM(commandBuffer);
+}
+
+void DeviceDriver::cmdBeginPerTileExecutionQCOM (VkCommandBuffer commandBuffer, const VkPerTileBeginInfoQCOM* pPerTileBeginInfo) const
+{
+    m_vk.cmdBeginPerTileExecutionQCOM(commandBuffer, pPerTileBeginInfo);
+}
+
+void DeviceDriver::cmdEndPerTileExecutionQCOM (VkCommandBuffer commandBuffer, const VkPerTileEndInfoQCOM* pPerTileEndInfo) const
+{
+    m_vk.cmdEndPerTileExecutionQCOM(commandBuffer, pPerTileEndInfo);
+}
+
+VkResult DeviceDriver::createExternalComputeQueueNV (VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkExternalComputeQueueNV* pExternalQueue) const
+{
+    return m_vk.createExternalComputeQueueNV(device, pCreateInfo, pAllocator, pExternalQueue);
+}
+
+void DeviceDriver::destroyExternalComputeQueueNV (VkDevice device, VkExternalComputeQueueNV externalQueue, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyExternalComputeQueueNV(device, externalQueue, pAllocator);
 }

@@ -255,6 +255,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceCornerSampledImageFeaturesNV
 template<> void initFeatureFromBlob<VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR>(VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderImageFootprintFeaturesNV>(VkPhysicalDeviceShaderImageFootprintFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV>(VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR>(VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceCopyMemoryIndirectFeaturesNV>(VkPhysicalDeviceCopyMemoryIndirectFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceMemoryDecompressionFeaturesNV>(VkPhysicalDeviceMemoryDecompressionFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShadingRateImageFeaturesNV>(VkPhysicalDeviceShadingRateImageFeaturesNV&, const AllFeaturesBlobs&) {}
@@ -267,7 +268,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceRayQueryFeaturesKHR>(VkPhysi
 template<> void initFeatureFromBlob<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR>(VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceFragmentDensityMapFeaturesEXT>(VkPhysicalDeviceFragmentDensityMapFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceFragmentDensityMap2FeaturesEXT>(VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&, const AllFeaturesBlobs&) {}
-template<> void initFeatureFromBlob<VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM>(VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT>(VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceDepthClipEnableFeaturesEXT>(VkPhysicalDeviceDepthClipEnableFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceMemoryPriorityFeaturesEXT>(VkPhysicalDeviceMemoryPriorityFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT>(VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT&, const AllFeaturesBlobs&) {}
@@ -293,7 +294,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceExtendedDynamicState3Feature
 template<> void initFeatureFromBlob<VkPhysicalDevicePartitionedAccelerationStructureFeaturesNV>(VkPhysicalDevicePartitionedAccelerationStructureFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceDiagnosticsConfigFeaturesNV>(VkPhysicalDeviceDiagnosticsConfigFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR>(VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR&, const AllFeaturesBlobs&) {}
-template<> void initFeatureFromBlob<VkPhysicalDeviceRobustness2FeaturesEXT>(VkPhysicalDeviceRobustness2FeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceRobustness2FeaturesKHR>(VkPhysicalDeviceRobustness2FeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR>(VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDevicePortabilitySubsetFeaturesKHR>(VkPhysicalDevicePortabilitySubsetFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDevice4444FormatsFeaturesEXT>(VkPhysicalDevice4444FormatsFeaturesEXT&, const AllFeaturesBlobs&) {}
@@ -309,6 +310,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceAttachmentFeedbackLoopDynami
 template<> void initFeatureFromBlob<VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT>(VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT>(VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceDepthClipControlFeaturesEXT>(VkPhysicalDeviceDepthClipControlFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT>(VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT>(VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceDepthClampControlFeaturesEXT>(VkPhysicalDeviceDepthClampControlFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT>(VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&, const AllFeaturesBlobs&) {}
@@ -371,6 +373,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceExternalMemoryScreenBufferFe
 template<> void initFeatureFromBlob<VkPhysicalDeviceCooperativeMatrixFeaturesKHR>(VkPhysicalDeviceCooperativeMatrixFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderEnqueueFeaturesAMDX>(VkPhysicalDeviceShaderEnqueueFeaturesAMDX&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceAntiLagFeaturesAMD>(VkPhysicalDeviceAntiLagFeaturesAMD&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceTileMemoryHeapFeaturesQCOM>(VkPhysicalDeviceTileMemoryHeapFeaturesQCOM&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceCubicClampFeaturesQCOM>(VkPhysicalDeviceCubicClampFeaturesQCOM&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceYcbcrDegammaFeaturesQCOM>(VkPhysicalDeviceYcbcrDegammaFeaturesQCOM&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceCubicWeightsFeaturesQCOM>(VkPhysicalDeviceCubicWeightsFeaturesQCOM&, const AllFeaturesBlobs&) {}
@@ -387,6 +390,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceShaderMaximalReconvergenceFe
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderQuadControlFeaturesKHR>(VkPhysicalDeviceShaderQuadControlFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV>(VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceMapMemoryPlacedFeaturesEXT>(VkPhysicalDeviceMapMemoryPlacedFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceShaderBfloat16FeaturesKHR>(VkPhysicalDeviceShaderBfloat16FeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceRawAccessChainsFeaturesNV>(VkPhysicalDeviceRawAccessChainsFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceCommandBufferInheritanceFeaturesNV>(VkPhysicalDeviceCommandBufferInheritanceFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceImageAlignmentControlFeaturesMESA>(VkPhysicalDeviceImageAlignmentControlFeaturesMESA&, const AllFeaturesBlobs&) {}
@@ -397,6 +401,8 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceHdrVividFeaturesHUAWEI>(VkPh
 template<> void initFeatureFromBlob<VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT>(VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceDepthClampZeroOneFeaturesKHR>(VkPhysicalDeviceDepthClampZeroOneFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceCooperativeVectorFeaturesNV>(VkPhysicalDeviceCooperativeVectorFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceTileShadingFeaturesQCOM>(VkPhysicalDeviceTileShadingFeaturesQCOM&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDevicePresentMeteringFeaturesNV>(VkPhysicalDevicePresentMeteringFeaturesNV&, const AllFeaturesBlobs&) {}
 
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceTransformFeedbackFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT, VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME, VK_EXT_TRANSFORM_FEEDBACK_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceDynamicRenderingFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_SPEC_VERSION}; }
@@ -415,6 +421,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePerformanceQueryFeaturesK
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVariablePointersFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES_KHR, VK_KHR_VARIABLE_POINTERS_EXTENSION_NAME, VK_KHR_VARIABLE_POINTERS_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderEnqueueFeaturesAMDX>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ENQUEUE_FEATURES_AMDX, VK_AMDX_SHADER_ENQUEUE_EXTENSION_NAME, VK_AMDX_SHADER_ENQUEUE_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceInlineUniformBlockFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT, VK_EXT_INLINE_UNIFORM_BLOCK_EXTENSION_NAME, VK_EXT_INLINE_UNIFORM_BLOCK_SPEC_VERSION}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderBfloat16FeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_BFLOAT16_FEATURES_KHR, VK_KHR_SHADER_BFLOAT16_EXTENSION_NAME, VK_KHR_SHADER_BFLOAT16_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BLEND_OPERATION_ADVANCED_FEATURES_EXT, VK_EXT_BLEND_OPERATION_ADVANCED_EXTENSION_NAME, VK_EXT_BLEND_OPERATION_ADVANCED_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, VK_KHR_ACCELERATION_STRUCTURE_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, VK_KHR_RAY_TRACING_PIPELINE_SPEC_VERSION}; }
@@ -472,7 +479,6 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderIntegerDotProductFe
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT, VK_EXT_TEXEL_BUFFER_ALIGNMENT_EXTENSION_NAME, VK_EXT_TEXEL_BUFFER_ALIGNMENT_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceDepthBiasControlFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_BIAS_CONTROL_FEATURES_EXT, VK_EXT_DEPTH_BIAS_CONTROL_EXTENSION_NAME, VK_EXT_DEPTH_BIAS_CONTROL_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceDeviceMemoryReportFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_MEMORY_REPORT_FEATURES_EXT, VK_EXT_DEVICE_MEMORY_REPORT_EXTENSION_NAME, VK_EXT_DEVICE_MEMORY_REPORT_SPEC_VERSION}; }
-template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRobustness2FeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT, VK_EXT_ROBUSTNESS_2_EXTENSION_NAME, VK_EXT_ROBUSTNESS_2_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCustomBorderColorFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT, VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME, VK_EXT_CUSTOM_BORDER_COLOR_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePresentBarrierFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_BARRIER_FEATURES_NV, VK_NV_PRESENT_BARRIER_EXTENSION_NAME, VK_NV_PRESENT_BARRIER_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePresentIdFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR, VK_KHR_PRESENT_ID_EXTENSION_NAME, VK_KHR_PRESENT_ID_SPEC_VERSION}; }
@@ -480,6 +486,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePrivateDataFeatures>(void
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePipelineCreationCacheControlFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT, VK_EXT_PIPELINE_CREATION_CACHE_CONTROL_EXTENSION_NAME, VK_EXT_PIPELINE_CREATION_CACHE_CONTROL_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceDiagnosticsConfigFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV, VK_NV_DEVICE_DIAGNOSTICS_CONFIG_EXTENSION_NAME, VK_NV_DEVICE_DIAGNOSTICS_CONFIG_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCudaKernelLaunchFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUDA_KERNEL_LAUNCH_FEATURES_NV, VK_NV_CUDA_KERNEL_LAUNCH_EXTENSION_NAME, VK_NV_CUDA_KERNEL_LAUNCH_SPEC_VERSION}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceTileShadingFeaturesQCOM>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_SHADING_FEATURES_QCOM, VK_QCOM_TILE_SHADING_EXTENSION_NAME, VK_QCOM_TILE_SHADING_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceSynchronization2Features>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR, VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME, VK_KHR_SYNCHRONIZATION_2_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceDescriptorBufferFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME, VK_EXT_DESCRIPTOR_BUFFER_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT, VK_EXT_GRAPHICS_PIPELINE_LIBRARY_EXTENSION_NAME, VK_EXT_GRAPHICS_PIPELINE_LIBRARY_SPEC_VERSION}; }
@@ -530,8 +537,6 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceImageSlicedViewOf3DFeatur
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceDescriptorSetHostMappingFeaturesVALVE>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_SET_HOST_MAPPING_FEATURES_VALVE, VK_VALVE_DESCRIPTOR_SET_HOST_MAPPING_EXTENSION_NAME, VK_VALVE_DESCRIPTOR_SET_HOST_MAPPING_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_NON_SEAMLESS_CUBE_MAP_FEATURES_EXT, VK_EXT_NON_SEAMLESS_CUBE_MAP_EXTENSION_NAME, VK_EXT_NON_SEAMLESS_CUBE_MAP_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRenderPassStripedFeaturesARM>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RENDER_PASS_STRIPED_FEATURES_ARM, VK_ARM_RENDER_PASS_STRIPED_EXTENSION_NAME, VK_ARM_RENDER_PASS_STRIPED_SPEC_VERSION}; }
-template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_QCOM, VK_QCOM_FRAGMENT_DENSITY_MAP_OFFSET_EXTENSION_NAME, VK_QCOM_FRAGMENT_DENSITY_MAP_OFFSET_SPEC_VERSION}; }
-template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCopyMemoryIndirectFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_NV, VK_NV_COPY_MEMORY_INDIRECT_EXTENSION_NAME, VK_NV_COPY_MEMORY_INDIRECT_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceMemoryDecompressionFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_FEATURES_NV, VK_NV_MEMORY_DECOMPRESSION_EXTENSION_NAME, VK_NV_MEMORY_DECOMPRESSION_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_COMPUTE_FEATURES_NV, VK_NV_DEVICE_GENERATED_COMMANDS_COMPUTE_EXTENSION_NAME, VK_NV_DEVICE_GENERATED_COMMANDS_COMPUTE_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_LINEAR_SWEPT_SPHERES_FEATURES_NV, VK_NV_RAY_TRACING_LINEAR_SWEPT_SPHERES_EXTENSION_NAME, VK_NV_RAY_TRACING_LINEAR_SWEPT_SPHERES_SPEC_VERSION}; }
@@ -583,6 +588,8 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceLineRasterizationFeatures
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderExpectAssumeFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_EXPECT_ASSUME_FEATURES_KHR, VK_KHR_SHADER_EXPECT_ASSUME_EXTENSION_NAME, VK_KHR_SHADER_EXPECT_ASSUME_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceMaintenance6Features>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_FEATURES_KHR, VK_KHR_MAINTENANCE_6_EXTENSION_NAME, VK_KHR_MAINTENANCE_6_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV, VK_NV_DESCRIPTOR_POOL_OVERALLOCATION_EXTENSION_NAME, VK_NV_DESCRIPTOR_POOL_OVERALLOCATION_SPEC_VERSION}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceTileMemoryHeapFeaturesQCOM>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_MEMORY_HEAP_FEATURES_QCOM, VK_QCOM_TILE_MEMORY_HEAP_EXTENSION_NAME, VK_QCOM_TILE_MEMORY_HEAP_SPEC_VERSION}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_KHR, VK_KHR_COPY_MEMORY_INDIRECT_EXTENSION_NAME, VK_KHR_COPY_MEMORY_INDIRECT_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUANTIZATION_MAP_FEATURES_KHR, VK_KHR_VIDEO_ENCODE_QUANTIZATION_MAP_EXTENSION_NAME, VK_KHR_VIDEO_ENCODE_QUANTIZATION_MAP_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRawAccessChainsFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV, VK_NV_RAW_ACCESS_CHAINS_EXTENSION_NAME, VK_NV_RAW_ACCESS_CHAINS_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR, VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME, VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_SPEC_VERSION}; }
@@ -603,6 +610,10 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCooperativeMatrix2Feature
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePipelineOpacityMicromapFeaturesARM>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_OPACITY_MICROMAP_FEATURES_ARM, VK_ARM_PIPELINE_OPACITY_MICROMAP_EXTENSION_NAME, VK_ARM_PIPELINE_OPACITY_MICROMAP_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceDepthClampZeroOneFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_KHR, VK_KHR_DEPTH_CLAMP_ZERO_ONE_EXTENSION_NAME, VK_KHR_DEPTH_CLAMP_ZERO_ONE_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT, VK_EXT_VERTEX_ATTRIBUTE_ROBUSTNESS_EXTENSION_NAME, VK_EXT_VERTEX_ATTRIBUTE_ROBUSTNESS_SPEC_VERSION}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRobustness2FeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_KHR, VK_KHR_ROBUSTNESS_2_EXTENSION_NAME, VK_KHR_ROBUSTNESS_2_SPEC_VERSION}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePresentMeteringFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_METERING_FEATURES_NV, VK_NV_PRESENT_METERING_EXTENSION_NAME, VK_NV_PRESENT_METERING_SPEC_VERSION}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_EXT, VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET_EXTENSION_NAME, VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET_SPEC_VERSION}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_DEVICE_MEMORY_FEATURES_EXT, VK_EXT_ZERO_INITIALIZE_DEVICE_MEMORY_EXTENSION_NAME, VK_EXT_ZERO_INITIALIZE_DEVICE_MEMORY_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceProtectedMemoryFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES, DECL_PROTECTED_MEMORY_EXTENSION_NAME, 0}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderDrawParametersFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES, DECL_SHADER_DRAW_PARAMETERS_EXTENSION_NAME, 0}; }
 
@@ -625,6 +636,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceVariablePointersFeatures>, VK_KHR_VARIABLE_POINTERS_EXTENSION_NAME, VK_KHR_VARIABLE_POINTERS_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderEnqueueFeaturesAMDX>, VK_AMDX_SHADER_ENQUEUE_EXTENSION_NAME, VK_AMDX_SHADER_ENQUEUE_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceInlineUniformBlockFeatures>, VK_EXT_INLINE_UNIFORM_BLOCK_EXTENSION_NAME, VK_EXT_INLINE_UNIFORM_BLOCK_SPEC_VERSION },
+	{ createFeatureStructWrapper<VkPhysicalDeviceShaderBfloat16FeaturesKHR>, VK_KHR_SHADER_BFLOAT16_EXTENSION_NAME, VK_KHR_SHADER_BFLOAT16_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT>, VK_EXT_BLEND_OPERATION_ADVANCED_EXTENSION_NAME, VK_EXT_BLEND_OPERATION_ADVANCED_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceAccelerationStructureFeaturesKHR>, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, VK_KHR_ACCELERATION_STRUCTURE_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, VK_KHR_RAY_TRACING_PIPELINE_SPEC_VERSION },
@@ -682,7 +694,6 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT>, VK_EXT_TEXEL_BUFFER_ALIGNMENT_EXTENSION_NAME, VK_EXT_TEXEL_BUFFER_ALIGNMENT_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceDepthBiasControlFeaturesEXT>, VK_EXT_DEPTH_BIAS_CONTROL_EXTENSION_NAME, VK_EXT_DEPTH_BIAS_CONTROL_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceDeviceMemoryReportFeaturesEXT>, VK_EXT_DEVICE_MEMORY_REPORT_EXTENSION_NAME, VK_EXT_DEVICE_MEMORY_REPORT_SPEC_VERSION },
-	{ createFeatureStructWrapper<VkPhysicalDeviceRobustness2FeaturesEXT>, VK_EXT_ROBUSTNESS_2_EXTENSION_NAME, VK_EXT_ROBUSTNESS_2_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceCustomBorderColorFeaturesEXT>, VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME, VK_EXT_CUSTOM_BORDER_COLOR_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDevicePresentBarrierFeaturesNV>, VK_NV_PRESENT_BARRIER_EXTENSION_NAME, VK_NV_PRESENT_BARRIER_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDevicePresentIdFeaturesKHR>, VK_KHR_PRESENT_ID_EXTENSION_NAME, VK_KHR_PRESENT_ID_SPEC_VERSION },
@@ -690,6 +701,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDevicePipelineCreationCacheControlFeatures>, VK_EXT_PIPELINE_CREATION_CACHE_CONTROL_EXTENSION_NAME, VK_EXT_PIPELINE_CREATION_CACHE_CONTROL_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceDiagnosticsConfigFeaturesNV>, VK_NV_DEVICE_DIAGNOSTICS_CONFIG_EXTENSION_NAME, VK_NV_DEVICE_DIAGNOSTICS_CONFIG_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceCudaKernelLaunchFeaturesNV>, VK_NV_CUDA_KERNEL_LAUNCH_EXTENSION_NAME, VK_NV_CUDA_KERNEL_LAUNCH_SPEC_VERSION },
+	{ createFeatureStructWrapper<VkPhysicalDeviceTileShadingFeaturesQCOM>, VK_QCOM_TILE_SHADING_EXTENSION_NAME, VK_QCOM_TILE_SHADING_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceSynchronization2Features>, VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME, VK_KHR_SYNCHRONIZATION_2_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceDescriptorBufferFeaturesEXT>, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME, VK_EXT_DESCRIPTOR_BUFFER_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT>, VK_EXT_GRAPHICS_PIPELINE_LIBRARY_EXTENSION_NAME, VK_EXT_GRAPHICS_PIPELINE_LIBRARY_SPEC_VERSION },
@@ -740,8 +752,6 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceDescriptorSetHostMappingFeaturesVALVE>, VK_VALVE_DESCRIPTOR_SET_HOST_MAPPING_EXTENSION_NAME, VK_VALVE_DESCRIPTOR_SET_HOST_MAPPING_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT>, VK_EXT_NON_SEAMLESS_CUBE_MAP_EXTENSION_NAME, VK_EXT_NON_SEAMLESS_CUBE_MAP_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceRenderPassStripedFeaturesARM>, VK_ARM_RENDER_PASS_STRIPED_EXTENSION_NAME, VK_ARM_RENDER_PASS_STRIPED_SPEC_VERSION },
-	{ createFeatureStructWrapper<VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM>, VK_QCOM_FRAGMENT_DENSITY_MAP_OFFSET_EXTENSION_NAME, VK_QCOM_FRAGMENT_DENSITY_MAP_OFFSET_SPEC_VERSION },
-	{ createFeatureStructWrapper<VkPhysicalDeviceCopyMemoryIndirectFeaturesNV>, VK_NV_COPY_MEMORY_INDIRECT_EXTENSION_NAME, VK_NV_COPY_MEMORY_INDIRECT_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceMemoryDecompressionFeaturesNV>, VK_NV_MEMORY_DECOMPRESSION_EXTENSION_NAME, VK_NV_MEMORY_DECOMPRESSION_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV>, VK_NV_DEVICE_GENERATED_COMMANDS_COMPUTE_EXTENSION_NAME, VK_NV_DEVICE_GENERATED_COMMANDS_COMPUTE_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV>, VK_NV_RAY_TRACING_LINEAR_SWEPT_SPHERES_EXTENSION_NAME, VK_NV_RAY_TRACING_LINEAR_SWEPT_SPHERES_SPEC_VERSION },
@@ -793,6 +803,8 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderExpectAssumeFeatures>, VK_KHR_SHADER_EXPECT_ASSUME_EXTENSION_NAME, VK_KHR_SHADER_EXPECT_ASSUME_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceMaintenance6Features>, VK_KHR_MAINTENANCE_6_EXTENSION_NAME, VK_KHR_MAINTENANCE_6_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV>, VK_NV_DESCRIPTOR_POOL_OVERALLOCATION_EXTENSION_NAME, VK_NV_DESCRIPTOR_POOL_OVERALLOCATION_SPEC_VERSION },
+	{ createFeatureStructWrapper<VkPhysicalDeviceTileMemoryHeapFeaturesQCOM>, VK_QCOM_TILE_MEMORY_HEAP_EXTENSION_NAME, VK_QCOM_TILE_MEMORY_HEAP_SPEC_VERSION },
+	{ createFeatureStructWrapper<VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR>, VK_KHR_COPY_MEMORY_INDIRECT_EXTENSION_NAME, VK_KHR_COPY_MEMORY_INDIRECT_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR>, VK_KHR_VIDEO_ENCODE_QUANTIZATION_MAP_EXTENSION_NAME, VK_KHR_VIDEO_ENCODE_QUANTIZATION_MAP_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceRawAccessChainsFeaturesNV>, VK_NV_RAW_ACCESS_CHAINS_EXTENSION_NAME, VK_NV_RAW_ACCESS_CHAINS_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR>, VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME, VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_SPEC_VERSION },
@@ -813,6 +825,10 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDevicePipelineOpacityMicromapFeaturesARM>, VK_ARM_PIPELINE_OPACITY_MICROMAP_EXTENSION_NAME, VK_ARM_PIPELINE_OPACITY_MICROMAP_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceDepthClampZeroOneFeaturesKHR>, VK_KHR_DEPTH_CLAMP_ZERO_ONE_EXTENSION_NAME, VK_KHR_DEPTH_CLAMP_ZERO_ONE_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT>, VK_EXT_VERTEX_ATTRIBUTE_ROBUSTNESS_EXTENSION_NAME, VK_EXT_VERTEX_ATTRIBUTE_ROBUSTNESS_SPEC_VERSION },
+	{ createFeatureStructWrapper<VkPhysicalDeviceRobustness2FeaturesKHR>, VK_KHR_ROBUSTNESS_2_EXTENSION_NAME, VK_KHR_ROBUSTNESS_2_SPEC_VERSION },
+	{ createFeatureStructWrapper<VkPhysicalDevicePresentMeteringFeaturesNV>, VK_NV_PRESENT_METERING_EXTENSION_NAME, VK_NV_PRESENT_METERING_SPEC_VERSION },
+	{ createFeatureStructWrapper<VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT>, VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET_EXTENSION_NAME, VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET_SPEC_VERSION },
+	{ createFeatureStructWrapper<VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT>, VK_EXT_ZERO_INITIALIZE_DEVICE_MEMORY_EXTENSION_NAME, VK_EXT_ZERO_INITIALIZE_DEVICE_MEMORY_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceProtectedMemoryFeatures>, DECL_PROTECTED_MEMORY_EXTENSION_NAME, 0 },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderDrawParametersFeatures>, DECL_SHADER_DRAW_PARAMETERS_EXTENSION_NAME, 0 },
 };
@@ -828,7 +844,10 @@ const std::string getPreviousFeatureExtName (const std::string &name)
 		{ "VK_KHR_vertex_attribute_divisor", "VK_EXT_vertex_attribute_divisor" },
 		{ "VK_KHR_index_type_uint8", "VK_EXT_index_type_uint8" },
 		{ "VK_KHR_line_rasterization", "VK_EXT_line_rasterization" },
-		{ "VK_KHR_depth_clamp_zero_one", "VK_EXT_depth_clamp_zero_one" }
+		{ "VK_KHR_copy_memory_indirect", "VK_NV_copy_memory_indirect" },
+		{ "VK_KHR_depth_clamp_zero_one", "VK_EXT_depth_clamp_zero_one" },
+		{ "VK_KHR_robustness2", "VK_EXT_robustness2" },
+		{ "VK_EXT_fragment_density_map_offset", "VK_QCOM_fragment_density_map_offset" }
 	};
 
 	auto it = previousExtensionsMap.find(name);

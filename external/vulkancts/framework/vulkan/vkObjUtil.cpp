@@ -792,13 +792,14 @@ Move<VkFramebuffer> makeFramebuffer(const DeviceInterface &vk, const VkDevice de
     return createFramebuffer(vk, device, &framebufferInfo);
 }
 
-Move<VkCommandPool> makeCommandPool(const DeviceInterface &vk, const VkDevice device, const uint32_t queueFamilyIndex)
+Move<VkCommandPool> makeCommandPool(const DeviceInterface &vk, const VkDevice device, const uint32_t queueFamilyIndex,
+                                    const VkCommandPoolCreateFlags additionalFlags)
 {
     const VkCommandPoolCreateInfo commandPoolParams = {
-        VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-        nullptr,                                         // const void* pNext;
-        VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags flags;
-        queueFamilyIndex,                                // uint32_t queueFamilyIndex;
+        VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,                        // VkStructureType sType;
+        nullptr,                                                           // const void* pNext;
+        VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | additionalFlags, // VkCommandPoolCreateFlags flags;
+        queueFamilyIndex,                                                  // uint32_t queueFamilyIndex;
     };
 
     return createCommandPool(vk, device, &commandPoolParams);

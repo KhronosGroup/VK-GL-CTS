@@ -165,7 +165,8 @@ Move<VkFramebuffer> makeFramebuffer(const DeviceInterface &vk, const VkDevice de
                                     const uint32_t attachmentCount, const VkImageView *attachmentsArray,
                                     const uint32_t width, const uint32_t height, const uint32_t layers = 1u);
 
-Move<VkCommandPool> makeCommandPool(const DeviceInterface &vk, const VkDevice device, const uint32_t queueFamilyIndex);
+Move<VkCommandPool> makeCommandPool(const DeviceInterface &vk, const VkDevice device, const uint32_t queueFamilyIndex,
+                                    const VkCommandPoolCreateFlags additionalFlags = 0u);
 
 inline Move<VkBuffer> makeBuffer(const DeviceInterface &vk, const VkDevice device, const VkDeviceSize bufferSize,
                                  const VkBufferUsageFlags usage)

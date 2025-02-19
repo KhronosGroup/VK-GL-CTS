@@ -86,8 +86,11 @@ uint32_t findSpecificQueueFamilyIndex(const std::vector<VkQueueFamilyProperties>
 } // namespace
 
 void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequirementsVec &queueRequirements,
-                                                               bool requireShaderImageAtomicInt64Features,
-                                                               bool requireMaintenance5, bool requireTransformFeedback)
+                                                               bool requireShaderImageAtomicInt64Features /* = false */,
+                                                               bool requireMaintenance5 /* = false */,
+                                                               bool requireTransformFeedback /* = false */,
+                                                               bool requireCopyMemoryIndirect /* = false */,
+                                                               bool requireBufferDeviceAddress /* = false */)
 {
     typedef std::map<VkQueueFlags, std::vector<Queue>> QueuesMap;
     typedef std::map<uint32_t, QueueFamilyQueuesCount> SelectedQueuesMap;
@@ -258,11 +261,33 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 
             deviceExtensions.push_back("VK_EXT_transform_feedback");
         }
+
+        if (requireCopyMemoryIndirect)
+        {
+            deviceExtensions.push_back("VK_KHR_copy_memory_indirect");
+        }
+
+        if (requireBufferDeviceAddress)
+        {
+            deviceExtensions.push_back("VK_KHR_buffer_device_address");
+        }
     }
     else if (m_useDeviceGroups)
     {
         pNext = &deviceGroupInfo;
     }
+
+    // Add these extensions regardless of whether we're using features2
+    if (requireCopyMemoryIndirect)
+    {
+        deviceExtensions.push_back("VK_KHR_copy_memory_indirect");
+    }
+
+    if (requireBufferDeviceAddress)
+    {
+        deviceExtensions.push_back("VK_KHR_buffer_device_address");
+    }
+
     const VkDeviceCreateInfo deviceInfo = {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,                     // VkStructureType sType;
         pNext,                                                    // const void* pNext;
