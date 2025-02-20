@@ -14917,6 +14917,10 @@ KHR-GL46.aggressive_optimizations.cos_vec3_frag
 KHR-GL46.texture_query_lod.sampler1D_test
 KHR-GL46.texture_query_lod.sampler2D_test
 KHR-GL46.texture_query_lod.sampler3D_test
+KHR-GL46.texture_buffer_size_clamping.tex_buffer
+KHR-GL46.texture_buffer_size_clamping.texture_buffer
+KHR-GL46.texture_buffer_size_clamping.tex_buffer_range
+KHR-GL46.texture_buffer_size_clamping.texture_buffer_range
 KHR-GL46.shaders44.preprocessor.invalid_redefinitions.invalid_identifier_2_vertex
 KHR-GL46.shaders44.preprocessor.invalid_redefinitions.invalid_identifier_2_fragment
 KHR-GL46.shaders44.preprocessor.line_continuation.comment_vertex

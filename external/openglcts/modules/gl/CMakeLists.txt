@@ -125,6 +125,8 @@ set(GLCTS_GL_SRCS
 	gl4cGlSpirvTests.hpp
 	gl4cTextureQueryLodTests.hpp
 	gl4cTextureQueryLodTests.cpp
+	gl4cTextureBufferTests.hpp
+	gl4cTextureBufferTests.cpp
 	)
 
 set(GLCTS_GL_LIBS

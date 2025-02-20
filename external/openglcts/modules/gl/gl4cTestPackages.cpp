@@ -61,6 +61,7 @@
 #include "gl4cStencilTexturingTests.hpp"
 #include "gl4cSyncTests.hpp"
 #include "gl4cTextureBarrierTests.hpp"
+#include "gl4cTextureBufferTests.hpp"
 #include "gl4cTextureFilterMinmaxTests.hpp"
 #include "gl4cTextureGatherTests.hpp"
 #include "gl4cTextureViewTests.hpp"
@@ -313,6 +314,7 @@ void GL43TestPackage::init(void)
         addChild(new glcts::ShaderConstExprTests(getContext()));
         addChild(new glcts::AggressiveShaderOptimizationsTests(getContext()));
         addChild(new gl4cts::TextureQueryLodTests(getContext()));
+        addChild(new gl4cts::TextureBufferTests(getContext()));
     }
     catch (...)
     {

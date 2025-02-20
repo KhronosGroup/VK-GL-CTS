@@ -13281,6 +13281,10 @@ KHR-GL45.aggressive_optimizations.cos_vec2_vert
 KHR-GL45.aggressive_optimizations.cos_vec2_frag
 KHR-GL45.aggressive_optimizations.cos_vec3_vert
 KHR-GL45.aggressive_optimizations.cos_vec3_frag
+KHR-GL45.texture_buffer_size_clamping.tex_buffer
+KHR-GL45.texture_buffer_size_clamping.texture_buffer
+KHR-GL45.texture_buffer_size_clamping.tex_buffer_range
+KHR-GL45.texture_buffer_size_clamping.texture_buffer_range
 KHR-GL45.shaders44.preprocessor.invalid_redefinitions.invalid_identifier_2_vertex
 KHR-GL45.shaders44.preprocessor.invalid_redefinitions.invalid_identifier_2_fragment
 KHR-GL45.shaders44.preprocessor.line_continuation.comment_vertex
