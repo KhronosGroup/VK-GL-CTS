@@ -290,7 +290,7 @@ class GitRepo (Source):
                 run(["git", "clone", "--no-checkout", url, fullDstPath])
             except:
                 if backupUrl != None:
-                    run(["git", "clone", "--no-checkout", url, backupPath])
+                    execute(["git", "clone", "--no-checkout", backupUrl, fullDstPath])
 
         pushWorkingDir(fullDstPath)
 
