@@ -1488,14 +1488,14 @@ void AttributeArray::bindAttribute(uint32_t loc)
 
                 // Output type is float type
                 m_ctx.vertexAttribPointer(loc, size, inputTypeToGL(m_inputType), m_normalize, m_stride,
-                                          basePtr + m_offset);
+                                          basePtr ? basePtr + m_offset : reinterpret_cast<uint8_t *>(m_offset));
                 GLU_EXPECT_NO_ERROR(m_ctx.getError(), "glVertexAttribPointer()");
             }
             else
             {
                 // Output type is int type
                 m_ctx.vertexAttribIPointer(loc, m_componentCount, inputTypeToGL(m_inputType), m_stride,
-                                           basePtr + m_offset);
+                                           basePtr ? basePtr + m_offset : reinterpret_cast<uint8_t *>(m_offset));
                 GLU_EXPECT_NO_ERROR(m_ctx.getError(), "glVertexAttribIPointer()");
             }
         }
@@ -1507,7 +1507,7 @@ void AttributeArray::bindAttribute(uint32_t loc)
             DE_ASSERT(outputTypeIsFloatType(m_outputType));
 
             m_ctx.vertexAttribPointer(loc, m_componentCount, inputTypeToGL(m_inputType), m_normalize, m_stride,
-                                      basePtr + m_offset);
+                                      basePtr ? basePtr + m_offset : reinterpret_cast<uint8_t *>(m_offset));
             GLU_EXPECT_NO_ERROR(m_ctx.getError(), "glVertexAttribPointer()");
         }
 
@@ -3786,7 +3786,8 @@ DrawTest::IterateResult DrawTest::iterate(void)
                     seed, (int)elementCount, spec.indexType, spec.indexPointerOffset, indexMin, indexMax, indexBase);
                 const char *indexPointerBase =
                     (spec.indexStorage == DrawTestSpec::STORAGE_USER) ? (indexArray) : (nullptr);
-                const char *indexPointer = indexPointerBase + spec.indexPointerOffset;
+                const char *indexPointer = indexPointerBase ? indexPointerBase + spec.indexPointerOffset :
+                                                              reinterpret_cast<const char *>(spec.indexPointerOffset);
 
                 de::UniquePtr<AttributeArray> glArray(new AttributeArray(spec.indexStorage, *m_glesContext));
                 de::UniquePtr<AttributeArray> rrArray(new AttributeArray(spec.indexStorage, *m_refContext));
