@@ -5807,6 +5807,7 @@ dEQP-GL45-ES31.functional.shaders.framebuffer_fetch.basic.last_frag_data
 dEQP-GL45-ES31.functional.shaders.framebuffer_fetch.basic.fragment_discard
 dEQP-GL45-ES31.functional.shaders.framebuffer_fetch.basic.multiple_assignment
 dEQP-GL45-ES31.functional.shaders.framebuffer_fetch.basic.multiple_render_targets
+dEQP-GL45-ES31.functional.shaders.framebuffer_fetch.basic.multiple_render_targets_overdraw
 dEQP-GL45-ES31.functional.shaders.framebuffer_fetch.basic.framebuffer_texture_level
 dEQP-GL45-ES31.functional.shaders.framebuffer_fetch.basic.framebuffer_texture_layer
 dEQP-GL45-ES31.functional.shaders.framebuffer_fetch.framebuffer_format.rgba32i

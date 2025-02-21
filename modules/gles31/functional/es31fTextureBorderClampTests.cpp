@@ -1000,6 +1000,89 @@ void TextureBorderClampTest::verifyImage(const tcu::Surface &renderedFrame, cons
         m_result.fail("Image verification failed");
 }
 
+int verifyTextureBorderErrors(const tcu::PixelBufferAccess &errorMask, const float *texCoord,
+                              const glu::TextureTestUtil::ReferenceParams &sampleParams, qpWatchDog *watchDog)
+{
+    std::vector<tcu::ConstPixelBufferAccess> srcLevelStorage;
+
+    const tcu::Vec4 sq = tcu::Vec4(texCoord[0 + 0], texCoord[2 + 0], texCoord[4 + 0], texCoord[6 + 0]);
+    const tcu::Vec4 tq = tcu::Vec4(texCoord[0 + 1], texCoord[2 + 1], texCoord[4 + 1], texCoord[6 + 1]);
+
+    const tcu::IVec2 dstSize = tcu::IVec2(errorMask.getWidth(), errorMask.getHeight());
+    const float dstW         = float(dstSize.x());
+    const float dstH         = float(dstSize.y());
+
+    // Coordinates and lod per triangle.
+    const tcu::Vec3 triS[2] = {sq.swizzle(0, 1, 2), sq.swizzle(3, 2, 1)};
+    const tcu::Vec3 triT[2] = {tq.swizzle(0, 1, 2), tq.swizzle(3, 2, 1)};
+    const tcu::Vec3 triW[2] = {sampleParams.w.swizzle(0, 1, 2), sampleParams.w.swizzle(3, 2, 1)};
+
+    const int MIN_SUBPIXEL_BITS = 4;
+    const float posEps          = 1.0f / float(1 << MIN_SUBPIXEL_BITS);
+
+    int numFailed = 0;
+
+    auto projectedTriInterpolate = [](const tcu::Vec3 &s, const tcu::Vec3 &w, float nx, float ny)
+    {
+        return (s[0] * (1.0f - nx - ny) / w[0] + s[1] * ny / w[1] + s[2] * nx / w[2]) /
+               ((1.0f - nx - ny) / w[0] + ny / w[1] + nx / w[2]);
+    };
+
+    tcu::clear(errorMask, tcu::RGBA::green().toVec());
+
+    for (int py = 0; py < errorMask.getHeight(); py++)
+    {
+        // Ugly hack, validation can take way too long at the moment.
+        if (watchDog)
+            qpWatchDog_touch(watchDog);
+
+        for (int px = 0; px < errorMask.getWidth(); px++)
+        {
+            const tcu::Vec4 errPix = errorMask.getPixel(px, py);
+
+            // Try comparison to ideal reference first, and if that fails use slower verificator.
+            if (!tcu::boolAll(tcu::equal(errPix, tcu::RGBA::green().toVec())))
+            {
+                const float wx = (float)px + 0.5f;
+                const float wy = (float)py + 0.5f;
+                const float nx = wx / dstW;
+                const float ny = wy / dstH;
+
+                const bool tri0 = (wx - posEps) / dstW + (wy - posEps) / dstH <= 1.0f;
+                const bool tri1 = (wx + posEps) / dstW + (wy + posEps) / dstH >= 1.0f;
+
+                bool isOk = false;
+
+                DE_ASSERT(tri0 || tri1);
+
+                // Pixel can belong to either of the triangles if it lies close enough to the edge.
+                for (int triNdx = (tri0 ? 0 : 1); triNdx <= (tri1 ? 1 : 0); triNdx++)
+                {
+                    const float triNx = triNdx ? 1.0f - nx : nx;
+                    const float triNy = triNdx ? 1.0f - ny : ny;
+
+                    const tcu::Vec2 coord(projectedTriInterpolate(triS[triNdx], triW[triNdx], triNx, triNy),
+                                          projectedTriInterpolate(triT[triNdx], triW[triNdx], triNx, triNy));
+
+                    // ignore inner-sampling errors for border test
+                    if (de::inBounds(coord[0], 0.f, 1.f) && de::inBounds(coord[1], 0.f, 1.f))
+                    {
+                        isOk = true;
+                        break;
+                    }
+                }
+
+                if (!isOk)
+                {
+                    errorMask.setPixel(tcu::RGBA::red().toVec(), px, py);
+                    numFailed += 1;
+                }
+            }
+        }
+    }
+    return numFailed;
+}
+
 bool TextureBorderClampTest::verifyTextureSampleResult(const tcu::ConstPixelBufferAccess &renderedFrame,
                                                        const float *texCoord,
                                                        const glu::TextureTestUtil::ReferenceParams &samplerParams,
@@ -1017,6 +1100,10 @@ bool TextureBorderClampTest::verifyTextureSampleResult(const tcu::ConstPixelBuff
     numFailedPixels = glu::TextureTestUtil::computeTextureLookupDiff(
         renderedFrame, reference.getAccess(), errorMask.getAccess(), m_texture->getRefTexture(), texCoord,
         samplerParams, lookupPrecision, lodPrecision, m_testCtx.getWatchDog());
+
+    if (numFailedPixels > 0)
+        numFailedPixels =
+            verifyTextureBorderErrors(errorMask.getAccess(), texCoord, samplerParams, m_testCtx.getWatchDog());
 
     if (numFailedPixels > 0)
         m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: Result verification failed, got " << numFailedPixels
@@ -1069,6 +1156,10 @@ bool TextureBorderClampTest::verifyTextureCompareResult(const tcu::ConstPixelBuf
         numFailedPixels = glu::TextureTestUtil::computeTextureCompareDiff(
             renderedFrame, reference.getAccess(), errorMask.getAccess(), effectiveView, texCoord, samplerParams,
             lowQualityTexComparePrecision, lowQualityLodPrecision, nonShadowThreshold);
+
+        if (numFailedPixels > 0)
+            numFailedPixels =
+                verifyTextureBorderErrors(errorMask.getAccess(), texCoord, samplerParams, m_testCtx.getWatchDog());
 
         if (numFailedPixels > 0)
             m_testCtx.getLog() << tcu::TestLog::Message
@@ -2198,6 +2289,10 @@ void TextureBorderClampPerAxisCase3D::verifyImage(const tcu::Surface &renderedFr
     numFailedPixels = glu::TextureTestUtil::computeTextureLookupDiff(
         renderedFrame.getAccess(), reference.getAccess(), errorMask.getAccess(), m_texture->getRefTexture(),
         &m_texCoords[0], samplerParams, lookupPrecision, lodPrecision, m_testCtx.getWatchDog());
+
+    if (numFailedPixels > 0)
+        numFailedPixels =
+            verifyTextureBorderErrors(errorMask.getAccess(), &m_texCoords[0], samplerParams, m_testCtx.getWatchDog());
 
     if (numFailedPixels > 0)
         m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: Result verification failed, got " << numFailedPixels

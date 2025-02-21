@@ -720,5 +720,37 @@
 		<t>dEQP-VK.glsl.texture_functions.textureprojoffset.mirrored_repeat.usampler3d_fragment</t>
 		<t>dEQP-VK.glsl.texture_functions.textureprojoffset.mirrored_repeat.usampler3d_vertex</t>
 	</waiver>
-
+	<waiver vendorName="Arm" vendorId="0x13b5" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/5544">
+		<description>The affected devices speculatively execute non-referenced indices in sequential groups of four, which hits an infinite loop due to out-of-bounds vertex attribute lookup in the affected test.</description>
+		<device_list>
+			<d>0x07500001</d>
+			<d>0x08300010</d>
+			<d>0x08301000</d>
+			<d>0x08601000</d>
+			<d>0x08602000</d>
+			<d>0x08801000</d>
+			<d>0x08801008</d>
+			<d>0x08802000</d>
+			<d>0x60a00002</d>
+			<d>0x62210001</d>
+			<d>0x70901010</d>
+			<d>0x70930000</d>
+			<d>0x72110000</d>
+			<d>0x72120000</d>
+			<d>0x90800020</d>
+			<d>0x90910010</d>
+			<d>0x92020010</d>
+			<d>0x92041010</d>
+			<d>0x9e550002</d>
+			<d>0xa8620004</d>
+			<d>0xa8670000</d>
+			<d>0xaa730000</d>
+			<d>0xac740000</d>
+			<d>0xb8a21020</d>
+			<d>0xb8a31020</d>
+			<d>0xc8700008</d>
+			<d>0xc8710008</d>
+		</device_list>
+		<t>dEQP-VK.glsl.loops.special.do_while_dynamic_iterations.dowhile_trap_vertex</t>
+	</waiver>
 </waiver_list>

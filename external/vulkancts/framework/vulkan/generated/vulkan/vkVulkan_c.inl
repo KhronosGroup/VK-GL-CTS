@@ -1962,7 +1962,7 @@ extern "C" {
 #define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)// Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 304
+#define VK_HEADER_VERSION 305
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 4, VK_HEADER_VERSION)
@@ -2794,6 +2794,8 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_MEMORY_RANGE_BARRIER_KHR = 1000318005,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_ADDRESS_COMMANDS_FEATURES_KHR = 1000318006,
     VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_2_EXT = 1000318007,
+    VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_2_KHR = 1000318008,
+    VK_STRUCTURE_TYPE_MICROMAP_CREATE_INFO_2_EXT = 1000318009,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT = 1000320000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_EXT = 1000320001,
     VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT = 1000320002,
@@ -2909,7 +2911,6 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_SET_HOST_MAPPING_FEATURES_VALVE = 1000420000,
     VK_STRUCTURE_TYPE_DESCRIPTOR_SET_BINDING_REFERENCE_VALVE = 1000420001,
     VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_HOST_MAPPING_INFO_VALVE = 1000420002,
-    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_EXT = 1000421000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_NON_SEAMLESS_CUBE_MAP_FEATURES_EXT = 1000422000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RENDER_PASS_STRIPED_FEATURES_ARM = 1000424000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RENDER_PASS_STRIPED_PROPERTIES_ARM = 1000424001,
@@ -3086,6 +3087,8 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_SHADER_LAYOUT_INFO_EXT = 1000572012,
     VK_STRUCTURE_TYPE_GENERATED_COMMANDS_PIPELINE_INFO_EXT = 1000572013,
     VK_STRUCTURE_TYPE_GENERATED_COMMANDS_SHADER_INFO_EXT = 1000572014,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_8_FEATURES_KHR = 1000574000,
+    VK_STRUCTURE_TYPE_MEMORY_BARRIER_ACCESS_FLAGS_3_KHR = 1000574002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA = 1000575000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA = 1000575001,
     VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA = 1000575002,
@@ -3097,6 +3100,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_FLEXIBLE_DIMENSIONS_PROPERTIES_NV = 1000593001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_PROPERTIES_NV = 1000593002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_OPACITY_MICROMAP_FEATURES_ARM = 1000596000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_KHR = 1000421000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT = 1000608000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
@@ -3307,6 +3311,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS_KHR = VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS,
     VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR = VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_ROTATE_FEATURES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_ROTATE_FEATURES,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_EXT = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_KHR,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_PROPERTIES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_PROPERTIES,
@@ -4618,6 +4623,7 @@ typedef VkFlags VkShaderModuleCreateFlags;
 
 typedef enum VkPipelineCacheCreateFlagBits {
     VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT = 0x00000001,
+    VK_PIPELINE_CACHE_CREATE_INTERNALLY_SYNCHRONIZED_MERGE_BIT_KHR = 0x00000008,
     VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT_EXT = VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT,
     VK_PIPELINE_CACHE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkPipelineCacheCreateFlagBits;
@@ -4808,6 +4814,7 @@ typedef enum VkDependencyFlagBits {
     VK_DEPENDENCY_DEVICE_GROUP_BIT = 0x00000004,
     VK_DEPENDENCY_VIEW_LOCAL_BIT = 0x00000002,
     VK_DEPENDENCY_FEEDBACK_LOOP_BIT_EXT = 0x00000008,
+    VK_DEPENDENCY_QUEUE_FAMILY_OWNERSHIP_TRANSFER_USE_ALL_STAGES_BIT_KHR = 0x00000020,
     VK_DEPENDENCY_VIEW_LOCAL_BIT_KHR = VK_DEPENDENCY_VIEW_LOCAL_BIT,
     VK_DEPENDENCY_DEVICE_GROUP_BIT_KHR = VK_DEPENDENCY_DEVICE_GROUP_BIT,
     VK_DEPENDENCY_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
@@ -13599,8 +13606,27 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit2KHR(
 
 // VK_KHR_device_address_commands is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_device_address_commands 1
+VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkAccelerationStructureKHR)
+VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkMicromapEXT)
 #define VK_KHR_DEVICE_ADDRESS_COMMANDS_SPEC_VERSION 1
 #define VK_KHR_DEVICE_ADDRESS_COMMANDS_EXTENSION_NAME "VK_KHR_device_address_commands"
+
+typedef enum VkAccelerationStructureTypeKHR {
+    VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR = 0,
+    VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR = 1,
+    VK_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR = 2,
+    VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_NV = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,
+    VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_NV = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
+    VK_ACCELERATION_STRUCTURE_TYPE_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkAccelerationStructureTypeKHR;
+
+typedef enum VkMicromapTypeEXT {
+    VK_MICROMAP_TYPE_OPACITY_MICROMAP_EXT = 0,
+#ifdef VK_ENABLE_BETA_EXTENSIONS
+    VK_MICROMAP_TYPE_DISPLACEMENT_MICROMAP_NV = 1000397000,
+#endif
+    VK_MICROMAP_TYPE_MAX_ENUM_EXT = 0x7FFFFFFF
+} VkMicromapTypeEXT;
 
 typedef enum VkAddressCopyFlagBitsKHR {
     VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR = 0x00000001,
@@ -13615,6 +13641,20 @@ typedef enum VkConditionalRenderingFlagBitsEXT {
     VK_CONDITIONAL_RENDERING_FLAG_BITS_MAX_ENUM_EXT = 0x7FFFFFFF
 } VkConditionalRenderingFlagBitsEXT;
 typedef VkFlags VkConditionalRenderingFlagsEXT;
+
+typedef enum VkAccelerationStructureCreateFlagBitsKHR {
+    VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR = 0x00000001,
+    VK_ACCELERATION_STRUCTURE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT = 0x00000008,
+    VK_ACCELERATION_STRUCTURE_CREATE_MOTION_BIT_NV = 0x00000004,
+    VK_ACCELERATION_STRUCTURE_CREATE_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkAccelerationStructureCreateFlagBitsKHR;
+typedef VkFlags VkAccelerationStructureCreateFlagsKHR;
+
+typedef enum VkMicromapCreateFlagBitsEXT {
+    VK_MICROMAP_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_EXT = 0x00000001,
+    VK_MICROMAP_CREATE_FLAG_BITS_MAX_ENUM_EXT = 0x7FFFFFFF
+} VkMicromapCreateFlagBitsEXT;
+typedef VkFlags VkMicromapCreateFlagsEXT;
 typedef struct VkDeviceAddressRangeKHR {
     VkDeviceAddress    address;
     VkDeviceSize       size;
@@ -13695,6 +13735,24 @@ typedef struct VkConditionalRenderingBeginInfo2EXT {
     VkConditionalRenderingFlagsEXT    flags;
 } VkConditionalRenderingBeginInfo2EXT;
 
+typedef struct VkAccelerationStructureCreateInfo2KHR {
+    VkStructureType                          sType;
+    const void*                              pNext;
+    VkAccelerationStructureCreateFlagsKHR    createFlags;
+    VkDeviceAddressRangeKHR                  addressRange;
+    VkAccelerationStructureTypeKHR           type;
+    VkDeviceAddress                          replayDeviceAddress;
+} VkAccelerationStructureCreateInfo2KHR;
+
+typedef struct VkMicromapCreateInfo2EXT {
+    VkStructureType             sType;
+    const void*                 pNext;
+    VkMicromapCreateFlagsEXT    createFlags;
+    VkDeviceAddressRangeKHR     addressRange;
+    VkMicromapTypeEXT           type;
+    VkDeviceAddress             replayDeviceAddress;
+} VkMicromapCreateInfo2EXT;
+
 typedef void (VKAPI_PTR *PFN_vkCmdBindIndexBuffer3KHR)(VkCommandBuffer   commandBuffer, VkDeviceAddressRangeKHR             addressRange, VkIndexType                         indexType);
 typedef void (VKAPI_PTR *PFN_vkCmdBindVertexBuffers3KHR)(VkCommandBuffer commandBuffer, uint32_t                            firstBinding, uint32_t                            bindingCount, const VkStridedDeviceAddressRangeKHR* pRanges);
 typedef void (VKAPI_PTR *PFN_vkCmdDrawIndirect2KHR)(VkCommandBuffer   commandBuffer, VkStridedDeviceAddressRangeKHR      addressRange, uint32_t                            drawCount);
@@ -13716,6 +13774,8 @@ typedef void (VKAPI_PTR *PFN_vkCmdDrawIndirectByteCount2EXT)(VkCommandBuffer com
 typedef void (VKAPI_PTR *PFN_vkCmdDrawMeshTasksIndirect2EXT)(VkCommandBuffer   commandBuffer, VkStridedDeviceAddressRangeKHR      addressRange, uint32_t                            drawCount);
 typedef void (VKAPI_PTR *PFN_vkCmdDrawMeshTasksIndirectCount2EXT)(VkCommandBuffer   commandBuffer, VkStridedDeviceAddressRangeKHR      addressRange, VkDeviceAddressRangeKHR             countAddressRange, uint32_t                            maxDrawCount);
 typedef void (VKAPI_PTR *PFN_vkCmdWriteMarkerToMemoryAMD)(VkCommandBuffer   commandBuffer, VkPipelineStageFlags2               stage, VkDeviceAddressRangeKHR             dstRange, VkAddressCopyFlagsKHR               dstCopyFlags, uint32_t                            marker);
+typedef VkResult                                     (VKAPI_PTR *PFN_vkCreateAccelerationStructure2KHR)(VkDevice                                     device, const VkAccelerationStructureCreateInfo2KHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR*                  pAccelerationStructure);
+typedef VkResult                                     (VKAPI_PTR *PFN_vkCreateMicromap2EXT)(VkDevice                                     device, const VkMicromapCreateInfo2EXT*              pCreateInfo, const VkAllocationCallbacks* pAllocator, VkMicromapEXT*                               pMicromap);
 
 #ifndef VK_NO_PROTOTYPES
 VKAPI_ATTR void VKAPI_CALL vkCmdBindIndexBuffer3KHR(
@@ -13836,6 +13896,18 @@ VKAPI_ATTR void VKAPI_CALL vkCmdWriteMarkerToMemoryAMD(
     VkDeviceAddressRangeKHR                     dstRange,
     VkAddressCopyFlagsKHR                       dstCopyFlags,
     uint32_t                                    marker);
+
+VKAPI_ATTR VkResult                                     VKAPI_CALL vkCreateAccelerationStructure2KHR(
+    VkDevice                                    device,
+    const VkAccelerationStructureCreateInfo2KHR* pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkAccelerationStructureKHR*                 pAccelerationStructure);
+
+VKAPI_ATTR VkResult                                     VKAPI_CALL vkCreateMicromap2EXT(
+    VkDevice                                    device,
+    const VkMicromapCreateInfo2EXT*             pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkMicromapEXT*                              pMicromap);
 #endif
 
 
@@ -14924,6 +14996,43 @@ typedef struct VkPhysicalDeviceLayeredApiVulkanPropertiesKHR {
     void*                          pNext;
     VkPhysicalDeviceProperties2    properties;
 } VkPhysicalDeviceLayeredApiVulkanPropertiesKHR;
+
+
+
+// VK_KHR_maintenance8 is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_maintenance8 1
+#define VK_KHR_MAINTENANCE_8_SPEC_VERSION 1
+#define VK_KHR_MAINTENANCE_8_EXTENSION_NAME "VK_KHR_maintenance8"
+typedef VkFlags64 VkAccessFlags3KHR;
+
+// Flag bits for VkAccessFlagBits3KHR
+typedef VkFlags64 VkAccessFlagBits3KHR;
+static const VkAccessFlagBits3KHR VK_ACCESS_3_NONE_KHR = 0ULL;
+
+typedef struct VkPhysicalDeviceMaintenance8FeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           maintenance8;
+} VkPhysicalDeviceMaintenance8FeaturesKHR;
+
+typedef struct VkMemoryBarrierAccessFlags3KHR {
+    VkStructureType      sType;
+    const void*          pNext;
+    VkAccessFlags3KHR    srcAccessMask3;
+    VkAccessFlags3KHR    dstAccessMask3;
+} VkMemoryBarrierAccessFlags3KHR;
+
+
+
+// VK_KHR_depth_clamp_zero_one is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_depth_clamp_zero_one 1
+#define VK_KHR_DEPTH_CLAMP_ZERO_ONE_SPEC_VERSION 1
+#define VK_KHR_DEPTH_CLAMP_ZERO_ONE_EXTENSION_NAME "VK_KHR_depth_clamp_zero_one"
+typedef struct VkPhysicalDeviceDepthClampZeroOneFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           depthClampZeroOne;
+} VkPhysicalDeviceDepthClampZeroOneFeaturesKHR;
 
 
 
@@ -16789,15 +16898,6 @@ typedef enum VkGeometryTypeKHR {
 } VkGeometryTypeKHR;
 typedef VkGeometryTypeKHR VkGeometryTypeNV;
 
-
-typedef enum VkAccelerationStructureTypeKHR {
-    VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR = 0,
-    VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR = 1,
-    VK_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR = 2,
-    VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_NV = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,
-    VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_NV = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
-    VK_ACCELERATION_STRUCTURE_TYPE_MAX_ENUM_KHR = 0x7FFFFFFF
-} VkAccelerationStructureTypeKHR;
 typedef VkAccelerationStructureTypeKHR VkAccelerationStructureTypeNV;
 
 
@@ -19167,7 +19267,6 @@ typedef struct VkQueryLowLatencySupportNV {
 
 // VK_EXT_descriptor_buffer is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_descriptor_buffer 1
-VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkAccelerationStructureKHR)
 #define VK_EXT_DESCRIPTOR_BUFFER_SPEC_VERSION 1
 #define VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME "VK_EXT_descriptor_buffer"
 typedef struct VkPhysicalDeviceDescriptorBufferPropertiesEXT {
@@ -20356,17 +20455,8 @@ typedef struct VkPhysicalDeviceShaderTileImagePropertiesEXT {
 
 // VK_EXT_opacity_micromap is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_opacity_micromap 1
-VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkMicromapEXT)
 #define VK_EXT_OPACITY_MICROMAP_SPEC_VERSION 2
 #define VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME "VK_EXT_opacity_micromap"
-
-typedef enum VkMicromapTypeEXT {
-    VK_MICROMAP_TYPE_OPACITY_MICROMAP_EXT = 0,
-#ifdef VK_ENABLE_BETA_EXTENSIONS
-    VK_MICROMAP_TYPE_DISPLACEMENT_MICROMAP_NV = 1000397000,
-#endif
-    VK_MICROMAP_TYPE_MAX_ENUM_EXT = 0x7FFFFFFF
-} VkMicromapTypeEXT;
 
 typedef enum VkBuildMicromapModeEXT {
     VK_BUILD_MICROMAP_MODE_BUILD_EXT = 0,
@@ -20415,12 +20505,6 @@ typedef enum VkBuildMicromapFlagBitsEXT {
     VK_BUILD_MICROMAP_FLAG_BITS_MAX_ENUM_EXT = 0x7FFFFFFF
 } VkBuildMicromapFlagBitsEXT;
 typedef VkFlags VkBuildMicromapFlagsEXT;
-
-typedef enum VkMicromapCreateFlagBitsEXT {
-    VK_MICROMAP_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_EXT = 0x00000001,
-    VK_MICROMAP_CREATE_FLAG_BITS_MAX_ENUM_EXT = 0x7FFFFFFF
-} VkMicromapCreateFlagBitsEXT;
-typedef VkFlags VkMicromapCreateFlagsEXT;
 typedef struct VkMicromapUsageEXT {
     uint32_t    count;
     uint32_t    subdivisionLevel;
@@ -20823,11 +20907,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetDescriptorSetHostMappingVALVE(
 #define VK_EXT_depth_clamp_zero_one 1
 #define VK_EXT_DEPTH_CLAMP_ZERO_ONE_SPEC_VERSION 1
 #define VK_EXT_DEPTH_CLAMP_ZERO_ONE_EXTENSION_NAME "VK_EXT_depth_clamp_zero_one"
-typedef struct VkPhysicalDeviceDepthClampZeroOneFeaturesEXT {
-    VkStructureType    sType;
-    void*              pNext;
-    VkBool32           depthClampZeroOne;
-} VkPhysicalDeviceDepthClampZeroOneFeaturesEXT;
+typedef VkPhysicalDeviceDepthClampZeroOneFeaturesKHR VkPhysicalDeviceDepthClampZeroOneFeaturesEXT;
 
 
 
@@ -22894,14 +22974,6 @@ typedef enum VkBuildAccelerationStructureModeKHR {
     VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR = 1,
     VK_BUILD_ACCELERATION_STRUCTURE_MODE_MAX_ENUM_KHR = 0x7FFFFFFF
 } VkBuildAccelerationStructureModeKHR;
-
-typedef enum VkAccelerationStructureCreateFlagBitsKHR {
-    VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR = 0x00000001,
-    VK_ACCELERATION_STRUCTURE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT = 0x00000008,
-    VK_ACCELERATION_STRUCTURE_CREATE_MOTION_BIT_NV = 0x00000004,
-    VK_ACCELERATION_STRUCTURE_CREATE_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
-} VkAccelerationStructureCreateFlagBitsKHR;
-typedef VkFlags VkAccelerationStructureCreateFlagsKHR;
 typedef struct VkAccelerationStructureBuildRangeInfoKHR {
     uint32_t    primitiveCount;
     uint32_t    primitiveOffset;

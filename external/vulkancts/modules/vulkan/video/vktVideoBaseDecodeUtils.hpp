@@ -63,6 +63,44 @@ namespace video
 using namespace vk;
 using namespace std;
 
+// <Temporary workaround for outdated xml in spec for VK_KHR_device_address_commands>
+// cts main has tests for VK_KHR_video_maintenance2 but this extension is not merged to
+// VK_KHR_device_address_commands spec branch
+#ifdef VK_KHR_VIDEO_MAINTENANCE_2_EXTENSION_NAME
+#error xml was updated - remove whole ifdef workaround
+#else
+const VkStructureType VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_INLINE_SESSION_PARAMETERS_INFO_KHR =
+    VK_STRUCTURE_TYPE_APPLICATION_INFO;
+const VkStructureType VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_INLINE_SESSION_PARAMETERS_INFO_KHR =
+    VK_STRUCTURE_TYPE_APPLICATION_INFO;
+const VkStructureType VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_INLINE_SESSION_PARAMETERS_INFO_KHR =
+    VK_STRUCTURE_TYPE_APPLICATION_INFO;
+const VkVideoSessionCreateFlagBitsKHR VK_VIDEO_SESSION_CREATE_INLINE_SESSION_PARAMETERS_BIT_KHR =
+    VK_VIDEO_SESSION_CREATE_PROTECTED_CONTENT_BIT_KHR;
+struct VkVideoDecodeH264InlineSessionParametersInfoKHR
+{
+    VkStructureType sType;
+    const void *pNext;
+    const StdVideoH264SequenceParameterSet *pStdSPS;
+    const StdVideoH264PictureParameterSet *pStdPPS;
+};
+struct VkVideoDecodeH265InlineSessionParametersInfoKHR
+{
+    VkStructureType sType;
+    const void *pNext;
+    const StdVideoH265VideoParameterSet *pStdVPS;
+    const StdVideoH265SequenceParameterSet *pStdSPS;
+    const StdVideoH265PictureParameterSet *pStdPPS;
+};
+struct VkVideoDecodeAV1InlineSessionParametersInfoKHR
+{
+    VkStructureType sType;
+    const void *pNext;
+    const StdVideoAV1SequenceHeader *pStdSequenceHeader;
+};
+#endif
+// </Temporary workaround end>
+
 #define MAKEFRAMERATE(num, den) (((num) << 14) | (den))
 #define NV_FRAME_RATE_NUM(rate) ((rate) >> 14)
 #define NV_FRAME_RATE_DEN(rate) ((rate)&0x3fff)
@@ -301,7 +339,7 @@ public:
     static VkResult Create(DeviceContext &devCtx, uint32_t videoQueueFamily, VkVideoCoreProfile *pVideoProfile,
                            VkFormat pictureFormat, const VkExtent2D &maxCodedExtent, VkFormat referencePicturesFormat,
                            uint32_t maxDpbSlots, uint32_t maxActiveReferencePictures, bool useInlineVideoQueries,
-                           VkSharedBaseObj<VulkanVideoSession> &videoSession);
+                           bool useInlineParameters, VkSharedBaseObj<VulkanVideoSession> &videoSession);
 
     bool IsCompatible(VkDevice device, uint32_t videoQueueFamily, VkVideoCoreProfile *pVideoProfile,
                       VkFormat pictureFormat, const VkExtent2D &maxCodedExtent, VkFormat referencePicturesFormat,
@@ -426,6 +464,18 @@ public:
     static const uint32_t MAX_VPS_IDS = 16;
     static const uint32_t MAX_SPS_IDS = 32;
     static const uint32_t MAX_PPS_IDS = 256;
+
+    struct CurrentStdPictureParameters
+    {
+        const StdVideoH264SequenceParameterSet *h264Sps;
+        const StdVideoH264PictureParameterSet *h264Pps;
+
+        const StdVideoH265VideoParameterSet *h265Vps;
+        const StdVideoH265SequenceParameterSet *h265Sps;
+        const StdVideoH265PictureParameterSet *h265Pps;
+
+        const StdVideoAV1SequenceHeader *av1SequenceHeader;
+    } currentStdPictureParameters;
 
     //! Increment the reference count by 1.
     virtual int32_t AddRef();
@@ -809,6 +859,13 @@ public:
         }
     };
 
+    union InlineSessionParameters
+    {
+        VkVideoDecodeH264InlineSessionParametersInfoKHR h264;
+        VkVideoDecodeH265InlineSessionParametersInfoKHR h265;
+        VkVideoDecodeAV1InlineSessionParametersInfoKHR av1;
+    };
+
     struct Parameters
     {
         DeviceContext *context{};
@@ -817,6 +874,8 @@ public:
         bool layeredDpb{};
         bool queryDecodeStatus{};
         bool useInlineQueries{};
+        bool useInlineSessionParams{};
+        bool resetCodecNoSessionParams{};
         bool resourcesWithoutProfiles{};
         bool outOfOrderDecoding{};
         bool alwaysRecreateDPB{};
@@ -902,6 +961,8 @@ public:
 
     void ApplyPictureParameters(de::MovePtr<CachedDecodeParameters> &cachedParameters);
     void WaitForFrameFences(de::MovePtr<CachedDecodeParameters> &cachedParameters);
+    void AddInlineSessionParameters(de::MovePtr<CachedDecodeParameters> &cachedParameters,
+                                    union InlineSessionParameters &inlineSessionParams, const void *currentNext);
     void RecordCommandBuffer(de::MovePtr<CachedDecodeParameters> &cachedParameters);
     void SubmitQueue(de::MovePtr<CachedDecodeParameters> &cachedParameters);
     void QueryDecodeResults(de::MovePtr<CachedDecodeParameters> &cachedParameters);
@@ -963,6 +1024,8 @@ public:
     bool m_forceDisableFilmGrain{false};
     bool m_queryResultWithStatus{false};
     bool m_useInlineQueries{false};
+    bool m_useInlineSessionParams{false};
+    bool m_resetCodecNoSessionParams{false};
     bool m_resourcesWithoutProfiles{false};
     bool m_outOfOrderDecoding{false};
     bool m_alwaysRecreateDPB{false};

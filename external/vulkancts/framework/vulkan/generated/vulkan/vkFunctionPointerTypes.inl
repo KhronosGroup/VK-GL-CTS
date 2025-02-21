@@ -739,3 +739,5 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawIndexedIndirectCount2KHRFunc)			
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawMeshTasksIndirect2EXTFunc)										(VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, uint32_t drawCount);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawMeshTasksIndirectCount2EXTFunc)									(VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, VkDeviceAddressRangeKHR countAddressRange, uint32_t maxDrawCount);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDispatchIndirect2KHRFunc)											(VkCommandBuffer commandBuffer, VkDeviceAddressRangeKHR addressRange);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateAccelerationStructure2KHRFunc)									(VkDevice device, const VkAccelerationStructureCreateInfo2KHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateMicromap2EXTFunc)												(VkDevice device, const VkMicromapCreateInfo2EXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkMicromapEXT* pMicromap);

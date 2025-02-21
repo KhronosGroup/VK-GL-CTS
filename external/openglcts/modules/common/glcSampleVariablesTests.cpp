@@ -112,9 +112,13 @@ SampleShadingExtensionCase::IterateResult SampleShadingExtensionCase::iterate()
 {
     TestLog &log = m_testCtx.getLog();
 
-    if (!m_context.getContextInfo().isExtensionSupported("GL_OES_sample_variables"))
+    bool is_at_least_gl_45 = (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5)));
+    bool is_arb_es31_compatibility = m_context.getContextInfo().isExtensionSupported("GL_ARB_ES3_1_compatibility");
+    bool is_oes_sample_variables   = m_context.getContextInfo().isExtensionSupported("GL_OES_sample_variables");
+
+    if (!(is_at_least_gl_45 || is_arb_es31_compatibility || is_oes_sample_variables))
     {
-        m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "GL_OES_sample_variables");
+        m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "GL_ARB_ES3_1_compatibility or GL_OES_sample_variables");
         return STOP;
     }
 
@@ -230,10 +234,14 @@ SampleShadingMaskCase::IterateResult SampleShadingMaskCase::iterate()
     bool isOk                = true;
     bool supportsRgba32f     = false;
 
+    bool is_at_least_gl_45 = (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5)));
+    bool is_arb_es31_compatibility = m_context.getContextInfo().isExtensionSupported("GL_ARB_ES3_1_compatibility");
+    bool is_oes_sample_variables   = m_context.getContextInfo().isExtensionSupported("GL_OES_sample_variables");
+
     if (m_glslVersion == glu::GLSL_VERSION_310_ES &&
-        !m_context.getContextInfo().isExtensionSupported("GL_OES_sample_variables"))
+        !(is_at_least_gl_45 || is_arb_es31_compatibility || is_oes_sample_variables))
     {
-        m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "GL_OES_sample_variables");
+        m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "GL_ARB_ES3_1_compatibility or GL_OES_sample_variables");
         return STOP;
     }
 
@@ -582,10 +590,14 @@ SampleShadingPositionCase::IterateResult SampleShadingPositionCase::iterate()
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
     bool isOk                = true;
 
+    bool is_at_least_gl_45 = (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5)));
+    bool is_arb_es31_compatibility = m_context.getContextInfo().isExtensionSupported("GL_ARB_ES3_1_compatibility");
+    bool is_oes_sample_variables   = m_context.getContextInfo().isExtensionSupported("GL_OES_sample_variables");
+
     if (m_glslVersion == glu::GLSL_VERSION_310_ES &&
-        !m_context.getContextInfo().isExtensionSupported("GL_OES_sample_variables"))
+        !(is_at_least_gl_45 || is_arb_es31_compatibility || is_oes_sample_variables))
     {
-        m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "GL_OES_sample_variables");
+        m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "GL_ARB_ES3_1_compatibility or GL_OES_sample_variables");
         return STOP;
     }
 

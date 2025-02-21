@@ -541,3 +541,5 @@ CmdDrawIndexedIndirectCount2KHRFunc							cmdDrawIndexedIndirectCount2KHR;
 CmdDrawMeshTasksIndirect2EXTFunc							cmdDrawMeshTasksIndirect2EXT;
 CmdDrawMeshTasksIndirectCount2EXTFunc						cmdDrawMeshTasksIndirectCount2EXT;
 CmdDispatchIndirect2KHRFunc									cmdDispatchIndirect2KHR;
+CreateAccelerationStructure2KHRFunc							createAccelerationStructure2KHR;
+CreateMicromap2EXTFunc										createMicromap2EXT;

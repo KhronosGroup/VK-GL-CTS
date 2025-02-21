@@ -266,11 +266,26 @@ void RayTracingTraceRaysIndirectTestCase::checkSupport(Context &context) const
     {
         context.requireDeviceFunctionality("VK_KHR_ray_tracing_maintenance1");
 
+        const VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR &maintenance1FeaturesKHR =
+            context.getRayTracingMaintenance1Features();
         const VkPhysicalDeviceFeatures deviceFeatures =
             getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice());
+
+        if (maintenance1FeaturesKHR.rayTracingMaintenance1 == VK_FALSE)
+            TCU_THROW(NotSupportedError,
+                      "Requires VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR::rayTracingMaintenance1");
+
         if (!deviceFeatures.shaderInt64)
         {
             TCU_THROW(NotSupportedError, "Device feature shaderInt64 is not supported");
+        }
+
+        if (((m_data.traceType == TraceType::INDIRECT2_CPU) || (m_data.traceType == TraceType::INDIRECT2_GPU)) &&
+            (maintenance1FeaturesKHR.rayTracingPipelineTraceRaysIndirect2 == VK_FALSE))
+        {
+            TCU_THROW(
+                NotSupportedError,
+                "Requires VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR::rayTracingPipelineTraceRaysIndirect2");
         }
     }
 

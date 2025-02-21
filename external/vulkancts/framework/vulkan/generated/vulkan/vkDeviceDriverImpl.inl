@@ -2833,3 +2833,13 @@ void DeviceDriver::cmdDispatchIndirect2KHR (VkCommandBuffer commandBuffer, VkDev
 {
     m_vk.cmdDispatchIndirect2KHR(commandBuffer, addressRange);
 }
+
+VkResult DeviceDriver::createAccelerationStructure2KHR (VkDevice device, const VkAccelerationStructureCreateInfo2KHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const
+{
+    return m_vk.createAccelerationStructure2KHR(device, pCreateInfo, pAllocator, pAccelerationStructure);
+}
+
+VkResult DeviceDriver::createMicromap2EXT (VkDevice device, const VkMicromapCreateInfo2EXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkMicromapEXT* pMicromap) const
+{
+    return m_vk.createMicromap2EXT(device, pCreateInfo, pAllocator, pMicromap);
+}

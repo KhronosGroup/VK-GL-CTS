@@ -1,2 +1,4 @@
 # AOSP bug 21620051
 KHR-GL44.ext_texture_shadow_lod.texture.sampler2darrayshadow_vertex
+#VK-GL-CTS 642
+KHR-GL44.texture_filter_anisotropic.drawing

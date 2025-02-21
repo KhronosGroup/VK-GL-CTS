@@ -17,6 +17,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_create_renderpass2",
 	"VK_KHR_dedicated_allocation",
 	"VK_KHR_deferred_host_operations",
+	"VK_KHR_depth_clamp_zero_one",
 	"VK_KHR_depth_stencil_resolve",
 	"VK_KHR_descriptor_update_template",
 	"VK_KHR_device_group",

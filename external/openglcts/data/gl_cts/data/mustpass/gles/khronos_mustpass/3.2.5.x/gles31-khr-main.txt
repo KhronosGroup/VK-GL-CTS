@@ -2927,6 +2927,7 @@ KHR-GLES31.core.compressed_format.format.rgba8_etc2_eac
 KHR-GLES31.core.compressed_format.format.srgb8_alpha8_etc2_eac
 KHR-GLES31.core.frag_coord_conventions.multisample
 KHR-GLES31.core.texture_stencil8.multisample
+KHR-GLES31.core.bind_image_texture.single_layer
 KHR-GLES31.core.geometry_shader.adjacency.adjacency_non_indiced_lines
 KHR-GLES31.core.geometry_shader.adjacency.adjacency_indiced_lines
 KHR-GLES31.core.geometry_shader.adjacency.adjacency_non_indiced_line_strip

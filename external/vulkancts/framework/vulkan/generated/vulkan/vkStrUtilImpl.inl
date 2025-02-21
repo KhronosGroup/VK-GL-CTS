@@ -266,7 +266,8 @@ tcu::Format::Bitfield<32> getPipelineCacheCreateFlagsStr (VkPipelineCacheCreateF
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT,	"VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT,				"VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CACHE_CREATE_INTERNALLY_SYNCHRONIZED_MERGE_BIT_KHR,	"VK_PIPELINE_CACHE_CREATE_INTERNALLY_SYNCHRONIZED_MERGE_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2154,6 +2155,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_MEMORY_RANGE_BARRIER_KHR:											return "VK_STRUCTURE_TYPE_MEMORY_RANGE_BARRIER_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_ADDRESS_COMMANDS_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_ADDRESS_COMMANDS_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_2_EXT:								return "VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_2_EXT";
+		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_2_KHR:							return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_2_KHR";
+		case VK_STRUCTURE_TYPE_MICROMAP_CREATE_INFO_2_EXT:											return "VK_STRUCTURE_TYPE_MICROMAP_CREATE_INFO_2_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT:							return "VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT";
@@ -2291,7 +2294,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_SET_HOST_MAPPING_FEATURES_VALVE:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_SET_HOST_MAPPING_FEATURES_VALVE";
 		case VK_STRUCTURE_TYPE_DESCRIPTOR_SET_BINDING_REFERENCE_VALVE:								return "VK_STRUCTURE_TYPE_DESCRIPTOR_SET_BINDING_REFERENCE_VALVE";
 		case VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_HOST_MAPPING_INFO_VALVE:						return "VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_HOST_MAPPING_INFO_VALVE";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_NON_SEAMLESS_CUBE_MAP_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_NON_SEAMLESS_CUBE_MAP_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RENDER_PASS_STRIPED_FEATURES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RENDER_PASS_STRIPED_FEATURES_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RENDER_PASS_STRIPED_PROPERTIES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RENDER_PASS_STRIPED_PROPERTIES_ARM";
@@ -2480,6 +2483,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_SHADER_LAYOUT_INFO_EXT:						return "VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_SHADER_LAYOUT_INFO_EXT";
 		case VK_STRUCTURE_TYPE_GENERATED_COMMANDS_PIPELINE_INFO_EXT:								return "VK_STRUCTURE_TYPE_GENERATED_COMMANDS_PIPELINE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_GENERATED_COMMANDS_SHADER_INFO_EXT:									return "VK_STRUCTURE_TYPE_GENERATED_COMMANDS_SHADER_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_8_FEATURES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_8_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_MEMORY_BARRIER_ACCESS_FLAGS_3_KHR:									return "VK_STRUCTURE_TYPE_MEMORY_BARRIER_ACCESS_FLAGS_3_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA";
 		case VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA:							return "VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA";
@@ -2649,10 +2654,11 @@ tcu::Format::Bitfield<32> getDependencyFlagsStr (VkDependencyFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_DEPENDENCY_BY_REGION_BIT,			"VK_DEPENDENCY_BY_REGION_BIT"),
-		tcu::Format::BitDesc(VK_DEPENDENCY_VIEW_LOCAL_BIT,			"VK_DEPENDENCY_VIEW_LOCAL_BIT"),
-		tcu::Format::BitDesc(VK_DEPENDENCY_DEVICE_GROUP_BIT,		"VK_DEPENDENCY_DEVICE_GROUP_BIT"),
-		tcu::Format::BitDesc(VK_DEPENDENCY_FEEDBACK_LOOP_BIT_EXT,	"VK_DEPENDENCY_FEEDBACK_LOOP_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DEPENDENCY_BY_REGION_BIT,											"VK_DEPENDENCY_BY_REGION_BIT"),
+		tcu::Format::BitDesc(VK_DEPENDENCY_VIEW_LOCAL_BIT,											"VK_DEPENDENCY_VIEW_LOCAL_BIT"),
+		tcu::Format::BitDesc(VK_DEPENDENCY_DEVICE_GROUP_BIT,										"VK_DEPENDENCY_DEVICE_GROUP_BIT"),
+		tcu::Format::BitDesc(VK_DEPENDENCY_FEEDBACK_LOOP_BIT_EXT,									"VK_DEPENDENCY_FEEDBACK_LOOP_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DEPENDENCY_QUEUE_FAMILY_OWNERSHIP_TRANSFER_USE_ALL_STAGES_BIT_KHR,	"VK_DEPENDENCY_QUEUE_FAMILY_OWNERSHIP_TRANSFER_USE_ALL_STAGES_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -5338,6 +5344,15 @@ const char* getVideoEncodeAV1RateControlGroupKHRName (VkVideoEncodeAV1RateContro
 		case VK_VIDEO_ENCODE_AV1_RATE_CONTROL_GROUP_BIPREDICTIVE_KHR:	return "VK_VIDEO_ENCODE_AV1_RATE_CONTROL_GROUP_BIPREDICTIVE_KHR";
 		default:														return nullptr;
 	}
+}
+
+tcu::Format::Bitfield<64> getAccessFlags3KHRStr (VkAccessFlags3KHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_ACCESS_3_NONE_KHR,	"VK_ACCESS_3_NONE_KHR"),
+	};
+	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
 const char* getAccelerationStructureMotionInstanceTypeNVName (VkAccelerationStructureMotionInstanceTypeNV value)
@@ -10576,6 +10591,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLayeredApiVulka
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance8FeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceMaintenance8FeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaintenance8 = " << value.maintenance8 << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkRenderingAreaInfo& value)
 {
 	s << "VkRenderingAreaInfo = {\n";
@@ -15071,6 +15096,17 @@ std::ostream& operator<< (std::ostream& s, const VkBufferMemoryBarrier2& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkMemoryBarrierAccessFlags3KHR& value)
+{
+	s << "VkMemoryBarrierAccessFlags3KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcAccessMask3 = " << getAccessFlags3KHRStr(value.srcAccessMask3) << '\n';
+	s << "\tdstAccessMask3 = " << getAccessFlags3KHRStr(value.dstAccessMask3) << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkDependencyInfo& value)
 {
 	s << "VkDependencyInfo = {\n";
@@ -18354,16 +18390,6 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceAttachmentFeedb
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDepthClampZeroOneFeaturesEXT& value)
-{
-	s << "VkPhysicalDeviceDepthClampZeroOneFeaturesEXT = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tdepthClampZeroOne = " << value.depthClampZeroOne << '\n';
-	s << '}';
-	return s;
-}
-
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceAddressBindingReportFeaturesEXT& value)
 {
 	s << "VkPhysicalDeviceAddressBindingReportFeaturesEXT = {\n";
@@ -19975,6 +20001,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVertexAttribute
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDepthClampZeroOneFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceDepthClampZeroOneFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdepthClampZeroOne = " << value.depthClampZeroOne << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkDeviceAddressRangeKHR& value)
 {
 	s << "VkDeviceAddressRangeKHR = {\n";
@@ -20091,6 +20127,32 @@ std::ostream& operator<< (std::ostream& s, const VkConditionalRenderingBeginInfo
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\taddressRange = " << value.addressRange << '\n';
 	s << "\tflags = " << getConditionalRenderingFlagsEXTStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureCreateInfo2KHR& value)
+{
+	s << "VkAccelerationStructureCreateInfo2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcreateFlags = " << getAccelerationStructureCreateFlagsKHRStr(value.createFlags) << '\n';
+	s << "\taddressRange = " << value.addressRange << '\n';
+	s << "\ttype = " << value.type << '\n';
+	s << "\treplayDeviceAddress = " << value.replayDeviceAddress << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMicromapCreateInfo2EXT& value)
+{
+	s << "VkMicromapCreateInfo2EXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcreateFlags = " << getMicromapCreateFlagsEXTStr(value.createFlags) << '\n';
+	s << "\taddressRange = " << value.addressRange << '\n';
+	s << "\ttype = " << value.type << '\n';
+	s << "\treplayDeviceAddress = " << value.replayDeviceAddress << '\n';
 	s << '}';
 	return s;
 }

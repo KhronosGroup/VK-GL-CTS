@@ -24,6 +24,7 @@
 #include "vktMemoryTests.hpp"
 
 #include "vktMemoryAllocationTests.hpp"
+#include "vktMemoryConcurrentAccessTests.hpp"
 #include "vktMemoryPipelineBarrierTests.hpp"
 #include "vktMemoryRequirementsTests.hpp"
 #include "vktMemoryBindingTests.hpp"
@@ -56,6 +57,7 @@ void createChildren(tcu::TestCaseGroup *memoryTests)
     memoryTests->addChild(createMappingTests(testCtx));
     memoryTests->addChild(createPipelineBarrierTests(testCtx));
 #endif // CTS_USES_VULKANSC
+    memoryTests->addChild(createConcurrentAccessTests(testCtx));
     memoryTests->addChild(createRequirementsTests(testCtx));
     memoryTests->addChild(createMemoryBindingTests(testCtx));
     memoryTests->addChild(createMemoryExternalMemoryHostTests(testCtx));

@@ -541,3 +541,5 @@ virtual void				cmdDrawIndexedIndirectCount2KHR							(VkCommandBuffer commandBu
 virtual void				cmdDrawMeshTasksIndirect2EXT							(VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, uint32_t drawCount) const;
 virtual void				cmdDrawMeshTasksIndirectCount2EXT						(VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, VkDeviceAddressRangeKHR countAddressRange, uint32_t maxDrawCount) const;
 virtual void				cmdDispatchIndirect2KHR									(VkCommandBuffer commandBuffer, VkDeviceAddressRangeKHR addressRange) const;
+virtual VkResult			createAccelerationStructure2KHR							(VkDevice device, const VkAccelerationStructureCreateInfo2KHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const;
+virtual VkResult			createMicromap2EXT										(VkDevice device, const VkMicromapCreateInfo2EXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkMicromapEXT* pMicromap) const;

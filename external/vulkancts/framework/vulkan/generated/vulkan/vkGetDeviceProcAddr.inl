@@ -414,6 +414,8 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdDrawMeshTasksIndirect2EXT",
 		"vkCmdDrawMeshTasksIndirectCount2EXT",
 		"vkCmdWriteMarkerToMemoryAMD",
+		"vkCreateAccelerationStructure2KHR",
+		"vkCreateMicromap2EXT",
 		"vkCmdSetFragmentShadingRateEnumNV",
 		"vkCmdDrawMeshTasksEXT",
 		"vkCmdDrawMeshTasksIndirectEXT",

@@ -660,3 +660,17 @@ Move<VkOpticalFlowSessionNV> createOpticalFlowSessionNV (const DeviceInterface& 
 	return Move<VkOpticalFlowSessionNV>(check<VkOpticalFlowSessionNV>(object), Deleter<VkOpticalFlowSessionNV>(vk, device, pAllocator));
 }
 
+Move<VkAccelerationStructureKHR> createAccelerationStructure2KHR (const DeviceInterface& vk, VkDevice device, const VkAccelerationStructureCreateInfo2KHR* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkAccelerationStructureKHR object = VK_NULL_HANDLE;
+	VK_CHECK(vk.createAccelerationStructure2KHR(device, pCreateInfo, pAllocator, &object));
+	return Move<VkAccelerationStructureKHR>(check<VkAccelerationStructureKHR>(object), Deleter<VkAccelerationStructureKHR>(vk, device, pAllocator));
+}
+
+Move<VkMicromapEXT> createMicromap2EXT (const DeviceInterface& vk, VkDevice device, const VkMicromapCreateInfo2EXT* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkMicromapEXT object = VK_NULL_HANDLE;
+	VK_CHECK(vk.createMicromap2EXT(device, pCreateInfo, pAllocator, &object));
+	return Move<VkMicromapEXT>(check<VkMicromapEXT>(object), Deleter<VkMicromapEXT>(vk, device, pAllocator));
+}
+

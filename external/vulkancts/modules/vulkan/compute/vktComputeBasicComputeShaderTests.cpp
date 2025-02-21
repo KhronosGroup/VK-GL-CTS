@@ -5115,6 +5115,129 @@ tcu::TestStatus ReplicatedCompositesTestInstance::iterate(void)
 }
 #endif // ifndef CTS_USES_VULKANSC
 
+namespace UndefinedValues
+{
+
+void checkSupport(Context &context, vk::ComputePipelineConstructionType constructionType)
+{
+    checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), constructionType);
+    context.contextSupports(VK_API_VERSION_1_2);
+}
+
+void createProgram(SourceCollections &dst, vk::ComputePipelineConstructionType)
+{
+    const ShaderBuildOptions buildOpts(dst.usedVulkanVersion, vk::SPIRV_VERSION_1_5, 0u, false);
+    std::ostringstream comp;
+    comp << "#version 450\n"
+         << "layout (local_size_x=1, local_size_y=1, local_size_z=1) in;\n"
+         << "\n"
+         << "struct Bar {\n"
+         << "    uint x;\n"
+         << "    uint y;\n"
+         << "    uint z[2];\n"
+         << "};\n"
+         << "\n"
+         << "layout(set = 0, binding = 0, std430) buffer foo {\n"
+         << "    uvec4 a;\n"
+         << "    Bar b;\n"
+         << "    uint c;\n"
+         << "};\n"
+         << "\n"
+         << "void main() {\n"
+         << "    Bar new_bar;\n"
+         << "    b = new_bar;\n"
+         << "    a = uvec4(1, 2, 3, 4);\n"
+         << "    c = 5;\n"
+         << "}\n";
+    dst.glslSources.add("comp") << glu::ComputeSource(comp.str()) << buildOpts;
+}
+
+// These must match the structures in the shader.
+struct Bar
+{
+    uint32_t x;
+    uint32_t y;
+    uint32_t z[2];
+};
+
+struct StorageBufferWithBar
+{
+    uint32_t a[4];
+    Bar b;
+    uint32_t c;
+};
+
+tcu::TestStatus createTest(Context &context, vk::ComputePipelineConstructionType constructionType)
+{
+    const auto ctx      = context.getContextCommonData();
+    const auto descType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    const auto stages   = VK_SHADER_STAGE_COMPUTE_BIT;
+
+    StorageBufferWithBar bufferData;
+    memset(&bufferData, 0, sizeof(bufferData));
+
+    const auto bufferSize = static_cast<VkDeviceSize>(sizeof(bufferData));
+    const auto bufferInfo = makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    BufferWithMemory buffer(ctx.vkd, ctx.device, ctx.allocator, bufferInfo, MemoryRequirement::HostVisible);
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(descType, stages);
+    const auto setLayout = setLayoutBuilder.build(ctx.vkd, ctx.device);
+
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(descType);
+    const auto descriptorPool =
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+    const auto descriptorSet = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+
+    DescriptorSetUpdateBuilder setUpdateBuilder;
+    const auto bufferDescInfo = makeDescriptorBufferInfo(*buffer, 0u, VK_WHOLE_SIZE);
+    setUpdateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descType,
+                                 &bufferDescInfo);
+    setUpdateBuilder.update(ctx.vkd, ctx.device);
+
+    ComputePipelineWrapper pipeline(ctx.vkd, ctx.device, constructionType, context.getBinaryCollection().get("comp"));
+    pipeline.setDescriptorSetLayout(*setLayout);
+    pipeline.buildPipeline();
+    const auto pipelineLayout = pipeline.getPipelineLayout();
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    // Dispatch work and verify defined data.
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u,
+                                  &descriptorSet.get(), 0u, nullptr);
+    pipeline.bind(cmdBuffer);
+    ctx.vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+    {
+        const auto barrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                 &barrier);
+    }
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    auto &bufferAlloc = buffer.getAllocation();
+    void *bufferPtr   = bufferAlloc.getHostPtr();
+
+    invalidateAlloc(ctx.vkd, ctx.device, bufferAlloc);
+    memcpy(&bufferData, bufferPtr, sizeof(bufferData));
+
+    // These must match the shader.
+    const tcu::UVec4 resA(bufferData.a);
+    if (resA != tcu::UVec4(1u, 2u, 3u, 4u) || bufferData.c != 5u)
+    {
+        std::ostringstream msg;
+        msg << "Unexpected values in output structure: a=" << bufferData.a << " c=" << bufferData.c;
+        TCU_FAIL(msg.str());
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+} // namespace UndefinedValues
+
 } // namespace
 
 tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
@@ -5340,6 +5463,11 @@ tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
         }
     }
 #endif // ifndef CTS_USES_VULKANSC
+
+    // Shader that does nothing
+    addFunctionCaseWithPrograms(basicComputeTests.get(), "undefined_values", UndefinedValues::checkSupport,
+                                UndefinedValues::createProgram, UndefinedValues::createTest,
+                                computePipelineConstructionType);
 
     return basicComputeTests.release();
 }

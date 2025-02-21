@@ -134,7 +134,7 @@ private:
                            const vector<uint32_t> &max);
     static bool checkUniquenessAndLinearity(TestLog &log, const vector<uint32_t> &values);
     static bool checkPath(const vector<uint32_t> &increments, const vector<uint32_t> &decrements, int initialValue,
-                          const TestSpec &spec);
+                          const TestSpec &spec, TestLog &log);
 
     int getOperationCount(void) const;
 
@@ -737,7 +737,7 @@ bool AtomicCounterTest::checkUniquenessAndLinearity(TestLog &log, const vector<u
 }
 
 bool AtomicCounterTest::checkPath(const vector<uint32_t> &increments, const vector<uint32_t> &decrements,
-                                  int initialValue, const TestSpec &spec)
+                                  int initialValue, const TestSpec &spec, TestLog &log)
 {
     const uint32_t lastValue =
         initialValue +
@@ -772,8 +772,15 @@ bool AtomicCounterTest::checkPath(const vector<uint32_t> &increments, const vect
     minValue = std::min(minValue, (uint32_t)initialValue);
     maxValue = std::max(maxValue, (uint32_t)initialValue);
 
-    incrementCounts.resize(maxValue - minValue + 1, 0);
-    decrementCounts.resize(maxValue - minValue + 1, 0);
+    auto size = maxValue - minValue + 1;
+    if (size > 5000)
+    {
+        log << TestLog::Message << "Test failed. Size is bigger than 5000 (" << size
+            << ") what means driver implementation bug." << TestLog::EndMessage;
+        return false;
+    }
+    incrementCounts.resize(size, 0);
+    decrementCounts.resize(size, 0);
 
     for (int valueNdx = 0; valueNdx < (int)increments.size(); valueNdx++)
     {
@@ -886,7 +893,7 @@ bool AtomicCounterTest::checkAndLogCallValues(TestLog &log, const vector<uint32_
                                              ("Check that there is order in which counter" + de::toString(counterNdx) +
                                               " increments and decrements could have happened.")
                                                  .c_str());
-            if (!checkPath(counterIncrements, counterDecrements, getInitialValue(), m_spec))
+            if (!checkPath(counterIncrements, counterDecrements, getInitialValue(), m_spec, log))
             {
                 isOk = false;
                 log << TestLog::Message << "No possible order of calls to atomicCounterIncrement(counter" << counterNdx

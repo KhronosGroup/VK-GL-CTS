@@ -296,18 +296,52 @@ bool verifyTriangle(const tcu::Vec4 &a1, const tcu::Vec4 &a2, const tcu::Vec4 &a
 Move<VkShaderEXT> makeShader(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkShaderStageFlagBits stage,
                              vk::VkShaderCreateFlagsEXT shaderFlags, const vk::ProgramBinary &shaderBinary,
                              const std::vector<vk::VkDescriptorSetLayout> &setLayouts,
-                             const std::vector<vk::VkPushConstantRange> &pushConstantRanges/*,
-                             const vk::VkSpecializationInfo *specializationInfo, const void *pNext*/)
+                             const std::vector<vk::VkPushConstantRange> &pushConstantRanges, bool tessellationFeature,
+                             bool geometryFeature)
 {
     if (shaderBinary.getFormat() != PROGRAM_FORMAT_SPIRV)
         TCU_THROW(InternalError, "Program format not supported");
+
+    VkShaderStageFlags nextStage = 0u;
+    switch (stage)
+    {
+    case VK_SHADER_STAGE_VERTEX_BIT:
+        if (tessellationFeature)
+            nextStage |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+        if (geometryFeature)
+            nextStage |= VK_SHADER_STAGE_GEOMETRY_BIT;
+        nextStage |= VK_SHADER_STAGE_FRAGMENT_BIT;
+        break;
+    case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+        DE_ASSERT(tessellationFeature);
+        nextStage |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+        break;
+    case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+        DE_ASSERT(tessellationFeature);
+        if (geometryFeature)
+            nextStage |= VK_SHADER_STAGE_GEOMETRY_BIT;
+        nextStage |= VK_SHADER_STAGE_FRAGMENT_BIT;
+        break;
+    case VK_SHADER_STAGE_GEOMETRY_BIT:
+        DE_ASSERT(geometryFeature);
+        nextStage |= VK_SHADER_STAGE_FRAGMENT_BIT;
+        break;
+    case VK_SHADER_STAGE_TASK_BIT_EXT:
+        nextStage |= VK_SHADER_STAGE_MESH_BIT_EXT;
+        break;
+    case VK_SHADER_STAGE_MESH_BIT_EXT:
+        nextStage |= VK_SHADER_STAGE_FRAGMENT_BIT;
+        break;
+    default:
+        break;
+    }
 
     const VkShaderCreateInfoEXT shaderCreateInfo = {
         VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, // VkStructureType sType;
         nullptr,                                  // const void* pNext;
         shaderFlags,                              // VkShaderCreateFlagsEXT flags;
         stage,                                    // VkShaderStageFlagBits stage;
-        0u,                                       // VkShaderStageFlags nextStage;
+        nextStage,                                // VkShaderStageFlags nextStage;
         VK_SHADER_CODE_TYPE_SPIRV_EXT,            // VkShaderCodeTypeEXT codeType;
         shaderBinary.getSize(),                   // size_t codeSize;
         shaderBinary.getBinary(),                 // const void* pCode;
@@ -481,13 +515,17 @@ tcu::TestStatus XfbTestInstance::iterate(void)
     std::vector<VkShaderEXT> shaderHandles;
     shaderHandles.reserve(5u);
 
+    const auto &features   = m_context.getDeviceFeatures();
+    const auto tessFeature = (features.tessellationShader == VK_TRUE);
+    const auto geomFeature = (features.geometryShader == VK_TRUE);
+
     // Shaders, modules and pipelines.
     if (m_params.useShaderObjects)
     {
         vertShader = makeShader(ctx.vkd, ctx.device, VK_SHADER_STAGE_VERTEX_BIT, 0u, binaries.get("vert"), noLayouts,
-                                noPCRanges);
+                                noPCRanges, tessFeature, geomFeature);
         fragShader = makeShader(ctx.vkd, ctx.device, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, binaries.get("frag"), noLayouts,
-                                noPCRanges);
+                                noPCRanges, tessFeature, geomFeature);
 
         shaderHandles.push_back(*vertShader);
         shaderHandles.push_back(*fragShader);
@@ -495,9 +533,9 @@ tcu::TestStatus XfbTestInstance::iterate(void)
         if (m_params.useTess)
         {
             tescShader = makeShader(ctx.vkd, ctx.device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, 0u,
-                                    binaries.get("tesc"), noLayouts, noPCRanges);
+                                    binaries.get("tesc"), noLayouts, noPCRanges, tessFeature, geomFeature);
             teseShader = makeShader(ctx.vkd, ctx.device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 0u,
-                                    binaries.get("tese"), noLayouts, noPCRanges);
+                                    binaries.get("tese"), noLayouts, noPCRanges, tessFeature, geomFeature);
 
             shaderHandles.push_back(*tescShader);
             shaderHandles.push_back(*teseShader);
@@ -505,7 +543,7 @@ tcu::TestStatus XfbTestInstance::iterate(void)
         if (m_params.useGeom)
         {
             geomShader = makeShader(ctx.vkd, ctx.device, VK_SHADER_STAGE_GEOMETRY_BIT, 0u, binaries.get("geom"),
-                                    noLayouts, noPCRanges);
+                                    noLayouts, noPCRanges, tessFeature, geomFeature);
 
             shaderHandles.push_back(*geomShader);
         }

@@ -187,14 +187,13 @@ protected:
     // dstOffset will be used as the offset for vkCmdFillBuffer.
     // size in vkCmdFillBuffer will always be VK_WHOLE_SIZE.
     const TestParams m_params;
-
+#ifdef CTS_USES_VULKANSC
+    const CustomInstance m_customInstance;
+#endif // CTS_USES_VULKANSC
     Move<VkDevice> m_customDevice;
     de::MovePtr<Allocator> m_customAllocator;
 
     VkDevice m_device;
-#ifdef CTS_USES_VULKANSC
-    const CustomInstance m_customInstance;
-#endif // CTS_USES_VULKANSC
     Allocator *m_allocator;
     uint32_t m_queueFamilyIndex;
 
@@ -389,14 +388,13 @@ public:
 
 protected:
     const TestParams m_params;
-
+#ifdef CTS_USES_VULKANSC
+    const CustomInstance m_customInstance;
+#endif // CTS_USES_VULKANSC
     Move<VkDevice> m_customDevice;
     de::MovePtr<Allocator> m_customAllocator;
 
     VkDevice m_device;
-#ifdef CTS_USES_VULKANSC
-    const CustomInstance m_customInstance;
-#endif // CTS_USES_VULKANSC
     Allocator *m_allocator;
     uint32_t m_queueFamilyIndex;
 

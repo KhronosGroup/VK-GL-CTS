@@ -3390,7 +3390,8 @@ void DescriptorBufferTestInstance::createDescriptorBuffers()
             }
             else
             {
-                currentBuffer.usage |= VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT;
+                currentBuffer.usage |=
+                    VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
             }
         }
 

@@ -39,6 +39,9 @@
 
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
+#include "glcShaderImageLoadStoreTests.hpp"
+#include "glcSampleVariablesTests.hpp"
+#include "glcShaderStorageBufferObjectTests.hpp"
 
 /* Interface. */
 
@@ -144,88 +147,6 @@ private:
     void cleanFramebufferAndVertexArrayObject();
 };
 
-/* ShaderFunctionalCompatibilityTests */
-
-/** @class SampleVariablesTests
- *
- *  @breif This class groups adjusted OpenGL ES 3.1 Sample Variables Tests.
- *         Those tests cover a new GLSL built-in constant for the maximum supported
- *         samples (gl_MaxSamples) which is available in OpenGL ES 3.1 and in new
- *         compatibility feature of OpenGL 4.5.
- */
-class SampleVariablesTests : public deqp::TestCaseGroup
-{
-public:
-    SampleVariablesTests(deqp::Context &context, glu::GLSLVersion glslVersion);
-    ~SampleVariablesTests();
-
-    void init();
-
-private:
-    SampleVariablesTests(const SampleVariablesTests &other);
-    SampleVariablesTests &operator=(const SampleVariablesTests &other);
-
-    enum
-    {
-        SAMPLE_MASKS = 8
-    };
-
-    glu::GLSLVersion m_glslVersion;
-};
-
-/* SampleVariablesTests class */
-
-/** @class ShaderImageLoadStoreTests
- *
- *  @brief This class groups adjusted OpenGL ES 3.1 Shader Image Load
- *         Store Tests. These tests cover following features of OpenGL
- *         ES 3.1 which were included to OpenGL 4.5 as a compatibility
- *         enhancement:
- *
- *          -  a MemoryBarrierByRegion API,
- *          -  a GLSL built-in function imageAtomicExchange,
- *          -  a set of new GLSL built-in constants (gl_Max*ImageUniforms,
- *             gl_MaxCombinedShaderOutputResources)
- *          -  a "coherent" qualifier related to variables taken by the GLSL atomic*
- *             and imageAtomic* functions.
- */
-class ShaderImageLoadStoreTests : public deqp::TestCaseGroup
-{
-public:
-    ShaderImageLoadStoreTests(deqp::Context &context);
-    ~ShaderImageLoadStoreTests(void);
-
-    void init(void);
-
-private:
-    ShaderImageLoadStoreTests(const ShaderImageLoadStoreTests &other);
-    ShaderImageLoadStoreTests &operator=(const ShaderImageLoadStoreTests &other);
-};
-
-/* ShaderImageLoadStoreTests class */
-
-/** @class ShaderStorageBufferObjectTests
- *
- *  @brief This class contains adjusted OpenGL ES 3.1 Shader Storage
- *         Buffer Object Tests. These tests cover minimum required
- *         size of SSBOs to 2^27 (128 MB) and its general functionality
- *         included in OpenGL ES 3.1 and in new compatibility feature
- *         of OpenGL 4.5.
- */
-class ShaderStorageBufferObjectTests : public deqp::TestCaseGroup
-{
-public:
-    ShaderStorageBufferObjectTests(deqp::Context &context);
-    ~ShaderStorageBufferObjectTests(void);
-
-    void init(void);
-
-private:
-    ShaderStorageBufferObjectTests(const ShaderStorageBufferObjectTests &other);
-    ShaderStorageBufferObjectTests &operator=(const ShaderStorageBufferObjectTests &other);
-};
-
-/* ShaderStorageBufferObjectTests class */
 } // namespace es31compatibility
 } // namespace gl4cts
 

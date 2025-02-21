@@ -979,11 +979,15 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
                 // Check previous presents; if any is signaled, immediatey destroy its wait semaphore
                 while (nextUnfinishedPresent[j] < i)
                 {
-                    const auto &fence = presentFences[nextUnfinishedPresent[j] * surfaceCount + j];
-                    if (fence && vkd.getFenceStatus(device, **fence) == VK_NOT_READY)
+                    const auto unfinishedPresent = nextUnfinishedPresent[j];
+                    const auto &fence            = presentFences[unfinishedPresent * surfaceCount + j];
+                    if (!fence)
+                        ++nextUnfinishedPresent[j];
+
+                    if (!fence || vkd.getFenceStatus(device, **fence) == VK_NOT_READY)
                         break;
 
-                    presentSems[nextUnfinishedPresent[j]].clear();
+                    presentSems[unfinishedPresent].clear();
                     ++nextUnfinishedPresent[j];
                 }
 
@@ -1006,8 +1010,8 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
                 if (fence)
                 {
                     VK_CHECK(vkd.waitForFences(device, 1u, &**fence, VK_TRUE, kMaxFenceWaitTimeout));
+                    presentSems[nextUnfinishedPresent[j]].clear();
                 }
-                presentSems[nextUnfinishedPresent[j]].clear();
                 ++nextUnfinishedPresent[j];
             }
         }
@@ -2255,7 +2259,10 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
 
                     if (testParams.scaling == 0)
                     {
-                        swapchainInfo.imageExtent = vk::makeExtent2D(native.windowSize.x(), native.windowSize.y());
+                        const VkSurfaceCapabilitiesKHR currentCapabilities = getPhysicalDeviceSurfaceCapabilities(
+                            instHelper.vki, devHelper.physicalDevice, *surface, nullptr);
+                        swapchainInfo.imageExtent = vk::makeExtent2D(currentCapabilities.minImageExtent.width,
+                                                                     currentCapabilities.minImageExtent.height);
                     }
 
                     swapchainInfo.oldSwapchain = *swapchain;

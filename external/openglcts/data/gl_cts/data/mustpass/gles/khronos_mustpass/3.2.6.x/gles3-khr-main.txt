@@ -2988,7 +2988,6 @@ KHR-GLES3.shaders.aggressive_optimizations.cos_vec2_frag
 KHR-GLES3.shaders.aggressive_optimizations.cos_vec3_vert
 KHR-GLES3.shaders.aggressive_optimizations.cos_vec3_frag
 KHR-GLES3.texture_filter_anisotropic.queries
-KHR-GLES3.texture_filter_anisotropic.drawing
 KHR-GLES3.texture_repeat_mode.r8_49x23_0_clamp_to_edge
 KHR-GLES3.texture_repeat_mode.r8_49x23_0_repeat
 KHR-GLES3.texture_repeat_mode.r8_49x23_0_mirrored_repeat

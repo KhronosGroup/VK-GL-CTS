@@ -923,7 +923,7 @@ std::vector<vk::VkDynamicState> ShaderObjectStateInstance::getDynamicStates(void
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_VERTEX_INPUT_EXT);
     if (eds2Features.extendedDynamicState2LogicOp)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LOGIC_OP_EXT);
-    if (eds2Features.extendedDynamicState2PatchControlPoints && !m_params.meshShader)
+    if (eds2Features.extendedDynamicState2PatchControlPoints)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_PATCH_CONTROL_POINTS_EXT);
     if (eds3Features.extendedDynamicState3TessellationDomainOrigin)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_TESSELLATION_DOMAIN_ORIGIN_EXT);
@@ -947,7 +947,7 @@ std::vector<vk::VkDynamicState> ShaderObjectStateInstance::getDynamicStates(void
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT);
     if (eds3Features.extendedDynamicState3ColorWriteMask)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT);
-    if (eds3Features.extendedDynamicState3RasterizationStream && m_params.geometryStreams)
+    if (eds3Features.extendedDynamicState3RasterizationStream)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_RASTERIZATION_STREAM_EXT);
     if (m_params.discardRectangles)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_ENABLE_EXT);

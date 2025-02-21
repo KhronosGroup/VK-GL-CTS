@@ -23,12 +23,8 @@ set(GLCTS_ES31_SRCS
 	es31cShaderAtomicCountersTests.hpp
 	es31cShaderBitfieldOperationTests.cpp
 	es31cShaderBitfieldOperationTests.hpp
-	es31cShaderImageLoadStoreTests.cpp
-	es31cShaderImageLoadStoreTests.hpp
 	es31cShaderImageSizeTests.cpp
 	es31cShaderImageSizeTests.hpp
-	es31cShaderStorageBufferObjectTests.cpp
-	es31cShaderStorageBufferObjectTests.hpp
 	es31cTestPackage.cpp
 	es31cTestPackage.hpp
 	es31cTextureGatherTests.cpp

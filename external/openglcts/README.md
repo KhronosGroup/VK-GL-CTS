@@ -203,12 +203,6 @@ set(DEQP_PLATFORM_COPY_LIBRARIES )
 set(DEQP_USE_X11 OFF)
 ```
 
-- Embed the test files in the test Before building with this set (if GTF module is present), run these commands:
-```
-cd external/kc-cts/src/GTF_ES/glsl/GTF
-perl mergeTestFilesToCSource.pl
-```
-
  In your target `.cmake` file add
 ```
 set(DEQP_EMBED_TESTS ON)
@@ -223,26 +217,6 @@ spirv-headers, and spirv-tools.
 To download sources, run:
 
 	python external/fetch_sources.py
-
-For OpenGL CTS releases, and OpenGL ES CTS releases prior to opengl-es-cts-3.2.4.0
-download Khronos Confidential Conformance Test Suite:
-
-	python external/fetch_kc_cts.py
-
-For OpenGL CTS releases, and OpenGL ES CTS releases prior to opengl-es-cts-3.2.4.0
-the results for the tests included in this suite must be included in a
-conformance submission.
-
-**NOTE**: You need to be a Khronos Adopter and have an active account
-at [Khronos Gitlab](https://gitlab.khronos.org/) to be able to download
-Khronos Confidential CTS.
-It is possible to run and build the CTS without the Khronos Confidential CTS.
-For OpenGL CTS releases, and OpenGL ES CTS releases prior to opengl-es-cts-3.2.4.0
-Khronos Confidential CTS is mandatory if you plan to make a
-conformance submission (see [Creating a Submission Package](#creating-a-submission-package)).
-For opengl-es-cts-3.2.4.0 and later OpenGL ES CTS releases Khronos Confidential CTS
-results must not be included in a submission package.
-
 
 With CMake out-of-source builds are always recommended. Create a build directory
 of your choosing, and in that directory generate Makefiles or IDE project
@@ -263,15 +237,6 @@ Building GL, ES2, or ES3.x conformance tests:
 
 	cmake <path to VK-GL-CTS> -DDEQP_TARGET=default -G"<Generator Name>"
 	cmake --build external/openglcts
-
-Khronos Confidential CTS doesn't support run-time selection of API context.
-If you intend to run it you need to additionally supply `GLCTS_GTF_TARGET`
-option to you cmake command, e.g.:
-
-	cmake <path to VK-GL-CTS> -DDEQP_TARGET=default -DGLCTS_GTF_TARGET=<target> -G"<Generator Name>"
-
-Available `<target>`s are `gles2`, `gles3`, `gles31`, `gles32`, and `gl`.
-The default `<target>` is `gles32`.
 
 It's also possible to build `GL-CTS.sln` in Visual Studio instead of running
 the `cmake --build external/openglcts` command.
@@ -300,21 +265,10 @@ Required tools:
 - Standard build utilities (make, gcc, etc.)
 - Necessary API libraries (OpenGL, GLES, EGL depending on configuration)
 
-Building ES2 or ES3.x conformance tests:
+Building OpenGL, OpenGL ES2 or ES3.x conformance tests:
 
-	cmake <path to VK-GL-CTS> -DDEQP_TARGET=null -DGLCTS_GTF_TARGET=gles32
+	cmake <path to VK-GL-CTS> -DDEQP_TARGET=null
 	cmake --build external/openglcts
-
-Building OpenGL conformance tests:
-
-	cmake <path to VK-GL-CTS> -DDEQP_TARGET=null -DGLCTS_GTF_TARGET=gl
-	cmake --build external/openglcts
-
-Khronos Confidential CTS doesn't support run-time selection of API context.
-If you intend to run it then the `GLCTS_GTF_TARGET` option is necessary.
-
-Available values for `GLCTS_GTF_TARGET` are `gles2`, `gles3`, `gles31`, `gles32`, and `gl`.
-The default value is `gles32`.
 
 CMake chooses to generate Makefiles by default. Other generators can be used
 as well. See CMake help for more details.
@@ -342,15 +296,6 @@ An Android APK (for ES 3.2) can be built using command:
 
 By default the CTS package will be built for the Android API level 28.
 Another API level may be supplied using --native-api command line option.
-
-If Khronos Confidential CTS is present then the script will set `GLCTS_GTF_TARGET`
-to `gles32` by default.
-It is possible to specify a different `GLCTS_GTF_TARGET` target by invoking the script
-with the `--kc-cts-target` option, e.g.:
-
-	python scripts/android/build_apk.py --target=openglcts --kc-cts-target=gles31 --sdk <path to Android SDK> --ndk <path to Android NDK>
-
-Available values for `--kc-cts-target` are `gles32`, `gles31`, `gles3`, `gles2` and `gl`.
 
 The package can be installed by either running:
 
@@ -504,10 +449,6 @@ See Section [Test Logs](#test-logs) for instructions on how to view the images.
 To direct logs to a directory, add `--logdir=[path]` parameter.
 
 To specify waived tests, add `--waivers=[path]` parameter.
-
-**NOTE**: Due to the lack of support for run-time selection of API context in the
-Khronos Confidential CTS, a conformance run may fail if it is executed for an API
-version that doesn't match the `GLCTS_GTF_TARGET` value used during the build step.
 
 #### Android
 

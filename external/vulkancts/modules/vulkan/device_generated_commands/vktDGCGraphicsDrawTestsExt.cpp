@@ -693,7 +693,7 @@ ShaderWrapperPtr maybeCreateModule(const DeviceInterface &vkd, VkDevice device, 
 
 DGCShaderExtPtr maybeCreateShader(const DeviceInterface &vkd, VkDevice device, const BinaryCollection &binaries,
                                   const std::string &name, VkShaderStageFlagBits stage,
-                                  const VkPushConstantRange *pcRange)
+                                  const VkPushConstantRange *pcRange, bool tessFeature, bool geomFeature)
 {
     DGCShaderExtPtr shaderPtr;
     if (binaries.contains(name))
@@ -704,8 +704,8 @@ DGCShaderExtPtr maybeCreateShader(const DeviceInterface &vkd, VkDevice device, c
         if (pcRange)
             pcRanges.push_back(*pcRange);
 
-        shaderPtr.reset(
-            new DGCShaderExt(vkd, device, stage, 0u, binaries.get(name), setLayouts, pcRanges, nullptr, nullptr));
+        shaderPtr.reset(new DGCShaderExt(vkd, device, stage, 0u, binaries.get(name), setLayouts, pcRanges, tessFeature,
+                                         geomFeature, nullptr, nullptr));
     }
     return shaderPtr;
 }
@@ -1321,26 +1321,33 @@ tcu::TestStatus DGCDrawInstance::iterate(void)
     DGCShaderExtPtr fragNormalShader;
     DGCShaderExtPtr fragAltShader;
 
+    const auto &meshFeatures = m_context.getMeshShaderFeaturesEXT();
+    const auto &features     = m_context.getDeviceFeatures();
+
+    const auto tessFeature = (features.tessellationShader == VK_TRUE);
+    const auto geomFeature = (features.geometryShader == VK_TRUE);
+
     if (m_params.isShaderObjects())
     {
-        vertNormalShader =
-            maybeCreateShader(ctx.vkd, ctx.device, binaries, "vert_normal", VK_SHADER_STAGE_VERTEX_BIT, nullptr);
-        vertFlipShader =
-            maybeCreateShader(ctx.vkd, ctx.device, binaries, "vert_flip", VK_SHADER_STAGE_VERTEX_BIT, nullptr);
-        tescNormalShader = maybeCreateShader(ctx.vkd, ctx.device, binaries, "tesc_normal",
-                                             VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, nullptr);
+        vertNormalShader = maybeCreateShader(ctx.vkd, ctx.device, binaries, "vert_normal", VK_SHADER_STAGE_VERTEX_BIT,
+                                             nullptr, tessFeature, geomFeature);
+        vertFlipShader   = maybeCreateShader(ctx.vkd, ctx.device, binaries, "vert_flip", VK_SHADER_STAGE_VERTEX_BIT,
+                                             nullptr, tessFeature, geomFeature);
+        tescNormalShader =
+            maybeCreateShader(ctx.vkd, ctx.device, binaries, "tesc_normal", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+                              nullptr, tessFeature, geomFeature);
         tescFlipShader   = maybeCreateShader(ctx.vkd, ctx.device, binaries, "tesc_flip",
-                                             VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, nullptr);
+                                             VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, nullptr, tessFeature, geomFeature);
         teseShader       = maybeCreateShader(ctx.vkd, ctx.device, binaries, "tese",
-                                             VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, nullptr);
-        geomNormalShader =
-            maybeCreateShader(ctx.vkd, ctx.device, binaries, "geom_normal", VK_SHADER_STAGE_GEOMETRY_BIT, nullptr);
-        geomFlipShader =
-            maybeCreateShader(ctx.vkd, ctx.device, binaries, "geom_flip", VK_SHADER_STAGE_GEOMETRY_BIT, nullptr);
-        fragNormalShader =
-            maybeCreateShader(ctx.vkd, ctx.device, binaries, "frag_normal", VK_SHADER_STAGE_FRAGMENT_BIT, &pcRange);
-        fragAltShader =
-            maybeCreateShader(ctx.vkd, ctx.device, binaries, "frag_alt", VK_SHADER_STAGE_FRAGMENT_BIT, &pcRange);
+                                             VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, nullptr, tessFeature, geomFeature);
+        geomNormalShader = maybeCreateShader(ctx.vkd, ctx.device, binaries, "geom_normal", VK_SHADER_STAGE_GEOMETRY_BIT,
+                                             nullptr, tessFeature, geomFeature);
+        geomFlipShader   = maybeCreateShader(ctx.vkd, ctx.device, binaries, "geom_flip", VK_SHADER_STAGE_GEOMETRY_BIT,
+                                             nullptr, tessFeature, geomFeature);
+        fragNormalShader = maybeCreateShader(ctx.vkd, ctx.device, binaries, "frag_normal", VK_SHADER_STAGE_FRAGMENT_BIT,
+                                             &pcRange, tessFeature, geomFeature);
+        fragAltShader    = maybeCreateShader(ctx.vkd, ctx.device, binaries, "frag_alt", VK_SHADER_STAGE_FRAGMENT_BIT,
+                                             &pcRange, tessFeature, geomFeature);
     }
     else
     {
@@ -1655,9 +1662,6 @@ tcu::TestStatus DGCDrawInstance::iterate(void)
     }
 
     // Record pre-execution state to all needed command buffers.
-    const auto &meshFeatures = m_context.getMeshShaderFeaturesEXT();
-    const auto &features     = m_context.getDeviceFeatures();
-
     VkCommandBuffer prevCmdBuffer = VK_NULL_HANDLE;
     for (const auto &stateCmdBufferPair : stateCmdBuffers)
     {

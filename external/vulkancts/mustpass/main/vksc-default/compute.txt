@@ -40,6 +40,7 @@ dEQP-VKSC.compute.pipeline.basic.ubo_to_ssbo_multiple_groups
 dEQP-VKSC.compute.pipeline.basic.ubo_to_ssbo_multiple_invocations
 dEQP-VKSC.compute.pipeline.basic.ubo_to_ssbo_single_group
 dEQP-VKSC.compute.pipeline.basic.ubo_to_ssbo_single_invocation
+dEQP-VKSC.compute.pipeline.basic.undefined_values
 dEQP-VKSC.compute.pipeline.basic.write_multiple_arr_multiple_groups
 dEQP-VKSC.compute.pipeline.basic.write_multiple_arr_single_invocation
 dEQP-VKSC.compute.pipeline.basic.write_multiple_unsized_arr_multiple_groups

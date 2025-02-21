@@ -2164,6 +2164,18 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
                 currentCodedExtent.height /= 2;
             }
 
+            if (currentCodedExtent.width > videoCapabilities->maxCodedExtent.width ||
+                currentCodedExtent.height > videoCapabilities->maxCodedExtent.height)
+            {
+                TCU_THROW(NotSupportedError, "Required dimensions exceed maxCodedExtent");
+            }
+
+            if (currentCodedExtent.width < videoCapabilities->minCodedExtent.width ||
+                currentCodedExtent.height < videoCapabilities->minCodedExtent.height)
+            {
+                TCU_THROW(NotSupportedError, "Required dimensions are smaller than minCodedExtent");
+            }
+
             const VkImageCreateInfo imageCreateInfo =
                 makeImageCreateInfo(imageFormat, currentCodedExtent,
                                     resourcesWithoutProfiles ? VK_IMAGE_CREATE_VIDEO_PROFILE_INDEPENDENT_BIT_KHR : 0,

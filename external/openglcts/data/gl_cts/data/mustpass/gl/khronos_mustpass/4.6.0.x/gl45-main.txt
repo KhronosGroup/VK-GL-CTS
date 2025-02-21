@@ -13665,7 +13665,6 @@ KHR-GL45.shader_texture_image_samples_tests.texture_functional_test
 KHR-GL45.shader_texture_image_samples_tests.glsl_extension_enable
 KHR-GL45.shader_texture_image_samples_tests.glsl_extension_require
 KHR-GL45.texture_filter_anisotropic.queries
-KHR-GL45.texture_filter_anisotropic.drawing
 KHR-GL45.geometry_shader.adjacency.adjacency_non_indiced_lines
 KHR-GL45.geometry_shader.adjacency.adjacency_indiced_lines
 KHR-GL45.geometry_shader.adjacency.adjacency_non_indiced_line_strip

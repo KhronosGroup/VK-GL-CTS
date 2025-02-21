@@ -104,10 +104,6 @@ typedef enum
     DATA_TYPE_FLOAT64,
 } DataType;
 
-const VkFlags allShaderStages = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-const VkFlags allPipelineStages =
-    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-
 struct CaseDef
 {
     bool payloadMemLocal;
@@ -125,6 +121,21 @@ struct CaseDef
     bool transitive;
     bool transitiveVis;
 };
+
+VkFlags getAllShaderStages(tcu::TestContext &testCtx)
+{
+    return testCtx.getCommandLine().isComputeOnly() ?
+               VK_SHADER_STAGE_COMPUTE_BIT :
+               VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+}
+
+VkFlags getAllPipelineStages(tcu::TestContext &testCtx)
+{
+    return testCtx.getCommandLine().isComputeOnly() ?
+               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT :
+               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
+                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+}
 
 class MemoryModelTestInstance : public TestInstance
 {
@@ -1320,6 +1331,9 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice device     = m_context.getDevice();
     Allocator &allocator      = m_context.getDefaultAllocator();
+
+    const VkFlags allShaderStages   = getAllShaderStages(m_context.getTestContext());
+    const VkFlags allPipelineStages = getAllPipelineStages(m_context.getTestContext());
 
     VkPhysicalDeviceProperties2 properties;
     properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;

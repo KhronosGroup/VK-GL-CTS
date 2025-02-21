@@ -174,6 +174,10 @@ enum TestType
     TEST_TYPE_H264_BOTH_DECODE_ENCODE_INTERLEAVED, // Case 23 TODO
     TEST_TYPE_H264_H265_DECODE_INTERLEAVED,        // Case 24
 
+    // VK_KHR_video_maintenance2
+    TEST_TYPE_H264_DECODE_INLINE_SESSION_PARAMS,
+    TEST_TYPE_H264_DECODE_RELAXED_SESSION_PARAMS,
+
     TEST_TYPE_H265_DECODE_I,   // Case 15
     TEST_TYPE_H265_DECODE_I_P, // Case 16
     TEST_TYPE_H265_DECODE_CLIP_D,
@@ -185,6 +189,10 @@ enum TestType
     TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES,
     TEST_TYPE_H265_DECODE_SLIST_A,
     TEST_TYPE_H265_DECODE_SLIST_B,
+
+    // VK_KHR_video_maintenance2
+    TEST_TYPE_H265_DECODE_INLINE_SESSION_PARAMS,
+    TEST_TYPE_H265_DECODE_RELAXED_SESSION_PARAMS,
 
     TEST_TYPE_AV1_DECODE_I,
     TEST_TYPE_AV1_DECODE_I_P,
@@ -211,6 +219,10 @@ enum TestType
     TEST_TYPE_AV1_DECODE_ARGON_TEST_787,
 
     TEST_TYPE_AV1_DECODE_ARGON_SEQCHANGE_AFFINE_8,
+
+    // VK_KHR_video_maintenance2
+    TEST_TYPE_AV1_DECODE_INLINE_SESSION_PARAMS,
+    TEST_TYPE_AV1_DECODE_RELAXED_SESSION_PARAMS,
 
     TEST_TYPE_LAST
 };
@@ -348,6 +360,16 @@ static const char *testTypeToStr(TestType type)
     case TEST_TYPE_AV1_DECODE_ARGON_TEST_787:
         testName = "argon_test787";
         break;
+    case TEST_TYPE_H264_DECODE_INLINE_SESSION_PARAMS:
+    case TEST_TYPE_H265_DECODE_INLINE_SESSION_PARAMS:
+    case TEST_TYPE_AV1_DECODE_INLINE_SESSION_PARAMS:
+        testName = "inline_session_params";
+        break;
+    case TEST_TYPE_H264_DECODE_RELAXED_SESSION_PARAMS:
+    case TEST_TYPE_H265_DECODE_RELAXED_SESSION_PARAMS:
+    case TEST_TYPE_AV1_DECODE_RELAXED_SESSION_PARAMS:
+        testName = "relaxed_session_params";
+        break;
     default:
         TCU_THROW(InternalError, "Unknown TestType");
     }
@@ -371,6 +393,8 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE_DPB:
     case TEST_TYPE_H264_DECODE_INTERLEAVED:
     case TEST_TYPE_H264_H265_DECODE_INTERLEAVED:
+    case TEST_TYPE_H264_DECODE_INLINE_SESSION_PARAMS:
+    case TEST_TYPE_H264_DECODE_RELAXED_SESSION_PARAMS:
         return TEST_CODEC_H264;
 
     case TEST_TYPE_H265_DECODE_I:
@@ -384,6 +408,8 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES:
     case TEST_TYPE_H265_DECODE_SLIST_A:
     case TEST_TYPE_H265_DECODE_SLIST_B:
+    case TEST_TYPE_H265_DECODE_INLINE_SESSION_PARAMS:
+    case TEST_TYPE_H265_DECODE_RELAXED_SESSION_PARAMS:
         return TEST_CODEC_H265;
 
     case TEST_TYPE_AV1_DECODE_I:
@@ -409,6 +435,8 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_AV1_DECODE_CDEF_10:
     case TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10:
     case TEST_TYPE_AV1_DECODE_ARGON_TEST_787:
+    case TEST_TYPE_AV1_DECODE_INLINE_SESSION_PARAMS:
+    case TEST_TYPE_AV1_DECODE_RELAXED_SESSION_PARAMS:
         return TEST_CODEC_AV1;
 
     default:
@@ -437,6 +465,9 @@ enum DecoderOption : uint32_t
     FilmGrainPresent         = 1 << 5,
     IntraOnlyDecoding        = 1 << 6,
     AnnexB                   = 1 << 7,
+
+    UseInlineSessionParams    = 1 << 8,
+    ResetCodecNoSessionParams = 1 << 9,
 };
 
 static const int ALL_FRAMES = 0;
@@ -467,6 +498,8 @@ struct DecodeTestParam
     {TEST_TYPE_H264_DECODE_RESOURCES_WITHOUT_PROFILES, {CLIP_A, ALL_FRAMES, DecoderOption::ResourcesWithoutProfiles}},
     {TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE, {CLIP_C, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE_DPB, {CLIP_C, ALL_FRAMES, DecoderOption::RecreateDPBImages}},
+    {TEST_TYPE_H264_DECODE_INLINE_SESSION_PARAMS, {CLIP_A, 1, DecoderOption::UseInlineSessionParams}},
+    {TEST_TYPE_H264_DECODE_RELAXED_SESSION_PARAMS, {CLIP_A, 1, DecoderOption::ResetCodecNoSessionParams}},
 
     {TEST_TYPE_H265_DECODE_I, {CLIP_D, 1, DecoderOption::Default}},
     {TEST_TYPE_H265_DECODE_I_P, {CLIP_D, 2, DecoderOption::Default}},
@@ -480,6 +513,8 @@ struct DecodeTestParam
     {TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES, {CLIP_D, ALL_FRAMES, DecoderOption::ResourcesWithoutProfiles}},
     {TEST_TYPE_H265_DECODE_SLIST_A, {CLIP_ITU_SLIST_A_HEVC, 28, DecoderOption::Default}},
     {TEST_TYPE_H265_DECODE_SLIST_B, {CLIP_ITU_SLIST_B_HEVC, 28, DecoderOption::Default}},
+    {TEST_TYPE_H265_DECODE_INLINE_SESSION_PARAMS, {CLIP_D, 1, DecoderOption::UseInlineSessionParams}},
+    {TEST_TYPE_H265_DECODE_RELAXED_SESSION_PARAMS, {CLIP_D, 1, DecoderOption::ResetCodecNoSessionParams}},
 
     {TEST_TYPE_AV1_DECODE_I, {CLIP_BASIC_8, 1, DecoderOption::Default}},
     {TEST_TYPE_AV1_DECODE_I_P, {CLIP_BASIC_8, 2, DecoderOption::Default}},
@@ -501,6 +536,8 @@ struct DecodeTestParam
     {TEST_TYPE_AV1_DECODE_LOSSLESS_10, {CLIP_LOSSLESS_10, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_AV1_DECODE_LOOPFILTER_10, {CLIP_LOOPFILTER_10, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_AV1_DECODE_CDEF_10, {CLIP_CDEF_10, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_INLINE_SESSION_PARAMS, {CLIP_BASIC_8, 1, DecoderOption::UseInlineSessionParams}},
+    {TEST_TYPE_AV1_DECODE_RELAXED_SESSION_PARAMS, {CLIP_BASIC_8, 1, DecoderOption::ResetCodecNoSessionParams}},
 
     // TODO: Did not have sufficient implementations to find out why this is failing.
     // {TEST_TYPE_AV1_DECODE_ARGON_SEQCHANGE_AFFINE_8, {CLIP_ARGON_SEQCHANGE_AFFINE_8, 4, DecoderOption::AnnexB}},
@@ -701,6 +738,8 @@ static std::shared_ptr<VideoBaseDecoder> decoderFromTestDefinition(DeviceContext
     params.layeredDpb                        = test.isLayered();
     params.queryDecodeStatus                 = test.hasOption(DecoderOption::UseStatusQueries);
     params.useInlineQueries                  = test.hasOption(DecoderOption::UseInlineStatusQueries);
+    params.useInlineSessionParams            = test.hasOption(DecoderOption::UseInlineSessionParams);
+    params.resetCodecNoSessionParams         = test.hasOption(DecoderOption::ResetCodecNoSessionParams);
     params.resourcesWithoutProfiles          = test.hasOption(DecoderOption::ResourcesWithoutProfiles);
     params.outOfOrderDecoding                = test.hasOption(DecoderOption::CachedDecoding);
     params.alwaysRecreateDPB                 = test.hasOption(DecoderOption::RecreateDPBImages);
@@ -1548,6 +1587,14 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_video_maintenance1");
         break;
     }
+    case TEST_TYPE_H264_DECODE_INLINE_SESSION_PARAMS:
+    case TEST_TYPE_H264_DECODE_RELAXED_SESSION_PARAMS:
+    {
+        context.requireDeviceFunctionality("VK_KHR_video_decode_h264");
+        context.requireDeviceFunctionality("VK_KHR_video_maintenance2");
+        break;
+    }
+
     case TEST_TYPE_H265_DECODE_I:
     case TEST_TYPE_H265_DECODE_I_P:
     case TEST_TYPE_H265_DECODE_CLIP_D:
@@ -1568,6 +1615,14 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_video_maintenance1");
         break;
     }
+    case TEST_TYPE_H265_DECODE_INLINE_SESSION_PARAMS:
+    case TEST_TYPE_H265_DECODE_RELAXED_SESSION_PARAMS:
+    {
+        context.requireDeviceFunctionality("VK_KHR_video_decode_h265");
+        context.requireDeviceFunctionality("VK_KHR_video_maintenance2");
+        break;
+    }
+
     case TEST_TYPE_AV1_DECODE_I:
     case TEST_TYPE_AV1_DECODE_I_P:
     case TEST_TYPE_AV1_DECODE_I_P_NOT_MATCHING_ORDER:
@@ -1595,6 +1650,14 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_video_decode_av1");
         break;
     }
+    case TEST_TYPE_AV1_DECODE_INLINE_SESSION_PARAMS:
+    case TEST_TYPE_AV1_DECODE_RELAXED_SESSION_PARAMS:
+    {
+        context.requireDeviceFunctionality("VK_KHR_video_decode_av1");
+        context.requireDeviceFunctionality("VK_KHR_video_maintenance2");
+        break;
+    }
+
     default:
         TCU_THROW(InternalError, "Unknown TestType");
     }

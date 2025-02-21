@@ -926,3 +926,5 @@ m_vk.cmdDrawIndexedIndirectCount2KHR = (CmdDrawIndexedIndirectCount2KHRFunc) GET
 m_vk.cmdDrawMeshTasksIndirect2EXT = (CmdDrawMeshTasksIndirect2EXTFunc) GET_PROC_ADDR("vkCmdDrawMeshTasksIndirect2EXT");
 m_vk.cmdDrawMeshTasksIndirectCount2EXT = (CmdDrawMeshTasksIndirectCount2EXTFunc) GET_PROC_ADDR("vkCmdDrawMeshTasksIndirectCount2EXT");
 m_vk.cmdDispatchIndirect2KHR = (CmdDispatchIndirect2KHRFunc) GET_PROC_ADDR("vkCmdDispatchIndirect2KHR");
+m_vk.createAccelerationStructure2KHR = (CreateAccelerationStructure2KHRFunc) GET_PROC_ADDR("vkCreateAccelerationStructure2KHR");
+m_vk.createMicromap2EXT = (CreateMicromap2EXTFunc) GET_PROC_ADDR("vkCreateMicromap2EXT");

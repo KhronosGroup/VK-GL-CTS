@@ -3337,6 +3337,13 @@ struct VkPhysicalDeviceLayeredApiVulkanPropertiesKHR
 	VkPhysicalDeviceProperties2	properties;
 };
 
+struct VkPhysicalDeviceMaintenance8FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		maintenance8;
+};
+
 struct VkRenderingAreaInfo
 {
 	VkStructureType	sType;
@@ -6754,6 +6761,14 @@ struct VkBufferMemoryBarrier2
 	VkDeviceSize			size;
 };
 
+struct VkMemoryBarrierAccessFlags3KHR
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkAccessFlags3KHR	srcAccessMask3;
+	VkAccessFlags3KHR	dstAccessMask3;
+};
+
 struct VkDependencyInfo
 {
 	VkStructureType					sType;
@@ -9014,13 +9029,6 @@ struct VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT
 	VkBool32		attachmentFeedbackLoopLayout;
 };
 
-struct VkPhysicalDeviceDepthClampZeroOneFeaturesEXT
-{
-	VkStructureType	sType;
-	void*			pNext;
-	VkBool32		depthClampZeroOne;
-};
-
 struct VkPhysicalDeviceAddressBindingReportFeaturesEXT
 {
 	VkStructureType	sType;
@@ -10220,6 +10228,13 @@ struct VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT
 	VkBool32		vertexAttributeRobustness;
 };
 
+struct VkPhysicalDeviceDepthClampZeroOneFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		depthClampZeroOne;
+};
+
 struct VkDeviceAddressRangeKHR
 {
 	VkDeviceAddress	address;
@@ -10308,6 +10323,26 @@ struct VkConditionalRenderingBeginInfo2EXT
 	const void*						pNext;
 	VkDeviceAddressRangeKHR			addressRange;
 	VkConditionalRenderingFlagsEXT	flags;
+};
+
+struct VkAccelerationStructureCreateInfo2KHR
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkAccelerationStructureCreateFlagsKHR	createFlags;
+	VkDeviceAddressRangeKHR					addressRange;
+	VkAccelerationStructureTypeKHR			type;
+	VkDeviceAddress							replayDeviceAddress;
+};
+
+struct VkMicromapCreateInfo2EXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkMicromapCreateFlagsEXT	createFlags;
+	VkDeviceAddressRangeKHR		addressRange;
+	VkMicromapTypeEXT			type;
+	VkDeviceAddress				replayDeviceAddress;
 };
 
 struct StdVideoH264SpsVuiFlags

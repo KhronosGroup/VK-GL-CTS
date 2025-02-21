@@ -21,7 +21,7 @@
  * \brief
  */ /*-------------------------------------------------------------------*/
 
-#include "es31cShaderImageLoadStoreTests.hpp"
+#include "glcShaderImageLoadStoreTests.hpp"
 #include "gluContextInfo.hpp"
 #include "glwEnums.hpp"
 #include "tcuMatrix.hpp"
@@ -65,7 +65,7 @@ const char *const kGLSLPrec =
        "precision highp iimage2DArray;" NL "precision highp uimage2D;" NL "precision highp uimage3D;" NL
        "precision highp uimageCube;" NL "precision highp uimage2DArray;";
 
-class ShaderImageLoadStoreBase : public glcts::SubcaseBase
+class ShaderImageLoadStoreBase : public deqp::SubcaseBase
 {
 public:
     virtual std::string Title()
@@ -124,7 +124,11 @@ public:
 
     bool IsImageAtomicSupported()
     {
-        if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_image_atomic"))
+        bool is_at_least_gl_45 =
+            (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5)));
+        bool is_arb_es31_compatibility  = m_context.getContextInfo().isExtensionSupported("GL_ARB_ES3_1_compatibility");
+        bool is_oes_shader_image_atomic = m_context.getContextInfo().isExtensionSupported("GL_OES_shader_image_atomic");
+        if (!(is_at_least_gl_45 || is_arb_es31_compatibility || is_oes_shader_image_atomic))
         {
             std::ostringstream reason;
             reason << "Required GL_OES_shader_image_atomic is not available." << std::endl;
@@ -900,9 +904,13 @@ class BasicAPIBind : public ShaderImageLoadStoreBase
     virtual long Run()
     {
         bool status = true;
+        bool is_at_least_gl_45 =
+            (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5)));
+        GLenum format = is_at_least_gl_45 ? GL_R8 : GL_R32UI;
+
         for (GLuint index = 0; index < 4; ++index)
         {
-            if (!CheckBinding(index, 0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI))
+            if (!CheckBinding(index, 0, 0, GL_FALSE, 0, GL_READ_ONLY, format))
             {
                 m_context.getTestContext().getLog() << tcu::TestLog::Message << "Binding point " << index
                                                     << " has invalid default state." << tcu::TestLog::EndMessage;
@@ -945,7 +953,7 @@ class BasicAPIBind : public ShaderImageLoadStoreBase
                     << " should be set to 0 after texture deletion." << tcu::TestLog::EndMessage;
                 status = false;
             }
-            if (!CheckBinding(index, 0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI))
+            if (!CheckBinding(index, 0, 0, GL_FALSE, 0, GL_READ_ONLY, format))
                 status = false;
         }
 
@@ -5070,11 +5078,11 @@ class NegativeUniform : public ShaderImageLoadStoreBase
     }
     virtual long Run()
     {
-        const char *glsl_vs =
-            NL "layout(location = 0) in vec4 i_position;" NL "void main() {" NL "  gl_Position = i_position;" NL "}";
-        const char *glsl_fs = NL "layout(rgba32f) writeonly uniform image2D g_image;" NL "void main() {" NL
-                                 "  ivec2 coord = ivec2(gl_FragCoord.xy);" NL
-                                 "  imageStore(g_image, coord, vec4(0.0));" NL "  discard;" NL "}";
+        const char *glsl_vs = "#version 310 es" NL "layout(location = 0) in vec4 i_position;" NL "void main() {" NL
+                              "  gl_Position = i_position;" NL "}";
+        const char *glsl_fs = "#version 310 es" NL "layout(rgba32f) writeonly uniform image2D g_image;" NL
+                              "void main() {" NL "  ivec2 coord = ivec2(gl_FragCoord.xy);" NL
+                              "  imageStore(g_image, coord, vec4(0.0));" NL "  discard;" NL "}";
         m_program = BuildProgram(glsl_vs, glsl_fs);
 
         GLint max_image_units;
@@ -5211,16 +5219,21 @@ class NegativeBind : public ShaderImageLoadStoreBase
             return ERROR;
         }
 
-        glGenTextures(1, &m_texture2);
-        glBindTexture(GL_TEXTURE_2D, m_texture2);
-        glBindImageTexture(1, m_texture2, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-        if (glGetError() != GL_INVALID_OPERATION)
+        bool is_at_least_gl_45 =
+            (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5)));
+        if (!is_at_least_gl_45)
         {
-            m_context.getTestContext().getLog()
-                << tcu::TestLog::Message
-                << "BindImageTexture should generate INVALID_OPERATION if <texture> is a mutable texture object."
-                << tcu::TestLog::EndMessage;
-            return ERROR;
+            glGenTextures(1, &m_texture2);
+            glBindTexture(GL_TEXTURE_2D, m_texture2);
+            glBindImageTexture(1, m_texture2, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+            if (glGetError() != GL_INVALID_OPERATION)
+            {
+                m_context.getTestContext().getLog()
+                    << tcu::TestLog::Message
+                    << "BindImageTexture should generate INVALID_OPERATION if <texture> is a mutable texture object."
+                    << tcu::TestLog::EndMessage;
+                return ERROR;
+            }
         }
 
         return NO_ERROR;

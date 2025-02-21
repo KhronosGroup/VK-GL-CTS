@@ -619,9 +619,13 @@ TestImage::TestImage(Context &context, TextureType texType, tcu::TextureFormat f
                                                                          VK_IMAGE_ASPECT_COLOR_BIT);
         const VkBufferImageCopy copyInfo = {0u, 1u, 1u, {imageAspect, 0u, 0u, numLayers}, {0u, 0u, 0u}, {1u, 1u, 1u}};
 
+        VkFlags destPipelineStageFlags = context.getTestContext().getCommandLine().isComputeOnly() ?
+                                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT :
+                                             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
         copyBufferToImage(vkd, device, context.getUniversalQueue(), context.getUniversalQueueFamilyIndex(),
                           *stagingBuffer, stagingBufferSize, vector<VkBufferImageCopy>(1, copyInfo), nullptr,
-                          imageAspect, 1u, numLayers, *m_image);
+                          imageAspect, 1u, numLayers, *m_image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                          destPipelineStageFlags);
     }
 }
 

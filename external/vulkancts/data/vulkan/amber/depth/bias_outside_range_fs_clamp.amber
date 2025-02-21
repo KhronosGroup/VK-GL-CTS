@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-DEVICE_EXTENSION VK_EXT_depth_clamp_zero_one
+DEVICE_FEATURE DepthClampZeroOneFeatures.depthClampZeroOne
 DEVICE_FEATURE fragmentStoresAndAtomics
 
 SHADER vertex vert_shader GLSL

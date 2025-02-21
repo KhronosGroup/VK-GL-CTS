@@ -591,8 +591,12 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate(void)
             vector<VkBufferImageCopy> copyRegions;
             copyRegions.push_back(copyRegion);
 
+            VkFlags destPipelineStageFlags = m_context.getTestContext().getCommandLine().isComputeOnly() ?
+                                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT :
+                                                 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             copyBufferToImage(vkdi, device, queue, queueFamilyIndex, buffer->get(), (uint32_t)numBytes, copyRegions,
-                              nullptr, VK_IMAGE_ASPECT_COLOR_BIT, 1u, 1u, image->get(), imageLayout);
+                              nullptr, VK_IMAGE_ASPECT_COLOR_BIT, 1u, 1u, image->get(), imageLayout,
+                              destPipelineStageFlags);
         }
     }
 

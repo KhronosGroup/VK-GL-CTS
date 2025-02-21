@@ -142,7 +142,20 @@ tcu::TestNode::IterateResult FunctionalTest::iterate()
                         for (glw::GLuint k = 0; k < COMPONENTS_COUNT; ++k)
                         {
                             /* Prepare destination texture. */
-                            prepareDestinationTextureAndFramebuffer(s_formats[i], GL_TEXTURE_2D);
+                            try
+                            {
+                                prepareDestinationTextureAndFramebuffer(s_formats[i], GL_TEXTURE_2D);
+                            }
+                            catch (tcu::NotSupportedError &e)
+                            {
+                                // According to OpenGL 3.1 spec, page 119, R16_SNORM is not mandatory for
+                                // rendering. If the driver do not support it, then just skip the
+                                // related tests.
+                                if (isFixedSignedType(s_formats[i]))
+                                    continue;
+                                else
+                                    throw tcu::TestError(e.getMessage());
+                            }
 
                             /* Building program (throws on failure). */
                             m_program =

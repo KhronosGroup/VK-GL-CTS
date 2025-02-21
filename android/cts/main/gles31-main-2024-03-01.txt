@@ -8,6 +8,7 @@ dEQP-GLES31.functional.image_load_store.buffer.atomic.comp_swap_r32i_return_valu
 dEQP-GLES31.functional.image_load_store.buffer.atomic.comp_swap_r32ui_return_value
 dEQP-GLES31.functional.image_load_store.cube.atomic.comp_swap_r32i_return_value
 dEQP-GLES31.functional.image_load_store.cube.atomic.comp_swap_r32ui_return_value
+dEQP-GLES31.functional.shaders.framebuffer_fetch.basic.multiple_render_targets_overdraw
 dEQP-GLES31.functional.texture.border_clamp.formats.r32f.linear_size_npot
 dEQP-GLES31.functional.texture.border_clamp.formats.r32f.linear_size_pot
 dEQP-GLES31.functional.texture.border_clamp.formats.rg32f.linear_size_npot

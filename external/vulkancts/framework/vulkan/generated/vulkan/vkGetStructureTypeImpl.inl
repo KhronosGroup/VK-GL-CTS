@@ -1333,6 +1333,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceLayeredApiVulkanProp
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_VULKAN_PROPERTIES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceMaintenance8FeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_8_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkRenderingAreaInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_RENDERING_AREA_INFO;
@@ -2923,6 +2928,11 @@ template<> VkStructureType getStructureType<VkBufferMemoryBarrier2> (void)
 	return VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
 }
 
+template<> VkStructureType getStructureType<VkMemoryBarrierAccessFlags3KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_BARRIER_ACCESS_FLAGS_3_KHR;
+}
+
 template<> VkStructureType getStructureType<VkDependencyInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
@@ -4178,11 +4188,6 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceAttachmentFeedbackLo
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_FEATURES_EXT;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceDepthClampZeroOneFeaturesEXT> (void)
-{
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_EXT;
-}
-
 template<> VkStructureType getStructureType<VkPhysicalDeviceAddressBindingReportFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ADDRESS_BINDING_REPORT_FEATURES_EXT;
@@ -4848,6 +4853,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceVertexAttributeRobus
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceDepthClampZeroOneFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkDeviceMemoryCopyKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_DEVICE_MEMORY_COPY_KHR;
@@ -4886,5 +4896,15 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceDeviceAddressCommand
 template<> VkStructureType getStructureType<VkConditionalRenderingBeginInfo2EXT> (void)
 {
 	return VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_2_EXT;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureCreateInfo2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkMicromapCreateInfo2EXT> (void)
+{
+	return VK_STRUCTURE_TYPE_MICROMAP_CREATE_INFO_2_EXT;
 }
 

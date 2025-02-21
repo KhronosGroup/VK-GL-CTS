@@ -1,0 +1,26 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceDepthClampZeroOneFeaturesKHR": [
+            {
+                "features": [
+                    "depthClampZeroOne"
+                ],
+                "requirements": [
+                    "VK_EXT_depth_clamp_zero_one"
+                ]
+            },
+            {
+                "features": [
+                    "depthClampZeroOne"
+                ],
+                "requirements": [
+                    "VK_KHR_depth_clamp_zero_one"
+                ]
+            }
+        ]
+    }
+}

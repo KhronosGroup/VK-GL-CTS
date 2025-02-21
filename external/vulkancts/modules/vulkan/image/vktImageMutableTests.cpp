@@ -296,19 +296,28 @@ std::string getColorFormatStr(const int numComponents, const bool isUint, const 
 }
 
 // Select the highest sample count usable by the platform
-VkSampleCountFlagBits getMaxAvailableSampleCount(const Context &context)
+VkSampleCountFlagBits getMaxAvailableSampleCount(const Context &context, VkFormat format, VkImageType imageType,
+                                                 VkImageUsageFlags usage, VkImageCreateFlags flags)
 {
+    const InstanceInterface &vki      = context.getInstanceInterface();
+    const VkPhysicalDevice physDevice = context.getPhysicalDevice();
+
     VkPhysicalDeviceProperties deviceProperties;
-    context.getInstanceInterface().getPhysicalDeviceProperties(context.getPhysicalDevice(), &deviceProperties);
+    vki.getPhysicalDeviceProperties(physDevice, &deviceProperties);
 
     VkSampleCountFlags supportedSampleCount = std::min(deviceProperties.limits.framebufferColorSampleCounts,
                                                        deviceProperties.limits.framebufferDepthSampleCounts);
     std::vector<VkSampleCountFlagBits> possibleSampleCounts{VK_SAMPLE_COUNT_64_BIT, VK_SAMPLE_COUNT_32_BIT,
                                                             VK_SAMPLE_COUNT_16_BIT, VK_SAMPLE_COUNT_8_BIT,
                                                             VK_SAMPLE_COUNT_4_BIT,  VK_SAMPLE_COUNT_2_BIT};
+
+    VkImageFormatProperties imageFormatProperties;
+    vki.getPhysicalDeviceImageFormatProperties(physDevice, format, imageType, VK_IMAGE_TILING_OPTIMAL, usage, flags,
+                                               &imageFormatProperties);
+
     for (auto &possibleSampleCount : possibleSampleCounts)
     {
-        if (supportedSampleCount & possibleSampleCount)
+        if ((supportedSampleCount & possibleSampleCount) && (imageFormatProperties.sampleCounts & possibleSampleCount))
         {
             return possibleSampleCount;
         }
@@ -1079,11 +1088,13 @@ void UploadDownloadExecutor::run(Context &context, VkBuffer buffer)
 
     if (m_caseDef.isResolveAttachmentTest)
     {
+        const vk::VkImageType imageType   = getImageType(m_caseDef.imageType);
+        const vk::VkImageUsageFlags usage = getImageUsageForTestCase(m_caseDef);
+        const vk::VkSampleCountFlagBits samples =
+            getMaxAvailableSampleCount(context, m_caseDef.imageFormat, imageType, usage, imageFlags);
         m_multisampledImageHolder =
-            makeImage(m_vk, m_device, imageFlags, getImageType(m_caseDef.imageType), m_caseDef.imageFormat,
-                      m_caseDef.viewFormat, m_caseDef.isFormatListTest, m_caseDef.size, 1u, m_caseDef.numLayers,
-                      VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                      getMaxAvailableSampleCount(context));
+            makeImage(m_vk, m_device, imageFlags, imageType, m_caseDef.imageFormat, m_caseDef.viewFormat,
+                      m_caseDef.isFormatListTest, m_caseDef.size, 1u, m_caseDef.numLayers, usage, samples);
         m_multisampledImage      = *m_multisampledImageHolder;
         m_multisampledImageAlloc = bindImage(m_vk, m_device, m_allocator, m_multisampledImage, MemoryRequirement::Any);
     }
@@ -1336,8 +1347,9 @@ void UploadDownloadExecutor::uploadCopy(Context &context)
 
 void UploadDownloadExecutor::uploadDraw(Context &context)
 {
-    VkSampleCountFlagBits sampleCount =
-        m_caseDef.isResolveAttachmentTest ? getMaxAvailableSampleCount(context) : VK_SAMPLE_COUNT_1_BIT;
+    VkSampleCountFlagBits maxSampleCount = getMaxAvailableSampleCount(
+        context, m_caseDef.imageFormat, getImageType(m_caseDef.imageType), getImageUsageForTestCase(m_caseDef), 0u);
+    VkSampleCountFlagBits sampleCount = m_caseDef.isResolveAttachmentTest ? maxSampleCount : VK_SAMPLE_COUNT_1_BIT;
     // Create vertex buffer
     {
         const vector<Vec4> vertices         = genVertexData(m_caseDef);
@@ -1802,7 +1814,12 @@ void checkSupport(Context &context, const CaseDef caseDef)
         TCU_THROW(NotSupportedError, "Base image format is not supported");
     }
 
-    if (getMaxAvailableSampleCount(context) == VK_SAMPLE_COUNT_1_BIT)
+    const vk::VkImageUsageFlags usage = getImageUsageForTestCase(caseDef);
+    const VkImageCreateFlags imageFlags =
+        VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | (haveMaintenance2 ? VK_IMAGE_CREATE_EXTENDED_USAGE_BIT : 0);
+
+    if (getMaxAvailableSampleCount(context, caseDef.imageFormat, getImageType(caseDef.imageType), usage, imageFlags) ==
+        VK_SAMPLE_COUNT_1_BIT)
         TCU_THROW(NotSupportedError, "Maximum available sample count is VK_SAMPLE_COUNT_1_BIT");
 }
 

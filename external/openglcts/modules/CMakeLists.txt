@@ -12,10 +12,6 @@ include_directories(
 	${PROJECT_SOURCE_DIR}/modules/glshared
 	)
 
-if (DEQP_GTF_AVAILABLE)
-	include_directories(${GTF_HOME}/glcts-gtf)
-endif ()
-
 add_subdirectory(common)
 add_subdirectory(gl)
 add_subdirectory(gles2)
@@ -23,11 +19,6 @@ add_subdirectory(gles3)
 add_subdirectory(gles31)
 add_subdirectory(gles32)
 add_subdirectory(glesext)
-
-if (DEQP_GTF_AVAILABLE)
-	set(GTF_DIR ${GTF_HOME})
-	add_subdirectory(${GTF_HOME}/glcts-gtf gtf)
-endif ()
 
 # glcTestPackageRegistry.cpp includes dEQP modules directly
 include_directories(

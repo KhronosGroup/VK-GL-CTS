@@ -2310,6 +2310,16 @@ tcu::TestStatus IdenticalMemoryLayoutTestInstance::iterate(void)
                  VK_IMAGE_ASPECT_COLOR_BIT);
         const auto imageSRR = makeImageSubresourceRange(aspectMask, 0u, 1u, 0u, 1u);
 
+        // As copying depth/stencil requires queue that supports graphics operations we need to throw NotSupported for compute only implementations
+        if (hasDepth || hasStencil)
+        {
+            const bool isComputeOnly = m_context.getTestContext().getCommandLine().isComputeOnly();
+            if (isComputeOnly)
+            {
+                TCU_THROW(NotSupportedError, "Universal queue does not support graphics operations.");
+            }
+        }
+
         beginCommandBuffer(vk, *cmdbuffer);
         vk.cmdFillBuffer(*cmdbuffer, *baseBuffer, 0ull, VK_WHOLE_SIZE, 0u);
         vk.cmdFillBuffer(*cmdbuffer, *hostXferBuffer, 0ull, VK_WHOLE_SIZE, 0u);

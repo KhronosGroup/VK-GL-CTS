@@ -1646,6 +1646,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_maintenance8")
+	{
+		return;
+	}
 	if (extName == "VK_MESA_image_alignment_control")
 	{
 		return;
@@ -1664,6 +1668,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_ARM_pipeline_opacity_micromap")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_depth_clamp_zero_one")
 	{
 		return;
 	}
@@ -3048,6 +3056,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		if (extensionIsSupported(vDEP, "VK_AMD_buffer_marker")) {
 			functions.push_back("vkCmdWriteMarkerToMemoryAMD");
 		}
+		// Dependencies: VK_KHR_acceleration_structure
+		if (extensionIsSupported(vDEP, "VK_KHR_acceleration_structure")) {
+			functions.push_back("vkCreateAccelerationStructure2KHR");
+		}
+		// Dependencies: VK_EXT_opacity_micromap
+		if (extensionIsSupported(vDEP, "VK_EXT_opacity_micromap")) {
+			functions.push_back("vkCreateMicromap2EXT");
+		}
 		return;
 	}
 	if (extName == "VK_EXT_graphics_pipeline_library")
@@ -3886,6 +3902,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkUpdateIndirectExecutionSetShaderEXT");
 		return;
 	}
+	if (extName == "VK_KHR_maintenance8")
+	{
+		return;
+	}
 	if (extName == "VK_MESA_image_alignment_control")
 	{
 		return;
@@ -3904,6 +3924,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_ARM_pipeline_opacity_micromap")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_depth_clamp_zero_one")
 	{
 		return;
 	}
@@ -4343,10 +4367,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_shader_replicated_composites",
 	"VK_NV_ray_tracing_validation",
 	"VK_EXT_device_generated_commands",
+	"VK_KHR_maintenance8",
 	"VK_MESA_image_alignment_control",
 	"VK_EXT_depth_clamp_control",
 	"VK_HUAWEI_hdr_vivid",
 	"VK_NV_cooperative_matrix2",
 	"VK_ARM_pipeline_opacity_micromap",
+	"VK_KHR_depth_clamp_zero_one",
 	"VK_EXT_vertex_attribute_robustness",
 };

@@ -294,8 +294,8 @@ uint32_t WaiverTreeBuilder::findComponentInBuildTree(const std::vector<std::stri
         uint32_t reverseLevel        = index;
         uint32_t ancestorInTreeIndex = componentInTree.parentIndex;
 
-        // if this component is the next after root then there is no ancestors to check
-        if (reverseLevel == 1)
+        // if this component and the ancestor component are both the next level after root, we have a match
+        if ((reverseLevel == 1) && (ancestorInTreeIndex == 0))
             return componentIndex;
 
         while (--reverseLevel > 0)

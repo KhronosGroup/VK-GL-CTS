@@ -235,6 +235,17 @@ void freeNonDispHandle(Handle handle, const VkAllocationCallbacks *pAllocator)
         }                                                                        \
     };
 
+#define VK_NULL_DEFINE_OBJ_2_WITH_POSTFIX(DEVICE_OR_INSTANCE, NAME, POSTFIX)      \
+    struct NAME##POSTFIX                                                          \
+    {                                                                             \
+        NAME##POSTFIX(DEVICE_OR_INSTANCE, const Vk##NAME##CreateInfo##POSTFIX *)  \
+        {                                                                         \
+        }                                                                         \
+        NAME##POSTFIX(DEVICE_OR_INSTANCE, const Vk##NAME##CreateInfo2##POSTFIX *) \
+        {                                                                         \
+        }                                                                         \
+    };
+
 VK_NULL_DEFINE_DEVICE_OBJ(Fence);
 VK_NULL_DEFINE_DEVICE_OBJ(Semaphore);
 VK_NULL_DEFINE_DEVICE_OBJ(Event);
@@ -261,19 +272,19 @@ VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, CuModule, NVX)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, CuFunction, NVX)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, CudaModule, NV)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, CudaFunction, NV)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Micromap, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, OpticalFlowSession, NV)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, NV)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, AccelerationStructure, NV)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, AccelerationStructure, KHR)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, VideoSession, KHR)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, VideoSessionParameters, KHR)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, ValidationCache, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, BufferCollection, FUCHSIA)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Shader, EXT)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, EXT);
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectExecutionSet, EXT);
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, EXT)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectExecutionSet, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, PipelineBinary, KHR)
+VK_NULL_DEFINE_OBJ_2_WITH_POSTFIX(VkDevice, Micromap, EXT)
+VK_NULL_DEFINE_OBJ_2_WITH_POSTFIX(VkDevice, AccelerationStructure, KHR)
 #endif // CTS_USES_VULKANSC
 
 class Instance

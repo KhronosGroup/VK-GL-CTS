@@ -70,7 +70,7 @@ using PropertyStructWrapperCreator = PropertyStructWrapperBase *(*)(void);
 struct PropertyStructCreationData
 {
     PropertyStructWrapperCreator creatorFunction;
-    const char *name;
+    const std::string name;
     uint32_t specVersion;
 };
 
@@ -140,6 +140,8 @@ public:
     bool isDevicePropertyInitialized(VkStructureType sType) const;
 
 private:
+    static bool verifyPropertyAddCriteria(const PropertyStructCreationData &item,
+                                          const std::vector<std::string> &allDeviceExtensions);
     static void addToChainStructWrapper(void ***chainPNextPtr, PropertyStructWrapperBase *structWrapper);
 
 private:

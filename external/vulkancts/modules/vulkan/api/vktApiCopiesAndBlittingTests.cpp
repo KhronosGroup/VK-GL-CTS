@@ -96,6 +96,7 @@ enum FillMode
     FILL_MODE_WHITE,
     FILL_MODE_BLACK,
     FILL_MODE_RED,
+    FILL_MODE_RANDOM_GRAY,
     FILL_MODE_MULTISAMPLE,
     FILL_MODE_BLUE_RED_X,
     FILL_MODE_BLUE_RED_Y,
@@ -731,6 +732,7 @@ void CopiesAndBlittingTestInstance::generateBuffer(tcu::PixelBufferAccess buffer
         return;
     }
 
+    de::Random randomGen(deInt32Hash((uint32_t)buffer.getFormat().type));
     const tcu::Vec4 redColor(maxValue.x(), 0.0, 0.0, maxValue.w());
     const tcu::Vec4 greenColor(0.0, maxValue.y(), 0.0, maxValue.w());
     const tcu::Vec4 blueColor(0.0, 0.0, maxValue.z(), maxValue.w());
@@ -775,6 +777,16 @@ void CopiesAndBlittingTestInstance::generateBuffer(tcu::PixelBufferAccess buffer
                     else
                         buffer.setPixel(redColor, x, y, z);
                     break;
+
+                case FILL_MODE_RANDOM_GRAY:
+                {
+                    // generate random gray color but multiply it by 0.95 to not generate
+                    // value that can be interpreted as NaNs when copied to float formats
+                    tcu::Vec4 randomGrayColor(randomGen.getFloat() * 0.95f);
+                    randomGrayColor.w() = maxValue.w();
+                    buffer.setPixel(randomGrayColor, x, y, z);
+                    break;
+                }
 
                 case FILL_MODE_BLUE_RED_X:
                 case FILL_MODE_BLUE_RED_Y:
@@ -3427,6 +3439,15 @@ CopyBufferToDepthStencil::CopyBufferToDepthStencil(Context &context, TestParams 
     Allocator &memAlloc                 = context.getDefaultAllocator();
     const bool hasDepth                 = tcu::hasDepthComponent(mapVkFormat(m_params.dst.image.format).order);
     const bool hasStencil               = tcu::hasStencilComponent(mapVkFormat(m_params.dst.image.format).order);
+
+    // As copying depth/stencil requires queue that supports graphics operations we need to throw NotSupported for compute only implementations
+    {
+        const bool isComputeOnly = m_context.getTestContext().getCommandLine().isComputeOnly();
+        if (isComputeOnly)
+        {
+            TCU_THROW(NotSupportedError, "Universal queue does not support graphics operations.");
+        }
+    }
 
     if (!isSupportedDepthStencilFormat(vki, vkPhysDevice, testParams.dst.image.format))
     {
@@ -10183,7 +10204,6 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
 
     // 1D to 1D tests.
     {
-        // 1D to 1D copies
         de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_1d"));
 
         TestParams params;
@@ -10240,7 +10260,6 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
 
     // 1D to 2D tests.
     {
-        // 1D to 2D copies
         de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_2d"));
 
         TestParams params;
@@ -10424,7 +10443,7 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
         params.dst.image.extent    = defaultExtent;
         params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
         params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.fillMode  = FILL_MODE_WHITE;
+        params.src.image.fillMode  = FILL_MODE_RANDOM_GRAY;
         params.dst.image.fillMode  = FILL_MODE_GRADIENT;
         params.allocationKind      = testGroupParams->allocationKind;
         params.extensionFlags      = testGroupParams->extensionFlags;
@@ -10480,7 +10499,7 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
         params.dst.image.extent    = default3dSmallExtent;
         params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
         params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.fillMode  = FILL_MODE_WHITE;
+        params.src.image.fillMode  = FILL_MODE_RANDOM_GRAY;
         params.dst.image.fillMode  = FILL_MODE_GRADIENT;
         params.allocationKind      = testGroupParams->allocationKind;
         params.extensionFlags      = testGroupParams->extensionFlags;
@@ -10779,6 +10798,7 @@ void addImageToImageDimensionsTests(tcu::TestCaseGroup *group, TestGroupParamsPt
         testParams.params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
         testParams.params.src.image.imageType = VK_IMAGE_TYPE_2D;
         testParams.params.src.image.extent    = extent;
+        testParams.params.src.image.fillMode  = FILL_MODE_PYRAMID;
 
         testParams.params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
         testParams.params.dst.image.imageType = VK_IMAGE_TYPE_2D;

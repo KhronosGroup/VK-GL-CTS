@@ -498,7 +498,19 @@ void checkSupport(Context &context, TestParameters params)
     const bool isYCbCrImage = isYCbCrFormat(params.format);
 
     if (isYCbCrImage)
+    {
         checkImageSupport(context, params.format, params.flags);
+
+        VkFormatProperties2 formatProperties = initVulkanStructure();
+
+        context.getInstanceInterface().getPhysicalDeviceFormatProperties2(context.getPhysicalDevice(), params.format,
+                                                                          &formatProperties);
+        // VUID-VkSamplerYcbcrConversionCreateInfo-xChromaOffset-01652
+        if (!(formatProperties.formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT))
+        {
+            TCU_THROW(NotSupportedError, "Format does not support midpoint chroma subsampling");
+        }
+    }
 
     checkSupportShader(context, params.shaderType);
 }

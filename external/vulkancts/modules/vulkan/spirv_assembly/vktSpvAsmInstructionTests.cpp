@@ -9447,10 +9447,12 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup *testCtx)
 
         if (tests[idx].preserveNanInf)
         {
-            fragments["capability"] = "OpCapability SignedZeroInfNanPreserve\n";
-            fragments["extension"]  = "OpExtension \"SPV_KHR_float_controls\"\n";
+            fragments["capability"]     = "OpCapability SignedZeroInfNanPreserve\n";
+            fragments["extension"]      = "OpExtension \"SPV_KHR_float_controls\"\n";
+            fragments["execution_mode"] = "OpExecutionMode %BP_main SignedZeroInfNanPreserve 32\n";
             extensions.push_back("VK_KHR_shader_float_controls");
             features.floatControlsProperties.shaderSignedZeroInfNanPreserveFloat16 = true;
+            features.floatControlsProperties.shaderSignedZeroInfNanPreserveFloat32 = true;
         }
 
         createTestsForAllStages(tests[idx].name, inputColors, expectedColors, fragments, SpecConstants(),
@@ -9475,10 +9477,12 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup *testCtx)
 
         if (tests[idx].preserveNanInf)
         {
-            fragments["capability"] = "OpCapability SignedZeroInfNanPreserve\n";
-            fragments["extension"]  = "OpExtension \"SPV_KHR_float_controls\"\n";
+            fragments["capability"]     = "OpCapability SignedZeroInfNanPreserve\n";
+            fragments["extension"]      = "OpExtension \"SPV_KHR_float_controls\"\n";
+            fragments["execution_mode"] = "OpExecutionMode %BP_main SignedZeroInfNanPreserve 32\n";
             extensions.push_back("VK_KHR_shader_float_controls");
             features.floatControlsProperties.shaderSignedZeroInfNanPreserveFloat16 = true;
+            features.floatControlsProperties.shaderSignedZeroInfNanPreserveFloat32 = true;
         }
 
         createTestsForAllStages(string("spec_const_") + tests[idx].name, inputColors, expectedColors, fragments,

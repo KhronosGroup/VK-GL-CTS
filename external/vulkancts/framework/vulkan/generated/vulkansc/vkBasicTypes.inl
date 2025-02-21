@@ -3157,6 +3157,8 @@ typedef uint32_t VkVideoEncodeAV1RateControlFlagsKHR;
 
 typedef uint32_t VkVideoEncodeAV1SuperblockSizeFlagsKHR;
 
+typedef uint64_t VkAccessFlags3KHR;
+
 
 VK_DEFINE_PLATFORM_TYPE(XlibDisplayPtr,				void*)
 VK_DEFINE_PLATFORM_TYPE(XlibWindow,					uintptr_t)

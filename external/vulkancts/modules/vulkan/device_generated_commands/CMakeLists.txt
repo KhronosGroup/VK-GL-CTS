@@ -60,6 +60,9 @@ set(DEQP_VK_DGC_SRCS
 	vktDGCRayTracingTestsExt.hpp
 	vktDGCGraphicsXfbTestsExt.cpp
 	vktDGCGraphicsXfbTestsExt.hpp
+	vktDGCGraphicsTessStateTestsExt.cpp
+	vktDGCGraphicsTessStateTestsExt.hpp
+	vktDGCGraphicsTessStateRefImages.hpp
 	)
 
 set(DEQP_VK_DGC_LIBS

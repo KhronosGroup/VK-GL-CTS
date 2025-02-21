@@ -1,5 +1,5 @@
-#ifndef _ES31CSHADERIMAGELOADSTORETESTS_HPP
-#define _ES31CSHADERIMAGELOADSTORETESTS_HPP
+#ifndef _GLCSHADERIMAGELOADSTORETESTS_HPP
+#define _GLCSHADERIMAGELOADSTORETESTS_HPP
 /*-------------------------------------------------------------------------
  * OpenGL Conformance Test Suite
  * -----------------------------
@@ -44,4 +44,4 @@ private:
 };
 } // namespace glcts
 
-#endif // _ES31CSHADERIMAGELOADSTORETESTS_HPP
+#endif // _GLCSHADERIMAGELOADSTORETESTS_HPP

@@ -697,6 +697,7 @@ tcu::Format::Bitfield<32>	getVideoEncodeAV1CapabilityFlagsKHRStr						(VkVideoEn
 tcu::Format::Bitfield<32>	getVideoEncodeAV1StdFlagsKHRStr								(VkVideoEncodeAV1StdFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoEncodeAV1RateControlFlagsKHRStr						(VkVideoEncodeAV1RateControlFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoEncodeAV1SuperblockSizeFlagsKHRStr					(VkVideoEncodeAV1SuperblockSizeFlagsKHR value);
+tcu::Format::Bitfield<64>	getAccessFlags3KHRStr										(VkAccessFlags3KHR value);
 
 std::ostream&	operator<<	(std::ostream& s, const VkBaseOutStructure& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBaseInStructure& value);
@@ -1063,6 +1064,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance7Pro
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLayeredApiPropertiesListKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLayeredApiPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLayeredApiVulkanPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance8FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderingAreaInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDescriptorSetLayoutSupport& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderDrawParametersFeatures& value);
@@ -1419,6 +1421,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelineColorWriteCreateInfoE
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryBarrier2& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageMemoryBarrier2& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferMemoryBarrier2& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryBarrierAccessFlags3KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDependencyInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreSubmitInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCommandBufferSubmitInfo& value);
@@ -1687,7 +1690,6 @@ std::ostream&	operator<<	(std::ostream& s, const VkTilePropertiesQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAmigoProfilingFeaturesSEC& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAmigoProfilingSubmitInfoSEC& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDepthClampZeroOneFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAddressBindingReportFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceAddressBindingCallbackDataEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceOpticalFlowFeaturesNV& value);
@@ -1828,6 +1830,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatr
 std::ostream&	operator<<	(std::ostream& s, const VkCooperativeMatrixFlexibleDimensionsPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceHdrVividFeaturesHUAWEI& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDepthClampZeroOneFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceAddressRangeKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkStridedDeviceAddressRangeKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceMemoryCopyKHR& value);
@@ -1838,6 +1841,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkMemoryRangeBarriersInfoKHR& v
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryRangeBarrierKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkConditionalRenderingBeginInfo2EXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureCreateInfo2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMicromapCreateInfo2EXT& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SpsVuiFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264HrdParameters& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SequenceParameterSetVui& value);

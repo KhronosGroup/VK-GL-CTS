@@ -355,6 +355,18 @@ VKAPI_ATTR VkResult VKAPI_CALL createExecutionGraphPipelinesAMDX (VkDevice devic
 	VK_NULL_RETURN((allocateNonDispHandleArray<Pipeline, VkPipeline>(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createAccelerationStructure2KHR (VkDevice device, const VkAccelerationStructureCreateInfo2KHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pAccelerationStructure = allocateNonDispHandle<AccelerationStructureKHR, VkAccelerationStructureKHR>(device, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createMicromap2EXT (VkDevice device, const VkMicromapCreateInfo2EXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkMicromapEXT* pMicromap)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pMicromap = allocateNonDispHandle<MicromapEXT, VkMicromapEXT>(device, pCreateInfo, pAllocator)));
+}
+
 VKAPI_ATTR void VKAPI_CALL destroyInstance (VkInstance instance, const VkAllocationCallbacks* pAllocator)
 {
 	freeHandle<Instance, VkInstance>(instance, pAllocator);
@@ -5154,5 +5166,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdDrawMeshTasksIndirect2EXT,								cmdDrawMeshTasksIndirect2EXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDrawMeshTasksIndirectCount2EXT,							cmdDrawMeshTasksIndirectCount2EXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDispatchIndirect2KHR,									cmdDispatchIndirect2KHR),
+	VK_NULL_FUNC_ENTRY(vkCreateAccelerationStructure2KHR,							createAccelerationStructure2KHR),
+	VK_NULL_FUNC_ENTRY(vkCreateMicromap2EXT,										createMicromap2EXT),
 };
 

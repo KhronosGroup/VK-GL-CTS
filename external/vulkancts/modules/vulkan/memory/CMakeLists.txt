@@ -11,6 +11,8 @@ set(DEQP_VK_VKSC_MEMORY_SRCS
 	vktMemoryTests.hpp
 	vktMemoryAllocationTests.cpp
 	vktMemoryAllocationTests.hpp
+	vktMemoryConcurrentAccessTests.cpp
+	vktMemoryConcurrentAccessTests.hpp
 	vktMemoryPipelineBarrierTests.hpp
 	vktMemoryPipelineBarrierTests.cpp
 	vktMemoryRequirementsTests.cpp

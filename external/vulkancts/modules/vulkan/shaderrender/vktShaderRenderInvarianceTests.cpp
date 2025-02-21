@@ -19,7 +19,7 @@
  *
  *//*!
  * \file
- * \brief Invariant decoration tests.
+ * \brief Invariant and precise decoration tests.
  *//*--------------------------------------------------------------------*/
 
 #include "vktShaderRenderInvarianceTests.hpp"
@@ -34,12 +34,9 @@
 
 using namespace vk;
 
-namespace vkt
+namespace vkt::sr
 {
 using namespace drawutil;
-
-namespace sr
-{
 
 namespace
 {
@@ -63,7 +60,7 @@ FormatArgument::FormatArgument(const char *name, const std::string &value) : m_n
 class FormatArgumentList
 {
 public:
-    FormatArgumentList(void);
+    FormatArgumentList(void) = default;
 
     FormatArgumentList &operator<<(const FormatArgument &);
     const std::map<std::string, std::string> &getArguments(void) const;
@@ -71,10 +68,6 @@ public:
 private:
     std::map<std::string, std::string> m_formatArguments;
 };
-
-FormatArgumentList::FormatArgumentList(void)
-{
-}
 
 FormatArgumentList &FormatArgumentList::operator<<(const FormatArgument &arg)
 {
@@ -87,17 +80,17 @@ const std::map<std::string, std::string> &FormatArgumentList::getArguments(void)
     return m_formatArguments;
 }
 
-static std::string formatGLSL(const char *templateString, const FormatArgumentList &args)
+static std::string formatGLSL(std::string templateString, const FormatArgumentList &args)
 {
     const std::map<std::string, std::string> &params = args.getArguments();
 
-    return tcu::StringTemplate(std::string(templateString)).specialize(params);
+    return tcu::StringTemplate(templateString).specialize(params);
 }
 
 class InvarianceTest : public vkt::TestCase
 {
 public:
-    InvarianceTest(tcu::TestContext &ctx, const char *name, const std::string &vertexShader1,
+    InvarianceTest(tcu::TestContext &ctx, const std::string &name, const std::string &vertexShader1,
                    const std::string &vertexShader2, const std::string &fragmentShader = "");
 
     void initPrograms(SourceCollections &sourceCollections) const override;
@@ -118,13 +111,12 @@ public:
     const int m_renderSize = 256;
 };
 
-InvarianceTest::InvarianceTest(tcu::TestContext &ctx, const char *name, const std::string &vertexShader1,
+InvarianceTest::InvarianceTest(tcu::TestContext &ctx, const std::string &name, const std::string &vertexShader1,
                                const std::string &vertexShader2, const std::string &fragmentShader)
     : vkt::TestCase(ctx, name)
     , m_vertexShader1(vertexShader1)
     , m_vertexShader2(vertexShader2)
     , m_fragmentShader(fragmentShader)
-
 {
 }
 
@@ -211,17 +203,17 @@ tcu::TestStatus InvarianceTestInstance::iterate(void)
                              .addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2u)
                              .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 2u);
 
-        const VkDescriptorSetAllocateInfo descriptorSetAllocInfo = {
+        const VkDescriptorSetAllocateInfo descriptorSetAllocInfo{
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, *descriptorPool, 1u, &descriptorSetLayout.get()};
 
-        const VkBufferCreateInfo uniformBufferCreateInfo = {
+        const VkBufferCreateInfo uniformBufferCreateInfo{
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType
             nullptr,                              // const void*            pNext
             (VkBufferCreateFlags)0,               // VkBufferCreateFlags    flags
-            sizeof(ColorUniform),                 // VkDeviceSize            size
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,   // VkBufferUsageFlags    usage
-            VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode        sharingMode
-            0u,                                   // uint32_t                queueFamilyIndexCount
+            sizeof(ColorUniform),                 // VkDeviceSize           size
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,   // VkBufferUsageFlags     usage
+            VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode          sharingMode
+            0u,                                   // uint32_t               queueFamilyIndexCount
             nullptr                               // pQueueFamilyIndices
         };
 
@@ -251,7 +243,7 @@ tcu::TestStatus InvarianceTestInstance::iterate(void)
 
     // pick first available depth buffer format
     const std::vector<VkFormat> depthFormats{VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT,
-                                             VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D24_UNORM_S8_UINT};
+                                             VK_FORMAT_X8_D24_UNORM_PACK32};
     VkFormat depthFormat                = VK_FORMAT_UNDEFINED;
     const InstanceInterface &vki        = m_context.getInstanceInterface();
     const VkPhysicalDevice vkPhysDevice = m_context.getPhysicalDevice();
@@ -281,10 +273,9 @@ tcu::TestStatus InvarianceTestInstance::iterate(void)
 
     for (uint32_t passNdx = 0; passNdx < 2; ++passNdx)
     {
-        std::vector<VulkanShader> shaders;
-        shaders.push_back(
-            VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get(vertexShaderNames[passNdx])));
-        shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("fragment")));
+        std::vector<VulkanShader> shaders{
+            {VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get(vertexShaderNames[passNdx])},
+            {VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("fragment")}};
         VulkanProgram vulkanProgram(shaders);
         vulkanProgram.descriptorSetLayout = *descriptorSetLayout;
         vulkanProgram.descriptorSet       = *descriptorSet[passNdx];
@@ -315,10 +306,13 @@ bool InvarianceTestInstance::checkImage(const tcu::ConstPixelBufferAccess &image
     const tcu::IVec4 okColor(0, 255, 0, 255);
     const tcu::RGBA errColor(255, 0, 0, 255);
     bool error = false;
-    tcu::Surface errorMask(image.getWidth(), image.getHeight());
+    auto &log  = m_context.getTestContext().getLog();
 
+    tcu::Surface errorMask(image.getWidth(), image.getHeight());
     tcu::clear(errorMask.getAccess(), okColor);
 
+    // same triangles are drawn twice - first with red color then
+    // with green color; we check if there is no red color
     for (int y = 0; y < m_renderSize; ++y)
         for (int x = 0; x < m_renderSize; ++x)
         {
@@ -334,66 +328,58 @@ bool InvarianceTestInstance::checkImage(const tcu::ConstPixelBufferAccess &image
     // report error
     if (error)
     {
-        m_context.getTestContext().getLog()
-            << tcu::TestLog::Message
+        log << tcu::TestLog::Message
             << "Invalid pixels found (fragments from first render pass found). Variance detected."
-            << tcu::TestLog::EndMessage;
-        m_context.getTestContext().getLog()
-            << tcu::TestLog::ImageSet("Results", "Result verification")
+            << tcu::TestLog::EndMessage << tcu::TestLog::ImageSet("Results", "Result verification")
             << tcu::TestLog::Image("Result", "Result", image)
             << tcu::TestLog::Image("Error mask", "Error mask", errorMask) << tcu::TestLog::EndImageSet;
-
         return false;
     }
-    else
-    {
-        m_context.getTestContext().getLog()
-            << tcu::TestLog::Message << "No variance found." << tcu::TestLog::EndMessage;
-        m_context.getTestContext().getLog()
-            << tcu::TestLog::ImageSet("Results", "Result verification")
-            << tcu::TestLog::Image("Result", "Result", image) << tcu::TestLog::EndImageSet;
 
-        return true;
-    }
+    log << tcu::TestLog::Message << "No variance found." << tcu::TestLog::EndMessage
+        << tcu::TestLog::ImageSet("Results", "Result verification") << tcu::TestLog::Image("Result", "Result", image)
+        << tcu::TestLog::EndImageSet;
+    return true;
 }
 
 } // namespace
 
-tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
+static const struct PrecisionCase
 {
-    de::MovePtr<tcu::TestCaseGroup> invarianceGroup(new tcu::TestCaseGroup(testCtx, "invariance"));
+    glu::Precision prec;
+    const char *name;
 
-    static const struct PrecisionCase
-    {
-        glu::Precision prec;
-        const char *name;
+    // set literals in the glsl to be in the representable range
+    const char *highValue; // !< highValue < maxValue
+    const char *invHighValue;
+    const char *mediumValue; // !< mediumValue^2 < maxValue
+    const char *lowValue;    // !< lowValue^4 < maxValue
+    const char *invlowValue;
+    int loopIterations;
+    int loopPartialIterations;
+    int loopNormalizationExponent;
+    const char *loopNormalizationConstantLiteral;
+    const char *loopMultiplier;
+    const char *sumLoopNormalizationConstantLiteral;
+} precisions[] = {
+    {glu::PRECISION_HIGHP, "highp", "1.0e20", "1.0e-20", "1.0e14", "1.0e9", "1.0e-9", 14, 11, 2, "1.0e4", "1.9",
+     "1.0e3"},
+    {glu::PRECISION_MEDIUMP, "mediump", "1.0e4", "1.0e-4", "1.0e2", "1.0e1", "1.0e-1", 13, 11, 2, "1.0e4", "1.9",
+     "1.0e3"},
+    {glu::PRECISION_LOWP, "lowp", "0.9", "1.1", "1.1", "1.15", "0.87", 6, 2, 0, "2.0", "1.1", "1.0"},
+};
 
-        // set literals in the glsl to be in the representable range
-        const char *highValue; // !< highValue < maxValue
-        const char *invHighValue;
-        const char *mediumValue; // !< mediumValue^2 < maxValue
-        const char *lowValue;    // !< lowValue^4 < maxValue
-        const char *invlowValue;
-        int loopIterations;
-        int loopPartialIterations;
-        int loopNormalizationExponent;
-        const char *loopNormalizationConstantLiteral;
-        const char *loopMultiplier;
-        const char *sumLoopNormalizationConstantLiteral;
-    } precisions[] = {
-        {glu::PRECISION_HIGHP, "highp", "1.0e20", "1.0e-20", "1.0e14", "1.0e9", "1.0e-9", 14, 11, 2, "1.0e4", "1.9",
-         "1.0e3"},
-        {glu::PRECISION_MEDIUMP, "mediump", "1.0e4", "1.0e-4", "1.0e2", "1.0e1", "1.0e-1", 13, 11, 2, "1.0e4", "1.9",
-         "1.0e3"},
-        {glu::PRECISION_LOWP, "lowp", "0.9", "1.1", "1.1", "1.15", "0.87", 6, 2, 0, "2.0", "1.1", "1.0"},
-    };
+void addBasicTests(de::MovePtr<tcu::TestCaseGroup> &mainGroup, const std::string &decorationName)
+{
+    auto &testCtx = mainGroup->getTestContext();
 
-    // gl_Position must always be invariant for comparisons on gl_Position to be valid.
-    static const std::string invariantDeclaration[] = {
-        "invariant gl_Position;", "invariant gl_Position;\nlayout(location = 1) invariant highp out vec4 v_value;"};
-    static const std::string invariantAssignment0[] = {"gl_Position", "v_value"};
-    static const std::string invariantAssignment1[] = {"", "gl_Position = v_value;"};
-    static const std::string fragDeclaration[]      = {"", "layout(location = 1) highp in vec4 v_value;"};
+    // gl_Position must always be invariant/precise for comparisons on gl_Position to be valid.
+    const std::string vertDeclaration[]        = {decorationName + " gl_Position;",
+                                                  decorationName + " gl_Position;\nlayout(location = 1) " + decorationName +
+                                                      " highp out vec4 v_value;"};
+    static const std::string assignment0[]     = {"gl_Position", "v_value"};
+    static const std::string assignment1[]     = {"", "gl_Position = v_value;"};
+    static const std::string fragDeclaration[] = {"", "layout(location = 1) highp in vec4 v_value;"};
 
     static const char *basicFragmentShader =
         "${VERSION}"
@@ -407,7 +393,7 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
         "layout(location = 0) out vec4 fragColor;\n"
         "void main ()\n"
         "{\n"
-        "    float blue = dot(v_unrelated, vec4(1.0, 1.0, 1.0, 1.0));\n"
+        "    float blue = dot(v_unrelated, vec4(1.0));\n"
         "    fragColor = vec4(ucolor.u_color.r, ucolor.u_color.g, blue, ucolor.u_color.a);\n"
         "}\n";
 
@@ -415,14 +401,13 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
     {
         const char *const precisionName = precisions[precNdx].name;
         const glu::Precision precision  = precisions[precNdx].prec;
-        // Invariance tests using the given precision.
+        // Invariance/precise tests using the given precision.
         tcu::TestCaseGroup *const group = new tcu::TestCaseGroup(testCtx, precisionName);
 
         const uint32_t VAR_GROUP_SIZE = 2u;
-        tcu::TestCaseGroup *varGroup[VAR_GROUP_SIZE];
-        // Invariance tests using gl_Position variable
-        varGroup[0] = new tcu::TestCaseGroup(testCtx, "gl_position");
-        varGroup[1] = new tcu::TestCaseGroup(testCtx, "user_defined");
+        // Invariance/precise tests using gl_Position variable
+        tcu::TestCaseGroup *varGroup[VAR_GROUP_SIZE]{new tcu::TestCaseGroup(testCtx, "gl_position"),
+                                                     new tcu::TestCaseGroup(testCtx, "user_defined")};
         FormatArgumentList args[VAR_GROUP_SIZE];
         for (uint32_t groupNdx = 0u; groupNdx < VAR_GROUP_SIZE; ++groupNdx)
         {
@@ -432,9 +417,9 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
                              << FormatArgument("IN", "layout(location = 0) in")
                              << FormatArgument("OUT", "layout(location = 0) out")
                              << FormatArgument("IN_PREC", precisionName)
-                             << FormatArgument("INVARIANT_DECLARATION", invariantDeclaration[groupNdx])
-                             << FormatArgument("INVARIANT_ASSIGN_0", invariantAssignment0[groupNdx])
-                             << FormatArgument("INVARIANT_ASSIGN_1", invariantAssignment1[groupNdx])
+                             << FormatArgument("VERT_DECLARATION", vertDeclaration[groupNdx])
+                             << FormatArgument("ASSIGN_0", assignment0[groupNdx])
+                             << FormatArgument("ASSIGN_1", assignment1[groupNdx])
                              << FormatArgument("FRAG_DECLARATION", fragDeclaration[groupNdx])
                              << FormatArgument("HIGH_VALUE", de::toString(precisions[precNdx].highValue))
                              << FormatArgument("HIGH_VALUE_INV", de::toString(precisions[precNdx].invHighValue))
@@ -466,28 +451,28 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
                     "${VERSION}"
                     "${IN} ${IN_PREC} vec4 a_input;\n"
                     "${OUT} mediump vec4 v_unrelated;\n"
-                    "${INVARIANT_DECLARATION}\n"
+                    "${VERT_DECLARATION}\n"
                     "void main ()\n"
                     "{\n"
                     "    v_unrelated = a_input.xzxz + (${HIGH_VALUE}*a_input.x*a_input.xxxx + "
                     "${HIGH_VALUE}*a_input.y*a_input.yyyy) * (1.08 * a_input.zyzy * a_input.xzxz) * ${HIGH_VALUE_INV} "
                     "* (a_input.z * a_input.zzxz - a_input.z * a_input.zzxz) + (${HIGH_VALUE}*a_input.x*a_input.xxxx + "
                     "${HIGH_VALUE}*a_input.y*a_input.yyyy) / ${HIGH_VALUE};\n"
-                    "    ${INVARIANT_ASSIGN_0} = a_input + (${HIGH_VALUE}*a_input.x*a_input.xxxx + "
+                    "    ${ASSIGN_0} = a_input + (${HIGH_VALUE}*a_input.x*a_input.xxxx + "
                     "${HIGH_VALUE}*a_input.y*a_input.yyyy) * ${HIGH_VALUE_INV};\n"
-                    "    ${INVARIANT_ASSIGN_1}\n"
+                    "    ${ASSIGN_1}\n"
                     "}\n",
                     args[groupNdx]),
                 formatGLSL("${VERSION}"
                            "${IN} ${IN_PREC} vec4 a_input;\n"
                            "${OUT} mediump vec4 v_unrelated;\n"
-                           "${INVARIANT_DECLARATION}\n"
+                           "${VERT_DECLARATION}\n"
                            "void main ()\n"
                            "{\n"
                            "    v_unrelated = vec4(0.0, 0.0, 0.0, 0.0);\n"
-                           "    ${INVARIANT_ASSIGN_0} = a_input + (${HIGH_VALUE}*a_input.x*a_input.xxxx + "
+                           "    ${ASSIGN_0} = a_input + (${HIGH_VALUE}*a_input.x*a_input.xxxx + "
                            "${HIGH_VALUE}*a_input.y*a_input.yyyy) * ${HIGH_VALUE_INV};\n"
-                           "    ${INVARIANT_ASSIGN_1}\n"
+                           "    ${ASSIGN_1}\n"
                            "}\n",
                            args[groupNdx]),
                 formatGLSL(basicFragmentShader, args[groupNdx])));
@@ -501,7 +486,7 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
                 formatGLSL("${VERSION}"
                            "${IN} ${IN_PREC} vec4 a_input;\n"
                            "${OUT} mediump vec4 v_unrelated;\n"
-                           "${INVARIANT_DECLARATION}\n"
+                           "${VERT_DECLARATION}\n"
                            "void main ()\n"
                            "{\n"
                            "    ${IN_PREC} vec4 a = ${HIGH_VALUE} * a_input.zzxx + a_input.xzxy - ${HIGH_VALUE} * "
@@ -513,14 +498,14 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
                            "    ${IN_PREC} vec4 e = ((${LOW_VALUE} * a_input.yzxx) * (1.1*${LOW_VALUE_INV} * "
                            "a_input.yzxx)) * ((${LOW_VALUE_INV} * a_input.xzzy) * (${LOW_VALUE} * a_input.yzzw));\n"
                            "    v_unrelated = a + b + c + d + e;\n"
-                           "    ${INVARIANT_ASSIGN_0} = a_input + fract(c) + e;\n"
-                           "    ${INVARIANT_ASSIGN_1}\n"
+                           "    ${ASSIGN_0} = a_input + fract(c) + e;\n"
+                           "    ${ASSIGN_1}\n"
                            "}\n",
                            args[groupNdx]),
                 formatGLSL("${VERSION}"
                            "${IN} ${IN_PREC} vec4 a_input;\n"
                            "${OUT} mediump vec4 v_unrelated;\n"
-                           "${INVARIANT_DECLARATION}\n"
+                           "${VERT_DECLARATION}\n"
                            "void main ()\n"
                            "{\n"
                            "    ${IN_PREC} vec4 b = ${HIGH_VALUE} * a_input.zzxx;\n"
@@ -528,8 +513,8 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
                            "    ${IN_PREC} vec4 e = ((${LOW_VALUE} * a_input.yzxx) * (1.1*${LOW_VALUE_INV} * "
                            "a_input.yzxx)) * ((${LOW_VALUE_INV} * a_input.xzzy) * (${LOW_VALUE} * a_input.yzzw));\n"
                            "    v_unrelated = vec4(0.0, 0.0, 0.0, 0.0);\n"
-                           "    ${INVARIANT_ASSIGN_0} = a_input + fract(c) + e;\n"
-                           "    ${INVARIANT_ASSIGN_1}\n"
+                           "    ${ASSIGN_0} = a_input + fract(c) + e;\n"
+                           "    ${ASSIGN_1}\n"
                            "}\n",
                            args[groupNdx]),
                 formatGLSL(basicFragmentShader, args[groupNdx])));
@@ -542,7 +527,7 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
                 formatGLSL("${VERSION}"
                            "${IN} ${IN_PREC} vec4 a_input;\n"
                            "${OUT} mediump vec4 v_unrelated;\n"
-                           "${INVARIANT_DECLARATION}\n"
+                           "${VERT_DECLARATION}\n"
                            "void main ()\n"
                            "{\n"
                            "    ${IN_PREC} vec4 a = ${MEDIUM_VALUE} * (a_input.xxxx + a_input.yyyy);\n"
@@ -551,22 +536,22 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
                            "    ${IN_PREC} vec4 c = a * a;\n"
                            "    ${IN_PREC} vec4 d = c / ${MEDIUM_VALUE} / ${MEDIUM_VALUE};\n"
                            "    v_unrelated = a + b + c + d;\n"
-                           "    ${INVARIANT_ASSIGN_0} = a_input + d;\n"
-                           "    ${INVARIANT_ASSIGN_1}\n"
+                           "    ${ASSIGN_0} = a_input + d;\n"
+                           "    ${ASSIGN_1}\n"
                            "}\n",
                            args[groupNdx]),
                 formatGLSL("${VERSION}"
                            "${IN} ${IN_PREC} vec4 a_input;\n"
                            "${OUT} mediump vec4 v_unrelated;\n"
-                           "${INVARIANT_DECLARATION}\n"
+                           "${VERT_DECLARATION}\n"
                            "void main ()\n"
                            "{\n"
                            "    ${IN_PREC} vec4 a = ${MEDIUM_VALUE} * (a_input.xxxx + a_input.yyyy);\n"
                            "    ${IN_PREC} vec4 c = a * a;\n"
                            "    ${IN_PREC} vec4 d = c / ${MEDIUM_VALUE} / ${MEDIUM_VALUE};\n"
                            "    v_unrelated = vec4(0.0, 0.0, 0.0, 0.0);\n"
-                           "    ${INVARIANT_ASSIGN_0} = a_input + d;\n"
-                           "    ${INVARIANT_ASSIGN_1}\n"
+                           "    ${ASSIGN_0} = a_input + d;\n"
+                           "    ${ASSIGN_1}\n"
                            "}\n",
                            args[groupNdx]),
                 formatGLSL(basicFragmentShader, args[groupNdx])));
@@ -578,7 +563,7 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
                                                             formatGLSL("${VERSION}"
                                                                        "${IN} ${IN_PREC} vec4 a_input;\n"
                                                                        "${OUT} mediump vec4 v_unrelated;\n"
-                                                                       "${INVARIANT_DECLARATION}\n"
+                                                                       "${VERT_DECLARATION}\n"
                                                                        "void main ()\n"
                                                                        "{\n"
                                                                        "    ${IN_PREC} float x = a_input.x * 0.2;\n"
@@ -588,14 +573,14 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
                                                                        "    ${IN_PREC} vec4 f = x*a + x*b + x*c;\n"
                                                                        "    v_unrelated = f;\n"
                                                                        "    ${IN_PREC} vec4 g = x * (a + b + c);\n"
-                                                                       "    ${INVARIANT_ASSIGN_0} = a_input + g;\n"
-                                                                       "    ${INVARIANT_ASSIGN_1}\n"
+                                                                       "    ${ASSIGN_0} = a_input + g;\n"
+                                                                       "    ${ASSIGN_1}\n"
                                                                        "}\n",
                                                                        args[groupNdx]),
                                                             formatGLSL("${VERSION}"
                                                                        "${IN} ${IN_PREC} vec4 a_input;\n"
                                                                        "${OUT} mediump vec4 v_unrelated;\n"
-                                                                       "${INVARIANT_DECLARATION}\n"
+                                                                       "${VERT_DECLARATION}\n"
                                                                        "void main ()\n"
                                                                        "{\n"
                                                                        "    ${IN_PREC} float x = a_input.x * 0.2;\n"
@@ -604,8 +589,8 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
                                                                        "    ${IN_PREC} vec4 c = a_input.zxyx * 0.5;\n"
                                                                        "    v_unrelated = vec4(0.0, 0.0, 0.0, 0.0);\n"
                                                                        "    ${IN_PREC} vec4 g = x * (a + b + c);\n"
-                                                                       "    ${INVARIANT_ASSIGN_0} = a_input + g;\n"
-                                                                       "    ${INVARIANT_ASSIGN_1}\n"
+                                                                       "    ${ASSIGN_0} = a_input + g;\n"
+                                                                       "    ${ASSIGN_1}\n"
                                                                        "}\n",
                                                                        args[groupNdx]),
                                                             formatGLSL(basicFragmentShader, args[groupNdx])));
@@ -637,7 +622,7 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
                         "${VERSION}"
                         "${IN} ${IN_PREC} vec4 a_input;\n"
                         "${OUT} ${UNRELATED_PREC} vec4 v_unrelated;\n"
-                        "${INVARIANT_DECLARATION}\n"
+                        "${VERT_DECLARATION}\n"
                         "void main ()\n"
                         "{\n"
                         "    ${UNRELATED_PREC} vec4 unrelated0 = a_input + vec4(0.1, 0.2, 0.3, 0.4);\n"
@@ -648,8 +633,8 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
                         "    ${IN_PREC} vec4 used0 = a_input + vec4(0.1, 0.2, 0.3, 0.4);\n"
                         "    ${IN_PREC} vec4 used1 = vec4(${MULTIPLIER}) * used0.xywz + used0;\n"
                         "    ${IN_PREC} vec4 used2 = refract(used1, used0, distance(used0, used1));\n"
-                        "    ${INVARIANT_ASSIGN_0} = a_input + 0.02 * ${NORMALIZE_USED};\n"
-                        "    ${INVARIANT_ASSIGN_1}\n"
+                        "    ${ASSIGN_0} = a_input + 0.02 * ${NORMALIZE_USED};\n"
+                        "    ${ASSIGN_1}\n"
                         "}\n",
                         FormatArgumentList(args[groupNdx])
                             << FormatArgument("UNRELATED_PREC", unrelatedPrec)
@@ -659,15 +644,15 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
                     formatGLSL("${VERSION}"
                                "${IN} ${IN_PREC} vec4 a_input;\n"
                                "${OUT} ${UNRELATED_PREC} vec4 v_unrelated;\n"
-                               "${INVARIANT_DECLARATION}\n"
+                               "${VERT_DECLARATION}\n"
                                "void main ()\n"
                                "{\n"
                                "    v_unrelated = vec4(0.0, 0.0, 0.0, 0.0);\n"
                                "    ${IN_PREC} vec4 used0 = a_input + vec4(0.1, 0.2, 0.3, 0.4);\n"
                                "    ${IN_PREC} vec4 used1 = vec4(${MULTIPLIER}) * used0.xywz + used0;\n"
                                "    ${IN_PREC} vec4 used2 = refract(used1, used0, distance(used0, used1));\n"
-                               "    ${INVARIANT_ASSIGN_0} = a_input + 0.02 * ${NORMALIZE_USED};\n"
-                               "    ${INVARIANT_ASSIGN_1}\n"
+                               "    ${ASSIGN_0} = a_input + 0.02 * ${NORMALIZE_USED};\n"
+                               "    ${ASSIGN_1}\n"
                                "}\n",
                                FormatArgumentList(args[groupNdx])
                                    << FormatArgument("UNRELATED_PREC", unrelatedPrec)
@@ -702,41 +687,39 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
             // Invariant value set using a loop
             varGroup[groupNdx]->addChild(new InvarianceTest(
                 testCtx, "loop_0",
-                formatGLSL(
-                    "${VERSION}"
-                    "${IN} ${IN_PREC} vec4 a_input;\n"
-                    "${OUT} highp vec4 v_unrelated;\n"
-                    "${INVARIANT_DECLARATION}\n"
-                    "void main ()\n"
-                    "{\n"
-                    "    ${IN_PREC} vec4 value = a_input;\n"
-                    "    v_unrelated = vec4(0.0, 0.0, 0.0, 0.0);\n"
-                    "    for (mediump int i = 0; i < ${LOOP_ITERS}; ++i)\n"
-                    "    {\n"
-                    "        value *= ${LOOP_MULTIPLIER};\n"
-                    "        v_unrelated += value;\n"
-                    "    }\n"
-                    "    ${INVARIANT_ASSIGN_0} = vec4(value.xyz / ${LOOP_NORM_LITERAL} + a_input.xyz * 0.1, 1.0);\n"
-                    "    ${INVARIANT_ASSIGN_1}\n"
-                    "}\n",
-                    args[groupNdx]),
-                formatGLSL(
-                    "${VERSION}"
-                    "${IN} ${IN_PREC} vec4 a_input;\n"
-                    "${OUT} highp vec4 v_unrelated;\n"
-                    "${INVARIANT_DECLARATION}\n"
-                    "void main ()\n"
-                    "{\n"
-                    "    ${IN_PREC} vec4 value = a_input;\n"
-                    "    v_unrelated = vec4(0.0, 0.0, 0.0, 0.0);\n"
-                    "    for (mediump int i = 0; i < ${LOOP_ITERS}; ++i)\n"
-                    "    {\n"
-                    "        value *= ${LOOP_MULTIPLIER};\n"
-                    "    }\n"
-                    "    ${INVARIANT_ASSIGN_0} = vec4(value.xyz / ${LOOP_NORM_LITERAL} + a_input.xyz * 0.1, 1.0);\n"
-                    "    ${INVARIANT_ASSIGN_1}\n"
-                    "}\n",
-                    args[groupNdx]),
+                formatGLSL("${VERSION}"
+                           "${IN} ${IN_PREC} vec4 a_input;\n"
+                           "${OUT} highp vec4 v_unrelated;\n"
+                           "${VERT_DECLARATION}\n"
+                           "void main ()\n"
+                           "{\n"
+                           "    ${IN_PREC} vec4 value = a_input;\n"
+                           "    v_unrelated = vec4(0.0, 0.0, 0.0, 0.0);\n"
+                           "    for (mediump int i = 0; i < ${LOOP_ITERS}; ++i)\n"
+                           "    {\n"
+                           "        value *= ${LOOP_MULTIPLIER};\n"
+                           "        v_unrelated += value;\n"
+                           "    }\n"
+                           "    ${ASSIGN_0} = vec4(value.xyz / ${LOOP_NORM_LITERAL} + a_input.xyz * 0.1, 1.0);\n"
+                           "    ${ASSIGN_1}\n"
+                           "}\n",
+                           args[groupNdx]),
+                formatGLSL("${VERSION}"
+                           "${IN} ${IN_PREC} vec4 a_input;\n"
+                           "${OUT} highp vec4 v_unrelated;\n"
+                           "${VERT_DECLARATION}\n"
+                           "void main ()\n"
+                           "{\n"
+                           "    ${IN_PREC} vec4 value = a_input;\n"
+                           "    v_unrelated = vec4(0.0, 0.0, 0.0, 0.0);\n"
+                           "    for (mediump int i = 0; i < ${LOOP_ITERS}; ++i)\n"
+                           "    {\n"
+                           "        value *= ${LOOP_MULTIPLIER};\n"
+                           "    }\n"
+                           "    ${ASSIGN_0} = vec4(value.xyz / ${LOOP_NORM_LITERAL} + a_input.xyz * 0.1, 1.0);\n"
+                           "    ${ASSIGN_1}\n"
+                           "}\n",
+                           args[groupNdx]),
                 formatGLSL("${VERSION}"
                            "precision mediump float;\n"
                            "layout(location=0) in highp vec4 v_unrelated;\n"
@@ -756,41 +739,39 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
             // Invariant value set using a loop
             varGroup[groupNdx]->addChild(new InvarianceTest(
                 testCtx, "loop_1",
-                formatGLSL(
-                    "${VERSION}"
-                    "${IN} ${IN_PREC} vec4 a_input;\n"
-                    "${OUT} mediump vec4 v_unrelated;\n"
-                    "${INVARIANT_DECLARATION}\n"
-                    "void main ()\n"
-                    "{\n"
-                    "    ${IN_PREC} vec4 value = a_input;\n"
-                    "    for (mediump int i = 0; i < ${LOOP_ITERS}; ++i)\n"
-                    "    {\n"
-                    "        value *= ${LOOP_MULTIPLIER};\n"
-                    "        if (i == ${LOOP_ITERS_PARTIAL})\n"
-                    "            v_unrelated = value;\n"
-                    "    }\n"
-                    "    ${INVARIANT_ASSIGN_0} = vec4(value.xyz / ${LOOP_NORM_LITERAL} + a_input.xyz * 0.1, 1.0);\n"
-                    "    ${INVARIANT_ASSIGN_1}\n"
-                    "}\n",
-                    args[groupNdx]),
-                formatGLSL(
-                    "${VERSION}"
-                    "${IN} ${IN_PREC} vec4 a_input;\n"
-                    "${OUT} mediump vec4 v_unrelated;\n"
-                    "${INVARIANT_DECLARATION}\n"
-                    "void main ()\n"
-                    "{\n"
-                    "    ${IN_PREC} vec4 value = a_input;\n"
-                    "    v_unrelated = vec4(0.0, 0.0, 0.0, 0.0);\n"
-                    "    for (mediump int i = 0; i < ${LOOP_ITERS}; ++i)\n"
-                    "    {\n"
-                    "        value *= ${LOOP_MULTIPLIER};\n"
-                    "    }\n"
-                    "    ${INVARIANT_ASSIGN_0} = vec4(value.xyz / ${LOOP_NORM_LITERAL} + a_input.xyz * 0.1, 1.0);\n"
-                    "    ${INVARIANT_ASSIGN_1}\n"
-                    "}\n",
-                    args[groupNdx]),
+                formatGLSL("${VERSION}"
+                           "${IN} ${IN_PREC} vec4 a_input;\n"
+                           "${OUT} mediump vec4 v_unrelated;\n"
+                           "${VERT_DECLARATION}\n"
+                           "void main ()\n"
+                           "{\n"
+                           "    ${IN_PREC} vec4 value = a_input;\n"
+                           "    for (mediump int i = 0; i < ${LOOP_ITERS}; ++i)\n"
+                           "    {\n"
+                           "        value *= ${LOOP_MULTIPLIER};\n"
+                           "        if (i == ${LOOP_ITERS_PARTIAL})\n"
+                           "            v_unrelated = value;\n"
+                           "    }\n"
+                           "    ${ASSIGN_0} = vec4(value.xyz / ${LOOP_NORM_LITERAL} + a_input.xyz * 0.1, 1.0);\n"
+                           "    ${ASSIGN_1}\n"
+                           "}\n",
+                           args[groupNdx]),
+                formatGLSL("${VERSION}"
+                           "${IN} ${IN_PREC} vec4 a_input;\n"
+                           "${OUT} mediump vec4 v_unrelated;\n"
+                           "${VERT_DECLARATION}\n"
+                           "void main ()\n"
+                           "{\n"
+                           "    ${IN_PREC} vec4 value = a_input;\n"
+                           "    v_unrelated = vec4(0.0, 0.0, 0.0, 0.0);\n"
+                           "    for (mediump int i = 0; i < ${LOOP_ITERS}; ++i)\n"
+                           "    {\n"
+                           "        value *= ${LOOP_MULTIPLIER};\n"
+                           "    }\n"
+                           "    ${ASSIGN_0} = vec4(value.xyz / ${LOOP_NORM_LITERAL} + a_input.xyz * 0.1, 1.0);\n"
+                           "    ${ASSIGN_1}\n"
+                           "}\n",
+                           args[groupNdx]),
                 formatGLSL(basicFragmentShader, args[groupNdx])));
 
             // Invariant value set using a loop
@@ -799,7 +780,7 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
                                    formatGLSL("${VERSION}"
                                               "${IN} ${IN_PREC} vec4 a_input;\n"
                                               "${OUT} mediump vec4 v_unrelated;\n"
-                                              "${INVARIANT_DECLARATION}\n"
+                                              "${VERT_DECLARATION}\n"
                                               "void main ()\n"
                                               "{\n"
                                               "    ${IN_PREC} vec4 value = a_input;\n"
@@ -808,18 +789,18 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
                                               "    {\n"
                                               "        value *= ${LOOP_MULTIPLIER};\n"
                                               "        if (i == ${LOOP_ITERS_PARTIAL})\n"
-                                              "            ${INVARIANT_ASSIGN_0} = a_input + 0.05 * "
+                                              "            ${ASSIGN_0} = a_input + 0.05 * "
                                               "vec4(fract(value.xyz / 1.0e${LOOP_NORM_FRACT_EXP}), 1.0);\n"
                                               "        else\n"
                                               "            v_unrelated = value + a_input;\n"
-                                              "    ${INVARIANT_ASSIGN_1}\n"
+                                              "    ${ASSIGN_1}\n"
                                               "    }\n"
                                               "}\n",
                                               args[groupNdx]),
                                    formatGLSL("${VERSION}"
                                               "${IN} ${IN_PREC} vec4 a_input;\n"
                                               "${OUT} mediump vec4 v_unrelated;\n"
-                                              "${INVARIANT_DECLARATION}\n"
+                                              "${VERT_DECLARATION}\n"
                                               "void main ()\n"
                                               "{\n"
                                               "    ${IN_PREC} vec4 value = a_input;\n"
@@ -828,11 +809,11 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
                                               "    {\n"
                                               "        value *= ${LOOP_MULTIPLIER};\n"
                                               "        if (i == ${LOOP_ITERS_PARTIAL})\n"
-                                              "            ${INVARIANT_ASSIGN_0} = a_input + 0.05 * "
+                                              "            ${ASSIGN_0} = a_input + 0.05 * "
                                               "vec4(fract(value.xyz / 1.0e${LOOP_NORM_FRACT_EXP}), 1.0);\n"
                                               "        else\n"
                                               "            v_unrelated = vec4(0.0, 0.0, 0.0, 0.0);\n"
-                                              "    ${INVARIANT_ASSIGN_1}\n"
+                                              "    ${ASSIGN_1}\n"
                                               "    }\n"
                                               "}\n",
                                               args[groupNdx]),
@@ -844,38 +825,38 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
                                    formatGLSL("${VERSION}"
                                               "${IN} ${IN_PREC} vec4 a_input;\n"
                                               "${OUT} mediump vec4 v_unrelated;\n"
-                                              "${INVARIANT_DECLARATION}\n"
+                                              "${VERT_DECLARATION}\n"
                                               "void main ()\n"
                                               "{\n"
                                               "    ${IN_PREC} vec4 value = a_input;\n"
-                                              "    ${INVARIANT_ASSIGN_0} = vec4(0.0, 0.0, 0.0, 0.0);\n"
+                                              "    ${ASSIGN_0} = vec4(0.0, 0.0, 0.0, 0.0);\n"
                                               "    v_unrelated = vec4(0.0, 0.0, 0.0, 0.0);\n"
                                               "    for (mediump int i = 0; i < ${LOOP_ITERS}; ++i)\n"
                                               "    {\n"
                                               "        value *= ${LOOP_MULTIPLIER};\n"
-                                              "        ${INVARIANT_ASSIGN_0} += vec4(value.xyz / "
+                                              "        ${ASSIGN_0} += vec4(value.xyz / "
                                               "${SUM_LOOP_NORM_LITERAL} + a_input.xyz * 0.1, 1.0);\n"
-                                              "        v_unrelated = ${INVARIANT_ASSIGN_0}.xyzx * a_input;\n"
+                                              "        v_unrelated = ${ASSIGN_0}.xyzx * a_input;\n"
                                               "    }\n"
-                                              "    ${INVARIANT_ASSIGN_1}\n"
+                                              "    ${ASSIGN_1}\n"
                                               "}\n",
                                               args[groupNdx]),
                                    formatGLSL("${VERSION}"
                                               "${IN} ${IN_PREC} vec4 a_input;\n"
                                               "${OUT} mediump vec4 v_unrelated;\n"
-                                              "${INVARIANT_DECLARATION}\n"
+                                              "${VERT_DECLARATION}\n"
                                               "void main ()\n"
                                               "{\n"
                                               "    ${IN_PREC} vec4 value = a_input;\n"
-                                              "    ${INVARIANT_ASSIGN_0} = vec4(0.0, 0.0, 0.0, 0.0);\n"
+                                              "    ${ASSIGN_0} = vec4(0.0, 0.0, 0.0, 0.0);\n"
                                               "    v_unrelated = vec4(0.0, 0.0, 0.0, 0.0);\n"
                                               "    for (mediump int i = 0; i < ${LOOP_ITERS}; ++i)\n"
                                               "    {\n"
                                               "        value *= ${LOOP_MULTIPLIER};\n"
-                                              "        ${INVARIANT_ASSIGN_0} += vec4(value.xyz / "
+                                              "        ${ASSIGN_0} += vec4(value.xyz / "
                                               "${SUM_LOOP_NORM_LITERAL} + a_input.xyz * 0.1, 1.0);\n"
                                               "    }\n"
-                                              "    ${INVARIANT_ASSIGN_1}\n"
+                                              "    ${ASSIGN_1}\n"
                                               "}\n",
                                               args[groupNdx]),
                                    formatGLSL(basicFragmentShader, args[groupNdx])));
@@ -886,7 +867,7 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
                                    formatGLSL("${VERSION}"
                                               "${IN} ${IN_PREC} vec4 a_input;\n"
                                               "${OUT} mediump vec4 v_unrelated;\n"
-                                              "${INVARIANT_DECLARATION}\n"
+                                              "${VERT_DECLARATION}\n"
                                               "void main ()\n"
                                               "{\n"
                                               "    ${IN_PREC} vec4 position = vec4(0.0, 0.0, 0.0, 0.0);\n"
@@ -903,15 +884,15 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
                                               "        value2 *= ${LOOP_MULTIPLIER};\n"
                                               "        position = position*1.3 + a_input.xyzx * value2.xyxw;\n"
                                               "    }\n"
-                                              "    ${INVARIANT_ASSIGN_0} = a_input + 0.05 * vec4(fract(position.xyz / "
+                                              "    ${ASSIGN_0} = a_input + 0.05 * vec4(fract(position.xyz / "
                                               "1.0e${LOOP_NORM_FRACT_EXP}), 1.0);\n"
-                                              "    ${INVARIANT_ASSIGN_1}\n"
+                                              "    ${ASSIGN_1}\n"
                                               "}\n",
                                               args[groupNdx]),
                                    formatGLSL("${VERSION}"
                                               "${IN} ${IN_PREC} vec4 a_input;\n"
                                               "${OUT} mediump vec4 v_unrelated;\n"
-                                              "${INVARIANT_DECLARATION}\n"
+                                              "${VERT_DECLARATION}\n"
                                               "void main ()\n"
                                               "{\n"
                                               "    ${IN_PREC} vec4 position = vec4(0.0, 0.0, 0.0, 0.0);\n"
@@ -922,18 +903,241 @@ tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
                                               "        value2 *= ${LOOP_MULTIPLIER};\n"
                                               "        position = position*1.3 + a_input.xyzx * value2.xyxw;\n"
                                               "    }\n"
-                                              "    ${INVARIANT_ASSIGN_0} = a_input + 0.05 * vec4(fract(position.xyz / "
+                                              "    ${ASSIGN_0} = a_input + 0.05 * vec4(fract(position.xyz / "
                                               "1.0e${LOOP_NORM_FRACT_EXP}), 1.0);\n"
-                                              "    ${INVARIANT_ASSIGN_1}\n"
+                                              "    ${ASSIGN_1}\n"
                                               "}\n",
                                               args[groupNdx]),
                                    formatGLSL(basicFragmentShader, args[groupNdx])));
         }
-        invarianceGroup->addChild(group);
+        mainGroup->addChild(group);
     }
-    return invarianceGroup.release();
 }
 
-} // namespace sr
+void addExtendedInstructionsTests(de::MovePtr<tcu::TestCaseGroup> &mainGroup, const std::string &decorationName)
+{
+    static const char *basicFragmentShader =
+        "#version 450\n"
+        "precision mediump float;\n"
+        "layout(location = 0) in vec4 v_unrelated;\n"
+        "layout(binding = 0) uniform ColorUniform\n"
+        "{\n"
+        "    vec4 u_color;\n"
+        "} ucolor;\n"
+        "layout(location = 0) out vec4 fragColor;\n"
+        "void main ()\n"
+        "{\n"
+        "    float blue = dot(v_unrelated, vec4(1.0));\n"
+        "    fragColor = vec4(ucolor.u_color.r, ucolor.u_color.g, blue, ucolor.u_color.a);\n"
+        "}\n";
 
-} // namespace vkt
+    auto &testCtx = mainGroup->getTestContext();
+    de::MovePtr<tcu::TestCaseGroup> extInstructionGroup(new tcu::TestCaseGroup(testCtx, "extended_instructions"));
+
+    for (const auto &precision : precisions)
+    {
+        const std::string precisionName = precision.name;
+        for (int precisionOther = glu::PRECISION_LOWP; precisionOther != glu::PRECISION_LAST; ++precisionOther)
+        {
+            const std::string unrelatedPrec = glu::getPrecisionName((glu::Precision)precisionOther);
+            auto args                       = FormatArgumentList()
+                        << FormatArgument("IN_PREC", precisionName) << FormatArgument("UNRELATED_PREC", unrelatedPrec)
+                        << FormatArgument("VERT_DECLARATION", decorationName + " gl_Position;")
+                        << FormatArgument("DECORATION", decorationName)
+                        << FormatArgument("HIGH_VALUE", de::toString(precision.highValue))
+                        << FormatArgument("HIGH_VALUE_INV", de::toString(precision.invHighValue))
+                        << FormatArgument("MEDIUM_VALUE", de::toString(precision.mediumValue))
+                        << FormatArgument("LOW_VALUE", de::toString(precision.lowValue))
+                        << FormatArgument("LOW_VALUE_INV", de::toString(precision.invlowValue));
+
+            extInstructionGroup->addChild(new InvarianceTest(
+                testCtx, std::string("smoothstep_") + precisionName + "_" + unrelatedPrec,
+                formatGLSL("#version 450\n"
+                           "layout(location = 0) in ${IN_PREC} vec4 a_input;\n"
+                           "layout(location = 0) out ${UNRELATED_PREC} vec4 v_unrelated;\n"
+                           "${VERT_DECLARATION}\n"
+                           "void main ()\n"
+                           "{\n"
+                           "    ${UNRELATED_PREC} float unrelated0 = a_input.x + 0.1;\n"
+                           "    ${UNRELATED_PREC} float unrelated1 = unrelated0 + a_input.y;\n"
+                           "    ${UNRELATED_PREC} float unrelated2 = smoothstep(unrelated0, unrelated1, a_input.z);\n"
+                           "    v_unrelated = a_input + vec4(vec3(0.02 * unrelated2), 1.0);\n"
+                           "    ${IN_PREC} float used0 = a_input.x + 0.1;\n"
+                           "    ${IN_PREC} float used1 = used0 + a_input.y;\n"
+                           "    ${IN_PREC} ${DECORATION} float used2 = smoothstep(used0, used1, a_input.z);\n"
+                           "    gl_Position = a_input * vec4(vec3(0.3), 1.0) + used2;\n"
+                           "}\n",
+                           FormatArgumentList(args)),
+                formatGLSL("#version 450\n"
+                           "layout(location = 0) in ${IN_PREC} vec4 a_input;\n"
+                           "layout(location = 0) out ${UNRELATED_PREC} vec4 v_unrelated;\n"
+                           "${VERT_DECLARATION}\n"
+                           "void main ()\n"
+                           "{\n"
+                           "    v_unrelated = vec4(0.0);\n"
+                           "    ${IN_PREC} float used0 = a_input.x + 0.1;\n"
+                           "    ${IN_PREC} float used1 = used0 + a_input.y;\n"
+                           "    ${IN_PREC} ${DECORATION} float used2 = smoothstep(used0, used1, a_input.z);\n"
+                           "    gl_Position = a_input * vec4(vec3(0.3), 1.0) + used2;\n"
+                           "}\n",
+                           FormatArgumentList(args)),
+                basicFragmentShader));
+
+            extInstructionGroup->addChild(new InvarianceTest(
+                testCtx, std::string("mix_") + precisionName + "_" + unrelatedPrec,
+                formatGLSL("#version 450\n"
+                           "layout(location = 0) in ${IN_PREC} vec4 a_input;\n"
+                           "layout(location = 0) out ${UNRELATED_PREC} vec4 v_unrelated;\n"
+                           "${VERT_DECLARATION}\n"
+                           "void main ()\n"
+                           "{\n"
+                           "    ${UNRELATED_PREC} float unrelated0 = a_input.x + 0.1;\n"
+                           "    ${UNRELATED_PREC} float unrelated1 = unrelated0 + a_input.y;\n"
+                           "    ${UNRELATED_PREC} float unrelated2 = mix(unrelated0, unrelated1, a_input.z);\n"
+                           "    v_unrelated = a_input + vec4(vec3(0.02 * unrelated2), 1.0);\n"
+                           "    ${IN_PREC} float used0 = a_input.x + 0.1;\n"
+                           "    ${IN_PREC} float used1 = used0 + a_input.y;\n"
+                           "    ${IN_PREC} ${DECORATION} float used2 = mix(used0, used1, a_input.z);\n"
+                           "    gl_Position = a_input * vec4(vec3(0.3), 1.0) + used2;\n"
+                           "}\n",
+                           FormatArgumentList(args)),
+                formatGLSL("#version 450\n"
+                           "layout(location = 0) in ${IN_PREC} vec4 a_input;\n"
+                           "layout(location = 0) out ${UNRELATED_PREC} vec4 v_unrelated;\n"
+                           "${VERT_DECLARATION}\n"
+                           "void main ()\n"
+                           "{\n"
+                           "    v_unrelated = vec4(0.0);\n"
+                           "    ${IN_PREC} float used0 = a_input.x + 0.1;\n"
+                           "    ${IN_PREC} float used1 = used0 + a_input.y;\n"
+                           "    ${IN_PREC} ${DECORATION} float used2 = mix(used0, used1, a_input.z);\n"
+                           "    gl_Position = a_input * vec4(vec3(0.3), 1.0) + used2;\n"
+                           "}\n",
+                           FormatArgumentList(args)),
+                basicFragmentShader));
+
+            extInstructionGroup->addChild(
+                new InvarianceTest(testCtx, std::string("dot_") + precisionName + "_" + unrelatedPrec,
+                                   formatGLSL("#version 450\n"
+                                              "layout(location = 0) in ${IN_PREC} vec4 a_input;\n"
+                                              "layout(location = 0) out ${UNRELATED_PREC} vec4 v_unrelated;\n"
+                                              "${VERT_DECLARATION}\n"
+                                              "void main ()\n"
+                                              "{\n"
+                                              "    ${UNRELATED_PREC} vec2 unrelated0 = a_input.xz + vec2(0.1);\n"
+                                              "    ${UNRELATED_PREC} vec2 unrelated1 = unrelated0 + a_input.yx;\n"
+                                              "    ${UNRELATED_PREC} float unrelated2 = dot(unrelated0, unrelated1);\n"
+                                              "    v_unrelated = a_input + vec4(vec3(0.02 * unrelated2), 1.0);\n"
+                                              "    ${IN_PREC} vec2 used0 = a_input.xz + vec2(0.1);\n"
+                                              "    ${IN_PREC} vec2 used1 = used0 + a_input.yx;\n"
+                                              "    ${IN_PREC} ${DECORATION} float used2 = dot(used0, used1);\n"
+                                              "    gl_Position = a_input * vec4(vec3(0.3), 1.0) + used2;\n"
+                                              "}\n",
+                                              FormatArgumentList(args)),
+                                   formatGLSL("#version 450\n"
+                                              "layout(location = 0) in ${IN_PREC} vec4 a_input;\n"
+                                              "layout(location = 0) out ${UNRELATED_PREC} vec4 v_unrelated;\n"
+                                              "${VERT_DECLARATION}\n"
+                                              "void main ()\n"
+                                              "{\n"
+                                              "    v_unrelated = vec4(0.0);\n"
+                                              "    ${IN_PREC} vec2 used0 = a_input.xz + vec2(0.1);\n"
+                                              "    ${IN_PREC} vec2 used1 = used0 + a_input.yx;\n"
+                                              "    ${IN_PREC} ${DECORATION} float used2 = dot(used0, used1);\n"
+                                              "    gl_Position = a_input * vec4(vec3(0.3), 1.0) + used2;\n"
+                                              "}\n",
+                                              FormatArgumentList(args)),
+                                   basicFragmentShader));
+
+            extInstructionGroup->addChild(
+                new InvarianceTest(testCtx, std::string("cross_") + precisionName + "_" + unrelatedPrec,
+                                   formatGLSL("#version 450\n"
+                                              "layout(location = 0) in ${IN_PREC} vec4 a_input;\n"
+                                              "layout(location = 0) out ${UNRELATED_PREC} vec4 v_unrelated;\n"
+                                              "${VERT_DECLARATION}\n"
+                                              "void main ()\n"
+                                              "{\n"
+                                              "    ${UNRELATED_PREC} vec3 unrelated0 = a_input.xzy + vec3(0.1);\n"
+                                              "    ${UNRELATED_PREC} vec3 unrelated1 = unrelated0 + a_input.yxx;\n"
+                                              "    ${UNRELATED_PREC} vec3 unrelated2 = cross(unrelated0, unrelated1);\n"
+                                              "    v_unrelated = a_input + vec4(vec3(0.02 * unrelated2), 1.0);\n"
+                                              "    ${IN_PREC} vec3 used0 = a_input.xzy + vec3(0.1);\n"
+                                              "    ${IN_PREC} vec3 used1 = used0 + a_input.yxx;\n"
+                                              "    ${IN_PREC} ${DECORATION} vec3 used2 = cross(used0, used1);\n"
+                                              "    gl_Position = a_input * vec4(vec3(0.3), 1.0) + vec4(used2, 0.0);\n"
+                                              "}\n",
+                                              FormatArgumentList(args)),
+                                   formatGLSL("#version 450\n"
+                                              "layout(location = 0) in ${IN_PREC} vec4 a_input;\n"
+                                              "layout(location = 0) out ${UNRELATED_PREC} vec4 v_unrelated;\n"
+                                              "${VERT_DECLARATION}\n"
+                                              "void main ()\n"
+                                              "{\n"
+                                              "    v_unrelated = vec4(0.0);\n"
+                                              "    ${IN_PREC} vec3 used0 = a_input.xzy + vec3(0.1);\n"
+                                              "    ${IN_PREC} vec3 used1 = used0 + a_input.yxx;\n"
+                                              "    ${IN_PREC} ${DECORATION} vec3 used2 = cross(used0, used1);\n"
+                                              "    gl_Position = a_input * vec4(vec3(0.3), 1.0) + vec4(used2, 0.0);\n"
+                                              "}\n",
+                                              FormatArgumentList(args)),
+                                   basicFragmentShader));
+
+            extInstructionGroup->addChild(new InvarianceTest(
+                testCtx, std::string("distance_") + precisionName + "_" + unrelatedPrec,
+                formatGLSL("#version 450\n"
+                           "layout(location = 0) in ${IN_PREC} vec4 a_input;\n"
+                           "layout(location = 0) out ${UNRELATED_PREC} vec4 v_unrelated;\n"
+                           "${VERT_DECLARATION}\n"
+                           "void main ()\n"
+                           "{\n"
+                           "    ${UNRELATED_PREC} vec2 unrelated0 = a_input.xz + vec2(0.1);\n"
+                           "    ${UNRELATED_PREC} vec2 unrelated1 = unrelated0 + a_input.yx;\n"
+                           "    ${UNRELATED_PREC} float unrelated2 = distance(unrelated0, unrelated1);\n"
+                           "    v_unrelated = a_input + vec4(vec3(0.02 * unrelated2), 1.0);\n"
+                           "    ${IN_PREC} vec2 used0 = a_input.xz + vec2(0.1);\n"
+                           "    ${IN_PREC} vec2 used1 = used0 + a_input.yx;\n"
+                           "    ${IN_PREC} ${DECORATION} float used2 = distance(used0, used1);\n"
+                           "    gl_Position = a_input * vec4(vec3(0.3), 1.0) + used2;\n"
+                           "}\n",
+                           FormatArgumentList(args)),
+                formatGLSL("#version 450\n"
+                           "layout(location = 0) in ${IN_PREC} vec4 a_input;\n"
+                           "layout(location = 0) out ${UNRELATED_PREC} vec4 v_unrelated;\n"
+                           "${VERT_DECLARATION}\n"
+                           "void main ()\n"
+                           "{\n"
+                           "    v_unrelated = vec4(0.0);\n"
+                           "    ${IN_PREC} vec2 used0 = a_input.xz + vec2(0.1);\n"
+                           "    ${IN_PREC} vec2 used1 = used0 + a_input.yx;\n"
+                           "    ${IN_PREC} ${DECORATION} float used2 = distance(used0, used1);\n"
+                           "    gl_Position = a_input * vec4(vec3(0.3), 1.0) + used2;\n"
+                           "}\n",
+                           FormatArgumentList(args)),
+                basicFragmentShader));
+        }
+    }
+
+    mainGroup->addChild(extInstructionGroup.release());
+}
+
+tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx)
+{
+    de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, "invariance"));
+
+    addBasicTests(mainGroup, "invariant");
+
+    return mainGroup.release();
+}
+
+tcu::TestCaseGroup *createShaderPreciseTests(tcu::TestContext &testCtx)
+{
+    de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, "precise"));
+
+    // precise keyword also makes invariance guarantees
+    addBasicTests(mainGroup, "precise");
+    addExtendedInstructionsTests(mainGroup, "precise");
+
+    return mainGroup.release();
+}
+
+} // namespace vkt::sr
