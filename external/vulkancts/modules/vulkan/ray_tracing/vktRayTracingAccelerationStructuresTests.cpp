@@ -2209,7 +2209,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const uint3
             case OP_UPDATE_UNINITIALIZED:
             {
                 topLevelAccelerationStructureCopy = makeTopLevelAccelerationStructure();
-                topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator,
+                topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bufferProps,
                                                                      topLevelAccelerationStructure.get(), 0u, 0u);
                 break;
             }

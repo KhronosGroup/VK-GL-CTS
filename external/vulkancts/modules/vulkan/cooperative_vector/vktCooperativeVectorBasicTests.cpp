@@ -377,7 +377,7 @@ void CooperativeVectorTestCase::checkSupport(Context &context) const
     uint32_t propertyCount = 0;
     std::vector<VkCooperativeVectorPropertiesNV> properties;
     context.getInstanceInterface().getPhysicalDeviceCooperativeVectorPropertiesNV(context.getPhysicalDevice(),
-                                                                                  &propertyCount, DE_NULL);
+                                                                                  &propertyCount, nullptr);
     if (propertyCount == 0)
         TCU_THROW(NotSupportedError, "cooperative vectors not supported");
 
@@ -388,7 +388,7 @@ void CooperativeVectorTestCase::checkSupport(Context &context) const
     {
         VkCooperativeVectorPropertiesNV *p = &properties[i];
         p->sType                           = VK_STRUCTURE_TYPE_COOPERATIVE_VECTOR_PROPERTIES_NV;
-        p->pNext                           = DE_NULL;
+        p->pNext                           = nullptr;
     }
 
     context.getInstanceInterface().getPhysicalDeviceCooperativeVectorPropertiesNV(context.getPhysicalDevice(),
@@ -1778,7 +1778,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
 
                 VkConvertCooperativeVectorMatrixInfoNV info = {
                     VK_STRUCTURE_TYPE_CONVERT_COOPERATIVE_VECTOR_MATRIX_INFO_NV, // VkStructureType                       sType;
-                    DE_NULL,           // void const*                           pNext;
+                    nullptr,           // void const*                           pNext;
                     layerSizesRaw[i],  // size_t                                srcSize;
                     {0},               // VkDeviceOrHostAddressConstKHR         srcData;
                     &dstSize,          // size_t*                               pDstSize;
@@ -1824,7 +1824,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
         {
             VkConvertCooperativeVectorMatrixInfoNV info = {
                 VK_STRUCTURE_TYPE_CONVERT_COOPERATIVE_VECTOR_MATRIX_INFO_NV, // VkStructureType                       sType;
-                DE_NULL,           // void const*                           pNext;
+                nullptr,           // void const*                           pNext;
                 0,                 // size_t                                srcSize;
                 {0},               // VkDeviceOrHostAddressConstKHR         srcData;
                 &outerProductSize, // size_t*                               pDstSize;
@@ -1911,7 +1911,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
 
             VkBufferDeviceAddressInfo info{
                 VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType  sType;
-                DE_NULL,                                      // const void*  pNext;
+                nullptr,                                      // const void*  pNext;
                 **buffers[i],                                 // VkBuffer            buffer
             };
             bufferDeviceAddress[i] = vk.getBufferDeviceAddress(device, &info);
@@ -1984,38 +1984,41 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
         // Create ray tracing structures
         de::MovePtr<vk::BottomLevelAccelerationStructure> bottomLevelAccelerationStructure;
         de::MovePtr<vk::TopLevelAccelerationStructure> topLevelAccelerationStructure;
-        VkStridedDeviceAddressRegionKHR raygenShaderBindingTableRegion =
-            makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-        VkStridedDeviceAddressRegionKHR missShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-        VkStridedDeviceAddressRegionKHR hitShaderBindingTableRegion  = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-        VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion =
-            makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+        VkStridedDeviceAddressRegionKHR raygenShaderBindingTableRegion   = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+        VkStridedDeviceAddressRegionKHR missShaderBindingTableRegion     = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+        VkStridedDeviceAddressRegionKHR hitShaderBindingTableRegion      = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+        VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
         if (usesAccelerationStructure(m_data.stage))
         {
             // Create bottom level acceleration structure
             {
+                AccelerationStructBufferProperties bufferProps;
+                bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
                 bottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
 
                 bottomLevelAccelerationStructure->setDefaultGeometryData(getShaderStageFlag(m_data.stage));
 
-                bottomLevelAccelerationStructure->createAndBuild(vk, device, *cmdBuffer, allocator);
+                bottomLevelAccelerationStructure->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
             }
 
             // Create top level acceleration structure
             {
+                AccelerationStructBufferProperties bufferProps;
+                bufferProps.props.residency   = ResourceResidency::TRADITIONAL;
                 topLevelAccelerationStructure = makeTopLevelAccelerationStructure();
 
                 topLevelAccelerationStructure->setInstanceCount(1);
                 topLevelAccelerationStructure->addInstance(
                     de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
 
-                topLevelAccelerationStructure->createAndBuild(vk, device, *cmdBuffer, allocator);
+                topLevelAccelerationStructure->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
             }
 
             VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
                 VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-                DE_NULL,                                                           //  const void* pNext;
+                nullptr,                                                           //  const void* pNext;
                 1,                                       //  uint32_t accelerationStructureCount;
                 topLevelAccelerationStructure->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
             };
@@ -2029,12 +2032,12 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
 
         const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-            DE_NULL,                                       // pNext
+            nullptr,                                       // pNext
             (VkPipelineLayoutCreateFlags)0,
             1,                          // setLayoutCount
             &descriptorSetLayout.get(), // pSetLayouts
             0u,                         // pushConstantRangeCount
-            DE_NULL,                    // pPushConstantRanges
+            nullptr,                    // pPushConstantRanges
         };
 
         Move<VkPipelineLayout> pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo, NULL);
@@ -2130,7 +2133,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
 
                     VkConvertCooperativeVectorMatrixInfoNV info = {
                         VK_STRUCTURE_TYPE_CONVERT_COOPERATIVE_VECTOR_MATRIX_INFO_NV, // VkStructureType                       sType;
-                        DE_NULL,           // void const*                           pNext;
+                        nullptr,           // void const*                           pNext;
                         layerSizesRaw[i],  // size_t                                srcSize;
                         {0},               // VkDeviceOrHostAddressConstKHR         srcData;
                         &dstSize,          // size_t*                               pDstSize;
@@ -2190,7 +2193,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
 
                         VkMemoryBarrier2KHR memoryBarrier = {
                             VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR,                       // sType
-                            DE_NULL,                                                      // pNext
+                            nullptr,                                                      // pNext
                             VK_PIPELINE_STAGE_2_CONVERT_COOPERATIVE_VECTOR_MATRIX_BIT_NV, // srcStageMask
                             VK_ACCESS_2_TRANSFER_WRITE_BIT,                               // srcAccessMask
                             VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,                         // dstStageMask
@@ -2199,14 +2202,14 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
 
                         VkDependencyInfoKHR dependencyInfo{
                             VK_STRUCTURE_TYPE_DEPENDENCY_INFO, // sType
-                            DE_NULL,                           // pNext
+                            nullptr,                           // pNext
                             0,                                 //dependency flags
                             1,                                 //memory barrier count
                             &memoryBarrier,                    //memory barrier
                             0,                                 // bufferMemoryBarrierCount
-                            DE_NULL,                           // pBufferMemoryBarriers
+                            nullptr,                           // pBufferMemoryBarriers
                             0,                                 // imageMemoryBarrierCount
-                            DE_NULL,                           // pImageMemoryBarriers
+                            nullptr,                           // pImageMemoryBarriers
                         };
                         vk.cmdPipelineBarrier2(*cmdBuffer, &dependencyInfo);
                     }
@@ -2230,7 +2233,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
 
             const VkPipelineShaderStageCreateInfo shaderCreateInfo = {
                 VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-                DE_NULL,
+                nullptr,
                 (VkPipelineShaderStageCreateFlags)0,
                 VK_SHADER_STAGE_COMPUTE_BIT, // stage
                 *shader,                     // shader
@@ -2240,7 +2243,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
 
             const VkComputePipelineCreateInfo pipelineCreateInfo = {
                 VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-                DE_NULL,
+                nullptr,
                 0u,               // flags
                 shaderCreateInfo, // cs
                 *pipelineLayout,  // layout
@@ -2397,36 +2400,36 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                 (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags    flags
                 VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint            pipelineBindPoint
                 0u,                              // uint32_t                        inputAttachmentCount
-                DE_NULL,                         // const VkAttachmentReference*    pInputAttachments
+                nullptr,                         // const VkAttachmentReference*    pInputAttachments
                 0u,                              // uint32_t                        colorAttachmentCount
-                DE_NULL,                         // const VkAttachmentReference*    pColorAttachments
-                DE_NULL,                         // const VkAttachmentReference*    pResolveAttachments
-                DE_NULL,                         // const VkAttachmentReference*    pDepthStencilAttachment
+                nullptr,                         // const VkAttachmentReference*    pColorAttachments
+                nullptr,                         // const VkAttachmentReference*    pResolveAttachments
+                nullptr,                         // const VkAttachmentReference*    pDepthStencilAttachment
                 0u,                              // uint32_t                        preserveAttachmentCount
-                DE_NULL                          // const uint32_t*                pPreserveAttachments
+                nullptr                          // const uint32_t*                pPreserveAttachments
             };
 
             const VkRenderPassCreateInfo renderPassParams = {
                 VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureTypei                    sType
-                DE_NULL,                                   // const void*                        pNext
+                nullptr,                                   // const void*                        pNext
                 (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags            flags
                 0u,                                        // uint32_t                            attachmentCount
-                DE_NULL,                                   // const VkAttachmentDescription*    pAttachments
+                nullptr,                                   // const VkAttachmentDescription*    pAttachments
                 1u,                                        // uint32_t                            subpassCount
                 &subpassDesc,                              // const VkSubpassDescription*        pSubpasses
                 0u,                                        // uint32_t                            dependencyCount
-                DE_NULL                                    // const VkSubpassDependency*        pDependencies
+                nullptr                                    // const VkSubpassDependency*        pDependencies
             };
 
             renderPass = createRenderPass(vk, device, &renderPassParams);
 
             const vk::VkFramebufferCreateInfo framebufferParams = {
                 vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // sType
-                DE_NULL,                                       // pNext
+                nullptr,                                       // pNext
                 (vk::VkFramebufferCreateFlags)0,
                 *renderPass,                                      // renderPass
                 0U,                                               // attachmentCount
-                DE_NULL,                                          // pAttachments
+                nullptr,                                          // pAttachments
                 m_data.threadsPerWorkgroupX * m_data.workgroupsX, // width
                 m_data.threadsPerWorkgroupY * m_data.workgroupsY, // height
                 1u,                                               // layers
@@ -2438,17 +2441,17 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
 
             const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
                 VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                                   // const void* pNext;
+                nullptr,                                                   // const void* pNext;
                 (VkPipelineVertexInputStateCreateFlags)0, // VkPipelineVertexInputStateCreateFlags flags;
                 0u,                                       // uint32_t vertexBindingDescriptionCount;
-                DE_NULL, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+                nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
                 0u,      // uint32_t vertexAttributeDescriptionCount;
-                DE_NULL  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+                nullptr  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
             };
 
             const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
                 VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                                     // const void* pNext;
+                nullptr,                                                     // const void* pNext;
                 (VkPipelineInputAssemblyStateCreateFlags)0, // VkPipelineInputAssemblyStateCreateFlags flags;
                 (m_data.stage == STAGE_VERTEX) ? VK_PRIMITIVE_TOPOLOGY_POINT_LIST :
                 (m_data.stage == STAGE_TESS_CTRL || m_data.stage == STAGE_TESS_EVAL) ?
@@ -2459,7 +2462,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
 
             const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
                 VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                                    // const void* pNext;
+                nullptr,                                                    // const void* pNext;
                 (VkPipelineRasterizationStateCreateFlags)0,            // VkPipelineRasterizationStateCreateFlags flags;
                 VK_FALSE,                                              // VkBool32 depthClampEnable;
                 (m_data.stage != STAGE_FRAGMENT) ? VK_TRUE : VK_FALSE, // VkBool32 rasterizerDiscardEnable;
@@ -2475,12 +2478,12 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
 
             const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = {
                 VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType                            sType
-                DE_NULL,               // const void*                                pNext
+                nullptr,               // const void*                                pNext
                 0u,                    // VkPipelineMultisampleStateCreateFlags    flags
                 VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits                    rasterizationSamples
                 VK_FALSE,              // VkBool32                                    sampleShadingEnable
                 1.0f,                  // float                                    minSampleShading
-                DE_NULL,               // const VkSampleMask*                        pSampleMask
+                nullptr,               // const VkSampleMask*                        pSampleMask
                 VK_FALSE,              // VkBool32                                    alphaToCoverageEnable
                 VK_FALSE               // VkBool32                                    alphaToOneEnable
             };
@@ -2492,7 +2495,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
 
             const VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {
                 VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                            sType
-                DE_NULL,                               // const void*                                pNext
+                nullptr,                               // const void*                                pNext
                 (VkPipelineViewportStateCreateFlags)0, // VkPipelineViewportStateCreateFlags        flags
                 1u,                                    // uint32_t                                    viewportCount
                 &viewport,                             // const VkViewport*                        pViewports
@@ -2564,7 +2567,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
 
             const VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {
                 VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                         // const void* pNext;
+                nullptr,                                         // const void* pNext;
                 (VkPipelineCreateFlags)0,                        // VkPipelineCreateFlags flags;
                 static_cast<uint32_t>(stageCreateInfos.size()),  // uint32_t stageCount;
                 de::dataOrNull(stageCreateInfos),                // const VkPipelineShaderStageCreateInfo* pStages;
@@ -2574,9 +2577,9 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                 &viewportStateCreateInfo,      // const VkPipelineViewportStateCreateInfo* pViewportState;
                 &rasterizationStateCreateInfo, // const VkPipelineRasterizationStateCreateInfo* pRasterizationState;
                 &multisampleStateCreateInfo,   // const VkPipelineMultisampleStateCreateInfo* pMultisampleState;
-                DE_NULL,                       // const VkPipelineDepthStencilStateCreateInfo* pDepthStencilState;
-                DE_NULL,                       // const VkPipelineColorBlendStateCreateInfo* pColorBlendState;
-                DE_NULL,                       // const VkPipelineDynamicStateCreateInfo* pDynamicState;
+                nullptr,                       // const VkPipelineDepthStencilStateCreateInfo* pDepthStencilState;
+                nullptr,                       // const VkPipelineColorBlendStateCreateInfo* pColorBlendState;
+                nullptr,                       // const VkPipelineDynamicStateCreateInfo* pDynamicState;
                 pipelineLayout.get(),          // VkPipelineLayout layout;
                 renderPass.get(),              // VkRenderPass renderPass;
                 0u,                            // uint32_t subpass;
@@ -2587,7 +2590,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
             pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo);
         }
 
-        vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, DE_NULL);
+        vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, nullptr);
         vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
 
         if (m_data.stage == STAGE_COMPUTE)
@@ -2606,7 +2609,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
             beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer,
                             makeRect2D(m_data.threadsPerWorkgroupX * m_data.workgroupsX,
                                        m_data.threadsPerWorkgroupY * m_data.workgroupsY),
-                            0, DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
+                            0, nullptr, VK_SUBPASS_CONTENTS_INLINE);
             // Draw a point cloud for vertex shader testing, points forming patches for tessellation testing,
             // and a single quad for fragment shader testing
             if (m_data.stage == STAGE_VERTEX || m_data.stage == STAGE_TESS_CTRL || m_data.stage == STAGE_TESS_EVAL)
@@ -2651,7 +2654,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
 
                     VkConvertCooperativeVectorMatrixInfoNV info = {
                         VK_STRUCTURE_TYPE_CONVERT_COOPERATIVE_VECTOR_MATRIX_INFO_NV, // VkStructureType                       sType;
-                        DE_NULL,                // void const*                           pNext;
+                        nullptr,                // void const*                           pNext;
                         (size_t)bufferSizes[3], // size_t                                srcSize;
                         {0},                    // VkDeviceOrHostAddressConstKHR         srcData;
                         &dstSize,               // size_t*                               pDstSize;

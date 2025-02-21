@@ -594,7 +594,7 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildIndirectTestInsta
         result->setGeometryTransform(geoId, transformMatrix);
     }
 
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return de::SharedPtr<BottomLevelAccelerationStructure>(result.release());
 }
@@ -607,6 +607,9 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildTrianglesIndexed:
     const VkDevice device                                = m_context.getDevice();
     Allocator &allocator                                 = m_context.getDefaultAllocator();
     de::MovePtr<BottomLevelAccelerationStructure> result = makeBottomLevelAccelerationStructure();
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
 
     result->setGeometryCount(m_data.geometriesGroupCount);
     result->setIndirectBuildParameters(indirectBuffer, indirectBufferOffset, indirectBufferStride);
@@ -648,7 +651,7 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildTrianglesIndexed:
         result->setGeometryTransform(geoId, transformMatrix);
     }
 
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return de::SharedPtr<BottomLevelAccelerationStructure>(result.release());
 }
@@ -661,6 +664,9 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildAABBs::initBottom
     const VkDevice device                                = m_context.getDevice();
     Allocator &allocator                                 = m_context.getDefaultAllocator();
     de::MovePtr<BottomLevelAccelerationStructure> result = makeBottomLevelAccelerationStructure();
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
 
     result->setGeometryCount(m_data.geometriesGroupCount);
     result->setIndirectBuildParameters(indirectBuffer, indirectBufferOffset, indirectBufferStride);
@@ -687,7 +693,7 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildAABBs::initBottom
         result->addGeometry(rtGeo);
     }
 
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return de::SharedPtr<BottomLevelAccelerationStructure>(result.release());
 }
@@ -700,6 +706,9 @@ de::SharedPtr<TopLevelAccelerationStructure> RayTracingBuildInstances::initTopAc
     const VkDevice device                             = m_context.getDevice();
     Allocator &allocator                              = m_context.getDefaultAllocator();
     de::MovePtr<TopLevelAccelerationStructure> result = makeTopLevelAccelerationStructure();
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
 
     result->setInstanceBufferAddressOffset(-m_data.instancesOffset);
     result->setInstanceCount(m_data.maxInstancesCount + 1);
@@ -715,7 +724,7 @@ de::SharedPtr<TopLevelAccelerationStructure> RayTracingBuildInstances::initTopAc
     }
     result->setIndirectBuildParameters(indirectBuffer, indirectBufferOffset, indirectBufferStride);
 
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return de::SharedPtr<TopLevelAccelerationStructure>(result.release());
 }
@@ -728,6 +737,9 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildInstances::initBo
     const VkDevice device                                = m_context.getDevice();
     Allocator &allocator                                 = m_context.getDefaultAllocator();
     de::MovePtr<BottomLevelAccelerationStructure> result = makeBottomLevelAccelerationStructure();
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
 
     result->setGeometryCount(m_data.geometriesGroupCount);
     result->setIndirectBuildParameters(indirectBuffer, indirectBufferOffset, indirectBufferStride);
