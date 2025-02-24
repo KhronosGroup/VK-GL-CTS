@@ -4331,13 +4331,15 @@ tcu::TestStatus testImageQueries(Context &context, vk::VkExternalMemoryHandleTyp
 
 struct ImageTestConfig
 {
-    ImageTestConfig(vk::VkExternalMemoryHandleTypeFlagBits externalType_, bool dedicated_)
+    ImageTestConfig(vk::VkExternalMemoryHandleTypeFlagBits externalType_, vk::VkImageTiling tiling_, bool dedicated_)
         : externalType(externalType_)
+        , tiling(tiling_)
         , dedicated(dedicated_)
     {
     }
 
     vk::VkExternalMemoryHandleTypeFlagBits externalType;
+    vk::VkImageTiling tiling;
     bool dedicated;
 };
 
@@ -4361,7 +4363,7 @@ tcu::TestStatus testImageBindExportImportBind(Context &context, const ImageTestC
     const vk::VkFormat format      = vk::VK_FORMAT_R8G8B8A8_UNORM;
     const uint32_t width           = 64u;
     const uint32_t height          = 64u;
-    const vk::VkImageTiling tiling = vk::VK_IMAGE_TILING_OPTIMAL;
+    const vk::VkImageTiling tiling = config.tiling;
 
     checkImageSupport(vki, physicalDevice, config.externalType, 0u, usage, format, tiling, config.dedicated);
 
@@ -4416,7 +4418,7 @@ tcu::TestStatus testImageExportBindImportBind(Context &context, const ImageTestC
     const vk::VkFormat format      = vk::VK_FORMAT_R8G8B8A8_UNORM;
     const uint32_t width           = 64u;
     const uint32_t height          = 64u;
-    const vk::VkImageTiling tiling = vk::VK_IMAGE_TILING_OPTIMAL;
+    const vk::VkImageTiling tiling = config.tiling;
 
     checkImageSupport(vki, physicalDevice, config.externalType, 0u, usage, format, tiling, config.dedicated);
 
@@ -4480,7 +4482,7 @@ tcu::TestStatus testImageExportImportBindBind(Context &context, const ImageTestC
     const vk::VkFormat format      = vk::VK_FORMAT_R8G8B8A8_UNORM;
     const uint32_t width           = 64u;
     const uint32_t height          = 64u;
-    const vk::VkImageTiling tiling = vk::VK_IMAGE_TILING_OPTIMAL;
+    const vk::VkImageTiling tiling = config.tiling;
 
     checkImageSupport(vki, physicalDevice, config.externalType, 0u, usage, format, tiling, config.dedicated);
 
@@ -5475,7 +5477,7 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests(tcu::TestContext &testCtx,
 
         {
             de::MovePtr<tcu::TestCaseGroup> imageGroup(new tcu::TestCaseGroup(testCtx, "image"));
-            const ImageTestConfig imageConfig(externalType, dedicated);
+            const ImageTestConfig imageConfig(externalType, vk::VK_IMAGE_TILING_OPTIMAL, dedicated);
 
             // External image memory info query.
             addFunctionCase(imageGroup.get(), "info", testImageQueries, externalType);
