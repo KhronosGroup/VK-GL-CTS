@@ -4177,6 +4177,20 @@ tcu::TestStatus testBufferExportImportBindBind(Context &context, const BufferTes
     return tcu::TestStatus::pass("Pass");
 }
 
+struct ImageTestConfig
+{
+    ImageTestConfig(vk::VkExternalMemoryHandleTypeFlagBits externalType_, vk::VkImageTiling tiling_, bool dedicated_)
+        : externalType(externalType_)
+        , tiling(tiling_)
+        , dedicated(dedicated_)
+    {
+    }
+
+    vk::VkExternalMemoryHandleTypeFlagBits externalType;
+    vk::VkImageTiling tiling;
+    bool dedicated;
+};
+
 tcu::TestStatus testImageQueries(Context &context, vk::VkExternalMemoryHandleTypeFlagBits externalType)
 {
     const vk::VkImageCreateFlags createFlags[] = {
@@ -4328,20 +4342,6 @@ tcu::TestStatus testImageQueries(Context &context, vk::VkExternalMemoryHandleTyp
 
     return tcu::TestStatus::pass("Pass");
 }
-
-struct ImageTestConfig
-{
-    ImageTestConfig(vk::VkExternalMemoryHandleTypeFlagBits externalType_, vk::VkImageTiling tiling_, bool dedicated_)
-        : externalType(externalType_)
-        , tiling(tiling_)
-        , dedicated(dedicated_)
-    {
-    }
-
-    vk::VkExternalMemoryHandleTypeFlagBits externalType;
-    vk::VkImageTiling tiling;
-    bool dedicated;
-};
 
 tcu::TestStatus testImageBindExportImportBind(Context &context, const ImageTestConfig config)
 {
