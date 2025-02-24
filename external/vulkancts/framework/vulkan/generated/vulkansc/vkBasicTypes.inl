@@ -37,6 +37,7 @@
 #define VK_MAX_SHADER_MODULE_IDENTIFIER_SIZE_EXT						(static_cast<uint32_t>			(32))
 #define VK_MAX_PIPELINE_BINARY_KEY_SIZE_KHR								(static_cast<uint32_t>			(32))
 #define VK_MAX_VIDEO_AV1_REFERENCES_PER_FRAME_KHR						(static_cast<uint32_t>			(7))
+#define VK_MAX_VIDEO_VP9_REFERENCES_PER_FRAME_KHR						(static_cast<uint32_t>			(3))
 #define VK_SHADER_INDEX_UNUSED_AMDX										(static_cast<uint32_t>			((~0U)))
 #define VK_PARTITIONED_ACCELERATION_STRUCTURE_PARTITION_INDEX_GLOBAL_NV	(static_cast<uint32_t>			((~0U)))
 #define VKSC_API_MAX_FRAMEWORK_VERSION	VKSC_API_VERSION_1_0

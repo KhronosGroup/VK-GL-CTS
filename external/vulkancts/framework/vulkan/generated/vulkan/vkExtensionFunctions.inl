@@ -1538,6 +1538,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_video_decode_vp9")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_video_maintenance1")
 	{
 		return;
@@ -1725,6 +1729,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "vulkan_video_codec_h265std_encode")
+	{
+		return;
+	}
+	if (extName == "vulkan_video_codec_vp9std")
+	{
+		return;
+	}
+	if (extName == "vulkan_video_codec_vp9std_decode")
 	{
 		return;
 	}
@@ -3745,6 +3757,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_video_decode_vp9")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_video_maintenance1")
 	{
 		return;
@@ -3962,6 +3978,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "vulkan_video_codec_h265std_encode")
+	{
+		return;
+	}
+	if (extName == "vulkan_video_codec_vp9std")
+	{
+		return;
+	}
+	if (extName == "vulkan_video_codec_vp9std_decode")
 	{
 		return;
 	}
@@ -4343,6 +4367,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_compute_shader_derivatives",
 	"VK_KHR_video_decode_av1",
 	"VK_KHR_video_encode_av1",
+	"VK_KHR_video_decode_vp9",
 	"VK_KHR_video_maintenance1",
 	"VK_NV_per_stage_descriptor_set",
 	"VK_QCOM_image_processing2",

@@ -1891,6 +1891,225 @@ typedef struct StdVideoEncodeAV1ReferenceInfo {
 #endif
 
 #endif
+#ifndef VULKAN_VIDEO_CODEC_VP9STD_H_
+#define VULKAN_VIDEO_CODEC_VP9STD_H_ 1
+
+/*
+** Copyright 2015-2025 The Khronos Group Inc.
+**
+** SPDX-License-Identifier: Apache-2.0
+*/
+
+/*
+** This header is generated from the Khronos Vulkan XML API Registry.
+**
+*/
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+
+// vulkan_video_codec_vp9std is a preprocessor guard. Do not pass it to API calls.
+#define vulkan_video_codec_vp9std 1
+
+#define STD_VIDEO_VP9_NUM_REF_FRAMES      8
+#define STD_VIDEO_VP9_REFS_PER_FRAME      3
+#define STD_VIDEO_VP9_MAX_REF_FRAMES      4
+#define STD_VIDEO_VP9_LOOP_FILTER_ADJUSTMENTS 2
+#define STD_VIDEO_VP9_MAX_SEGMENTS        8
+#define STD_VIDEO_VP9_SEG_LVL_MAX         4
+#define STD_VIDEO_VP9_MAX_SEGMENTATION_TREE_PROBS 7
+#define STD_VIDEO_VP9_MAX_SEGMENTATION_PRED_PROB 3
+
+typedef enum StdVideoVP9Profile {
+    STD_VIDEO_VP9_PROFILE_0 = 0,
+    STD_VIDEO_VP9_PROFILE_1 = 1,
+    STD_VIDEO_VP9_PROFILE_2 = 2,
+    STD_VIDEO_VP9_PROFILE_3 = 3,
+    STD_VIDEO_VP9_PROFILE_INVALID = 0x7FFFFFFF,
+    STD_VIDEO_VP9_PROFILE_MAX_ENUM = 0x7FFFFFFF
+} StdVideoVP9Profile;
+
+typedef enum StdVideoVP9Level {
+    STD_VIDEO_VP9_LEVEL_1_0 = 0,
+    STD_VIDEO_VP9_LEVEL_1_1 = 1,
+    STD_VIDEO_VP9_LEVEL_2_0 = 2,
+    STD_VIDEO_VP9_LEVEL_2_1 = 3,
+    STD_VIDEO_VP9_LEVEL_3_0 = 4,
+    STD_VIDEO_VP9_LEVEL_3_1 = 5,
+    STD_VIDEO_VP9_LEVEL_4_0 = 6,
+    STD_VIDEO_VP9_LEVEL_4_1 = 7,
+    STD_VIDEO_VP9_LEVEL_5_0 = 8,
+    STD_VIDEO_VP9_LEVEL_5_1 = 9,
+    STD_VIDEO_VP9_LEVEL_5_2 = 10,
+    STD_VIDEO_VP9_LEVEL_6_0 = 11,
+    STD_VIDEO_VP9_LEVEL_6_1 = 12,
+    STD_VIDEO_VP9_LEVEL_6_2 = 13,
+    STD_VIDEO_VP9_LEVEL_INVALID = 0x7FFFFFFF,
+    STD_VIDEO_VP9_LEVEL_MAX_ENUM = 0x7FFFFFFF
+} StdVideoVP9Level;
+
+typedef enum StdVideoVP9FrameType {
+    STD_VIDEO_VP9_FRAME_TYPE_KEY = 0,
+    STD_VIDEO_VP9_FRAME_TYPE_NON_KEY = 1,
+    STD_VIDEO_VP9_FRAME_TYPE_INVALID = 0x7FFFFFFF,
+    STD_VIDEO_VP9_FRAME_TYPE_MAX_ENUM = 0x7FFFFFFF
+} StdVideoVP9FrameType;
+
+typedef enum StdVideoVP9ReferenceName {
+    STD_VIDEO_VP9_REFERENCE_NAME_INTRA_FRAME = 0,
+    STD_VIDEO_VP9_REFERENCE_NAME_LAST_FRAME = 1,
+    STD_VIDEO_VP9_REFERENCE_NAME_GOLDEN_FRAME = 2,
+    STD_VIDEO_VP9_REFERENCE_NAME_ALTREF_FRAME = 3,
+    STD_VIDEO_VP9_REFERENCE_NAME_INVALID = 0x7FFFFFFF,
+    STD_VIDEO_VP9_REFERENCE_NAME_MAX_ENUM = 0x7FFFFFFF
+} StdVideoVP9ReferenceName;
+
+typedef enum StdVideoVP9InterpolationFilter {
+    STD_VIDEO_VP9_INTERPOLATION_FILTER_EIGHTTAP = 0,
+    STD_VIDEO_VP9_INTERPOLATION_FILTER_EIGHTTAP_SMOOTH = 1,
+    STD_VIDEO_VP9_INTERPOLATION_FILTER_EIGHTTAP_SHARP = 2,
+    STD_VIDEO_VP9_INTERPOLATION_FILTER_BILINEAR = 3,
+    STD_VIDEO_VP9_INTERPOLATION_FILTER_SWITCHABLE = 4,
+    STD_VIDEO_VP9_INTERPOLATION_FILTER_INVALID = 0x7FFFFFFF,
+    STD_VIDEO_VP9_INTERPOLATION_FILTER_MAX_ENUM = 0x7FFFFFFF
+} StdVideoVP9InterpolationFilter;
+
+typedef enum StdVideoVP9ColorSpace {
+    STD_VIDEO_VP9_COLOR_SPACE_UNKNOWN = 0,
+    STD_VIDEO_VP9_COLOR_SPACE_BT_601 = 1,
+    STD_VIDEO_VP9_COLOR_SPACE_BT_709 = 2,
+    STD_VIDEO_VP9_COLOR_SPACE_SMPTE_170 = 3,
+    STD_VIDEO_VP9_COLOR_SPACE_SMPTE_240 = 4,
+    STD_VIDEO_VP9_COLOR_SPACE_BT_2020 = 5,
+    STD_VIDEO_VP9_COLOR_SPACE_RESERVED = 6,
+    STD_VIDEO_VP9_COLOR_SPACE_RGB = 7,
+    STD_VIDEO_VP9_COLOR_SPACE_INVALID = 0x7FFFFFFF,
+    STD_VIDEO_VP9_COLOR_SPACE_MAX_ENUM = 0x7FFFFFFF
+} StdVideoVP9ColorSpace;
+typedef struct StdVideoVP9ColorConfigFlags {
+    uint32_t    color_range : 1;
+    uint32_t    reserved : 31;
+} StdVideoVP9ColorConfigFlags;
+
+typedef struct StdVideoVP9ColorConfig {
+    StdVideoVP9ColorConfigFlags    flags;
+    uint8_t                        BitDepth;
+    uint8_t                        subsampling_x;
+    uint8_t                        subsampling_y;
+    uint8_t                        reserved1;
+    StdVideoVP9ColorSpace          color_space;
+} StdVideoVP9ColorConfig;
+
+typedef struct StdVideoVP9LoopFilterFlags {
+    uint32_t    loop_filter_delta_enabled : 1;
+    uint32_t    loop_filter_delta_update : 1;
+    uint32_t    reserved : 30;
+} StdVideoVP9LoopFilterFlags;
+
+typedef struct StdVideoVP9LoopFilter {
+    StdVideoVP9LoopFilterFlags    flags;
+    uint8_t                       loop_filter_level;
+    uint8_t                       loop_filter_sharpness;
+    uint8_t                       update_ref_delta;
+    int8_t                        loop_filter_ref_deltas[STD_VIDEO_VP9_MAX_REF_FRAMES];
+    uint8_t                       update_mode_delta;
+    int8_t                        loop_filter_mode_deltas[STD_VIDEO_VP9_LOOP_FILTER_ADJUSTMENTS];
+} StdVideoVP9LoopFilter;
+
+typedef struct StdVideoVP9SegmentationFlags {
+    uint32_t    segmentation_update_map : 1;
+    uint32_t    segmentation_temporal_update : 1;
+    uint32_t    segmentation_update_data : 1;
+    uint32_t    segmentation_abs_or_delta_update : 1;
+    uint32_t    reserved : 28;
+} StdVideoVP9SegmentationFlags;
+
+typedef struct StdVideoVP9Segmentation {
+    StdVideoVP9SegmentationFlags    flags;
+    uint8_t                         segmentation_tree_probs[STD_VIDEO_VP9_MAX_SEGMENTATION_TREE_PROBS];
+    uint8_t                         segmentation_pred_prob[STD_VIDEO_VP9_MAX_SEGMENTATION_PRED_PROB];
+    uint8_t                         FeatureEnabled[STD_VIDEO_VP9_MAX_SEGMENTS];
+    int16_t                         FeatureData[STD_VIDEO_VP9_MAX_SEGMENTS][STD_VIDEO_VP9_SEG_LVL_MAX];
+} StdVideoVP9Segmentation;
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+#ifndef VULKAN_VIDEO_CODEC_VP9STD_DECODE_H_
+#define VULKAN_VIDEO_CODEC_VP9STD_DECODE_H_ 1
+
+/*
+** Copyright 2015-2025 The Khronos Group Inc.
+**
+** SPDX-License-Identifier: Apache-2.0
+*/
+
+/*
+** This header is generated from the Khronos Vulkan XML API Registry.
+**
+*/
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+
+// vulkan_video_codec_vp9std_decode is a preprocessor guard. Do not pass it to API calls.
+#define vulkan_video_codec_vp9std_decode 1
+
+
+#define VK_STD_VULKAN_VIDEO_CODEC_VP9_DECODE_API_VERSION_1_0_0 VK_MAKE_VIDEO_STD_VERSION(1, 0, 0)
+
+#define VK_STD_VULKAN_VIDEO_CODEC_VP9_DECODE_SPEC_VERSION VK_STD_VULKAN_VIDEO_CODEC_VP9_DECODE_API_VERSION_1_0_0
+#define VK_STD_VULKAN_VIDEO_CODEC_VP9_DECODE_EXTENSION_NAME "VK_STD_vulkan_video_codec_vp9_decode"
+typedef struct StdVideoDecodeVP9PictureInfoFlags {
+    uint32_t    error_resilient_mode : 1;
+    uint32_t    intra_only : 1;
+    uint32_t    allow_high_precision_mv : 1;
+    uint32_t    refresh_frame_context : 1;
+    uint32_t    frame_parallel_decoding_mode : 1;
+    uint32_t    segmentation_enabled : 1;
+    uint32_t    show_frame : 1;
+    uint32_t    UsePrevFrameMvs : 1;
+    uint32_t    reserved : 24;
+} StdVideoDecodeVP9PictureInfoFlags;
+
+typedef struct StdVideoDecodeVP9PictureInfo {
+    StdVideoDecodeVP9PictureInfoFlags    flags;
+    StdVideoVP9Profile                   profile;
+    StdVideoVP9FrameType                 frame_type;
+    uint8_t                              frame_context_idx;
+    uint8_t                              reset_frame_context;
+    uint8_t                              refresh_frame_flags;
+    uint8_t                              ref_frame_sign_bias_mask;
+    StdVideoVP9InterpolationFilter       interpolation_filter;
+    uint8_t                              base_q_idx;
+    int8_t                               delta_q_y_dc;
+    int8_t                               delta_q_uv_dc;
+    int8_t                               delta_q_uv_ac;
+    uint8_t                              tile_cols_log2;
+    uint8_t                              tile_rows_log2;
+    uint16_t                             reserved1[3];
+    const StdVideoVP9ColorConfig*        pColorConfig;
+    const StdVideoVP9LoopFilter*         pLoopFilter;
+    const StdVideoVP9Segmentation*       pSegmentation;
+} StdVideoDecodeVP9PictureInfo;
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
 #ifndef VULKAN_CORE_H_
 #define VULKAN_CORE_H_ 1
 
@@ -3024,6 +3243,10 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_QUALITY_LEVEL_PROPERTIES_KHR = 1000513008,
     VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_SESSION_CREATE_INFO_KHR = 1000513009,
     VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_GOP_REMAINING_FRAME_INFO_KHR = 1000513010,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_DECODE_VP9_FEATURES_KHR = 1000514000,
+    VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_CAPABILITIES_KHR = 1000514001,
+    VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_PICTURE_INFO_KHR = 1000514002,
+    VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_PROFILE_INFO_KHR = 1000514003,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR = 1000515000,
     VK_STRUCTURE_TYPE_VIDEO_INLINE_QUERY_INFO_KHR = 1000515001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PER_STAGE_DESCRIPTOR_SET_FEATURES_NV = 1000516000,
@@ -10841,6 +11064,7 @@ typedef enum VkVideoCodecOperationFlagBitsKHR {
     VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR = 0x00000002,
     VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR = 0x00000004,
     VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR = 0x00040000,
+    VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR = 0x00000008,
     VK_VIDEO_CODEC_OPERATION_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
 } VkVideoCodecOperationFlagBitsKHR;
 typedef VkFlags VkVideoCodecOperationFlagsKHR;
@@ -14385,6 +14609,43 @@ typedef struct VkVideoEncodeAV1RateControlLayerInfoKHR {
     VkBool32                        useMaxFrameSize;
     VkVideoEncodeAV1FrameSizeKHR    maxFrameSize;
 } VkVideoEncodeAV1RateControlLayerInfoKHR;
+
+
+
+// VK_KHR_video_decode_vp9 is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_video_decode_vp9 1
+
+
+#define VK_MAX_VIDEO_VP9_REFERENCES_PER_FRAME_KHR 3U
+#define VK_KHR_VIDEO_DECODE_VP9_SPEC_VERSION 1
+#define VK_KHR_VIDEO_DECODE_VP9_EXTENSION_NAME "VK_KHR_video_decode_vp9"
+typedef struct VkPhysicalDeviceVideoDecodeVP9FeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           videoDecodeVP9;
+} VkPhysicalDeviceVideoDecodeVP9FeaturesKHR;
+
+typedef struct VkVideoDecodeVP9ProfileInfoKHR {
+    VkStructureType       sType;
+    const void*           pNext;
+    StdVideoVP9Profile    stdProfile;
+} VkVideoDecodeVP9ProfileInfoKHR;
+
+typedef struct VkVideoDecodeVP9CapabilitiesKHR {
+    VkStructureType     sType;
+    void*               pNext;
+    StdVideoVP9Level    maxLevel;
+} VkVideoDecodeVP9CapabilitiesKHR;
+
+typedef struct VkVideoDecodeVP9PictureInfoKHR {
+    VkStructureType                        sType;
+    const void*                            pNext;
+    const StdVideoDecodeVP9PictureInfo*    pStdPictureInfo;
+    int32_t                                referenceNameSlotIndices[VK_MAX_VIDEO_VP9_REFERENCES_PER_FRAME_KHR];
+    uint32_t                               uncompressedHeaderOffset;
+    uint32_t                               compressedHeaderOffset;
+    uint32_t                               tilesOffset;
+} VkVideoDecodeVP9PictureInfoKHR;
 
 
 

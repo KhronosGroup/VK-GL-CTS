@@ -3436,6 +3436,18 @@ bool check_VK_KHR_video_encode_av1(const tcu::UVec2& v, const ExtPropVect& vIEP,
 	return isSupported(vDEP, "VK_KHR_video_encode_queue");
 }
 
+bool check_VK_KHR_video_decode_vp9(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_video_decode_vp9"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_video_decode_queue
+	return isSupported(vDEP, "VK_KHR_video_decode_queue");
+}
+
 bool check_VK_KHR_video_maintenance1(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -4066,6 +4078,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_KHR_compute_shader_derivatives",						&check_VK_KHR_compute_shader_derivatives),
 	std::make_pair("VK_KHR_video_decode_av1",								&check_VK_KHR_video_decode_av1),
 	std::make_pair("VK_KHR_video_encode_av1",								&check_VK_KHR_video_encode_av1),
+	std::make_pair("VK_KHR_video_decode_vp9",								&check_VK_KHR_video_decode_vp9),
 	std::make_pair("VK_KHR_video_maintenance1",								&check_VK_KHR_video_maintenance1),
 	std::make_pair("VK_NV_per_stage_descriptor_set",						&check_VK_NV_per_stage_descriptor_set),
 	std::make_pair("VK_QCOM_image_processing2",								&check_VK_QCOM_image_processing2),
@@ -4465,6 +4478,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_KHR_compute_shader_derivatives"),
 	std::make_tuple(1, 0, "VK_KHR_video_decode_av1"),
 	std::make_tuple(1, 0, "VK_KHR_video_encode_av1"),
+	std::make_tuple(1, 0, "VK_KHR_video_decode_vp9"),
 	std::make_tuple(1, 0, "VK_KHR_video_maintenance1"),
 	std::make_tuple(1, 1, "VK_NV_per_stage_descriptor_set"),
 	std::make_tuple(1, 0, "VK_QCOM_image_processing2"),

@@ -173,6 +173,7 @@ const vk::VkPhysicalDeviceCooperativeMatrixFeaturesKHR&						Context::getCoopera
 const vk::VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM&			Context::getMultiviewPerViewRenderAreasFeaturesQCOM			(void) const { return m_device->getMultiviewPerViewRenderAreasFeaturesQCOM();		}
 const vk::VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR&				Context::getComputeShaderDerivativesFeatures				(void) const { return m_device->getComputeShaderDerivativesFeatures();				}
 const vk::VkPhysicalDeviceVideoEncodeAV1FeaturesKHR&						Context::getVideoEncodeAV1Features							(void) const { return m_device->getVideoEncodeAV1Features();						}
+const vk::VkPhysicalDeviceVideoDecodeVP9FeaturesKHR&						Context::getVideoDecodeVP9Features							(void) const { return m_device->getVideoDecodeVP9Features();						}
 const vk::VkPhysicalDeviceVideoMaintenance1FeaturesKHR&						Context::getVideoMaintenance1Features						(void) const { return m_device->getVideoMaintenance1Features();						}
 const vk::VkPhysicalDevicePerStageDescriptorSetFeaturesNV&					Context::getPerStageDescriptorSetFeaturesNV					(void) const { return m_device->getPerStageDescriptorSetFeaturesNV();				}
 const vk::VkPhysicalDeviceImageProcessing2FeaturesQCOM&						Context::getImageProcessing2FeaturesQCOM					(void) const { return m_device->getImageProcessing2FeaturesQCOM();					}

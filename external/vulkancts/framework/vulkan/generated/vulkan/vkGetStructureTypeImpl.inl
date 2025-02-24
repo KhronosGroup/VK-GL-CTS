@@ -3333,6 +3333,26 @@ template<> VkStructureType getStructureType<VkVideoDecodeH265DpbSlotInfoKHR> (vo
 	return VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_DPB_SLOT_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceVideoDecodeVP9FeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_DECODE_VP9_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeVP9ProfileInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_PROFILE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeVP9CapabilitiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_CAPABILITIES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeVP9PictureInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_PICTURE_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkVideoDecodeAV1ProfileInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_PROFILE_INFO_KHR;

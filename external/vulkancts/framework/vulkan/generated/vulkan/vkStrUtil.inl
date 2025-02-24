@@ -164,6 +164,12 @@ const char*	getdVideoH265LevelIdcName								(StdVideoH265LevelIdc value);
 const char*	getdVideoH265SliceTypeName								(StdVideoH265SliceType value);
 const char*	getdVideoH265PictureTypeName							(StdVideoH265PictureType value);
 const char*	getdVideoH265AspectRatioIdcName							(StdVideoH265AspectRatioIdc value);
+const char*	getdVideoVP9ProfileName									(StdVideoVP9Profile value);
+const char*	getdVideoVP9LevelName									(StdVideoVP9Level value);
+const char*	getdVideoVP9FrameTypeName								(StdVideoVP9FrameType value);
+const char*	getdVideoVP9ReferenceNameName							(StdVideoVP9ReferenceName value);
+const char*	getdVideoVP9InterpolationFilterName						(StdVideoVP9InterpolationFilter value);
+const char*	getdVideoVP9ColorSpaceName								(StdVideoVP9ColorSpace value);
 const char*	getdVideoAV1ProfileName									(StdVideoAV1Profile value);
 const char*	getdVideoAV1LevelName									(StdVideoAV1Level value);
 const char*	getdVideoAV1FrameTypeName								(StdVideoAV1FrameType value);
@@ -337,6 +343,12 @@ inline tcu::Format::Enum<StdVideoH265LevelIdc>								getdVideoH265LevelIdcStr		
 inline tcu::Format::Enum<StdVideoH265SliceType>								getdVideoH265SliceTypeStr							(StdVideoH265SliceType value)							{ return tcu::Format::Enum<StdVideoH265SliceType>(getdVideoH265SliceTypeName, value);														}
 inline tcu::Format::Enum<StdVideoH265PictureType>							getdVideoH265PictureTypeStr							(StdVideoH265PictureType value)							{ return tcu::Format::Enum<StdVideoH265PictureType>(getdVideoH265PictureTypeName, value);													}
 inline tcu::Format::Enum<StdVideoH265AspectRatioIdc>						getdVideoH265AspectRatioIdcStr						(StdVideoH265AspectRatioIdc value)						{ return tcu::Format::Enum<StdVideoH265AspectRatioIdc>(getdVideoH265AspectRatioIdcName, value);												}
+inline tcu::Format::Enum<StdVideoVP9Profile>								getdVideoVP9ProfileStr								(StdVideoVP9Profile value)								{ return tcu::Format::Enum<StdVideoVP9Profile>(getdVideoVP9ProfileName, value);																}
+inline tcu::Format::Enum<StdVideoVP9Level>									getdVideoVP9LevelStr								(StdVideoVP9Level value)								{ return tcu::Format::Enum<StdVideoVP9Level>(getdVideoVP9LevelName, value);																	}
+inline tcu::Format::Enum<StdVideoVP9FrameType>								getdVideoVP9FrameTypeStr							(StdVideoVP9FrameType value)							{ return tcu::Format::Enum<StdVideoVP9FrameType>(getdVideoVP9FrameTypeName, value);															}
+inline tcu::Format::Enum<StdVideoVP9ReferenceName>							getdVideoVP9ReferenceNameStr						(StdVideoVP9ReferenceName value)						{ return tcu::Format::Enum<StdVideoVP9ReferenceName>(getdVideoVP9ReferenceNameName, value);													}
+inline tcu::Format::Enum<StdVideoVP9InterpolationFilter>					getdVideoVP9InterpolationFilterStr					(StdVideoVP9InterpolationFilter value)					{ return tcu::Format::Enum<StdVideoVP9InterpolationFilter>(getdVideoVP9InterpolationFilterName, value);										}
+inline tcu::Format::Enum<StdVideoVP9ColorSpace>								getdVideoVP9ColorSpaceStr							(StdVideoVP9ColorSpace value)							{ return tcu::Format::Enum<StdVideoVP9ColorSpace>(getdVideoVP9ColorSpaceName, value);														}
 inline tcu::Format::Enum<StdVideoAV1Profile>								getdVideoAV1ProfileStr								(StdVideoAV1Profile value)								{ return tcu::Format::Enum<StdVideoAV1Profile>(getdVideoAV1ProfileName, value);																}
 inline tcu::Format::Enum<StdVideoAV1Level>									getdVideoAV1LevelStr								(StdVideoAV1Level value)								{ return tcu::Format::Enum<StdVideoAV1Level>(getdVideoAV1LevelName, value);																	}
 inline tcu::Format::Enum<StdVideoAV1FrameType>								getdVideoAV1FrameTypeStr							(StdVideoAV1FrameType value)							{ return tcu::Format::Enum<StdVideoAV1FrameType>(getdVideoAV1FrameTypeName, value);															}
@@ -510,6 +522,12 @@ inline std::ostream&	operator<<	(std::ostream& s, StdVideoH265LevelIdc value)			
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoH265SliceType value)								{ return s << getdVideoH265SliceTypeStr(value);								}
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoH265PictureType value)							{ return s << getdVideoH265PictureTypeStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoH265AspectRatioIdc value)							{ return s << getdVideoH265AspectRatioIdcStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoVP9Profile value)									{ return s << getdVideoVP9ProfileStr(value);								}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoVP9Level value)									{ return s << getdVideoVP9LevelStr(value);									}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoVP9FrameType value)								{ return s << getdVideoVP9FrameTypeStr(value);								}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoVP9ReferenceName value)							{ return s << getdVideoVP9ReferenceNameStr(value);							}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoVP9InterpolationFilter value)						{ return s << getdVideoVP9InterpolationFilterStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoVP9ColorSpace value)								{ return s << getdVideoVP9ColorSpaceStr(value);								}
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1Profile value)									{ return s << getdVideoAV1ProfileStr(value);								}
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1Level value)									{ return s << getdVideoAV1LevelStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1FrameType value)								{ return s << getdVideoAV1FrameTypeStr(value);								}
@@ -1539,6 +1557,10 @@ std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH265SessionParamet
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH265InlineSessionParametersInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH265PictureInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH265DpbSlotInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoDecodeVP9FeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeVP9ProfileInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeVP9CapabilitiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeVP9PictureInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeAV1ProfileInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeAV1CapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeAV1SessionParametersCreateInfoKHR& value);
@@ -1954,6 +1976,14 @@ std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265PictureInfoFl
 std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265PictureInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265ReferenceInfoFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265ReferenceInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoVP9ColorConfigFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoVP9ColorConfig& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoVP9LoopFilterFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoVP9LoopFilter& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoVP9SegmentationFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoVP9Segmentation& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoDecodeVP9PictureInfoFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoDecodeVP9PictureInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1ColorConfigFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1ColorConfig& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1TimingInfoFlags& value);

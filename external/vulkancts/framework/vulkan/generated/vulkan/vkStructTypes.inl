@@ -7526,6 +7526,27 @@ struct VkVideoDecodeH265CapabilitiesKHR
 	StdVideoH265LevelIdc	maxLevelIdc;
 };
 
+struct VkPhysicalDeviceVideoDecodeVP9FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		videoDecodeVP9;
+};
+
+struct VkVideoDecodeVP9ProfileInfoKHR
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	StdVideoVP9Profile	stdProfile;
+};
+
+struct VkVideoDecodeVP9CapabilitiesKHR
+{
+	VkStructureType		sType;
+	void*				pNext;
+	StdVideoVP9Level	maxLevel;
+};
+
 struct VkVideoDecodeAV1ProfileInfoKHR
 {
 	VkStructureType		sType;
@@ -11584,6 +11605,104 @@ struct VkVideoEncodeH265DpbSlotInfoKHR
 	VkStructureType							sType;
 	const void*								pNext;
 	const StdVideoEncodeH265ReferenceInfo*	pStdReferenceInfo;
+};
+
+struct StdVideoVP9ColorConfigFlags
+{
+	uint32_t	color_range:1;
+	uint32_t	reserved:31;
+};
+
+struct StdVideoVP9ColorConfig
+{
+	StdVideoVP9ColorConfigFlags	flags;
+	uint8_t						BitDepth;
+	uint8_t						subsampling_x;
+	uint8_t						subsampling_y;
+	uint8_t						reserved1;
+	StdVideoVP9ColorSpace		color_space;
+};
+
+struct StdVideoVP9LoopFilterFlags
+{
+	uint32_t	loop_filter_delta_enabled:1;
+	uint32_t	loop_filter_delta_update:1;
+	uint32_t	reserved:30;
+};
+
+struct StdVideoVP9LoopFilter
+{
+	StdVideoVP9LoopFilterFlags	flags;
+	uint8_t						loop_filter_level;
+	uint8_t						loop_filter_sharpness;
+	uint8_t						update_ref_delta;
+	int8_t						loop_filter_ref_deltas[STD_VIDEO_VP9_MAX_REF_FRAMES];
+	uint8_t						update_mode_delta;
+	int8_t						loop_filter_mode_deltas[STD_VIDEO_VP9_LOOP_FILTER_ADJUSTMENTS];
+};
+
+struct StdVideoVP9SegmentationFlags
+{
+	uint32_t	segmentation_update_map:1;
+	uint32_t	segmentation_temporal_update:1;
+	uint32_t	segmentation_update_data:1;
+	uint32_t	segmentation_abs_or_delta_update:1;
+	uint32_t	reserved:28;
+};
+
+struct StdVideoVP9Segmentation
+{
+	StdVideoVP9SegmentationFlags	flags;
+	uint8_t							segmentation_tree_probs[STD_VIDEO_VP9_MAX_SEGMENTATION_TREE_PROBS];
+	uint8_t							segmentation_pred_prob[STD_VIDEO_VP9_MAX_SEGMENTATION_PRED_PROB];
+	uint8_t							FeatureEnabled[STD_VIDEO_VP9_MAX_SEGMENTS];
+	int16_t							FeatureData[STD_VIDEO_VP9_MAX_SEGMENTS][STD_VIDEO_VP9_SEG_LVL_MAX];
+};
+
+struct StdVideoDecodeVP9PictureInfoFlags
+{
+	uint32_t	error_resilient_mode:1;
+	uint32_t	intra_only:1;
+	uint32_t	allow_high_precision_mv:1;
+	uint32_t	refresh_frame_context:1;
+	uint32_t	frame_parallel_decoding_mode:1;
+	uint32_t	segmentation_enabled:1;
+	uint32_t	show_frame:1;
+	uint32_t	UsePrevFrameMvs:1;
+	uint32_t	reserved:24;
+};
+
+struct StdVideoDecodeVP9PictureInfo
+{
+	StdVideoDecodeVP9PictureInfoFlags	flags;
+	StdVideoVP9Profile					profile;
+	StdVideoVP9FrameType				frame_type;
+	uint8_t								frame_context_idx;
+	uint8_t								reset_frame_context;
+	uint8_t								refresh_frame_flags;
+	uint8_t								ref_frame_sign_bias_mask;
+	StdVideoVP9InterpolationFilter		interpolation_filter;
+	uint8_t								base_q_idx;
+	int8_t								delta_q_y_dc;
+	int8_t								delta_q_uv_dc;
+	int8_t								delta_q_uv_ac;
+	uint8_t								tile_cols_log2;
+	uint8_t								tile_rows_log2;
+	uint16_t							reserved1[3];
+	const StdVideoVP9ColorConfig*		pColorConfig;
+	const StdVideoVP9LoopFilter*		pLoopFilter;
+	const StdVideoVP9Segmentation*		pSegmentation;
+};
+
+struct VkVideoDecodeVP9PictureInfoKHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	const StdVideoDecodeVP9PictureInfo*	pStdPictureInfo;
+	int32_t								referenceNameSlotIndices[VK_MAX_VIDEO_VP9_REFERENCES_PER_FRAME_KHR];
+	uint32_t							uncompressedHeaderOffset;
+	uint32_t							compressedHeaderOffset;
+	uint32_t							tilesOffset;
 };
 
 struct StdVideoAV1ColorConfigFlags

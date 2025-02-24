@@ -635,6 +635,9 @@ void VideoDevice::checkSupport(Context &context, const VideoCodecOperationFlags 
 
     if ((videoCodecOperation & vk::VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR) != 0)
         context.requireDeviceFunctionality("VK_KHR_video_decode_av1");
+
+    if ((videoCodecOperation & vk::VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR) != 0)
+        context.requireDeviceFunctionality("VK_KHR_video_decode_vp9");
 #else
     DE_UNREF(context);
     DE_UNREF(videoCodecOperation);
@@ -712,9 +715,9 @@ bool VideoDevice::isVideoEncodeOperation(const VideoCodecOperationFlags videoCod
 bool VideoDevice::isVideoDecodeOperation(const VideoCodecOperationFlags videoCodecOperationFlags)
 {
 #ifndef CTS_USES_VULKANSC
-    const vk::VkVideoCodecOperationFlagsKHR decodeOperations = vk::VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR |
-                                                               vk::VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR |
-                                                               vk::VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR;
+    const vk::VkVideoCodecOperationFlagsKHR decodeOperations =
+        vk::VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR | vk::VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR |
+        vk::VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR | vk::VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR;
 
     return (decodeOperations & videoCodecOperationFlags) != 0;
 #else

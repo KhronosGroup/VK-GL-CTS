@@ -2412,6 +2412,10 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_QUALITY_LEVEL_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_QUALITY_LEVEL_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_SESSION_CREATE_INFO_KHR:							return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_SESSION_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_GOP_REMAINING_FRAME_INFO_KHR:						return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_GOP_REMAINING_FRAME_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_DECODE_VP9_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_DECODE_VP9_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_CAPABILITIES_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_CAPABILITIES_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_PICTURE_INFO_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_PICTURE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_PROFILE_INFO_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_PROFILE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_INLINE_QUERY_INFO_KHR:											return "VK_STRUCTURE_TYPE_VIDEO_INLINE_QUERY_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PER_STAGE_DESCRIPTOR_SET_FEATURES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PER_STAGE_DESCRIPTOR_SET_FEATURES_NV";
@@ -5087,6 +5091,7 @@ tcu::Format::Bitfield<32> getVideoCodecOperationFlagsKHRStr (VkVideoCodecOperati
 		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR,	"VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR,	"VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR,	"VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR,	"VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR,	"VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR,	"VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR,	"VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR"),
@@ -5832,6 +5837,97 @@ const char* getdVideoH265AspectRatioIdcName (StdVideoH265AspectRatioIdc value)
 		case STD_VIDEO_H265_ASPECT_RATIO_IDC_EXTENDED_SAR:	return "STD_VIDEO_H265_ASPECT_RATIO_IDC_EXTENDED_SAR";
 		case STD_VIDEO_H265_ASPECT_RATIO_IDC_INVALID:		return "STD_VIDEO_H265_ASPECT_RATIO_IDC_INVALID";
 		default:											return nullptr;
+	}
+}
+
+const char* getdVideoVP9ProfileName (StdVideoVP9Profile value)
+{
+	switch (value)
+	{
+		case STD_VIDEO_VP9_PROFILE_0:		return "STD_VIDEO_VP9_PROFILE_0";
+		case STD_VIDEO_VP9_PROFILE_1:		return "STD_VIDEO_VP9_PROFILE_1";
+		case STD_VIDEO_VP9_PROFILE_2:		return "STD_VIDEO_VP9_PROFILE_2";
+		case STD_VIDEO_VP9_PROFILE_3:		return "STD_VIDEO_VP9_PROFILE_3";
+		case STD_VIDEO_VP9_PROFILE_INVALID:	return "STD_VIDEO_VP9_PROFILE_INVALID";
+		default:							return nullptr;
+	}
+}
+
+const char* getdVideoVP9LevelName (StdVideoVP9Level value)
+{
+	switch (value)
+	{
+		case STD_VIDEO_VP9_LEVEL_1_0:		return "STD_VIDEO_VP9_LEVEL_1_0";
+		case STD_VIDEO_VP9_LEVEL_1_1:		return "STD_VIDEO_VP9_LEVEL_1_1";
+		case STD_VIDEO_VP9_LEVEL_2_0:		return "STD_VIDEO_VP9_LEVEL_2_0";
+		case STD_VIDEO_VP9_LEVEL_2_1:		return "STD_VIDEO_VP9_LEVEL_2_1";
+		case STD_VIDEO_VP9_LEVEL_3_0:		return "STD_VIDEO_VP9_LEVEL_3_0";
+		case STD_VIDEO_VP9_LEVEL_3_1:		return "STD_VIDEO_VP9_LEVEL_3_1";
+		case STD_VIDEO_VP9_LEVEL_4_0:		return "STD_VIDEO_VP9_LEVEL_4_0";
+		case STD_VIDEO_VP9_LEVEL_4_1:		return "STD_VIDEO_VP9_LEVEL_4_1";
+		case STD_VIDEO_VP9_LEVEL_5_0:		return "STD_VIDEO_VP9_LEVEL_5_0";
+		case STD_VIDEO_VP9_LEVEL_5_1:		return "STD_VIDEO_VP9_LEVEL_5_1";
+		case STD_VIDEO_VP9_LEVEL_5_2:		return "STD_VIDEO_VP9_LEVEL_5_2";
+		case STD_VIDEO_VP9_LEVEL_6_0:		return "STD_VIDEO_VP9_LEVEL_6_0";
+		case STD_VIDEO_VP9_LEVEL_6_1:		return "STD_VIDEO_VP9_LEVEL_6_1";
+		case STD_VIDEO_VP9_LEVEL_6_2:		return "STD_VIDEO_VP9_LEVEL_6_2";
+		case STD_VIDEO_VP9_LEVEL_INVALID:	return "STD_VIDEO_VP9_LEVEL_INVALID";
+		default:							return nullptr;
+	}
+}
+
+const char* getdVideoVP9FrameTypeName (StdVideoVP9FrameType value)
+{
+	switch (value)
+	{
+		case STD_VIDEO_VP9_FRAME_TYPE_KEY:		return "STD_VIDEO_VP9_FRAME_TYPE_KEY";
+		case STD_VIDEO_VP9_FRAME_TYPE_NON_KEY:	return "STD_VIDEO_VP9_FRAME_TYPE_NON_KEY";
+		case STD_VIDEO_VP9_FRAME_TYPE_INVALID:	return "STD_VIDEO_VP9_FRAME_TYPE_INVALID";
+		default:								return nullptr;
+	}
+}
+
+const char* getdVideoVP9ReferenceNameName (StdVideoVP9ReferenceName value)
+{
+	switch (value)
+	{
+		case STD_VIDEO_VP9_REFERENCE_NAME_INTRA_FRAME:	return "STD_VIDEO_VP9_REFERENCE_NAME_INTRA_FRAME";
+		case STD_VIDEO_VP9_REFERENCE_NAME_LAST_FRAME:	return "STD_VIDEO_VP9_REFERENCE_NAME_LAST_FRAME";
+		case STD_VIDEO_VP9_REFERENCE_NAME_GOLDEN_FRAME:	return "STD_VIDEO_VP9_REFERENCE_NAME_GOLDEN_FRAME";
+		case STD_VIDEO_VP9_REFERENCE_NAME_ALTREF_FRAME:	return "STD_VIDEO_VP9_REFERENCE_NAME_ALTREF_FRAME";
+		case STD_VIDEO_VP9_REFERENCE_NAME_INVALID:		return "STD_VIDEO_VP9_REFERENCE_NAME_INVALID";
+		default:										return nullptr;
+	}
+}
+
+const char* getdVideoVP9InterpolationFilterName (StdVideoVP9InterpolationFilter value)
+{
+	switch (value)
+	{
+		case STD_VIDEO_VP9_INTERPOLATION_FILTER_EIGHTTAP:			return "STD_VIDEO_VP9_INTERPOLATION_FILTER_EIGHTTAP";
+		case STD_VIDEO_VP9_INTERPOLATION_FILTER_EIGHTTAP_SMOOTH:	return "STD_VIDEO_VP9_INTERPOLATION_FILTER_EIGHTTAP_SMOOTH";
+		case STD_VIDEO_VP9_INTERPOLATION_FILTER_EIGHTTAP_SHARP:		return "STD_VIDEO_VP9_INTERPOLATION_FILTER_EIGHTTAP_SHARP";
+		case STD_VIDEO_VP9_INTERPOLATION_FILTER_BILINEAR:			return "STD_VIDEO_VP9_INTERPOLATION_FILTER_BILINEAR";
+		case STD_VIDEO_VP9_INTERPOLATION_FILTER_SWITCHABLE:			return "STD_VIDEO_VP9_INTERPOLATION_FILTER_SWITCHABLE";
+		case STD_VIDEO_VP9_INTERPOLATION_FILTER_INVALID:			return "STD_VIDEO_VP9_INTERPOLATION_FILTER_INVALID";
+		default:													return nullptr;
+	}
+}
+
+const char* getdVideoVP9ColorSpaceName (StdVideoVP9ColorSpace value)
+{
+	switch (value)
+	{
+		case STD_VIDEO_VP9_COLOR_SPACE_UNKNOWN:		return "STD_VIDEO_VP9_COLOR_SPACE_UNKNOWN";
+		case STD_VIDEO_VP9_COLOR_SPACE_BT_601:		return "STD_VIDEO_VP9_COLOR_SPACE_BT_601";
+		case STD_VIDEO_VP9_COLOR_SPACE_BT_709:		return "STD_VIDEO_VP9_COLOR_SPACE_BT_709";
+		case STD_VIDEO_VP9_COLOR_SPACE_SMPTE_170:	return "STD_VIDEO_VP9_COLOR_SPACE_SMPTE_170";
+		case STD_VIDEO_VP9_COLOR_SPACE_SMPTE_240:	return "STD_VIDEO_VP9_COLOR_SPACE_SMPTE_240";
+		case STD_VIDEO_VP9_COLOR_SPACE_BT_2020:		return "STD_VIDEO_VP9_COLOR_SPACE_BT_2020";
+		case STD_VIDEO_VP9_COLOR_SPACE_RESERVED:	return "STD_VIDEO_VP9_COLOR_SPACE_RESERVED";
+		case STD_VIDEO_VP9_COLOR_SPACE_RGB:			return "STD_VIDEO_VP9_COLOR_SPACE_RGB";
+		case STD_VIDEO_VP9_COLOR_SPACE_INVALID:		return "STD_VIDEO_VP9_COLOR_SPACE_INVALID";
+		default:									return nullptr;
 	}
 }
 
@@ -16388,6 +16484,50 @@ std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265DpbSlotInfoKHR
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVideoDecodeVP9FeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceVideoDecodeVP9FeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvideoDecodeVP9 = " << value.videoDecodeVP9 << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeVP9ProfileInfoKHR& value)
+{
+	s << "VkVideoDecodeVP9ProfileInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstdProfile = " << value.stdProfile << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeVP9CapabilitiesKHR& value)
+{
+	s << "VkVideoDecodeVP9CapabilitiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxLevel = " << value.maxLevel << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeVP9PictureInfoKHR& value)
+{
+	s << "VkVideoDecodeVP9PictureInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpStdPictureInfo = " << value.pStdPictureInfo << '\n';
+	s << "\treferenceNameSlotIndices = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.referenceNameSlotIndices), DE_ARRAY_END(value.referenceNameSlotIndices)) << '\n';
+	s << "\tuncompressedHeaderOffset = " << value.uncompressedHeaderOffset << '\n';
+	s << "\tcompressedHeaderOffset = " << value.compressedHeaderOffset << '\n';
+	s << "\ttilesOffset = " << value.tilesOffset << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkVideoDecodeAV1ProfileInfoKHR& value)
 {
 	s << "VkVideoDecodeAV1ProfileInfoKHR = {\n";
@@ -21684,6 +21824,119 @@ std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH265ReferenceInfo
 	s << "\tpic_type = " << value.pic_type << '\n';
 	s << "\tPicOrderCntVal = " << value.PicOrderCntVal << '\n';
 	s << "\tTemporalId = " << value.TemporalId << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoVP9ColorConfigFlags& value)
+{
+	s << "StdVideoVP9ColorConfigFlags = {\n";
+	s << "\tcolor_range = " << value.color_range << '\n';
+	s << "\treserved = " << value.reserved << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoVP9ColorConfig& value)
+{
+	s << "StdVideoVP9ColorConfig = {\n";
+	s << "\tflags = " << value.flags << '\n';
+	s << "\tBitDepth = " << value.BitDepth << '\n';
+	s << "\tsubsampling_x = " << value.subsampling_x << '\n';
+	s << "\tsubsampling_y = " << value.subsampling_y << '\n';
+	s << "\treserved1 = " << value.reserved1 << '\n';
+	s << "\tcolor_space = " << value.color_space << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoVP9LoopFilterFlags& value)
+{
+	s << "StdVideoVP9LoopFilterFlags = {\n";
+	s << "\tloop_filter_delta_enabled = " << value.loop_filter_delta_enabled << '\n';
+	s << "\tloop_filter_delta_update = " << value.loop_filter_delta_update << '\n';
+	s << "\treserved = " << value.reserved << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoVP9LoopFilter& value)
+{
+	s << "StdVideoVP9LoopFilter = {\n";
+	s << "\tflags = " << value.flags << '\n';
+	s << "\tloop_filter_level = " << value.loop_filter_level << '\n';
+	s << "\tloop_filter_sharpness = " << value.loop_filter_sharpness << '\n';
+	s << "\tupdate_ref_delta = " << value.update_ref_delta << '\n';
+	s << "\tloop_filter_ref_deltas = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.loop_filter_ref_deltas), DE_ARRAY_END(value.loop_filter_ref_deltas)) << '\n';
+	s << "\tupdate_mode_delta = " << value.update_mode_delta << '\n';
+	s << "\tloop_filter_mode_deltas = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.loop_filter_mode_deltas), DE_ARRAY_END(value.loop_filter_mode_deltas)) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoVP9SegmentationFlags& value)
+{
+	s << "StdVideoVP9SegmentationFlags = {\n";
+	s << "\tsegmentation_update_map = " << value.segmentation_update_map << '\n';
+	s << "\tsegmentation_temporal_update = " << value.segmentation_temporal_update << '\n';
+	s << "\tsegmentation_update_data = " << value.segmentation_update_data << '\n';
+	s << "\tsegmentation_abs_or_delta_update = " << value.segmentation_abs_or_delta_update << '\n';
+	s << "\treserved = " << value.reserved << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoVP9Segmentation& value)
+{
+	s << "StdVideoVP9Segmentation = {\n";
+	s << "\tflags = " << value.flags << '\n';
+	s << "\tsegmentation_tree_probs = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.segmentation_tree_probs)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.segmentation_tree_probs))) << '\n';
+	s << "\tsegmentation_pred_prob = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.segmentation_pred_prob)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.segmentation_pred_prob))) << '\n';
+	s << "\tFeatureEnabled = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.FeatureEnabled)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.FeatureEnabled))) << '\n';
+	s << "\tFeatureData = " << '\n';
+	for(uint32_t i0 = 0 ; i0 < STD_VIDEO_VP9_MAX_SEGMENTS ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.FeatureData[i0]), DE_ARRAY_END(value.FeatureData[i0])) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoDecodeVP9PictureInfoFlags& value)
+{
+	s << "StdVideoDecodeVP9PictureInfoFlags = {\n";
+	s << "\terror_resilient_mode = " << value.error_resilient_mode << '\n';
+	s << "\tintra_only = " << value.intra_only << '\n';
+	s << "\tallow_high_precision_mv = " << value.allow_high_precision_mv << '\n';
+	s << "\trefresh_frame_context = " << value.refresh_frame_context << '\n';
+	s << "\tframe_parallel_decoding_mode = " << value.frame_parallel_decoding_mode << '\n';
+	s << "\tsegmentation_enabled = " << value.segmentation_enabled << '\n';
+	s << "\tshow_frame = " << value.show_frame << '\n';
+	s << "\tUsePrevFrameMvs = " << value.UsePrevFrameMvs << '\n';
+	s << "\treserved = " << value.reserved << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoDecodeVP9PictureInfo& value)
+{
+	s << "StdVideoDecodeVP9PictureInfo = {\n";
+	s << "\tflags = " << value.flags << '\n';
+	s << "\tprofile = " << value.profile << '\n';
+	s << "\tframe_type = " << value.frame_type << '\n';
+	s << "\tframe_context_idx = " << value.frame_context_idx << '\n';
+	s << "\treset_frame_context = " << value.reset_frame_context << '\n';
+	s << "\trefresh_frame_flags = " << value.refresh_frame_flags << '\n';
+	s << "\tref_frame_sign_bias_mask = " << value.ref_frame_sign_bias_mask << '\n';
+	s << "\tinterpolation_filter = " << value.interpolation_filter << '\n';
+	s << "\tbase_q_idx = " << value.base_q_idx << '\n';
+	s << "\tdelta_q_y_dc = " << value.delta_q_y_dc << '\n';
+	s << "\tdelta_q_uv_dc = " << value.delta_q_uv_dc << '\n';
+	s << "\tdelta_q_uv_ac = " << value.delta_q_uv_ac << '\n';
+	s << "\ttile_cols_log2 = " << value.tile_cols_log2 << '\n';
+	s << "\ttile_rows_log2 = " << value.tile_rows_log2 << '\n';
+	s << "\treserved1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.reserved1), DE_ARRAY_END(value.reserved1)) << '\n';
+	s << "\tpColorConfig = " << value.pColorConfig << '\n';
+	s << "\tpLoopFilter = " << value.pLoopFilter << '\n';
+	s << "\tpSegmentation = " << value.pSegmentation << '\n';
 	s << '}';
 	return s;
 }
