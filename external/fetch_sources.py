@@ -338,7 +338,7 @@ PACKAGES = [
         "767e901c986e9755a17e7939b3046fc2911a4bbd",
         "spirv-headers"),
     GitRepo(
-        None,
+        "https://gitlab.khronos.org/vulkan/vulkan.git",
         "git@gitlab.khronos.org:vulkan/vulkan.git",
         "1bd8e70a639c5ba2e1549c15b9fc2d683daf7091",
         "vulkan-docs"),
@@ -361,9 +361,9 @@ PACKAGES = [
     # integration, this fork contains the small fixes needed for use
     # by the CTS.
     GitRepo(
-        "https://github.com/Igalia/vk_video_samples.git",
-        "git@github.com:Igalia/vk_video_samples.git",
-        "45fe88b456c683120138f052ea81f0a958ff3ec4",
+        "https://gitlab.khronos.org/vulkan/vulkan_video_sample_av1_develop.git",
+        "git@gitlab.khronos.org:vulkan/vulkan_video_sample_av1_develop.git",
+        "e83f26f413fbb075bc90a234263dda5f03348d6d",
         "nvidia-video-samples"),
     # NOTE: Temporary vk_video_samples repo and branch where AV1
     # encoder library is being developed by NVidia.
