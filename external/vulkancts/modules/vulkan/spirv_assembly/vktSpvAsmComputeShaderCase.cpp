@@ -447,11 +447,16 @@ void SpvAsmComputeShaderCase::initPrograms(SourceCollections &programCollection)
     const bool allowSpirv14 = (std::find(extensions.begin(), extensions.end(), "VK_KHR_spirv_1_4") != extensions.end());
     const bool allowMaintenance4 =
         (std::find(extensions.begin(), extensions.end(), "VK_KHR_maintenance4") != extensions.end());
+#ifndef CTS_USES_VULKANSC
+    const bool allowMaintenance9 = m_shaderSpec.requestedVulkanFeatures.maint9Features.maintenance9;
+#else
+    const bool allowMaintenance9 = false;
+#endif // CTS_USES_VULKANSC
 
     programCollection.spirvAsmSources.add("compute")
         << m_shaderSpec.assembly.c_str()
         << SpirVAsmBuildOptions(programCollection.usedVulkanVersion, m_shaderSpec.spirvVersion, allowSpirv14,
-                                allowMaintenance4);
+                                allowMaintenance4, allowMaintenance9);
 }
 
 TestInstance *SpvAsmComputeShaderCase::createInstance(Context &ctx) const

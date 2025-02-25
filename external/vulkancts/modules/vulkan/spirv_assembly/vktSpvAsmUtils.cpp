@@ -212,6 +212,16 @@ bool isFloatControls2FeaturesSupported(const Context &context,
 
     return true;
 }
+
+bool isMaintenance9FeaturesSupported(const Context &context, const vk::VkPhysicalDeviceMaintenance9FeaturesKHR &toCheck,
+                                     const char **missingFeature)
+{
+    const VkPhysicalDeviceMaintenance9FeaturesKHR &extensionFeatures = context.getMaintenance9Features();
+
+    IS_AVAIL("Maintenance9.", maintenance9);
+
+    return true;
+}
 #endif // CTS_USES_VULKANSC
 
 #undef IS_AVAIL
@@ -318,6 +328,9 @@ bool isVulkanFeaturesSupported(const Context &context, const VulkanFeatures &req
         return false;
 
     if (!isFloatControls2FeaturesSupported(context, requested.extFloatControls2, missingFeature))
+        return false;
+
+    if (!isMaintenance9FeaturesSupported(context, requested.maint9Features, missingFeature))
         return false;
 #endif // CTS_USES_VULKANSC
 
