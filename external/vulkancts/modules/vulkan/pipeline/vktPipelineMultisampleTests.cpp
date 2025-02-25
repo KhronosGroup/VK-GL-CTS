@@ -7668,7 +7668,15 @@ tcu::TestCaseGroup *createMultisampleTests(tcu::TestContext &testCtx, PipelineCo
 
     // VK_EXT_sample_locations
     multisampleTests->addChild(
-        createMultisampleSampleLocationsExtTests(testCtx, pipelineConstructionType, useFragmentShadingRate));
+        createMultisampleSampleLocationsTests(testCtx, pipelineConstructionType, useFragmentShadingRate, false));
+
+    if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC ||
+        pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY ||
+        pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV)
+    {
+        multisampleTests->addChild(
+            createMultisampleSampleLocationsTests(testCtx, pipelineConstructionType, useFragmentShadingRate, true));
+    }
 
     // VK_AMD_mixed_attachment
     multisampleTests->addChild(

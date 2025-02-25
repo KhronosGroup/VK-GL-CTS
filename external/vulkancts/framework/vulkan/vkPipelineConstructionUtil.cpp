@@ -1093,6 +1093,23 @@ void recordImageBarrier(const DeviceInterface &vk, const VkCommandBuffer command
     }
 }
 
+bool isDepthStencilAttachmentLayout(VkImageLayout layout)
+{
+    switch (layout)
+    {
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+    case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL:
+    case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL:
+    case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL:
+    case VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL:
+        return true;
+    default:
+        break;
+    }
+
+    return false;
+}
+
 } // anonymous namespace
 
 void RenderPassWrapper::transitionLayouts(const DeviceInterface &vk, const VkCommandBuffer commandBuffer,
@@ -1135,12 +1152,21 @@ void RenderPassWrapper::transitionLayouts(const DeviceInterface &vk, const VkCom
                     const auto subresourceRange = makeImageSubresourceRange(
                         vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, VK_REMAINING_MIP_LEVELS, 0u, VK_REMAINING_ARRAY_LAYERS);
 
-                    const VkPipelineStageFlags2 srcStageMask =
-                        (vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | externalStageFlags);
-                    const VkAccessFlags2 srcAccessMask       = externalAccessFlags;
+                    VkPipelineStageFlags2 srcStageMask = (vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | externalStageFlags);
+                    VkAccessFlags2 srcAccessMask       = externalAccessFlags;
+                    const VkImageLayout newLayout      = subpass.m_colorAttachments[j].attachmentInfo.imageLayout;
+
+                    if (m_layouts[i] == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && m_layouts[i] != newLayout)
+                    {
+                        // It may have been used as a color attachment already, so we need to synchronize writes before
+                        // transitioning the layout.
+                        srcStageMask |= vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                        srcAccessMask |= vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                    }
+
                     const VkPipelineStageFlags2 dstStageMask = vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                    const VkAccessFlags2 dstAccessMask       = vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-                    const VkImageLayout newLayout            = subpass.m_colorAttachments[j].attachmentInfo.imageLayout;
+                    const VkAccessFlags2 dstAccessMask =
+                        (vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT);
 
                     recordImageBarrier(vk, commandBuffer, sync2, srcStageMask, srcAccessMask, dstStageMask,
                                        dstAccessMask, m_layouts[i], newLayout, m_images[i], subresourceRange);
@@ -1163,13 +1189,22 @@ void RenderPassWrapper::transitionLayouts(const DeviceInterface &vk, const VkCom
                 const auto subresourceRange =
                     makeImageSubresourceRange(aspect, 0u, VK_REMAINING_MIP_LEVELS, 0u, VK_REMAINING_ARRAY_LAYERS);
 
-                const VkPipelineStageFlags2 srcStageMask = (vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | externalStageFlags);
-                const VkAccessFlags2 srcAccessMask       = externalAccessFlags;
+                VkPipelineStageFlags2 srcStageMask = (vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | externalStageFlags);
+                VkAccessFlags2 srcAccessMask       = externalAccessFlags;
+                const VkImageLayout newLayout      = subpass.m_depthStencilAttachment.attachmentInfo.imageLayout;
+
+                if (isDepthStencilAttachmentLayout(m_layouts[i]) && m_layouts[i] != newLayout)
+                {
+                    // It may have been used as a depth/stencil attachment already, so we need to synchronize writes.
+                    srcStageMask |= (vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                                     vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+                    srcAccessMask |= vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                }
+
                 const VkPipelineStageFlags2 dstStageMask =
                     (vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
                 const VkAccessFlags2 dstAccessMask = (vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
                                                       vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
-                const VkImageLayout newLayout      = subpass.m_depthStencilAttachment.attachmentInfo.imageLayout;
 
                 recordImageBarrier(vk, commandBuffer, sync2, srcStageMask, srcAccessMask, dstStageMask, dstAccessMask,
                                    m_layouts[i], newLayout, m_images[i], subresourceRange);
