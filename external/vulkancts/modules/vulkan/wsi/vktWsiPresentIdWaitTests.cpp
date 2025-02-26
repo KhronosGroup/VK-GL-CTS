@@ -89,10 +89,31 @@ TimeoutRange calcTimeoutRange(uint64_t timeout)
     return TimeoutRange(static_cast<int64_t>(timeoutMin), static_cast<int64_t>(timeoutMax));
 }
 
+bool surfaceSupportsPresentIdWait2(const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
+                                   vk::VkSurfaceKHR surface)
+{
+    vk::VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo          = vk::initVulkanStructure();
+    vk::VkSurfaceCapabilities2KHR capabilities               = vk::initVulkanStructure();
+    vk::VkSurfaceCapabilitiesPresentId2KHR pi2Capabilities   = vk::initVulkanStructure();
+    vk::VkSurfaceCapabilitiesPresentWait2KHR pw2Capabilities = vk::initVulkanStructure();
+
+    const auto addCapabilities = vk::makeStructChainAdder(&capabilities);
+    addCapabilities(&pi2Capabilities);
+    addCapabilities(&pw2Capabilities);
+
+    surfaceInfo.surface = surface;
+    VK_CHECK(vki.getPhysicalDeviceSurfaceCapabilities2KHR(physicalDevice, &surfaceInfo, &capabilities));
+
+    return pi2Capabilities.presentId2Supported && pw2Capabilities.presentWait2Supported;
+}
+
 class PresentIdWaitInstance : public TestInstance
 {
 public:
-    PresentIdWaitInstance(Context &context, vk::wsi::Type wsiType) : TestInstance(context), m_wsiType(wsiType)
+    PresentIdWaitInstance(Context &context, int ver, vk::wsi::Type wsiType)
+        : TestInstance(context)
+        , m_wsiType(wsiType)
+        , m_ver(ver)
     {
     }
     virtual ~PresentIdWaitInstance(void)
@@ -122,6 +143,7 @@ public:
 
 protected:
     vk::wsi::Type m_wsiType;
+    int m_ver;
 };
 
 vector<const char *> getRequiredWsiInstanceExtensions(vk::wsi::Type wsiType)
@@ -256,7 +278,8 @@ struct DeviceHelper
     }
 };
 
-vk::VkSwapchainCreateInfoKHR getBasicSwapchainParameters(vk::wsi::Type wsiType, const vk::InstanceInterface &vki,
+vk::VkSwapchainCreateInfoKHR getBasicSwapchainParameters(vk::wsi::Type wsiType, const int ver,
+                                                         const vk::InstanceInterface &vki,
                                                          vk::VkPhysicalDevice physicalDevice, vk::VkSurfaceKHR surface,
                                                          const tcu::UVec2 &desiredSize, uint32_t desiredImageCount)
 {
@@ -269,10 +292,16 @@ vk::VkSwapchainCreateInfoKHR getBasicSwapchainParameters(vk::wsi::Type wsiType, 
         (capabilities.supportedTransforms & vk::VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) ?
             vk::VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR :
             capabilities.currentTransform;
+    vk::VkSwapchainCreateFlagsKHR flags;
+    if (ver == 1u)
+        flags = (vk::VkSwapchainCreateFlagsKHR)0;
+    else
+        flags = vk::VK_SWAPCHAIN_CREATE_PRESENT_ID_2_BIT_KHR | vk::VK_SWAPCHAIN_CREATE_PRESENT_WAIT_2_BIT_KHR;
+
     const vk::VkSwapchainCreateInfoKHR parameters = {
         vk::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
         nullptr,
-        (vk::VkSwapchainCreateFlagsKHR)0,
+        flags,
         surface,
         de::clamp(desiredImageCount, capabilities.minImageCount,
                   capabilities.maxImageCount > 0 ? capabilities.maxImageCount :
@@ -390,6 +419,8 @@ tcu::TestStatus PresentIdWaitInstance::iterate(void)
 {
     const tcu::UVec2 desiredSize(256, 256);
     vector<const char *> extensions;
+    if (m_ver == 2)
+        extensions.push_back("VK_KHR_get_surface_capabilities2");
     const InstanceHelper instHelper(m_context, m_wsiType, extensions);
     const NativeObjects native(m_context, instHelper.supportedExtensions, m_wsiType, 1u, tcu::just(desiredSize));
     const vk::Unique<vk::VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, m_wsiType,
@@ -397,12 +428,14 @@ tcu::TestStatus PresentIdWaitInstance::iterate(void)
                                                              m_context.getTestContext().getCommandLine()));
     const DeviceHelper devHelper(m_context, instHelper.vki, instHelper.instance,
                                  vector<vk::VkSurfaceKHR>(1u, surface.get()), getRequiredDeviceExts());
+    if (m_ver == 2 && !surfaceSupportsPresentIdWait2(instHelper.vki, devHelper.physicalDevice, surface.get()))
+        TCU_THROW(NotSupportedError, "PresentId2/PresentWait2 not supported for surface");
     const vk::DeviceInterface &vkd = devHelper.vkd;
     const vk::VkDevice device      = *devHelper.device;
     vk::SimpleAllocator allocator(vkd, device,
                                   getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
-    const vk::VkSwapchainCreateInfoKHR swapchainInfo =
-        getBasicSwapchainParameters(m_wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
+    const vk::VkSwapchainCreateInfoKHR swapchainInfo = getBasicSwapchainParameters(
+        m_wsiType, m_ver, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
     const vk::Unique<vk::VkSwapchainKHR> swapchain(vk::createSwapchainKHR(vkd, device, &swapchainInfo));
     const vector<vk::VkImage> swapchainImages = vk::wsi::getSwapchainImages(vkd, device, *swapchain);
     const vk::Unique<vk::VkCommandPool> commandPool(createCommandPool(
@@ -451,8 +484,9 @@ struct PresentAndWaitOps
 class PresentIdWaitSimpleInstance : public PresentIdWaitInstance
 {
 public:
-    PresentIdWaitSimpleInstance(Context &context, vk::wsi::Type wsiType, const vector<PresentAndWaitOps> &sequence)
-        : PresentIdWaitInstance(context, wsiType)
+    PresentIdWaitSimpleInstance(Context &context, int ver, vk::wsi::Type wsiType,
+                                const vector<PresentAndWaitOps> &sequence)
+        : PresentIdWaitInstance(context, ver, wsiType)
         , m_sequence(sequence)
     {
     }
@@ -543,12 +577,21 @@ tcu::TestStatus PresentIdWaitSimpleInstance::run(const vk::DeviceInterface &vkd,
             presentInfo.pSwapchains        = &swapchain;
             presentInfo.pImageIndices      = &imageNdx;
 
-            vk::VkPresentIdKHR presentId = vk::initVulkanStructure();
-            if (presentOp.presentId)
+            vk::VkPresentIdKHR presentId;
+            vk::VkPresentId2KHR presentId2;
+            if (m_ver == 1u && presentOp.presentId)
             {
+                presentId                = vk::initVulkanStructure();
                 presentId.swapchainCount = 1u;
                 presentId.pPresentIds    = &presentOp.presentId.get();
                 addPresent(&presentId);
+            }
+            else if (m_ver == 2u && presentOp.presentId)
+            {
+                presentId2                = vk::initVulkanStructure();
+                presentId2.swapchainCount = 1u;
+                presentId2.pPresentIds    = &presentOp.presentId.get();
+                addPresent(&presentId2);
             }
 
             vk::VkResult result = vkd.queuePresentKHR(queue, &presentInfo);
@@ -573,10 +616,19 @@ tcu::TestStatus PresentIdWaitSimpleInstance::run(const vk::DeviceInterface &vkd,
         // Wait operations.
         for (const auto &waitOp : step.waitOps)
         {
-            auto before             = std::chrono::high_resolution_clock::now();
-            vk::VkResult waitResult = vkd.waitForPresentKHR(device, swapchain, waitOp.presentId, waitOp.timeout);
-            auto after              = std::chrono::high_resolution_clock::now();
-            auto diff               = std::chrono::nanoseconds(after - before).count();
+            auto before = std::chrono::high_resolution_clock::now();
+            vk::VkResult waitResult;
+            if (m_ver == 1)
+                waitResult = vkd.waitForPresentKHR(device, swapchain, waitOp.presentId, waitOp.timeout);
+            else
+            {
+                vk::VkPresentWait2InfoKHR waitInfo = vk::initVulkanStructure();
+                waitInfo.presentId                 = waitOp.presentId;
+                waitInfo.timeout                   = waitOp.timeout;
+                waitResult                         = vkd.waitForPresent2KHR(device, swapchain, &waitInfo);
+            }
+            auto after = std::chrono::high_resolution_clock::now();
+            auto diff  = std::chrono::nanoseconds(after - before).count();
 
             if (waitOp.timeoutExpected)
             {
@@ -617,7 +669,7 @@ class PresentIdInstance : public PresentIdWaitSimpleInstance
 {
 public:
     PresentIdInstance(Context &context, vk::wsi::Type wsiType, const vector<PresentAndWaitOps> &sequence)
-        : PresentIdWaitSimpleInstance(context, wsiType, sequence)
+        : PresentIdWaitSimpleInstance(context, 1, wsiType, sequence)
     {
     }
 
@@ -638,12 +690,44 @@ public:
     }
 };
 
+class PresentId2Instance : public PresentIdWaitSimpleInstance
+{
+public:
+    PresentId2Instance(Context &context, vk::wsi::Type wsiType, const vector<PresentAndWaitOps> &sequence)
+        : PresentIdWaitSimpleInstance(context, 2, wsiType, sequence)
+    {
+    }
+
+    virtual ~PresentId2Instance()
+    {
+    }
+
+    static vector<const char *> requiredInstanceExts(void)
+    {
+        vector<const char *> extensions;
+        extensions.push_back("VK_KHR_get_surface_capabilities2");
+        return extensions;
+    }
+
+    static vector<const char *> requiredDeviceExts(void)
+    {
+        vector<const char *> extensions;
+        extensions.push_back("VK_KHR_present_id2");
+        return extensions;
+    }
+
+    virtual vector<const char *> getRequiredDeviceExts(void)
+    {
+        return requiredDeviceExts();
+    }
+};
+
 // Parent class for VK_KHR_present_wait simple tests.
 class PresentWaitInstance : public PresentIdWaitSimpleInstance
 {
 public:
     PresentWaitInstance(Context &context, vk::wsi::Type wsiType, const vector<PresentAndWaitOps> &sequence)
-        : PresentIdWaitSimpleInstance(context, wsiType, sequence)
+        : PresentIdWaitSimpleInstance(context, 1, wsiType, sequence)
     {
     }
 
@@ -665,12 +749,55 @@ public:
     }
 };
 
+class PresentWait2Instance : public PresentIdWaitSimpleInstance
+{
+public:
+    PresentWait2Instance(Context &context, vk::wsi::Type wsiType, const vector<PresentAndWaitOps> &sequence)
+        : PresentIdWaitSimpleInstance(context, 2, wsiType, sequence)
+    {
+    }
+
+    virtual ~PresentWait2Instance()
+    {
+    }
+
+    static vector<const char *> requiredInstanceExts(void)
+    {
+        vector<const char *> extensions;
+        extensions.push_back("VK_KHR_get_surface_capabilities2");
+        return extensions;
+    }
+
+    static vector<const char *> requiredDeviceExts(void)
+    {
+        vector<const char *> extensions;
+        extensions.push_back("VK_KHR_present_id2");
+        extensions.push_back("VK_KHR_present_wait2");
+        return extensions;
+    }
+
+    virtual vector<const char *> getRequiredDeviceExts(void)
+    {
+        return requiredDeviceExts();
+    }
+};
+
 class PresentIdZeroInstance : public PresentIdInstance
 {
 public:
     static const vector<PresentAndWaitOps> sequence;
 
     PresentIdZeroInstance(Context &context, vk::wsi::Type wsiType) : PresentIdInstance(context, wsiType, sequence)
+    {
+    }
+};
+
+class PresentId2ZeroInstance : public PresentId2Instance
+{
+public:
+    static const vector<PresentAndWaitOps> sequence;
+
+    PresentId2ZeroInstance(Context &context, vk::wsi::Type wsiType) : PresentId2Instance(context, wsiType, sequence)
     {
     }
 };
@@ -687,6 +814,8 @@ const vector<PresentAndWaitOps> PresentIdZeroInstance::sequence = {
         },
     },
 };
+
+const vector<PresentAndWaitOps> PresentId2ZeroInstance::sequence = PresentIdZeroInstance::sequence;
 
 class PresentIdIncreasingInstance : public PresentIdInstance
 {
@@ -711,6 +840,19 @@ const vector<PresentAndWaitOps> PresentIdIncreasingInstance::sequence = {
         },
     },
 };
+
+class PresentId2IncreasingInstance : public PresentId2Instance
+{
+public:
+    static const vector<PresentAndWaitOps> sequence;
+
+    PresentId2IncreasingInstance(Context &context, vk::wsi::Type wsiType)
+        : PresentId2Instance(context, wsiType, sequence)
+    {
+    }
+};
+
+const vector<PresentAndWaitOps> PresentId2IncreasingInstance::sequence = PresentIdIncreasingInstance::sequence;
 
 class PresentIdInterleavedInstance : public PresentIdInstance
 {
@@ -739,6 +881,30 @@ const vector<PresentAndWaitOps> PresentIdInterleavedInstance::sequence = {
     },
 };
 
+class PresentId2InterleavedInstance : public PresentId2Instance
+{
+public:
+    static const vector<PresentAndWaitOps> sequence;
+
+    PresentId2InterleavedInstance(Context &context, vk::wsi::Type wsiType)
+        : PresentId2Instance(context, wsiType, sequence)
+    {
+    }
+};
+
+const vector<PresentAndWaitOps> PresentId2InterleavedInstance::sequence = PresentIdInterleavedInstance::sequence;
+
+class PresentWait2SingleFrameInstance : public PresentWait2Instance
+{
+public:
+    static const vector<PresentAndWaitOps> sequence;
+
+    PresentWait2SingleFrameInstance(Context &context, vk::wsi::Type wsiType)
+        : PresentWait2Instance(context, wsiType, sequence)
+    {
+    }
+};
+
 class PresentWaitSingleFrameInstance : public PresentWaitInstance
 {
 public:
@@ -763,6 +929,8 @@ const vector<PresentAndWaitOps> PresentWaitSingleFrameInstance::sequence = {
         },
     },
 };
+
+const vector<PresentAndWaitOps> PresentWait2SingleFrameInstance::sequence = PresentWaitSingleFrameInstance::sequence;
 
 class PresentWaitPastFrameInstance : public PresentWaitInstance
 {
@@ -817,6 +985,19 @@ const vector<PresentAndWaitOps> PresentWaitPastFrameInstance::sequence = {
         },
     },
 };
+
+class PresentWait2PastFrameInstance : public PresentWait2Instance
+{
+public:
+    static const vector<PresentAndWaitOps> sequence;
+
+    PresentWait2PastFrameInstance(Context &context, vk::wsi::Type wsiType)
+        : PresentWait2Instance(context, wsiType, sequence)
+    {
+    }
+};
+
+const vector<PresentAndWaitOps> PresentWait2PastFrameInstance::sequence = PresentWaitPastFrameInstance::sequence;
 
 class PresentWaitNoFramesInstance : public PresentWaitInstance
 {
@@ -913,7 +1094,10 @@ const vector<PresentAndWaitOps> PresentWaitFutureFrameInstance::sequence = {
 class PresentWaitDualInstance : public TestInstance
 {
 public:
-    PresentWaitDualInstance(Context &context, vk::wsi::Type wsiType) : TestInstance(context), m_wsiType(wsiType)
+    PresentWaitDualInstance(Context &context, vk::wsi::Type wsiType, int ver = 1)
+        : TestInstance(context)
+        , m_wsiType(wsiType)
+        , m_ver(ver)
     {
     }
     virtual ~PresentWaitDualInstance(void)
@@ -942,6 +1126,7 @@ public:
 
 protected:
     vk::wsi::Type m_wsiType;
+    int m_ver;
 };
 
 struct IdAndWait
@@ -965,6 +1150,8 @@ tcu::TestStatus PresentWaitDualInstance::iterate(void)
     const tcu::UVec2 desiredSize(256, 256);
 
     vector<const char *> instanceExts;
+    if (m_ver == 2)
+        instanceExts.push_back("VK_KHR_get_surface_capabilities2");
     const InstanceHelper instHelper(m_context, m_wsiType, instanceExts);
     const NativeObjects native(m_context, instHelper.supportedExtensions, m_wsiType, 2u, tcu::just(desiredSize));
     const vk::Unique<vk::VkSurfaceKHR> surface1(createSurface(instHelper.vki, instHelper.instance, m_wsiType,
@@ -975,14 +1162,18 @@ tcu::TestStatus PresentWaitDualInstance::iterate(void)
                                                               m_context.getTestContext().getCommandLine()));
     const DeviceHelper devHelper(m_context, instHelper.vki, instHelper.instance,
                                  vector<vk::VkSurfaceKHR>{surface1.get(), surface2.get()}, getRequiredDeviceExts());
+    if (m_ver == 2 && !surfaceSupportsPresentIdWait2(instHelper.vki, devHelper.physicalDevice, surface1.get()))
+        TCU_THROW(NotSupportedError, "PresentId2/PresentWait2 not supported for surface)");
+    if (m_ver == 2 && !surfaceSupportsPresentIdWait2(instHelper.vki, devHelper.physicalDevice, surface2.get()))
+        TCU_THROW(NotSupportedError, "PresentId2/PresentWait2 not supported for surface)");
     const vk::DeviceInterface &vkd = devHelper.vkd;
     const vk::VkDevice device      = *devHelper.device;
     vk::SimpleAllocator allocator(vkd, device,
                                   getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
     const vk::VkSwapchainCreateInfoKHR swapchainInfo1 = getBasicSwapchainParameters(
-        m_wsiType, instHelper.vki, devHelper.physicalDevice, surface1.get(), desiredSize, 2);
+        m_wsiType, m_ver, instHelper.vki, devHelper.physicalDevice, surface1.get(), desiredSize, 2);
     const vk::VkSwapchainCreateInfoKHR swapchainInfo2 = getBasicSwapchainParameters(
-        m_wsiType, instHelper.vki, devHelper.physicalDevice, surface2.get(), desiredSize, 2);
+        m_wsiType, m_ver, instHelper.vki, devHelper.physicalDevice, surface2.get(), desiredSize, 2);
     const vk::Unique<vk::VkSwapchainKHR> swapchain1(vk::createSwapchainKHR(vkd, device, &swapchainInfo1));
     const vk::Unique<vk::VkSwapchainKHR> swapchain2(vk::createSwapchainKHR(vkd, device, &swapchainInfo2));
     const vector<vk::VkImage> swapchainImages1 = vk::wsi::getSwapchainImages(vkd, device, swapchain1.get());
@@ -1047,10 +1238,23 @@ tcu::TestStatus PresentWaitDualInstance::iterate(void)
             presentInfo.pImageIndices               = imgIndexArr;
 
             const uint64_t presentIdsArr[] = {step.idWait1.presentId, step.idWait2.presentId};
-            vk::VkPresentIdKHR presentId   = vk::initVulkanStructure();
-            presentId.swapchainCount       = static_cast<uint32_t>(DE_LENGTH_OF_ARRAY(presentIdsArr));
-            presentId.pPresentIds          = presentIdsArr;
-            addPresent(&presentId);
+            vk::VkPresentIdKHR presentId;
+            vk::VkPresentId2KHR presentId2;
+
+            if (m_ver == 1u)
+            {
+                presentId                = vk::initVulkanStructure();
+                presentId.swapchainCount = static_cast<uint32_t>(DE_LENGTH_OF_ARRAY(presentIdsArr));
+                presentId.pPresentIds    = presentIdsArr;
+                addPresent(&presentId);
+            }
+            else
+            {
+                presentId2                = vk::initVulkanStructure();
+                presentId2.swapchainCount = static_cast<uint32_t>(DE_LENGTH_OF_ARRAY(presentIdsArr));
+                presentId2.pPresentIds    = presentIdsArr;
+                addPresent(&presentId2);
+            }
 
             VK_CHECK(vkd.queuePresentKHR(devHelper.queue, &presentInfo));
 
@@ -1058,7 +1262,19 @@ tcu::TestStatus PresentWaitDualInstance::iterate(void)
             for (int i = 0; i < DE_LENGTH_OF_ARRAY(idWaitArr); ++i)
             {
                 if (idWaitArr[i]->wait)
-                    VK_CHECK(vkd.waitForPresentKHR(device, swapchainArr[i], idWaitArr[i]->presentId, k10sec));
+                {
+                    if (m_ver == 1)
+                    {
+                        VK_CHECK(vkd.waitForPresentKHR(device, swapchainArr[i], idWaitArr[i]->presentId, k10sec));
+                    }
+                    else
+                    {
+                        vk::VkPresentWait2InfoKHR waitInfo = vk::initVulkanStructure();
+                        waitInfo.presentId                 = idWaitArr[i]->presentId;
+                        waitInfo.timeout                   = k10sec;
+                        VK_CHECK(vkd.waitForPresent2KHR(device, swapchainArr[i], &waitInfo));
+                    }
+                }
             }
         }
 
@@ -1076,6 +1292,30 @@ tcu::TestStatus PresentWaitDualInstance::iterate(void)
 
     return tcu::TestStatus(QP_TEST_RESULT_INTERNAL_ERROR, "Reached unreachable code");
 }
+
+class PresentWait2DualInstance : public PresentWaitDualInstance
+{
+public:
+    PresentWait2DualInstance(Context &context, vk::wsi::Type wsiType) : PresentWaitDualInstance(context, wsiType, 2)
+    {
+    }
+    virtual ~PresentWait2DualInstance(void)
+    {
+    }
+
+    static vector<const char *> requiredDeviceExts(void)
+    {
+        vector<const char *> extensions;
+        extensions.push_back("VK_KHR_present_id2");
+        extensions.push_back("VK_KHR_present_wait2");
+        return extensions;
+    }
+
+    virtual vector<const char *> getRequiredDeviceExts(void)
+    {
+        return requiredDeviceExts();
+    }
+};
 
 // Templated class for every instance type.
 template <class T> // T is the test instance class.
@@ -1158,6 +1398,18 @@ void createPresentIdTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
         new PresentIdWaitCase<PresentIdInterleavedInstance>(wsiType, testGroup->getTestContext(), "interleaved"));
 }
 
+void createPresentId2Tests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
+{
+    // Use present id zero
+    testGroup->addChild(new PresentIdWaitCase<PresentId2ZeroInstance>(wsiType, testGroup->getTestContext(), "zero"));
+    // Use increasing present ids
+    testGroup->addChild(
+        new PresentIdWaitCase<PresentId2IncreasingInstance>(wsiType, testGroup->getTestContext(), "increasing"));
+    // Use increasing present ids interleaved with no ids
+    testGroup->addChild(
+        new PresentIdWaitCase<PresentId2InterleavedInstance>(wsiType, testGroup->getTestContext(), "interleaved"));
+}
+
 void createPresentWaitTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
 {
     // Present single frame with no expected timeout
@@ -1180,20 +1432,44 @@ void createPresentWaitTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType
         new PresentIdWaitCase<PresentWaitDualInstance>(wsiType, testGroup->getTestContext(), "two_swapchains"));
 }
 
+void createPresentWait2Tests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
+{
+    // Present single frame with no expected timeout
+    testGroup->addChild(new PresentIdWaitCase<PresentWait2SingleFrameInstance>(wsiType, testGroup->getTestContext(),
+                                                                               "single_no_timeout"));
+    // Wait for past frame with no expected timeout
+    testGroup->addChild(
+        new PresentIdWaitCase<PresentWait2PastFrameInstance>(wsiType, testGroup->getTestContext(), "past_no_timeout"));
+
+    // No equivalent to NoFrames/NoFrameId/FutureFrame instances;
+    // WaitForPresent2 has as VU that the ID must have actually been
+    // submitted as a presentId
+
+    // Smoke test using two windows, surfaces and swapchains
+    testGroup->addChild(
+        new PresentIdWaitCase<PresentWait2DualInstance>(wsiType, testGroup->getTestContext(), "two_swapchains"));
+}
+
 } // namespace
 
 void createPresentIdWaitTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
 {
-    // VK_KHR_present_id tests
+    // VK_KHR_present_id & VK_KHR_present_id2 tests
     de::MovePtr<tcu::TestCaseGroup> idGroup(new tcu::TestCaseGroup(testGroup->getTestContext(), "id"));
-    // VK_KHR_present_wait tests
+    de::MovePtr<tcu::TestCaseGroup> id2Group(new tcu::TestCaseGroup(testGroup->getTestContext(), "id2"));
+    // VK_KHR_present_wait & VK_KHR_present_wait2 tests
     de::MovePtr<tcu::TestCaseGroup> waitGroup(new tcu::TestCaseGroup(testGroup->getTestContext(), "wait"));
+    de::MovePtr<tcu::TestCaseGroup> wait2Group(new tcu::TestCaseGroup(testGroup->getTestContext(), "wait2"));
 
     createPresentIdTests(idGroup.get(), wsiType);
+    createPresentId2Tests(id2Group.get(), wsiType);
     createPresentWaitTests(waitGroup.get(), wsiType);
+    createPresentWait2Tests(wait2Group.get(), wsiType);
 
     testGroup->addChild(idGroup.release());
+    testGroup->addChild(id2Group.release());
     testGroup->addChild(waitGroup.release());
+    testGroup->addChild(wait2Group.release());
 }
 
 } // namespace wsi
