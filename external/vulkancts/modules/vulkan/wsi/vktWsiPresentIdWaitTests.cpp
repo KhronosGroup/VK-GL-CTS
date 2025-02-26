@@ -106,6 +106,12 @@ public:
                                 const vk::wsi::WsiTriangleRenderer &renderer) = 0;
 
     // Subclasses will need to implement a static method like this one indicating which extensions they need.
+    static vector<const char *> requiredInstanceExts(void)
+    {
+        return vector<const char *>();
+    }
+
+    // Subclasses will need to implement a static method like this one indicating which extensions they need.
     static vector<const char *> requiredDeviceExts(void)
     {
         return vector<const char *>();
@@ -118,7 +124,7 @@ protected:
     vk::wsi::Type m_wsiType;
 };
 
-vector<const char *> getRequiredInstanceExtensions(vk::wsi::Type wsiType)
+vector<const char *> getRequiredWsiInstanceExtensions(vk::wsi::Type wsiType)
 {
     vector<const char *> extensions;
     extensions.push_back("VK_KHR_surface");
@@ -129,10 +135,14 @@ vector<const char *> getRequiredInstanceExtensions(vk::wsi::Type wsiType)
 }
 
 CustomInstance createInstanceWithWsi(Context &context, vk::wsi::Type wsiType,
+                                     const vector<const char *> &additionalExtensions,
                                      const vk::VkAllocationCallbacks *pAllocator = nullptr)
 {
-    const auto version            = context.getUsedApiVersion();
-    const auto requiredExtensions = getRequiredInstanceExtensions(wsiType);
+    const auto version      = context.getUsedApiVersion();
+    auto requiredExtensions = getRequiredWsiInstanceExtensions(wsiType);
+
+    requiredExtensions.reserve(requiredExtensions.size() + additionalExtensions.size());
+    requiredExtensions.insert(requiredExtensions.end(), additionalExtensions.begin(), additionalExtensions.end());
 
     vector<string> requestedExtensions;
     for (const auto &extensionName : requiredExtensions)
@@ -150,9 +160,10 @@ struct InstanceHelper
     CustomInstance instance;
     const vk::InstanceDriver &vki;
 
-    InstanceHelper(Context &context, vk::wsi::Type wsiType, const vk::VkAllocationCallbacks *pAllocator = nullptr)
+    InstanceHelper(Context &context, vk::wsi::Type wsiType, const vector<const char *> &additionalExtensions,
+                   const vk::VkAllocationCallbacks *pAllocator = nullptr)
         : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr))
-        , instance(createInstanceWithWsi(context, wsiType, pAllocator))
+        , instance(createInstanceWithWsi(context, wsiType, additionalExtensions, pAllocator))
         , vki(instance.getDriver())
     {
     }
@@ -378,7 +389,8 @@ private:
 tcu::TestStatus PresentIdWaitInstance::iterate(void)
 {
     const tcu::UVec2 desiredSize(256, 256);
-    const InstanceHelper instHelper(m_context, m_wsiType);
+    vector<const char *> extensions;
+    const InstanceHelper instHelper(m_context, m_wsiType, extensions);
     const NativeObjects native(m_context, instHelper.supportedExtensions, m_wsiType, 1u, tcu::just(desiredSize));
     const vk::Unique<vk::VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, m_wsiType,
                                                              native.getDisplay(), native.getWindow(),
@@ -911,6 +923,11 @@ public:
 
     virtual tcu::TestStatus iterate(void);
 
+    static vector<const char *> requiredInstanceExts(void)
+    {
+        return vector<const char *>();
+    }
+
     static vector<const char *> requiredDeviceExts(void)
     {
         vector<const char *> extensions;
@@ -947,7 +964,9 @@ tcu::TestStatus PresentWaitDualInstance::iterate(void)
         TCU_THROW(NotSupportedError, "Creating 2 windows not supported");
 
     const tcu::UVec2 desiredSize(256, 256);
-    const InstanceHelper instHelper(m_context, m_wsiType);
+
+    vector<const char *> instanceExts;
+    const InstanceHelper instHelper(m_context, m_wsiType, instanceExts);
     const NativeObjects native(m_context, instHelper.supportedExtensions, m_wsiType, 2u, tcu::just(desiredSize));
     const vk::Unique<vk::VkSurfaceKHR> surface1(createSurface(instHelper.vki, instHelper.instance, m_wsiType,
                                                               native.getDisplay(), native.getWindow(0),
@@ -1104,8 +1123,13 @@ template <class T>
 void PresentIdWaitCase<T>::checkSupport(Context &context) const
 {
     // Check instance extension support.
-    const auto instanceExtensions = getRequiredInstanceExtensions(m_wsiType);
-    for (const auto &ext : instanceExtensions)
+    const auto instanceExtensions = T::requiredInstanceExts();
+    auto requiredExtensions       = getRequiredWsiInstanceExtensions(m_wsiType);
+
+    requiredExtensions.reserve(requiredExtensions.size() + instanceExtensions.size());
+    requiredExtensions.insert(requiredExtensions.end(), instanceExtensions.begin(), instanceExtensions.end());
+
+    for (const auto &ext : requiredExtensions)
     {
         if (!context.isInstanceFunctionalitySupported(ext))
             TCU_THROW(NotSupportedError, ext + string(" is not supported"));
