@@ -171,17 +171,51 @@ struct DrawParams : DrawParamsBase
     }
 };
 
+bool isSimpleListTopology(vk::VkPrimitiveTopology topo)
+{
+    switch (topo)
+    {
+    case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+    case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+    case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+        return true;
+    default:
+        break;
+    }
+
+    return false;
+}
+
+uint32_t verticesPerPrimitive(vk::VkPrimitiveTopology topo)
+{
+    DE_ASSERT(isSimpleListTopology(topo));
+    static const std::map<vk::VkPrimitiveTopology, uint32_t> vppMap{
+        std::make_pair(vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 1u),
+        std::make_pair(vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST, 2u),
+        std::make_pair(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 3u),
+    };
+    return vppMap.at(topo);
+}
+
 struct DrawIndexedParams : DrawParamsBase, IndexedParamsBase
 {
     // vkCmdDrawIndexed parameters is like a single VkDrawIndexedIndirectCommand
     vk::VkDrawIndexedIndirectCommand params;
+    bool multipleDraws;
 
     DrawIndexedParams(const vk::VkPrimitiveTopology top, const SharedGroupParams gParams, const vk::VkIndexType indexT,
                       const uint32_t indexC, const uint32_t instanceC, const uint32_t firstIdx, const int32_t vertexO,
-                      const uint32_t firstIns)
+                      const uint32_t firstIns, bool multipleDraws_)
         : DrawParamsBase(top, gParams)
         , IndexedParamsBase(indexT)
+        , multipleDraws(multipleDraws_)
     {
+        if (multipleDraws)
+        {
+            // The code is not prepared for other cases.
+            DE_ASSERT(isSimpleListTopology(top));
+        }
+
         params.indexCount    = indexC;
         params.instanceCount = instanceC;
         params.firstIndex    = firstIdx;
@@ -1055,8 +1089,12 @@ void DrawTestInstance<DrawIndexedParams>::generateDrawData(void)
 template <>
 void DrawTestInstance<DrawIndexedParams>::draw(vk::VkCommandBuffer cmdBuffer, vk::VkBuffer, vk::VkDeviceSize)
 {
-    m_vk.cmdDrawIndexed(cmdBuffer, m_data.params.indexCount, m_data.params.instanceCount, m_data.params.firstIndex,
-                        m_data.params.vertexOffset, m_data.params.firstInstance);
+    const auto countPerDraw = (m_data.multipleDraws ? verticesPerPrimitive(m_data.topology) : m_data.params.indexCount);
+    for (uint32_t indexCount = 0u; indexCount < m_data.params.indexCount; indexCount += countPerDraw)
+    {
+        m_vk.cmdDrawIndexed(cmdBuffer, countPerDraw, m_data.params.instanceCount, m_data.params.firstIndex + indexCount,
+                            m_data.params.vertexOffset, m_data.params.firstInstance);
+    }
 }
 
 template <>
@@ -1756,9 +1794,18 @@ void populateSubGroup(tcu::TestCaseGroup *testGroup, const TestCaseParams casePa
         {
             uint32_t firstIndex   = rnd.getInt(0, OFFSET_LIMIT);
             uint32_t vertexOffset = rnd.getInt(0, OFFSET_LIMIT);
-            testGroup->addChild(new IndexedCase(testCtx, name.c_str(),
-                                                DrawIndexedParams(topology, groupParams, vk::VK_INDEX_TYPE_UINT32,
-                                                                  vertexCount, 1, firstIndex, vertexOffset, 0)));
+
+            DrawIndexedParams testParams(topology, groupParams, vk::VK_INDEX_TYPE_UINT32, vertexCount, 1, firstIndex,
+                                         vertexOffset, 0, false);
+            testGroup->addChild(new IndexedCase(testCtx, name.c_str(), testParams));
+
+            if (isSimpleListTopology(topology) && primitives > 1u)
+            {
+                const auto altName       = name + "_multi_command";
+                testParams.multipleDraws = true;
+                testGroup->addChild(new IndexedCase(testCtx, altName.c_str(), testParams));
+            }
+
             break;
         }
         case DRAW_COMMAND_TYPE_DRAW_INDIRECT:
