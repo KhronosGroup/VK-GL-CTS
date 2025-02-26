@@ -433,7 +433,6 @@ private:
     Context &m_context;
     glu::Texture2D m_source;
     glu::TextureTestUtil::TextureType m_targetType;
-    const tcu::TextureFormat m_internalFormat;
     const int m_width;
     const int m_height;
     tcu::Vec4 m_color;
@@ -453,7 +452,6 @@ SRGBTestTexture::SRGBTestTexture(Context &context, const glu::TextureTestUtil::T
     : m_context(context)
     , m_source(context.getRenderContext(), glu::getInternalFormat(internalFormat), width, height)
     , m_targetType(targetType)
-    , m_internalFormat(internalFormat)
     , m_width(width)
     , m_height(height)
     , m_color(color)
