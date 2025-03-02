@@ -54,6 +54,8 @@ set(DEQP_VK_VKSC_IMAGE_SRCS
 	vktImageDepthStencilSeparateTests.hpp
 	vktImageConcurrentCopyTests.cpp
 	vktImageConcurrentCopyTests.hpp
+	vktImage2dArrayCompatibleTests.cpp
+	vktImage2dArrayCompatibleTests.hpp
 	)
 
 set(DEQP_VK_IMAGE_SRCS

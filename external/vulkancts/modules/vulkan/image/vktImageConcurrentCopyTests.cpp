@@ -54,6 +54,7 @@ struct TestParameters
     bool read;
     bool singleCommand;
     bool randomData;
+    bool create2dArrayCompatible;
 };
 
 class ConcurrentCopyTestInstance : public vkt::TestInstance
@@ -160,6 +161,11 @@ public:
         return m_failed;
     }
 
+    const vk::VkMemoryToImageCopyEXT &getRegion()
+    {
+        return m_region;
+    }
+
 private:
     const vk::DeviceInterface &m_vk;
     const vk::VkDevice m_device;
@@ -208,8 +214,8 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
     const vk::VkImageLayout imageLayout =
         m_parameters.read ? vk::VK_IMAGE_LAYOUT_GENERAL : vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
-    const vk::VkImageSubresourceRange subresourceRange =
-        makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+    const vk::VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(
+        vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_parameters.create2dArrayCompatible ? depth : 1u);
 
     const uint32_t pixelSize  = tcu::getPixelSize(vk::mapVkFormat(m_parameters.format));
     const uint32_t bufferSize = width * height * depth * pixelSize;
@@ -263,10 +269,14 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
         usage |= vk::VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT;
 #endif
 
+    vk::VkImageCreateFlags imageCreateFlags = m_parameters.create2dArrayCompatible ?
+                                                  (vk::VkImageCreateFlags)vk::VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT :
+                                                  (vk::VkImageCreateFlags)0u;
+
     vk::VkImageCreateInfo imageCreateInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType          sType
         nullptr,                                 // const void*              pNext
-        0u,                                      // VkImageCreateFlags       flags
+        imageCreateFlags,                        // VkImageCreateFlags       flags
         m_parameters.type,                       // VkImageType              imageType
         m_parameters.format,                     // VkFormat                 format
         {width, height, depth},                  // VkExtent3D               extent
@@ -284,42 +294,22 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
     de::MovePtr<vk::ImageWithMemory> image = de::MovePtr<vk::ImageWithMemory>(
         new vk::ImageWithMemory(vk, device, alloc, imageCreateInfo, vk::MemoryRequirement::Any));
 
-    if (m_parameters.hostCopy)
+    std::vector<uint32_t> widths, heights, depths;
+    if (!m_parameters.create2dArrayCompatible)
     {
-#ifndef CTS_USES_VULKANSC
-        vk::VkHostImageLayoutTransitionInfoEXT transition = {
-            vk::VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO_EXT, // VkStructureType sType;
-            nullptr,                                                     // const void* pNext;
-            **image,                                                     // VkImage image;
-            vk::VK_IMAGE_LAYOUT_UNDEFINED,                               // VkImageLayout oldLayout;
-            imageLayout,                                                 // VkImageLayout newLayout;
-            subresourceRange,                                            // VkImageSubresourceRange subresourceRange;
-        };
-        vk.transitionImageLayout(device, 1u, &transition);
-#endif
+        splitRegion(randomGen, width, widths);
+        splitRegion(randomGen, height, heights);
+        if (m_parameters.type == vk::VK_IMAGE_TYPE_2D)
+            depths.push_back(1u);
+        else
+            splitRegion(randomGen, depth, depths);
     }
     else
     {
-        m_context.resetCommandPoolForVKSC(device, *cmdPool);
-        vk::beginCommandBuffer(vk, *cmdBuffer);
-        auto preImageMemoryBarrier =
-            makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED, imageLayout,
-                                   **image, subresourceRange);
-        vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_NONE_KHR, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
-                              nullptr, 0u, nullptr, 1, &preImageMemoryBarrier);
-        vk::endCommandBuffer(vk, *cmdBuffer);
-        vk::submitCommandsAndWait(vk, device, queue, *cmdBuffer);
-    }
-
-    std::vector<uint32_t> widths;
-    splitRegion(randomGen, width, widths);
-    std::vector<uint32_t> heights;
-    splitRegion(randomGen, height, heights);
-    std::vector<uint32_t> depths;
-    if (m_parameters.type == vk::VK_IMAGE_TYPE_2D)
-        depths.push_back(1u);
-    else
+        widths.push_back(width);
+        heights.push_back(height);
         splitRegion(randomGen, depth, depths);
+    }
 
     std::vector<vk::VkBufferImageCopy> regions;
     int posWidth = 0u;
@@ -352,6 +342,18 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
     if (m_parameters.hostCopy)
     {
 #ifndef CTS_USES_VULKANSC
+        if (!m_parameters.create2dArrayCompatible || m_parameters.singleCommand)
+        {
+            vk::VkHostImageLayoutTransitionInfoEXT transition = {
+                vk::VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO_EXT, // VkStructureType sType;
+                nullptr,                                                     // const void* pNext;
+                **image,                                                     // VkImage image;
+                vk::VK_IMAGE_LAYOUT_UNDEFINED,                               // VkImageLayout oldLayout;
+                imageLayout,                                                 // VkImageLayout newLayout;
+                subresourceRange, // VkImageSubresourceRange subresourceRange;
+            };
+            vk.transitionImageLayout(device, 1u, &transition);
+        }
 
         std::vector<vk::VkMemoryToImageCopyEXT> memoryToImageCopies;
         for (uint32_t i = 0; i < (uint32_t)regions.size(); ++i)
@@ -404,7 +406,24 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
                 }
 
                 for (auto &thread : threads)
+                {
+                    if (m_parameters.create2dArrayCompatible)
+                    {
+                        const vk::VkImageSubresourceRange layersSubresourceRange = makeImageSubresourceRange(
+                            vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, thread->getRegion().imageOffset.z,
+                            thread->getRegion().imageExtent.depth);
+                        vk::VkHostImageLayoutTransitionInfoEXT transition = {
+                            vk::VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO_EXT, // VkStructureType sType;
+                            nullptr,                                                     // const void* pNext;
+                            **image,                                                     // VkImage image;
+                            vk::VK_IMAGE_LAYOUT_UNDEFINED,                               // VkImageLayout oldLayout;
+                            imageLayout,                                                 // VkImageLayout newLayout;
+                            layersSubresourceRange, // VkImageSubresourceRange subresourceRange;
+                        };
+                        vk.transitionImageLayout(device, 1u, &transition);
+                    }
                     thread->start();
+                }
 
                 for (auto &thread : threads)
                     thread->join();
@@ -422,6 +441,19 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
     }
     else
     {
+        if (!m_parameters.create2dArrayCompatible || m_parameters.singleCommand)
+        {
+            m_context.resetCommandPoolForVKSC(device, *cmdPool);
+            vk::beginCommandBuffer(vk, *cmdBuffer);
+            auto preImageMemoryBarrier =
+                makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED, imageLayout,
+                                       **image, subresourceRange);
+            vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_NONE_KHR, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+                                  0u, nullptr, 0u, nullptr, 1, &preImageMemoryBarrier);
+            vk::endCommandBuffer(vk, *cmdBuffer);
+            vk::submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+        }
+
         m_context.resetCommandPoolForVKSC(device, *cmdPool);
         vk::beginCommandBuffer(vk, *cmdBuffer);
         if (m_parameters.singleCommand)
@@ -433,6 +465,17 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
         {
             for (const auto &region : regions)
             {
+                if (m_parameters.create2dArrayCompatible)
+                {
+                    const vk::VkImageSubresourceRange layersSubresourceRange = makeImageSubresourceRange(
+                        vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, region.imageOffset.z, region.imageExtent.depth);
+                    auto preImageMemoryBarrier =
+                        makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
+                                               imageLayout, **image, layersSubresourceRange);
+                    vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_NONE_KHR,
+                                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1,
+                                          &preImageMemoryBarrier);
+                }
                 vk.cmdCopyBufferToImage(*cmdBuffer, **srcBuffer, **image, imageLayout, 1u, &region);
             }
         }
@@ -442,19 +485,60 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
 
     m_context.resetCommandPoolForVKSC(device, *cmdPool);
     vk::beginCommandBuffer(vk, *cmdBuffer);
-    auto postImageMemoryBarrier =
-        makeImageMemoryBarrier(vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT, imageLayout,
-                               vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **image, subresourceRange);
-    vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
-                          nullptr, 0u, nullptr, 1, &postImageMemoryBarrier);
-    vk::VkBufferImageCopy region;
-    region.bufferOffset      = 0u;
-    region.bufferRowLength   = 0u;
-    region.bufferImageHeight = 0u;
-    region.imageSubresource  = {vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u};
-    region.imageOffset       = {0, 0, 0};
-    region.imageExtent       = {width, height, depth};
-    vk.cmdCopyImageToBuffer(*cmdBuffer, **image, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **dstBuffer, 1u, &region);
+    if (!m_parameters.create2dArrayCompatible)
+    {
+        auto postImageMemoryBarrier =
+            makeImageMemoryBarrier(vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT, imageLayout,
+                                   vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **image, subresourceRange);
+        vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+                              0u, nullptr, 0u, nullptr, 1, &postImageMemoryBarrier);
+
+        vk::VkBufferImageCopy region;
+        region.bufferOffset      = 0u;
+        region.bufferRowLength   = 0u;
+        region.bufferImageHeight = 0u;
+        region.imageSubresource  = {vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u};
+        region.imageOffset       = {0, 0, 0};
+        region.imageExtent       = {width, height, depth};
+        vk.cmdCopyImageToBuffer(*cmdBuffer, **image, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **dstBuffer, 1u,
+                                &region);
+    }
+    else
+    {
+        // Create a random order in which the layers will be copied
+        std::vector<uint32_t> layerNdx;
+        for (uint32_t i = 0; i < depth; ++i)
+            layerNdx.push_back(i);
+        for (uint32_t i = 0; i < depth; ++i)
+        {
+            int randomIndex = i + (randomGen.getUint32() % (depth - i));
+            std::swap(layerNdx[i], layerNdx[randomIndex]);
+        }
+
+        for (uint32_t j = 0; j < depth; ++j)
+        {
+            uint32_t i = layerNdx[j];
+            const vk::VkImageSubresourceRange layerSubresourceRange =
+                makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, i, 1u);
+            // Alternate between transfer src optimal and general layouts
+            vk::VkImageLayout layout =
+                (j % 2 == 0) ? vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : vk::VK_IMAGE_LAYOUT_GENERAL;
+            auto postImageMemoryBarrier =
+                makeImageMemoryBarrier(vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT, imageLayout,
+                                       layout, **image, layerSubresourceRange);
+            vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                  0u, 0u, nullptr, 0u, nullptr, 1, &postImageMemoryBarrier);
+
+            vk::VkBufferImageCopy region;
+            region.bufferOffset      = width * height * i * pixelSize;
+            region.bufferRowLength   = 0u;
+            region.bufferImageHeight = 0u;
+            region.imageSubresource  = {vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u};
+            region.imageOffset       = {0, 0, (int)i};
+            region.imageExtent       = {width, height, 1u};
+            vk.cmdCopyImageToBuffer(*cmdBuffer, **image, layout, **dstBuffer, 1u, &region);
+        }
+    }
     vk::endCommandBuffer(vk, *cmdBuffer);
     vk::submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
@@ -471,6 +555,12 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
                     << ", dst value: " << dstPtr[i] << "." << tcu::TestLog::EndMessage;
             }
         }
+        const tcu::IVec3 imageDim(static_cast<int>(width), static_cast<int>(height), static_cast<int>(depth));
+        tcu::ConstPixelBufferAccess reference(vk::mapVkFormat(m_parameters.format), imageDim,
+                                              srcBufferAlloc.getHostPtr());
+        tcu::ConstPixelBufferAccess result(vk::mapVkFormat(m_parameters.format), imageDim, dstBufferAlloc.getHostPtr());
+        log << tcu::TestLog::Image("Reference", "", reference);
+        log << tcu::TestLog::Image("Result", "", result);
         return tcu::TestStatus::fail("Fail");
     }
 
@@ -548,6 +638,9 @@ void ConcurrentCopyTestCase::checkSupport(vkt::Context &context) const
         }
     }
 #endif
+
+    if (m_parameters.create2dArrayCompatible)
+        context.requireDeviceFunctionality("VK_KHR_maintenance9");
 }
 
 } // namespace
@@ -612,6 +705,15 @@ tcu::TestCaseGroup *createImageConcurrentCopyTests(tcu::TestContext &testCtx)
         {false, "gradient"},
     };
 
+    constexpr struct ImageFlags
+    {
+        bool create2dArrayCompatible;
+        const char *name;
+    } imageFlags[] = {
+        {false, "none"},
+        {true, "2d_array_compatible"},
+    };
+
     for (const auto format : formats)
     {
         de::MovePtr<tcu::TestCaseGroup> formatGroup(
@@ -639,17 +741,28 @@ tcu::TestCaseGroup *createImageConcurrentCopyTests(tcu::TestContext &testCtx)
                                 if (accessType.read && !copyType.hostCopy)
                                     continue;
 
-                                TestParameters parameters;
-                                parameters.format        = format;
-                                parameters.tiling        = tiling;
-                                parameters.type          = type;
-                                parameters.hostCopy      = copyType.hostCopy;
-                                parameters.read          = accessType.read;
-                                parameters.singleCommand = commandType.singleCommand;
-                                parameters.randomData    = dataType.random;
+                                de::MovePtr<tcu::TestCaseGroup> accessTypeGroup(
+                                    new tcu::TestCaseGroup(testCtx, accessType.name));
 
-                                copyTypeGroup->addChild(
-                                    new ConcurrentCopyTestCase(testCtx, accessType.name, parameters));
+                                for (const auto imageFlag : imageFlags)
+                                {
+                                    if (type != vk::VK_IMAGE_TYPE_3D && imageFlag.create2dArrayCompatible)
+                                        continue;
+
+                                    TestParameters parameters;
+                                    parameters.format                  = format;
+                                    parameters.tiling                  = tiling;
+                                    parameters.type                    = type;
+                                    parameters.hostCopy                = copyType.hostCopy;
+                                    parameters.read                    = accessType.read;
+                                    parameters.singleCommand           = commandType.singleCommand;
+                                    parameters.randomData              = dataType.random;
+                                    parameters.create2dArrayCompatible = imageFlag.create2dArrayCompatible;
+
+                                    accessTypeGroup->addChild(
+                                        new ConcurrentCopyTestCase(testCtx, imageFlag.name, parameters));
+                                }
+                                copyTypeGroup->addChild(accessTypeGroup.release());
                             }
                             dataTypeGroup->addChild(copyTypeGroup.release());
                         }

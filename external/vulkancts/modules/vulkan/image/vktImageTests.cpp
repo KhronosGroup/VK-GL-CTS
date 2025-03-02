@@ -43,6 +43,7 @@
 #include "vktImageTransfer.hpp"
 #include "vktImageDepthStencilSeparateTests.hpp"
 #include "vktImageConcurrentCopyTests.hpp"
+#include "vktImage2dArrayCompatibleTests.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktImageHostImageCopyTests.hpp"
 #endif
@@ -91,6 +92,7 @@ void createChildren(tcu::TestCaseGroup *imageTests)
 #endif // CTS_USES_VULKANSC
     imageTests->addChild(createImageDepthStencilSeparateTests(testCtx));
     imageTests->addChild(createImageDeviceScopeAccessTests(testCtx));
+    imageTests->addChild(createImage2dArrayCompatibleTests(testCtx));
 }
 
 } // namespace
