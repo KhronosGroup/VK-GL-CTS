@@ -369,6 +369,16 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceFragmentDensityMapFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT physicalDeviceFragmentDensityMapOffsetFeaturesEXT;
+	deMemset(&physicalDeviceFragmentDensityMapOffsetFeaturesEXT, 0, sizeof(physicalDeviceFragmentDensityMapOffsetFeaturesEXT));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_fragment_density_map_offset", "VK_QCOM_fragment_density_map_offset"))
+	{
+		physicalDeviceFragmentDensityMapOffsetFeaturesEXT.sType = getStructureType<VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT>();
+		*nextPtr = &physicalDeviceFragmentDensityMapOffsetFeaturesEXT;
+		nextPtr  = &physicalDeviceFragmentDensityMapOffsetFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT physicalDeviceFragmentShaderInterlockFeaturesEXT;
 	deMemset(&physicalDeviceFragmentShaderInterlockFeaturesEXT, 0, sizeof(physicalDeviceFragmentShaderInterlockFeaturesEXT));
 
@@ -1896,6 +1906,15 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceFragmentDensityMapFeaturesEXT.fragmentDensityMap == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature fragmentDensityMap not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_fragment_density_map_offset")) )
+	{
+		if ( physicalDeviceFragmentDensityMapOffsetFeaturesEXT.fragmentDensityMapOffset == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature fragmentDensityMapOffset not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

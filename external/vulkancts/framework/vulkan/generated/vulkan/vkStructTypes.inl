@@ -4836,7 +4836,7 @@ struct VkPhysicalDeviceFragmentDensityMap2FeaturesEXT
 	VkBool32		fragmentDensityMapDeferred;
 };
 
-struct VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM
+struct VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -4862,7 +4862,7 @@ struct VkPhysicalDeviceFragmentDensityMap2PropertiesEXT
 	uint32_t		maxDescriptorSetSubsampledSamplers;
 };
 
-struct VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM
+struct VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -4876,7 +4876,7 @@ struct VkRenderPassFragmentDensityMapCreateInfoEXT
 	VkAttachmentReference	fragmentDensityMapAttachment;
 };
 
-struct VkSubpassFragmentDensityMapOffsetEndInfoQCOM
+struct VkRenderPassFragmentDensityMapOffsetEndInfoEXT
 {
 	VkStructureType		sType;
 	const void*			pNext;
@@ -8665,6 +8665,12 @@ struct VkPipelineRenderingCreateInfo
 	VkFormat		stencilAttachmentFormat;
 };
 
+struct VkRenderingEndInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+};
+
 struct VkRenderingAttachmentInfo
 {
 	VkStructureType			sType;
@@ -10606,6 +10612,21 @@ struct VkConvertCooperativeVectorMatrixInfoNV
 	size_t								dstStride;
 };
 
+struct VkSetPresentConfigNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		numFramesPerBatch;
+	uint32_t		presentConfigFeedback;
+};
+
+struct VkPhysicalDevicePresentMeteringFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		presentMetering;
+};
+
 struct StdVideoH264SpsVuiFlags
 {
 	uint32_t	aspect_ratio_info_present_flag:1;
@@ -12311,6 +12332,12 @@ typedef VkSubpassDescriptionDepthStencilResolve VkSubpassDescriptionDepthStencil
 typedef VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR VkPhysicalDeviceComputeShaderDerivativesFeaturesNV;
 
 typedef VkImageStencilUsageCreateInfo VkImageStencilUsageCreateInfoEXT;
+
+typedef VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM;
+
+typedef VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM;
+
+typedef VkRenderPassFragmentDensityMapOffsetEndInfoEXT VkSubpassFragmentDensityMapOffsetEndInfoQCOM;
 
 typedef VkPhysicalDeviceScalarBlockLayoutFeatures VkPhysicalDeviceScalarBlockLayoutFeaturesEXT;
 

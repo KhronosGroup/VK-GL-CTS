@@ -65,7 +65,6 @@ const vk::VkPhysicalDeviceMaintenance4Properties&						getMaintenance4Properties
 const vk::VkPhysicalDeviceShaderCorePropertiesARM&						getShaderCorePropertiesARM						(void) const;
 const vk::VkPhysicalDeviceSchedulingControlsPropertiesARM&				getSchedulingControlsPropertiesARM				(void) const;
 const vk::VkPhysicalDeviceRenderPassStripedPropertiesARM&				getRenderPassStripedPropertiesARM				(void) const;
-const vk::VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM&		getFragmentDensityMapOffsetPropertiesQCOM		(void) const;
 const vk::VkPhysicalDeviceCopyMemoryIndirectPropertiesNV&				getCopyMemoryIndirectProperties					(void) const;
 const vk::VkPhysicalDeviceMemoryDecompressionPropertiesNV&				getMemoryDecompressionProperties				(void) const;
 const vk::VkPhysicalDeviceImageProcessingPropertiesQCOM&				getImageProcessingPropertiesQCOM				(void) const;
@@ -95,5 +94,6 @@ const vk::VkPhysicalDevicePartitionedAccelerationStructurePropertiesNV&	getParti
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT&			getDeviceGeneratedCommandsPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceImageAlignmentControlPropertiesMESA&			getImageAlignmentControlPropertiesMESA			(void) const;
 const vk::VkPhysicalDeviceCooperativeMatrix2PropertiesNV&				getCooperativeMatrix2PropertiesNV				(void) const;
+const vk::VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT&		getFragmentDensityMapOffsetPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceSubgroupProperties&							getSubgroupProperties							(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryProperties&					getProtectedMemoryProperties					(void) const;

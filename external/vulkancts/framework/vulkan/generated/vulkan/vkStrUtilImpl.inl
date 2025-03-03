@@ -952,7 +952,7 @@ tcu::Format::Bitfield<32> getImageCreateFlagsStr (VkImageCreateFlags value)
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT,		"VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV,							"VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT,							"VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT"),
-		tcu::Format::BitDesc(VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_QCOM,			"VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_QCOM"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_EXT,			"VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_EXT"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT,		"VK_IMAGE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT,					"VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT,	"VK_IMAGE_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT"),
@@ -1179,8 +1179,8 @@ tcu::Format::Bitfield<32> getAccessFlagsStr (VkAccessFlags value)
 		tcu::Format::BitDesc(VK_ACCESS_HOST_WRITE_BIT,									"VK_ACCESS_HOST_WRITE_BIT"),
 		tcu::Format::BitDesc(VK_ACCESS_MEMORY_READ_BIT,									"VK_ACCESS_MEMORY_READ_BIT"),
 		tcu::Format::BitDesc(VK_ACCESS_MEMORY_WRITE_BIT,								"VK_ACCESS_MEMORY_WRITE_BIT"),
-		tcu::Format::BitDesc(VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_NV,					"VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_NV"),
-		tcu::Format::BitDesc(VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_NV,					"VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_NV"),
+		tcu::Format::BitDesc(VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_EXT,					"VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_EXT"),
+		tcu::Format::BitDesc(VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_EXT,				"VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT,		"VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_CONDITIONAL_RENDERING_READ_BIT_EXT,				"VK_ACCESS_CONDITIONAL_RENDERING_READ_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR,				"VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR"),
@@ -2292,9 +2292,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_BEGIN_INFO_ARM:									return "VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_BEGIN_INFO_ARM";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_INFO_ARM:											return "VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_INFO_ARM";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_SUBMIT_INFO_ARM:									return "VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_SUBMIT_INFO_ARM";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_QCOM:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_QCOM";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_QCOM:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_QCOM";
-		case VK_STRUCTURE_TYPE_SUBPASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_QCOM:					return "VK_STRUCTURE_TYPE_SUBPASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_QCOM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_EXT:				return "VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_FEATURES_NV";
@@ -2516,6 +2516,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_MEMORY_METAL_HANDLE_PROPERTIES_EXT:									return "VK_STRUCTURE_TYPE_MEMORY_METAL_HANDLE_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_MEMORY_GET_METAL_HANDLE_INFO_EXT:									return "VK_STRUCTURE_TYPE_MEMORY_GET_METAL_HANDLE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_SET_PRESENT_CONFIG_NV:												return "VK_STRUCTURE_TYPE_SET_PRESENT_CONFIG_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_METERING_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_METERING_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_RENDERING_END_INFO_EXT:												return "VK_STRUCTURE_TYPE_RENDERING_END_INFO_EXT";
 		default:																					return nullptr;
 	}
 }
@@ -2608,7 +2611,7 @@ tcu::Format::Bitfield<32> getPipelineStageFlagsStr (VkPipelineStageFlags value)
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_HOST_BIT,									"VK_PIPELINE_STAGE_HOST_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,							"VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,							"VK_PIPELINE_STAGE_ALL_COMMANDS_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV,					"VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_EXT,					"VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT,				"VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT,							"VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT,							"VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT"),
@@ -3499,8 +3502,8 @@ tcu::Format::Bitfield<64> getAccessFlags2Str (VkAccessFlags2 value)
 		tcu::Format::BitDesc(VK_ACCESS_2_HOST_WRITE_BIT,								"VK_ACCESS_2_HOST_WRITE_BIT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_MEMORY_READ_BIT,								"VK_ACCESS_2_MEMORY_READ_BIT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_MEMORY_WRITE_BIT,								"VK_ACCESS_2_MEMORY_WRITE_BIT"),
-		tcu::Format::BitDesc(VK_ACCESS_2_COMMAND_PREPROCESS_READ_BIT_NV,				"VK_ACCESS_2_COMMAND_PREPROCESS_READ_BIT_NV"),
-		tcu::Format::BitDesc(VK_ACCESS_2_COMMAND_PREPROCESS_WRITE_BIT_NV,				"VK_ACCESS_2_COMMAND_PREPROCESS_WRITE_BIT_NV"),
+		tcu::Format::BitDesc(VK_ACCESS_2_COMMAND_PREPROCESS_READ_BIT_EXT,				"VK_ACCESS_2_COMMAND_PREPROCESS_READ_BIT_EXT"),
+		tcu::Format::BitDesc(VK_ACCESS_2_COMMAND_PREPROCESS_WRITE_BIT_EXT,				"VK_ACCESS_2_COMMAND_PREPROCESS_WRITE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT,		"VK_ACCESS_2_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_CONDITIONAL_RENDERING_READ_BIT_EXT,			"VK_ACCESS_2_CONDITIONAL_RENDERING_READ_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR,			"VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR"),
@@ -3550,7 +3553,7 @@ tcu::Format::Bitfield<64> getPipelineStageFlags2Str (VkPipelineStageFlags2 value
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_HOST_BIT,									"VK_PIPELINE_STAGE_2_HOST_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,							"VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,							"VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_COMMAND_PREPROCESS_BIT_NV,					"VK_PIPELINE_STAGE_2_COMMAND_PREPROCESS_BIT_NV"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_COMMAND_PREPROCESS_BIT_EXT,				"VK_PIPELINE_STAGE_2_COMMAND_PREPROCESS_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_CONDITIONAL_RENDERING_BIT_EXT,				"VK_PIPELINE_STAGE_2_CONDITIONAL_RENDERING_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_EXT,						"VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_EXT,						"VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_EXT"),
@@ -12728,9 +12731,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensity
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT& value)
 {
-	s << "VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM = {\n";
+	s << "VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tfragmentDensityMapOffset = " << value.fragmentDensityMapOffset << '\n';
@@ -12763,9 +12766,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensity
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT& value)
 {
-	s << "VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM = {\n";
+	s << "VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tfragmentDensityOffsetGranularity = " << value.fragmentDensityOffsetGranularity << '\n';
@@ -12783,9 +12786,9 @@ std::ostream& operator<< (std::ostream& s, const VkRenderPassFragmentDensityMapC
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkSubpassFragmentDensityMapOffsetEndInfoQCOM& value)
+std::ostream& operator<< (std::ostream& s, const VkRenderPassFragmentDensityMapOffsetEndInfoEXT& value)
 {
-	s << "VkSubpassFragmentDensityMapOffsetEndInfoQCOM = {\n";
+	s << "VkRenderPassFragmentDensityMapOffsetEndInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tfragmentDensityOffsetCount = " << value.fragmentDensityOffsetCount << '\n';
@@ -18087,6 +18090,15 @@ std::ostream& operator<< (std::ostream& s, const VkRenderingInfo& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkRenderingEndInfoEXT& value)
+{
+	s << "VkRenderingEndInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkRenderingAttachmentInfo& value)
 {
 	s << "VkRenderingAttachmentInfo = {\n";
@@ -20680,6 +20692,27 @@ std::ostream& operator<< (std::ostream& s, const VkConvertCooperativeVectorMatri
 	s << "\tsrcStride = " << value.srcStride << '\n';
 	s << "\tdstLayout = " << value.dstLayout << '\n';
 	s << "\tdstStride = " << value.dstStride << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSetPresentConfigNV& value)
+{
+	s << "VkSetPresentConfigNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tnumFramesPerBatch = " << value.numFramesPerBatch << '\n';
+	s << "\tpresentConfigFeedback = " << value.presentConfigFeedback << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePresentMeteringFeaturesNV& value)
+{
+	s << "VkPhysicalDevicePresentMeteringFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpresentMetering = " << value.presentMetering << '\n';
 	s << '}';
 	return s;
 }

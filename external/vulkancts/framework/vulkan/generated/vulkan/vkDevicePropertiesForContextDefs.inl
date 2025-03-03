@@ -65,7 +65,6 @@ const vk::VkPhysicalDeviceMaintenance4Properties&						Context::getMaintenance4P
 const vk::VkPhysicalDeviceShaderCorePropertiesARM&						Context::getShaderCorePropertiesARM							(void) const { return m_device->getShaderCorePropertiesARM();						}
 const vk::VkPhysicalDeviceSchedulingControlsPropertiesARM&				Context::getSchedulingControlsPropertiesARM					(void) const { return m_device->getSchedulingControlsPropertiesARM();				}
 const vk::VkPhysicalDeviceRenderPassStripedPropertiesARM&				Context::getRenderPassStripedPropertiesARM					(void) const { return m_device->getRenderPassStripedPropertiesARM();				}
-const vk::VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM&		Context::getFragmentDensityMapOffsetPropertiesQCOM			(void) const { return m_device->getFragmentDensityMapOffsetPropertiesQCOM();		}
 const vk::VkPhysicalDeviceCopyMemoryIndirectPropertiesNV&				Context::getCopyMemoryIndirectProperties					(void) const { return m_device->getCopyMemoryIndirectProperties();					}
 const vk::VkPhysicalDeviceMemoryDecompressionPropertiesNV&				Context::getMemoryDecompressionProperties					(void) const { return m_device->getMemoryDecompressionProperties();					}
 const vk::VkPhysicalDeviceImageProcessingPropertiesQCOM&				Context::getImageProcessingPropertiesQCOM					(void) const { return m_device->getImageProcessingPropertiesQCOM();					}
@@ -95,5 +94,6 @@ const vk::VkPhysicalDevicePartitionedAccelerationStructurePropertiesNV&	Context:
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT&			Context::getDeviceGeneratedCommandsPropertiesEXT			(void) const { return m_device->getDeviceGeneratedCommandsPropertiesEXT();			}
 const vk::VkPhysicalDeviceImageAlignmentControlPropertiesMESA&			Context::getImageAlignmentControlPropertiesMESA				(void) const { return m_device->getImageAlignmentControlPropertiesMESA();			}
 const vk::VkPhysicalDeviceCooperativeMatrix2PropertiesNV&				Context::getCooperativeMatrix2PropertiesNV					(void) const { return m_device->getCooperativeMatrix2PropertiesNV();				}
+const vk::VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT&		Context::getFragmentDensityMapOffsetPropertiesEXT			(void) const { return m_device->getFragmentDensityMapOffsetPropertiesEXT();			}
 const vk::VkPhysicalDeviceSubgroupProperties&							Context::getSubgroupProperties								(void) const { return m_device->getSubgroupProperties();							}
 const vk::VkPhysicalDeviceProtectedMemoryProperties&					Context::getProtectedMemoryProperties						(void) const { return m_device->getProtectedMemoryProperties();						}
