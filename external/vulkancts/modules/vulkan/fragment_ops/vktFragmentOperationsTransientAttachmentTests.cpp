@@ -137,7 +137,7 @@ VkImageCreateInfo makeImageCreateInfo(const VkFormat format, const tcu::IVec2 &s
 {
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0,               // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         format,                              // VkFormat format;
@@ -149,7 +149,7 @@ VkImageCreateInfo makeImageCreateInfo(const VkFormat format, const tcu::IVec2 &s
         usage,                               // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
     return imageParams;
@@ -197,30 +197,30 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
         (VkSubpassDescriptionFlags)0,                      // VkSubpassDescriptionFlags        flags
         VK_PIPELINE_BIND_POINT_GRAPHICS,                   // VkPipelineBindPoint                pipelineBindPoint
         hasInputAttachment ? 1u : 0u,                      // uint32_t                            inputAttachmentCount
-        hasInputAttachment ? &testReferences[0] : DE_NULL, // const VkAttachmentReference*        pInputAttachments
+        hasInputAttachment ? &testReferences[0] : nullptr, // const VkAttachmentReference*        pInputAttachments
         !hasDepthStencil || hasInputAttachment ? 1u : 0u,  // uint32_t                            colorAttachmentCount
         !hasDepthStencil || hasInputAttachment ? &testReferences[maxAttachmentIndex] :
-                                                 DE_NULL, // const VkAttachmentReference*        pColorAttachments
-        DE_NULL,                                          // const VkAttachmentReference*        pResolveAttachments
+                                                 nullptr, // const VkAttachmentReference*        pColorAttachments
+        nullptr,                                          // const VkAttachmentReference*        pResolveAttachments
         hasDepthStencil && !hasInputAttachment ? &testReferences[0] :
-                                                 DE_NULL, // const VkAttachmentReference*        pDepthStencilAttachment
+                                                 nullptr, // const VkAttachmentReference*        pDepthStencilAttachment
         0u,                                               // uint32_t                            preserveAttachmentCount
-        DE_NULL                                           // const uint32_t*                    pPreserveAttachments
+        nullptr                                           // const uint32_t*                    pPreserveAttachments
     };
 
     const VkRenderPassCreateInfo renderPassInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType                    sType
-        DE_NULL,                                   // const void*                        pNext
+        nullptr,                                   // const void*                        pNext
         (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags            flags
         uint32_t(attachmentDescriptions.size()),   // uint32_t                            attachmentCount
         attachmentDescriptions.data(),             // const VkAttachmentDescription*    pAttachments
         1u,                                        // uint32_t                            subpassCount
         &subpassDescription,                       // const VkSubpassDescription*        pSubpasses
         0u,                                        // uint32_t                            dependencyCount
-        DE_NULL                                    // const VkSubpassDependency*        pDependencies
+        nullptr                                    // const VkSubpassDependency*        pDependencies
     };
 
-    return createRenderPass(vk, device, &renderPassInfo, DE_NULL);
+    return createRenderPass(vk, device, &renderPassInfo, nullptr);
 }
 
 class TransientAttachmentTest : public TestCase

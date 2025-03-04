@@ -1,0 +1,17 @@
+{
+    "mandatory_features": {
+        "VkPhysicalDeviceCooperativeVectorFeaturesNV": [
+            {
+                "features": [
+                    "cooperativeVector"
+                ],
+                "requirements": [
+                    "VK_NV_cooperative_vector"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            }
+        ]
+    }
+}

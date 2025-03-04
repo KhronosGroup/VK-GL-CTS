@@ -58,7 +58,7 @@ static inline int64_t toInt64(const char *str)
 
 static inline bool toBool(const char *str)
 {
-    return deStringEqual(str, "OK") || deStringEqual(str, "True");
+    return strcmp(str, "OK") == 0 || strcmp(str, "True") == 0;
 }
 
 static const char *stripLeadingWhitespace(const char *str)
@@ -200,7 +200,7 @@ static inline int getEnumValue(const char *enumName, const EnumMapEntry *entries
 
     for (int ndx = 0; ndx < numEntries; ndx++)
     {
-        if (entries[ndx].hash == hash && deStringEqual(entries[ndx].name, name))
+        if (entries[ndx].hash == hash && strcmp(entries[ndx].name, name) == 0)
             return entries[ndx].value;
     }
 
@@ -286,10 +286,10 @@ static ri::NumericValue getNumericValue(const std::string &value)
 }
 
 TestResultParser::TestResultParser(void)
-    : m_result(DE_NULL)
+    : m_result(nullptr)
     , m_state(STATE_NOT_INITIALIZED)
     , m_logVersion(TESTLOGVERSION_LAST)
-    , m_curItemList(DE_NULL)
+    , m_curItemList(nullptr)
     , m_base64DecodeOffset(0)
 {
 }
@@ -303,10 +303,10 @@ void TestResultParser::clear(void)
     m_xmlParser.clear();
     m_itemStack.clear();
 
-    m_result             = DE_NULL;
+    m_result             = nullptr;
     m_state              = STATE_NOT_INITIALIZED;
     m_logVersion         = TESTLOGVERSION_LAST;
-    m_curItemList        = DE_NULL;
+    m_curItemList        = nullptr;
     m_base64DecodeOffset = 0;
     m_curNumValue.clear();
 }
@@ -395,7 +395,7 @@ const char *TestResultParser::getAttribute(const char *name)
 
 ri::Item *TestResultParser::getCurrentItem(void)
 {
-    return !m_itemStack.empty() ? m_itemStack.back() : DE_NULL;
+    return !m_itemStack.empty() ? m_itemStack.back() : nullptr;
 }
 
 ri::List *TestResultParser::getCurrentItemList(void)
@@ -406,7 +406,7 @@ ri::List *TestResultParser::getCurrentItemList(void)
 
 void TestResultParser::updateCurrentItemList(void)
 {
-    m_curItemList = DE_NULL;
+    m_curItemList = nullptr;
 
     for (vector<ri::Item *>::reverse_iterator i = m_itemStack.rbegin(); i != m_itemStack.rend(); i++)
     {
@@ -449,7 +449,7 @@ void TestResultParser::handleElementStart(void)
     if (m_state == STATE_INITIALIZED)
     {
         // Expect TestCaseResult.
-        if (!deStringEqual(elemName, "TestCaseResult"))
+        if (strcmp(elemName, "TestCaseResult") != 0)
             throw TestResultParseError(string("Expected <TestCaseResult>, got <") + elemName + ">");
 
         const char *version = getAttribute("Version");
@@ -476,7 +476,7 @@ void TestResultParser::handleElementStart(void)
     {
         ri::List *curList    = getCurrentItemList();
         ri::Type itemType    = getResultItemType(elemName);
-        ri::Item *item       = DE_NULL;
+        ri::Item *item       = nullptr;
         ri::Item *parentItem = getCurrentItem();
         ri::Type parentType  = parentItem ? parentItem->getType() : ri::TYPE_LAST;
 
@@ -732,10 +732,10 @@ void TestResultParser::handleElementEnd(void)
     if (m_state != STATE_IN_TEST_CASE_RESULT)
         throw TestResultParseError(string("Unexpected </") + elemName + "> outside of <TestCaseResult>");
 
-    if (deStringEqual(elemName, "TestCaseResult"))
+    if (strcmp(elemName, "TestCaseResult") == 0)
     {
         // Logs from buggy test cases may contain invalid XML.
-        // DE_ASSERT(getCurrentItem() == DE_NULL);
+        // DE_ASSERT(getCurrentItem() == nullptr);
         // \todo [2012-11-22 pyry] Log warning.
 
         m_state = STATE_TEST_CASE_RESULT_ENDED;

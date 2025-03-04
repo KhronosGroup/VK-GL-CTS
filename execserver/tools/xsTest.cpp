@@ -252,7 +252,7 @@ void TestExecutor::runCases(const std::vector<TestCase *> &testCases)
 class FilePrinter : public de::Thread
 {
 public:
-    FilePrinter(void) : m_curFile(DE_NULL)
+    FilePrinter(void) : m_curFile(nullptr)
     {
     }
 
@@ -271,7 +271,7 @@ public:
         while (deFile_read(m_curFile, &buf[0], (int64_t)sizeof(buf), &numRead) == DE_FILERESULT_SUCCESS)
             fwrite(&buf[0], 1, (size_t)numRead, stdout);
 
-        m_curFile = DE_NULL;
+        m_curFile = nullptr;
     }
 
 private:
@@ -283,7 +283,7 @@ bool TestExecutor::runCase(TestCase *testCase)
     printf("%s\n", testCase->getName());
 
     bool success          = false;
-    deProcess *serverProc = DE_NULL;
+    deProcess *serverProc = nullptr;
     FilePrinter stdoutPrinter;
     FilePrinter stderrPrinter;
 
@@ -295,7 +295,7 @@ bool TestExecutor::runCase(TestCase *testCase)
             serverProc     = deProcess_create();
             XS_CHECK(serverProc);
 
-            if (!deProcess_start(serverProc, cmdLine.c_str(), DE_NULL))
+            if (!deProcess_start(serverProc, cmdLine.c_str(), nullptr))
             {
                 string errMsg = deProcess_getLastError(serverProc);
                 deProcess_destroy(serverProc);
@@ -897,14 +897,14 @@ void runExecServerTests(int argc, const char *const *argv)
             testCtx.logFileName = arg + 20;
         else if (deStringBeginsWith(arg, "--deqp-caselist="))
             testCtx.caseList = arg + 16;
-        else if (deStringEqual(arg, "--deqp-stdin-caselist"))
+        else if (strcmp(arg, "--deqp-stdin-caselist") == 0)
         {
             // \todo [pyry] This is rather brute-force solution...
             char c;
             while (fread(&c, 1, 1, stdin) == 1 && c != 0)
                 testCtx.caseList += c;
         }
-        else if (deStringEqual(arg, "--start-server"))
+        else if (strcmp(arg, "--start-server") == 0)
             testCtx.startServer = true;
         else
         {
@@ -972,18 +972,18 @@ void testProcFile (void)
         deDeleteFile("test.txt");
     deFile* file = deFile_create("test.txt", DE_FILEMODE_CREATE|DE_FILEMODE_WRITE);
     const char test[] = "Hello";
-    XS_CHECK(deFile_write(file, test, sizeof(test), DE_NULL) == DE_FILERESULT_SUCCESS);
+    XS_CHECK(deFile_write(file, test, sizeof(test), nullptr) == DE_FILERESULT_SUCCESS);
     deFile_destroy(file);
 
     /* Read. */
     char buf[10] = { 0 };
     file = deFile_create("test.txt", DE_FILEMODE_OPEN|DE_FILEMODE_READ);
-    XS_CHECK(deFile_read(file, buf, sizeof(test), DE_NULL) == DE_FILERESULT_SUCCESS);
+    XS_CHECK(deFile_read(file, buf, sizeof(test), nullptr) == DE_FILERESULT_SUCCESS);
     printf("buf: %s\n", buf);
     deFile_destroy(file);
 
     /* Process test. */
-    deProcess* proc = deProcess_create("ls -lah /Users/pyry", DE_NULL);
+    deProcess* proc = deProcess_create("ls -lah /Users/pyry", nullptr);
     deFile* out = deProcess_getStdOut(proc);
 
     int64_t numRead = 0;

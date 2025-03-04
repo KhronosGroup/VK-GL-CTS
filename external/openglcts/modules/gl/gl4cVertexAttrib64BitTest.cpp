@@ -3191,17 +3191,17 @@ VAOTest::VAOTest(deqp::Context &context)
     : Base(context, "vao",
            "Verify that non-trivial VAO configurations are correctly supported "
            "for double-precision floating-point types.")
-    , m_bo_1_data(DE_NULL)
+    , m_bo_1_data(nullptr)
     , m_bo_1_data_size(0)
     , m_bo_1_offset_matrix(0)
     , m_bo_1_offset_ubyte(72)
     , m_bo_1_offset_short(73)
     , m_bo_1_offset_double(75)
-    , m_bo_2_data(DE_NULL)
+    , m_bo_2_data(nullptr)
     , m_bo_2_data_size(0)
     , m_bo_2_offset_sbyte(0)
     , m_bo_2_offset_matrix(1)
-    , m_bo_index_data(DE_NULL)
+    , m_bo_index_data(nullptr)
     , m_bo_index_data_size(0)
     , m_bo_id_1(0)
     , m_bo_id_2(0)
@@ -3259,25 +3259,25 @@ VAOTest::VAOTest(deqp::Context &context)
  *  been created during test execution */
 void VAOTest::deinit()
 {
-    if (m_bo_1_data != DE_NULL)
+    if (m_bo_1_data != nullptr)
     {
         delete[] m_bo_1_data;
 
-        m_bo_1_data = DE_NULL;
+        m_bo_1_data = nullptr;
     }
 
-    if (m_bo_2_data != DE_NULL)
+    if (m_bo_2_data != nullptr)
     {
         delete[] m_bo_2_data;
 
-        m_bo_2_data = DE_NULL;
+        m_bo_2_data = nullptr;
     }
 
-    if (m_bo_index_data != DE_NULL)
+    if (m_bo_index_data != nullptr)
     {
         delete[] m_bo_index_data;
 
-        m_bo_index_data = DE_NULL;
+        m_bo_index_data = nullptr;
     }
 
     if (m_bo_id_1 != 0)
@@ -3391,13 +3391,13 @@ bool VAOTest::executeTest(_draw_call_type draw_call, bool instanced, bool zero_v
         {
             if (instanced)
             {
-                gl.drawElementsInstanced(GL_POINTS, m_n_batches, GL_UNSIGNED_SHORT, DE_NULL /* indices */,
+                gl.drawElementsInstanced(GL_POINTS, m_n_batches, GL_UNSIGNED_SHORT, nullptr /* indices */,
                                          m_n_draw_call_instances);
                 GLU_EXPECT_NO_ERROR(gl.getError(), "glDrawElementsInstanced() call failed.");
             }
             else
             {
-                gl.drawElements(GL_POINTS, m_n_batches, GL_UNSIGNED_SHORT, DE_NULL); /* indices */
+                gl.drawElements(GL_POINTS, m_n_batches, GL_UNSIGNED_SHORT, nullptr); /* indices */
                 GLU_EXPECT_NO_ERROR(gl.getError(), "glDrawElements() call failed.");
             }
 
@@ -3434,8 +3434,8 @@ bool VAOTest::executeTest(_draw_call_type draw_call, bool instanced, bool zero_v
  **/
 void VAOTest::initBufferObjects()
 {
-    DE_ASSERT(m_bo_1_data != DE_NULL);
-    DE_ASSERT(m_bo_2_data != DE_NULL);
+    DE_ASSERT(m_bo_1_data != nullptr);
+    DE_ASSERT(m_bo_2_data != nullptr);
 
     /* Generate BOs */
     gl.genBuffers(1, &m_bo_id_1);
@@ -3487,7 +3487,7 @@ void VAOTest::initBufferObjects()
     gl.bindBuffer(GL_ARRAY_BUFFER, m_bo_id_result);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() call failed.");
 
-    gl.bufferData(GL_ARRAY_BUFFER, xfb_data_size, DE_NULL /* data */, GL_STATIC_DRAW);
+    gl.bufferData(GL_ARRAY_BUFFER, xfb_data_size, nullptr /* data */, GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 
     /* Set up XFB bindings */
@@ -3501,9 +3501,9 @@ void VAOTest::initBufferObjects()
 /** Initializes buffers that will later be used to fill storage of buffer objects used by the test. */
 void VAOTest::initBuffers()
 {
-    DE_ASSERT(m_bo_1_data == DE_NULL);
-    DE_ASSERT(m_bo_2_data == DE_NULL);
-    DE_ASSERT(m_bo_index_data == DE_NULL);
+    DE_ASSERT(m_bo_1_data == nullptr);
+    DE_ASSERT(m_bo_2_data == nullptr);
+    DE_ASSERT(m_bo_index_data == nullptr);
 
     /* Prepare buffers storing underlying data. The buffers will be used for:
      *

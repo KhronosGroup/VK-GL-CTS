@@ -258,6 +258,21 @@ PipelineConstructionType getConstructionTypeFromRobustnessCase(PipelineRobustnes
     return PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC;
 }
 
+VkFlags getAllShaderStages(tcu::TestContext &testCtx)
+{
+    return testCtx.getCommandLine().isComputeOnly() ?
+               VK_SHADER_STAGE_COMPUTE_BIT :
+               VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+}
+
+VkFlags getAllPipelineStages(tcu::TestContext &testCtx)
+{
+    return testCtx.getCommandLine().isComputeOnly() ?
+               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT :
+               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
+                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
+}
+
 struct CaseDef
 {
     VkFormat format;
@@ -545,8 +560,15 @@ void RobustnessExtsTestCase::checkSupport(Context &context) const
                 VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT)
                 TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT is not supported");
 #ifndef CTS_USES_VULKANSC
-            if ((formatProperties3.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR) !=
-                VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR)
+            if ((!m_data.formatQualifier) &&
+                ((formatProperties3.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR) !=
+                 VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR))
+                TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT is not supported");
+            break;
+        case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+            if ((!m_data.formatQualifier) &&
+                ((formatProperties3.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR) !=
+                 VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR))
                 TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT is not supported");
 #endif // CTS_USES_VULKANSC
             break;
@@ -892,7 +914,7 @@ static std::string getShaderImageFormatQualifier(const tcu::TextureFormat &forma
 
     default:
         DE_FATAL("Impossible");
-        orderPart = DE_NULL;
+        orderPart = nullptr;
     }
 
     switch (format.type)
@@ -946,7 +968,7 @@ static std::string getShaderImageFormatQualifier(const tcu::TextureFormat &forma
 
     default:
         DE_FATAL("Impossible");
-        typePart = DE_NULL;
+        typePart = nullptr;
     }
 
     return std::string() + orderPart + typePart;
@@ -2048,9 +2070,9 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
     // Create a layout and allocate a descriptor set for it.
 
     const VkDescriptorSetLayoutCreateInfo setLayoutCreateInfo = {
-        vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, DE_NULL,
+        vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr,
 
-        layoutCreateFlags, (uint32_t)bindings.size(), bindings.empty() ? DE_NULL : bindings.data()};
+        layoutCreateFlags, (uint32_t)bindings.size(), bindings.empty() ? nullptr : bindings.data()};
 
     descriptorSetLayout = vk::createDescriptorSetLayout(vk, device, &setLayoutCreateInfo);
 
@@ -2064,16 +2086,16 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
     poolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1);
     poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2);
 
-    descriptorPool = poolBuilder.build(vk, device, poolCreateFlags, 1u, DE_NULL);
+    descriptorPool = poolBuilder.build(vk, device, poolCreateFlags, 1u, nullptr);
 
-    const void *pNext = DE_NULL;
+    const void *pNext = nullptr;
 
     if (!m_data.pushDescriptor)
         descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout, pNext);
 
     BufferWithMemoryPtr buffer;
 
-    uint8_t *bufferPtr = DE_NULL;
+    uint8_t *bufferPtr = nullptr;
     if (!m_data.nullDescriptor)
     {
         // Create a buffer to hold data for all descriptors.
@@ -2153,7 +2175,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
     VkImageMemoryBarrier preImageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType        sType
-        DE_NULL,                                // const void*            pNext
+        nullptr,                                // const void*            pNext
         0u,                                     // VkAccessFlags        srcAccessMask
         VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags        dstAccessMask
         VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout        oldLayout
@@ -2166,7 +2188,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
     VkImageMemoryBarrier postImageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags srcAccessMask;
         VK_ACCESS_SHADER_READ_BIT,              // VkAccessFlags dstAccessMask;
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout oldLayout;
@@ -2209,7 +2231,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
     const VkImageCreateInfo outputImageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         mutableFormatFlag,                   // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         m_data.format,                       // VkFormat format;
@@ -2226,7 +2248,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
             VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
     };
 
@@ -2247,7 +2269,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,       // VkStructureType sType;
-        DE_NULL,                                   // const void* pNext;
+        nullptr,                                   // const void* pNext;
         imageCreateFlags,                          // VkImageCreateFlags flags;
         imageViewTypeToImageType(m_data.viewType), // VkImageType imageType;
         m_data.format,                             // VkFormat format;
@@ -2264,13 +2286,13 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
             VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
     };
 
     VkImageViewCreateInfo imageViewCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                  // const void* pNext;
+        nullptr,                                  // const void* pNext;
         (VkImageViewCreateFlags)0u,               // VkImageViewCreateFlags flags;
         VK_NULL_HANDLE,                           // VkImage image;
         VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -2369,7 +2391,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
             const vk::VkBufferViewCreateInfo viewCreateInfo = {
                 vk::VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,
-                DE_NULL,
+                nullptr,
                 (vk::VkBufferViewCreateFlags)0,
                 **buffer,                          // buffer
                 m_data.format,                     // format
@@ -2434,8 +2456,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                 postImageBarrier.image = img;
 
                 vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                      (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                                      (const VkBufferMemoryBarrier *)DE_NULL, 1, &preImageBarrier);
+                                      (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &preImageBarrier);
 
                 for (unsigned int i = 0; i < clearLayers; ++i)
                 {
@@ -2461,9 +2482,8 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                             clearValue.uint32[0] += 1;
                     }
                 }
-                vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-                                      (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                                      (const VkBufferMemoryBarrier *)DE_NULL, 1, &postImageBarrier);
+                vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, m_data.allPipelineStages,
+                                      (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &postImageBarrier);
             }
             else
             {
@@ -2510,19 +2530,16 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                         .update(vk, device);
 
                     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                                          (const VkBufferMemoryBarrier *)DE_NULL, 1, &imageBarrierPre);
+                                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &imageBarrierPre);
 
                     vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineFillImage);
                     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayoutFillImage, 0u,
-                                             1u, &(*descriptorSetFillImage), 0u, DE_NULL);
+                                             1u, &(*descriptorSetFillImage), 0u, nullptr);
 
                     vk.cmdDispatch(*cmdBuffer, imageInfo.extent.width, imageInfo.extent.height, clearLayers);
 
-                    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                          VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (VkDependencyFlags)0, 0,
-                                          (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL,
-                                          1, &imageBarrierPost);
+                    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_data.allPipelineStages,
+                                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &imageBarrierPost);
                 }
                 else
                 {
@@ -2532,7 +2549,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                                                                                             0, 0, clearLayers)));
 
                     copyBufferToImage(vk, *cmdBuffer, bufferR64, size, bufferImageCopy, VK_IMAGE_ASPECT_COLOR_BIT, 1,
-                                      clearLayers, img, VK_IMAGE_LAYOUT_GENERAL, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+                                      clearLayers, img, VK_IMAGE_LAYOUT_GENERAL, m_data.allPipelineStages);
                 }
             }
         }
@@ -2542,7 +2559,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
     const VkSamplerCreateInfo samplerParams = {
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         0,                                       // VkSamplerCreateFlags flags;
         VK_FILTER_NEAREST,                       // VkFilter                    magFilter:
         VK_FILTER_NEAREST,                       // VkFilter minFilter;
@@ -2570,12 +2587,12 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,
         1u,                         // setLayoutCount
         &descriptorSetLayout.get(), // pSetLayouts
         0u,                         // pushConstantRangeCount
-        DE_NULL,                    // pPushConstantRanges
+        nullptr,                    // pPushConstantRanges
     };
 
     Move<VkPipelineLayout> pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo, NULL);
@@ -2635,7 +2652,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
                 VkWriteDescriptorSet w = {
                     VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,                  // sType
-                    DE_NULL,                                                 // pNext
+                    nullptr,                                                 // pNext
                     m_data.pushDescriptor ? VK_NULL_HANDLE : *descriptorSet, // dstSet
                     (uint32_t)b,                                             // binding
                     0,                                                       // dstArrayElement
@@ -2706,7 +2723,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                 NULL,                                                     // void* pNext;
                 0,       // VkDescriptorUpdateTemplateCreateFlags flags;
                 0,       // uint32_t descriptorUpdateEntryCount;
-                DE_NULL, // uint32_t descriptorUpdateEntryCount;
+                nullptr, // uint32_t descriptorUpdateEntryCount;
                 m_data.pushDescriptor ?
                     VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR :
                     VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET, // VkDescriptorUpdateTemplateType templateType;
@@ -2738,8 +2755,8 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                         templateCreateInfo.pDescriptorUpdateEntries   = templateVectorsBefore[i]->data();
                         Move<VkDescriptorUpdateTemplate> descriptorUpdateTemplate =
                             createDescriptorUpdateTemplate(vk, device, &templateCreateInfo, NULL);
-                        vk.cmdPushDescriptorSetWithTemplateKHR(*cmdBuffer, *descriptorUpdateTemplate, *pipelineLayout,
-                                                               0, templateVectorData[i]);
+                        vk.cmdPushDescriptorSetWithTemplate(*cmdBuffer, *descriptorUpdateTemplate, *pipelineLayout, 0,
+                                                            templateVectorData[i]);
                     }
                 }
             }
@@ -2770,8 +2787,8 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 #ifndef CTS_USES_VULKANSC
                 if (writesBeforeBindVec.size())
                 {
-                    vk.cmdPushDescriptorSetKHR(*cmdBuffer, bindPoint, *pipelineLayout, 0,
-                                               (uint32_t)writesBeforeBindVec.size(), &writesBeforeBindVec[0]);
+                    vk.cmdPushDescriptorSet(*cmdBuffer, bindPoint, *pipelineLayout, 0,
+                                            (uint32_t)writesBeforeBindVec.size(), &writesBeforeBindVec[0]);
                 }
 #endif
             }
@@ -2925,13 +2942,13 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
             (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags    flags
             VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint            pipelineBindPoint
             0u,                              // uint32_t                        inputAttachmentCount
-            DE_NULL,                         // const VkAttachmentReference*    pInputAttachments
+            nullptr,                         // const VkAttachmentReference*    pInputAttachments
             0u,                              // uint32_t                        colorAttachmentCount
-            DE_NULL,                         // const VkAttachmentReference*    pColorAttachments
-            DE_NULL,                         // const VkAttachmentReference*    pResolveAttachments
-            DE_NULL,                         // const VkAttachmentReference*    pDepthStencilAttachment
+            nullptr,                         // const VkAttachmentReference*    pColorAttachments
+            nullptr,                         // const VkAttachmentReference*    pResolveAttachments
+            nullptr,                         // const VkAttachmentReference*    pDepthStencilAttachment
             0u,                              // uint32_t                        preserveAttachmentCount
-            DE_NULL                          // const uint32_t*                pPreserveAttachments
+            nullptr                          // const uint32_t*                pPreserveAttachments
         };
 
         const std::vector<VkSubpassDependency> subpassDependencies = {
@@ -2951,10 +2968,10 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
         const VkRenderPassCreateInfo renderPassParams = {
             VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureTypei                    sType
-            DE_NULL,                                   // const void*                        pNext
+            nullptr,                                   // const void*                        pNext
             (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags            flags
             0u,                                        // uint32_t                            attachmentCount
-            DE_NULL,                                   // const VkAttachmentDescription*    pAttachments
+            nullptr,                                   // const VkAttachmentDescription*    pAttachments
             1u,                                        // uint32_t                            subpassCount
             &subpassDesc,                              // const VkSubpassDescription*        pSubpasses
             de::sizeU32(subpassDependencies),          // uint32_t                            dependencyCount
@@ -2965,11 +2982,11 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
         const vk::VkFramebufferCreateInfo framebufferParams = {
             vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // sType
-            DE_NULL,                                       // pNext
+            nullptr,                                       // pNext
             (vk::VkFramebufferCreateFlags)0,
             *renderPass, // renderPass
             0u,          // attachmentCount
-            DE_NULL,     // pAttachments
+            nullptr,     // pAttachments
             DIM,         // width
             DIM,         // height
             1u,          // layers
@@ -2994,7 +3011,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
         VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags flags;
             numAttribs,                                                // uint32_t vertexBindingDescriptionCount;
             &vertexInputBindingDescription,  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -3004,7 +3021,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
         const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                     // const void* pNext;
+            nullptr,                                                     // const void* pNext;
             (VkPipelineInputAssemblyStateCreateFlags)0, // VkPipelineInputAssemblyStateCreateFlags flags;
             (m_data.stage == STAGE_VERTEX) ? VK_PRIMITIVE_TOPOLOGY_POINT_LIST :
                                              VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, // VkPrimitiveTopology topology;
@@ -3013,7 +3030,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
         const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                    // const void* pNext;
+            nullptr,                                                    // const void* pNext;
             (VkPipelineRasterizationStateCreateFlags)0,          // VkPipelineRasterizationStateCreateFlags flags;
             VK_FALSE,                                            // VkBool32 depthClampEnable;
             (m_data.stage == STAGE_VERTEX) ? VK_TRUE : VK_FALSE, // VkBool32 rasterizerDiscardEnable;
@@ -3029,12 +3046,12 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
         const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType                            sType
-            DE_NULL,               // const void*                                pNext
+            nullptr,               // const void*                                pNext
             0u,                    // VkPipelineMultisampleStateCreateFlags    flags
             VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits                    rasterizationSamples
             VK_FALSE,              // VkBool32                                    sampleShadingEnable
             1.0f,                  // float                                    minSampleShading
-            DE_NULL,               // const VkSampleMask*                        pSampleMask
+            nullptr,               // const VkSampleMask*                        pSampleMask
             VK_FALSE,              // VkBool32                                    alphaToCoverageEnable
             VK_FALSE               // VkBool32                                    alphaToOneEnable
         };
@@ -3044,7 +3061,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
         const VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                            sType
-            DE_NULL,                                               // const void*                                pNext
+            nullptr,                                               // const void*                                pNext
             (VkPipelineViewportStateCreateFlags)0,                 // VkPipelineViewportStateCreateFlags        flags
             1u,        // uint32_t                                    viewportCount
             &viewport, // const VkViewport*                        pViewports
@@ -3071,18 +3088,18 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
         VkPipelineShaderStageCreateInfo shaderCreateInfo[2] = {
             {
-                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, DE_NULL, (VkPipelineShaderStageCreateFlags)0,
+                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, (VkPipelineShaderStageCreateFlags)0,
                 VK_SHADER_STAGE_VERTEX_BIT, // stage
                 *vs,                        // shader
                 "main",
-                DE_NULL, // pSpecializationInfo
+                nullptr, // pSpecializationInfo
             },
             {
-                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, DE_NULL, (VkPipelineShaderStageCreateFlags)0,
+                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, (VkPipelineShaderStageCreateFlags)0,
                 VK_SHADER_STAGE_FRAGMENT_BIT, // stage
                 *fs,                          // shader
                 "main",
-                DE_NULL, // pSpecializationInfo
+                nullptr, // pSpecializationInfo
             }};
 
         // Base structure with everything for the monolithic case.
@@ -3254,7 +3271,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
     }
 
     const VkImageMemoryBarrier imageBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType        sType
-                                               DE_NULL,                                // const void*            pNext
+                                               nullptr,                                // const void*            pNext
                                                0u,                           // VkAccessFlags        srcAccessMask
                                                VK_ACCESS_TRANSFER_WRITE_BIT, // VkAccessFlags        dstAccessMask
                                                VK_IMAGE_LAYOUT_UNDEFINED,    // VkImageLayout        oldLayout
@@ -3271,8 +3288,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                                                }};
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                          (const VkBufferMemoryBarrier *)DE_NULL, 1, &imageBarrier);
+                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
 
     vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
 
@@ -3290,21 +3306,22 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                                    makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1)));
         copyBufferToImage(vk, *cmdBuffer, *(*bufferOutputImageR64), sizeOutputR64, bufferImageCopy,
                           VK_IMAGE_ASPECT_COLOR_BIT, 1, 1, **images[0], VK_IMAGE_LAYOUT_GENERAL,
-                          VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+                          m_data.allPipelineStages);
     }
 
     VkMemoryBarrier memBarrier = {
         VK_STRUCTURE_TYPE_MEMORY_BARRIER, // sType
-        DE_NULL,                          // pNext
+        nullptr,                          // pNext
         0u,                               // srcAccessMask
         0u,                               // dstAccessMask
     };
 
     memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    memBarrier.dstAccessMask =
-        VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+    memBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+    if (!m_context.getTestContext().getCommandLine().isComputeOnly())
+        memBarrier.dstAccessMask |= VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, m_data.allPipelineStages, 0, 1, &memBarrier, 0,
-                          DE_NULL, 0, DE_NULL);
+                          nullptr, 0, nullptr);
 
     if (m_data.stage == STAGE_COMPUTE)
     {
@@ -3318,7 +3335,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 #endif
     else
     {
-        beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(DIM, DIM), 0, DE_NULL,
+        beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(DIM, DIM), 0, nullptr,
                         VK_SUBPASS_CONTENTS_INLINE);
         // Draw a point cloud for vertex shader testing, and a single quad for fragment shader testing
         if (m_data.descriptorType == VERTEX_ATTRIBUTE_FETCH)
@@ -3349,7 +3366,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
     memBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
     memBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
     vk.cmdPipelineBarrier(*cmdBuffer, m_data.allPipelineStages, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &memBarrier, 0,
-                          DE_NULL, 0, DE_NULL);
+                          nullptr, 0, nullptr);
 
     const VkBufferImageCopy copyRegion = makeBufferImageCopy(
         makeExtent3D(DIM, DIM, 1u), makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u));
@@ -3358,7 +3375,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
     memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     memBarrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &memBarrier, 0,
-                          DE_NULL, 0, DE_NULL);
+                          nullptr, 0, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
 
@@ -3636,10 +3653,29 @@ tcu::TestStatus OutOfBoundsStrideInstance::iterate(void)
         de::dataOrNull(dynamicStates),                        // const VkDynamicState* pDynamicStates;
     };
 
+    const void *pNext = nullptr;
+
+#ifndef CTS_USES_VULKANSC
+    VkPipelineRobustnessCreateInfoEXT pipelineRobustnessCreateInfo;
+    if (m_params.pipelineRobustness)
+    {
+        pipelineRobustnessCreateInfo = {
+            VK_STRUCTURE_TYPE_PIPELINE_ROBUSTNESS_CREATE_INFO_EXT, //VkStructureType sType;
+            nullptr,                                               //const void *pNext;
+            VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2_EXT, //VkPipelineRobustnessBufferBehaviorEXT storageBuffers;
+            VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2_EXT, //VkPipelineRobustnessBufferBehaviorEXT uniformBuffers;
+            VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2_EXT, //VkPipelineRobustnessBufferBehaviorEXT vertexInputs;
+            VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_ROBUST_IMAGE_ACCESS_2_EXT, //VkPipelineRobustnessImageBehaviorEXT images;
+        };
+
+        pNext = &pipelineRobustnessCreateInfo;
+    }
+#endif // CTS_USES_VULKANSC
+
     const auto pipeline = makeGraphicsPipeline(
         vkd, device, pipelineLayout.get(), vertModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
         fragModule.get(), renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, 0u,
-        &inputStateCreateInfo, nullptr, nullptr, nullptr, nullptr, &dynamicStateCreateInfo);
+        &inputStateCreateInfo, nullptr, nullptr, nullptr, nullptr, &dynamicStateCreateInfo, pNext);
 
     // Command pool and buffer.
     const CommandPoolWithBuffer cmd(vkd, device, qfIndex);
@@ -4012,13 +4048,8 @@ static void createTests(tcu::TestCaseGroup *group, bool robustness2, bool pipeli
                                                      stageNdx++)
                                                 {
                                                     Stage currentStage = static_cast<Stage>(stageCases[stageNdx].count);
-                                                    VkFlags allShaderStages = VK_SHADER_STAGE_COMPUTE_BIT |
-                                                                              VK_SHADER_STAGE_VERTEX_BIT |
-                                                                              VK_SHADER_STAGE_FRAGMENT_BIT;
-                                                    VkFlags allPipelineStages = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-                                                                                VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
-                                                                                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
-                                                                                VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
+                                                    VkFlags allShaderStages   = getAllShaderStages(testCtx);
+                                                    VkFlags allPipelineStages = getAllPipelineStages(testCtx);
 #ifndef CTS_USES_VULKANSC
                                                     if ((Stage)stageCases[stageNdx].count == STAGE_RAYGEN)
                                                     {

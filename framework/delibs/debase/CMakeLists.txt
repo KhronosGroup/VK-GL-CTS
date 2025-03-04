@@ -38,3 +38,7 @@ endif ()
 if (DE_OS_IS_SYMBIAN)
     target_link_libraries(debase gcc)
 endif()
+
+if (DE_OS_IS_ANDROID)
+	target_link_libraries(debase log)
+endif()

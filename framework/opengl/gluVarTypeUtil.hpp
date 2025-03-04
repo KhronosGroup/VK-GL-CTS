@@ -263,7 +263,7 @@ public:
     static SubTypeIterator<IsExpanded> end(const VarType *type)
     {
         DE_UNREF(type);
-        return SubTypeIterator(DE_NULL);
+        return SubTypeIterator(nullptr);
     }
 
     bool operator==(const SubTypeIterator<IsExpanded> &other) const
@@ -362,13 +362,13 @@ SubTypeIterator<IsExpanded> &SubTypeIterator<IsExpanded>::operator++(void)
         if (!m_path.empty())
             findNext();
         else
-            m_type = DE_NULL; // Unset type to signal end.
+            m_type = nullptr; // Unset type to signal end.
     }
     else
     {
         // First type was already expanded.
         DE_ASSERT(IsExpanded()(getVarType(*m_type, m_path)));
-        m_type = DE_NULL;
+        m_type = nullptr;
     }
 
     return *this;

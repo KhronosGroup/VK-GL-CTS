@@ -142,7 +142,20 @@ tcu::TestNode::IterateResult FunctionalTest::iterate()
                         for (glw::GLuint k = 0; k < COMPONENTS_COUNT; ++k)
                         {
                             /* Prepare destination texture. */
-                            prepareDestinationTextureAndFramebuffer(s_formats[i], GL_TEXTURE_2D);
+                            try
+                            {
+                                prepareDestinationTextureAndFramebuffer(s_formats[i], GL_TEXTURE_2D);
+                            }
+                            catch (tcu::NotSupportedError &e)
+                            {
+                                // According to OpenGL 3.1 spec, page 119, R16_SNORM is not mandatory for
+                                // rendering. If the driver do not support it, then just skip the
+                                // related tests.
+                                if (isFixedSignedType(s_formats[i]))
+                                    continue;
+                                else
+                                    throw tcu::TestError(e.getMessage());
+                            }
 
                             /* Building program (throws on failure). */
                             m_program =
@@ -265,7 +278,7 @@ void FunctionalTest::prepareSourceTexture(TextureInternalFormatDescriptor descri
     }
 
     /* Select proper data set. */
-    glw::GLvoid *source_data  = DE_NULL;
+    glw::GLvoid *source_data  = nullptr;
     glw::GLenum source_type   = GL_NONE;
     glw::GLenum source_format = GL_RGBA;
 
@@ -1450,7 +1463,7 @@ glw::GLuint buildProgram(glw::Functions const &gl, tcu::TestLog &log, glw::GLcha
 
         for (glw::GLuint i = 0; i < shader_count; ++i)
         {
-            if (DE_NULL != shader[i].source)
+            if (nullptr != shader[i].source)
             {
                 shader[i].id = gl.createShader(shader[i].type);
 

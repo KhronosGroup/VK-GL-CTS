@@ -44,12 +44,12 @@ TcpServer::TcpServer(deSocketFamily family, int port) : m_socket()
 
 void TcpServer::runServer(void)
 {
-    de::Socket *clientSocket = DE_NULL;
+    de::Socket *clientSocket = nullptr;
     de::SocketAddress clientAddr;
 
-    while ((clientSocket = m_socket.accept(clientAddr)) != DE_NULL)
+    while ((clientSocket = m_socket.accept(clientAddr)) != nullptr)
     {
-        ConnectionHandler *handler = DE_NULL;
+        ConnectionHandler *handler = nullptr;
 
         try
         {

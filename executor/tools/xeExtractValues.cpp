@@ -271,7 +271,7 @@ static bool parseCommandLine(CommandLine &cmdLine, int argc, const char *const *
     {
         const char *arg = argv[argNdx];
 
-        if (deStringEqual(arg, "--statuscode"))
+        if (strcmp(arg, "--statuscode") == 0)
             cmdLine.statusCode = true;
         else if (!deStringBeginsWith(arg, "--"))
         {

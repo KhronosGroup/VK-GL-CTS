@@ -117,11 +117,11 @@ static const rsg::Variable *findShaderOutputByName(const rsg::Shader &shader, co
 
     for (vector<const rsg::Variable *>::const_iterator iter = outputs.begin(); iter != outputs.end(); ++iter)
     {
-        if (deStringEqual((*iter)->getName(), name))
+        if (strcmp((*iter)->getName(), name) == 0)
             return *iter;
     }
 
-    return DE_NULL;
+    return nullptr;
 }
 
 static const rsg::Variable *findShaderOutputByLocation(const rsg::Shader &shader, int location)
@@ -135,7 +135,7 @@ static const rsg::Variable *findShaderOutputByLocation(const rsg::Shader &shader
             return *iter;
     }
 
-    return DE_NULL;
+    return nullptr;
 }
 
 RandomShaderProgram::RandomShaderProgram(const rsg::Shader &vertexShader, const rsg::Shader &fragmentShader,

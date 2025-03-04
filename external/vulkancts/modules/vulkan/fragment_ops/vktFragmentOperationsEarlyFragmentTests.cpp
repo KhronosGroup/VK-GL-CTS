@@ -65,7 +65,7 @@ inline VkImageCreateInfo makeImageCreateInfo(const tcu::IVec2 &size, const VkFor
 {
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0,               // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         format,                              // VkFormat format;
@@ -77,7 +77,7 @@ inline VkImageCreateInfo makeImageCreateInfo(const tcu::IVec2 &size, const VkFor
         usage,                               // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
     return imageParams;
@@ -111,7 +111,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType                          sType
-        DE_NULL,                                                    // const void*                              pNext
+        nullptr,                                                    // const void*                              pNext
         0u,                                                         // VkPipelineDepthStencilStateCreateFlags   flags
         enableDepthTest ? VK_TRUE : VK_FALSE,   // VkBool32                                 depthTestEnable
         enableDepthTest ? VK_TRUE : VK_FALSE,   // VkBool32                                 depthWriteEnable
@@ -139,9 +139,9 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, // const VkPrimitiveTopology                     topology
         0u,                                  // const uint32_t                                subpass
         0u,                                  // const uint32_t                                patchControlPoints
-        DE_NULL,                             // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-        DE_NULL,                       // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-        DE_NULL,                       // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+        nullptr,                             // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+        nullptr,                       // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+        nullptr,                       // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
         &depthStencilStateCreateInfo); // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
 }
 
@@ -513,7 +513,7 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate(void)
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT,
                                   VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
                                       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  0u, 0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers);
+                                  0u, 0u, nullptr, 0u, nullptr, DE_LENGTH_OF_ARRAY(barriers), barriers);
         }
 
         // Will clear the attachments with specified depth and stencil values.
@@ -521,7 +521,7 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate(void)
 
         vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                                 &descriptorSet.get(), 0u, DE_NULL);
+                                 &descriptorSet.get(), 0u, nullptr);
         vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 
         // Mask half of the attachment image with value that will pass the stencil test.
@@ -859,7 +859,7 @@ tcu::TestStatus EarlyFragmentDiscardTestInstance::iterate(void)
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT,
                                   VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
                                       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  0u, 0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers);
+                                  0u, 0u, nullptr, 0u, nullptr, DE_LENGTH_OF_ARRAY(barriers), barriers);
         }
 
         // Will clear the attachments with specified depth and stencil values.
@@ -867,7 +867,7 @@ tcu::TestStatus EarlyFragmentDiscardTestInstance::iterate(void)
 
         vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                                 &descriptorSet.get(), 0u, DE_NULL);
+                                 &descriptorSet.get(), 0u, nullptr);
         vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 
         // Mask half of the attachment image with value that will pass the stencil test.
@@ -1196,7 +1196,7 @@ Move<VkPipeline> EarlyFragmentSampleMaskTestInstance::makeGraphicsPipeline(
 
     const VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType                          sType
-        DE_NULL,                                                    // const void*                              pNext
+        nullptr,                                                    // const void*                              pNext
         0u,                                                         // VkPipelineDepthStencilStateCreateFlags   flags
         enableDepthTest ? VK_TRUE : VK_FALSE,   // VkBool32                                 depthTestEnable
         enableDepthTest ? VK_TRUE : VK_FALSE,   // VkBool32                                 depthWriteEnable
@@ -1214,7 +1214,7 @@ Move<VkPipeline> EarlyFragmentSampleMaskTestInstance::makeGraphicsPipeline(
 
     const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType                            sType
-        DE_NULL,                                                  // const void*                                pNext
+        nullptr,                                                  // const void*                                pNext
         0u,                                                       // VkPipelineMultisampleStateCreateFlags    flags
         (VkSampleCountFlagBits)m_sampleCount, // VkSampleCountFlagBits                    rasterizationSamples
         true,                                 // VkBool32                                    sampleShadingEnable
@@ -1239,8 +1239,8 @@ Move<VkPipeline> EarlyFragmentSampleMaskTestInstance::makeGraphicsPipeline(
         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, // const VkPrimitiveTopology                     topology
         0u,                                  // const uint32_t                                subpass
         0u,                                  // const uint32_t                                patchControlPoints
-        DE_NULL,                             // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-        DE_NULL,                       // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+        nullptr,                             // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+        nullptr,                       // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
         &multisampleStateCreateInfo,   // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
         &depthStencilStateCreateInfo); // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
 }
@@ -1254,7 +1254,7 @@ Move<VkRenderPass> EarlyFragmentSampleMaskTestInstance::makeRenderPass(const Dev
 
     const VkAttachmentDescription2 colorAttachmentDescription = {
         VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2, // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         (VkAttachmentDescriptionFlags)0,            // VkAttachmentDescriptionFlags    flags
         colorFormat,                                // VkFormat                        format
         (VkSampleCountFlagBits)m_sampleCount,       // VkSampleCountFlagBits           samples
@@ -1268,7 +1268,7 @@ Move<VkRenderPass> EarlyFragmentSampleMaskTestInstance::makeRenderPass(const Dev
 
     const VkAttachmentDescription2 depthStencilAttachmentDescription = {
         VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,       // VkStructureType sType;
-        DE_NULL,                                          // const void* pNext;
+        nullptr,                                          // const void* pNext;
         (VkAttachmentDescriptionFlags)0,                  // VkAttachmentDescriptionFlags    flags
         depthStencilFormat,                               // VkFormat                        format
         (VkSampleCountFlagBits)m_sampleCount,             // VkSampleCountFlagBits           samples
@@ -1282,7 +1282,7 @@ Move<VkRenderPass> EarlyFragmentSampleMaskTestInstance::makeRenderPass(const Dev
 
     const VkAttachmentDescription2 resolveAttachmentDescription = {
         VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2, // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         (VkAttachmentDescriptionFlags)0,            // VkAttachmentDescriptionFlags    flags
         colorFormat,                                // VkFormat                        format
         VK_SAMPLE_COUNT_1_BIT,                      // VkSampleCountFlagBits           samples
@@ -1296,7 +1296,7 @@ Move<VkRenderPass> EarlyFragmentSampleMaskTestInstance::makeRenderPass(const Dev
 
     const VkAttachmentDescription2 resolveDepthStencilAttachmentDescription = {
         VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,       // VkStructureType sType;
-        DE_NULL,                                          // const void* pNext;
+        nullptr,                                          // const void* pNext;
         (VkAttachmentDescriptionFlags)0,                  // VkAttachmentDescriptionFlags    flags
         depthStencilFormat,                               // VkFormat                        format
         VK_SAMPLE_COUNT_1_BIT,                            // VkSampleCountFlagBits           samples
@@ -1321,7 +1321,7 @@ Move<VkRenderPass> EarlyFragmentSampleMaskTestInstance::makeRenderPass(const Dev
 
     const VkAttachmentReference2 colorAttachmentRef = {
         VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2, // VkStructureType sType;
-        DE_NULL,                                  // const void* pNext;
+        nullptr,                                  // const void* pNext;
         0u,                                       // uint32_t                attachment
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout        layout
         VK_IMAGE_ASPECT_COLOR_BIT                 // VkImageAspectFlags aspectMask;
@@ -1329,7 +1329,7 @@ Move<VkRenderPass> EarlyFragmentSampleMaskTestInstance::makeRenderPass(const Dev
 
     const VkAttachmentReference2 depthStencilAttachmentRef = {
         VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,         // VkStructureType sType;
-        DE_NULL,                                          // const void* pNext;
+        nullptr,                                          // const void* pNext;
         hasDepthStencil ? 1u : 0u,                        // uint32_t                attachment
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout        layout
         VkImageAspectFlags(m_testMode == MODE_DEPTH ? VK_IMAGE_ASPECT_DEPTH_BIT :
@@ -1338,7 +1338,7 @@ Move<VkRenderPass> EarlyFragmentSampleMaskTestInstance::makeRenderPass(const Dev
 
     const VkAttachmentReference2 resolveAttachmentRef = {
         VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2, // VkStructureType sType;
-        DE_NULL,                                  // const void* pNext;
+        nullptr,                                  // const void* pNext;
         hasColor ? 2u : 0u,                       // uint32_t                attachment
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout        layout
         VK_IMAGE_ASPECT_COLOR_BIT                 // VkImageAspectFlags aspectMask;
@@ -1346,7 +1346,7 @@ Move<VkRenderPass> EarlyFragmentSampleMaskTestInstance::makeRenderPass(const Dev
 
     const VkAttachmentReference2 depthStencilResolveAttachmentRef = {
         VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,         // VkStructureType sType;
-        DE_NULL,                                          // const void* pNext;
+        nullptr,                                          // const void* pNext;
         hasDepthStencil ? 3u : 0u,                        // uint32_t                attachment
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout        layout
         VkImageAspectFlags(m_testMode == MODE_DEPTH ? VK_IMAGE_ASPECT_DEPTH_BIT :
@@ -1356,7 +1356,7 @@ Move<VkRenderPass> EarlyFragmentSampleMaskTestInstance::makeRenderPass(const Dev
     // Using VK_RESOLVE_MODE_SAMPLE_ZERO_BIT as resolve mode, so no need to check its support as it is mandatory in the extension.
     const VkSubpassDescriptionDepthStencilResolve depthStencilResolveDescription = {
         VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE, // VkStructureType sType;
-        DE_NULL,                                                     // const void* pNext;
+        nullptr,                                                     // const void* pNext;
         VK_RESOLVE_MODE_SAMPLE_ZERO_BIT,                             // VkResolveModeFlagBits depthResolveMode;
         VK_RESOLVE_MODE_SAMPLE_ZERO_BIT,                             // VkResolveModeFlagBits stencilResolveMode;
         &depthStencilResolveAttachmentRef // const VkAttachmentReference2* pDepthStencilResolveAttachment;
@@ -1364,37 +1364,37 @@ Move<VkRenderPass> EarlyFragmentSampleMaskTestInstance::makeRenderPass(const Dev
 
     const VkSubpassDescription2 subpassDescription = {
         VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2,                     // VkStructureType sType;
-        hasDepthStencil ? &depthStencilResolveDescription : DE_NULL, // const void* pNext;
+        hasDepthStencil ? &depthStencilResolveDescription : nullptr, // const void* pNext;
         (VkSubpassDescriptionFlags)0,                                // VkSubpassDescriptionFlags        flags
         VK_PIPELINE_BIND_POINT_GRAPHICS,            // VkPipelineBindPoint                pipelineBindPoint
         0u,                                         // uint32_t viewMask;
         0u,                                         // uint32_t                            inputAttachmentCount
-        DE_NULL,                                    // const VkAttachmentReference2*    pInputAttachments
+        nullptr,                                    // const VkAttachmentReference2*    pInputAttachments
         hasColor ? 1u : 0u,                         // uint32_t                            colorAttachmentCount
-        hasColor ? &colorAttachmentRef : DE_NULL,   // const VkAttachmentReference2*    pColorAttachments
-        hasColor ? &resolveAttachmentRef : DE_NULL, // const VkAttachmentReference2*    pResolveAttachments
+        hasColor ? &colorAttachmentRef : nullptr,   // const VkAttachmentReference2*    pColorAttachments
+        hasColor ? &resolveAttachmentRef : nullptr, // const VkAttachmentReference2*    pResolveAttachments
         hasDepthStencil ? &depthStencilAttachmentRef :
-                          DE_NULL, // const VkAttachmentReference2*    pDepthStencilAttachment
+                          nullptr, // const VkAttachmentReference2*    pDepthStencilAttachment
         0u,                        // uint32_t                            preserveAttachmentCount
-        DE_NULL                    // const uint32_t*                    pPreserveAttachments
+        nullptr                    // const uint32_t*                    pPreserveAttachments
     };
 
     const VkRenderPassCreateInfo2 renderPassInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2, // VkStructureType                   sType
-        DE_NULL,                                     // const void*                       pNext
+        nullptr,                                     // const void*                       pNext
         (VkRenderPassCreateFlags)0,                  // VkRenderPassCreateFlags           flags
         (uint32_t)attachmentDescriptions.size(),     // uint32_t                          attachmentCount
         attachmentDescriptions.size() > 0 ? &attachmentDescriptions[0] :
-                                            DE_NULL, // const VkAttachmentDescription2*    pAttachments
+                                            nullptr, // const VkAttachmentDescription2*    pAttachments
         1u,                                          // uint32_t                          subpassCount
         &subpassDescription,                         // const VkSubpassDescription2*       pSubpasses
         0u,                                          // uint32_t                          dependencyCount
-        DE_NULL,                                     // const VkSubpassDependency*        pDependencies
+        nullptr,                                     // const VkSubpassDependency*        pDependencies
         0u,                                          // uint32_t correlatedViewMaskCount;
-        DE_NULL,                                     // const uint32_t* pCorrelatedViewMasks;
+        nullptr,                                     // const uint32_t* pCorrelatedViewMasks;
     };
 
-    return createRenderPass2(vk, device, &renderPassInfo, DE_NULL);
+    return createRenderPass2(vk, device, &renderPassInfo, nullptr);
 }
 
 tcu::TestStatus EarlyFragmentSampleMaskTestInstance::iterate(void)
@@ -1452,7 +1452,7 @@ tcu::TestStatus EarlyFragmentSampleMaskTestInstance::iterate(void)
 
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-        DE_NULL,                                                               // const void* pNext;
+        nullptr,                                                               // const void* pNext;
         (VkImageCreateFlags)0,                                                 // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
         colorFormat,                                                           // VkFormat format;
@@ -1464,7 +1464,7 @@ tcu::TestStatus EarlyFragmentSampleMaskTestInstance::iterate(void)
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,                                             // VkSharingMode sharingMode;
         0u,                                                                    // uint32_t queueFamilyIndexCount;
-        DE_NULL,                                                               // const uint32_t* pQueueFamilyIndices;
+        nullptr,                                                               // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,                                             // VkImageLayout initialLayout;
     };
     const Unique<VkImage> colorImage(makeImage(vk, device, imageParams));
@@ -1487,7 +1487,7 @@ tcu::TestStatus EarlyFragmentSampleMaskTestInstance::iterate(void)
 
     const VkImageCreateInfo depthStencilImageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                           // VkStructureType sType;
-        DE_NULL,                                                                       // const void* pNext;
+        nullptr,                                                                       // const void* pNext;
         (VkImageCreateFlags)0,                                                         // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                                                              // VkImageType imageType;
         depthStencilFormat,                                                            // VkFormat format;
@@ -1499,7 +1499,7 @@ tcu::TestStatus EarlyFragmentSampleMaskTestInstance::iterate(void)
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,                                                     // VkSharingMode sharingMode;
         0u,                        // uint32_t queueFamilyIndexCount;
-        DE_NULL,                   // const uint32_t* pQueueFamilyIndices;
+        nullptr,                   // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED, // VkImageLayout initialLayout;
     };
     const Unique<VkImage> depthStencilImage(makeImage(vk, device, depthStencilImageParams));
@@ -1648,7 +1648,7 @@ tcu::TestStatus EarlyFragmentSampleMaskTestInstance::iterate(void)
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT,
                                   VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
                                       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  0u, 0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers);
+                                  0u, 0u, nullptr, 0u, nullptr, DE_LENGTH_OF_ARRAY(barriers), barriers);
         }
 
         // Will clear the attachments with specified depth and stencil values.
@@ -1662,7 +1662,7 @@ tcu::TestStatus EarlyFragmentSampleMaskTestInstance::iterate(void)
 
             const VkRenderPassBeginInfo renderPassBeginInfo = {
                 VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // VkStructureType         sType;
-                DE_NULL,                                  // const void*             pNext;
+                nullptr,                                  // const void*             pNext;
                 *renderPass,                              // VkRenderPass            renderPass;
                 *framebuffer,                             // VkFramebuffer           framebuffer;
                 renderArea,                               // VkRect2D                renderArea;
@@ -1675,7 +1675,7 @@ tcu::TestStatus EarlyFragmentSampleMaskTestInstance::iterate(void)
 
         vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                                 &descriptorSet.get(), 0u, DE_NULL);
+                                 &descriptorSet.get(), 0u, nullptr);
         vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 
         // Mask half of the attachment image with value that will pass the stencil test.
@@ -1982,7 +1982,7 @@ Move<VkPipeline> EarlyFragmentSampleCountTestInstance::makeGraphicsPipeline(
 
     const VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType                            sType
-        DE_NULL,                                                    // const void*                                pNext
+        nullptr,                                                    // const void*                                pNext
         0u,                                                         // VkPipelineDepthStencilStateCreateFlags    flags
         VK_TRUE,            // VkBool32                                    depthTestEnable
         VK_TRUE,            // VkBool32                                    depthWriteEnable
@@ -1997,7 +1997,7 @@ Move<VkPipeline> EarlyFragmentSampleCountTestInstance::makeGraphicsPipeline(
 
     const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType                            sType
-        DE_NULL,                                                  // const void*                                pNext
+        nullptr,                                                  // const void*                                pNext
         0u,                                                       // VkPipelineMultisampleStateCreateFlags    flags
         (VkSampleCountFlagBits)
             m_testParams.sampleCount, // VkSampleCountFlagBits                    rasterizationSamples
@@ -2023,8 +2023,8 @@ Move<VkPipeline> EarlyFragmentSampleCountTestInstance::makeGraphicsPipeline(
         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, // const VkPrimitiveTopology                        topology
         0u,                                  // const uint32_t                                    subpass
         0u,                                  // const uint32_t                                    patchControlPoints
-        DE_NULL,                       // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
-        DE_NULL,                       // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
+        nullptr,                       // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
+        nullptr,                       // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
         &multisampleStateCreateInfo,   // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
         &depthStencilStateCreateInfo); // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo
 }
@@ -2096,28 +2096,28 @@ Move<VkRenderPass> EarlyFragmentSampleCountTestInstance::makeRenderPass(const De
         (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags        flags
         VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint                pipelineBindPoint
         0u,                              // uint32_t                            inputAttachmentCount
-        DE_NULL,                         // const VkAttachmentReference2*    pInputAttachments
+        nullptr,                         // const VkAttachmentReference2*    pInputAttachments
         1u,                              // uint32_t                            colorAttachmentCount
         &colorAttachmentRef,             // const VkAttachmentReference2*    pColorAttachments
         &resolveAttachmentRef,           // const VkAttachmentReference2*    pResolveAttachments
         &depthStencilAttachmentRef,      // const VkAttachmentReference2*    pDepthStencilAttachment
         0u,                              // uint32_t                            preserveAttachmentCount
-        DE_NULL                          // const uint32_t*                    pPreserveAttachments
+        nullptr                          // const uint32_t*                    pPreserveAttachments
     };
 
     const VkRenderPassCreateInfo renderPassInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                   // const void* pNext;
+        nullptr,                                   // const void* pNext;
         (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags flags;
         (uint32_t)attachmentDescriptions.size(),   // uint32_t attachmentCount;
         attachmentDescriptions.data(),             // const VkAttachmentDescription* pAttachments;
         1u,                                        // uint32_t subpassCount;
         &subpassDescription,                       // const VkSubpassDescription* pSubpasses;
         0u,                                        // uint32_t dependencyCount;
-        DE_NULL                                    // const VkSubpassDependency* pDependencies;
+        nullptr                                    // const VkSubpassDependency* pDependencies;
     };
 
-    return createRenderPass(vk, device, &renderPassInfo, DE_NULL);
+    return createRenderPass(vk, device, &renderPassInfo, nullptr);
 }
 
 tcu::TextureLevel EarlyFragmentSampleCountTestInstance::generateReferenceColorImage(const tcu::TextureFormat format,
@@ -2148,7 +2148,7 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate(void)
     {
         VkQueryPoolCreateInfo queryPoolInfo{
             VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             (VkQueryPoolCreateFlags)0,                // VkQueryPoolCreateFlags flags;
             VK_QUERY_TYPE_OCCLUSION,                  // VkQueryType queryType;
             queryCount,                               // uint32_t queryCount;
@@ -2168,7 +2168,7 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate(void)
 
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,             // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         (VkImageCreateFlags)0,                           // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                                // VkImageType imageType;
         colorFormat,                                     // VkFormat format;
@@ -2180,7 +2180,7 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate(void)
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,             // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,                       // VkSharingMode sharingMode;
         0u,                                              // uint32_t queueFamilyIndexCount;
-        DE_NULL,                                         // const uint32_t* pQueueFamilyIndices;
+        nullptr,                                         // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout initialLayout;
     };
 
@@ -2204,7 +2204,7 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate(void)
 
     const VkImageCreateInfo depthImageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,             // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         (VkImageCreateFlags)0,                           // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                                // VkImageType imageType;
         depthFormat,                                     // VkFormat format;
@@ -2216,7 +2216,7 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate(void)
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,     // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,                       // VkSharingMode sharingMode;
         0u,                                              // uint32_t queueFamilyIndexCount;
-        DE_NULL,                                         // const uint32_t* pQueueFamilyIndices;
+        nullptr,                                         // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout initialLayout;
     };
 
@@ -2322,9 +2322,9 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate(void)
             makeImageMemoryBarrier(0, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
                                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, *depthImage,
                                    depthSubresourceRange)};
-        vk.cmdPipelineBarrier(*cmdBuffer, 0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u,
-                              DE_NULL, 2u, initialImageBarriers);
-        vk.cmdPipelineBarrier(*cmdBuffer, 0, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL,
+        vk.cmdPipelineBarrier(*cmdBuffer, 0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u,
+                              nullptr, 2u, initialImageBarriers);
+        vk.cmdPipelineBarrier(*cmdBuffer, 0, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0u, 0u, nullptr, 0u, nullptr,
                               1u, &initialImageBarriers[2]);
 
         const VkClearValue clearValues[] = {
@@ -2336,7 +2336,7 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate(void)
 
         const VkRenderPassBeginInfo renderPassBeginInfo = {
             VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             *renderPass,                              // VkRenderPass renderPass;
             *framebuffer,                             // VkFramebuffer framebuffer;
             renderArea,                               // VkRect2D renderArea;
@@ -2368,7 +2368,7 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate(void)
             VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *resolveColorImage, colorSubresourceRange);
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                              0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &postResolveImageBarrier);
+                              0u, 0u, nullptr, 0u, nullptr, 1u, &postResolveImageBarrier);
 
         vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -2731,6 +2731,9 @@ void EarlyFragmentSampleCountTest::checkSupport(Context &context) const
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u, &formatProperties);
     if ((formatProperties.sampleCounts & m_testParams.sampleCount) == 0)
         TCU_THROW(NotSupportedError, "Format does not support this number of samples for depth format");
+
+    if (!context.getDeviceFeatures().occlusionQueryPrecise)
+        TCU_THROW(NotSupportedError, "Precise occlusion queries are not supported");
 
 #ifndef CTS_USES_VULKANSC
     if (m_testParams.earlyAndLate)

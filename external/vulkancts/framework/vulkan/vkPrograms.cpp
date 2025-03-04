@@ -624,7 +624,8 @@ void shadercacheSave(const vk::ProgramBinary *binary, const std::string &shaders
             cacheFileMutex->unlock();
             return;
         }
-        fclose(file);
+        if (file)
+            fclose(file);
     }
 
     if (!de::FilePath(filePath.getDirName()).exists())
@@ -975,7 +976,7 @@ Move<VkShaderModule> createShaderModule(const DeviceInterface &deviceInterface, 
     if (binary.getFormat() == PROGRAM_FORMAT_SPIRV)
     {
         const struct VkShaderModuleCreateInfo shaderModuleInfo = {
-            VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, DE_NULL, flags, (uintptr_t)binary.getSize(),
+            VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, nullptr, flags, (uintptr_t)binary.getSize(),
             (const uint32_t *)binary.getBinary(),
         };
 

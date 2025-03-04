@@ -59,21 +59,21 @@ constexpr int kInvalidFd = std::numeric_limits<int>::min();
 
 NativeHandle::NativeHandle(void)
     : m_fd(kInvalidFd)
-    , m_zirconHandle(0)
+    , m_zirconHandle(0u)
     , m_win32HandleType(WIN32HANDLETYPE_LAST)
-    , m_win32Handle(DE_NULL)
-    , m_androidHardwareBuffer(DE_NULL)
-    , m_hostPtr(DE_NULL)
+    , m_win32Handle(nullptr)
+    , m_androidHardwareBuffer(nullptr)
+    , m_hostPtr(nullptr)
 {
 }
 
 NativeHandle::NativeHandle(const NativeHandle &other)
     : m_fd(kInvalidFd)
-    , m_zirconHandle(0)
+    , m_zirconHandle(0u)
     , m_win32HandleType(WIN32HANDLETYPE_LAST)
-    , m_win32Handle(DE_NULL)
-    , m_androidHardwareBuffer(DE_NULL)
-    , m_hostPtr(DE_NULL)
+    , m_win32Handle(nullptr)
+    , m_androidHardwareBuffer(nullptr)
+    , m_hostPtr(nullptr)
 {
     if (other.m_fd >= 0)
     {
@@ -138,7 +138,7 @@ NativeHandle::NativeHandle(const NativeHandle &other)
         else
             DE_FATAL("Platform doesn't support Android Hardware Buffer handles");
     }
-    else if (other.m_metalHandle.internal)
+    else if (other.m_metalHandle)
     {
 #if (DE_OS == DE_OS_OSX)
         m_metalHandle = other.m_metalHandle;
@@ -152,41 +152,41 @@ NativeHandle::NativeHandle(const NativeHandle &other)
 
 NativeHandle::NativeHandle(int fd)
     : m_fd(fd)
-    , m_zirconHandle(0)
+    , m_zirconHandle(0u)
     , m_win32HandleType(WIN32HANDLETYPE_LAST)
-    , m_win32Handle(DE_NULL)
-    , m_androidHardwareBuffer(DE_NULL)
-    , m_hostPtr(DE_NULL)
+    , m_win32Handle(nullptr)
+    , m_androidHardwareBuffer(nullptr)
+    , m_hostPtr(nullptr)
 {
 }
 
 NativeHandle::NativeHandle(Win32HandleType handleType, vk::pt::Win32Handle handle)
     : m_fd(kInvalidFd)
-    , m_zirconHandle(0)
+    , m_zirconHandle(0u)
     , m_win32HandleType(handleType)
     , m_win32Handle(handle)
-    , m_androidHardwareBuffer(DE_NULL)
-    , m_hostPtr(DE_NULL)
+    , m_androidHardwareBuffer(nullptr)
+    , m_hostPtr(nullptr)
 {
 }
 
 NativeHandle::NativeHandle(vk::pt::AndroidHardwareBufferPtr buffer)
     : m_fd(kInvalidFd)
-    , m_zirconHandle(0)
+    , m_zirconHandle(0u)
     , m_win32HandleType(WIN32HANDLETYPE_LAST)
-    , m_win32Handle(DE_NULL)
+    , m_win32Handle(nullptr)
     , m_androidHardwareBuffer(buffer)
-    , m_hostPtr(DE_NULL)
+    , m_hostPtr(nullptr)
 {
 }
 
-NativeHandle::NativeHandle(vk::pt::MTLResource_id handle)
+NativeHandle::NativeHandle(void *handle)
     : m_fd(kInvalidFd)
-    , m_zirconHandle(0)
+    , m_zirconHandle(0u)
     , m_win32HandleType(WIN32HANDLETYPE_LAST)
-    , m_win32Handle(DE_NULL)
-    , m_androidHardwareBuffer(DE_NULL)
-    , m_hostPtr(DE_NULL)
+    , m_win32Handle(nullptr)
+    , m_androidHardwareBuffer(nullptr)
+    , m_hostPtr(nullptr)
     , m_metalHandle(handle)
 {
 }
@@ -209,7 +209,7 @@ void NativeHandle::reset(void)
 #endif
     }
 
-    if (m_zirconHandle.internal != 0)
+    if (m_zirconHandle.internal != 0u)
     {
 #if (DE_OS == DE_OS_FUCHSIA)
         zx_handle_close(m_zirconHandle.internal);
@@ -249,7 +249,7 @@ void NativeHandle::reset(void)
         else
             DE_FATAL("Platform doesn't support Android Hardware Buffer handles");
     }
-    if (m_metalHandle.internal)
+    if (m_metalHandle)
     {
 #if (DE_OS == DE_OS_OSX)
         // TODO Aitor: Release resource
@@ -259,12 +259,12 @@ void NativeHandle::reset(void)
     }
 
     m_fd                    = kInvalidFd;
-    m_zirconHandle          = vk::pt::zx_handle_t(0);
-    m_win32Handle           = vk::pt::Win32Handle(DE_NULL);
+    m_zirconHandle          = vk::pt::zx_handle_t(0u);
+    m_win32Handle           = vk::pt::Win32Handle(nullptr);
     m_win32HandleType       = WIN32HANDLETYPE_LAST;
-    m_androidHardwareBuffer = vk::pt::AndroidHardwareBufferPtr(DE_NULL);
-    m_hostPtr               = DE_NULL;
-    m_metalHandle           = vk::pt::MTLResource_id(nullptr);
+    m_androidHardwareBuffer = vk::pt::AndroidHardwareBufferPtr(nullptr);
+    m_hostPtr               = nullptr;
+    m_metalHandle           = nullptr;
 }
 
 NativeHandle &NativeHandle::operator=(int fd)
@@ -300,7 +300,7 @@ void NativeHandle::setZirconHandle(vk::pt::zx_handle_t zirconHandle)
     m_zirconHandle = zirconHandle;
 }
 
-void NativeHandle::setMetalHandle(vk::pt::MTLResource_id metalHandle)
+void NativeHandle::setMetalHandle(void *metalHandle)
 {
     reset();
 
@@ -317,18 +317,18 @@ void NativeHandle::setHostPtr(void *hostPtr)
 void NativeHandle::disown(void)
 {
     m_fd                    = kInvalidFd;
-    m_zirconHandle          = vk::pt::zx_handle_t(0);
-    m_win32Handle           = vk::pt::Win32Handle(DE_NULL);
-    m_androidHardwareBuffer = vk::pt::AndroidHardwareBufferPtr(DE_NULL);
-    m_hostPtr               = DE_NULL;
-    m_metalHandle           = vk::pt::MTLResource_id(nullptr);
+    m_zirconHandle          = vk::pt::zx_handle_t(0u);
+    m_win32Handle           = vk::pt::Win32Handle(nullptr);
+    m_androidHardwareBuffer = vk::pt::AndroidHardwareBufferPtr(nullptr);
+    m_hostPtr               = nullptr;
+    m_metalHandle           = nullptr;
 }
 
 vk::pt::Win32Handle NativeHandle::getWin32Handle(void) const
 {
     DE_ASSERT(m_fd == kInvalidFd);
     DE_ASSERT(!m_androidHardwareBuffer.internal);
-    DE_ASSERT(m_hostPtr == DE_NULL);
+    DE_ASSERT(m_hostPtr == nullptr);
 
     return m_win32Handle;
 }
@@ -342,8 +342,8 @@ int NativeHandle::getFd(void) const
 {
     DE_ASSERT(!m_win32Handle.internal);
     DE_ASSERT(!m_androidHardwareBuffer.internal);
-    DE_ASSERT(m_hostPtr == DE_NULL);
-    DE_ASSERT(!m_metalHandle.internal);
+    DE_ASSERT(m_hostPtr == nullptr);
+    DE_ASSERT(!m_metalHandle);
     return m_fd;
 }
 
@@ -351,7 +351,7 @@ vk::pt::zx_handle_t NativeHandle::getZirconHandle(void) const
 {
     DE_ASSERT(!m_win32Handle.internal);
     DE_ASSERT(!m_androidHardwareBuffer.internal);
-    DE_ASSERT(!m_metalHandle.internal);
+    DE_ASSERT(!m_metalHandle);
 
     return m_zirconHandle;
 }
@@ -360,8 +360,8 @@ vk::pt::AndroidHardwareBufferPtr NativeHandle::getAndroidHardwareBuffer(void) co
 {
     DE_ASSERT(m_fd == kInvalidFd);
     DE_ASSERT(!m_win32Handle.internal);
-    DE_ASSERT(m_hostPtr == DE_NULL);
-    DE_ASSERT(!m_metalHandle.internal);
+    DE_ASSERT(m_hostPtr == nullptr);
+    DE_ASSERT(!m_metalHandle);
     return m_androidHardwareBuffer;
 }
 
@@ -369,15 +369,15 @@ void *NativeHandle::getHostPtr(void) const
 {
     DE_ASSERT(m_fd == kInvalidFd);
     DE_ASSERT(!m_win32Handle.internal);
-    DE_ASSERT(!m_metalHandle.internal);
+    DE_ASSERT(!m_metalHandle);
     return m_hostPtr;
 }
 
-vk::pt::MTLResource_id NativeHandle::getMetalHandle(void) const
+void *NativeHandle::getMetalHandle(void) const
 {
     DE_ASSERT(m_fd == kInvalidFd);
     DE_ASSERT(!m_win32Handle.internal);
-    DE_ASSERT(m_hostPtr == DE_NULL);
+    DE_ASSERT(m_hostPtr == nullptr);
     return m_metalHandle;
 }
 
@@ -405,7 +405,7 @@ const char *externalSemaphoreTypeToName(vk::VkExternalSemaphoreHandleTypeFlagBit
 
     default:
         DE_FATAL("Unknown external semaphore type");
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -427,7 +427,7 @@ const char *externalFenceTypeToName(vk::VkExternalFenceHandleTypeFlagBits type)
 
     default:
         DE_FATAL("Unknown external fence type");
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -476,7 +476,7 @@ const char *externalMemoryTypeToName(vk::VkExternalMemoryHandleTypeFlagBits type
 
     default:
         DE_FATAL("Unknown external memory type");
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -569,7 +569,7 @@ Transference getHandelTypeTransferences(vk::VkExternalFenceHandleTypeFlagBits ty
 int getMemoryFd(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkDeviceMemory memory,
                 vk::VkExternalMemoryHandleTypeFlagBits externalType)
 {
-    const vk::VkMemoryGetFdInfoKHR info = {vk::VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR, DE_NULL,
+    const vk::VkMemoryGetFdInfoKHR info = {vk::VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR, nullptr,
 
                                            memory, externalType};
     int fd                              = kInvalidFd;
@@ -586,7 +586,7 @@ void getMemoryNative(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::Vk
     if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT ||
         externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT)
     {
-        const vk::VkMemoryGetFdInfoKHR info = {vk::VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR, DE_NULL,
+        const vk::VkMemoryGetFdInfoKHR info = {vk::VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR, nullptr,
 
                                                memory, externalType};
         int fd                              = kInvalidFd;
@@ -598,10 +598,10 @@ void getMemoryNative(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::Vk
     else if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA)
     {
         const vk::VkMemoryGetZirconHandleInfoFUCHSIA info = {
-            vk::VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA, DE_NULL,
+            vk::VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA, nullptr,
 
             memory, externalType};
-        vk::pt::zx_handle_t handle(0);
+        vk::pt::zx_handle_t handle(0u);
 
         VK_CHECK(vkd.getMemoryZirconHandleFUCHSIA(device, &info, &handle));
         nativeHandle.setZirconHandle(handle);
@@ -609,10 +609,10 @@ void getMemoryNative(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::Vk
     else if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT ||
              externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)
     {
-        const vk::VkMemoryGetWin32HandleInfoKHR info = {vk::VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR, DE_NULL,
+        const vk::VkMemoryGetWin32HandleInfoKHR info = {vk::VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR, nullptr,
 
                                                         memory, externalType};
-        vk::pt::Win32Handle handle(DE_NULL);
+        vk::pt::Win32Handle handle(nullptr);
 
         VK_CHECK(vkd.getMemoryWin32HandleKHR(device, &info, &handle));
 
@@ -638,11 +638,11 @@ void getMemoryNative(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::Vk
         }
         const vk::VkMemoryGetAndroidHardwareBufferInfoANDROID info = {
             vk::VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
-            DE_NULL,
+            nullptr,
 
             memory,
         };
-        vk::pt::AndroidHardwareBufferPtr ahb(DE_NULL);
+        vk::pt::AndroidHardwareBufferPtr ahb(nullptr);
 
         VK_CHECK(vkd.getMemoryAndroidHardwareBufferANDROID(device, &info, &ahb));
         TCU_CHECK(ahb.internal);
@@ -651,12 +651,12 @@ void getMemoryNative(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::Vk
     else if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT ||
              externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLTEXTURE_BIT_EXT)
     {
-        const vk::VkMemoryGetMetalHandleInfoEXT info = {vk::VK_STRUCTURE_TYPE_MEMORY_GET_METAL_HANDLE_INFO_EXT, DE_NULL,
+        const vk::VkMemoryGetMetalHandleInfoEXT info = {vk::VK_STRUCTURE_TYPE_MEMORY_GET_METAL_HANDLE_INFO_EXT, nullptr,
                                                         memory, externalType};
 
-        vk::pt::MTLResource_id handle(nullptr);
+        void *handle(nullptr);
         VK_CHECK(vkd.getMemoryMetalHandleEXT(device, &info, &handle));
-        TCU_CHECK(handle.internal);
+        TCU_CHECK(handle);
         nativeHandle.setMetalHandle(handle);
     }
     else
@@ -666,7 +666,7 @@ void getMemoryNative(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::Vk
 vk::Move<vk::VkFence> createExportableFence(const vk::DeviceInterface &vkd, vk::VkDevice device,
                                             vk::VkExternalFenceHandleTypeFlagBits externalType)
 {
-    const vk::VkExportFenceCreateInfo exportCreateInfo = {vk::VK_STRUCTURE_TYPE_EXPORT_FENCE_CREATE_INFO, DE_NULL,
+    const vk::VkExportFenceCreateInfo exportCreateInfo = {vk::VK_STRUCTURE_TYPE_EXPORT_FENCE_CREATE_INFO, nullptr,
                                                           (vk::VkExternalFenceHandleTypeFlags)externalType};
     const vk::VkFenceCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, &exportCreateInfo, 0u};
 
@@ -676,7 +676,7 @@ vk::Move<vk::VkFence> createExportableFence(const vk::DeviceInterface &vkd, vk::
 int getFenceFd(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkFence fence,
                vk::VkExternalFenceHandleTypeFlagBits externalType)
 {
-    const vk::VkFenceGetFdInfoKHR info = {vk::VK_STRUCTURE_TYPE_FENCE_GET_FD_INFO_KHR, DE_NULL,
+    const vk::VkFenceGetFdInfoKHR info = {vk::VK_STRUCTURE_TYPE_FENCE_GET_FD_INFO_KHR, nullptr,
 
                                           fence, externalType};
     int fd                             = kInvalidFd;
@@ -694,7 +694,7 @@ void getFenceNative(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkF
     if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT ||
         externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT)
     {
-        const vk::VkFenceGetFdInfoKHR info = {vk::VK_STRUCTURE_TYPE_FENCE_GET_FD_INFO_KHR, DE_NULL,
+        const vk::VkFenceGetFdInfoKHR info = {vk::VK_STRUCTURE_TYPE_FENCE_GET_FD_INFO_KHR, nullptr,
 
                                               fence, externalType};
         int fd                             = kInvalidFd;
@@ -715,10 +715,10 @@ void getFenceNative(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkF
     else if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT ||
              externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)
     {
-        const vk::VkFenceGetWin32HandleInfoKHR info = {vk::VK_STRUCTURE_TYPE_FENCE_GET_WIN32_HANDLE_INFO_KHR, DE_NULL,
+        const vk::VkFenceGetWin32HandleInfoKHR info = {vk::VK_STRUCTURE_TYPE_FENCE_GET_WIN32_HANDLE_INFO_KHR, nullptr,
 
                                                        fence, externalType};
-        vk::pt::Win32Handle handle(DE_NULL);
+        vk::pt::Win32Handle handle(nullptr);
 
         VK_CHECK(vkd.getFenceWin32HandleKHR(device, &info, &handle));
 
@@ -747,7 +747,7 @@ void importFence(const vk::DeviceInterface &vkd, const vk::VkDevice device, cons
         externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT)
     {
         const vk::VkImportFenceFdInfoKHR importInfo = {
-            vk::VK_STRUCTURE_TYPE_IMPORT_FENCE_FD_INFO_KHR, DE_NULL, fence, flags, externalType, handle.getFd()};
+            vk::VK_STRUCTURE_TYPE_IMPORT_FENCE_FD_INFO_KHR, nullptr, fence, flags, externalType, handle.getFd()};
 
         VK_CHECK(vkd.importFenceFdKHR(device, &importInfo));
         handle.disown();
@@ -757,12 +757,12 @@ void importFence(const vk::DeviceInterface &vkd, const vk::VkDevice device, cons
     {
         const vk::VkImportFenceWin32HandleInfoKHR importInfo = {
             vk::VK_STRUCTURE_TYPE_IMPORT_FENCE_WIN32_HANDLE_INFO_KHR,
-            DE_NULL,
+            nullptr,
             fence,
             flags,
             externalType,
             handle.getWin32Handle(),
-            (vk::pt::Win32LPCWSTR)DE_NULL};
+            (vk::pt::Win32LPCWSTR) nullptr};
 
         VK_CHECK(vkd.importFenceWin32HandleKHR(device, &importInfo));
         // \note Importing a fence payload from Windows handles does not transfer ownership of the handle to the Vulkan implementation,
@@ -787,7 +787,7 @@ vk::Move<vk::VkSemaphore> createExportableSemaphore(const vk::DeviceInterface &v
                                                     vk::VkExternalSemaphoreHandleTypeFlagBits externalType)
 {
     const vk::VkExportSemaphoreCreateInfo exportCreateInfo = {vk::VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO,
-                                                              DE_NULL,
+                                                              nullptr,
                                                               (vk::VkExternalSemaphoreHandleTypeFlags)externalType};
     const vk::VkSemaphoreCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, &exportCreateInfo, 0u};
 
@@ -800,7 +800,7 @@ vk::Move<vk::VkSemaphore> createExportableSemaphoreType(const vk::DeviceInterfac
 {
     const vk::VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo = {
         vk::VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         semaphoreType,
         0,
     };
@@ -815,7 +815,7 @@ vk::Move<vk::VkSemaphore> createExportableSemaphoreType(const vk::DeviceInterfac
 int getSemaphoreFd(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkSemaphore semaphore,
                    vk::VkExternalSemaphoreHandleTypeFlagBits externalType)
 {
-    const vk::VkSemaphoreGetFdInfoKHR info = {vk::VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR, DE_NULL,
+    const vk::VkSemaphoreGetFdInfoKHR info = {vk::VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR, nullptr,
 
                                               semaphore, externalType};
     int fd                                 = kInvalidFd;
@@ -832,7 +832,7 @@ void getSemaphoreNative(const vk::DeviceInterface &vkd, vk::VkDevice device, vk:
     if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT ||
         externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT)
     {
-        const vk::VkSemaphoreGetFdInfoKHR info = {vk::VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR, DE_NULL,
+        const vk::VkSemaphoreGetFdInfoKHR info = {vk::VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR, nullptr,
 
                                                   semaphore, externalType};
         int fd                                 = kInvalidFd;
@@ -849,10 +849,10 @@ void getSemaphoreNative(const vk::DeviceInterface &vkd, vk::VkDevice device, vk:
     else if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA)
     {
         const vk::VkSemaphoreGetZirconHandleInfoFUCHSIA info = {
-            vk::VK_STRUCTURE_TYPE_SEMAPHORE_GET_ZIRCON_HANDLE_INFO_FUCHSIA, DE_NULL,
+            vk::VK_STRUCTURE_TYPE_SEMAPHORE_GET_ZIRCON_HANDLE_INFO_FUCHSIA, nullptr,
 
             semaphore, externalType};
-        vk::pt::zx_handle_t zirconHandle(0);
+        vk::pt::zx_handle_t zirconHandle(0u);
 
         VK_CHECK(vkd.getSemaphoreZirconHandleFUCHSIA(device, &info, &zirconHandle));
         nativeHandle.setZirconHandle(zirconHandle);
@@ -861,10 +861,10 @@ void getSemaphoreNative(const vk::DeviceInterface &vkd, vk::VkDevice device, vk:
              externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)
     {
         const vk::VkSemaphoreGetWin32HandleInfoKHR info = {vk::VK_STRUCTURE_TYPE_SEMAPHORE_GET_WIN32_HANDLE_INFO_KHR,
-                                                           DE_NULL,
+                                                           nullptr,
 
                                                            semaphore, externalType};
-        vk::pt::Win32Handle handle(DE_NULL);
+        vk::pt::Win32Handle handle(nullptr);
 
         VK_CHECK(vkd.getSemaphoreWin32HandleKHR(device, &info, &handle));
 
@@ -894,7 +894,7 @@ void importSemaphore(const vk::DeviceInterface &vkd, const vk::VkDevice device, 
         externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT)
     {
         const vk::VkImportSemaphoreFdInfoKHR importInfo = {vk::VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR,
-                                                           DE_NULL,
+                                                           nullptr,
                                                            semaphore,
                                                            flags,
                                                            externalType,
@@ -907,7 +907,7 @@ void importSemaphore(const vk::DeviceInterface &vkd, const vk::VkDevice device, 
     {
         const vk::VkImportSemaphoreZirconHandleInfoFUCHSIA importInfo = {
             vk::VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_ZIRCON_HANDLE_INFO_FUCHSIA,
-            DE_NULL,
+            nullptr,
             semaphore,
             flags,
             externalType,
@@ -921,12 +921,12 @@ void importSemaphore(const vk::DeviceInterface &vkd, const vk::VkDevice device, 
     {
         const vk::VkImportSemaphoreWin32HandleInfoKHR importInfo = {
             vk::VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR,
-            DE_NULL,
+            nullptr,
             semaphore,
             flags,
             externalType,
             handle.getWin32Handle(),
-            (vk::pt::Win32LPCWSTR)DE_NULL};
+            (vk::pt::Win32LPCWSTR) nullptr};
 
         VK_CHECK(vkd.importSemaphoreWin32HandleKHR(device, &importInfo));
         // \note Importing a semaphore payload from Windows handles does not transfer ownership of the handle to the Vulkan implementation,
@@ -997,11 +997,11 @@ vk::Move<vk::VkDeviceMemory> allocateExportableMemory(const vk::DeviceInterface 
                                                       vk::VkBuffer buffer)
 {
     const vk::VkMemoryDedicatedAllocateInfo dedicatedInfo = {vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
-                                                             DE_NULL,
+                                                             nullptr,
 
                                                              VK_NULL_HANDLE, buffer};
     const vk::VkExportMemoryAllocateInfo exportInfo       = {vk::VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO,
-                                                       !!buffer ? &dedicatedInfo : DE_NULL,
+                                                       !!buffer ? &dedicatedInfo : nullptr,
                                                              (vk::VkExternalMemoryHandleTypeFlags)externalType};
     const vk::VkMemoryAllocateInfo info = {vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, &exportInfo, allocationSize,
                                            memoryTypeIndex};
@@ -1014,11 +1014,11 @@ vk::Move<vk::VkDeviceMemory> allocateExportableMemory(const vk::DeviceInterface 
                                                       vk::VkImage image)
 {
     const vk::VkMemoryDedicatedAllocateInfo dedicatedInfo = {vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
-                                                             DE_NULL,
+                                                             nullptr,
 
                                                              image, VK_NULL_HANDLE};
     const vk::VkExportMemoryAllocateInfo exportInfo       = {vk::VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO,
-                                                       !!image ? &dedicatedInfo : DE_NULL,
+                                                       !!image ? &dedicatedInfo : nullptr,
                                                              (vk::VkExternalMemoryHandleTypeFlags)externalType};
     const vk::VkMemoryAllocateInfo info = {vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, &exportInfo, allocationSize,
                                            memoryTypeIndex};
@@ -1038,7 +1038,7 @@ static vk::Move<vk::VkDeviceMemory> importMemory(const vk::DeviceInterface &vkd,
     if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT ||
         externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT)
     {
-        const vk::VkImportMemoryFdInfoKHR importInfo = {vk::VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR, DE_NULL,
+        const vk::VkImportMemoryFdInfoKHR importInfo = {vk::VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR, nullptr,
                                                         externalType, handle.getFd()};
         const vk::VkMemoryDedicatedAllocateInfo dedicatedInfo = {
             vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
@@ -1059,7 +1059,7 @@ static vk::Move<vk::VkDeviceMemory> importMemory(const vk::DeviceInterface &vkd,
     else if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA)
     {
         const vk::VkImportMemoryZirconHandleInfoFUCHSIA importInfo = {
-            vk::VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA, DE_NULL, externalType,
+            vk::VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA, nullptr, externalType,
             handle.getZirconHandle()};
         const vk::VkMemoryDedicatedAllocateInfo dedicatedInfo = {
             vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
@@ -1081,8 +1081,8 @@ static vk::Move<vk::VkDeviceMemory> importMemory(const vk::DeviceInterface &vkd,
              externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)
     {
         const vk::VkImportMemoryWin32HandleInfoKHR importInfo = {
-            vk::VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR, DE_NULL, externalType, handle.getWin32Handle(),
-            (vk::pt::Win32LPCWSTR)DE_NULL};
+            vk::VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR, nullptr, externalType, handle.getWin32Handle(),
+            (vk::pt::Win32LPCWSTR) nullptr};
         const vk::VkMemoryDedicatedAllocateInfo dedicatedInfo = {
             vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
             &importInfo,
@@ -1110,17 +1110,17 @@ static vk::Move<vk::VkDeviceMemory> importMemory(const vk::DeviceInterface &vkd,
         }
 
         uint32_t ahbFormat = 0;
-        ahbApi->describe(handle.getAndroidHardwareBuffer(), DE_NULL, DE_NULL, DE_NULL, &ahbFormat, DE_NULL, DE_NULL);
+        ahbApi->describe(handle.getAndroidHardwareBuffer(), nullptr, nullptr, nullptr, &ahbFormat, nullptr, nullptr);
         DE_ASSERT(ahbApi->ahbFormatIsBlob(ahbFormat) || image != VK_NULL_HANDLE);
 
         vk::VkAndroidHardwareBufferPropertiesANDROID ahbProperties = {
-            vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID, DE_NULL, 0u, 0u};
+            vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID, nullptr, 0u, 0u};
 
         VK_CHECK(
             vkd.getAndroidHardwareBufferPropertiesANDROID(device, handle.getAndroidHardwareBuffer(), &ahbProperties));
 
         vk::VkImportAndroidHardwareBufferInfoANDROID importInfo = {
-            vk::VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID, DE_NULL,
+            vk::VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID, nullptr,
             handle.getAndroidHardwareBuffer()};
         const vk::VkMemoryDedicatedAllocateInfo dedicatedInfo = {
             vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
@@ -1141,7 +1141,7 @@ static vk::Move<vk::VkDeviceMemory> importMemory(const vk::DeviceInterface &vkd,
         DE_ASSERT(memoryTypeIndex != ~0U);
 
         const vk::VkImportMemoryHostPointerInfoEXT importInfo = {
-            vk::VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT, DE_NULL, externalType, handle.getHostPtr()};
+            vk::VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT, nullptr, externalType, handle.getHostPtr()};
         const vk::VkMemoryDedicatedAllocateInfo dedicatedInfo = {
             vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
             &importInfo,
@@ -1159,7 +1159,7 @@ static vk::Move<vk::VkDeviceMemory> importMemory(const vk::DeviceInterface &vkd,
              externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLTEXTURE_BIT_EXT)
     {
         const vk::VkImportMemoryMetalHandleInfoEXT importInfo = {
-            vk::VK_STRUCTURE_TYPE_IMPORT_MEMORY_METAL_HANDLE_INFO_EXT, DE_NULL, externalType, handle.getMetalHandle()};
+            vk::VK_STRUCTURE_TYPE_IMPORT_MEMORY_METAL_HANDLE_INFO_EXT, nullptr, externalType, handle.getMetalHandle()};
         const vk::VkMemoryDedicatedAllocateInfo dedicatedInfo = {
             vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
             &importInfo,
@@ -1212,7 +1212,7 @@ vk::Move<vk::VkBuffer> createExternalBuffer(const vk::DeviceInterface &vkd, vk::
                                             vk::VkBufferCreateFlags createFlags, vk::VkBufferUsageFlags usageFlags)
 {
     const vk::VkExternalMemoryBufferCreateInfo externalCreateInfo = {
-        vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO, DE_NULL,
+        vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO, nullptr,
         (vk::VkExternalMemoryHandleTypeFlags)externalType};
     const vk::VkBufferCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
                                                &externalCreateInfo,
@@ -1237,7 +1237,7 @@ vk::Move<vk::VkImage> createExternalImage(const vk::DeviceInterface &vkd, vk::Vk
         arrayLayers = 6u;
 
     const vk::VkExternalMemoryImageCreateInfo externalCreateInfo = {
-        vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO, DE_NULL,
+        vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO, nullptr,
         (vk::VkExternalMemoryHandleTypeFlags)externalType};
     const vk::VkImageCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
                                               &externalCreateInfo,
@@ -1267,7 +1267,7 @@ vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT getPhysicalDeviceExternalMem
 {
     vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT externalProps = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT,
-        DE_NULL,
+        nullptr,
         0u,
     };
 

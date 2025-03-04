@@ -314,15 +314,15 @@ void generateCtorClose(ostringstream &out, const size_t)
 
 const map<string, DataTypeInfo> dataTypeInfos = {
     //                numElements    , valueFn            , beforeValueFn                                , afterValueFn
-    {"float", {1, generateValueFloat, DE_NULL, DE_NULL}},
+    {"float", {1, generateValueFloat, nullptr, nullptr}},
     {"vec2", {2, generateValueFloat, bind(generateCtorOpen, "vec2", _1, _2), generateCtorClose}},
     {"vec3", {3, generateValueFloat, bind(generateCtorOpen, "vec3", _1, _2), generateCtorClose}},
     {"vec4", {4, generateValueFloat, bind(generateCtorOpen, "vec4", _1, _2), generateCtorClose}},
-    {"int", {1, generateValueInt, DE_NULL, DE_NULL}},
+    {"int", {1, generateValueInt, nullptr, nullptr}},
     {"ivec2", {2, generateValueInt, bind(generateCtorOpen, "ivec2", _1, _2), generateCtorClose}},
     {"ivec3", {3, generateValueInt, bind(generateCtorOpen, "ivec3", _1, _2), generateCtorClose}},
     {"ivec4", {4, generateValueInt, bind(generateCtorOpen, "ivec4", _1, _2), generateCtorClose}},
-    {"bool", {1, generateValueBool, DE_NULL, DE_NULL}},
+    {"bool", {1, generateValueBool, nullptr, nullptr}},
     {"bvec2", {2, generateValueBool, bind(generateCtorOpen, "bvec2", _1, _2), generateCtorClose}},
     {"bvec3", {3, generateValueBool, bind(generateCtorOpen, "bvec3", _1, _2), generateCtorClose}},
     {"bvec4", {4, generateValueBool, bind(generateCtorOpen, "bvec4", _1, _2), generateCtorClose}},
@@ -344,7 +344,7 @@ string generateTestCode(const string &outputType, const vector<string> &inputTyp
     DE_ASSERT(outputTypeInfo != dataTypeInfos.end());
 
     output << outputType << " v = ";
-    if (outputTypeInfo->second.beforeValueFn != DE_NULL)
+    if (outputTypeInfo->second.beforeValueFn != nullptr)
         outputTypeInfo->second.beforeValueFn(output, -1);
     int outputElementsRemaining = (int)outputTypeInfo->second.numElements;
     int outputElementIndex      = 0;
@@ -356,7 +356,7 @@ string generateTestCode(const string &outputType, const vector<string> &inputTyp
 
         if (outputElementIndex > 0)
             output << ", ";
-        if (inputTypeInfo->second.beforeValueFn != DE_NULL)
+        if (inputTypeInfo->second.beforeValueFn != nullptr)
             inputTypeInfo->second.beforeValueFn(output, i);
         for (size_t j = 0; j < inputTypeInfo->second.numElements; ++j)
         {
@@ -366,10 +366,10 @@ string generateTestCode(const string &outputType, const vector<string> &inputTyp
             inputTypeInfo->second.valueFn(output, outputElementIndex++);
             --outputElementsRemaining;
         }
-        if (inputTypeInfo->second.afterValueFn != DE_NULL)
+        if (inputTypeInfo->second.afterValueFn != nullptr)
             inputTypeInfo->second.afterValueFn(output, i);
     }
-    if (outputTypeInfo->second.afterValueFn != DE_NULL)
+    if (outputTypeInfo->second.afterValueFn != nullptr)
         outputTypeInfo->second.afterValueFn(output, -1);
     output << ";";
     return output.str();

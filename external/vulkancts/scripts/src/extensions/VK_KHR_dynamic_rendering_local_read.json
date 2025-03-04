@@ -1,21 +1,18 @@
 {
-    "register_extension":
-        {
-            "type": "device",
-            "core": ""
-        },
-    "mandatory_features":
-        {
-            "VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR":
-                [
-                    {
-                        "features": [
-                            "dynamicRenderingLocalRead"
-                        ],
-                        "requirements": [
-                            "VK_KHR_dynamic_rendering_local_read"
-                        ]
-                    }
+    "register_extension": {
+        "type": "device",
+        "core": "0.1.4.0"
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR": [
+            {
+                "features": [
+                    "dynamicRenderingLocalRead"
+                ],
+                "requirements": [
+                    "VK_KHR_dynamic_rendering_local_read"
                 ]
-        }
+            }
+        ]
+    }
 }

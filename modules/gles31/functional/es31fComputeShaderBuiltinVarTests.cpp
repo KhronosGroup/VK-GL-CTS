@@ -239,7 +239,7 @@ ComputeBuiltinVarCase::IterateResult ComputeBuiltinVarCase::iterate(void)
                        << TestLog::Message << "Work group size = " << subCase.localSize << TestLog::EndMessage;
 
     gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, *outputBuffer);
-    gl.bufferData(GL_SHADER_STORAGE_BUFFER, (glw::GLsizeiptr)bufferSize, DE_NULL, GL_STREAM_READ);
+    gl.bufferData(GL_SHADER_STORAGE_BUFFER, (glw::GLsizeiptr)bufferSize, nullptr, GL_STREAM_READ);
     gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, *outputBuffer);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Buffer setup failed");
 

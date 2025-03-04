@@ -161,7 +161,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, uint32_t 
 {
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         0u,                                  // VkImageCreateFlags flags;
         getImageType(depth),
         format,                             // VkFormat format;
@@ -173,7 +173,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, uint32_t 
         getImageUsage(),                    // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,          // VkSharingMode sharingMode;
         0u,                                 // uint32_t queueFamilyIndexCount;
-        DE_NULL,                            // const uint32_t* pQueueFamilyIndices;
+        nullptr,                            // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED           // VkImageLayout initialLayout;
     };
 
@@ -416,12 +416,15 @@ de::MovePtr<TopLevelAccelerationStructure> RayTracingWatertightnessTestInstance:
     Allocator &allocator                              = m_context.getDefaultAllocator();
     de::MovePtr<TopLevelAccelerationStructure> result = makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     result->setInstanceCount(bottomLevelAccelerationStructures.size());
 
     for (size_t structNdx = 0; structNdx < bottomLevelAccelerationStructures.size(); ++structNdx)
         result->addInstance(bottomLevelAccelerationStructures[structNdx]);
 
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return result;
 }
@@ -437,6 +440,9 @@ de::MovePtr<BottomLevelAccelerationStructure> RayTracingWatertightnessTestInstan
     std::vector<tcu::Vec3> vertices;
     std::vector<tcu::UVec3> triangles;
     std::vector<tcu::Vec3> geometryData;
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
 
     result->setGeometryCount(1u);
 
@@ -494,7 +500,7 @@ de::MovePtr<BottomLevelAccelerationStructure> RayTracingWatertightnessTestInstan
     }
 
     result->addGeometry(geometryData, triangle);
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return result;
 }
@@ -545,6 +551,9 @@ vector<de::SharedPtr<BottomLevelAccelerationStructure>> RayTracingWatertightness
             const VkDevice device      = m_context.getDevice();
             const DeviceInterface &vkd = m_context.getDeviceInterface();
 
+            AccelerationStructBufferProperties bufferProps;
+            bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
             if (!m_data.useManyGeometries)
             {
                 de::MovePtr<BottomLevelAccelerationStructure> resultBLAS = makeBottomLevelAccelerationStructure();
@@ -562,7 +571,7 @@ vector<de::SharedPtr<BottomLevelAccelerationStructure>> RayTracingWatertightness
                                             VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
                 }
 
-                resultBLAS->createAndBuild(vkd, device, cmdBuffer, allocator);
+                resultBLAS->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
                 result.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(resultBLAS.release()));
             }
@@ -579,7 +588,7 @@ vector<de::SharedPtr<BottomLevelAccelerationStructure>> RayTracingWatertightness
 
                     resultBLAS->addGeometry(geometryData, true /* triangles */,
                                             VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
-                    resultBLAS->createAndBuild(vkd, device, cmdBuffer, allocator);
+                    resultBLAS->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
                     result.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(resultBLAS.release()));
                 }
@@ -694,7 +703,7 @@ de::MovePtr<BufferWithMemory> RayTracingWatertightnessTestInstance::runTest(void
         const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = topLevelAccelerationStructure.get();
         VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-            DE_NULL,                                                           //  const void* pNext;
+            nullptr,                                                           //  const void* pNext;
             1u,                                                                //  uint32_t accelerationStructureCount;
             topLevelAccelerationStructurePtr->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
         };
@@ -707,7 +716,7 @@ de::MovePtr<BufferWithMemory> RayTracingWatertightnessTestInstance::runTest(void
             .update(vkd, device);
 
         vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                                  &descriptorSet.get(), 0, DE_NULL);
+                                  &descriptorSet.get(), 0, nullptr);
 
         vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 

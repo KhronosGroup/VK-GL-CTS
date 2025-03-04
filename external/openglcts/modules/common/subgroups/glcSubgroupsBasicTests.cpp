@@ -1294,7 +1294,7 @@ tcu::TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
     if (subgroups::SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
     {
         if (OPTYPE_ELECT == caseDef.opType)
-            return subgroups::makeVertexFrameBufferTest(context, subgroups::FORMAT_R32G32_SFLOAT, DE_NULL, 0u,
+            return subgroups::makeVertexFrameBufferTest(context, subgroups::FORMAT_R32G32_SFLOAT, nullptr, 0u,
                                                         checkVertexPipelineStagesSubgroupElectNoSSBO);
         else
             return subgroups::makeVertexFrameBufferTest(context, subgroups::FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0],
@@ -1309,7 +1309,7 @@ tcu::TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
     else if (subgroups::SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
     {
         if (OPTYPE_ELECT == caseDef.opType)
-            return subgroups::makeGeometryFrameBufferTest(context, subgroups::FORMAT_R32G32_SFLOAT, DE_NULL, 0u,
+            return subgroups::makeGeometryFrameBufferTest(context, subgroups::FORMAT_R32G32_SFLOAT, nullptr, 0u,
                                                           checkVertexPipelineStagesSubgroupElectNoSSBO);
         else
             return subgroups::makeGeometryFrameBufferTest(context, subgroups::FORMAT_R32G32B32A32_SFLOAT,
@@ -1318,7 +1318,7 @@ tcu::TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
     }
 
     if (OPTYPE_ELECT == caseDef.opType)
-        return subgroups::makeTessellationEvaluationFrameBufferTest(context, subgroups::FORMAT_R32G32_SFLOAT, DE_NULL,
+        return subgroups::makeTessellationEvaluationFrameBufferTest(context, subgroups::FORMAT_R32G32_SFLOAT, nullptr,
                                                                     0u, checkVertexPipelineStagesSubgroupElectNoSSBO,
                                                                     caseDef.shaderStage);
 
@@ -1358,7 +1358,7 @@ tcu::TestStatus test(Context &context, const CaseDefinition caseDef)
 
         if (OPTYPE_ELECT == caseDef.opType)
         {
-            return subgroups::makeComputeTest(context, subgroups::FORMAT_R32_UINT, DE_NULL, 0,
+            return subgroups::makeComputeTest(context, subgroups::FORMAT_R32_UINT, nullptr, 0,
                                               checkComputeSubgroupElect);
         }
         else

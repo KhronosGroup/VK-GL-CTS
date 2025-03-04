@@ -1070,7 +1070,7 @@ void writeFragmentPackets(const RenderState &state, const RenderTarget &renderTa
                         (uint32_t)((packet.coverage & getCoverageFragmentSampleBits(numSamples, xo, yo)) >>
                                    getCoverageOffset(numSamples, xo, yo));
                     fragment.sampleDepths =
-                        (depthValues) ? (&depthValues[(packetNdx * 4 + yo * 2 + xo) * numSamples]) : (DE_NULL);
+                        (depthValues) ? (&depthValues[(packetNdx * 4 + yo * 2 + xo) * numSamples]) : (nullptr);
                 }
             }
     }
@@ -1196,7 +1196,7 @@ void rasterizePrimitive(const RenderState &state, const RenderTarget &renderTarg
     const float depthClampMin = de::min(state.viewport.zn, state.viewport.zf);
     const float depthClampMax = de::max(state.viewport.zn, state.viewport.zf);
     const bool msaa           = numSamples > 1;
-    FragmentShadingContext shadingContext(line.v0->outputs, line.v1->outputs, DE_NULL, &buffers.shaderOutputs[0],
+    FragmentShadingContext shadingContext(line.v0->outputs, line.v1->outputs, nullptr, &buffers.shaderOutputs[0],
                                           &buffers.shaderOutputsSrc1[0], buffers.fragmentDepthBuffer,
                                           line.v1->primitiveID, (int)program.fragmentShader->getOutputs().size(),
                                           numSamples, FACETYPE_FRONT);
@@ -1271,7 +1271,7 @@ void rasterizePrimitive(const RenderState &state, const RenderTarget &renderTarg
     rasterizer2.init(w0, w2, w3);
 
     // Shading context
-    FragmentShadingContext shadingContext(point.v0->outputs, DE_NULL, DE_NULL, &buffers.shaderOutputs[0],
+    FragmentShadingContext shadingContext(point.v0->outputs, nullptr, nullptr, &buffers.shaderOutputs[0],
                                           &buffers.shaderOutputsSrc1[0], buffers.fragmentDepthBuffer,
                                           point.v0->primitiveID, (int)program.fragmentShader->getOutputs().size(),
                                           numSamples, FACETYPE_FRONT);
@@ -1290,7 +1290,7 @@ void rasterizePrimitive(const RenderState &state, const RenderTarget &renderTarg
         {
             float *const depthBufferAppendPointer =
                 (buffers.fragmentDepthBuffer) ? (buffers.fragmentDepthBuffer + numRasterizedPackets * numSamples * 4) :
-                                                (DE_NULL);
+                                                (nullptr);
             int numRasterizedPackets2 = 0;
 
             rasterizer2.rasterize(&buffers.fragmentPackets[numRasterizedPackets], depthBufferAppendPointer,
@@ -1341,7 +1341,7 @@ void rasterize(const RenderState &state, const RenderTarget &renderTarget, const
     std::vector<GenericVec4> shaderOutputsSrc1(maxFragmentPackets * 4 * numFragmentOutputs);
     std::vector<Fragment> shadedFragments(maxFragmentPackets * 4);
     std::vector<float> depthValues(0);
-    float *depthBufferPointer = DE_NULL;
+    float *depthBufferPointer = nullptr;
 
     RasterizationInternalBuffers buffers;
 
@@ -1765,7 +1765,7 @@ DrawIndices::DrawIndices(const void *ptr, IndexType type, int baseVertex_)
 PrimitiveList::PrimitiveList(PrimitiveType primitiveType, int numElements, const int firstElement)
     : m_primitiveType(primitiveType)
     , m_numElements(numElements)
-    , m_indices(DE_NULL)
+    , m_indices(nullptr)
     , m_indexType(INDEXTYPE_LAST)
     , m_baseVertex(firstElement)
 {
@@ -1785,7 +1785,7 @@ PrimitiveList::PrimitiveList(PrimitiveType primitiveType, int numElements, const
 
 size_t PrimitiveList::getIndex(size_t elementNdx) const
 {
-    // indices == DE_NULL interpreted as command.indices = [first (=baseVertex) + 0, first + 1, first + 2...]
+    // indices == nullptr interpreted as command.indices = [first (=baseVertex) + 0, first + 1, first + 2...]
     if (m_indices)
     {
         int index = m_baseVertex + (int)readIndexArray(m_indexType, m_indices, elementNdx);

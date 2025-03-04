@@ -1479,7 +1479,7 @@ ShaderTextureFunctionInstance::ShaderTextureFunctionInstance(
     Context &context, const bool isVertexCase, const ShaderEvaluator &evaluator, const UniformSetup &uniformSetup,
     const TextureLookupSpec &lookupSpec, const TextureSpec &textureSpec, const TexLookupParams &lookupParams,
     const ImageBackingMode imageBackingMode)
-    : ShaderRenderCaseInstance(context, isVertexCase, evaluator, uniformSetup, DE_NULL, imageBackingMode,
+    : ShaderRenderCaseInstance(context, isVertexCase, evaluator, uniformSetup, nullptr, imageBackingMode,
                                (isVertexCase ? 92 : GRID_SIZE_DEFAULT_FRAGMENT))
     , m_lookupSpec(lookupSpec)
     , m_textureSpec(textureSpec)
@@ -1952,8 +1952,8 @@ ShaderTextureFunctionCase::~ShaderTextureFunctionCase(void)
 
 TestInstance *ShaderTextureFunctionCase::createInstance(Context &context) const
 {
-    DE_ASSERT(m_evaluator != DE_NULL);
-    DE_ASSERT(m_uniformSetup != DE_NULL);
+    DE_ASSERT(m_evaluator);
+    DE_ASSERT(m_uniformSetup);
     return new ShaderTextureFunctionInstance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_lookupSpec,
                                              m_textureSpec, m_lookupParams);
 }
@@ -1998,7 +1998,7 @@ void ShaderTextureFunctionCase::initShaderSources(void)
                                        glu::TYPE_FLOAT_VEC3 :
                                        glu::TYPE_FLOAT_VEC2;
     const char *gradTypeName     = glu::getDataTypeName(gradType);
-    const char *baseFuncName     = DE_NULL;
+    const char *baseFuncName     = nullptr;
 
     DE_ASSERT(!isGrad || !hasLodBias);
 
@@ -2246,15 +2246,16 @@ using TestMode = uint32_t;
 
 enum QueryLodTestModes
 {
-    QLODTM_DEFAULT = 0,  // uv coords have different values
-    QLODTM_ZERO_UV_WIDTH // all uv coords are 0; there were implementations that incorrectly returned 0 in that case instead of -maxSamplerLodBias or less
+    QLODTM_DEFAULT = 0,   // uv coords have different values
+    QLODTM_ZERO_UV_WIDTH, // all uv coords are 0; there were implementations that incorrectly returned 0 in that case instead of -maxSamplerLodBias or less
+    QLODTM_WITH_NON_ZERO_BASE_LEVEL, // test texture LoD query in combination with base leve that is != 0
 };
 
 class TextureQueryInstance : public ShaderRenderCaseInstance
 {
 public:
     TextureQueryInstance(Context &context, const bool isVertexCase, const TextureSpec &textureSpec);
-    virtual ~TextureQueryInstance(void);
+    virtual ~TextureQueryInstance(void) = default;
 
 protected:
     virtual void setupDefaultInputs(void);
@@ -2267,16 +2268,12 @@ protected:
 };
 
 TextureQueryInstance::TextureQueryInstance(Context &context, const bool isVertexCase, const TextureSpec &textureSpec)
-    : ShaderRenderCaseInstance(context, isVertexCase, DE_NULL, DE_NULL, DE_NULL)
+    : ShaderRenderCaseInstance(context, isVertexCase, nullptr, nullptr, nullptr)
     , m_textureSpec(textureSpec)
 {
     m_colorFormat = vk::VK_FORMAT_R32G32B32A32_SFLOAT;
 
     checkDeviceFeatures(m_context, m_textureSpec.type);
-}
-
-TextureQueryInstance::~TextureQueryInstance(void)
-{
 }
 
 void TextureQueryInstance::setupDefaultInputs(void)
@@ -3395,7 +3392,7 @@ class TextureQueryLodInstance : public TextureQueryInstance
 public:
     TextureQueryLodInstance(Context &context, const bool isVertexCase, const TextureSpec &textureSpec,
                             const TestMode mode);
-    virtual ~TextureQueryLodInstance(void);
+    virtual ~TextureQueryLodInstance(void) = default;
 
     virtual tcu::TestStatus iterate(void);
 
@@ -3403,7 +3400,7 @@ protected:
     virtual void setupDefaultInputs(void);
 
 private:
-    void initTexture(void);
+    void initTexture(int baseMipLevel);
     float computeLevelFromLod(float computedLod) const;
     vector<float> computeQuadTexCoord(void) const;
 
@@ -3423,10 +3420,13 @@ TextureQueryLodInstance::TextureQueryLodInstance(Context &context, const bool is
     , m_lodBounds()
     , m_levelBounds()
 {
-    // setup texture
-    initTexture();
+    int lodBase    = (m_mode == QLODTM_WITH_NON_ZERO_BASE_LEVEL) ? 2 : 0;
+    float lodBaseF = float(lodBase);
 
-    if (m_mode == QLODTM_DEFAULT)
+    // setup texture
+    initTexture(lodBase);
+
+    if (m_mode != QLODTM_ZERO_UV_WIDTH)
     {
         const tcu::UVec2 &viewportSize = getViewportSize();
         const float lodEps = (1.0f / float(1u << m_context.getDeviceProperties().limits.mipmapPrecisionBits)) + 0.008f;
@@ -3442,8 +3442,8 @@ TextureQueryLodInstance::TextureQueryLodInstance(Context &context, const bool is
 
             const float dudx = (m_maxCoord[0] - m_minCoord[0]) * (float)m_textureSpec.width / (float)viewportSize[0];
 
-            m_lodBounds[0] = computeLodFromDerivates(LODMODE_MIN_BOUND, dudx, 0.0f) - lodEps;
-            m_lodBounds[1] = computeLodFromDerivates(LODMODE_MAX_BOUND, dudx, 0.0f) + lodEps;
+            m_lodBounds[0] = computeLodFromDerivates(LODMODE_MIN_BOUND, dudx, 0.0f) - lodEps - lodBaseF;
+            m_lodBounds[1] = computeLodFromDerivates(LODMODE_MAX_BOUND, dudx, 0.0f) + lodEps - lodBaseF;
             break;
         }
 
@@ -3456,8 +3456,8 @@ TextureQueryLodInstance::TextureQueryLodInstance(Context &context, const bool is
             const float dudx = (m_maxCoord[0] - m_minCoord[0]) * (float)m_textureSpec.width / (float)viewportSize[0];
             const float dvdy = (m_maxCoord[1] - m_minCoord[1]) * (float)m_textureSpec.height / (float)viewportSize[1];
 
-            m_lodBounds[0] = computeLodFromDerivates(LODMODE_MIN_BOUND, dudx, 0.0f, 0.0f, dvdy) - lodEps;
-            m_lodBounds[1] = computeLodFromDerivates(LODMODE_MAX_BOUND, dudx, 0.0f, 0.0f, dvdy) + lodEps;
+            m_lodBounds[0] = computeLodFromDerivates(LODMODE_MIN_BOUND, dudx, 0.0f, 0.0f, dvdy) - lodEps - lodBaseF;
+            m_lodBounds[1] = computeLodFromDerivates(LODMODE_MAX_BOUND, dudx, 0.0f, 0.0f, dvdy) + lodEps - lodBaseF;
             break;
         }
 
@@ -3480,8 +3480,8 @@ TextureQueryLodInstance::TextureQueryLodInstance(Context &context, const bool is
             float dudx                   = (c10.s - c00.s) * (float)m_textureSpec.width / (float)viewportSize[0];
             float dvdy                   = (c01.t - c00.t) * (float)m_textureSpec.height / (float)viewportSize[1];
 
-            m_lodBounds[0] = computeLodFromDerivates(LODMODE_MIN_BOUND, dudx, 0.0f, 0.0f, dvdy) - lodEps;
-            m_lodBounds[1] = computeLodFromDerivates(LODMODE_MAX_BOUND, dudx, 0.0f, 0.0f, dvdy) + lodEps;
+            m_lodBounds[0] = computeLodFromDerivates(LODMODE_MIN_BOUND, dudx, 0.0f, 0.0f, dvdy) - lodEps - lodBaseF;
+            m_lodBounds[1] = computeLodFromDerivates(LODMODE_MAX_BOUND, dudx, 0.0f, 0.0f, dvdy) + lodEps - lodBaseF;
             break;
         }
 
@@ -3497,8 +3497,10 @@ TextureQueryLodInstance::TextureQueryLodInstance(Context &context, const bool is
             const float dwdy =
                 (m_maxCoord[2] - m_minCoord[2]) * 0.5f * (float)m_textureSpec.depth / (float)viewportSize[1];
 
-            m_lodBounds[0] = computeLodFromDerivates(LODMODE_MIN_BOUND, dudx, 0.0f, dwdx, 0.0f, dvdy, dwdy) - lodEps;
-            m_lodBounds[1] = computeLodFromDerivates(LODMODE_MAX_BOUND, dudx, 0.0f, dwdx, 0.0f, dvdy, dwdy) + lodEps;
+            m_lodBounds[0] =
+                computeLodFromDerivates(LODMODE_MIN_BOUND, dudx, 0.0f, dwdx, 0.0f, dvdy, dwdy) - lodEps - lodBaseF;
+            m_lodBounds[1] =
+                computeLodFromDerivates(LODMODE_MAX_BOUND, dudx, 0.0f, dwdx, 0.0f, dvdy, dwdy) + lodEps - lodBaseF;
             break;
         }
 
@@ -3512,8 +3514,7 @@ TextureQueryLodInstance::TextureQueryLodInstance(Context &context, const bool is
 
         return;
     }
-
-    if (m_mode == QLODTM_ZERO_UV_WIDTH)
+    else
     {
         // setup same texture coordinates that will result in pmax
         // beeing 0 and as a result lambda being -inf; on most
@@ -3533,10 +3534,6 @@ TextureQueryLodInstance::TextureQueryLodInstance(Context &context, const bool is
     }
 
     DE_ASSERT(false);
-}
-
-TextureQueryLodInstance::~TextureQueryLodInstance(void)
-{
 }
 
 tcu::TestStatus TextureQueryLodInstance::iterate(void)
@@ -3591,7 +3588,7 @@ void TextureQueryLodInstance::setupDefaultInputs(void)
                  texCoord.data());
 }
 
-void TextureQueryLodInstance::initTexture(void)
+void TextureQueryLodInstance::initTexture(int baseMipLevel)
 {
     tcu::TestLog &log = m_context.getTestContext().getLog();
     tcu::IVec3 textureSize(m_textureSpec.width, m_textureSpec.height, m_textureSpec.depth);
@@ -3603,7 +3600,7 @@ void TextureQueryLodInstance::initTexture(void)
         << tcu::TestLog::EndMessage;
 
     textureBinding = createEmptyTexture(m_textureSpec.format, m_textureSpec.type, textureSize, m_textureSpec.numLevels,
-                                        0 /* lodBase */, m_textureSpec.sampler);
+                                        baseMipLevel, m_textureSpec.sampler);
 
     m_textures.push_back(textureBinding);
 }
@@ -3686,7 +3683,7 @@ protected:
 
 TextureQueryCase::TextureQueryCase(tcu::TestContext &testCtx, const std::string &name, const std::string &samplerType,
                                    const TextureSpec &texture, bool isVertexCase, QueryFunction function, TestMode mode)
-    : ShaderRenderCase(testCtx, name, isVertexCase, (ShaderEvaluator *)DE_NULL, DE_NULL, DE_NULL)
+    : ShaderRenderCase(testCtx, name, isVertexCase, (ShaderEvaluator *)nullptr, nullptr, nullptr)
     , m_samplerTypeStr(samplerType)
     , m_textureSpec(texture)
     , m_function(function)
@@ -3715,7 +3712,7 @@ TestInstance *TextureQueryCase::createInstance(Context &context) const
         return new TextureSamplesInstance(context, m_isVertexCase, m_textureSpec);
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -3888,7 +3885,7 @@ tcu::TestStatus textureSizeOOBTest(Context &context)
     // create image, we do not need to fill it with data for this test
     const VkImageCreateInfo imageCreateInfo{
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                          // VkStructureType sType;
-        DE_NULL,                                                      // const void* pNext;
+        nullptr,                                                      // const void* pNext;
         0u,                                                           // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                                             // VkImageType imageType;
         VK_FORMAT_R8G8B8A8_UNORM,                                     // VkFormat format;
@@ -3900,7 +3897,7 @@ tcu::TestStatus textureSizeOOBTest(Context &context)
         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,                                    // VkSharingMode sharingMode;
         0u,                                                           // uint32_t queueFamilyIndexCount;
-        DE_NULL,                                                      // const uint32_t* pQueueFamilyIndices;
+        nullptr,                                                      // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,                                    // VkImageLayout initialLayout;
     };
     const ImageWithMemory image(vk, device, allocator, imageCreateInfo, MemoryRequirement::Any);
@@ -3958,13 +3955,13 @@ tcu::TestStatus textureSizeOOBTest(Context &context)
     beginCommandBuffer(vk, *cmdBuffer);
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, DE_NULL, 0, DE_NULL, 1, &layoutBarrier);
+                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &layoutBarrier);
     vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(),
-                             0u, DE_NULL);
+                             0u, nullptr);
     vk.cmdDispatch(*cmdBuffer, DE_LENGTH_OF_ARRAY(testedLods), 1, 1);
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, DE_NULL, 1, &outBarrier, 0, DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &outBarrier, 0, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
     submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -4157,7 +4154,7 @@ void SparseShaderTextureFunctionCase::initShaderSources(void)
         (m_textureSpec.type == TEXTURETYPE_CUBE_MAP || m_textureSpec.type == TEXTURETYPE_3D) ? glu::TYPE_FLOAT_VEC3 :
                                                                                                glu::TYPE_FLOAT_VEC2;
     const char *gradTypeName = glu::getDataTypeName(gradType);
-    const char *baseFuncName = DE_NULL;
+    const char *baseFuncName = nullptr;
 
     DE_ASSERT(!isGrad || !hasLodBias);
 
@@ -4376,8 +4373,8 @@ SparseShaderTextureFunctionCase::~SparseShaderTextureFunctionCase()
 
 TestInstance *SparseShaderTextureFunctionCase::createInstance(Context &context) const
 {
-    DE_ASSERT(m_evaluator != DE_NULL);
-    DE_ASSERT(m_uniformSetup != DE_NULL);
+    DE_ASSERT(m_evaluator);
+    DE_ASSERT(m_uniformSetup);
     return new SparseShaderTextureFunctionInstance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_lookupSpec,
                                                    m_textureSpec, m_lookupParams);
 }
@@ -7307,6 +7304,10 @@ void ShaderTextureFunctionTests::init(void)
                 group->addChild(new TextureQueryCase(
                     m_testCtx, (std::string(caseSpec.name) + "_zero_uv_width_fragment"), caseSpec.samplerName,
                     caseSpec.textureSpec, false, QUERYFUNCTION_TEXTUREQUERYLOD, QLODTM_ZERO_UV_WIDTH));
+
+                group->addChild(new TextureQueryCase(
+                    m_testCtx, (std::string(caseSpec.name) + "non_zero_base_level_fragment"), caseSpec.samplerName,
+                    caseSpec.textureSpec, false, QUERYFUNCTION_TEXTUREQUERYLOD, QLODTM_WITH_NON_ZERO_BASE_LEVEL));
             }
 
             queryGroup->addChild(group.release());

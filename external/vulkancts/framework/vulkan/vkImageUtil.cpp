@@ -2315,6 +2315,28 @@ PlanarFormatDescription getCorePlanarFormatDescription(VkFormat format)
         return desc;
     }
 
+    case VK_FORMAT_R16G16B16A16_SFLOAT:
+    {
+        const PlanarFormatDescription desc = {1, // planes
+                                              chanR | chanG | chanB | chanA,
+                                              1,
+                                              1,
+                                              {
+                                                  //        Size    WDiv    HDiv    planeCompatibleFormat
+                                                  {8, 1, 1, VK_FORMAT_R16G16B16A16_SFLOAT},
+                                                  {0, 0, 0, VK_FORMAT_UNDEFINED},
+                                                  {0, 0, 0, VK_FORMAT_UNDEFINED},
+                                              },
+                                              {
+                                                  //        Plane    Type    Offs    Size    Stride
+                                                  {0, sfloat, 0, 16, 8},  // R
+                                                  {0, sfloat, 16, 16, 8}, // G
+                                                  {0, sfloat, 32, 16, 8}, // B
+                                                  {0, sfloat, 48, 16, 8}  // A
+                                              }};
+        return desc;
+    }
+
     case VK_FORMAT_R32G32B32A32_SFLOAT:
     {
         const PlanarFormatDescription desc = {1, // planes
@@ -4225,7 +4247,7 @@ VkSamplerCreateInfo mapSampler(const tcu::Sampler &sampler, const tcu::TextureFo
 
     const VkSamplerCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         flags,
         mapFilterMode(sampler.magFilter),                          // magFilter
         mapFilterMode(sampler.minFilter),                          // minFilter
@@ -4276,7 +4298,7 @@ tcu::Sampler mapVkSampler(const VkSamplerCreateInfo &samplerCreateInfo)
     rr::GenericVec4 borderColorValue;
 
     void const *pNext = samplerCreateInfo.pNext;
-    while (pNext != DE_NULL)
+    while (pNext != nullptr)
     {
         const VkStructureType nextType = *reinterpret_cast<const VkStructureType *>(pNext);
         switch (nextType)
@@ -4583,7 +4605,7 @@ void copyBufferToImage(const DeviceInterface &vk, const VkCommandBuffer &cmdBuff
     // Barriers for copying buffer to image
     const VkBufferMemoryBarrier preBufferBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         VK_ACCESS_HOST_WRITE_BIT,                // VkAccessFlags srcAccessMask;
         VK_ACCESS_TRANSFER_READ_BIT,             // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
@@ -4594,7 +4616,7 @@ void copyBufferToImage(const DeviceInterface &vk, const VkCommandBuffer &cmdBuff
     };
 
     const VkImageMemoryBarrier preImageBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-                                                  DE_NULL,                                // const void* pNext;
+                                                  nullptr,                                // const void* pNext;
                                                   0u,                                   // VkAccessFlags srcAccessMask;
                                                   VK_ACCESS_TRANSFER_WRITE_BIT,         // VkAccessFlags dstAccessMask;
                                                   VK_IMAGE_LAYOUT_UNDEFINED,            // VkImageLayout oldLayout;
@@ -4612,7 +4634,7 @@ void copyBufferToImage(const DeviceInterface &vk, const VkCommandBuffer &cmdBuff
                                                   }};
 
     const VkImageMemoryBarrier postImageBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-                                                   DE_NULL,                                // const void* pNext;
+                                                   nullptr,                                // const void* pNext;
                                                    VK_ACCESS_TRANSFER_WRITE_BIT,         // VkAccessFlags srcAccessMask;
                                                    destImageDstAccessMask,               // VkAccessFlags dstAccessMask;
                                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // VkImageLayout oldLayout;
@@ -4648,7 +4670,7 @@ void copyBufferToImage(const DeviceInterface &vk, VkDevice device, VkQueue queue
 {
     Move<VkCommandPool> cmdPool;
     VkCommandPool activeCmdPool;
-    if (externalCommandPool == DE_NULL)
+    if (externalCommandPool == nullptr)
     {
         // Create local command pool
         cmdPool       = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
@@ -4665,7 +4687,7 @@ void copyBufferToImage(const DeviceInterface &vk, VkDevice device, VkQueue queue
 
     const VkCommandBufferBeginInfo cmdBufferBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, // VkCommandBufferUsageFlags flags;
         nullptr,
     };
@@ -4679,14 +4701,14 @@ void copyBufferToImage(const DeviceInterface &vk, VkDevice device, VkQueue queue
 
     const VkSubmitInfo submitInfo = {
         VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
-        DE_NULL,                       // const void* pNext;
+        nullptr,                       // const void* pNext;
         waitSemaphore ? 1u : 0u,       // uint32_t waitSemaphoreCount;
         waitSemaphore,                 // const VkSemaphore* pWaitSemaphores;
         &pipelineStageFlags,           // const VkPipelineStageFlags* pWaitDstStageMask;
         1u,                            // uint32_t commandBufferCount;
         &cmdBuffer.get(),              // const VkCommandBuffer* pCommandBuffers;
         0u,                            // uint32_t signalSemaphoreCount;
-        DE_NULL                        // const VkSemaphore* pSignalSemaphores;
+        nullptr                        // const VkSemaphore* pSignalSemaphores;
     };
 
     try
@@ -4708,7 +4730,7 @@ void copyImageToBuffer(const DeviceInterface &vk, VkCommandBuffer cmdBuffer, VkI
 {
     const VkImageMemoryBarrier imageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,                        // VkStructureType sType;
-        DE_NULL,                                                       // const void* pNext;
+        nullptr,                                                       // const void* pNext;
         srcAccessMask,                                                 // VkAccessFlags srcAccessMask;
         VK_ACCESS_TRANSFER_READ_BIT,                                   // VkAccessFlags dstAccessMask;
         oldLayout,                                                     // VkImageLayout oldLayout;
@@ -4719,7 +4741,7 @@ void copyImageToBuffer(const DeviceInterface &vk, VkCommandBuffer cmdBuffer, VkI
         makeImageSubresourceRange(barrierAspect, 0u, 1u, 0, numLayers) // VkImageSubresourceRange subresourceRange;
     };
 
-    vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+    vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
                           &imageBarrier);
 
     const VkImageSubresourceLayers subresource = {
@@ -4742,7 +4764,7 @@ void copyImageToBuffer(const DeviceInterface &vk, VkCommandBuffer cmdBuffer, VkI
 
     const VkBufferMemoryBarrier bufferBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
         VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
@@ -4752,8 +4774,8 @@ void copyImageToBuffer(const DeviceInterface &vk, VkCommandBuffer cmdBuffer, VkI
         VK_WHOLE_SIZE                            // VkDeviceSize size;
     };
 
-    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u,
-                          &bufferBarrier, 0u, DE_NULL);
+    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 1u,
+                          &bufferBarrier, 0u, nullptr);
 }
 
 void copyImageToBuffer(const DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkBuffer buffer,
@@ -4763,7 +4785,7 @@ void copyImageToBuffer(const DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer,
 {
     const VkImageMemoryBarrier imageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         srcAccessMask,                          // VkAccessFlags srcAccessMask;
         VK_ACCESS_TRANSFER_READ_BIT,            // VkAccessFlags dstAccessMask;
         oldLayout,                              // VkImageLayout oldLayout;
@@ -4776,7 +4798,7 @@ void copyImageToBuffer(const DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer,
     };
 
     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
-                          DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+                          nullptr, 0u, nullptr, 1u, &imageBarrier);
 
     const VkImageSubresourceLayers subresource = {
         copyAspect, // VkImageAspectFlags aspectMask;
@@ -4810,7 +4832,7 @@ void copyImageToBuffer(const DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer,
 
     const VkBufferMemoryBarrier bufferBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
         VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
@@ -4820,8 +4842,8 @@ void copyImageToBuffer(const DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer,
         VK_WHOLE_SIZE                            // VkDeviceSize size;
     };
 
-    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u,
-                          &bufferBarrier, 0u, DE_NULL);
+    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 1u,
+                          &bufferBarrier, 0u, nullptr);
 }
 
 void clearColorImage(const DeviceInterface &vk, const VkDevice device, const VkQueue queue, uint32_t queueFamilyIndex,
@@ -4842,7 +4864,7 @@ void clearColorImage(const DeviceInterface &vk, const VkDevice device, const VkQ
 
     const VkImageMemoryBarrier preImageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         0u,                                     // VkAccessFlags srcAccessMask;
         VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags dstAccessMask;
         oldLayout,                              // VkImageLayout oldLayout;
@@ -4855,7 +4877,7 @@ void clearColorImage(const DeviceInterface &vk, const VkDevice device, const VkQ
 
     const VkImageMemoryBarrier postImageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags srcAccessMask;
         dstAccessFlags,                         // VkAccessFlags dstAccessMask;
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout oldLayout;
@@ -4868,12 +4890,10 @@ void clearColorImage(const DeviceInterface &vk, const VkDevice device, const VkQ
 
     beginCommandBuffer(vk, *cmdBuffer);
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
-                          0, (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1,
-                          &preImageBarrier);
+                          0, nullptr, 0, nullptr, 1, &preImageBarrier);
     vk.cmdClearColorImage(*cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1, &subresourceRange);
-    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, dstStageFlags, (VkDependencyFlags)0, 0,
-                          (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1,
-                          &postImageBarrier);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, dstStageFlags, (VkDependencyFlags)0, 0, nullptr,
+                          0, nullptr, 1, &postImageBarrier);
     endCommandBuffer(vk, *cmdBuffer);
 
     submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -4960,7 +4980,7 @@ void initColorImageChessboardPattern(const DeviceInterface &vk, const VkDevice d
 
     const VkImageMemoryBarrier preImageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         0u,                                     // VkAccessFlags srcAccessMask;
         VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags dstAccessMask;
         oldLayout,                              // VkImageLayout oldLayout;
@@ -4973,7 +4993,7 @@ void initColorImageChessboardPattern(const DeviceInterface &vk, const VkDevice d
 
     const VkImageMemoryBarrier postImageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags srcAccessMask;
         VK_ACCESS_SHADER_WRITE_BIT,             // VkAccessFlags dstAccessMask;
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout oldLayout;
@@ -4990,13 +5010,13 @@ void initColorImageChessboardPattern(const DeviceInterface &vk, const VkDevice d
 
     const VkBufferCreateInfo bufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType
-        DE_NULL,                              // const void*            pNext
+        nullptr,                              // const void*            pNext
         0u,                                   // VkBufferCreateFlags    flags
         (VkDeviceSize)bufferSize,             // VkDeviceSize            size
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // VkBufferUsageFlags    usage
         VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode        sharingMode
         0u,                                   // uint32_t                queueFamilyIndexCount
-        DE_NULL                               // const uint32_t*        pQueueFamilyIndices
+        nullptr                               // const uint32_t*        pQueueFamilyIndices
     };
 
     for (uint32_t bufferIdx = 0; bufferIdx < 2; bufferIdx++)
@@ -5019,8 +5039,7 @@ void initColorImageChessboardPattern(const DeviceInterface &vk, const VkDevice d
 
     beginCommandBuffer(vk, *cmdBuffer);
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
-                          0, (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1,
-                          &preImageBarrier);
+                          0, nullptr, 0, nullptr, 1, &preImageBarrier);
 
     for (uint32_t bufferIdx = 0; bufferIdx < 2; bufferIdx++)
     {
@@ -5031,9 +5050,8 @@ void initColorImageChessboardPattern(const DeviceInterface &vk, const VkDevice d
                                 (uint32_t)copyRegions.size(), copyRegions.data());
     }
 
-    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, dstStageFlags, (VkDependencyFlags)0, 0,
-                          (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1,
-                          &postImageBarrier);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, dstStageFlags, (VkDependencyFlags)0, 0, nullptr,
+                          0, nullptr, 1, &postImageBarrier);
 
     endCommandBuffer(vk, *cmdBuffer);
 
@@ -5047,7 +5065,7 @@ void copyDepthStencilImageToBuffers(const DeviceInterface &vk, VkCommandBuffer c
     const VkImageAspectFlags aspect         = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
     const VkImageMemoryBarrier imageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,                 // VkStructureType sType;
-        DE_NULL,                                                // const void* pNext;
+        nullptr,                                                // const void* pNext;
         srcAccessMask,                                          // VkAccessFlags srcAccessMask;
         VK_ACCESS_TRANSFER_READ_BIT,                            // VkAccessFlags dstAccessMask;
         oldLayout,                                              // VkImageLayout oldLayout;
@@ -5059,7 +5077,7 @@ void copyDepthStencilImageToBuffers(const DeviceInterface &vk, VkCommandBuffer c
     };
 
     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
-                          DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+                          nullptr, 0u, nullptr, 1u, &imageBarrier);
 
     const VkImageSubresourceLayers subresourceDepth = {
         VK_IMAGE_ASPECT_DEPTH_BIT, // VkImageAspectFlags aspectMask;
@@ -5099,7 +5117,7 @@ void copyDepthStencilImageToBuffers(const DeviceInterface &vk, VkCommandBuffer c
     const VkBufferMemoryBarrier bufferBarriers[] = {
         {
             VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-            DE_NULL,                                 // const void* pNext;
+            nullptr,                                 // const void* pNext;
             VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
             VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags dstAccessMask;
             VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
@@ -5110,7 +5128,7 @@ void copyDepthStencilImageToBuffers(const DeviceInterface &vk, VkCommandBuffer c
         },
         {
             VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-            DE_NULL,                                 // const void* pNext;
+            nullptr,                                 // const void* pNext;
             VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
             VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags dstAccessMask;
             VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
@@ -5120,8 +5138,8 @@ void copyDepthStencilImageToBuffers(const DeviceInterface &vk, VkCommandBuffer c
             VK_WHOLE_SIZE                            // VkDeviceSize size;
         }};
 
-    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 2u,
-                          bufferBarriers, 0u, DE_NULL);
+    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 2u,
+                          bufferBarriers, 0u, nullptr);
 }
 
 void clearDepthStencilImage(const DeviceInterface &vk, const VkDevice device, const VkQueue queue,
@@ -5145,7 +5163,7 @@ void clearDepthStencilImage(const DeviceInterface &vk, const VkDevice device, co
 
     const VkImageMemoryBarrier preImageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         0u,                                     // VkAccessFlags srcAccessMask;
         VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags dstAccessMask;
         oldLayout,                              // VkImageLayout oldLayout;
@@ -5158,7 +5176,7 @@ void clearDepthStencilImage(const DeviceInterface &vk, const VkDevice device, co
 
     const VkImageMemoryBarrier postImageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags srcAccessMask;
         dstAccessFlags,                         // VkAccessFlags dstAccessMask;
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout oldLayout;
@@ -5171,13 +5189,11 @@ void clearDepthStencilImage(const DeviceInterface &vk, const VkDevice device, co
 
     beginCommandBuffer(vk, *cmdBuffer);
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
-                          0, (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1,
-                          &preImageBarrier);
+                          0, nullptr, 0, nullptr, 1, &preImageBarrier);
     vk.cmdClearDepthStencilImage(*cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue, 1,
                                  &subresourceRange);
-    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, dstStageFlags, (VkDependencyFlags)0, 0,
-                          (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1,
-                          &postImageBarrier);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, dstStageFlags, (VkDependencyFlags)0, 0, nullptr,
+                          0, nullptr, 1, &postImageBarrier);
     endCommandBuffer(vk, *cmdBuffer);
 
     submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -5209,7 +5225,7 @@ void initDepthStencilImageChessboardPattern(const DeviceInterface &vk, const VkD
 
     const VkImageMemoryBarrier preImageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         0u,                                     // VkAccessFlags srcAccessMask;
         VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags dstAccessMask;
         oldLayout,                              // VkImageLayout oldLayout;
@@ -5222,7 +5238,7 @@ void initDepthStencilImageChessboardPattern(const DeviceInterface &vk, const VkD
 
     const VkImageMemoryBarrier postImageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags srcAccessMask;
         VK_ACCESS_SHADER_WRITE_BIT,             // VkAccessFlags dstAccessMask;
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout oldLayout;
@@ -5241,24 +5257,24 @@ void initDepthStencilImageChessboardPattern(const DeviceInterface &vk, const VkD
 
     const VkBufferCreateInfo depthBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType
-        DE_NULL,                              // const void*            pNext
+        nullptr,                              // const void*            pNext
         0u,                                   // VkBufferCreateFlags    flags
         (VkDeviceSize)depthBufferSize,        // VkDeviceSize            size
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // VkBufferUsageFlags    usage
         VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode        sharingMode
         0u,                                   // uint32_t                queueFamilyIndexCount
-        DE_NULL                               // const uint32_t*        pQueueFamilyIndices
+        nullptr                               // const uint32_t*        pQueueFamilyIndices
     };
 
     const VkBufferCreateInfo stencilBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType
-        DE_NULL,                              // const void*            pNext
+        nullptr,                              // const void*            pNext
         0u,                                   // VkBufferCreateFlags    flags
         (VkDeviceSize)stencilBufferSize,      // VkDeviceSize            size
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // VkBufferUsageFlags    usage
         VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode        sharingMode
         0u,                                   // uint32_t                queueFamilyIndexCount
-        DE_NULL                               // const uint32_t*        pQueueFamilyIndices
+        nullptr                               // const uint32_t*        pQueueFamilyIndices
     };
 
     for (uint32_t bufferIdx = 0; bufferIdx < 2; bufferIdx++)
@@ -5300,8 +5316,7 @@ void initDepthStencilImageChessboardPattern(const DeviceInterface &vk, const VkD
 
     beginCommandBuffer(vk, *cmdBuffer);
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
-                          0, (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1,
-                          &preImageBarrier);
+                          0, nullptr, 0, nullptr, 1, &preImageBarrier);
 
     for (uint32_t bufferIdx = 0; bufferIdx < 2; bufferIdx++)
     {
@@ -5316,9 +5331,8 @@ void initDepthStencilImageChessboardPattern(const DeviceInterface &vk, const VkD
                                 (uint32_t)copyRegionsStencil.size(), copyRegionsStencil.data());
     }
 
-    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, dstStageFlags, (VkDependencyFlags)0, 0,
-                          (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1,
-                          &postImageBarrier);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, dstStageFlags, (VkDependencyFlags)0, 0, nullptr,
+                          0, nullptr, 1, &postImageBarrier);
 
     endCommandBuffer(vk, *cmdBuffer);
 
@@ -5400,32 +5414,32 @@ ImageWithBuffer::ImageWithBuffer(const DeviceInterface &vkd, const VkDevice devi
     size = verificationBufferSize;
 }
 
-VkImage ImageWithBuffer::getImage()
+VkImage ImageWithBuffer::getImage() const
 {
     return (*image).get();
 }
 
-VkImageView ImageWithBuffer::getImageView()
+VkImageView ImageWithBuffer::getImageView() const
 {
     return imageView.get();
 }
 
-VkBuffer ImageWithBuffer::getBuffer()
+VkBuffer ImageWithBuffer::getBuffer() const
 {
     return (*buffer).get();
 }
 
-VkDeviceSize ImageWithBuffer::getBufferSize()
+VkDeviceSize ImageWithBuffer::getBufferSize() const
 {
     return size;
 }
 
-Allocation &ImageWithBuffer::getImageAllocation()
+Allocation &ImageWithBuffer::getImageAllocation() const
 {
     return (*image).getAllocation();
 }
 
-Allocation &ImageWithBuffer::getBufferAllocation()
+Allocation &ImageWithBuffer::getBufferAllocation() const
 {
     return (*buffer).getAllocation();
 }
@@ -5448,7 +5462,7 @@ void allocateAndBindSparseImage(const DeviceInterface &vk, VkDevice device, cons
     if (!checkSparseImageFormatSupport(physicalDevice, instance, imageCreateInfo))
         TCU_THROW(NotSupportedError, "The image format does not support sparse operations.");
 
-    vk.getImageSparseMemoryRequirements(device, destImage, &sparseMemoryReqCount, DE_NULL);
+    vk.getImageSparseMemoryRequirements(device, destImage, &sparseMemoryReqCount, nullptr);
 
     DE_ASSERT(sparseMemoryReqCount != 0);
 
@@ -5459,13 +5473,16 @@ void allocateAndBindSparseImage(const DeviceInterface &vk, VkDevice device, cons
 
     const uint32_t noMatchFound = ~((uint32_t)0);
 
-    uint32_t aspectIndex = noMatchFound;
+    std::vector<uint32_t> aspectIndices;
+
+    VkImageAspectFlags memReqAspectFlags = 0;
+
     for (uint32_t memoryReqNdx = 0; memoryReqNdx < sparseMemoryReqCount; ++memoryReqNdx)
     {
-        if (sparseImageMemoryRequirements[memoryReqNdx].formatProperties.aspectMask == imageAspectFlags)
+        if (sparseImageMemoryRequirements[memoryReqNdx].formatProperties.aspectMask & imageAspectFlags)
         {
-            aspectIndex = memoryReqNdx;
-            break;
+            aspectIndices.push_back(memoryReqNdx);
+            memReqAspectFlags |= sparseImageMemoryRequirements[memoryReqNdx].formatProperties.aspectMask;
         }
     }
 
@@ -5479,7 +5496,7 @@ void allocateAndBindSparseImage(const DeviceInterface &vk, VkDevice device, cons
         }
     }
 
-    if (aspectIndex == noMatchFound)
+    if (memReqAspectFlags != imageAspectFlags)
         TCU_THROW(NotSupportedError, "Required image aspect not supported.");
 
     const VkMemoryRequirements memoryRequirements = getImageMemoryRequirements(vk, device, destImage);
@@ -5501,145 +5518,148 @@ void allocateAndBindSparseImage(const DeviceInterface &vk, VkDevice device, cons
     if (memoryRequirements.size > deviceProperties.limits.sparseAddressSpaceSize)
         TCU_THROW(NotSupportedError, "Required memory size for sparse resource exceeds device limits.");
 
-    const VkSparseImageMemoryRequirements aspectRequirements = sparseImageMemoryRequirements[aspectIndex];
-    VkExtent3D blockSize                                     = aspectRequirements.formatProperties.imageGranularity;
-
     std::vector<VkSparseImageMemoryBind> imageResidencyMemoryBinds;
     std::vector<VkSparseMemoryBind> imageMipTailMemoryBinds;
 
-    for (uint32_t layerNdx = 0; layerNdx < imageCreateInfo.arrayLayers; ++layerNdx)
+    for (uint32_t aspectIndex : aspectIndices)
     {
-        for (uint32_t mipLevelNdx = 0; mipLevelNdx < aspectRequirements.imageMipTailFirstLod; ++mipLevelNdx)
+        const VkSparseImageMemoryRequirements aspectRequirements = sparseImageMemoryRequirements[aspectIndex];
+        VkExtent3D blockSize                                     = aspectRequirements.formatProperties.imageGranularity;
+
+        for (uint32_t layerNdx = 0; layerNdx < imageCreateInfo.arrayLayers; ++layerNdx)
         {
-            const VkExtent3D mipExtent      = mipLevelExtents(imageCreateInfo.extent, mipLevelNdx);
-            const tcu::UVec3 numSparseBinds = alignedDivide(mipExtent, blockSize);
-            const tcu::UVec3 lastBlockExtent =
-                tcu::UVec3(mipExtent.width % blockSize.width ? mipExtent.width % blockSize.width : blockSize.width,
-                           mipExtent.height % blockSize.height ? mipExtent.height % blockSize.height : blockSize.height,
-                           mipExtent.depth % blockSize.depth ? mipExtent.depth % blockSize.depth : blockSize.depth);
-
-            for (uint32_t z = 0; z < numSparseBinds.z(); ++z)
-                for (uint32_t y = 0; y < numSparseBinds.y(); ++y)
-                    for (uint32_t x = 0; x < numSparseBinds.x(); ++x)
-                    {
-                        const VkMemoryRequirements allocRequirements = {
-                            // 28.7.5 alignment shows the block size in bytes
-                            memoryRequirements.alignment,      // VkDeviceSize size;
-                            memoryRequirements.alignment,      // VkDeviceSize alignment;
-                            memoryRequirements.memoryTypeBits, // uint32_t memoryTypeBits;
-                        };
-
-                        de::SharedPtr<Allocation> allocation(
-                            allocator.allocate(allocRequirements, MemoryRequirement::Any).release());
-                        allocations.push_back(allocation);
-
-                        VkOffset3D offset;
-                        offset.x = x * blockSize.width;
-                        offset.y = y * blockSize.height;
-                        offset.z = z * blockSize.depth;
-
-                        VkExtent3D extent;
-                        extent.width  = (x == numSparseBinds.x() - 1) ? lastBlockExtent.x() : blockSize.width;
-                        extent.height = (y == numSparseBinds.y() - 1) ? lastBlockExtent.y() : blockSize.height;
-                        extent.depth  = (z == numSparseBinds.z() - 1) ? lastBlockExtent.z() : blockSize.depth;
-
-                        const VkSparseImageMemoryBind imageMemoryBind = {
-                            {
-                                imageAspectFlags,    // VkImageAspectFlags aspectMask;
-                                mipLevelNdx,         // uint32_t mipLevel;
-                                layerNdx,            // uint32_t arrayLayer;
-                            },                       // VkImageSubresource subresource;
-                            offset,                  // VkOffset3D offset;
-                            extent,                  // VkExtent3D extent;
-                            allocation->getMemory(), // VkDeviceMemory memory;
-                            allocation->getOffset(), // VkDeviceSize memoryOffset;
-                            0u,                      // VkSparseMemoryBindFlags flags;
-                        };
-
-                        imageResidencyMemoryBinds.push_back(imageMemoryBind);
-                    }
-        }
-
-        // Handle MIP tail. There are two cases to consider here:
-        //
-        // 1) VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT is requested by the driver: each layer needs a separate tail.
-        // 2) otherwise:                                                            only one tail is needed.
-        if (aspectRequirements.imageMipTailSize > 0)
-        {
-            if (layerNdx == 0 ||
-                (aspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT) == 0)
+            for (uint32_t mipLevelNdx = 0; mipLevelNdx < aspectRequirements.imageMipTailFirstLod; ++mipLevelNdx)
             {
-                const VkMemoryRequirements allocRequirements = {
-                    aspectRequirements.imageMipTailSize, // VkDeviceSize size;
-                    memoryRequirements.alignment,        // VkDeviceSize alignment;
-                    memoryRequirements.memoryTypeBits,   // uint32_t memoryTypeBits;
-                };
+                const VkExtent3D mipExtent       = mipLevelExtents(imageCreateInfo.extent, mipLevelNdx);
+                const tcu::UVec3 numSparseBinds  = alignedDivide(mipExtent, blockSize);
+                const tcu::UVec3 lastBlockExtent = tcu::UVec3(
+                    mipExtent.width % blockSize.width ? mipExtent.width % blockSize.width : blockSize.width,
+                    mipExtent.height % blockSize.height ? mipExtent.height % blockSize.height : blockSize.height,
+                    mipExtent.depth % blockSize.depth ? mipExtent.depth % blockSize.depth : blockSize.depth);
 
-                const de::SharedPtr<Allocation> allocation(
-                    allocator.allocate(allocRequirements, MemoryRequirement::Any).release());
+                for (uint32_t z = 0; z < numSparseBinds.z(); ++z)
+                    for (uint32_t y = 0; y < numSparseBinds.y(); ++y)
+                        for (uint32_t x = 0; x < numSparseBinds.x(); ++x)
+                        {
+                            const VkMemoryRequirements allocRequirements = {
+                                // 28.7.5 alignment shows the block size in bytes
+                                memoryRequirements.alignment,      // VkDeviceSize size;
+                                memoryRequirements.alignment,      // VkDeviceSize alignment;
+                                memoryRequirements.memoryTypeBits, // uint32_t memoryTypeBits;
+                            };
 
-                const VkSparseMemoryBind imageMipTailMemoryBind = {
-                    aspectRequirements.imageMipTailOffset +
-                        layerNdx * aspectRequirements.imageMipTailStride, // VkDeviceSize resourceOffset;
-                    aspectRequirements.imageMipTailSize,                  // VkDeviceSize size;
-                    allocation->getMemory(),                              // VkDeviceMemory memory;
-                    allocation->getOffset(),                              // VkDeviceSize memoryOffset;
-                    0u,                                                   // VkSparseMemoryBindFlags flags;
-                };
+                            de::SharedPtr<Allocation> allocation(
+                                allocator.allocate(allocRequirements, MemoryRequirement::Any).release());
+                            allocations.push_back(allocation);
 
-                allocations.push_back(allocation);
+                            VkOffset3D offset;
+                            offset.x = x * blockSize.width;
+                            offset.y = y * blockSize.height;
+                            offset.z = z * blockSize.depth;
 
-                imageMipTailMemoryBinds.push_back(imageMipTailMemoryBind);
+                            VkExtent3D extent;
+                            extent.width  = (x == numSparseBinds.x() - 1) ? lastBlockExtent.x() : blockSize.width;
+                            extent.height = (y == numSparseBinds.y() - 1) ? lastBlockExtent.y() : blockSize.height;
+                            extent.depth  = (z == numSparseBinds.z() - 1) ? lastBlockExtent.z() : blockSize.depth;
+
+                            const VkSparseImageMemoryBind imageMemoryBind = {
+                                {
+                                    aspectRequirements.formatProperties.aspectMask, // VkImageAspectFlags aspectMask;
+                                    mipLevelNdx,                                    // uint32_t mipLevel;
+                                    layerNdx,                                       // uint32_t arrayLayer;
+                                },                                                  // VkImageSubresource subresource;
+                                offset,                                             // VkOffset3D offset;
+                                extent,                                             // VkExtent3D extent;
+                                allocation->getMemory(),                            // VkDeviceMemory memory;
+                                allocation->getOffset(),                            // VkDeviceSize memoryOffset;
+                                0u,                                                 // VkSparseMemoryBindFlags flags;
+                            };
+
+                            imageResidencyMemoryBinds.push_back(imageMemoryBind);
+                        }
             }
-        }
 
-        // Handle Metadata. Similarly to MIP tail in aspectRequirements, there are two cases to consider here:
-        //
-        // 1) VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT is requested by the driver: each layer needs a separate tail.
-        // 2) otherwise:
-        if (metadataAspectIndex != noMatchFound)
-        {
-            const VkSparseImageMemoryRequirements metadataAspectRequirements =
-                sparseImageMemoryRequirements[metadataAspectIndex];
-
-            if (layerNdx == 0 ||
-                (metadataAspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT) == 0)
+            // Handle MIP tail. There are two cases to consider here:
+            //
+            // 1) VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT is requested by the driver: each layer needs a separate tail.
+            // 2) otherwise:                                                            only one tail is needed.
+            if (aspectRequirements.imageMipTailSize > 0)
             {
-                const VkMemoryRequirements metadataAllocRequirements = {
-                    metadataAspectRequirements.imageMipTailSize, // VkDeviceSize size;
-                    memoryRequirements.alignment,                // VkDeviceSize alignment;
-                    memoryRequirements.memoryTypeBits,           // uint32_t memoryTypeBits;
-                };
-                const de::SharedPtr<Allocation> metadataAllocation(
-                    allocator.allocate(metadataAllocRequirements, MemoryRequirement::Any).release());
+                if (layerNdx == 0 ||
+                    (aspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT) == 0)
+                {
+                    const VkMemoryRequirements allocRequirements = {
+                        aspectRequirements.imageMipTailSize, // VkDeviceSize size;
+                        memoryRequirements.alignment,        // VkDeviceSize alignment;
+                        memoryRequirements.memoryTypeBits,   // uint32_t memoryTypeBits;
+                    };
 
-                const VkSparseMemoryBind metadataMipTailMemoryBind = {
-                    metadataAspectRequirements.imageMipTailOffset +
-                        layerNdx * metadataAspectRequirements.imageMipTailStride, // VkDeviceSize resourceOffset;
-                    metadataAspectRequirements.imageMipTailSize,                  // VkDeviceSize size;
-                    metadataAllocation->getMemory(),                              // VkDeviceMemory memory;
-                    metadataAllocation->getOffset(),                              // VkDeviceSize memoryOffset;
-                    VK_SPARSE_MEMORY_BIND_METADATA_BIT                            // VkSparseMemoryBindFlags flags;
-                };
+                    const de::SharedPtr<Allocation> allocation(
+                        allocator.allocate(allocRequirements, MemoryRequirement::Any).release());
 
-                allocations.push_back(metadataAllocation);
+                    const VkSparseMemoryBind imageMipTailMemoryBind = {
+                        aspectRequirements.imageMipTailOffset +
+                            layerNdx * aspectRequirements.imageMipTailStride, // VkDeviceSize resourceOffset;
+                        aspectRequirements.imageMipTailSize,                  // VkDeviceSize size;
+                        allocation->getMemory(),                              // VkDeviceMemory memory;
+                        allocation->getOffset(),                              // VkDeviceSize memoryOffset;
+                        0u,                                                   // VkSparseMemoryBindFlags flags;
+                    };
 
-                imageMipTailMemoryBinds.push_back(metadataMipTailMemoryBind);
+                    allocations.push_back(allocation);
+
+                    imageMipTailMemoryBinds.push_back(imageMipTailMemoryBind);
+                }
+            }
+
+            // Handle Metadata. Similarly to MIP tail in aspectRequirements, there are two cases to consider here:
+            //
+            // 1) VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT is requested by the driver: each layer needs a separate tail.
+            // 2) otherwise:
+            if (metadataAspectIndex != noMatchFound)
+            {
+                const VkSparseImageMemoryRequirements metadataAspectRequirements =
+                    sparseImageMemoryRequirements[metadataAspectIndex];
+
+                if (layerNdx == 0 || (metadataAspectRequirements.formatProperties.flags &
+                                      VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT) == 0)
+                {
+                    const VkMemoryRequirements metadataAllocRequirements = {
+                        metadataAspectRequirements.imageMipTailSize, // VkDeviceSize size;
+                        memoryRequirements.alignment,                // VkDeviceSize alignment;
+                        memoryRequirements.memoryTypeBits,           // uint32_t memoryTypeBits;
+                    };
+                    const de::SharedPtr<Allocation> metadataAllocation(
+                        allocator.allocate(metadataAllocRequirements, MemoryRequirement::Any).release());
+
+                    const VkSparseMemoryBind metadataMipTailMemoryBind = {
+                        metadataAspectRequirements.imageMipTailOffset +
+                            layerNdx * metadataAspectRequirements.imageMipTailStride, // VkDeviceSize resourceOffset;
+                        metadataAspectRequirements.imageMipTailSize,                  // VkDeviceSize size;
+                        metadataAllocation->getMemory(),                              // VkDeviceMemory memory;
+                        metadataAllocation->getOffset(),                              // VkDeviceSize memoryOffset;
+                        VK_SPARSE_MEMORY_BIND_METADATA_BIT                            // VkSparseMemoryBindFlags flags;
+                    };
+
+                    allocations.push_back(metadataAllocation);
+
+                    imageMipTailMemoryBinds.push_back(metadataMipTailMemoryBind);
+                }
             }
         }
     }
 
     VkBindSparseInfo bindSparseInfo = {
         VK_STRUCTURE_TYPE_BIND_SPARSE_INFO, //VkStructureType sType;
-        DE_NULL,                            //const void* pNext;
+        nullptr,                            //const void* pNext;
         0u,                                 //uint32_t waitSemaphoreCount;
-        DE_NULL,                            //const VkSemaphore* pWaitSemaphores;
+        nullptr,                            //const VkSemaphore* pWaitSemaphores;
         0u,                                 //uint32_t bufferBindCount;
-        DE_NULL,                            //const VkSparseBufferMemoryBindInfo* pBufferBinds;
+        nullptr,                            //const VkSparseBufferMemoryBindInfo* pBufferBinds;
         0u,                                 //uint32_t imageOpaqueBindCount;
-        DE_NULL,                            //const VkSparseImageOpaqueMemoryBindInfo* pImageOpaqueBinds;
+        nullptr,                            //const VkSparseImageOpaqueMemoryBindInfo* pImageOpaqueBinds;
         0u,                                 //uint32_t imageBindCount;
-        DE_NULL,                            //const VkSparseImageMemoryBindInfo* pImageBinds;
+        nullptr,                            //const VkSparseImageMemoryBindInfo* pImageBinds;
         1u,                                 //uint32_t signalSemaphoreCount;
         &signalSemaphore                    //const VkSemaphore* pSignalSemaphores;
     };

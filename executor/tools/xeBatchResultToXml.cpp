@@ -298,7 +298,7 @@ static void writeTestCaseListNode(const xe::TestNode *testNode, const ShortTestR
 
         const xe::TestCase *testCase                 = static_cast<const xe::TestCase *>(testNode);
         ShortTestResultMap::const_iterator resultPos = resultMap.find(testCase);
-        const xe::TestCaseResultHeader *result       = resultPos != resultMap.end() ? resultPos->second : DE_NULL;
+        const xe::TestCaseResultHeader *result       = resultPos != resultMap.end() ? resultPos->second : nullptr;
 
         DE_ASSERT(result);
 

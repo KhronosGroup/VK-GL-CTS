@@ -280,7 +280,7 @@ public:
     virtual void initPrograms(SourceCollections &programCollection) const override
     {
         initializePrograms(programCollection, glu::Precision::PRECISION_HIGHP, std::vector<Program>({PROGRAM_2D_FLOAT}),
-                           DE_NULL, glu::Precision::PRECISION_HIGHP);
+                           nullptr, glu::Precision::PRECISION_HIGHP);
     }
 
 private:
@@ -296,7 +296,7 @@ void populateUfloatNegativeValuesTests(tcu::TestCaseGroup *group)
 
     VkImageCreateInfo info = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType          sType
-        DE_NULL,                             // const void*              pNext
+        nullptr,                             // const void*              pNext
         0,                                   // VkImageCreateFlags       flags
         VK_IMAGE_TYPE_2D,                    // VkImageType              imageType
         VK_FORMAT_B10G11R11_UFLOAT_PACK32,   // VkFormat                 format
@@ -308,7 +308,7 @@ void populateUfloatNegativeValuesTests(tcu::TestCaseGroup *group)
         usage,                               // VkImageUsageFlags        usage
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode            sharingMode
         0u,                                  // uint32_t                 queueFamilyIndexCount
-        DE_NULL,                             // const uint32_t*          pQueueFamilyIndices
+        nullptr,                             // const uint32_t*          pQueueFamilyIndices
         VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout            initialLayout
     };
 
@@ -329,7 +329,7 @@ void populateSnormClampTests(tcu::TestCaseGroup *group)
 
     VkImageCreateInfo info = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType          sType
-        DE_NULL,                             // const void*              pNext
+        nullptr,                             // const void*              pNext
         0,                                   // VkImageCreateFlags       flags
         VK_IMAGE_TYPE_1D,                    // VkImageType              imageType
         VK_FORMAT_UNDEFINED,                 // VkFormat                 format
@@ -341,7 +341,7 @@ void populateSnormClampTests(tcu::TestCaseGroup *group)
         usage,                               // VkImageUsageFlags        usage
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode            sharingMode
         0u,                                  // uint32_t                 queueFamilyIndexCount
-        DE_NULL,                             // const uint32_t*          pQueueFamilyIndices
+        nullptr,                             // const uint32_t*          pQueueFamilyIndices
         VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout            initialLayout
     };
 

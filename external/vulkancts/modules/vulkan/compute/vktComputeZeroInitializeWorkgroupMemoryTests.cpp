@@ -127,10 +127,19 @@ tcu::TestStatus runCompute(Context &context, uint32_t bufferSize, uint32_t numWG
 
     beginCommandBuffer(vk, *cmdBuffer, 0);
 
-    vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, pipeline.getPipelineLayout(), 0u, 1, &*descriptorSet, 0u, DE_NULL);
+    vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, pipeline.getPipelineLayout(), 0u, 1, &*descriptorSet, 0u, nullptr);
     pipeline.bind(*cmdBuffer);
 
     vk.cmdDispatch(*cmdBuffer, numWGX, numWGY, numWGZ);
+
+    const VkMemoryBarrier barrier = {
+        VK_STRUCTURE_TYPE_MEMORY_BARRIER, // sType
+        nullptr,                          // pNext
+        VK_ACCESS_SHADER_WRITE_BIT,       // srcAccessMask
+        VK_ACCESS_HOST_READ_BIT,          // dstAccessMask
+    };
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                          (VkDependencyFlags)0, 1, &barrier, 0, nullptr, 0, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
 
@@ -326,7 +335,7 @@ void TypeTest::checkSupport(Context &context) const
     VkPhysicalDeviceShaderFloat16Int8Features f16_i8_features;
     deMemset(&f16_i8_features, 0, sizeof(f16_i8_features));
     f16_i8_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES;
-    f16_i8_features.pNext = DE_NULL;
+    f16_i8_features.pNext = nullptr;
 
     VkPhysicalDeviceFeatures2 features2;
     deMemset(&features2, 0, sizeof(features2));
@@ -532,7 +541,7 @@ void CompositeTest::checkSupport(Context &context) const
     VkPhysicalDeviceShaderFloat16Int8Features f16_i8_features;
     deMemset(&f16_i8_features, 0, sizeof(f16_i8_features));
     f16_i8_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES;
-    f16_i8_features.pNext = DE_NULL;
+    f16_i8_features.pNext = nullptr;
 
     VkPhysicalDeviceFeatures2 features2;
     deMemset(&features2, 0, sizeof(features2));
@@ -1234,12 +1243,12 @@ tcu::TestStatus RepeatedPipelineInstance::iterate(void)
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkPipelineLayoutCreateFlags)0,
         1,
         &descriptorSetLayout.get(),
         0u,
-        DE_NULL,
+        nullptr,
     };
     Move<VkPipelineLayout> pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo, NULL);
     VkPipelineBindPoint bindPoint         = VK_PIPELINE_BIND_POINT_COMPUTE;
@@ -1252,7 +1261,7 @@ tcu::TestStatus RepeatedPipelineInstance::iterate(void)
     const Unique<VkShaderModule> shader(createShaderModule(vk, device, context.getBinaryCollection().get("comp"), 0));
     const VkPipelineShaderStageCreateInfo shaderInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0,
         VK_SHADER_STAGE_COMPUTE_BIT,
         *shader,
@@ -1261,7 +1270,7 @@ tcu::TestStatus RepeatedPipelineInstance::iterate(void)
     };
 
     const VkComputePipelineCreateInfo pipelineInfo = {
-        VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, DE_NULL, 0u, shaderInfo, *pipelineLayout, VK_NULL_HANDLE, 0u,
+        VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, nullptr, 0u, shaderInfo, *pipelineLayout, VK_NULL_HANDLE, 0u,
     };
     Move<VkPipeline> pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineInfo, NULL);
 
@@ -1280,10 +1289,19 @@ tcu::TestStatus RepeatedPipelineInstance::iterate(void)
 
     beginCommandBuffer(vk, *cmdBuffer, 0);
 
-    vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, DE_NULL);
+    vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, nullptr);
     vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
 
     vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
+
+    const VkMemoryBarrier barrier = {
+        VK_STRUCTURE_TYPE_MEMORY_BARRIER, // sType
+        nullptr,                          // pNext
+        VK_ACCESS_SHADER_WRITE_BIT,       // srcAccessMask
+        VK_ACCESS_HOST_READ_BIT,          // dstAccessMask
+    };
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                          (VkDependencyFlags)0, 1, &barrier, 0, nullptr, 0, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
 

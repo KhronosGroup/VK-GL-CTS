@@ -96,7 +96,7 @@ VarType &VarType::operator=(const VarType &other)
     if (this == &other)
         return *this; // Self-assignment.
 
-    VarType *oldElementType = m_type == TYPE_ARRAY ? m_data.array.elementType : DE_NULL;
+    VarType *oldElementType = m_type == TYPE_ARRAY ? m_data.array.elementType : nullptr;
 
     m_type  = other.m_type;
     m_flags = other.m_flags;
@@ -944,7 +944,7 @@ const char *getCompareFuncForType(glu::DataType type)
         return "mediump float compare_u16vec4  (highp uvec4 a, highp uvec4 b)  { return a == b ? 1.0 : 0.0; }\n";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -1224,7 +1224,7 @@ public:
         if (m_next != m_elements.end())
             return *m_next++;
         else
-            return DE_NULL;
+            return nullptr;
     }
 
 private:
@@ -1801,7 +1801,7 @@ Move<VkBuffer> createBuffer(Context &context, VkDeviceSize bufferSize, vk::VkBuf
 
     const VkBufferCreateInfo bufferInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         bufferSize,                           // VkDeviceSize size;
         usageFlags,                           // VkBufferUsageFlags usage;
@@ -1819,7 +1819,7 @@ Move<vk::VkImage> createImage2D(Context &context, uint32_t width, uint32_t heigh
     const uint32_t queueFamilyIndex    = context.getUniversalQueueFamilyIndex();
     const vk::VkImageCreateInfo params = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-        DE_NULL,                                 // const void*                pNext
+        nullptr,                                 // const void*                pNext
         0u,                                      // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
         format,                                  // VkFormat                    format
@@ -1864,7 +1864,7 @@ Move<vk::VkImageView> createAttachmentView(Context &context, vk::VkImage image, 
 {
     const vk::VkImageViewCreateInfo params = {
         vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,    // sType
-        DE_NULL,                                         // pNext
+        nullptr,                                         // pNext
         0u,                                              // flags
         image,                                           // image
         vk::VK_IMAGE_VIEW_TYPE_2D,                       // viewType
@@ -1880,12 +1880,12 @@ Move<vk::VkPipelineLayout> createPipelineLayout(Context &context, vk::VkDescript
 {
     const vk::VkPipelineLayoutCreateInfo params = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                           // pNext
+        nullptr,                                           // pNext
         0u,                                                // flags
         1u,                                                // setLayoutCount
         &descriptorSetLayout,                              // pSetLayouts
         0u,                                                // pushConstantRangeCount
-        DE_NULL,                                           // pPushConstantRanges
+        nullptr,                                           // pPushConstantRanges
     };
 
     return vk::createPipelineLayout(context.getDeviceInterface(), context.getDevice(), &params);
@@ -1999,7 +1999,7 @@ tcu::TestStatus UniformBlockCaseInstance::iterate(void)
 
     const VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *descriptorPool,                                // VkDescriptorPool descriptorPool;
         1u,                                             // uint32_t setLayoutCount;
         &descriptorSetLayout.get()                      // const VkDescriptorSetLayout* pSetLayouts;
@@ -2093,9 +2093,9 @@ tcu::TestStatus UniformBlockCaseInstance::iterate(void)
     // Record command buffer
     const vk::VkCommandBufferBeginInfo beginInfo = {
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         0u,                                              // VkCommandBufferUsageFlags flags;
-        (const vk::VkCommandBufferInheritanceInfo *)DE_NULL,
+        nullptr,
     };
     VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &beginInfo));
 
@@ -2103,7 +2103,7 @@ tcu::TestStatus UniformBlockCaseInstance::iterate(void)
     {
         const vk::VkImageMemoryBarrier initializeBarrier = {
             vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType sType;
-            DE_NULL,                                      // const void*                pNext
+            nullptr,                                      // const void*                pNext
             0,                                            // VVkAccessFlags srcAccessMask;
             vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags dstAccessMask;
             vk::VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout oldLayout;
@@ -2121,8 +2121,7 @@ tcu::TestStatus UniformBlockCaseInstance::iterate(void)
         };
 
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-                              (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                              (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &initializeBarrier);
+                              (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &initializeBarrier);
     }
 
     beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, RENDER_WIDTH, RENDER_HEIGHT),
@@ -2130,7 +2129,7 @@ tcu::TestStatus UniformBlockCaseInstance::iterate(void)
 
     vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
     vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &*descriptorSet,
-                             0u, DE_NULL);
+                             0u, nullptr);
 
     const vk::VkDeviceSize offsets[] = {0u};
     vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &*positionsBuffer, offsets);
@@ -2236,7 +2235,7 @@ vk::Move<VkFramebuffer> UniformBlockCaseInstance::createFramebuffer(vk::VkRender
 
     const VkFramebufferCreateInfo framebufferParams = {
         VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                   // const void* pNext;
+        nullptr,                                   // const void* pNext;
         0u,                                        // VkFramebufferCreateFlags flags;
         renderPass,                                // VkRenderPass renderPass;
         1u,                                        // uint32_t attachmentCount;

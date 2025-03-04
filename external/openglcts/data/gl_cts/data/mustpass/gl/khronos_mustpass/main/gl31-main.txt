@@ -28,6 +28,7 @@ KHR-GL31.transform_feedback.draw_xfb_stream_test
 KHR-GL31.transform_feedback.capture_special_interleaved_test
 KHR-GL31.transform_feedback.draw_xfb_instanced_test
 KHR-GL31.transform_feedback.draw_xfb_stream_instanced_test
+KHR-GL31.transform_feedback.geometry
 KHR-GL31.transform_feedback3.multiple_streams
 KHR-GL31.transform_feedback3.skip_components
 KHR-GL31.transform_feedback3.skip_multiple_buffers
@@ -860,7 +861,9 @@ KHR-GL31.ext_texture_shadow_lod.texturelod.samplercubeshadow_fragment
 KHR-GL31.ext_texture_shadow_lod.texturelod.samplercubearrayshadow_fragment
 KHR-GL31.ext_texture_shadow_lod.texturelodoffset.sampler2darrayshadow_vertex
 KHR-GL31.ext_texture_shadow_lod.texturelodoffset.sampler2darrayshadow_fragment
-KHR-GL31.framebuffer_blit.framebuffer_blit_functionality_multisampled_to_singlesampled_blit
+KHR-GL31.framebuffer_blit.multisampled_to_singlesampled_blit_color_config_test
+KHR-GL31.framebuffer_blit.multisampled_to_singlesampled_blit_depth_config_test
+KHR-GL31.framebuffer_blit.scissor_blit
 KHR-GL31.texture_lod_bias.texture_lod_bias_all
 KHR-GL31.buffer_objects.gen_buffers
 KHR-GL31.buffer_objects.triangles
@@ -869,6 +872,10 @@ KHR-GL31.buffer_objects.multi_texture
 KHR-GL31.buffer_objects.sub_data
 KHR-GL31.transform_feedback2.transform_feedback2_states
 KHR-GL31.api.coverage
+KHR-GL31.get_uniform_tests.get_uniform
+KHR-GL31.frag_coord_conventions.multisample
+KHR-GL31.texture_storage.compressed_data
+KHR-GL31.draw_buffers.draw_buffers_1
 KHR-GL31.CommonBugs.CommonBug_GetProgramivActiveUniformBlockMaxNameLength
 KHR-GL31.CommonBugs.CommonBug_InputVariablesCannotBeModified
 KHR-GL31.CommonBugs.CommonBug_InvalidUseCasesForAllNotFuncsAndExclMarkOp
@@ -878,3 +885,4 @@ KHR-GL31.CommonBugs.CommonBug_PerVertexValidation
 KHR-GL31.CommonBugs.CommonBug_ReservedNames
 KHR-GL31.CommonBugs.CommonBug_SparseBuffersWithCopyOps
 KHR-GL31.texture_size_promotion.functional
+KHR-GL31.primitive_restart.restart_mode

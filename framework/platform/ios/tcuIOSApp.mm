@@ -307,7 +307,7 @@ tcuIOSApp_s::tcuIOSApp_s(void *view)
                         .getPath()),
       m_server(&m_testProcess, 50016), m_archive(getAppBundleDir().c_str()),
       m_screenManager((tcuEAGLView *)view), m_platform(&m_screenManager),
-      m_log(DE_NULL), m_cmdLine(DE_NULL), m_app(DE_NULL)
+      m_log(nullptr), m_cmdLine(nullptr), m_app(nullptr)
 {
     // Start server.
     m_server.start();
@@ -341,9 +341,9 @@ void tcuIOSApp::destroyTestApp(void)
     delete m_app;
     delete m_cmdLine;
     delete m_log;
-    m_app = DE_NULL;
-    m_cmdLine = DE_NULL;
-    m_log = DE_NULL;
+    m_app = nullptr;
+    m_cmdLine = nullptr;
+    m_log = nullptr;
 }
 
 void tcuIOSApp::iterate(void)
@@ -380,7 +380,7 @@ tcuIOSApp *tcuIOSApp_create(void *view)
     catch (const std::exception &e)
     {
         tcu::die("FATAL ERROR: %s", e.what());
-        return DE_NULL;
+        return nullptr;
     }
 }
 

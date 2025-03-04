@@ -74,13 +74,13 @@ private:
 } DE_WARN_UNUSED_TYPE;
 
 template <typename T, size_t Alignment, size_t Stride>
-ArrayBuffer<T, Alignment, Stride>::ArrayBuffer(void) throw() : m_ptr(DE_NULL)
+ArrayBuffer<T, Alignment, Stride>::ArrayBuffer(void) throw() : m_ptr(nullptr)
                                                              , m_cap(0)
 {
 }
 
 template <typename T, size_t Alignment, size_t Stride>
-ArrayBuffer<T, Alignment, Stride>::ArrayBuffer(size_t numElements) : m_ptr(DE_NULL)
+ArrayBuffer<T, Alignment, Stride>::ArrayBuffer(size_t numElements) : m_ptr(nullptr)
                                                                    , m_cap(0)
 {
     if (numElements)
@@ -98,7 +98,7 @@ ArrayBuffer<T, Alignment, Stride>::ArrayBuffer(size_t numElements) : m_ptr(DE_NU
 }
 
 template <typename T, size_t Alignment, size_t Stride>
-ArrayBuffer<T, Alignment, Stride>::ArrayBuffer(const T *ptr, size_t numElements) : m_ptr(DE_NULL)
+ArrayBuffer<T, Alignment, Stride>::ArrayBuffer(const T *ptr, size_t numElements) : m_ptr(nullptr)
                                                                                  , m_cap(0)
 {
     if (numElements)
@@ -125,7 +125,7 @@ ArrayBuffer<T, Alignment, Stride>::ArrayBuffer(const T *ptr, size_t numElements)
 
 template <typename T, size_t Alignment, size_t Stride>
 ArrayBuffer<T, Alignment, Stride>::ArrayBuffer(const ArrayBuffer<T, Alignment, Stride> &other)
-    : m_ptr(DE_NULL)
+    : m_ptr(nullptr)
     , m_cap(0)
 {
     if (other.m_cap)
@@ -159,7 +159,7 @@ void ArrayBuffer<T, Alignment, Stride>::clear(void) throw()
 {
     detail::ArrayBuffer_AlignedFree(m_ptr);
 
-    m_ptr = DE_NULL;
+    m_ptr = nullptr;
     m_cap = 0;
 }
 

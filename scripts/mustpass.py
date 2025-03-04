@@ -394,7 +394,7 @@ def genMustpassFromLists (mustpass, moduleCaseLists):
                         log_count = 0
                         for pattern, usage in patternsDict.items():
                             if usage == 0:
-                                logging.warning("%s %s in file %s for module %s was never used!" % (kind, pattern, filter.key, config.name))
+                                logging.debug("%s %s in file %s for module %s was never used!" % (kind, pattern, filter.key, config.name))
                                 log_count += 1
                             if log_count > 100:
                                 logging.warning("Too many '%s unused' logs, the rest are not logged!" % kind)

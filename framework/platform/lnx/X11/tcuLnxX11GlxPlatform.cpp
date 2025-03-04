@@ -147,6 +147,7 @@ private:
     GlxDisplay &m_display;
     ::Visual *m_visual;
     const GLXFBConfig m_fbConfig;
+    glu::ResetNotificationStrategy resetStrategy;
 };
 
 class GlxDrawable
@@ -219,6 +220,7 @@ public:
     virtual const tcu::RenderTarget &getRenderTarget(void) const;
     virtual glw::GenericFuncType getProcAddress(const char *name) const;
     const GLXContext &getGLXContext(void) const;
+    const GlxVisual &getGLXVisual(void) const;
 
 private:
     GlxDisplay m_glxDisplay;
@@ -316,7 +318,7 @@ static void checkGlxExtension(const GlxDisplay &dpy, const char *extName)
 
 GlxVisual::GlxVisual(GlxDisplay &display, GLXFBConfig fbConfig)
     : m_display(display)
-    , m_visual(DE_NULL)
+    , m_visual(nullptr)
     , m_fbConfig(fbConfig)
 {
     XVisualInfo *visualInfo = glXGetVisualFromFBConfig(getXDisplay(), fbConfig);
@@ -410,24 +412,32 @@ GLXContext GlxVisual::createContext(const GlxContextFactory &factory, const Cont
         }
     }
 
-    if (resetNotificationStrategy != glu::RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED)
+    const GlxRenderContext *sharedGlxRenderContext = dynamic_cast<const GlxRenderContext *>(sharedContext);
+
+    /* If there is a shared context, use same reset notification strategy. */
+    glu::ResetNotificationStrategy usedResetNotificationStrategy =
+        sharedGlxRenderContext ? sharedGlxRenderContext->getGLXVisual().resetStrategy : resetNotificationStrategy;
+
+    if (usedResetNotificationStrategy != glu::RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED)
     {
         checkGlxExtension(m_display, "GLX_ARB_create_context_robustness");
         attribs.push_back(GLX_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB);
 
-        if (resetNotificationStrategy == glu::RESET_NOTIFICATION_STRATEGY_NO_RESET_NOTIFICATION)
+        if (usedResetNotificationStrategy == glu::RESET_NOTIFICATION_STRATEGY_NO_RESET_NOTIFICATION)
             attribs.push_back(GLX_NO_RESET_NOTIFICATION_ARB);
-        else if (resetNotificationStrategy == glu::RESET_NOTIFICATION_STRATEGY_LOSE_CONTEXT_ON_RESET)
+        else if (usedResetNotificationStrategy == glu::RESET_NOTIFICATION_STRATEGY_LOSE_CONTEXT_ON_RESET)
             attribs.push_back(GLX_LOSE_CONTEXT_ON_RESET_ARB);
         else
             TCU_THROW(InternalError, "Unknown reset notification strategy");
     }
 
+    // Reset notification strategy used with this visual.
+    resetStrategy = resetNotificationStrategy;
+
     // Terminate attrib list
     attribs.push_back(None);
 
-    const GlxRenderContext *sharedGlxRenderContext = dynamic_cast<const GlxRenderContext *>(sharedContext);
-    const GLXContext &sharedGLXContext = sharedGlxRenderContext ? sharedGlxRenderContext->getGLXContext() : DE_NULL;
+    const GLXContext &sharedGLXContext = sharedGlxRenderContext ? sharedGlxRenderContext->getGLXContext() : nullptr;
 
     return TCU_CHECK_GLX(
         factory.m_glXCreateContextAttribsARB(getXDisplay(), m_fbConfig, sharedGLXContext, True, &attribs[0]));
@@ -448,14 +458,14 @@ unsigned GlxDrawable::getAttrib(int attrib)
 int GlxDrawable::getWidth(void)
 {
     int width = 0;
-    getDimensions(&width, DE_NULL);
+    getDimensions(&width, nullptr);
     return width;
 }
 
 int GlxDrawable::getHeight(void)
 {
     int height = 0;
-    getDimensions(DE_NULL, &height);
+    getDimensions(nullptr, &height);
     return height;
 }
 
@@ -469,13 +479,13 @@ GlxWindow::GlxWindow(GlxVisual &visual, const RenderConfig &cfg)
 
 void GlxWindow::getDimensions(int *width, int *height)
 {
-    if (width != DE_NULL)
+    if (width != nullptr)
         *width = getAttrib(GLX_WIDTH);
-    if (height != DE_NULL)
+    if (height != nullptr)
         *height = getAttrib(GLX_HEIGHT);
 
     // glXQueryDrawable may be buggy, so fall back to X geometry if needed
-    if ((width != DE_NULL && *width == 0) || (height != DE_NULL && *height == 0))
+    if ((width != nullptr && *width == 0) || (height != nullptr && *height == 0))
         m_x11Window.getDimensions(width, height);
 }
 
@@ -533,7 +543,7 @@ static bool configMatches(GlxVisual &visual, const RenderConfig &renderCfg)
 
         // It shouldn't be possible to have GLX_WINDOW_BIT set without a visual,
         // but let's make sure.
-        if (renderCfg.surfaceType == RenderConfig::SURFACETYPE_WINDOW && visual.getXVisual() == DE_NULL)
+        if (renderCfg.surfaceType == RenderConfig::SURFACETYPE_WINDOW && visual.getXVisual() == nullptr)
             return false;
     }
 
@@ -635,11 +645,11 @@ static GlxVisual chooseVisual(GlxDisplay &display, const RenderConfig &cfg)
 {
     ::Display *dpy        = display.getXDisplay();
     uint64_t maxRank      = 0;
-    GLXFBConfig maxConfig = DE_NULL;
+    GLXFBConfig maxConfig = nullptr;
     int numElems          = 0;
 
     GLXFBConfig *const fbConfigs = glXGetFBConfigs(dpy, DefaultScreen(dpy), &numElems);
-    TCU_CHECK_MSG(fbConfigs != DE_NULL, "Couldn't query framebuffer configurations");
+    TCU_CHECK_MSG(fbConfigs != nullptr, "Couldn't query framebuffer configurations");
 
     for (int i = 0; i < numElems; i++)
     {
@@ -677,7 +687,7 @@ GlxDrawable *createDrawable(GlxVisual &visual, const RenderConfig &config)
 
     if (surfaceType == RenderConfig::SURFACETYPE_DONT_CARE)
     {
-        if (visual.getXVisual() == DE_NULL)
+        if (visual.getXVisual() == nullptr)
             // No visual, cannot create X window
             surfaceType = RenderConfig::SURFACETYPE_OFFSCREEN_NATIVE;
         else
@@ -703,7 +713,7 @@ GlxDrawable *createDrawable(GlxVisual &visual, const RenderConfig &config)
         TCU_THROW(NotSupportedError, "Unsupported surface type");
     }
 
-    return DE_NULL;
+    return nullptr;
 }
 
 struct GlxFunctionLoader : public glw::FunctionLoader
@@ -720,7 +730,7 @@ struct GlxFunctionLoader : public glw::FunctionLoader
 
 GlxRenderContext::GlxRenderContext(const GlxContextFactory &factory, const RenderConfig &config,
                                    const glu::RenderContext *sharedContext)
-    : m_glxDisplay(factory.getEventState(), DE_NULL)
+    : m_glxDisplay(factory.getEventState(), nullptr)
     , m_glxVisual(chooseVisual(m_glxDisplay, config))
     , m_type(config.type)
     , m_GLXContext(m_glxVisual.createContext(factory, config.type, sharedContext, config.resetNotificationStrategy))
@@ -740,7 +750,7 @@ GlxRenderContext::GlxRenderContext(const GlxContextFactory &factory, const Rende
 GlxRenderContext::~GlxRenderContext(void)
 {
     clearCurrent();
-    if (m_GLXContext != DE_NULL)
+    if (m_GLXContext != nullptr)
         glXDestroyContext(m_glxDisplay.getXDisplay(), m_GLXContext);
 }
 
@@ -752,7 +762,7 @@ void GlxRenderContext::makeCurrent(void)
 
 void GlxRenderContext::clearCurrent(void)
 {
-    TCU_CHECK_GLX(glXMakeContextCurrent(m_glxDisplay.getXDisplay(), None, None, DE_NULL));
+    TCU_CHECK_GLX(glXMakeContextCurrent(m_glxDisplay.getXDisplay(), None, None, nullptr));
 }
 
 glw::GenericFuncType GlxRenderContext::getProcAddress(const char *name) const
@@ -803,6 +813,11 @@ const glw::Functions &GlxRenderContext::getFunctions(void) const
 const GLXContext &GlxRenderContext::getGLXContext(void) const
 {
     return m_GLXContext;
+}
+
+const GlxVisual &GlxRenderContext::getGLXVisual(void) const
+{
+    return m_glxVisual;
 }
 
 MovePtr<ContextFactory> createContextFactory(EventState &eventState)

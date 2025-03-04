@@ -78,7 +78,7 @@ void initGlslang(void *)
 
 void prepareGlslang(void)
 {
-    deInitSingleton(&s_glslangInitState, initGlslang, DE_NULL);
+    deInitSingleton(&s_glslangInitState, initGlslang, nullptr);
 }
 
 void getDefaultLimits(TLimits *limits)

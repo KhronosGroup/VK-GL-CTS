@@ -72,6 +72,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     extGroup->addChild(createMeshShaderApiTestsEXT(testCtx));
     extGroup->addChild(createMeshShaderSyncTestsEXT(testCtx));
     extGroup->addChild(createMeshShaderBuiltinTestsEXT(testCtx));
+    extGroup->addChild(createMeshShaderPipelineTestsEXT(testCtx));
     extGroup->addChild(createMeshShaderMiscTestsEXT(testCtx));
     extGroup->addChild(createMeshShaderInOutTestsEXT(testCtx));
     extGroup->addChild(createMeshShaderPropertyTestsEXT(testCtx));

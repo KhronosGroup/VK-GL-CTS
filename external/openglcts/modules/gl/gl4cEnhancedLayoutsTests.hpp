@@ -2094,6 +2094,7 @@ protected:
     /* Protected fields */
     std::vector<glw::GLubyte> m_first_data;
     std::vector<glw::GLubyte> m_last_data;
+    glw::GLint m_gl_max_geometry_input_components;
 };
 
 /** Implementation of test VertexAttribLocations. Description follows:

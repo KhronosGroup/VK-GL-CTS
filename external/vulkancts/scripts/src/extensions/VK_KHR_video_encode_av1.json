@@ -1,0 +1,21 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceVideoEncodeAV1FeaturesKHR": [
+            {
+                "features": [
+                    "videoEncodeAV1"
+                ],
+                "requirements": [
+                    "VK_KHR_video_encode_av1"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            }
+        ]
+    }
+}

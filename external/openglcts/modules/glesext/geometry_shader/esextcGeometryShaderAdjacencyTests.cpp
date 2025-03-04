@@ -471,7 +471,7 @@ void GeometryShaderAdjacencyTests::createGridLineSegments(AdjacencyTestData &tes
         } /* for (all line segments) */
 
         delete[] candidateSegments;
-        candidateSegments = DE_NULL;
+        candidateSegments = nullptr;
     } /* for (all grid points) */
 
     test_data.m_grid->m_n_segments = nAddedSegments;

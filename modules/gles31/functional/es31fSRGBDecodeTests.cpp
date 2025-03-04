@@ -294,7 +294,7 @@ FragmentShaderParameters::FragmentShaderParameters(const ShaderOutputs paramsOut
     , blendRequired(paramsBlendRequired)
     , toggleRequired(paramsToggleRequired)
 {
-    if (paramsComparisonFunction != DE_NULL)
+    if (paramsComparisonFunction != nullptr)
     {
         functionName           = paramsComparisonFunction->name;
         functionParameters     = paramsComparisonFunction->parameters;
@@ -671,7 +671,7 @@ SRGBTestProgram::SRGBTestProgram(Context &context, const FragmentShaderParameter
 
 SRGBTestProgram::~SRGBTestProgram(void)
 {
-    m_program = de::MovePtr<glu::ShaderProgram>(DE_NULL);
+    m_program = de::MovePtr<glu::ShaderProgram>(nullptr);
 }
 
 void SRGBTestProgram::setBlendRequired(bool blendRequired)
@@ -986,7 +986,7 @@ void SRGBTestCase::deinit(void)
 {
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-    m_framebuffer = de::MovePtr<glu::Framebuffer>(DE_NULL);
+    m_framebuffer = de::MovePtr<glu::Framebuffer>(nullptr);
 
     for (std::size_t renderBufferIdx = 0; renderBufferIdx < m_renderBufferList.size(); renderBufferIdx++)
     {

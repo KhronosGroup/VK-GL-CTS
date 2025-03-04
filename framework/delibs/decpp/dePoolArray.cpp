@@ -189,7 +189,7 @@ namespace
 class RefCount
 {
 public:
-    RefCount(void) : m_count(DE_NULL)
+    RefCount(void) : m_count(nullptr)
     {
     }
 

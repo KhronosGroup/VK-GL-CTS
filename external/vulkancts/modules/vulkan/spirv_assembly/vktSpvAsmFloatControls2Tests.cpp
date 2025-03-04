@@ -1227,6 +1227,7 @@ public:
 
             {OID_MODF_ST_WH, V_MINUS_INF, V_UNUSED, V_MINUS_INF, FP::NotInf},
             {OID_MODF_ST_FR, V_MINUS_INF, V_UNUSED, V_MINUS_ZERO, FP::NSZ | FP::NotInf},
+            {OID_MODF_ST_FR, V_MINUS_ONE, V_UNUSED, V_MINUS_ZERO, FP::NSZ},
 
             {OID_LENGTH, V_MINUS_INF, V_UNUSED, V_INF, FP::NotInf},
 
@@ -1667,7 +1668,7 @@ void TestCasesBuilder::init()
                                  "                      OpBranch %comp_merge\n"
                                  "%comp_merge         = OpLabel\n"
                                  "%result             = OpPhi %type_float %arg2 %true_branch %arg1 %false_branch\n",
-                           B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT, {"comp", "result"});
+                           B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT, {"arg1", "arg2", "comp", "result"});
     mo[OID_SELECT]    = Op("select", FLOAT_ARITHMETIC,
                            "%always_true        = OpFOrdGreaterThan %type_bool %c_float_1 %c_float_0\n"
                               "%result             = OpSelect %type_float %always_true %arg1 %arg2\n",
@@ -2653,6 +2654,8 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo &testCa
     csSpec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = float64FeatureRequired;
     csSpec.requestedVulkanFeatures.ext16BitStorage.storageBuffer16BitAccess =
         float16FeatureRequired && !testCase.fp16Without16BitStorage;
+    csSpec.requestedVulkanFeatures.ext16BitStorage.uniformAndStorageBuffer16BitAccess =
+        csSpec.requestedVulkanFeatures.ext16BitStorage.storageBuffer16BitAccess;
     csSpec.requestedVulkanFeatures.extFloat16Int8.shaderFloat16 =
         float16CapabilityAlreadyAdded || usesFP16Constants ||
         (float16FeatureRequired && !testCase.fp16Without16BitStorage && testOperation.floatUsage == FLOAT_ARITHMETIC);
@@ -2857,9 +2860,9 @@ void getGraphicsShaderCode(vk::SourceCollections &dst, InstanceContext context)
         "OpReturn\n"
         "OpFunctionEnd\n";
 
-    dst.spirvAsmSources.add("vert", DE_NULL) << StringTemplate(vertexTemplate).specialize(context.testCodeFragments)
+    dst.spirvAsmSources.add("vert", nullptr) << StringTemplate(vertexTemplate).specialize(context.testCodeFragments)
                                              << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-    dst.spirvAsmSources.add("frag", DE_NULL) << StringTemplate(fragmentTemplate).specialize(context.testCodeFragments)
+    dst.spirvAsmSources.add("frag", nullptr) << StringTemplate(fragmentTemplate).specialize(context.testCodeFragments)
                                              << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
 }
 
@@ -3296,7 +3299,10 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
     vulkanFeatures.extFloatControls2.shaderFloatControls2 = true;
     vulkanFeatures.extFloat16Int8.shaderFloat16           = needsShaderFloat16;
     vulkanFeatures.ext16BitStorage.storageBuffer16BitAccess =
-        float16FeatureRequired && !testCase.fp16Without16BitStorage;
+        float16FeatureRequired &&
+        (!testCase.fp16Without16BitStorage || testCaseInfo.testedStage == VK_SHADER_STAGE_VERTEX_BIT);
+    vulkanFeatures.ext16BitStorage.uniformAndStorageBuffer16BitAccess =
+        vulkanFeatures.ext16BitStorage.storageBuffer16BitAccess;
 
     // Float controls 2 still requires that the original float controls properties are supported
     FillFloatControlsProperties(vulkanFeatures.floatControlsProperties, testCase, inFloatType);

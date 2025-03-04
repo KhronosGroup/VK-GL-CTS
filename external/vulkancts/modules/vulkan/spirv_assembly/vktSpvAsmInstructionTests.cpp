@@ -90,6 +90,7 @@
 #ifndef CTS_USES_VULKANSC
 #include "vktSpvAsmFloatControls2Tests.hpp"
 #include "vktSpvAsmIntegerDotProductTests.hpp"
+#include "vktSpvAsmComputeShaderDerivativesTests.hpp"
 #endif // CTS_USES_VULKANSC
 #include "vktSpvAsmPhysicalStorageBufferPointerTests.hpp"
 #include "vktSpvAsmRawAccessChainTests.hpp"
@@ -1759,9 +1760,8 @@ bool veryfiBinaryShader(const ProgramBinary &binary)
 
     for (size_t ndx = 0u; ndx < binary.getSize(); ++ndx)
     {
-        if (false == paternsCheck[paternNdx] && patersns[paternNdx][0] == static_cast<char>(binary.getBinary()[ndx]) &&
-            deMemoryEqual((const char *)&binary.getBinary()[ndx], &patersns[paternNdx][0],
-                          patersns[paternNdx].length()))
+        if (!paternsCheck[paternNdx] && patersns[paternNdx][0] == static_cast<char>(binary.getBinary()[ndx]) &&
+            memcmp(&binary.getBinary()[ndx], &patersns[paternNdx][0], patersns[paternNdx].length()) == 0)
         {
             paternsCheck[paternNdx] = true;
             paternNdx++;
@@ -9447,10 +9447,12 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup *testCtx)
 
         if (tests[idx].preserveNanInf)
         {
-            fragments["capability"] = "OpCapability SignedZeroInfNanPreserve\n";
-            fragments["extension"]  = "OpExtension \"SPV_KHR_float_controls\"\n";
+            fragments["capability"]     = "OpCapability SignedZeroInfNanPreserve\n";
+            fragments["extension"]      = "OpExtension \"SPV_KHR_float_controls\"\n";
+            fragments["execution_mode"] = "OpExecutionMode %BP_main SignedZeroInfNanPreserve 32\n";
             extensions.push_back("VK_KHR_shader_float_controls");
             features.floatControlsProperties.shaderSignedZeroInfNanPreserveFloat16 = true;
+            features.floatControlsProperties.shaderSignedZeroInfNanPreserveFloat32 = true;
         }
 
         createTestsForAllStages(tests[idx].name, inputColors, expectedColors, fragments, SpecConstants(),
@@ -9475,10 +9477,12 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup *testCtx)
 
         if (tests[idx].preserveNanInf)
         {
-            fragments["capability"] = "OpCapability SignedZeroInfNanPreserve\n";
-            fragments["extension"]  = "OpExtension \"SPV_KHR_float_controls\"\n";
+            fragments["capability"]     = "OpCapability SignedZeroInfNanPreserve\n";
+            fragments["extension"]      = "OpExtension \"SPV_KHR_float_controls\"\n";
+            fragments["execution_mode"] = "OpExecutionMode %BP_main SignedZeroInfNanPreserve 32\n";
             extensions.push_back("VK_KHR_shader_float_controls");
             features.floatControlsProperties.shaderSignedZeroInfNanPreserveFloat16 = true;
+            features.floatControlsProperties.shaderSignedZeroInfNanPreserveFloat32 = true;
         }
 
         createTestsForAllStages(string("spec_const_") + tests[idx].name, inputColors, expectedColors, fragments,
@@ -10606,7 +10610,7 @@ const string getTypeName(ConversionDataType type)
 
 const string getTestName(ConversionDataType from, ConversionDataType to, const char *suffix)
 {
-    const string fullSuffix(suffix == DE_NULL ? "" : string("_") + string(suffix));
+    const string fullSuffix(suffix == nullptr ? "" : string("_") + string(suffix));
 
     return getTypeName(from) + "_to_" + getTypeName(to) + fullSuffix;
 }
@@ -10754,7 +10758,7 @@ void getVulkanFeaturesAndExtensions(ConversionDataType from, ConversionDataType 
 struct ConvertCase
 {
     ConvertCase(const string &instruction, ConversionDataType from, ConversionDataType to, int64_t number,
-                bool separateOutput = false, int64_t outputNumber = 0, const char *suffix = DE_NULL,
+                bool separateOutput = false, int64_t outputNumber = 0, const char *suffix = nullptr,
                 bool useStorageExt = true)
         : m_fromType(from)
         , m_toType(to)
@@ -14428,7 +14432,7 @@ tcu::TestCaseGroup *createFloat16CompositeInsertExtractSet(tcu::TestContext &tes
 
     const char *accessPathF16[] = {
         "0", // %f16
-        DE_NULL,
+        nullptr,
     };
     const char *accessPathV2F16[] = {
         "0 0", // %v2f16
@@ -14438,7 +14442,7 @@ tcu::TestCaseGroup *createFloat16CompositeInsertExtractSet(tcu::TestContext &tes
         "0 0", // %v3f16
         "0 1",
         "0 2",
-        DE_NULL,
+        nullptr,
     };
     const char *accessPathV4F16[] = {
         "0 0", // %v4f16"
@@ -14450,13 +14454,13 @@ tcu::TestCaseGroup *createFloat16CompositeInsertExtractSet(tcu::TestContext &tes
         "0 0", // %f16arr3
         "0 1",
         "0 2",
-        DE_NULL,
+        nullptr,
     };
     const char *accessPathStruct16Arr3[] = {
         "0 0 0", // %struct16arr3
-        DE_NULL, "0 0 1 0 0", "0 0 1 0 1", "0 0 1 1 0", "0 0 1 1 1", "0 0 1 2 0", "0 0 1 2 1", "0 1 0",
-        DE_NULL, "0 1 1 0 0", "0 1 1 0 1", "0 1 1 1 0", "0 1 1 1 1", "0 1 1 2 0", "0 1 1 2 1", "0 2 0",
-        DE_NULL, "0 2 1 0 0", "0 2 1 0 1", "0 2 1 1 0", "0 2 1 1 1", "0 2 1 2 0", "0 2 1 2 1",
+        nullptr, "0 0 1 0 0", "0 0 1 0 1", "0 0 1 1 0", "0 0 1 1 1", "0 0 1 2 0", "0 0 1 2 1", "0 1 0",
+        nullptr, "0 1 1 0 0", "0 1 1 0 1", "0 1 1 1 0", "0 1 1 1 1", "0 1 1 2 0", "0 1 1 2 1", "0 2 0",
+        nullptr, "0 2 1 0 0", "0 2 1 0 1", "0 2 1 1 0", "0 2 1 1 1", "0 2 1 2 0", "0 2 1 2 1",
     };
     const char *accessPathV2F16Arr5[] = {
         "0 0 0", // %v2f16arr5
@@ -14464,13 +14468,13 @@ tcu::TestCaseGroup *createFloat16CompositeInsertExtractSet(tcu::TestContext &tes
     };
     const char *accessPathV3F16Arr5[] = {
         "0 0 0", // %v3f16arr5
-        "0 0 1", "0 0 2", DE_NULL, "0 1 0", "0 1 1", "0 1 2", DE_NULL, "0 2 0", "0 2 1", "0 2 2",
-        DE_NULL, "0 3 0", "0 3 1", "0 3 2", DE_NULL, "0 4 0", "0 4 1", "0 4 2", DE_NULL,
+        "0 0 1", "0 0 2", nullptr, "0 1 0", "0 1 1", "0 1 2", nullptr, "0 2 0", "0 2 1", "0 2 2",
+        nullptr, "0 3 0", "0 3 1", "0 3 2", nullptr, "0 4 0", "0 4 1", "0 4 2", nullptr,
     };
     const char *accessPathV4F16Arr3[] = {
         "0 0 0", // %v4f16arr3
         "0 0 1", "0 0 2", "0 0 3", "0 1 0", "0 1 1", "0 1 2", "0 1 3", "0 2 0",
-        "0 2 1", "0 2 2", "0 2 3", DE_NULL, DE_NULL, DE_NULL, DE_NULL,
+        "0 2 1", "0 2 2", "0 2 3", nullptr, nullptr, nullptr, nullptr,
     };
 
     struct TypeTestParameters
@@ -14512,7 +14516,7 @@ tcu::TestCaseGroup *createFloat16CompositeInsertExtractSet(tcu::TestContext &tes
         // Generate values for input
         inputFP16.reserve(structItemsCount);
         for (uint32_t structItemNdx = 0; structItemNdx < structItemsCount; ++structItemNdx)
-            inputFP16.push_back((accessPath[structItemNdx] == DE_NULL) ? exceptionValue :
+            inputFP16.push_back((accessPath[structItemNdx] == nullptr) ? exceptionValue :
                                                                          tcu::Float16(float(structItemNdx)).bits());
 
         unusedFP16Output.resize(structItemsCount);
@@ -14523,7 +14527,7 @@ tcu::TestCaseGroup *createFloat16CompositeInsertExtractSet(tcu::TestContext &tes
             string caseList;
 
             for (uint32_t caseNdx = 0; caseNdx < structItemsCount; ++caseNdx)
-                if (accessPath[caseNdx] != DE_NULL)
+                if (accessPath[caseNdx] != nullptr)
                 {
                     map<string, string> specCase;
 
@@ -17910,9 +17914,9 @@ bool compareFP16ArithmeticFunc(const std::vector<Resource> &inputs, const vector
         inputs[inputNdx].getBytes(inputBytes[inputNdx]);
 
     const deFloat16 *const inputsAsFP16[3] = {
-        inputs.size() >= 1 ? (const deFloat16 *)&inputBytes[0][0] : DE_NULL,
-        inputs.size() >= 2 ? (const deFloat16 *)&inputBytes[1][0] : DE_NULL,
-        inputs.size() >= 3 ? (const deFloat16 *)&inputBytes[2][0] : DE_NULL,
+        inputs.size() >= 1 ? (const deFloat16 *)&inputBytes[0][0] : nullptr,
+        inputs.size() >= 2 ? (const deFloat16 *)&inputBytes[1][0] : nullptr,
+        inputs.size() >= 3 ? (const deFloat16 *)&inputBytes[2][0] : nullptr,
     };
 
     for (size_t idx = 0; idx < iterationsCount; ++idx)
@@ -18931,7 +18935,7 @@ void createFloat16ArithmeticFuncTest(tcu::TestContext &testCtx, tcu::TestCaseGro
     const Math16TestType &testType         = testTypes[testTypeIdx];
     const string funcNameString            = string(testFunc.funcName) + string(testFunc.funcSuffix);
     const string testName                  = de::toLower(funcNameString);
-    const Math16ArgFragments *argFragments = DE_NULL;
+    const Math16ArgFragments *argFragments = nullptr;
     const size_t typeStructStride          = testType.typeStructStride;
     const bool extInst                     = !(testFunc.funcName[0] == 'O' && testFunc.funcName[1] == 'p');
     const size_t numFloatsPerArg0Type      = testTypes[testFunc.typeArg0].typeArrayStride / sizeof(deFloat16);
@@ -21276,6 +21280,7 @@ tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
     computeTests->addChild(create64bitCompareComputeGroup(testCtx));
 #ifndef CTS_USES_VULKANSC
     computeTests->addChild(createOpArrayLengthComputeGroup(testCtx));
+    computeTests->addChild(createComputeShaderDerivativesTests(testCtx));
 #endif // CTS_USES_VULKANSC
     computeTests->addChild(createPhysicalStorageBufferTestGroup(testCtx));
     computeTests->addChild(createOpMulExtendedGroup(testCtx));

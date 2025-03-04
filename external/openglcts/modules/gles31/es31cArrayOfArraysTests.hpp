@@ -317,12 +317,13 @@ class SizedDeclarationsPrimitive : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    SizedDeclarationsPrimitive(Context &context)
+    SizedDeclarationsPrimitive(Context &context, size_t var_type_index)
         : TestCaseBase<API>(context, "SizedDeclarationsPrimitive",
                             " Verify that declarations of variables containing between 2 and 8\n"
                             " sized dimensions of each primitive type are permitted.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_" + std::to_string(m_var_type_index));
     }
 
     virtual ~SizedDeclarationsPrimitive()
@@ -333,6 +334,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -340,13 +344,14 @@ class SizedDeclarationsStructTypes1 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    SizedDeclarationsStructTypes1(Context &context)
+    SizedDeclarationsStructTypes1(Context &context, size_t max_dimension_index)
         : TestCaseBase<API>(context, "SizedDeclarationsStructTypes1",
                             " Declare a structure type containing both ints and floats, and verify\n"
                             " that variables having between 2 and 8 sized dimensions of this type\n"
                             " can be declared.\n")
+        , m_max_dimension_index(max_dimension_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_max_dimension_" + std::to_string(m_max_dimension_index));
     }
 
     virtual ~SizedDeclarationsStructTypes1()
@@ -357,6 +362,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_max_dimension_index;
 };
 
 template <class API>
@@ -390,13 +398,14 @@ class SizedDeclarationsStructTypes3 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    SizedDeclarationsStructTypes3(Context &context)
+    SizedDeclarationsStructTypes3(Context &context, size_t max_dimension_index)
         : TestCaseBase<API>(context, "SizedDeclarationsStructTypes3",
                             " Declare a structure type containing both ints and floats, and verify\n"
                             " that variables having between 2 and 8 sized dimensions of this type\n"
                             " can be declared, with a structure containing an array.\n")
+        , m_max_dimension_index(max_dimension_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_max_dimension_" + std::to_string(m_max_dimension_index));
     }
 
     virtual ~SizedDeclarationsStructTypes3()
@@ -407,6 +416,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_max_dimension_index;
 };
 
 template <class API>
@@ -414,14 +426,15 @@ class SizedDeclarationsStructTypes4 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    SizedDeclarationsStructTypes4(Context &context)
+    SizedDeclarationsStructTypes4(Context &context, size_t max_dimension_index)
         : TestCaseBase<API>(context, "SizedDeclarationsStructTypes4",
                             " Declare a structure type containing an array, and verify\n"
                             " that variables having between 2 and 8 sized dimensions of this type\n"
                             " can be declared when the structure  definition is included in the \n"
                             " variable definition.\n")
+        , m_max_dimension_index(max_dimension_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_max_dimension_" + std::to_string(m_max_dimension_index));
     }
 
     virtual ~SizedDeclarationsStructTypes4()
@@ -432,6 +445,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_max_dimension_index;
 };
 
 template <class API>
@@ -439,14 +455,15 @@ class SizedDeclarationsTypenameStyle1 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    SizedDeclarationsTypenameStyle1(Context &context)
+    SizedDeclarationsTypenameStyle1(Context &context, size_t max_dimension_index)
         : TestCaseBase<API>(context, "SizedDeclarationsTypenameStyle1",
                             " Verify that an 8-dimensional array of floats can be declared with\n"
                             " any placement of the brackets (e.g. float[2]\n"
                             " x[2][2][2][2][2][2][2], float [2][2] x [2][2][2][2][2][2], etc) (9\n"
                             " cases).\n")
+        , m_max_dimension_index(max_dimension_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_max_dimension_" + std::to_string(m_max_dimension_index));
     }
 
     virtual ~SizedDeclarationsTypenameStyle1()
@@ -457,6 +474,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_max_dimension_index;
 };
 
 template <class API>
@@ -517,14 +537,15 @@ class SizedDeclarationsTypenameStyle4 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    SizedDeclarationsTypenameStyle4(Context &context)
+    SizedDeclarationsTypenameStyle4(Context &context, size_t max_dimension_index)
         : TestCaseBase<API>(context, "SizedDeclarationsTypenameStyle4",
                             " Verify that an 8-dimensional array of floats can be declared with\n"
                             " any placement of the brackets (e.g. float[2]\n"
                             " x[2][2][2][2][2][2][2], float [2][2] x [2][2][2][2][2][2], etc) (9\n"
                             " cases) within a structure body.\n")
+        , m_max_dimension_index(max_dimension_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_max_dimension_" + std::to_string(m_max_dimension_index));
     }
 
     virtual ~SizedDeclarationsTypenameStyle4()
@@ -535,6 +556,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_max_dimension_index;
 };
 
 template <class API>
@@ -596,13 +620,14 @@ class sized_declarations_invalid_sizes1 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    sized_declarations_invalid_sizes1(Context &context)
+    sized_declarations_invalid_sizes1(Context &context, size_t invalid_declarations_index)
         : TestCaseBase<API>(context, "sized_declarations_invalid_sizes1",
                             " Correctly reject variable declarations, having 4 dimensions, for\n"
                             " which any combination of dimensions are declared with zero-size\n"
                             " (16 cases).\n")
+        , m_invalid_declarations_index(invalid_declarations_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_invalid_declaration_" + std::to_string(m_invalid_declarations_index));
     }
 
     virtual ~sized_declarations_invalid_sizes1()
@@ -613,6 +638,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_invalid_declarations_index;
 };
 
 template <class API>
@@ -620,13 +648,14 @@ class sized_declarations_invalid_sizes2 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    sized_declarations_invalid_sizes2(Context &context)
+    sized_declarations_invalid_sizes2(Context &context, size_t invalid_declarations_index)
         : TestCaseBase<API>(context, "sized_declarations_invalid_sizes2",
                             " Correctly reject variable declarations, having 4 dimensions, for\n"
                             " which any combination of dimensions are declared with size -1\n"
                             " (16 cases).\n")
+        , m_invalid_declarations_index(invalid_declarations_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_invalid_declaration_" + std::to_string(m_invalid_declarations_index));
     }
 
     virtual ~sized_declarations_invalid_sizes2()
@@ -637,6 +666,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_invalid_declarations_index;
 };
 
 template <class API>
@@ -644,13 +676,14 @@ class sized_declarations_invalid_sizes3 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    sized_declarations_invalid_sizes3(Context &context)
+    sized_declarations_invalid_sizes3(Context &context, size_t invalid_declarations_index)
         : TestCaseBase<API>(context, "sized_declarations_invalid_sizes3",
                             " Correctly reject variable declarations, having 4 dimensions, for\n"
                             " which any combination of dimensions are declared with a\n"
                             " non-constant (16 cases).\n")
+        , m_invalid_declarations_index(invalid_declarations_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_invalid_declaration_" + std::to_string(m_invalid_declarations_index));
     }
 
     virtual ~sized_declarations_invalid_sizes3()
@@ -661,6 +694,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_invalid_declarations_index;
 };
 
 template <class API>
@@ -668,14 +704,15 @@ class sized_declarations_invalid_sizes4 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    sized_declarations_invalid_sizes4(Context &context)
+    sized_declarations_invalid_sizes4(Context &context, size_t string_index)
         : TestCaseBase<API>(context, "sized_declarations_invalid_sizes4",
                             " Correctly reject modifications of a variable declaration of\n"
                             " 4 dimensions (e.g. float x[2][2][2][2]), in which\n"
                             " each adjacent pair '][' is replaced by the sequence operator\n"
                             " (e.g. float x[2,2][2][2]) (6 cases).\n")
+        , m_string_index(string_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_string_index_" + std::to_string(m_string_index));
     }
 
     virtual ~sized_declarations_invalid_sizes4()
@@ -686,6 +723,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_string_index;
 };
 
 template <class API>
@@ -693,13 +733,14 @@ class ConstructorsAndUnsizedDeclConstructors1 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ConstructorsAndUnsizedDeclConstructors1(Context &context)
+    ConstructorsAndUnsizedDeclConstructors1(Context &context, size_t var_type_index)
         : TestCaseBase<API>(context, "ConstructorsAndUnsizedDeclConstructors1",
                             " Verifies that constructors for arrays of between 2 and 8 dimensions\n"
                             " are accepted as isolated expressions for each non-opaque primitive\n"
                             " type (7 cases per primitive type).\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~ConstructorsAndUnsizedDeclConstructors1()
@@ -711,6 +752,9 @@ protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
     std::string recursively_initialise(std::string var_type, size_t dimension_index, std::string init_string);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -744,7 +788,7 @@ class ConstructorsAndUnsizedDeclUnsizedConstructors : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ConstructorsAndUnsizedDeclUnsizedConstructors(Context &context)
+    ConstructorsAndUnsizedDeclUnsizedConstructors(Context &context, size_t string_index)
         : TestCaseBase<API>(context, "ConstructorsAndUnsizedDeclUnsizedConstructors",
                             " Verifies that any of the array dimensions, or any combination of\n"
                             " dimensions, may be omitted for a 4-dimensional float array\n"
@@ -752,8 +796,9 @@ public:
                             " consistently omitted or present, and need not be manipulated\n"
                             " between cases) (e.g. float[][][2][](float[][][](float[][] etc))\n"
                             " (16 cases).\n")
+        , m_string_index(string_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_string_index_" + std::to_string(m_string_index));
     }
 
     virtual ~ConstructorsAndUnsizedDeclUnsizedConstructors()
@@ -764,6 +809,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_string_index;
 };
 
 template <class API>
@@ -795,12 +843,13 @@ class ConstructorsAndUnsizedDeclInvalidConstructors1 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ConstructorsAndUnsizedDeclInvalidConstructors1(Context &context)
+    ConstructorsAndUnsizedDeclInvalidConstructors1(Context &context, glcts::test_var_type opaque_var_type)
         : TestCaseBase<API>(context, "ConstructorsAndUnsizedDeclInvalidConstructors1",
                             " Correctly reject any attempt to call array constructors for\n"
                             " 2-dimensional arrays of any opaque type.\n")
+        , m_opaque_var_type(opaque_var_type)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_opaque_type_" + std::to_string(m_opaque_var_type));
     }
 
     virtual ~ConstructorsAndUnsizedDeclInvalidConstructors1()
@@ -811,6 +860,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    glcts::test_var_type m_opaque_var_type;
 };
 
 template <class API>
@@ -818,13 +870,14 @@ class ConstructorsAndUnsizedDeclInvalidConstructors2 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ConstructorsAndUnsizedDeclInvalidConstructors2(Context &context)
+    ConstructorsAndUnsizedDeclInvalidConstructors2(Context &context, size_t invalid_initializer_index)
         : TestCaseBase<API>(context, "ConstructorsAndUnsizedDeclInvalidConstructors2",
                             " Correctly reject 3-dimensional int array constructor calls\n"
                             " for which any dimension or combination of dimensions is\n"
                             " given as zero (see sec(i) - 8 cases).\n")
+        , m_invalid_initializer_index(invalid_initializer_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_invalid_initializer_index_" + std::to_string(m_invalid_initializer_index));
     }
 
     virtual ~ConstructorsAndUnsizedDeclInvalidConstructors2()
@@ -835,6 +888,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_invalid_initializer_index;
 };
 
 template <class API>
@@ -842,13 +898,14 @@ class ConstructorsAndUnsizedDeclInvalidConstructors3 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ConstructorsAndUnsizedDeclInvalidConstructors3(Context &context)
+    ConstructorsAndUnsizedDeclInvalidConstructors3(Context &context, size_t invalid_initializer_index)
         : TestCaseBase<API>(context, "ConstructorsAndUnsizedDeclInvalidConstructors3",
                             " Correctly reject 3-dimensional int array constructor calls\n"
                             " for which any dimension or combination of dimensions is\n"
                             " given as -1 (see sec(i) - 8 cases).\n")
+        , m_invalid_initializer_index(invalid_initializer_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_invalid_initializer_index_" + std::to_string(m_invalid_initializer_index));
     }
 
     virtual ~ConstructorsAndUnsizedDeclInvalidConstructors3()
@@ -859,6 +916,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_invalid_initializer_index;
 };
 
 template <class API>
@@ -866,13 +926,14 @@ class ConstructorsAndUnsizedDeclInvalidConstructors4 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ConstructorsAndUnsizedDeclInvalidConstructors4(Context &context)
+    ConstructorsAndUnsizedDeclInvalidConstructors4(Context &context, size_t invalid_initializer_index)
         : TestCaseBase<API>(context, "ConstructorsAndUnsizedDeclInvalidConstructors4",
                             " Correctly reject 3-dimensional int array constructor calls\n"
                             " for which any dimension or combination of dimensions is\n"
                             " given by a non-constant variable (8 cases).\n")
+        , m_invalid_initializer_index(invalid_initializer_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_invalid_initializer_index_" + std::to_string(m_invalid_initializer_index));
     }
 
     virtual ~ConstructorsAndUnsizedDeclInvalidConstructors4()
@@ -883,6 +944,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_invalid_initializer_index;
 };
 
 template <class API>
@@ -890,14 +954,15 @@ class ConstructorsAndUnsizedDeclConstructorSizing1 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ConstructorsAndUnsizedDeclConstructorSizing1(Context &context)
+    ConstructorsAndUnsizedDeclConstructorSizing1(Context &context, size_t var_type_index)
         : TestCaseBase<API>(context, "ConstructorsAndUnsizedDeclConstructorSizing1",
                             " Verifies that arrays of 4 dimensions can be declared with any\n"
                             " combination of dimension sizes omitted, provided a valid\n"
                             " constructor is used as an initializer (15 cases per non-opaque\n"
                             " primitive type).\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~ConstructorsAndUnsizedDeclConstructorSizing1()
@@ -908,6 +973,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -942,13 +1010,14 @@ class ConstructorsAndUnsizedDeclStructConstructors : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ConstructorsAndUnsizedDeclStructConstructors(Context &context)
+    ConstructorsAndUnsizedDeclStructConstructors(Context &context, size_t max_dimension_index)
         : TestCaseBase<API>(context, "ConstructorsAndUnsizedDeclStructConstructors",
                             " Declare a user type (struct) and verify that arrays of between 2\n"
                             " and 8 dimensions can be declared without explicit sizes, and\n"
                             " initialized from constructors (7 cases).\n")
+        , m_max_dimension_index(max_dimension_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_max_dimension_index_" + std::to_string(m_max_dimension_index));
     }
 
     virtual ~ConstructorsAndUnsizedDeclStructConstructors()
@@ -960,6 +1029,9 @@ protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
     std::string recursively_initialise(std::string var_type, size_t dimension_index, std::string init_string);
+
+private:
+    size_t m_max_dimension_index;
 };
 
 template <class API>
@@ -967,12 +1039,13 @@ class ConstructorsAndUnsizedDeclUnsizedArrays1 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ConstructorsAndUnsizedDeclUnsizedArrays1(Context &context)
+    ConstructorsAndUnsizedDeclUnsizedArrays1(Context &context, size_t max_dimension_index)
         : TestCaseBase<API>(context, "ConstructorsAndUnsizedDeclUnsizedArrays1",
                             " Correctly reject unsized declarations of variables between 2 and 8\n"
                             " dimensions for which an initializer is not present.\n")
+        , m_max_dimension_index(max_dimension_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_max_dimension_index_" + std::to_string(m_max_dimension_index));
     }
 
     virtual ~ConstructorsAndUnsizedDeclUnsizedArrays1()
@@ -983,6 +1056,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_max_dimension_index;
 };
 
 template <class API>
@@ -990,12 +1066,13 @@ class ConstructorsAndUnsizedDeclUnsizedArrays2 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ConstructorsAndUnsizedDeclUnsizedArrays2(Context &context)
+    ConstructorsAndUnsizedDeclUnsizedArrays2(Context &context, size_t string_index)
         : TestCaseBase<API>(context, "ConstructorsAndUnsizedDeclUnsizedArrays2",
                             " Correctly reject unsized declarations where some elements are\n"
                             " lacking initializers (e.g. float[] x=float[](1), y).\n")
+        , m_string_index(string_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_string_index_" + std::to_string(m_string_index));
     }
 
     virtual ~ConstructorsAndUnsizedDeclUnsizedArrays2()
@@ -1006,6 +1083,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_string_index;
 };
 
 template <class API>
@@ -1061,13 +1141,14 @@ class ExpressionsAssignment1 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ExpressionsAssignment1(Context &context)
+    ExpressionsAssignment1(Context &context, size_t max_dimension_index)
         : TestCaseBase<API>(context, "ExpressionsAssignment1",
                             " Declare two variables of matching array size, having between 2 and\n"
                             " 8 dimensions, and verify that the value of one can be assigned to\n"
                             " the other without error (7 cases).\n")
+        , m_max_dimension_index(max_dimension_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_max_dimension_index_" + std::to_string(m_max_dimension_index));
     }
 
     virtual ~ExpressionsAssignment1()
@@ -1079,6 +1160,9 @@ protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
     std::string recursively_initialise(std::string var_type, size_t dimension_index, std::string init_string);
+
+private:
+    size_t m_max_dimension_index;
 };
 
 template <class API>
@@ -1086,12 +1170,15 @@ class ExpressionsAssignment2 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ExpressionsAssignment2(Context &context)
+    ExpressionsAssignment2(Context &context, int variable_index, int value_index)
         : TestCaseBase<API>(context, "ExpressionsAssignment2",
                             " Correctly reject assignment of variables of differing numbers of array\n"
                             " dimensions (between 1 and 4) to one another (6 cases).\n")
+        , m_variable_index(variable_index)
+        , m_value_index(value_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_variable_index_" + std::to_string(m_variable_index) + "_value_index_" +
+                                         std::to_string(m_value_index));
     }
 
     virtual ~ExpressionsAssignment2()
@@ -1102,6 +1189,10 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    int m_variable_index;
+    int m_value_index;
 };
 
 template <class API>
@@ -1109,13 +1200,14 @@ class ExpressionsAssignment3 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ExpressionsAssignment3(Context &context)
+    ExpressionsAssignment3(Context &context, int permutation)
         : TestCaseBase<API>(context, "ExpressionsAssignment3",
                             " Correctly reject assignment of variables of 4 dimensions and differing\n"
                             " array size to one another, where all combinations of each dimension\n"
                             " matching or not matching are tested (15 cases).\n")
+        , m_permutation(permutation)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_permutation_" + std::to_string(m_permutation));
     }
 
     virtual ~ExpressionsAssignment3()
@@ -1126,6 +1218,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    int m_permutation;
 };
 
 template <class API>
@@ -1133,13 +1228,14 @@ class ExpressionsTypeRestrictions1 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ExpressionsTypeRestrictions1(Context &context)
+    ExpressionsTypeRestrictions1(Context &context, int var_type_index)
         : TestCaseBase<API>(context, "ExpressionsTypeRestrictions1",
                             " Declare two 2-dimensional arrays of a sampler type and verify that\n"
                             " one cannot be assigned to the other.\n"
                             " Repeat the test for each opaque type.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~ExpressionsTypeRestrictions1()
@@ -1150,6 +1246,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    int m_var_type_index;
 };
 
 template <class API>
@@ -1157,13 +1256,14 @@ class ExpressionsTypeRestrictions2 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ExpressionsTypeRestrictions2(Context &context)
+    ExpressionsTypeRestrictions2(Context &context, int var_type_index)
         : TestCaseBase<API>(context, "ExpressionsTypeRestrictions2",
                             " For each opaque type, verify that structures containing \n"
                             " two 2-dimensional arrays of that sampler type\n"
                             " cannot be assigned to each other.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~ExpressionsTypeRestrictions2()
@@ -1174,6 +1274,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    int m_var_type_index;
 };
 
 template <class API>
@@ -1181,12 +1284,13 @@ class ExpressionsIndexingScalar1 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ExpressionsIndexingScalar1(Context &context)
+    ExpressionsIndexingScalar1(Context &context, size_t var_type_index)
         : TestCaseBase<API>(context, "ExpressionsIndexingScalar1",
                             " Assign to each scalar element of a 4 dimensional array\n"
                             " float x[1][2][3][4] (24 cases).\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~ExpressionsIndexingScalar1()
@@ -1197,6 +1301,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -1204,12 +1311,13 @@ class ExpressionsIndexingScalar2 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ExpressionsIndexingScalar2(Context &context)
+    ExpressionsIndexingScalar2(Context &context, int permutation)
         : TestCaseBase<API>(context, "ExpressionsIndexingScalar2",
                             " Correctly reject indexing the array with any combination\n"
                             " of indices given as -1 (15 cases).\n")
+        , m_permutation(permutation)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_permutation_" + std::to_string(m_permutation));
     }
 
     virtual ~ExpressionsIndexingScalar2()
@@ -1220,6 +1328,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    int m_permutation;
 };
 
 template <class API>
@@ -1227,12 +1338,13 @@ class ExpressionsIndexingScalar3 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ExpressionsIndexingScalar3(Context &context)
+    ExpressionsIndexingScalar3(Context &context, int permutation)
         : TestCaseBase<API>(context, "ExpressionsIndexingScalar3",
                             " Correctly reject indexing the array with any combination\n"
                             " of indices given as 4 (15 cases).\n")
+        , m_permutation(permutation)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_permutation_" + std::to_string(m_permutation));
     }
 
     virtual ~ExpressionsIndexingScalar3()
@@ -1243,6 +1355,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    int m_permutation;
 };
 
 template <class API>
@@ -1250,13 +1365,14 @@ class ExpressionsIndexingScalar4 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ExpressionsIndexingScalar4(Context &context)
+    ExpressionsIndexingScalar4(Context &context, int permutation)
         : TestCaseBase<API>(context, "ExpressionsIndexingScalar4",
                             " Correctly reject any attempt to index a 4-dimensional array with\n"
                             " any combination of missing array index expressions\n"
                             " (e.g. x[][0][0][]) - (15 cases).\n")
+        , m_permutation(permutation)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_permutation_" + std::to_string(m_permutation));
     }
 
     virtual ~ExpressionsIndexingScalar4()
@@ -1267,6 +1383,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    int m_permutation;
 };
 
 template <class API>
@@ -1274,15 +1393,16 @@ class ExpressionsIndexingArray1 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ExpressionsIndexingArray1(Context &context)
+    ExpressionsIndexingArray1(Context &context, size_t string_index)
         : TestCaseBase<API>(context, "ExpressionsIndexingArray1",
                             " Assign to each dimension of an 8 dimensional, single-element array\n"
                             " with an appropriate constructor (e.g. float\n"
                             " x[1][1][1][1][1][1][1][1];\n"
                             " x[0] = float[1][1][1][1][1][1][1](1);\n"
                             " x[0][0] = etc) - (8 cases).\n")
+        , m_string_index(string_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_string_index_" + std::to_string(m_string_index));
     }
 
     virtual ~ExpressionsIndexingArray1()
@@ -1293,6 +1413,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_string_index;
 };
 
 template <class API>
@@ -1300,13 +1423,14 @@ class ExpressionsIndexingArray2 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ExpressionsIndexingArray2(Context &context)
+    ExpressionsIndexingArray2(Context &context, size_t max_dimension_index)
         : TestCaseBase<API>(context, "ExpressionsIndexingArray2",
                             " Declare two 8 dimensional, single-element arrays, and assign to\n"
                             " each dimension of one from the matching sub_scripting of the other\n"
                             " (e.g. x[0] = y[0]; x[0][0] = y[0][0]; etc.) (8 cases).\n")
+        , m_max_dimension_index(max_dimension_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_max_dimension_index_" + std::to_string(m_max_dimension_index));
     }
 
     virtual ~ExpressionsIndexingArray2()
@@ -1318,6 +1442,9 @@ protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
     std::string recursively_initialise(std::string var_type, size_t dimension_index, std::string init_string);
+
+private:
+    size_t m_max_dimension_index;
 };
 
 template <class API>
@@ -1325,12 +1452,13 @@ class ExpressionsIndexingArray3 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ExpressionsIndexingArray3(Context &context)
+    ExpressionsIndexingArray3(Context &context, size_t string_index)
         : TestCaseBase<API>(context, "ExpressionsIndexingArray3",
                             " Correctly reject use of ivecn to index an n-dimensional array -\n"
                             " e.g. float x[2][2][2][2]; x[ivec4(0)] = 1; (3 cases).\n")
+        , m_string_index(string_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_string_index_" + std::to_string(m_string_index));
     }
 
     virtual ~ExpressionsIndexingArray3()
@@ -1341,6 +1469,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_string_index;
 };
 
 template <class API>
@@ -1348,13 +1479,16 @@ class ExpressionsDynamicIndexing1 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ExpressionsDynamicIndexing1(Context &context)
+    ExpressionsDynamicIndexing1(Context &context, size_t write_index, size_t read_index)
         : TestCaseBase<API>(context, "ExpressionsDynamicIndexing1",
                             " Verifies that any mixture of constant, uniform and dynamic expressions\n"
                             " can be used as the array index expression, in any combination, for\n"
                             " each dimension of a 2 dimensional array (16 cases).\n")
+        , m_write_index(write_index)
+        , m_read_index(read_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_write_index_" + std::to_string(m_write_index) + "_read_index_" +
+                                         std::to_string(m_read_index));
     }
 
     virtual ~ExpressionsDynamicIndexing1()
@@ -1365,6 +1499,10 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_write_index;
+    size_t m_read_index;
 };
 
 template <class API>
@@ -1372,13 +1510,14 @@ class ExpressionsDynamicIndexing2 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ExpressionsDynamicIndexing2(Context &context)
+    ExpressionsDynamicIndexing2(Context &context, int var_type_index)
         : TestCaseBase<API>(context, "ExpressionsDynamicIndexing2",
                             " Correctly reject any attempt to index 4-dimensional arrays of opaque\n"
                             " types with any combination of non-constant expressions\n"
                             " (e.g. x[0][y][0][y] etc for non-const y) - (15 cases per type).\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~ExpressionsDynamicIndexing2()
@@ -1389,6 +1528,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    int m_var_type_index;
 };
 
 template <class API>
@@ -1396,7 +1538,7 @@ class ExpressionsEquality1 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ExpressionsEquality1(Context &context)
+    ExpressionsEquality1(Context &context, int var_type_index)
         : TestCaseBase<API>(context, "ExpressionsEquality1",
                             " Verifies that two 4-dimensional arrays of matching primitive\n"
                             " type can be correctly compared for equality and inequality, when\n"
@@ -1404,8 +1546,9 @@ public:
                             " components (e.g. x = float[][](float[](1,1), float[](1,1)); y =\n"
                             " float[][](float[](2,1), float[](1,1)); return x == y;) - (16\n"
                             " cases per primitive type).\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~ExpressionsEquality1()
@@ -1416,6 +1559,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    int m_var_type_index;
 };
 
 template <class API>
@@ -1423,14 +1569,15 @@ class ExpressionsEquality2 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ExpressionsEquality2(Context &context)
+    ExpressionsEquality2(Context &context, int var_type_index)
         : TestCaseBase<API>(context, "ExpressionsEquality2",
                             " Verifies that two 4-dimensional arrays of matching user (struct)\n"
                             " types can be correctly compared for equality and inequality, when\n"
                             " they differ independently in each component or combination of\n"
                             " components - (16 cases per primitive type).\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~ExpressionsEquality2()
@@ -1441,6 +1588,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    int m_var_type_index;
 };
 
 template <class API>
@@ -1454,13 +1604,14 @@ public:
         /* Left empty on purpose */
     }
 
-    ExpressionsLength1(Context &context)
+    ExpressionsLength1(Context &context, size_t case_specific_string_index)
         : TestCaseBase<API>(context, "ExpressionsLength1",
                             " For a 4-dimensional array declared as int x[4][3][2][1], verify that\n"
                             " x.length returns the integer 4, x[0].length the integer 3, and so\n"
                             " forth (4 cases).\n")
+        , m_case_specific_string_index(case_specific_string_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_case_specific_string_index_" + std::to_string(m_case_specific_string_index));
     }
 
     virtual ~ExpressionsLength1()
@@ -1495,6 +1646,9 @@ protected:
                                       const std::string &tested_declaration, const std::string &tested_snippet);
 
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_case_specific_string_index;
 };
 
 template <class API>
@@ -1502,13 +1656,14 @@ class ExpressionsLength2 : public ExpressionsLength1<API>
 {
 public:
     /* Public methods */
-    ExpressionsLength2(Context &context)
+    ExpressionsLength2(Context &context, size_t case_specific_string_index)
         : ExpressionsLength1<API>(context, "ExpressionsLength2",
                                   " For a 4-dimensional array declared as int x[1][2][3][4], verify that\n"
                                   " x.length returns the integer 1, x[0].length the integer 2, and so\n"
                                   " forth (4 cases).\n")
+        , m_case_specific_string_index(case_specific_string_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_case_specific_string_index_" + std::to_string(m_case_specific_string_index));
     }
 
     virtual ~ExpressionsLength2()
@@ -1519,6 +1674,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_case_specific_string_index;
 };
 
 template <class API>
@@ -1526,13 +1684,14 @@ class ExpressionsLength3 : public ExpressionsLength1<API>
 {
 public:
     /* Public methods */
-    ExpressionsLength3(Context &context)
+    ExpressionsLength3(Context &context, size_t string_index)
         : ExpressionsLength1<API>(context, "ExpressionsLength3",
                                   " Correctly reject any use of the length method on elements of a\n"
                                   " 4-dimensional array x[1][1][1][1] for which the index\n"
                                   " expression is omitted, e.g. x[].length, x[][].length etc (3 cases).\n")
+        , m_string_index(string_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_string_index_" + std::to_string(m_string_index));
     }
 
     virtual ~ExpressionsLength3()
@@ -1543,6 +1702,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_string_index;
 };
 
 template <class API>
@@ -1573,13 +1735,14 @@ class ExpressionsInvalid2 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    ExpressionsInvalid2(Context &context)
+    ExpressionsInvalid2(Context &context, size_t var_type_index)
         : TestCaseBase<API>(context, "ExpressionsInvalid2",
                             " For 8-dimensional arrays x,y, correctly reject any attempt\n"
                             " to apply the relational operators other than equality and\n"
                             " inequality (4 cases per non-opaque primitive type).\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~ExpressionsInvalid2()
@@ -1590,6 +1753,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -1603,7 +1769,7 @@ public:
         /* Left empty on purpose */
     }
 
-    InteractionFunctionCalls1(Context &context)
+    InteractionFunctionCalls1(Context &context, size_t var_type_index)
         : TestCaseBase<API>(context, "InteractionFunctionCalls1",
                             " Declare a function returning an 8-dimensional 64-element array as\n"
                             " an out parameter, which places a unique integer in each\n"
@@ -1612,8 +1778,9 @@ public:
                             " is called.\n"
                             " Repeat for the following primitive types: int, float,\n"
                             " ivec2, ivec3, ivec4, vec2, vec3, vec4, mat2, mat3, mat4.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~InteractionFunctionCalls1()
@@ -1656,6 +1823,9 @@ protected:
                                       const std::string &verification);
 
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -1663,15 +1833,16 @@ class InteractionFunctionCalls2 : public InteractionFunctionCalls1<API>
 {
 public:
     /* Public methods */
-    InteractionFunctionCalls2(Context &context)
+    InteractionFunctionCalls2(Context &context, size_t var_type_index)
         : InteractionFunctionCalls1<API>(context, "InteractionFunctionCalls2",
                                          " Declare a function taking an inout parameter,\n"
                                          " which multiplies each element by a different prime.\n"
                                          " Verifies that the results after returning are again as expected.\n"
                                          " Repeat for the following primitive types: int, float,\n"
                                          " ivec2, ivec3, ivec4, vec2, vec3, vec4, mat2, mat3, mat4.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~InteractionFunctionCalls2()
@@ -1682,6 +1853,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -1689,7 +1863,7 @@ class InteractionArgumentAliasing1 : public InteractionFunctionCalls1<API>
 {
 public:
     /* Public methods */
-    InteractionArgumentAliasing1(Context &context)
+    InteractionArgumentAliasing1(Context &context, size_t var_type_index)
         : InteractionFunctionCalls1<API>(context, "InteractionArgumentAliasing1",
                                          " Declare a function taking two 8-dimensional, 64-element parameters\n"
                                          " (e.g. void g(int x[2][2][2][2][2][2][2][2], int\n"
@@ -1697,8 +1871,9 @@ public:
                                          " and overwriting x with a constant value, the original values of z\n"
                                          " are accessible through y.\n"
                                          " Repeat for float and mat4 types.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~InteractionArgumentAliasing1()
@@ -1709,6 +1884,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -1716,7 +1894,7 @@ class InteractionArgumentAliasing2 : public InteractionFunctionCalls1<API>
 {
 public:
     /* Public methods */
-    InteractionArgumentAliasing2(Context &context)
+    InteractionArgumentAliasing2(Context &context, size_t var_type_index)
         : InteractionFunctionCalls1<API>(context, "InteractionArgumentAliasing2",
                                          " Declare a function taking two 8-dimensional, 64-element parameters\n"
                                          " (e.g. void g(int x[2][2][2][2][2][2][2][2], int\n"
@@ -1724,8 +1902,9 @@ public:
                                          " and overwriting y with a constant value, the original values of z\n"
                                          " are accessible through x.\n"
                                          " Repeat for float and mat4 types.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~InteractionArgumentAliasing2()
@@ -1736,6 +1915,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -1743,7 +1925,7 @@ class InteractionArgumentAliasing3 : public InteractionFunctionCalls1<API>
 {
 public:
     /* Public methods */
-    InteractionArgumentAliasing3(Context &context)
+    InteractionArgumentAliasing3(Context &context, size_t var_type_index)
         : InteractionFunctionCalls1<API>(context, "InteractionArgumentAliasing3",
                                          " Declare a function taking two 8-dimensional, 64-element parameters\n"
                                          " (e.g. void g(int x[2][2][2][2][2][2][2][2], int\n"
@@ -1751,8 +1933,9 @@ public:
                                          " and overwriting y with a constant value, the original values of z\n"
                                          " are accessible through x, where x is an out parameter.\n"
                                          " Repeat for float and mat4 types.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~InteractionArgumentAliasing3()
@@ -1763,6 +1946,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -1770,7 +1956,7 @@ class InteractionArgumentAliasing4 : public InteractionFunctionCalls1<API>
 {
 public:
     /* Public methods */
-    InteractionArgumentAliasing4(Context &context)
+    InteractionArgumentAliasing4(Context &context, size_t var_type_index)
         : InteractionFunctionCalls1<API>(context, "InteractionArgumentAliasing4",
                                          " Declare a function taking two 8-dimensional, 64-element parameters\n"
                                          " (e.g. void g(int x[2][2][2][2][2][2][2][2], int\n"
@@ -1778,8 +1964,9 @@ public:
                                          " and overwriting x with a constant value, the original values of z\n"
                                          " are accessible through y, where y is an out parameter.\n"
                                          " Repeat for float and mat4 types.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~InteractionArgumentAliasing4()
@@ -1790,6 +1977,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -1797,7 +1987,7 @@ class InteractionArgumentAliasing5 : public InteractionFunctionCalls1<API>
 {
 public:
     /* Public methods */
-    InteractionArgumentAliasing5(Context &context)
+    InteractionArgumentAliasing5(Context &context, size_t var_type_index)
         : InteractionFunctionCalls1<API>(context, "InteractionArgumentAliasing5",
                                          " Declare a function taking two 8-dimensional, 64-element parameters\n"
                                          " (e.g. void g(int x[2][2][2][2][2][2][2][2], int\n"
@@ -1805,8 +1995,9 @@ public:
                                          " and overwriting y with a constant value, the original values of z\n"
                                          " are accessible through x, where x is an inout parameter.\n"
                                          " Repeat for float and mat4 types.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~InteractionArgumentAliasing5()
@@ -1817,6 +2008,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -1824,7 +2018,7 @@ class InteractionArgumentAliasing6 : public InteractionFunctionCalls1<API>
 {
 public:
     /* Public methods */
-    InteractionArgumentAliasing6(Context &context)
+    InteractionArgumentAliasing6(Context &context, size_t var_type_index)
         : InteractionFunctionCalls1<API>(context, "InteractionArgumentAliasing6",
                                          " Declare a function taking two 8-dimensional, 64-element parameters\n"
                                          " (e.g. void g(int x[2][2][2][2][2][2][2][2], int\n"
@@ -1832,8 +2026,9 @@ public:
                                          " and overwriting x with a constant value, the original values of z\n"
                                          " are accessible through y, where y is an inout parameter.\n"
                                          " Repeat for float and mat4 types.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~InteractionArgumentAliasing6()
@@ -1845,6 +2040,9 @@ public:
     //AL protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -1858,12 +2056,13 @@ public:
         /* Left empty on purpose */
     }
 
-    InteractionUniforms1(Context &context)
+    InteractionUniforms1(Context &context, size_t var_type_index)
         : TestCaseBase<API>(context, "InteractionUniforms1",
                             " Declare a 4-dimensional uniform array and verify that it can be\n"
                             " initialized with user data correctly using the API.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~InteractionUniforms1()
@@ -1892,6 +2091,9 @@ protected:
                                       const std::string &uniform_definition, const std::string &uniform_use);
 
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -1899,12 +2101,13 @@ class InteractionUniforms2 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    InteractionUniforms2(Context &context)
+    InteractionUniforms2(Context &context, size_t var_type_index)
         : TestCaseBase<API>(context, "InteractionUniforms2",
                             " Correctly reject 4-dimensional uniform arrays with any unsized\n"
                             " dimension, with or without an initializer (30 cases).\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~InteractionUniforms2()
@@ -1915,6 +2118,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -1922,13 +2128,14 @@ class InteractionUniformBuffers1 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    InteractionUniformBuffers1(Context &context)
+    InteractionUniformBuffers1(Context &context, size_t var_type_index)
         : TestCaseBase<API>(context, "InteractionUniformBuffers1",
                             " Declare a uniform block containing a 6-dimensional array and verify\n"
                             " that the resulting shader compiles.\n"
                             " Repeat for ints and uints.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~InteractionUniformBuffers1()
@@ -1939,6 +2146,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -1946,14 +2156,15 @@ class InteractionUniformBuffers2 : public InteractionUniforms1<API>
 {
 public:
     /* Public methods */
-    InteractionUniformBuffers2(Context &context)
+    InteractionUniformBuffers2(Context &context, size_t var_type_index)
         : InteractionUniforms1<API>(context, "InteractionUniformBuffers2",
                                     " Declare a 4-dimensional uniform float array x[2][2][2][2] within a\n"
                                     " uniform block, and verify that it can be initialized correctly with user\n"
                                     " data via the API.\n"
                                     " Repeat for ints and uints.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~InteractionUniformBuffers2()
@@ -1968,6 +2179,9 @@ protected:
     void execute_draw_test(typename TestCaseBase<API>::TestShaderType tested_shader_type);
 
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -1975,13 +2189,14 @@ class InteractionUniformBuffers3 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    InteractionUniformBuffers3(Context &context)
+    InteractionUniformBuffers3(Context &context, size_t var_type_index)
         : TestCaseBase<API>(context, "InteractionUniformBuffers3",
                             " Correctly reject 4-dimensional uniform arrays with a uniform block\n"
                             " with any dimension unsized, with or without an initializer (30 cases).\n"
                             " Repeat for ints and uints.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~InteractionUniformBuffers3()
@@ -1992,6 +2207,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -1999,13 +2217,14 @@ class InteractionStorageBuffers1 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    InteractionStorageBuffers1(Context &context)
+    InteractionStorageBuffers1(Context &context, size_t var_type_index)
         : TestCaseBase<API>(context, "InteractionStorageBuffers1",
                             " Declare a storage block containing a 6-dimensional array and verify\n"
                             " that the resulting shader compiles.\n"
                             " Repeat for ints and uints.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~InteractionStorageBuffers1()
@@ -2016,6 +2235,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -2023,14 +2245,15 @@ class InteractionStorageBuffers2 : public InteractionUniforms1<API>
 {
 public:
     /* Public methods */
-    InteractionStorageBuffers2(Context &context)
+    InteractionStorageBuffers2(Context &context, size_t var_type_index)
         : InteractionUniforms1<API>(context, "InteractionStorageBuffers2",
                                     " Declare a 4-dimensional float array x[2][2][2][2] within a\n"
                                     " storage block, and verify that it can be initialized correctly with user\n"
                                     " data via the API.\n"
                                     " Repeat for ints and uints.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~InteractionStorageBuffers2()
@@ -2045,6 +2268,9 @@ protected:
     void execute_draw_test(typename TestCaseBase<API>::TestShaderType tested_shader_type);
 
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -2052,13 +2278,14 @@ class InteractionStorageBuffers3 : public TestCaseBase<API>
 {
 public:
     /* Public methods */
-    InteractionStorageBuffers3(Context &context)
+    InteractionStorageBuffers3(Context &context, size_t var_type_index)
         : TestCaseBase<API>(context, "InteractionStorageBuffers3",
                             " Correctly reject 4-dimensional uniform arrays with a uniform block\n"
                             " with any dimension unsized, with or without an initializer (30 cases).\n"
                             " Repeat for ints and uints.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~InteractionStorageBuffers3()
@@ -2069,6 +2296,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -2276,7 +2506,7 @@ public:
         /* Left empty on purpose */
     }
 
-    SubroutineFunctionCalls1(Context &context)
+    SubroutineFunctionCalls1(Context &context, size_t var_type_index)
         : TestCaseBase<API>(context, "SubroutineFunctionCalls1",
                             " Declare two subroutines returning an 8-dimensional 64-element array as\n"
                             " an out parameter, filled with unique values.\n"
@@ -2284,8 +2514,9 @@ public:
                             " is called.\n"
                             " Repeat for the following primitive types: int, float,\n"
                             " ivec2, ivec3, ivec4, vec2, vec3, vec4, mat2, mat3, mat4.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~SubroutineFunctionCalls1()
@@ -2328,6 +2559,9 @@ protected:
                                       const std::string &verification);
 
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 /** Implements "inout" case of SubRoutineCalls test, description follows:
@@ -2343,15 +2577,16 @@ class SubroutineFunctionCalls2 : public SubroutineFunctionCalls1<API>
 {
 public:
     /* Public methods */
-    SubroutineFunctionCalls2(Context &context)
+    SubroutineFunctionCalls2(Context &context, size_t var_type_index)
         : SubroutineFunctionCalls1<API>(context, "SubroutineFunctionCalls2",
                                         " Declare two subroutines taking an inout parameter,\n"
                                         " which modifies each element in a unique way.\n"
                                         " Verifies that the results after returning are as expected.\n"
                                         " Repeat for the following primitive types: int, float,\n"
                                         " ivec2, ivec3, ivec4, vec2, vec3, vec4, mat2, mat3, mat4.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~SubroutineFunctionCalls2()
@@ -2362,6 +2597,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -2369,7 +2607,7 @@ class SubroutineArgumentAliasing1 : public SubroutineFunctionCalls1<API>
 {
 public:
     /* Public methods */
-    SubroutineArgumentAliasing1(Context &context)
+    SubroutineArgumentAliasing1(Context &context, size_t var_type_index)
         : SubroutineFunctionCalls1<API>(
               context, "SubroutineArgumentAliasing1",
               " Declare a function taking two 8-dimensional, 64-element parameters\n"
@@ -2378,8 +2616,9 @@ public:
               " and overwriting one parameter with a constant value, the original values of z\n"
               " are accessible through the second parameter.\n"
               " Repeat for float and mat4 types.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~SubroutineArgumentAliasing1()
@@ -2390,6 +2629,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -2397,7 +2639,7 @@ class SubroutineArgumentAliasing2 : public SubroutineFunctionCalls1<API>
 {
 public:
     /* Public methods */
-    SubroutineArgumentAliasing2(Context &context)
+    SubroutineArgumentAliasing2(Context &context, size_t var_type_index)
         : SubroutineFunctionCalls1<API>(
               context, "SubroutineArgumentAliasing2",
               " Declare two subroutines taking two 8-dimensional, 64-element parameters\n"
@@ -2406,8 +2648,9 @@ public:
               " and overwriting one parameter with a constant value, the original values of z\n"
               " are accessible through the second inout parameter.\n"
               " Repeat for float and mat4 types.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~SubroutineArgumentAliasing2()
@@ -2418,6 +2661,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -2425,7 +2671,7 @@ class SubroutineArgumentAliasing3 : public SubroutineFunctionCalls1<API>
 {
 public:
     /* Public methods */
-    SubroutineArgumentAliasing3(Context &context)
+    SubroutineArgumentAliasing3(Context &context, size_t var_type_index)
         : SubroutineFunctionCalls1<API>(
               context, "SubroutineArgumentAliasing3",
               " Declare two subroutines taking two 8-dimensional, 64-element parameters\n"
@@ -2434,8 +2680,9 @@ public:
               " and overwriting x, out, parameter with a constant value, the original values of z\n"
               " are accessible through the y parameter.\n"
               " Repeat for float and mat4 types.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~SubroutineArgumentAliasing3()
@@ -2446,6 +2693,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 template <class API>
@@ -2453,7 +2703,7 @@ class SubroutineArgumentAliasing4 : public SubroutineFunctionCalls1<API>
 {
 public:
     /* Public methods */
-    SubroutineArgumentAliasing4(Context &context)
+    SubroutineArgumentAliasing4(Context &context, size_t var_type_index)
         : SubroutineFunctionCalls1<API>(
               context, "SubroutineArgumentAliasing4",
               " Declare two subroutines taking two 8-dimensional, 64-element parameters\n"
@@ -2462,8 +2712,9 @@ public:
               " and overwriting y, out, parameter with a constant value, the original values of z\n"
               " are accessible through the x parameter.\n"
               " Repeat for float and mat4 types.\n")
+        , m_var_type_index(var_type_index)
     {
-        /* Left empty on purpose */
+        TestCaseBase<API>::m_name.append("_var_type_index_" + std::to_string(m_var_type_index));
     }
 
     virtual ~SubroutineArgumentAliasing4()
@@ -2474,6 +2725,9 @@ public:
 protected:
     /* Protected methods */
     void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type);
+
+private:
+    size_t m_var_type_index;
 };
 
 } // namespace ArraysOfArrays

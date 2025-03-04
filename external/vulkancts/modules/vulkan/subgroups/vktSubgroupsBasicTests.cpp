@@ -1796,17 +1796,8 @@ void supportedCheck(Context &context, CaseDefinition caseDef)
     {
         context.requireDeviceFunctionality("VK_EXT_subgroup_size_control");
 
-#ifndef CTS_USES_VULKANSC
-        const VkPhysicalDeviceSubgroupSizeControlFeatures &subgroupSizeControlFeatures =
-            context.getSubgroupSizeControlFeatures();
-        const VkPhysicalDeviceSubgroupSizeControlProperties &subgroupSizeControlProperties =
-            context.getSubgroupSizeControlProperties();
-#else
-        const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT &subgroupSizeControlFeatures =
-            context.getSubgroupSizeControlFeatures();
-        const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-            context.getSubgroupSizeControlProperties();
-#endif // CTS_USES_VULKANSC
+        const auto &subgroupSizeControlFeatures   = context.getSubgroupSizeControlFeatures();
+        const auto &subgroupSizeControlProperties = context.getSubgroupSizeControlProperties();
 
         if (subgroupSizeControlFeatures.subgroupSizeControl == false)
             TCU_THROW(NotSupportedError, "Device does not support varying subgroup sizes nor required subgroup size");
@@ -1880,11 +1871,11 @@ TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
     if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
     {
         if (OPTYPE_ELECT == caseDef.opType)
-            return subgroups::makeVertexFrameBufferTest(context, VK_FORMAT_R32G32_SFLOAT, DE_NULL, 0u, DE_NULL,
+            return subgroups::makeVertexFrameBufferTest(context, VK_FORMAT_R32G32_SFLOAT, nullptr, 0u, nullptr,
                                                         checkVertexPipelineStagesSubgroupElectNoSSBO);
         else
             return subgroups::makeVertexFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0],
-                                                        inputDatasCount, DE_NULL,
+                                                        inputDatasCount, nullptr,
                                                         (OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType) ?
                                                             checkVertexPipelineStagesSubgroupBarriersWithImageNoSSBO :
                                                             checkVertexPipelineStagesSubgroupBarriersNoSSBO);
@@ -1892,18 +1883,18 @@ TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
     else if (VK_SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage)
     {
         return subgroups::makeFragmentFrameBufferTest(
-            context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount, DE_NULL,
+            context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount, nullptr,
             (OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType) ? checkFragmentSubgroupBarriersWithImageNoSSBO :
                                                                        checkFragmentSubgroupBarriersNoSSBO);
     }
     else if (VK_SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
     {
         if (OPTYPE_ELECT == caseDef.opType)
-            return subgroups::makeGeometryFrameBufferTest(context, VK_FORMAT_R32G32_SFLOAT, DE_NULL, 0u, DE_NULL,
+            return subgroups::makeGeometryFrameBufferTest(context, VK_FORMAT_R32G32_SFLOAT, nullptr, 0u, nullptr,
                                                           checkVertexPipelineStagesSubgroupElectNoSSBO);
         else
             return subgroups::makeGeometryFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0],
-                                                          inputDatasCount, DE_NULL,
+                                                          inputDatasCount, nullptr,
                                                           (OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType) ?
                                                               checkVertexPipelineStagesSubgroupBarriersWithImageNoSSBO :
                                                               checkVertexPipelineStagesSubgroupBarriersNoSSBO);
@@ -1911,11 +1902,11 @@ TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
 
     if (OPTYPE_ELECT == caseDef.opType)
         return subgroups::makeTessellationEvaluationFrameBufferTest(
-            context, VK_FORMAT_R32G32_SFLOAT, DE_NULL, 0u, DE_NULL, checkVertexPipelineStagesSubgroupElectNoSSBO,
+            context, VK_FORMAT_R32G32_SFLOAT, nullptr, 0u, nullptr, checkVertexPipelineStagesSubgroupElectNoSSBO,
             caseDef.shaderStage);
 
     return subgroups::makeTessellationEvaluationFrameBufferTest(
-        context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount, DE_NULL,
+        context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount, nullptr,
         (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT == caseDef.shaderStage) ?
             ((OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType) ?
                  checkVertexPipelineStagesSubgroupBarriersWithImageNoSSBO :
@@ -1932,27 +1923,21 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
 #ifndef CTS_USES_VULKANSC
     const bool isMesh = isAllMeshShadingStages(caseDef.shaderStage);
 #else
-    const bool isMesh = false;
+    const bool isMesh          = false;
 #endif // CTS_USES_VULKANSC
     DE_ASSERT(!(isCompute && isMesh));
 
     if (isCompute || isMesh)
     {
-#ifndef CTS_USES_VULKANSC
-        const VkPhysicalDeviceSubgroupSizeControlProperties &subgroupSizeControlProperties =
-            context.getSubgroupSizeControlProperties();
-#else
-        const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-            context.getSubgroupSizeControlProperties();
-#endif // CTS_USES_VULKANSC
-        TestLog &log = context.getTestContext().getLog();
+        const auto &subgroupSizeControlProperties = context.getSubgroupSizeControlProperties();
+        TestLog &log                              = context.getTestContext().getLog();
 
         if (OPTYPE_ELECT == caseDef.opType)
         {
             if (caseDef.requiredSubgroupSize == false)
             {
                 if (isCompute)
-                    return subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL,
+                    return subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
                                                       checkComputeOrMeshSubgroupElect);
                 else
                     return subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
@@ -1970,7 +1955,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
                 TestStatus result(QP_TEST_RESULT_INTERNAL_ERROR, "Internal Error");
 
                 if (isCompute)
-                    result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0u, DE_NULL,
+                    result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, nullptr, 0u, nullptr,
                                                         checkComputeOrMeshSubgroupElect, size);
                 else
                     result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, nullptr, 0u, nullptr,
@@ -2013,7 +1998,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
             if (caseDef.requiredSubgroupSize == false)
             {
                 if (isCompute)
-                    return subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, inputDatas, inputDatasCount, DE_NULL,
+                    return subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, inputDatas, inputDatasCount, nullptr,
                                                       checkComputeOrMeshSubgroupBarriers);
                 else
                     return subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, inputDatas, inputDatasCount, nullptr,
@@ -2032,7 +2017,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
 
                 if (isCompute)
                     result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, inputDatas, inputDatasCount,
-                                                        DE_NULL, checkComputeOrMeshSubgroupBarriers, size);
+                                                        nullptr, checkComputeOrMeshSubgroupBarriers, size);
                 else
                     result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, inputDatas, inputDatasCount, nullptr,
                                                      checkComputeOrMeshSubgroupBarriers, size);
@@ -2082,7 +2067,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
                 };
             }
 
-            return subgroups::allStages(context, VK_FORMAT_R32_UINT, inputData, inputCount, DE_NULL,
+            return subgroups::allStages(context, VK_FORMAT_R32_UINT, inputData, inputCount, nullptr,
                                         checkVertexPipelineStagesSubgroupElect, stages);
         }
         else
@@ -2124,7 +2109,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
                 inputDatas[index + 3].stages         = stagesBits[ndx];
             }
 
-            return subgroups::allStages(context, VK_FORMAT_R32_UINT, inputDatas, inputDatasCount, DE_NULL,
+            return subgroups::allStages(context, VK_FORMAT_R32_UINT, inputDatas, inputDatasCount, nullptr,
                                         checkVertexPipelineStagesSubgroupBarriers, stages);
         }
     }
@@ -2153,7 +2138,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
                 inputData[ndx].stages         = stagesBits[ndx];
             }
 
-            return subgroups::allRayTracingStages(context, VK_FORMAT_R32_UINT, inputData, inputDataCount, DE_NULL,
+            return subgroups::allRayTracingStages(context, VK_FORMAT_R32_UINT, inputData, inputDataCount, nullptr,
                                                   checkVertexPipelineStagesSubgroupElect, stages);
         }
         else
@@ -2192,7 +2177,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
                 inputDatas[index + 3].binding        = index + stagesCount + 3u;
             }
 
-            return subgroups::allRayTracingStages(context, VK_FORMAT_R32_UINT, inputDatas, inputDatasCount, DE_NULL,
+            return subgroups::allRayTracingStages(context, VK_FORMAT_R32_UINT, inputDatas, inputDatasCount, nullptr,
                                                   checkVertexPipelineStagesSubgroupBarriers, stages);
         }
     }

@@ -171,7 +171,7 @@ NativeDisplay::NativeDisplay(void)
 
 NativePixmap::NativePixmap(NativeDisplay *nativeDisplay, int width, int height, int bitDepth)
     : eglu::NativePixmap(BITMAP_CAPABILITIES)
-    , m_bitmap(DE_NULL)
+    , m_bitmap(nullptr)
 {
     const HDC deviceCtx = nativeDisplay->getDeviceContext();
     BITMAPINFO bitmapInfo;
@@ -179,7 +179,7 @@ NativePixmap::NativePixmap(NativeDisplay *nativeDisplay, int width, int height, 
     memset(&bitmapInfo, 0, sizeof(bitmapInfo));
 
     if (bitDepth != 24 && bitDepth != 32)
-        throw NotSupportedError("Unsupported pixmap bit depth", DE_NULL, __FILE__, __LINE__);
+        throw NotSupportedError("Unsupported pixmap bit depth", nullptr, __FILE__, __LINE__);
 
     bitmapInfo.bmiHeader.biSize          = sizeof(bitmapInfo);
     bitmapInfo.bmiHeader.biWidth         = width;
@@ -193,11 +193,11 @@ NativePixmap::NativePixmap(NativeDisplay *nativeDisplay, int width, int height, 
     bitmapInfo.bmiHeader.biClrUsed       = 0;
     bitmapInfo.bmiHeader.biClrImportant  = 0;
 
-    void *bitmapPtr = DE_NULL;
+    void *bitmapPtr = nullptr;
     m_bitmap        = CreateDIBSection(deviceCtx, &bitmapInfo, DIB_RGB_COLORS, &bitmapPtr, NULL, 0);
 
     if (!m_bitmap)
-        throw ResourceError("Failed to create bitmap", DE_NULL, __FILE__, __LINE__);
+        throw ResourceError("Failed to create bitmap", nullptr, __FILE__, __LINE__);
 }
 
 NativePixmap::~NativePixmap(void)
@@ -312,10 +312,10 @@ void NativeWindow::setSurfaceSize(IVec2 size)
 
 void NativeWindow::readScreenPixels(tcu::TextureLevel *dst) const
 {
-    HDC windowDC      = DE_NULL;
-    HDC screenDC      = DE_NULL;
-    HDC tmpDC         = DE_NULL;
-    HBITMAP tmpBitmap = DE_NULL;
+    HDC windowDC      = nullptr;
+    HDC screenDC      = nullptr;
+    HDC tmpDC         = nullptr;
+    HBITMAP tmpBitmap = nullptr;
     RECT rect;
 
     TCU_CHECK_INTERNAL(m_curVisibility != eglu::WindowParams::VISIBILITY_HIDDEN);
@@ -339,21 +339,21 @@ void NativeWindow::readScreenPixels(tcu::TextureLevel *dst) const
 
         deMemset(&bitmapInfo, 0, sizeof(bitmapInfo));
 
-        screenDC = GetDC(DE_NULL);
+        screenDC = GetDC(nullptr);
         TCU_CHECK(screenDC);
 
         windowDC = GetDC(m_window.getHandle());
         TCU_CHECK(windowDC);
 
         tmpDC = CreateCompatibleDC(screenDC);
-        TCU_CHECK(tmpDC != DE_NULL);
+        TCU_CHECK(tmpDC != nullptr);
 
-        MapWindowPoints(m_window.getHandle(), DE_NULL, (LPPOINT)&rect, 2);
+        MapWindowPoints(m_window.getHandle(), nullptr, (LPPOINT)&rect, 2);
 
         tmpBitmap = CreateCompatibleBitmap(screenDC, width, height);
-        TCU_CHECK(tmpBitmap != DE_NULL);
+        TCU_CHECK(tmpBitmap != nullptr);
 
-        TCU_CHECK(SelectObject(tmpDC, tmpBitmap) != DE_NULL);
+        TCU_CHECK(SelectObject(tmpDC, tmpBitmap) != nullptr);
 
         TCU_CHECK(BitBlt(tmpDC, 0, 0, width, height, screenDC, rect.left, rect.top, SRCCOPY));
 
@@ -375,21 +375,21 @@ void NativeWindow::readScreenPixels(tcu::TextureLevel *dst) const
                             DIB_RGB_COLORS));
 
         DeleteObject(tmpBitmap);
-        tmpBitmap = DE_NULL;
+        tmpBitmap = nullptr;
 
-        ReleaseDC(DE_NULL, screenDC);
-        screenDC = DE_NULL;
+        ReleaseDC(nullptr, screenDC);
+        screenDC = nullptr;
 
         ReleaseDC(m_window.getHandle(), windowDC);
-        windowDC = DE_NULL;
+        windowDC = nullptr;
 
         DeleteDC(tmpDC);
-        tmpDC = DE_NULL;
+        tmpDC = nullptr;
     }
     catch (...)
     {
         if (screenDC)
-            ReleaseDC(DE_NULL, screenDC);
+            ReleaseDC(nullptr, screenDC);
 
         if (windowDC)
             ReleaseDC(m_window.getHandle(), windowDC);

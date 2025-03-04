@@ -44,14 +44,14 @@ static TestCaseType getTestCaseType(const char *caseType)
 
     for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_caseTypeMap); ndx++)
     {
-        if (deStringEqual(caseType, s_caseTypeMap[ndx].name))
+        if (strcmp(caseType, s_caseTypeMap[ndx].name) == 0)
             return s_caseTypeMap[ndx].caseType;
     }
 
     XE_FAIL((string("Unknown test case type '") + caseType + "'").c_str());
 }
 
-TestCaseListParser::TestCaseListParser(void) : m_root(DE_NULL)
+TestCaseListParser::TestCaseListParser(void) : m_root(nullptr)
 {
 }
 
@@ -63,7 +63,7 @@ void TestCaseListParser::clear(void)
 {
     m_xmlParser.clear();
     m_nodeStack.clear();
-    m_root = DE_NULL;
+    m_root = nullptr;
 }
 
 void TestCaseListParser::init(TestGroup *rootGroup)
@@ -89,24 +89,24 @@ void TestCaseListParser::parse(const uint8_t *bytes, int numBytes)
             bool isStart         = element == xml::ELEMENT_START;
             const char *elemName = m_xmlParser.getElementName();
 
-            if (deStringEqual(elemName, "TestCase"))
+            if (strcmp(elemName, "TestCase") == 0)
             {
                 if (isStart)
                 {
                     XE_CHECK_MSG(!m_nodeStack.empty(), "<TestCase> outside of <TestCaseList>");
 
                     TestNode *parent = m_nodeStack.back();
-                    const char *name = m_xmlParser.hasAttribute("Name") ? m_xmlParser.getAttribute("Name") : DE_NULL;
+                    const char *name = m_xmlParser.hasAttribute("Name") ? m_xmlParser.getAttribute("Name") : nullptr;
                     const char *description =
-                        m_xmlParser.hasAttribute("Description") ? m_xmlParser.getAttribute("Description") : DE_NULL;
+                        m_xmlParser.hasAttribute("Description") ? m_xmlParser.getAttribute("Description") : nullptr;
                     const char *caseType =
-                        m_xmlParser.hasAttribute("CaseType") ? m_xmlParser.getAttribute("CaseType") : DE_NULL;
+                        m_xmlParser.hasAttribute("CaseType") ? m_xmlParser.getAttribute("CaseType") : nullptr;
 
                     XE_CHECK_MSG(name && description && caseType, "Missing attribute in <TestCase>");
                     XE_CHECK_MSG(parent->getNodeType() == TESTNODETYPE_GROUP,
                                  "Only TestGroups are allowed to have child nodes");
 
-                    bool isGroup = deStringEqual(caseType, "TestGroup") == true;
+                    bool isGroup = strcmp(caseType, "TestGroup") == 0;
                     TestNode *node =
                         isGroup ? static_cast<TestNode *>(static_cast<TestGroup *>(parent)->createGroup(name)) :
                                   static_cast<TestNode *>(
@@ -120,7 +120,7 @@ void TestCaseListParser::parse(const uint8_t *bytes, int numBytes)
                     m_nodeStack.pop_back();
                 }
             }
-            else if (deStringEqual(elemName, "TestCaseList"))
+            else if (strcmp(elemName, "TestCaseList") == 0)
             {
                 if (isStart)
                 {

@@ -396,7 +396,7 @@ GLESImageApi::GLESImageApi(const Library &egl, const glw::Functions &gl, int con
                            EGLDisplay display, EGLSurface surface, EGLConfig config, EGLint apiVersion)
     : ImageApi(egl, contextId, display, surface)
     , glu::CallLogWrapper(gl, log)
-    , m_context(DE_NULL)
+    , m_context(nullptr)
     , m_gl(gl)
 {
     const EGLint attriblist[] = {EGL_CONTEXT_CLIENT_VERSION, apiVersion, EGL_NONE};
@@ -1032,7 +1032,7 @@ bool GLESImageApi::RenderYUVTexture::invokeGLES(GLESImageApi &api, MovePtr<Uniqu
                 gl, clearColor(colorValues[ndx].x(), colorValues[ndx].y(), colorValues[ndx].z(), colorValues[ndx].w()));
             GLU_CHECK_GLW_CALL(gl, clear(GL_COLOR_BUFFER_BIT));
             GLU_CHECK_GLW_CALL(gl, finish());
-            char tmp[4] = {"0"};
+            uint8_t tmp[4] = {"0"};
             GLU_CHECK_GLW_CALL(gl, readPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, (void *)tmp));
             tcu::clear(tcu::getSubregion(reference.getLevel(0), 0, 0, size.x(), size.y()),
                        tcu::Vec4(tmp[0] / (255.0f), tmp[1] / (255.0f), tmp[2] / (255.0f), tmp[3] / (255.0f)));
@@ -1676,7 +1676,7 @@ ImageFormatCase::ImageFormatCase(EglTestContext &eglTestCtx, const TestSpec &spe
     , glu::CallLogWrapper(m_gl, eglTestCtx.getTestContext().getLog())
     , m_spec(spec)
     , m_display(EGL_NO_DISPLAY)
-    , m_window(DE_NULL)
+    , m_window(nullptr)
     , m_surface(EGL_NO_SURFACE)
     , m_config(0)
     , m_curIter(0)
@@ -1730,9 +1730,9 @@ void ImageFormatCase::init(void)
 
         m_config = getConfig();
         m_window = windowFactory.createWindow(
-            &m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL,
+            &m_eglTestCtx.getNativeDisplay(), m_display, m_config, nullptr,
             eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
-        m_surface = eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_display, m_config, DE_NULL);
+        m_surface = eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_display, m_config, nullptr);
 
         {
             const char *extensions[] = {"GL_OES_EGL_image"};
@@ -1750,7 +1750,7 @@ void ImageFormatCase::init(void)
 
         for (int contextNdx = 0; contextNdx < (int)m_spec.contexts.size(); contextNdx++)
         {
-            ImageApi *api = DE_NULL;
+            ImageApi *api = nullptr;
             switch (m_spec.contexts[contextNdx])
             {
             case TestSpec::API_GLES2:
@@ -1798,7 +1798,7 @@ void ImageFormatCase::deinit(void)
     }
 
     delete m_window;
-    m_window = DE_NULL;
+    m_window = nullptr;
 
     if (m_display != EGL_NO_DISPLAY)
     {

@@ -65,7 +65,7 @@ inline VkImageCreateInfo makeImageCreateInfo(const tcu::IVec2 &size, const VkFor
 {
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0,               // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         format,                              // VkFormat format;
@@ -77,7 +77,7 @@ inline VkImageCreateInfo makeImageCreateInfo(const tcu::IVec2 &size, const VkFor
         usage,                               // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
 
@@ -115,7 +115,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType                            sType
-        DE_NULL,                                                    // const void*                                pNext
+        nullptr,                                                    // const void*                                pNext
         0u,                                                         // VkPipelineDepthStencilStateCreateFlags    flags
         enableDepthTest ? VK_TRUE : VK_FALSE,   // VkBool32                                    depthTestEnable
         enableDepthTest ? VK_TRUE : VK_FALSE,   // VkBool32                                    depthWriteEnable
@@ -143,9 +143,9 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, // const VkPrimitiveTopology                        topology
         0u,                                  // const uint32_t                                    subpass
         0u,                                  // const uint32_t                                    patchControlPoints
-        DE_NULL,                       // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
-        DE_NULL,                       // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
-        DE_NULL,                       // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
+        nullptr,                       // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
+        nullptr,                       // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
+        nullptr,                       // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
         &depthStencilStateCreateInfo); // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo
 }
 
@@ -289,7 +289,7 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
     {
         VkQueryPoolCreateInfo queryPoolInfo{
             VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             (VkQueryPoolCreateFlags)0,                // VkQueryPoolCreateFlags flags;
             VK_QUERY_TYPE_OCCLUSION,                  // VkQueryType queryType;
             queryCount,                               // uint32_t queryCount;
@@ -482,7 +482,7 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
         }
         else
         {
-            vk.cmdBeginQuery(cmdBuffer.get(), queryPool, 0, DE_NULL);
+            vk.cmdBeginQuery(cmdBuffer.get(), queryPool, 0, 0);
         }
 
         vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);

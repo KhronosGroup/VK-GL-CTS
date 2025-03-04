@@ -40,7 +40,10 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBarrierUtil.hpp"
+
 #include "tcuImageCompare.hpp"
+
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
 #include "deMemory.h"
@@ -136,8 +139,9 @@ public:
               const VkPrimitiveTopology primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
               const bool depthBoundsTestEnable = false, const float depthBoundsMin = 0.0f,
               const float depthBoundsMax = 1.0f, const bool depthTestEnable = true,
-              const bool stencilTestEnable = false, const bool colorAttachmentEnable = true,
-              const bool hostVisible = false, const tcu::UVec2 renderSize = tcu::UVec2(32, 32),
+              const bool stencilTestEnable = false, const bool depthAttachmentBound = true,
+              const bool colorAttachmentEnable = true, const bool hostVisible = false,
+              const tcu::UVec2 renderSize                 = tcu::UVec2(32, 32),
               const DepthClipControlCase depthClipControl = DepthClipControlCase::DISABLED);
     virtual ~DepthTest(void);
     virtual void initPrograms(SourceCollections &programCollection) const;
@@ -154,6 +158,7 @@ private:
     const float m_depthBoundsMax;
     const bool m_depthTestEnable;
     const bool m_stencilTestEnable;
+    const bool m_depthAttachmentBound;
     const bool m_colorAttachmentEnable;
     const bool m_hostVisible;
     const tcu::UVec2 m_renderSize;
@@ -168,8 +173,9 @@ public:
                       const VkFormat depthFormat, const VkCompareOp depthCompareOps[DepthTest::QUAD_COUNT],
                       const bool separateDepthStencilLayouts, const VkPrimitiveTopology primitiveTopology,
                       const bool depthBoundsTestEnable, const float depthBoundsMin, const float depthBoundsMax,
-                      const bool depthTestEnable, const bool stencilTestEnable, const bool colorAttachmentEnable,
-                      const bool hostVisible, const tcu::UVec2 renderSize, const DepthClipControlCase depthClipControl);
+                      const bool depthTestEnable, const bool stencilTestEnable, const bool depthAttachmentBound,
+                      const bool colorAttachmentEnable, const bool hostVisible, const tcu::UVec2 renderSize,
+                      const DepthClipControlCase depthClipControl);
 
     virtual ~DepthTestInstance(void);
     virtual tcu::TestStatus iterate(void);
@@ -189,6 +195,7 @@ private:
     const float m_depthBoundsMax;
     const bool m_depthTestEnable;
     const bool m_stencilTestEnable;
+    const bool m_depthAttachmentBound;
     const bool m_colorAttachmentEnable;
     const bool m_hostVisible;
     const DepthClipControlCase m_depthClipControl;
@@ -234,8 +241,8 @@ DepthTest::DepthTest(tcu::TestContext &testContext, const std::string &name,
                      const VkCompareOp depthCompareOps[QUAD_COUNT], const bool separateDepthStencilLayouts,
                      const VkPrimitiveTopology primitiveTopology, const bool depthBoundsTestEnable,
                      const float depthBoundsMin, const float depthBoundsMax, const bool depthTestEnable,
-                     const bool stencilTestEnable, const bool colorAttachmentEnable, const bool hostVisible,
-                     const tcu::UVec2 renderSize, const DepthClipControlCase depthClipControl)
+                     const bool stencilTestEnable, const bool depthAttachmentBound, const bool colorAttachmentEnable,
+                     const bool hostVisible, const tcu::UVec2 renderSize, const DepthClipControlCase depthClipControl)
     : vkt::TestCase(testContext, name)
     , m_pipelineConstructionType(pipelineConstructionType)
     , m_depthFormat(depthFormat)
@@ -246,6 +253,7 @@ DepthTest::DepthTest(tcu::TestContext &testContext, const std::string &name,
     , m_depthBoundsMax(depthBoundsMax)
     , m_depthTestEnable(depthTestEnable)
     , m_stencilTestEnable(stencilTestEnable)
+    , m_depthAttachmentBound(depthAttachmentBound)
     , m_colorAttachmentEnable(colorAttachmentEnable)
     , m_hostVisible(hostVisible)
     , m_renderSize(renderSize)
@@ -263,7 +271,8 @@ void DepthTest::checkSupport(Context &context) const
     if (m_depthBoundsTestEnable)
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_DEPTH_BOUNDS);
 
-    if (!isSupportedDepthStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_depthFormat))
+    if (m_depthAttachmentBound &&
+        !isSupportedDepthStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_depthFormat))
         throw tcu::NotSupportedError(std::string("Unsupported depth/stencil format: ") + getFormatName(m_depthFormat));
 
     if (m_separateDepthStencilLayouts &&
@@ -285,7 +294,8 @@ TestInstance *DepthTest::createInstance(Context &context) const
     return new DepthTestInstance(context, m_pipelineConstructionType, m_depthFormat, m_depthCompareOps,
                                  m_separateDepthStencilLayouts, m_primitiveTopology, m_depthBoundsTestEnable,
                                  m_depthBoundsMin, m_depthBoundsMax, m_depthTestEnable, m_stencilTestEnable,
-                                 m_colorAttachmentEnable, m_hostVisible, m_renderSize, m_depthClipControl);
+                                 m_depthAttachmentBound, m_colorAttachmentEnable, m_hostVisible, m_renderSize,
+                                 m_depthClipControl);
 }
 
 void DepthTest::initPrograms(SourceCollections &programCollection) const
@@ -332,9 +342,9 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
                                      const bool separateDepthStencilLayouts,
                                      const VkPrimitiveTopology primitiveTopology, const bool depthBoundsTestEnable,
                                      const float depthBoundsMin, const float depthBoundsMax, const bool depthTestEnable,
-                                     const bool stencilTestEnable, const bool colorAttachmentEnable,
-                                     const bool hostVisible, const tcu::UVec2 renderSize,
-                                     const DepthClipControlCase depthClipControl)
+                                     const bool stencilTestEnable, const bool depthAttachmentBound,
+                                     const bool colorAttachmentEnable, const bool hostVisible,
+                                     const tcu::UVec2 renderSize, const DepthClipControlCase depthClipControl)
     : vkt::TestInstance(context)
     , m_renderSize(renderSize)
     , m_colorFormat(colorAttachmentEnable ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_UNDEFINED)
@@ -346,6 +356,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
     , m_depthBoundsMax(depthBoundsMax)
     , m_depthTestEnable(depthTestEnable)
     , m_stencilTestEnable(stencilTestEnable)
+    , m_depthAttachmentBound(depthAttachmentBound)
     , m_colorAttachmentEnable(colorAttachmentEnable)
     , m_hostVisible(hostVisible)
     , m_depthClipControl(depthClipControl)
@@ -386,7 +397,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
     {
         const VkImageCreateInfo colorImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-            DE_NULL,                                                               // const void* pNext;
+            nullptr,                                                               // const void* pNext;
             0u,                                                                    // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
             m_colorFormat,                                                         // VkFormat format;
@@ -411,11 +422,15 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
                                     m_colorImageAlloc->getOffset()));
     }
 
+    // bind depth attachment or depth format should be undefined.
+    DE_ASSERT(m_depthAttachmentBound || m_depthFormat == VK_FORMAT_UNDEFINED);
+
     // Create depth image
+    if (m_depthAttachmentBound)
     {
         const VkImageCreateInfo depthImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,      // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                         // VkImageType imageType;
             m_depthFormat,                            // VkFormat format;
@@ -466,7 +481,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
     {
         const VkImageViewCreateInfo colorAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,   // VkStructureType sType;
-            DE_NULL,                                    // const void* pNext;
+            nullptr,                                    // const void* pNext;
             0u,                                         // VkImageViewCreateFlags flags;
             *m_colorImage,                              // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                      // VkImageViewType viewType;
@@ -479,10 +494,11 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
     }
 
     // Create depth attachment view
+    if (m_depthAttachmentBound)
     {
         const VkImageViewCreateInfo depthAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkImageViewCreateFlags flags;
             *m_depthImage,                            // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -508,12 +524,15 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
             attachmentBindInfos.push_back(*m_colorAttachmentView);
         }
 
-        images.push_back(*m_depthImage);
-        attachmentBindInfos.push_back(*m_depthAttachmentView);
+        if (m_depthAttachmentBound)
+        {
+            images.push_back(*m_depthImage);
+            attachmentBindInfos.push_back(*m_depthAttachmentView);
+        }
 
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             (uint32_t)attachmentBindInfos.size(),      // uint32_t attachmentCount;
@@ -530,12 +549,12 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             0u,                                            // uint32_t setLayoutCount;
-            DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_pipelineLayout = PipelineLayoutWrapper(pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
@@ -577,7 +596,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams{
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
             1u,                                                        // uint32_t vertexBindingDescriptionCount;
             &vertexInputBindingDescription,  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -587,7 +606,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
 
         const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateParams{
             VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                                sType
-            DE_NULL,             // const void*                                    pNext
+            nullptr,             // const void*                                    pNext
             0u,                  // VkPipelineInputAssemblyStateCreateFlags        flags
             m_primitiveTopology, // VkPrimitiveTopology                            topology
             VK_FALSE             // VkBool32                                        primitiveRestartEnable
@@ -595,7 +614,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
 
         VkPipelineDepthStencilStateCreateInfo depthStencilStateParams{
             VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                    // const void* pNext;
+            nullptr,                                                    // const void* pNext;
             0u,                                                         // VkPipelineDepthStencilStateCreateFlags flags;
             m_depthTestEnable,                                          // VkBool32 depthTestEnable;
             true,                                                       // VkBool32 depthWriteEnable;
@@ -649,7 +668,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
 #ifndef CTS_USES_VULKANSC
         VkPipelineViewportDepthClipControlCreateInfoEXT depthClipControlCreateInfo{
             VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                                                // const void* pNext;
+            nullptr,                                                                // const void* pNext;
             VK_TRUE,                                                                // VkBool32 negativeOneToOne;
         };
         if (hasDepthClipControl)
@@ -658,7 +677,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
         // Using the range 0,1 in the structure.
         VkPipelineViewportDepthClipControlCreateInfoEXT depthClipControlCreateInfo01{
             VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                                                // const void* pNext;
+            nullptr,                                                                // const void* pNext;
             VK_FALSE,                                                               // VkBool32 negativeOneToOne;
         };
         depthClipControl01Wrapper.ptr = &depthClipControlCreateInfo01;
@@ -697,7 +716,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
 
         const VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo{
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType                                sType
-            DE_NULL,                 // const void*                                    pNext
+            nullptr,                 // const void*                                    pNext
             0u,                      // VkPipelineColorBlendStateCreateFlags            flags
             VK_FALSE,                // VkBool32                                        logicOpEnable
             VK_LOGIC_OP_CLEAR,       // VkLogicOp                                    logicOp
@@ -769,7 +788,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
     {
         const VkBufferCreateInfo vertexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             1024u,                                // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
@@ -854,11 +873,14 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
         if (m_colorAttachmentEnable)
             attachmentClearValues.push_back(defaultClearValue(m_colorFormat));
 
-        attachmentClearValues.push_back(defaultClearValue(m_depthFormat));
+        if (m_depthAttachmentBound)
+        {
+            attachmentClearValues.push_back(defaultClearValue(m_depthFormat));
+        }
 
         const VkImageMemoryBarrier colorBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,     // VkStructureType            sType;
-            DE_NULL,                                    // const void*                pNext;
+            nullptr,                                    // const void*                pNext;
             (VkAccessFlags)0,                           // VkAccessFlags              srcAccessMask;
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,       // VkAccessFlags              dstAccessMask;
             VK_IMAGE_LAYOUT_UNDEFINED,                  // VkImageLayout              oldLayout;
@@ -879,7 +901,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
 
         const VkImageMemoryBarrier depthBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,       // VkStructureType            sType;
-            DE_NULL,                                      // const void*                pNext;
+            nullptr,                                      // const void*                pNext;
             (VkAccessFlags)0,                             // VkAccessFlags              srcAccessMask;
             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, // VkAccessFlags              dstAccessMask;
             VK_IMAGE_LAYOUT_UNDEFINED,                    // VkImageLayout              oldLayout;
@@ -895,7 +917,10 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
         if (m_colorAttachmentEnable)
             imageLayoutBarriers.push_back(colorBarrier);
 
-        imageLayoutBarriers.push_back(depthBarrier);
+        if (m_depthAttachmentBound)
+        {
+            imageLayoutBarriers.push_back(depthBarrier);
+        }
 
         m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
@@ -905,7 +930,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
                               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
                                   VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
                                   VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-                              (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, (uint32_t)imageLayoutBarriers.size(),
+                              (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, (uint32_t)imageLayoutBarriers.size(),
                               imageLayoutBarriers.data());
 
         m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()),
@@ -990,7 +1015,9 @@ tcu::TestStatus DepthTestInstance::iterate(void)
 tcu::TestStatus DepthTestInstance::verifyImage(void)
 {
     const tcu::TextureFormat tcuColorFormat = mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM);
-    const tcu::TextureFormat tcuDepthFormat = mapVkFormat(m_depthFormat);
+    const tcu::TextureFormat tcuDepthFormat =
+        m_depthAttachmentBound ? mapVkFormat(m_depthFormat) : tcu::TextureFormat();
+
     const ColorVertexShader vertexShader;
     const ColorFragmentShader fragmentShader(tcuColorFormat, tcuDepthFormat,
                                              (m_depthClipControl != DepthClipControlCase::DISABLED));
@@ -1044,6 +1071,7 @@ tcu::TestStatus DepthTestInstance::verifyImage(void)
     }
 
     // Compare depth result with reference image
+    if (m_depthAttachmentBound)
     {
         const DeviceInterface &vk       = m_context.getDeviceInterface();
         const VkDevice vkDevice         = m_context.getDevice();
@@ -1101,6 +1129,10 @@ tcu::TestStatus DepthTestInstance::verifyImage(void)
                 result->getAccess(), tcu::Vec4(depthThreshold, 0.0f, 0.0f, 0.0f), tcu::COMPARE_LOG_RESULT);
         }
     }
+    else
+    {
+        depthCompareOk = true;
+    }
 
     if (colorCompareOk && depthCompareOk)
         return tcu::TestStatus::pass("Result image matches reference");
@@ -1143,6 +1175,434 @@ std::string getCompareOpsName(const VkCompareOp quadDepthOps[DepthTest::QUAD_COU
     }
 
     return name.str();
+}
+
+//
+// Tests that do a layout change on the transfer queue for a depth/stencil image.
+// This seems to create issues in some implementations.
+//
+
+struct TransferLayoutChangeParams
+{
+    TransferLayoutChangeParams(VkImageAspectFlags aspects_)
+        : aspects(aspects_)
+        , clearColor(0.0f, 0.0f, 0.0f, 1.0f)
+        , geometryColor(0.0f, 0.0f, 1.0f, 1.0f)
+        , clearDepth(0.0f)
+        , geometryDepth(1.0f)
+        , clearStencil(0u)
+        , geometryStencil(255u)
+    {
+        // Make sure aspects only includes depth and/or stencil bits.
+        const auto validBits   = (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT);
+        const auto invalidBits = ~validBits;
+        DE_ASSERT((aspects_ & invalidBits) == 0u);
+        DE_UNREF(invalidBits); // For release builds.
+    }
+
+    VkImageAspectFlags aspects;
+
+    const tcu::Vec4 clearColor;
+    const tcu::Vec4 geometryColor;
+    const float clearDepth;
+    const float geometryDepth;
+    const uint32_t clearStencil;
+    const uint32_t geometryStencil;
+};
+
+using TransferLayoutChangeParamsPtr = de::SharedPtr<TransferLayoutChangeParams>;
+
+void transferLayoutChangePrograms(SourceCollections &dst, TransferLayoutChangeParamsPtr params)
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "const float geometryDepth = " << params->geometryDepth << ";\n"
+         << "const vec4 vertices[] = vec4[](\n"
+         << "    vec4(-1.0, -1.0, geometryDepth, 1.0),\n"
+         << "    vec4(-1.0,  3.0, geometryDepth, 1.0),\n"
+         << "    vec4( 3.0, -1.0, geometryDepth, 1.0)\n"
+         << ");\n"
+         << "void main (void) {\n"
+         << "    gl_Position = vertices[gl_VertexIndex % 3];\n"
+         << "}\n";
+    dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main (void) {\n"
+         << "    outColor = vec4" << params->geometryColor << ";\n"
+         << "}\n";
+    dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+void transferLayoutChangeSupportCheck(Context &context, TransferLayoutChangeParamsPtr)
+{
+    // Will throw NotSupportedError if the queue does not exist.
+    context.getTransferQueue();
+}
+
+// Find a suitable format for the depth/stencil buffer.
+VkFormat chooseDepthStencilFormat(const InstanceInterface &vki, VkPhysicalDevice physDev)
+{
+    // The spec mandates support for one of these two formats.
+    const VkFormat candidates[] = {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT};
+
+    // We will read from
+    const auto requiredFeatures = (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT);
+    const auto chosenFormat     = findFirstSupportedFormat(vki, physDev, requiredFeatures, ImageFeatureType::OPTIMAL,
+                                                           std::begin(candidates), std::end(candidates));
+
+    if (chosenFormat == VK_FORMAT_UNDEFINED)
+        TCU_FAIL("No suitable depth/stencil format found");
+
+    return chosenFormat;
+}
+
+tcu::TestStatus transferLayoutChangeTest(Context &context, TransferLayoutChangeParamsPtr params)
+{
+    const auto ctx         = context.getContextCommonData();
+    const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto dsFormat    = chooseDepthStencilFormat(ctx.vki, ctx.physicalDevice);
+    const auto xferUsage   = (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    const auto colorUsage  = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | xferUsage);
+    const auto dsUsage     = (VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | xferUsage);
+    const tcu::IVec3 fbExtent(1, 1, 1);
+    const auto fbExtentVk      = makeExtent3D(fbExtent);
+    const auto dsAspects       = (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT);
+    const bool useDepth        = static_cast<bool>(params->aspects & VK_IMAGE_ASPECT_DEPTH_BIT);
+    const bool useStencil      = static_cast<bool>(params->aspects & VK_IMAGE_ASPECT_STENCIL_BIT);
+    const auto dsUsedAspects   = params->aspects;
+    const auto dsUnusedAspects = (dsAspects & (~dsUsedAspects));
+
+    const VkPipelineStageFlags xferStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    const VkPipelineStageFlags dsStage =
+        (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+
+    // Color buffer.
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, fbExtentVk, colorFormat, colorUsage,
+                                VK_IMAGE_TYPE_2D);
+    const auto colorSRR = makeDefaultImageSubresourceRange();
+
+    // Depth/stencil buffers (regular and staging).
+    const VkImageCreateInfo dsCreateInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_IMAGE_TYPE_2D,
+        dsFormat,
+        fbExtentVk,
+        1u,
+        1u,
+        VK_SAMPLE_COUNT_1_BIT,
+        VK_IMAGE_TILING_OPTIMAL,
+        dsUsage,
+        VK_SHARING_MODE_EXCLUSIVE,
+        0u,
+        nullptr,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+    };
+    ImageWithMemory dsBuffer(ctx.vkd, ctx.device, ctx.allocator, dsCreateInfo, MemoryRequirement::Any);
+    ImageWithMemory dsStagingBuffer(ctx.vkd, ctx.device, ctx.allocator, dsCreateInfo, MemoryRequirement::Any);
+
+    const auto dsSRR       = makeImageSubresourceRange(dsAspects, 0u, 1u, 0u, 1u);
+    const auto dsView      = makeImageView(ctx.vkd, ctx.device, *dsBuffer, VK_IMAGE_VIEW_TYPE_2D, dsFormat, dsSRR);
+    const auto dsUsedSRR   = makeImageSubresourceRange(dsUsedAspects, 0u, 1u, 0u, 1u);
+    const auto dsUnusedSRR = makeImageSubresourceRange(dsUnusedAspects, 0u, 1u, 0u, 1u);
+    const auto dsUsedSRL   = makeImageSubresourceLayers(dsUsedAspects, 0u, 0u, 1u);
+
+    // Render pass and framebuffer. We'll clear the images from the transfer queue, so we load them here.
+    const std::vector<VkImageView> fbViews{colorBuffer.getImageView(), *dsView};
+
+    const std::vector<VkAttachmentDescription> attachmentDescriptions{
+        makeAttachmentDescription(0u, colorFormat, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_LOAD,
+                                  VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                  VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+        makeAttachmentDescription(0u, dsFormat, VK_SAMPLE_COUNT_1_BIT,
+                                  (useDepth ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE),
+                                  (useDepth ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE),
+                                  (useStencil ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE),
+                                  (useStencil ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE),
+                                  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                                  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL),
+    };
+
+    const std::vector<VkAttachmentReference> attachmentReferences{
+        makeAttachmentReference(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+        makeAttachmentReference(1u, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL),
+    };
+
+    const VkSubpassDescription subpassDescription = {
+        0u,      VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, nullptr, 1u, &attachmentReferences.at(0u),
+        nullptr, &attachmentReferences.at(1u),    0u, nullptr,
+    };
+
+    const VkRenderPassCreateInfo renderPassCreateInfo = {
+        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(attachmentDescriptions),
+        de::dataOrNull(attachmentDescriptions),
+        1u,
+        &subpassDescription,
+        0u,
+        nullptr,
+    };
+
+    const auto renderPass  = createRenderPass(ctx.vkd, ctx.device, &renderPassCreateInfo);
+    const auto framebuffer = makeFramebuffer(ctx.vkd, ctx.device, *renderPass, de::sizeU32(fbViews),
+                                             de::dataOrNull(fbViews), fbExtentVk.width, fbExtentVk.height);
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
+
+    // Pipeline.
+    const auto &binaries      = context.getBinaryCollection();
+    const auto vertModule     = createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+    const auto fragModule     = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device);
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = initVulkanStructure();
+
+    // Enable depth/stencil tests depending on the used aspects.
+    const auto stencilOp = makeStencilOpState(VK_STENCIL_OP_KEEP, VK_STENCIL_OP_REPLACE, VK_STENCIL_OP_KEEP,
+                                              VK_COMPARE_OP_ALWAYS, 0xFFu, 0xFFu, params->geometryStencil);
+
+    const VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        useDepth,
+        useDepth,
+        VK_COMPARE_OP_ALWAYS,
+        VK_FALSE,
+        useStencil,
+        stencilOp,
+        stencilOp,
+        0.0f,
+        1.0f,
+    };
+
+    const auto pipeline = makeGraphicsPipeline(
+        ctx.vkd, ctx.device, *pipelineLayout, *vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragModule,
+        *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vertexInputStateCreateInfo,
+        nullptr, nullptr, &depthStencilStateCreateInfo);
+
+    const auto xferQFIndex = context.getTransferQueueFamilyIndex();
+    const auto xferQueue   = context.getTransferQueue();
+
+    // Clear staging image on the universal queue first.
+    // This is needed because we can't run vkCmdClearDepthStencilImage on the transfer queue due to VUID-vkCmdClearDepthStencilImage-commandBuffer-cmdpool.
+    // Likewise, we cannot use vkCmdCopyBufferToImage as a workaround due to VUID-vkCmdCopyBufferToImage-commandBuffer-07737.
+    // So we use a staging image that we clear on the universal queue, and then use vkCmdCopyImage on the transfer queue, which is legal.
+    CommandPoolWithBuffer stagingCmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto stagingCmdBuffer = *stagingCmd.cmdBuffer;
+    beginCommandBuffer(ctx.vkd, stagingCmdBuffer);
+    {
+        const auto preClearBarrier =
+            makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *dsStagingBuffer, dsSRR);
+        cmdPipelineImageMemoryBarrier(ctx.vkd, stagingCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, xferStage,
+                                      &preClearBarrier);
+
+        const auto dsClearValue = makeClearValueDepthStencil(params->clearDepth, params->clearStencil);
+        ctx.vkd.cmdClearDepthStencilImage(stagingCmdBuffer, *dsStagingBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                          &dsClearValue.depthStencil, 1u, &dsSRR);
+    }
+
+    // Barrier to transition layout and ownership of the staging image.
+    const auto qfotStagingBarrier = makeImageMemoryBarrier(
+        VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dsStagingBuffer, dsSRR, ctx.qfIndex, xferQFIndex);
+    cmdPipelineImageMemoryBarrier(ctx.vkd, stagingCmdBuffer, xferStage, xferStage, &qfotStagingBarrier);
+
+    endCommandBuffer(ctx.vkd, stagingCmdBuffer);
+
+    CommandPoolWithBuffer xferCmd(ctx.vkd, ctx.device, xferQFIndex);
+    const auto xferCmdBuffer = *xferCmd.cmdBuffer;
+    beginCommandBuffer(ctx.vkd, xferCmdBuffer);
+
+    // Acquire ownership of the staging image.
+    cmdPipelineImageMemoryBarrier(ctx.vkd, xferCmdBuffer, xferStage, xferStage, &qfotStagingBarrier);
+
+    // Transition layout of the final depth/stencil buffer before the copy.
+    // This is the key and motivation to write this test: here we are transitioning the layout of a depth/stencil
+    // image using the transfer queue.
+    {
+        const auto preCopyBarrier = makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *dsBuffer, dsUsedSRR);
+        cmdPipelineImageMemoryBarrier(ctx.vkd, xferCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, xferStage,
+                                      &preCopyBarrier);
+    }
+    {
+        const auto zeroOffset        = makeOffset3D(0, 0, 0);
+        const VkImageCopy copyRegion = {
+            dsUsedSRL, zeroOffset, dsUsedSRL, zeroOffset, fbExtentVk,
+        };
+        ctx.vkd.cmdCopyImage(xferCmdBuffer, *dsStagingBuffer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dsBuffer,
+                             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
+    }
+    const VkAccessFlags dsAccess =
+        (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+    const auto qfotBarrier = makeImageMemoryBarrier(
+        VK_ACCESS_TRANSFER_WRITE_BIT, dsAccess, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, *dsBuffer, dsUsedSRR, xferQFIndex, ctx.qfIndex);
+
+    // We need to zero-out some bitflags in the barrier and command because (a) it's recommended by the spec and (b)
+    // because we can only include stages supported by the queue, and the xfer queue does not support the dst stage.
+    auto qfotBarrierRelease          = qfotBarrier;
+    qfotBarrierRelease.dstAccessMask = 0u;
+
+    auto qfotBarrierAcquire          = qfotBarrier;
+    qfotBarrierAcquire.srcAccessMask = 0u;
+
+    // Release depth/stencil image to the universal queue.
+    cmdPipelineImageMemoryBarrier(ctx.vkd, xferCmdBuffer, xferStage, 0u, &qfotBarrierRelease);
+
+    endCommandBuffer(ctx.vkd, xferCmdBuffer);
+
+    // Use the depth/stencil attachment normally in the universal queue.
+    CommandPoolWithBuffer useCmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto drawCmdBuffer = *useCmd.cmdBuffer;
+    beginCommandBuffer(ctx.vkd, drawCmdBuffer);
+
+    // Acquire depth/stencil image.
+    cmdPipelineImageMemoryBarrier(ctx.vkd, drawCmdBuffer, 0u, dsStage, &qfotBarrierAcquire);
+
+    // Clear color image.
+    {
+        const auto preClearBarrier =
+            makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, colorBuffer.getImage(), colorSRR);
+        cmdPipelineImageMemoryBarrier(ctx.vkd, drawCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, xferStage,
+                                      &preClearBarrier);
+
+        const auto colorClearValue = makeClearValueColorVec4(params->clearColor);
+        ctx.vkd.cmdClearColorImage(drawCmdBuffer, colorBuffer.getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                   &colorClearValue.color, 1u, &colorSRR);
+
+        const auto colorAccess = (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+        const auto postClearBarrier =
+            makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, colorAccess, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, colorBuffer.getImage(), colorSRR);
+        cmdPipelineImageMemoryBarrier(ctx.vkd, drawCmdBuffer, xferStage, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                      &postClearBarrier);
+    }
+
+    // Transition pending depth/stencil aspect if needed.
+    if (dsUnusedAspects != 0u)
+    {
+        const auto extraBarrier =
+            makeImageMemoryBarrier(0u, dsAccess, VK_IMAGE_LAYOUT_UNDEFINED,
+                                   VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, *dsBuffer, dsUnusedSRR);
+        cmdPipelineImageMemoryBarrier(ctx.vkd, drawCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dsStage,
+                                      &extraBarrier);
+    }
+
+    beginRenderPass(ctx.vkd, drawCmdBuffer, *renderPass, *framebuffer, scissors.at(0u));
+    ctx.vkd.cmdBindPipeline(drawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+    ctx.vkd.cmdDraw(drawCmdBuffer, 3u, 1u, 0u, 0u);
+    endRenderPass(ctx.vkd, drawCmdBuffer);
+
+    // Copy color, depth and stencil aspects to buffers.
+    const auto fbExtent2D = fbExtent.swizzle(0, 1);
+    copyImageToBuffer(ctx.vkd, drawCmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), fbExtent2D);
+
+    const auto tcuColorFormat   = mapVkFormat(colorFormat);
+    const auto tcuDepthFormat   = getDepthCopyFormat(dsFormat);
+    const auto tcuStencilFormat = getStencilCopyFormat(dsFormat);
+    const auto pixelCount       = fbExtent.x() * fbExtent.y() * fbExtent.z();
+
+    const auto depthVerifBufferSize = static_cast<VkDeviceSize>(pixelCount * tcu::getPixelSize(tcuDepthFormat));
+    const auto depthVerifBufferInfo = makeBufferCreateInfo(depthVerifBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    BufferWithMemory depthVerifBuffer(ctx.vkd, ctx.device, ctx.allocator, depthVerifBufferInfo,
+                                      MemoryRequirement::HostVisible);
+
+    const auto stencilVerifBufferSize = static_cast<VkDeviceSize>(pixelCount * tcu::getPixelSize(tcuStencilFormat));
+    const auto stencilVerifBufferInfo = makeBufferCreateInfo(stencilVerifBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    BufferWithMemory stencilVerifBuffer(ctx.vkd, ctx.device, ctx.allocator, stencilVerifBufferInfo,
+                                        MemoryRequirement::HostVisible);
+
+    copyImageToBuffer(ctx.vkd, drawCmdBuffer, *dsBuffer, *depthVerifBuffer, fbExtent2D, dsAccess,
+                      VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1u, VK_IMAGE_ASPECT_DEPTH_BIT,
+                      VK_IMAGE_ASPECT_DEPTH_BIT);
+    copyImageToBuffer(ctx.vkd, drawCmdBuffer, *dsBuffer, *stencilVerifBuffer, fbExtent2D, dsAccess,
+                      VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1u, VK_IMAGE_ASPECT_STENCIL_BIT,
+                      VK_IMAGE_ASPECT_STENCIL_BIT);
+
+    endCommandBuffer(ctx.vkd, drawCmdBuffer);
+
+    // Two semaphores: from universal queue to transfer queue, and from transfer queue to universal queue.
+    const auto uniToXferSem = createSemaphore(ctx.vkd, ctx.device);
+    const auto xferToUniSem = createSemaphore(ctx.vkd, ctx.device);
+
+    const VkSubmitInfo stagingSubmitInfo = {
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 0u, nullptr, nullptr, 1u, &stagingCmdBuffer, 1u, &uniToXferSem.get(),
+    };
+    VK_CHECK(ctx.vkd.queueSubmit(ctx.queue, 1u, &stagingSubmitInfo, VK_NULL_HANDLE));
+
+    const VkSubmitInfo xferSubmitInfo = {
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 1u, &uniToXferSem.get(), &xferStage, 1u, &xferCmdBuffer, 1u,
+        &xferToUniSem.get(),
+    };
+    VK_CHECK(ctx.vkd.queueSubmit(xferQueue, 1u, &xferSubmitInfo, VK_NULL_HANDLE));
+
+    const VkSubmitInfo drawSubmitInfo = {
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 1u, &xferToUniSem.get(), &dsStage, 1u, &drawCmdBuffer, 0u, nullptr,
+    };
+    const auto fence = createFence(ctx.vkd, ctx.device);
+    VK_CHECK(ctx.vkd.queueSubmit(ctx.queue, 1u, &drawSubmitInfo, *fence));
+    waitForFence(ctx.vkd, ctx.device, *fence);
+
+    auto &log = context.getTestContext().getLog();
+
+    // Check color buffer.
+    {
+        invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+
+        tcu::TextureLevel refLevel(tcuColorFormat, fbExtent.x(), fbExtent.y(), fbExtent.z());
+        tcu::PixelBufferAccess refAccess = refLevel.getAccess();
+        tcu::clear(refAccess, params->geometryColor);
+
+        tcu::ConstPixelBufferAccess resAccess(tcuColorFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+
+        const tcu::Vec4 threshold(0.0f, 0.0f, 0.0f, 0.0f);
+
+        if (!tcu::floatThresholdCompare(log, "Color", "", refAccess, resAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+            TCU_FAIL("Unexpected results in color buffer; check log for details;");
+    }
+
+    if (useDepth)
+    {
+        invalidateAlloc(ctx.vkd, ctx.device, depthVerifBuffer.getAllocation());
+
+        tcu::TextureLevel refLevel(tcuDepthFormat, fbExtent.x(), fbExtent.y(), fbExtent.z());
+        tcu::PixelBufferAccess refAccess = refLevel.getAccess();
+        tcu::clearDepth(refAccess, params->geometryDepth);
+
+        tcu::ConstPixelBufferAccess resAccess(tcuDepthFormat, fbExtent, depthVerifBuffer.getAllocation().getHostPtr());
+
+        if (!tcu::dsThresholdCompare(log, "Depth", "", refAccess, resAccess, 0.0f, tcu::COMPARE_LOG_ON_ERROR))
+            TCU_FAIL("Unexpected results in depth buffer; check log for details;");
+    }
+
+    if (useStencil)
+    {
+        invalidateAlloc(ctx.vkd, ctx.device, stencilVerifBuffer.getAllocation());
+
+        tcu::TextureLevel refLevel(tcuStencilFormat, fbExtent.x(), fbExtent.y(), fbExtent.z());
+        tcu::PixelBufferAccess refAccess = refLevel.getAccess();
+        tcu::clearStencil(refAccess, static_cast<int>(params->geometryStencil));
+
+        tcu::ConstPixelBufferAccess resAccess(tcuStencilFormat, fbExtent,
+                                              stencilVerifBuffer.getAllocation().getHostPtr());
+
+        if (!tcu::dsThresholdCompare(log, "Stencil", "", refAccess, resAccess, 0.0f, tcu::COMPARE_LOG_ON_ERROR))
+            TCU_FAIL("Unexpected results in stencil buffer; check log for details;");
+    }
+
+    return tcu::TestStatus::pass("Pass");
 }
 
 } // namespace
@@ -1317,7 +1777,7 @@ tcu::TestCaseGroup *createDepthTests(tcu::TestContext &testCtx, PipelineConstruc
                                 testCtx, topologyName + getCompareOpsName(depthOps[opsNdx]) + "_depth_bounds_test",
                                 pipelineConstructionType, depthFormats[formatNdx], depthOps[opsNdx],
                                 useSeparateDepthStencilLayouts, primitiveTopologies[topologyNdx], true, 0.1f, 0.25f,
-                                true, false, colorEnabled));
+                                true, false, true, colorEnabled));
                         }
                     }
                     // Special VkPipelineDepthStencilStateCreateInfo known to have issues
@@ -1328,7 +1788,7 @@ tcu::TestCaseGroup *createDepthTests(tcu::TestContext &testCtx, PipelineConstruc
                         compareOpsTests->addChild(new DepthTest(
                             testCtx, "never_zerodepthbounds_depthdisabled_stencilenabled", pipelineConstructionType,
                             depthFormats[formatNdx], depthOpsSpecial, useSeparateDepthStencilLayouts,
-                            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, true, 0.0f, 0.0f, false, true, colorEnabled));
+                            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, true, 0.0f, 0.0f, false, true, true, colorEnabled));
                     }
                     formatTest->addChild(compareOpsTests.release());
 
@@ -1346,6 +1806,7 @@ tcu::TestCaseGroup *createDepthTests(tcu::TestContext &testCtx, PipelineConstruc
                             1.0f,                                       /* depthBoundMax*/
                             false,                                      /* depthTestEnable */
                             false,                                      /* stencilTestEnable */
+                            true,                                       /* depthAttachmentBound */
                             colorEnabled /* colorAttachmentEnable */));
                     }
                     formatTest->addChild(depthTestDisabled.release());
@@ -1365,6 +1826,7 @@ tcu::TestCaseGroup *createDepthTests(tcu::TestContext &testCtx, PipelineConstruc
                                           1.0f,                                       /* depthBoundMax*/
                                           true,                                       /* depthTestEnable */
                                           false,                                      /* stencilTestEnable */
+                                          true,                                       /* depthAttachmentBound */
                                           colorEnabled,                               /* colorAttachmentEnable */
                                           true,                                       /* hostVisible */
                                           tcu::UVec2(256, 256) /*renderSize*/));
@@ -1374,6 +1836,7 @@ tcu::TestCaseGroup *createDepthTests(tcu::TestContext &testCtx, PipelineConstruc
                     formatTests->addChild(formatTest.release());
                 }
             }
+
             if (colorEnabled)
                 depthTests->addChild(formatTests.release());
             else
@@ -1382,6 +1845,27 @@ tcu::TestCaseGroup *createDepthTests(tcu::TestContext &testCtx, PipelineConstruc
     }
     if (genFormatTests)
         depthTests->addChild(noColorAttachmentTests.release());
+
+    // no depth attachment bound test.
+    if (!vk::isConstructionTypeShaderObject(pipelineConstructionType))
+    {
+        de::MovePtr<tcu::TestCaseGroup> depthBoundTestNoDepthAttachment(
+            new tcu::TestCaseGroup(testCtx, "no_depth_attachment"));
+        {
+            const VkCompareOp depthOpsDepthTestDisabled[DepthTest::QUAD_COUNT] = {
+                VK_COMPARE_OP_NEVER, VK_COMPARE_OP_LESS, VK_COMPARE_OP_GREATER, VK_COMPARE_OP_ALWAYS};
+            depthBoundTestNoDepthAttachment->addChild(new DepthTest(
+                testCtx, "depth_bound_test", pipelineConstructionType, VK_FORMAT_UNDEFINED, depthOpsDepthTestDisabled,
+                false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, true, /* depthBoundsTestEnable */
+                0.1f,                                             /* depthBoundMin*/
+                0.2f,                                             /* depthBoundMax*/
+                false,                                            /* depthTestEnable */
+                false,                                            /* stencilTestEnable */
+                false,                                            /* depthAttachmentBound */
+                true /* colorAttachmentEnable */));
+        }
+        depthTests->addChild(depthBoundTestNoDepthAttachment.release());
+    }
 
 #ifndef CTS_USES_VULKANSC
     de::MovePtr<tcu::TestCaseGroup> depthClipControlTests(new tcu::TestCaseGroup(testCtx, "depth_clip_control"));
@@ -1412,12 +1896,37 @@ tcu::TestCaseGroup *createDepthTests(tcu::TestContext &testCtx, PipelineConstruc
                     const VkCompareOp ops[DepthTest::QUAD_COUNT] = {compareOp, compareOp, compareOp, compareOp};
                     depthClipControlTests->addChild(new DepthTest(testCtx, testName, pipelineConstructionType, format,
                                                                   ops, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-                                                                  false, 0.0f, 1.0f, true, false, true, false,
+                                                                  false, 0.0f, 1.0f, true, false, true, true, false,
                                                                   tcu::UVec2(32, 32), viewportCase.viewportCase));
                 }
     }
     depthTests->addChild(depthClipControlTests.release());
 #endif // CTS_USES_VULKANSC
+
+    if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+    {
+        de::MovePtr<tcu::TestCaseGroup> xferLayoutGroup(new tcu::TestCaseGroup(testCtx, "xfer_queue_layout"));
+
+        const std::vector<VkImageAspectFlags> aspectCases{
+            (VK_IMAGE_ASPECT_DEPTH_BIT),
+            (VK_IMAGE_ASPECT_STENCIL_BIT),
+            (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT),
+        };
+
+        for (const auto &aspects : aspectCases)
+        {
+            const std::string testName = std::string("aspect") +
+                                         (((aspects & VK_IMAGE_ASPECT_DEPTH_BIT) != 0u) ? "_depth" : "") +
+                                         (((aspects & VK_IMAGE_ASPECT_STENCIL_BIT) != 0u) ? "_stencil" : "");
+
+            de::SharedPtr<TransferLayoutChangeParams> params(new TransferLayoutChangeParams(aspects));
+
+            addFunctionCaseWithPrograms(xferLayoutGroup.get(), testName, transferLayoutChangeSupportCheck,
+                                        transferLayoutChangePrograms, transferLayoutChangeTest, params);
+        }
+
+        depthTests->addChild(xferLayoutGroup.release());
+    }
 
     return depthTests.release();
 }

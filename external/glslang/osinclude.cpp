@@ -64,7 +64,7 @@ static deMutex s_globalLock = 0;
 void InitGlobalLock(void)
 {
     DE_ASSERT(s_globalLock == 0);
-    s_globalLock = deMutex_create(DE_NULL);
+    s_globalLock = deMutex_create(nullptr);
 }
 
 void GetGlobalLock(void)
@@ -83,12 +83,12 @@ DE_STATIC_ASSERT(sizeof(void *) >= sizeof(deThread));
 
 static void EnterGenericThread(void *entry)
 {
-    ((TThreadEntrypoint)entry)(DE_NULL);
+    ((TThreadEntrypoint)entry)(nullptr);
 }
 
 void *OS_CreateThread(TThreadEntrypoint entry)
 {
-    return (void *)(uintptr_t)deThread_create(EnterGenericThread, (void *)entry, DE_NULL);
+    return (void *)(uintptr_t)deThread_create(EnterGenericThread, (void *)entry, nullptr);
 }
 
 void OS_WaitForAllThreads(void *threads, int numThreads)

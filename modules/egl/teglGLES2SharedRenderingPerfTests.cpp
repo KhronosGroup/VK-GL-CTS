@@ -339,9 +339,9 @@ GLuint createProgram(const glw::Functions &gl, const TestConfig &config)
                                            "\tgl_FragColor = texture2D(u_sampler, v_texCoord);\n"
                                            "}\n";
 
-        gl.shaderSource(vertexShader, 1, &vertexShaderSource, DE_NULL);
+        gl.shaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource()");
-        gl.shaderSource(fragmentShader, 1, &fragmentShaderSource, DE_NULL);
+        gl.shaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource()");
     }
     else
@@ -360,9 +360,9 @@ GLuint createProgram(const glw::Functions &gl, const TestConfig &config)
                                            "\tgl_FragColor = v_color;\n"
                                            "}\n";
 
-        gl.shaderSource(vertexShader, 1, &vertexShaderSource, DE_NULL);
+        gl.shaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource()");
-        gl.shaderSource(fragmentShader, 1, &fragmentShaderSource, DE_NULL);
+        gl.shaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource()");
     }
 
@@ -437,7 +437,7 @@ GLuint createProgram(const glw::Functions &gl, const TestConfig &config)
                 string log;
                 GLsizei length;
 
-                gl.getProgramInfoLog(program, 0, &length, DE_NULL);
+                gl.getProgramInfoLog(program, 0, &length, nullptr);
                 GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramInfoLog()");
                 log.resize(length, 0);
 
@@ -649,7 +649,7 @@ TestContext::~TestContext(void)
 
     EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
 
-    if (m_parent == DE_NULL && m_eglImage)
+    if (m_parent == nullptr && m_eglImage)
         EGLU_CHECK_CALL(egl, destroyImageKHR(m_eglDisplay, m_eglImage));
 
     EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
@@ -861,7 +861,7 @@ void SharedRenderingPerfCase::init(void)
         // Create contexts and resources
         for (int threadNdx = 0; threadNdx < m_config.threadCount * m_config.perThreadContextCount; threadNdx++)
             m_contexts.push_back(new TestContext(m_eglTestCtx, m_display, eglConfig, m_config, m_config.sharedContexts,
-                                                 (threadNdx == 0 ? DE_NULL : m_contexts[threadNdx - 1])));
+                                                 (threadNdx == 0 ? nullptr : m_contexts[threadNdx - 1])));
     }
 }
 
@@ -871,7 +871,7 @@ void SharedRenderingPerfCase::deinit(void)
     for (int threadNdx = 0; threadNdx < (int)m_contexts.size(); threadNdx++)
     {
         delete m_contexts[threadNdx];
-        m_contexts[threadNdx] = DE_NULL;
+        m_contexts[threadNdx] = nullptr;
     }
 
     m_contexts.clear();
@@ -911,7 +911,7 @@ void destroyThreads(vector<TestThread *> &threads)
     for (int threadNdx = 0; threadNdx < (int)threads.size(); threadNdx++)
     {
         delete threads[threadNdx];
-        threads[threadNdx] = DE_NULL;
+        threads[threadNdx] = nullptr;
     }
 
     threads.clear();

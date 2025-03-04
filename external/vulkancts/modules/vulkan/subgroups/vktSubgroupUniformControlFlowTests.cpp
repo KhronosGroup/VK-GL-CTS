@@ -108,7 +108,7 @@ void SubgroupUniformControlFlowTestCase::checkSupport(Context &ctx) const
 
     vk::VkPhysicalDeviceSubgroupProperties subgroupProperties;
     subgroupProperties.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
-    subgroupProperties.pNext = DE_NULL;
+    subgroupProperties.pNext = nullptr;
 
     vk::VkPhysicalDeviceProperties2 properties2;
     properties2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
@@ -118,7 +118,7 @@ void SubgroupUniformControlFlowTestCase::checkSupport(Context &ctx) const
 
     vk::VkPhysicalDeviceSubgroupSizeControlFeaturesEXT subgroupSizeControlFeatures;
     subgroupSizeControlFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT;
-    subgroupSizeControlFeatures.pNext = DE_NULL;
+    subgroupSizeControlFeatures.pNext = nullptr;
 
     vk::VkPhysicalDeviceFeatures2 features2;
     features2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
@@ -191,7 +191,7 @@ void addTestsForAmberFiles(tcu::TestCaseGroup *tests, CaseGroup group)
         SubgroupUniformControlFlowTestCase *testCase = new SubgroupUniformControlFlowTestCase(
             testCtx, cases[i].basename, readFilename, cases[i].small_workgroups, cases[i].use_subgroup_size_control,
             cases[i].stage, cases[i].operation);
-        DE_ASSERT(testCase != DE_NULL);
+        DE_ASSERT(testCase != nullptr);
         if (requirements)
         {
             testCase->addRequirement("SubgroupSizeControl.computeFullSubgroups");

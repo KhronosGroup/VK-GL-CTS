@@ -1906,7 +1906,7 @@ public:
         for (int i = 0; i < DE_LENGTH_OF_ARRAY(s_modes); i++)
         {
             const char *qualifier = m_missingType == MISSING ?
-                                        DE_NULL :
+                                        nullptr :
                                         GetLayoutQualifierStr(s_modes[(i + 1) % DE_LENGTH_OF_ARRAY(s_modes)]);
             addChild(new MissingCase(m_context, m_glslVersion, s_modes[i], qualifier));
         }
@@ -2208,7 +2208,7 @@ MRTCaseGroup::MRTCase::IterateResult MRTCaseGroup::MRTCase::iterate(void)
     gl.bindVertexArray(vao);
     glw::GLint loc = gl.getAttribLocation(p.getProgram(), "aPos");
     gl.enableVertexAttribArray(loc);
-    gl.vertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 8, DE_NULL);
+    gl.vertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 8, nullptr);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Attributes failed");
 
     gl.drawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -2335,7 +2335,7 @@ public:
 
     void init(void)
     {
-        addChild(new PreprocessorCase(m_context, m_glslVersion, DE_NULL));
+        addChild(new PreprocessorCase(m_context, m_glslVersion, nullptr));
         addChild(new PreprocessorCase(m_context, m_glslVersion, "require"));
         addChild(new PreprocessorCase(m_context, m_glslVersion, "enable"));
         addChild(new PreprocessorCase(m_context, m_glslVersion, "warn"));

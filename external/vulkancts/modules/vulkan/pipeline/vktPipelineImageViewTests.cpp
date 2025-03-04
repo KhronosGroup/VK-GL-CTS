@@ -110,7 +110,7 @@ ImageSamplingInstanceParams ImageViewTest::getImageSamplingInstanceParams(
 
     const VkSamplerCreateInfo samplerParams = {
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,                                    // VkStructureType sType;
-        DE_NULL,                                                                  // const void* pNext;
+        nullptr,                                                                  // const void* pNext;
         0u,                                                                       // VkSamplerCreateFlags flags;
         VK_FILTER_NEAREST,                                                        // VkFilter magFilter;
         VK_FILTER_NEAREST,                                                        // VkFilter minFilter;
@@ -163,7 +163,7 @@ void ImageViewTest::initPrograms(SourceCollections &sourceCollections) const
 {
     std::ostringstream vertexSrc;
     std::ostringstream fragmentSrc;
-    const char *texCoordSwizzle     = DE_NULL;
+    const char *texCoordSwizzle     = nullptr;
     const tcu::TextureFormat format = (isCompressedFormat(m_imageFormat)) ?
                                           tcu::getUncompressedFormat(mapVkCompressedFormat(m_imageFormat)) :
                                           mapVkFormat(m_imageFormat);

@@ -66,6 +66,7 @@
 #include <set>
 #include <array>
 #include <utility>
+#include <cmath>
 
 namespace vkt
 {
@@ -406,6 +407,26 @@ private:
     const bool m_useFragmentShadingRate;
 };
 #endif // CTS_USES_VULKANSC
+
+class CompatibleRenderPassTest : public vkt::TestCase
+{
+public:
+    CompatibleRenderPassTest(tcu::TestContext &testContext, const std::string &name,
+                             const PipelineConstructionType pipelineConstructionType, bool dynamic);
+
+    ~CompatibleRenderPassTest(void)
+    {
+    }
+
+    void initPrograms(SourceCollections &programCollection) const;
+    TestInstance *createInstance(Context &context) const;
+    virtual void checkSupport(Context &context) const;
+
+private:
+    const PipelineConstructionType m_pipelineConstructionType;
+    const bool m_dynamic;
+};
+
 class MultisampleRenderer
 {
 public:
@@ -856,6 +877,22 @@ void checkSupport(Context &context, MultisampleTestParams params)
 }
 #endif // CTS_USES_VULKANSC
 
+class CompatibleRenderPassTestInstance : public vkt::TestInstance
+{
+public:
+    CompatibleRenderPassTestInstance(Context &context, const PipelineConstructionType pipelineConstructionType,
+                                     bool dynamic);
+    ~CompatibleRenderPassTestInstance(void)
+    {
+    }
+
+    tcu::TestStatus iterate(void);
+
+private:
+    const PipelineConstructionType m_pipelineConstructionType;
+    const bool m_dynamic;
+};
+
 void initMultisamplePrograms(SourceCollections &sources, MultisampleTestParams params)
 {
     const std::string pointSize = params.geometryType == GEOMETRY_TYPE_OPAQUE_POINT ?
@@ -1002,11 +1039,11 @@ bool checkFragmentShadingRateRequirements(Context &context, uint32_t sampleCount
 
     // Fetch information about supported fragment shading rates
     uint32_t supportedFragmentShadingRateCount = 0;
-    vki.getPhysicalDeviceFragmentShadingRatesKHR(physicalDevice, &supportedFragmentShadingRateCount, DE_NULL);
+    vki.getPhysicalDeviceFragmentShadingRatesKHR(physicalDevice, &supportedFragmentShadingRateCount, nullptr);
 
     std::vector<vk::VkPhysicalDeviceFragmentShadingRateKHR> supportedFragmentShadingRates(
         supportedFragmentShadingRateCount,
-        {vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_KHR, DE_NULL, vk::VK_SAMPLE_COUNT_1_BIT, {1, 1}});
+        {vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_KHR, nullptr, vk::VK_SAMPLE_COUNT_1_BIT, {1, 1}});
     vki.getPhysicalDeviceFragmentShadingRatesKHR(physicalDevice, &supportedFragmentShadingRateCount,
                                                  supportedFragmentShadingRates.data());
 
@@ -1297,12 +1334,12 @@ VkPipelineMultisampleStateCreateInfo RasterizationSamplesTest::getRasterizationS
 {
     const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
         rasterizationSamples,                                     // VkSampleCountFlagBits rasterizationSamples;
         false,                                                    // VkBool32 sampleShadingEnable;
         0.0f,                                                     // float minSampleShading;
-        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
         false,                                                    // VkBool32 alphaToCoverageEnable;
         false                                                     // VkBool32 alphaToOneEnable;
     };
@@ -1371,12 +1408,12 @@ VkPipelineMultisampleStateCreateInfo MinSampleShadingTest::getMinSampleShadingSt
 {
     const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
         rasterizationSamples,                                     // VkSampleCountFlagBits rasterizationSamples;
         minSampleShadingEnabled ? VK_TRUE : VK_FALSE,             // VkBool32 sampleShadingEnable;
         minSampleShading,                                         // float minSampleShading;
-        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
         false,                                                    //  VkBool32 alphaToCoverageEnable;
         false                                                     //  VkBool32 alphaToOneEnable;
     };
@@ -1413,7 +1450,7 @@ VkPipelineMultisampleStateCreateInfo SampleMaskTest::getSampleMaskStateParams(
 {
     const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
         rasterizationSamples,                                     // VkSampleCountFlagBits rasterizationSamples;
         false,                                                    // VkBool32 sampleShadingEnable;
@@ -1460,12 +1497,12 @@ VkPipelineMultisampleStateCreateInfo AlphaToOneTest::getAlphaToOneStateParams(
 {
     const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
         rasterizationSamples,                                     // VkSampleCountFlagBits rasterizationSamples;
         false,                                                    // VkBool32 sampleShadingEnable;
         0.0f,                                                     // float minSampleShading;
-        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
         false,                                                    // VkBool32 alphaToCoverageEnable;
         true                                                      // VkBool32 alphaToOneEnable;
     };
@@ -1546,12 +1583,12 @@ VkPipelineMultisampleStateCreateInfo AlphaToCoverageTest::getAlphaToCoverageStat
 {
     const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
         rasterizationSamples,                                     // VkSampleCountFlagBits rasterizationSamples;
         false,                                                    // VkBool32 sampleShadingEnable;
         0.0f,                                                     // float minSampleShading;
-        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
         true,                                                     // VkBool32 alphaToCoverageEnable;
         false                                                     // VkBool32 alphaToOneEnable;
     };
@@ -1588,12 +1625,12 @@ VkPipelineMultisampleStateCreateInfo AlphaToCoverageNoColorAttachmentTest::getSt
 {
     const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
         rasterizationSamples,                                     // VkSampleCountFlagBits rasterizationSamples;
         false,                                                    // VkBool32 sampleShadingEnable;
         0.0f,                                                     // float minSampleShading;
-        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
         true,                                                     // VkBool32 alphaToCoverageEnable;
         false                                                     // VkBool32 alphaToOneEnable;
     };
@@ -1635,17 +1672,340 @@ VkPipelineMultisampleStateCreateInfo AlphaToCoverageColorUnusedAttachmentTest::g
 {
     const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
         rasterizationSamples,                                     // VkSampleCountFlagBits rasterizationSamples;
         false,                                                    // VkBool32 sampleShadingEnable;
         0.0f,                                                     // float minSampleShading;
-        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
         true,                                                     // VkBool32 alphaToCoverageEnable;
         false                                                     // VkBool32 alphaToOneEnable;
     };
 
     return multisampleStateParams;
+}
+
+// Alpha to one with alpha to coverage. If an implementation doesn't do the operations in the right order, it will fail
+// a trivial test: color all samples with a value that has alpha 0.0, and alpha to one will replace the alpha with 1.0.
+// Then, alpha to coverage will result in the samples being covered. When using the right order, no samples should have
+// coverage because the alpha to coverage tests should happen first, and there will be no samples to modify to set the
+// alpha to 1.0.
+struct A2CplusA2OneParams
+{
+    PipelineConstructionType constructionType;
+    bool dynamicA2C;
+    bool dynamicA2One;
+    bool exportFragDepth;
+    bool sampleShadingEnable;
+};
+
+void A2CplusA2OneSupport(Context &context, A2CplusA2OneParams params)
+{
+    const auto ctx = context.getContextCommonData();
+    checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, params.constructionType);
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_ALPHA_TO_ONE);
+
+    if (params.sampleShadingEnable)
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
+
+#ifndef CTS_USES_VULKANSC
+    if (params.dynamicA2C || params.dynamicA2One)
+    {
+        context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state3");
+        const auto &eds3Features = context.getExtendedDynamicState3FeaturesEXT();
+
+        if (params.dynamicA2C && !eds3Features.extendedDynamicState3AlphaToCoverageEnable)
+            TCU_THROW(NotSupportedError, "extendedDynamicState3AlphaToCoverageEnable not supported");
+
+        if (params.dynamicA2One && !eds3Features.extendedDynamicState3AlphaToOneEnable)
+            TCU_THROW(NotSupportedError, "extendedDynamicState3AlphaToOneEnable not supported");
+    }
+#endif
+}
+
+void A2CplusA2OnePrograms(SourceCollections &programCollection, A2CplusA2OneParams params)
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "vec2 positions[3] = vec2[](\n"
+         << "    vec2(-1.0, -1.0),\n"
+         << "    vec2(-1.0, 3.0),\n"
+         << "    vec2(3.0, -1.0)\n"
+         << ");\n"
+         << "void main (void) {\n"
+         << "    gl_Position = vec4(positions[gl_VertexIndex % 3], 0.0, 1.0);\n"
+         << "}\n";
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    // Using push constants so the pixel color is not a constant.
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "layout (push_constant, std430) uniform PCBlock { vec4 color; float depth; } pc;\n"
+         << "void main(void) {\n"
+         << "    outColor = pc.color;\n"
+         << (params.exportFragDepth ? "    gl_FragDepth = pc.depth;\n" : "") << "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus A2CplusA2OneRun(Context &context, A2CplusA2OneParams params)
+{
+    const auto &ctx = context.getContextCommonData();
+    const tcu::IVec3 fbExtent(1, 1, 1);
+    const auto vkExtent     = makeExtent3D(fbExtent);
+    const auto colorFormat  = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto depthFormat  = VK_FORMAT_D16_UNORM;
+    const auto tcuFormat    = mapVkFormat(colorFormat);
+    const auto colorUsage   = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    const auto depthUsage   = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    const auto resolveUsage = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    const tcu::Vec4 geomColor(1.0f, 1.0f, 1.0f, 0.0f); // Note geometry color has alpha 0.0.
+    const float clearDepth = 1.0f;
+    const float geomDepth  = 0.0f;
+    const tcu::Vec4 threshold(0.0f, 0.0f, 0.0f, 0.0f); // When using 0 and 1 only, we expect exact results.
+    const auto bindPoint     = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    const auto pcStages      = VK_SHADER_STAGE_FRAGMENT_BIT;
+    const auto sampleCount   = VK_SAMPLE_COUNT_4_BIT;
+    const auto imageType     = VK_IMAGE_TYPE_2D;
+    const auto imageViewType = VK_IMAGE_VIEW_TYPE_2D;
+    const auto colorSRR      = makeDefaultImageSubresourceRange();
+    const auto depthSRR      = makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u);
+
+    // Color buffer and resolve attachment with verification buffer.
+    const VkImageCreateInfo colorBufferInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        nullptr,
+        0u,
+        imageType,
+        colorFormat,
+        vkExtent,
+        1u,
+        1u,
+        sampleCount,
+        VK_IMAGE_TILING_OPTIMAL,
+        colorUsage,
+        VK_SHARING_MODE_EXCLUSIVE,
+        0u,
+        nullptr,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+    };
+    ImageWithMemory colorBuffer(ctx.vkd, ctx.device, ctx.allocator, colorBufferInfo, MemoryRequirement::Any);
+    const auto colorView = makeImageView(ctx.vkd, ctx.device, *colorBuffer, imageViewType, colorFormat, colorSRR);
+
+    std::unique_ptr<ImageWithMemory> depthBuffer;
+    Move<VkImageView> depthView;
+    if (params.exportFragDepth)
+    {
+        const VkImageCreateInfo depthBufferInfo = {
+            VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            nullptr,
+            0u,
+            imageType,
+            depthFormat,
+            vkExtent,
+            1u,
+            1u,
+            sampleCount,
+            VK_IMAGE_TILING_OPTIMAL,
+            depthUsage,
+            VK_SHARING_MODE_EXCLUSIVE,
+            0u,
+            nullptr,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+        };
+        depthBuffer.reset(
+            new ImageWithMemory(ctx.vkd, ctx.device, ctx.allocator, depthBufferInfo, MemoryRequirement::Any));
+        depthView = makeImageView(ctx.vkd, ctx.device, depthBuffer->get(), imageViewType, depthFormat, depthSRR);
+    }
+
+    // Resolve buffer, single sample.
+    ImageWithBuffer resolveBuffer(ctx.vkd, ctx.device, ctx.allocator, vkExtent, colorFormat, resolveUsage, imageType);
+
+    // Push constants.
+    struct PushConstantData
+    {
+        // This structure has to match the shader push constant declaration.
+        tcu::Vec4 color;
+        float depth;
+    };
+    const PushConstantData pcData{geomColor, geomDepth};
+
+    const auto pcSize  = static_cast<uint32_t>(sizeof(pcData));
+    const auto pcRange = makePushConstantRange(pcStages, 0u, pcSize);
+
+    PipelineLayoutWrapper pipelineLayout(params.constructionType, ctx.vkd, ctx.device, VK_NULL_HANDLE, &pcRange);
+
+    std::vector<VkAttachmentDescription> attDescs{
+        makeAttachmentDescription(0u, colorFormat, sampleCount, VK_ATTACHMENT_LOAD_OP_CLEAR,
+                                  VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                  VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED,
+                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+        makeAttachmentDescription(0u, colorFormat, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                  VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                  VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED,
+                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+    };
+
+    std::vector<VkAttachmentReference> attRefs{
+        makeAttachmentReference(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+        makeAttachmentReference(1u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+    };
+
+    if (params.exportFragDepth)
+    {
+        attDescs.push_back(makeAttachmentDescription(0u, depthFormat, sampleCount, VK_ATTACHMENT_LOAD_OP_CLEAR,
+                                                     VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                                     VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED,
+                                                     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
+        attRefs.push_back(makeAttachmentReference(2u, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
+    }
+
+    const auto subpass = makeSubpassDescription(0u, bindPoint, 0u, nullptr, 1u, &attRefs.at(0u), &attRefs.at(1u),
+                                                (params.exportFragDepth ? &attRefs.at(2u) : nullptr), 0u, nullptr);
+
+    const VkRenderPassCreateInfo rpInfo = {
+        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(attDescs),
+        de::dataOrNull(attDescs),
+        1u,
+        &subpass,
+        0u,
+        nullptr,
+    };
+    RenderPassWrapper renderPass(params.constructionType, ctx.vkd, ctx.device, &rpInfo);
+
+    std::vector<VkImage> fbImages{*colorBuffer, resolveBuffer.getImage()};
+    std::vector<VkImageView> fbViews{*colorView, resolveBuffer.getImageView()};
+    if (params.exportFragDepth)
+    {
+        fbImages.push_back(depthBuffer->get());
+        fbViews.push_back(*depthView);
+    }
+    DE_ASSERT(fbImages.size() == fbViews.size());
+    renderPass.createFramebuffer(ctx.vkd, ctx.device, de::sizeU32(fbImages), de::dataOrNull(fbImages),
+                                 de::dataOrNull(fbViews), vkExtent.width, vkExtent.height);
+
+    // Modules.
+    const auto &binaries = context.getBinaryCollection();
+    const ShaderWrapper vertModule(ctx.vkd, ctx.device, binaries.get("vert"));
+    const ShaderWrapper fragModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(vkExtent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(vkExtent));
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = initVulkanStructureConst();
+
+    const auto staticA2C   = (params.dynamicA2C ? VK_FALSE : VK_TRUE);
+    const auto staticA2One = (params.dynamicA2One ? VK_FALSE : VK_TRUE);
+    const auto staticSRSE  = (params.sampleShadingEnable ? VK_TRUE : VK_FALSE);
+
+    const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        sampleCount,
+        staticSRSE,
+        1.0f,
+        nullptr,
+        staticA2C,   // Alpha to coverage.
+        staticA2One, // Alpha to one.
+    };
+
+    std::vector<VkDynamicState> dynamicStates;
+#ifndef CTS_USES_VULKANSC
+    if (params.dynamicA2C)
+        dynamicStates.push_back(VK_DYNAMIC_STATE_ALPHA_TO_COVERAGE_ENABLE_EXT);
+    if (params.dynamicA2One)
+        dynamicStates.push_back(VK_DYNAMIC_STATE_ALPHA_TO_ONE_ENABLE_EXT);
+#endif
+
+    const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(dynamicStates),
+        de::dataOrNull(dynamicStates),
+    };
+
+    const auto stencilState =
+        makeStencilOpState(VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_NEVER, 0u, 0u, 0u);
+
+    const VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_TRUE,
+        VK_TRUE,
+        VK_COMPARE_OP_LESS,
+        VK_FALSE,
+        VK_FALSE,
+        stencilState,
+        stencilState,
+        0.0f,
+        0.0f,
+    };
+
+    const auto dsPtr = (params.exportFragDepth ? &depthStencilStateCreateInfo : nullptr);
+
+    GraphicsPipelineWrapper pipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, context.getDeviceExtensions(),
+                                     params.constructionType);
+    pipeline.setDynamicState(&dynamicStateCreateInfo)
+        .setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+        .setDefaultRasterizationState()
+        .setDefaultDepthStencilState()
+        .setDefaultColorBlendState()
+        .setupVertexInputState(&vertexInputStateCreateInfo)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPass.get(), 0u, vertModule)
+        .setupFragmentShaderState(pipelineLayout, renderPass.get(), 0u, fragModule, dsPtr, &multisampleStateCreateInfo)
+        .setupFragmentOutputState(renderPass.get(), 0u, nullptr, &multisampleStateCreateInfo)
+        .buildPipeline();
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    std::vector<VkClearValue> clearValues{makeClearValueColor(clearColor)};
+    if (params.exportFragDepth)
+    {
+        // We need this extra clear color value because clear values are indexed by attachment index.
+        clearValues.push_back(makeClearValueColor(clearColor));
+        clearValues.push_back(makeClearValueDepthStencil(clearDepth, 0u));
+    }
+    renderPass.begin(ctx.vkd, cmdBuffer, scissors.front(), de::sizeU32(clearValues), de::dataOrNull(clearValues));
+    pipeline.bind(cmdBuffer);
+    ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, pcStages, 0u, pcSize, &pcData);
+#ifndef CTS_USES_VULKANSC
+    if (params.dynamicA2C)
+        ctx.vkd.cmdSetAlphaToCoverageEnableEXT(cmdBuffer, VK_TRUE);
+    if (params.dynamicA2One)
+        ctx.vkd.cmdSetAlphaToOneEnableEXT(cmdBuffer, VK_TRUE);
+#endif
+    ctx.vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+    renderPass.end(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, resolveBuffer.getImage(), resolveBuffer.getBuffer(), fbExtent.swizzle(0, 1),
+                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
+                      VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
+                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    // Verify color output.
+    invalidateAlloc(ctx.vkd, ctx.device, resolveBuffer.getBufferAllocation());
+    tcu::PixelBufferAccess resultAccess(tcuFormat, fbExtent, resolveBuffer.getBufferAllocation().getHostPtr());
+
+    tcu::TextureLevel referenceLevel(tcuFormat, fbExtent.x(), fbExtent.y());
+    auto referenceAccess = referenceLevel.getAccess();
+    tcu::clear(referenceAccess, clearColor);
+
+    auto &log = context.getTestContext().getLog();
+    if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultAccess, threshold,
+                                    tcu::COMPARE_LOG_ON_ERROR))
+        TCU_FAIL("Unexpected color in result buffer; check log for details");
+
+    return tcu::TestStatus::pass("Pass");
 }
 
 // SampleMaskWithConservativeTest
@@ -1918,6 +2278,46 @@ TestInstance *SampleMaskWithDepthTestTest::createInstance(Context &context) cons
                                                m_enablePostDepthCoverage, m_useFragmentShadingRate);
 }
 #endif // CTS_USES_VULKANSC
+
+CompatibleRenderPassTest::CompatibleRenderPassTest(tcu::TestContext &testContext, const std::string &name,
+                                                   const PipelineConstructionType pipelineConstructionType,
+                                                   bool dynamic)
+    : vkt::TestCase(testContext, name)
+    , m_pipelineConstructionType(pipelineConstructionType)
+    , m_dynamic(dynamic)
+{
+}
+void CompatibleRenderPassTest::initPrograms(SourceCollections &programCollection) const
+{
+    std::stringstream vert;
+    std::stringstream frag;
+
+    vert << "#version 450\n"
+         << "void main() {\n"
+         << "    vec2 pos = vec2(float(gl_VertexIndex & 1), float((gl_VertexIndex >> 1) & 1));\n"
+         << "    gl_Position = vec4(pos * 2.0f - 1.0f, 0.0f, 1.0f);\n"
+         << "}\n";
+
+    frag << "#version 450\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main() {\n"
+         << "    outColor = vec4(1.0f);\n"
+         << "}\n";
+
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+TestInstance *CompatibleRenderPassTest::createInstance(Context &context) const
+{
+    return new CompatibleRenderPassTestInstance(context, m_pipelineConstructionType, m_dynamic);
+}
+
+void CompatibleRenderPassTest::checkSupport(Context &context) const
+{
+    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                          m_pipelineConstructionType);
+}
 
 // RasterizationSamplesInstance
 
@@ -2341,12 +2741,12 @@ tcu::TestStatus testRasterSamplesConsistency(Context &context, MultisampleTestPa
 
         const VkPipelineMultisampleStateCreateInfo multisampleStateParams{
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
+            nullptr,                                                  // const void* pNext;
             0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
             samples[samplesNdx],                                      // VkSampleCountFlagBits rasterizationSamples;
             false,                                                    // VkBool32 sampleShadingEnable;
             0.0f,                                                     // float minSampleShading;
-            DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+            nullptr,                                                  // const VkSampleMask* pSampleMask;
             false,                                                    // VkBool32 alphaToCoverageEnable;
             false                                                     // VkBool32 alphaToOneEnable;
         };
@@ -2788,12 +3188,12 @@ VkPipelineMultisampleStateCreateInfo SampleMaskWithConservativeInstance::getMult
 {
     const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
         rasterizationSamples,                                     // VkSampleCountFlagBits rasterizationSamples;
         enableMinSampleShading ? VK_TRUE : VK_FALSE,              // VkBool32 sampleShadingEnable;
         enableMinSampleShading ? minSampleShading : 0.0f,         // float minSampleShading;
-        enableSampleMask ? m_sampleMask.data() : DE_NULL,         // const VkSampleMask* pSampleMask;
+        enableSampleMask ? m_sampleMask.data() : nullptr,         // const VkSampleMask* pSampleMask;
         false,                                                    // VkBool32 alphaToCoverageEnable;
         false                                                     // VkBool32 alphaToOneEnable;
     };
@@ -2806,7 +3206,7 @@ VkPipelineRasterizationConservativeStateCreateInfoEXT SampleMaskWithConservative
 {
     const VkPipelineRasterizationConservativeStateCreateInfoEXT rasterizationConservativeStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT, //  VkStructureType sType;
-        DE_NULL,                                                                     //  const void* pNext;
+        nullptr,                                                                     //  const void* pNext;
         (VkPipelineRasterizationConservativeStateCreateFlagsEXT)0, //  VkPipelineRasterizationConservativeStateCreateFlagsEXT flags;
         conservativeRasterizationMode, //  VkConservativeRasterizationModeEXT conservativeRasterizationMode;
         0.0f                           //  float extraPrimitiveOverestimationSize;
@@ -3079,12 +3479,12 @@ VkPipelineMultisampleStateCreateInfo SampleMaskWithDepthTestInstance::getMultisa
 {
     const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
         rasterizationSamples,                                     // VkSampleCountFlagBits rasterizationSamples;
         false,                                                    // VkBool32 sampleShadingEnable;
         0.0f,                                                     // float minSampleShading;
-        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
         false,                                                    // VkBool32 alphaToCoverageEnable;
         false                                                     // VkBool32 alphaToOneEnable;
     };
@@ -3219,6 +3619,316 @@ tcu::TestStatus SampleMaskWithDepthTestInstance::verifyImage(const tcu::ConstPix
         return tcu::TestStatus::fail("Failed");
 }
 #endif // CTS_USES_VULKANSC
+
+CompatibleRenderPassTestInstance::CompatibleRenderPassTestInstance(
+    Context &context, const PipelineConstructionType pipelineConstructionType, bool dynamic)
+    : vkt::TestInstance(context)
+    , m_pipelineConstructionType(pipelineConstructionType)
+    , m_dynamic(dynamic)
+{
+}
+
+tcu::TestStatus CompatibleRenderPassTestInstance::iterate(void)
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice vkDevice   = m_context.getDevice();
+    Allocator &memAlloc       = m_context.getDefaultAllocator();
+    const VkQueue queue       = m_context.getUniversalQueue();
+    const auto queueIndex     = m_context.getUniversalQueueFamilyIndex();
+    auto &log                 = m_context.getTestContext().getLog();
+
+    vk::VkImageCreateInfo colorImageParams = {
+        vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                       // VkStructureType sType;
+        nullptr,                                                                       // const void* pNext;
+        (vk::VkImageCreateFlags)0u,                                                    // VkImageCreateFlags flags;
+        vk::VK_IMAGE_TYPE_2D,                                                          // VkImageType imageType;
+        vk::VK_FORMAT_R8G8B8A8_UNORM,                                                  // VkFormat format;
+        {32u, 32u, 1u},                                                                // VkExtent3D extent;
+        1u,                                                                            // uint32_t mipLevels;
+        1u,                                                                            // uint32_t arrayLayers;
+        vk::VK_SAMPLE_COUNT_4_BIT,                                                     // VkSampleCountFlagBits samples;
+        vk::VK_IMAGE_TILING_OPTIMAL,                                                   // VkImageTiling tiling;
+        vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags usage;
+        vk::VK_SHARING_MODE_EXCLUSIVE,                                                 // VkSharingMode sharingMode;
+        1u,                        // uint32_t queueFamilyIndexCount;
+        nullptr,                   // const uint32_t* pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED, // VkImageLayout initialLayout;
+    };
+
+    vk::ImageWithMemory colorAttachment(vk, vkDevice, memAlloc, colorImageParams, MemoryRequirement::Any);
+    colorImageParams.samples = vk::VK_SAMPLE_COUNT_1_BIT;
+    vk::ImageWithMemory resolveAttachment(vk, vkDevice, memAlloc, colorImageParams, MemoryRequirement::Any);
+
+    vk::VkImageViewCreateInfo colorAttachmentViewParams = {
+        vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                      // const void* pNext;
+        0u,                                           // VkImageViewCreateFlags flags;
+        *colorAttachment,                             // VkImage image;
+        vk::VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
+        vk::VK_FORMAT_R8G8B8A8_UNORM,                 // VkFormat format;
+        {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B,
+         VK_COMPONENT_SWIZZLE_A},                   // VkComponentMapping components;
+        {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u} // VkImageSubresourceRange subresourceRange;
+    };
+
+    auto colorImageView             = createImageView(vk, vkDevice, &colorAttachmentViewParams);
+    colorAttachmentViewParams.image = *resolveAttachment;
+    auto resolveImageView           = createImageView(vk, vkDevice, &colorAttachmentViewParams);
+
+    std::vector<VkAttachmentDescription> attachmentDescriptions;
+    const VkAttachmentDescription colorAttachmentDescription = {
+        0u,                                      // VkAttachmentDescriptionFlags flags;
+        vk::VK_FORMAT_R8G8B8A8_UNORM,            // VkFormat format;
+        vk::VK_SAMPLE_COUNT_4_BIT,               // VkSampleCountFlagBits samples;
+        VK_ATTACHMENT_LOAD_OP_CLEAR,             // VkAttachmentLoadOp loadOp;
+        VK_ATTACHMENT_STORE_OP_STORE,            // VkAttachmentStoreOp storeOp;
+        VK_ATTACHMENT_LOAD_OP_DONT_CARE,         // VkAttachmentLoadOp stencilLoadOp;
+        VK_ATTACHMENT_STORE_OP_DONT_CARE,        // VkAttachmentStoreOp stencilStoreOp;
+        VK_IMAGE_LAYOUT_UNDEFINED,               // VkImageLayout initialLayout;
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL // VkImageLayout finalLayout;
+    };
+
+    const VkAttachmentDescription resolveAttachmentDescription = {
+        0u,                                      // VkAttachmentDescriptionFlags flags;
+        vk::VK_FORMAT_R8G8B8A8_UNORM,            // VkFormat format;
+        VK_SAMPLE_COUNT_1_BIT,                   // VkSampleCountFlagBits samples;
+        VK_ATTACHMENT_LOAD_OP_CLEAR,             // VkAttachmentLoadOp loadOp;
+        VK_ATTACHMENT_STORE_OP_STORE,            // VkAttachmentStoreOp storeOp;
+        VK_ATTACHMENT_LOAD_OP_DONT_CARE,         // VkAttachmentLoadOp stencilLoadOp;
+        VK_ATTACHMENT_STORE_OP_DONT_CARE,        // VkAttachmentStoreOp stencilStoreOp;
+        VK_IMAGE_LAYOUT_UNDEFINED,               // VkImageLayout initialLayout;
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL // VkImageLayout finalLayout;
+    };
+
+    attachmentDescriptions.push_back(colorAttachmentDescription);
+    attachmentDescriptions.push_back(resolveAttachmentDescription);
+
+    const VkAttachmentReference colorAttachmentReference = {
+        0u,                                      // uint32_t attachment;
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL // VkImageLayout layout;
+    };
+
+    const VkAttachmentReference resolveAttachmentReference = {
+        1u,                                      // uint32_t attachment;
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL // VkImageLayout layout;
+    };
+
+    vk::VkSubpassDescription subpassDescription = {
+        0u,                                  // VkSubpassDescriptionFlags       flags
+        vk::VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint             pipelineBindPoint
+        0u,                                  // uint32_t                        inputAttachmentCount
+        nullptr,                             // const VkAttachmentReference*    pInputAttachments
+        1u,                                  // uint32_t                        colorAttachmentCount
+        &colorAttachmentReference,           // const VkAttachmentReference*    pColorAttachments
+        &resolveAttachmentReference,         // const VkAttachmentReference*    pResolveAttachments
+        nullptr,                             // const VkAttachmentReference*    pDepthStencilAttachment
+        0u,                                  // uint32_t                        preserveAttachmentCount
+        nullptr                              // const VkAttachmentReference*    pPreserveAttachments
+    };
+
+    vk::VkRenderPassCreateInfo renderPassParams = {
+        vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                       // const void* pNext;
+        0u,                                            // VkRenderPassCreateFlags flags;
+        2u,                                            // uint32_t attachmentCount;
+        attachmentDescriptions.data(),                 // const VkAttachmentDescription* pAttachments;
+        1u,                                            // uint32_t subpassCount;
+        &subpassDescription,                           // const VkSubpassDescription* pSubpasses;
+        0u,                                            // uint32_t dependencyCount;
+        nullptr                                        // const VkSubpassDependency* pDependencies;
+    };
+
+    auto renderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, &renderPassParams);
+
+    std::vector<vk::VkImageView> framebufferAttachments{*colorImageView, *resolveImageView};
+
+    const VkFramebufferCreateInfo framebufferParams = {
+        VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                   // const void* pNext;
+        0u,                                        // VkFramebufferCreateFlags flags;
+        *renderPass,                               // VkRenderPass renderPass;
+        2u,                                        // uint32_t attachmentCount;
+        framebufferAttachments.data(),             // const VkImageView* pAttachments;
+        32u,                                       // uint32_t width;
+        32u,                                       // uint32_t height;
+        1u                                         // uint32_t layers;
+    };
+
+    renderPass.createFramebuffer(vk, vkDevice, &framebufferParams, *colorAttachment);
+
+    renderPassParams.attachmentCount       = 1;
+    subpassDescription.pResolveAttachments = nullptr;
+    auto compatibleRenderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, &renderPassParams);
+
+    const std::vector<VkViewport> viewports{vk::makeViewport(32u, 32u)};
+    const std::vector<VkRect2D> scissors{vk::makeRect2D(32u, 32u)};
+
+    const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                                  // const void* pNext;
+        0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
+        vk::VK_SAMPLE_COUNT_4_BIT,                                // VkSampleCountFlagBits rasterizationSamples;
+        VK_FALSE,                                                 // VkBool32 sampleShadingEnable;
+        1.0f,                                                     // float minSampleShading;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
+        VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
+        VK_FALSE,                                                 // VkBool32 alphaToOneEnable;
+    };
+
+    const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                       // const void* pNext;
+        0u,                                            // VkPipelineLayoutCreateFlags flags;
+        0u,                                            // uint32_t setLayoutCount;
+        nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
+        0u,                                            // uint32_t pushConstantRangeCount;
+        nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
+    };
+
+    const auto &binaries  = m_context.getBinaryCollection();
+    const auto vertModule = createShaderModule(vk, vkDevice, binaries.get("vert"));
+    const auto fragModule = createShaderModule(vk, vkDevice, binaries.get("frag"));
+    auto pipelineLayout   = PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                                   // const void* pNext;
+        0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
+        0u,                                                        // uint32_t vertexBindingDescriptionCount;
+        nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+        0u,      // uint32_t vertexAttributeDescriptionCount;
+        nullptr  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+    };
+
+    const auto &edsFeatures = m_context.getExtendedDynamicStateFeaturesEXT();
+    std::vector<vk::VkDynamicState> dynamicStates;
+
+    if (m_dynamic)
+    {
+        dynamicStates.push_back(vk::VK_DYNAMIC_STATE_VIEWPORT);
+        dynamicStates.push_back(vk::VK_DYNAMIC_STATE_SCISSOR);
+        dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_BIAS);
+        dynamicStates.push_back(vk::VK_DYNAMIC_STATE_BLEND_CONSTANTS);
+        dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_BOUNDS);
+        dynamicStates.push_back(vk::VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK);
+        dynamicStates.push_back(vk::VK_DYNAMIC_STATE_STENCIL_WRITE_MASK);
+        dynamicStates.push_back(vk::VK_DYNAMIC_STATE_STENCIL_REFERENCE);
+#ifndef CTS_USES_VULKANSC
+        if (edsFeatures.extendedDynamicState)
+        {
+            dynamicStates.push_back(vk::VK_DYNAMIC_STATE_CULL_MODE);
+            dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE);
+            dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_COMPARE_OP);
+            dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE);
+            dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE);
+            dynamicStates.push_back(vk::VK_DYNAMIC_STATE_FRONT_FACE);
+            dynamicStates.push_back(vk::VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY);
+            dynamicStates.push_back(vk::VK_DYNAMIC_STATE_STENCIL_OP);
+            dynamicStates.push_back(vk::VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE);
+        }
+#endif
+    }
+
+    const VkPipelineDynamicStateCreateInfo dynamicStateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                              // const void* pNext;
+        0u,                                                   // VkPipelineDynamicStateCreateFlags flags;
+        de::sizeU32(dynamicStates),                           // uint32_t dynamicStateCount;
+        de::dataOrNull(dynamicStates),                        // const VkDynamicState* pDynamicStates;
+    };
+
+    std::vector<VkViewport> staticViewports = viewports;
+    std::vector<VkRect2D> staticScissors    = scissors;
+    if (m_dynamic && edsFeatures.extendedDynamicState)
+    {
+        staticViewports.clear();
+        staticScissors.clear();
+    }
+
+    const auto pipeline =
+        makeGraphicsPipeline(vk, vkDevice, pipelineLayout.get(), vertModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE,
+                             VK_NULL_HANDLE, fragModule.get(), compatibleRenderPass.get(), staticViewports,
+                             staticScissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, 0u, &vertexInputStateParams,
+                             nullptr, &multisampleStateCreateInfo, nullptr, nullptr, &dynamicStateInfo);
+
+    auto cmdPool   = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueIndex);
+    auto cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    VkClearValue colorClearValue;
+    colorClearValue.color.float32[0] = 0.25f;
+    colorClearValue.color.float32[1] = 0.25f;
+    colorClearValue.color.float32[2] = 0.25f;
+    colorClearValue.color.float32[3] = 1.0f;
+
+    std::vector<VkClearValue> clearValues;
+    clearValues.push_back(colorClearValue);
+    colorClearValue.color.float32[0] = 0.5f;
+    colorClearValue.color.float32[1] = 0.5f;
+    colorClearValue.color.float32[2] = 0.5f;
+    clearValues.push_back(colorClearValue);
+
+    beginCommandBuffer(vk, *cmdBuffer, 0u);
+
+    renderPass.begin(vk, *cmdBuffer, makeRect2D(0, 0, 32u, 32u), (uint32_t)clearValues.size(), clearValues.data());
+
+    vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+
+    if (m_dynamic)
+    {
+        vk.cmdSetViewport(*cmdBuffer, 0u, 1u, viewports.data());
+        vk.cmdSetScissor(*cmdBuffer, 0u, 1u, scissors.data());
+        vk.cmdSetDepthBias(*cmdBuffer, 0.0f, 1.0f, 1.0f);
+        float blendConstants[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+        vk.cmdSetBlendConstants(*cmdBuffer, blendConstants);
+        vk.cmdSetDepthBounds(*cmdBuffer, 0.0f, 1.0f);
+        vk.cmdSetStencilCompareMask(*cmdBuffer, vk::VK_STENCIL_FACE_FRONT_AND_BACK, 0xff);
+        vk.cmdSetStencilWriteMask(*cmdBuffer, vk::VK_STENCIL_FACE_FRONT_AND_BACK, 0xff);
+        vk.cmdSetStencilReference(*cmdBuffer, vk::VK_STENCIL_FACE_FRONT_AND_BACK, 0xff);
+#ifndef CTS_USES_VULKANSC
+        if (edsFeatures.extendedDynamicState)
+        {
+            vk.cmdSetCullMode(*cmdBuffer, vk::VK_CULL_MODE_NONE);
+            vk.cmdSetDepthBoundsTestEnable(*cmdBuffer, VK_FALSE);
+            vk.cmdSetDepthCompareOp(*cmdBuffer, vk::VK_COMPARE_OP_ALWAYS);
+            vk.cmdSetDepthTestEnable(*cmdBuffer, VK_FALSE);
+            vk.cmdSetDepthWriteEnable(*cmdBuffer, VK_FALSE);
+            vk.cmdSetFrontFace(*cmdBuffer, vk::VK_FRONT_FACE_COUNTER_CLOCKWISE);
+            vk.cmdSetPrimitiveTopology(*cmdBuffer, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+            vk.cmdSetStencilOp(*cmdBuffer, vk::VK_STENCIL_FACE_FRONT_AND_BACK, vk::VK_STENCIL_OP_KEEP,
+                               vk::VK_STENCIL_OP_KEEP, vk::VK_STENCIL_OP_KEEP, vk::VK_COMPARE_OP_ALWAYS);
+            vk.cmdSetStencilTestEnable(*cmdBuffer, VK_FALSE);
+        }
+#endif
+    }
+
+    vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
+
+    renderPass.end(vk, *cmdBuffer);
+
+    endCommandBuffer(vk, *cmdBuffer);
+    submitCommandsAndWait(vk, vkDevice, queue, *cmdBuffer);
+
+    const auto colorLevel  = readColorAttachment(vk, vkDevice, queue, queueIndex, memAlloc, *resolveAttachment,
+                                                 vk::VK_FORMAT_R8G8B8A8_UNORM, tcu::UVec2(32u, 32u));
+    const auto colorAccess = colorLevel->getAccess();
+
+    const tcu::IVec3 iExtent(32, 32, 1);
+    tcu::TextureLevel refColor(mapVkFormat(vk::VK_FORMAT_R8G8B8A8_UNORM), iExtent.x(), iExtent.y());
+    const tcu::Vec4 clearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    tcu::clear(refColor, clearColor);
+    auto refColorAccess = refColor.getAccess();
+    tcu::Vec4 colorThreshold(0.0f, 0.0f, 0.0f, 0.0f);
+    const auto colorOK = tcu::floatThresholdCompare(log, "Color", "Color Result", refColorAccess, colorAccess,
+                                                    colorThreshold, tcu::COMPARE_LOG_ON_ERROR);
+
+    if (!colorOK)
+    {
+        return tcu::TestStatus::fail("Fail");
+    }
+
+    return tcu::TestStatus::pass("Passed");
+}
+
 // MultisampleRenderer
 
 MultisampleRenderer::MultisampleRenderer(Context &context, const PipelineConstructionType pipelineConstructionType,
@@ -3372,7 +4082,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
 
         const VkImageCreateInfo colorImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                          // VkStructureType sType;
-            DE_NULL,                                                      // const void* pNext;
+            nullptr,                                                      // const void* pNext;
             imageCreateFlags,                                             // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                                             // VkImageType imageType;
             m_colorFormat,                                                // VkFormat format;
@@ -3419,7 +4129,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
     {
         const VkImageCreateInfo resolveImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                    // VkStructureType sType;
-            DE_NULL,                                                                // const void* pNext;
+            nullptr,                                                                // const void* pNext;
             0u,                                                                     // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                                                       // VkImageType imageType;
             m_colorFormat,                                                          // VkFormat format;
@@ -3448,7 +4158,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
         {
             const VkImageViewCreateInfo resolveAttachmentViewParams = {
                 VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,   // VkStructureType sType;
-                DE_NULL,                                    // const void* pNext;
+                nullptr,                                    // const void* pNext;
                 0u,                                         // VkImageViewCreateFlags flags;
                 *m_resolveImage,                            // VkImage image;
                 VK_IMAGE_VIEW_TYPE_2D,                      // VkImageViewType viewType;
@@ -3466,7 +4176,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
     {
         const VkImageCreateInfo perSampleImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                    // VkStructureType sType;
-            DE_NULL,                                                                // const void* pNext;
+            nullptr,                                                                // const void* pNext;
             0u,                                                                     // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                                                       // VkImageType imageType;
             m_colorFormat,                                                          // VkFormat format;
@@ -3502,7 +4212,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
             {
                 const VkImageViewCreateInfo perSampleAttachmentViewParams = {
                     VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,   // VkStructureType sType;
-                    DE_NULL,                                    // const void* pNext;
+                    nullptr,                                    // const void* pNext;
                     0u,                                         // VkImageViewCreateFlags flags;
                     *image.m_image,                             // VkImage image;
                     VK_IMAGE_VIEW_TYPE_2D,                      // VkImageViewType viewType;
@@ -3521,7 +4231,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
     {
         const VkImageCreateInfo depthStencilImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                          // VkStructureType sType;
-            DE_NULL,                                                      // const void* pNext;
+            nullptr,                                                      // const void* pNext;
             0u,                                                           // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                                             // VkImageType imageType;
             m_depthStencilFormat,                                         // VkFormat format;
@@ -3550,7 +4260,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
     {
         const VkImageViewCreateInfo colorAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,   // VkStructureType sType;
-            DE_NULL,                                    // const void* pNext;
+            nullptr,                                    // const void* pNext;
             0u,                                         // VkImageViewCreateFlags flags;
             *m_colorImage,                              // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                      // VkImageViewType viewType;
@@ -3571,7 +4281,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
 
         const VkImageViewCreateInfo depthStencilAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,      // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkImageViewCreateFlags flags;
             *m_depthStencilImage,                          // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                         // VkImageViewType viewType;
@@ -3731,26 +4441,26 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
                 0u,                               // VkSubpassDescriptionFlags    flags
                 VK_PIPELINE_BIND_POINT_GRAPHICS,  // VkPipelineBindPoint            pipelineBindPoint
                 0u,                               // uint32_t                        inputAttachmentCount
-                DE_NULL,                          // const VkAttachmentReference*    pInputAttachments
+                nullptr,                          // const VkAttachmentReference*    pInputAttachments
                 0u,                               // uint32_t                        colorAttachmentCount
-                DE_NULL,                          // const VkAttachmentReference*    pColorAttachments
-                DE_NULL,                          // const VkAttachmentReference*    pResolveAttachments
+                nullptr,                          // const VkAttachmentReference*    pColorAttachments
+                nullptr,                          // const VkAttachmentReference*    pResolveAttachments
                 &depthStencilAttachmentReference, // const VkAttachmentReference*    pDepthStencilAttachment
                 0u,                               // uint32_t                        preserveAttachmentCount
-                DE_NULL                           // const VkAttachmentReference*    pPreserveAttachments
+                nullptr                           // const VkAttachmentReference*    pPreserveAttachments
             };
 
             const VkSubpassDescription subpassDescription1 = {
                 0u,                               // VkSubpassDescriptionFlags    flags
                 VK_PIPELINE_BIND_POINT_GRAPHICS,  // VkPipelineBindPoint            pipelineBindPoint
                 0u,                               // uint32_t                        inputAttachmentCount
-                DE_NULL,                          // const VkAttachmentReference*    pInputAttachments
+                nullptr,                          // const VkAttachmentReference*    pInputAttachments
                 1u,                               // uint32_t                        colorAttachmentCount
                 &colorAttachmentReference,        // const VkAttachmentReference*    pColorAttachments
                 &resolveAttachmentReference,      // const VkAttachmentReference*    pResolveAttachments
                 &depthStencilAttachmentReference, // const VkAttachmentReference*    pDepthStencilAttachment
                 0u,                               // uint32_t                        preserveAttachmentCount
-                DE_NULL                           // const VkAttachmentReference*    pPreserveAttachments
+                nullptr                           // const VkAttachmentReference*    pPreserveAttachments
             };
 
             const VkSubpassDependency subpassDependency = {
@@ -3773,13 +4483,13 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
                 0u,                                          // VkSubpassDescriptionFlags    flags
                 VK_PIPELINE_BIND_POINT_GRAPHICS,             // VkPipelineBindPoint            pipelineBindPoint
                 0u,                                          // uint32_t                        inputAttachmentCount
-                DE_NULL,                                     // const VkAttachmentReference*    pInputAttachments
+                nullptr,                                     // const VkAttachmentReference*    pInputAttachments
                 2u,                                          // uint32_t                        colorAttachmentCount
                 colorAttachmentReferencesUnusedAttachment,   // const VkAttachmentReference*    pColorAttachments
                 resolveAttachmentReferencesUnusedAttachment, // const VkAttachmentReference*    pResolveAttachments
-                DE_NULL,                                     // const VkAttachmentReference*    pDepthStencilAttachment
+                nullptr,                                     // const VkAttachmentReference*    pDepthStencilAttachment
                 0u,                                          // uint32_t                        preserveAttachmentCount
-                DE_NULL                                      // const VkAttachmentReference*    pPreserveAttachments
+                nullptr                                      // const VkAttachmentReference*    pPreserveAttachments
             };
 
             subpassDescriptions.push_back(renderSubpassDescription);
@@ -3791,15 +4501,15 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
                     0u,                              // VkSubpassDescriptionFlags flags;
                     VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
                     0u,                              // uint32_t inputAttachmentCount;
-                    DE_NULL,                         // const VkAttachmentReference* pInputAttachments;
+                    nullptr,                         // const VkAttachmentReference* pInputAttachments;
                     1u,                              // uint32_t colorAttachmentCount;
                     &colorAttachmentReference,       // const VkAttachmentReference* pColorAttachments;
                     usesResolveImage ? &resolveAttachmentReference :
-                                       DE_NULL, // const VkAttachmentReference* pResolveAttachments;
+                                       nullptr, // const VkAttachmentReference* pResolveAttachments;
                     (m_useDepth || m_useStencil ? &depthStencilAttachmentReference :
-                                                  DE_NULL), // const VkAttachmentReference* pDepthStencilAttachment;
+                                                  nullptr), // const VkAttachmentReference* pDepthStencilAttachment;
                     0u,                                     // uint32_t preserveAttachmentCount;
-                    DE_NULL                                 // const VkAttachmentReference* pPreserveAttachments;
+                    nullptr                                 // const VkAttachmentReference* pPreserveAttachments;
                 };
                 subpassDescriptions.push_back(renderSubpassDescription);
             }
@@ -3816,10 +4526,10 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
                         &inputAttachmentReference,         // const VkAttachmentReference* pInputAttachments;
                         1u,                                // uint32_t colorAttachmentCount;
                         &perSampleAttachmentReferences[i], // const VkAttachmentReference* pColorAttachments;
-                        DE_NULL,                           // const VkAttachmentReference* pResolveAttachments;
-                        DE_NULL,                           // const VkAttachmentReference* pDepthStencilAttachment;
+                        nullptr,                           // const VkAttachmentReference* pResolveAttachments;
+                        nullptr,                           // const VkAttachmentReference* pDepthStencilAttachment;
                         0u,                                // uint32_t preserveAttachmentCount;
-                        DE_NULL                            // const VkAttachmentReference* pPreserveAttachments;
+                        nullptr                            // const VkAttachmentReference* pPreserveAttachments;
                     };
                     subpassDescriptions.push_back(copySampleSubpassDescription);
 
@@ -3854,14 +4564,14 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
 
         const VkRenderPassCreateInfo renderPassParams = {
             VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkRenderPassCreateFlags flags;
             (uint32_t)attachmentDescriptions.size(),   // uint32_t attachmentCount;
             &attachmentDescriptions[0],                // const VkAttachmentDescription* pAttachments;
             (uint32_t)subpassDescriptions.size(),      // uint32_t subpassCount;
             &subpassDescriptions[0],                   // const VkSubpassDescription* pSubpasses;
             (uint32_t)subpassDependencies.size(),      // uint32_t dependencyCount;
-            subpassDependencies.size() != 0 ? &subpassDependencies[0] : DE_NULL};
+            subpassDependencies.size() != 0 ? &subpassDependencies[0] : nullptr};
 
         m_renderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, &renderPassParams);
     }
@@ -3894,7 +4604,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
 
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             (uint32_t)attachments.size(),              // uint32_t attachmentCount;
@@ -3911,12 +4621,12 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             0u,                                            // uint32_t setLayoutCount;
-            DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_pipelineLayout = PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
@@ -3930,12 +4640,12 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
                 VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, // VkDescriptorType descriptorType;
                 1u,                                  // uint32_t descriptorCount;
                 VK_SHADER_STAGE_FRAGMENT_BIT,        // VkShaderStageFlags stageFlags;
-                DE_NULL,                             // const VkSampler* pImmutableSamplers;
+                nullptr,                             // const VkSampler* pImmutableSamplers;
             };
 
             const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutParams = {
                 VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType                        sType
-                DE_NULL,                                             // const void*                            pNext
+                nullptr,                                             // const void*                            pNext
                 0u,                                                  // VkDescriptorSetLayoutCreateFlags        flags
                 1u,            // uint32_t                                bindingCount
                 &layoutBinding // const VkDescriptorSetLayoutBinding*    pBindings
@@ -3951,7 +4661,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
             };
             const VkPipelineLayoutCreateInfo copySamplePipelineLayoutParams = {
                 VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                       // const void* pNext;
+                nullptr,                                       // const void* pNext;
                 0u,                                            // VkPipelineLayoutCreateFlags flags;
                 1u,                                            // uint32_t setLayoutCount;
                 &m_copySampleDesciptorLayout.get(),            // const VkDescriptorSetLayout* pSetLayouts;
@@ -3998,7 +4708,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
             1u,                                                        // uint32_t vertexBindingDescriptionCount;
             &vertexInputBindingDescription,  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -4018,7 +4728,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
 
         VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
+            nullptr,                                                  // const void* pNext;
             0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
             false,                                                    // VkBool32 logicOpEnable;
             VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -4039,7 +4749,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
 
         const VkPipelineDepthStencilStateCreateInfo depthStencilStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                    // const void* pNext;
+            nullptr,                                                    // const void* pNext;
             0u,                                                         // VkPipelineDepthStencilStateCreateFlags flags;
             m_useDepth,                                                 // VkBool32 depthTestEnable;
             m_useDepth,                                                 // VkBool32 depthWriteEnable;
@@ -4055,7 +4765,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
         const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo{
             VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                                sType
             m_useConservative ? &m_rasterizationConservativeStateCreateInfo :
-                                DE_NULL,     // const void*                                    pNext
+                                nullptr,     // const void*                                    pNext
             0u,                              // VkPipelineRasterizationStateCreateFlags        flags
             VK_FALSE,                        // VkBool32                                        depthClampEnable
             VK_FALSE,                        // VkBool32                                        rasterizerDiscardEnable
@@ -4071,7 +4781,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
 
         VkPipelineFragmentShadingRateStateCreateInfoKHR shadingRateStateCreateInfo{
             VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR, // VkStructureType sType;
-            DE_NULL,                                                                // const void* pNext;
+            nullptr,                                                                // const void* pNext;
             {2, 2},                                                                 // VkExtent2D fragmentSize;
             {VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR,
              VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR}, // VkFragmentShadingRateCombinerOpKHR combinerOps[2];
@@ -4102,7 +4812,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
                     .setupVertexInputState(&vertexInputStateParams)
                     .setupPreRasterizationShaderState(
                         viewports, scissors, m_pipelineLayout, *m_renderPass, subpassIdx, m_vertexShaderModule,
-                        &rasterizationStateCreateInfo, ShaderWrapper(), ShaderWrapper(), ShaderWrapper(), DE_NULL,
+                        &rasterizationStateCreateInfo, ShaderWrapper(), ShaderWrapper(), ShaderWrapper(), nullptr,
                         (m_useFragmentShadingRate ? &shadingRateStateCreateInfo : nullptr))
                     .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, subpassIdx, m_fragmentShaderModule,
                                               &depthStencilStateParams, &m_multisampleStateParams)
@@ -4120,12 +4830,12 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
         {
             const VkPipelineVertexInputStateCreateInfo vertexInputStateParams{
                 VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                                   // const void* pNext;
+                nullptr,                                                   // const void* pNext;
                 0u,      // VkPipelineVertexInputStateCreateFlags flags;
                 0u,      // uint32_t vertexBindingDescriptionCount;
-                DE_NULL, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+                nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
                 0u,      // uint32_t vertexAttributeDescriptionCount;
-                DE_NULL  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+                nullptr  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
             };
 
             const std::vector<VkViewport> viewports{makeViewport(m_renderSize)};
@@ -4133,7 +4843,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
 
             const VkPipelineColorBlendStateCreateInfo colorBlendStateParams{
                 VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                                  // const void* pNext;
+                nullptr,                                                  // const void* pNext;
                 0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
                 false,                                                    // VkBool32 logicOpEnable;
                 VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -4173,7 +4883,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
 
         const VkDescriptorPoolCreateInfo descriptorPoolCreateInfo{
             VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,     // VkStructureType                    sType
-            DE_NULL,                                           // const void*                        pNext
+            nullptr,                                           // const void*                        pNext
             VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, // VkDescriptorPoolCreateFlags        flags
             1u,                                                // uint32_t                            maxSets
             1u,                                                // uint32_t                            poolSizeCount
@@ -4184,7 +4894,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
 
         const VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType                    sType
-            DE_NULL,                                        // const void*                        pNext
+            nullptr,                                        // const void*                        pNext
             *m_copySampleDesciptorPool,                     // VkDescriptorPool                    descriptorPool
             1u,                                             // uint32_t                            descriptorSetCount
             &m_copySampleDesciptorLayout.get(),             // const VkDescriptorSetLayout*        pSetLayouts
@@ -4196,24 +4906,24 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
                                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
         const VkWriteDescriptorSet descriptorWrite{
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
-            DE_NULL,                                // const void* pNext;
+            nullptr,                                // const void* pNext;
             *m_copySampleDesciptorSet,              // VkDescriptorSet dstSet;
             0u,                                     // uint32_t dstBinding;
             0u,                                     // uint32_t dstArrayElement;
             1u,                                     // uint32_t descriptorCount;
             VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,    // VkDescriptorType descriptorType;
             &imageInfo,                             // const VkDescriptorImageInfo* pImageInfo;
-            DE_NULL,                                // const VkDescriptorBufferInfo* pBufferInfo;
-            DE_NULL,                                // const VkBufferView* pTexelBufferView;
+            nullptr,                                // const VkDescriptorBufferInfo* pBufferInfo;
+            nullptr,                                // const VkBufferView* pTexelBufferView;
         };
-        vk.updateDescriptorSets(vkDevice, 1u, &descriptorWrite, 0u, DE_NULL);
+        vk.updateDescriptorSets(vkDevice, 1u, &descriptorWrite, 0u, nullptr);
     }
 
     // Create vertex buffer
     {
         const VkBufferCreateInfo vertexBufferParams{
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             1024u,                                // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
@@ -4313,7 +5023,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
                 // color attachment image
                 {
                     VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,      // VkStructureType sType;
-                    DE_NULL,                                     // const void* pNext;
+                    nullptr,                                     // const void* pNext;
                     0u,                                          // VkAccessFlags srcAccessMask;
                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,        // VkAccessFlags dstAccessMask;
                     VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout oldLayout;
@@ -4331,7 +5041,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
                 // resolve attachment image
                 {
                     VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,      // VkStructureType sType;
-                    DE_NULL,                                     // const void* pNext;
+                    nullptr,                                     // const void* pNext;
                     0u,                                          // VkAccessFlags srcAccessMask;
                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,        // VkAccessFlags dstAccessMask;
                     VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout oldLayout;
@@ -4351,7 +5061,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
                     // resolve attachment image
                     {
                         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,      // VkStructureType sType;
-                        DE_NULL,                                     // const void* pNext;
+                        nullptr,                                     // const void* pNext;
                         0u,                                          // VkAccessFlags srcAccessMask;
                         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,        // VkAccessFlags dstAccessMask;
                         VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout oldLayout;
@@ -4370,7 +5080,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
                 // depth/stencil attachment image
                 {
                     VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,           // VkStructureType sType;
-                    DE_NULL,                                          // const void* pNext;
+                    nullptr,                                          // const void* pNext;
                     0u,                                               // VkAccessFlags srcAccessMask;
                     VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,     // VkAccessFlags dstAccessMask;
                     VK_IMAGE_LAYOUT_UNDEFINED,                        // VkImageLayout oldLayout;
@@ -4389,7 +5099,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
         beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
         vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dstStageMask, (VkDependencyFlags)0, 0u,
-                              DE_NULL, 0u, DE_NULL, (uint32_t)imageLayoutBarriers.size(), &imageLayoutBarriers[0]);
+                              nullptr, 0u, nullptr, (uint32_t)imageLayoutBarriers.size(), &imageLayoutBarriers[0]);
 
         m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()),
                            (uint32_t)clearValues.size(), &clearValues[0]);
@@ -4422,7 +5132,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
                 m_renderPass.nextSubpass(vk, *m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
                 m_copySamplePipelines[sampleId].bind(*m_cmdBuffer);
                 vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_copySamplePipelineLayout, 0u,
-                                         1u, &m_copySampleDesciptorSet.get(), 0u, DE_NULL);
+                                         1u, &m_copySampleDesciptorSet.get(), 0u, nullptr);
                 vk.cmdPushConstants(*m_cmdBuffer, *m_copySamplePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                                     sizeof(int32_t), &sampleId);
                 vk.cmdDraw(*m_cmdBuffer, 4, 1, 0, 0);
@@ -5050,7 +5760,7 @@ tcu::TestStatus VariableRateTestInstance::iterate(void)
 
     const vk::VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfoNoAttachments = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                      // const void* pNext;
+        nullptr,                                                      // const void* pNext;
         0u,                                                           // VkPipelineColorBlendStateCreateFlags flags;
         VK_FALSE,                                                     // VkBool32 logicOpEnable;
         vk::VK_LOGIC_OP_CLEAR,                                        // VkLogicOp logicOp;
@@ -5061,7 +5771,7 @@ tcu::TestStatus VariableRateTestInstance::iterate(void)
 
     const vk::VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfoOneAttachment = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                      // const void* pNext;
+        nullptr,                                                      // const void* pNext;
         0u,                                                           // VkPipelineColorBlendStateCreateFlags flags;
         VK_FALSE,                                                     // VkBool32 logicOpEnable;
         vk::VK_LOGIC_OP_CLEAR,                                        // VkLogicOp logicOp;
@@ -5099,7 +5809,7 @@ tcu::TestStatus VariableRateTestInstance::iterate(void)
             .setupVertexInputState(&vertexInputStateCreateInfo)
             .setupPreRasterizationShaderState(viewport, scissor, pipelineLayout, *renderPassSingleSubpass, 0u,
                                               vertModule)
-            .setupFragmentShaderState(pipelineLayout, *renderPassSingleSubpass, 0u, fragModule, DE_NULL,
+            .setupFragmentShaderState(pipelineLayout, *renderPassSingleSubpass, 0u, fragModule, nullptr,
                                       &multisampleStateCreateInfo)
             .setupFragmentOutputState(*renderPassSingleSubpass, 0u, colorBlendStatePtr, &multisampleStateCreateInfo)
             .setMonolithicPipelineLayout(pipelineLayout)
@@ -5122,7 +5832,7 @@ tcu::TestStatus VariableRateTestInstance::iterate(void)
             .setupVertexInputState(&vertexInputStateCreateInfo)
             .setupPreRasterizationShaderState(viewport, scissor, pipelineLayout, *renderPassMultiplePasses, subpass,
                                               vertModule)
-            .setupFragmentShaderState(pipelineLayout, *renderPassMultiplePasses, subpass, fragModule, DE_NULL,
+            .setupFragmentShaderState(pipelineLayout, *renderPassMultiplePasses, subpass, fragModule, nullptr,
                                       &multisampleStateCreateInfo)
             .setupFragmentOutputState(*renderPassMultiplePasses, subpass, &colorBlendStateCreateInfoNoAttachments,
                                       &multisampleStateCreateInfo)
@@ -5756,7 +6466,7 @@ tcu::TestStatus ZExportIterate(Context &context, const ZExportParams params)
 
     const VkPipelineDepthStencilStateCreateInfo dsStateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType                                sType
-        DE_NULL,             // const void*                                    pNext
+        nullptr,             // const void*                                    pNext
         0u,                  // VkPipelineDepthStencilStateCreateFlags        flags
         VK_TRUE,             // VkBool32                                        depthTestEnable
         VK_TRUE,             // VkBool32                                        depthWriteEnable
@@ -5966,6 +6676,508 @@ tcu::TestStatus ZExportIterate(Context &context, const ZExportParams params)
     }
 
     return tcu::TestStatus::fail("Unexpected color, depth or stencil result; check log for details");
+}
+
+struct SampleRateAlphaToCoverageParams
+{
+    PipelineConstructionType constructionType;
+    bool dynamicState;
+
+    tcu::IVec3 getExtent() const
+    {
+        return tcu::IVec3(3, 16, 1);
+    }
+
+    VkSampleCountFlagBits getSampleCount() const
+    {
+        return VK_SAMPLE_COUNT_4_BIT;
+    }
+
+    int getShiftBits() const
+    {
+        // When using 4 samples and expanding the multisample image into a single sample image, we need a 2x2 block for
+        // each original pixel, and each pixel in the block can be addressed using 1 bit of the sample ID. If using,
+        // e.g., 64 samples, we need an 8x8 block and each pixel is addressed with 3 bits in each dimension of the
+        // sample ID. So, the number of bits per subblock address is log2(sqrt(sampleCount)). We also apply rounding in
+        // case the result is not precise.
+        const auto sampleCount = getSampleCount();
+        DE_ASSERT(sampleCount == 4 || sampleCount == 16 || sampleCount == 64); // sqrt needs to be a whole number.
+        const auto shiftBits = static_cast<int>(std::log2(std::sqrt(static_cast<float>(sampleCount))) + 0.5f);
+        return shiftBits;
+    }
+
+    int32_t getBufferItemCount() const
+    {
+        // The buffer will contain values for the whole framebuffer.
+        const auto fbExtent = getExtent();
+        return fbExtent.x() * fbExtent.y() * fbExtent.z() * getSampleCount();
+    }
+
+    VkFormat getFormat() const
+    {
+        return VK_FORMAT_R8G8B8A8_UNORM;
+    }
+
+    uint32_t getRandomSeed() const
+    {
+        return 1730734808u;
+    }
+
+    tcu::Vec4 getClearColor() const
+    {
+        return tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    }
+
+    VkImageUsageFlags getImageUsage() const
+    {
+        return (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+    }
+};
+
+class SampleRateAlphaToCoverageInstance : public vkt::TestInstance
+{
+public:
+    SampleRateAlphaToCoverageInstance(Context &context, const SampleRateAlphaToCoverageParams &params)
+        : vkt::TestInstance(context)
+        , m_params(params)
+    {
+    }
+    virtual ~SampleRateAlphaToCoverageInstance(void) = default;
+
+    tcu::TestStatus iterate(void) override;
+
+protected:
+    const SampleRateAlphaToCoverageParams m_params;
+};
+
+class SampleRateAlphaToCoverageCase : public vkt::TestCase
+{
+public:
+    SampleRateAlphaToCoverageCase(tcu::TestContext &testCtx, const std::string &name,
+                                  const SampleRateAlphaToCoverageParams &params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~SampleRateAlphaToCoverageCase(void) = default;
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new SampleRateAlphaToCoverageInstance(context, m_params);
+    }
+
+    void checkSupport(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+protected:
+    const SampleRateAlphaToCoverageParams m_params;
+};
+
+void SampleRateAlphaToCoverageCase::checkSupport(Context &context) const
+{
+    const auto ctx = context.getContextCommonData();
+
+    checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, m_params.constructionType);
+
+    if (m_params.dynamicState)
+    {
+#ifndef CTS_USES_VULKANSC
+        const auto &eds3Features = context.getExtendedDynamicState3FeaturesEXT();
+        if (!eds3Features.extendedDynamicState3AlphaToCoverageEnable)
+            TCU_THROW(NotSupportedError, "extendedDynamicState3AlphaToCoverageEnable not supported");
+#else
+        TCU_THROW(NotSupportedError, "VK_EXT_extended_dynamic_state3 not supported in VulkanSC");
+#endif // CTS_USES_VULKANSC
+    }
+
+    const auto imageUsage = m_params.getImageUsage();
+
+    VkImageFormatProperties formatProperties;
+    const auto result =
+        ctx.vki.getPhysicalDeviceImageFormatProperties(ctx.physicalDevice, m_params.getFormat(), VK_IMAGE_TYPE_2D,
+                                                       VK_IMAGE_TILING_OPTIMAL, imageUsage, 0u, &formatProperties);
+
+    if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+        TCU_THROW(NotSupportedError, "Implementation does not support required format features");
+    else if (result != VK_SUCCESS)
+        TCU_FAIL(std::string("vkGetPhysicalDeviceImageFormatProperties error: ") + getResultName(result));
+
+    const auto sampleCount = m_params.getSampleCount();
+    if ((formatProperties.sampleCounts & sampleCount) != sampleCount)
+        TCU_THROW(NotSupportedError, "Required sample count not supported");
+}
+
+void SampleRateAlphaToCoverageCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    // Full-screen triangle that saves us from having to create a vertex buffer.
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "const vec4 vertices[] = vec4[](\n"
+         << "    vec4(-1.0, -1.0, 0.0, 1.0),\n"
+         << "    vec4(-1.0,  3.0, 0.0, 1.0),\n"
+         << "    vec4( 3.0, -1.0, 0.0, 1.0)\n"
+         << ");\n"
+         << "void main (void) {\n"
+         << "    gl_Position = vertices[gl_VertexIndex % 3];\n"
+         << "}\n";
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    const auto fbExtent    = m_params.getExtent();
+    const auto sampleCount = m_params.getSampleCount();
+    const auto itemCount   = m_params.getBufferItemCount();
+
+    DE_ASSERT(fbExtent.z() == 1);
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "layout (set=0, binding=0, std430) readonly buffer CoverageBlock { float alpha[" << itemCount
+         << "]; } coverage;\n"
+         << "void main(void) {\n"
+         << "    const int cols = " << fbExtent.x() << ";\n"
+         << "    const int rows = " << fbExtent.y() << ";\n"
+         << "    const int sampleCount = " << sampleCount << ";\n"
+         << "    const int xIdx = int(gl_FragCoord.x);\n"
+         << "    const int yIdx = int(gl_FragCoord.y);\n"
+         << "    const int bufferIdx = yIdx * (sampleCount * cols) + xIdx * sampleCount + gl_SampleID;\n"
+         << "    const float alpha = coverage.alpha[bufferIdx];\n"
+         << "    outColor = vec4(0.0, 0.0, 1.0, alpha);\n"
+         << "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+
+    // The compute shader will sample the multisample color attachment and "translate it" to a single sample image where
+    // each pixel is a 2x2 pixel block that contains the values of the 4 samples.
+    const auto shiftBits = m_params.getShiftBits();
+    std::ostringstream comp;
+    comp << "#version 460\n"
+         << "layout (local_size_x=" << fbExtent.x() << ", local_size_y=" << fbExtent.y()
+         << ", local_size_z=" << fbExtent.z() << ") in;\n"
+         << "layout (set=0, binding=0) uniform sampler2DMS resultSampler;\n"
+         << "layout (rgba8, set=0, binding=1) uniform image2D expandedImg;\n"
+         << "void main(void) {\n"
+         << "    const int sampleCount = " << sampleCount << ";\n"
+         << "    const int shiftBits = " << shiftBits << ";\n"
+         << "    const int shiftMask = (1 << shiftBits) - 1;\n"
+         << "    const ivec2 invID = ivec2(gl_LocalInvocationID.xy);\n"
+         << "    for (int i = 0; i < sampleCount; ++i) {\n"
+         << "        const int subCol = ((i >> shiftBits) & shiftMask);\n"
+         << "        const int subRow = (i & shiftMask);\n"
+         << "        const int xCoord = invID.x * 2 + subCol;\n"
+         << "        const int yCoord = invID.y * 2 + subRow;\n"
+         << "        const vec4 resultColor = texelFetch(resultSampler, invID, i);\n"
+         << "        imageStore(expandedImg, ivec2(xCoord, yCoord), resultColor);\n"
+         << "    }\n"
+         << "}\n";
+    programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str());
+}
+
+tcu::TestStatus SampleRateAlphaToCoverageInstance::iterate(void)
+{
+    const auto ctx         = m_context.getContextCommonData();
+    const auto itemCount   = m_params.getBufferItemCount();
+    const auto fbExtent    = m_params.getExtent();
+    const auto apiExtent   = makeExtent3D(fbExtent);
+    const auto sampleCount = m_params.getSampleCount();
+    const auto shiftBits   = m_params.getShiftBits();
+    const auto blockDim    = (1u << shiftBits);
+    const auto shiftMask   = blockDim - 1u;
+    const tcu::IVec3 expandedExtent(fbExtent.x() * blockDim, fbExtent.y() * blockDim, fbExtent.z());
+    const auto middleColumn = static_cast<int>(static_cast<float>(fbExtent.x()) / 2.0);
+    const auto randomSeed   = m_params.getRandomSeed();
+    const auto imageFormat  = m_params.getFormat();
+    const auto imageUsage   = m_params.getImageUsage();
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+    // Prepare coverage buffer. One value per sample, row by row, column by column, pixel by pixel.
+    std::vector<float> coverage;
+    coverage.reserve(itemCount);
+
+    DE_ASSERT(fbExtent.z() == 1);
+    de::Random rnd(randomSeed);
+
+    for (int y = 0; y < fbExtent.y(); ++y)
+        for (int x = 0; x < fbExtent.x(); ++x)
+            for (int s = 0; s < sampleCount; ++s)
+            {
+                if (x < middleColumn)
+                    coverage.push_back(1.0f);
+                else if (x > middleColumn)
+                    coverage.push_back(0.0f);
+                else
+                    coverage.push_back(rnd.getBool() ? 1.0f : 0.0f);
+            }
+
+    const auto coverageBufferInfo =
+        makeBufferCreateInfo(static_cast<VkDeviceSize>(de::dataSize(coverage)), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    BufferWithMemory coverageBuffer(ctx.vkd, ctx.device, ctx.allocator, coverageBufferInfo,
+                                    MemoryRequirement::HostVisible);
+    {
+        auto &alloc   = coverageBuffer.getAllocation();
+        void *dataPtr = alloc.getHostPtr();
+        deMemcpy(dataPtr, de::dataOrNull(coverage), de::dataSize(coverage));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Multisample color buffer.
+    const VkImageCreateInfo colorBufferInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_IMAGE_TYPE_2D,
+        imageFormat,
+        apiExtent,
+        1u,
+        1u,
+        sampleCount,
+        VK_IMAGE_TILING_OPTIMAL,
+        imageUsage,
+        VK_SHARING_MODE_EXCLUSIVE,
+        0u,
+        nullptr,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+    };
+    ImageWithMemory colorBuffer(ctx.vkd, ctx.device, ctx.allocator, colorBufferInfo, MemoryRequirement::Any);
+    const auto colorSRR = makeDefaultImageSubresourceRange();
+    const auto colorBufferView =
+        makeImageView(ctx.vkd, ctx.device, colorBuffer.get(), VK_IMAGE_VIEW_TYPE_2D, imageFormat, colorSRR);
+
+    // Sampler for the compute shader.
+    const VkSamplerCreateInfo samplerCreateInfo = {
+        VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_FILTER_NEAREST,
+        VK_FILTER_NEAREST,
+        VK_SAMPLER_MIPMAP_MODE_NEAREST,
+        VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        0.0f,
+        VK_FALSE,
+        0.0f,
+        VK_FALSE,
+        VK_COMPARE_OP_NEVER,
+        0.0f,
+        1.0f,
+        VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+        VK_FALSE,
+    };
+    const auto sampler = createSampler(ctx.vkd, ctx.device, &samplerCreateInfo);
+
+    // Single-sample "expanded" result.
+    VkImageCreateInfo expandedImgInfo = colorBufferInfo;
+    expandedImgInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
+    expandedImgInfo.extent = makeExtent3D(apiExtent.width * blockDim, apiExtent.height * blockDim, apiExtent.depth);
+    expandedImgInfo.usage =
+        (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT);
+
+    ImageWithBuffer expandedImg(ctx.vkd, ctx.device, ctx.allocator, expandedImgInfo.extent, expandedImgInfo.format,
+                                expandedImgInfo.usage, expandedImgInfo.imageType);
+
+    // Prepare descriptor pool, layouts and sets.
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    const auto descriptorPool =
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 2u);
+
+    Move<VkDescriptorSetLayout> fragSetLayout;
+    Move<VkDescriptorSetLayout> compSetLayout;
+
+    {
+        DescriptorSetLayoutBuilder layoutBuilder;
+        layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
+        fragSetLayout = layoutBuilder.build(ctx.vkd, ctx.device);
+    }
+    {
+        DescriptorSetLayoutBuilder layoutBuilder;
+        layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT);
+        layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT);
+        compSetLayout = layoutBuilder.build(ctx.vkd, ctx.device);
+    }
+
+    const auto fragDescSet = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *fragSetLayout);
+    const auto compDescSet = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *compSetLayout);
+
+    // Update descriptor sets.
+    using Location = DescriptorSetUpdateBuilder::Location;
+    {
+        DescriptorSetUpdateBuilder updateBuilder;
+        const auto bufferInfo = makeDescriptorBufferInfo(*coverageBuffer, 0ull, VK_WHOLE_SIZE);
+        updateBuilder.writeSingle(*fragDescSet, Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferInfo);
+        updateBuilder.update(ctx.vkd, ctx.device);
+    }
+    {
+        DescriptorSetUpdateBuilder updateBuilder;
+        const auto combinedInfo =
+            makeDescriptorImageInfo(*sampler, *colorBufferView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        const auto storageInfo =
+            makeDescriptorImageInfo(VK_NULL_HANDLE, expandedImg.getImageView(), VK_IMAGE_LAYOUT_GENERAL);
+        updateBuilder.writeSingle(*compDescSet, Location::binding(0u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                  &combinedInfo);
+        updateBuilder.writeSingle(*compDescSet, Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &storageInfo);
+        updateBuilder.update(ctx.vkd, ctx.device);
+    }
+
+    // Render pass and framebuffer for the graphics part.
+    const auto attDesc     = makeAttachmentDescription(0u, imageFormat, sampleCount, VK_ATTACHMENT_LOAD_OP_CLEAR,
+                                                       VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                                       VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED,
+                                                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    const auto attRef      = makeAttachmentReference(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    const auto subpassDesc = makeSubpassDescription(0u, VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, nullptr, 1u, &attRef,
+                                                    nullptr, nullptr, 0u, nullptr);
+    const VkRenderPassCreateInfo renderPassCreateInfo = {
+        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, nullptr, 0u, 1u, &attDesc, 1u, &subpassDesc, 0u, nullptr,
+    };
+    RenderPassWrapper renderPass(m_params.constructionType, ctx.vkd, ctx.device, &renderPassCreateInfo);
+    renderPass.createFramebuffer(ctx.vkd, ctx.device, *colorBuffer, *colorBufferView, apiExtent.width,
+                                 apiExtent.height);
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
+
+    // Pipeline layouts.
+    PipelineLayoutWrapper graphicsPipelineLayout(m_params.constructionType, ctx.vkd, ctx.device, *fragSetLayout);
+    const auto computePipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *compSetLayout);
+
+    // Shaders.
+    const auto &binaries = m_context.getBinaryCollection();
+    const ShaderWrapper vertModule(ctx.vkd, ctx.device, binaries.get("vert"));
+    const ShaderWrapper fragModule(ctx.vkd, ctx.device, binaries.get("frag"));
+    const auto compModule = createShaderModule(ctx.vkd, ctx.device, binaries.get("comp"));
+
+    // Pipelines.
+    const auto staticAlphaToCoverage = (m_params.dynamicState ? VK_FALSE : VK_TRUE);
+#ifndef CTS_USES_VULKANSC
+    const auto dynamicAlphaToCoverage = (m_params.dynamicState ? VK_TRUE : VK_FALSE);
+#endif // CTS_USES_VULKANSC
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = initVulkanStructure();
+
+    const VkPipelineMultisampleStateCreateInfo multiSampleStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        sampleCount,
+        VK_FALSE, // Sample shading should be enabled because the frag shader uses gl_SampleID.
+        0.0f,
+        nullptr,
+        staticAlphaToCoverage,
+        VK_FALSE,
+    };
+
+    std::vector<VkDynamicState> dynamicStates;
+#ifndef CTS_USES_VULKANSC
+    if (m_params.dynamicState)
+        dynamicStates.push_back(VK_DYNAMIC_STATE_ALPHA_TO_COVERAGE_ENABLE_EXT);
+#endif // CTS_USES_VULKANSC
+
+    const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(dynamicStates),
+        de::dataOrNull(dynamicStates),
+    };
+
+    GraphicsPipelineWrapper graphicsPipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device,
+                                             m_context.getDeviceExtensions(), m_params.constructionType);
+
+    graphicsPipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+        .setDefaultRasterizationState()
+        .setDefaultDepthStencilState()
+        .setDefaultColorBlendState()
+        .setMonolithicPipelineLayout(graphicsPipelineLayout)
+        .setDynamicState(&dynamicStateCreateInfo)
+        .setupVertexInputState(&vertexInputStateCreateInfo)
+        .setupPreRasterizationShaderState(viewports, scissors, graphicsPipelineLayout, renderPass.get(), 0u, vertModule)
+        .setupFragmentShaderState(graphicsPipelineLayout, renderPass.get(), 0u, fragModule, nullptr,
+                                  &multiSampleStateCreateInfo)
+        .setupFragmentOutputState(renderPass.get(), 0u, nullptr, &multiSampleStateCreateInfo)
+        .buildPipeline();
+
+    const auto computePipeline = makeComputePipeline(ctx.vkd, ctx.device, *computePipelineLayout, *compModule);
+
+    // Submit work.
+    {
+        CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+        const auto cmdBuffer = *cmd.cmdBuffer;
+
+        beginCommandBuffer(ctx.vkd, cmdBuffer);
+        renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u), clearColor);
+        graphicsPipeline.bind(cmdBuffer);
+        ctx.vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipelineLayout, 0u, 1u,
+                                      &fragDescSet.get(), 0u, nullptr);
+#ifndef CTS_USES_VULKANSC
+        if (m_params.dynamicState)
+            ctx.vkd.cmdSetAlphaToCoverageEnableEXT(cmdBuffer, dynamicAlphaToCoverage);
+#endif // CTS_USES_VULKANSC
+        ctx.vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+        renderPass.end(ctx.vkd, cmdBuffer);
+
+        {
+            const std::vector<VkImageMemoryBarrier> imageBarriers{
+                // Move multisample image to shader read optimal before the compute shader.
+                makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+                                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, *colorBuffer, colorSRR),
+
+                // Transition expanded image to the proper layout for writing.
+                makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                       VK_IMAGE_LAYOUT_GENERAL, expandedImg.getImage(), colorSRR),
+            };
+
+            const auto srcStages = (VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+            const auto dstStages = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
+            cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, srcStages, dstStages, de::dataOrNull(imageBarriers),
+                                          imageBarriers.size());
+        }
+
+        ctx.vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
+        ctx.vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipelineLayout, 0u, 1u,
+                                      &compDescSet.get(), 0u, nullptr);
+        ctx.vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+
+        // Read expanded image.
+        copyImageToBuffer(ctx.vkd, cmdBuffer, expandedImg.getImage(), expandedImg.getBuffer(),
+                          expandedExtent.swizzle(0, 1), VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
+
+        endCommandBuffer(ctx.vkd, cmdBuffer);
+        submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+    }
+
+    // Create reference image.
+    const auto tcuFormat = mapVkFormat(imageFormat);
+    tcu::TextureLevel referenceLevel(tcuFormat, expandedExtent.x(), expandedExtent.y(), expandedExtent.z());
+    tcu::PixelBufferAccess referenceAccess = referenceLevel.getAccess();
+
+    for (int y = 0; y < fbExtent.y(); ++y)
+        for (int x = 0; x < fbExtent.x(); ++x)
+            for (int s = 0; s < sampleCount; ++s)
+            {
+                const int index           = y * (sampleCount * fbExtent.x()) + x * sampleCount + s;
+                const float coverageValue = coverage.at(index);
+                const auto subX           = ((s >> shiftBits) & shiftMask);
+                const auto subY           = (s & shiftMask);
+                const auto xCoord         = x * blockDim + subX;
+                const auto yCoord         = y * blockDim + subY;
+                const tcu::Vec4 color(0.0f, 0.0f, (coverageValue > 0.0f ? 1.0f : 0.0f), 1.0f);
+                referenceAccess.setPixel(color, xCoord, yCoord);
+            }
+
+    invalidateAlloc(ctx.vkd, ctx.device, expandedImg.getBufferAllocation());
+    tcu::ConstPixelBufferAccess resultAccess(tcuFormat, expandedExtent, expandedImg.getBufferAllocation().getHostPtr());
+    const tcu::Vec4 threshold(0.0f, 0.0f, 0.0f, 0.0f);
+
+    auto &log = m_context.getTestContext().getLog();
+    if (!tcu::floatThresholdCompare(log, "Result (2x2 pixel blocks per original pixel)", "", referenceAccess,
+                                    resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+        TCU_FAIL("Unexpected expanded color buffer contents; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
 }
 
 } // namespace
@@ -6410,6 +7622,23 @@ tcu::TestCaseGroup *createMultisampleTests(tcu::TestContext &testCtx, PipelineCo
     }
 
 #ifndef CTS_USES_VULKANSC
+    if (!useFragmentShadingRate)
+    {
+        TestCaseGroupPtr sampleRateA2CGroup(new tcu::TestCaseGroup(testCtx, "sample_rate_a2c"));
+        for (const bool dynamicA2C : {false, true})
+        {
+            const auto testName = (dynamicA2C ? "dynamic_a2c" : "static_a2c");
+            const SampleRateAlphaToCoverageParams params{
+                pipelineConstructionType,
+                dynamicA2C,
+            };
+            sampleRateA2CGroup->addChild(new SampleRateAlphaToCoverageCase(testCtx, testName, params));
+        }
+        multisampleTests->addChild(sampleRateA2CGroup.release());
+    }
+#endif // CTS_USES_VULKANSC
+
+#ifndef CTS_USES_VULKANSC
     // not all tests need to be repeated for FSR
     if (useFragmentShadingRate == false)
     {
@@ -6540,6 +7769,13 @@ tcu::TestCaseGroup *createMultisampleTests(tcu::TestContext &testCtx, PipelineCo
         }
 
         multisampleTests->addChild(conservativeGroup.release());
+
+        TestCaseGroupPtr compatibleRenderPassGroup(new tcu::TestCaseGroup(testCtx, "compatible_render_pass"));
+        compatibleRenderPassGroup->addChild(
+            new CompatibleRenderPassTest(testCtx, "static", pipelineConstructionType, false));
+        compatibleRenderPassGroup->addChild(
+            new CompatibleRenderPassTest(testCtx, "dynamic", pipelineConstructionType, true));
+        multisampleTests->addChild(compatibleRenderPassGroup.release());
     }
 
     {
@@ -6724,6 +7960,44 @@ tcu::TestCaseGroup *createMultisampleTests(tcu::TestContext &testCtx, PipelineCo
 
             multisampleTests->addChild(zExportGroup.release());
         }
+    }
+
+    if (!useFragmentShadingRate)
+    {
+        TestCaseGroupPtr a2cWa2oneGrp(new tcu::TestCaseGroup(testCtx, "a2c_with_a2one"));
+        for (const bool dynamicA2C : {false, true})
+            for (const bool dynamicA2One : {false, true})
+                for (const bool exportFragDepth : {false, true})
+                    for (const bool sampleRateShadingEnable : {false, true})
+                    {
+#ifdef CTS_USES_VULKANSC
+                        if (dynamicA2C || dynamicA2One)
+                            continue;
+#endif
+                        const A2CplusA2OneParams params{
+                            pipelineConstructionType, dynamicA2C, dynamicA2One, exportFragDepth,
+                            sampleRateShadingEnable,
+                        };
+
+                        std::string testName;
+                        if (dynamicA2C)
+                            testName += "dynamic_a2c";
+                        if (dynamicA2One)
+                            testName += (testName.empty() ? "" : "_") + std::string("dynamic_a2one");
+                        if (testName.empty())
+                            testName = "static";
+
+                        if (params.exportFragDepth)
+                            testName += "_export_frag_depth";
+
+                        if (params.sampleShadingEnable)
+                            testName += "_with_sample_rate_shading";
+
+                        addFunctionCaseWithPrograms(a2cWa2oneGrp.get(), testName, A2CplusA2OneSupport,
+                                                    A2CplusA2OnePrograms, A2CplusA2OneRun, params);
+                    }
+
+        multisampleTests->addChild(a2cWa2oneGrp.release());
     }
 
     return multisampleTests.release();

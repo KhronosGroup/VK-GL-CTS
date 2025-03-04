@@ -426,7 +426,7 @@ int deMemPool_getCapacity(const deMemPool *pool, bool recurse)
     return numCapacityBytes;
 }
 
-DE_INLINE void *deMemPool_allocInternal(deMemPool *pool, size_t numBytes, uint32_t alignBytes)
+void *deMemPool_allocInternal(deMemPool *pool, size_t numBytes, uint32_t alignBytes)
 {
     MemPage *curPage = pool->currentPage;
 

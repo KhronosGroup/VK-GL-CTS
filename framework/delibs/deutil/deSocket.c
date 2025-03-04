@@ -209,7 +209,7 @@ typedef size_t NativeSize;
 #define DE_INVALID_SOCKET_HANDLE (-1)
 #endif
 
-DE_INLINE bool deSocketHandleIsValid(deSocketHandle handle)
+bool deSocketHandleIsValid(deSocketHandle handle)
 {
     return handle != DE_INVALID_SOCKET_HANDLE;
 }
@@ -781,7 +781,7 @@ static deSocketResult mapSendRecvResult(int numBytes)
     }
 }
 
-DE_INLINE void deSocket_setChannelsClosed(deSocket *sock, uint32_t channels)
+void deSocket_setChannelsClosed(deSocket *sock, uint32_t channels)
 {
     deMutex_lock(sock->stateLock);
 

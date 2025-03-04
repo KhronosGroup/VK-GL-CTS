@@ -551,11 +551,11 @@ private:
         /** Destructor */
         ~_reference_color_storage()
         {
-            if (data != DE_NULL)
+            if (data != nullptr)
             {
                 delete[] data;
 
-                data = DE_NULL;
+                data = nullptr;
             }
         }
     };

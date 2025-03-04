@@ -86,7 +86,7 @@ struct Params
     VertexTopology vertexTopology;
     GeometryOutput geometryOutput;
     VkPolygonMode polygonMode;
-    VkLineRasterizationModeKHR lineRasterizationMode;
+    VkLineRasterizationMode lineRasterizationMode;
 
     bool useGeometryShader(void) const
     {
@@ -247,6 +247,9 @@ void NonLineDrawCase::checkSupport(Context &context) const
 
     if (!(*requiredFeature))
         TCU_THROW(NotSupportedError, "Required line type not supported");
+
+    if (m_params.polygonMode != VK_POLYGON_MODE_FILL && !context.getDeviceFeatures().fillModeNonSolid)
+        TCU_THROW(NotSupportedError, "Required polygon mode not supported");
 }
 
 void NonLineDrawCase::initPrograms(SourceCollections &dst) const
@@ -623,7 +626,7 @@ tcu::TestCaseGroup *createDrawNonLineTests(tcu::TestContext &testCtx)
 
     const struct
     {
-        VkLineRasterizationModeKHR lineRasterMode;
+        VkLineRasterizationMode lineRasterMode;
         const char *suffix;
     } lineRasterModeCases[] = {
         {VK_LINE_RASTERIZATION_MODE_RECTANGULAR_KHR, "_line_raster_rect"},

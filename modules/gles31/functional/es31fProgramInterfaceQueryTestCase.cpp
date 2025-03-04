@@ -79,7 +79,7 @@ const char *getRequiredExtensionForStage(glu::ShaderType stage)
     case glu::SHADERTYPE_COMPUTE:
     case glu::SHADERTYPE_VERTEX:
     case glu::SHADERTYPE_FRAGMENT:
-        return DE_NULL;
+        return nullptr;
 
     case glu::SHADERTYPE_GEOMETRY:
         return "GL_EXT_geometry_shader";
@@ -90,7 +90,7 @@ const char *getRequiredExtensionForStage(glu::ShaderType stage)
 
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -208,7 +208,7 @@ bool PropValidator::isSupported(void) const
     if (glu::contextSupports(m_renderContext.getType(), glu::ApiType::es(3, 2)) ||
         glu::contextSupports(m_renderContext.getType(), glu::ApiType::core(4, 5)))
         return true;
-    return m_extension == DE_NULL || m_contextInfo.isExtensionSupported(m_extension);
+    return m_extension == nullptr || m_contextInfo.isExtensionSupported(m_extension);
 }
 
 bool PropValidator::isSelected(uint32_t caseFlags) const
@@ -257,7 +257,7 @@ void SingleVariableValidator::validate(const ProgramInterfaceDefinition::Program
 
     if (findProgramVariablePathByPathName(path, program, resource, m_filter))
     {
-        const glu::VarType *variable = (path.back().isVariableType()) ? (path.back().getVariableType()) : (DE_NULL);
+        const glu::VarType *variable = (path.back().isVariableType()) ? (path.back().getVariableType()) : (nullptr);
 
         if (!variable || !variable->isBasicType())
         {
@@ -383,7 +383,7 @@ public:
 };
 
 TypeValidator::TypeValidator(Context &context, glw::GLuint programID, const VariableSearchFilter &filter)
-    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_TYPE, programID, filter, DE_NULL)
+    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_TYPE, programID, filter, nullptr)
 {
 }
 
@@ -470,7 +470,7 @@ private:
 
 ArraySizeValidator::ArraySizeValidator(Context &context, glw::GLuint programID, int unsizedArraySize,
                                        const VariableSearchFilter &filter)
-    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_ARRAY_SIZE, programID, filter, DE_NULL)
+    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_ARRAY_SIZE, programID, filter, nullptr)
     , m_unsizedArraySize(unsizedArraySize)
 {
 }
@@ -547,7 +547,7 @@ public:
 };
 
 ArrayStrideValidator::ArrayStrideValidator(Context &context, glw::GLuint programID, const VariableSearchFilter &filter)
-    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_ARRAY_STRIDE, programID, filter, DE_NULL)
+    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_ARRAY_STRIDE, programID, filter, nullptr)
 {
 }
 
@@ -610,7 +610,7 @@ public:
 };
 
 BlockIndexValidator::BlockIndexValidator(Context &context, glw::GLuint programID, const VariableSearchFilter &filter)
-    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_BLOCK_INDEX, programID, filter, DE_NULL)
+    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_BLOCK_INDEX, programID, filter, nullptr)
 {
 }
 
@@ -695,7 +695,7 @@ public:
 };
 
 IsRowMajorValidator::IsRowMajorValidator(Context &context, glw::GLuint programID, const VariableSearchFilter &filter)
-    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_MATRIX_ROW_MAJOR, programID, filter, DE_NULL)
+    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_MATRIX_ROW_MAJOR, programID, filter, nullptr)
 {
 }
 
@@ -741,7 +741,7 @@ public:
 
 MatrixStrideValidator::MatrixStrideValidator(Context &context, glw::GLuint programID,
                                              const VariableSearchFilter &filter)
-    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_MATRIX_STRIDE, programID, filter, DE_NULL)
+    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_MATRIX_STRIDE, programID, filter, nullptr)
 {
 }
 
@@ -805,7 +805,7 @@ public:
 
 AtomicCounterBufferIndexVerifier::AtomicCounterBufferIndexVerifier(Context &context, glw::GLuint programID,
                                                                    const VariableSearchFilter &filter)
-    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_ATOMIC_COUNTER_BUFFER_INDEX, programID, filter, DE_NULL)
+    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_ATOMIC_COUNTER_BUFFER_INDEX, programID, filter, nullptr)
 {
 }
 
@@ -868,7 +868,7 @@ public:
 };
 
 LocationValidator::LocationValidator(Context &context, glw::GLuint programID, const VariableSearchFilter &filter)
-    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_LOCATION, programID, filter, DE_NULL)
+    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_LOCATION, programID, filter, nullptr)
 {
 }
 
@@ -1160,7 +1160,7 @@ public:
 
 VariableNameLengthValidator::VariableNameLengthValidator(Context &context, glw::GLuint programID,
                                                          const VariableSearchFilter &filter)
-    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_NAME_LENGTH, programID, filter, DE_NULL)
+    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_NAME_LENGTH, programID, filter, nullptr)
 {
 }
 
@@ -1205,7 +1205,7 @@ public:
 };
 
 OffsetValidator::OffsetValidator(Context &context, glw::GLuint programID, const VariableSearchFilter &filter)
-    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_OFFSET, programID, filter, DE_NULL)
+    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_OFFSET, programID, filter, nullptr)
 {
 }
 
@@ -1310,7 +1310,7 @@ public:
 
 BlockNameLengthValidator::BlockNameLengthValidator(Context &context, const glw::GLuint programID,
                                                    const VariableSearchFilter &filter)
-    : SingleBlockValidator(context, PROGRAMRESOURCEPROP_NAME_LENGTH, programID, filter, DE_NULL)
+    : SingleBlockValidator(context, PROGRAMRESOURCEPROP_NAME_LENGTH, programID, filter, nullptr)
 {
 }
 
@@ -1347,7 +1347,7 @@ public:
 
 BufferBindingValidator::BufferBindingValidator(Context &context, const glw::GLuint programID,
                                                const VariableSearchFilter &filter)
-    : SingleBlockValidator(context, PROGRAMRESOURCEPROP_BUFFER_BINDING, programID, filter, DE_NULL)
+    : SingleBlockValidator(context, PROGRAMRESOURCEPROP_BUFFER_BINDING, programID, filter, nullptr)
 {
 }
 
@@ -1470,7 +1470,7 @@ public:
 
 TopLevelArraySizeValidator::TopLevelArraySizeValidator(Context &context, glw::GLuint programID,
                                                        const VariableSearchFilter &filter)
-    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_TOP_LEVEL_ARRAY_SIZE, programID, filter, DE_NULL)
+    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_TOP_LEVEL_ARRAY_SIZE, programID, filter, nullptr)
 {
 }
 
@@ -1528,7 +1528,7 @@ public:
 
 TopLevelArrayStrideValidator::TopLevelArrayStrideValidator(Context &context, glw::GLuint programID,
                                                            const VariableSearchFilter &filter)
-    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_TOP_LEVEL_ARRAY_STRIDE, programID, filter, DE_NULL)
+    : SingleVariableValidator(context, PROGRAMRESOURCEPROP_TOP_LEVEL_ARRAY_STRIDE, programID, filter, nullptr)
 {
 }
 
@@ -1601,7 +1601,7 @@ private:
 
 TransformFeedbackResourceValidator::TransformFeedbackResourceValidator(Context &context,
                                                                        ProgramResourcePropFlags validationProp)
-    : PropValidator(context, validationProp, DE_NULL)
+    : PropValidator(context, validationProp, nullptr)
 {
 }
 

@@ -38,7 +38,7 @@ AttachmentDescription1::AttachmentDescription1(const void *pNext_, VkAttachmentD
                                                VkAttachmentLoadOp stencilLoadOp_, VkAttachmentStoreOp stencilStoreOp_,
                                                VkImageLayout initialLayout_, VkImageLayout finalLayout_)
 {
-    DE_ASSERT(pNext_ == DE_NULL);
+    DE_ASSERT(pNext_ == nullptr);
 
     // No sType field in this struct
     DE_UNREF(pNext_);
@@ -75,7 +75,7 @@ AttachmentDescription2::AttachmentDescription2(const void *pNext_, VkAttachmentD
 AttachmentReference1::AttachmentReference1(const void *pNext_, uint32_t attachment_, VkImageLayout layout_,
                                            VkImageAspectFlags aspectMask_)
 {
-    DE_ASSERT(pNext_ == DE_NULL);
+    DE_ASSERT(pNext_ == nullptr);
     DE_ASSERT(aspectMask_ == 0);
 
     // No sType field in this struct
@@ -102,7 +102,7 @@ SubpassDescription1::SubpassDescription1(
     const VkAttachmentReference *pDepthStencilAttachment_, uint32_t preserveAttachmentCount_,
     const uint32_t *pPreserveAttachments_)
 {
-    DE_ASSERT(pNext_ == DE_NULL);
+    DE_ASSERT(pNext_ == nullptr);
     DE_ASSERT(viewMask_ == 0);
 
     // No sType field in this struct
@@ -147,7 +147,7 @@ SubpassDependency1::SubpassDependency1(const void *pNext_, uint32_t srcSubpass_,
                                        VkAccessFlags srcAccessMask_, VkAccessFlags dstAccessMask_,
                                        VkDependencyFlags dependencyFlags_, int32_t viewOffset_)
 {
-    DE_ASSERT(pNext_ == DE_NULL);
+    DE_ASSERT(pNext_ == nullptr);
     DE_ASSERT(viewOffset_ == 0);
 
     // No sType field in this struct
@@ -186,7 +186,7 @@ RenderPassCreateInfo1::RenderPassCreateInfo1(const void *pNext_, VkRenderPassCre
                                              uint32_t correlatedViewMaskCount_, const uint32_t *pCorrelatedViewMasks_)
 {
     DE_ASSERT(correlatedViewMaskCount_ == 0);
-    DE_ASSERT(pCorrelatedViewMasks_ == DE_NULL);
+    DE_ASSERT(pCorrelatedViewMasks_ == nullptr);
 
     sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     pNext           = pNext_;
@@ -232,7 +232,7 @@ Move<VkRenderPass> RenderPassCreateInfo2::createRenderPass(const DeviceInterface
 
 SubpassBeginInfo1::SubpassBeginInfo1(const void *pNext_, VkSubpassContents contents_) : contents(contents_)
 {
-    DE_ASSERT(pNext_ == DE_NULL);
+    DE_ASSERT(pNext_ == nullptr);
 
     DE_UNREF(pNext_);
 }
@@ -246,7 +246,7 @@ SubpassBeginInfo2::SubpassBeginInfo2(const void *pNext_, VkSubpassContents conte
 
 SubpassEndInfo1::SubpassEndInfo1(const void *pNext_)
 {
-    DE_ASSERT(pNext_ == DE_NULL);
+    DE_ASSERT(pNext_ == nullptr);
 
     DE_UNREF(pNext_);
 }
@@ -261,7 +261,7 @@ void RenderpassSubpass1::cmdBeginRenderPass(const DeviceInterface &vk, VkCommand
                                             const VkRenderPassBeginInfo *pRenderPassBegin,
                                             const SubpassBeginInfo *pSubpassBeginInfo)
 {
-    DE_ASSERT(pSubpassBeginInfo != DE_NULL);
+    DE_ASSERT(pSubpassBeginInfo != nullptr);
 
     vk.cmdBeginRenderPass(cmdBuffer, pRenderPassBegin, pSubpassBeginInfo->contents);
 }
@@ -271,7 +271,7 @@ void RenderpassSubpass1::cmdNextSubpass(const DeviceInterface &vk, VkCommandBuff
                                         const SubpassEndInfo *pSubpassEndInfo)
 {
     DE_UNREF(pSubpassEndInfo);
-    DE_ASSERT(pSubpassBeginInfo != DE_NULL);
+    DE_ASSERT(pSubpassBeginInfo != nullptr);
 
     vk.cmdNextSubpass(cmdBuffer, pSubpassBeginInfo->contents);
 }
@@ -295,8 +295,8 @@ void RenderpassSubpass2::cmdNextSubpass(const DeviceInterface &vk, VkCommandBuff
                                         const SubpassBeginInfo *pSubpassBeginInfo,
                                         const SubpassEndInfo *pSubpassEndInfo)
 {
-    DE_ASSERT(pSubpassBeginInfo != DE_NULL);
-    DE_ASSERT(pSubpassEndInfo != DE_NULL);
+    DE_ASSERT(pSubpassBeginInfo != nullptr);
+    DE_ASSERT(pSubpassEndInfo != nullptr);
 
     vk.cmdNextSubpass2(cmdBuffer, pSubpassBeginInfo, pSubpassEndInfo);
 }
@@ -304,7 +304,7 @@ void RenderpassSubpass2::cmdNextSubpass(const DeviceInterface &vk, VkCommandBuff
 void RenderpassSubpass2::cmdEndRenderPass(const DeviceInterface &vk, VkCommandBuffer cmdBuffer,
                                           const SubpassEndInfo *pSubpassEndInfo)
 {
-    DE_ASSERT(pSubpassEndInfo != DE_NULL);
+    DE_ASSERT(pSubpassEndInfo != nullptr);
 
     vk.cmdEndRenderPass2(cmdBuffer, pSubpassEndInfo);
 }

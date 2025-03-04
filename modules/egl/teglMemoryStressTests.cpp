@@ -354,7 +354,7 @@ MemoryStressCase::MemoryStressCase(EglTestContext &eglTestCtx, Spec spec, const 
     , m_iterationCount(10)
     , m_seed(deStringHash(name))
     , m_display(EGL_NO_DISPLAY)
-    , m_config(DE_NULL)
+    , m_config(nullptr)
 {
 }
 
@@ -383,7 +383,7 @@ void MemoryStressCase::init(void)
 void MemoryStressCase::deinit(void)
 {
     delete m_allocator;
-    m_allocator = DE_NULL;
+    m_allocator = nullptr;
 
     if (m_display != EGL_NO_DISPLAY)
     {

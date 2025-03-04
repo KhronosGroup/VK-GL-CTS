@@ -51,7 +51,7 @@ TextureBufferBufferParameters::TextureBufferBufferParameters(Context &context, c
                                                              const char *name, const char *description)
     : TestCaseBase(context, extParams, name, description)
     , m_bo_id(0)
-    , m_buffer_pointer(DE_NULL)
+    , m_buffer_pointer(nullptr)
 {
 }
 
@@ -65,7 +65,7 @@ void TextureBufferBufferParameters::deinit(void)
     gl.bindBuffer(m_glExtTokens.TEXTURE_BUFFER, 0);
     gl.unmapBuffer(m_glExtTokens.TEXTURE_BUFFER);
     gl.getError();
-    m_buffer_pointer = DE_NULL;
+    m_buffer_pointer = nullptr;
 
     /* Delete GLES objects */
     if (m_bo_id != 0)
@@ -175,7 +175,7 @@ glw::GLboolean TextureBufferBufferParameters::queryBufferPointerv(glw::GLenum ta
     /* Retrieve GLES entry points. */
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-    glw::GLvoid *result_pointer = DE_NULL;
+    glw::GLvoid *result_pointer = nullptr;
     glw::GLboolean test_passed  = true;
 
     gl.getBufferPointerv(target, pname, &result_pointer);
@@ -217,7 +217,7 @@ tcu::TestNode::IterateResult TextureBufferBufferParameters::iterate(void)
     test_passed =
         queryBufferParameteri64v(m_glExtTokens.TEXTURE_BUFFER, GL_BUFFER_SIZE, 0 /* expected size */) && test_passed;
 
-    gl.bufferData(m_glExtTokens.TEXTURE_BUFFER, m_bo_size, DE_NULL, GL_STATIC_READ);
+    gl.bufferData(m_glExtTokens.TEXTURE_BUFFER, m_bo_size, nullptr, GL_STATIC_READ);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Could not initialize buffer object's data store!");
 
     /* Query GL_BUFFER_SIZE with buffer object's data store initialized */
@@ -244,8 +244,7 @@ tcu::TestNode::IterateResult TextureBufferBufferParameters::iterate(void)
     test_passed = queryBufferParameteri64v(m_glExtTokens.TEXTURE_BUFFER, GL_BUFFER_MAP_LENGTH, 0 /* expected size */) &&
                   test_passed;
 
-    test_passed =
-        queryBufferPointerv(m_glExtTokens.TEXTURE_BUFFER, GL_BUFFER_MAP_POINTER, (glw::GLvoid *)DE_NULL) && test_passed;
+    test_passed = queryBufferPointerv(m_glExtTokens.TEXTURE_BUFFER, GL_BUFFER_MAP_POINTER, nullptr) && test_passed;
 
     /* Mapping whole buffer object's data store */
     m_buffer_pointer = (glw::GLubyte *)gl.mapBufferRange(m_glExtTokens.TEXTURE_BUFFER, 0, m_bo_size, GL_MAP_READ_BIT);
@@ -275,7 +274,7 @@ tcu::TestNode::IterateResult TextureBufferBufferParameters::iterate(void)
         test_passed;
 
     /* Unmapping buffer object's data store */
-    m_buffer_pointer = DE_NULL;
+    m_buffer_pointer = nullptr;
     gl.unmapBuffer(m_glExtTokens.TEXTURE_BUFFER);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Unmapping buffer failed");
 
@@ -309,7 +308,7 @@ tcu::TestNode::IterateResult TextureBufferBufferParameters::iterate(void)
         test_passed;
 
     /* Unmapping buffer object's data store */
-    m_buffer_pointer = DE_NULL;
+    m_buffer_pointer = nullptr;
     gl.unmapBuffer(m_glExtTokens.TEXTURE_BUFFER);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Unmapping buffer failed");
 

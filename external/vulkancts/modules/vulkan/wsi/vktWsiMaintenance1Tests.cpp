@@ -80,7 +80,7 @@ void checkAllSupported(const Extensions &supportedExtensions, const std::vector<
 }
 
 CustomInstance createInstanceWithWsi(Context &context, const Extensions &supportedExtensions, Type wsiType,
-                                     bool requireDeviceGroup, const VkAllocationCallbacks *pAllocator = DE_NULL)
+                                     bool requireDeviceGroup, const VkAllocationCallbacks *pAllocator = nullptr)
 {
     const uint32_t version = context.getUsedApiVersion();
     std::vector<std::string> extensions;
@@ -116,12 +116,13 @@ VkPhysicalDeviceFeatures getDeviceFeaturesForWsi(void)
 Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance instance, const InstanceInterface &vki,
                                    VkPhysicalDevice physicalDevice, const Extensions &supportedExtensions,
                                    const uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator,
-                                   bool requireSwapchainMaintenance1, bool requireDeviceGroup, bool validationEnabled)
+                                   bool requireSwapchainMaintenance1, bool enableSwapchainMaintenance1Feature,
+                                   bool requireDeviceGroup, bool validationEnabled)
 {
     const float queuePriorities[]              = {1.0f};
     const VkDeviceQueueCreateInfo queueInfos[] = {{
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkDeviceQueueCreateFlags)0,
         queueFamilyIndex,
         DE_LENGTH_OF_ARRAY(queuePriorities),
@@ -146,17 +147,29 @@ Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance 
 
     checkAllSupported(supportedExtensions, extensions);
 
+    VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainMaintenance1Features{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT, // VkStructureType sType;
+        nullptr,                                                                // void* pNext;
+        VK_TRUE,                                                                // VkBool32 swapchainMaintenance1;
+    };
+
+    VkPhysicalDeviceFeatures2 features2 = initVulkanStructure();
+    features2.features                  = features;
+
+    if (enableSwapchainMaintenance1Feature)
+        features2.pNext = &swapchainMaintenance1Features;
+
     VkDeviceCreateInfo deviceParams = {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        DE_NULL,
+        &features2,
         (VkDeviceCreateFlags)0,
         DE_LENGTH_OF_ARRAY(queueInfos),
         &queueInfos[0],
         0u,      // enabledLayerCount
-        DE_NULL, // ppEnabledLayerNames
+        nullptr, // ppEnabledLayerNames
         (uint32_t)extensions.size(),
-        extensions.empty() ? DE_NULL : &extensions[0],
-        &features,
+        extensions.empty() ? nullptr : &extensions[0],
+        nullptr,
     };
 
     return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
@@ -169,8 +182,8 @@ struct InstanceHelper
     const InstanceDriver &vki;
 
     InstanceHelper(Context &context, Type wsiType, bool requireDeviceGroup,
-                   const VkAllocationCallbacks *pAllocator = DE_NULL)
-        : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), DE_NULL))
+                   const VkAllocationCallbacks *pAllocator = nullptr)
+        : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr))
         , instance(createInstanceWithWsi(context, supportedExtensions, wsiType, requireDeviceGroup, pAllocator))
         , vki(instance.getDriver())
     {
@@ -186,13 +199,14 @@ struct DeviceHelper
     const VkQueue queue;
 
     DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance, VkSurfaceKHR surface,
-                 bool requireSwapchainMaintenance1, bool requireDeviceGroup,
-                 const VkAllocationCallbacks *pAllocator = DE_NULL)
+                 bool requireSwapchainMaintenance1, bool enableSwapchainMaintenance1Feature, bool requireDeviceGroup,
+                 const VkAllocationCallbacks *pAllocator = nullptr)
         : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
         , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
         , device(createDeviceWithWsi(context.getPlatformInterface(), instance, vki, physicalDevice,
-                                     enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL), queueFamilyIndex,
-                                     pAllocator, requireSwapchainMaintenance1, requireDeviceGroup,
+                                     enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr), queueFamilyIndex,
+                                     pAllocator, requireSwapchainMaintenance1, enableSwapchainMaintenance1Feature,
+                                     requireDeviceGroup,
                                      context.getTestContext().getCommandLine().isValidationEnabled()))
         , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
               context.getTestContext().getCommandLine())
@@ -274,7 +288,7 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters(VkSurfaceKHR surface, VkSur
 {
     const VkSwapchainCreateInfoKHR parameters = {
         VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
         (VkSwapchainCreateFlagsKHR)(deferMemoryAllocation ? VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_EXT : 0),
         surface,
         desiredImageCount,
@@ -285,7 +299,7 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters(VkSurfaceKHR surface, VkSur
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
         VK_SHARING_MODE_EXCLUSIVE,
         0u,
-        (const uint32_t *)DE_NULL,
+        nullptr,
         transform,
         VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         presentMode,
@@ -302,17 +316,17 @@ VkSurfaceCapabilitiesKHR getPhysicalDeviceSurfaceCapabilities(const vk::Instance
 {
     const VkPhysicalDeviceSurfaceInfo2KHR info = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR,
-        DE_NULL,
+        nullptr,
         surface,
     };
     VkSharedPresentSurfaceCapabilitiesKHR sharedCapabilities;
     VkSurfaceCapabilities2KHR capabilities;
 
     sharedCapabilities.sType = VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR;
-    sharedCapabilities.pNext = DE_NULL;
+    sharedCapabilities.pNext = nullptr;
 
     capabilities.sType = VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
-    capabilities.pNext = sharedImageUsage ? &sharedCapabilities : DE_NULL;
+    capabilities.pNext = sharedImageUsage ? &sharedCapabilities : nullptr;
 
     VK_CHECK(vki.getPhysicalDeviceSurfaceCapabilities2KHR(physicalDevice, &info, &capabilities));
 
@@ -330,7 +344,7 @@ std::vector<VkPresentModeKHR> getSurfaceCompatiblePresentModes(const vk::Instanc
 {
     VkSurfacePresentModeEXT presentModeInfo = {
         VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT,
-        DE_NULL,
+        nullptr,
         presentMode,
     };
     const VkPhysicalDeviceSurfaceInfo2KHR info = {
@@ -344,7 +358,7 @@ std::vector<VkPresentModeKHR> getSurfaceCompatiblePresentModes(const vk::Instanc
 
     VkSurfacePresentModeCompatibilityEXT compatibility = {
         VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_COMPATIBILITY_EXT,
-        DE_NULL,
+        nullptr,
         (uint32_t)compatibleModes.size(),
         compatibleModes.data(),
     };
@@ -366,7 +380,7 @@ VkSurfacePresentScalingCapabilitiesEXT getSurfaceScalingCapabilities(const vk::I
 {
     VkSurfacePresentModeEXT presentModeInfo = {
         VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT,
-        DE_NULL,
+        nullptr,
         presentMode,
     };
     const VkPhysicalDeviceSurfaceInfo2KHR info = {
@@ -376,7 +390,7 @@ VkSurfacePresentScalingCapabilitiesEXT getSurfaceScalingCapabilities(const vk::I
     };
 
     VkSurfacePresentScalingCapabilitiesEXT scaling = {
-        VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT, DE_NULL, 0, 0, 0, {}, {},
+        VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT, nullptr, 0, 0, 0, {}, {},
     };
     VkSurfaceCapabilities2KHR capabilities = {
         VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR,
@@ -395,7 +409,7 @@ VkSurfaceCapabilitiesKHR getPerPresentSurfaceCapabilities(const vk::InstanceInte
 {
     VkSurfacePresentModeEXT presentModeInfo = {
         VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT,
-        DE_NULL,
+        nullptr,
         presentMode,
     };
     const VkPhysicalDeviceSurfaceInfo2KHR info = {
@@ -406,7 +420,7 @@ VkSurfaceCapabilitiesKHR getPerPresentSurfaceCapabilities(const vk::InstanceInte
 
     VkSurfaceCapabilities2KHR capabilities = {
         VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR,
-        DE_NULL,
+        nullptr,
         {},
     };
 
@@ -420,12 +434,14 @@ typedef de::SharedPtr<Unique<VkFence>> FenceSp;
 typedef de::SharedPtr<Unique<VkSemaphore>> SemaphoreSp;
 typedef de::SharedPtr<Unique<VkImage>> ImageSp;
 
-std::vector<FenceSp> createFences(const DeviceInterface &vkd, const VkDevice device, size_t numFences)
+std::vector<FenceSp> createFences(const DeviceInterface &vkd, const VkDevice device, size_t numFences, bool nullHandles,
+                                  de::Random &rng)
 {
     std::vector<FenceSp> fences(numFences);
 
     for (size_t ndx = 0; ndx < numFences; ++ndx)
-        fences[ndx] = FenceSp(new Unique<VkFence>(createFence(vkd, device)));
+        if (!nullHandles || rng.getUint32() % 4 != 0)
+            fences[ndx] = FenceSp(new Unique<VkFence>(createFence(vkd, device)));
 
     return fences;
 }
@@ -462,7 +478,7 @@ Move<VkBuffer> createBufferAndBindMemory(const DeviceHelper &devHelper, SimpleAl
 
     const VkBufferCreateInfo bufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType      sType;
-        DE_NULL,                              // const void*          pNext;
+        nullptr,                              // const void*          pNext;
         0u,                                   // VkBufferCreateFlags  flags;
         count * 4,                            // VkDeviceSize         size;
         vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT, // VkBufferUsageFlags   usage;
@@ -517,6 +533,8 @@ struct PresentFenceTestConfig
     bool bindImageMemory;
     bool changePresentModes;
     bool verifyFenceOrdering;
+    bool nullHandles;
+    bool swapchainMaintenance1;
 };
 
 bool canDoMultiSwapchainPresent(vk::wsi::Type wsiType)
@@ -569,14 +587,14 @@ uint32_t getIterations(std::vector<VkPresentModeKHR> presentModes,
     // Return an iteration count that is as high as possible while keeping the test time and memory usage reasonable.
     //
     // - If FIFO is used, limit to 120 (~2s on 60Hz)
-    // - Else, limit to 1000
+    // - Else, limit to 250
 
     if (hasFifo)
         return testResizesWindowsFrequently ? 60 : 120;
 
     (void)hasShared;
     (void)hasNoVsync;
-    uint32_t iterations = 1000;
+    uint32_t iterations = 250;
 
     // If the test resizes windows frequently, reduce the testing time as that's a very slow operation.
     if (testResizesWindowsFrequently)
@@ -590,7 +608,7 @@ ImageSp bindSingleImageMemory(const DeviceInterface &vkd, const VkDevice device,
 {
     VkImageSwapchainCreateInfoKHR imageSwapchainCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_SWAPCHAIN_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
         swapchain,
     };
 
@@ -613,7 +631,7 @@ ImageSp bindSingleImageMemory(const DeviceInterface &vkd, const VkDevice device,
         swapchainCreateInfo.imageUsage, // usage
         VK_SHARING_MODE_EXCLUSIVE,      // sharingMode
         0u,                             // queueFamilyIndexCount
-        DE_NULL,                        // pQueueFamilyIndices
+        nullptr,                        // pQueueFamilyIndices
         VK_IMAGE_LAYOUT_UNDEFINED,      // initialLayout
     };
 
@@ -621,7 +639,7 @@ ImageSp bindSingleImageMemory(const DeviceInterface &vkd, const VkDevice device,
 
     VkBindImageMemorySwapchainInfoKHR bimSwapchainInfo = {
         VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_SWAPCHAIN_INFO_KHR,
-        DE_NULL,
+        nullptr,
         swapchain,
         imageIndex,
     };
@@ -639,7 +657,7 @@ std::vector<ImageSp> bindImageMemory(const DeviceInterface &vkd, const VkDevice 
                                      const VkSwapchainCreateInfoKHR swapchainCreateInfo)
 {
     uint32_t numImages = 0;
-    VK_CHECK(vkd.getSwapchainImagesKHR(device, swapchain, &numImages, DE_NULL));
+    VK_CHECK(vkd.getSwapchainImagesKHR(device, swapchain, &numImages, nullptr));
 
     std::vector<ImageSp> images(numImages);
 
@@ -692,7 +710,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
     }
 
     const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surfaces[0], true,
-                                 testParams.bindImageMemory);
+                                 testParams.swapchainMaintenance1, testParams.bindImageMemory);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
 
@@ -728,7 +746,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
         VkImageUsageFlags sharedImageUsage = 0;
         const VkSurfaceCapabilitiesKHR capabilities =
             getPhysicalDeviceSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surfaces[i],
-                                                 isSharedPresentMode[i] ? &sharedImageUsage : DE_NULL);
+                                                 isSharedPresentMode[i] ? &sharedImageUsage : nullptr);
         const VkSurfaceTransformFlagBitsKHR transform =
             (capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) != 0 ?
                 VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR :
@@ -743,9 +761,9 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
 
         VkSwapchainPresentModesCreateInfoEXT compatibleModesCreateInfo = {
             VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_EXT,
-            DE_NULL,
+            nullptr,
             0,
-            DE_NULL,
+            nullptr,
         };
         if (testParams.changePresentModes)
         {
@@ -763,7 +781,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
         if (testParams.bindImageMemory)
         {
             uint32_t numImages = 0;
-            VK_CHECK(vkd.getSwapchainImagesKHR(device, *swapchains.back(), &numImages, DE_NULL));
+            VK_CHECK(vkd.getSwapchainImagesKHR(device, *swapchains.back(), &numImages, nullptr));
             swapchainImages.push_back(std::vector<VkImage>(numImages, VK_NULL_HANDLE));
 
             // If memory allocation is deferred, bind image memory lazily at acquire time.
@@ -791,8 +809,15 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
 
     const uint32_t iterations = getIterations(testParams.modes, compatiblePresentModes, false);
 
+    const uint32_t configHash =
+        (uint32_t)testParams.wsiType | (uint32_t)testParams.modes[0] << 4 |
+        (uint32_t)testParams.deferMemoryAllocation << 28 | (uint32_t)testParams.bindImageMemory << 29 |
+        (uint32_t)testParams.changePresentModes << 30 | (uint32_t)testParams.verifyFenceOrdering << 31;
+    de::Random rng(0x53A4C8A1u ^ configHash);
+
     // Do iterations presents, each with an associated fence.  Destroy the wait semaphores as soon as the corresponding fence signals.
-    const std::vector<FenceSp> presentFences(createFences(vkd, device, iterations * surfaceCount));
+    const std::vector<FenceSp> presentFences(
+        createFences(vkd, device, iterations * surfaceCount, testParams.nullHandles, rng));
     const std::vector<SemaphoreSp> acquireSems(createSemaphores(vkd, device, iterations * surfaceCount));
     std::vector<SemaphoreSp> presentSems(createSemaphores(vkd, device, iterations));
 
@@ -804,12 +829,6 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
     VkImageSubresourceRange range = {
         VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1,
     };
-
-    const uint32_t configHash =
-        (uint32_t)testParams.wsiType | (uint32_t)testParams.modes[0] << 4 |
-        (uint32_t)testParams.deferMemoryAllocation << 28 | (uint32_t)testParams.bindImageMemory << 29 |
-        (uint32_t)testParams.changePresentModes << 30 | (uint32_t)testParams.verifyFenceOrdering << 31;
-    de::Random rng(0x53A4C8A1u ^ configHash);
 
     try
     {
@@ -826,7 +845,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
 
             VkImageMemoryBarrier barrier = {
                 VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                DE_NULL,
+                nullptr,
                 0,
                 0,
                 VK_IMAGE_LAYOUT_UNDEFINED,
@@ -840,7 +859,10 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
             for (uint32_t j = 0; j < surfaceCount; ++j)
             {
                 acquireSem.push_back(**acquireSems[i * surfaceCount + j]);
-                presentFence.push_back(**presentFences[i * surfaceCount + j]);
+                if (presentFences[i * surfaceCount + j])
+                    presentFence.push_back(**presentFences[i * surfaceCount + j]);
+                else
+                    presentFence.push_back(VK_NULL_HANDLE);
 
                 VK_CHECK(vkd.acquireNextImageKHR(device, *swapchains[j], foreverNs, acquireSem[j], VK_NULL_HANDLE,
                                                  &imageIndex[j]));
@@ -862,7 +884,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
                 barrier.image = acquiredImage;
 
                 vkd.cmdPipelineBarrier(**commandBuffers[i], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                       VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0, DE_NULL, 0, DE_NULL, 1, &barrier);
+                                       VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0, nullptr, 0, nullptr, 1, &barrier);
             }
 
             for (uint32_t j = 0; j < surfaceCount; ++j)
@@ -893,15 +915,15 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
                 barrier.image = swapchainImages[j][imageIndex[j]];
 
                 vkd.cmdPipelineBarrier(**commandBuffers[i], VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                       VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0u, 0, DE_NULL, 0, DE_NULL, 1, &barrier);
+                                       VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0u, 0, nullptr, 0, nullptr, 1, &barrier);
             }
 
             endCommandBuffer(vkd, **commandBuffers[i]);
 
             // Submit the command buffer
-            VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-            const VkSubmitInfo submitInfo  = {
-                VK_STRUCTURE_TYPE_SUBMIT_INFO, DE_NULL, surfaceCount, acquireSem.data(), &waitStage, 1u,
+            std::vector<VkPipelineStageFlags> waitStages(surfaceCount, VK_PIPELINE_STAGE_TRANSFER_BIT);
+            const VkSubmitInfo submitInfo = {
+                VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, surfaceCount, acquireSem.data(), waitStages.data(), 1u,
                 &**commandBuffers[i],          1u,      presentSem,
             };
             VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, VK_NULL_HANDLE));
@@ -909,7 +931,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
             // Present the frame
             VkSwapchainPresentFenceInfoEXT presentFenceInfo = {
                 VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT,
-                DE_NULL,
+                nullptr,
                 surfaceCount,
                 presentFence.data(),
             };
@@ -917,9 +939,9 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
 
             VkSwapchainPresentModeInfoEXT presentModeInfo = {
                 VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODE_INFO_EXT,
-                DE_NULL,
+                nullptr,
                 surfaceCount,
-                DE_NULL,
+                nullptr,
             };
             std::vector<VkPresentModeKHR> presentModes;
             if (testParams.changePresentModes && rng.getUint32() % 10 != 0)
@@ -957,11 +979,15 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
                 // Check previous presents; if any is signaled, immediatey destroy its wait semaphore
                 while (nextUnfinishedPresent[j] < i)
                 {
-                    if (vkd.getFenceStatus(device, **presentFences[nextUnfinishedPresent[j] * surfaceCount + j]) ==
-                        VK_NOT_READY)
+                    const auto unfinishedPresent = nextUnfinishedPresent[j];
+                    const auto &fence            = presentFences[unfinishedPresent * surfaceCount + j];
+                    if (!fence)
+                        ++nextUnfinishedPresent[j];
+
+                    if (!fence || vkd.getFenceStatus(device, **fence) == VK_NOT_READY)
                         break;
 
-                    presentSems[nextUnfinishedPresent[j]].clear();
+                    presentSems[unfinishedPresent].clear();
                     ++nextUnfinishedPresent[j];
                 }
 
@@ -980,9 +1006,12 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
 
             while (nextUnfinishedPresent[j] < iterations)
             {
-                VK_CHECK(vkd.waitForFences(device, 1u, &**presentFences[nextUnfinishedPresent[j] * surfaceCount + j],
-                                           VK_TRUE, kMaxFenceWaitTimeout));
-                presentSems[nextUnfinishedPresent[j]].clear();
+                const auto &fence = presentFences[nextUnfinishedPresent[j] * surfaceCount + j];
+                if (fence)
+                {
+                    VK_CHECK(vkd.waitForFences(device, 1u, &**fence, VK_TRUE, kMaxFenceWaitTimeout));
+                    presentSems[nextUnfinishedPresent[j]].clear();
+                }
                 ++nextUnfinishedPresent[j];
             }
         }
@@ -1029,6 +1058,8 @@ void populatePresentFenceGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         config.bindImageMemory       = false;
         config.changePresentModes    = false;
         config.verifyFenceOrdering   = false;
+        config.nullHandles           = false;
+        config.swapchainMaintenance1 = true;
 
         // Basic present fence test
         addFunctionCase(&*presentModeGroup, "basic", presentFenceTest, config);
@@ -1047,7 +1078,17 @@ void populatePresentFenceGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
             config.verifyFenceOrdering = true;
             // Test ordering guarantee of present fence signals with multiple swapchains
             addFunctionCase(&*presentModeGroup, "mult_swapchain_ordering", presentFenceTest, config);
+
+            config.modes               = std::vector<VkPresentModeKHR>(5, presentModes[presentModeNdx].mode);
+            config.verifyFenceOrdering = false;
+            config.nullHandles         = true;
+            addFunctionCase(&*presentModeGroup, "null_handles", presentFenceTest, config);
         }
+
+        config.modes                 = std::vector<VkPresentModeKHR>(1, presentModes[presentModeNdx].mode);
+        config.nullHandles           = false;
+        config.swapchainMaintenance1 = false;
+        addFunctionCase(&*presentModeGroup, "maintenance1_disabled", presentFenceTest, config);
 
         testGroup->addChild(presentModeGroup.release());
     }
@@ -1103,7 +1144,7 @@ tcu::TestStatus presentModesQueryTest(Context &context, const PresentModesTestCo
     const TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, 1);
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false, false);
 
     const std::vector<VkPresentModeKHR> presentModes =
         getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
@@ -1113,7 +1154,7 @@ tcu::TestStatus presentModesQueryTest(Context &context, const PresentModesTestCo
     // Get the compatible present modes with the given one.
     VkSurfacePresentModeEXT presentModeInfo = {
         VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT,
-        DE_NULL,
+        nullptr,
         testParams.mode,
     };
     const VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = {
@@ -1123,9 +1164,9 @@ tcu::TestStatus presentModesQueryTest(Context &context, const PresentModesTestCo
     };
     VkSurfacePresentModeCompatibilityEXT compatibility = {
         VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_COMPATIBILITY_EXT,
-        DE_NULL,
+        nullptr,
         0,
-        DE_NULL,
+        nullptr,
     };
     VkSurfaceCapabilities2KHR capabilities = {
         VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR,
@@ -1137,9 +1178,10 @@ tcu::TestStatus presentModesQueryTest(Context &context, const PresentModesTestCo
     VK_CHECK(
         instHelper.vki.getPhysicalDeviceSurfaceCapabilities2KHR(devHelper.physicalDevice, &surfaceInfo, &capabilities));
 
-    // The return value must be at least one, as every mode is compatible with itself.
+    // Sometime ICD selected will not support the instance extensions got in enumerateInstanceExtensionProperties.
+    // In this case the struct varible compatibility queried in getPhysicalDeviceSurfaceCapabilities2KHR will keep unchanged.
     if (compatibility.presentModeCount < 1)
-        return tcu::TestStatus::fail("Empty compatible present mode list");
+        TCU_THROW(NotSupportedError, "Empty compatible present mode list, VK_EXT_surface_maintenance1 not supported.");
 
     // Test again providing a buffer that's too small
     constexpr VkPresentModeKHR invalidValue = (VkPresentModeKHR)0x1234;
@@ -1257,6 +1299,8 @@ void populatePresentModesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
             config.bindImageMemory       = false;
             config.changePresentModes    = true;
             config.verifyFenceOrdering   = false;
+            config.nullHandles           = false;
+            config.swapchainMaintenance1 = true;
 
             // Switch between compatible modes
             addFunctionCase(&*presentModeGroup, "change_modes", presentFenceTest, config);
@@ -1313,6 +1357,8 @@ void populatePresentModesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
                     config.bindImageMemory       = false;
                     config.changePresentModes    = true;
                     config.verifyFenceOrdering   = false;
+                    config.nullHandles           = false;
+                    config.swapchainMaintenance1 = true;
 
                     addFunctionCase(&*heterogenousGroup, testName, presentFenceTest, config);
                 }
@@ -1362,7 +1408,7 @@ tcu::TestStatus scalingQueryTest(Context &context, const ScalingQueryTestConfig 
     const TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, 1);
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false, false);
 
     const std::vector<VkPresentModeKHR> presentModes =
         getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
@@ -1397,7 +1443,7 @@ tcu::TestStatus scalingQueryCompatibleModesTest(Context &context, const ScalingQ
     const TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, 1);
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false, false);
 
     const std::vector<VkPresentModeKHR> presentModes =
         getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
@@ -1407,7 +1453,7 @@ tcu::TestStatus scalingQueryCompatibleModesTest(Context &context, const ScalingQ
     // Query compatible present modes, and scaling capabilities for each mode.  They must all be identical.
     VkSurfacePresentModeEXT presentModeInfo = {
         VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT,
-        DE_NULL,
+        nullptr,
         testParams.mode,
     };
     const VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = {
@@ -1417,9 +1463,9 @@ tcu::TestStatus scalingQueryCompatibleModesTest(Context &context, const ScalingQ
     };
     VkSurfacePresentModeCompatibilityEXT compatibility = {
         VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_COMPATIBILITY_EXT,
-        DE_NULL,
+        nullptr,
         0,
-        DE_NULL,
+        nullptr,
     };
     VkSurfaceCapabilities2KHR capabilities = {
         VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR,
@@ -1465,7 +1511,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
 
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, true, false);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
     SimpleAllocator allocator(vkd, device, getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
@@ -1476,7 +1522,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
         return tcu::TestStatus::fail("No VkSurfaceFormatKHR defined");
 
     const VkSurfaceCapabilitiesKHR capabilities =
-        getPhysicalDeviceSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surface, DE_NULL);
+        getPhysicalDeviceSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surface, nullptr);
     const VkSurfaceTransformFlagBitsKHR transform =
         (capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) != 0 ?
             VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR :
@@ -1535,7 +1581,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
 
     VkSwapchainPresentScalingCreateInfoEXT scalingInfo = {
         VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT,
-        DE_NULL,
+        nullptr,
         testParams.scaling,
         testParams.gravityX,
         testParams.gravityY,
@@ -1627,7 +1673,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
 
             VkImageMemoryBarrier barrier = {
                 VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                DE_NULL,
+                nullptr,
                 0,
                 0,
                 VK_IMAGE_LAYOUT_UNDEFINED,
@@ -1639,7 +1685,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
             };
 
             vkd.cmdPipelineBarrier(**commandBuffers[i], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                   VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0, DE_NULL, 0, DE_NULL, 1, &barrier);
+                                   VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0, nullptr, 0, nullptr, 1, &barrier);
 
             const tcu::UVec2 halfSwapchainSize = swapchainSize / 2u;
             copyBufferToImage(vkd, **commandBuffers[i], *redBuffer, swapchainImages[imageIndex], tcu::UVec2(0, 0),
@@ -1659,14 +1705,14 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
             barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
             vkd.cmdPipelineBarrier(**commandBuffers[i], VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                   VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0u, 0, DE_NULL, 0, DE_NULL, 1, &barrier);
+                                   VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0u, 0, nullptr, 0, nullptr, 1, &barrier);
 
             endCommandBuffer(vkd, **commandBuffers[i]);
 
             // Submit the command buffer
             VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             const VkSubmitInfo submitInfo  = {
-                VK_STRUCTURE_TYPE_SUBMIT_INFO, DE_NULL, 1,           &acquireSem, &waitStage, 1u,
+                VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 1,           &acquireSem, &waitStage, 1u,
                 &**commandBuffers[i],          1u,      &presentSem,
             };
             VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, VK_NULL_HANDLE));
@@ -1674,7 +1720,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
             // Present the frame
             const VkSwapchainPresentFenceInfoEXT presentFenceInfo = {
                 VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT,
-                DE_NULL,
+                nullptr,
                 1,
                 &**presentFence,
             };
@@ -1892,6 +1938,8 @@ void populateDeferredAllocGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         config.bindImageMemory       = false;
         config.changePresentModes    = false;
         config.verifyFenceOrdering   = false;
+        config.nullHandles           = false;
+        config.swapchainMaintenance1 = true;
 
         // Basic deferred allocation test
         addFunctionCase(&*presentModeGroup, "basic", presentFenceTest, config);
@@ -1942,7 +1990,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
 
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, true, false);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
 
@@ -1951,17 +1999,17 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
     if (surfaceFormats.empty())
         return tcu::TestStatus::fail("No VkSurfaceFormatKHR defined");
 
+    const std::vector<VkPresentModeKHR> presentModes =
+        getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
+    if (std::find(presentModes.begin(), presentModes.end(), testParams.mode) == presentModes.end())
+        TCU_THROW(NotSupportedError, "Present mode not supported");
+
     const VkSurfaceCapabilitiesKHR capabilities =
         getPerPresentSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surface, testParams.mode);
     const VkSurfaceTransformFlagBitsKHR transform =
         (capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) != 0 ?
             VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR :
             capabilities.currentTransform;
-
-    const std::vector<VkPresentModeKHR> presentModes =
-        getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
-    if (std::find(presentModes.begin(), presentModes.end(), testParams.mode) == presentModes.end())
-        TCU_THROW(NotSupportedError, "Present mode not supported");
 
     if (testParams.scaling != 0)
     {
@@ -1988,7 +2036,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                                                                          testParams.mode, transform, imageCount, false);
 
     VkSwapchainPresentScalingCreateInfoEXT scalingInfo = {
-        VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT, DE_NULL, testParams.scaling, 0, 0,
+        VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT, nullptr, testParams.scaling, 0, 0,
     };
     swapchainInfo.pNext = &scalingInfo;
 
@@ -2045,10 +2093,17 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             const VkSemaphore presentSem = **presentSems[i];
             const VkSemaphore acquireSem = **acquireSems[i];
             std::vector<uint32_t> acquiredIndices(acquireCount, 0x12345);
+            FenceSp acquireFenceSp      = FenceSp(new Unique<VkFence>(createFence(vkd, device)));
+            const VkFence &acquireFence = **acquireFenceSp;
 
             VkResult result =
                 vkd.acquireNextImageKHR(device, *swapchain, foreverNs, presentIndex == 0 ? acquireSem : VK_NULL_HANDLE,
-                                        VK_NULL_HANDLE, &acquiredIndices[0]);
+                                        acquireFence, &acquiredIndices[0]);
+            if (result == VK_SUCCESS)
+            {
+                VK_CHECK(vkd.waitForFences(device, 1u, &acquireFence, VK_TRUE, kMaxFenceWaitTimeout));
+                VK_CHECK(vkd.resetFences(device, 1u, &acquireFence));
+            }
 
             // If out of date, recreate the swapchain and reacquire.
             if (result == VK_ERROR_OUT_OF_DATE_KHR)
@@ -2069,8 +2124,13 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                               "Unexpected change in number of swapchain images when recreated during window resize");
 
                 result = vkd.acquireNextImageKHR(device, *swapchain, foreverNs,
-                                                 presentIndex == 0 ? acquireSem : VK_NULL_HANDLE, VK_NULL_HANDLE,
+                                                 presentIndex == 0 ? acquireSem : VK_NULL_HANDLE, acquireFence,
                                                  &acquiredIndices[0]);
+                if (result == VK_SUCCESS)
+                {
+                    VK_CHECK(vkd.waitForFences(device, 1u, &acquireFence, VK_TRUE, kMaxFenceWaitTimeout));
+                    VK_CHECK(vkd.resetFences(device, 1u, &acquireFence));
+                }
             }
 
             VK_CHECK_WSI(result);
@@ -2078,8 +2138,10 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             for (uint32_t j = 1; j < acquireCount; ++j)
             {
                 VK_CHECK_WSI(vkd.acquireNextImageKHR(device, *swapchain, foreverNs,
-                                                     presentIndex == j ? acquireSem : VK_NULL_HANDLE, VK_NULL_HANDLE,
+                                                     presentIndex == j ? acquireSem : VK_NULL_HANDLE, acquireFence,
                                                      &acquiredIndices[j]));
+                VK_CHECK(vkd.waitForFences(device, 1u, &acquireFence, VK_TRUE, kMaxFenceWaitTimeout));
+                VK_CHECK(vkd.resetFences(device, 1u, &acquireFence));
             }
 
             // Construct a list of image indices to be released.  That is every index except the one being presented, if any.
@@ -2088,6 +2150,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             {
                 releaseIndices.erase(releaseIndices.begin() + presentIndex);
             }
+            size_t imageReleaseSize = releaseIndices.size();
 
             // Randomize the indices to be released.
             rng.shuffle(releaseIndices.begin(), releaseIndices.end());
@@ -2107,7 +2170,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
 
                 VkImageMemoryBarrier barrier = {
                     VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                    DE_NULL,
+                    nullptr,
                     0,
                     0,
                     VK_IMAGE_LAYOUT_UNDEFINED,
@@ -2117,6 +2180,8 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                     swapchainImages[acquiredIndices[presentIndex]],
                     range,
                 };
+                vkd.cmdPipelineBarrier(**commandBuffers[i], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                       VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0, nullptr, 0, nullptr, 1, &barrier);
 
                 VkClearColorValue clearValue;
                 clearValue.float32[0] = static_cast<float>(i % 33) / 32.0f;
@@ -2132,14 +2197,14 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                 barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
                 vkd.cmdPipelineBarrier(**commandBuffers[i], VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                       VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0u, 0, DE_NULL, 0, DE_NULL, 1, &barrier);
+                                       VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0u, 0, nullptr, 0, nullptr, 1, &barrier);
 
                 endCommandBuffer(vkd, **commandBuffers[i]);
 
                 // Submit the command buffer
                 VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
                 const VkSubmitInfo submitInfo  = {
-                    VK_STRUCTURE_TYPE_SUBMIT_INFO, DE_NULL, 1,           &acquireSem, &waitStage, 1u,
+                    VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 1,           &acquireSem, &waitStage, 1u,
                     &**commandBuffers[i],          1u,      &presentSem,
                 };
                 VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, VK_NULL_HANDLE));
@@ -2148,14 +2213,14 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             // If asked to release before present, do so now.
             const VkReleaseSwapchainImagesInfoEXT releaseInfo = {
                 VK_STRUCTURE_TYPE_RELEASE_SWAPCHAIN_IMAGES_INFO_EXT,
-                DE_NULL,
+                nullptr,
                 *swapchain,
-                (uint32_t)releaseIndices.size(),
+                (uint32_t)imageReleaseSize,
                 releaseIndices.data(),
             };
 
             bool imagesReleased = false;
-            if (testParams.releaseBeforePresent)
+            if (testParams.releaseBeforePresent && imageReleaseSize > 0)
             {
                 VK_CHECK(vkd.releaseSwapchainImagesEXT(device, &releaseInfo));
                 imagesReleased = true;
@@ -2166,7 +2231,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             {
                 const VkSwapchainPresentFenceInfoEXT presentFenceInfo = {
                     VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT,
-                    DE_NULL,
+                    nullptr,
                     1,
                     &**presentFence,
                 };
@@ -2186,7 +2251,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                 if (aggregateResult == VK_ERROR_OUT_OF_DATE_KHR || result == VK_ERROR_OUT_OF_DATE_KHR)
                 {
                     // If OUT_OF_DATE is returned from present, recreate the swapchain and release images to the retired swapchain.
-                    if (!imagesReleased && testParams.releaseBeforeRetire)
+                    if (!imagesReleased && testParams.releaseBeforeRetire && imageReleaseSize > 0)
                     {
                         VK_CHECK(vkd.releaseSwapchainImagesEXT(device, &releaseInfo));
                         imagesReleased = true;
@@ -2194,13 +2259,16 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
 
                     if (testParams.scaling == 0)
                     {
-                        swapchainInfo.imageExtent = vk::makeExtent2D(native.windowSize.x(), native.windowSize.y());
+                        const VkSurfaceCapabilitiesKHR currentCapabilities = getPhysicalDeviceSurfaceCapabilities(
+                            instHelper.vki, devHelper.physicalDevice, *surface, nullptr);
+                        swapchainInfo.imageExtent = vk::makeExtent2D(currentCapabilities.minImageExtent.width,
+                                                                     currentCapabilities.minImageExtent.height);
                     }
 
                     swapchainInfo.oldSwapchain = *swapchain;
                     Move<VkSwapchainKHR> newSwapchain(createSwapchainKHR(vkd, device, &swapchainInfo));
 
-                    if (!imagesReleased && !testParams.releaseBeforeRetire)
+                    if (!imagesReleased && !testParams.releaseBeforeRetire && imageReleaseSize > 0)
                     {
                         // Release the images to the retired swapchain before deleting it (as part of move assignment below)
                         VK_CHECK(vkd.releaseSwapchainImagesEXT(device, &releaseInfo));
@@ -2208,7 +2276,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                     }
 
                     // Must have released old swapchain's images before destruction
-                    DE_ASSERT(imagesReleased);
+                    DE_ASSERT(imagesReleased || imageReleaseSize == 0);
                     swapchain = std::move(newSwapchain);
 
                     const size_t previousImageCount = swapchainImages.size();
@@ -2226,7 +2294,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             }
 
             // If asked to release after present, do it now.
-            if (!imagesReleased)
+            if (!imagesReleased && imageReleaseSize > 0)
             {
                 VK_CHECK_WSI(vkd.releaseSwapchainImagesEXT(device, &releaseInfo));
             }

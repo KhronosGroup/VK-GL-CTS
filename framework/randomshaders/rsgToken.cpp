@@ -46,7 +46,7 @@ Token &Token::operator=(const Token &other)
     if (m_type == IDENTIFIER)
     {
         deFree(m_arg.identifier);
-        m_arg.identifier = DE_NULL;
+        m_arg.identifier = nullptr;
     }
 
     m_type = other.m_type;
@@ -77,7 +77,7 @@ bool Token::operator!=(const Token &other) const
     if (m_type != other.m_type)
         return false;
 
-    if (m_type == IDENTIFIER && !deStringEqual(m_arg.identifier, other.m_arg.identifier))
+    if (m_type == IDENTIFIER && strcmp(m_arg.identifier, other.m_arg.identifier) != 0)
         return false;
     else if (m_type == FLOAT_LITERAL && m_arg.floatValue != other.m_arg.floatValue)
         return false;

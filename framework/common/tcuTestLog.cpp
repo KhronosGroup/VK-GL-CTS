@@ -215,7 +215,7 @@ void TestLog::writeMessage(const char *msgStr)
         return;
     if (m_skipAdditionalDataInLog)
         return;
-    if (qpTestLog_writeText(m_log, DE_NULL, DE_NULL, QP_KEY_TAG_NONE, msgStr) == false)
+    if (qpTestLog_writeText(m_log, nullptr, nullptr, QP_KEY_TAG_NONE, msgStr) == false)
         throw LogWriteFailedError();
 }
 
@@ -602,7 +602,7 @@ void TestLog::writeValueInfo(const std::string &name, const std::string &descrip
 {
     if (m_logSupressed)
         return;
-    if (qpTestLog_writeValueInfo(m_log, name.c_str(), description.c_str(), unit.empty() ? DE_NULL : unit.c_str(),
+    if (qpTestLog_writeValueInfo(m_log, name.c_str(), description.c_str(), unit.empty() ? nullptr : unit.c_str(),
                                  tag) == false)
         throw LogWriteFailedError();
 }

@@ -70,7 +70,7 @@ void DirectoryIterator::next(void)
 
 void DirectoryIterator::skipCurAndParent(void)
 {
-    while (m_hasItem && (deStringEqual(m_fileInfo.name, "..") || deStringEqual(m_fileInfo.name, ".")))
+    while (m_hasItem && (strcmp(m_fileInfo.name, "..") == 0 || strcmp(m_fileInfo.name, ".") == 0))
         m_hasItem = (_findnext32(m_handle, &m_fileInfo) == 0);
 }
 
@@ -78,8 +78,8 @@ void DirectoryIterator::skipCurAndParent(void)
 
 DirectoryIterator::DirectoryIterator(const FilePath &path)
     : m_path(FilePath::normalize(path))
-    , m_handle(DE_NULL)
-    , m_curEntry(DE_NULL)
+    , m_handle(nullptr)
+    , m_curEntry(nullptr)
 {
     DE_CHECK_RUNTIME_ERR(m_path.exists());
     DE_CHECK_RUNTIME_ERR(m_path.getType() == FilePath::TYPE_DIRECTORY);
@@ -98,7 +98,7 @@ DirectoryIterator::~DirectoryIterator(void)
 
 bool DirectoryIterator::hasItem(void) const
 {
-    return (m_curEntry != DE_NULL);
+    return (m_curEntry != nullptr);
 }
 
 FilePath DirectoryIterator::getItem(void) const
@@ -112,7 +112,7 @@ void DirectoryIterator::next(void)
     do
     {
         m_curEntry = readdir(m_handle);
-    } while (m_curEntry && (deStringEqual(m_curEntry->d_name, "..") || deStringEqual(m_curEntry->d_name, ".")));
+    } while (m_curEntry && (strcmp(m_curEntry->d_name, "..") == 0 || strcmp(m_curEntry->d_name, ".") == 0));
 }
 
 #endif

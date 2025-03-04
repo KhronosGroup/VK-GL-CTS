@@ -110,7 +110,7 @@ LongRunningShaderCase::LongRunningShaderCase(Context &context, const Params *par
     : TestCase(context, params->name, params->description)
     , m_params(params)
     , m_numCaseIters(5)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_caseIterNdx(0)
 {
 }
@@ -238,7 +238,7 @@ void LongRunningShaderCase::init(void)
 void LongRunningShaderCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 void genPositions(const tcu::RenderTarget &renderTarget, int numPoints, Vec2 *positions)

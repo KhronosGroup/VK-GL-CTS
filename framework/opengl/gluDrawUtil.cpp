@@ -578,7 +578,7 @@ void drawFromBuffers(const RenderContext &context, uint32_t program, int numVert
     // Create buffers for duration of draw call.
     {
         VertexBuffer vertexBuffer(context, (int)bindingsWithLocations.size(),
-                                  (bindingsWithLocations.empty()) ? (DE_NULL) : (&bindingsWithLocations[0]));
+                                  (bindingsWithLocations.empty()) ? (nullptr) : (&bindingsWithLocations[0]));
 
         // Set state.
         setVertexBufferAttributes(gl, vertexBuffer.getDescriptor());

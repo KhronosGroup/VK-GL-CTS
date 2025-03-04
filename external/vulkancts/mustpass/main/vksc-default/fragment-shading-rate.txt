@@ -601,7 +601,7 @@ dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.apisamplemask.dynamic.noa
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.attachment_rate.misc.memory_access
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.attachment_rate.misc.ro_ds_depth_read_only_optimal
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.attachment_rate.misc.ro_ds_general
-dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.attachment_rate.misc.ro_ds_read_only_optimal_khr
+dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.attachment_rate.misc.ro_ds_read_only_optimal
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.attachment_rate.misc.ro_ds_stencil_read_only_optimal
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.attachment_rate.misc.two_subpass
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.attachment_rate.setup_with_atomics.r16_uint.rate_1x1

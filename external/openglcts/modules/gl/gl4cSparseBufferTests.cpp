@@ -431,7 +431,7 @@ void NegativeTests::init()
  */
 tcu::TestNode::IterateResult NegativeTests::iterate()
 {
-    glw::GLvoid *data_ptr    = DE_NULL;
+    glw::GLvoid *data_ptr    = nullptr;
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
     glw::GLint page_size     = 0;
     bool result              = true;
@@ -457,10 +457,10 @@ tcu::TestNode::IterateResult NegativeTests::iterate()
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() call failed.");
 
     gl.bufferStorage(GL_ARRAY_BUFFER, page_size * 3, /* size as per test spec */
-                     DE_NULL,                        /* data */
+                     nullptr,                        /* data */
                      GL_SPARSE_STORAGE_BIT_ARB);
     gl.bufferStorage(GL_COPY_READ_BUFFER, m_immutable_bo_size, /* size */
-                     DE_NULL,                                  /* data */
+                     nullptr,                                  /* data */
                      0);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferStorage() call(s) failed.");
 
@@ -486,7 +486,7 @@ tcu::TestNode::IterateResult NegativeTests::iterate()
      *    set to (GL_SPARSE_STORAGE_BIT_ARB | GL_MAP_READ_BIT) or
      *    (GL_SPARSE_STORAGE_BIT_ARB | GL_MAP_WRITE_BIT). */
     gl.bufferStorage(GL_ELEMENT_ARRAY_BUFFER, page_size * 3, /* size */
-                     DE_NULL,                                /* data */
+                     nullptr,                                /* data */
                      GL_SPARSE_STORAGE_BIT_ARB | GL_MAP_READ_BIT);
 
     error_code = gl.getError();
@@ -501,7 +501,7 @@ tcu::TestNode::IterateResult NegativeTests::iterate()
     }
 
     gl.bufferStorage(GL_ELEMENT_ARRAY_BUFFER, page_size * 3, /* size */
-                     DE_NULL,                                /* data */
+                     nullptr,                                /* data */
                      GL_SPARSE_STORAGE_BIT_ARB | GL_MAP_WRITE_BIT);
 
     error_code = gl.getError();
@@ -648,7 +648,7 @@ tcu::TestNode::IterateResult NegativeTests::iterate()
      *    buffer generates a GL_INVALID_OPERATION error. */
     data_ptr = gl.mapBuffer(GL_ARRAY_BUFFER, GL_READ_ONLY);
 
-    if (data_ptr != DE_NULL)
+    if (data_ptr != nullptr)
     {
         m_testCtx.getLog() << tcu::TestLog::Message
                            << "Non-NULL pointer returned by an invalid glMapBuffer() call, issued "
@@ -674,7 +674,7 @@ tcu::TestNode::IterateResult NegativeTests::iterate()
                                  page_size,          /* length */
                                  GL_MAP_READ_BIT);
 
-    if (data_ptr != DE_NULL)
+    if (data_ptr != nullptr)
     {
         m_testCtx.getLog() << tcu::TestLog::Message
                            << "Non-NULL pointer returned by an invalid glMapBufferRange() call, issued "
@@ -1050,7 +1050,7 @@ bool AtomicCounterBufferStorageTestCase::initTestCaseGlobal()
                                          "\n"
                                          "    gl_Position = vec4(0.0, 0.0, 0.0, 1.0);\n"
                                          "}\n";
-    const char *vs_body_parts[]        = {vs_body_preamble, DE_NULL, /* will be set to n_counters_string.c_str() */
+    const char *vs_body_parts[]        = {vs_body_preamble, nullptr, /* will be set to n_counters_string.c_str() */
                                           vs_body_core};
     const unsigned int n_vs_body_parts = sizeof(vs_body_parts) / sizeof(vs_body_parts[0]);
 
@@ -1073,10 +1073,10 @@ bool AtomicCounterBufferStorageTestCase::initTestCaseGlobal()
     DE_ASSERT(m_po == 0);
 
     m_po =
-        SparseBufferTestUtilities::createProgram(m_gl, DE_NULL,                           /* fs_body_parts   */
+        SparseBufferTestUtilities::createProgram(m_gl, nullptr,                           /* fs_body_parts   */
                                                  0,                                       /* n_fs_body_parts */
-                                                 vs_body_parts, n_vs_body_parts, DE_NULL, /* attribute_names        */
-                                                 DE_NULL,                                 /* attribute_locations    */
+                                                 vs_body_parts, n_vs_body_parts, nullptr, /* attribute_names        */
+                                                 nullptr,                                 /* attribute_locations    */
                                                  0);                                      /* n_attribute_properties */
 
     if (m_po == 0)
@@ -1111,7 +1111,7 @@ bool AtomicCounterBufferStorageTestCase::initTestCaseGlobal()
     m_gl.bindBuffer(GL_COPY_READ_BUFFER, m_helper_bo);
     GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
-    m_gl.bufferStorage(GL_COPY_READ_BUFFER, m_helper_bo_size_rounded, DE_NULL, GL_MAP_READ_BIT); /* flags */
+    m_gl.bufferStorage(GL_COPY_READ_BUFFER, m_helper_bo_size_rounded, nullptr, GL_MAP_READ_BIT); /* flags */
     GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferStorage() call failed.");
 
     /* Set up the vertex array object */
@@ -1204,7 +1204,7 @@ BufferTextureStorageTestCase::BufferTextureStorageTestCase(const glw::Functions 
                                                            tcu::TestContext &testContext)
     : m_gl(gl)
     , m_helper_bo(0)
-    , m_helper_bo_data(DE_NULL)
+    , m_helper_bo_data(nullptr)
     , m_helper_bo_data_size(0)
     , m_is_texture_buffer_range_supported(false)
     , m_po(0)
@@ -1213,7 +1213,7 @@ BufferTextureStorageTestCase::BufferTextureStorageTestCase(const glw::Functions 
     , m_sparse_bo_size(0)
     , m_sparse_bo_size_rounded(0)
     , m_ssbo(0)
-    , m_ssbo_zero_data(DE_NULL)
+    , m_ssbo_zero_data(nullptr)
     , m_ssbo_zero_data_size(0)
     , m_testCtx(testContext)
     , m_to(0)
@@ -1242,11 +1242,11 @@ void BufferTextureStorageTestCase::deinitTestCaseGlobal()
         m_helper_bo = 0;
     }
 
-    if (m_helper_bo_data != DE_NULL)
+    if (m_helper_bo_data != nullptr)
     {
         delete[] m_helper_bo_data;
 
-        m_helper_bo_data = DE_NULL;
+        m_helper_bo_data = nullptr;
     }
 
     if (m_po != 0)
@@ -1263,11 +1263,11 @@ void BufferTextureStorageTestCase::deinitTestCaseGlobal()
         m_ssbo = 0;
     }
 
-    if (m_ssbo_zero_data != DE_NULL)
+    if (m_ssbo_zero_data != nullptr)
     {
         delete[] m_ssbo_zero_data;
 
-        m_ssbo_zero_data = DE_NULL;
+        m_ssbo_zero_data = nullptr;
     }
 
     if (m_to != 0)
@@ -1588,7 +1588,7 @@ ClearOpsBufferStorageTestCase::ClearOpsBufferStorageTestCase(const glw::Function
                                                              unsigned int clear_op_type, unsigned int iteration)
     : m_gl(gl)
     , m_helper_bo(0)
-    , m_initial_data(DE_NULL)
+    , m_initial_data(nullptr)
     , m_n_pages_to_use(16)
     , m_sparse_bo(0)
     , m_sparse_bo_size_rounded(0)
@@ -1612,11 +1612,11 @@ void ClearOpsBufferStorageTestCase::deinitTestCaseGlobal()
         m_helper_bo = 0;
     }
 
-    if (m_initial_data != DE_NULL)
+    if (m_initial_data != nullptr)
     {
         delete[] m_initial_data;
 
-        m_initial_data = DE_NULL;
+        m_initial_data = nullptr;
     }
 }
 
@@ -1844,13 +1844,13 @@ bool ClearOpsBufferStorageTestCase::initTestCaseGlobal()
     m_gl.bindBuffer(GL_COPY_READ_BUFFER, m_helper_bo);
     GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
-    m_gl.bufferStorage(GL_COPY_READ_BUFFER, m_sparse_bo_size_rounded, DE_NULL,
+    m_gl.bufferStorage(GL_COPY_READ_BUFFER, m_sparse_bo_size_rounded, nullptr,
                        GL_DYNAMIC_STORAGE_BIT | GL_MAP_READ_BIT); /* flags */
     GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferStorage() call failed.");
 
     /* Set up a client-side data buffer we will use to fill the sparse BO with data,
      * to be later cleared with the clear ops */
-    DE_ASSERT(m_initial_data == DE_NULL);
+    DE_ASSERT(m_initial_data == nullptr);
 
     m_initial_data = new unsigned char[m_sparse_bo_size_rounded];
 
@@ -1904,9 +1904,9 @@ CopyOpsBufferStorageTestCase::CopyOpsBufferStorageTestCase(const glw::Functions 
     , m_sparse_bo_size_rounded(0)
     , m_testCtx(testContext)
 {
-    m_ref_data[0]   = DE_NULL;
-    m_ref_data[1]   = DE_NULL;
-    m_ref_data[2]   = DE_NULL;
+    m_ref_data[0]   = nullptr;
+    m_ref_data[1]   = nullptr;
+    m_ref_data[2]   = nullptr;
     m_sparse_bos[0] = 0;
     m_sparse_bos[1] = 0;
 }
@@ -1935,11 +1935,11 @@ void CopyOpsBufferStorageTestCase::deinitTestCaseGlobal()
     for (unsigned int n_ref_data_buffer = 0; n_ref_data_buffer < sizeof(m_ref_data) / sizeof(m_ref_data[0]);
          ++n_ref_data_buffer)
     {
-        if (m_ref_data[n_ref_data_buffer] != DE_NULL)
+        if (m_ref_data[n_ref_data_buffer] != nullptr)
         {
             delete[] m_ref_data[n_ref_data_buffer];
 
-            m_ref_data[n_ref_data_buffer] = DE_NULL;
+            m_ref_data[n_ref_data_buffer] = nullptr;
         }
     }
 
@@ -2258,7 +2258,7 @@ void CopyOpsBufferStorageTestCase::initReferenceData()
     for (unsigned int n_ref_data_buffer = 0; n_ref_data_buffer < sizeof(m_ref_data) / sizeof(m_ref_data[0]);
          ++n_ref_data_buffer)
     {
-        DE_ASSERT(m_ref_data[n_ref_data_buffer] == DE_NULL);
+        DE_ASSERT(m_ref_data[n_ref_data_buffer] == nullptr);
 
         m_ref_data[n_ref_data_buffer] = new unsigned short[m_sparse_bo_size_rounded / 2];
 
@@ -2293,7 +2293,7 @@ bool CopyOpsBufferStorageTestCase::initTestCaseGlobal()
     m_gl.bindBuffer(GL_ARRAY_BUFFER, m_sparse_bos[1]);
     GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
-    m_gl.bufferStorage(GL_ARRAY_BUFFER, m_sparse_bo_size_rounded, DE_NULL, /* data */
+    m_gl.bufferStorage(GL_ARRAY_BUFFER, m_sparse_bo_size_rounded, nullptr, /* data */
                        GL_SPARSE_STORAGE_BIT_ARB);
     GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferStorage() call failed.");
 
@@ -2376,10 +2376,10 @@ void CopyOpsBufferStorageTestCase::initTestCases()
     {
         glw::GLuint dst_bo_sparse_id    = 0;
         bool dst_bo_is_sparse           = false;
-        unsigned short *dst_bo_ref_data = DE_NULL;
+        unsigned short *dst_bo_ref_data = nullptr;
         glw::GLuint src_bo_sparse_id    = 0;
         bool src_bo_is_sparse           = false;
-        unsigned short *src_bo_ref_data = DE_NULL;
+        unsigned short *src_bo_ref_data = nullptr;
 
         switch (n_bo_configuration)
         {
@@ -2551,12 +2551,12 @@ void CopyOpsBufferStorageTestCase::initTestCases()
 
                 DE_ASSERT(test_case.dst_bo_commit_size >= 0);
                 DE_ASSERT(test_case.dst_bo_commit_start_offset >= 0);
-                DE_ASSERT(test_case.dst_bo_ref_data != DE_NULL);
+                DE_ASSERT(test_case.dst_bo_ref_data != nullptr);
                 DE_ASSERT(test_case.dst_bo_start_offset >= 0);
                 DE_ASSERT(test_case.n_bytes_to_copy >= 0);
                 DE_ASSERT(test_case.src_bo_commit_size >= 0);
                 DE_ASSERT(test_case.src_bo_commit_start_offset >= 0);
-                DE_ASSERT(test_case.src_bo_ref_data != DE_NULL);
+                DE_ASSERT(test_case.src_bo_ref_data != nullptr);
                 DE_ASSERT(test_case.src_bo_start_offset >= 0);
 
                 m_test_cases.push_back(test_case);
@@ -2970,7 +2970,7 @@ PixelPackBufferStorageTestCase::PixelPackBufferStorageTestCase(const glw::Functi
     , m_gl(gl)
     , m_helper_bo(0)
     , m_po(0)
-    , m_ref_data_ptr(DE_NULL)
+    , m_ref_data_ptr(nullptr)
     , m_ref_data_size(0)
     , m_sparse_bo(0)
     , m_sparse_bo_size(0)
@@ -3008,11 +3008,11 @@ void PixelPackBufferStorageTestCase::deinitTestCaseGlobal()
         m_helper_bo = 0;
     }
 
-    if (m_ref_data_ptr != DE_NULL)
+    if (m_ref_data_ptr != nullptr)
     {
         delete[] m_ref_data_ptr;
 
-        m_ref_data_ptr = DE_NULL;
+        m_ref_data_ptr = nullptr;
     }
 
     if (m_po != 0)
@@ -3198,7 +3198,7 @@ bool PixelPackBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags
         m_gl.unmapBuffer(GL_COPY_READ_BUFFER);
         GLU_EXPECT_NO_ERROR(m_gl.getError(), "glUnmapBuffer() call failed.");
 
-        read_data_ptr = DE_NULL;
+        read_data_ptr = nullptr;
         result &= result_local;
 
         /* Clean up */
@@ -3306,7 +3306,7 @@ bool PixelPackBufferStorageTestCase::initTestCaseGlobal()
     m_sparse_bo_size_rounded = SparseBufferTestUtilities::alignOffset(m_sparse_bo_size, m_page_size);
 
     /* Prepare the texture data */
-    unsigned char *ref_data_traveller_ptr = DE_NULL;
+    unsigned char *ref_data_traveller_ptr = nullptr;
 
     m_ref_data_ptr         = new unsigned char[m_ref_data_size];
     ref_data_traveller_ptr = m_ref_data_ptr;
@@ -3362,15 +3362,15 @@ PixelUnpackBufferStorageTestCase::PixelUnpackBufferStorageTestCase(const glw::Fu
                                                                    tcu::TestContext &testContext)
     : m_gl(gl)
     , m_helper_bo(0)
-    , m_read_data_ptr(DE_NULL)
+    , m_read_data_ptr(nullptr)
     , m_sparse_bo(0)
     , m_sparse_bo_size(0)
     , m_sparse_bo_size_rounded(0)
     , m_testCtx(testContext)
-    , m_texture_data_ptr(DE_NULL)
+    , m_texture_data_ptr(nullptr)
     , m_texture_data_size(0)
     , m_to(0)
-    , m_to_data_zero(DE_NULL)
+    , m_to_data_zero(nullptr)
     , m_to_height(1024)
     , m_to_width(1024)
 {
@@ -3390,18 +3390,18 @@ void PixelUnpackBufferStorageTestCase::deinitTestCaseGlobal()
         m_helper_bo = 0;
     }
 
-    if (m_read_data_ptr != DE_NULL)
+    if (m_read_data_ptr != nullptr)
     {
         delete[] m_read_data_ptr;
 
-        m_read_data_ptr = DE_NULL;
+        m_read_data_ptr = nullptr;
     }
 
-    if (m_texture_data_ptr != DE_NULL)
+    if (m_texture_data_ptr != nullptr)
     {
         delete[] m_texture_data_ptr;
 
-        m_texture_data_ptr = DE_NULL;
+        m_texture_data_ptr = nullptr;
     }
 
     if (m_to != 0)
@@ -3411,11 +3411,11 @@ void PixelUnpackBufferStorageTestCase::deinitTestCaseGlobal()
         m_to = 0;
     }
 
-    if (m_to_data_zero != DE_NULL)
+    if (m_to_data_zero != nullptr)
     {
         delete[] m_to_data_zero;
 
-        m_to_data_zero = DE_NULL;
+        m_to_data_zero = nullptr;
     }
 }
 
@@ -3634,7 +3634,7 @@ bool PixelUnpackBufferStorageTestCase::initTestCaseGlobal()
     m_sparse_bo_size_rounded = SparseBufferTestUtilities::alignOffset(m_sparse_bo_size, m_page_size);
 
     /* Prepare the texture data */
-    unsigned char *texture_data_traveller_ptr = DE_NULL;
+    unsigned char *texture_data_traveller_ptr = nullptr;
 
     m_read_data_ptr            = new unsigned char[m_texture_data_size];
     m_texture_data_ptr         = new unsigned char[m_texture_data_size];
@@ -3711,7 +3711,7 @@ QuadsBufferStorageTestCase::QuadsBufferStorageTestCase(const glw::Functions &gl,
     : m_attribute_color_location(0)    /* predefined attribute locations */
     , m_attribute_position_location(1) /* predefined attribute locations */
     , m_color_data_offset(0)
-    , m_data(DE_NULL)
+    , m_data(nullptr)
     , m_data_size(0)
     , m_data_size_rounded(0)
     , m_fbo(0)
@@ -3907,11 +3907,11 @@ void QuadsBufferStorageTestCase::createTestData(unsigned char **out_data, unsign
  */
 void QuadsBufferStorageTestCase::deinitTestCaseGlobal()
 {
-    if (m_data != DE_NULL)
+    if (m_data != nullptr)
     {
         delete[] m_data;
 
-        m_data = DE_NULL;
+        m_data = nullptr;
     }
 
     if (m_fbo != 0)
@@ -4131,7 +4131,7 @@ bool QuadsBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
         }         /* if (m_pages_committed) */
 
         delete[] read_data;
-        read_data = DE_NULL;
+        read_data = nullptr;
     } /* for (both iterations) */
 
 end:
@@ -4143,7 +4143,7 @@ end:
  */
 void QuadsBufferStorageTestCase::initHelperBO()
 {
-    DE_ASSERT(m_data == DE_NULL);
+    DE_ASSERT(m_data == nullptr);
     DE_ASSERT(m_helper_bo == 0);
 
     createTestData(&m_data, &m_vbo_data_offset, &m_ibo_data_offset, &m_color_data_offset);
@@ -4170,7 +4170,7 @@ void QuadsBufferStorageTestCase::initHelperBO()
 void QuadsBufferStorageTestCase::initSparseBO(bool decommit_data_pages_after_upload, bool is_dynamic_storage)
 {
     /* Set up the vertex buffer object. */
-    if (m_data == DE_NULL)
+    if (m_data == nullptr)
     {
         createTestData(&m_data, &m_vbo_data_offset, &m_ibo_data_offset, &m_color_data_offset);
     }
@@ -4609,11 +4609,11 @@ bool QueryBufferStorageTestCase::initTestCaseGlobal()
                                  "    gl_Position = vec4(0.0, 0.0, 0.0, 1.0);\n"
                                  "}\n";
 
-    m_po = SparseBufferTestUtilities::createProgram(m_gl, DE_NULL, /* fs_body_parts */
+    m_po = SparseBufferTestUtilities::createProgram(m_gl, nullptr, /* fs_body_parts */
                                                     0,             /* n_fs_body_parts */
                                                     &vs_body, 1,   /* n_vs_body_parts */
-                                                    DE_NULL,       /* attribute_names */
-                                                    DE_NULL,       /* attribute_locations */
+                                                    nullptr,       /* attribute_names */
+                                                    nullptr,       /* attribute_locations */
                                                     0);            /* n_attribute_locations */
 
     if (m_po == 0)
@@ -4628,7 +4628,7 @@ bool QueryBufferStorageTestCase::initTestCaseGlobal()
     m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_helper_bo);
     GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
-    m_gl.bufferStorage(GL_COPY_WRITE_BUFFER, sizeof(glw::GLint64), DE_NULL, /* data */
+    m_gl.bufferStorage(GL_COPY_WRITE_BUFFER, sizeof(glw::GLint64), nullptr, /* data */
                        GL_MAP_READ_BIT);
     GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferStorage() call failed.");
 
@@ -4681,7 +4681,7 @@ SSBOStorageTestCase::SSBOStorageTestCase(const glw::Functions &gl, tcu::TestCont
     , m_sparse_bo(0)
     , m_sparse_bo_size(0)
     , m_sparse_bo_size_rounded(0)
-    , m_ssbo_data(DE_NULL)
+    , m_ssbo_data(nullptr)
     , m_testCtx(testContext)
 {
     /* min max for SSBO size from GL_ARB_shader_storage_buffer_object is 16mb;
@@ -4722,11 +4722,11 @@ void SSBOStorageTestCase::deinitTestCaseGlobal()
         m_result_bo = 0;
     }
 
-    if (m_ssbo_data != DE_NULL)
+    if (m_ssbo_data != nullptr)
     {
         delete[] m_ssbo_data;
 
-        m_ssbo_data = DE_NULL;
+        m_ssbo_data = nullptr;
     }
 }
 
@@ -4983,7 +4983,7 @@ bool SSBOStorageTestCase::initTestCaseGlobal()
     m_gl.bindBuffer(GL_ARRAY_BUFFER, m_result_bo);
     GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
-    m_gl.bufferData(GL_ARRAY_BUFFER, m_sparse_bo_size, DE_NULL, /* data */
+    m_gl.bufferData(GL_ARRAY_BUFFER, m_sparse_bo_size, nullptr, /* data */
                     GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferData() call failed.");
 
@@ -5038,9 +5038,9 @@ TransformFeedbackBufferStorageTestCase::TransformFeedbackBufferStorageTestCase(c
     , m_draw_call_firstIndex(4)
     , m_gl(gl)
     , m_helper_bo(0)
-    , m_index_data(DE_NULL)
+    , m_index_data(nullptr)
     , m_index_data_size(0)
-    , m_indirect_arg_data(DE_NULL)
+    , m_indirect_arg_data(nullptr)
     , m_indirect_arg_data_size(0)
     , m_min_memory_page_span(4) /* as per test spec */
     , m_multidrawcall_drawcount(-1)
@@ -5080,18 +5080,18 @@ void TransformFeedbackBufferStorageTestCase::deinitTestCaseGlobal()
         m_helper_bo = 0;
     }
 
-    if (m_index_data != DE_NULL)
+    if (m_index_data != nullptr)
     {
         delete[] m_index_data;
 
-        m_index_data = DE_NULL;
+        m_index_data = nullptr;
     }
 
-    if (m_indirect_arg_data != DE_NULL)
+    if (m_indirect_arg_data != nullptr)
     {
         delete[] m_indirect_arg_data;
 
-        m_indirect_arg_data = DE_NULL;
+        m_indirect_arg_data = nullptr;
     }
 
     if (m_po_ia != 0)
@@ -5159,7 +5159,7 @@ bool TransformFeedbackBufferStorageTestCase::execute(glw::GLuint sparse_bo_stora
     unsigned int n_result_bytes_per_instance[2]  = {0};
     const unsigned int n_result_bytes_per_vertex = sizeof(unsigned int) * 2;
     unsigned int n_result_bytes_total            = 0;
-    glw::GLuint *result_ptr                      = DE_NULL;
+    glw::GLuint *result_ptr                      = nullptr;
 
     m_gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_data_bo);
     m_gl.bindBuffer(GL_DRAW_INDIRECT_BUFFER, m_data_bo);
@@ -5660,8 +5660,8 @@ bool TransformFeedbackBufferStorageTestCase::execute(glw::GLuint sparse_bo_stora
 
             /* Determine where the result TF data start from */
             const glw::GLuint expected_instance_id        = draw_call_first_instance_id[n_draw_call] + n_instance;
-            glw::GLuint *result_instance_id_traveller_ptr = DE_NULL;
-            glw::GLuint *result_vertex_id_traveller_ptr   = DE_NULL;
+            glw::GLuint *result_instance_id_traveller_ptr = nullptr;
+            glw::GLuint *result_vertex_id_traveller_ptr   = nullptr;
 
             if (is_ia_iteration)
             {
@@ -5956,7 +5956,7 @@ void TransformFeedbackBufferStorageTestCase::initDataBO()
     m_gl.bindBuffer(GL_ARRAY_BUFFER, m_data_bo);
     GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
-    m_gl.bufferStorage(GL_ARRAY_BUFFER, m_data_bo_size, DE_NULL, GL_DYNAMIC_STORAGE_BIT);
+    m_gl.bufferStorage(GL_ARRAY_BUFFER, m_data_bo_size, nullptr, GL_DYNAMIC_STORAGE_BIT);
     GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferStorage() call failed.");
 
     m_gl.bufferSubData(GL_ARRAY_BUFFER, m_data_bo_indexed_indirect_arg_offset, m_indirect_arg_data_size,
@@ -5977,7 +5977,7 @@ void TransformFeedbackBufferStorageTestCase::initDataBO()
     m_gl.bindBuffer(GL_ARRAY_BUFFER, m_helper_bo);
     GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
-    m_gl.bufferStorage(GL_ARRAY_BUFFER, m_result_bo_size, DE_NULL, /* data */
+    m_gl.bufferStorage(GL_ARRAY_BUFFER, m_result_bo_size, nullptr, /* data */
                        GL_MAP_READ_BIT);
     GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferStorage() call failed.");
 }
@@ -6008,19 +6008,19 @@ bool TransformFeedbackBufferStorageTestCase::initTestCaseGlobal()
                                               "    vertex_id   = gl_VertexID;\n"
                                               "}\n";
 
-    m_po_ia = SparseBufferTestUtilities::createProgram(m_gl, DE_NULL, /* fs_body_parts */
+    m_po_ia = SparseBufferTestUtilities::createProgram(m_gl, nullptr, /* fs_body_parts */
                                                        0,             /* n_fs_body_parts */
                                                        &vs_body, 1,   /* n_vs_body_parts */
-                                                       DE_NULL,       /* attribute_names */
-                                                       DE_NULL,       /* attribute_locations */
+                                                       nullptr,       /* attribute_names */
+                                                       nullptr,       /* attribute_locations */
                                                        0,             /* n_attribute_properties */
                                                        tf_varyings, n_tf_varyings, GL_INTERLEAVED_ATTRIBS);
 
-    m_po_sa = SparseBufferTestUtilities::createProgram(m_gl, DE_NULL, /* fs_body_parts */
+    m_po_sa = SparseBufferTestUtilities::createProgram(m_gl, nullptr, /* fs_body_parts */
                                                        0,             /* n_fs_body_parts */
                                                        &vs_body, 1,   /* n_vs_body_parts */
-                                                       DE_NULL,       /* attribute_names */
-                                                       DE_NULL,       /* attribute_locations */
+                                                       nullptr,       /* attribute_names */
+                                                       nullptr,       /* attribute_locations */
                                                        0,             /* n_attribute_properties */
                                                        tf_varyings, n_tf_varyings, GL_SEPARATE_ATTRIBS);
 
@@ -6105,7 +6105,7 @@ void TransformFeedbackBufferStorageTestCase::initTestData()
     m_data_bo_index_data_offset           = m_data_bo_regular_mdi_arg_offset + regular_mdi_size;
 
     /* Form the index data */
-    DE_ASSERT(m_index_data == DE_NULL);
+    DE_ASSERT(m_index_data == nullptr);
     DE_ASSERT(m_draw_call_firstIndex == sizeof(unsigned int));
 
     m_index_data_size = static_cast<glw::GLuint>(
@@ -6130,7 +6130,7 @@ void TransformFeedbackBufferStorageTestCase::initTestData()
     m_multidrawcall_primcount     = m_n_instances_to_test;
 
     /* Form the indirect data */
-    DE_ASSERT(m_indirect_arg_data == DE_NULL);
+    DE_ASSERT(m_indirect_arg_data == nullptr);
 
     m_indirect_arg_data_size = m_data_bo_index_data_offset - m_data_bo_indexed_indirect_arg_offset;
     m_indirect_arg_data      = (unsigned int *)new unsigned char[m_indirect_arg_data_size];
@@ -6243,7 +6243,7 @@ UniformBufferStorageTestCase::UniformBufferStorageTestCase(const glw::Functions 
     , m_sparse_bo_size_rounded(0)
     , m_testCtx(testContext)
     , m_tf_bo(0)
-    , m_ubo_data(DE_NULL)
+    , m_ubo_data(nullptr)
     , m_vao(0)
 {
     if ((m_n_pages_to_use % 2) != 0)
@@ -6279,11 +6279,11 @@ void UniformBufferStorageTestCase::deinitTestCaseGlobal()
         m_tf_bo = 0;
     }
 
-    if (m_ubo_data != DE_NULL)
+    if (m_ubo_data != nullptr)
     {
         delete[] m_ubo_data;
 
-        m_ubo_data = DE_NULL;
+        m_ubo_data = nullptr;
     }
 
     if (m_vao != 0)
@@ -6523,10 +6523,10 @@ bool UniformBufferStorageTestCase::initTestCaseGlobal()
     const char *vs_body_parts[]        = {vs_body_preamble, vs_body_define_string.c_str(), vs_body_main};
     const unsigned int n_vs_body_parts = sizeof(vs_body_parts) / sizeof(vs_body_parts[0]);
 
-    m_po = SparseBufferTestUtilities::createProgram(m_gl, DE_NULL,                           /* fs_body_parts */
+    m_po = SparseBufferTestUtilities::createProgram(m_gl, nullptr,                           /* fs_body_parts */
                                                     0,                                       /* n_fs_body_parts */
-                                                    vs_body_parts, n_vs_body_parts, DE_NULL, /* attribute_names */
-                                                    DE_NULL,                                 /* attribute_locations */
+                                                    vs_body_parts, n_vs_body_parts, nullptr, /* attribute_names */
+                                                    nullptr,                                 /* attribute_locations */
                                                     0,              /* n_attribute_properties */
                                                     &tf_varying, 1, /* n_tf_varyings */
                                                     GL_INTERLEAVED_ATTRIBS);
@@ -6565,7 +6565,7 @@ bool UniformBufferStorageTestCase::initTestCaseGlobal()
     m_gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, m_tf_bo);
     GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
-    m_gl.bufferStorage(GL_TRANSFORM_FEEDBACK_BUFFER, tfbo_size, DE_NULL, /* data */
+    m_gl.bufferStorage(GL_TRANSFORM_FEEDBACK_BUFFER, tfbo_size, nullptr, /* data */
                        GL_MAP_READ_BIT);
     GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferStorage() call failed.");
 
@@ -6573,7 +6573,7 @@ bool UniformBufferStorageTestCase::initTestCaseGlobal()
      * but we'll use its contents for a copy op, executed at the beginning of
      * each iteration.
      */
-    unsigned int *ubo_data_traveller_ptr = DE_NULL;
+    unsigned int *ubo_data_traveller_ptr = nullptr;
 
     DE_ASSERT((m_sparse_bo_data_size % sizeof(unsigned int)) == 0);
 
@@ -6737,7 +6737,7 @@ tcu::TestNode::IterateResult BufferStorageTest::iterate()
         GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() call failed.");
 
         gl.bufferStorage(GL_ARRAY_BUFFER, 1024768 * 1024, /* as per test spec */
-                         DE_NULL,                         /* data */
+                         nullptr,                         /* data */
                          flags);
 
         GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferStorage() call failed.");

@@ -53,7 +53,7 @@ using std::vector;
 using tcu::LibDrm;
 #endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 
-#define INVALID_PTR 0xFFFFFFFF
+#define INVALID_DISPLAY VkDisplayKHR(reinterpret_cast<void *>(0xFFFFFFFF))
 
 enum DrmTestIndex
 {
@@ -179,7 +179,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::iterate(void)
 CustomInstance AcquireDrmDisplayTestInstance::createInstanceWithAcquireDrmDisplay(void)
 {
     vector<VkExtensionProperties> supportedExtensions =
-        enumerateInstanceExtensionProperties(m_context.getPlatformInterface(), DE_NULL);
+        enumerateInstanceExtensionProperties(m_context.getPlatformInterface(), nullptr);
     vector<string> requiredExtensions = {
         "VK_EXT_acquire_drm_display",
         "VK_EXT_direct_mode_display",
@@ -205,7 +205,7 @@ LibDrm::FdPtr AcquireDrmDisplayTestInstance::getDrmFdPtr(void)
 
     deMemset(&deviceDrmProperties, 0, sizeof(deviceDrmProperties));
     deviceDrmProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT;
-    deviceDrmProperties.pNext = DE_NULL;
+    deviceDrmProperties.pNext = nullptr;
 
     deMemset(&deviceProperties2, 0, sizeof(deviceProperties2));
     deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
@@ -315,7 +315,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testGetDrmDisplayEXT(void)
     if (!connectorId)
         TCU_THROW(NotSupportedError, "Could not find a DRM connector.");
 
-    VkDisplayKHR display = INVALID_PTR;
+    VkDisplayKHR display = INVALID_DISPLAY;
     VkResult result      = m_vki.getDrmDisplayEXT(m_physDevice, fd, connectorId, &display);
     if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
         TCU_THROW(NotSupportedError, "VK_EXT_acquire_drm_display not supported.");
@@ -323,7 +323,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testGetDrmDisplayEXT(void)
     if (result != VK_SUCCESS)
         TCU_FAIL("vkGetDrmDisplayEXT failed.");
 
-    if (display == VK_NULL_HANDLE || display == INVALID_PTR)
+    if (display == VK_NULL_HANDLE || display == INVALID_DISPLAY)
         TCU_FAIL("vkGetDrmDisplayEXT did not set display.");
 
     return tcu::TestStatus::pass("pass");
@@ -348,7 +348,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testGetDrmDisplayEXTInvalidFd(voi
         TCU_THROW(NotSupportedError, "Could not find a DRM connector.");
 
     int invalidFd        = open("/", O_RDONLY | O_PATH);
-    VkDisplayKHR display = INVALID_PTR;
+    VkDisplayKHR display = INVALID_DISPLAY;
     VkResult result      = m_vki.getDrmDisplayEXT(m_physDevice, invalidFd, connectorId, &display);
     close(invalidFd);
     if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
@@ -379,7 +379,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testGetDrmDisplayEXTInvalidConnec
         TCU_THROW(NotSupportedError, "Could not find a DRM connector.");
 
     uint32_t invalidConnectorId = connectorId + 1234;
-    VkDisplayKHR display        = INVALID_PTR;
+    VkDisplayKHR display        = INVALID_DISPLAY;
     VkResult result             = m_vki.getDrmDisplayEXT(m_physDevice, fd, invalidConnectorId, &display);
     if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
         TCU_THROW(NotSupportedError, "VK_EXT_acquire_drm_display not supported.");
@@ -414,7 +414,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testGetDrmDisplayEXTNotMaster(voi
     if (!connectorId)
         TCU_THROW(NotSupportedError, "Could not find a DRM connector.");
 
-    VkDisplayKHR display = INVALID_PTR;
+    VkDisplayKHR display = INVALID_DISPLAY;
     VkResult result      = m_vki.getDrmDisplayEXT(m_physDevice, fd, connectorId, &display);
     if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
         TCU_THROW(NotSupportedError, "VK_EXT_acquire_drm_display not supported.");
@@ -422,7 +422,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testGetDrmDisplayEXTNotMaster(voi
     if (result != VK_SUCCESS)
         TCU_FAIL("vkGetDrmDisplayEXT failed.");
 
-    if (display == VK_NULL_HANDLE || display == INVALID_PTR)
+    if (display == VK_NULL_HANDLE || display == INVALID_DISPLAY)
         TCU_FAIL("vkGetDrmDisplayEXT did not set display.");
 
     return tcu::TestStatus::pass("pass");
@@ -466,7 +466,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testGetDrmDisplayEXTUnownedConnec
         TCU_THROW(NotSupportedError, "Could not lease DRM.");
     int leaseFd = *leaseFdPtr;
 
-    VkDisplayKHR display = INVALID_PTR;
+    VkDisplayKHR display = INVALID_DISPLAY;
     VkResult result      = m_vki.getDrmDisplayEXT(m_physDevice, leaseFd, otherConnectorId, &display);
     if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
         TCU_THROW(NotSupportedError, "VK_EXT_acquire_drm_display not supported.");
@@ -508,7 +508,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testAcquireDrmDisplayEXT(void)
     if (!connectorId)
         TCU_THROW(NotSupportedError, "Could not find a DRM connector.");
 
-    VkDisplayKHR display = INVALID_PTR;
+    VkDisplayKHR display = INVALID_DISPLAY;
     VkResult result      = m_vki.getDrmDisplayEXT(m_physDevice, fd, connectorId, &display);
     if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
         TCU_THROW(NotSupportedError, "VK_EXT_acquire_drm_display not supported.");
@@ -516,7 +516,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testAcquireDrmDisplayEXT(void)
     if (result != VK_SUCCESS)
         TCU_FAIL("vkGetDrmDisplayEXT failed.");
 
-    if (display == VK_NULL_HANDLE || display == INVALID_PTR)
+    if (display == VK_NULL_HANDLE || display == INVALID_DISPLAY)
         TCU_FAIL("vkGetDrmDisplayEXT did not set display.");
 
     result = m_vki.acquireDrmDisplayEXT(m_physDevice, fd, display);
@@ -544,7 +544,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testAcquireDrmDisplayEXTInvalidFd
     if (!connectorId)
         TCU_THROW(NotSupportedError, "Could not find a DRM connector.");
 
-    VkDisplayKHR display = INVALID_PTR;
+    VkDisplayKHR display = INVALID_DISPLAY;
     VkResult result      = m_vki.getDrmDisplayEXT(m_physDevice, fd, connectorId, &display);
     if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
         TCU_THROW(NotSupportedError, "VK_EXT_acquire_drm_display not supported.");
@@ -552,7 +552,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testAcquireDrmDisplayEXTInvalidFd
     if (result != VK_SUCCESS)
         TCU_FAIL("vkGetDrmDisplayEXT failed.");
 
-    if (display == VK_NULL_HANDLE || display == INVALID_PTR)
+    if (display == VK_NULL_HANDLE || display == INVALID_DISPLAY)
         TCU_FAIL("vkGetDrmDisplayEXT did not set display.");
 
     int invalidFd = open("/", O_RDONLY | O_PATH);
@@ -585,7 +585,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testAcquireDrmDisplayEXTNotMaster
     if (!connectorId)
         TCU_THROW(NotSupportedError, "Could not find a DRM connector.");
 
-    VkDisplayKHR display = INVALID_PTR;
+    VkDisplayKHR display = INVALID_DISPLAY;
     VkResult result      = m_vki.getDrmDisplayEXT(m_physDevice, fd, connectorId, &display);
     if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
         TCU_THROW(NotSupportedError, "VK_EXT_acquire_drm_display not supported.");
@@ -593,7 +593,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testAcquireDrmDisplayEXTNotMaster
     if (result != VK_SUCCESS)
         TCU_FAIL("vkGetDrmDisplayEXT failed.");
 
-    if (display == VK_NULL_HANDLE || display == INVALID_PTR)
+    if (display == VK_NULL_HANDLE || display == INVALID_DISPLAY)
         TCU_FAIL("vkGetDrmDisplayEXT did not set display.");
 
     result = m_vki.acquireDrmDisplayEXT(m_physDevice, fd, display);
@@ -642,7 +642,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testAcquireDrmDisplayEXTUnownedCo
     int leaseFd = *leaseFdPtr;
 
     // We know that this would fail with leaseFd, so use the original master fd.
-    VkDisplayKHR display = INVALID_PTR;
+    VkDisplayKHR display = INVALID_DISPLAY;
     VkResult result      = m_vki.getDrmDisplayEXT(m_physDevice, fd, otherConnectorId, &display);
     if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
         TCU_THROW(NotSupportedError, "VK_EXT_acquire_drm_display not supported.");
@@ -650,7 +650,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testAcquireDrmDisplayEXTUnownedCo
     if (result != VK_SUCCESS)
         TCU_FAIL("vkGetDrmDisplayEXT failed.");
 
-    if (display == VK_NULL_HANDLE || display == INVALID_PTR)
+    if (display == VK_NULL_HANDLE || display == INVALID_DISPLAY)
         TCU_FAIL("vkGetDrmDisplayEXT did not set display.");
 
     result = m_vki.acquireDrmDisplayEXT(m_physDevice, leaseFd, display);
@@ -688,7 +688,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testReleaseDisplayEXT(void)
     if (!connectorId)
         TCU_THROW(NotSupportedError, "Could not find a DRM connector.");
 
-    VkDisplayKHR display = INVALID_PTR;
+    VkDisplayKHR display = INVALID_DISPLAY;
     VkResult result      = m_vki.getDrmDisplayEXT(m_physDevice, fd, connectorId, &display);
     if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
         TCU_THROW(NotSupportedError, "VK_EXT_acquire_drm_display not supported.");
@@ -696,7 +696,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testReleaseDisplayEXT(void)
     if (result != VK_SUCCESS)
         TCU_FAIL("vkGetDrmDisplayEXT failed.");
 
-    if (display == VK_NULL_HANDLE || display == INVALID_PTR)
+    if (display == VK_NULL_HANDLE || display == INVALID_DISPLAY)
         TCU_FAIL("vkGetDrmDisplayEXT did not set display.");
 
     result = m_vki.acquireDrmDisplayEXT(m_physDevice, fd, display);

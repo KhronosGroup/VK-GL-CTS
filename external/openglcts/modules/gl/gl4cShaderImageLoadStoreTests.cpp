@@ -6057,6 +6057,8 @@ class AdvancedSSOSimple : public ShaderImageLoadStoreBase
         glBindProgramPipeline(m_pipeline[1]);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
+        glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
+
         std::vector<vec4> data(width * height * 8);
         glGetTexImage(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, GL_FLOAT, &data[0]);
 
@@ -6502,6 +6504,8 @@ class AdvancedCopyImage : public ShaderImageLoadStoreBase
         glViewport(0, 0, width, height);
         glBindVertexArray(m_vao);
         glDrawElementsInstancedBaseInstance(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, 0, 1, 0);
+
+        glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
 
         std::vector<vec4> rdata(width * height);
         glBindTexture(GL_TEXTURE_2D, m_texture[1]);
@@ -9209,7 +9213,7 @@ private:
             "\n"
             "precision highp float;\n"
             "\n"
-            "layout(quads, equal_spacing, ccw) in;\n"
+            "layout(isolines) in;\n"
             "\n"
             "void main()\n"
             "{\n"
@@ -9489,8 +9493,10 @@ private:
             break;
 
         case tesselationEvalutaionShaderStage:
-            stage_specific_layout = "layout(quads, equal_spacing, ccw) in;\n"
+            stage_specific_layout = "layout(isolines) in;\n"
                                     "\n";
+            // Execute exactly once, given isolines with min tess factor
+            stage_specific_predicate = "gl_TessCoord.x < 0.5";
             break;
 
         case vertexShaderStage:

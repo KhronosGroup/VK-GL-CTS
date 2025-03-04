@@ -66,7 +66,7 @@ ShaderFunctionCase::ShaderFunctionCase(Context &context, const char *name, const
     : ShaderRenderCase(context.getTestContext(), context.getRenderContext(), context.getContextInfo(), name,
                        description, isVertexCase, evalFunc)
     , m_setupUniforms(setupUniformsFunc)
-    , m_brickTexture(DE_NULL)
+    , m_brickTexture(nullptr)
 {
     m_vertShaderSource = vertShaderSource;
     m_fragShaderSource = fragShaderSource;
@@ -86,7 +86,7 @@ void ShaderFunctionCase::deinit(void)
 {
     gls::ShaderRenderCase::deinit();
     delete m_brickTexture;
-    m_brickTexture = DE_NULL;
+    m_brickTexture = nullptr;
 }
 
 void ShaderFunctionCase::setupUniforms(int programID, const tcu::Vec4 &constCoords)
@@ -163,14 +163,14 @@ void ShaderFunctionTests::init(void)
         {                                                                                                        \
             static void eval(ShaderEvalContext &c) EVAL_FUNC_BODY                                                \
         }; /* NOLINT(EVAL_FUNC_BODY) */                                                                          \
-        addChild(createStructCase(m_context, #NAME "_vertex", DESCRIPTION, true, &Eval_##NAME::eval, DE_NULL,    \
+        addChild(createStructCase(m_context, #NAME "_vertex", DESCRIPTION, true, &Eval_##NAME::eval, nullptr,    \
                                   SHADER_SRC, PARAMS));                                                          \
-        addChild(createStructCase(m_context, #NAME "_fragment", DESCRIPTION, false, &Eval_##NAME::eval, DE_NULL, \
+        addChild(createStructCase(m_context, #NAME "_fragment", DESCRIPTION, false, &Eval_##NAME::eval, nullptr, \
                                   SHADER_SRC, PARAMS));                                                          \
     } while (false)
 
 #define FUNCTION_CASE(NAME, DESCRIPTION, SHADER_SRC, EVAL_FUNC_BODY) \
-    FUNCTION_CASE_PARAMETERIZED(NAME, DESCRIPTION, SHADER_SRC, EVAL_FUNC_BODY, DE_NULL)
+    FUNCTION_CASE_PARAMETERIZED(NAME, DESCRIPTION, SHADER_SRC, EVAL_FUNC_BODY, nullptr)
 
     FUNCTION_CASE(local_variable_aliasing, "Function out parameter aliases local variable",
                   LineStream() << "${DECLARATIONS}"

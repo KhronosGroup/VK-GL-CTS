@@ -60,6 +60,29 @@ uint32_t findMatchingQueueFamilyIndex(const std::vector<VkQueueFamilyProperties>
     return NO_MATCH_FOUND;
 }
 
+uint32_t findSpecificQueueFamilyIndex(const std::vector<VkQueueFamilyProperties> &queueFamilyProperties,
+                                      const VkQueueFlags requestedFlags, const uint32_t startIndex)
+{
+    for (uint32_t queueNdx = startIndex; queueNdx < queueFamilyProperties.size(); ++queueNdx)
+    {
+        const VkQueueFlags queueFlags         = queueFamilyProperties[queueNdx].queueFlags;
+        const VkQueueFlags coreFlags          = (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT);
+        const VkQueueFlags coreQueueFlags     = queueFlags & coreFlags;
+        const VkQueueFlags coreRequestedFlags = requestedFlags & coreFlags;
+
+        bool isUniversal   = (coreQueueFlags & VK_QUEUE_GRAPHICS_BIT) != 0;
+        bool needUniversal = (coreRequestedFlags & VK_QUEUE_GRAPHICS_BIT) != 0;
+
+        if (isUniversal && needUniversal)
+            return queueNdx;
+
+        if ((coreQueueFlags == coreRequestedFlags) && ((queueFlags & requestedFlags) == requestedFlags))
+            return queueNdx;
+    }
+
+    return NO_MATCH_FOUND;
+}
+
 } // namespace
 
 void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequirementsVec &queueRequirements,
@@ -74,9 +97,9 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
     std::vector<const char *> deviceExtensions;
     VkDeviceGroupDeviceCreateInfo deviceGroupInfo = {
         VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO, //stype
-        DE_NULL,                                           //pNext
+        nullptr,                                           //pNext
         0,                                                 //physicalDeviceCount
-        DE_NULL                                            //physicalDevices
+        nullptr                                            //physicalDevices
     };
     m_physicalDevices.push_back(m_context.getPhysicalDevice());
 
@@ -112,7 +135,7 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
     InstanceDriver instanceDriver(m_context.getPlatformInterface(), instance);
     const VkPhysicalDevice physicalDevice = getPhysicalDevice();
     uint32_t queueFamilyPropertiesCount   = 0u;
-    instanceDriver.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertiesCount, DE_NULL);
+    instanceDriver.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertiesCount, nullptr);
 
     if (queueFamilyPropertiesCount == 0u)
         TCU_THROW(ResourceError, "Device reports an empty set of queue family properties");
@@ -139,7 +162,9 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
         do
         {
             queueFamilyIndex =
-                findMatchingQueueFamilyIndex(queueFamilyProperties, queueRequirement.queueFlags, queueFamilyIndex);
+                m_forceSpecificQueue ?
+                    findSpecificQueueFamilyIndex(queueFamilyProperties, queueRequirement.queueFlags, queueFamilyIndex) :
+                    findMatchingQueueFamilyIndex(queueFamilyProperties, queueRequirement.queueFlags, queueFamilyIndex);
 
             if (queueFamilyIndex == NO_MATCH_FOUND)
                 TCU_THROW(NotSupportedError, "No match found for queue requirements");
@@ -152,7 +177,7 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 
             for (uint32_t queueNdx = 0; queueNdx < queuesPerFamilyCount; ++queueNdx)
             {
-                Queue queue            = {DE_NULL, 0, 0};
+                Queue queue            = {nullptr, 0, 0};
                 queue.queueFamilyIndex = queueFamilyIndex;
                 queue.queueIndex       = queueNdx;
 
@@ -175,7 +200,7 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 
         const VkDeviceQueueCreateInfo queueInfo = {
             VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,  // VkStructureType sType;
-            DE_NULL,                                     // const void* pNext;
+            nullptr,                                     // const void* pNext;
             (VkDeviceQueueCreateFlags)0u,                // VkDeviceQueueCreateFlags flags;
             queueFamilyIter->first,                      // uint32_t queueFamilyIndex;
             queueFamilyIter->second.queueCount,          // uint32_t queueCount;
@@ -235,9 +260,9 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
         static_cast<uint32_t>(queueInfos.size()),                 // uint32_t queueCreateInfoCount;
         &queueInfos[0],                                           // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u,                                                       // uint32_t enabledLayerCount;
-        DE_NULL,                                                  // const char* const* ppEnabledLayerNames;
+        nullptr,                                                  // const char* const* ppEnabledLayerNames;
         uint32_t(deviceExtensions.size()),                        // uint32_t enabledExtensionCount;
-        deviceExtensions.size() ? &deviceExtensions[0] : DE_NULL, // const char* const* ppEnabledExtensionNames;
+        deviceExtensions.size() ? &deviceExtensions[0] : nullptr, // const char* const* ppEnabledExtensionNames;
         useFeatures2 ? nullptr : &deviceFeatures,                 // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 

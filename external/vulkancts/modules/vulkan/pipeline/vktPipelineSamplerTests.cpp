@@ -357,7 +357,7 @@ void SamplerTest::initPrograms(SourceCollections &sourceCollections) const
 {
     std::ostringstream vertexSrc;
     std::ostringstream fragmentSrc;
-    const char *texCoordSwizzle = DE_NULL;
+    const char *texCoordSwizzle = nullptr;
     tcu::TextureFormat format   = (isCompressedFormat(m_imageFormat)) ?
                                       tcu::getUncompressedFormat(mapVkCompressedFormat(m_imageFormat)) :
                                       mapVkFormat(m_imageFormat);
@@ -473,7 +473,7 @@ VkSamplerCreateInfo SamplerTest::getSamplerCreateInfo(void) const
 {
     const VkSamplerCreateInfo defaultSamplerParams = {
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,           // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         0u,                                              // VkSamplerCreateFlags flags;
         VK_FILTER_NEAREST,                               // VkFilter magFilter;
         VK_FILTER_NEAREST,                               // VkFilter minFilter;
@@ -636,7 +636,7 @@ VkSamplerReductionModeCreateInfo getSamplerReductionCreateInfo(VkSamplerReductio
 {
     const VkSamplerReductionModeCreateInfo ret = {
         VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO, // VkStructureType                sType
-        DE_NULL,                                              // const void*                    pNext
+        nullptr,                                              // const void*                    pNext
         reductionMode                                         // VkSamplerReductionMode        reductionMode
     };
     return ret;
@@ -808,7 +808,7 @@ VkSamplerCustomBorderColorCreateInfoEXT SamplerAddressModesTest::getSamplerCusto
     VkFormat format, rr::GenericVec4 customBorderColorValue, bool customBorderColorFormatless) const
 {
     const VkSamplerCustomBorderColorCreateInfoEXT defaultSamplerCustomBorderColorParams = {
-        VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT, DE_NULL, mapVkColor(customBorderColorValue),
+        VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT, nullptr, mapVkColor(customBorderColorValue),
         customBorderColorFormatless ? VK_FORMAT_UNDEFINED : format};
 
     return defaultSamplerCustomBorderColorParams;
@@ -887,7 +887,7 @@ static std::string getShortComponentSwizzleName(VkComponentSwizzle componentSwiz
 
     DE_ASSERT(de::beginsWith(fullName, prefix));
 
-    return de::toLower(fullName.substr(deStrnlen(prefix, -1)));
+    return de::toLower(fullName.substr(strlen(prefix)));
 }
 
 static std::string getComponentMappingGroupName(const VkComponentMapping &componentMapping)
@@ -1604,12 +1604,13 @@ tcu::TestStatus ExactSamplingInstance::iterate(void)
     float maxV = 1.0f;
 
     // When testing the edges, apply a texture offset of almost half a texel, so the sample location is very close to the texel border.
+    // Note that the spec only requires precision of about 1e-05, and texExtent.width can be 256
     if (m_params.offsetSign)
     {
         const float sign = m_params.offsetSign.get();
         DE_ASSERT(sign == 1.0f || sign == -1.0f);
-        const float offsetWidth  = 0.499f / static_cast<float>(texExtent.width);
-        const float offsetHeight = 0.499f / static_cast<float>(texExtent.height);
+        const float offsetWidth  = 0.498f / static_cast<float>(texExtent.width);
+        const float offsetHeight = 0.498f / static_cast<float>(texExtent.height);
 
         minU += sign * offsetWidth;
         maxU += sign * offsetWidth;

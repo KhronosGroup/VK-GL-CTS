@@ -508,7 +508,7 @@ void TextureCubeMapArrayColorDepthAttachmentsTest::generateAndConfigureTextureOb
 /* Initializes all ES objects needed to run the test */
 void TextureCubeMapArrayColorDepthAttachmentsTest::initTest()
 {
-    const glw::GLchar *depth_calculation_code = DE_NULL;
+    const glw::GLchar *depth_calculation_code = nullptr;
     const glw::Functions &gl                  = m_context.getRenderContext().getFunctions();
 
     /* Check if EXT_texture_cube_map_array extension is supported */
@@ -754,7 +754,7 @@ void TextureCubeMapArrayColorDepthAttachmentsTest::prepareMutableTextureObject(
     /* Initialize mutable texture storage as per description */
     gl.texImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0 /* mipmap_level */, internal_format, texture_size, texture_size,
                   n_cubemaps * 6 /* layer-faces per cube-map */, 0 /* border */, format, type,
-                  DE_NULL); /* initial data */
+                  nullptr); /* initial data */
     GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage3D() call failed");
 
     /* Update GL_TEXTURE_MAX_LEVEL so that the texture is considered complete */

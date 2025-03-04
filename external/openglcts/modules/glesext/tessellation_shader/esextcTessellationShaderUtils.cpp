@@ -140,7 +140,7 @@ void TessellationShaderUtils::captureTessellationData(_tessellation_vertex_count
         m_gl.bindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0 /* index */, m_bo_id);
         GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBufferBase() failed");
 
-        m_gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, DE_NULL, /* data */
+        m_gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, nullptr, /* data */
                         GL_STATIC_DRAW);
         GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferData() failed");
 
@@ -887,7 +887,7 @@ void TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(_tessellati
             level = (float)gl_max_tess_gen_level_value;
         }
 
-        if (out_clamped != DE_NULL)
+        if (out_clamped != nullptr)
         {
             *out_clamped = level;
         }
@@ -895,7 +895,7 @@ void TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(_tessellati
         /* Round *up* to nearest integer */
         level = (float)((int)(deFloatCeil(level) + 0.5f));
 
-        if (out_clamped_and_rounded != DE_NULL)
+        if (out_clamped_and_rounded != nullptr)
         {
             *out_clamped_and_rounded = level;
         }
@@ -914,7 +914,7 @@ void TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(_tessellati
             level = (float)gl_max_tess_gen_level_value;
         }
 
-        if (out_clamped != DE_NULL)
+        if (out_clamped != nullptr)
         {
             *out_clamped = level;
         }
@@ -927,7 +927,7 @@ void TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(_tessellati
             level_temp++;
         }
 
-        if (out_clamped_and_rounded != DE_NULL)
+        if (out_clamped_and_rounded != nullptr)
         {
             *out_clamped_and_rounded = (float)level_temp;
         }
@@ -946,7 +946,7 @@ void TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(_tessellati
             level = (float)(gl_max_tess_gen_level_value - 1);
         }
 
-        if (out_clamped != DE_NULL)
+        if (out_clamped != nullptr)
         {
             *out_clamped = level;
         }
@@ -959,7 +959,7 @@ void TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(_tessellati
             level_temp++;
         }
 
-        if (out_clamped_and_rounded != DE_NULL)
+        if (out_clamped_and_rounded != nullptr)
         {
             *out_clamped_and_rounded = (float)level_temp;
         }

@@ -123,7 +123,7 @@ tcu::TestNode::IterateResult TestCaseWrapper::iterate(tcu::TestCase *testCase)
 TestPackage::TestPackage(tcu::TestContext &testCtx)
     : tcu::TestPackage(testCtx, "dEQP-GLES2", "dEQP OpenGL ES 2.0 Tests")
     , m_archive(testCtx.getRootArchive(), "gles2/")
-    , m_context(DE_NULL)
+    , m_context(nullptr)
     , m_waiverMechanism(new tcu::WaiverUtil)
 {
 }
@@ -165,7 +165,7 @@ void TestPackage::init(void)
     catch (...)
     {
         delete m_context;
-        m_context = DE_NULL;
+        m_context = nullptr;
 
         throw;
     }
@@ -175,7 +175,7 @@ void TestPackage::deinit(void)
 {
     TestNode::deinit();
     delete m_context;
-    m_context = DE_NULL;
+    m_context = nullptr;
 }
 
 tcu::TestCaseExecutor *TestPackage::createExecutor(void) const

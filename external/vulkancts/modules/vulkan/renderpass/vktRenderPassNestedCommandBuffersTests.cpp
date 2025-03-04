@@ -103,7 +103,7 @@ void NestedCommandBuffersTestInstance::createRenderPass(void)
 
     const vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-        DE_NULL,                                 // const void*                pNext
+        nullptr,                                 // const void*                pNext
         0u,                                      // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
         format,                                  // VkFormat                    format
@@ -115,7 +115,7 @@ void NestedCommandBuffersTestInstance::createRenderPass(void)
         vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags        usage
         vk::VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode
         0,                             // uint32_t                    queueFamilyIndexCount
-        DE_NULL,                       // const uint32_t*            pQueueFamilyIndices
+        nullptr,                       // const uint32_t*            pQueueFamilyIndices
         vk::VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
     };
 
@@ -124,7 +124,7 @@ void NestedCommandBuffersTestInstance::createRenderPass(void)
 
     vk::VkImageViewCreateInfo imageViewCreateInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                      // const void* pNext;
+        nullptr,                                      // const void* pNext;
         (vk::VkImageViewCreateFlags)0u,               // VkImageViewCreateFlags flags;
         **m_image,                                    // VkImage image;
         vk::VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -138,7 +138,7 @@ void NestedCommandBuffersTestInstance::createRenderPass(void)
     {
         vk::VkAttachmentDescription2 attachmentDescription = {
             vk::VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             (vk::VkAttachmentDescriptionFlags)0u,           // VkAttachmentDescriptionFlags flags;
             format,                                         // VkFormat format;
             vk::VK_SAMPLE_COUNT_1_BIT,                      // VkSampleCountFlagBits samples;
@@ -147,12 +147,12 @@ void NestedCommandBuffersTestInstance::createRenderPass(void)
             vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,            // VkAttachmentLoadOp stencilLoadOp;
             vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,           // VkAttachmentStoreOp stencilStoreOp;
             vk::VK_IMAGE_LAYOUT_UNDEFINED,                  // VkImageLayout initialLayout;
-            vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,       // VkImageLayout finalLayout;
+            vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,   // VkImageLayout finalLayout;
         };
 
         vk::VkAttachmentReference2 colorAttachment = {
             vk::VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2, // VkStructureType sType;
-            DE_NULL,                                      // const void* pNext;
+            nullptr,                                      // const void* pNext;
             0u,                                           // uint32_t attachment;
             vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout layout;
             vk::VK_IMAGE_ASPECT_COLOR_BIT,                // VkImageAspectFlags aspectMask;
@@ -160,32 +160,32 @@ void NestedCommandBuffersTestInstance::createRenderPass(void)
 
         vk::VkSubpassDescription2 subpass = {
             vk::VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2, // VkStructureType sType;
-            DE_NULL,                                     // const void* pNext;
+            nullptr,                                     // const void* pNext;
             (vk::VkSubpassDescriptionFlags)0u,           // VkSubpassDescriptionFlags flags;
             vk::VK_PIPELINE_BIND_POINT_GRAPHICS,         // VkPipelineBindPoint pipelineBindPoint;
             0x0,                                         // uint32_t viewMask;
             0u,                                          // uint32_t inputAttachmentCount;
-            DE_NULL,                                     // const VkAttachmentReference2* pInputAttachments;
+            nullptr,                                     // const VkAttachmentReference2* pInputAttachments;
             1u,                                          // uint32_t colorAttachmentCount;
             &colorAttachment,                            // const VkAttachmentReference2* pColorAttachments;
-            DE_NULL,                                     // const VkAttachmentReference2* pResolveAttachments;
-            DE_NULL,                                     // const VkAttachmentReference2* pDepthStencilAttachment;
+            nullptr,                                     // const VkAttachmentReference2* pResolveAttachments;
+            nullptr,                                     // const VkAttachmentReference2* pDepthStencilAttachment;
             0u,                                          // uint32_t preserveAttachmentCount;
-            DE_NULL,                                     // const uint32_t* pPreserveAttachments;
+            nullptr,                                     // const uint32_t* pPreserveAttachments;
         };
 
         vk::VkRenderPassCreateInfo2 renderPassCreateInfo = {
             vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2, // VkStructureType sType;
-            DE_NULL,                                         // const void* pNext;
+            nullptr,                                         // const void* pNext;
             (vk::VkRenderPassCreateFlags)0u,                 // VkRenderPassCreateFlags flags;
             1u,                                              // uint32_t attachmentCount;
             &attachmentDescription,                          // const VkAttachmentDescription2* pAttachments;
             1u,                                              // uint32_t subpassCount;
             &subpass,                                        // const VkSubpassDescription2* pSubpasses;
             0u,                                              // uint32_t dependencyCount;
-            DE_NULL,                                         // const VkSubpassDependency2* pDependencies;
+            nullptr,                                         // const VkSubpassDependency2* pDependencies;
             0u,                                              // uint32_t correlatedViewMaskCount;
-            DE_NULL,                                         // const uint32_t* pCorrelatedViewMasks;
+            nullptr,                                         // const uint32_t* pCorrelatedViewMasks;
         };
 
         m_renderPass = vk::createRenderPass2(vk, device, &renderPassCreateInfo);
@@ -193,15 +193,15 @@ void NestedCommandBuffersTestInstance::createRenderPass(void)
     else if (m_testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
     {
         vk::VkAttachmentDescription attachmentDescription = {
-            (vk::VkAttachmentDescriptionFlags)0u,     // VkAttachmentDescriptionFlags flags;
-            format,                                   // VkFormat format;
-            vk::VK_SAMPLE_COUNT_1_BIT,                // VkSampleCountFlagBits samples;
-            vk::VK_ATTACHMENT_LOAD_OP_CLEAR,          // VkAttachmentLoadOp loadOp;
-            vk::VK_ATTACHMENT_STORE_OP_STORE,         // VkAttachmentStoreOp storeOp;
-            vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,      // VkAttachmentLoadOp stencilLoadOp;
-            vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,     // VkAttachmentStoreOp stencilStoreOp;
-            vk::VK_IMAGE_LAYOUT_UNDEFINED,            // VkImageLayout initialLayout;
-            vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, // VkImageLayout finalLayout;
+            (vk::VkAttachmentDescriptionFlags)0u,         // VkAttachmentDescriptionFlags flags;
+            format,                                       // VkFormat format;
+            vk::VK_SAMPLE_COUNT_1_BIT,                    // VkSampleCountFlagBits samples;
+            vk::VK_ATTACHMENT_LOAD_OP_CLEAR,              // VkAttachmentLoadOp loadOp;
+            vk::VK_ATTACHMENT_STORE_OP_STORE,             // VkAttachmentStoreOp storeOp;
+            vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp stencilLoadOp;
+            vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,         // VkAttachmentStoreOp stencilStoreOp;
+            vk::VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout initialLayout;
+            vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout finalLayout;
         };
 
         vk::VkAttachmentReference colorAttachment = {
@@ -213,25 +213,25 @@ void NestedCommandBuffersTestInstance::createRenderPass(void)
             (vk::VkSubpassDescriptionFlags)0u,   // VkSubpassDescriptionFlags flags;
             vk::VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
             0u,                                  // uint32_t inputAttachmentCount;
-            DE_NULL,                             // const VkAttachmentReference2* pInputAttachments;
+            nullptr,                             // const VkAttachmentReference2* pInputAttachments;
             1u,                                  // uint32_t colorAttachmentCount;
             &colorAttachment,                    // const VkAttachmentReference2* pColorAttachments;
-            DE_NULL,                             // const VkAttachmentReference2* pResolveAttachments;
-            DE_NULL,                             // const VkAttachmentReference2* pDepthStencilAttachment;
+            nullptr,                             // const VkAttachmentReference2* pResolveAttachments;
+            nullptr,                             // const VkAttachmentReference2* pDepthStencilAttachment;
             0u,                                  // uint32_t preserveAttachmentCount;
-            DE_NULL,                             // const uint32_t* pPreserveAttachments;
+            nullptr,                             // const uint32_t* pPreserveAttachments;
         };
 
         vk::VkRenderPassCreateInfo renderPassCreateInfo = {
             vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             (vk::VkRenderPassCreateFlags)0u,               // VkRenderPassCreateFlags flags;
             1u,                                            // uint32_t attachmentCount;
             &attachmentDescription,                        // const VkAttachmentDescription* pAttachments;
             1u,                                            // uint32_t subpassCount;
             &subpass,                                      // const VkSubpassDescription2* pSubpasses;
             0u,                                            // uint32_t dependencyCount;
-            DE_NULL,                                       // const VkSubpassDependency2* pDependencies;
+            nullptr,                                       // const VkSubpassDependency2* pDependencies;
         };
 
         m_renderPass = vk::createRenderPass(vk, device, &renderPassCreateInfo);
@@ -251,19 +251,18 @@ void NestedCommandBuffersTestInstance::beginRenderPass(void)
     const vk::VkClearValue attachmentClearValue = vk::makeClearValueColorF32(0.0f, 0.0f, 0.0f, 1.0f);
     const vk::VkRect2D renderArea               = {{0, 0}, {width, height}};
 
+    const auto preImageBarrier = makeImageMemoryBarrier(
+        vk::VK_ACCESS_NONE, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
+        vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, **m_image, outputSubresourceRange);
+    vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                          vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u,
+                          nullptr, 1u, &preImageBarrier);
+
     if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
     {
-        const auto preImageBarrier = makeImageMemoryBarrier(
-            vk::VK_ACCESS_NONE, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
-            vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, **m_image, outputSubresourceRange);
-        vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u,
-                              (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                              &preImageBarrier);
-
         vk::VkRenderingAttachmentInfo colorAttachment = {
             vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             *m_imageView,                                        // VkImageView imageView;
             vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout imageLayout;
             vk::VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
@@ -276,7 +275,7 @@ void NestedCommandBuffersTestInstance::beginRenderPass(void)
 
         vk::VkRenderingInfo renderingInfo = {
             vk::VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-            DE_NULL,
+            nullptr,
             vk::VK_RENDERING_CONTENTS_INLINE_BIT_EXT |
                 vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT, // VkRenderingFlagsKHR flags;
             renderArea,                                                  // VkRect2D renderArea;
@@ -284,8 +283,8 @@ void NestedCommandBuffersTestInstance::beginRenderPass(void)
             0x0,                                                         // uint32_t viewMask;
             1u,                                                          // uint32_t colorAttachmentCount;
             &colorAttachment, // const VkRenderingAttachmentInfoKHR* pColorAttachments;
-            DE_NULL,          // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
-            DE_NULL,          // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
+            nullptr,          // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
+            nullptr,          // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
         };
         vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
     }
@@ -293,7 +292,7 @@ void NestedCommandBuffersTestInstance::beginRenderPass(void)
     {
         vk::VkRenderPassBeginInfo renderPassBeginInfo = {
             vk::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // VkStructureType sType;
-            DE_NULL,                                      // const void* pNext;
+            nullptr,                                      // const void* pNext;
             *m_renderPass,                                // VkRenderPass renderPass;
             *m_framebuffer,                               // VkFramebuffer framebuffer;
             renderArea,                                   // VkRect2D renderArea;
@@ -303,7 +302,7 @@ void NestedCommandBuffersTestInstance::beginRenderPass(void)
 
         vk::VkSubpassBeginInfo subpassBeginInfo = {
             vk::VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO,                         // VkStructureType sType;
-            DE_NULL,                                                          // const void* pNext;
+            nullptr,                                                          // const void* pNext;
             vk::VK_SUBPASS_CONTENTS_INLINE_AND_SECONDARY_COMMAND_BUFFERS_KHR, // VkSubpassContents contents;
         };
 
@@ -313,7 +312,7 @@ void NestedCommandBuffersTestInstance::beginRenderPass(void)
     {
         vk::VkRenderPassBeginInfo renderPassBeginInfo = {
             vk::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // VkStructureType sType;
-            DE_NULL,                                      // const void* pNext;
+            nullptr,                                      // const void* pNext;
             *m_renderPass,                                // VkRenderPass renderPass;
             *m_framebuffer,                               // VkFramebuffer framebuffer;
             renderArea,                                   // VkRect2D renderArea;
@@ -332,21 +331,12 @@ void NestedCommandBuffersTestInstance::endRenderPass(void)
     if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
     {
         vk.cmdEndRendering(*m_cmdBuffer);
-
-        const auto postImageBarrier =
-            makeImageMemoryBarrier(vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT,
-                                   vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                   vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_image, outputSubresourceRange);
-        vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                              vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u,
-                              (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                              &postImageBarrier);
     }
     else if (m_testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
     {
         vk::VkSubpassEndInfo subpassEndInfo = {
             vk::VK_STRUCTURE_TYPE_SUBPASS_END_INFO, // VkStructureType sType;
-            DE_NULL,                                // const void* pNext;
+            nullptr,                                // const void* pNext;
         };
 
         vk.cmdEndRenderPass2(*m_cmdBuffer, &subpassEndInfo);
@@ -355,6 +345,14 @@ void NestedCommandBuffersTestInstance::endRenderPass(void)
     {
         vk.cmdEndRenderPass(*m_cmdBuffer);
     }
+
+    const auto postImageBarrier =
+        makeImageMemoryBarrier(vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT,
+                               vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                               **m_image, outputSubresourceRange);
+    vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u,
+                          &postImageBarrier);
 }
 
 tcu::TestStatus NestedCommandBuffersTestInstance::iterate(void)
@@ -389,7 +387,7 @@ tcu::TestStatus NestedCommandBuffersTestInstance::iterate(void)
     {
         pipelineRenderingCreateInfo = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO, // VkStructureType    sType
-            DE_NULL,                                              // const void*        pNext
+            nullptr,                                              // const void*        pNext
             0u,                                                   // uint32_t            viewMask
             1u,                                                   // uint32_t            colorAttachmentCount
             &format,                                              // const VkFormat*    pColorAttachmentFormats
@@ -408,9 +406,9 @@ tcu::TestStatus NestedCommandBuffersTestInstance::iterate(void)
         nullptr,                                                       // const void* pNext;
         0u,                                                            // VkPipelineVertexInputStateCreateFlags flags;
         0u,                                                            // uint32_t vertexBindingDescriptionCount;
-        DE_NULL, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+        nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
         0u,      // uint32_t vertexAttributeDescriptionCount;
-        DE_NULL, // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+        nullptr, // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
     };
 
     vk::GraphicsPipelineWrapper pipeline(vki, vk, physicalDevice, device, deviceExtensions,
@@ -421,8 +419,8 @@ tcu::TestStatus NestedCommandBuffersTestInstance::iterate(void)
         .setDefaultDepthStencilState()
         .setDefaultColorBlendState()
         .setupVertexInputState(&vertexInput)
-        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *m_renderPass, 0u, vert, DE_NULL, {}, {},
-                                          {}, DE_NULL, DE_NULL, renderingCreateInfoWrapper)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *m_renderPass, 0u, vert, nullptr, {}, {},
+                                          {}, nullptr, nullptr, renderingCreateInfoWrapper)
         .setupFragmentShaderState(pipelineLayout, *m_renderPass, 0u, frag)
         .setupFragmentOutputState(*m_renderPass)
         .setMonolithicPipelineLayout(pipelineLayout)
@@ -437,7 +435,7 @@ tcu::TestStatus NestedCommandBuffersTestInstance::iterate(void)
     {
         vk::VkCommandBufferInheritanceRenderingInfo inheritanceRenderingInfo = {
             vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO, // VkStructureType sType;
-            DE_NULL,                                                         // const void* pNext;
+            nullptr,                                                         // const void* pNext;
             vk::VK_RENDERING_CONTENTS_INLINE_BIT_EXT |
                 vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT, // VkRenderingFlags flags;
             0x0,                                                         // uint32_t viewMask;
@@ -450,7 +448,7 @@ tcu::TestStatus NestedCommandBuffersTestInstance::iterate(void)
 
         vk::VkCommandBufferInheritanceInfo inheritanceInfo = {
             vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType sType;
-            DE_NULL,                                               // const void* pNext;
+            nullptr,                                               // const void* pNext;
             *m_renderPass,                                         // VkRenderPass renderPass;
             0u,                                                    // uint32_t subpass;
             *m_framebuffer,                                        // VkFramebuffer framebuffer;
@@ -466,7 +464,7 @@ tcu::TestStatus NestedCommandBuffersTestInstance::iterate(void)
 
         vk::VkCommandBufferBeginInfo commandBufferBeginInfo = {
             vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-            DE_NULL,                                         // const void* pNext;
+            nullptr,                                         // const void* pNext;
             (vk::VkCommandBufferUsageFlags)
                 vk::VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT, // VkCommandBufferUsageFlags flags;
             &inheritanceInfo, // const VkCommandBufferInheritanceInfo* pInheritanceInfo;
@@ -522,6 +520,8 @@ tcu::TestStatus NestedCommandBuffersTestInstance::iterate(void)
                             &copyRegion);
     vk::endCommandBuffer(vk, *m_cmdBuffer);
     vk::submitCommandsAndWait(vk, device, queue, m_cmdBuffer.get());
+
+    invalidateAlloc(vk, device, colorOutputBuffer->getAllocation());
 
     tcu::ConstPixelBufferAccess resultBuffer = tcu::ConstPixelBufferAccess(
         vk::mapVkFormat(format), width, height, 1, (const void *)colorOutputBuffer->getAllocation().getHostPtr());
@@ -645,8 +645,7 @@ void NestedCommandBuffersTest::checkSupport(Context &context) const
     {
         context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
 
-        const auto &features =
-            *vk::findStructure<vk::VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+        const auto &features = context.getNestedCommandBufferFeaturesEXT();
         if (!features.nestedCommandBuffer)
             TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
         if (!features.nestedCommandBufferRendering)
@@ -657,8 +656,7 @@ void NestedCommandBuffersTest::checkSupport(Context &context) const
     {
         context.requireDeviceFunctionality("VK_KHR_maintenance7");
 
-        const auto &features =
-            *vk::findStructure<vk::VkPhysicalDeviceMaintenance7FeaturesKHR>(&context.getDeviceFeatures2());
+        const auto &features = context.getMaintenance7Features();
         if (!features.maintenance7)
             TCU_THROW(NotSupportedError, "maintenance7 is not supported");
     }

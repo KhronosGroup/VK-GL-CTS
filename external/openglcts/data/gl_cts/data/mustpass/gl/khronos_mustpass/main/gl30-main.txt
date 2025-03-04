@@ -28,6 +28,7 @@ KHR-GL30.transform_feedback.draw_xfb_stream_test
 KHR-GL30.transform_feedback.capture_special_interleaved_test
 KHR-GL30.transform_feedback.draw_xfb_instanced_test
 KHR-GL30.transform_feedback.draw_xfb_stream_instanced_test
+KHR-GL30.transform_feedback.geometry
 KHR-GL30.transform_feedback3.multiple_streams
 KHR-GL30.transform_feedback3.skip_components
 KHR-GL30.transform_feedback3.skip_multiple_buffers
@@ -860,7 +861,9 @@ KHR-GL30.ext_texture_shadow_lod.texturelod.samplercubeshadow_fragment
 KHR-GL30.ext_texture_shadow_lod.texturelod.samplercubearrayshadow_fragment
 KHR-GL30.ext_texture_shadow_lod.texturelodoffset.sampler2darrayshadow_vertex
 KHR-GL30.ext_texture_shadow_lod.texturelodoffset.sampler2darrayshadow_fragment
-KHR-GL30.framebuffer_blit.framebuffer_blit_functionality_multisampled_to_singlesampled_blit
+KHR-GL30.framebuffer_blit.multisampled_to_singlesampled_blit_color_config_test
+KHR-GL30.framebuffer_blit.multisampled_to_singlesampled_blit_depth_config_test
+KHR-GL30.framebuffer_blit.scissor_blit
 KHR-GL30.texture_lod_bias.texture_lod_bias_all
 KHR-GL30.buffer_objects.gen_buffers
 KHR-GL30.buffer_objects.triangles
@@ -869,3 +872,7 @@ KHR-GL30.buffer_objects.multi_texture
 KHR-GL30.buffer_objects.sub_data
 KHR-GL30.transform_feedback2.transform_feedback2_states
 KHR-GL30.api.coverage
+KHR-GL30.get_uniform_tests.get_uniform
+KHR-GL30.frag_coord_conventions.multisample
+KHR-GL30.texture_storage.compressed_data
+KHR-GL30.draw_buffers.draw_buffers_1

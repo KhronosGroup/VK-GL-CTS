@@ -65,7 +65,7 @@ ShaderFunctionCase::ShaderFunctionCase(Context &context, const char *name, const
                        description, isVertexCase, evalFunc)
     , m_setupUniforms(setupUniformsFunc)
     , m_usesTexture(usesTextures)
-    , m_gradientTexture(DE_NULL)
+    , m_gradientTexture(nullptr)
 {
     m_vertShaderSource = vertShaderSource;
     m_fragShaderSource = fragShaderSource;
@@ -190,9 +190,9 @@ void ShaderFunctionTests::init(void)
             static void eval(ShaderEvalContext &c) EVAL_FUNC_BODY                                         \
         };                                                                                                \
         addChild(createStructCase(m_context, #NAME "_vertex", DESCRIPTION, m_glslVersion, true, false,    \
-                                  &Eval_##NAME::eval, DE_NULL, SHADER_SRC));                              \
+                                  &Eval_##NAME::eval, nullptr, SHADER_SRC));                              \
         addChild(createStructCase(m_context, #NAME "_fragment", DESCRIPTION, m_glslVersion, false, false, \
-                                  &Eval_##NAME::eval, DE_NULL, SHADER_SRC));                              \
+                                  &Eval_##NAME::eval, nullptr, SHADER_SRC));                              \
     } while (false)
 
     FUNCTION_CASE(local_variable_aliasing, "Function out parameter aliases local variable",

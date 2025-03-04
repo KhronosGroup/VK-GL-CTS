@@ -63,9 +63,9 @@ void beginCommandBuffer(const DeviceInterface &vk, const VkCommandBuffer command
 {
     const VkCommandBufferBeginInfo commandBufBeginParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType                  sType;
-        DE_NULL,                                     // const void*                      pNext;
+        nullptr,                                     // const void*                      pNext;
         flags,                                       // VkCommandBufferUsageFlags        flags;
-        (const VkCommandBufferInheritanceInfo *)DE_NULL,
+        nullptr,
     };
     VK_CHECK(vk.beginCommandBuffer(commandBuffer, &commandBufBeginParams));
 }
@@ -109,7 +109,7 @@ tcu::TestStatus verifyCommandPoolReservedSize(Context &context, TestParams testP
     // By connecting our own VkCommandPoolMemoryReservationCreateInfo we avoid getting unknown data from DeviceDriverSC::createCommandPoolHandlerNorm()
     VkCommandPoolMemoryReservationCreateInfo cpMemReservationCI = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_RESERVATION_CREATE_INFO, // VkStructureType        sType
-        DE_NULL,                                                       // const void*            pNext
+        nullptr,                                                       // const void*            pNext
         commandPoolReservedSize,      // VkDeviceSize            commandPoolReservedSize
         testParams.commandBufferCount // uint32_t                commandPoolMaxCommandBuffers
     };
@@ -126,13 +126,13 @@ tcu::TestStatus verifyCommandPoolReservedSize(Context &context, TestParams testP
 
     VkCommandPoolMemoryConsumption memConsumption = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_CONSUMPTION, // VkStructureType    sType
-        DE_NULL,                                           // void*            pNext
+        nullptr,                                           // void*            pNext
         0,                                                 // VkDeviceSize        commandPoolAllocated
         0,                                                 // VkDeviceSize        commandPoolReservedSize
         0,                                                 // VkDeviceSize        commandBufferAllocated
     };
 
-    vk.getCommandPoolMemoryConsumption(device, *cmdPool, DE_NULL, &memConsumption);
+    vk.getCommandPoolMemoryConsumption(device, *cmdPool, nullptr, &memConsumption);
 
     if (commandPoolReservedSize != memConsumption.commandPoolReservedSize)
         return tcu::TestStatus::fail("Failed");
@@ -170,7 +170,7 @@ tcu::TestStatus verifyCommandPoolAllocEqualsCommandBufferAlloc(Context &context,
     // By connecting our own VkCommandPoolMemoryReservationCreateInfo we avoid getting unknown data from DeviceDriverSC::createCommandPoolHandlerNorm()
     VkCommandPoolMemoryReservationCreateInfo cpMemReservationCI = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_RESERVATION_CREATE_INFO, // VkStructureType        sType
-        DE_NULL,                                                       // const void*            pNext
+        nullptr,                                                       // const void*            pNext
         commandPoolReservedSize,      // VkDeviceSize            commandPoolReservedSize
         testParams.commandBufferCount // uint32_t                commandPoolMaxCommandBuffers
     };
@@ -187,7 +187,7 @@ tcu::TestStatus verifyCommandPoolAllocEqualsCommandBufferAlloc(Context &context,
     std::vector<Move<VkCommandBuffer>> commandBuffers(testParams.commandBufferCount);
     const VkCommandBufferAllocateInfo cmdBufferAllocateInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType             sType;
-        DE_NULL,                                        // const void*                 pNext;
+        nullptr,                                        // const void*                 pNext;
         *cmdPool,                                       // VkCommandPool               commandPool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel        level;
         testParams.commandBufferCount                   // uint32_t                    commandBufferCount;
@@ -244,7 +244,7 @@ tcu::TestStatus verifyCommandPoolAllocEqualsCommandBufferAlloc(Context &context,
         {
             VkCommandPoolMemoryConsumption memConsumption = {
                 VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_CONSUMPTION, // VkStructureType    sType
-                DE_NULL,                                           // void*            pNext
+                nullptr,                                           // void*            pNext
                 0,                                                 // VkDeviceSize        commandPoolAllocated
                 0,                                                 // VkDeviceSize        commandPoolReservedSize
                 0,                                                 // VkDeviceSize        commandBufferAllocated

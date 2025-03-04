@@ -144,10 +144,14 @@ void checkSupport(Context &context, ConditionalTestSpec testSpec)
         testSpec.command == DRAW_COMMAND_TYPE_DRAW_MULTI_INDEXED_EXT)
         context.requireDeviceFunctionality("VK_EXT_multi_draw");
 
+    if (!context.getTransformFeedbackFeaturesEXT().geometryStreams)
+        TCU_THROW(NotSupportedError, "geometryStreams feature not supported");
     if (context.getTransformFeedbackPropertiesEXT().transformFeedbackDraw == VK_FALSE)
         TCU_THROW(NotSupportedError, "transformFeedbackDraw feature not supported");
     if (context.getTransformFeedbackPropertiesEXT().maxTransformFeedbackBuffers < 4)
         TCU_THROW(NotSupportedError, "maxTransformFeedbackBuffers is less than required");
+    if (context.getTransformFeedbackPropertiesEXT().maxTransformFeedbackStreams < 4)
+        TCU_THROW(NotSupportedError, "maxTransformFeedbackStreams is less than required");
 }
 
 ConditionalTransformFeedbackDraw::ConditionalTransformFeedbackDraw(Context &context, ConditionalTestSpec testSpec)
@@ -328,8 +332,8 @@ void ConditionalTransformFeedbackDraw::createStreamPipeline(void)
 
     const PipelineCreateInfo::ColorBlendState::Attachment vkCbAttachmentState;
 
-    vk::VkViewport viewport = vk::makeViewport(WIDTH, HEIGHT);
-    vk::VkRect2D scissor    = vk::makeRect2D(WIDTH, HEIGHT);
+    vk::VkViewport viewport = vk::makeViewport(m_renderWidth, m_renderHeight);
+    vk::VkRect2D scissor    = vk::makeRect2D(m_renderWidth, m_renderHeight);
 
     const vk::VkVertexInputBindingDescription vertexInputBindingDescription = {0, sizeof(VertexElementData),
                                                                                vk::VK_VERTEX_INPUT_RATE_VERTEX};
@@ -360,7 +364,7 @@ void ConditionalTransformFeedbackDraw::createStreamPipeline(void)
     const auto viewMask = getDefaultViewMask();
 
     vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo{vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-                                                             DE_NULL,
+                                                             nullptr,
                                                              viewMask,
                                                              1u,
                                                              &m_colorAttachmentFormat,
@@ -455,7 +459,7 @@ tcu::TestStatus ConditionalTransformFeedbackDraw::iterate(void)
 
     vk::VkQueryPoolCreateInfo queryPoolInfo{
         vk::VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                      // const void* pNext;
+        nullptr,                                      // const void* pNext;
         (vk::VkQueryPoolCreateFlags)0,                // VkQueryPoolCreateFlags flags;
         vk::VK_QUERY_TYPE_OCCLUSION,                  // VkQueryType queryType;
         2u,                                           // uint32_t queryCount;
@@ -554,8 +558,8 @@ tcu::TestStatus ConditionalTransformFeedbackDraw::iterate(void)
                                     m_queryBuffer->object(), 0u, sizeof(uint32_t) * 2);
 
     m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                            vk::VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT, 0, 0, DE_NULL, 1, &bufferMemoryBarrier,
-                            0, DE_NULL);
+                            vk::VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT, 0, 0, nullptr, 1, &bufferMemoryBarrier,
+                            0, nullptr);
 
     vk::VkConditionalRenderingBeginInfoEXT conditionalRenderingBeginInfo;
     conditionalRenderingBeginInfo.sType  = vk::VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT;
@@ -578,16 +582,16 @@ tcu::TestStatus ConditionalTransformFeedbackDraw::iterate(void)
 
         conditionalRenderingBeginInfo.offset = sizeof(uint32_t) * (stream % 2);
         m_vk.cmdBeginConditionalRenderingEXT(*m_cmdBuffer, &conditionalRenderingBeginInfo);
-        m_vk.cmdBeginTransformFeedbackEXT(*m_cmdBuffer, 0u, 0u, DE_NULL, DE_NULL);
+        m_vk.cmdBeginTransformFeedbackEXT(*m_cmdBuffer, 0u, 0u, nullptr, nullptr);
         recordDraw(*m_cmdBuffer, 1u);
-        m_vk.cmdEndTransformFeedbackEXT(*m_cmdBuffer, 0u, 0u, DE_NULL, DE_NULL);
+        m_vk.cmdEndTransformFeedbackEXT(*m_cmdBuffer, 0u, 0u, nullptr, nullptr);
         m_vk.cmdEndConditionalRenderingEXT(*m_cmdBuffer);
     }
     endLegacyRender(*m_cmdBuffer);
     const vk::VkMemoryBarrier tfMemoryBarrier =
         vk::makeMemoryBarrier(vk::VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT, vk::VK_ACCESS_HOST_READ_BIT);
     m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,
-                            vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &tfMemoryBarrier, 0u, DE_NULL, 0u, DE_NULL);
+                            vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &tfMemoryBarrier, 0u, nullptr, 0u, nullptr);
     endCommandBuffer(m_vk, *m_cmdBuffer);
     submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 

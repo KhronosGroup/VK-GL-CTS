@@ -175,7 +175,7 @@ static glu::ApiType getVersion(const glw::Functions &gl)
 
 CGLRenderContext::CGLRenderContext(const glu::RenderConfig &config)
     : m_type(config.type)
-    , m_context(DE_NULL)
+    , m_context(nullptr)
     , m_renderTarget(0, 0, tcu::PixelFormat(0, 0, 0, 0), 0, 0, 0)
 {
     try
@@ -192,7 +192,7 @@ CGLRenderContext::CGLRenderContext(const glu::RenderConfig &config)
 
         try
         {
-            if (CGLCreateContext(pixelFormat, DE_NULL, &m_context) != kCGLNoError)
+            if (CGLCreateContext(pixelFormat, nullptr, &m_context) != kCGLNoError)
                 throw ResourceError("Failed to create CGL context");
 
             if (CGLSetCurrentContext(m_context) != kCGLNoError)
@@ -221,7 +221,7 @@ CGLRenderContext::CGLRenderContext(const glu::RenderConfig &config)
     {
         if (m_context)
         {
-            CGLSetCurrentContext(DE_NULL);
+            CGLSetCurrentContext(nullptr);
             CGLDestroyContext(m_context);
         }
         throw;
@@ -230,7 +230,7 @@ CGLRenderContext::CGLRenderContext(const glu::RenderConfig &config)
 
 CGLRenderContext::~CGLRenderContext(void)
 {
-    CGLSetCurrentContext(DE_NULL);
+    CGLSetCurrentContext(nullptr);
     if (m_context)
         CGLDestroyContext(m_context);
 }

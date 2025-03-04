@@ -63,7 +63,7 @@ TessellationShaderQuadsDegenerateCase::TessellationShaderQuadsDegenerateCase(Con
                    " is generated, if both clamped inner and outer tessellation levels are "
                    "set to one.")
     , m_vao_id(0)
-    , m_utils(DE_NULL)
+    , m_utils(nullptr)
 {
     /* Left blank on purpose */
 }
@@ -80,11 +80,11 @@ void TessellationShaderQuadsDegenerateCase::deinit()
     gl.bindVertexArray(0);
 
     /* Deinitialize utils instance */
-    if (m_utils != DE_NULL)
+    if (m_utils != nullptr)
     {
         delete m_utils;
 
-        m_utils = DE_NULL;
+        m_utils = nullptr;
     }
 
     /* Delete vertex array object */
@@ -318,7 +318,7 @@ TessellationShaderQuadsInnerTessellationLevelRounding::TessellationShaderQuadsIn
                    " when the tessellator is run in quads primitive mode and "
                    "corresponding inner tessellation level is set to 1.")
     , m_vao_id(0)
-    , m_utils(DE_NULL)
+    , m_utils(nullptr)
 {
     /* Left blank on purpose */
 }
@@ -335,11 +335,11 @@ void TessellationShaderQuadsInnerTessellationLevelRounding::deinit()
     gl.bindVertexArray(0);
 
     /* Deinitialize utils instance */
-    if (m_utils != DE_NULL)
+    if (m_utils != nullptr)
     {
         delete m_utils;
 
-        m_utils = DE_NULL;
+        m_utils = nullptr;
     }
 
     /* Delete vertex array object */
@@ -452,7 +452,7 @@ void TessellationShaderQuadsInnerTessellationLevelRounding::initTest()
 
                     TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(
                         vs_mode, run.set1_inner[0] + 1.0f /* epsilon */, gl_max_tess_gen_level_value,
-                        DE_NULL, /* out_clamped */
+                        nullptr, /* out_clamped */
                         run.set2_inner);
                     break;
                 } /* case 0: */
@@ -465,7 +465,7 @@ void TessellationShaderQuadsInnerTessellationLevelRounding::initTest()
 
                     TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(
                         vs_mode, run.set1_inner[1] + 1.0f /* epsilon */, gl_max_tess_gen_level_value,
-                        DE_NULL, /* out_clamped */
+                        nullptr, /* out_clamped */
                         run.set2_inner + 1);
                     break;
                 } /* case 1: */
@@ -784,9 +784,9 @@ tcu::TestNode::IterateResult TessellationShaderQuadsInnerTessellationLevelRoundi
                         const float *vertex3_data = vertex2_data + 3 /* components */;
 
                         /* Make sure at least two Y coordinates are equal to y1_y2. */
-                        const float *y1_vertex_data = DE_NULL;
-                        const float *y2_vertex_data = DE_NULL;
-                        const float *y3_vertex_data = DE_NULL;
+                        const float *y1_vertex_data = nullptr;
+                        const float *y2_vertex_data = nullptr;
+                        const float *y3_vertex_data = nullptr;
 
                         if (vertex1_data[1] == y1_y2)
                         {
@@ -810,7 +810,7 @@ tcu::TestNode::IterateResult TessellationShaderQuadsInnerTessellationLevelRoundi
                             y3_vertex_data = vertex1_data;
                         }
 
-                        if (y1_vertex_data != DE_NULL && y2_vertex_data != DE_NULL && y3_vertex_data != DE_NULL)
+                        if (y1_vertex_data != nullptr && y2_vertex_data != nullptr && y3_vertex_data != nullptr)
                         {
                             /* Vertex 1 and 2 should span across whole domain horizontally */
                             if ((y1_vertex_data[0] == 0.0f && y2_vertex_data[0] == 1.0f) ||
@@ -871,9 +871,9 @@ tcu::TestNode::IterateResult TessellationShaderQuadsInnerTessellationLevelRoundi
                         const float *vertex3_data = vertex2_data + 3 /* components */;
 
                         /* Make sure at least two X coordinates are equal to x1_x2. */
-                        const float *x1_vertex_data = DE_NULL;
-                        const float *x2_vertex_data = DE_NULL;
-                        const float *x3_vertex_data = DE_NULL;
+                        const float *x1_vertex_data = nullptr;
+                        const float *x2_vertex_data = nullptr;
+                        const float *x3_vertex_data = nullptr;
 
                         if (vertex1_data[0] == x1_x2)
                         {
@@ -897,7 +897,7 @@ tcu::TestNode::IterateResult TessellationShaderQuadsInnerTessellationLevelRoundi
                             x3_vertex_data = vertex1_data;
                         }
 
-                        if (x1_vertex_data != DE_NULL && x2_vertex_data != DE_NULL && x3_vertex_data != DE_NULL)
+                        if (x1_vertex_data != nullptr && x2_vertex_data != nullptr && x3_vertex_data != nullptr)
                         {
                             /* Vertex 1 and 2 should span across whole domain vertically */
                             if ((x1_vertex_data[1] == 0.0f && x2_vertex_data[1] == 1.0f) ||

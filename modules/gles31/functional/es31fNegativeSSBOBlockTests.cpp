@@ -387,7 +387,7 @@ void ssbo_block_matching(NegativeTestContext &ctx)
     log << tcu::TestLog::Message << message << tcu::TestLog::EndMessage;
 
     // compile
-    ctx.glShaderSource(shaderVertexGL, 1, &shaderVertexCharPtr, DE_NULL);
+    ctx.glShaderSource(shaderVertexGL, 1, &shaderVertexCharPtr, nullptr);
     ctx.glCompileShader(shaderVertexGL);
 
     for (std::size_t idx = 0; idx < argDataVectorFrag.size(); ++idx)
@@ -416,7 +416,7 @@ void ssbo_block_matching(NegativeTestContext &ctx)
         log << tcu::TestLog::Message << message << tcu::TestLog::EndMessage;
 
         // compile
-        ctx.glShaderSource(shaderFragmentGL, 1, &shaderFragmentCharPtr, DE_NULL);
+        ctx.glShaderSource(shaderFragmentGL, 1, &shaderFragmentCharPtr, nullptr);
         ctx.glCompileShader(shaderFragmentGL);
 
         // attach shaders to program and attempt to link
@@ -493,7 +493,7 @@ void ssbo_block_shared_qualifier(NegativeTestContext &ctx)
     log << tcu::TestLog::Message << message << tcu::TestLog::EndMessage;
 
     // compile
-    ctx.glShaderSource(shaderVertexGL, 1, &shaderVertexCharPtr, DE_NULL);
+    ctx.glShaderSource(shaderVertexGL, 1, &shaderVertexCharPtr, nullptr);
     ctx.glCompileShader(shaderVertexGL);
 
     for (std::size_t idx = 0; idx < argDataVectorFrag.size(); idx++)
@@ -522,7 +522,7 @@ void ssbo_block_shared_qualifier(NegativeTestContext &ctx)
         log << tcu::TestLog::Message << message << tcu::TestLog::EndMessage;
 
         // compile
-        ctx.glShaderSource(shaderFragmentGL, 1, &shaderFragmentCharPtr, DE_NULL);
+        ctx.glShaderSource(shaderFragmentGL, 1, &shaderFragmentCharPtr, nullptr);
         ctx.glCompileShader(shaderFragmentGL);
 
         // attach shaders to the program and attempt to link

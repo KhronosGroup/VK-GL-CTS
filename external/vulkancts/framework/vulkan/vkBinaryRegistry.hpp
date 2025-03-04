@@ -251,7 +251,7 @@ private:
         {
         }
 
-        BinarySlot(void) : binary(DE_NULL), referenceCount(0)
+        BinarySlot(void) : binary(nullptr), referenceCount(0)
         {
         }
     };

@@ -52,6 +52,7 @@ add_subdirectory(sc)
 add_subdirectory(video)
 add_subdirectory(shader_object)
 add_subdirectory(device_generated_commands)
+add_subdirectory(cooperative_vector)
 
 include_directories(
 	api
@@ -101,6 +102,7 @@ include_directories(
 	mesh_shader
 	fragment_shading_barycentric
 	video
+	cooperative_vector
 	${DEQP_INL_DIR}
 	sc
 	video
@@ -178,6 +180,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-video
 	deqp-vk-shader-object
 	deqp-vk-dgc
+	deqp-vk-cooperative_vector
 	)
 
 set(DEQP_VKSC_LIBS
@@ -227,6 +230,7 @@ set(DEQP_VKSC_LIBS
 #x	deqp-vksc-postmortem
 	deqp-vksc-fragment-shading-rate
 	deqp-vksc-sc
+	deqp-vksc-cooperative_vector
 	)
 
 
@@ -259,7 +263,3 @@ if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX)
 	add_executable(vk-build-programs vktBuildPrograms.cpp)
 	target_link_libraries(vk-build-programs deqp-vk${MODULE_LIB_TARGET_POSTFIX})
 endif ()
-
-if(DE_OS_IS_ANDROID)
-	add_definitions(-DDEQP_EXCLUDE_VK_VIDEO_TESTS)
-endif()

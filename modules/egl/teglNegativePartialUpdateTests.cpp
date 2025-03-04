@@ -144,7 +144,7 @@ NegativePartialUpdateTest::NegativePartialUpdateTest(EglTestContext &eglTestCtx,
     , m_preserveBuffer(preserveBuffer)
     , m_surfaceType(surfaceType)
     , m_eglDisplay(EGL_NO_DISPLAY)
-    , m_window(DE_NULL)
+    , m_window(nullptr)
     , m_eglSurface(EGL_NO_SURFACE)
     , m_eglContext(EGL_NO_CONTEXT)
 {
@@ -178,10 +178,10 @@ void NegativePartialUpdateTest::init(void)
         m_eglConfig = getEGLConfig(egl, m_eglDisplay, SURFACETYPE_WINDOW | SURFACETYPE_PBUFFER, m_preserveBuffer);
         const NativeWindowFactory &factory =
             selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
-        m_window = factory.createWindow(&m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, DE_NULL,
+        m_window = factory.createWindow(&m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, nullptr,
                                         WindowParams(width, height, parseWindowVisibility(m_testCtx.getCommandLine())));
         m_eglSurface =
-            createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_eglDisplay, m_eglConfig, DE_NULL);
+            createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_eglDisplay, m_eglConfig, nullptr);
     }
     m_eglContext = initAndMakeCurrentEGLContext(egl, m_eglDisplay, m_eglSurface, m_eglConfig, contextAttribList);
 }
@@ -210,7 +210,7 @@ void NegativePartialUpdateTest::deinit(void)
     }
 
     delete m_window;
-    m_window = DE_NULL;
+    m_window = nullptr;
 }
 
 void NegativePartialUpdateTest::expectError(EGLenum expected)
@@ -511,7 +511,7 @@ TestCase::IterateResult PassNullTest::iterate(void)
         tcu::ScopedLogSection(log, "Test6", "If pass (null, 0) to setDamageRegion(), no error");
         EGLU_CHECK_CALL(egl, surfaceAttrib(m_eglDisplay, m_eglSurface, EGL_SWAP_BEHAVIOR, EGL_BUFFER_DESTROYED));
         EGLU_CHECK_CALL(egl, querySurface(m_eglDisplay, m_eglSurface, EGL_BUFFER_AGE_KHR, &bufferAge));
-        expectTrue(wrapper.eglSetDamageRegionKHR(m_eglDisplay, m_eglSurface, DE_NULL, 0));
+        expectTrue(wrapper.eglSetDamageRegionKHR(m_eglDisplay, m_eglSurface, nullptr, 0));
         expectError(EGL_SUCCESS);
     }
 

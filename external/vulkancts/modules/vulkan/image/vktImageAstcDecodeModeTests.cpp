@@ -111,7 +111,7 @@ TestStatus BasicComputeTestInstance::iterate(void)
 
     const VkImageCreateInfo compressedImageInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT |
             VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT,          // VkImageCreateFlags flags;
         imageType,                                                    // VkImageType imageType;
@@ -124,13 +124,13 @@ TestStatus BasicComputeTestInstance::iterate(void)
         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,                                    // VkSharingMode sharingMode;
         0u,                                                           // uint32_t queueFamilyIndexCount;
-        DE_NULL,                                                      // const uint32_t* pQueueFamilyIndices;
+        nullptr,                                                      // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,                                    // VkImageLayout initialLayout;
     };
 
     const VkImageCreateInfo resultImageInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         0u,                                  // VkImageCreateFlags flags;
         imageType,                           // VkImageType imageType;
         m_parameters.resultFormat,           // VkFormat format;
@@ -143,7 +143,7 @@ TestStatus BasicComputeTestInstance::iterate(void)
             VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
 
@@ -156,7 +156,7 @@ TestStatus BasicComputeTestInstance::iterate(void)
     const VkImageViewType imageViewType(mapImageViewType(m_parameters.imageType));
     VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
 
-    VkImageViewASTCDecodeModeEXT decodeMode = {VK_STRUCTURE_TYPE_IMAGE_VIEW_ASTC_DECODE_MODE_EXT, DE_NULL,
+    VkImageViewASTCDecodeModeEXT decodeMode = {VK_STRUCTURE_TYPE_IMAGE_VIEW_ASTC_DECODE_MODE_EXT, nullptr,
                                                m_parameters.testedDecodeMode};
 
     const VkImageViewCreateInfo imageViewParams = {
@@ -225,7 +225,7 @@ TestStatus BasicComputeTestInstance::iterate(void)
     {
         const VkSamplerCreateInfo createInfo = {
             VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   //VkStructureType sType;
-            DE_NULL,                                 //const void* pNext;
+            nullptr,                                 //const void* pNext;
             0u,                                      //VkSamplerCreateFlags flags;
             VK_FILTER_NEAREST,                       //VkFilter magFilter;
             VK_FILTER_NEAREST,                       //VkFilter minFilter;
@@ -275,8 +275,8 @@ TestStatus BasicComputeTestInstance::iterate(void)
                     VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, inBuffer.get(), 0ull, bufferSizeCompresed);
 
                 vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                      (VkDependencyFlags)0, 0u, (const VkMemoryBarrier *)DE_NULL, 1u,
-                                      &flushHostCopyBarrier, 1u, &preCopyImageBarrier);
+                                      (VkDependencyFlags)0, 0u, nullptr, 1u, &flushHostCopyBarrier, 1u,
+                                      &preCopyImageBarrier);
 
                 const VkBufferImageCopy copyRegion = {
                     0ull, //VkDeviceSize bufferOffset;
@@ -296,7 +296,7 @@ TestStatus BasicComputeTestInstance::iterate(void)
         // bind pipeline and descriptors
         vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                 &descriptorSet.get(), 0u, DE_NULL);
+                                 &descriptorSet.get(), 0u, nullptr);
 
         {
             const VkImageMemoryBarrier preShaderImageBarriers[] = {
@@ -312,9 +312,8 @@ TestStatus BasicComputeTestInstance::iterate(void)
                                        VK_IMAGE_LAYOUT_GENERAL, resultImage.get(), subresourceRange)};
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0u,
-                                  (const VkBufferMemoryBarrier *)DE_NULL, DE_LENGTH_OF_ARRAY(preShaderImageBarriers),
-                                  preShaderImageBarriers);
+                                  (VkDependencyFlags)0, 0, nullptr, 0u, nullptr,
+                                  DE_LENGTH_OF_ARRAY(preShaderImageBarriers), preShaderImageBarriers);
         }
 
         vk.cmdDispatch(*cmdBuffer, extentUnCompressed.width, extentUnCompressed.height, extentUnCompressed.depth);
@@ -325,9 +324,8 @@ TestStatus BasicComputeTestInstance::iterate(void)
                                        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, resultImage.get(), subresourceRange)};
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  (VkDependencyFlags)0, 0u, (const VkMemoryBarrier *)DE_NULL, 0u,
-                                  (const VkBufferMemoryBarrier *)DE_NULL, DE_LENGTH_OF_ARRAY(postShaderImageBarriers),
-                                  postShaderImageBarriers);
+                                  (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr,
+                                  DE_LENGTH_OF_ARRAY(postShaderImageBarriers), postShaderImageBarriers);
         }
 
         const VkBufferImageCopy copyRegion = {
@@ -349,9 +347,8 @@ TestStatus BasicComputeTestInstance::iterate(void)
             };
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                  (VkDependencyFlags)0, 0u, (const VkMemoryBarrier *)DE_NULL,
-                                  DE_LENGTH_OF_ARRAY(postCopyBufferBarrier), postCopyBufferBarrier, 0u,
-                                  (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0u, nullptr, DE_LENGTH_OF_ARRAY(postCopyBufferBarrier),
+                                  postCopyBufferBarrier, 0u, nullptr);
         }
     }
     endCommandBuffer(vk, *cmdBuffer);

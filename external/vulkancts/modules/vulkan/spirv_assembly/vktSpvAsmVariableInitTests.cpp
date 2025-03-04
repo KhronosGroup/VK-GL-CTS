@@ -445,9 +445,9 @@ void addShaderCodeOutput(vk::SourceCollections &dst, ShaderParams params)
             "                            OpReturn\n"
             "                            OpFunctionEnd\n";
 
-        dst.spirvAsmSources.add("vert", DE_NULL)
+        dst.spirvAsmSources.add("vert", nullptr)
             << vertexShader.specialize(spec) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("frag", DE_NULL)
+        dst.spirvAsmSources.add("frag", nullptr)
             << fragmentShader << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
     }
     else
@@ -578,9 +578,9 @@ void addShaderCodeOutput(vk::SourceCollections &dst, ShaderParams params)
                    "                       OpReturn\n"
                    "                       OpFunctionEnd\n"));
 
-        dst.spirvAsmSources.add("vert", DE_NULL)
+        dst.spirvAsmSources.add("vert", nullptr)
             << vertexShader.specialize(spec) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("frag", DE_NULL)
+        dst.spirvAsmSources.add("frag", nullptr)
             << fragmentShader.specialize(spec) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
     }
 }

@@ -112,7 +112,7 @@ void CreateVulkanSCCache(const VulkanPipelineCacheInput &input, int caseFraction
     }
     else
     {
-        if (vkscServer.get() == DE_NULL)
+        if (vkscServer.get() == nullptr)
             vkscServer.reset(createServerVKSC(logFile));
 
         binary = buildPipelineCache(input, vkscServer->vkp, vkscServer->instance, vkscServer->vki,
@@ -162,9 +162,9 @@ VkscServer *createServerVKSC(const std::string &logFile)
     log.supressLogging(true);
     tcu::Platform *platform{createPlatform()};
 #ifdef DE_PLATFORM_USE_LIBRARY_TYPE
-    vk::Library *library{platform->getVulkanPlatform().createLibrary(vk::Platform::LIBRARY_TYPE_VULKAN, DE_NULL)};
+    vk::Library *library{platform->getVulkanPlatform().createLibrary(vk::Platform::LIBRARY_TYPE_VULKAN, nullptr)};
 #else
-    vk::Library *library{platform->getVulkanPlatform().createLibrary(DE_NULL)};
+    vk::Library *library{platform->getVulkanPlatform().createLibrary(nullptr)};
 #endif
     tcu::TestContext *tcx            = new tcu::TestContext{*platform, archive, log, cmdLine, nullptr};
     vk::ResourceInterface *resource  = new vk::ResourceInterfaceStandard{*tcx};

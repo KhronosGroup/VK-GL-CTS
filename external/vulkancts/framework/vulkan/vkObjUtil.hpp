@@ -43,7 +43,7 @@ Move<VkPipeline> makeComputePipeline(const DeviceInterface &vk, const VkDevice d
                                      const VkPipelineLayout pipelineLayout, const VkPipelineCreateFlags pipelineFlags,
                                      const void *pipelinePNext, const VkShaderModule shaderModule,
                                      const VkPipelineShaderStageCreateFlags shaderFlags,
-                                     const VkSpecializationInfo *specializationInfo = DE_NULL,
+                                     const VkSpecializationInfo *specializationInfo = nullptr,
                                      const VkPipelineCache pipelineCache            = VK_NULL_HANDLE,
                                      const uint32_t subgroupSize                    = 0);
 
@@ -57,12 +57,12 @@ Move<VkPipeline> makeGraphicsPipeline(
     const VkShaderModule fragmentShaderModule, const VkRenderPass renderPass, const std::vector<VkViewport> &viewports,
     const std::vector<VkRect2D> &scissors, const VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
     const uint32_t subpass = 0u, const uint32_t patchControlPoints = 0u,
-    const VkPipelineVertexInputStateCreateInfo *vertexInputStateCreateInfo     = DE_NULL,
-    const VkPipelineRasterizationStateCreateInfo *rasterizationStateCreateInfo = DE_NULL,
-    const VkPipelineMultisampleStateCreateInfo *multisampleStateCreateInfo     = DE_NULL,
-    const VkPipelineDepthStencilStateCreateInfo *depthStencilStateCreateInfo   = DE_NULL,
-    const VkPipelineColorBlendStateCreateInfo *colorBlendStateCreateInfo       = DE_NULL,
-    const VkPipelineDynamicStateCreateInfo *dynamicStateCreateInfo = DE_NULL, const void *pNext = DE_NULL,
+    const VkPipelineVertexInputStateCreateInfo *vertexInputStateCreateInfo     = nullptr,
+    const VkPipelineRasterizationStateCreateInfo *rasterizationStateCreateInfo = nullptr,
+    const VkPipelineMultisampleStateCreateInfo *multisampleStateCreateInfo     = nullptr,
+    const VkPipelineDepthStencilStateCreateInfo *depthStencilStateCreateInfo   = nullptr,
+    const VkPipelineColorBlendStateCreateInfo *colorBlendStateCreateInfo       = nullptr,
+    const VkPipelineDynamicStateCreateInfo *dynamicStateCreateInfo = nullptr, const void *pNext = nullptr,
     const VkPipelineCreateFlags pipelineCreateFlags = 0u);
 
 Move<VkPipeline> makeGraphicsPipeline(
@@ -70,15 +70,15 @@ Move<VkPipeline> makeGraphicsPipeline(
     const VkShaderModule vertexShaderModule, const VkShaderModule tessellationControlShaderModule,
     const VkShaderModule tessellationEvalShaderModule, const VkShaderModule geometryShaderModule,
     const VkShaderModule fragmentShaderModule, const VkRenderPass renderPass, const uint32_t subpass = 0u,
-    const VkPipelineVertexInputStateCreateInfo *vertexInputStateCreateInfo     = DE_NULL,
-    const VkPipelineInputAssemblyStateCreateInfo *inputAssemblyStateCreateInfo = DE_NULL,
-    const VkPipelineTessellationStateCreateInfo *tessStateCreateInfo           = DE_NULL,
-    const VkPipelineViewportStateCreateInfo *viewportStateCreateInfo           = DE_NULL,
-    const VkPipelineRasterizationStateCreateInfo *rasterizationStateCreateInfo = DE_NULL,
-    const VkPipelineMultisampleStateCreateInfo *multisampleStateCreateInfo     = DE_NULL,
-    const VkPipelineDepthStencilStateCreateInfo *depthStencilStateCreateInfo   = DE_NULL,
-    const VkPipelineColorBlendStateCreateInfo *colorBlendStateCreateInfo       = DE_NULL,
-    const VkPipelineDynamicStateCreateInfo *dynamicStateCreateInfo = DE_NULL, const void *pNext = DE_NULL,
+    const VkPipelineVertexInputStateCreateInfo *vertexInputStateCreateInfo     = nullptr,
+    const VkPipelineInputAssemblyStateCreateInfo *inputAssemblyStateCreateInfo = nullptr,
+    const VkPipelineTessellationStateCreateInfo *tessStateCreateInfo           = nullptr,
+    const VkPipelineViewportStateCreateInfo *viewportStateCreateInfo           = nullptr,
+    const VkPipelineRasterizationStateCreateInfo *rasterizationStateCreateInfo = nullptr,
+    const VkPipelineMultisampleStateCreateInfo *multisampleStateCreateInfo     = nullptr,
+    const VkPipelineDepthStencilStateCreateInfo *depthStencilStateCreateInfo   = nullptr,
+    const VkPipelineColorBlendStateCreateInfo *colorBlendStateCreateInfo       = nullptr,
+    const VkPipelineDynamicStateCreateInfo *dynamicStateCreateInfo = nullptr, const void *pNext = nullptr,
     const VkPipelineCreateFlags pipelineCreateFlags = 0u);
 
 #ifndef CTS_USES_VULKANSC
@@ -119,20 +119,21 @@ Move<VkRenderPass> makeRenderPass(
 Move<VkImageView> makeImageView(const DeviceInterface &vk, const VkDevice vkDevice, const VkImage image,
                                 const VkImageViewType imageViewType, const VkFormat format,
                                 const VkImageSubresourceRange subresourceRange,
-                                const vk::VkImageViewUsageCreateInfo *imageUsageCreateInfo = DE_NULL);
+                                const vk::VkImageViewUsageCreateInfo *imageUsageCreateInfo = nullptr);
 
 Move<VkBufferView> makeBufferView(const DeviceInterface &vk, const VkDevice vkDevice, const VkBuffer buffer,
                                   const VkFormat format, const VkDeviceSize offset, const VkDeviceSize size);
 
 Move<VkDescriptorSet> makeDescriptorSet(const DeviceInterface &vk, const VkDevice device,
                                         const VkDescriptorPool descriptorPool, const VkDescriptorSetLayout setLayout,
-                                        const void *pNext = DE_NULL);
+                                        const void *pNext = nullptr);
 
-VkBufferCreateInfo makeBufferCreateInfo(const VkDeviceSize size, const VkBufferUsageFlags usage);
+VkBufferCreateInfo makeBufferCreateInfo(const VkDeviceSize size, const VkBufferUsageFlags usage,
+                                        const VkBufferCreateFlags createFlags = 0);
 
 VkBufferCreateInfo makeBufferCreateInfo(const VkDeviceSize size, const VkBufferUsageFlags usage,
                                         const std::vector<uint32_t> &queueFamilyIndices,
-                                        const VkBufferCreateFlags createFlags = 0, const void *pNext = DE_NULL);
+                                        const VkBufferCreateFlags createFlags = 0, const void *pNext = nullptr);
 
 Move<VkPipelineLayout> makePipelineLayout(const DeviceInterface &vk, const VkDevice device,
                                           const VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE,

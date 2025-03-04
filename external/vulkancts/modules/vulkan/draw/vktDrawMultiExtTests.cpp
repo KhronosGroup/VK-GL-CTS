@@ -129,15 +129,14 @@ VkFormat chooseDepthStencilFormat(const InstanceInterface &vki, VkPhysicalDevice
     // The spec mandates support for one of these two formats.
     const VkFormat candidates[] = {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT};
 
-    for (const auto &format : candidates)
-    {
-        const auto properties = getPhysicalDeviceFormatProperties(vki, physDev, format);
-        if ((properties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0u)
-            return format;
-    }
+    const auto requiredFeatures = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    const auto chosenFormat     = findFirstSupportedFormat(vki, physDev, requiredFeatures, ImageFeatureType::OPTIMAL,
+                                                           std::begin(candidates), std::end(candidates));
 
-    TCU_FAIL("No suitable depth/stencil format found");
-    return VK_FORMAT_UNDEFINED; // Unreachable.
+    if (chosenFormat == VK_FORMAT_UNDEFINED)
+        TCU_FAIL("No suitable depth/stencil format found");
+
+    return chosenFormat;
 }
 
 // Format used when verifying the stencil aspect.
@@ -750,7 +749,7 @@ void MultiDrawInstance::beginSecondaryCmdBuffer(const DeviceInterface &vk, VkCom
 {
     VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                         // const void* pNext;
+        nullptr,                                                         // const void* pNext;
         renderingFlags,                                                  // VkRenderingFlagsKHR flags;
         viewMask,                                                        // uint32_t viewMask;
         1u,                                                              // uint32_t colorAttachmentCount;
@@ -768,7 +767,7 @@ void MultiDrawInstance::beginSecondaryCmdBuffer(const DeviceInterface &vk, VkCom
 
     const VkCommandBufferBeginInfo commandBufBeginParams{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         usageFlags,                                  // VkCommandBufferUsageFlags flags;
         &bufferInheritanceInfo};
 
@@ -1008,7 +1007,7 @@ tcu::TestStatus MultiDrawInstance::iterate(void)
     };
 
     vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo{
-        vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR, DE_NULL, 0u, 1u, &colorFormat, dsFormat, dsFormat};
+        vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR, nullptr, 0u, 1u, &colorFormat, dsFormat, dsFormat};
 
     vk::VkPipelineRenderingCreateInfoKHR *nextPtr = nullptr;
     if (m_params.groupParams->useDynamicRendering)

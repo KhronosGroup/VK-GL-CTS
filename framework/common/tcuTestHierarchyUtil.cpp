@@ -50,7 +50,7 @@ static const char *getNodeTypeName(TestNodeType nodeType)
         return "TestGroup";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -142,8 +142,8 @@ void writeXmlCaselistsToFiles(TestPackageRoot &root, TestContext &testCtx, const
         DE_ASSERT(iter.getState() == TestHierarchyIterator::STATE_ENTER_NODE &&
                   node->getNodeType() == NODETYPE_PACKAGE);
 
-        FILE *file          = DE_NULL;
-        qpXmlWriter *writer = DE_NULL;
+        FILE *file          = nullptr;
+        qpXmlWriter *writer = nullptr;
 
         try
         {
@@ -160,10 +160,10 @@ void writeXmlCaselistsToFiles(TestPackageRoot &root, TestContext &testCtx, const
             writeXmlCaselist(iter, writer);
 
             qpXmlWriter_destroy(writer);
-            writer = DE_NULL;
+            writer = nullptr;
 
             fclose(file);
-            file = DE_NULL;
+            file = nullptr;
         }
         catch (...)
         {

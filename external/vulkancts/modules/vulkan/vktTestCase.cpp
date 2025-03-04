@@ -105,13 +105,15 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
         "VK_MVK_macos_surface",
         "VK_NV_raw_access_chains",
         "VK_NV_linear_color_attachment",
+        "VK_NV_cooperative_matrix2",
+        "VK_NV_cooperative_vector",
     };
 
     const char *exclusions[] = {"VK_EXT_device_address_binding_report", "VK_EXT_device_memory_report"};
 
     for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
     {
-        if (deStringEqual(extensions[extNdx].extensionName, "VK_KHR_buffer_device_address"))
+        if (strcmp(extensions[extNdx].extensionName, "VK_KHR_buffer_device_address") == 0)
         {
             khrBufferDeviceAddress = true;
             break;
@@ -125,12 +127,12 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
         excludeExtension = false;
 
         // VK_EXT_buffer_device_address is deprecated and must not be enabled if VK_KHR_buffer_device_address is enabled
-        if (khrBufferDeviceAddress && deStringEqual(extName, "VK_EXT_buffer_device_address"))
+        if (khrBufferDeviceAddress && strcmp(extName, "VK_EXT_buffer_device_address") == 0)
             continue;
 
         for (int exclusionsNdx = 0; exclusionsNdx < DE_LENGTH_OF_ARRAY(exclusions); exclusionsNdx++)
         {
-            if (deStringEqual(extName, exclusions[exclusionsNdx]))
+            if (strcmp(extName, exclusions[exclusionsNdx]) == 0)
             {
                 excludeExtension = true;
                 break;
@@ -285,7 +287,7 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
 
     // Always create the universal queue.
     queueInfo[0].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueInfo[0].pNext            = DE_NULL;
+    queueInfo[0].pNext            = nullptr;
     queueInfo[0].flags            = (VkDeviceQueueCreateFlags)0u;
     queueInfo[0].queueFamilyIndex = universalQueueIndex;
     queueInfo[0].queueCount       = 1u;
@@ -295,7 +297,7 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
     if (enabledFeatures.features.sparseBinding && (universalQueueIndex != sparseQueueIndex))
     {
         queueInfo[numQueues].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueInfo[numQueues].pNext            = DE_NULL;
+        queueInfo[numQueues].pNext            = nullptr;
         queueInfo[numQueues].flags            = (VkDeviceQueueCreateFlags)0u;
         queueInfo[numQueues].queueFamilyIndex = sparseQueueIndex;
         queueInfo[numQueues].queueCount       = 1u;
@@ -305,7 +307,7 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
     if (computeQueueIndex != -1 && (universalQueueIndex != (uint32_t)computeQueueIndex))
     {
         queueInfo[numQueues].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueInfo[numQueues].pNext            = DE_NULL;
+        queueInfo[numQueues].pNext            = nullptr;
         queueInfo[numQueues].flags            = (VkDeviceQueueCreateFlags)0u;
         queueInfo[numQueues].queueFamilyIndex = computeQueueIndex;
         queueInfo[numQueues].queueCount       = 1u;
@@ -315,7 +317,7 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
     if (transferQueueIndex != -1 && (universalQueueIndex != (uint32_t)transferQueueIndex))
     {
         queueInfo[numQueues].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueInfo[numQueues].pNext            = DE_NULL;
+        queueInfo[numQueues].pNext            = nullptr;
         queueInfo[numQueues].flags            = (VkDeviceQueueCreateFlags)0u;
         queueInfo[numQueues].queueFamilyIndex = transferQueueIndex;
         queueInfo[numQueues].queueCount       = 1u;
@@ -347,11 +349,11 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
     VkDeviceObjectReservationCreateInfo dmrCI = resetDeviceObjectReservationCreateInfo();
     VkPipelineCacheCreateInfo pcCI            = {
         VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                      // const void* pNext;
+        nullptr,                                      // const void* pNext;
         VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
             VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
         0U,                                                       // uintptr_t initialDataSize;
-        DE_NULL                                                   // const void* pInitialData;
+        nullptr                                                   // const void* pInitialData;
     };
 
     std::vector<VkPipelinePoolSize> poolSizes;
@@ -396,7 +398,7 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
 
     VkFaultCallbackInfo faultCallbackInfo = {
         VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO, // VkStructureType sType;
-        DE_NULL,                               // void* pNext;
+        nullptr,                               // void* pNext;
         0U,                                    // uint32_t faultCount;
         nullptr,                               // VkFaultData* pFaults;
         Context::faultCallbackFunction         // PFN_vkFaultCallbackFunction pfnFaultCallback;
@@ -513,6 +515,16 @@ public:
     {
         return m_deviceFeatures.getVulkan13Features();
     }
+    const VkPhysicalDeviceVulkan14Features &getVulkan14Features(void) const
+    {
+        return m_deviceFeatures.getVulkan14Features();
+    }
+#endif // CTS_USES_VULKANSC
+#ifdef CTS_USES_VULKANSC
+    const VkPhysicalDeviceVulkanSC10Features &getVulkanSC10Features(void) const
+    {
+        return m_deviceFeatures.getVulkanSC10Features();
+    }
 #endif // CTS_USES_VULKANSC
 
 #include "vkDeviceFeaturesForDefaultDeviceDefs.inl"
@@ -541,6 +553,10 @@ public:
     const VkPhysicalDeviceVulkan13Properties &getDeviceVulkan13Properties(void) const
     {
         return m_deviceProperties.getVulkan13Properties();
+    }
+    const VkPhysicalDeviceVulkan14Properties &getDeviceVulkan14Properties(void) const
+    {
+        return m_deviceProperties.getVulkan14Properties();
     }
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
@@ -713,7 +729,7 @@ DefaultDevice::DefaultDevice(const PlatformInterface &vkPlatform, const tcu::Com
                                 de::MovePtr<vk::DebugReportRecorder>())
 #endif // CTS_USES_VULKANSC
     , m_instanceExtensions(addCoreInstanceExtensions(
-          filterExtensions(enumerateInstanceExtensionProperties(vkPlatform, DE_NULL)), m_usedApiVersion))
+          filterExtensions(enumerateInstanceExtensionProperties(vkPlatform, nullptr)), m_usedApiVersion))
 #ifndef CTS_USES_VULKANSC
     , m_instance(
           createInstance(vkPlatform, m_usedApiVersion, m_instanceExtensions, cmdLine, m_debugReportRecorder.get()))
@@ -734,7 +750,7 @@ DefaultDevice::DefaultDevice(const PlatformInterface &vkPlatform, const tcu::Com
     , m_deviceVersion(getPhysicalDeviceProperties(m_instanceInterface, m_physicalDevice).apiVersion)
 
     , m_deviceExtensions(addCoreDeviceExtensions(
-          filterExtensions(enumerateDeviceExtensionProperties(m_instanceInterface, m_physicalDevice, DE_NULL)),
+          filterExtensions(enumerateDeviceExtensionProperties(m_instanceInterface, m_physicalDevice, nullptr)),
           m_usedApiVersion))
     , m_deviceFeatures(m_instanceInterface, m_usedApiVersion, m_physicalDevice, m_instanceExtensions,
                        m_deviceExtensions)
@@ -894,6 +910,10 @@ const vk::VkPhysicalDeviceVulkan13Features &Context::getDeviceVulkan13Features(v
 {
     return m_device->getVulkan13Features();
 }
+const vk::VkPhysicalDeviceVulkan14Features &Context::getDeviceVulkan14Features(void) const
+{
+    return m_device->getVulkan14Features();
+}
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
 const vk::VkPhysicalDeviceVulkanSC10Features &Context::getDeviceVulkanSC10Features(void) const
@@ -978,6 +998,30 @@ bool Context::isDeviceFunctionalitySupported(const std::string &extension) const
                 return !!vk13Features.shaderIntegerDotProduct;
             if (extension == "VK_KHR_maintenance4")
                 return !!vk13Features.maintenance4;
+
+            const auto &vk14Features = m_device->getVulkan14Features();
+            if (extension == "VK_KHR_dynamic_rendering_local_read")
+                return !!vk14Features.dynamicRenderingLocalRead;
+            if (extension == "VK_KHR_global_priority")
+                return !!vk14Features.globalPriorityQuery;
+            if (extension == "VK_KHR_index_type_uint8")
+                return !!vk14Features.indexTypeUint8;
+            if (extension == "VK_KHR_maintenance5")
+                return !!vk14Features.maintenance5;
+            if (extension == "VK_KHR_maintenance6")
+                return !!vk14Features.maintenance6;
+            if (extension == "VK_KHR_shader_expect_assume")
+                return !!vk14Features.shaderExpectAssume;
+            if (extension == "VK_KHR_shader_float_controls2")
+                return !!vk14Features.shaderFloatControls2;
+            if (extension == "VK_EXT_host_image_copy")
+                return !!vk14Features.hostImageCopy;
+            if (extension == "VK_EXT_pipeline_protected_access")
+                return !!vk14Features.pipelineProtectedAccess;
+            if (extension == "VK_EXT_pipeline_robustness")
+                return !!vk14Features.pipelineRobustness;
+            if (extension == "VK_KHR_push_descriptor")
+                return !!vk14Features.pushDescriptor;
 #endif // CTS_USES_VULKANSC
 
 #ifdef CTS_USES_VULKANSC
@@ -1027,6 +1071,10 @@ const vk::VkPhysicalDeviceVulkan12Properties &Context::getDeviceVulkan12Properti
 const vk::VkPhysicalDeviceVulkan13Properties &Context::getDeviceVulkan13Properties(void) const
 {
     return m_device->getDeviceVulkan13Properties();
+}
+const vk::VkPhysicalDeviceVulkan14Properties &Context::getDeviceVulkan14Properties(void) const
+{
+    return m_device->getDeviceVulkan14Properties();
 }
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
@@ -1356,7 +1404,7 @@ vk::VkFormatProperties3 Context::getRequiredFormatProperties(const vk::VkFormat 
 {
     vk::VkFormatProperties3 p;
     p.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
-    p.pNext = DE_NULL;
+    p.pNext = nullptr;
 
     vk::VkFormatProperties properties;
     getInstanceInterface().getPhysicalDeviceFormatProperties(getPhysicalDevice(), format, &properties);
@@ -1413,7 +1461,7 @@ vk::VkFormatProperties3 Context::getFormatProperties(const vk::VkFormat &format)
     {
         vk::VkFormatProperties3 p;
         p.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
-        p.pNext = DE_NULL;
+        p.pNext = nullptr;
 
         vk::VkFormatProperties2 properties;
         properties.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
@@ -1467,11 +1515,15 @@ void Context::resetCommandPoolForVKSC(const VkDevice device, const VkCommandPool
 #endif
 }
 
-ContextCommonData Context::getContextCommonData()
+ContextCommonData Context::getContextCommonData() const
 {
-    return ContextCommonData{getInstanceInterface(), getDevice(),           getDeviceInterface(),
-                             getPhysicalDevice(),    getDefaultAllocator(), getUniversalQueueFamilyIndex(),
-                             getUniversalQueue()};
+    return ContextCommonData{
+        getPlatformInterface(), getInstanceInterface(),
+        getDeviceInterface(),   getInstance(),
+        getPhysicalDevice(),    getDevice(),
+        getDefaultAllocator(),  getUniversalQueueFamilyIndex(),
+        getUniversalQueue(),
+    };
 }
 
 #ifdef CTS_USES_VULKANSC
@@ -1487,7 +1539,7 @@ void Context::faultCallbackFunction(VkBool32 unrecordedFaults, uint32_t faultCou
     for (uint32_t i = 0; i < faultCount; ++i)
     {
         VkFaultData faultData = pFaults[i];
-        faultData.pNext       = DE_NULL;
+        faultData.pNext       = nullptr;
 
         m_faultData.push_back(faultData);
     }

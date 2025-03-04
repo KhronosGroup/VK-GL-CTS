@@ -123,7 +123,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, uint32_t 
 {
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0u,              // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_3D,                    // VkImageType imageType;
         format,                              // VkFormat format;
@@ -136,7 +136,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, uint32_t 
             VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
     };
 
@@ -179,9 +179,9 @@ std::tuple<bool, VkQueue, uint32_t> getQueueFamilyIndexAtExact(const DeviceInter
 }
 
 typedef std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> BlasVec;
-auto initTopAccelerationStructure(VkCommandBuffer cmdBuffer, const BlasVec &bottomLevelAccelerationStructures,
-                                  Context &context, const VkExtent3D &imageExtent)
-    -> de::MovePtr<TopLevelAccelerationStructure>
+de::MovePtr<TopLevelAccelerationStructure> initTopAccelerationStructure(
+    VkCommandBuffer cmdBuffer, const BlasVec &bottomLevelAccelerationStructures, Context &context,
+    const VkExtent3D &imageExtent)
 {
     const DeviceInterface &vkd   = context.getDeviceInterface();
     const VkDevice device        = context.getDevice();
@@ -190,6 +190,9 @@ auto initTopAccelerationStructure(VkCommandBuffer cmdBuffer, const BlasVec &bott
 
     de::MovePtr<TopLevelAccelerationStructure> result = makeTopLevelAccelerationStructure();
     result->setInstanceCount(instanceCount);
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
 
     uint32_t currentInstanceIndex = 0;
 
@@ -201,7 +204,7 @@ auto initTopAccelerationStructure(VkCommandBuffer cmdBuffer, const BlasVec &bott
                     continue;
                 result->addInstance(bottomLevelAccelerationStructures[currentInstanceIndex++]);
             }
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return result;
 }
@@ -266,11 +269,26 @@ void RayTracingTraceRaysIndirectTestCase::checkSupport(Context &context) const
     {
         context.requireDeviceFunctionality("VK_KHR_ray_tracing_maintenance1");
 
+        const VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR &maintenance1FeaturesKHR =
+            context.getRayTracingMaintenance1Features();
         const VkPhysicalDeviceFeatures deviceFeatures =
             getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice());
+
+        if (maintenance1FeaturesKHR.rayTracingMaintenance1 == VK_FALSE)
+            TCU_THROW(NotSupportedError,
+                      "Requires VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR::rayTracingMaintenance1");
+
         if (!deviceFeatures.shaderInt64)
         {
             TCU_THROW(NotSupportedError, "Device feature shaderInt64 is not supported");
+        }
+
+        if (((m_data.traceType == TraceType::INDIRECT2_CPU) || (m_data.traceType == TraceType::INDIRECT2_GPU)) &&
+            (maintenance1FeaturesKHR.rayTracingPipelineTraceRaysIndirect2 == VK_FALSE))
+        {
+            TCU_THROW(
+                NotSupportedError,
+                "Requires VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR::rayTracingPipelineTraceRaysIndirect2");
         }
     }
 
@@ -428,6 +446,10 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> RayTracingTraceRays
     const DeviceInterface &vkd = m_context.getDeviceInterface();
     const VkDevice device      = m_context.getDevice();
     Allocator &allocator       = m_context.getDefaultAllocator();
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> result;
 
     tcu::Vec3 v0(0.0, 1.0, 0.0);
@@ -457,7 +479,7 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> RayTracingTraceRays
                 geometryData.push_back(xyz + v3);
 
                 bottomLevelAccelerationStructure->addGeometry(geometryData, true);
-                bottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+                bottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
                 result.push_back(
                     de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
             }
@@ -503,16 +525,16 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
             createShaderModule(vkd, device, m_context.getBinaryCollection().get("compute_indirect_command"), 0);
         const VkPipelineShaderStageCreateInfo pipelineShaderStageParams = {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             VkPipelineShaderStageCreateFlags(0u),                // VkPipelineShaderStageCreateFlags flags;
             VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
             *computeShader,                                      // VkShaderModule module;
             "main",                                              // const char* pName;
-            DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
         };
         const VkComputePipelineCreateInfo pipelineCreateInfo = {
             VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             VkPipelineCreateFlags(0u),                      // VkPipelineCreateFlags flags;
             pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
             *computePipelineLayout,                         // VkPipelineLayout layout;
@@ -703,7 +725,7 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
 
             vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
             vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipelineLayout, 0u, 1u,
-                                      &computeDescriptorSet.get(), 0u, DE_NULL);
+                                      &computeDescriptorSet.get(), 0u, nullptr);
             vkd.cmdDispatch(*cmdBuffer, 1, 1, 1);
 
             const VkBufferMemoryBarrier fillIndirectBufferMemoryBarrier =
@@ -728,7 +750,7 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
 
             vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
             vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipelineLayout, 0u, 1u,
-                                      &computeDescriptorSet.get(), 0u, DE_NULL);
+                                      &computeDescriptorSet.get(), 0u, nullptr);
             vkd.cmdDispatch(*cmdBuffer, 1, 1, 1);
 
             const VkBufferMemoryBarrier fillIndirectBufferMemoryBarrier =
@@ -741,7 +763,7 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
         const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = topLevelAccelerationStructure.get();
         VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-            DE_NULL,                                                           //  const void* pNext;
+            nullptr,                                                           //  const void* pNext;
             1u,                                                                //  uint32_t accelerationStructureCount;
             topLevelAccelerationStructurePtr->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
         };
@@ -754,7 +776,7 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
             .update(vkd, device);
 
         vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                                  &descriptorSet.get(), 0, DE_NULL);
+                                  &descriptorSet.get(), 0, nullptr);
 
         vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 
@@ -1196,16 +1218,16 @@ TestStatus TraceRaysIndirect2Instance::iterate(void)
             createShaderModule(vkd, device, m_context.getBinaryCollection().get("compute_indirect_command"), 0);
         const VkPipelineShaderStageCreateInfo pipelineShaderStageParams = {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             VkPipelineShaderStageCreateFlags(0u),                // VkPipelineShaderStageCreateFlags flags;
             VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
             *computeShader,                                      // VkShaderModule module;
             "main",                                              // const char* pName;
-            DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
         };
         const VkComputePipelineCreateInfo pipelineCreateInfo = {
             VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             VkPipelineCreateFlags(0u),                      // VkPipelineCreateFlags flags;
             pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
             *computePipelineLayout,                         // VkPipelineLayout layout;
@@ -1345,7 +1367,7 @@ TestStatus TraceRaysIndirect2Instance::iterate(void)
 
             vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
             vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipelineLayout, 0u, 1u,
-                                      &computeDescriptorSet.get(), 0u, DE_NULL);
+                                      &computeDescriptorSet.get(), 0u, nullptr);
             vkd.cmdPushConstants(*cmdBuffer, *computePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0,
                                  uint32_t(sizeof(uint32_t)), &fullCopyStyle);
             vkd.cmdDispatch(*cmdBuffer, 1, 1, 1);
@@ -1359,7 +1381,7 @@ TestStatus TraceRaysIndirect2Instance::iterate(void)
         const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = topLevelAccelerationStructure.get();
         VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-            DE_NULL,                                                           //  const void* pNext;
+            nullptr,                                                           //  const void* pNext;
             1u,                                                                //  uint32_t accelerationStructureCount;
             topLevelAccelerationStructurePtr->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
         };
@@ -1372,7 +1394,7 @@ TestStatus TraceRaysIndirect2Instance::iterate(void)
             .update(vkd, device);
 
         vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                                  &descriptorSet.get(), 0, DE_NULL);
+                                  &descriptorSet.get(), 0, nullptr);
 
         vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 

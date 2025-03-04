@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktDGCTests.hpp"
+
 #include "vktDGCComputeGetInfoTests.hpp"
 #include "vktDGCPropertyTests.hpp"
 #include "vktDGCComputeSmokeTests.hpp"
@@ -31,6 +32,25 @@
 #include "vktDGCComputePreprocessTests.hpp"
 #include "vktDGCComputeSubgroupTests.hpp"
 #include "vktDGCComputeConditionalTests.hpp"
+
+#include "vktDGCComputeGetInfoTestsExt.hpp"
+#include "vktDGCPropertyTestsExt.hpp"
+#include "vktDGCComputeSmokeTestsExt.hpp"
+#include "vktDGCComputeLayoutTestsExt.hpp"
+#include "vktDGCComputeMiscTestsExt.hpp"
+#include "vktDGCComputePreprocessTestsExt.hpp"
+#include "vktDGCComputeSubgroupTestsExt.hpp"
+#include "vktDGCComputeConditionalTestsExt.hpp"
+
+#include "vktDGCGraphicsDrawTestsExt.hpp"
+#include "vktDGCGraphicsDrawCountTestsExt.hpp"
+#include "vktDGCGraphicsConditionalTestsExt.hpp"
+#include "vktDGCGraphicsMeshTestsExt.hpp"
+#include "vktDGCGraphicsMiscTestsExt.hpp"
+#include "vktDGCGraphicsXfbTestsExt.hpp"
+#include "vktDGCGraphicsTessStateTestsExt.hpp"
+
+#include "vktDGCRayTracingTestsExt.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -47,23 +67,55 @@ using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
 {
     GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
+
     GroupPtr nvGroup(new tcu::TestCaseGroup(testCtx, "nv"));
-    GroupPtr computeGroup(new tcu::TestCaseGroup(testCtx, "compute"));
-    GroupPtr miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
+    GroupPtr extGroup(new tcu::TestCaseGroup(testCtx, "ext"));
 
-    computeGroup->addChild(createDGCComputeGetInfoTests(testCtx));
-    computeGroup->addChild(createDGCComputeSmokeTests(testCtx));
-    computeGroup->addChild(createDGCComputeLayoutTests(testCtx));
-    computeGroup->addChild(createDGCComputeMiscTests(testCtx));
-    computeGroup->addChild(createDGCComputePreprocessTests(testCtx));
-    computeGroup->addChild(createDGCComputeSubgroupTests(testCtx));
-    computeGroup->addChild(createDGCComputeConditionalTests(testCtx));
+    GroupPtr nvComputeGroup(new tcu::TestCaseGroup(testCtx, "compute"));
+    GroupPtr nvMiscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
 
-    miscGroup->addChild(createDGCPropertyTests(testCtx));
+    GroupPtr extComputeGroup(new tcu::TestCaseGroup(testCtx, "compute"));
+    GroupPtr extMiscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
+    GroupPtr extGraphicsGroup(new tcu::TestCaseGroup(testCtx, "graphics"));
 
-    nvGroup->addChild(computeGroup.release());
-    nvGroup->addChild(miscGroup.release());
+    nvComputeGroup->addChild(createDGCComputeGetInfoTests(testCtx));
+    nvComputeGroup->addChild(createDGCComputeSmokeTests(testCtx));
+    nvComputeGroup->addChild(createDGCComputeLayoutTests(testCtx));
+    nvComputeGroup->addChild(createDGCComputeMiscTests(testCtx));
+    nvComputeGroup->addChild(createDGCComputePreprocessTests(testCtx));
+    nvComputeGroup->addChild(createDGCComputeSubgroupTests(testCtx));
+    nvComputeGroup->addChild(createDGCComputeConditionalTests(testCtx));
+
+    nvMiscGroup->addChild(createDGCPropertyTests(testCtx));
+
+    nvGroup->addChild(nvComputeGroup.release());
+    nvGroup->addChild(nvMiscGroup.release());
+
+    extComputeGroup->addChild(createDGCComputeGetInfoTestsExt(testCtx));
+    extComputeGroup->addChild(createDGCComputeSmokeTestsExt(testCtx));
+    extComputeGroup->addChild(createDGCComputeLayoutTestsExt(testCtx));
+    extComputeGroup->addChild(createDGCComputeMiscTestsExt(testCtx));
+    extComputeGroup->addChild(createDGCComputePreprocessTestsExt(testCtx));
+    extComputeGroup->addChild(createDGCComputeSubgroupTestsExt(testCtx));
+    extComputeGroup->addChild(createDGCComputeConditionalTestsExt(testCtx));
+
+    extMiscGroup->addChild(createDGCPropertyTestsExt(testCtx));
+
+    extGraphicsGroup->addChild(createDGCGraphicsDrawTestsExt(testCtx));
+    extGraphicsGroup->addChild(createDGCGraphicsDrawCountTestsExt(testCtx));
+    extGraphicsGroup->addChild(createDGCGraphicsConditionalTestsExt(testCtx));
+    extGraphicsGroup->addChild(createDGCGraphicsMeshTestsExt(testCtx));
+    extGraphicsGroup->addChild(createDGCGraphicsMiscTestsExt(testCtx));
+    extGraphicsGroup->addChild(createDGCGraphicsXfbTestsExt(testCtx));
+    extGraphicsGroup->addChild(createDGCGraphicsTessStateTestsExt(testCtx));
+
+    extGroup->addChild(extComputeGroup.release());
+    extGroup->addChild(extMiscGroup.release());
+    extGroup->addChild(extGraphicsGroup.release());
+    extGroup->addChild(createDGCRayTracingTestsExt(testCtx));
+
     mainGroup->addChild(nvGroup.release());
+    mainGroup->addChild(extGroup.release());
 
     return mainGroup.release();
 }

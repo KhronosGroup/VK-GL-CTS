@@ -45,6 +45,9 @@ Matrix<float, 3, 3> rotationMatrixX(float radiansX);
 Matrix<float, 3, 3> rotationMatrixY(float radiansY);
 Matrix<float, 3, 3> rotationMatrixZ(float radiansZ);
 
+template <class T, int Rows, int Cols>
+Matrix<T, Rows, Cols> ortho2DMatrix(T l, T r, T b, T t, T n, T f);
+
 // Implementations.
 
 // Builds a translation matrix for a homogenous coordinate system
@@ -131,6 +134,30 @@ inline Matrix<float, 3, 3> rotationMatrixZ(float radiansZ)
     mat(1, 1) = c;
 
     return mat;
+}
+
+template <class T, int Rows, int Cols>
+Matrix<T, Rows, Cols> ortho2DMatrix(T l, T r, T b, T t, T n, T f)
+{
+    Matrix<T, Rows, Cols> res;
+
+    if ((r - l) == 0.f || (t - b) == 0.f || (f - n) == 0.f)
+        return res;
+
+    T inv_width  = 1.0f / (r - l);
+    T inv_height = 1.0f / (t - b);
+    T inv_depth  = 1.0f / (f - n);
+
+    res(0, 0) = 2.0f * inv_width;
+    res(1, 1) = 2.0f * inv_height;
+    res(2, 2) = 2.0f * inv_depth;
+
+    res(3, 0) = -(r + l) * inv_width;
+    res(3, 1) = -(t + b) * inv_height;
+    res(3, 2) = -(f + n) * inv_depth;
+    res(3, 3) = 1.0f;
+
+    return res;
 }
 
 } // namespace tcu

@@ -101,7 +101,7 @@ vk::Move<vk::VkSampler> makeSampler(const vk::DeviceInterface &vk, const vk::VkD
 {
     const vk::VkSamplerCreateInfo samplerInfo = {
         vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         0u,                                          // flags
         vk::VK_FILTER_NEAREST,                       // magFilter
         vk::VK_FILTER_NEAREST,                       // minFilter
@@ -173,7 +173,7 @@ void PipelineCacheTestInstance::draw(const vk::GraphicsPipelineWrapper &pipeline
     }
     m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(m_extent), clearColor);
     vk.cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0, 1,
-                             &*m_descriptorSet, 0, DE_NULL);
+                             &*m_descriptorSet, 0, nullptr);
     pipeline.bind(*m_cmdBuffer);
     vk.cmdDraw(*m_cmdBuffer, 4, 1, 0, 0);
     m_renderPass.end(vk, *m_cmdBuffer);
@@ -344,7 +344,7 @@ tcu::TestStatus PipelineCacheTestInstance::iterate(void)
         vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags usage;
         vk::VK_SHARING_MODE_EXCLUSIVE,                                                 // VkSharingMode sharingMode;
         0u,                            // uint32_t queueFamilyIndexCount;
-        DE_NULL,                       // const uint32_t* pQueueFamilyIndices;
+        nullptr,                       // const uint32_t* pQueueFamilyIndices;
         vk::VK_IMAGE_LAYOUT_UNDEFINED, // VkImageLayout initialLayout;
     };
 
@@ -361,9 +361,9 @@ tcu::TestStatus PipelineCacheTestInstance::iterate(void)
         nullptr,                                                       // const void* pNext;
         0u,                                                            // VkPipelineVertexInputStateCreateFlags flags;
         0u,                                                            // uint32_t vertexBindingDescriptionCount;
-        DE_NULL, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+        nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
         0u,      // uint32_t vertexAttributeDescriptionCount;
-        DE_NULL, // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+        nullptr, // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
     };
 
     vk::VkVertexInputBindingDescription bindingDescription;
@@ -399,10 +399,10 @@ tcu::TestStatus PipelineCacheTestInstance::iterate(void)
 
     const vk::VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                          // const void* pNext;
+        nullptr,                                          // const void* pNext;
         0u,                                               // VkPipelineCacheCreateFlags flags;
         0u,                                               // uintptr_t initialDataSize;
-        DE_NULL,                                          // const void* pInitialData;
+        nullptr,                                          // const void* pInitialData;
     };
 
     vk::Move<vk::VkPipelineCache> pipelineCache = createPipelineCache(vk, device, &pipelineCacheCreateInfo);
@@ -469,7 +469,7 @@ tcu::TestStatus PipelineCacheTestInstance::iterate(void)
         // Initialize image
         const vk::VkImageMemoryBarrier preImageBarrier = {
             vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-            DE_NULL,                                    // const void* pNext;
+            nullptr,                                    // const void* pNext;
             0u,                                         // VkAccessFlags srcAccessMask;
             vk::VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags dstAccessMask;
             vk::VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout oldLayout;
@@ -488,7 +488,7 @@ tcu::TestStatus PipelineCacheTestInstance::iterate(void)
 
         const vk::VkImageMemoryBarrier postImageBarrier = {
             vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-            DE_NULL,                                    // const void* pNext;
+            nullptr,                                    // const void* pNext;
             vk::VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags srcAccessMask;
             vk::VK_ACCESS_SHADER_READ_BIT,              // VkAccessFlags dstAccessMask;
             vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout oldLayout;
@@ -521,14 +521,12 @@ tcu::TestStatus PipelineCacheTestInstance::iterate(void)
 
         vk::beginCommandBuffer(vk, *m_cmdBuffer);
         vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                              (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0u, DE_NULL, 1u,
-                              &preImageBarrier);
+                              (vk::VkDependencyFlags)0, 0, nullptr, 0u, nullptr, 1u, &preImageBarrier);
         vk.cmdCopyBufferToImage(*m_cmdBuffer, **m_buffer, **image, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u,
                                 &copyRegion);
         vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                              vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (vk::VkDependencyFlags)0, 0,
-                              (const vk::VkMemoryBarrier *)DE_NULL, 0, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1,
-                              &postImageBarrier);
+                              vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (vk::VkDependencyFlags)0, 0, nullptr, 0,
+                              nullptr, 1, &postImageBarrier);
         vk::endCommandBuffer(vk, *m_cmdBuffer);
         vk::submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
     }

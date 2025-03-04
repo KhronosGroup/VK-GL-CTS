@@ -53,6 +53,42 @@ namespace vk
 
 #ifndef CTS_USES_VULKANSC
 
+enum class ResourceResidency : uint32_t
+{
+    TRADITIONAL,    // acceleration struct buffer resource bound to memory in traditional way
+    SPARSE_BINDING, // acceleration struct buffer is sparse resource fully bound to memory
+};
+
+struct ExternalBuffer
+{
+    VkBuffer buffer;
+    VkDeviceAddress size;
+};
+
+struct BufferProps
+{
+    ResourceResidency residency;
+    VkQueue queue; // queue to bind sparse resource
+
+    BufferProps() : residency(ResourceResidency::TRADITIONAL), queue(VK_NULL_HANDLE)
+    {
+    }
+};
+
+struct AccelerationStructBufferProperties
+{
+    bool useExternalBuffer;
+    union
+    {
+        BufferProps props;
+        ExternalBuffer extBuffer;
+    };
+
+    AccelerationStructBufferProperties() : useExternalBuffer(false), props()
+    {
+    }
+};
+
 constexpr VkShaderStageFlags SHADER_STAGE_ALL_RAY_TRACING =
     VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |
     VK_SHADER_STAGE_MISS_BIT_KHR | VK_SHADER_STAGE_INTERSECTION_BIT_KHR | VK_SHADER_STAGE_CALLABLE_BIT_KHR;
@@ -77,7 +113,7 @@ inline std::string updateRayTracingGLSL(const std::string &str)
     return str;
 }
 
-std::string getCommonRayGenerationShader(void);
+std::string getCommonRayGenerationShader(uint32_t set = 0, uint32_t binding = 1);
 
 // Get lowercase version of the format name with no VK_FORMAT_ prefix.
 std::string getFormatSimpleName(vk::VkFormat format);
@@ -139,18 +175,21 @@ public:
         m_hasOpacityMicromap      = true;
         m_opacityGeometryMicromap = *opacityGeometryMicromap;
     }
-    virtual uint32_t getVertexCount(void) const         = 0;
-    virtual const uint8_t *getVertexPointer(void) const = 0;
-    virtual VkDeviceSize getVertexStride(void) const    = 0;
-    virtual VkDeviceSize getAABBStride(void) const      = 0;
-    virtual size_t getVertexByteSize(void) const        = 0;
-    virtual uint32_t getIndexCount(void) const          = 0;
-    virtual const uint8_t *getIndexPointer(void) const  = 0;
-    virtual VkDeviceSize getIndexStride(void) const     = 0;
-    virtual size_t getIndexByteSize(void) const         = 0;
-    virtual uint32_t getPrimitiveCount(void) const      = 0;
-    virtual void addVertex(const tcu::Vec3 &vertex)     = 0;
-    virtual void addIndex(const uint32_t &index)        = 0;
+    virtual uint32_t getVertexCount(void) const                           = 0;
+    virtual const uint8_t *getVertexPointer(void) const                   = 0;
+    virtual VkDeviceSize getVertexStride(void) const                      = 0;
+    virtual VkDeviceSize getAABBStride(void) const                        = 0;
+    virtual size_t getVertexByteSize(void) const                          = 0;
+    virtual uint32_t getIndexCount(void) const                            = 0;
+    virtual const uint8_t *getIndexPointer(void) const                    = 0;
+    virtual VkDeviceSize getIndexStride(void) const                       = 0;
+    virtual size_t getIndexByteSize(void) const                           = 0;
+    virtual const uint8_t *getTransformPointer(void) const                = 0;
+    virtual size_t getTransformByteSize(void) const                       = 0;
+    virtual uint32_t getPrimitiveCount(void) const                        = 0;
+    virtual void addVertex(const tcu::Vec3 &vertex)                       = 0;
+    virtual void addIndex(const uint32_t &index)                          = 0;
+    virtual void setTransformMatrix(VkTransformMatrixKHR transformMatrix) = 0;
 
 private:
     VkGeometryTypeKHR m_geometryType;
@@ -432,10 +471,13 @@ public:
     const uint8_t *getIndexPointer(void) const override;
     VkDeviceSize getIndexStride(void) const override;
     size_t getIndexByteSize(void) const override;
+    const uint8_t *getTransformPointer(void) const override;
+    size_t getTransformByteSize(void) const override;
     uint32_t getPrimitiveCount(void) const override;
 
     void addVertex(const tcu::Vec3 &vertex) override;
     void addIndex(const uint32_t &index) override;
+    void setTransformMatrix(VkTransformMatrixKHR transformMatrix) override;
 
 private:
     void init();                           // To be run in constructors.
@@ -452,18 +494,18 @@ private:
     //
     //    struct Vertex
     //    {
-    // V vertex;
-    // uint8_t padding[m_paddingBlocks * sizeof(V)];
-    // };
+    //        V vertex;
+    //        uint8_t padding[m_paddingBlocks * sizeof(V)];
+    //    };
     //
     // For AABBs, the padding block has a size that is a multiple of kAABBPadBaseSize (see below) and vertices are stored in pairs
     // before the padding block. This is equivalent to:
     //
-    //        struct VertexPair
-    //        {
-    // V vertices[2];
-    // uint8_t padding[m_paddingBlocks * kAABBPadBaseSize];
-    // };
+    //    struct VertexPair
+    //    {
+    //        V vertices[2];
+    //        uint8_t padding[m_paddingBlocks * kAABBPadBaseSize];
+    //    };
     //
     // The size of each pseudo-structure above is saved to one of the correspoding union members below.
     union BlockSize
@@ -474,9 +516,10 @@ private:
 
     const uint32_t m_paddingBlocks;
     size_t m_vertexCount;
-    std::vector<uint8_t> m_vertices; // Vertices are stored as byte blocks.
-    std::vector<I> m_indices;        // Indices are stored natively.
-    BlockSize m_blockSize;           // For m_vertices.
+    std::vector<uint8_t> m_vertices;               // Vertices are stored as byte blocks.
+    std::vector<I> m_indices;                      // Indices are stored natively.
+    de::MovePtr<VkTransformMatrixKHR> m_transform; // Transform matrix is stored natively.
+    BlockSize m_blockSize;                         // For m_vertices.
 
     // Data sizes.
     static constexpr size_t kVertexSize      = sizeof(V);
@@ -570,6 +613,18 @@ size_t RaytracedGeometry<V, I>::getIndexByteSize(void) const
 }
 
 template <typename V, typename I>
+const uint8_t *RaytracedGeometry<V, I>::getTransformPointer(void) const
+{
+    return reinterpret_cast<const uint8_t *>(m_transform.get());
+}
+
+template <typename V, typename I>
+size_t RaytracedGeometry<V, I>::getTransformByteSize(void) const
+{
+    return sizeof(VkTransformMatrixKHR);
+}
+
+template <typename V, typename I>
 uint32_t RaytracedGeometry<V, I>::getPrimitiveCount(void) const
 {
     return static_cast<uint32_t>(isTrianglesType() ? (usesIndices() ? m_indices.size() / 3 : m_vertexCount / 3) :
@@ -627,6 +682,12 @@ template <typename V, typename I>
 void RaytracedGeometry<V, I>::addIndex(const uint32_t &index)
 {
     m_indices.push_back(convertIndexTo<I>(index));
+}
+
+template <typename V, typename I>
+void RaytracedGeometry<V, I>::setTransformMatrix(VkTransformMatrixKHR transformMatrix)
+{
+    m_transform = de::MovePtr<VkTransformMatrixKHR>(new VkTransformMatrixKHR(transformMatrix));
 }
 
 template <typename V, typename I>
@@ -787,7 +848,7 @@ public:
     virtual void addGeometry(de::SharedPtr<RaytracedGeometryBase> &raytracedGeometry);
     virtual void addGeometry(
         const std::vector<tcu::Vec3> &geometryData, const bool triangles, const VkGeometryFlagsKHR geometryFlags = 0u,
-        const VkAccelerationStructureTrianglesOpacityMicromapEXT *opacityGeometryMicromap = DE_NULL);
+        const VkAccelerationStructureTrianglesOpacityMicromapEXT *opacityGeometryMicromap = nullptr);
 
     virtual void setBuildType(const VkAccelerationStructureBuildTypeKHR buildType)                         = 0;
     virtual VkAccelerationStructureBuildTypeKHR getBuildType() const                                       = 0;
@@ -807,13 +868,15 @@ public:
 
     // methods specific for each acceleration structure
     virtual void create(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
-                        VkDeviceSize structureSize, VkDeviceAddress deviceAddress = 0u, const void *pNext = DE_NULL,
-                        const MemoryRequirement &addMemoryRequirement = MemoryRequirement::Any,
-                        const VkBuffer creationBuffer = VK_NULL_HANDLE, const VkDeviceSize creationBufferSize = 0u) = 0;
+                        const AccelerationStructBufferProperties &bufferProps, VkDeviceSize structureSize,
+                        VkDeviceAddress deviceAddress = 0u, const void *pNext = nullptr,
+                        const MemoryRequirement &addMemoryRequirement = MemoryRequirement::Any)      = 0;
     virtual void build(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
-                       BottomLevelAccelerationStructure *srcAccelerationStructure = DE_NULL)                        = 0;
+                       BottomLevelAccelerationStructure *srcAccelerationStructure = nullptr,
+                       VkPipelineStageFlags barrierDstStages =
+                           static_cast<VkPipelineStageFlags>(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT))    = 0;
     virtual void copyFrom(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
-                          BottomLevelAccelerationStructure *accelerationStructure, bool compactCopy)                = 0;
+                          BottomLevelAccelerationStructure *accelerationStructure, bool compactCopy) = 0;
 
     virtual void serialize(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
                            SerialStorage *storage)   = 0;
@@ -822,14 +885,22 @@ public:
 
     // helper methods for typical acceleration structure creation tasks
     void createAndBuild(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
-                        Allocator &allocator, VkDeviceAddress deviceAddress = 0u);
+                        Allocator &allocator, const AccelerationStructBufferProperties &bufferProps,
+                        VkDeviceAddress deviceAddress = 0u);
     void createAndCopyFrom(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
-                           Allocator &allocator, BottomLevelAccelerationStructure *accelerationStructure,
-                           VkDeviceSize compactCopySize = 0u, VkDeviceAddress deviceAddress = 0u);
+                           Allocator &allocator, const AccelerationStructBufferProperties &bufferProps,
+                           BottomLevelAccelerationStructure *accelerationStructure, VkDeviceSize compactCopySize = 0u,
+                           VkDeviceAddress deviceAddress = 0u);
     void createAndDeserializeFrom(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
-                                  Allocator &allocator, SerialStorage *storage, VkDeviceAddress deviceAddress = 0u);
+                                  Allocator &allocator, const AccelerationStructBufferProperties &bufferProps,
+                                  SerialStorage *storage, VkDeviceAddress deviceAddress = 0u);
     virtual const VkAccelerationStructureKHR *getPtr(void) const                                               = 0;
     virtual void updateGeometry(size_t geometryIndex, de::SharedPtr<RaytracedGeometryBase> &raytracedGeometry) = 0;
+    virtual void setGeometryTransform(size_t geometryIndex, VkTransformMatrixKHR transformMatrix)              = 0;
+
+    virtual void setVertexBufferAddressOffset(int32_t vertexBufferOffset)       = 0;
+    virtual void setIndexBufferAddressOffset(int32_t indexBufferOffset)         = 0;
+    virtual void setTransformBufferAddressOffset(int32_t transformBufferOffset) = 0;
 
 protected:
     std::vector<de::SharedPtr<RaytracedGeometryBase>> m_geometriesData;
@@ -906,14 +977,14 @@ public:
      */
     void batchCreate(const DeviceInterface &vkd, const VkDevice device, Allocator &allocator);
     void batchCreateAdjust(const DeviceInterface &vkd, const VkDevice device, Allocator &allocator,
-                           const VkDeviceSize maxBufferSize);
+                           const VkDeviceSize maxBufferSize, bool scratchIsHostVisible = true);
     void batchBuild(const DeviceInterface &vk, const VkDevice device, VkCommandBuffer cmdBuffer);
     void batchBuild(const DeviceInterface &vk, const VkDevice device, VkCommandPool cmdPool, VkQueue queue,
                     qpWatchDog *watchDog);
     size_t getAllocationCount() const;
     size_t getAllocationCount(const DeviceInterface &vk, const VkDevice device, const VkDeviceSize maxBufferSize) const;
-    auto getAllocationSizes(const DeviceInterface &vk, // (strBuff, scratchBuff, vertBuff, indexBuff)
-                            const VkDevice device) const -> tcu::Vector<VkDeviceSize, 4>;
+    auto getAllocationSizes(const DeviceInterface &vk, // (strBuff, scratchBuff, vertBuff, indexBuff, transformBuff)
+                            const VkDevice device) const -> tcu::Vector<VkDeviceSize, 5>;
 
 protected:
     uint32_t m_batchStructCount; // default is 4
@@ -927,6 +998,7 @@ protected:
     VkDeviceSize m_buildsScratchSize;
     VkDeviceSize m_verticesSize;
     VkDeviceSize m_indicesSize;
+    VkDeviceSize m_transformsSize;
 
 protected:
     struct Impl;
@@ -994,16 +1066,15 @@ public:
 
     // methods specific for each acceleration structure
     virtual void getCreationSizes(const DeviceInterface &vk, const VkDevice device, const VkDeviceSize structureSize,
-                                  CreationSizes &sizes)                                                             = 0;
+                                  CreationSizes &sizes)                                           = 0;
     virtual void create(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
-                        VkDeviceSize structureSize = 0u, VkDeviceAddress deviceAddress = 0u,
-                        const void *pNext                             = DE_NULL,
-                        const MemoryRequirement &addMemoryRequirement = MemoryRequirement::Any,
-                        const VkBuffer creationBuffer = VK_NULL_HANDLE, const VkDeviceSize creationBufferSize = 0u) = 0;
+                        const AccelerationStructBufferProperties &bufferProps, VkDeviceSize structureSize = 0u,
+                        VkDeviceAddress deviceAddress = 0u, const void *pNext = nullptr,
+                        const MemoryRequirement &addMemoryRequirement = MemoryRequirement::Any)   = 0;
     virtual void build(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
-                       TopLevelAccelerationStructure *srcAccelerationStructure = DE_NULL)                           = 0;
+                       TopLevelAccelerationStructure *srcAccelerationStructure = nullptr)         = 0;
     virtual void copyFrom(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
-                          TopLevelAccelerationStructure *accelerationStructure, bool compactCopy)                   = 0;
+                          TopLevelAccelerationStructure *accelerationStructure, bool compactCopy) = 0;
 
     virtual void serialize(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
                            SerialStorage *storage)   = 0;
@@ -1017,17 +1088,22 @@ public:
 
     // helper methods for typical acceleration structure creation tasks
     void createAndBuild(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
-                        Allocator &allocator, VkDeviceAddress deviceAddress = 0u);
+                        Allocator &allocator, const AccelerationStructBufferProperties &bufferProps,
+                        VkDeviceAddress deviceAddress = 0u);
     void createAndCopyFrom(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
-                           Allocator &allocator, TopLevelAccelerationStructure *accelerationStructure,
-                           VkDeviceSize compactCopySize = 0u, VkDeviceAddress deviceAddress = 0u);
+                           Allocator &allocator, const AccelerationStructBufferProperties &bufferProps,
+                           TopLevelAccelerationStructure *accelerationStructure, VkDeviceSize compactCopySize = 0u,
+                           VkDeviceAddress deviceAddress = 0u);
     void createAndDeserializeFrom(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
-                                  Allocator &allocator, SerialStorage *storage, VkDeviceAddress deviceAddress = 0u);
+                                  Allocator &allocator, const AccelerationStructBufferProperties &bufferProps,
+                                  SerialStorage *storage, VkDeviceAddress deviceAddress = 0u);
 
     virtual const VkAccelerationStructureKHR *getPtr(void) const = 0;
 
     virtual void updateInstanceMatrix(const DeviceInterface &vk, const VkDevice device, size_t instanceIndex,
                                       const VkTransformMatrixKHR &matrix) = 0;
+
+    virtual void setInstanceBufferAddressOffset(int32_t instanceBufferAddressOffset) = 0;
 
 protected:
     std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> m_bottomLevelInstances;
@@ -1038,6 +1114,7 @@ protected:
 
     virtual void createAndDeserializeBottoms(const DeviceInterface &vk, const VkDevice device,
                                              const VkCommandBuffer cmdBuffer, Allocator &allocator,
+                                             const AccelerationStructBufferProperties &bufferProps,
                                              SerialStorage *storage) = 0;
 };
 
@@ -1245,7 +1322,7 @@ static inline VkDeviceOrHostAddressConstKHR makeDeviceOrHostAddressConstKHR(cons
 
     VkBufferDeviceAddressInfo bufferDeviceAddressInfo = {
         VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR, // VkStructureType  sType;
-        DE_NULL,                                          // const void*  pNext;
+        nullptr,                                          // const void*  pNext;
         buffer,                                           // VkBuffer            buffer
     };
     result.deviceAddress = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo) + offset;
@@ -1263,7 +1340,7 @@ static inline VkDeviceOrHostAddressKHR makeDeviceOrHostAddressKHR(const DeviceIn
 
     VkBufferDeviceAddressInfo bufferDeviceAddressInfo = {
         VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR, // VkStructureType  sType;
-        DE_NULL,                                          // const void*  pNext;
+        nullptr,                                          // const void*  pNext;
         buffer,                                           // VkBuffer            buffer
     };
     result.deviceAddress = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo) + offset;
@@ -1323,6 +1400,7 @@ struct RayQueryTestParams
     RayQueryShaderSourcePipeline pipelineType;
     RayQueryShaderSourceType shaderSourceType;
     VkTransformMatrixKHR transform;
+    ResourceResidency resourceRes;
 };
 
 struct RayQueryTestState
@@ -1364,19 +1442,19 @@ static inline bool registerRayQueryShaderModule(const DeviceInterface &vkd, cons
         new Move<VkShaderModule>(createShaderModule(vkd, device, binaryCollection.get(name), 0))));
 
     shaderCreateInfos.push_back({
-        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, DE_NULL, (VkPipelineShaderStageCreateFlags)0,
+        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, (VkPipelineShaderStageCreateFlags)0,
         stage,                       // stage
         shaderModules.back()->get(), // shader
         "main",
-        DE_NULL, // pSpecializationInfo
+        nullptr, // pSpecializationInfo
     });
 
     return true;
 }
 
 static inline void initRayQueryAccelerationStructures(
-    const vk::DeviceInterface &vkd, const vk::VkDevice &device, vk::Allocator &allocator, RayQueryTestParams testParams,
-    VkCommandBuffer cmdBuffer,
+    const vk::DeviceInterface &vkd, const vk::VkDevice &device, vk::Allocator &allocator,
+    const AccelerationStructBufferProperties &bufferProps, RayQueryTestParams testParams, VkCommandBuffer cmdBuffer,
     std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> &bottomAccelerationStructures,
     de::SharedPtr<vk::TopLevelAccelerationStructure> &topAccelerationStructure)
 {
@@ -1433,7 +1511,7 @@ static inline void initRayQueryAccelerationStructures(
         }
 
         rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, triangles);
-        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
         bottomAccelerationStructures.push_back(
             de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
@@ -1441,7 +1519,7 @@ static inline void initRayQueryAccelerationStructures(
         topAccelerationStructure->addInstance(bottomAccelerationStructures.back());
     }
 
-    topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 }
 
 template <typename T>
@@ -1465,6 +1543,10 @@ std::vector<T> rayQueryRayTracingTestSetup(const vk::DeviceInterface &vkd, const
     de::MovePtr<RayTracingProperties> rayTracingPropertiesKHR = makeRayTracingProperties(instanceInterface, physDevice);
     uint32_t shaderGroupHandleSize                            = rayTracingPropertiesKHR->getShaderGroupHandleSize();
     uint32_t shaderGroupBaseAlignment                         = rayTracingPropertiesKHR->getShaderGroupBaseAlignment();
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = params.resourceRes;
+    bufferProps.props.queue     = universalQueue;
 
     const VkBufferCreateInfo resultDataCreateInfo =
         makeBufferCreateInfo(params.rays.size() * sizeof(T), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
@@ -1543,7 +1625,10 @@ std::vector<T> rayQueryRayTracingTestSetup(const vk::DeviceInterface &vkd, const
     {
         hitGroup  = 1;
         missGroup = 2;
-        rt_pipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR, shaderModules[1].get()->get(), hitGroup);
+        if (params.triangles == false)
+        {
+            rt_pipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR, shaderModules[1].get()->get(), hitGroup);
+        }
         rt_pipeline->addShader(VK_SHADER_STAGE_ANY_HIT_BIT_KHR, shaderModules[2].get()->get(), hitGroup);
         rt_pipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, shaderModules[3].get()->get(), hitGroup);
         rt_pipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, shaderModules[4].get()->get(), missGroup);
@@ -1649,8 +1734,8 @@ std::vector<T> rayQueryRayTracingTestSetup(const vk::DeviceInterface &vkd, const
     beginCommandBuffer(vkd, *cmdBuffer);
 
     // build acceleration structures for ray query
-    initRayQueryAccelerationStructures(vkd, device, allocator, params, *cmdBuffer, rayQueryBottomAccelerationStructures,
-                                       rayQueryTopAccelerationStructure);
+    initRayQueryAccelerationStructures(vkd, device, allocator, bufferProps, params, *cmdBuffer,
+                                       rayQueryBottomAccelerationStructures, rayQueryTopAccelerationStructure);
     // build acceleration structures for trace
     std::vector<tcu::Vec3> geomData;
     switch (params.shaderSourceType)
@@ -1682,7 +1767,7 @@ std::vector<T> rayQueryRayTracingTestSetup(const vk::DeviceInterface &vkd, const
         rayQueryTopAccelerationStructure.get();
     VkWriteDescriptorSetAccelerationStructureKHR rayQueryAccelerationStructureWriteDescriptorSet = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-        DE_NULL,                                                           //  const void* pNext;
+        nullptr,                                                           //  const void* pNext;
         1u,                                                                //  uint32_t accelerationStructureCount;
         rayQueryTopLevelAccelerationStructurePtr
             ->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
@@ -1698,17 +1783,17 @@ std::vector<T> rayQueryRayTracingTestSetup(const vk::DeviceInterface &vkd, const
             makeBottomLevelAccelerationStructure();
 
         traceBottomLevelAccelerationStructure->addGeometry(geomData, ((geomData.size() % 3) == 0), 0);
-        traceBottomLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator);
+        traceBottomLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
         traceBottomAccelerationStructures.push_back(
             de::SharedPtr<BottomLevelAccelerationStructure>(traceBottomLevelAccelerationStructure.release()));
         traceAccelerationStructure->addInstance(traceBottomAccelerationStructures.back(), identityMatrix3x4, 0, 255U, 0,
                                                 0);
-        traceAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator);
+        traceAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
 
         const TopLevelAccelerationStructure *traceTopLevelAccelerationStructurePtr = traceAccelerationStructure.get();
         traceAccelerationStructureWriteDescriptorSet                               = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-            DE_NULL, //  const void* pNext;
+            nullptr, //  const void* pNext;
             1u,      //  uint32_t accelerationStructureCount;
             traceTopLevelAccelerationStructurePtr
                 ->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
@@ -1742,7 +1827,7 @@ std::vector<T> rayQueryRayTracingTestSetup(const vk::DeviceInterface &vkd, const
     VkDescriptorSet setHandle = descriptorSet.get();
 
     vkd.cmdBindPipeline(*cmdBuffer, state.pipelineBind, *pipeline);
-    vkd.cmdBindDescriptorSets(*cmdBuffer, state.pipelineBind, *pipelineLayout, 0, 1, &setHandle, 0, DE_NULL);
+    vkd.cmdBindDescriptorSets(*cmdBuffer, state.pipelineBind, *pipelineLayout, 0, 1, &setHandle, 0, nullptr);
 
     cmdTraceRays(vkd, *cmdBuffer, &raygenRegion, &missRegion, &hitRegion, &callableRegion,
                  static_cast<uint32_t>(params.rays.size()), 1, 1);
@@ -1813,16 +1898,16 @@ std::vector<T> rayQueryComputeTestSetup(const vk::DeviceInterface &vkd, const vk
 
     const VkPipelineShaderStageCreateInfo pipelineShaderStageParams = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                             // const void* pNext;
+        nullptr,                                             // const void* pNext;
         static_cast<VkPipelineShaderStageCreateFlags>(0u),   // VkPipelineShaderStageCreateFlags flags;
         VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
         *rayQueryModule,                                     // VkShaderModule module;
         "main",                                              // const char* pName;
-        DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
+        nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
     };
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         static_cast<VkPipelineCreateFlags>(0u),         // VkPipelineCreateFlags flags;
         pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
         *pipelineLayout,                                // VkPipelineLayout layout;
@@ -1851,13 +1936,17 @@ std::vector<T> rayQueryComputeTestSetup(const vk::DeviceInterface &vkd, const vk
     beginCommandBuffer(vk, *cmdBuffer);
 
     // build acceleration structures for ray query
-    initRayQueryAccelerationStructures(vkd, device, allocator, params, *cmdBuffer, bottomAccelerationStructures,
-                                       topAccelerationStructure);
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = params.resourceRes;
+    bufferProps.props.queue     = universalQueue;
+
+    initRayQueryAccelerationStructures(vkd, device, allocator, bufferProps, params, *cmdBuffer,
+                                       bottomAccelerationStructures, topAccelerationStructure);
 
     const TopLevelAccelerationStructure *rayQueryTopLevelAccelerationStructurePtr = topAccelerationStructure.get();
     VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-        DE_NULL,                                                           //  const void* pNext;
+        nullptr,                                                           //  const void* pNext;
         1u,                                                                //  uint32_t accelerationStructureCount;
         rayQueryTopLevelAccelerationStructurePtr
             ->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
@@ -1879,7 +1968,7 @@ std::vector<T> rayQueryComputeTestSetup(const vk::DeviceInterface &vkd, const vk
 
     vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
 
-    vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1, &setHandle, 0, DE_NULL);
+    vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1, &setHandle, 0, nullptr);
 
     vk.cmdDispatch(*cmdBuffer, static_cast<uint32_t>(params.rays.size()), 1, 1);
 
@@ -1931,6 +2020,10 @@ static std::vector<T> rayQueryGraphicsTestSetup(const DeviceInterface &vkd, cons
     Move<VkPipeline> pipeline;
     std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> rayQueryBottomAccelerationStructures;
     de::SharedPtr<TopLevelAccelerationStructure> rayQueryTopAccelerationStructure;
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = params.resourceRes;
+    bufferProps.props.queue     = universalQueue;
 
     descriptorSetLayout =
         DescriptorSetLayoutBuilder()
@@ -2013,35 +2106,35 @@ static std::vector<T> rayQueryGraphicsTestSetup(const DeviceInterface &vkd, cons
         (vk::VkSubpassDescriptionFlags)0,
         vk::VK_PIPELINE_BIND_POINT_GRAPHICS, // pipelineBindPoint
         0u,                                  // inputCount
-        DE_NULL,                             // pInputAttachments
+        nullptr,                             // pInputAttachments
         0u,                                  // colorCount
-        DE_NULL,                             // pColorAttachments
-        DE_NULL,                             // pResolveAttachments
-        DE_NULL,                             // depthStencilAttachment
+        nullptr,                             // pColorAttachments
+        nullptr,                             // pResolveAttachments
+        nullptr,                             // depthStencilAttachment
         0u,                                  // preserveCount
-        DE_NULL,                             // pPreserveAttachments
+        nullptr,                             // pPreserveAttachments
     };
     const vk::VkRenderPassCreateInfo renderPassParams = {
         vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (vk::VkRenderPassCreateFlags)0,
         0u,           // attachmentCount
-        DE_NULL,      // pAttachments
+        nullptr,      // pAttachments
         1u,           // subpassCount
         &subpassDesc, // pSubpasses
         0u,           // dependencyCount
-        DE_NULL,      // pDependencies
+        nullptr,      // pDependencies
     };
 
     renderPass = createRenderPass(vkd, device, &renderPassParams);
 
     const vk::VkFramebufferCreateInfo framebufferParams = {
         vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (vk::VkFramebufferCreateFlags)0,
         *renderPass, // renderPass
         0u,          // attachmentCount
-        DE_NULL,     // pAttachments
+        nullptr,     // pAttachments
         renderSz[0], // width
         renderSz[1], // height
         1u,          // layers
@@ -2106,7 +2199,7 @@ static std::vector<T> rayQueryGraphicsTestSetup(const DeviceInterface &vkd, cons
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                   // const void* pNext;
+        nullptr,                                                   // const void* pNext;
         (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags flags;
         1u,                                                        // uint32_t vertexBindingDescriptionCount;
         &vertexInputBindingDescription,  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -2116,7 +2209,7 @@ static std::vector<T> rayQueryGraphicsTestSetup(const DeviceInterface &vkd, cons
 
     const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                     // const void* pNext;
+        nullptr,                                                     // const void* pNext;
         (VkPipelineInputAssemblyStateCreateFlags)0,                  // VkPipelineInputAssemblyStateCreateFlags flags;
         testTopology,                                                // VkPrimitiveTopology topology;
         VK_FALSE                                                     // VkBool32 primitiveRestartEnable;
@@ -2124,7 +2217,7 @@ static std::vector<T> rayQueryGraphicsTestSetup(const DeviceInterface &vkd, cons
 
     const VkPipelineTessellationStateCreateInfo tessellationStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                   // const void* pNext;
+        nullptr,                                                   // const void* pNext;
         VkPipelineTessellationStateCreateFlags(0u),                // VkPipelineTessellationStateCreateFlags flags;
         3u                                                         // uint32_t patchControlPoints;
     };
@@ -2134,7 +2227,7 @@ static std::vector<T> rayQueryGraphicsTestSetup(const DeviceInterface &vkd, cons
 
     const VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                                    sType
-        DE_NULL,                               // const void*                                        pNext
+        nullptr,                               // const void*                                        pNext
         (VkPipelineViewportStateCreateFlags)0, // VkPipelineViewportStateCreateFlags                flags
         1u,                                    // uint32_t                                            viewportCount
         &viewport,                             // const VkViewport*                                pViewports
@@ -2144,7 +2237,7 @@ static std::vector<T> rayQueryGraphicsTestSetup(const DeviceInterface &vkd, cons
 
     const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         (VkPipelineRasterizationStateCreateFlags)0,                 // VkPipelineRasterizationStateCreateFlags flags;
         VK_FALSE,                                                   // VkBool32 depthClampEnable;
         fragX ? VK_FALSE : VK_TRUE,                                 // VkBool32 rasterizerDiscardEnable;
@@ -2160,43 +2253,43 @@ static std::vector<T> rayQueryGraphicsTestSetup(const DeviceInterface &vkd, cons
 
     const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (VkPipelineMultisampleStateCreateFlags)0,                 // VkPipelineMultisampleStateCreateFlags flags;
         VK_SAMPLE_COUNT_1_BIT,                                    // VkSampleCountFlagBits rasterizationSamples;
         VK_FALSE,                                                 // VkBool32 sampleShadingEnable;
         0.0f,                                                     // float minSampleShading;
-        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
         VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
         VK_FALSE                                                  // VkBool32 alphaToOneEnable;
     };
 
     const VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (VkPipelineColorBlendStateCreateFlags)0,                  // VkPipelineColorBlendStateCreateFlags flags;
         false,                                                    // VkBool32 logicOpEnable;
         VK_LOGIC_OP_CLEAR,                                        // VkLogicOp logicOp;
         0,                                                        // uint32_t attachmentCount;
-        DE_NULL,                 // const VkPipelineColorBlendAttachmentState* pAttachments;
+        nullptr,                 // const VkPipelineColorBlendAttachmentState* pAttachments;
         {1.0f, 1.0f, 1.0f, 1.0f} // float blendConstants[4];
     };
 
     const VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {
         VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         (VkPipelineCreateFlags)0,                        // VkPipelineCreateFlags flags;
         static_cast<uint32_t>(shaderCreateInfos.size()), // uint32_t stageCount;
         shaderCreateInfos.data(),                        // const VkPipelineShaderStageCreateInfo* pStages;
         &vertexInputStateCreateInfo,   // const VkPipelineVertexInputStateCreateInfo* pVertexInputState;
         &inputAssemblyStateCreateInfo, // const VkPipelineInputAssemblyStateCreateInfo* pInputAssemblyState;
         (tescX || teseX) ? &tessellationStateCreateInfo :
-                           DE_NULL,                 // const VkPipelineTessellationStateCreateInfo* pTessellationState;
-        fragX ? &viewportStateCreateInfo : DE_NULL, // const VkPipelineViewportStateCreateInfo* pViewportState;
+                           nullptr,                 // const VkPipelineTessellationStateCreateInfo* pTessellationState;
+        fragX ? &viewportStateCreateInfo : nullptr, // const VkPipelineViewportStateCreateInfo* pViewportState;
         &rasterizationStateCreateInfo, // const VkPipelineRasterizationStateCreateInfo* pRasterizationState;
-        fragX ? &multisampleStateCreateInfo : DE_NULL, // const VkPipelineMultisampleStateCreateInfo* pMultisampleState;
-        DE_NULL, // const VkPipelineDepthStencilStateCreateInfo* pDepthStencilState;
-        fragX ? &colorBlendStateCreateInfo : DE_NULL, // const VkPipelineColorBlendStateCreateInfo* pColorBlendState;
-        DE_NULL,                                      // const VkPipelineDynamicStateCreateInfo* pDynamicState;
+        fragX ? &multisampleStateCreateInfo : nullptr, // const VkPipelineMultisampleStateCreateInfo* pMultisampleState;
+        nullptr, // const VkPipelineDepthStencilStateCreateInfo* pDepthStencilState;
+        fragX ? &colorBlendStateCreateInfo : nullptr, // const VkPipelineColorBlendStateCreateInfo* pColorBlendState;
+        nullptr,                                      // const VkPipelineDynamicStateCreateInfo* pDynamicState;
         pipelineLayout.get(),                         // VkPipelineLayout layout;
         renderPass.get(),                             // VkRenderPass renderPass;
         0u,                                           // uint32_t subpass;
@@ -2208,7 +2301,7 @@ static std::vector<T> rayQueryGraphicsTestSetup(const DeviceInterface &vkd, cons
 
     const VkBufferCreateInfo vertexBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                                 // VkStructureType sType;
-        DE_NULL,                                                              // const void* pNext;
+        nullptr,                                                              // const void* pNext;
         0u,                                                                   // VkBufferCreateFlags flags;
         VkDeviceSize(sizeof(tcu::Vec3) * vertices.size()),                    // VkDeviceSize size;
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, // VkBufferUsageFlags usage;
@@ -2249,7 +2342,7 @@ static std::vector<T> rayQueryGraphicsTestSetup(const DeviceInterface &vkd, cons
     const VkFormat imageFormat              = VK_FORMAT_R32G32B32A32_SFLOAT;
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,       // VkStructureType sType;
-        DE_NULL,                                   // const void* pNext;
+        nullptr,                                   // const void* pNext;
         (VkImageCreateFlags)0u,                    // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_3D,                          // VkImageType imageType;
         imageFormat,                               // VkFormat format;
@@ -2262,7 +2355,7 @@ static std::vector<T> rayQueryGraphicsTestSetup(const DeviceInterface &vkd, cons
             VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
     };
     const VkImageSubresourceRange imageSubresourceRange =
@@ -2310,14 +2403,14 @@ static std::vector<T> rayQueryGraphicsTestSetup(const DeviceInterface &vkd, cons
                                       &postImageBarrier);
 
         // build acceleration structures for ray query
-        initRayQueryAccelerationStructures(vkd, device, allocator, params, *cmdBuffer,
+        initRayQueryAccelerationStructures(vkd, device, allocator, bufferProps, params, *cmdBuffer,
                                            rayQueryBottomAccelerationStructures, rayQueryTopAccelerationStructure);
 
         const TopLevelAccelerationStructure *rayQueryTopLevelAccelerationStructurePtr =
             rayQueryTopAccelerationStructure.get();
         VkWriteDescriptorSetAccelerationStructureKHR rayQueryAccelerationStructureWriteDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-            DE_NULL,                                                           //  const void* pNext;
+            nullptr,                                                           //  const void* pNext;
             1u,                                                                //  uint32_t accelerationStructureCount;
             rayQueryTopLevelAccelerationStructurePtr
                 ->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
@@ -2335,19 +2428,19 @@ static std::vector<T> rayQueryGraphicsTestSetup(const DeviceInterface &vkd, cons
 
         const VkRenderPassBeginInfo renderPassBeginInfo = {
             VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             renderPass.get(),                         // VkRenderPass renderPass;
             framebuffer.get(),                        // VkFramebuffer framebuffer;
             makeRect2D(renderSz[0], renderSz[1]),     // VkRect2D renderArea;
             0u,                                       // uint32_t clearValueCount;
-            DE_NULL                                   // const VkClearValue* pClearValues;
+            nullptr                                   // const VkClearValue* pClearValues;
         };
         VkDeviceSize vertexBufferOffset = 0u;
 
         vkd.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
         vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u,
-                                  &descriptorSet.get(), 0u, DE_NULL);
+                                  &descriptorSet.get(), 0u, nullptr);
         vkd.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer.get(), &vertexBufferOffset);
         vkd.cmdDraw(*cmdBuffer, uint32_t(vertices.size()), 1, 0, 0);
         vkd.cmdEndRenderPass(*cmdBuffer);

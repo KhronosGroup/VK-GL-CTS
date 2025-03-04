@@ -68,7 +68,7 @@ FunctionNames getExtFunctionNames(const std::string &extName)
     }
 
     DE_ASSERT(false);
-    return FunctionNames(0, DE_NULL);
+    return FunctionNames(0, nullptr);
 }
 
 } // namespace
@@ -295,7 +295,7 @@ public:
             DE_ASSERT(false);
         }
 
-        return FunctionNames(0, DE_NULL);
+        return FunctionNames(0, nullptr);
     }
 
     void executeTest(void)

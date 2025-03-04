@@ -322,11 +322,11 @@ public:
         EGLU_CHECK_MSG(egl, "before queries");
 
         de::UniquePtr<eglu::NativeWindow> window(windowFactory.createWindow(
-            &m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL,
+            &m_eglTestCtx.getNativeDisplay(), display, config, nullptr,
             eglu::WindowParams(width, height, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
         eglu::UniqueSurface surface(
             egl, display,
-            eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, display, config, DE_NULL));
+            eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, display, config, nullptr));
 
         logCommonSurfaceAttributes(log, egl, display, *surface);
         checkCommonAttributes(display, *surface, info);
@@ -359,10 +359,10 @@ public:
         EGLU_CHECK_MSG(egl, "before queries");
 
         de::UniquePtr<eglu::NativePixmap> pixmap(
-            pixmapFactory.createPixmap(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, width, height));
+            pixmapFactory.createPixmap(&m_eglTestCtx.getNativeDisplay(), display, config, nullptr, width, height));
         eglu::UniqueSurface surface(
             egl, display,
-            eglu::createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, display, config, DE_NULL));
+            eglu::createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, display, config, nullptr));
 
         logCommonSurfaceAttributes(log, egl, display, *surface);
         checkCommonAttributes(display, *surface, info);
@@ -621,11 +621,11 @@ public:
         EGLU_CHECK_MSG(egl, "before queries");
 
         de::UniquePtr<eglu::NativeWindow> window(windowFactory.createWindow(
-            &m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL,
+            &m_eglTestCtx.getNativeDisplay(), display, config, nullptr,
             eglu::WindowParams(width, height, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
         eglu::UniqueSurface surface(
             egl, display,
-            eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, display, config, DE_NULL));
+            eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, display, config, nullptr));
 
         testAttributes(display, *surface, EGL_WINDOW_BIT, info);
     }
@@ -656,10 +656,10 @@ public:
         EGLU_CHECK_MSG(egl, "before queries");
 
         de::UniquePtr<eglu::NativePixmap> pixmap(
-            pixmapFactory.createPixmap(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, width, height));
+            pixmapFactory.createPixmap(&m_eglTestCtx.getNativeDisplay(), display, config, nullptr, width, height));
         eglu::UniqueSurface surface(
             egl, display,
-            eglu::createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, display, config, DE_NULL));
+            eglu::createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, display, config, nullptr));
 
         testAttributes(display, *surface, EGL_PIXMAP_BIT, info);
     }

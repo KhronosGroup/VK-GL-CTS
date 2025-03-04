@@ -140,7 +140,7 @@ private:
 
         Data(void)
         {
-            array.elementType = DE_NULL;
+            array.elementType = nullptr;
             array.size        = 0;
         }
     } m_data;
@@ -190,7 +190,7 @@ public:
 
     const char *getTypeName(void) const
     {
-        return m_typeName.empty() ? DE_NULL : m_typeName.c_str();
+        return m_typeName.empty() ? nullptr : m_typeName.c_str();
     }
 
     inline Iterator begin(void)
@@ -255,7 +255,7 @@ public:
     }
     const char *getInstanceName(void) const
     {
-        return m_instanceName.empty() ? DE_NULL : m_instanceName.c_str();
+        return m_instanceName.empty() ? nullptr : m_instanceName.c_str();
     }
     bool isArray(void) const
     {

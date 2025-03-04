@@ -152,7 +152,7 @@ void GPUShader5PreciseQualifier::initTest(void)
     /* Create transform feedback buffer object */
     gl.genBuffers(1, &m_tf_buffer_id);
     gl.bindBuffer(GL_ARRAY_BUFFER, m_tf_buffer_id);
-    gl.bufferData(GL_ARRAY_BUFFER, sizeof(glw::GLfloat) * m_n_components, DE_NULL, GL_STATIC_COPY);
+    gl.bufferData(GL_ARRAY_BUFFER, sizeof(glw::GLfloat) * m_n_components, nullptr, GL_STATIC_COPY);
     gl.bindBuffer(GL_ARRAY_BUFFER, 0);
 
     GLU_EXPECT_NO_ERROR(gl.getError(), "Could not create buffer object!");
@@ -165,14 +165,14 @@ void GPUShader5PreciseQualifier::initTest(void)
     /* Create positions buffer object */
     gl.genBuffers(1, &m_vertex_positions_buffer_id);
     gl.bindBuffer(GL_ARRAY_BUFFER, m_vertex_positions_buffer_id);
-    gl.bufferData(GL_ARRAY_BUFFER, sizeof(glw::GLfloat) * m_n_components, DE_NULL, GL_STATIC_DRAW);
+    gl.bufferData(GL_ARRAY_BUFFER, sizeof(glw::GLfloat) * m_n_components, nullptr, GL_STATIC_DRAW);
 
     GLU_EXPECT_NO_ERROR(gl.getError(), "Could not create buffer object!");
 
     /* Create weights buffer object */
     gl.genBuffers(1, &m_vertex_weights_buffer_id);
     gl.bindBuffer(GL_ARRAY_BUFFER, m_vertex_weights_buffer_id);
-    gl.bufferData(GL_ARRAY_BUFFER, sizeof(glw::GLfloat) * m_n_components, DE_NULL, GL_STATIC_DRAW);
+    gl.bufferData(GL_ARRAY_BUFFER, sizeof(glw::GLfloat) * m_n_components, nullptr, GL_STATIC_DRAW);
 
     GLU_EXPECT_NO_ERROR(gl.getError(), "Could not create buffer object!");
 

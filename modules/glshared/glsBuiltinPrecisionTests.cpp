@@ -203,7 +203,7 @@ template <>
 const char *dataTypeNameOf<Void>(void)
 {
     DE_FATAL("Impossible");
-    return DE_NULL;
+    return nullptr;
 }
 
 //! A hack to get Void support for VarType.
@@ -5413,7 +5413,7 @@ PrecisionCase *createFuncCase(const Context &context, const string &name, const 
     default:
         DE_FATAL("Impossible");
     }
-    return DE_NULL;
+    return nullptr;
 }
 
 class CaseFactory

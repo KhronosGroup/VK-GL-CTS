@@ -217,12 +217,12 @@ void BatchExecutor::run(void)
     }
     catch (...)
     {
-        m_commLink->setCallbacks(DE_NULL, DE_NULL, DE_NULL, DE_NULL);
+        m_commLink->setCallbacks(nullptr, nullptr, nullptr, nullptr);
         throw;
     }
 
     // De-register callbacks.
-    m_commLink->setCallbacks(DE_NULL, DE_NULL, DE_NULL, DE_NULL);
+    m_commLink->setCallbacks(nullptr, nullptr, nullptr, nullptr);
 }
 
 void BatchExecutor::cancel(void)
@@ -383,7 +383,7 @@ void BatchExecutor::enqueueInfoLogData(void *userPtr, const uint8_t *bytes, size
 
 void BatchExecutor::dispatchStateChanged(CallReader &data)
 {
-    BatchExecutor *executor = DE_NULL;
+    BatchExecutor *executor = nullptr;
     CommLinkState state     = COMMLINKSTATE_LAST;
     std::string message;
 
@@ -394,7 +394,7 @@ void BatchExecutor::dispatchStateChanged(CallReader &data)
 
 void BatchExecutor::dispatchTestLogData(CallReader &data)
 {
-    BatchExecutor *executor = DE_NULL;
+    BatchExecutor *executor = nullptr;
     size_t numBytes;
 
     data >> executor >> numBytes;
@@ -404,7 +404,7 @@ void BatchExecutor::dispatchTestLogData(CallReader &data)
 
 void BatchExecutor::dispatchInfoLogData(CallReader &data)
 {
-    BatchExecutor *executor = DE_NULL;
+    BatchExecutor *executor = nullptr;
     size_t numBytes;
 
     data >> executor >> numBytes;

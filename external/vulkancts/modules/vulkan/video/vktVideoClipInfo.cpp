@@ -44,19 +44,6 @@ static const char *clipA[30] = {
     "5a9fe2e1bdf31ad0d256aeeecbe35ae7", "3e825fb6fb5361151fb7c1347523d6d0", "2870bd63631f4b787a1b084974cd519c",
 };
 
-static const char *clipB[30] = {
-    "a5221c5caa575aadb9c6c1e968ab6c29", "5214efd7d98f6c4dcab897bb1310743b", "6c7ab991e68a285711731911d88ed121",
-    "43a583ed805e254a5473ae515eea2e93", "1a9fb658f449d71648b6f2cdca1aa34d", "377be6813960071259167f7305894469",
-    "cf3ab21b6b6570f63a2b8eff7ee04879", "596a68452693b2e56df40e30275a353e", "e785d42901a1196690bd0f3700011a90",
-    "88a00463d768d796e106408ebcb6721e", "bda7da34a619ef6d9cd08ab03fa72e3a", "bebc1624c3cdebcfc3016c33955f4923",
-    "e209eac5c302e23252570b74973f94bf", "4ff0ba2f72cb6d8f0229dc12e2cfbbcf", "18ac88f74d7df142046079d733779035",
-    "147bb36e92f6ff87e348c48f38b47dab", "9e09197f76ba89c70c2b183a167a6696", "867c16867c26bc0c58f16c5ebeff6eb2",
-    "b8efc23369b7f2ea19e2b21ce97368db", "5b911f588984740ef772f5845f3a5805", "27f0f7fe39718799061e0e532bfbed14",
-    "60020402bc2b645b703af5156f52ee9d", "d73e71817bf776b62b4d1e81793d659f", "e873082290fbcfddebd784fc2edaab9f",
-    "2f4e293b00c145f1f5515920d2fd5705", "be907f259eca15e8914bc08861f3c76f", "a18eb46de4c7dff7915bc65673d2fff9",
-    "615315bca5a50fabad86745e070b3c8f", "2a2aa07f61aa590eb9a10a07c85dfe04", "119fd37851af0cac45fda60d7dc1ccd8",
-};
-
 static const char *clipC[30] = {
     "2086be0ea6f35e68a9f34ea51a359ef0", // 352x288 reference checksums
     "9e045b8e14c7f635fff4a4e56a359ff7", "b9aace50035d92d2b2b0cbc5049ccea1", "eda08231bb604567d72d850b9aaa8658",
@@ -305,14 +292,6 @@ static const char *sizeupAV1[20] = {
     "86b88efecf34dd7e4bb1d38346bc7a94", "02ec4d652fa265cfc928e0bc27ed783a", "120e9c7220f1803b796c487a28551382",
 };
 
-static const char *argonSeqchangeAffine8[15] = {
-    "bed28b1d9d693b52f27538cbc12911de", "3f0350c326bb6d930c9bdf5fd6554b85", "d529d2bc67c84b5869a9d45c56f2b3aa",
-    "2c1f9a3d479652fdb01c0587675b67db", "2c1f9a3d479652fdb01c0587675b67db", "d529d2bc67c84b5869a9d45c56f2b3aa",
-    "d529d2bc67c84b5869a9d45c56f2b3aa", "5038db232827e5aff83760c7a24edd62", "f9222adce56309445a52879a733c28dd",
-    "1013823ecdc2f19509a6a1afaa408d57", "a81d92b3f8401d583d6a4509458961ee", "eb6176cbe5329c61a53b1eb3cc49f398",
-    "5025298703a1b57e834262c7b6fa6d1e", "38148b17884f4e83221ba4dac18bd91b",
-};
-
 static const char *argonFilmgrain10[6] = {
     "cc05f657a3f6acaab634344e3181f149", "9bf462d19b14a2a4540d64f466f4b062", "9bf462d19b14a2a4540d64f466f4b062",
     "6c22eaa1a4537824bdd408dea694b5d5", "f2e8ea58b5a2e0645dd41ed1659e2c2e", "6c22eaa1a4537824bdd408dea694b5d5",
@@ -358,7 +337,7 @@ static auto H265_420_8BIT_MAIN_ENCODE_PROFILE = VideoProfileInfo{
 
 static ClipInfo Clips[] = {
     {
-        CLIP_A,
+        CLIP_H264_DEC_A,
         "clip-a.h264",
         {H264_420_8BIT_HIGH_DECODE_PROFILE},
         ElementaryStreamFraming::H26X_BYTE_STREAM,
@@ -370,19 +349,7 @@ static ClipInfo Clips[] = {
         clipA,
     },
     {
-        CLIP_B,
-        "clip-b.h264",
-        {H264_420_8BIT_HIGH_DECODE_PROFILE},
-        ElementaryStreamFraming::H26X_BYTE_STREAM,
-        352,
-        288,
-        30,
-        30,
-        10,
-        clipB,
-    },
-    {
-        CLIP_C,
+        CLIP_H264_DEC_C,
         "clip-c.h264",
         {H264_420_8BIT_HIGH_DECODE_PROFILE},
         ElementaryStreamFraming::H26X_BYTE_STREAM,
@@ -394,7 +361,7 @@ static ClipInfo Clips[] = {
         clipC,
     },
     {
-        CLIP_D,
+        CLIP_H265_DEC_D,
         "clip-d.h265",
         {H265_420_8BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::H26X_BYTE_STREAM,
@@ -406,7 +373,7 @@ static ClipInfo Clips[] = {
         clipA, // same as clip A
     },
     {
-        CLIP_E,
+        CLIP_H264_ENC_E,
         "vulkan/video/176x144_30_i420.yuv",
         {H264_420_8BIT_MAIN_ENCODE_PROFILE},
         ElementaryStreamFraming::UNKNOWN, // TODO: Encode tests shouldn't have been put in here
@@ -415,7 +382,7 @@ static ClipInfo Clips[] = {
         24,
     },
     {
-        CLIP_F,
+        CLIP_H265_ENC_F,
         "vulkan/video/176x144_30_i420.yuv",
         {H265_420_8BIT_MAIN_ENCODE_PROFILE},
         ElementaryStreamFraming::UNKNOWN,
@@ -424,7 +391,7 @@ static ClipInfo Clips[] = {
         24,
     },
     {
-        CLIP_G,
+        CLIP_H264_ENC_G,
         "vulkan/video/352x288_15_i420.yuv",
         {H264_420_8BIT_MAIN_ENCODE_PROFILE},
         ElementaryStreamFraming::UNKNOWN,
@@ -433,7 +400,7 @@ static ClipInfo Clips[] = {
         15,
     },
     {
-        CLIP_H,
+        CLIP_H265_ENC_H,
         "vulkan/video/352x288_15_i420.yuv",
         {H265_420_8BIT_MAIN_ENCODE_PROFILE},
         ElementaryStreamFraming::UNKNOWN,
@@ -442,7 +409,7 @@ static ClipInfo Clips[] = {
         15,
     },
     {
-        CLIP_H264_4K_26_IBP_MAIN,
+        CLIP_H264_DEC_4K_26_IBP_MAIN,
         "4k_26_ibp_main.h264",
         {H264_420_8BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::H26X_BYTE_STREAM,
@@ -454,7 +421,7 @@ static ClipInfo Clips[] = {
         h264_4k_26_ibp_main,
     },
     {
-        CLIP_JELLY_HEVC,
+        CLIP_H265_DEC_JELLY,
         "jellyfish-250-mbps-4k-uhd-GOB-IPB13.h265",
         {H265_420_8BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::H26X_BYTE_STREAM,
@@ -466,7 +433,7 @@ static ClipInfo Clips[] = {
         jellyfishHEVC,
     },
     {
-        CLIP_ITU_SLIST_A_HEVC,
+        CLIP_H265_DEC_ITU_SLIST_A,
         "hevc-itu-slist-a.h265",
         {H265_420_8BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::H26X_BYTE_STREAM,
@@ -478,7 +445,7 @@ static ClipInfo Clips[] = {
         slistAHEVC,
     },
     {
-        CLIP_ITU_SLIST_B_HEVC,
+        CLIP_H265_DEC_ITU_SLIST_B,
         "hevc-itu-slist-b.h265",
         {H265_420_8BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::H26X_BYTE_STREAM,
@@ -490,19 +457,7 @@ static ClipInfo Clips[] = {
         slistBHEVC,
     },
     {
-        CLIP_NONE_HEVC,
-        "",
-        {H265_420_8BIT_MAIN_ENCODE_PROFILE},
-        ElementaryStreamFraming::UNKNOWN,
-        0,
-        0,
-        0,
-        0,
-        0,
-        nullptr,
-    },
-    {
-        CLIP_BASIC_8,
+        CLIP_AV1_DEC_BASIC_8,
         "av1-176x144-main-basic-8.ivf",
         {AV1_420_8BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::IVF,
@@ -514,7 +469,7 @@ static ClipInfo Clips[] = {
         basic8AV1,
     },
     {
-        CLIP_ALLINTRA_8,
+        CLIP_AV1_DEC_ALLINTRA_8,
         "av1-352x288-main-allintra-8.ivf",
         {AV1_420_8BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::IVF,
@@ -526,7 +481,7 @@ static ClipInfo Clips[] = {
         allintra8AV1,
     },
     {
-        CLIP_ALLINTRA_INTRABC_8,
+        CLIP_AV1_DEC_ALLINTRA_INTRABC_8,
         "av1-1920x1080-intrabc-extreme-dv-8.ivf",
         {AV1_420_8BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::IVF,
@@ -538,7 +493,7 @@ static ClipInfo Clips[] = {
         allintrabc8AV1,
     },
     {
-        CLIP_CDFUPDATE_8,
+        CLIP_AV1_DEC_CDFUPDATE_8,
         "av1-352x288-main-cdfupdate-8.ivf",
         {AV1_420_8BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::IVF,
@@ -550,7 +505,7 @@ static ClipInfo Clips[] = {
         cdfupdate8AV1,
     },
     {
-        CLIP_GLOBALMOTION_8,
+        CLIP_AV1_DEC_GLOBALMOTION_8,
         "av1-176x144-main-globalmotion-8.ivf",
         {AV1_420_8BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::IVF,
@@ -562,7 +517,7 @@ static ClipInfo Clips[] = {
         globalmotion10AV1,
     },
     {
-        CLIP_FILMGRAIN_8,
+        CLIP_AV1_DEC_FILMGRAIN_8,
         "av1-352x288-main-filmgrain-8.ivf",
         {AV1_420_8BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::IVF,
@@ -574,7 +529,7 @@ static ClipInfo Clips[] = {
         filmgrain8AV1,
     },
     {
-        CLIP_SVCL1T2_8,
+        CLIP_AV1_DEC_SVCL1T2_8,
         "av1-640x360-main-svc-L1T2-8.ivf",
         {AV1_420_8BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::IVF,
@@ -586,7 +541,7 @@ static ClipInfo Clips[] = {
         svcL1T28AV1,
     },
     {
-        CLIP_SUPERRES_8,
+        CLIP_AV1_DEC_SUPERRES_8,
         "av1-1920x1080-main-superres-8.ivf",
         {AV1_420_8BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::IVF,
@@ -598,7 +553,7 @@ static ClipInfo Clips[] = {
         superres8AV1,
     },
     {
-        CLIP_SIZEUP_8,
+        CLIP_AV1_DEC_SIZEUP_8,
         "av1-sizeup-fluster.ivf",
         {AV1_420_8BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::IVF,
@@ -609,22 +564,9 @@ static ClipInfo Clips[] = {
         0,
         sizeupAV1,
     },
-    {
-        CLIP_ARGON_SEQCHANGE_AFFINE_8,
-        "av1-argon_test9354_2.obu",
-        {AV1_420_8BIT_MAIN_DECODE_PROFILE, AV1_MONOCHROME_10BIT_MAIN_DECODE_PROFILE},
-        ElementaryStreamFraming::AV1_ANNEXB,
-        0,
-        0,
-        0,
-        12,
-        0,
-        argonSeqchangeAffine8,
-    },
-
     // 10-bit AV1 test cases
     {
-        CLIP_BASIC_10,
+        CLIP_AV1_DEC_BASIC_10,
         "av1-176x144-main-basic-10.ivf",
         {AV1_420_10BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::IVF,
@@ -636,7 +578,7 @@ static ClipInfo Clips[] = {
         basic10AV1,
     },
     {
-        CLIP_ORDERHINT_10,
+        CLIP_AV1_DEC_ORDERHINT_10,
         "av1-176x144-main-orderhint-10.ivf",
         {AV1_420_10BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::IVF,
@@ -648,7 +590,7 @@ static ClipInfo Clips[] = {
         orderhint10AV1,
     },
     {
-        CLIP_FORWARDKEYFRAME_10,
+        CLIP_AV1_DEC_FORWARDKEYFRAME_10,
         "av1-176x144-main-forward-key-frame-10.ivf",
         {AV1_420_10BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::IVF,
@@ -660,7 +602,7 @@ static ClipInfo Clips[] = {
         forwardKeyframe10AV1,
     },
     {
-        CLIP_LOSSLESS_10,
+        CLIP_AV1_DEC_LOSSLESS_10,
         "av1-176x144-main-lossless-10.ivf",
         {AV1_420_10BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::IVF,
@@ -672,7 +614,7 @@ static ClipInfo Clips[] = {
         lossless10AV1,
     },
     {
-        CLIP_LOOPFILTER_10,
+        CLIP_AV1_DEC_LOOPFILTER_10,
         "av1-176x144-main-loop-filter-10.ivf",
         {AV1_420_10BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::IVF,
@@ -684,7 +626,7 @@ static ClipInfo Clips[] = {
         loopfilter10AV1,
     },
     {
-        CLIP_CDEF_10,
+        CLIP_AV1_DEC_CDEF_10,
         "av1-176x144-main-cdef-10.ivf",
         {AV1_420_10BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::IVF,
@@ -696,7 +638,7 @@ static ClipInfo Clips[] = {
         cdef10AV1,
     },
     {
-        CLIP_ARGON_FILMGRAIN_10,
+        CLIP_AV1_DEC_ARGON_FILMGRAIN_10,
         "av1-argon_test1019.obu",
         {AV1_420_10BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::AV1_ANNEXB,
@@ -708,7 +650,7 @@ static ClipInfo Clips[] = {
         argonFilmgrain10,
     },
     {
-        CLIP_ARGON_TEST_787,
+        CLIP_AV1_DEC_ARGON_TEST_787,
         "av1-argon_test787.obu",
         {AV1_420_10BIT_MAIN_DECODE_PROFILE},
         ElementaryStreamFraming::AV1_ANNEXB,

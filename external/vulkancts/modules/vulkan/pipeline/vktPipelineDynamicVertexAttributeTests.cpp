@@ -83,7 +83,7 @@ vk::VkImageCreateInfo makeImageCreateInfo(const tcu::IVec2 &size, const vk::VkFo
 {
     const vk::VkImageCreateInfo imageParams = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         (vk::VkImageCreateFlags)0u,              // VkImageCreateFlags flags;
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         format,                                  // VkFormat format;
@@ -95,33 +95,20 @@ vk::VkImageCreateInfo makeImageCreateInfo(const tcu::IVec2 &size, const vk::VkFo
         usage,                                   // VkImageUsageFlags usage;
         vk::VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                      // uint32_t queueFamilyIndexCount;
-        DE_NULL,                                 // const uint32_t* pQueueFamilyIndices;
+        nullptr,                                 // const uint32_t* pQueueFamilyIndices;
         vk::VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
 
     return imageParams;
 }
 
-static std::vector<std::string> removeExtensions(const std::vector<std::string> &a, const std::vector<const char *> &b)
-{
-    std::vector<std::string> res;
-    std::set<std::string> removeExts(b.begin(), b.end());
-
-    for (std::vector<std::string>::const_iterator aIter = a.begin(); aIter != a.end(); ++aIter)
-    {
-        if (!de::contains(removeExts, *aIter))
-            res.push_back(*aIter);
-    }
-
-    return res;
-}
-
 vk::Move<vk::VkDevice> createDynamicVertexStateDevice(Context &context, const uint32_t testQueueFamilyIndex,
-                                                      const vk::PipelineConstructionType pipelineConstructionType)
+                                                      const vk::PipelineConstructionType pipelineConstructionType,
+                                                      std::vector<std::string> &deviceExtensions)
 {
     DE_UNREF(pipelineConstructionType);
 
-    void *pNext = DE_NULL;
+    void *pNext = nullptr;
 
 #ifndef CTS_USES_VULKANSC
     vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT graphicsPipelineFeatures{
@@ -131,7 +118,11 @@ vk::Move<vk::VkDevice> createDynamicVertexStateDevice(Context &context, const ui
     };
 
     if (vk::isConstructionTypeLibrary(pipelineConstructionType))
+    {
         pNext = &graphicsPipelineFeatures;
+        deviceExtensions.push_back("VK_KHR_pipeline_library");
+        deviceExtensions.push_back("VK_EXT_graphics_pipeline_library");
+    }
     vk::VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures{
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR, // VkStructureType sType;
         pNext,                                                                // void* pNext;
@@ -144,7 +135,20 @@ vk::Move<vk::VkDevice> createDynamicVertexStateDevice(Context &context, const ui
     };
 
     if (vk::isConstructionTypeShaderObject(pipelineConstructionType))
+    {
         pNext = &shaderObjectFeatures;
+        if (!vk::isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_dynamic_rendering"))
+        {
+            deviceExtensions.push_back("VK_KHR_dynamic_rendering");
+            if (!vk::isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_create_renderpass2"))
+                deviceExtensions.push_back("VK_KHR_create_renderpass2");
+            if (!vk::isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_depth_stencil_resolve"))
+                deviceExtensions.push_back("VK_KHR_depth_stencil_resolve");
+            if (!vk::isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_maintenance2"))
+                deviceExtensions.push_back("VK_KHR_maintenance2");
+        }
+        deviceExtensions.push_back("VK_EXT_shader_object");
+    }
 #endif
 
     vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT dynamicVertexState{
@@ -152,6 +156,8 @@ vk::Move<vk::VkDevice> createDynamicVertexStateDevice(Context &context, const ui
         pNext,                                                                         // void* pNext;
         VK_TRUE, // VkBool32 vertexInputDynamicState;
     };
+
+    deviceExtensions.push_back("VK_EXT_vertex_input_dynamic_state");
 
     vk::VkPhysicalDeviceFeatures2 physDeviceFeats2 = context.getDeviceFeatures2();
 
@@ -162,7 +168,7 @@ vk::Move<vk::VkDevice> createDynamicVertexStateDevice(Context &context, const ui
 
     const vk::VkDeviceQueueCreateInfo queueParams = {
         vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         0u,                                             // VkDeviceQueueCreateFlags flags;
         testQueueFamilyIndex,                           // uint32_t queueFamilyIndex;
         1u,                                             // uint32_t queueCount;
@@ -170,16 +176,8 @@ vk::Move<vk::VkDevice> createDynamicVertexStateDevice(Context &context, const ui
     };
 
     std::vector<const char *> extensionPtrs;
-    std::vector<const char *> coreExtensions;
-
-    vk::getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-
-    std::vector<std::string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-    extensionPtrs.resize(nonCoreExtensions.size());
-
-    for (size_t ndx = 0; ndx < nonCoreExtensions.size(); ++ndx)
-        extensionPtrs[ndx] = nonCoreExtensions[ndx].c_str();
+    for (const auto &ext : deviceExtensions)
+        extensionPtrs.push_back(ext.c_str());
 
     const vk::VkDeviceCreateInfo deviceInfo = {
         vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, // VkStructureType sType;
@@ -188,7 +186,7 @@ vk::Move<vk::VkDevice> createDynamicVertexStateDevice(Context &context, const ui
         1u,                                       // uint32_t queueCreateInfoCount;
         &queueParams,                             // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u,                                       // uint32_t enabledLayerCount;
-        DE_NULL,                                  // const char* const* ppEnabledLayerNames;
+        nullptr,                                  // const char* const* ppEnabledLayerNames;
         (uint32_t)extensionPtrs.size(),           // uint32_t enabledExtensionCount;
         extensionPtrs.data(),                     // const char* const* ppEnabledExtensionNames;
         NULL                                      // const VkPhysicalDeviceFeatures* pEnabledFeatures;
@@ -232,21 +230,20 @@ private:
 tcu::TestStatus NonSequentialInstance::iterate(void)
 {
     tcu::TestLog &log                              = m_context.getTestContext().getLog();
-    const vk::DeviceInterface &vk                  = m_context.getDeviceInterface();
     const vk::PlatformInterface &vkp               = m_context.getPlatformInterface();
     const vk::VkInstance vki                       = m_context.getInstance();
     const vk::InstanceInterface &instanceInterface = m_context.getInstanceInterface();
     const uint32_t queueFamilyIndex                = m_context.getUniversalQueueFamilyIndex();
     const vk::VkPhysicalDevice physicalDevice      = m_context.getPhysicalDevice();
+    std::vector<std::string> deviceExtensions;
     const vk::Move<vk::VkDevice> device =
-        createDynamicVertexStateDevice(m_context, queueFamilyIndex, m_pipelineConstructionType);
+        createDynamicVertexStateDevice(m_context, queueFamilyIndex, m_pipelineConstructionType, deviceExtensions);
+    const vk::DeviceDriver vk(vkp, vki, *device, m_context.getUsedApiVersion(),
+                              m_context.getTestContext().getCommandLine());
     vk::SimpleAllocator allocator(
         vk, *device,
         getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
-    const vk::DeviceDriver deviceDriver(vkp, vki, *device, m_context.getUsedApiVersion(),
-                                        m_context.getTestContext().getCommandLine());
-    const vk::VkQueue queue      = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, 0u);
-    const auto &deviceExtensions = m_context.getDeviceExtensions();
+    const vk::VkQueue queue = getDeviceQueue(vk, *device, queueFamilyIndex, 0u);
 
     // Create shaders
     const std::array<vk::ShaderWrapper, 2> vertexShaderModules = {
@@ -274,12 +271,12 @@ tcu::TestStatus NonSequentialInstance::iterate(void)
 
     const vk::VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo{
         vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                       // const void* pNext;
+        nullptr,                                                       // const void* pNext;
         (vk::VkPipelineVertexInputStateCreateFlags)0u,                 // VkPipelineVertexInputStateCreateFlags flags;
         0u,                                                            // uint32_t vertexBindingDescriptionCount;
-        DE_NULL, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+        nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
         0u,      // uint32_t vertexAttributeDescriptionCount;
-        DE_NULL  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+        nullptr  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
     };
 
     vk::Move<vk::VkImage> colorImage =
@@ -317,25 +314,25 @@ tcu::TestStatus NonSequentialInstance::iterate(void)
         (vk::VkSubpassDescriptionFlags)0u,   // VkSubpassDescriptionFlags    flags
         vk::VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint            pipelineBindPoint
         0u,                                  // uint32_t                        inputAttachmentCount
-        DE_NULL,                             // const VkAttachmentReference*    pInputAttachments
+        nullptr,                             // const VkAttachmentReference*    pInputAttachments
         1u,                                  // uint32_t                        colorAttachmentCount
         &attachmentReference,                // const VkAttachmentReference*    pColorAttachments
-        DE_NULL,                             // const VkAttachmentReference*    pResolveAttachments
-        DE_NULL,                             // const VkAttachmentReference*    pDepthStencilAttachment
+        nullptr,                             // const VkAttachmentReference*    pResolveAttachments
+        nullptr,                             // const VkAttachmentReference*    pDepthStencilAttachment
         0u,                                  // uint32_t                        preserveAttachmentCount
-        DE_NULL                              // const uint32_t*                pPreserveAttachments
+        nullptr                              // const uint32_t*                pPreserveAttachments
     };
 
     const vk::VkRenderPassCreateInfo renderPassInfo = {
         vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureTypei                    sType
-        DE_NULL,                                       // const void*                        pNext
+        nullptr,                                       // const void*                        pNext
         (vk::VkRenderPassCreateFlags)0u,               // VkRenderPassCreateFlags            flags
         1u,                                            // uint32_t                            attachmentCount
         &attachmentDescription,                        // const VkAttachmentDescription*    pAttachments
         1u,                                            // uint32_t                            subpassCount
         &subpassDescription,                           // const VkSubpassDescription*        pSubpasses
         0u,                                            // uint32_t                            dependencyCount
-        DE_NULL                                        // const VkSubpassDependency*        pDependencies
+        nullptr                                        // const VkSubpassDependency*        pDependencies
     };
 
     vk::RenderPassWrapper renderPass = vk::RenderPassWrapper(m_pipelineConstructionType, vk, *device, &renderPassInfo);
@@ -345,7 +342,7 @@ tcu::TestStatus NonSequentialInstance::iterate(void)
 
     const vk::VkFramebufferCreateInfo framebufferCreateInfo = {
         vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                       // const void* pNext;
+        nullptr,                                       // const void* pNext;
         vk::VkFramebufferCreateFlags(0),               // VkFramebufferCreateFlags flags;
         *renderPass,                                   // VkRenderPass renderPass;
         1u,                                            // uint32_t attachmentCount;
@@ -363,7 +360,7 @@ tcu::TestStatus NonSequentialInstance::iterate(void)
 
     vk::VkPipelineDynamicStateCreateInfo pipelineDynamicStateNfo{
         vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (vk::VkPipelineDynamicStateCreateFlags)0u,                // VkPipelineDynamicStateCreateFlags flags;
         static_cast<uint32_t>(dynamicStates.size()),              // uint32_t dynamicStateCount;
         dynamicStates.data()                                      // const VkDynamicState* pDynamicStates;
@@ -372,12 +369,12 @@ tcu::TestStatus NonSequentialInstance::iterate(void)
     // Create pipeline layout
     const vk::VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                           // const void* pNext;
+        nullptr,                                           // const void* pNext;
         0u,                                                // VkPipelineLayoutCreateFlags flags;
         0u,                                                // uint32_t descriptorSetCount;
-        DE_NULL,                                           // const VkDescriptorSetLayout* pSetLayouts;
+        nullptr,                                           // const VkDescriptorSetLayout* pSetLayouts;
         0u,                                                // uint32_t pushConstantRangeCount;
-        DE_NULL                                            // const VkPushDescriptorRange* pPushDescriptorRanges;
+        nullptr                                            // const VkPushDescriptorRange* pPushDescriptorRanges;
     };
 
     vk::PipelineLayoutWrapper pipelineLayout(m_pipelineConstructionType, vk, *device, &pipelineLayoutInfo);
@@ -404,7 +401,7 @@ tcu::TestStatus NonSequentialInstance::iterate(void)
             .setupVertexInputState(&vertexInputStateCreateInfo)
             .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u,
                                               vertexShaderModules[i])
-            .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragmentShaderModule, DE_NULL, DE_NULL)
+            .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragmentShaderModule, nullptr, nullptr)
             .setupFragmentOutputState(*renderPass)
             .setMonolithicPipelineLayout(pipelineLayout)
             .buildPipeline();

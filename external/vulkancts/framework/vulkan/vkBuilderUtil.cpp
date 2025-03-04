@@ -56,7 +56,7 @@ DescriptorSetLayoutBuilder &DescriptorSetLayoutBuilder::addBinding(VkDescriptorT
         descriptorType,              // descriptorType
         descriptorCount,             // descriptorCount
         stageFlags,                  // stageFlags
-        DE_NULL,                     // pImmutableSamplers
+        nullptr,                     // pImmutableSamplers
     };
     m_bindings.push_back(binding);
     return *this;
@@ -84,7 +84,7 @@ DescriptorSetLayoutBuilder &DescriptorSetLayoutBuilder::addIndexedBinding(VkDesc
         descriptorType,  // descriptorType
         descriptorCount, // descriptorCount
         stageFlags,      // stageFlags
-        DE_NULL,         // pImmutableSamplers
+        nullptr,         // pImmutableSamplers
     };
     m_bindings.push_back(binding);
     return *this;
@@ -114,10 +114,10 @@ Move<VkDescriptorSetLayout> DescriptorSetLayoutBuilder::build(const DeviceInterf
 
     const VkDescriptorSetLayoutCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkDescriptorSetLayoutCreateFlags)extraFlags,         // flags
         (uint32_t)bindings.size(),                            // bindingCount
-        (bindings.empty()) ? (DE_NULL) : (&bindings.front()), // pBinding
+        (bindings.empty()) ? (nullptr) : (&bindings.front()), // pBinding
     };
 
     return createDescriptorSetLayout(vk, device, &createInfo);
@@ -165,7 +165,7 @@ Move<VkDescriptorPool> DescriptorPoolBuilder::build(const DeviceInterface &vk, V
                                                     VkDescriptorPoolCreateFlags flags, uint32_t maxSets,
                                                     const void *pNext) const
 {
-    const VkDescriptorPoolSize *const typeCountPtr = (m_counts.empty()) ? (DE_NULL) : (&m_counts[0]);
+    const VkDescriptorPoolSize *const typeCountPtr = (m_counts.empty()) ? (nullptr) : (&m_counts[0]);
     const VkDescriptorPoolCreateInfo createInfo    = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
         pNext,
@@ -199,9 +199,9 @@ DescriptorSetUpdateBuilder &DescriptorSetUpdateBuilder::write(VkDescriptorSet de
                                               destArrayElement, //!< destArrayElement
                                               count,            //!< count
                                               descriptorType,   //!< descriptorType
-                                              DE_NULL,
-                                              DE_NULL,
-                                              DE_NULL};
+                                              nullptr,
+                                              nullptr,
+                                              nullptr};
 
     m_writes.push_back(writeParams);
 
@@ -229,7 +229,7 @@ DescriptorSetUpdateBuilder &DescriptorSetUpdateBuilder::copy(VkDescriptorSet src
 {
     const VkCopyDescriptorSet copyParams = {
         VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET,
-        DE_NULL,
+        nullptr,
         srcSet,           //!< srcSet
         srcBinding,       //!< srcBinding
         srcArrayElement,  //!< srcArrayElement
@@ -261,8 +261,8 @@ void DescriptorSetUpdateBuilder::update(const DeviceInterface &vk, VkDevice devi
             writes[writeNdx].pTexelBufferView = &writeInfo.texelBufferViews[0];
     }
 
-    const VkWriteDescriptorSet *const writePtr = (m_writes.empty()) ? (DE_NULL) : (&writes[0]);
-    const VkCopyDescriptorSet *const copyPtr   = (m_copies.empty()) ? (DE_NULL) : (&m_copies[0]);
+    const VkWriteDescriptorSet *const writePtr = (m_writes.empty()) ? (nullptr) : (&writes[0]);
+    const VkCopyDescriptorSet *const copyPtr   = (m_copies.empty()) ? (nullptr) : (&m_copies[0]);
 
     vk.updateDescriptorSets(device, (uint32_t)writes.size(), writePtr, (uint32_t)m_copies.size(), copyPtr);
 }
@@ -293,9 +293,9 @@ void DescriptorSetUpdateBuilder::updateWithPush(const DeviceInterface &vk, VkCom
             writes[writeNdx].pTexelBufferView = &writeInfo.texelBufferViews[0];
     }
 
-    const VkWriteDescriptorSet *const writePtr = (m_writes.empty()) ? (DE_NULL) : (&writes[descriptorIdx]);
+    const VkWriteDescriptorSet *const writePtr = (m_writes.empty()) ? (nullptr) : (&writes[descriptorIdx]);
 
-    vk.cmdPushDescriptorSetKHR(cmd, bindPoint, pipelineLayout, setIdx, count, writePtr);
+    vk.cmdPushDescriptorSet(cmd, bindPoint, pipelineLayout, setIdx, count, writePtr);
 }
 
 #endif // CTS_USES_VULKANSC

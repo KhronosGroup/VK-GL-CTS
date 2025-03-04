@@ -95,7 +95,7 @@ tcu::TestNode::IterateResult gl4cts::ContextFlushControl::CoverageTest::iterate(
         glu::RenderContext *no_flush_context = createNoFlushContext();
 
         /* Proceed only if such context has been created. */
-        if (DE_NULL != no_flush_context)
+        if (nullptr != no_flush_context)
         {
             /* Test no-flush context. */
             no_flush_context->makeCurrent();
@@ -192,7 +192,7 @@ bool gl4cts::ContextFlushControl::CoverageTest::testQuery(glu::RenderContext &co
 
 /** @brief Create render context with CONTEXT_RELEASE_BEHAVIOR set as NONE.
  *
- *  @return Render context pointer if creation succeeded, DE_NULL otherwise.
+ *  @return Render context pointer if creation succeeded, nullptr otherwise.
  */
 glu::RenderContext *gl4cts::ContextFlushControl::CoverageTest::createNoFlushContext()
 {
@@ -200,13 +200,13 @@ glu::RenderContext *gl4cts::ContextFlushControl::CoverageTest::createNoFlushCont
     glu::Platform &platform = dynamic_cast<glu::Platform &>(m_context.getTestContext().getPlatform());
 
     /* Context to be returned (NULL if failed). */
-    glu::RenderContext *context = DE_NULL;
+    glu::RenderContext *context = nullptr;
 
     /* Get context related attributes needed to create no-flush context. */
     const int *attributes = platform.getContextFlushControlContextAttributes();
 
     /* Proceed only if it is possible to make no-flush context. */
-    if (DE_NULL != attributes)
+    if (nullptr != attributes)
     {
         glu::ContextType renderContextType = m_context.getRenderContext().getType();
 
@@ -254,7 +254,7 @@ tcu::TestNode::IterateResult gl4cts::ContextFlushControl::FunctionalTest::iterat
     try
     {
         if ((is_at_least_gl_44 || is_khr_context_flush_control) &&
-            (DE_NULL != platform.getContextFlushControlContextAttributes()))
+            (nullptr != platform.getContextFlushControlContextAttributes()))
         {
             glw::GLfloat test_time_no_flush = testTime(false);
             glw::GLfloat test_time_flush    = testTime(true);
@@ -391,7 +391,7 @@ gl4cts::ContextFlushControl::FunctionalTest::DrawSetup::DrawSetup(deqp::Context 
 {
     createContext(shall_flush_on_release);
 
-    if (DE_NULL == m_context)
+    if (nullptr == m_context)
     {
         throw 0;
     }
@@ -469,7 +469,7 @@ gl4cts::ContextFlushControl::FunctionalTest::DrawSetup::~DrawSetup()
 
 /** @brief Create render context with CONTEXT_RELEASE_BEHAVIOR set to NONE or CONTEXT_RELEASE_BEHAVIOR_FLUSH.
  *
- *  @return Render context pointer if creation succeeded, DE_NULL otherwise.
+ *  @return Render context pointer if creation succeeded, nullptr otherwise.
  */
 void gl4cts::ContextFlushControl::FunctionalTest::DrawSetup::createContext(bool shall_flush_on_release)
 {
@@ -477,7 +477,7 @@ void gl4cts::ContextFlushControl::FunctionalTest::DrawSetup::createContext(bool 
     glu::Platform &platform = dynamic_cast<glu::Platform &>(m_test_context.getTestContext().getPlatform());
 
     /* Get context related attributes needed to create no-flush context. */
-    const int *attributes = DE_NULL;
+    const int *attributes = nullptr;
 
     if (!shall_flush_on_release)
     {
@@ -571,7 +571,7 @@ void gl4cts::ContextFlushControl::FunctionalTest::DrawSetup::createProgram()
 
         for (glw::GLuint i = 0; i < shader_count; ++i)
         {
-            if (DE_NULL != shader[i].source)
+            if (nullptr != shader[i].source)
             {
                 shader[i].id = gl.createShader(shader[i].type);
 

@@ -118,8 +118,9 @@ void importFilesForExternalCompiler(vksc_server::VulkanPipelineCacheInput &input
                     const Json::Value &value                = jsonSamplerYcbcrConversions[i][membersNames[0]];
                     uint64_t index;
                     std::istringstream(membersNames[0]) >> index;
-                    input.samplerYcbcrConversions[vk::VkSamplerYcbcrConversion(index)] = std::string(
-                        fileContents.begin() + value.getOffsetStart(), fileContents.begin() + value.getOffsetLimit());
+                    input.samplerYcbcrConversions[vk::VkSamplerYcbcrConversion(reinterpret_cast<void *>(index))] =
+                        std::string(fileContents.begin() + value.getOffsetStart(),
+                                    fileContents.begin() + value.getOffsetLimit());
                 }
             }
 
@@ -132,8 +133,8 @@ void importFilesForExternalCompiler(vksc_server::VulkanPipelineCacheInput &input
                     const Json::Value &value                = jsonSamplers[i][membersNames[0]];
                     uint64_t index;
                     std::istringstream(membersNames[0]) >> index;
-                    input.samplers[vk::VkSampler(index)] = std::string(fileContents.begin() + value.getOffsetStart(),
-                                                                       fileContents.begin() + value.getOffsetLimit());
+                    input.samplers[vk::VkSampler(reinterpret_cast<void *>(index))] = std::string(
+                        fileContents.begin() + value.getOffsetStart(), fileContents.begin() + value.getOffsetLimit());
                 }
             }
 
@@ -146,8 +147,9 @@ void importFilesForExternalCompiler(vksc_server::VulkanPipelineCacheInput &input
                     const Json::Value &value                = jsonDescriptorSetLayouts[i][membersNames[0]];
                     uint64_t index;
                     std::istringstream(membersNames[0]) >> index;
-                    input.descriptorSetLayouts[vk::VkDescriptorSetLayout(index)] = std::string(
-                        fileContents.begin() + value.getOffsetStart(), fileContents.begin() + value.getOffsetLimit());
+                    input.descriptorSetLayouts[vk::VkDescriptorSetLayout(reinterpret_cast<void *>(index))] =
+                        std::string(fileContents.begin() + value.getOffsetStart(),
+                                    fileContents.begin() + value.getOffsetLimit());
                 }
             }
 
@@ -184,7 +186,7 @@ void importFilesForExternalCompiler(vksc_server::VulkanPipelineCacheInput &input
             const Json::Value &jsonPipelineLayout = jsonPipelineState["PipelineLayout"];
             if (!jsonPipelineLayout.isNull() && pipelineLayoutHandle != 0u)
             {
-                input.pipelineLayouts[vk::VkPipelineLayout(pipelineLayoutHandle)] =
+                input.pipelineLayouts[vk::VkPipelineLayout(reinterpret_cast<void *>(pipelineLayoutHandle))] =
                     std::string(fileContents.begin() + jsonPipelineLayout.getOffsetStart(),
                                 fileContents.begin() + jsonPipelineLayout.getOffsetLimit());
             }
@@ -192,7 +194,7 @@ void importFilesForExternalCompiler(vksc_server::VulkanPipelineCacheInput &input
             const Json::Value &jsonRenderPass = jsonPipelineState["Renderpass"];
             if (!jsonRenderPass.isNull() && renderPassHandle != 0u)
             {
-                input.renderPasses[vk::VkRenderPass(renderPassHandle)] =
+                input.renderPasses[vk::VkRenderPass(reinterpret_cast<void *>(renderPassHandle))] =
                     std::string(fileContents.begin() + jsonRenderPass.getOffsetStart(),
                                 fileContents.begin() + jsonRenderPass.getOffsetLimit());
             }
@@ -200,7 +202,7 @@ void importFilesForExternalCompiler(vksc_server::VulkanPipelineCacheInput &input
             const Json::Value &jsonRenderPass2 = jsonPipelineState["Renderpass2"];
             if (!jsonRenderPass2.isNull() && renderPassHandle != 0u)
             {
-                input.renderPasses[vk::VkRenderPass(renderPassHandle)] =
+                input.renderPasses[vk::VkRenderPass(reinterpret_cast<void *>(renderPassHandle))] =
                     std::string(fileContents.begin() + jsonRenderPass.getOffsetStart(),
                                 fileContents.begin() + jsonRenderPass.getOffsetLimit());
             }
@@ -240,13 +242,13 @@ void importFilesForExternalCompiler(vksc_server::VulkanPipelineCacheInput &input
 
                     vk::VkShaderModuleCreateInfo smCI{
                         VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,    // VkStructureType sType;
-                        DE_NULL,                                        // const void* pNext;
+                        nullptr,                                        // const void* pNext;
                         vk::VkShaderModuleCreateFlags(0u),              // VkShaderModuleCreateFlags flags;
                         fileSize,                                       // uintptr_t codeSize;
                         reinterpret_cast<uint32_t *>(shaderData.data()) // const uint32_t* pCode;
                     };
 
-                    input.shaderModules[vk::VkShaderModule(it->second)] =
+                    input.shaderModules[vk::VkShaderModule(reinterpret_cast<void *>(it->second))] =
                         vksc_server::json::writeJSON_VkShaderModuleCreateInfo(smCI);
                 }
             }
@@ -271,7 +273,7 @@ void importFilesForExternalCompiler(vksc_server::VulkanPipelineCacheInput &input
         if (!jsonPipelineUUID.isNull())
         {
             pipelineDescription.id.sType = VK_STRUCTURE_TYPE_PIPELINE_OFFLINE_CREATE_INFO;
-            pipelineDescription.id.pNext = DE_NULL;
+            pipelineDescription.id.pNext = nullptr;
             for (Json::ArrayIndex i = 0; i < jsonPipelineUUID.size(); ++i)
                 pipelineDescription.id.pipelineIdentifier[i] = uint8_t(jsonPipelineUUID[i].asUInt());
             pipelineDescription.id.matchControl  = VK_PIPELINE_MATCH_CONTROL_APPLICATION_UUID_EXACT_MATCH;
@@ -314,9 +316,9 @@ int main(int argc, char **argv)
         de::SharedPtr<tcu::Platform> platform{createPlatform()};
 #ifdef DE_PLATFORM_USE_LIBRARY_TYPE
         de::SharedPtr<vk::Library> library{
-            platform->getVulkanPlatform().createLibrary(vk::Platform::LIBRARY_TYPE_VULKAN, DE_NULL)};
+            platform->getVulkanPlatform().createLibrary(vk::Platform::LIBRARY_TYPE_VULKAN, nullptr)};
 #else
-        de::SharedPtr<vk::Library> library{platform->getVulkanPlatform().createLibrary(DE_NULL)};
+        de::SharedPtr<vk::Library> library{platform->getVulkanPlatform().createLibrary(nullptr)};
 #endif
         tcu::TestContext tcx{*platform, archive, log, cmdLineDummy, nullptr};
         vk::BinaryCollection collection{};

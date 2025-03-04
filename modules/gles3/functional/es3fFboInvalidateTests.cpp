@@ -165,7 +165,7 @@ public:
         flatShader.setColor(*getCurrentContext(), flatShaderID, Vec4(1.0f, 0.0f, 0.0f, 1.0f));
         sglr::drawQuad(*getCurrentContext(), flatShaderID, Vec3(-1.0f, -1.0f, -1.0f), Vec3(1.0f, 1.0f, 1.0f));
 
-        glInvalidateFramebuffer(m_fboTarget, (int)attachments.size(), attachments.empty() ? DE_NULL : &attachments[0]);
+        glInvalidateFramebuffer(m_fboTarget, (int)attachments.size(), attachments.empty() ? nullptr : &attachments[0]);
 
         if ((m_buffers & GL_COLOR_BUFFER_BIT) != 0)
         {
@@ -235,7 +235,7 @@ public:
         glGenFramebuffers(1, &fbo);
         glGenTextures(1, &tex);
         glBindTexture(GL_TEXTURE_2D, tex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, getWidth(), getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, getWidth(), getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
@@ -253,7 +253,7 @@ public:
         sglr::drawQuad(*getCurrentContext(), flatShaderID, Vec3(-1.0f, -1.0f, -1.0f), Vec3(1.0f, 1.0f, 1.0f));
 
         glInvalidateFramebuffer(GL_FRAMEBUFFER, (int)attachments.size(),
-                                attachments.empty() ? DE_NULL : &attachments[0]);
+                                attachments.empty() ? nullptr : &attachments[0]);
 
         // Switch to fbo and render gradient into it.
         glDisable(GL_DEPTH_TEST);
@@ -396,7 +396,7 @@ public:
         glGenFramebuffers(1, &fbo);
         glGenTextures(1, &tex);
         glBindTexture(GL_TEXTURE_2D, tex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, getWidth(), getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, getWidth(), getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
@@ -524,7 +524,7 @@ protected:
         sglr::drawQuad(*getCurrentContext(), flatShaderID, Vec3(-1.0f, -1.0f, -1.0f), Vec3(1.0f, 1.0f, 1.0f));
 
         glInvalidateFramebuffer(GL_FRAMEBUFFER, (int)attachments.size(),
-                                attachments.empty() ? DE_NULL : &attachments[0]);
+                                attachments.empty() ? nullptr : &attachments[0]);
 
         if ((m_invalidateBuffers & GL_COLOR_BUFFER_BIT) != 0)
         {
@@ -613,7 +613,7 @@ protected:
             glGenTextures(1, &colorTex);
             glBindTexture(GL_TEXTURE_2D, colorTex);
             glTexImage2D(GL_TEXTURE_2D, 0, m_colorFmt, getWidth(), getHeight(), 0, transferFmt.format,
-                         transferFmt.dataType, DE_NULL);
+                         transferFmt.dataType, nullptr);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         }
 
@@ -624,7 +624,7 @@ protected:
             glGenTextures(1, &depthStencilTex);
             glBindTexture(GL_TEXTURE_2D, depthStencilTex);
             glTexImage2D(GL_TEXTURE_2D, 0, m_depthStencilFmt, getWidth(), getHeight(), 0, transferFmt.format,
-                         transferFmt.dataType, DE_NULL);
+                         transferFmt.dataType, nullptr);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         }
@@ -922,7 +922,7 @@ protected:
         sglr::drawQuad(*getCurrentContext(), flatShaderID, Vec3(-1.0f, -1.0f, -1.0f), Vec3(1.0f, 1.0f, 1.0f));
 
         glInvalidateSubFramebuffer(GL_FRAMEBUFFER, (int)attachments.size(),
-                                   attachments.empty() ? DE_NULL : &attachments[0], invalidateX, invalidateY,
+                                   attachments.empty() ? nullptr : &attachments[0], invalidateX, invalidateY,
                                    invalidateW, invalidateH);
 
         // Clear invalidated buffers.
@@ -1005,7 +1005,7 @@ protected:
             glGenTextures(1, &colorTex);
             glBindTexture(GL_TEXTURE_2D, colorTex);
             glTexImage2D(GL_TEXTURE_2D, 0, m_colorFmt, getWidth(), getHeight(), 0, transferFmt.format,
-                         transferFmt.dataType, DE_NULL);
+                         transferFmt.dataType, nullptr);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         }
@@ -1017,7 +1017,7 @@ protected:
             glGenTextures(1, &depthStencilTex);
             glBindTexture(GL_TEXTURE_2D, depthStencilTex);
             glTexImage2D(GL_TEXTURE_2D, 0, m_depthStencilFmt, getWidth(), getHeight(), 0, transferFmt.format,
-                         transferFmt.dataType, DE_NULL);
+                         transferFmt.dataType, nullptr);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         }
@@ -1348,7 +1348,7 @@ protected:
         }
 
         glInvalidateFramebuffer(m_invalidateTarget, (int)m_invalidateAttachments.size(),
-                                m_invalidateAttachments.empty() ? DE_NULL : &m_invalidateAttachments[0]);
+                                m_invalidateAttachments.empty() ? nullptr : &m_invalidateAttachments[0]);
 
         if (m_boundTarget != GL_FRAMEBUFFER)
             glBindFramebuffer(GL_FRAMEBUFFER, fbo);

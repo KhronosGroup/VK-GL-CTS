@@ -25,12 +25,10 @@
 #include "glcShaderIndexingTests.hpp"
 #include "glcShaderRenderCase.hpp"
 #include "gluShaderUtil.hpp"
-#include "glwEnums.hpp"
 #include "glwFunctions.hpp"
 #include "tcuStringTemplate.hpp"
 
 #include "deInt32.h"
-#include "deMemory.h"
 
 #include <map>
 
@@ -172,7 +170,7 @@ ShaderIndexingCase::ShaderIndexingCase(Context &context, const char *name, const
                                        DataType varType, ShaderEvalFunc evalFunc, const char *vertShaderSource,
                                        const char *fragShaderSource)
     : ShaderRenderCase(context.getTestContext(), context.getRenderContext(), context.getContextInfo(), name,
-                       description, isVertexCase, evalFunc)
+                       description, isVertexCase, evalFunc, true /*useLevel*/)
 {
     m_varType          = varType;
     m_vertShaderSource = vertShaderSource;
@@ -956,7 +954,7 @@ static ShaderEvalFunc getMatrixSubscriptEvalFunc(DataType dataType)
 
     default:
         DE_ASSERT(false && "Invalid data type.");
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -1020,92 +1018,92 @@ static ShaderIndexingCase *createMatrixSubscriptCase(Context &context, const cha
 
     // Write matrix.
     if (isVertexCase)
-        op << " ${PRECISION} vec4 coords = a_coords;\n";
+        op << "    ${PRECISION} vec4 coords = a_coords;\n";
     else
-        op << " ${PRECISION} vec4 coords = v_coords;\n";
+        op << "    ${PRECISION} vec4 coords = v_coords;\n";
 
-    op << " ${PRECISION} ${MAT_TYPE} tmp;\n";
+    op << "    ${PRECISION} ${MAT_TYPE} tmp;\n";
     if (writeAccess == INDEXACCESS_STATIC)
     {
-        op << " tmp[0] = ${VEC_TYPE}(coords);\n";
+        op << "    tmp[0] = ${VEC_TYPE}(coords);\n";
         if (numCols >= 2)
-            op << "   tmp[1] = ${VEC_TYPE}(coords.yzwx) * 0.5;\n";
+            op << "    tmp[1] = ${VEC_TYPE}(coords.yzwx) * 0.5;\n";
         if (numCols >= 3)
-            op << "   tmp[2] = ${VEC_TYPE}(coords.zwxy) * 0.25;\n";
+            op << "    tmp[2] = ${VEC_TYPE}(coords.zwxy) * 0.25;\n";
         if (numCols >= 4)
-            op << "   tmp[3] = ${VEC_TYPE}(coords.wxyz) * 0.125;\n";
+            op << "    tmp[3] = ${VEC_TYPE}(coords.wxyz) * 0.125;\n";
     }
     else if (writeAccess == INDEXACCESS_DYNAMIC)
     {
-        op << " tmp[ui_zero]  = ${VEC_TYPE}(coords);\n";
+        op << "    tmp[ui_zero]  = ${VEC_TYPE}(coords);\n";
         if (numCols >= 2)
-            op << "   tmp[ui_one]   = ${VEC_TYPE}(coords.yzwx) * 0.5;\n";
+            op << "    tmp[ui_one]   = ${VEC_TYPE}(coords.yzwx) * 0.5;\n";
         if (numCols >= 3)
-            op << "   tmp[ui_two]   = ${VEC_TYPE}(coords.zwxy) * 0.25;\n";
+            op << "    tmp[ui_two]   = ${VEC_TYPE}(coords.zwxy) * 0.25;\n";
         if (numCols >= 4)
-            op << "   tmp[ui_three] = ${VEC_TYPE}(coords.wxyz) * 0.125;\n";
+            op << "    tmp[ui_three] = ${VEC_TYPE}(coords.wxyz) * 0.125;\n";
     }
     else if (writeAccess == INDEXACCESS_STATIC_LOOP)
     {
-        op << " for (int i = 0; i < " << numCols << "; i++)\n";
-        op << " {\n";
-        op << "     tmp[i] = ${VEC_TYPE}(coords);\n";
-        op << "     coords = coords.yzwx * 0.5;\n";
-        op << " }\n";
+        op << "    for (int i = 0; i < " << numCols << "; i++)\n";
+        op << "    {\n";
+        op << "        tmp[i] = ${VEC_TYPE}(coords);\n";
+        op << "        coords = coords.yzwx * 0.5;\n";
+        op << "    }\n";
     }
     else
     {
         DE_ASSERT(writeAccess == INDEXACCESS_DYNAMIC_LOOP);
-        op << " for (int i = 0; i < " << matSizeName << "; i++)\n";
-        op << " {\n";
-        op << "     tmp[i] = ${VEC_TYPE}(coords);\n";
-        op << "     coords = coords.yzwx * 0.5;\n";
-        op << " }\n";
+        op << "    for (int i = 0; i < " << matSizeName << "; i++)\n";
+        op << "    {\n";
+        op << "        tmp[i] = ${VEC_TYPE}(coords);\n";
+        op << "        coords = coords.yzwx * 0.5;\n";
+        op << "    }\n";
     }
 
     // Read matrix.
-    op << " ${PRECISION} ${VEC_TYPE} res = ${VEC_TYPE}(0.0);\n";
+    op << "    ${PRECISION} ${VEC_TYPE} res = ${VEC_TYPE}(0.0);\n";
     if (readAccess == INDEXACCESS_STATIC)
     {
-        op << " res += tmp[0];\n";
+        op << "    res += tmp[0];\n";
         if (numCols >= 2)
-            op << "   res += tmp[1];\n";
+            op << "    res += tmp[1];\n";
         if (numCols >= 3)
-            op << "   res += tmp[2];\n";
+            op << "    res += tmp[2];\n";
         if (numCols >= 4)
-            op << "   res += tmp[3];\n";
+            op << "    res += tmp[3];\n";
     }
     else if (readAccess == INDEXACCESS_DYNAMIC)
     {
-        op << " res += tmp[ui_zero];\n";
+        op << "    res += tmp[ui_zero];\n";
         if (numCols >= 2)
-            op << "   res += tmp[ui_one];\n";
+            op << "    res += tmp[ui_one];\n";
         if (numCols >= 3)
-            op << "   res += tmp[ui_two];\n";
+            op << "    res += tmp[ui_two];\n";
         if (numCols >= 4)
-            op << "   res += tmp[ui_three];\n";
+            op << "    res += tmp[ui_three];\n";
     }
     else if (readAccess == INDEXACCESS_STATIC_LOOP)
     {
-        op << " for (int i = 0; i < " << numCols << "; i++)\n";
-        op << "     res += tmp[i];\n";
+        op << "    for (int i = 0; i < " << numCols << "; i++)\n";
+        op << "        res += tmp[i];\n";
     }
     else
     {
         DE_ASSERT(readAccess == INDEXACCESS_DYNAMIC_LOOP);
-        op << " for (int i = 0; i < " << matSizeName << "; i++)\n";
-        op << "     res += tmp[i];\n";
+        op << "    for (int i = 0; i < " << matSizeName << "; i++)\n";
+        op << "        res += tmp[i];\n";
     }
 
     if (isVertexCase)
     {
         vtx << "    v_color = vec4(res${PADDING});\n";
-        frag << "   o_color = v_color;\n";
+        frag << "    o_color = v_color;\n";
     }
     else
     {
         vtx << "    v_coords = a_coords;\n";
-        frag << "   o_color = vec4(res${PADDING});\n";
+        frag << "    o_color = vec4(res${PADDING});\n";
     }
 
     vtx << "}\n";

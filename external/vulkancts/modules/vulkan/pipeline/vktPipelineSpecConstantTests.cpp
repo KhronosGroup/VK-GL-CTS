@@ -258,7 +258,7 @@ public:
     //! Can return NULL if nothing is specialized
     const VkSpecializationInfo *getSpecializationInfo(void) const
     {
-        return m_entries.size() > 0 ? &m_specialization : DE_NULL;
+        return m_entries.size() > 0 ? &m_specialization : nullptr;
     }
 
 private:
@@ -601,7 +601,7 @@ tcu::TestStatus ComputeTestInstance::iterate(void)
 
     pipeline.bind(*cmdBuffer);
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(),
-                             0u, DE_NULL);
+                             0u, nullptr);
 
     vk.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
 
@@ -610,7 +610,7 @@ tcu::TestStatus ComputeTestInstance::iterate(void)
             VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *resultBuffer, 0ull, m_ssboSize);
 
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                              DE_NULL, 1u, &shaderWriteBarrier, 0u, DE_NULL);
+                              nullptr, 1u, &shaderWriteBarrier, 0u, nullptr);
     }
 
     endCommandBuffer(vk, *cmdBuffer);
@@ -771,7 +771,7 @@ tcu::TestStatus GraphicsTestInstance::iterate(void)
         .setupVertexInputState()
         .setupPreRasterizationShaderState(viewport, scissor, pipelineLayout, *renderPass, 0u, vertShaderModule, 0u,
                                           tescShaderModule, teseShaderModule, geomShaderModule, pSpecInfo)
-        .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragShaderModule, DE_NULL, DE_NULL, pSpecInfo)
+        .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragShaderModule, nullptr, nullptr, pSpecInfo)
         .setupFragmentOutputState(*renderPass)
         .setMonolithicPipelineLayout(pipelineLayout)
         .buildPipeline();
@@ -792,14 +792,14 @@ tcu::TestStatus GraphicsTestInstance::iterate(void)
                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *colorImage, imageFullSubresourceRange);
 
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u,
-                              0u, DE_NULL, 0u, DE_NULL, 1u, &barrierColorAttachmentSetInitialLayout);
+                              0u, nullptr, 0u, nullptr, 1u, &barrierColorAttachmentSetInitialLayout);
     }
 
     renderPass.begin(vk, *cmdBuffer, renderArea, clearColor);
 
     graphicsPipeline.bind(*cmdBuffer);
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(),
-                             0u, DE_NULL);
+                             0u, nullptr);
     vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 
     vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
@@ -810,7 +810,7 @@ tcu::TestStatus GraphicsTestInstance::iterate(void)
             VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *resultBuffer, 0ull, m_ssboSize);
 
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                              DE_NULL, 1u, &shaderWriteBarrier, 0u, DE_NULL);
+                              nullptr, 1u, &shaderWriteBarrier, 0u, nullptr);
     }
 
     endCommandBuffer(vk, *cmdBuffer);

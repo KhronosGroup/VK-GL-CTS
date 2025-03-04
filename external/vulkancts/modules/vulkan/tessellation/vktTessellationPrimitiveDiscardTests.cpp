@@ -500,12 +500,12 @@ tcu::TestStatus test(Context &context, const CaseDefinition caseDef)
             .setRenderSize(renderSize)
             .setPatchControlPoints(numAttribsPerPrimitive)
             .setVertexInputSingleAttribute(vertexFormat, vertexStride)
-            .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("vert"), DE_NULL)
+            .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("vert"), nullptr)
             .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, context.getBinaryCollection().get("tesc"),
-                       DE_NULL)
+                       nullptr)
             .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-                       context.getBinaryCollection().get(needPointSizeWrite ? "tese_psw" : "tese"), DE_NULL)
-            .setShader(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT, context.getBinaryCollection().get("frag"), DE_NULL)
+                       context.getBinaryCollection().get(needPointSizeWrite ? "tese_psw" : "tese"), nullptr)
+            .setShader(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT, context.getBinaryCollection().get("frag"), nullptr)
             .build(vk, device, *pipelineLayout, *renderPass));
 
     context.getTestContext().getLog()
@@ -525,7 +525,7 @@ tcu::TestStatus test(Context &context, const CaseDefinition caseDef)
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *colorAttachmentImage, colorImageSubresourceRange);
 
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
                               &colorAttachmentLayoutBarrier);
     }
 
@@ -539,7 +539,7 @@ tcu::TestStatus test(Context &context, const CaseDefinition caseDef)
 
     vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(),
-                             0u, DE_NULL);
+                             0u, nullptr);
     {
         const VkDeviceSize vertexBufferOffset = 0ull;
         vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
@@ -555,7 +555,7 @@ tcu::TestStatus test(Context &context, const CaseDefinition caseDef)
             VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *resultBuffer, 0ull, resultBufferSizeBytes);
 
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                              DE_NULL, 1u, &shaderWriteBarrier, 0u, DE_NULL);
+                              nullptr, 1u, &shaderWriteBarrier, 0u, nullptr);
     }
 
     endCommandBuffer(vk, *cmdBuffer);

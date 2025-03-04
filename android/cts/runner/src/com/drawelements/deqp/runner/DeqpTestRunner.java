@@ -349,7 +349,6 @@ public class DeqpTestRunner
                 mRemainingTests.remove(testId);
 
                 // Forward results to the sink
-                mSink.testStarted(testId);
 
                 // Test Log
                 if (mLogData) {
@@ -490,6 +489,7 @@ public class DeqpTestRunner
                 pathToIdentifier(values.get("dEQP-BeginTestCase-TestCasePath"));
             mCurrentTestLog = "";
             mGotTestResult = false;
+            mSink.testStarted(mCurrentTestId);
 
             // mark instance as started
             if (mPendingResults.get(mCurrentTestId) != null) {

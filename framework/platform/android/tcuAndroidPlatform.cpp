@@ -198,7 +198,7 @@ eglu::NativeWindow *NativeWindowFactory::createWindow(const eglu::WindowParams &
     Window *window = m_windowRegistry.tryAcquireWindow();
 
     if (!window)
-        throw ResourceError("Native window is not available", DE_NULL, __FILE__, __LINE__);
+        throw NotSupportedError("Native window is not available", nullptr, __FILE__, __LINE__);
 
     return new NativeWindow(window, params.width, params.height, format);
 }
@@ -223,7 +223,7 @@ class VulkanLibrary : public vk::Library
 {
 public:
     VulkanLibrary(const char *libraryPath)
-        : m_library(libraryPath != DE_NULL ? libraryPath : "libvulkan.so")
+        : m_library(libraryPath != nullptr ? libraryPath : "libvulkan.so")
         , m_driver(m_library)
     {
     }
@@ -316,23 +316,26 @@ private:
 static size_t getTotalSystemMemory(ANativeActivity *activity)
 {
     const size_t MiB = (size_t)(1 << 20);
+    // Use relatively high fallback size to encourage CDD-compliant behavior
+    const size_t fallbackSize = (sizeof(void *) == sizeof(uint64_t)) ? 2048 * MiB : 1024 * MiB;
 
-    try
+    if (activity)
     {
-        const size_t totalMemory = getTotalAndroidSystemMemory(activity);
-        print("Device has %.2f MiB of system memory\n", static_cast<double>(totalMemory) / static_cast<double>(MiB));
-        return totalMemory;
+        try
+        {
+            const size_t totalMemory = getTotalAndroidSystemMemory(activity);
+            print("Device has %.2f MiB of system memory\n",
+                  static_cast<double>(totalMemory) / static_cast<double>(MiB));
+            return totalMemory;
+        }
+        catch (const std::exception &e)
+        {
+            print("WARNING: Failed to determine system memory size required by CDD: %s\n", e.what());
+            print("WARNING: Using fall-back size of %.2f MiB\n", double(fallbackSize) / double(MiB));
+        }
     }
-    catch (const std::exception &e)
-    {
-        // Use relatively high fallback size to encourage CDD-compliant behavior
-        const size_t fallbackSize = (sizeof(void *) == sizeof(uint64_t)) ? 2048 * MiB : 1024 * MiB;
 
-        print("WARNING: Failed to determine system memory size required by CDD: %s\n", e.what());
-        print("WARNING: Using fall-back size of %.2f MiB\n", double(fallbackSize) / double(MiB));
-
-        return fallbackSize;
-    }
+    return fallbackSize;
 }
 
 // Platform
@@ -416,3 +419,9 @@ bool Platform::hasDisplay(vk::wsi::Type wsiType) const
 
 } // namespace Android
 } // namespace tcu
+
+tcu::Platform *createPlatform(void)
+{
+    tcu::Android::NativeActivity activity(NULL);
+    return new tcu::Android::Platform(activity);
+}

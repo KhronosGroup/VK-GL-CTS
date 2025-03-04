@@ -154,7 +154,7 @@ public:
 
         // Tests with default instance and device without extensions
         {
-            CustomInstance instance = createCustomInstanceFromContext(m_context, DE_NULL, false);
+            CustomInstance instance = createCustomInstanceFromContext(m_context, nullptr, false);
             Move<VkDevice> device   = createTestDevice(m_context, instance, vector<string>(), false);
             GetInstanceProcAddrFunc getInstanceProcAddr =
                 reinterpret_cast<GetInstanceProcAddrFunc>(funcLibrary.getFunction("vkGetInstanceProcAddr"));
@@ -164,8 +164,22 @@ public:
 
             // Check entry points of core functions
             {
-                ApisMap functions = ApisMap();
+                ApisMap functions;
                 initApisMap(functions);
+
+#if defined(CTS_USES_VULKAN)
+                // For vulkan 1.4+ we may need to test optionaly promoted VK_EXT_host_image_copy
+                if (m_context.getDeviceVulkan14Features().hostImageCopy)
+                {
+                    const char *hostImageCopyFunctions[]{"vkCopyMemoryToImage", "vkCopyImageToMemory",
+                                                         "vkCopyImageToImage", "vkTransitionImageLayout",
+                                                         "vkGetImageSubresourceLayout2"};
+                    auto &vk14Functions = functions[VK_API_VERSION_1_4];
+                    for (const auto fun : hostImageCopyFunctions)
+                        vk14Functions.emplace_back(fun, FUNCTIONORIGIN_DEVICE);
+                }
+#endif
+
                 ApisMap::const_iterator lastGoodVersion   = functions.begin();
                 const ApisMap::const_iterator versionsEnd = functions.end();
                 for (ApisMap::const_iterator it = lastGoodVersion; it != versionsEnd; ++it)
@@ -191,16 +205,17 @@ public:
 
             // Check function entry points of disabled extensions
             {
-                FunctionInfosList extFunctions = FunctionInfosList();
-                extFunctions.push_back(FunctionInfo("vkTrimCommandPoolKHR", FUNCTIONORIGIN_DEVICE));
-                extFunctions.push_back(FunctionInfo("vkCmdPushDescriptorSetKHR", FUNCTIONORIGIN_DEVICE));
-                extFunctions.push_back(FunctionInfo("vkCreateSamplerYcbcrConversionKHR", FUNCTIONORIGIN_DEVICE));
-                extFunctions.push_back(FunctionInfo("vkCreateSwapchainKHR", FUNCTIONORIGIN_DEVICE));
-                extFunctions.push_back(FunctionInfo("vkGetImageSparseMemoryRequirements2KHR", FUNCTIONORIGIN_DEVICE));
-                extFunctions.push_back(FunctionInfo("vkBindBufferMemory2KHR", FUNCTIONORIGIN_DEVICE));
-                extFunctions.push_back(FunctionInfo("vkImportFenceWin32HandleKHR", FUNCTIONORIGIN_DEVICE));
-                extFunctions.push_back(FunctionInfo("vkGetBufferMemoryRequirements2KHR", FUNCTIONORIGIN_DEVICE));
-                extFunctions.push_back(FunctionInfo("vkGetImageMemoryRequirements2KHR", FUNCTIONORIGIN_DEVICE));
+                FunctionInfosList extFunctions = {
+                    {"vkTrimCommandPoolKHR", FUNCTIONORIGIN_DEVICE},
+                    {"vkCmdPushDescriptorSetKHR", FUNCTIONORIGIN_DEVICE},
+                    {"vkCreateSamplerYcbcrConversionKHR", FUNCTIONORIGIN_DEVICE},
+                    {"vkCreateSwapchainKHR", FUNCTIONORIGIN_DEVICE},
+                    {"vkGetImageSparseMemoryRequirements2KHR", FUNCTIONORIGIN_DEVICE},
+                    {"vkBindBufferMemory2KHR", FUNCTIONORIGIN_DEVICE},
+                    {"vkImportFenceWin32HandleKHR", FUNCTIONORIGIN_DEVICE},
+                    {"vkGetBufferMemoryRequirements2KHR", FUNCTIONORIGIN_DEVICE},
+                    {"vkGetImageMemoryRequirements2KHR", FUNCTIONORIGIN_DEVICE},
+                };
 
                 log << tcu::TestLog::Message
                     << "Disabled extensions check - tries to get functions of disabled extensions from proper "
@@ -213,13 +228,13 @@ public:
 
             // Check special cases
             {
-                FunctionInfosList nonexistingFunctions = FunctionInfosList();
+                FunctionInfosList nonexistingFunctions;
                 for (uint32_t i = 0; i <= FUNCTIONORIGIN_DEVICE; ++i)
                 {
                     const FunctionOrigin origin = static_cast<FunctionOrigin>(i);
-                    nonexistingFunctions.push_back(FunctionInfo("vkSomeName", origin));
-                    nonexistingFunctions.push_back(FunctionInfo("vkNonexistingKHR", origin));
-                    nonexistingFunctions.push_back(FunctionInfo("", origin));
+                    nonexistingFunctions.emplace_back("vkSomeName", origin);
+                    nonexistingFunctions.emplace_back("vkNonexistingKHR", origin);
+                    nonexistingFunctions.emplace_back("", origin);
                 }
 
                 log << tcu::TestLog::Message
@@ -235,7 +250,7 @@ public:
         {
             const vector<string> supportedInstanceExtensions = getSupportedInstanceExtensions(instanceApiVersion);
             CustomInstance instance =
-                createCustomInstanceWithExtensions(m_context, supportedInstanceExtensions, DE_NULL, false);
+                createCustomInstanceWithExtensions(m_context, supportedInstanceExtensions, nullptr, false);
             const vector<string> supportedDeviceExtensions = getSupportedDeviceExtensions(deviceApiVersion);
             Move<VkDevice> device = createTestDevice(m_context, instance, supportedDeviceExtensions, false);
             GetInstanceProcAddrFunc getInstanceProcAddr =
@@ -249,45 +264,42 @@ public:
                 vector<FunctionInfo> extFunctions;
 
                 // Add supported instance extension functions
-                for (size_t instanceExtNdx = 0; instanceExtNdx < DE_LENGTH_OF_ARRAY(instanceExtensionNames);
-                     instanceExtNdx++)
+                for (auto instanceExtensionName : instanceExtensionNames)
                 {
                     vector<const char *> instanceExtFunctions;
                     vector<const char *> deviceExtFunctions;
 
-                    if (isSupportedInstanceExt(instanceExtensionNames[instanceExtNdx], instanceApiVersion))
+                    if (isSupportedInstanceExt(instanceExtensionName, instanceApiVersion))
                     {
                         getInstanceExtensionFunctions(instanceApiVersion, supportedInstanceExtensions,
-                                                      supportedDeviceExtensions, instanceExtensionNames[instanceExtNdx],
+                                                      supportedDeviceExtensions, instanceExtensionName,
                                                       instanceExtFunctions);
                     }
-                    if (isSupportedInstanceExt(instanceExtensionNames[instanceExtNdx], deviceApiVersion))
+                    if (isSupportedInstanceExt(instanceExtensionName, deviceApiVersion))
                     {
                         getDeviceExtensionFunctions(deviceApiVersion, supportedInstanceExtensions,
-                                                    supportedDeviceExtensions, instanceExtensionNames[instanceExtNdx],
+                                                    supportedDeviceExtensions, instanceExtensionName,
                                                     deviceExtFunctions);
                     }
 
-                    for (size_t instanceFuncNdx = 0; instanceFuncNdx < instanceExtFunctions.size(); instanceFuncNdx++)
-                        extFunctions.push_back(
-                            FunctionInfo(instanceExtFunctions[instanceFuncNdx], FUNCTIONORIGIN_INSTANCE));
+                    for (auto instanceFunc : instanceExtFunctions)
+                        extFunctions.emplace_back(instanceFunc, FUNCTIONORIGIN_INSTANCE);
 
-                    for (size_t deviceFuncNdx = 0; deviceFuncNdx < deviceExtFunctions.size(); deviceFuncNdx++)
-                        extFunctions.push_back(FunctionInfo(deviceExtFunctions[deviceFuncNdx], FUNCTIONORIGIN_DEVICE));
+                    for (auto deviceFunc : deviceExtFunctions)
+                        extFunctions.emplace_back(deviceFunc, FUNCTIONORIGIN_DEVICE);
                 }
 
                 // Add supported device extension functions
-                for (size_t deviceExtNdx = 0; deviceExtNdx < DE_LENGTH_OF_ARRAY(deviceExtensionNames); deviceExtNdx++)
+                for (const auto &deviceExtensionName : deviceExtensionNames)
                 {
                     vector<const char *> deviceExtFunctions;
 
-                    if (isSupportedDeviceExt(deviceExtensionNames[deviceExtNdx], deviceApiVersion))
+                    if (isSupportedDeviceExt(deviceExtensionName, deviceApiVersion))
                         getDeviceExtensionFunctions(deviceApiVersion, supportedInstanceExtensions,
-                                                    supportedDeviceExtensions, deviceExtensionNames[deviceExtNdx],
-                                                    deviceExtFunctions);
+                                                    supportedDeviceExtensions, deviceExtensionName, deviceExtFunctions);
 
-                    for (size_t deviceFuncNdx = 0; deviceFuncNdx < deviceExtFunctions.size(); deviceFuncNdx++)
-                        extFunctions.push_back(FunctionInfo(deviceExtFunctions[deviceFuncNdx], FUNCTIONORIGIN_DEVICE));
+                    for (auto deviceFunc : deviceExtFunctions)
+                        extFunctions.emplace_back(deviceFunc, FUNCTIONORIGIN_DEVICE);
                 }
 
                 log << tcu::TestLog::Message
@@ -301,8 +313,8 @@ public:
 
         if (failsQuantity > 0u)
             return tcu::TestStatus::fail("Fail");
-        else
-            return tcu::TestStatus::pass("Pass");
+
+        return tcu::TestStatus::pass("Pass");
     }
 
 private:
@@ -310,7 +322,7 @@ private:
                                   VkQueueFlags requiredCaps)
     {
         uint32_t numQueues = 0;
-        vkInstance.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numQueues, DE_NULL);
+        vkInstance.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numQueues, nullptr);
         if (numQueues > 0)
         {
             vector<VkQueueFamilyProperties> properties(numQueues);
@@ -345,7 +357,7 @@ private:
     vector<string> getSupportedInstanceExtensions(const uint32_t apiVersion)
     {
         vector<VkExtensionProperties> enumeratedExtensions(
-            enumerateInstanceExtensionProperties(m_context.getPlatformInterface(), DE_NULL));
+            enumerateInstanceExtensionProperties(m_context.getPlatformInterface(), nullptr));
         vector<VkExtensionProperties> supportedExtensions;
 
         for (size_t extNdx = 0; extNdx < enumeratedExtensions.size(); extNdx++)
@@ -360,7 +372,7 @@ private:
     vector<string> getSupportedDeviceExtensions(const uint32_t apiVersion)
     {
         vector<VkExtensionProperties> enumeratedExtensions(enumerateDeviceExtensionProperties(
-            m_context.getInstanceInterface(), m_context.getPhysicalDevice(), DE_NULL));
+            m_context.getInstanceInterface(), m_context.getPhysicalDevice(), nullptr));
         vector<VkExtensionProperties> supportedExtensions;
 
         for (size_t extNdx = 0; extNdx < enumeratedExtensions.size(); extNdx++)
@@ -389,13 +401,13 @@ private:
             extensionPtrs.push_back(extensions[i].c_str());
 
         VkDeviceQueueCreateInfo queueInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                                             DE_NULL,
+                                             nullptr,
                                              static_cast<VkDeviceQueueCreateFlags>(0u),
                                              queueIndex,
                                              1u,
                                              &queuePriority};
 
-        void *pNext = DE_NULL;
+        void *pNext = nullptr;
 #ifdef CTS_USES_VULKANSC
         VkDeviceObjectReservationCreateInfo memReservationInfo =
             context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() :
@@ -415,7 +427,7 @@ private:
             {
                 pcCI = {
                     VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                    DE_NULL,                                      // const void* pNext;
+                    nullptr,                                      // const void* pNext;
                     VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                         VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
                     context.getResourceInterface()->getCacheDataSize(),       // uintptr_t initialDataSize;
@@ -441,10 +453,10 @@ private:
             1u,
             &queueInfo,
             0u,
-            DE_NULL,
+            nullptr,
             (uint32_t)extensions.size(),
-            extensions.size() ? &extensionPtrs[0] : DE_NULL,
-            DE_NULL,
+            extensions.size() ? &extensionPtrs[0] : nullptr,
+            nullptr,
         };
 
         const bool validationEnabled = (cmdLine.isValidationEnabled() && allowLayers);
@@ -464,21 +476,21 @@ private:
     void checkPlatformFunction(const APIContext &ctx, tcu::TestLog &log, const char *const name, bool shouldBeNonNull,
                                uint32_t &failsQuantity)
     {
-        if ((ctx.getInstanceProcAddr(DE_NULL, name) == DE_NULL) == shouldBeNonNull)
-            reportFail(log, "vkGetInstanceProcAddr", "DE_NULL", name, shouldBeNonNull, failsQuantity);
+        if ((ctx.getInstanceProcAddr(nullptr, name) == nullptr) == shouldBeNonNull)
+            reportFail(log, "vkGetInstanceProcAddr", "nullptr", name, shouldBeNonNull, failsQuantity);
     }
 
     void checkInstanceFunction(const APIContext &ctx, tcu::TestLog &log, const char *const name, bool shouldBeNonNull,
                                uint32_t &failsQuantity)
     {
-        if ((ctx.getInstanceProcAddr(ctx.instance, name) == DE_NULL) == shouldBeNonNull)
+        if ((ctx.getInstanceProcAddr(ctx.instance, name) == nullptr) == shouldBeNonNull)
             reportFail(log, "vkGetInstanceProcAddr", "instance", name, shouldBeNonNull, failsQuantity);
     }
 
     void checkDeviceFunction(const APIContext &ctx, tcu::TestLog &log, const char *const name, bool shouldBeNonNull,
                              uint32_t &failsQuantity)
     {
-        if ((ctx.getDeviceProcAddr(ctx.device, name) == DE_NULL) == shouldBeNonNull)
+        if ((ctx.getDeviceProcAddr(ctx.device, name) == nullptr) == shouldBeNonNull)
             reportFail(log, "vkGetDeviceProcAddr", "device", name, shouldBeNonNull, failsQuantity);
     }
 
@@ -502,8 +514,8 @@ private:
         const uint32_t startingQuantity = failsQuantity;
         for (uint32_t ndx = 0u; ndx < testsArr.size(); ++ndx)
         {
-            if (deStringEqual(testsArr[ndx].first, "vkGetInstanceProcAddr") ||
-                deStringEqual(testsArr[ndx].first, "vkEnumerateInstanceVersion"))
+            if (strcmp(testsArr[ndx].first, "vkGetInstanceProcAddr") == 0 ||
+                strcmp(testsArr[ndx].first, "vkEnumerateInstanceVersion") == 0)
                 continue;
 
             const char *functionName    = testsArr[ndx].first;
@@ -547,14 +559,14 @@ private:
             const auto &funcType  = testsArr[ndx].second;
             const auto apiVersion = m_context.getUsedApiVersion();
 
-            if (deStringEqual(funcName, "vkGetInstanceProcAddr") && apiVersion < VK_API_VERSION_1_2)
+            if (strcmp(funcName, "vkGetInstanceProcAddr") == 0 && apiVersion < VK_API_VERSION_1_2)
                 continue;
 
             // VK_KHR_draw_indirect_count was promoted to core in Vulkan 1.2, but these entrypoints are not mandatory unless the
             // device supports the extension. In that case, the drawIndirectCount feature bit will also be true. Any of the two
             // checks is valid. We use the extension name for convenience here.
-            if ((deStringEqual(funcName, "vkCmdDrawIndirectCount") ||
-                 deStringEqual(funcName, "vkCmdDrawIndexedIndirectCount")) &&
+            if ((strcmp(funcName, "vkCmdDrawIndirectCount") == 0 ||
+                 strcmp(funcName, "vkCmdDrawIndexedIndirectCount") == 0) &&
                 !isSupportedDeviceExt("VK_KHR_draw_indirect_count", apiVersion))
                 continue;
 
@@ -562,7 +574,7 @@ private:
             // - VK_KHR_push_descriptor is supported AND
             //   - API >= VK_VERSION_1_1 OR
             //   - VK_KHR_descriptor_update_template is supported
-            if (deStringEqual(funcName, "vkCmdPushDescriptorSetWithTemplateKHR") &&
+            if (strcmp(funcName, "vkCmdPushDescriptorSetWithTemplateKHR") == 0 &&
                 (!isSupportedDeviceExt("VK_KHR_push_descriptor", apiVersion) ||
                  (apiVersion < VK_API_VERSION_1_1 &&
                   !isSupportedDeviceExt("VK_KHR_descriptor_update_template", apiVersion))))
@@ -626,6 +638,10 @@ public:
         // create custom instance for each api version
         for (const auto &testedApiVersion : functionsPerVersion)
         {
+            // VK_KHR_maintenance5 requires at least Vulkan 1.1
+            if (testedApiVersion.first == VK_API_VERSION_1_0)
+                continue;
+
             // we cant test api versions that are higher then api version support by this device
             if (testedApiVersion.first > supportedApiVersion)
                 break;
@@ -651,7 +667,7 @@ public:
 #endif // CTS_USES_VULKANSC
 
             // create instance for currentluy tested vulkan version
-            Move<VkInstance> customInstance(vk::createInstance(vkp, &instanceCreateInfo, DE_NULL));
+            Move<VkInstance> customInstance(vk::createInstance(vkp, &instanceCreateInfo, nullptr));
             std::unique_ptr<vk::InstanceDriver> instanceDriver(new InstanceDriver(vkp, *customInstance));
             const VkPhysicalDevice physicalDevice =
                 chooseDevice(*instanceDriver, *customInstance, m_context.getTestContext().getCommandLine());
@@ -667,9 +683,14 @@ public:
             deviceCreateInfo.pQueueCreateInfos    = &deviceQueueCreateInfo;
 
 #ifndef CTS_USES_VULKANSC
-            char const *extensionName                = "VK_KHR_maintenance5";
-            deviceCreateInfo.enabledExtensionCount   = 1u;
-            deviceCreateInfo.ppEnabledExtensionNames = &extensionName;
+            std::vector<const char *> extensions = {"VK_KHR_maintenance5", "VK_KHR_dynamic_rendering"};
+            if (testedApiVersion.first < VK_API_VERSION_1_2)
+            {
+                extensions.push_back("VK_KHR_depth_stencil_resolve");
+                extensions.push_back("VK_KHR_create_renderpass2");
+            }
+            deviceCreateInfo.enabledExtensionCount   = (uint32_t)extensions.size();
+            deviceCreateInfo.ppEnabledExtensionNames = extensions.data();
 
             vk::VkPhysicalDeviceMaintenance5FeaturesKHR maint5 = initVulkanStructure();
             vk::VkPhysicalDeviceFeatures2 features2            = initVulkanStructure(&maint5);
@@ -715,7 +736,7 @@ public:
                         continue;
 
                     // check if returned function pointer is NULL
-                    if (deviceDriver.getDeviceProcAddr(*device, funcName) != DE_NULL)
+                    if (deviceDriver.getDeviceProcAddr(*device, funcName) != nullptr)
                     {
                         log << tcu::TestLog::Message << "getDeviceProcAddr(" << funcName
                             << ") returned non-null pointer, expected NULL" << tcu::TestLog::EndMessage;

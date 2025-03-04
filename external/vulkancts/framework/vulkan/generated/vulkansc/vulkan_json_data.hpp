@@ -2,7 +2,7 @@
 #define _VULKAN_JSON_DATA_HPP
 
 /*
- * Copyright (c) 2021 The Khronos Group Inc.
+ * Copyright 2021-2024 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -234,7 +234,7 @@ static void print_char(const char *o, const std::string &s, bool commaNeeded = t
     PRINT_STR(commaNeeded)
 }
 
-// Base 64 formater class from executor/xeTestLogWriter.cpp
+// Base 64 formatter class from executor/xeTestLogWriter.cpp
 
 class Base64Formatter
 {
@@ -316,22 +316,8 @@ static void print_VkBool32(VkBool32 obj, const std::string &str, bool commaNeede
          << " : "
          << "\"" << ((obj == 0) ? ("VK_FALSE") : ("VK_TRUE")) << "\"" << (commaNeeded ? "," : "") << std::endl;
 }
-static void print_VkBool32(const VkBool32 *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "\"" << str << "\""
-         << " : "
-         << "\"" << ((obj == 0) ? ("VK_FALSE") : ("VK_TRUE")) << "\"" << (commaNeeded ? "," : "") << std::endl;
-}
 
 static void print_VkDeviceAddress(VkDeviceAddress obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "\"" << str << "\""
-         << " : "
-         << "\"" << obj << "\"" << (commaNeeded ? "," : "") << std::endl;
-}
-static void print_VkDeviceAddress(const VkDeviceAddress *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "\"" << str << "\""
@@ -346,22 +332,8 @@ static void print_VkDeviceSize(VkDeviceSize obj, const std::string &str, bool co
          << " : "
          << "\"" << obj << "\"" << (commaNeeded ? "," : "") << std::endl;
 }
-static void print_VkDeviceSize(const VkDeviceSize *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "\"" << str << "\""
-         << " : "
-         << "\"" << obj << "\"" << (commaNeeded ? "," : "") << std::endl;
-}
 
 static void print_VkFlags(VkFlags obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "\"" << str << "\""
-         << " : "
-         << "\"" << obj << "\"" << (commaNeeded ? "," : "") << std::endl;
-}
-static void print_VkFlags(const VkFlags *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "\"" << str << "\""
@@ -376,24 +348,8 @@ static void print_VkSampleMask(VkSampleMask obj, const std::string &str, bool co
          << " : "
          << "\"" << obj << "\"" << (commaNeeded ? "," : "") << std::endl;
 }
-static void print_VkSampleMask(const VkSampleMask *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "\"" << str << "\""
-         << " : "
-         << "\"" << obj << "\"" << (commaNeeded ? "," : "") << std::endl;
-}
 
 static void print_VkBuffer(VkBuffer obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
-static void print_VkBuffer(const VkBuffer *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (commaNeeded)
@@ -412,26 +368,8 @@ static void print_VkImage(VkImage obj, const std::string &str, bool commaNeeded 
     else
         _OUT << "\"" << str << "\"" << std::endl;
 }
-static void print_VkImage(const VkImage *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
 
 static void print_VkInstance(VkInstance obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
-static void print_VkInstance(const VkInstance *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (commaNeeded)
@@ -450,26 +388,8 @@ static void print_VkPhysicalDevice(VkPhysicalDevice obj, const std::string &str,
     else
         _OUT << "\"" << str << "\"" << std::endl;
 }
-static void print_VkPhysicalDevice(const VkPhysicalDevice *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
 
 static void print_VkDevice(VkDevice obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
-static void print_VkDevice(const VkDevice *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (commaNeeded)
@@ -488,26 +408,8 @@ static void print_VkQueue(VkQueue obj, const std::string &str, bool commaNeeded 
     else
         _OUT << "\"" << str << "\"" << std::endl;
 }
-static void print_VkQueue(const VkQueue *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
 
 static void print_VkSemaphore(VkSemaphore obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
-static void print_VkSemaphore(const VkSemaphore *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (commaNeeded)
@@ -526,26 +428,8 @@ static void print_VkCommandBuffer(VkCommandBuffer obj, const std::string &str, b
     else
         _OUT << "\"" << str << "\"" << std::endl;
 }
-static void print_VkCommandBuffer(const VkCommandBuffer *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
 
 static void print_VkFence(VkFence obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
-static void print_VkFence(const VkFence *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (commaNeeded)
@@ -564,26 +448,8 @@ static void print_VkDeviceMemory(VkDeviceMemory obj, const std::string &str, boo
     else
         _OUT << "\"" << str << "\"" << std::endl;
 }
-static void print_VkDeviceMemory(const VkDeviceMemory *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
 
 static void print_VkEvent(VkEvent obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
-static void print_VkEvent(const VkEvent *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (commaNeeded)
@@ -602,26 +468,8 @@ static void print_VkQueryPool(VkQueryPool obj, const std::string &str, bool comm
     else
         _OUT << "\"" << str << "\"" << std::endl;
 }
-static void print_VkQueryPool(const VkQueryPool *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
 
 static void print_VkBufferView(VkBufferView obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
-static void print_VkBufferView(const VkBufferView *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (commaNeeded)
@@ -640,26 +488,8 @@ static void print_VkImageView(VkImageView obj, const std::string &str, bool comm
     else
         _OUT << "\"" << str << "\"" << std::endl;
 }
-static void print_VkImageView(const VkImageView *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
 
 static void print_VkShaderModule(VkShaderModule obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
-static void print_VkShaderModule(const VkShaderModule *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (commaNeeded)
@@ -678,26 +508,8 @@ static void print_VkPipelineCache(VkPipelineCache obj, const std::string &str, b
     else
         _OUT << "\"" << str << "\"" << std::endl;
 }
-static void print_VkPipelineCache(const VkPipelineCache *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
 
 static void print_VkPipelineLayout(VkPipelineLayout obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
-static void print_VkPipelineLayout(const VkPipelineLayout *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (commaNeeded)
@@ -716,26 +528,8 @@ static void print_VkPipeline(VkPipeline obj, const std::string &str, bool commaN
     else
         _OUT << "\"" << str << "\"" << std::endl;
 }
-static void print_VkPipeline(const VkPipeline *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
 
 static void print_VkRenderPass(VkRenderPass obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
-static void print_VkRenderPass(const VkRenderPass *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (commaNeeded)
@@ -754,27 +548,8 @@ static void print_VkDescriptorSetLayout(VkDescriptorSetLayout obj, const std::st
     else
         _OUT << "\"" << str << "\"" << std::endl;
 }
-static void print_VkDescriptorSetLayout(const VkDescriptorSetLayout *obj, const std::string &str,
-                                        bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
 
 static void print_VkSampler(VkSampler obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
-static void print_VkSampler(const VkSampler *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (commaNeeded)
@@ -793,26 +568,8 @@ static void print_VkDescriptorSet(VkDescriptorSet obj, const std::string &str, b
     else
         _OUT << "\"" << str << "\"" << std::endl;
 }
-static void print_VkDescriptorSet(const VkDescriptorSet *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
 
 static void print_VkDescriptorPool(VkDescriptorPool obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
-static void print_VkDescriptorPool(const VkDescriptorPool *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (commaNeeded)
@@ -831,26 +588,8 @@ static void print_VkFramebuffer(VkFramebuffer obj, const std::string &str, bool 
     else
         _OUT << "\"" << str << "\"" << std::endl;
 }
-static void print_VkFramebuffer(const VkFramebuffer *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
 
 static void print_VkCommandPool(VkCommandPool obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
-static void print_VkCommandPool(const VkCommandPool *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (commaNeeded)
@@ -884,6 +623,7 @@ static std::map<uint64_t, std::string> VkResult_map = {
     std::make_pair(1000072003, "VK_ERROR_INVALID_EXTERNAL_HANDLE"),
     std::make_pair(1000161000, "VK_ERROR_FRAGMENTATION"),
     std::make_pair(1000257000, "VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS"),
+    std::make_pair(1000297000, "VK_PIPELINE_COMPILE_REQUIRED"),
     std::make_pair(1000011001, "VK_ERROR_VALIDATION_FAILED"),
     std::make_pair(1000298000, "VK_ERROR_INVALID_PIPELINE_CACHE_DATA"),
     std::make_pair(1000298001, "VK_ERROR_NO_PIPELINE_MATCH"),
@@ -893,14 +633,22 @@ static std::map<uint64_t, std::string> VkResult_map = {
     std::make_pair(1000001004, "VK_ERROR_OUT_OF_DATE_KHR"),
     std::make_pair(1000003001, "VK_ERROR_INCOMPATIBLE_DISPLAY_KHR"),
     std::make_pair(1000012000, "VK_ERROR_INVALID_SHADER_NV"),
+    std::make_pair(1000023000, "VK_ERROR_IMAGE_USAGE_NOT_SUPPORTED_KHR"),
+    std::make_pair(1000023001, "VK_ERROR_VIDEO_PICTURE_LAYOUT_NOT_SUPPORTED_KHR"),
+    std::make_pair(1000023002, "VK_ERROR_VIDEO_PROFILE_OPERATION_NOT_SUPPORTED_KHR"),
+    std::make_pair(1000023003, "VK_ERROR_VIDEO_PROFILE_FORMAT_NOT_SUPPORTED_KHR"),
+    std::make_pair(1000023004, "VK_ERROR_VIDEO_PROFILE_CODEC_NOT_SUPPORTED_KHR"),
+    std::make_pair(1000023005, "VK_ERROR_VIDEO_STD_VERSION_NOT_SUPPORTED_KHR"),
     std::make_pair(1000158000, "VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT"),
-    std::make_pair(1000174001, "VK_ERROR_NOT_PERMITTED_EXT"),
+    std::make_pair(1000174001, "VK_ERROR_NOT_PERMITTED_KHR"),
     std::make_pair(1000255000, "VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT"),
     std::make_pair(1000268000, "VK_THREAD_IDLE_KHR"),
     std::make_pair(1000268001, "VK_THREAD_DONE_KHR"),
     std::make_pair(1000268002, "VK_OPERATION_DEFERRED_KHR"),
     std::make_pair(1000268003, "VK_OPERATION_NOT_DEFERRED_KHR"),
-    std::make_pair(1000297000, "VK_PIPELINE_COMPILE_REQUIRED_EXT"),
+    std::make_pair(1000299000, "VK_ERROR_INVALID_VIDEO_STD_PARAMETERS_KHR"),
+    std::make_pair(1000338000, "VK_ERROR_COMPRESSION_EXHAUSTED_EXT"),
+    std::make_pair(1000482000, "VK_INCOMPATIBLE_SHADER_BINARY_EXT"),
 };
 static void print_VkResult(VkResult obj, const std::string &str, bool commaNeeded = true)
 {
@@ -1082,6 +830,58 @@ static std::map<uint64_t, std::string> VkStructureType_map = {
     std::make_pair(1000257002, "VK_STRUCTURE_TYPE_BUFFER_OPAQUE_CAPTURE_ADDRESS_CREATE_INFO"),
     std::make_pair(1000257003, "VK_STRUCTURE_TYPE_MEMORY_OPAQUE_CAPTURE_ADDRESS_ALLOCATE_INFO"),
     std::make_pair(1000257004, "VK_STRUCTURE_TYPE_DEVICE_MEMORY_OPAQUE_CAPTURE_ADDRESS_INFO"),
+    std::make_pair(53, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES"),
+    std::make_pair(54, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_PROPERTIES"),
+    std::make_pair(1000192000, "VK_STRUCTURE_TYPE_PIPELINE_CREATION_FEEDBACK_CREATE_INFO"),
+    std::make_pair(1000215000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TERMINATE_INVOCATION_FEATURES"),
+    std::make_pair(1000245000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES"),
+    std::make_pair(1000276000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES"),
+    std::make_pair(1000295000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIVATE_DATA_FEATURES"),
+    std::make_pair(1000295001, "VK_STRUCTURE_TYPE_DEVICE_PRIVATE_DATA_CREATE_INFO"),
+    std::make_pair(1000295002, "VK_STRUCTURE_TYPE_PRIVATE_DATA_SLOT_CREATE_INFO"),
+    std::make_pair(1000297000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES"),
+    std::make_pair(1000314000, "VK_STRUCTURE_TYPE_MEMORY_BARRIER_2"),
+    std::make_pair(1000314001, "VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2"),
+    std::make_pair(1000314002, "VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2"),
+    std::make_pair(1000314003, "VK_STRUCTURE_TYPE_DEPENDENCY_INFO"),
+    std::make_pair(1000314004, "VK_STRUCTURE_TYPE_SUBMIT_INFO_2"),
+    std::make_pair(1000314005, "VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO"),
+    std::make_pair(1000314006, "VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO"),
+    std::make_pair(1000314007, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES"),
+    std::make_pair(1000325000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_WORKGROUP_MEMORY_FEATURES"),
+    std::make_pair(1000335000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES"),
+    std::make_pair(1000337000, "VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2"),
+    std::make_pair(1000337001, "VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2"),
+    std::make_pair(1000337002, "VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2"),
+    std::make_pair(1000337003, "VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2"),
+    std::make_pair(1000337004, "VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2"),
+    std::make_pair(1000337005, "VK_STRUCTURE_TYPE_RESOLVE_IMAGE_INFO_2"),
+    std::make_pair(1000337006, "VK_STRUCTURE_TYPE_BUFFER_COPY_2"),
+    std::make_pair(1000337007, "VK_STRUCTURE_TYPE_IMAGE_COPY_2"),
+    std::make_pair(1000337008, "VK_STRUCTURE_TYPE_IMAGE_BLIT_2"),
+    std::make_pair(1000337009, "VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2"),
+    std::make_pair(1000337010, "VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2"),
+    std::make_pair(1000225000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES"),
+    std::make_pair(1000225001, "VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO"),
+    std::make_pair(1000225002, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES"),
+    std::make_pair(1000138000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES"),
+    std::make_pair(1000138001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES"),
+    std::make_pair(1000138002, "VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK"),
+    std::make_pair(1000138003, "VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_INLINE_UNIFORM_BLOCK_CREATE_INFO"),
+    std::make_pair(1000066000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXTURE_COMPRESSION_ASTC_HDR_FEATURES"),
+    std::make_pair(1000044000, "VK_STRUCTURE_TYPE_RENDERING_INFO"),
+    std::make_pair(1000044001, "VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO"),
+    std::make_pair(1000044002, "VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO"),
+    std::make_pair(1000044003, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES"),
+    std::make_pair(1000044004, "VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO"),
+    std::make_pair(1000280000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES"),
+    std::make_pair(1000280001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES"),
+    std::make_pair(1000281001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES"),
+    std::make_pair(1000360000, "VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3"),
+    std::make_pair(1000413000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES"),
+    std::make_pair(1000413001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES"),
+    std::make_pair(1000413002, "VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS"),
+    std::make_pair(1000413003, "VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS"),
     std::make_pair(1000298000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES"),
     std::make_pair(1000298001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_PROPERTIES"),
     std::make_pair(1000298002, "VK_STRUCTURE_TYPE_DEVICE_OBJECT_RESERVATION_CREATE_INFO"),
@@ -1115,23 +915,26 @@ static std::map<uint64_t, std::string> VkStructureType_map = {
     std::make_pair(1000022000, "VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT"),
     std::make_pair(1000022001, "VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_TAG_INFO_EXT"),
     std::make_pair(1000022002, "VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT"),
-    std::make_pair(1000023000, "VK_STRUCTURE_TYPE_VIDEO_PROFILE_KHR"),
+    std::make_pair(1000023000, "VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR"),
     std::make_pair(1000023001, "VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR"),
-    std::make_pair(1000023002, "VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_KHR"),
-    std::make_pair(1000023003, "VK_STRUCTURE_TYPE_VIDEO_GET_MEMORY_PROPERTIES_KHR"),
-    std::make_pair(1000023004, "VK_STRUCTURE_TYPE_VIDEO_BIND_MEMORY_KHR"),
+    std::make_pair(1000023002, "VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR"),
+    std::make_pair(1000023003, "VK_STRUCTURE_TYPE_VIDEO_SESSION_MEMORY_REQUIREMENTS_KHR"),
+    std::make_pair(1000023004, "VK_STRUCTURE_TYPE_BIND_VIDEO_SESSION_MEMORY_INFO_KHR"),
     std::make_pair(1000023005, "VK_STRUCTURE_TYPE_VIDEO_SESSION_CREATE_INFO_KHR"),
     std::make_pair(1000023006, "VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_CREATE_INFO_KHR"),
     std::make_pair(1000023007, "VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_UPDATE_INFO_KHR"),
     std::make_pair(1000023008, "VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR"),
     std::make_pair(1000023009, "VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR"),
     std::make_pair(1000023010, "VK_STRUCTURE_TYPE_VIDEO_CODING_CONTROL_INFO_KHR"),
-    std::make_pair(1000023011, "VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_KHR"),
+    std::make_pair(1000023011, "VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_INFO_KHR"),
     std::make_pair(1000023012, "VK_STRUCTURE_TYPE_QUEUE_FAMILY_VIDEO_PROPERTIES_KHR"),
-    std::make_pair(1000023013, "VK_STRUCTURE_TYPE_VIDEO_PROFILES_KHR"),
+    std::make_pair(1000023013, "VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR"),
     std::make_pair(1000023014, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_FORMAT_INFO_KHR"),
     std::make_pair(1000023015, "VK_STRUCTURE_TYPE_VIDEO_FORMAT_PROPERTIES_KHR"),
+    std::make_pair(1000023016, "VK_STRUCTURE_TYPE_QUEUE_FAMILY_QUERY_RESULT_STATUS_PROPERTIES_KHR"),
     std::make_pair(1000024000, "VK_STRUCTURE_TYPE_VIDEO_DECODE_INFO_KHR"),
+    std::make_pair(1000024001, "VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR"),
+    std::make_pair(1000024002, "VK_STRUCTURE_TYPE_VIDEO_DECODE_USAGE_INFO_KHR"),
     std::make_pair(1000026000, "VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_IMAGE_CREATE_INFO_NV"),
     std::make_pair(1000026001, "VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_BUFFER_CREATE_INFO_NV"),
     std::make_pair(1000026002, "VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_MEMORY_ALLOCATE_INFO_NV"),
@@ -1143,50 +946,48 @@ static std::map<uint64_t, std::string> VkStructureType_map = {
     std::make_pair(1000029002, "VK_STRUCTURE_TYPE_CU_LAUNCH_INFO_NVX"),
     std::make_pair(1000030000, "VK_STRUCTURE_TYPE_IMAGE_VIEW_HANDLE_INFO_NVX"),
     std::make_pair(1000030001, "VK_STRUCTURE_TYPE_IMAGE_VIEW_ADDRESS_PROPERTIES_NVX"),
-    std::make_pair(1000038000, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_CAPABILITIES_EXT"),
-    std::make_pair(1000038001, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_CREATE_INFO_EXT"),
-    std::make_pair(1000038002, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_CREATE_INFO_EXT"),
-    std::make_pair(1000038003, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_ADD_INFO_EXT"),
-    std::make_pair(1000038004, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_VCL_FRAME_INFO_EXT"),
-    std::make_pair(1000038005, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_DPB_SLOT_INFO_EXT"),
-    std::make_pair(1000038006, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_NALU_SLICE_EXT"),
-    std::make_pair(1000038007, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_EMIT_PICTURE_PARAMETERS_EXT"),
-    std::make_pair(1000038008, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_EXT"),
-    std::make_pair(1000038009, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_INFO_EXT"),
-    std::make_pair(1000038010, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_LAYER_INFO_EXT"),
-    std::make_pair(1000039000, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_CAPABILITIES_EXT"),
-    std::make_pair(1000039001, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_CREATE_INFO_EXT"),
-    std::make_pair(1000039002, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_PARAMETERS_CREATE_INFO_EXT"),
-    std::make_pair(1000039003, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_PARAMETERS_ADD_INFO_EXT"),
-    std::make_pair(1000039004, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_VCL_FRAME_INFO_EXT"),
-    std::make_pair(1000039005, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_DPB_SLOT_INFO_EXT"),
-    std::make_pair(1000039006, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_NALU_SLICE_EXT"),
-    std::make_pair(1000039007, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_EMIT_PICTURE_PARAMETERS_EXT"),
-    std::make_pair(1000039008, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PROFILE_EXT"),
-    std::make_pair(1000039009, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_REFERENCE_LISTS_EXT"),
-    std::make_pair(1000039010, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_INFO_EXT"),
-    std::make_pair(1000039011, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_LAYER_INFO_EXT"),
+    std::make_pair(1000038000, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_CAPABILITIES_KHR"),
+    std::make_pair(1000038001, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_CREATE_INFO_KHR"),
+    std::make_pair(1000038002, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_ADD_INFO_KHR"),
+    std::make_pair(1000038003, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PICTURE_INFO_KHR"),
+    std::make_pair(1000038004, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_DPB_SLOT_INFO_KHR"),
+    std::make_pair(1000038005, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_NALU_SLICE_INFO_KHR"),
+    std::make_pair(1000038006, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_GOP_REMAINING_FRAME_INFO_KHR"),
+    std::make_pair(1000038007, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_KHR"),
+    std::make_pair(1000038008, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_INFO_KHR"),
+    std::make_pair(1000038009, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_LAYER_INFO_KHR"),
+    std::make_pair(1000038010, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_CREATE_INFO_KHR"),
+    std::make_pair(1000038011, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_QUALITY_LEVEL_PROPERTIES_KHR"),
+    std::make_pair(1000038012, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_GET_INFO_KHR"),
+    std::make_pair(1000038013, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_FEEDBACK_INFO_KHR"),
+    std::make_pair(1000039000, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_CAPABILITIES_KHR"),
+    std::make_pair(1000039001, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_PARAMETERS_CREATE_INFO_KHR"),
+    std::make_pair(1000039002, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_PARAMETERS_ADD_INFO_KHR"),
+    std::make_pair(1000039003, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PICTURE_INFO_KHR"),
+    std::make_pair(1000039004, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_DPB_SLOT_INFO_KHR"),
+    std::make_pair(1000039005, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_NALU_SLICE_SEGMENT_INFO_KHR"),
+    std::make_pair(1000039006, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_GOP_REMAINING_FRAME_INFO_KHR"),
+    std::make_pair(1000039007, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PROFILE_INFO_KHR"),
+    std::make_pair(1000039009, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_INFO_KHR"),
+    std::make_pair(1000039010, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_LAYER_INFO_KHR"),
+    std::make_pair(1000039011, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_CREATE_INFO_KHR"),
+    std::make_pair(1000039012, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_QUALITY_LEVEL_PROPERTIES_KHR"),
+    std::make_pair(1000039013, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_PARAMETERS_GET_INFO_KHR"),
+    std::make_pair(1000039014, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_PARAMETERS_FEEDBACK_INFO_KHR"),
     std::make_pair(1000040000, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_KHR"),
-    std::make_pair(1000040001, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_CREATE_INFO_EXT"),
-    std::make_pair(1000040002, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PICTURE_INFO_KHR"),
-    std::make_pair(1000040003, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_MVC_EXT"),
-    std::make_pair(1000040004, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_EXT"),
-    std::make_pair(1000040005, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_CREATE_INFO_EXT"),
-    std::make_pair(1000040006, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_ADD_INFO_KHR"),
-    std::make_pair(1000040007, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_DPB_SLOT_INFO_KHR"),
+    std::make_pair(1000040001, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PICTURE_INFO_KHR"),
+    std::make_pair(1000040003, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_KHR"),
+    std::make_pair(1000040004, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_CREATE_INFO_KHR"),
+    std::make_pair(1000040005, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_ADD_INFO_KHR"),
+    std::make_pair(1000040006, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_DPB_SLOT_INFO_KHR"),
     std::make_pair(1000041000, "VK_STRUCTURE_TYPE_TEXTURE_LOD_GATHER_FORMAT_PROPERTIES_AMD"),
-    std::make_pair(1000044000, "VK_STRUCTURE_TYPE_RENDERING_INFO_KHR"),
-    std::make_pair(1000044001, "VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR"),
-    std::make_pair(1000044002, "VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR"),
-    std::make_pair(1000044003, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR"),
-    std::make_pair(1000044004, "VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR"),
     std::make_pair(1000044006, "VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR"),
     std::make_pair(1000044007, "VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_INFO_EXT"),
     std::make_pair(1000044008, "VK_STRUCTURE_TYPE_ATTACHMENT_SAMPLE_COUNT_INFO_AMD"),
     std::make_pair(1000044009, "VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_ATTRIBUTES_INFO_NVX"),
     std::make_pair(1000049000, "VK_STRUCTURE_TYPE_STREAM_DESCRIPTOR_SURFACE_CREATE_INFO_GGP"),
     std::make_pair(1000050000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CORNER_SAMPLED_IMAGE_FEATURES_NV"),
-    std::make_pair(1000051000, "VK_STRUCTURE_TYPE_PRIVATE_VENDOR_INFO_RESERVED_OFFSET_0_NV"),
+    std::make_pair(1000051000, "VK_STRUCTURE_TYPE_PRIVATE_VENDOR_INFO_PLACEHOLDER_OFFSET_0_NV"),
     std::make_pair(1000056000, "VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_NV"),
     std::make_pair(1000056001, "VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_NV"),
     std::make_pair(1000057000, "VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_NV"),
@@ -1200,9 +1001,11 @@ static std::map<uint64_t, std::string> VkStructureType_map = {
     std::make_pair(1000060012, "VK_STRUCTURE_TYPE_DEVICE_GROUP_SWAPCHAIN_CREATE_INFO_KHR"),
     std::make_pair(1000061000, "VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT"),
     std::make_pair(1000062000, "VK_STRUCTURE_TYPE_VI_SURFACE_CREATE_INFO_NN"),
-    std::make_pair(1000066000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXTURE_COMPRESSION_ASTC_HDR_FEATURES_EXT"),
     std::make_pair(1000067000, "VK_STRUCTURE_TYPE_IMAGE_VIEW_ASTC_DECODE_MODE_EXT"),
     std::make_pair(1000067001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ASTC_DECODE_FEATURES_EXT"),
+    std::make_pair(1000068000, "VK_STRUCTURE_TYPE_PIPELINE_ROBUSTNESS_CREATE_INFO_EXT"),
+    std::make_pair(1000068001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_ROBUSTNESS_FEATURES_EXT"),
+    std::make_pair(1000068002, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_ROBUSTNESS_PROPERTIES_EXT"),
     std::make_pair(1000073000, "VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR"),
     std::make_pair(1000073001, "VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_KHR"),
     std::make_pair(1000073002, "VK_STRUCTURE_TYPE_MEMORY_WIN32_HANDLE_PROPERTIES_KHR"),
@@ -1238,6 +1041,7 @@ static std::map<uint64_t, std::string> VkStructureType_map = {
     std::make_pair(1000102000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_ENABLE_FEATURES_EXT"),
     std::make_pair(1000102001, "VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT"),
     std::make_pair(1000105000, "VK_STRUCTURE_TYPE_HDR_METADATA_EXT"),
+    std::make_pair(1000110000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RELAXED_LINE_RASTERIZATION_FEATURES_IMG"),
     std::make_pair(1000111000, "VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR"),
     std::make_pair(1000114000, "VK_STRUCTURE_TYPE_IMPORT_FENCE_WIN32_HANDLE_INFO_KHR"),
     std::make_pair(1000114001, "VK_STRUCTURE_TYPE_EXPORT_FENCE_WIN32_HANDLE_INFO_KHR"),
@@ -1274,10 +1078,11 @@ static std::map<uint64_t, std::string> VkStructureType_map = {
     std::make_pair(1000129004, "VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID"),
     std::make_pair(1000129005, "VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID"),
     std::make_pair(1000129006, "VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_2_ANDROID"),
-    std::make_pair(1000138000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT"),
-    std::make_pair(1000138001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES_EXT"),
-    std::make_pair(1000138002, "VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT"),
-    std::make_pair(1000138003, "VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_INLINE_UNIFORM_BLOCK_CREATE_INFO_EXT"),
+    std::make_pair(1000134000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ENQUEUE_FEATURES_AMDX"),
+    std::make_pair(1000134001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ENQUEUE_PROPERTIES_AMDX"),
+    std::make_pair(1000134002, "VK_STRUCTURE_TYPE_EXECUTION_GRAPH_PIPELINE_SCRATCH_SIZE_AMDX"),
+    std::make_pair(1000134003, "VK_STRUCTURE_TYPE_EXECUTION_GRAPH_PIPELINE_CREATE_INFO_AMDX"),
+    std::make_pair(1000134004, "VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_NODE_CREATE_INFO_AMDX"),
     std::make_pair(1000143000, "VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT"),
     std::make_pair(1000143001, "VK_STRUCTURE_TYPE_RENDER_PASS_SAMPLE_LOCATIONS_BEGIN_INFO_EXT"),
     std::make_pair(1000143002, "VK_STRUCTURE_TYPE_PIPELINE_SAMPLE_LOCATIONS_STATE_CREATE_INFO_EXT"),
@@ -1340,31 +1145,27 @@ static std::map<uint64_t, std::string> VkStructureType_map = {
     std::make_pair(1000166001, "VK_STRUCTURE_TYPE_PIPELINE_REPRESENTATIVE_FRAGMENT_TEST_STATE_CREATE_INFO_NV"),
     std::make_pair(1000170000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_IMAGE_FORMAT_INFO_EXT"),
     std::make_pair(1000170001, "VK_STRUCTURE_TYPE_FILTER_CUBIC_IMAGE_VIEW_IMAGE_FORMAT_PROPERTIES_EXT"),
-    std::make_pair(1000174000, "VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT"),
     std::make_pair(1000178000, "VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT"),
     std::make_pair(1000178001, "VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT"),
     std::make_pair(1000178002, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT"),
     std::make_pair(1000181000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR"),
     std::make_pair(1000183000, "VK_STRUCTURE_TYPE_PIPELINE_COMPILER_CONTROL_CREATE_INFO_AMD"),
-    std::make_pair(1000184000, "VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT"),
     std::make_pair(1000185000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_AMD"),
-    std::make_pair(1000187000, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_CAPABILITIES_EXT"),
-    std::make_pair(1000187001, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_CREATE_INFO_EXT"),
-    std::make_pair(1000187002, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_CREATE_INFO_EXT"),
-    std::make_pair(1000187003, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_ADD_INFO_EXT"),
-    std::make_pair(1000187004, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PROFILE_EXT"),
-    std::make_pair(1000187005, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PICTURE_INFO_EXT"),
-    std::make_pair(1000187006, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_DPB_SLOT_INFO_EXT"),
+    std::make_pair(1000187000, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_CAPABILITIES_KHR"),
+    std::make_pair(1000187001, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_CREATE_INFO_KHR"),
+    std::make_pair(1000187002, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_ADD_INFO_KHR"),
+    std::make_pair(1000187003, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PROFILE_INFO_KHR"),
+    std::make_pair(1000187004, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PICTURE_INFO_KHR"),
+    std::make_pair(1000187005, "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_DPB_SLOT_INFO_KHR"),
+    std::make_pair(1000174000, "VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_KHR"),
+    std::make_pair(1000388000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_KHR"),
+    std::make_pair(1000388001, "VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES_KHR"),
     std::make_pair(1000189000, "VK_STRUCTURE_TYPE_DEVICE_MEMORY_OVERALLOCATION_CREATE_INFO_AMD"),
     std::make_pair(1000190000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT"),
-    std::make_pair(1000190001, "VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT"),
-    std::make_pair(1000190002, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT"),
     std::make_pair(1000191000, "VK_STRUCTURE_TYPE_PRESENT_FRAME_TOKEN_GGP"),
-    std::make_pair(1000192000, "VK_STRUCTURE_TYPE_PIPELINE_CREATION_FEEDBACK_CREATE_INFO_EXT"),
     std::make_pair(1000201000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_SHADER_DERIVATIVES_FEATURES_NV"),
     std::make_pair(1000202000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_NV"),
     std::make_pair(1000202001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_NV"),
-    std::make_pair(1000203000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_NV"),
     std::make_pair(1000204000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_FOOTPRINT_FEATURES_NV"),
     std::make_pair(1000205000, "VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_EXCLUSIVE_SCISSOR_STATE_CREATE_INFO_NV"),
     std::make_pair(1000205002, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXCLUSIVE_SCISSOR_FEATURES_NV"),
@@ -1381,14 +1182,10 @@ static std::map<uint64_t, std::string> VkStructureType_map = {
     std::make_pair(1000213000, "VK_STRUCTURE_TYPE_DISPLAY_NATIVE_HDR_SURFACE_CAPABILITIES_AMD"),
     std::make_pair(1000213001, "VK_STRUCTURE_TYPE_SWAPCHAIN_DISPLAY_NATIVE_HDR_CREATE_INFO_AMD"),
     std::make_pair(1000214000, "VK_STRUCTURE_TYPE_IMAGEPIPE_SURFACE_CREATE_INFO_FUCHSIA"),
-    std::make_pair(1000215000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TERMINATE_INVOCATION_FEATURES_KHR"),
     std::make_pair(1000217000, "VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT"),
     std::make_pair(1000218000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_FEATURES_EXT"),
     std::make_pair(1000218001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_PROPERTIES_EXT"),
     std::make_pair(1000218002, "VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_CREATE_INFO_EXT"),
-    std::make_pair(1000225000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT"),
-    std::make_pair(1000225001, "VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT"),
-    std::make_pair(1000225002, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT"),
     std::make_pair(1000226000, "VK_STRUCTURE_TYPE_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR"),
     std::make_pair(1000226001, "VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR"),
     std::make_pair(1000226002, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_PROPERTIES_KHR"),
@@ -1396,7 +1193,11 @@ static std::map<uint64_t, std::string> VkStructureType_map = {
     std::make_pair(1000226004, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_KHR"),
     std::make_pair(1000227000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD"),
     std::make_pair(1000229000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD"),
+    std::make_pair(1000232000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_LOCAL_READ_FEATURES_KHR"),
+    std::make_pair(1000232001, "VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_LOCATION_INFO_KHR"),
+    std::make_pair(1000232002, "VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO_KHR"),
     std::make_pair(1000234000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_ATOMIC_INT64_FEATURES_EXT"),
+    std::make_pair(1000235000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_QUAD_CONTROL_FEATURES_KHR"),
     std::make_pair(1000237000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT"),
     std::make_pair(1000238000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT"),
     std::make_pair(1000238001, "VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT"),
@@ -1404,7 +1205,6 @@ static std::map<uint64_t, std::string> VkStructureType_map = {
     std::make_pair(1000240000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEDICATED_ALLOCATION_IMAGE_ALIASING_FEATURES_NV"),
     std::make_pair(1000244000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT"),
     std::make_pair(1000244002, "VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT"),
-    std::make_pair(1000245000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES_EXT"),
     std::make_pair(1000247000, "VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT"),
     std::make_pair(1000248000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_FEATURES_KHR"),
     std::make_pair(1000249000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV"),
@@ -1422,11 +1222,7 @@ static std::map<uint64_t, std::string> VkStructureType_map = {
     std::make_pair(1000255002, "VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_FULL_SCREEN_EXCLUSIVE_EXT"),
     std::make_pair(1000255001, "VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT"),
     std::make_pair(1000256000, "VK_STRUCTURE_TYPE_HEADLESS_SURFACE_CREATE_INFO_EXT"),
-    std::make_pair(1000259000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_EXT"),
-    std::make_pair(1000259001, "VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT"),
-    std::make_pair(1000259002, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT"),
     std::make_pair(1000260000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT"),
-    std::make_pair(1000265000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT"),
     std::make_pair(1000267000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT"),
     std::make_pair(1000269000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR"),
     std::make_pair(1000269001, "VK_STRUCTURE_TYPE_PIPELINE_INFO_KHR"),
@@ -1434,8 +1230,31 @@ static std::map<uint64_t, std::string> VkStructureType_map = {
     std::make_pair(1000269003, "VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR"),
     std::make_pair(1000269004, "VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR"),
     std::make_pair(1000269005, "VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR"),
+    std::make_pair(1000270000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_FEATURES_EXT"),
+    std::make_pair(1000270001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_PROPERTIES_EXT"),
+    std::make_pair(1000270002, "VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY_EXT"),
+    std::make_pair(1000270003, "VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY_EXT"),
+    std::make_pair(1000270004, "VK_STRUCTURE_TYPE_COPY_IMAGE_TO_MEMORY_INFO_EXT"),
+    std::make_pair(1000270005, "VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO_EXT"),
+    std::make_pair(1000270006, "VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO_EXT"),
+    std::make_pair(1000270007, "VK_STRUCTURE_TYPE_COPY_IMAGE_TO_IMAGE_INFO_EXT"),
+    std::make_pair(1000270008, "VK_STRUCTURE_TYPE_SUBRESOURCE_HOST_MEMCPY_SIZE_EXT"),
+    std::make_pair(1000270009, "VK_STRUCTURE_TYPE_HOST_IMAGE_COPY_DEVICE_PERFORMANCE_QUERY_EXT"),
+    std::make_pair(1000271000, "VK_STRUCTURE_TYPE_MEMORY_MAP_INFO_KHR"),
+    std::make_pair(1000271001, "VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO_KHR"),
+    std::make_pair(1000272000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_FEATURES_EXT"),
+    std::make_pair(1000272001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_PROPERTIES_EXT"),
+    std::make_pair(1000272002, "VK_STRUCTURE_TYPE_MEMORY_MAP_PLACED_INFO_EXT"),
     std::make_pair(1000273000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT"),
-    std::make_pair(1000276000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT"),
+    std::make_pair(1000274000, "VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT"),
+    std::make_pair(1000274001, "VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT"),
+    std::make_pair(1000274002, "VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_COMPATIBILITY_EXT"),
+    std::make_pair(1000275000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT"),
+    std::make_pair(1000275001, "VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT"),
+    std::make_pair(1000275002, "VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_EXT"),
+    std::make_pair(1000275003, "VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODE_INFO_EXT"),
+    std::make_pair(1000275004, "VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT"),
+    std::make_pair(1000275005, "VK_STRUCTURE_TYPE_RELEASE_SWAPCHAIN_IMAGES_INFO_EXT"),
     std::make_pair(1000277000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_PROPERTIES_NV"),
     std::make_pair(1000277001, "VK_STRUCTURE_TYPE_GRAPHICS_SHADER_GROUP_CREATE_INFO_NV"),
     std::make_pair(1000277002, "VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_SHADER_GROUPS_CREATE_INFO_NV"),
@@ -1446,12 +1265,12 @@ static std::map<uint64_t, std::string> VkStructureType_map = {
     std::make_pair(1000277007, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_FEATURES_NV"),
     std::make_pair(1000278000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INHERITED_VIEWPORT_SCISSOR_FEATURES_NV"),
     std::make_pair(1000278001, "VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_VIEWPORT_SCISSOR_INFO_NV"),
-    std::make_pair(1000280000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR"),
-    std::make_pair(1000280001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR"),
     std::make_pair(1000281000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT"),
-    std::make_pair(1000281001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT"),
     std::make_pair(1000282000, "VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDER_PASS_TRANSFORM_INFO_QCOM"),
     std::make_pair(1000282001, "VK_STRUCTURE_TYPE_RENDER_PASS_TRANSFORM_BEGIN_INFO_QCOM"),
+    std::make_pair(1000283000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_BIAS_CONTROL_FEATURES_EXT"),
+    std::make_pair(1000283001, "VK_STRUCTURE_TYPE_DEPTH_BIAS_INFO_EXT"),
+    std::make_pair(1000283002, "VK_STRUCTURE_TYPE_DEPTH_BIAS_REPRESENTATION_INFO_EXT"),
     std::make_pair(1000284000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_MEMORY_REPORT_FEATURES_EXT"),
     std::make_pair(1000284001, "VK_STRUCTURE_TYPE_DEVICE_DEVICE_MEMORY_REPORT_CREATE_INFO_EXT"),
     std::make_pair(1000284002, "VK_STRUCTURE_TYPE_DEVICE_MEMORY_REPORT_CALLBACK_DATA_EXT"),
@@ -1461,68 +1280,97 @@ static std::map<uint64_t, std::string> VkStructureType_map = {
     std::make_pair(1000287001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_PROPERTIES_EXT"),
     std::make_pair(1000287002, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT"),
     std::make_pair(1000290000, "VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR"),
+    std::make_pair(1000292000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_BARRIER_FEATURES_NV"),
+    std::make_pair(1000292001, "VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_PRESENT_BARRIER_NV"),
+    std::make_pair(1000292002, "VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_BARRIER_CREATE_INFO_NV"),
     std::make_pair(1000294000, "VK_STRUCTURE_TYPE_PRESENT_ID_KHR"),
     std::make_pair(1000294001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR"),
-    std::make_pair(1000295000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIVATE_DATA_FEATURES_EXT"),
-    std::make_pair(1000295001, "VK_STRUCTURE_TYPE_DEVICE_PRIVATE_DATA_CREATE_INFO_EXT"),
-    std::make_pair(1000295002, "VK_STRUCTURE_TYPE_PRIVATE_DATA_SLOT_CREATE_INFO_EXT"),
-    std::make_pair(1000297000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT"),
     std::make_pair(1000299000, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_INFO_KHR"),
     std::make_pair(1000299001, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_INFO_KHR"),
     std::make_pair(1000299002, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_LAYER_INFO_KHR"),
+    std::make_pair(1000299003, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR"),
+    std::make_pair(1000299004, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_USAGE_INFO_KHR"),
+    std::make_pair(1000299005, "VK_STRUCTURE_TYPE_QUERY_POOL_VIDEO_ENCODE_FEEDBACK_CREATE_INFO_KHR"),
+    std::make_pair(1000299006, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUALITY_LEVEL_INFO_KHR"),
+    std::make_pair(1000299007, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUALITY_LEVEL_PROPERTIES_KHR"),
+    std::make_pair(1000299008, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUALITY_LEVEL_INFO_KHR"),
+    std::make_pair(1000299009, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_PARAMETERS_GET_INFO_KHR"),
+    std::make_pair(1000299010, "VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_PARAMETERS_FEEDBACK_INFO_KHR"),
     std::make_pair(1000300000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV"),
     std::make_pair(1000300001, "VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV"),
+    std::make_pair(1000307000, "VK_STRUCTURE_TYPE_CUDA_MODULE_CREATE_INFO_NV"),
+    std::make_pair(1000307001, "VK_STRUCTURE_TYPE_CUDA_FUNCTION_CREATE_INFO_NV"),
+    std::make_pair(1000307002, "VK_STRUCTURE_TYPE_CUDA_LAUNCH_INFO_NV"),
+    std::make_pair(1000307003, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUDA_KERNEL_LAUNCH_FEATURES_NV"),
+    std::make_pair(1000307004, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUDA_KERNEL_LAUNCH_PROPERTIES_NV"),
     std::make_pair(1000308000, "VK_STRUCTURE_TYPE_REFRESH_OBJECT_LIST_KHR"),
-    std::make_pair(1000309000, "VK_STRUCTURE_TYPE_RESERVED_QCOM"),
-    std::make_pair(1000314000, "VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR"),
-    std::make_pair(1000314001, "VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR"),
-    std::make_pair(1000314002, "VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR"),
-    std::make_pair(1000314003, "VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR"),
-    std::make_pair(1000314004, "VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR"),
-    std::make_pair(1000314005, "VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR"),
-    std::make_pair(1000314006, "VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR"),
-    std::make_pair(1000314007, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR"),
+    std::make_pair(1000310000, "VK_STRUCTURE_TYPE_QUERY_LOW_LATENCY_SUPPORT_NV"),
+    std::make_pair(1000311000, "VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECT_CREATE_INFO_EXT"),
+    std::make_pair(1000311001, "VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECTS_INFO_EXT"),
+    std::make_pair(1000311002, "VK_STRUCTURE_TYPE_EXPORT_METAL_DEVICE_INFO_EXT"),
+    std::make_pair(1000311003, "VK_STRUCTURE_TYPE_EXPORT_METAL_COMMAND_QUEUE_INFO_EXT"),
+    std::make_pair(1000311004, "VK_STRUCTURE_TYPE_EXPORT_METAL_BUFFER_INFO_EXT"),
+    std::make_pair(1000311005, "VK_STRUCTURE_TYPE_IMPORT_METAL_BUFFER_INFO_EXT"),
+    std::make_pair(1000311006, "VK_STRUCTURE_TYPE_EXPORT_METAL_TEXTURE_INFO_EXT"),
+    std::make_pair(1000311007, "VK_STRUCTURE_TYPE_IMPORT_METAL_TEXTURE_INFO_EXT"),
+    std::make_pair(1000311008, "VK_STRUCTURE_TYPE_EXPORT_METAL_IO_SURFACE_INFO_EXT"),
+    std::make_pair(1000311009, "VK_STRUCTURE_TYPE_IMPORT_METAL_IO_SURFACE_INFO_EXT"),
+    std::make_pair(1000311010, "VK_STRUCTURE_TYPE_EXPORT_METAL_SHARED_EVENT_INFO_EXT"),
+    std::make_pair(1000311011, "VK_STRUCTURE_TYPE_IMPORT_METAL_SHARED_EVENT_INFO_EXT"),
     std::make_pair(1000314008, "VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_2_NV"),
     std::make_pair(1000314009, "VK_STRUCTURE_TYPE_CHECKPOINT_DATA_2_NV"),
+    std::make_pair(1000316000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_PROPERTIES_EXT"),
+    std::make_pair(1000316001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_DENSITY_MAP_PROPERTIES_EXT"),
+    std::make_pair(1000316002, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT"),
+    std::make_pair(1000316003, "VK_STRUCTURE_TYPE_DESCRIPTOR_ADDRESS_INFO_EXT"),
+    std::make_pair(1000316004, "VK_STRUCTURE_TYPE_DESCRIPTOR_GET_INFO_EXT"),
+    std::make_pair(1000316005, "VK_STRUCTURE_TYPE_BUFFER_CAPTURE_DESCRIPTOR_DATA_INFO_EXT"),
+    std::make_pair(1000316006, "VK_STRUCTURE_TYPE_IMAGE_CAPTURE_DESCRIPTOR_DATA_INFO_EXT"),
+    std::make_pair(1000316007, "VK_STRUCTURE_TYPE_IMAGE_VIEW_CAPTURE_DESCRIPTOR_DATA_INFO_EXT"),
+    std::make_pair(1000316008, "VK_STRUCTURE_TYPE_SAMPLER_CAPTURE_DESCRIPTOR_DATA_INFO_EXT"),
+    std::make_pair(1000316010, "VK_STRUCTURE_TYPE_OPAQUE_CAPTURE_DESCRIPTOR_DATA_CREATE_INFO_EXT"),
+    std::make_pair(1000316011, "VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_INFO_EXT"),
+    std::make_pair(1000316012, "VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_PUSH_DESCRIPTOR_BUFFER_HANDLE_EXT"),
+    std::make_pair(1000316009, "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CAPTURE_DESCRIPTOR_DATA_INFO_EXT"),
+    std::make_pair(1000320000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT"),
+    std::make_pair(1000320001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_EXT"),
+    std::make_pair(1000320002, "VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT"),
+    std::make_pair(1000321000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS_FEATURES_AMD"),
+    std::make_pair(1000203000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_KHR"),
+    std::make_pair(1000322000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_PROPERTIES_KHR"),
     std::make_pair(1000323000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR"),
-    std::make_pair(1000325000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_WORKGROUP_MEMORY_FEATURES_KHR"),
     std::make_pair(1000326000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_PROPERTIES_NV"),
     std::make_pair(1000326001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_FEATURES_NV"),
     std::make_pair(1000326002, "VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_ENUM_STATE_CREATE_INFO_NV"),
     std::make_pair(1000327000, "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_MOTION_TRIANGLES_DATA_NV"),
     std::make_pair(1000327001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MOTION_BLUR_FEATURES_NV"),
     std::make_pair(1000327002, "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MOTION_INFO_NV"),
+    std::make_pair(1000328000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT"),
+    std::make_pair(1000328001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_EXT"),
     std::make_pair(1000330000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_YCBCR_2_PLANE_444_FORMATS_FEATURES_EXT"),
     std::make_pair(1000332000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT"),
     std::make_pair(1000332001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT"),
     std::make_pair(1000333000, "VK_STRUCTURE_TYPE_COPY_COMMAND_TRANSFORM_INFO_QCOM"),
-    std::make_pair(1000335000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES_EXT"),
     std::make_pair(1000336000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_FEATURES_KHR"),
-    std::make_pair(1000337000, "VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2_KHR"),
-    std::make_pair(1000337001, "VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2_KHR"),
-    std::make_pair(1000337002, "VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2_KHR"),
-    std::make_pair(1000337003, "VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2_KHR"),
-    std::make_pair(1000337004, "VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2_KHR"),
-    std::make_pair(1000337005, "VK_STRUCTURE_TYPE_RESOLVE_IMAGE_INFO_2_KHR"),
-    std::make_pair(1000337006, "VK_STRUCTURE_TYPE_BUFFER_COPY_2_KHR"),
-    std::make_pair(1000337007, "VK_STRUCTURE_TYPE_IMAGE_COPY_2_KHR"),
-    std::make_pair(1000337008, "VK_STRUCTURE_TYPE_IMAGE_BLIT_2_KHR"),
-    std::make_pair(1000337009, "VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2_KHR"),
-    std::make_pair(1000337010, "VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2_KHR"),
+    std::make_pair(1000338000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_FEATURES_EXT"),
+    std::make_pair(1000338001, "VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_CONTROL_EXT"),
+    std::make_pair(1000338004, "VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_PROPERTIES_EXT"),
+    std::make_pair(1000339000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_FEATURES_EXT"),
     std::make_pair(1000340000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT"),
-    std::make_pair(1000342000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_ARM"),
+    std::make_pair(1000341000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_EXT"),
+    std::make_pair(1000341001, "VK_STRUCTURE_TYPE_DEVICE_FAULT_COUNTS_EXT"),
+    std::make_pair(1000341002, "VK_STRUCTURE_TYPE_DEVICE_FAULT_INFO_EXT"),
     std::make_pair(1000344000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RGBA10X6_FORMATS_FEATURES_EXT"),
     std::make_pair(1000346000, "VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT"),
-    std::make_pair(1000351000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_VALVE"),
-    std::make_pair(1000351002, "VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_VALVE"),
     std::make_pair(1000352000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT"),
     std::make_pair(1000352001, "VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT"),
     std::make_pair(1000352002, "VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT"),
     std::make_pair(1000353000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT"),
+    std::make_pair(1000354000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ADDRESS_BINDING_REPORT_FEATURES_EXT"),
+    std::make_pair(1000354001, "VK_STRUCTURE_TYPE_DEVICE_ADDRESS_BINDING_CALLBACK_DATA_EXT"),
     std::make_pair(1000355000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_CONTROL_FEATURES_EXT"),
     std::make_pair(1000355001, "VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT"),
     std::make_pair(1000356000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT"),
-    std::make_pair(1000360000, "VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3_KHR"),
     std::make_pair(1000364000, "VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA"),
     std::make_pair(1000364001, "VK_STRUCTURE_TYPE_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA"),
     std::make_pair(1000364002, "VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA"),
@@ -1544,6 +1392,8 @@ static std::map<uint64_t, std::string> VkStructureType_map = {
     std::make_pair(1000370000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INVOCATION_MASK_FEATURES_HUAWEI"),
     std::make_pair(1000371000, "VK_STRUCTURE_TYPE_MEMORY_GET_REMOTE_ADDRESS_INFO_NV"),
     std::make_pair(1000371001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV"),
+    std::make_pair(1000372000, "VK_STRUCTURE_TYPE_PIPELINE_PROPERTIES_IDENTIFIER_EXT"),
+    std::make_pair(1000372001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROPERTIES_FEATURES_EXT"),
     std::make_pair(1000373000, "VK_STRUCTURE_TYPE_IMPORT_FENCE_SCI_SYNC_INFO_NV"),
     std::make_pair(1000373001, "VK_STRUCTURE_TYPE_EXPORT_FENCE_SCI_SYNC_INFO_NV"),
     std::make_pair(1000373002, "VK_STRUCTURE_TYPE_FENCE_GET_SCI_SYNC_INFO_NV"),
@@ -1557,24 +1407,124 @@ static std::map<uint64_t, std::string> VkStructureType_map = {
     std::make_pair(1000374002, "VK_STRUCTURE_TYPE_MEMORY_GET_SCI_BUF_INFO_NV"),
     std::make_pair(1000374003, "VK_STRUCTURE_TYPE_MEMORY_SCI_BUF_PROPERTIES_NV"),
     std::make_pair(1000374004, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCI_BUF_FEATURES_NV"),
+    std::make_pair(1000375000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAME_BOUNDARY_FEATURES_EXT"),
+    std::make_pair(1000375001, "VK_STRUCTURE_TYPE_FRAME_BOUNDARY_EXT"),
+    std::make_pair(1000376000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_FEATURES_EXT"),
+    std::make_pair(1000376001, "VK_STRUCTURE_TYPE_SUBPASS_RESOLVE_PERFORMANCE_QUERY_EXT"),
+    std::make_pair(1000376002, "VK_STRUCTURE_TYPE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_INFO_EXT"),
     std::make_pair(1000377000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT"),
     std::make_pair(1000378000, "VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX"),
     std::make_pair(1000381000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT"),
     std::make_pair(1000381001, "VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT"),
-    std::make_pair(1000388000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_EXT"),
-    std::make_pair(1000388001, "VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES_EXT"),
+    std::make_pair(1000382000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT"),
+    std::make_pair(1000386000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR"),
     std::make_pair(1000391000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT"),
     std::make_pair(1000391001, "VK_STRUCTURE_TYPE_IMAGE_VIEW_MIN_LOD_CREATE_INFO_EXT"),
     std::make_pair(1000392000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT"),
     std::make_pair(1000392001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_PROPERTIES_EXT"),
+    std::make_pair(1000393000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT"),
+    std::make_pair(1000395000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TILE_IMAGE_FEATURES_EXT"),
+    std::make_pair(1000395001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TILE_IMAGE_PROPERTIES_EXT"),
+    std::make_pair(1000396000, "VK_STRUCTURE_TYPE_MICROMAP_BUILD_INFO_EXT"),
+    std::make_pair(1000396001, "VK_STRUCTURE_TYPE_MICROMAP_VERSION_INFO_EXT"),
+    std::make_pair(1000396002, "VK_STRUCTURE_TYPE_COPY_MICROMAP_INFO_EXT"),
+    std::make_pair(1000396003, "VK_STRUCTURE_TYPE_COPY_MICROMAP_TO_MEMORY_INFO_EXT"),
+    std::make_pair(1000396004, "VK_STRUCTURE_TYPE_COPY_MEMORY_TO_MICROMAP_INFO_EXT"),
+    std::make_pair(1000396005, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_FEATURES_EXT"),
+    std::make_pair(1000396006, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_PROPERTIES_EXT"),
+    std::make_pair(1000396007, "VK_STRUCTURE_TYPE_MICROMAP_CREATE_INFO_EXT"),
+    std::make_pair(1000396008, "VK_STRUCTURE_TYPE_MICROMAP_BUILD_SIZES_INFO_EXT"),
+    std::make_pair(1000396009, "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_TRIANGLES_OPACITY_MICROMAP_EXT"),
+    std::make_pair(1000397000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DISPLACEMENT_MICROMAP_FEATURES_NV"),
+    std::make_pair(1000397001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DISPLACEMENT_MICROMAP_PROPERTIES_NV"),
+    std::make_pair(1000397002, "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_TRIANGLES_DISPLACEMENT_MICROMAP_NV"),
+    std::make_pair(1000404000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CLUSTER_CULLING_SHADER_FEATURES_HUAWEI"),
+    std::make_pair(1000404001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CLUSTER_CULLING_SHADER_PROPERTIES_HUAWEI"),
+    std::make_pair(1000404002, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CLUSTER_CULLING_SHADER_VRS_FEATURES_HUAWEI"),
     std::make_pair(1000411000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BORDER_COLOR_SWIZZLE_FEATURES_EXT"),
     std::make_pair(1000411001, "VK_STRUCTURE_TYPE_SAMPLER_BORDER_COLOR_COMPONENT_MAPPING_CREATE_INFO_EXT"),
     std::make_pair(1000412000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT"),
-    std::make_pair(1000413000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES_KHR"),
-    std::make_pair(1000413001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES_KHR"),
-    std::make_pair(1000413002, "VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS_KHR"),
-    std::make_pair(1000413003, "VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR"),
+    std::make_pair(1000415000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_ARM"),
+    std::make_pair(1000416000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_ROTATE_FEATURES_KHR"),
+    std::make_pair(1000417000, "VK_STRUCTURE_TYPE_DEVICE_QUEUE_SHADER_CORE_CONTROL_CREATE_INFO_ARM"),
+    std::make_pair(1000417001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCHEDULING_CONTROLS_FEATURES_ARM"),
+    std::make_pair(1000417002, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCHEDULING_CONTROLS_PROPERTIES_ARM"),
+    std::make_pair(1000418000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT"),
+    std::make_pair(1000418001, "VK_STRUCTURE_TYPE_IMAGE_VIEW_SLICED_CREATE_INFO_EXT"),
+    std::make_pair(1000420000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_SET_HOST_MAPPING_FEATURES_VALVE"),
+    std::make_pair(1000420001, "VK_STRUCTURE_TYPE_DESCRIPTOR_SET_BINDING_REFERENCE_VALVE"),
+    std::make_pair(1000420002, "VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_HOST_MAPPING_INFO_VALVE"),
+    std::make_pair(1000421000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_EXT"),
+    std::make_pair(1000422000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_NON_SEAMLESS_CUBE_MAP_FEATURES_EXT"),
+    std::make_pair(1000424000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RENDER_PASS_STRIPED_FEATURES_ARM"),
+    std::make_pair(1000424001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RENDER_PASS_STRIPED_PROPERTIES_ARM"),
+    std::make_pair(1000424002, "VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_BEGIN_INFO_ARM"),
+    std::make_pair(1000424003, "VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_INFO_ARM"),
+    std::make_pair(1000424004, "VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_SUBMIT_INFO_ARM"),
+    std::make_pair(1000425000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_QCOM"),
+    std::make_pair(1000425001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_QCOM"),
+    std::make_pair(1000425002, "VK_STRUCTURE_TYPE_SUBPASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_QCOM"),
+    std::make_pair(1000426000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_NV"),
+    std::make_pair(1000426001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_NV"),
+    std::make_pair(1000427000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_FEATURES_NV"),
+    std::make_pair(1000427001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_PROPERTIES_NV"),
+    std::make_pair(1000428000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_COMPUTE_FEATURES_NV"),
+    std::make_pair(1000428001, "VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_INDIRECT_BUFFER_INFO_NV"),
+    std::make_pair(1000428002, "VK_STRUCTURE_TYPE_PIPELINE_INDIRECT_DEVICE_ADDRESS_INFO_NV"),
+    std::make_pair(1000430000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINEAR_COLOR_ATTACHMENT_FEATURES_NV"),
+    std::make_pair(1000434000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MAXIMAL_RECONVERGENCE_FEATURES_KHR"),
     std::make_pair(1000435000, "VK_STRUCTURE_TYPE_APPLICATION_PARAMETERS_EXT"),
+    std::make_pair(1000437000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT"),
+    std::make_pair(1000440000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_FEATURES_QCOM"),
+    std::make_pair(1000440001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_PROPERTIES_QCOM"),
+    std::make_pair(1000440002, "VK_STRUCTURE_TYPE_IMAGE_VIEW_SAMPLE_WEIGHT_CREATE_INFO_QCOM"),
+    std::make_pair(1000451000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_NESTED_COMMAND_BUFFER_FEATURES_EXT"),
+    std::make_pair(1000451001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_NESTED_COMMAND_BUFFER_PROPERTIES_EXT"),
+    std::make_pair(1000453000, "VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_ACQUIRE_UNMODIFIED_EXT"),
+    std::make_pair(1000455000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_3_FEATURES_EXT"),
+    std::make_pair(1000455001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_3_PROPERTIES_EXT"),
+    std::make_pair(1000458000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_MERGE_FEEDBACK_FEATURES_EXT"),
+    std::make_pair(1000458001, "VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_CONTROL_EXT"),
+    std::make_pair(1000458002, "VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_FEEDBACK_CREATE_INFO_EXT"),
+    std::make_pair(1000458003, "VK_STRUCTURE_TYPE_RENDER_PASS_SUBPASS_FEEDBACK_CREATE_INFO_EXT"),
+    std::make_pair(1000459000, "VK_STRUCTURE_TYPE_DIRECT_DRIVER_LOADING_INFO_LUNARG"),
+    std::make_pair(1000459001, "VK_STRUCTURE_TYPE_DIRECT_DRIVER_LOADING_LIST_LUNARG"),
+    std::make_pair(1000462000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_FEATURES_EXT"),
+    std::make_pair(1000462001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT"),
+    std::make_pair(1000462002, "VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_MODULE_IDENTIFIER_CREATE_INFO_EXT"),
+    std::make_pair(1000462003, "VK_STRUCTURE_TYPE_SHADER_MODULE_IDENTIFIER_EXT"),
+    std::make_pair(1000342000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_EXT"),
+    std::make_pair(1000464000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPTICAL_FLOW_FEATURES_NV"),
+    std::make_pair(1000464001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPTICAL_FLOW_PROPERTIES_NV"),
+    std::make_pair(1000464002, "VK_STRUCTURE_TYPE_OPTICAL_FLOW_IMAGE_FORMAT_INFO_NV"),
+    std::make_pair(1000464003, "VK_STRUCTURE_TYPE_OPTICAL_FLOW_IMAGE_FORMAT_PROPERTIES_NV"),
+    std::make_pair(1000464004, "VK_STRUCTURE_TYPE_OPTICAL_FLOW_SESSION_CREATE_INFO_NV"),
+    std::make_pair(1000464005, "VK_STRUCTURE_TYPE_OPTICAL_FLOW_EXECUTE_INFO_NV"),
+    std::make_pair(1000464010, "VK_STRUCTURE_TYPE_OPTICAL_FLOW_SESSION_CREATE_PRIVATE_DATA_INFO_NV"),
+    std::make_pair(1000465000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT"),
+    std::make_pair(1000466000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT"),
+    std::make_pair(1000468000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FORMAT_RESOLVE_FEATURES_ANDROID"),
+    std::make_pair(1000468001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FORMAT_RESOLVE_PROPERTIES_ANDROID"),
+    std::make_pair(1000468002, "VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_RESOLVE_PROPERTIES_ANDROID"),
+    std::make_pair(1000470000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES_KHR"),
+    std::make_pair(1000470001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_PROPERTIES_KHR"),
+    std::make_pair(1000470003, "VK_STRUCTURE_TYPE_RENDERING_AREA_INFO_KHR"),
+    std::make_pair(1000470004, "VK_STRUCTURE_TYPE_DEVICE_IMAGE_SUBRESOURCE_INFO_KHR"),
+    std::make_pair(1000338002, "VK_STRUCTURE_TYPE_SUBRESOURCE_LAYOUT_2_KHR"),
+    std::make_pair(1000338003, "VK_STRUCTURE_TYPE_IMAGE_SUBRESOURCE_2_KHR"),
+    std::make_pair(1000470005, "VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO_KHR"),
+    std::make_pair(1000470006, "VK_STRUCTURE_TYPE_BUFFER_USAGE_FLAGS_2_CREATE_INFO_KHR"),
+    std::make_pair(1000481000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR"),
+    std::make_pair(1000482000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT"),
+    std::make_pair(1000482001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT"),
+    std::make_pair(1000482002, "VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT"),
+    std::make_pair(1000352001, "VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT"),
+    std::make_pair(1000352002, "VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT"),
+    std::make_pair(1000484000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_PROPERTIES_FEATURES_QCOM"),
+    std::make_pair(1000484001, "VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM"),
+    std::make_pair(1000485000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC"),
+    std::make_pair(1000485001, "VK_STRUCTURE_TYPE_AMIGO_PROFILING_SUBMIT_INFO_SEC"),
+    std::make_pair(1000488000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_VIEWPORTS_FEATURES_QCOM"),
     std::make_pair(1000489000, "VK_STRUCTURE_TYPE_SEMAPHORE_SCI_SYNC_POOL_CREATE_INFO_NV"),
     std::make_pair(1000489001, "VK_STRUCTURE_TYPE_SEMAPHORE_SCI_SYNC_CREATE_INFO_NV"),
     std::make_pair(1000489002, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SCI_SYNC_2_FEATURES_NV"),
@@ -1583,6 +1533,90 @@ static std::map<uint64_t, std::string> VkStructureType_map = {
     std::make_pair(1000373002, "VK_STRUCTURE_TYPE_FENCE_GET_SCI_SYNC_INFO_NV"),
     std::make_pair(1000373003, "VK_STRUCTURE_TYPE_SCI_SYNC_ATTRIBUTES_INFO_NV"),
     std::make_pair(1000489003, "VK_STRUCTURE_TYPE_DEVICE_SEMAPHORE_SCI_SYNC_POOL_RESERVATION_CREATE_INFO_NV"),
+    std::make_pair(1000490000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_FEATURES_NV"),
+    std::make_pair(1000490001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_NV"),
+    std::make_pair(1000492000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_SPARSE_ADDRESS_SPACE_FEATURES_NV"),
+    std::make_pair(1000492001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_SPARSE_ADDRESS_SPACE_PROPERTIES_NV"),
+    std::make_pair(1000351000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT"),
+    std::make_pair(1000351002, "VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_EXT"),
+    std::make_pair(1000495000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_FEATURES_EXT"),
+    std::make_pair(1000495001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_PROPERTIES_EXT"),
+    std::make_pair(1000496000, "VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT"),
+    std::make_pair(1000497000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM"),
+    std::make_pair(1000497001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM"),
+    std::make_pair(1000498000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT"),
+    std::make_pair(1000499000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_FEATURES_EXT"),
+    std::make_pair(1000505000, "VK_STRUCTURE_TYPE_LATENCY_SLEEP_MODE_INFO_NV"),
+    std::make_pair(1000505001, "VK_STRUCTURE_TYPE_LATENCY_SLEEP_INFO_NV"),
+    std::make_pair(1000505002, "VK_STRUCTURE_TYPE_SET_LATENCY_MARKER_INFO_NV"),
+    std::make_pair(1000505003, "VK_STRUCTURE_TYPE_GET_LATENCY_MARKER_INFO_NV"),
+    std::make_pair(1000505004, "VK_STRUCTURE_TYPE_LATENCY_TIMINGS_FRAME_REPORT_NV"),
+    std::make_pair(1000505005, "VK_STRUCTURE_TYPE_LATENCY_SUBMISSION_PRESENT_ID_NV"),
+    std::make_pair(1000505006, "VK_STRUCTURE_TYPE_OUT_OF_BAND_QUEUE_TYPE_INFO_NV"),
+    std::make_pair(1000505007, "VK_STRUCTURE_TYPE_SWAPCHAIN_LATENCY_CREATE_INFO_NV"),
+    std::make_pair(1000505008, "VK_STRUCTURE_TYPE_LATENCY_SURFACE_CAPABILITIES_NV"),
+    std::make_pair(1000506000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR"),
+    std::make_pair(1000506001, "VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR"),
+    std::make_pair(1000506002, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_KHR"),
+    std::make_pair(1000510000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM"),
+    std::make_pair(1000510001, "VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_RENDER_AREAS_RENDER_PASS_BEGIN_INFO_QCOM"),
+    std::make_pair(1000512000, "VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_CAPABILITIES_KHR"),
+    std::make_pair(1000512001, "VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_PICTURE_INFO_KHR"),
+    std::make_pair(1000512003, "VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_PROFILE_INFO_KHR"),
+    std::make_pair(1000512004, "VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_SESSION_PARAMETERS_CREATE_INFO_KHR"),
+    std::make_pair(1000512005, "VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_DPB_SLOT_INFO_KHR"),
+    std::make_pair(1000515000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR"),
+    std::make_pair(1000515001, "VK_STRUCTURE_TYPE_VIDEO_INLINE_QUERY_INFO_KHR"),
+    std::make_pair(1000516000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PER_STAGE_DESCRIPTOR_SET_FEATURES_NV"),
+    std::make_pair(1000518000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_2_FEATURES_QCOM"),
+    std::make_pair(1000518001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_2_PROPERTIES_QCOM"),
+    std::make_pair(1000518002, "VK_STRUCTURE_TYPE_SAMPLER_BLOCK_MATCH_WINDOW_CREATE_INFO_QCOM"),
+    std::make_pair(1000519000, "VK_STRUCTURE_TYPE_SAMPLER_CUBIC_WEIGHTS_CREATE_INFO_QCOM"),
+    std::make_pair(1000519001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUBIC_WEIGHTS_FEATURES_QCOM"),
+    std::make_pair(1000519002, "VK_STRUCTURE_TYPE_BLIT_IMAGE_CUBIC_WEIGHTS_INFO_QCOM"),
+    std::make_pair(1000520000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_YCBCR_DEGAMMA_FEATURES_QCOM"),
+    std::make_pair(1000520001, "VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_YCBCR_DEGAMMA_CREATE_INFO_QCOM"),
+    std::make_pair(1000521000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUBIC_CLAMP_FEATURES_QCOM"),
+    std::make_pair(1000524000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT"),
+    std::make_pair(1000525000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_KHR"),
+    std::make_pair(1000190001, "VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_KHR"),
+    std::make_pair(1000190002, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_KHR"),
+    std::make_pair(1000528000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT_CONTROLS_2_FEATURES_KHR"),
+    std::make_pair(1000529000, "VK_STRUCTURE_TYPE_SCREEN_BUFFER_PROPERTIES_QNX"),
+    std::make_pair(1000529001, "VK_STRUCTURE_TYPE_SCREEN_BUFFER_FORMAT_PROPERTIES_QNX"),
+    std::make_pair(1000529002, "VK_STRUCTURE_TYPE_IMPORT_SCREEN_BUFFER_INFO_QNX"),
+    std::make_pair(1000529003, "VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_QNX"),
+    std::make_pair(1000529004, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCREEN_BUFFER_FEATURES_QNX"),
+    std::make_pair(1000530000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_DRIVER_PROPERTIES_MSFT"),
+    std::make_pair(1000265000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_KHR"),
+    std::make_pair(1000259000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_KHR"),
+    std::make_pair(1000259001, "VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_KHR"),
+    std::make_pair(1000259002, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_KHR"),
+    std::make_pair(1000184000, "VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_KHR"),
+    std::make_pair(1000544000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_EXPECT_ASSUME_FEATURES_KHR"),
+    std::make_pair(1000545000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_FEATURES_KHR"),
+    std::make_pair(1000545001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_PROPERTIES_KHR"),
+    std::make_pair(1000545002, "VK_STRUCTURE_TYPE_BIND_MEMORY_STATUS_KHR"),
+    std::make_pair(1000545003, "VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO_KHR"),
+    std::make_pair(1000545004, "VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO_KHR"),
+    std::make_pair(1000545005, "VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO_KHR"),
+    std::make_pair(1000545006, "VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO_KHR"),
+    std::make_pair(1000545007, "VK_STRUCTURE_TYPE_SET_DESCRIPTOR_BUFFER_OFFSETS_INFO_EXT"),
+    std::make_pair(1000545008, "VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_BUFFER_EMBEDDED_SAMPLERS_INFO_EXT"),
+    std::make_pair(1000546000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV"),
+    std::make_pair(1000555000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV"),
+    std::make_pair(1000558000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR"),
+    std::make_pair(1000562000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_FEATURES_KHR"),
+    std::make_pair(1000562001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_PROPERTIES_KHR"),
+    std::make_pair(1000562002, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_PROPERTIES_LIST_KHR"),
+    std::make_pair(1000562003, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_PROPERTIES_KHR"),
+    std::make_pair(1000562004, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_VULKAN_PROPERTIES_KHR"),
+    std::make_pair(1000563000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV"),
+    std::make_pair(1000564000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT"),
+    std::make_pair(1000568000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV"),
+    std::make_pair(1000575000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA"),
+    std::make_pair(1000575001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA"),
+    std::make_pair(1000575002, "VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA"),
 };
 static void print_VkStructureType(VkStructureType obj, const std::string &str, bool commaNeeded = true)
 {
@@ -1607,6 +1641,35 @@ static void print_VkStructureType(const VkStructureType *obj, const std::string 
         _OUT << "\"" << VkStructureType_map[*obj] << "\"" << std::endl;
 }
 
+static std::map<uint64_t, std::string> VkPipelineCacheHeaderVersion_map = {
+    std::make_pair(1, "VK_PIPELINE_CACHE_HEADER_VERSION_ONE"),
+    std::make_pair(1000298001, "VK_PIPELINE_CACHE_HEADER_VERSION_SAFETY_CRITICAL_ONE"),
+};
+static void print_VkPipelineCacheHeaderVersion(VkPipelineCacheHeaderVersion obj, const std::string &str,
+                                               bool commaNeeded = true)
+{
+    PRINT_SPACE
+    if (str != "")
+        _OUT << "\"" << str << "\""
+             << " : ";
+    if (commaNeeded)
+        _OUT << "\"" << VkPipelineCacheHeaderVersion_map[obj] << "\"," << std::endl;
+    else
+        _OUT << "\"" << VkPipelineCacheHeaderVersion_map[obj] << "\"" << std::endl;
+}
+static void print_VkPipelineCacheHeaderVersion(const VkPipelineCacheHeaderVersion *obj, const std::string &str,
+                                               bool commaNeeded = true)
+{
+    PRINT_SPACE
+    if (str != "")
+        _OUT << "\"" << str << "\""
+             << " : ";
+    if (commaNeeded)
+        _OUT << "\"" << VkPipelineCacheHeaderVersion_map[*obj] << "\"," << std::endl;
+    else
+        _OUT << "\"" << VkPipelineCacheHeaderVersion_map[*obj] << "\"" << std::endl;
+}
+
 static std::map<uint64_t, std::string> VkAccessFlagBits_map = {
     std::make_pair(1ULL << 0, "VK_ACCESS_INDIRECT_COMMAND_READ_BIT"),
     std::make_pair(1ULL << 1, "VK_ACCESS_INDEX_READ_BIT"),
@@ -1625,6 +1688,7 @@ static std::map<uint64_t, std::string> VkAccessFlagBits_map = {
     std::make_pair(1ULL << 14, "VK_ACCESS_HOST_WRITE_BIT"),
     std::make_pair(1ULL << 15, "VK_ACCESS_MEMORY_READ_BIT"),
     std::make_pair(1ULL << 16, "VK_ACCESS_MEMORY_WRITE_BIT"),
+    std::make_pair(0, "VK_ACCESS_NONE"),
     std::make_pair(1ULL << 25, "VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT"),
     std::make_pair(1ULL << 26, "VK_ACCESS_TRANSFORM_FEEDBACK_COUNTER_READ_BIT_EXT"),
     std::make_pair(1ULL << 27, "VK_ACCESS_TRANSFORM_FEEDBACK_COUNTER_WRITE_BIT_EXT"),
@@ -1636,7 +1700,6 @@ static std::map<uint64_t, std::string> VkAccessFlagBits_map = {
     std::make_pair(1ULL << 23, "VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR"),
     std::make_pair(1ULL << 17, "VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_NV"),
     std::make_pair(1ULL << 18, "VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_NV"),
-    std::make_pair(0, "VK_ACCESS_NONE_KHR"),
 };
 static void print_VkAccessFlagBits(VkAccessFlagBits obj, const std::string &str, bool commaNeeded = true)
 {
@@ -1677,6 +1740,8 @@ static std::map<uint64_t, std::string> VkImageLayout_map = {
     std::make_pair(1000241001, "VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL"),
     std::make_pair(1000241002, "VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL"),
     std::make_pair(1000241003, "VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL"),
+    std::make_pair(1000314000, "VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL"),
+    std::make_pair(1000314001, "VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL"),
     std::make_pair(1000001002, "VK_IMAGE_LAYOUT_PRESENT_SRC_KHR"),
     std::make_pair(1000024000, "VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR"),
     std::make_pair(1000024001, "VK_IMAGE_LAYOUT_VIDEO_DECODE_SRC_KHR"),
@@ -1684,11 +1749,11 @@ static std::map<uint64_t, std::string> VkImageLayout_map = {
     std::make_pair(1000111000, "VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR"),
     std::make_pair(1000218000, "VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT"),
     std::make_pair(1000164003, "VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR"),
+    std::make_pair(1000232000, "VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR"),
     std::make_pair(1000299000, "VK_IMAGE_LAYOUT_VIDEO_ENCODE_DST_KHR"),
     std::make_pair(1000299001, "VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR"),
     std::make_pair(1000299002, "VK_IMAGE_LAYOUT_VIDEO_ENCODE_DPB_KHR"),
-    std::make_pair(1000314000, "VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL_KHR"),
-    std::make_pair(1000314001, "VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR"),
+    std::make_pair(1000339000, "VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT"),
 };
 static void print_VkImageLayout(VkImageLayout obj, const std::string &str, bool commaNeeded = true)
 {
@@ -1721,11 +1786,11 @@ static std::map<uint64_t, std::string> VkImageAspectFlagBits_map = {
     std::make_pair(1ULL << 4, "VK_IMAGE_ASPECT_PLANE_0_BIT"),
     std::make_pair(1ULL << 5, "VK_IMAGE_ASPECT_PLANE_1_BIT"),
     std::make_pair(1ULL << 6, "VK_IMAGE_ASPECT_PLANE_2_BIT"),
+    std::make_pair(0, "VK_IMAGE_ASPECT_NONE"),
     std::make_pair(1ULL << 7, "VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT"),
     std::make_pair(1ULL << 8, "VK_IMAGE_ASPECT_MEMORY_PLANE_1_BIT_EXT"),
     std::make_pair(1ULL << 9, "VK_IMAGE_ASPECT_MEMORY_PLANE_2_BIT_EXT"),
     std::make_pair(1ULL << 10, "VK_IMAGE_ASPECT_MEMORY_PLANE_3_BIT_EXT"),
-    std::make_pair(0, "VK_IMAGE_ASPECT_NONE_KHR"),
 };
 static void print_VkImageAspectFlagBits(VkImageAspectFlagBits obj, const std::string &str, bool commaNeeded = true)
 {
@@ -1779,6 +1844,7 @@ static std::map<uint64_t, std::string> VkObjectType_map = {
     std::make_pair(24, "VK_OBJECT_TYPE_FRAMEBUFFER"),
     std::make_pair(25, "VK_OBJECT_TYPE_COMMAND_POOL"),
     std::make_pair(1000156000, "VK_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION"),
+    std::make_pair(1000295000, "VK_OBJECT_TYPE_PRIVATE_DATA_SLOT"),
     std::make_pair(1000000000, "VK_OBJECT_TYPE_SURFACE_KHR"),
     std::make_pair(1000001000, "VK_OBJECT_TYPE_SWAPCHAIN_KHR"),
     std::make_pair(1000002000, "VK_OBJECT_TYPE_DISPLAY_KHR"),
@@ -1795,8 +1861,12 @@ static std::map<uint64_t, std::string> VkObjectType_map = {
     std::make_pair(1000210000, "VK_OBJECT_TYPE_PERFORMANCE_CONFIGURATION_INTEL"),
     std::make_pair(1000268000, "VK_OBJECT_TYPE_DEFERRED_OPERATION_KHR"),
     std::make_pair(1000277000, "VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV"),
-    std::make_pair(1000295000, "VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT"),
+    std::make_pair(1000307000, "VK_OBJECT_TYPE_CUDA_MODULE_NV"),
+    std::make_pair(1000307001, "VK_OBJECT_TYPE_CUDA_FUNCTION_NV"),
     std::make_pair(1000366000, "VK_OBJECT_TYPE_BUFFER_COLLECTION_FUCHSIA"),
+    std::make_pair(1000396000, "VK_OBJECT_TYPE_MICROMAP_EXT"),
+    std::make_pair(1000464000, "VK_OBJECT_TYPE_OPTICAL_FLOW_SESSION_NV"),
+    std::make_pair(1000482000, "VK_OBJECT_TYPE_SHADER_EXT"),
     std::make_pair(1000489000, "VK_OBJECT_TYPE_SEMAPHORE_SCI_SYNC_POOL_NV"),
 };
 static void print_VkObjectType(VkObjectType obj, const std::string &str, bool commaNeeded = true)
@@ -1822,39 +1892,11 @@ static void print_VkObjectType(const VkObjectType *obj, const std::string &str, 
         _OUT << "\"" << VkObjectType_map[*obj] << "\"" << std::endl;
 }
 
-static std::map<uint64_t, std::string> VkPipelineCacheHeaderVersion_map = {
-    std::make_pair(1, "VK_PIPELINE_CACHE_HEADER_VERSION_ONE"),
-    std::make_pair(1000298001, "VK_PIPELINE_CACHE_HEADER_VERSION_SAFETY_CRITICAL_ONE"),
-};
-static void print_VkPipelineCacheHeaderVersion(VkPipelineCacheHeaderVersion obj, const std::string &str,
-                                               bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    if (commaNeeded)
-        _OUT << "\"" << VkPipelineCacheHeaderVersion_map[obj] << "\"," << std::endl;
-    else
-        _OUT << "\"" << VkPipelineCacheHeaderVersion_map[obj] << "\"" << std::endl;
-}
-static void print_VkPipelineCacheHeaderVersion(const VkPipelineCacheHeaderVersion *obj, const std::string &str,
-                                               bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    if (commaNeeded)
-        _OUT << "\"" << VkPipelineCacheHeaderVersion_map[*obj] << "\"," << std::endl;
-    else
-        _OUT << "\"" << VkPipelineCacheHeaderVersion_map[*obj] << "\"" << std::endl;
-}
-
 static std::map<uint64_t, std::string> VkVendorId_map = {
-    std::make_pair(0x10001, "VK_VENDOR_ID_VIV"),   std::make_pair(0x10002, "VK_VENDOR_ID_VSI"),
-    std::make_pair(0x10003, "VK_VENDOR_ID_KAZAN"), std::make_pair(0x10004, "VK_VENDOR_ID_CODEPLAY"),
-    std::make_pair(0x10005, "VK_VENDOR_ID_MESA"),  std::make_pair(0x10006, "VK_VENDOR_ID_POCL"),
+    std::make_pair(0x10000, "VK_VENDOR_ID_KHRONOS"),  std::make_pair(0x10001, "VK_VENDOR_ID_VIV"),
+    std::make_pair(0x10002, "VK_VENDOR_ID_VSI"),      std::make_pair(0x10003, "VK_VENDOR_ID_KAZAN"),
+    std::make_pair(0x10004, "VK_VENDOR_ID_CODEPLAY"), std::make_pair(0x10005, "VK_VENDOR_ID_MESA"),
+    std::make_pair(0x10006, "VK_VENDOR_ID_POCL"),     std::make_pair(0x10007, "VK_VENDOR_ID_MOBILEYE"),
 };
 static void print_VkVendorId(VkVendorId obj, const std::string &str, bool commaNeeded = true)
 {
@@ -2156,6 +2198,26 @@ static std::map<uint64_t, std::string> VkFormat_map = {
     std::make_pair(1000156031, "VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM"),
     std::make_pair(1000156032, "VK_FORMAT_G16_B16R16_2PLANE_422_UNORM"),
     std::make_pair(1000156033, "VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM"),
+    std::make_pair(1000330000, "VK_FORMAT_G8_B8R8_2PLANE_444_UNORM"),
+    std::make_pair(1000330001, "VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16"),
+    std::make_pair(1000330002, "VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16"),
+    std::make_pair(1000330003, "VK_FORMAT_G16_B16R16_2PLANE_444_UNORM"),
+    std::make_pair(1000340000, "VK_FORMAT_A4R4G4B4_UNORM_PACK16"),
+    std::make_pair(1000340001, "VK_FORMAT_A4B4G4R4_UNORM_PACK16"),
+    std::make_pair(1000066000, "VK_FORMAT_ASTC_4x4_SFLOAT_BLOCK"),
+    std::make_pair(1000066001, "VK_FORMAT_ASTC_5x4_SFLOAT_BLOCK"),
+    std::make_pair(1000066002, "VK_FORMAT_ASTC_5x5_SFLOAT_BLOCK"),
+    std::make_pair(1000066003, "VK_FORMAT_ASTC_6x5_SFLOAT_BLOCK"),
+    std::make_pair(1000066004, "VK_FORMAT_ASTC_6x6_SFLOAT_BLOCK"),
+    std::make_pair(1000066005, "VK_FORMAT_ASTC_8x5_SFLOAT_BLOCK"),
+    std::make_pair(1000066006, "VK_FORMAT_ASTC_8x6_SFLOAT_BLOCK"),
+    std::make_pair(1000066007, "VK_FORMAT_ASTC_8x8_SFLOAT_BLOCK"),
+    std::make_pair(1000066008, "VK_FORMAT_ASTC_10x5_SFLOAT_BLOCK"),
+    std::make_pair(1000066009, "VK_FORMAT_ASTC_10x6_SFLOAT_BLOCK"),
+    std::make_pair(1000066010, "VK_FORMAT_ASTC_10x8_SFLOAT_BLOCK"),
+    std::make_pair(1000066011, "VK_FORMAT_ASTC_10x10_SFLOAT_BLOCK"),
+    std::make_pair(1000066012, "VK_FORMAT_ASTC_12x10_SFLOAT_BLOCK"),
+    std::make_pair(1000066013, "VK_FORMAT_ASTC_12x12_SFLOAT_BLOCK"),
     std::make_pair(1000054000, "VK_FORMAT_PVRTC1_2BPP_UNORM_BLOCK_IMG"),
     std::make_pair(1000054001, "VK_FORMAT_PVRTC1_4BPP_UNORM_BLOCK_IMG"),
     std::make_pair(1000054002, "VK_FORMAT_PVRTC2_2BPP_UNORM_BLOCK_IMG"),
@@ -2164,20 +2226,6 @@ static std::map<uint64_t, std::string> VkFormat_map = {
     std::make_pair(1000054005, "VK_FORMAT_PVRTC1_4BPP_SRGB_BLOCK_IMG"),
     std::make_pair(1000054006, "VK_FORMAT_PVRTC2_2BPP_SRGB_BLOCK_IMG"),
     std::make_pair(1000054007, "VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG"),
-    std::make_pair(1000066000, "VK_FORMAT_ASTC_4x4_SFLOAT_BLOCK_EXT"),
-    std::make_pair(1000066001, "VK_FORMAT_ASTC_5x4_SFLOAT_BLOCK_EXT"),
-    std::make_pair(1000066002, "VK_FORMAT_ASTC_5x5_SFLOAT_BLOCK_EXT"),
-    std::make_pair(1000066003, "VK_FORMAT_ASTC_6x5_SFLOAT_BLOCK_EXT"),
-    std::make_pair(1000066004, "VK_FORMAT_ASTC_6x6_SFLOAT_BLOCK_EXT"),
-    std::make_pair(1000066005, "VK_FORMAT_ASTC_8x5_SFLOAT_BLOCK_EXT"),
-    std::make_pair(1000066006, "VK_FORMAT_ASTC_8x6_SFLOAT_BLOCK_EXT"),
-    std::make_pair(1000066007, "VK_FORMAT_ASTC_8x8_SFLOAT_BLOCK_EXT"),
-    std::make_pair(1000066008, "VK_FORMAT_ASTC_10x5_SFLOAT_BLOCK_EXT"),
-    std::make_pair(1000066009, "VK_FORMAT_ASTC_10x6_SFLOAT_BLOCK_EXT"),
-    std::make_pair(1000066010, "VK_FORMAT_ASTC_10x8_SFLOAT_BLOCK_EXT"),
-    std::make_pair(1000066011, "VK_FORMAT_ASTC_10x10_SFLOAT_BLOCK_EXT"),
-    std::make_pair(1000066012, "VK_FORMAT_ASTC_12x10_SFLOAT_BLOCK_EXT"),
-    std::make_pair(1000066013, "VK_FORMAT_ASTC_12x12_SFLOAT_BLOCK_EXT"),
     std::make_pair(1000288000, "VK_FORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT"),
     std::make_pair(1000288001, "VK_FORMAT_ASTC_3x3x3_SRGB_BLOCK_EXT"),
     std::make_pair(1000288002, "VK_FORMAT_ASTC_3x3x3_SFLOAT_BLOCK_EXT"),
@@ -2208,12 +2256,9 @@ static std::map<uint64_t, std::string> VkFormat_map = {
     std::make_pair(1000288027, "VK_FORMAT_ASTC_6x6x6_UNORM_BLOCK_EXT"),
     std::make_pair(1000288028, "VK_FORMAT_ASTC_6x6x6_SRGB_BLOCK_EXT"),
     std::make_pair(1000288029, "VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT"),
-    std::make_pair(1000330000, "VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT"),
-    std::make_pair(1000330001, "VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT"),
-    std::make_pair(1000330002, "VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT"),
-    std::make_pair(1000330003, "VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT"),
-    std::make_pair(1000340000, "VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT"),
-    std::make_pair(1000340001, "VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT"),
+    std::make_pair(1000464000, "VK_FORMAT_R16G16_SFIXED5_NV"),
+    std::make_pair(1000470000, "VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR"),
+    std::make_pair(1000470001, "VK_FORMAT_A8_UNORM_KHR"),
 };
 static void print_VkFormat(VkFormat obj, const std::string &str, bool commaNeeded = true)
 {
@@ -2263,10 +2308,10 @@ static std::map<uint64_t, std::string> VkFormatFeatureFlagBits_map = {
     std::make_pair(1ULL << 22, "VK_FORMAT_FEATURE_DISJOINT_BIT"),
     std::make_pair(1ULL << 23, "VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT"),
     std::make_pair(1ULL << 16, "VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT"),
-    std::make_pair(1ULL << 13, "VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG"),
     std::make_pair(1ULL << 25, "VK_FORMAT_FEATURE_VIDEO_DECODE_OUTPUT_BIT_KHR"),
     std::make_pair(1ULL << 26, "VK_FORMAT_FEATURE_VIDEO_DECODE_DPB_BIT_KHR"),
     std::make_pair(1ULL << 29, "VK_FORMAT_FEATURE_ACCELERATION_STRUCTURE_VERTEX_BUFFER_BIT_KHR"),
+    std::make_pair(1ULL << 13, "VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_EXT"),
     std::make_pair(1ULL << 24, "VK_FORMAT_FEATURE_FRAGMENT_DENSITY_MAP_BIT_EXT"),
     std::make_pair(1ULL << 30, "VK_FORMAT_FEATURE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
     std::make_pair(1ULL << 27, "VK_FORMAT_FEATURE_VIDEO_ENCODE_INPUT_BIT_KHR"),
@@ -2312,9 +2357,12 @@ static std::map<uint64_t, std::string> VkImageCreateFlagBits_map = {
     std::make_pair(1ULL << 13, "VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV"),
     std::make_pair(1ULL << 12, "VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT"),
     std::make_pair(1ULL << 14, "VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT"),
-    std::make_pair(1ULL << 16, "VK_IMAGE_CREATE_RESERVED_16_BIT_AMD"),
-    std::make_pair(1ULL << 17, "VK_IMAGE_CREATE_RESERVED_394_BIT_EXT"),
-    std::make_pair(1ULL << 15, "VK_IMAGE_CREATE_RESERVED_426_BIT_QCOM"),
+    std::make_pair(1ULL << 19, "VK_IMAGE_CREATE_RESERVED_19_BIT_EXT"),
+    std::make_pair(1ULL << 16, "VK_IMAGE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT"),
+    std::make_pair(1ULL << 18, "VK_IMAGE_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT"),
+    std::make_pair(1ULL << 17, "VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT"),
+    std::make_pair(1ULL << 15, "VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_QCOM"),
+    std::make_pair(1ULL << 20, "VK_IMAGE_CREATE_VIDEO_PROFILE_INDEPENDENT_BIT_KHR"),
 };
 static void print_VkImageCreateFlagBits(VkImageCreateFlagBits obj, const std::string &str, bool commaNeeded = true)
 {
@@ -2438,15 +2486,20 @@ static std::map<uint64_t, std::string> VkImageUsageFlagBits_map = {
     std::make_pair(1ULL << 10, "VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR"),
     std::make_pair(1ULL << 11, "VK_IMAGE_USAGE_VIDEO_DECODE_SRC_BIT_KHR"),
     std::make_pair(1ULL << 12, "VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR"),
-    std::make_pair(1ULL << 16, "VK_IMAGE_USAGE_RESERVED_16_BIT_QCOM"),
-    std::make_pair(1ULL << 17, "VK_IMAGE_USAGE_RESERVED_17_BIT_QCOM"),
     std::make_pair(1ULL << 9, "VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT"),
     std::make_pair(1ULL << 8, "VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
+    std::make_pair(1ULL << 22, "VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT"),
     std::make_pair(1ULL << 13, "VK_IMAGE_USAGE_VIDEO_ENCODE_DST_BIT_KHR"),
     std::make_pair(1ULL << 14, "VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR"),
     std::make_pair(1ULL << 15, "VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR"),
-    std::make_pair(1ULL << 19, "VK_IMAGE_USAGE_RESERVED_19_BIT_EXT"),
+    std::make_pair(1ULL << 19, "VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT"),
     std::make_pair(1ULL << 18, "VK_IMAGE_USAGE_INVOCATION_MASK_BIT_HUAWEI"),
+    std::make_pair(1ULL << 20, "VK_IMAGE_USAGE_SAMPLE_WEIGHT_BIT_QCOM"),
+    std::make_pair(1ULL << 21, "VK_IMAGE_USAGE_SAMPLE_BLOCK_MATCH_BIT_QCOM"),
+    std::make_pair(1ULL << 24, "VK_IMAGE_USAGE_RESERVED_24_BIT_COREAVI"),
+    std::make_pair(1ULL << 23, "VK_IMAGE_USAGE_RESERVED_23_BIT_EXT"),
+    std::make_pair(1ULL << 25, "VK_IMAGE_USAGE_RESERVED_25_BIT_KHR"),
+    std::make_pair(1ULL << 26, "VK_IMAGE_USAGE_RESERVED_26_BIT_KHR"),
 };
 static void print_VkImageUsageFlagBits(VkImageUsageFlagBits obj, const std::string &str, bool commaNeeded = true)
 {
@@ -2469,6 +2522,34 @@ static void print_VkImageUsageFlagBits(const VkImageUsageFlagBits *obj, const st
         _OUT << "\"" << VkImageUsageFlagBits_map[*obj] << "\"," << std::endl;
     else
         _OUT << "\"" << VkImageUsageFlagBits_map[*obj] << "\"" << std::endl;
+}
+
+static std::map<uint64_t, std::string> VkInstanceCreateFlagBits_map = {
+    std::make_pair(1ULL << 0, "VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR"),
+};
+static void print_VkInstanceCreateFlagBits(VkInstanceCreateFlagBits obj, const std::string &str,
+                                           bool commaNeeded = true)
+{
+    PRINT_SPACE
+    if (str != "")
+        _OUT << "\"" << str << "\""
+             << " : ";
+    if (commaNeeded)
+        _OUT << "\"" << VkInstanceCreateFlagBits_map[obj] << "\"," << std::endl;
+    else
+        _OUT << "\"" << VkInstanceCreateFlagBits_map[obj] << "\"" << std::endl;
+}
+static void print_VkInstanceCreateFlagBits(const VkInstanceCreateFlagBits *obj, const std::string &str,
+                                           bool commaNeeded = true)
+{
+    PRINT_SPACE
+    if (str != "")
+        _OUT << "\"" << str << "\""
+             << " : ";
+    if (commaNeeded)
+        _OUT << "\"" << VkInstanceCreateFlagBits_map[*obj] << "\"," << std::endl;
+    else
+        _OUT << "\"" << VkInstanceCreateFlagBits_map[*obj] << "\"" << std::endl;
 }
 
 static std::map<uint64_t, std::string> VkMemoryHeapFlagBits_map = {
@@ -2571,7 +2652,12 @@ static std::map<uint64_t, std::string> VkQueueFlagBits_map = {
     std::make_pair(1ULL << 2, "VK_QUEUE_TRANSFER_BIT"),
     std::make_pair(1ULL << 4, "VK_QUEUE_PROTECTED_BIT"),
     std::make_pair(1ULL << 5, "VK_QUEUE_VIDEO_DECODE_BIT_KHR"),
+    std::make_pair(1ULL << 9, "VK_QUEUE_RESERVED_9_BIT_EXT"),
     std::make_pair(1ULL << 6, "VK_QUEUE_VIDEO_ENCODE_BIT_KHR"),
+    std::make_pair(1ULL << 7, "VK_QUEUE_RESERVED_7_BIT_QCOM"),
+    std::make_pair(1ULL << 11, "VK_QUEUE_RESERVED_11_BIT_ARM"),
+    std::make_pair(1ULL << 8, "VK_QUEUE_OPTICAL_FLOW_BIT_NV"),
+    std::make_pair(1ULL << 10, "VK_QUEUE_RESERVED_10_BIT_EXT"),
 };
 static void print_VkQueueFlagBits(VkQueueFlagBits obj, const std::string &str, bool commaNeeded = true)
 {
@@ -2598,6 +2684,7 @@ static void print_VkQueueFlagBits(const VkQueueFlagBits *obj, const std::string 
 
 static std::map<uint64_t, std::string> VkDeviceQueueCreateFlagBits_map = {
     std::make_pair(1ULL << 0, "VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT"),
+    std::make_pair(1ULL << 1, "VK_DEVICE_QUEUE_CREATE_RESERVED_1_BIT_QCOM"),
 };
 static void print_VkDeviceQueueCreateFlagBits(VkDeviceQueueCreateFlagBits obj, const std::string &str,
                                               bool commaNeeded = true)
@@ -2642,16 +2729,16 @@ static std::map<uint64_t, std::string> VkPipelineStageFlagBits_map = {
     std::make_pair(1ULL << 14, "VK_PIPELINE_STAGE_HOST_BIT"),
     std::make_pair(1ULL << 15, "VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT"),
     std::make_pair(1ULL << 16, "VK_PIPELINE_STAGE_ALL_COMMANDS_BIT"),
+    std::make_pair(0, "VK_PIPELINE_STAGE_NONE"),
     std::make_pair(1ULL << 24, "VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT"),
     std::make_pair(1ULL << 18, "VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT"),
     std::make_pair(1ULL << 25, "VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR"),
     std::make_pair(1ULL << 21, "VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR"),
-    std::make_pair(1ULL << 19, "VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV"),
-    std::make_pair(1ULL << 20, "VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV"),
     std::make_pair(1ULL << 23, "VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT"),
     std::make_pair(1ULL << 22, "VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
     std::make_pair(1ULL << 17, "VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV"),
-    std::make_pair(0, "VK_PIPELINE_STAGE_NONE_KHR"),
+    std::make_pair(1ULL << 19, "VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT"),
+    std::make_pair(1ULL << 20, "VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT"),
 };
 static void print_VkPipelineStageFlagBits(VkPipelineStageFlagBits obj, const std::string &str, bool commaNeeded = true)
 {
@@ -2675,6 +2762,32 @@ static void print_VkPipelineStageFlagBits(const VkPipelineStageFlagBits *obj, co
         _OUT << "\"" << VkPipelineStageFlagBits_map[*obj] << "\"," << std::endl;
     else
         _OUT << "\"" << VkPipelineStageFlagBits_map[*obj] << "\"" << std::endl;
+}
+
+static std::map<uint64_t, std::string> VkMemoryMapFlagBits_map = {
+    std::make_pair(1ULL << 0, "VK_MEMORY_MAP_PLACED_BIT_EXT"),
+};
+static void print_VkMemoryMapFlagBits(VkMemoryMapFlagBits obj, const std::string &str, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    if (str != "")
+        _OUT << "\"" << str << "\""
+             << " : ";
+    if (commaNeeded)
+        _OUT << "\"" << VkMemoryMapFlagBits_map[obj] << "\"," << std::endl;
+    else
+        _OUT << "\"" << VkMemoryMapFlagBits_map[obj] << "\"" << std::endl;
+}
+static void print_VkMemoryMapFlagBits(const VkMemoryMapFlagBits *obj, const std::string &str, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    if (str != "")
+        _OUT << "\"" << str << "\""
+             << " : ";
+    if (commaNeeded)
+        _OUT << "\"" << VkMemoryMapFlagBits_map[*obj] << "\"," << std::endl;
+    else
+        _OUT << "\"" << VkMemoryMapFlagBits_map[*obj] << "\"" << std::endl;
 }
 
 static std::map<uint64_t, std::string> VkFenceCreateFlagBits_map = {
@@ -2705,7 +2818,7 @@ static void print_VkFenceCreateFlagBits(const VkFenceCreateFlagBits *obj, const 
 }
 
 static std::map<uint64_t, std::string> VkEventCreateFlagBits_map = {
-    std::make_pair(1ULL << 0, "VK_EVENT_CREATE_DEVICE_ONLY_BIT_KHR"),
+    std::make_pair(1ULL << 0, "VK_EVENT_CREATE_DEVICE_ONLY_BIT"),
 };
 static void print_VkEventCreateFlagBits(VkEventCreateFlagBits obj, const std::string &str, bool commaNeeded = true)
 {
@@ -2743,6 +2856,9 @@ static std::map<uint64_t, std::string> VkQueryPipelineStatisticFlagBits_map = {
     std::make_pair(1ULL << 8, "VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT"),
     std::make_pair(1ULL << 9, "VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT"),
     std::make_pair(1ULL << 10, "VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT"),
+    std::make_pair(1ULL << 11, "VK_QUERY_PIPELINE_STATISTIC_TASK_SHADER_INVOCATIONS_BIT_EXT"),
+    std::make_pair(1ULL << 12, "VK_QUERY_PIPELINE_STATISTIC_MESH_SHADER_INVOCATIONS_BIT_EXT"),
+    std::make_pair(1ULL << 13, "VK_QUERY_PIPELINE_STATISTIC_CLUSTER_CULLING_SHADER_INVOCATIONS_BIT_HUAWEI"),
 };
 static void print_VkQueryPipelineStatisticFlagBits(VkQueryPipelineStatisticFlagBits obj, const std::string &str,
                                                    bool commaNeeded = true)
@@ -2780,7 +2896,13 @@ static std::map<uint64_t, std::string> VkQueryType_map = {
     std::make_pair(1000150001, "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR"),
     std::make_pair(1000165000, "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_NV"),
     std::make_pair(1000210000, "VK_QUERY_TYPE_PERFORMANCE_QUERY_INTEL"),
-    std::make_pair(1000299000, "VK_QUERY_TYPE_VIDEO_ENCODE_BITSTREAM_BUFFER_RANGE_KHR"),
+    std::make_pair(1000299000, "VK_QUERY_TYPE_VIDEO_ENCODE_FEEDBACK_KHR"),
+    std::make_pair(1000328000, "VK_QUERY_TYPE_MESH_PRIMITIVES_GENERATED_EXT"),
+    std::make_pair(1000382000, "VK_QUERY_TYPE_PRIMITIVES_GENERATED_EXT"),
+    std::make_pair(1000386000, "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_BOTTOM_LEVEL_POINTERS_KHR"),
+    std::make_pair(1000386001, "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SIZE_KHR"),
+    std::make_pair(1000396000, "VK_QUERY_TYPE_MICROMAP_SERIALIZATION_SIZE_EXT"),
+    std::make_pair(1000396001, "VK_QUERY_TYPE_MICROMAP_COMPACTED_SIZE_EXT"),
 };
 static void print_VkQueryType(VkQueryType obj, const std::string &str, bool commaNeeded = true)
 {
@@ -2842,7 +2964,8 @@ static std::map<uint64_t, std::string> VkBufferCreateFlagBits_map = {
     std::make_pair(1ULL << 2, "VK_BUFFER_CREATE_SPARSE_ALIASED_BIT"),
     std::make_pair(1ULL << 3, "VK_BUFFER_CREATE_PROTECTED_BIT"),
     std::make_pair(1ULL << 4, "VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT"),
-    std::make_pair(1ULL << 5, "VK_BUFFER_CREATE_RESERVED_5_BIT_AMD"),
+    std::make_pair(1ULL << 5, "VK_BUFFER_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT"),
+    std::make_pair(1ULL << 6, "VK_BUFFER_CREATE_VIDEO_PROFILE_INDEPENDENT_BIT_KHR"),
 };
 static void print_VkBufferCreateFlagBits(VkBufferCreateFlagBits obj, const std::string &str, bool commaNeeded = true)
 {
@@ -2884,14 +3007,19 @@ static std::map<uint64_t, std::string> VkBufferUsageFlagBits_map = {
     std::make_pair(1ULL << 11, "VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT"),
     std::make_pair(1ULL << 12, "VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT"),
     std::make_pair(1ULL << 9, "VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT"),
+    std::make_pair(1ULL << 25, "VK_BUFFER_USAGE_EXECUTION_GRAPH_SCRATCH_BIT_AMDX"),
+    std::make_pair(1ULL << 28, "VK_BUFFER_USAGE_RESERVED_28_BIT_KHR"),
     std::make_pair(1ULL << 19, "VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR"),
     std::make_pair(1ULL << 20, "VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR"),
     std::make_pair(1ULL << 10, "VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR"),
-    std::make_pair(1ULL << 18, "VK_BUFFER_USAGE_RESERVED_18_BIT_QCOM"),
     std::make_pair(1ULL << 15, "VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR"),
     std::make_pair(1ULL << 16, "VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR"),
-    std::make_pair(1ULL << 21, "VK_BUFFER_USAGE_RESERVED_21_BIT_AMD"),
-    std::make_pair(1ULL << 22, "VK_BUFFER_USAGE_RESERVED_22_BIT_AMD"),
+    std::make_pair(1ULL << 27, "VK_BUFFER_USAGE_RESERVED_27_BIT_QCOM"),
+    std::make_pair(1ULL << 21, "VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT"),
+    std::make_pair(1ULL << 22, "VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT"),
+    std::make_pair(1ULL << 26, "VK_BUFFER_USAGE_PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER_BIT_EXT"),
+    std::make_pair(1ULL << 23, "VK_BUFFER_USAGE_MICROMAP_BUILD_INPUT_READ_ONLY_BIT_EXT"),
+    std::make_pair(1ULL << 24, "VK_BUFFER_USAGE_MICROMAP_STORAGE_BIT_EXT"),
 };
 static void print_VkBufferUsageFlagBits(VkBufferUsageFlagBits obj, const std::string &str, bool commaNeeded = true)
 {
@@ -2975,6 +3103,7 @@ static void print_VkComponentSwizzle(const VkComponentSwizzle *obj, const std::s
 
 static std::map<uint64_t, std::string> VkImageViewCreateFlagBits_map = {
     std::make_pair(1ULL << 0, "VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DYNAMIC_BIT_EXT"),
+    std::make_pair(1ULL << 2, "VK_IMAGE_VIEW_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT"),
     std::make_pair(1ULL << 1, "VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DEFERRED_BIT_EXT"),
 };
 static void print_VkImageViewCreateFlagBits(VkImageViewCreateFlagBits obj, const std::string &str,
@@ -3032,9 +3161,9 @@ static void print_VkImageViewType(const VkImageViewType *obj, const std::string 
 }
 
 static std::map<uint64_t, std::string> VkPipelineCacheCreateFlagBits_map = {
+    std::make_pair(1ULL << 0, "VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT"),
+    std::make_pair(1ULL << 1, "VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT"),
     std::make_pair(1ULL << 2, "VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT"),
-    std::make_pair(1ULL << 1, "VK_PIPELINE_CACHE_CREATE_RESERVED_1_BIT_EXT"),
-    std::make_pair(1ULL << 0, "VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT_EXT"),
 };
 static void print_VkPipelineCacheCreateFlagBits(VkPipelineCacheCreateFlagBits obj, const std::string &str,
                                                 bool commaNeeded = true)
@@ -3249,6 +3378,8 @@ static std::map<uint64_t, std::string> VkPipelineCreateFlagBits_map = {
     std::make_pair(1ULL << 0, "VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT"),
     std::make_pair(1ULL << 3, "VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT"),
     std::make_pair(1ULL << 4, "VK_PIPELINE_CREATE_DISPATCH_BASE_BIT"),
+    std::make_pair(1ULL << 8, "VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT"),
+    std::make_pair(1ULL << 9, "VK_PIPELINE_CREATE_EARLY_RETURN_ON_FAILURE_BIT"),
     std::make_pair(1ULL << 21, "VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
     std::make_pair(1ULL << 22, "VK_PIPELINE_CREATE_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_EXT"),
     std::make_pair(1ULL << 14, "VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_ANY_HIT_SHADERS_BIT_KHR"),
@@ -3263,11 +3394,16 @@ static std::map<uint64_t, std::string> VkPipelineCreateFlagBits_map = {
     std::make_pair(1ULL << 7, "VK_PIPELINE_CREATE_CAPTURE_INTERNAL_REPRESENTATIONS_BIT_KHR"),
     std::make_pair(1ULL << 18, "VK_PIPELINE_CREATE_INDIRECT_BINDABLE_BIT_NV"),
     std::make_pair(1ULL << 11, "VK_PIPELINE_CREATE_LIBRARY_BIT_KHR"),
-    std::make_pair(1ULL << 8, "VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT_EXT"),
-    std::make_pair(1ULL << 9, "VK_PIPELINE_CREATE_EARLY_RETURN_ON_FAILURE_BIT_EXT"),
-    std::make_pair(1ULL << 23, "VK_PIPELINE_CREATE_RESERVED_23_BIT_AMD"),
-    std::make_pair(1ULL << 10, "VK_PIPELINE_CREATE_RESERVED_10_BIT_AMD"),
+    std::make_pair(1ULL << 29, "VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT"),
+    std::make_pair(1ULL << 23, "VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT"),
+    std::make_pair(1ULL << 10, "VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT"),
     std::make_pair(1ULL << 20, "VK_PIPELINE_CREATE_RAY_TRACING_ALLOW_MOTION_BIT_NV"),
+    std::make_pair(1ULL << 25, "VK_PIPELINE_CREATE_COLOR_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT"),
+    std::make_pair(1ULL << 26, "VK_PIPELINE_CREATE_DEPTH_STENCIL_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT"),
+    std::make_pair(1ULL << 24, "VK_PIPELINE_CREATE_RAY_TRACING_OPACITY_MICROMAP_BIT_EXT"),
+    std::make_pair(1ULL << 28, "VK_PIPELINE_CREATE_RAY_TRACING_DISPLACEMENT_MICROMAP_BIT_NV"),
+    std::make_pair(1ULL << 27, "VK_PIPELINE_CREATE_NO_PROTECTED_ACCESS_BIT_EXT"),
+    std::make_pair(1ULL << 30, "VK_PIPELINE_CREATE_PROTECTED_ACCESS_ONLY_BIT_EXT"),
 };
 static void print_VkPipelineCreateFlagBits(VkPipelineCreateFlagBits obj, const std::string &str,
                                            bool commaNeeded = true)
@@ -3295,8 +3431,8 @@ static void print_VkPipelineCreateFlagBits(const VkPipelineCreateFlagBits *obj, 
 }
 
 static std::map<uint64_t, std::string> VkPipelineShaderStageCreateFlagBits_map = {
-    std::make_pair(1ULL << 0, "VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT"),
-    std::make_pair(1ULL << 1, "VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT"),
+    std::make_pair(1ULL << 0, "VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT"),
+    std::make_pair(1ULL << 1, "VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT"),
     std::make_pair(1ULL << 3, "VK_PIPELINE_SHADER_STAGE_CREATE_RESERVED_3_BIT_KHR"),
 };
 static void print_VkPipelineShaderStageCreateFlagBits(VkPipelineShaderStageCreateFlagBits obj, const std::string &str,
@@ -3339,9 +3475,10 @@ static std::map<uint64_t, std::string> VkShaderStageFlagBits_map = {
     std::make_pair(1ULL << 11, "VK_SHADER_STAGE_MISS_BIT_KHR"),
     std::make_pair(1ULL << 12, "VK_SHADER_STAGE_INTERSECTION_BIT_KHR"),
     std::make_pair(1ULL << 13, "VK_SHADER_STAGE_CALLABLE_BIT_KHR"),
-    std::make_pair(1ULL << 6, "VK_SHADER_STAGE_TASK_BIT_NV"),
-    std::make_pair(1ULL << 7, "VK_SHADER_STAGE_MESH_BIT_NV"),
+    std::make_pair(1ULL << 6, "VK_SHADER_STAGE_TASK_BIT_EXT"),
+    std::make_pair(1ULL << 7, "VK_SHADER_STAGE_MESH_BIT_EXT"),
     std::make_pair(1ULL << 14, "VK_SHADER_STAGE_SUBPASS_SHADING_BIT_HUAWEI"),
+    std::make_pair(1ULL << 19, "VK_SHADER_STAGE_CLUSTER_CULLING_BIT_HUAWEI"),
 };
 static void print_VkShaderStageFlagBits(VkShaderStageFlagBits obj, const std::string &str, bool commaNeeded = true)
 {
@@ -3406,34 +3543,69 @@ static std::map<uint64_t, std::string> VkDynamicState_map = {
     std::make_pair(6, "VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK"),
     std::make_pair(7, "VK_DYNAMIC_STATE_STENCIL_WRITE_MASK"),
     std::make_pair(8, "VK_DYNAMIC_STATE_STENCIL_REFERENCE"),
+    std::make_pair(1000267000, "VK_DYNAMIC_STATE_CULL_MODE"),
+    std::make_pair(1000267001, "VK_DYNAMIC_STATE_FRONT_FACE"),
+    std::make_pair(1000267002, "VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY"),
+    std::make_pair(1000267003, "VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT"),
+    std::make_pair(1000267004, "VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT"),
+    std::make_pair(1000267005, "VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE"),
+    std::make_pair(1000267006, "VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE"),
+    std::make_pair(1000267007, "VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE"),
+    std::make_pair(1000267008, "VK_DYNAMIC_STATE_DEPTH_COMPARE_OP"),
+    std::make_pair(1000267009, "VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE"),
+    std::make_pair(1000267010, "VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE"),
+    std::make_pair(1000267011, "VK_DYNAMIC_STATE_STENCIL_OP"),
+    std::make_pair(1000377001, "VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE"),
+    std::make_pair(1000377002, "VK_DYNAMIC_STATE_DEPTH_BIAS_ENABLE"),
+    std::make_pair(1000377004, "VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE"),
     std::make_pair(1000087000, "VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV"),
     std::make_pair(1000099000, "VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT"),
+    std::make_pair(1000099001, "VK_DYNAMIC_STATE_DISCARD_RECTANGLE_ENABLE_EXT"),
+    std::make_pair(1000099002, "VK_DYNAMIC_STATE_DISCARD_RECTANGLE_MODE_EXT"),
     std::make_pair(1000143000, "VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT"),
     std::make_pair(1000347000, "VK_DYNAMIC_STATE_RAY_TRACING_PIPELINE_STACK_SIZE_KHR"),
     std::make_pair(1000164004, "VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV"),
     std::make_pair(1000164006, "VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV"),
+    std::make_pair(1000205000, "VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_ENABLE_NV"),
     std::make_pair(1000205001, "VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV"),
     std::make_pair(1000226000, "VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR"),
-    std::make_pair(1000259000, "VK_DYNAMIC_STATE_LINE_STIPPLE_EXT"),
-    std::make_pair(1000267000, "VK_DYNAMIC_STATE_CULL_MODE_EXT"),
-    std::make_pair(1000267001, "VK_DYNAMIC_STATE_FRONT_FACE_EXT"),
-    std::make_pair(1000267002, "VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY_EXT"),
-    std::make_pair(1000267003, "VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT_EXT"),
-    std::make_pair(1000267004, "VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT_EXT"),
-    std::make_pair(1000267005, "VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE_EXT"),
-    std::make_pair(1000267006, "VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE_EXT"),
-    std::make_pair(1000267007, "VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE_EXT"),
-    std::make_pair(1000267008, "VK_DYNAMIC_STATE_DEPTH_COMPARE_OP_EXT"),
-    std::make_pair(1000267009, "VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE_EXT"),
-    std::make_pair(1000267010, "VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT"),
-    std::make_pair(1000267011, "VK_DYNAMIC_STATE_STENCIL_OP_EXT"),
     std::make_pair(1000352000, "VK_DYNAMIC_STATE_VERTEX_INPUT_EXT"),
     std::make_pair(1000377000, "VK_DYNAMIC_STATE_PATCH_CONTROL_POINTS_EXT"),
-    std::make_pair(1000377001, "VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE_EXT"),
-    std::make_pair(1000377002, "VK_DYNAMIC_STATE_DEPTH_BIAS_ENABLE_EXT"),
     std::make_pair(1000377003, "VK_DYNAMIC_STATE_LOGIC_OP_EXT"),
-    std::make_pair(1000377004, "VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE_EXT"),
     std::make_pair(1000381000, "VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT"),
+    std::make_pair(1000455003, "VK_DYNAMIC_STATE_DEPTH_CLAMP_ENABLE_EXT"),
+    std::make_pair(1000455004, "VK_DYNAMIC_STATE_POLYGON_MODE_EXT"),
+    std::make_pair(1000455005, "VK_DYNAMIC_STATE_RASTERIZATION_SAMPLES_EXT"),
+    std::make_pair(1000455006, "VK_DYNAMIC_STATE_SAMPLE_MASK_EXT"),
+    std::make_pair(1000455007, "VK_DYNAMIC_STATE_ALPHA_TO_COVERAGE_ENABLE_EXT"),
+    std::make_pair(1000455008, "VK_DYNAMIC_STATE_ALPHA_TO_ONE_ENABLE_EXT"),
+    std::make_pair(1000455009, "VK_DYNAMIC_STATE_LOGIC_OP_ENABLE_EXT"),
+    std::make_pair(1000455010, "VK_DYNAMIC_STATE_COLOR_BLEND_ENABLE_EXT"),
+    std::make_pair(1000455011, "VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT"),
+    std::make_pair(1000455012, "VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT"),
+    std::make_pair(1000455002, "VK_DYNAMIC_STATE_TESSELLATION_DOMAIN_ORIGIN_EXT"),
+    std::make_pair(1000455013, "VK_DYNAMIC_STATE_RASTERIZATION_STREAM_EXT"),
+    std::make_pair(1000455014, "VK_DYNAMIC_STATE_CONSERVATIVE_RASTERIZATION_MODE_EXT"),
+    std::make_pair(1000455015, "VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT"),
+    std::make_pair(1000455016, "VK_DYNAMIC_STATE_DEPTH_CLIP_ENABLE_EXT"),
+    std::make_pair(1000455017, "VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_ENABLE_EXT"),
+    std::make_pair(1000455018, "VK_DYNAMIC_STATE_COLOR_BLEND_ADVANCED_EXT"),
+    std::make_pair(1000455019, "VK_DYNAMIC_STATE_PROVOKING_VERTEX_MODE_EXT"),
+    std::make_pair(1000455020, "VK_DYNAMIC_STATE_LINE_RASTERIZATION_MODE_EXT"),
+    std::make_pair(1000455021, "VK_DYNAMIC_STATE_LINE_STIPPLE_ENABLE_EXT"),
+    std::make_pair(1000455022, "VK_DYNAMIC_STATE_DEPTH_CLIP_NEGATIVE_ONE_TO_ONE_EXT"),
+    std::make_pair(1000455023, "VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_ENABLE_NV"),
+    std::make_pair(1000455024, "VK_DYNAMIC_STATE_VIEWPORT_SWIZZLE_NV"),
+    std::make_pair(1000455025, "VK_DYNAMIC_STATE_COVERAGE_TO_COLOR_ENABLE_NV"),
+    std::make_pair(1000455026, "VK_DYNAMIC_STATE_COVERAGE_TO_COLOR_LOCATION_NV"),
+    std::make_pair(1000455027, "VK_DYNAMIC_STATE_COVERAGE_MODULATION_MODE_NV"),
+    std::make_pair(1000455028, "VK_DYNAMIC_STATE_COVERAGE_MODULATION_TABLE_ENABLE_NV"),
+    std::make_pair(1000455029, "VK_DYNAMIC_STATE_COVERAGE_MODULATION_TABLE_NV"),
+    std::make_pair(1000455030, "VK_DYNAMIC_STATE_SHADING_RATE_IMAGE_ENABLE_NV"),
+    std::make_pair(1000455031, "VK_DYNAMIC_STATE_REPRESENTATIVE_FRAGMENT_TEST_ENABLE_NV"),
+    std::make_pair(1000455032, "VK_DYNAMIC_STATE_COVERAGE_REDUCTION_MODE_NV"),
+    std::make_pair(1000524000, "VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT"),
+    std::make_pair(1000259000, "VK_DYNAMIC_STATE_LINE_STIPPLE_KHR"),
 };
 static void print_VkDynamicState(VkDynamicState obj, const std::string &str, bool commaNeeded = true)
 {
@@ -3651,6 +3823,35 @@ static void print_VkLogicOp(const VkLogicOp *obj, const std::string &str, bool c
         _OUT << "\"" << VkLogicOp_map[*obj] << "\"" << std::endl;
 }
 
+static std::map<uint64_t, std::string> VkPipelineLayoutCreateFlagBits_map = {
+    std::make_pair(1ULL << 0, "VK_PIPELINE_LAYOUT_CREATE_RESERVED_0_BIT_AMD"),
+    std::make_pair(1ULL << 1, "VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT"),
+};
+static void print_VkPipelineLayoutCreateFlagBits(VkPipelineLayoutCreateFlagBits obj, const std::string &str,
+                                                 bool commaNeeded = true)
+{
+    PRINT_SPACE
+    if (str != "")
+        _OUT << "\"" << str << "\""
+             << " : ";
+    if (commaNeeded)
+        _OUT << "\"" << VkPipelineLayoutCreateFlagBits_map[obj] << "\"," << std::endl;
+    else
+        _OUT << "\"" << VkPipelineLayoutCreateFlagBits_map[obj] << "\"" << std::endl;
+}
+static void print_VkPipelineLayoutCreateFlagBits(const VkPipelineLayoutCreateFlagBits *obj, const std::string &str,
+                                                 bool commaNeeded = true)
+{
+    PRINT_SPACE
+    if (str != "")
+        _OUT << "\"" << str << "\""
+             << " : ";
+    if (commaNeeded)
+        _OUT << "\"" << VkPipelineLayoutCreateFlagBits_map[*obj] << "\"," << std::endl;
+    else
+        _OUT << "\"" << VkPipelineLayoutCreateFlagBits_map[*obj] << "\"" << std::endl;
+}
+
 static std::map<uint64_t, std::string> VkBorderColor_map = {
     std::make_pair(0, "VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK"),
     std::make_pair(1, "VK_BORDER_COLOR_INT_TRANSPARENT_BLACK"),
@@ -3687,7 +3888,7 @@ static void print_VkBorderColor(const VkBorderColor *obj, const std::string &str
 static std::map<uint64_t, std::string> VkFilter_map = {
     std::make_pair(0, "VK_FILTER_NEAREST"),
     std::make_pair(1, "VK_FILTER_LINEAR"),
-    std::make_pair(1000015000, "VK_FILTER_CUBIC_IMG"),
+    std::make_pair(1000015000, "VK_FILTER_CUBIC_EXT"),
 };
 static void print_VkFilter(VkFilter obj, const std::string &str, bool commaNeeded = true)
 {
@@ -3746,8 +3947,9 @@ static void print_VkSamplerAddressMode(const VkSamplerAddressMode *obj, const st
 static std::map<uint64_t, std::string> VkSamplerCreateFlagBits_map = {
     std::make_pair(1ULL << 0, "VK_SAMPLER_CREATE_SUBSAMPLED_BIT_EXT"),
     std::make_pair(1ULL << 1, "VK_SAMPLER_CREATE_SUBSAMPLED_COARSE_RECONSTRUCTION_BIT_EXT"),
-    std::make_pair(1ULL << 3, "VK_SAMPLER_CREATE_RESERVED_3_BIT_AMD"),
-    std::make_pair(1ULL << 2, "VK_SAMPLER_CREATE_RESERVED_2_BIT_EXT"),
+    std::make_pair(1ULL << 3, "VK_SAMPLER_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT"),
+    std::make_pair(1ULL << 2, "VK_SAMPLER_CREATE_NON_SEAMLESS_CUBE_MAP_BIT_EXT"),
+    std::make_pair(1ULL << 4, "VK_SAMPLER_CREATE_IMAGE_PROCESSING_BIT_QCOM"),
 };
 static void print_VkSamplerCreateFlagBits(VkSamplerCreateFlagBits obj, const std::string &str, bool commaNeeded = true)
 {
@@ -3803,7 +4005,9 @@ static void print_VkSamplerMipmapMode(const VkSamplerMipmapMode *obj, const std:
 static std::map<uint64_t, std::string> VkDescriptorPoolCreateFlagBits_map = {
     std::make_pair(1ULL << 0, "VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT"),
     std::make_pair(1ULL << 1, "VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT"),
-    std::make_pair(1ULL << 2, "VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_VALVE"),
+    std::make_pair(1ULL << 2, "VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_EXT"),
+    std::make_pair(1ULL << 3, "VK_DESCRIPTOR_POOL_CREATE_ALLOW_OVERALLOCATION_SETS_BIT_NV"),
+    std::make_pair(1ULL << 4, "VK_DESCRIPTOR_POOL_CREATE_ALLOW_OVERALLOCATION_POOLS_BIT_NV"),
 };
 static void print_VkDescriptorPoolCreateFlagBits(VkDescriptorPoolCreateFlagBits obj, const std::string &str,
                                                  bool commaNeeded = true)
@@ -3842,10 +4046,12 @@ static std::map<uint64_t, std::string> VkDescriptorType_map = {
     std::make_pair(8, "VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC"),
     std::make_pair(9, "VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC"),
     std::make_pair(10, "VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT"),
-    std::make_pair(1000138000, "VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT"),
+    std::make_pair(1000138000, "VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK"),
     std::make_pair(1000150000, "VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR"),
     std::make_pair(1000165000, "VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV"),
-    std::make_pair(1000351000, "VK_DESCRIPTOR_TYPE_MUTABLE_VALVE"),
+    std::make_pair(1000440000, "VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM"),
+    std::make_pair(1000440001, "VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM"),
+    std::make_pair(1000351000, "VK_DESCRIPTOR_TYPE_MUTABLE_EXT"),
 };
 static void print_VkDescriptorType(VkDescriptorType obj, const std::string &str, bool commaNeeded = true)
 {
@@ -3873,9 +4079,12 @@ static void print_VkDescriptorType(const VkDescriptorType *obj, const std::strin
 static std::map<uint64_t, std::string> VkDescriptorSetLayoutCreateFlagBits_map = {
     std::make_pair(1ULL << 1, "VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT"),
     std::make_pair(1ULL << 0, "VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR"),
-    std::make_pair(1ULL << 4, "VK_DESCRIPTOR_SET_LAYOUT_CREATE_RESERVED_4_BIT_AMD"),
+    std::make_pair(1ULL << 4, "VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT"),
+    std::make_pair(1ULL << 5, "VK_DESCRIPTOR_SET_LAYOUT_CREATE_EMBEDDED_IMMUTABLE_SAMPLERS_BIT_EXT"),
     std::make_pair(1ULL << 3, "VK_DESCRIPTOR_SET_LAYOUT_CREATE_RESERVED_3_BIT_AMD"),
-    std::make_pair(1ULL << 2, "VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_VALVE"),
+    std::make_pair(1ULL << 7, "VK_DESCRIPTOR_SET_LAYOUT_CREATE_INDIRECT_BINDABLE_BIT_NV"),
+    std::make_pair(1ULL << 2, "VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_EXT"),
+    std::make_pair(1ULL << 6, "VK_DESCRIPTOR_SET_LAYOUT_CREATE_PER_STAGE_BIT_NV"),
 };
 static void print_VkDescriptorSetLayoutCreateFlagBits(VkDescriptorSetLayoutCreateFlagBits obj, const std::string &str,
                                                       bool commaNeeded = true)
@@ -3934,7 +4143,7 @@ static std::map<uint64_t, std::string> VkAttachmentLoadOp_map = {
     std::make_pair(0, "VK_ATTACHMENT_LOAD_OP_LOAD"),
     std::make_pair(1, "VK_ATTACHMENT_LOAD_OP_CLEAR"),
     std::make_pair(2, "VK_ATTACHMENT_LOAD_OP_DONT_CARE"),
-    std::make_pair(1000400000, "VK_ATTACHMENT_LOAD_OP_NONE_EXT"),
+    std::make_pair(1000400000, "VK_ATTACHMENT_LOAD_OP_NONE_KHR"),
 };
 static void print_VkAttachmentLoadOp(VkAttachmentLoadOp obj, const std::string &str, bool commaNeeded = true)
 {
@@ -3962,7 +4171,7 @@ static void print_VkAttachmentLoadOp(const VkAttachmentLoadOp *obj, const std::s
 static std::map<uint64_t, std::string> VkAttachmentStoreOp_map = {
     std::make_pair(0, "VK_ATTACHMENT_STORE_OP_STORE"),
     std::make_pair(1, "VK_ATTACHMENT_STORE_OP_DONT_CARE"),
-    std::make_pair(1000301000, "VK_ATTACHMENT_STORE_OP_NONE_KHR"),
+    std::make_pair(1000301000, "VK_ATTACHMENT_STORE_OP_NONE"),
 };
 static void print_VkAttachmentStoreOp(VkAttachmentStoreOp obj, const std::string &str, bool commaNeeded = true)
 {
@@ -3991,6 +4200,8 @@ static std::map<uint64_t, std::string> VkDependencyFlagBits_map = {
     std::make_pair(1ULL << 0, "VK_DEPENDENCY_BY_REGION_BIT"),
     std::make_pair(1ULL << 2, "VK_DEPENDENCY_DEVICE_GROUP_BIT"),
     std::make_pair(1ULL << 1, "VK_DEPENDENCY_VIEW_LOCAL_BIT"),
+    std::make_pair(1ULL << 3, "VK_DEPENDENCY_FEEDBACK_LOOP_BIT_EXT"),
+    std::make_pair(1ULL << 4, "VK_DEPENDENCY_EXTENSION_586_BIT_IMG"),
 };
 static void print_VkDependencyFlagBits(VkDependencyFlagBits obj, const std::string &str, bool commaNeeded = true)
 {
@@ -4046,6 +4257,7 @@ static void print_VkFramebufferCreateFlagBits(const VkFramebufferCreateFlagBits 
 static std::map<uint64_t, std::string> VkPipelineBindPoint_map = {
     std::make_pair(0, "VK_PIPELINE_BIND_POINT_GRAPHICS"),
     std::make_pair(1, "VK_PIPELINE_BIND_POINT_COMPUTE"),
+    std::make_pair(1000134000, "VK_PIPELINE_BIND_POINT_EXECUTION_GRAPH_AMDX"),
     std::make_pair(1000165000, "VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR"),
     std::make_pair(1000369003, "VK_PIPELINE_BIND_POINT_SUBPASS_SHADING_HUAWEI"),
 };
@@ -4106,9 +4318,10 @@ static std::map<uint64_t, std::string> VkSubpassDescriptionFlagBits_map = {
     std::make_pair(1ULL << 1, "VK_SUBPASS_DESCRIPTION_PER_VIEW_POSITION_X_ONLY_BIT_NVX"),
     std::make_pair(1ULL << 2, "VK_SUBPASS_DESCRIPTION_FRAGMENT_REGION_BIT_QCOM"),
     std::make_pair(1ULL << 3, "VK_SUBPASS_DESCRIPTION_SHADER_RESOLVE_BIT_QCOM"),
-    std::make_pair(1ULL << 4, "VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_COLOR_ACCESS_BIT_ARM"),
-    std::make_pair(1ULL << 5, "VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_ARM"),
-    std::make_pair(1ULL << 6, "VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_ARM"),
+    std::make_pair(1ULL << 4, "VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_COLOR_ACCESS_BIT_EXT"),
+    std::make_pair(1ULL << 5, "VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_EXT"),
+    std::make_pair(1ULL << 6, "VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_EXT"),
+    std::make_pair(1ULL << 7, "VK_SUBPASS_DESCRIPTION_ENABLE_LEGACY_DITHERING_BIT_EXT"),
 };
 static void print_VkSubpassDescriptionFlagBits(VkSubpassDescriptionFlagBits obj, const std::string &str,
                                                bool commaNeeded = true)
@@ -4309,7 +4522,7 @@ static std::map<uint64_t, std::string> VkIndexType_map = {
     std::make_pair(0, "VK_INDEX_TYPE_UINT16"),
     std::make_pair(1, "VK_INDEX_TYPE_UINT32"),
     std::make_pair(1000165000, "VK_INDEX_TYPE_NONE_KHR"),
-    std::make_pair(1000265000, "VK_INDEX_TYPE_UINT8_EXT"),
+    std::make_pair(1000265000, "VK_INDEX_TYPE_UINT8_KHR"),
 };
 static void print_VkIndexType(VkIndexType obj, const std::string &str, bool commaNeeded = true)
 {
@@ -4366,6 +4579,7 @@ static void print_VkStencilFaceFlagBits(const VkStencilFaceFlagBits *obj, const 
 static std::map<uint64_t, std::string> VkSubpassContents_map = {
     std::make_pair(0, "VK_SUBPASS_CONTENTS_INLINE"),
     std::make_pair(1, "VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS"),
+    std::make_pair(1000451000, "VK_SUBPASS_CONTENTS_INLINE_AND_SECONDARY_COMMAND_BUFFERS_KHR"),
 };
 static void print_VkSubpassContents(VkSubpassContents obj, const std::string &str, bool commaNeeded = true)
 {
@@ -4391,36 +4605,6 @@ static void print_VkSubpassContents(const VkSubpassContents *obj, const std::str
 }
 
 static void print_VkAccessFlags(VkAccessFlags obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkAccessFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkAccessFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkAccessFlags(const VkAccessFlags *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
@@ -4481,68 +4665,8 @@ static void print_VkImageAspectFlags(VkImageAspectFlags obj, const std::string &
              << "";
     _OUT << std::endl;
 }
-static void print_VkImageAspectFlags(const VkImageAspectFlags *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkImageAspectFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkImageAspectFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkFormatFeatureFlags(VkFormatFeatureFlags obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkFormatFeatureFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkFormatFeatureFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkFormatFeatureFlags(const VkFormatFeatureFlags *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
@@ -4603,68 +4727,8 @@ static void print_VkImageCreateFlags(VkImageCreateFlags obj, const std::string &
              << "";
     _OUT << std::endl;
 }
-static void print_VkImageCreateFlags(const VkImageCreateFlags *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkImageCreateFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkImageCreateFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkSampleCountFlags(VkSampleCountFlags obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkSampleCountFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkSampleCountFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkSampleCountFlags(const VkSampleCountFlags *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
@@ -4725,62 +4789,10 @@ static void print_VkImageUsageFlags(VkImageUsageFlags obj, const std::string &st
              << "";
     _OUT << std::endl;
 }
-static void print_VkImageUsageFlags(const VkImageUsageFlags *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkImageUsageFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkImageUsageFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkInstanceCreateFlags(VkInstanceCreateFlags obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
-static void print_VkInstanceCreateFlags(const VkInstanceCreateFlags *obj, const std::string &str,
-                                        bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
-
-static void print_VkMemoryHeapFlags(VkMemoryHeapFlags obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
     if (str != "")
         _OUT << "\"" << str << "\""
              << " : ";
@@ -4795,9 +4807,9 @@ static void print_VkMemoryHeapFlags(VkMemoryHeapFlags obj, const std::string &st
         {
             bitCount++;
             if (bitCount < b.count())
-                _OUT << VkMemoryHeapFlagBits_map[1ULL << i] << " | ";
+                _OUT << VkInstanceCreateFlagBits_map[1ULL << i] << " | ";
             else
-                _OUT << VkMemoryHeapFlagBits_map[1ULL << i];
+                _OUT << VkInstanceCreateFlagBits_map[1ULL << i];
         }
     }
     if (commaNeeded)
@@ -4808,7 +4820,8 @@ static void print_VkMemoryHeapFlags(VkMemoryHeapFlags obj, const std::string &st
              << "";
     _OUT << std::endl;
 }
-static void print_VkMemoryHeapFlags(const VkMemoryHeapFlags *obj, const std::string &str, bool commaNeeded = true)
+
+static void print_VkMemoryHeapFlags(VkMemoryHeapFlags obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
@@ -4869,69 +4882,8 @@ static void print_VkMemoryPropertyFlags(VkMemoryPropertyFlags obj, const std::st
              << "";
     _OUT << std::endl;
 }
-static void print_VkMemoryPropertyFlags(const VkMemoryPropertyFlags *obj, const std::string &str,
-                                        bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkMemoryPropertyFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkMemoryPropertyFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkQueueFlags(VkQueueFlags obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkQueueFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkQueueFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkQueueFlags(const VkQueueFlags *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
@@ -4972,49 +4924,8 @@ static void print_VkDeviceCreateFlags(VkDeviceCreateFlags obj, const std::string
         _OUT << "\"" << str << "\""
              << " : " << obj << std::endl;
 }
-static void print_VkDeviceCreateFlags(const VkDeviceCreateFlags *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
 
 static void print_VkDeviceQueueCreateFlags(VkDeviceQueueCreateFlags obj, const std::string &str,
-                                           bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkDeviceQueueCreateFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkDeviceQueueCreateFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkDeviceQueueCreateFlags(const VkDeviceQueueCreateFlags *obj, const std::string &str,
                                            bool commaNeeded = true)
 {
     PRINT_SPACE
@@ -5076,61 +4987,10 @@ static void print_VkPipelineStageFlags(VkPipelineStageFlags obj, const std::stri
              << "";
     _OUT << std::endl;
 }
-static void print_VkPipelineStageFlags(const VkPipelineStageFlags *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkPipelineStageFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkPipelineStageFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkMemoryMapFlags(VkMemoryMapFlags obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
-static void print_VkMemoryMapFlags(const VkMemoryMapFlags *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
-
-static void print_VkFenceCreateFlags(VkFenceCreateFlags obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
     if (str != "")
         _OUT << "\"" << str << "\""
              << " : ";
@@ -5145,9 +5005,9 @@ static void print_VkFenceCreateFlags(VkFenceCreateFlags obj, const std::string &
         {
             bitCount++;
             if (bitCount < b.count())
-                _OUT << VkFenceCreateFlagBits_map[1ULL << i] << " | ";
+                _OUT << VkMemoryMapFlagBits_map[1ULL << i] << " | ";
             else
-                _OUT << VkFenceCreateFlagBits_map[1ULL << i];
+                _OUT << VkMemoryMapFlagBits_map[1ULL << i];
         }
     }
     if (commaNeeded)
@@ -5158,7 +5018,8 @@ static void print_VkFenceCreateFlags(VkFenceCreateFlags obj, const std::string &
              << "";
     _OUT << std::endl;
 }
-static void print_VkFenceCreateFlags(const VkFenceCreateFlags *obj, const std::string &str, bool commaNeeded = true)
+
+static void print_VkFenceCreateFlags(VkFenceCreateFlags obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
@@ -5199,49 +5060,8 @@ static void print_VkSemaphoreCreateFlags(VkSemaphoreCreateFlags obj, const std::
         _OUT << "\"" << str << "\""
              << " : " << obj << std::endl;
 }
-static void print_VkSemaphoreCreateFlags(const VkSemaphoreCreateFlags *obj, const std::string &str,
-                                         bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
 
 static void print_VkEventCreateFlags(VkEventCreateFlags obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkEventCreateFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkEventCreateFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkEventCreateFlags(const VkEventCreateFlags *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
@@ -5303,37 +5123,6 @@ static void print_VkQueryPipelineStatisticFlags(VkQueryPipelineStatisticFlags ob
              << "";
     _OUT << std::endl;
 }
-static void print_VkQueryPipelineStatisticFlags(const VkQueryPipelineStatisticFlags *obj, const std::string &str,
-                                                bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkQueryPipelineStatisticFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkQueryPipelineStatisticFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkQueryPoolCreateFlags(VkQueryPoolCreateFlags obj, const std::string &str, bool commaNeeded = true)
 {
@@ -5345,49 +5134,8 @@ static void print_VkQueryPoolCreateFlags(VkQueryPoolCreateFlags obj, const std::
         _OUT << "\"" << str << "\""
              << " : " << obj << std::endl;
 }
-static void print_VkQueryPoolCreateFlags(const VkQueryPoolCreateFlags *obj, const std::string &str,
-                                         bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
 
 static void print_VkQueryResultFlags(VkQueryResultFlags obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkQueryResultFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkQueryResultFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkQueryResultFlags(const VkQueryResultFlags *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
@@ -5448,68 +5196,8 @@ static void print_VkBufferCreateFlags(VkBufferCreateFlags obj, const std::string
              << "";
     _OUT << std::endl;
 }
-static void print_VkBufferCreateFlags(const VkBufferCreateFlags *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkBufferCreateFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkBufferCreateFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkBufferUsageFlags(VkBufferUsageFlags obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkBufferUsageFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkBufferUsageFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkBufferUsageFlags(const VkBufferUsageFlags *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
@@ -5550,50 +5238,8 @@ static void print_VkBufferViewCreateFlags(VkBufferViewCreateFlags obj, const std
         _OUT << "\"" << str << "\""
              << " : " << obj << std::endl;
 }
-static void print_VkBufferViewCreateFlags(const VkBufferViewCreateFlags *obj, const std::string &str,
-                                          bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
 
 static void print_VkImageViewCreateFlags(VkImageViewCreateFlags obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkImageViewCreateFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkImageViewCreateFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkImageViewCreateFlags(const VkImageViewCreateFlags *obj, const std::string &str,
-                                         bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
@@ -5655,37 +5301,6 @@ static void print_VkPipelineCacheCreateFlags(VkPipelineCacheCreateFlags obj, con
              << "";
     _OUT << std::endl;
 }
-static void print_VkPipelineCacheCreateFlags(const VkPipelineCacheCreateFlags *obj, const std::string &str,
-                                             bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkPipelineCacheCreateFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkPipelineCacheCreateFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkColorComponentFlags(VkColorComponentFlags obj, const std::string &str, bool commaNeeded = true)
 {
@@ -5717,70 +5332,8 @@ static void print_VkColorComponentFlags(VkColorComponentFlags obj, const std::st
              << "";
     _OUT << std::endl;
 }
-static void print_VkColorComponentFlags(const VkColorComponentFlags *obj, const std::string &str,
-                                        bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkColorComponentFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkColorComponentFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkPipelineCreateFlags(VkPipelineCreateFlags obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkPipelineCreateFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkPipelineCreateFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkPipelineCreateFlags(const VkPipelineCreateFlags *obj, const std::string &str,
-                                        bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
@@ -5842,69 +5395,8 @@ static void print_VkPipelineShaderStageCreateFlags(VkPipelineShaderStageCreateFl
              << "";
     _OUT << std::endl;
 }
-static void print_VkPipelineShaderStageCreateFlags(const VkPipelineShaderStageCreateFlags *obj, const std::string &str,
-                                                   bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkPipelineShaderStageCreateFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkPipelineShaderStageCreateFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkCullModeFlags(VkCullModeFlags obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkCullModeFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkCullModeFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkCullModeFlags(const VkCullModeFlags *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
@@ -5946,30 +5438,8 @@ static void print_VkPipelineVertexInputStateCreateFlags(VkPipelineVertexInputSta
         _OUT << "\"" << str << "\""
              << " : " << obj << std::endl;
 }
-static void print_VkPipelineVertexInputStateCreateFlags(const VkPipelineVertexInputStateCreateFlags *obj,
-                                                        const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
 
 static void print_VkPipelineInputAssemblyStateCreateFlags(VkPipelineInputAssemblyStateCreateFlags obj,
-                                                          const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
-static void print_VkPipelineInputAssemblyStateCreateFlags(const VkPipelineInputAssemblyStateCreateFlags *obj,
                                                           const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
@@ -5992,17 +5462,6 @@ static void print_VkPipelineTessellationStateCreateFlags(VkPipelineTessellationS
         _OUT << "\"" << str << "\""
              << " : " << obj << std::endl;
 }
-static void print_VkPipelineTessellationStateCreateFlags(const VkPipelineTessellationStateCreateFlags *obj,
-                                                         const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
 
 static void print_VkPipelineViewportStateCreateFlags(VkPipelineViewportStateCreateFlags obj, const std::string &str,
                                                      bool commaNeeded = true)
@@ -6015,30 +5474,8 @@ static void print_VkPipelineViewportStateCreateFlags(VkPipelineViewportStateCrea
         _OUT << "\"" << str << "\""
              << " : " << obj << std::endl;
 }
-static void print_VkPipelineViewportStateCreateFlags(const VkPipelineViewportStateCreateFlags *obj,
-                                                     const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
 
 static void print_VkPipelineRasterizationStateCreateFlags(VkPipelineRasterizationStateCreateFlags obj,
-                                                          const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
-static void print_VkPipelineRasterizationStateCreateFlags(const VkPipelineRasterizationStateCreateFlags *obj,
                                                           const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
@@ -6061,30 +5498,8 @@ static void print_VkPipelineMultisampleStateCreateFlags(VkPipelineMultisampleSta
         _OUT << "\"" << str << "\""
              << " : " << obj << std::endl;
 }
-static void print_VkPipelineMultisampleStateCreateFlags(const VkPipelineMultisampleStateCreateFlags *obj,
-                                                        const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
 
 static void print_VkPipelineDepthStencilStateCreateFlags(VkPipelineDepthStencilStateCreateFlags obj,
-                                                         const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
-static void print_VkPipelineDepthStencilStateCreateFlags(const VkPipelineDepthStencilStateCreateFlags *obj,
                                                          const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
@@ -6107,31 +5522,9 @@ static void print_VkPipelineColorBlendStateCreateFlags(VkPipelineColorBlendState
         _OUT << "\"" << str << "\""
              << " : " << obj << std::endl;
 }
-static void print_VkPipelineColorBlendStateCreateFlags(const VkPipelineColorBlendStateCreateFlags *obj,
-                                                       const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
 
 static void print_VkPipelineDynamicStateCreateFlags(VkPipelineDynamicStateCreateFlags obj, const std::string &str,
                                                     bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
-static void print_VkPipelineDynamicStateCreateFlags(const VkPipelineDynamicStateCreateFlags *obj,
-                                                    const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (commaNeeded)
@@ -6146,23 +5539,32 @@ static void print_VkPipelineLayoutCreateFlags(VkPipelineLayoutCreateFlags obj, c
                                               bool commaNeeded = true)
 {
     PRINT_SPACE
+    if (str != "")
+        _OUT << "\"" << str << "\""
+             << " : ";
+    const int max_bits = 64; // We don't expect the number to be larger.
+    std::bitset<max_bits> b(obj);
+    _OUT << "\"";
+    if (obj == 0)
+        _OUT << "0";
+    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
+    {
+        if (b[i] == 1)
+        {
+            bitCount++;
+            if (bitCount < b.count())
+                _OUT << VkPipelineLayoutCreateFlagBits_map[1ULL << i] << " | ";
+            else
+                _OUT << VkPipelineLayoutCreateFlagBits_map[1ULL << i];
+        }
+    }
     if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
+        _OUT << "\""
+             << ",";
     else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
-static void print_VkPipelineLayoutCreateFlags(const VkPipelineLayoutCreateFlags *obj, const std::string &str,
-                                              bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
+        _OUT << "\""
+             << "";
+    _OUT << std::endl;
 }
 
 static void print_VkShaderStageFlags(VkShaderStageFlags obj, const std::string &str, bool commaNeeded = true)
@@ -6195,68 +5597,8 @@ static void print_VkShaderStageFlags(VkShaderStageFlags obj, const std::string &
              << "";
     _OUT << std::endl;
 }
-static void print_VkShaderStageFlags(const VkShaderStageFlags *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkShaderStageFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkShaderStageFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkSamplerCreateFlags(VkSamplerCreateFlags obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkSamplerCreateFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkSamplerCreateFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkSamplerCreateFlags(const VkSamplerCreateFlags *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
@@ -6318,37 +5660,6 @@ static void print_VkDescriptorPoolCreateFlags(VkDescriptorPoolCreateFlags obj, c
              << "";
     _OUT << std::endl;
 }
-static void print_VkDescriptorPoolCreateFlags(const VkDescriptorPoolCreateFlags *obj, const std::string &str,
-                                              bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkDescriptorPoolCreateFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkDescriptorPoolCreateFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkDescriptorPoolResetFlags(VkDescriptorPoolResetFlags obj, const std::string &str,
                                              bool commaNeeded = true)
@@ -6361,50 +5672,8 @@ static void print_VkDescriptorPoolResetFlags(VkDescriptorPoolResetFlags obj, con
         _OUT << "\"" << str << "\""
              << " : " << obj << std::endl;
 }
-static void print_VkDescriptorPoolResetFlags(const VkDescriptorPoolResetFlags *obj, const std::string &str,
-                                             bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
 
 static void print_VkDescriptorSetLayoutCreateFlags(VkDescriptorSetLayoutCreateFlags obj, const std::string &str,
-                                                   bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkDescriptorSetLayoutCreateFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkDescriptorSetLayoutCreateFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkDescriptorSetLayoutCreateFlags(const VkDescriptorSetLayoutCreateFlags *obj, const std::string &str,
                                                    bool commaNeeded = true)
 {
     PRINT_SPACE
@@ -6467,69 +5736,8 @@ static void print_VkAttachmentDescriptionFlags(VkAttachmentDescriptionFlags obj,
              << "";
     _OUT << std::endl;
 }
-static void print_VkAttachmentDescriptionFlags(const VkAttachmentDescriptionFlags *obj, const std::string &str,
-                                               bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkAttachmentDescriptionFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkAttachmentDescriptionFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkDependencyFlags(VkDependencyFlags obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkDependencyFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkDependencyFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkDependencyFlags(const VkDependencyFlags *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
@@ -6591,37 +5799,6 @@ static void print_VkFramebufferCreateFlags(VkFramebufferCreateFlags obj, const s
              << "";
     _OUT << std::endl;
 }
-static void print_VkFramebufferCreateFlags(const VkFramebufferCreateFlags *obj, const std::string &str,
-                                           bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkFramebufferCreateFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkFramebufferCreateFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkRenderPassCreateFlags(VkRenderPassCreateFlags obj, const std::string &str, bool commaNeeded = true)
 {
@@ -6653,70 +5830,8 @@ static void print_VkRenderPassCreateFlags(VkRenderPassCreateFlags obj, const std
              << "";
     _OUT << std::endl;
 }
-static void print_VkRenderPassCreateFlags(const VkRenderPassCreateFlags *obj, const std::string &str,
-                                          bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkRenderPassCreateFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkRenderPassCreateFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkSubpassDescriptionFlags(VkSubpassDescriptionFlags obj, const std::string &str,
-                                            bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkSubpassDescriptionFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkSubpassDescriptionFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkSubpassDescriptionFlags(const VkSubpassDescriptionFlags *obj, const std::string &str,
                                             bool commaNeeded = true)
 {
     PRINT_SPACE
@@ -6779,70 +5894,8 @@ static void print_VkCommandPoolCreateFlags(VkCommandPoolCreateFlags obj, const s
              << "";
     _OUT << std::endl;
 }
-static void print_VkCommandPoolCreateFlags(const VkCommandPoolCreateFlags *obj, const std::string &str,
-                                           bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkCommandPoolCreateFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkCommandPoolCreateFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkCommandPoolResetFlags(VkCommandPoolResetFlags obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkCommandPoolResetFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkCommandPoolResetFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkCommandPoolResetFlags(const VkCommandPoolResetFlags *obj, const std::string &str,
-                                          bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
@@ -6904,69 +5957,8 @@ static void print_VkCommandBufferUsageFlags(VkCommandBufferUsageFlags obj, const
              << "";
     _OUT << std::endl;
 }
-static void print_VkCommandBufferUsageFlags(const VkCommandBufferUsageFlags *obj, const std::string &str,
-                                            bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkCommandBufferUsageFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkCommandBufferUsageFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkQueryControlFlags(VkQueryControlFlags obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkQueryControlFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkQueryControlFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkQueryControlFlags(const VkQueryControlFlags *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
@@ -7028,69 +6020,8 @@ static void print_VkCommandBufferResetFlags(VkCommandBufferResetFlags obj, const
              << "";
     _OUT << std::endl;
 }
-static void print_VkCommandBufferResetFlags(const VkCommandBufferResetFlags *obj, const std::string &str,
-                                            bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkCommandBufferResetFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkCommandBufferResetFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkStencilFaceFlags(VkStencilFaceFlags obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkStencilFaceFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkStencilFaceFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkStencilFaceFlags(const VkStencilFaceFlags *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
@@ -16428,16 +15359,6 @@ static void print_VkSamplerYcbcrConversion(VkSamplerYcbcrConversion obj, const s
     else
         _OUT << "\"" << str << "\"" << std::endl;
 }
-static void print_VkSamplerYcbcrConversion(const VkSamplerYcbcrConversion *obj, const std::string &str,
-                                           bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
 
 static std::map<uint64_t, std::string> VkSubgroupFeatureFlagBits_map = {
     std::make_pair(1ULL << 0, "VK_SUBGROUP_FEATURE_BASIC_BIT"),
@@ -16449,6 +15370,8 @@ static std::map<uint64_t, std::string> VkSubgroupFeatureFlagBits_map = {
     std::make_pair(1ULL << 6, "VK_SUBGROUP_FEATURE_CLUSTERED_BIT"),
     std::make_pair(1ULL << 7, "VK_SUBGROUP_FEATURE_QUAD_BIT"),
     std::make_pair(1ULL << 8, "VK_SUBGROUP_FEATURE_PARTITIONED_BIT_NV"),
+    std::make_pair(1ULL << 9, "VK_SUBGROUP_FEATURE_ROTATE_BIT_KHR"),
+    std::make_pair(1ULL << 10, "VK_SUBGROUP_FEATURE_ROTATE_CLUSTERED_BIT_KHR"),
 };
 static void print_VkSubgroupFeatureFlagBits(VkSubgroupFeatureFlagBits obj, const std::string &str,
                                             bool commaNeeded = true)
@@ -16694,6 +15617,8 @@ static std::map<uint64_t, std::string> VkExternalMemoryHandleTypeFlagBits_map = 
     std::make_pair(1ULL << 11, "VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA"),
     std::make_pair(1ULL << 12, "VK_EXTERNAL_MEMORY_HANDLE_TYPE_RDMA_ADDRESS_BIT_NV"),
     std::make_pair(1ULL << 13, "VK_EXTERNAL_MEMORY_HANDLE_TYPE_SCI_BUF_BIT_NV"),
+    std::make_pair(1ULL << 14, "VK_EXTERNAL_MEMORY_HANDLE_TYPE_SCREEN_BUFFER_BIT_QNX"),
+    std::make_pair(1ULL << 15, "VK_EXTERNAL_MEMORY_HANDLE_TYPE_590_BIT_HUAWEI"),
 };
 static void print_VkExternalMemoryHandleTypeFlagBits(VkExternalMemoryHandleTypeFlagBits obj, const std::string &str,
                                                      bool commaNeeded = true)
@@ -16962,70 +15887,8 @@ static void print_VkSubgroupFeatureFlags(VkSubgroupFeatureFlags obj, const std::
              << "";
     _OUT << std::endl;
 }
-static void print_VkSubgroupFeatureFlags(const VkSubgroupFeatureFlags *obj, const std::string &str,
-                                         bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkSubgroupFeatureFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkSubgroupFeatureFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkPeerMemoryFeatureFlags(VkPeerMemoryFeatureFlags obj, const std::string &str,
-                                           bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkPeerMemoryFeatureFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkPeerMemoryFeatureFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkPeerMemoryFeatureFlags(const VkPeerMemoryFeatureFlags *obj, const std::string &str,
                                            bool commaNeeded = true)
 {
     PRINT_SPACE
@@ -17087,70 +15950,8 @@ static void print_VkMemoryAllocateFlags(VkMemoryAllocateFlags obj, const std::st
              << "";
     _OUT << std::endl;
 }
-static void print_VkMemoryAllocateFlags(const VkMemoryAllocateFlags *obj, const std::string &str,
-                                        bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkMemoryAllocateFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkMemoryAllocateFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkExternalMemoryHandleTypeFlags(VkExternalMemoryHandleTypeFlags obj, const std::string &str,
-                                                  bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkExternalMemoryHandleTypeFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkExternalMemoryHandleTypeFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkExternalMemoryHandleTypeFlags(const VkExternalMemoryHandleTypeFlags *obj, const std::string &str,
                                                   bool commaNeeded = true)
 {
     PRINT_SPACE
@@ -17213,70 +16014,8 @@ static void print_VkExternalMemoryFeatureFlags(VkExternalMemoryFeatureFlags obj,
              << "";
     _OUT << std::endl;
 }
-static void print_VkExternalMemoryFeatureFlags(const VkExternalMemoryFeatureFlags *obj, const std::string &str,
-                                               bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkExternalMemoryFeatureFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkExternalMemoryFeatureFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkExternalFenceHandleTypeFlags(VkExternalFenceHandleTypeFlags obj, const std::string &str,
-                                                 bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkExternalFenceHandleTypeFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkExternalFenceHandleTypeFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkExternalFenceHandleTypeFlags(const VkExternalFenceHandleTypeFlags *obj, const std::string &str,
                                                  bool commaNeeded = true)
 {
     PRINT_SPACE
@@ -17339,37 +16078,6 @@ static void print_VkExternalFenceFeatureFlags(VkExternalFenceFeatureFlags obj, c
              << "";
     _OUT << std::endl;
 }
-static void print_VkExternalFenceFeatureFlags(const VkExternalFenceFeatureFlags *obj, const std::string &str,
-                                              bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkExternalFenceFeatureFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkExternalFenceFeatureFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkFenceImportFlags(VkFenceImportFlags obj, const std::string &str, bool commaNeeded = true)
 {
@@ -17401,69 +16109,8 @@ static void print_VkFenceImportFlags(VkFenceImportFlags obj, const std::string &
              << "";
     _OUT << std::endl;
 }
-static void print_VkFenceImportFlags(const VkFenceImportFlags *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkFenceImportFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkFenceImportFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkSemaphoreImportFlags(VkSemaphoreImportFlags obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkSemaphoreImportFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkSemaphoreImportFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkSemaphoreImportFlags(const VkSemaphoreImportFlags *obj, const std::string &str,
-                                         bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
@@ -17525,70 +16172,8 @@ static void print_VkExternalSemaphoreHandleTypeFlags(VkExternalSemaphoreHandleTy
              << "";
     _OUT << std::endl;
 }
-static void print_VkExternalSemaphoreHandleTypeFlags(const VkExternalSemaphoreHandleTypeFlags *obj,
-                                                     const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkExternalSemaphoreHandleTypeFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkExternalSemaphoreHandleTypeFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkExternalSemaphoreFeatureFlags(VkExternalSemaphoreFeatureFlags obj, const std::string &str,
-                                                  bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkExternalSemaphoreFeatureFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkExternalSemaphoreFeatureFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkExternalSemaphoreFeatureFlags(const VkExternalSemaphoreFeatureFlags *obj, const std::string &str,
                                                   bool commaNeeded = true)
 {
     PRINT_SPACE
@@ -22302,6 +20887,12 @@ static std::map<uint64_t, std::string> VkDriverId_map = {
     std::make_pair(19, "VK_DRIVER_ID_MESA_V3DV"),
     std::make_pair(20, "VK_DRIVER_ID_MESA_PANVK"),
     std::make_pair(21, "VK_DRIVER_ID_SAMSUNG_PROPRIETARY"),
+    std::make_pair(22, "VK_DRIVER_ID_MESA_VENUS"),
+    std::make_pair(23, "VK_DRIVER_ID_MESA_DOZEN"),
+    std::make_pair(24, "VK_DRIVER_ID_MESA_NVK"),
+    std::make_pair(25, "VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA"),
+    std::make_pair(26, "VK_DRIVER_ID_MESA_HONEYKRISP"),
+    std::make_pair(27, "VK_DRIVER_ID_RESERVED_27"),
 };
 static void print_VkDriverId(VkDriverId obj, const std::string &str, bool commaNeeded = true)
 {
@@ -22362,6 +20953,7 @@ static std::map<uint64_t, std::string> VkResolveModeFlagBits_map = {
     std::make_pair(1ULL << 1, "VK_RESOLVE_MODE_AVERAGE_BIT"),
     std::make_pair(1ULL << 2, "VK_RESOLVE_MODE_MIN_BIT"),
     std::make_pair(1ULL << 3, "VK_RESOLVE_MODE_MAX_BIT"),
+    std::make_pair(1ULL << 4, "VK_RESOLVE_MODE_EXTERNAL_FORMAT_DOWNSAMPLE_ANDROID"),
 };
 static void print_VkResolveModeFlagBits(VkResolveModeFlagBits obj, const std::string &str, bool commaNeeded = true)
 {
@@ -22423,6 +21015,7 @@ static std::map<uint64_t, std::string> VkSamplerReductionMode_map = {
     std::make_pair(0, "VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE"),
     std::make_pair(1, "VK_SAMPLER_REDUCTION_MODE_MIN"),
     std::make_pair(2, "VK_SAMPLER_REDUCTION_MODE_MAX"),
+    std::make_pair(1000521000, "VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_RANGECLAMP_QCOM"),
 };
 static void print_VkSamplerReductionMode(VkSamplerReductionMode obj, const std::string &str, bool commaNeeded = true)
 {
@@ -22532,36 +21125,6 @@ static void print_VkResolveModeFlags(VkResolveModeFlags obj, const std::string &
              << "";
     _OUT << std::endl;
 }
-static void print_VkResolveModeFlags(const VkResolveModeFlags *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkResolveModeFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkResolveModeFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkDescriptorBindingFlags(VkDescriptorBindingFlags obj, const std::string &str,
                                            bool commaNeeded = true)
@@ -22594,69 +21157,8 @@ static void print_VkDescriptorBindingFlags(VkDescriptorBindingFlags obj, const s
              << "";
     _OUT << std::endl;
 }
-static void print_VkDescriptorBindingFlags(const VkDescriptorBindingFlags *obj, const std::string &str,
-                                           bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkDescriptorBindingFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkDescriptorBindingFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkSemaphoreWaitFlags(VkSemaphoreWaitFlags obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkSemaphoreWaitFlagBits_map[1ULL << i] << " | ";
-            else
-                _OUT << VkSemaphoreWaitFlagBits_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkSemaphoreWaitFlags(const VkSemaphoreWaitFlags *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
@@ -29101,15 +27603,6 @@ static void print_VkSurfaceKHR(VkSurfaceKHR obj, const std::string &str, bool co
     else
         _OUT << "\"" << str << "\"" << std::endl;
 }
-static void print_VkSurfaceKHR(const VkSurfaceKHR *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
 
 static std::map<uint64_t, std::string> VkSurfaceTransformFlagBitsKHR_map = {
     std::make_pair(1ULL << 0, "VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR"),
@@ -29281,70 +27774,8 @@ static void print_VkCompositeAlphaFlagsKHR(VkCompositeAlphaFlagsKHR obj, const s
              << "";
     _OUT << std::endl;
 }
-static void print_VkCompositeAlphaFlagsKHR(const VkCompositeAlphaFlagsKHR *obj, const std::string &str,
-                                           bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkCompositeAlphaFlagBitsKHR_map[1ULL << i] << " | ";
-            else
-                _OUT << VkCompositeAlphaFlagBitsKHR_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkSurfaceTransformFlagsKHR(VkSurfaceTransformFlagsKHR obj, const std::string &str,
-                                             bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkSurfaceTransformFlagBitsKHR_map[1ULL << i] << " | ";
-            else
-                _OUT << VkSurfaceTransformFlagBitsKHR_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkSurfaceTransformFlagsKHR(const VkSurfaceTransformFlagsKHR *obj, const std::string &str,
                                              bool commaNeeded = true)
 {
     PRINT_SPACE
@@ -29512,21 +27943,14 @@ static void print_VkSwapchainKHR(VkSwapchainKHR obj, const std::string &str, boo
     else
         _OUT << "\"" << str << "\"" << std::endl;
 }
-static void print_VkSwapchainKHR(const VkSwapchainKHR *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
 
 static std::map<uint64_t, std::string> VkSwapchainCreateFlagBitsKHR_map = {
     std::make_pair(1ULL << 0, "VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR"),
     std::make_pair(1ULL << 1, "VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR"),
     std::make_pair(1ULL << 0, "VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR"),
     std::make_pair(1ULL << 2, "VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR"),
+    std::make_pair(1ULL << 3, "VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_EXT"),
+    std::make_pair(1ULL << 4, "VK_SWAPCHAIN_CREATE_RESERVED_4_BIT_EXT"),
 };
 static void print_VkSwapchainCreateFlagBitsKHR(VkSwapchainCreateFlagBitsKHR obj, const std::string &str,
                                                bool commaNeeded = true)
@@ -29615,70 +28039,8 @@ static void print_VkSwapchainCreateFlagsKHR(VkSwapchainCreateFlagsKHR obj, const
              << "";
     _OUT << std::endl;
 }
-static void print_VkSwapchainCreateFlagsKHR(const VkSwapchainCreateFlagsKHR *obj, const std::string &str,
-                                            bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkSwapchainCreateFlagBitsKHR_map[1ULL << i] << " | ";
-            else
-                _OUT << VkSwapchainCreateFlagBitsKHR_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkDeviceGroupPresentModeFlagsKHR(VkDeviceGroupPresentModeFlagsKHR obj, const std::string &str,
-                                                   bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkDeviceGroupPresentModeFlagBitsKHR_map[1ULL << i] << " | ";
-            else
-                _OUT << VkDeviceGroupPresentModeFlagBitsKHR_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkDeviceGroupPresentModeFlagsKHR(const VkDeviceGroupPresentModeFlagsKHR *obj, const std::string &str,
                                                    bool commaNeeded = true)
 {
     PRINT_SPACE
@@ -30670,26 +29032,8 @@ static void print_VkDisplayKHR(VkDisplayKHR obj, const std::string &str, bool co
     else
         _OUT << "\"" << str << "\"" << std::endl;
 }
-static void print_VkDisplayKHR(const VkDisplayKHR *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
 
 static void print_VkDisplayModeKHR(VkDisplayModeKHR obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
-static void print_VkDisplayModeKHR(const VkDisplayModeKHR *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (commaNeeded)
@@ -30741,17 +29085,6 @@ static void print_VkDisplayModeCreateFlagsKHR(VkDisplayModeCreateFlagsKHR obj, c
         _OUT << "\"" << str << "\""
              << " : " << obj << std::endl;
 }
-static void print_VkDisplayModeCreateFlagsKHR(const VkDisplayModeCreateFlagsKHR *obj, const std::string &str,
-                                              bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
 
 static void print_VkDisplayPlaneAlphaFlagsKHR(VkDisplayPlaneAlphaFlagsKHR obj, const std::string &str,
                                               bool commaNeeded = true)
@@ -30784,50 +29117,8 @@ static void print_VkDisplayPlaneAlphaFlagsKHR(VkDisplayPlaneAlphaFlagsKHR obj, c
              << "";
     _OUT << std::endl;
 }
-static void print_VkDisplayPlaneAlphaFlagsKHR(const VkDisplayPlaneAlphaFlagsKHR *obj, const std::string &str,
-                                              bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkDisplayPlaneAlphaFlagBitsKHR_map[1ULL << i] << " | ";
-            else
-                _OUT << VkDisplayPlaneAlphaFlagBitsKHR_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkDisplaySurfaceCreateFlagsKHR(VkDisplaySurfaceCreateFlagsKHR obj, const std::string &str,
-                                                 bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
-static void print_VkDisplaySurfaceCreateFlagsKHR(const VkDisplaySurfaceCreateFlagsKHR *obj, const std::string &str,
                                                  bool commaNeeded = true)
 {
     PRINT_SPACE
@@ -32469,70 +30760,8 @@ static void print_VkPerformanceCounterDescriptionFlagsKHR(VkPerformanceCounterDe
              << "";
     _OUT << std::endl;
 }
-static void print_VkPerformanceCounterDescriptionFlagsKHR(const VkPerformanceCounterDescriptionFlagsKHR *obj,
-                                                          const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkPerformanceCounterDescriptionFlagBitsKHR_map[1ULL << i] << " | ";
-            else
-                _OUT << VkPerformanceCounterDescriptionFlagBitsKHR_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkAcquireProfilingLockFlagsKHR(VkAcquireProfilingLockFlagsKHR obj, const std::string &str,
-                                                 bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkAcquireProfilingLockFlagBitsKHR_map[1ULL << i] << " | ";
-            else
-                _OUT << VkAcquireProfilingLockFlagBitsKHR_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkAcquireProfilingLockFlagsKHR(const VkAcquireProfilingLockFlagsKHR *obj, const std::string &str,
                                                  bool commaNeeded = true)
 {
     PRINT_SPACE
@@ -33895,8 +32124,249 @@ static void print_VkPhysicalDeviceShaderClockFeaturesKHR(const VkPhysicalDeviceS
         _OUT << "}" << std::endl;
 }
 
-static void print_VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR(
-    VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR obj, const std::string &s, bool commaNeeded = true)
+static std::map<uint64_t, std::string> VkQueueGlobalPriority_map = {
+    std::make_pair(128, "VK_QUEUE_GLOBAL_PRIORITY_LOW"),
+    std::make_pair(256, "VK_QUEUE_GLOBAL_PRIORITY_MEDIUM"),
+    std::make_pair(128, "VK_QUEUE_GLOBAL_PRIORITY_LOW_KHR"),
+    std::make_pair(256, "VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR"),
+    std::make_pair(512, "VK_QUEUE_GLOBAL_PRIORITY_HIGH_KHR"),
+    std::make_pair(1024, "VK_QUEUE_GLOBAL_PRIORITY_REALTIME_KHR"),
+};
+static void print_VkQueueGlobalPriority(VkQueueGlobalPriority obj, const std::string &str, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    if (str != "")
+        _OUT << "\"" << str << "\""
+             << " : ";
+    if (commaNeeded)
+        _OUT << "\"" << VkQueueGlobalPriority_map[obj] << "\"," << std::endl;
+    else
+        _OUT << "\"" << VkQueueGlobalPriority_map[obj] << "\"" << std::endl;
+}
+static void print_VkQueueGlobalPriority(const VkQueueGlobalPriority *obj, const std::string &str,
+                                        bool commaNeeded = true)
+{
+    PRINT_SPACE
+    if (str != "")
+        _OUT << "\"" << str << "\""
+             << " : ";
+    if (commaNeeded)
+        _OUT << "\"" << VkQueueGlobalPriority_map[*obj] << "\"," << std::endl;
+    else
+        _OUT << "\"" << VkQueueGlobalPriority_map[*obj] << "\"" << std::endl;
+}
+
+static void print_VkDeviceQueueGlobalPriorityCreateInfoKHR(VkDeviceQueueGlobalPriorityCreateInfoKHR obj,
+                                                           const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj.sType, "sType", 1);
+
+    if (obj.pNext)
+    {
+        dumpPNextChain(obj.pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_VkQueueGlobalPriority(obj.globalPriority, "globalPriority", 0);
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+static void print_VkDeviceQueueGlobalPriorityCreateInfoKHR(const VkDeviceQueueGlobalPriorityCreateInfoKHR *obj,
+                                                           const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj->sType, "sType", 1);
+
+    if (obj->pNext)
+    {
+        dumpPNextChain(obj->pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_VkQueueGlobalPriority(obj->globalPriority, "globalPriority", 0);
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+
+static void print_VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR(VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR obj,
+                                                                 const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj.sType, "sType", 1);
+
+    if (obj.pNext)
+    {
+        dumpPNextChain(obj.pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_VkBool32(obj.globalPriorityQuery, "globalPriorityQuery", 0);
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+static void print_VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR(
+    const VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR *obj, const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj->sType, "sType", 1);
+
+    if (obj->pNext)
+    {
+        dumpPNextChain(obj->pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_VkBool32(obj->globalPriorityQuery, "globalPriorityQuery", 0);
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+
+static void print_VkQueueFamilyGlobalPriorityPropertiesKHR(VkQueueFamilyGlobalPriorityPropertiesKHR obj,
+                                                           const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj.sType, "sType", 1);
+
+    if (obj.pNext)
+    {
+        dumpPNextChain(obj.pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_uint32_t(obj.priorityCount, "priorityCount", 1);
+
+    PRINT_SPACE
+    _OUT << "\"priorities\":" << std::endl;
+    PRINT_SPACE
+    _OUT << "[" << std::endl;
+    for (unsigned int i = 0; i < VK_MAX_GLOBAL_PRIORITY_SIZE; i++)
+    {
+        bool isCommaNeeded = (i + 1) != VK_MAX_GLOBAL_PRIORITY_SIZE;
+        print_VkQueueGlobalPriority(obj.priorities[i], "", isCommaNeeded);
+    }
+    PRINT_SPACE
+    _OUT << "]"
+         << "" << std::endl;
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+static void print_VkQueueFamilyGlobalPriorityPropertiesKHR(const VkQueueFamilyGlobalPriorityPropertiesKHR *obj,
+                                                           const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj->sType, "sType", 1);
+
+    if (obj->pNext)
+    {
+        dumpPNextChain(obj->pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_uint32_t(obj->priorityCount, "priorityCount", 1);
+
+    PRINT_SPACE
+    _OUT << "\"priorities\":" << std::endl;
+    PRINT_SPACE
+    _OUT << "[" << std::endl;
+    for (unsigned int i = 0; i < VK_MAX_GLOBAL_PRIORITY_SIZE; i++)
+    {
+        bool isCommaNeeded = (i + 1) != VK_MAX_GLOBAL_PRIORITY_SIZE;
+        print_VkQueueGlobalPriority(obj->priorities[i], "", isCommaNeeded);
+    }
+    PRINT_SPACE
+    _OUT << "]"
+         << "" << std::endl;
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+
+static void print_VkPhysicalDeviceShaderTerminateInvocationFeatures(
+    VkPhysicalDeviceShaderTerminateInvocationFeatures obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -33925,8 +32395,8 @@ static void print_VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR(
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR(
-    const VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR *obj, const std::string &s, bool commaNeeded = true)
+static void print_VkPhysicalDeviceShaderTerminateInvocationFeatures(
+    const VkPhysicalDeviceShaderTerminateInvocationFeatures *obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -33955,6 +32425,8 @@ static void print_VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR(
     else
         _OUT << "}" << std::endl;
 }
+
+typedef VkPhysicalDeviceShaderTerminateInvocationFeatures VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR;
 
 static std::map<uint64_t, std::string> VkFragmentShadingRateCombinerOpKHR_map = {
     std::make_pair(0, "VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR"),
@@ -34538,37 +33010,6 @@ static void print_VkRefreshObjectFlagsKHR(VkRefreshObjectFlagsKHR obj, const std
              << "";
     _OUT << std::endl;
 }
-static void print_VkRefreshObjectFlagsKHR(const VkRefreshObjectFlagsKHR *obj, const std::string &str,
-                                          bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkRefreshObjectFlagBitsKHR_map[1ULL << i] << " | ";
-            else
-                _OUT << VkRefreshObjectFlagBitsKHR_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkRefreshObjectKHR(VkRefreshObjectKHR obj, const std::string &s, bool commaNeeded = true)
 {
@@ -34720,40 +33161,33 @@ static void print_VkFlags64(VkFlags64 obj, const std::string &str, bool commaNee
          << " : "
          << "\"" << obj << "\"" << (commaNeeded ? "," : "") << std::endl;
 }
-static void print_VkFlags64(const VkFlags64 *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "\"" << str << "\""
-         << " : "
-         << "\"" << obj << "\"" << (commaNeeded ? "," : "") << std::endl;
-}
 
-static std::map<uint64_t, std::string> VkPipelineStageFlagBits2KHR_map = {
-    std::make_pair(0, "VK_PIPELINE_STAGE_2_NONE_KHR"),
-    std::make_pair(1ULL << 0, "VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR"),
-    std::make_pair(1ULL << 1, "VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT_KHR"),
-    std::make_pair(1ULL << 2, "VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT_KHR"),
-    std::make_pair(1ULL << 3, "VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT_KHR"),
-    std::make_pair(1ULL << 4, "VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT_KHR"),
-    std::make_pair(1ULL << 5, "VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT_KHR"),
-    std::make_pair(1ULL << 6, "VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT_KHR"),
-    std::make_pair(1ULL << 7, "VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT_KHR"),
-    std::make_pair(1ULL << 8, "VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT_KHR"),
-    std::make_pair(1ULL << 9, "VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT_KHR"),
-    std::make_pair(1ULL << 10, "VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR"),
-    std::make_pair(1ULL << 11, "VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR"),
-    std::make_pair(1ULL << 12, "VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT_KHR"),
-    std::make_pair(1ULL << 13, "VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR"),
-    std::make_pair(1ULL << 14, "VK_PIPELINE_STAGE_2_HOST_BIT_KHR"),
-    std::make_pair(1ULL << 15, "VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT_KHR"),
-    std::make_pair(1ULL << 16, "VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR"),
-    std::make_pair(1ULL << 32, "VK_PIPELINE_STAGE_2_COPY_BIT_KHR"),
-    std::make_pair(1ULL << 33, "VK_PIPELINE_STAGE_2_RESOLVE_BIT_KHR"),
-    std::make_pair(1ULL << 34, "VK_PIPELINE_STAGE_2_BLIT_BIT_KHR"),
-    std::make_pair(1ULL << 35, "VK_PIPELINE_STAGE_2_CLEAR_BIT_KHR"),
-    std::make_pair(1ULL << 36, "VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT_KHR"),
-    std::make_pair(1ULL << 37, "VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT_KHR"),
-    std::make_pair(1ULL << 38, "VK_PIPELINE_STAGE_2_PRE_RASTERIZATION_SHADERS_BIT_KHR"),
+static std::map<uint64_t, std::string> VkPipelineStageFlagBits2_map = {
+    std::make_pair(0, "VK_PIPELINE_STAGE_2_NONE"),
+    std::make_pair(1ULL << 0, "VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT"),
+    std::make_pair(1ULL << 1, "VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT"),
+    std::make_pair(1ULL << 2, "VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT"),
+    std::make_pair(1ULL << 3, "VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT"),
+    std::make_pair(1ULL << 4, "VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT"),
+    std::make_pair(1ULL << 5, "VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT"),
+    std::make_pair(1ULL << 6, "VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT"),
+    std::make_pair(1ULL << 7, "VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT"),
+    std::make_pair(1ULL << 8, "VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT"),
+    std::make_pair(1ULL << 9, "VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT"),
+    std::make_pair(1ULL << 10, "VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT"),
+    std::make_pair(1ULL << 11, "VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT"),
+    std::make_pair(1ULL << 12, "VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT"),
+    std::make_pair(1ULL << 13, "VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT"),
+    std::make_pair(1ULL << 14, "VK_PIPELINE_STAGE_2_HOST_BIT"),
+    std::make_pair(1ULL << 15, "VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT"),
+    std::make_pair(1ULL << 16, "VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT"),
+    std::make_pair(1ULL << 32, "VK_PIPELINE_STAGE_2_COPY_BIT"),
+    std::make_pair(1ULL << 33, "VK_PIPELINE_STAGE_2_RESOLVE_BIT"),
+    std::make_pair(1ULL << 34, "VK_PIPELINE_STAGE_2_BLIT_BIT"),
+    std::make_pair(1ULL << 35, "VK_PIPELINE_STAGE_2_CLEAR_BIT"),
+    std::make_pair(1ULL << 36, "VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT"),
+    std::make_pair(1ULL << 37, "VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT"),
+    std::make_pair(1ULL << 38, "VK_PIPELINE_STAGE_2_PRE_RASTERIZATION_SHADERS_BIT"),
     std::make_pair(1ULL << 26, "VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR"),
     std::make_pair(1ULL << 27, "VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR"),
     std::make_pair(1ULL << 24, "VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT"),
@@ -34763,11 +33197,91 @@ static std::map<uint64_t, std::string> VkPipelineStageFlagBits2KHR_map = {
     std::make_pair(1ULL << 25, "VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR"),
     std::make_pair(1ULL << 21, "VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR"),
     std::make_pair(1ULL << 23, "VK_PIPELINE_STAGE_2_FRAGMENT_DENSITY_PROCESS_BIT_EXT"),
-    std::make_pair(1ULL << 19, "VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_NV"),
-    std::make_pair(1ULL << 20, "VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_NV"),
-    std::make_pair(1ULL << 39, "VK_PIPELINE_STAGE_2_SUBPASS_SHADING_BIT_HUAWEI"),
+    std::make_pair(1ULL << 19, "VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_EXT"),
+    std::make_pair(1ULL << 20, "VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_EXT"),
+    std::make_pair(1ULL << 39, "VK_PIPELINE_STAGE_2_SUBPASS_SHADER_BIT_HUAWEI"),
     std::make_pair(1ULL << 40, "VK_PIPELINE_STAGE_2_INVOCATION_MASK_BIT_HUAWEI"),
-    std::make_pair(1ULL << 28, "VK_PIPELINE_STAGE_2_RESERVED_387_BIT_KHR"),
+    std::make_pair(1ULL << 28, "VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_COPY_BIT_KHR"),
+    std::make_pair(1ULL << 30, "VK_PIPELINE_STAGE_2_MICROMAP_BUILD_BIT_EXT"),
+    std::make_pair(1ULL << 41, "VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI"),
+    std::make_pair(1ULL << 43, "VK_PIPELINE_STAGE_2_RESERVED_43_BIT_ARM"),
+    std::make_pair(1ULL << 29, "VK_PIPELINE_STAGE_2_OPTICAL_FLOW_BIT_NV"),
+    std::make_pair(1ULL << 44, "VK_PIPELINE_STAGE_2_RESERVED_44_BIT_NV"),
+    std::make_pair(1ULL << 42, "VK_PIPELINE_STAGE_2_RESERVED_42_BIT_EXT"),
+    std::make_pair(1ULL << 45, "VK_PIPELINE_STAGE_2_RESERVED_45_BIT_NV"),
+};
+static void print_VkPipelineStageFlagBits2(VkPipelineStageFlagBits2 obj, const std::string &str,
+                                           bool commaNeeded = true)
+{
+    PRINT_SPACE
+    if (str != "")
+        _OUT << "\"" << str << "\""
+             << " : ";
+    if (commaNeeded)
+        _OUT << "\"" << VkPipelineStageFlagBits2_map[obj] << "\"," << std::endl;
+    else
+        _OUT << "\"" << VkPipelineStageFlagBits2_map[obj] << "\"" << std::endl;
+}
+static void print_VkPipelineStageFlagBits2(const VkPipelineStageFlagBits2 *obj, const std::string &str,
+                                           bool commaNeeded = true)
+{
+    PRINT_SPACE
+    if (str != "")
+        _OUT << "\"" << str << "\""
+             << " : ";
+    if (commaNeeded)
+        _OUT << "\"" << VkPipelineStageFlagBits2_map[*obj] << "\"," << std::endl;
+    else
+        _OUT << "\"" << VkPipelineStageFlagBits2_map[*obj] << "\"" << std::endl;
+}
+
+static std::map<uint64_t, std::string> VkPipelineStageFlagBits2KHR_map = {
+    std::make_pair(0, "VK_PIPELINE_STAGE_2_NONE"),
+    std::make_pair(1ULL << 0, "VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT"),
+    std::make_pair(1ULL << 1, "VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT"),
+    std::make_pair(1ULL << 2, "VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT"),
+    std::make_pair(1ULL << 3, "VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT"),
+    std::make_pair(1ULL << 4, "VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT"),
+    std::make_pair(1ULL << 5, "VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT"),
+    std::make_pair(1ULL << 6, "VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT"),
+    std::make_pair(1ULL << 7, "VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT"),
+    std::make_pair(1ULL << 8, "VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT"),
+    std::make_pair(1ULL << 9, "VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT"),
+    std::make_pair(1ULL << 10, "VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT"),
+    std::make_pair(1ULL << 11, "VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT"),
+    std::make_pair(1ULL << 12, "VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT"),
+    std::make_pair(1ULL << 13, "VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT"),
+    std::make_pair(1ULL << 14, "VK_PIPELINE_STAGE_2_HOST_BIT"),
+    std::make_pair(1ULL << 15, "VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT"),
+    std::make_pair(1ULL << 16, "VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT"),
+    std::make_pair(1ULL << 32, "VK_PIPELINE_STAGE_2_COPY_BIT"),
+    std::make_pair(1ULL << 33, "VK_PIPELINE_STAGE_2_RESOLVE_BIT"),
+    std::make_pair(1ULL << 34, "VK_PIPELINE_STAGE_2_BLIT_BIT"),
+    std::make_pair(1ULL << 35, "VK_PIPELINE_STAGE_2_CLEAR_BIT"),
+    std::make_pair(1ULL << 36, "VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT"),
+    std::make_pair(1ULL << 37, "VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT"),
+    std::make_pair(1ULL << 38, "VK_PIPELINE_STAGE_2_PRE_RASTERIZATION_SHADERS_BIT"),
+    std::make_pair(1ULL << 26, "VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR"),
+    std::make_pair(1ULL << 27, "VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR"),
+    std::make_pair(1ULL << 24, "VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT"),
+    std::make_pair(1ULL << 18, "VK_PIPELINE_STAGE_2_CONDITIONAL_RENDERING_BIT_EXT"),
+    std::make_pair(1ULL << 17, "VK_PIPELINE_STAGE_2_COMMAND_PREPROCESS_BIT_NV"),
+    std::make_pair(1ULL << 22, "VK_PIPELINE_STAGE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
+    std::make_pair(1ULL << 25, "VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR"),
+    std::make_pair(1ULL << 21, "VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR"),
+    std::make_pair(1ULL << 23, "VK_PIPELINE_STAGE_2_FRAGMENT_DENSITY_PROCESS_BIT_EXT"),
+    std::make_pair(1ULL << 19, "VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_EXT"),
+    std::make_pair(1ULL << 20, "VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_EXT"),
+    std::make_pair(1ULL << 39, "VK_PIPELINE_STAGE_2_SUBPASS_SHADER_BIT_HUAWEI"),
+    std::make_pair(1ULL << 40, "VK_PIPELINE_STAGE_2_INVOCATION_MASK_BIT_HUAWEI"),
+    std::make_pair(1ULL << 28, "VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_COPY_BIT_KHR"),
+    std::make_pair(1ULL << 30, "VK_PIPELINE_STAGE_2_MICROMAP_BUILD_BIT_EXT"),
+    std::make_pair(1ULL << 41, "VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI"),
+    std::make_pair(1ULL << 43, "VK_PIPELINE_STAGE_2_RESERVED_43_BIT_ARM"),
+    std::make_pair(1ULL << 29, "VK_PIPELINE_STAGE_2_OPTICAL_FLOW_BIT_NV"),
+    std::make_pair(1ULL << 44, "VK_PIPELINE_STAGE_2_RESERVED_44_BIT_NV"),
+    std::make_pair(1ULL << 42, "VK_PIPELINE_STAGE_2_RESERVED_42_BIT_EXT"),
+    std::make_pair(1ULL << 45, "VK_PIPELINE_STAGE_2_RESERVED_45_BIT_NV"),
 };
 static void print_VkPipelineStageFlagBits2KHR(VkPipelineStageFlagBits2KHR obj, const std::string &str,
                                               bool commaNeeded = true)
@@ -34794,32 +33308,40 @@ static void print_VkPipelineStageFlagBits2KHR(const VkPipelineStageFlagBits2KHR 
         _OUT << "\"" << VkPipelineStageFlagBits2KHR_map[*obj] << "\"" << std::endl;
 }
 
-static std::map<uint64_t, std::string> VkAccessFlagBits2KHR_map = {
-    std::make_pair(0, "VK_ACCESS_2_NONE_KHR"),
-    std::make_pair(1ULL << 0, "VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT_KHR"),
-    std::make_pair(1ULL << 1, "VK_ACCESS_2_INDEX_READ_BIT_KHR"),
-    std::make_pair(1ULL << 2, "VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT_KHR"),
-    std::make_pair(1ULL << 3, "VK_ACCESS_2_UNIFORM_READ_BIT_KHR"),
-    std::make_pair(1ULL << 4, "VK_ACCESS_2_INPUT_ATTACHMENT_READ_BIT_KHR"),
-    std::make_pair(1ULL << 5, "VK_ACCESS_2_SHADER_READ_BIT_KHR"),
-    std::make_pair(1ULL << 6, "VK_ACCESS_2_SHADER_WRITE_BIT_KHR"),
-    std::make_pair(1ULL << 7, "VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT_KHR"),
-    std::make_pair(1ULL << 8, "VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT_KHR"),
-    std::make_pair(1ULL << 9, "VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT_KHR"),
-    std::make_pair(1ULL << 10, "VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT_KHR"),
-    std::make_pair(1ULL << 11, "VK_ACCESS_2_TRANSFER_READ_BIT_KHR"),
-    std::make_pair(1ULL << 12, "VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR"),
-    std::make_pair(1ULL << 13, "VK_ACCESS_2_HOST_READ_BIT_KHR"),
-    std::make_pair(1ULL << 14, "VK_ACCESS_2_HOST_WRITE_BIT_KHR"),
-    std::make_pair(1ULL << 15, "VK_ACCESS_2_MEMORY_READ_BIT_KHR"),
-    std::make_pair(1ULL << 16, "VK_ACCESS_2_MEMORY_WRITE_BIT_KHR"),
-    std::make_pair(1ULL << 32, "VK_ACCESS_2_SHADER_SAMPLED_READ_BIT_KHR"),
-    std::make_pair(1ULL << 33, "VK_ACCESS_2_SHADER_STORAGE_READ_BIT_KHR"),
-    std::make_pair(1ULL << 34, "VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT_KHR"),
+static std::map<uint64_t, std::string> VkAccessFlagBits2_map = {
+    std::make_pair(0, "VK_ACCESS_2_NONE"),
+    std::make_pair(1ULL << 0, "VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT"),
+    std::make_pair(1ULL << 1, "VK_ACCESS_2_INDEX_READ_BIT"),
+    std::make_pair(1ULL << 2, "VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT"),
+    std::make_pair(1ULL << 3, "VK_ACCESS_2_UNIFORM_READ_BIT"),
+    std::make_pair(1ULL << 4, "VK_ACCESS_2_INPUT_ATTACHMENT_READ_BIT"),
+    std::make_pair(1ULL << 5, "VK_ACCESS_2_SHADER_READ_BIT"),
+    std::make_pair(1ULL << 6, "VK_ACCESS_2_SHADER_WRITE_BIT"),
+    std::make_pair(1ULL << 7, "VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT"),
+    std::make_pair(1ULL << 8, "VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT"),
+    std::make_pair(1ULL << 9, "VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT"),
+    std::make_pair(1ULL << 10, "VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT"),
+    std::make_pair(1ULL << 11, "VK_ACCESS_2_TRANSFER_READ_BIT"),
+    std::make_pair(1ULL << 12, "VK_ACCESS_2_TRANSFER_WRITE_BIT"),
+    std::make_pair(1ULL << 13, "VK_ACCESS_2_HOST_READ_BIT"),
+    std::make_pair(1ULL << 14, "VK_ACCESS_2_HOST_WRITE_BIT"),
+    std::make_pair(1ULL << 15, "VK_ACCESS_2_MEMORY_READ_BIT"),
+    std::make_pair(1ULL << 16, "VK_ACCESS_2_MEMORY_WRITE_BIT"),
+    std::make_pair(1ULL << 32, "VK_ACCESS_2_SHADER_SAMPLED_READ_BIT"),
+    std::make_pair(1ULL << 33, "VK_ACCESS_2_SHADER_STORAGE_READ_BIT"),
+    std::make_pair(1ULL << 34, "VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT"),
     std::make_pair(1ULL << 35, "VK_ACCESS_2_VIDEO_DECODE_READ_BIT_KHR"),
     std::make_pair(1ULL << 36, "VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR"),
+    std::make_pair(1ULL << 57, "VK_ACCESS_2_RESERVED_57_BIT_KHR"),
+    std::make_pair(1ULL << 58, "VK_ACCESS_2_RESERVED_58_BIT_KHR"),
+    std::make_pair(1ULL << 59, "VK_ACCESS_2_RESERVED_59_BIT_KHR"),
+    std::make_pair(1ULL << 46, "VK_ACCESS_2_RESERVED_46_BIT_INTEL"),
     std::make_pair(1ULL << 37, "VK_ACCESS_2_VIDEO_ENCODE_READ_BIT_KHR"),
     std::make_pair(1ULL << 38, "VK_ACCESS_2_VIDEO_ENCODE_WRITE_BIT_KHR"),
+    std::make_pair(1ULL << 51, "VK_ACCESS_2_RESERVED_51_BIT_QCOM"),
+    std::make_pair(1ULL << 52, "VK_ACCESS_2_RESERVED_52_BIT_QCOM"),
+    std::make_pair(1ULL << 53, "VK_ACCESS_2_RESERVED_53_BIT_QCOM"),
+    std::make_pair(1ULL << 54, "VK_ACCESS_2_RESERVED_54_BIT_QCOM"),
     std::make_pair(1ULL << 25, "VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT"),
     std::make_pair(1ULL << 26, "VK_ACCESS_2_TRANSFORM_FEEDBACK_COUNTER_READ_BIT_EXT"),
     std::make_pair(1ULL << 27, "VK_ACCESS_2_TRANSFORM_FEEDBACK_COUNTER_WRITE_BIT_EXT"),
@@ -34831,9 +33353,101 @@ static std::map<uint64_t, std::string> VkAccessFlagBits2KHR_map = {
     std::make_pair(1ULL << 22, "VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR"),
     std::make_pair(1ULL << 24, "VK_ACCESS_2_FRAGMENT_DENSITY_MAP_READ_BIT_EXT"),
     std::make_pair(1ULL << 19, "VK_ACCESS_2_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT"),
-    std::make_pair(1ULL << 41, "VK_ACCESS_2_RESERVED_41_BIT_AMD"),
+    std::make_pair(1ULL << 41, "VK_ACCESS_2_DESCRIPTOR_BUFFER_READ_BIT_EXT"),
     std::make_pair(1ULL << 39, "VK_ACCESS_2_INVOCATION_MASK_READ_BIT_HUAWEI"),
-    std::make_pair(1ULL << 40, "VK_ACCESS_2_RESERVED_387_BIT_KHR"),
+    std::make_pair(1ULL << 40, "VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR"),
+    std::make_pair(1ULL << 44, "VK_ACCESS_2_MICROMAP_READ_BIT_EXT"),
+    std::make_pair(1ULL << 45, "VK_ACCESS_2_MICROMAP_WRITE_BIT_EXT"),
+    std::make_pair(1ULL << 49, "VK_ACCESS_2_RESERVED_49_BIT_ARM"),
+    std::make_pair(1ULL << 50, "VK_ACCESS_2_RESERVED_50_BIT_ARM"),
+    std::make_pair(1ULL << 42, "VK_ACCESS_2_OPTICAL_FLOW_READ_BIT_NV"),
+    std::make_pair(1ULL << 43, "VK_ACCESS_2_OPTICAL_FLOW_WRITE_BIT_NV"),
+    std::make_pair(1ULL << 47, "VK_ACCESS_2_RESERVED_47_BIT_EXT"),
+    std::make_pair(1ULL << 48, "VK_ACCESS_2_RESERVED_48_BIT_EXT"),
+    std::make_pair(1ULL << 55, "VK_ACCESS_2_RESERVED_55_BIT_NV"),
+    std::make_pair(1ULL << 56, "VK_ACCESS_2_RESERVED_56_BIT_NV"),
+};
+static void print_VkAccessFlagBits2(VkAccessFlagBits2 obj, const std::string &str, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    if (str != "")
+        _OUT << "\"" << str << "\""
+             << " : ";
+    if (commaNeeded)
+        _OUT << "\"" << VkAccessFlagBits2_map[obj] << "\"," << std::endl;
+    else
+        _OUT << "\"" << VkAccessFlagBits2_map[obj] << "\"" << std::endl;
+}
+static void print_VkAccessFlagBits2(const VkAccessFlagBits2 *obj, const std::string &str, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    if (str != "")
+        _OUT << "\"" << str << "\""
+             << " : ";
+    if (commaNeeded)
+        _OUT << "\"" << VkAccessFlagBits2_map[*obj] << "\"," << std::endl;
+    else
+        _OUT << "\"" << VkAccessFlagBits2_map[*obj] << "\"" << std::endl;
+}
+
+static std::map<uint64_t, std::string> VkAccessFlagBits2KHR_map = {
+    std::make_pair(0, "VK_ACCESS_2_NONE"),
+    std::make_pair(1ULL << 0, "VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT"),
+    std::make_pair(1ULL << 1, "VK_ACCESS_2_INDEX_READ_BIT"),
+    std::make_pair(1ULL << 2, "VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT"),
+    std::make_pair(1ULL << 3, "VK_ACCESS_2_UNIFORM_READ_BIT"),
+    std::make_pair(1ULL << 4, "VK_ACCESS_2_INPUT_ATTACHMENT_READ_BIT"),
+    std::make_pair(1ULL << 5, "VK_ACCESS_2_SHADER_READ_BIT"),
+    std::make_pair(1ULL << 6, "VK_ACCESS_2_SHADER_WRITE_BIT"),
+    std::make_pair(1ULL << 7, "VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT"),
+    std::make_pair(1ULL << 8, "VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT"),
+    std::make_pair(1ULL << 9, "VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT"),
+    std::make_pair(1ULL << 10, "VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT"),
+    std::make_pair(1ULL << 11, "VK_ACCESS_2_TRANSFER_READ_BIT"),
+    std::make_pair(1ULL << 12, "VK_ACCESS_2_TRANSFER_WRITE_BIT"),
+    std::make_pair(1ULL << 13, "VK_ACCESS_2_HOST_READ_BIT"),
+    std::make_pair(1ULL << 14, "VK_ACCESS_2_HOST_WRITE_BIT"),
+    std::make_pair(1ULL << 15, "VK_ACCESS_2_MEMORY_READ_BIT"),
+    std::make_pair(1ULL << 16, "VK_ACCESS_2_MEMORY_WRITE_BIT"),
+    std::make_pair(1ULL << 32, "VK_ACCESS_2_SHADER_SAMPLED_READ_BIT"),
+    std::make_pair(1ULL << 33, "VK_ACCESS_2_SHADER_STORAGE_READ_BIT"),
+    std::make_pair(1ULL << 34, "VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT"),
+    std::make_pair(1ULL << 35, "VK_ACCESS_2_VIDEO_DECODE_READ_BIT_KHR"),
+    std::make_pair(1ULL << 36, "VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR"),
+    std::make_pair(1ULL << 57, "VK_ACCESS_2_RESERVED_57_BIT_KHR"),
+    std::make_pair(1ULL << 58, "VK_ACCESS_2_RESERVED_58_BIT_KHR"),
+    std::make_pair(1ULL << 59, "VK_ACCESS_2_RESERVED_59_BIT_KHR"),
+    std::make_pair(1ULL << 46, "VK_ACCESS_2_RESERVED_46_BIT_INTEL"),
+    std::make_pair(1ULL << 37, "VK_ACCESS_2_VIDEO_ENCODE_READ_BIT_KHR"),
+    std::make_pair(1ULL << 38, "VK_ACCESS_2_VIDEO_ENCODE_WRITE_BIT_KHR"),
+    std::make_pair(1ULL << 51, "VK_ACCESS_2_RESERVED_51_BIT_QCOM"),
+    std::make_pair(1ULL << 52, "VK_ACCESS_2_RESERVED_52_BIT_QCOM"),
+    std::make_pair(1ULL << 53, "VK_ACCESS_2_RESERVED_53_BIT_QCOM"),
+    std::make_pair(1ULL << 54, "VK_ACCESS_2_RESERVED_54_BIT_QCOM"),
+    std::make_pair(1ULL << 25, "VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT"),
+    std::make_pair(1ULL << 26, "VK_ACCESS_2_TRANSFORM_FEEDBACK_COUNTER_READ_BIT_EXT"),
+    std::make_pair(1ULL << 27, "VK_ACCESS_2_TRANSFORM_FEEDBACK_COUNTER_WRITE_BIT_EXT"),
+    std::make_pair(1ULL << 20, "VK_ACCESS_2_CONDITIONAL_RENDERING_READ_BIT_EXT"),
+    std::make_pair(1ULL << 17, "VK_ACCESS_2_COMMAND_PREPROCESS_READ_BIT_NV"),
+    std::make_pair(1ULL << 18, "VK_ACCESS_2_COMMAND_PREPROCESS_WRITE_BIT_NV"),
+    std::make_pair(1ULL << 23, "VK_ACCESS_2_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR"),
+    std::make_pair(1ULL << 21, "VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR"),
+    std::make_pair(1ULL << 22, "VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR"),
+    std::make_pair(1ULL << 24, "VK_ACCESS_2_FRAGMENT_DENSITY_MAP_READ_BIT_EXT"),
+    std::make_pair(1ULL << 19, "VK_ACCESS_2_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT"),
+    std::make_pair(1ULL << 41, "VK_ACCESS_2_DESCRIPTOR_BUFFER_READ_BIT_EXT"),
+    std::make_pair(1ULL << 39, "VK_ACCESS_2_INVOCATION_MASK_READ_BIT_HUAWEI"),
+    std::make_pair(1ULL << 40, "VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR"),
+    std::make_pair(1ULL << 44, "VK_ACCESS_2_MICROMAP_READ_BIT_EXT"),
+    std::make_pair(1ULL << 45, "VK_ACCESS_2_MICROMAP_WRITE_BIT_EXT"),
+    std::make_pair(1ULL << 49, "VK_ACCESS_2_RESERVED_49_BIT_ARM"),
+    std::make_pair(1ULL << 50, "VK_ACCESS_2_RESERVED_50_BIT_ARM"),
+    std::make_pair(1ULL << 42, "VK_ACCESS_2_OPTICAL_FLOW_READ_BIT_NV"),
+    std::make_pair(1ULL << 43, "VK_ACCESS_2_OPTICAL_FLOW_WRITE_BIT_NV"),
+    std::make_pair(1ULL << 47, "VK_ACCESS_2_RESERVED_47_BIT_EXT"),
+    std::make_pair(1ULL << 48, "VK_ACCESS_2_RESERVED_48_BIT_EXT"),
+    std::make_pair(1ULL << 55, "VK_ACCESS_2_RESERVED_55_BIT_NV"),
+    std::make_pair(1ULL << 56, "VK_ACCESS_2_RESERVED_56_BIT_NV"),
 };
 static void print_VkAccessFlagBits2KHR(VkAccessFlagBits2KHR obj, const std::string &str, bool commaNeeded = true)
 {
@@ -34858,8 +33472,34 @@ static void print_VkAccessFlagBits2KHR(const VkAccessFlagBits2KHR *obj, const st
         _OUT << "\"" << VkAccessFlagBits2KHR_map[*obj] << "\"" << std::endl;
 }
 
+static std::map<uint64_t, std::string> VkSubmitFlagBits_map = {
+    std::make_pair(1ULL << 0, "VK_SUBMIT_PROTECTED_BIT"),
+};
+static void print_VkSubmitFlagBits(VkSubmitFlagBits obj, const std::string &str, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    if (str != "")
+        _OUT << "\"" << str << "\""
+             << " : ";
+    if (commaNeeded)
+        _OUT << "\"" << VkSubmitFlagBits_map[obj] << "\"," << std::endl;
+    else
+        _OUT << "\"" << VkSubmitFlagBits_map[obj] << "\"" << std::endl;
+}
+static void print_VkSubmitFlagBits(const VkSubmitFlagBits *obj, const std::string &str, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    if (str != "")
+        _OUT << "\"" << str << "\""
+             << " : ";
+    if (commaNeeded)
+        _OUT << "\"" << VkSubmitFlagBits_map[*obj] << "\"," << std::endl;
+    else
+        _OUT << "\"" << VkSubmitFlagBits_map[*obj] << "\"" << std::endl;
+}
+
 static std::map<uint64_t, std::string> VkSubmitFlagBitsKHR_map = {
-    std::make_pair(1ULL << 0, "VK_SUBMIT_PROTECTED_BIT_KHR"),
+    std::make_pair(1ULL << 0, "VK_SUBMIT_PROTECTED_BIT"),
 };
 static void print_VkSubmitFlagBitsKHR(VkSubmitFlagBitsKHR obj, const std::string &str, bool commaNeeded = true)
 {
@@ -34884,19 +33524,7 @@ static void print_VkSubmitFlagBitsKHR(const VkSubmitFlagBitsKHR *obj, const std:
         _OUT << "\"" << VkSubmitFlagBitsKHR_map[*obj] << "\"" << std::endl;
 }
 
-static void print_VkPipelineStageFlags2KHR(VkPipelineStageFlags2KHR obj, const std::string &str,
-                                           bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
-static void print_VkPipelineStageFlags2KHR(const VkPipelineStageFlags2KHR *obj, const std::string &str,
-                                           bool commaNeeded = true)
+static void print_VkPipelineStageFlags2(VkPipelineStageFlags2 obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (commaNeeded)
@@ -34907,17 +33535,7 @@ static void print_VkPipelineStageFlags2KHR(const VkPipelineStageFlags2KHR *obj, 
              << " : " << obj << std::endl;
 }
 
-static void print_VkAccessFlags2KHR(VkAccessFlags2KHR obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
-static void print_VkAccessFlags2KHR(const VkAccessFlags2KHR *obj, const std::string &str, bool commaNeeded = true)
+static void print_VkAccessFlags2(VkAccessFlags2 obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (commaNeeded)
@@ -34928,7 +33546,7 @@ static void print_VkAccessFlags2KHR(const VkAccessFlags2KHR *obj, const std::str
              << " : " << obj << std::endl;
 }
 
-static void print_VkSubmitFlagsKHR(VkSubmitFlagsKHR obj, const std::string &str, bool commaNeeded = true)
+static void print_VkSubmitFlags(VkSubmitFlags obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
@@ -34945,39 +33563,9 @@ static void print_VkSubmitFlagsKHR(VkSubmitFlagsKHR obj, const std::string &str,
         {
             bitCount++;
             if (bitCount < b.count())
-                _OUT << VkSubmitFlagBitsKHR_map[1ULL << i] << " | ";
+                _OUT << VkSubmitFlagBits_map[1ULL << i] << " | ";
             else
-                _OUT << VkSubmitFlagBitsKHR_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkSubmitFlagsKHR(const VkSubmitFlagsKHR *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkSubmitFlagBitsKHR_map[1ULL << i] << " | ";
-            else
-                _OUT << VkSubmitFlagBitsKHR_map[1ULL << i];
+                _OUT << VkSubmitFlagBits_map[1ULL << i];
         }
     }
     if (commaNeeded)
@@ -34989,7 +33577,7 @@ static void print_VkSubmitFlagsKHR(const VkSubmitFlagsKHR *obj, const std::strin
     _OUT << std::endl;
 }
 
-static void print_VkMemoryBarrier2KHR(VkMemoryBarrier2KHR obj, const std::string &s, bool commaNeeded = true)
+static void print_VkMemoryBarrier2(VkMemoryBarrier2 obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -35009,13 +33597,13 @@ static void print_VkMemoryBarrier2KHR(VkMemoryBarrier2KHR obj, const std::string
              << "," << std::endl;
     }
 
-    print_VkPipelineStageFlags2KHR(obj.srcStageMask, "srcStageMask", 1);
+    print_VkPipelineStageFlags2(obj.srcStageMask, "srcStageMask", 1);
 
-    print_VkAccessFlags2KHR(obj.srcAccessMask, "srcAccessMask", 1);
+    print_VkAccessFlags2(obj.srcAccessMask, "srcAccessMask", 1);
 
-    print_VkPipelineStageFlags2KHR(obj.dstStageMask, "dstStageMask", 1);
+    print_VkPipelineStageFlags2(obj.dstStageMask, "dstStageMask", 1);
 
-    print_VkAccessFlags2KHR(obj.dstAccessMask, "dstAccessMask", 0);
+    print_VkAccessFlags2(obj.dstAccessMask, "dstAccessMask", 0);
 
     INDENT(-4);
     PRINT_SPACE
@@ -35024,7 +33612,7 @@ static void print_VkMemoryBarrier2KHR(VkMemoryBarrier2KHR obj, const std::string
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkMemoryBarrier2KHR(const VkMemoryBarrier2KHR *obj, const std::string &s, bool commaNeeded = true)
+static void print_VkMemoryBarrier2(const VkMemoryBarrier2 *obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -35044,13 +33632,13 @@ static void print_VkMemoryBarrier2KHR(const VkMemoryBarrier2KHR *obj, const std:
              << "," << std::endl;
     }
 
-    print_VkPipelineStageFlags2KHR(obj->srcStageMask, "srcStageMask", 1);
+    print_VkPipelineStageFlags2(obj->srcStageMask, "srcStageMask", 1);
 
-    print_VkAccessFlags2KHR(obj->srcAccessMask, "srcAccessMask", 1);
+    print_VkAccessFlags2(obj->srcAccessMask, "srcAccessMask", 1);
 
-    print_VkPipelineStageFlags2KHR(obj->dstStageMask, "dstStageMask", 1);
+    print_VkPipelineStageFlags2(obj->dstStageMask, "dstStageMask", 1);
 
-    print_VkAccessFlags2KHR(obj->dstAccessMask, "dstAccessMask", 0);
+    print_VkAccessFlags2(obj->dstAccessMask, "dstAccessMask", 0);
 
     INDENT(-4);
     PRINT_SPACE
@@ -35060,8 +33648,9 @@ static void print_VkMemoryBarrier2KHR(const VkMemoryBarrier2KHR *obj, const std:
         _OUT << "}" << std::endl;
 }
 
-static void print_VkBufferMemoryBarrier2KHR(VkBufferMemoryBarrier2KHR obj, const std::string &s,
-                                            bool commaNeeded = true)
+typedef VkMemoryBarrier2 VkMemoryBarrier2KHR;
+
+static void print_VkBufferMemoryBarrier2(VkBufferMemoryBarrier2 obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -35081,13 +33670,13 @@ static void print_VkBufferMemoryBarrier2KHR(VkBufferMemoryBarrier2KHR obj, const
              << "," << std::endl;
     }
 
-    print_VkPipelineStageFlags2KHR(obj.srcStageMask, "srcStageMask", 1);
+    print_VkPipelineStageFlags2(obj.srcStageMask, "srcStageMask", 1);
 
-    print_VkAccessFlags2KHR(obj.srcAccessMask, "srcAccessMask", 1);
+    print_VkAccessFlags2(obj.srcAccessMask, "srcAccessMask", 1);
 
-    print_VkPipelineStageFlags2KHR(obj.dstStageMask, "dstStageMask", 1);
+    print_VkPipelineStageFlags2(obj.dstStageMask, "dstStageMask", 1);
 
-    print_VkAccessFlags2KHR(obj.dstAccessMask, "dstAccessMask", 1);
+    print_VkAccessFlags2(obj.dstAccessMask, "dstAccessMask", 1);
 
     print_uint32_t(obj.srcQueueFamilyIndex, "srcQueueFamilyIndex", 1);
 
@@ -35112,8 +33701,8 @@ static void print_VkBufferMemoryBarrier2KHR(VkBufferMemoryBarrier2KHR obj, const
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkBufferMemoryBarrier2KHR(const VkBufferMemoryBarrier2KHR *obj, const std::string &s,
-                                            bool commaNeeded = true)
+static void print_VkBufferMemoryBarrier2(const VkBufferMemoryBarrier2 *obj, const std::string &s,
+                                         bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -35133,13 +33722,13 @@ static void print_VkBufferMemoryBarrier2KHR(const VkBufferMemoryBarrier2KHR *obj
              << "," << std::endl;
     }
 
-    print_VkPipelineStageFlags2KHR(obj->srcStageMask, "srcStageMask", 1);
+    print_VkPipelineStageFlags2(obj->srcStageMask, "srcStageMask", 1);
 
-    print_VkAccessFlags2KHR(obj->srcAccessMask, "srcAccessMask", 1);
+    print_VkAccessFlags2(obj->srcAccessMask, "srcAccessMask", 1);
 
-    print_VkPipelineStageFlags2KHR(obj->dstStageMask, "dstStageMask", 1);
+    print_VkPipelineStageFlags2(obj->dstStageMask, "dstStageMask", 1);
 
-    print_VkAccessFlags2KHR(obj->dstAccessMask, "dstAccessMask", 1);
+    print_VkAccessFlags2(obj->dstAccessMask, "dstAccessMask", 1);
 
     print_uint32_t(obj->srcQueueFamilyIndex, "srcQueueFamilyIndex", 1);
 
@@ -35165,7 +33754,9 @@ static void print_VkBufferMemoryBarrier2KHR(const VkBufferMemoryBarrier2KHR *obj
         _OUT << "}" << std::endl;
 }
 
-static void print_VkImageMemoryBarrier2KHR(VkImageMemoryBarrier2KHR obj, const std::string &s, bool commaNeeded = true)
+typedef VkBufferMemoryBarrier2 VkBufferMemoryBarrier2KHR;
+
+static void print_VkImageMemoryBarrier2(VkImageMemoryBarrier2 obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -35185,13 +33776,13 @@ static void print_VkImageMemoryBarrier2KHR(VkImageMemoryBarrier2KHR obj, const s
              << "," << std::endl;
     }
 
-    print_VkPipelineStageFlags2KHR(obj.srcStageMask, "srcStageMask", 1);
+    print_VkPipelineStageFlags2(obj.srcStageMask, "srcStageMask", 1);
 
-    print_VkAccessFlags2KHR(obj.srcAccessMask, "srcAccessMask", 1);
+    print_VkAccessFlags2(obj.srcAccessMask, "srcAccessMask", 1);
 
-    print_VkPipelineStageFlags2KHR(obj.dstStageMask, "dstStageMask", 1);
+    print_VkPipelineStageFlags2(obj.dstStageMask, "dstStageMask", 1);
 
-    print_VkAccessFlags2KHR(obj.dstAccessMask, "dstAccessMask", 1);
+    print_VkAccessFlags2(obj.dstAccessMask, "dstAccessMask", 1);
 
     print_VkImageLayout(obj.oldLayout, "oldLayout", 1);
 
@@ -35222,8 +33813,7 @@ static void print_VkImageMemoryBarrier2KHR(VkImageMemoryBarrier2KHR obj, const s
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkImageMemoryBarrier2KHR(const VkImageMemoryBarrier2KHR *obj, const std::string &s,
-                                           bool commaNeeded = true)
+static void print_VkImageMemoryBarrier2(const VkImageMemoryBarrier2 *obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -35243,13 +33833,13 @@ static void print_VkImageMemoryBarrier2KHR(const VkImageMemoryBarrier2KHR *obj, 
              << "," << std::endl;
     }
 
-    print_VkPipelineStageFlags2KHR(obj->srcStageMask, "srcStageMask", 1);
+    print_VkPipelineStageFlags2(obj->srcStageMask, "srcStageMask", 1);
 
-    print_VkAccessFlags2KHR(obj->srcAccessMask, "srcAccessMask", 1);
+    print_VkAccessFlags2(obj->srcAccessMask, "srcAccessMask", 1);
 
-    print_VkPipelineStageFlags2KHR(obj->dstStageMask, "dstStageMask", 1);
+    print_VkPipelineStageFlags2(obj->dstStageMask, "dstStageMask", 1);
 
-    print_VkAccessFlags2KHR(obj->dstAccessMask, "dstAccessMask", 1);
+    print_VkAccessFlags2(obj->dstAccessMask, "dstAccessMask", 1);
 
     print_VkImageLayout(obj->oldLayout, "oldLayout", 1);
 
@@ -35281,7 +33871,9 @@ static void print_VkImageMemoryBarrier2KHR(const VkImageMemoryBarrier2KHR *obj, 
         _OUT << "}" << std::endl;
 }
 
-static void print_VkDependencyInfoKHR(VkDependencyInfoKHR obj, const std::string &s, bool commaNeeded = true)
+typedef VkImageMemoryBarrier2 VkImageMemoryBarrier2KHR;
+
+static void print_VkDependencyInfo(VkDependencyInfo obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -35314,9 +33906,9 @@ static void print_VkDependencyInfoKHR(VkDependencyInfoKHR obj, const std::string
         for (unsigned int i = 0; i < obj.memoryBarrierCount; i++)
         {
             if (i + 1 == obj.memoryBarrierCount)
-                print_VkMemoryBarrier2KHR(obj.pMemoryBarriers[i], "pMemoryBarriers", 0);
+                print_VkMemoryBarrier2(obj.pMemoryBarriers[i], "pMemoryBarriers", 0);
             else
-                print_VkMemoryBarrier2KHR(obj.pMemoryBarriers[i], "pMemoryBarriers", 1);
+                print_VkMemoryBarrier2(obj.pMemoryBarriers[i], "pMemoryBarriers", 1);
         }
         PRINT_SPACE
         _OUT << "]," << std::endl;
@@ -35338,9 +33930,9 @@ static void print_VkDependencyInfoKHR(VkDependencyInfoKHR obj, const std::string
         for (unsigned int i = 0; i < obj.bufferMemoryBarrierCount; i++)
         {
             if (i + 1 == obj.bufferMemoryBarrierCount)
-                print_VkBufferMemoryBarrier2KHR(obj.pBufferMemoryBarriers[i], "pBufferMemoryBarriers", 0);
+                print_VkBufferMemoryBarrier2(obj.pBufferMemoryBarriers[i], "pBufferMemoryBarriers", 0);
             else
-                print_VkBufferMemoryBarrier2KHR(obj.pBufferMemoryBarriers[i], "pBufferMemoryBarriers", 1);
+                print_VkBufferMemoryBarrier2(obj.pBufferMemoryBarriers[i], "pBufferMemoryBarriers", 1);
         }
         PRINT_SPACE
         _OUT << "]," << std::endl;
@@ -35362,9 +33954,9 @@ static void print_VkDependencyInfoKHR(VkDependencyInfoKHR obj, const std::string
         for (unsigned int i = 0; i < obj.imageMemoryBarrierCount; i++)
         {
             if (i + 1 == obj.imageMemoryBarrierCount)
-                print_VkImageMemoryBarrier2KHR(obj.pImageMemoryBarriers[i], "pImageMemoryBarriers", 0);
+                print_VkImageMemoryBarrier2(obj.pImageMemoryBarriers[i], "pImageMemoryBarriers", 0);
             else
-                print_VkImageMemoryBarrier2KHR(obj.pImageMemoryBarriers[i], "pImageMemoryBarriers", 1);
+                print_VkImageMemoryBarrier2(obj.pImageMemoryBarriers[i], "pImageMemoryBarriers", 1);
         }
         PRINT_SPACE
         _OUT << "]" << std::endl;
@@ -35382,7 +33974,7 @@ static void print_VkDependencyInfoKHR(VkDependencyInfoKHR obj, const std::string
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkDependencyInfoKHR(const VkDependencyInfoKHR *obj, const std::string &s, bool commaNeeded = true)
+static void print_VkDependencyInfo(const VkDependencyInfo *obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -35415,9 +34007,9 @@ static void print_VkDependencyInfoKHR(const VkDependencyInfoKHR *obj, const std:
         for (unsigned int i = 0; i < obj->memoryBarrierCount; i++)
         {
             if (i + 1 == obj->memoryBarrierCount)
-                print_VkMemoryBarrier2KHR(obj->pMemoryBarriers[i], "pMemoryBarriers", 0);
+                print_VkMemoryBarrier2(obj->pMemoryBarriers[i], "pMemoryBarriers", 0);
             else
-                print_VkMemoryBarrier2KHR(obj->pMemoryBarriers[i], "pMemoryBarriers", 1);
+                print_VkMemoryBarrier2(obj->pMemoryBarriers[i], "pMemoryBarriers", 1);
         }
         PRINT_SPACE
         _OUT << "]," << std::endl;
@@ -35439,9 +34031,9 @@ static void print_VkDependencyInfoKHR(const VkDependencyInfoKHR *obj, const std:
         for (unsigned int i = 0; i < obj->bufferMemoryBarrierCount; i++)
         {
             if (i + 1 == obj->bufferMemoryBarrierCount)
-                print_VkBufferMemoryBarrier2KHR(obj->pBufferMemoryBarriers[i], "pBufferMemoryBarriers", 0);
+                print_VkBufferMemoryBarrier2(obj->pBufferMemoryBarriers[i], "pBufferMemoryBarriers", 0);
             else
-                print_VkBufferMemoryBarrier2KHR(obj->pBufferMemoryBarriers[i], "pBufferMemoryBarriers", 1);
+                print_VkBufferMemoryBarrier2(obj->pBufferMemoryBarriers[i], "pBufferMemoryBarriers", 1);
         }
         PRINT_SPACE
         _OUT << "]," << std::endl;
@@ -35463,9 +34055,9 @@ static void print_VkDependencyInfoKHR(const VkDependencyInfoKHR *obj, const std:
         for (unsigned int i = 0; i < obj->imageMemoryBarrierCount; i++)
         {
             if (i + 1 == obj->imageMemoryBarrierCount)
-                print_VkImageMemoryBarrier2KHR(obj->pImageMemoryBarriers[i], "pImageMemoryBarriers", 0);
+                print_VkImageMemoryBarrier2(obj->pImageMemoryBarriers[i], "pImageMemoryBarriers", 0);
             else
-                print_VkImageMemoryBarrier2KHR(obj->pImageMemoryBarriers[i], "pImageMemoryBarriers", 1);
+                print_VkImageMemoryBarrier2(obj->pImageMemoryBarriers[i], "pImageMemoryBarriers", 1);
         }
         PRINT_SPACE
         _OUT << "]" << std::endl;
@@ -35484,7 +34076,9 @@ static void print_VkDependencyInfoKHR(const VkDependencyInfoKHR *obj, const std:
         _OUT << "}" << std::endl;
 }
 
-static void print_VkSemaphoreSubmitInfoKHR(VkSemaphoreSubmitInfoKHR obj, const std::string &s, bool commaNeeded = true)
+typedef VkDependencyInfo VkDependencyInfoKHR;
+
+static void print_VkSemaphoreSubmitInfo(VkSemaphoreSubmitInfo obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -35514,7 +34108,7 @@ static void print_VkSemaphoreSubmitInfoKHR(VkSemaphoreSubmitInfoKHR obj, const s
 
     print_uint64_t(obj.value, "value", 1);
 
-    print_VkPipelineStageFlags2KHR(obj.stageMask, "stageMask", 1);
+    print_VkPipelineStageFlags2(obj.stageMask, "stageMask", 1);
 
     print_uint32_t(obj.deviceIndex, "deviceIndex", 0);
 
@@ -35525,8 +34119,7 @@ static void print_VkSemaphoreSubmitInfoKHR(VkSemaphoreSubmitInfoKHR obj, const s
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkSemaphoreSubmitInfoKHR(const VkSemaphoreSubmitInfoKHR *obj, const std::string &s,
-                                           bool commaNeeded = true)
+static void print_VkSemaphoreSubmitInfo(const VkSemaphoreSubmitInfo *obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -35556,7 +34149,7 @@ static void print_VkSemaphoreSubmitInfoKHR(const VkSemaphoreSubmitInfoKHR *obj, 
 
     print_uint64_t(obj->value, "value", 1);
 
-    print_VkPipelineStageFlags2KHR(obj->stageMask, "stageMask", 1);
+    print_VkPipelineStageFlags2(obj->stageMask, "stageMask", 1);
 
     print_uint32_t(obj->deviceIndex, "deviceIndex", 0);
 
@@ -35568,8 +34161,8 @@ static void print_VkSemaphoreSubmitInfoKHR(const VkSemaphoreSubmitInfoKHR *obj, 
         _OUT << "}" << std::endl;
 }
 
-static void print_VkCommandBufferSubmitInfoKHR(VkCommandBufferSubmitInfoKHR obj, const std::string &s,
-                                               bool commaNeeded = true)
+static void print_VkCommandBufferSubmitInfo(VkCommandBufferSubmitInfo obj, const std::string &s,
+                                            bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -35606,8 +34199,8 @@ static void print_VkCommandBufferSubmitInfoKHR(VkCommandBufferSubmitInfoKHR obj,
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkCommandBufferSubmitInfoKHR(const VkCommandBufferSubmitInfoKHR *obj, const std::string &s,
-                                               bool commaNeeded = true)
+static void print_VkCommandBufferSubmitInfo(const VkCommandBufferSubmitInfo *obj, const std::string &s,
+                                            bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -35645,7 +34238,7 @@ static void print_VkCommandBufferSubmitInfoKHR(const VkCommandBufferSubmitInfoKH
         _OUT << "}" << std::endl;
 }
 
-static void print_VkSubmitInfo2KHR(VkSubmitInfo2KHR obj, const std::string &s, bool commaNeeded = true)
+static void print_VkSubmitInfo2(VkSubmitInfo2 obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -35665,7 +34258,7 @@ static void print_VkSubmitInfo2KHR(VkSubmitInfo2KHR obj, const std::string &s, b
              << "," << std::endl;
     }
 
-    print_VkSubmitFlagsKHR(obj.flags, "flags", 1);
+    print_VkSubmitFlags(obj.flags, "flags", 1);
 
     print_uint32_t(obj.waitSemaphoreInfoCount, "waitSemaphoreInfoCount", 1);
 
@@ -35678,9 +34271,9 @@ static void print_VkSubmitInfo2KHR(VkSubmitInfo2KHR obj, const std::string &s, b
         for (unsigned int i = 0; i < obj.waitSemaphoreInfoCount; i++)
         {
             if (i + 1 == obj.waitSemaphoreInfoCount)
-                print_VkSemaphoreSubmitInfoKHR(obj.pWaitSemaphoreInfos[i], "pWaitSemaphoreInfos", 0);
+                print_VkSemaphoreSubmitInfo(obj.pWaitSemaphoreInfos[i], "pWaitSemaphoreInfos", 0);
             else
-                print_VkSemaphoreSubmitInfoKHR(obj.pWaitSemaphoreInfos[i], "pWaitSemaphoreInfos", 1);
+                print_VkSemaphoreSubmitInfo(obj.pWaitSemaphoreInfos[i], "pWaitSemaphoreInfos", 1);
         }
         PRINT_SPACE
         _OUT << "]," << std::endl;
@@ -35702,9 +34295,9 @@ static void print_VkSubmitInfo2KHR(VkSubmitInfo2KHR obj, const std::string &s, b
         for (unsigned int i = 0; i < obj.commandBufferInfoCount; i++)
         {
             if (i + 1 == obj.commandBufferInfoCount)
-                print_VkCommandBufferSubmitInfoKHR(obj.pCommandBufferInfos[i], "pCommandBufferInfos", 0);
+                print_VkCommandBufferSubmitInfo(obj.pCommandBufferInfos[i], "pCommandBufferInfos", 0);
             else
-                print_VkCommandBufferSubmitInfoKHR(obj.pCommandBufferInfos[i], "pCommandBufferInfos", 1);
+                print_VkCommandBufferSubmitInfo(obj.pCommandBufferInfos[i], "pCommandBufferInfos", 1);
         }
         PRINT_SPACE
         _OUT << "]," << std::endl;
@@ -35726,9 +34319,9 @@ static void print_VkSubmitInfo2KHR(VkSubmitInfo2KHR obj, const std::string &s, b
         for (unsigned int i = 0; i < obj.signalSemaphoreInfoCount; i++)
         {
             if (i + 1 == obj.signalSemaphoreInfoCount)
-                print_VkSemaphoreSubmitInfoKHR(obj.pSignalSemaphoreInfos[i], "pSignalSemaphoreInfos", 0);
+                print_VkSemaphoreSubmitInfo(obj.pSignalSemaphoreInfos[i], "pSignalSemaphoreInfos", 0);
             else
-                print_VkSemaphoreSubmitInfoKHR(obj.pSignalSemaphoreInfos[i], "pSignalSemaphoreInfos", 1);
+                print_VkSemaphoreSubmitInfo(obj.pSignalSemaphoreInfos[i], "pSignalSemaphoreInfos", 1);
         }
         PRINT_SPACE
         _OUT << "]" << std::endl;
@@ -35746,7 +34339,7 @@ static void print_VkSubmitInfo2KHR(VkSubmitInfo2KHR obj, const std::string &s, b
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkSubmitInfo2KHR(const VkSubmitInfo2KHR *obj, const std::string &s, bool commaNeeded = true)
+static void print_VkSubmitInfo2(const VkSubmitInfo2 *obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -35766,7 +34359,7 @@ static void print_VkSubmitInfo2KHR(const VkSubmitInfo2KHR *obj, const std::strin
              << "," << std::endl;
     }
 
-    print_VkSubmitFlagsKHR(obj->flags, "flags", 1);
+    print_VkSubmitFlags(obj->flags, "flags", 1);
 
     print_uint32_t(obj->waitSemaphoreInfoCount, "waitSemaphoreInfoCount", 1);
 
@@ -35779,9 +34372,9 @@ static void print_VkSubmitInfo2KHR(const VkSubmitInfo2KHR *obj, const std::strin
         for (unsigned int i = 0; i < obj->waitSemaphoreInfoCount; i++)
         {
             if (i + 1 == obj->waitSemaphoreInfoCount)
-                print_VkSemaphoreSubmitInfoKHR(obj->pWaitSemaphoreInfos[i], "pWaitSemaphoreInfos", 0);
+                print_VkSemaphoreSubmitInfo(obj->pWaitSemaphoreInfos[i], "pWaitSemaphoreInfos", 0);
             else
-                print_VkSemaphoreSubmitInfoKHR(obj->pWaitSemaphoreInfos[i], "pWaitSemaphoreInfos", 1);
+                print_VkSemaphoreSubmitInfo(obj->pWaitSemaphoreInfos[i], "pWaitSemaphoreInfos", 1);
         }
         PRINT_SPACE
         _OUT << "]," << std::endl;
@@ -35803,9 +34396,9 @@ static void print_VkSubmitInfo2KHR(const VkSubmitInfo2KHR *obj, const std::strin
         for (unsigned int i = 0; i < obj->commandBufferInfoCount; i++)
         {
             if (i + 1 == obj->commandBufferInfoCount)
-                print_VkCommandBufferSubmitInfoKHR(obj->pCommandBufferInfos[i], "pCommandBufferInfos", 0);
+                print_VkCommandBufferSubmitInfo(obj->pCommandBufferInfos[i], "pCommandBufferInfos", 0);
             else
-                print_VkCommandBufferSubmitInfoKHR(obj->pCommandBufferInfos[i], "pCommandBufferInfos", 1);
+                print_VkCommandBufferSubmitInfo(obj->pCommandBufferInfos[i], "pCommandBufferInfos", 1);
         }
         PRINT_SPACE
         _OUT << "]," << std::endl;
@@ -35827,9 +34420,9 @@ static void print_VkSubmitInfo2KHR(const VkSubmitInfo2KHR *obj, const std::strin
         for (unsigned int i = 0; i < obj->signalSemaphoreInfoCount; i++)
         {
             if (i + 1 == obj->signalSemaphoreInfoCount)
-                print_VkSemaphoreSubmitInfoKHR(obj->pSignalSemaphoreInfos[i], "pSignalSemaphoreInfos", 0);
+                print_VkSemaphoreSubmitInfo(obj->pSignalSemaphoreInfos[i], "pSignalSemaphoreInfos", 0);
             else
-                print_VkSemaphoreSubmitInfoKHR(obj->pSignalSemaphoreInfos[i], "pSignalSemaphoreInfos", 1);
+                print_VkSemaphoreSubmitInfo(obj->pSignalSemaphoreInfos[i], "pSignalSemaphoreInfos", 1);
         }
         PRINT_SPACE
         _OUT << "]" << std::endl;
@@ -35848,8 +34441,14 @@ static void print_VkSubmitInfo2KHR(const VkSubmitInfo2KHR *obj, const std::strin
         _OUT << "}" << std::endl;
 }
 
-static void print_VkPhysicalDeviceSynchronization2FeaturesKHR(VkPhysicalDeviceSynchronization2FeaturesKHR obj,
-                                                              const std::string &s, bool commaNeeded = true)
+typedef VkSubmitInfo2 VkSubmitInfo2KHR;
+
+typedef VkSemaphoreSubmitInfo VkSemaphoreSubmitInfoKHR;
+
+typedef VkCommandBufferSubmitInfo VkCommandBufferSubmitInfoKHR;
+
+static void print_VkPhysicalDeviceSynchronization2Features(VkPhysicalDeviceSynchronization2Features obj,
+                                                           const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -35878,8 +34477,8 @@ static void print_VkPhysicalDeviceSynchronization2FeaturesKHR(VkPhysicalDeviceSy
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkPhysicalDeviceSynchronization2FeaturesKHR(const VkPhysicalDeviceSynchronization2FeaturesKHR *obj,
-                                                              const std::string &s, bool commaNeeded = true)
+static void print_VkPhysicalDeviceSynchronization2Features(const VkPhysicalDeviceSynchronization2Features *obj,
+                                                           const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -35909,6 +34508,8 @@ static void print_VkPhysicalDeviceSynchronization2FeaturesKHR(const VkPhysicalDe
         _OUT << "}" << std::endl;
 }
 
+typedef VkPhysicalDeviceSynchronization2Features VkPhysicalDeviceSynchronization2FeaturesKHR;
+
 static void print_VkQueueFamilyCheckpointProperties2NV(VkQueueFamilyCheckpointProperties2NV obj, const std::string &s,
                                                        bool commaNeeded = true)
 {
@@ -35930,7 +34531,7 @@ static void print_VkQueueFamilyCheckpointProperties2NV(VkQueueFamilyCheckpointPr
              << "," << std::endl;
     }
 
-    print_VkPipelineStageFlags2KHR(obj.checkpointExecutionStageMask, "checkpointExecutionStageMask", 0);
+    print_VkPipelineStageFlags2(obj.checkpointExecutionStageMask, "checkpointExecutionStageMask", 0);
 
     INDENT(-4);
     PRINT_SPACE
@@ -35960,7 +34561,7 @@ static void print_VkQueueFamilyCheckpointProperties2NV(const VkQueueFamilyCheckp
              << "," << std::endl;
     }
 
-    print_VkPipelineStageFlags2KHR(obj->checkpointExecutionStageMask, "checkpointExecutionStageMask", 0);
+    print_VkPipelineStageFlags2(obj->checkpointExecutionStageMask, "checkpointExecutionStageMask", 0);
 
     INDENT(-4);
     PRINT_SPACE
@@ -35990,7 +34591,7 @@ static void print_VkCheckpointData2NV(VkCheckpointData2NV obj, const std::string
              << "," << std::endl;
     }
 
-    print_VkPipelineStageFlags2KHR(obj.stage, "stage", 1);
+    print_VkPipelineStageFlags2(obj.stage, "stage", 1);
 
     /** Note: Ignoring void* data. **/
 
@@ -36021,7 +34622,7 @@ static void print_VkCheckpointData2NV(const VkCheckpointData2NV *obj, const std:
              << "," << std::endl;
     }
 
-    print_VkPipelineStageFlags2KHR(obj->stage, "stage", 1);
+    print_VkPipelineStageFlags2(obj->stage, "stage", 1);
 
     /** Note: Ignoring void* data. **/
 
@@ -36033,7 +34634,7 @@ static void print_VkCheckpointData2NV(const VkCheckpointData2NV *obj, const std:
         _OUT << "}" << std::endl;
 }
 
-static void print_VkBufferCopy2KHR(VkBufferCopy2KHR obj, const std::string &s, bool commaNeeded = true)
+static void print_VkBufferCopy2(VkBufferCopy2 obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -36066,7 +34667,7 @@ static void print_VkBufferCopy2KHR(VkBufferCopy2KHR obj, const std::string &s, b
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkBufferCopy2KHR(const VkBufferCopy2KHR *obj, const std::string &s, bool commaNeeded = true)
+static void print_VkBufferCopy2(const VkBufferCopy2 *obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -36100,7 +34701,7 @@ static void print_VkBufferCopy2KHR(const VkBufferCopy2KHR *obj, const std::strin
         _OUT << "}" << std::endl;
 }
 
-static void print_VkCopyBufferInfo2KHR(VkCopyBufferInfo2KHR obj, const std::string &s, bool commaNeeded = true)
+static void print_VkCopyBufferInfo2(VkCopyBufferInfo2 obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -36147,9 +34748,9 @@ static void print_VkCopyBufferInfo2KHR(VkCopyBufferInfo2KHR obj, const std::stri
         for (unsigned int i = 0; i < obj.regionCount; i++)
         {
             if (i + 1 == obj.regionCount)
-                print_VkBufferCopy2KHR(obj.pRegions[i], "pRegions", 0);
+                print_VkBufferCopy2(obj.pRegions[i], "pRegions", 0);
             else
-                print_VkBufferCopy2KHR(obj.pRegions[i], "pRegions", 1);
+                print_VkBufferCopy2(obj.pRegions[i], "pRegions", 1);
         }
         PRINT_SPACE
         _OUT << "]" << std::endl;
@@ -36167,7 +34768,7 @@ static void print_VkCopyBufferInfo2KHR(VkCopyBufferInfo2KHR obj, const std::stri
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkCopyBufferInfo2KHR(const VkCopyBufferInfo2KHR *obj, const std::string &s, bool commaNeeded = true)
+static void print_VkCopyBufferInfo2(const VkCopyBufferInfo2 *obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -36214,9 +34815,9 @@ static void print_VkCopyBufferInfo2KHR(const VkCopyBufferInfo2KHR *obj, const st
         for (unsigned int i = 0; i < obj->regionCount; i++)
         {
             if (i + 1 == obj->regionCount)
-                print_VkBufferCopy2KHR(obj->pRegions[i], "pRegions", 0);
+                print_VkBufferCopy2(obj->pRegions[i], "pRegions", 0);
             else
-                print_VkBufferCopy2KHR(obj->pRegions[i], "pRegions", 1);
+                print_VkBufferCopy2(obj->pRegions[i], "pRegions", 1);
         }
         PRINT_SPACE
         _OUT << "]" << std::endl;
@@ -36235,7 +34836,9 @@ static void print_VkCopyBufferInfo2KHR(const VkCopyBufferInfo2KHR *obj, const st
         _OUT << "}" << std::endl;
 }
 
-static void print_VkImageCopy2KHR(VkImageCopy2KHR obj, const std::string &s, bool commaNeeded = true)
+typedef VkCopyBufferInfo2 VkCopyBufferInfo2KHR;
+
+static void print_VkImageCopy2(VkImageCopy2 obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -36292,7 +34895,7 @@ static void print_VkImageCopy2KHR(VkImageCopy2KHR obj, const std::string &s, boo
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkImageCopy2KHR(const VkImageCopy2KHR *obj, const std::string &s, bool commaNeeded = true)
+static void print_VkImageCopy2(const VkImageCopy2 *obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -36350,7 +34953,7 @@ static void print_VkImageCopy2KHR(const VkImageCopy2KHR *obj, const std::string 
         _OUT << "}" << std::endl;
 }
 
-static void print_VkCopyImageInfo2KHR(VkCopyImageInfo2KHR obj, const std::string &s, bool commaNeeded = true)
+static void print_VkCopyImageInfo2(VkCopyImageInfo2 obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -36401,9 +35004,9 @@ static void print_VkCopyImageInfo2KHR(VkCopyImageInfo2KHR obj, const std::string
         for (unsigned int i = 0; i < obj.regionCount; i++)
         {
             if (i + 1 == obj.regionCount)
-                print_VkImageCopy2KHR(obj.pRegions[i], "pRegions", 0);
+                print_VkImageCopy2(obj.pRegions[i], "pRegions", 0);
             else
-                print_VkImageCopy2KHR(obj.pRegions[i], "pRegions", 1);
+                print_VkImageCopy2(obj.pRegions[i], "pRegions", 1);
         }
         PRINT_SPACE
         _OUT << "]" << std::endl;
@@ -36421,7 +35024,7 @@ static void print_VkCopyImageInfo2KHR(VkCopyImageInfo2KHR obj, const std::string
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkCopyImageInfo2KHR(const VkCopyImageInfo2KHR *obj, const std::string &s, bool commaNeeded = true)
+static void print_VkCopyImageInfo2(const VkCopyImageInfo2 *obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -36472,9 +35075,9 @@ static void print_VkCopyImageInfo2KHR(const VkCopyImageInfo2KHR *obj, const std:
         for (unsigned int i = 0; i < obj->regionCount; i++)
         {
             if (i + 1 == obj->regionCount)
-                print_VkImageCopy2KHR(obj->pRegions[i], "pRegions", 0);
+                print_VkImageCopy2(obj->pRegions[i], "pRegions", 0);
             else
-                print_VkImageCopy2KHR(obj->pRegions[i], "pRegions", 1);
+                print_VkImageCopy2(obj->pRegions[i], "pRegions", 1);
         }
         PRINT_SPACE
         _OUT << "]" << std::endl;
@@ -36493,7 +35096,9 @@ static void print_VkCopyImageInfo2KHR(const VkCopyImageInfo2KHR *obj, const std:
         _OUT << "}" << std::endl;
 }
 
-static void print_VkBufferImageCopy2KHR(VkBufferImageCopy2KHR obj, const std::string &s, bool commaNeeded = true)
+typedef VkCopyImageInfo2 VkCopyImageInfo2KHR;
+
+static void print_VkBufferImageCopy2(VkBufferImageCopy2 obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -36544,7 +35149,7 @@ static void print_VkBufferImageCopy2KHR(VkBufferImageCopy2KHR obj, const std::st
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkBufferImageCopy2KHR(const VkBufferImageCopy2KHR *obj, const std::string &s, bool commaNeeded = true)
+static void print_VkBufferImageCopy2(const VkBufferImageCopy2 *obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -36596,8 +35201,7 @@ static void print_VkBufferImageCopy2KHR(const VkBufferImageCopy2KHR *obj, const 
         _OUT << "}" << std::endl;
 }
 
-static void print_VkCopyBufferToImageInfo2KHR(VkCopyBufferToImageInfo2KHR obj, const std::string &s,
-                                              bool commaNeeded = true)
+static void print_VkCopyBufferToImageInfo2(VkCopyBufferToImageInfo2 obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -36646,9 +35250,9 @@ static void print_VkCopyBufferToImageInfo2KHR(VkCopyBufferToImageInfo2KHR obj, c
         for (unsigned int i = 0; i < obj.regionCount; i++)
         {
             if (i + 1 == obj.regionCount)
-                print_VkBufferImageCopy2KHR(obj.pRegions[i], "pRegions", 0);
+                print_VkBufferImageCopy2(obj.pRegions[i], "pRegions", 0);
             else
-                print_VkBufferImageCopy2KHR(obj.pRegions[i], "pRegions", 1);
+                print_VkBufferImageCopy2(obj.pRegions[i], "pRegions", 1);
         }
         PRINT_SPACE
         _OUT << "]" << std::endl;
@@ -36666,8 +35270,8 @@ static void print_VkCopyBufferToImageInfo2KHR(VkCopyBufferToImageInfo2KHR obj, c
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkCopyBufferToImageInfo2KHR(const VkCopyBufferToImageInfo2KHR *obj, const std::string &s,
-                                              bool commaNeeded = true)
+static void print_VkCopyBufferToImageInfo2(const VkCopyBufferToImageInfo2 *obj, const std::string &s,
+                                           bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -36716,9 +35320,9 @@ static void print_VkCopyBufferToImageInfo2KHR(const VkCopyBufferToImageInfo2KHR 
         for (unsigned int i = 0; i < obj->regionCount; i++)
         {
             if (i + 1 == obj->regionCount)
-                print_VkBufferImageCopy2KHR(obj->pRegions[i], "pRegions", 0);
+                print_VkBufferImageCopy2(obj->pRegions[i], "pRegions", 0);
             else
-                print_VkBufferImageCopy2KHR(obj->pRegions[i], "pRegions", 1);
+                print_VkBufferImageCopy2(obj->pRegions[i], "pRegions", 1);
         }
         PRINT_SPACE
         _OUT << "]" << std::endl;
@@ -36737,8 +35341,9 @@ static void print_VkCopyBufferToImageInfo2KHR(const VkCopyBufferToImageInfo2KHR 
         _OUT << "}" << std::endl;
 }
 
-static void print_VkCopyImageToBufferInfo2KHR(VkCopyImageToBufferInfo2KHR obj, const std::string &s,
-                                              bool commaNeeded = true)
+typedef VkCopyBufferToImageInfo2 VkCopyBufferToImageInfo2KHR;
+
+static void print_VkCopyImageToBufferInfo2(VkCopyImageToBufferInfo2 obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -36787,9 +35392,9 @@ static void print_VkCopyImageToBufferInfo2KHR(VkCopyImageToBufferInfo2KHR obj, c
         for (unsigned int i = 0; i < obj.regionCount; i++)
         {
             if (i + 1 == obj.regionCount)
-                print_VkBufferImageCopy2KHR(obj.pRegions[i], "pRegions", 0);
+                print_VkBufferImageCopy2(obj.pRegions[i], "pRegions", 0);
             else
-                print_VkBufferImageCopy2KHR(obj.pRegions[i], "pRegions", 1);
+                print_VkBufferImageCopy2(obj.pRegions[i], "pRegions", 1);
         }
         PRINT_SPACE
         _OUT << "]" << std::endl;
@@ -36807,8 +35412,8 @@ static void print_VkCopyImageToBufferInfo2KHR(VkCopyImageToBufferInfo2KHR obj, c
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkCopyImageToBufferInfo2KHR(const VkCopyImageToBufferInfo2KHR *obj, const std::string &s,
-                                              bool commaNeeded = true)
+static void print_VkCopyImageToBufferInfo2(const VkCopyImageToBufferInfo2 *obj, const std::string &s,
+                                           bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -36857,9 +35462,9 @@ static void print_VkCopyImageToBufferInfo2KHR(const VkCopyImageToBufferInfo2KHR 
         for (unsigned int i = 0; i < obj->regionCount; i++)
         {
             if (i + 1 == obj->regionCount)
-                print_VkBufferImageCopy2KHR(obj->pRegions[i], "pRegions", 0);
+                print_VkBufferImageCopy2(obj->pRegions[i], "pRegions", 0);
             else
-                print_VkBufferImageCopy2KHR(obj->pRegions[i], "pRegions", 1);
+                print_VkBufferImageCopy2(obj->pRegions[i], "pRegions", 1);
         }
         PRINT_SPACE
         _OUT << "]" << std::endl;
@@ -36878,7 +35483,9 @@ static void print_VkCopyImageToBufferInfo2KHR(const VkCopyImageToBufferInfo2KHR 
         _OUT << "}" << std::endl;
 }
 
-static void print_VkImageBlit2KHR(VkImageBlit2KHR obj, const std::string &s, bool commaNeeded = true)
+typedef VkCopyImageToBufferInfo2 VkCopyImageToBufferInfo2KHR;
+
+static void print_VkImageBlit2(VkImageBlit2 obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -36943,7 +35550,7 @@ static void print_VkImageBlit2KHR(VkImageBlit2KHR obj, const std::string &s, boo
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkImageBlit2KHR(const VkImageBlit2KHR *obj, const std::string &s, bool commaNeeded = true)
+static void print_VkImageBlit2(const VkImageBlit2 *obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -37009,7 +35616,7 @@ static void print_VkImageBlit2KHR(const VkImageBlit2KHR *obj, const std::string 
         _OUT << "}" << std::endl;
 }
 
-static void print_VkBlitImageInfo2KHR(VkBlitImageInfo2KHR obj, const std::string &s, bool commaNeeded = true)
+static void print_VkBlitImageInfo2(VkBlitImageInfo2 obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -37060,9 +35667,9 @@ static void print_VkBlitImageInfo2KHR(VkBlitImageInfo2KHR obj, const std::string
         for (unsigned int i = 0; i < obj.regionCount; i++)
         {
             if (i + 1 == obj.regionCount)
-                print_VkImageBlit2KHR(obj.pRegions[i], "pRegions", 0);
+                print_VkImageBlit2(obj.pRegions[i], "pRegions", 0);
             else
-                print_VkImageBlit2KHR(obj.pRegions[i], "pRegions", 1);
+                print_VkImageBlit2(obj.pRegions[i], "pRegions", 1);
         }
         PRINT_SPACE
         _OUT << "]," << std::endl;
@@ -37082,7 +35689,7 @@ static void print_VkBlitImageInfo2KHR(VkBlitImageInfo2KHR obj, const std::string
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkBlitImageInfo2KHR(const VkBlitImageInfo2KHR *obj, const std::string &s, bool commaNeeded = true)
+static void print_VkBlitImageInfo2(const VkBlitImageInfo2 *obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -37133,9 +35740,9 @@ static void print_VkBlitImageInfo2KHR(const VkBlitImageInfo2KHR *obj, const std:
         for (unsigned int i = 0; i < obj->regionCount; i++)
         {
             if (i + 1 == obj->regionCount)
-                print_VkImageBlit2KHR(obj->pRegions[i], "pRegions", 0);
+                print_VkImageBlit2(obj->pRegions[i], "pRegions", 0);
             else
-                print_VkImageBlit2KHR(obj->pRegions[i], "pRegions", 1);
+                print_VkImageBlit2(obj->pRegions[i], "pRegions", 1);
         }
         PRINT_SPACE
         _OUT << "]," << std::endl;
@@ -37156,7 +35763,9 @@ static void print_VkBlitImageInfo2KHR(const VkBlitImageInfo2KHR *obj, const std:
         _OUT << "}" << std::endl;
 }
 
-static void print_VkImageResolve2KHR(VkImageResolve2KHR obj, const std::string &s, bool commaNeeded = true)
+typedef VkBlitImageInfo2 VkBlitImageInfo2KHR;
+
+static void print_VkImageResolve2(VkImageResolve2 obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -37213,7 +35822,7 @@ static void print_VkImageResolve2KHR(VkImageResolve2KHR obj, const std::string &
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkImageResolve2KHR(const VkImageResolve2KHR *obj, const std::string &s, bool commaNeeded = true)
+static void print_VkImageResolve2(const VkImageResolve2 *obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -37271,7 +35880,7 @@ static void print_VkImageResolve2KHR(const VkImageResolve2KHR *obj, const std::s
         _OUT << "}" << std::endl;
 }
 
-static void print_VkResolveImageInfo2KHR(VkResolveImageInfo2KHR obj, const std::string &s, bool commaNeeded = true)
+static void print_VkResolveImageInfo2(VkResolveImageInfo2 obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -37322,9 +35931,9 @@ static void print_VkResolveImageInfo2KHR(VkResolveImageInfo2KHR obj, const std::
         for (unsigned int i = 0; i < obj.regionCount; i++)
         {
             if (i + 1 == obj.regionCount)
-                print_VkImageResolve2KHR(obj.pRegions[i], "pRegions", 0);
+                print_VkImageResolve2(obj.pRegions[i], "pRegions", 0);
             else
-                print_VkImageResolve2KHR(obj.pRegions[i], "pRegions", 1);
+                print_VkImageResolve2(obj.pRegions[i], "pRegions", 1);
         }
         PRINT_SPACE
         _OUT << "]" << std::endl;
@@ -37342,8 +35951,7 @@ static void print_VkResolveImageInfo2KHR(VkResolveImageInfo2KHR obj, const std::
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkResolveImageInfo2KHR(const VkResolveImageInfo2KHR *obj, const std::string &s,
-                                         bool commaNeeded = true)
+static void print_VkResolveImageInfo2(const VkResolveImageInfo2 *obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -37394,9 +36002,9 @@ static void print_VkResolveImageInfo2KHR(const VkResolveImageInfo2KHR *obj, cons
         for (unsigned int i = 0; i < obj->regionCount; i++)
         {
             if (i + 1 == obj->regionCount)
-                print_VkImageResolve2KHR(obj->pRegions[i], "pRegions", 0);
+                print_VkImageResolve2(obj->pRegions[i], "pRegions", 0);
             else
-                print_VkImageResolve2KHR(obj->pRegions[i], "pRegions", 1);
+                print_VkImageResolve2(obj->pRegions[i], "pRegions", 1);
         }
         PRINT_SPACE
         _OUT << "]" << std::endl;
@@ -37415,8 +36023,693 @@ static void print_VkResolveImageInfo2KHR(const VkResolveImageInfo2KHR *obj, cons
         _OUT << "}" << std::endl;
 }
 
-static void print_VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT(
-    VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT obj, const std::string &s, bool commaNeeded = true)
+typedef VkResolveImageInfo2 VkResolveImageInfo2KHR;
+
+typedef VkBufferCopy2 VkBufferCopy2KHR;
+
+typedef VkImageCopy2 VkImageCopy2KHR;
+
+typedef VkImageBlit2 VkImageBlit2KHR;
+
+typedef VkBufferImageCopy2 VkBufferImageCopy2KHR;
+
+typedef VkImageResolve2 VkImageResolve2KHR;
+
+static void print_VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR(
+    VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR obj, const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj.sType, "sType", 1);
+
+    if (obj.pNext)
+    {
+        dumpPNextChain(obj.pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_uint32_t(obj.maxVertexAttribDivisor, "maxVertexAttribDivisor", 1);
+
+    print_VkBool32(obj.supportsNonZeroFirstInstance, "supportsNonZeroFirstInstance", 0);
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+static void print_VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR(
+    const VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR *obj, const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj->sType, "sType", 1);
+
+    if (obj->pNext)
+    {
+        dumpPNextChain(obj->pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_uint32_t(obj->maxVertexAttribDivisor, "maxVertexAttribDivisor", 1);
+
+    print_VkBool32(obj->supportsNonZeroFirstInstance, "supportsNonZeroFirstInstance", 0);
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+
+static void print_VkVertexInputBindingDivisorDescriptionKHR(VkVertexInputBindingDivisorDescriptionKHR obj,
+                                                            const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_uint32_t(obj.binding, "binding", 1);
+
+    print_uint32_t(obj.divisor, "divisor", 0);
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+static void print_VkVertexInputBindingDivisorDescriptionKHR(const VkVertexInputBindingDivisorDescriptionKHR *obj,
+                                                            const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_uint32_t(obj->binding, "binding", 1);
+
+    print_uint32_t(obj->divisor, "divisor", 0);
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+
+static void print_VkPipelineVertexInputDivisorStateCreateInfoKHR(VkPipelineVertexInputDivisorStateCreateInfoKHR obj,
+                                                                 const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj.sType, "sType", 1);
+
+    if (obj.pNext)
+    {
+        dumpPNextChain(obj.pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_uint32_t(obj.vertexBindingDivisorCount, "vertexBindingDivisorCount", 1);
+
+    PRINT_SPACE
+    _OUT << "\"pVertexBindingDivisors\": " << std::endl;
+    if (obj.pVertexBindingDivisors)
+    {
+        PRINT_SPACE
+        _OUT << "[" << std::endl;
+        for (unsigned int i = 0; i < obj.vertexBindingDivisorCount; i++)
+        {
+            if (i + 1 == obj.vertexBindingDivisorCount)
+                print_VkVertexInputBindingDivisorDescriptionKHR(obj.pVertexBindingDivisors[i], "pVertexBindingDivisors",
+                                                                0);
+            else
+                print_VkVertexInputBindingDivisorDescriptionKHR(obj.pVertexBindingDivisors[i], "pVertexBindingDivisors",
+                                                                1);
+        }
+        PRINT_SPACE
+        _OUT << "]" << std::endl;
+    }
+    else
+    {
+        PRINT_SPACE _OUT << "\"NULL\""
+                         << "" << std::endl;
+    }
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+static void print_VkPipelineVertexInputDivisorStateCreateInfoKHR(
+    const VkPipelineVertexInputDivisorStateCreateInfoKHR *obj, const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj->sType, "sType", 1);
+
+    if (obj->pNext)
+    {
+        dumpPNextChain(obj->pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_uint32_t(obj->vertexBindingDivisorCount, "vertexBindingDivisorCount", 1);
+
+    PRINT_SPACE
+    _OUT << "\"pVertexBindingDivisors\": " << std::endl;
+    if (obj->pVertexBindingDivisors)
+    {
+        PRINT_SPACE
+        _OUT << "[" << std::endl;
+        for (unsigned int i = 0; i < obj->vertexBindingDivisorCount; i++)
+        {
+            if (i + 1 == obj->vertexBindingDivisorCount)
+                print_VkVertexInputBindingDivisorDescriptionKHR(obj->pVertexBindingDivisors[i],
+                                                                "pVertexBindingDivisors", 0);
+            else
+                print_VkVertexInputBindingDivisorDescriptionKHR(obj->pVertexBindingDivisors[i],
+                                                                "pVertexBindingDivisors", 1);
+        }
+        PRINT_SPACE
+        _OUT << "]" << std::endl;
+    }
+    else
+    {
+        PRINT_SPACE _OUT << "\"NULL\""
+                         << "" << std::endl;
+    }
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+
+static void print_VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR(
+    VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR obj, const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj.sType, "sType", 1);
+
+    if (obj.pNext)
+    {
+        dumpPNextChain(obj.pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_VkBool32(obj.vertexAttributeInstanceRateDivisor, "vertexAttributeInstanceRateDivisor", 1);
+
+    print_VkBool32(obj.vertexAttributeInstanceRateZeroDivisor, "vertexAttributeInstanceRateZeroDivisor", 0);
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+static void print_VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR(
+    const VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR *obj, const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj->sType, "sType", 1);
+
+    if (obj->pNext)
+    {
+        dumpPNextChain(obj->pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_VkBool32(obj->vertexAttributeInstanceRateDivisor, "vertexAttributeInstanceRateDivisor", 1);
+
+    print_VkBool32(obj->vertexAttributeInstanceRateZeroDivisor, "vertexAttributeInstanceRateZeroDivisor", 0);
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+
+static void print_VkPhysicalDeviceIndexTypeUint8FeaturesKHR(VkPhysicalDeviceIndexTypeUint8FeaturesKHR obj,
+                                                            const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj.sType, "sType", 1);
+
+    if (obj.pNext)
+    {
+        dumpPNextChain(obj.pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_VkBool32(obj.indexTypeUint8, "indexTypeUint8", 0);
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+static void print_VkPhysicalDeviceIndexTypeUint8FeaturesKHR(const VkPhysicalDeviceIndexTypeUint8FeaturesKHR *obj,
+                                                            const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj->sType, "sType", 1);
+
+    if (obj->pNext)
+    {
+        dumpPNextChain(obj->pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_VkBool32(obj->indexTypeUint8, "indexTypeUint8", 0);
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+
+static std::map<uint64_t, std::string> VkLineRasterizationModeKHR_map = {
+    std::make_pair(0, "VK_LINE_RASTERIZATION_MODE_DEFAULT_KHR"),
+    std::make_pair(1, "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_KHR"),
+    std::make_pair(2, "VK_LINE_RASTERIZATION_MODE_BRESENHAM_KHR"),
+    std::make_pair(3, "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_KHR"),
+};
+static void print_VkLineRasterizationModeKHR(VkLineRasterizationMode obj, const std::string &str,
+                                             bool commaNeeded = true)
+{
+    PRINT_SPACE
+    if (str != "")
+        _OUT << "\"" << str << "\""
+             << " : ";
+    if (commaNeeded)
+        _OUT << "\"" << VkLineRasterizationModeKHR_map[obj] << "\"," << std::endl;
+    else
+        _OUT << "\"" << VkLineRasterizationModeKHR_map[obj] << "\"" << std::endl;
+}
+static void print_VkLineRasterizationModeKHR(const VkLineRasterizationMode *obj, const std::string &str,
+                                             bool commaNeeded = true)
+{
+    PRINT_SPACE
+    if (str != "")
+        _OUT << "\"" << str << "\""
+             << " : ";
+    if (commaNeeded)
+        _OUT << "\"" << VkLineRasterizationModeKHR_map[*obj] << "\"," << std::endl;
+    else
+        _OUT << "\"" << VkLineRasterizationModeKHR_map[*obj] << "\"" << std::endl;
+}
+
+static void print_VkPhysicalDeviceLineRasterizationFeaturesKHR(VkPhysicalDeviceLineRasterizationFeaturesKHR obj,
+                                                               const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj.sType, "sType", 1);
+
+    if (obj.pNext)
+    {
+        dumpPNextChain(obj.pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_VkBool32(obj.rectangularLines, "rectangularLines", 1);
+
+    print_VkBool32(obj.bresenhamLines, "bresenhamLines", 1);
+
+    print_VkBool32(obj.smoothLines, "smoothLines", 1);
+
+    print_VkBool32(obj.stippledRectangularLines, "stippledRectangularLines", 1);
+
+    print_VkBool32(obj.stippledBresenhamLines, "stippledBresenhamLines", 1);
+
+    print_VkBool32(obj.stippledSmoothLines, "stippledSmoothLines", 0);
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+static void print_VkPhysicalDeviceLineRasterizationFeaturesKHR(const VkPhysicalDeviceLineRasterizationFeaturesKHR *obj,
+                                                               const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj->sType, "sType", 1);
+
+    if (obj->pNext)
+    {
+        dumpPNextChain(obj->pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_VkBool32(obj->rectangularLines, "rectangularLines", 1);
+
+    print_VkBool32(obj->bresenhamLines, "bresenhamLines", 1);
+
+    print_VkBool32(obj->smoothLines, "smoothLines", 1);
+
+    print_VkBool32(obj->stippledRectangularLines, "stippledRectangularLines", 1);
+
+    print_VkBool32(obj->stippledBresenhamLines, "stippledBresenhamLines", 1);
+
+    print_VkBool32(obj->stippledSmoothLines, "stippledSmoothLines", 0);
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+
+static void print_VkPhysicalDeviceLineRasterizationPropertiesKHR(VkPhysicalDeviceLineRasterizationPropertiesKHR obj,
+                                                                 const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj.sType, "sType", 1);
+
+    if (obj.pNext)
+    {
+        dumpPNextChain(obj.pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_uint32_t(obj.lineSubPixelPrecisionBits, "lineSubPixelPrecisionBits", 0);
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+static void print_VkPhysicalDeviceLineRasterizationPropertiesKHR(
+    const VkPhysicalDeviceLineRasterizationPropertiesKHR *obj, const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj->sType, "sType", 1);
+
+    if (obj->pNext)
+    {
+        dumpPNextChain(obj->pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_uint32_t(obj->lineSubPixelPrecisionBits, "lineSubPixelPrecisionBits", 0);
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+
+static void print_VkPipelineRasterizationLineStateCreateInfoKHR(VkPipelineRasterizationLineStateCreateInfoKHR obj,
+                                                                const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj.sType, "sType", 1);
+
+    if (obj.pNext)
+    {
+        dumpPNextChain(obj.pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_VkLineRasterizationModeKHR(obj.lineRasterizationMode, "lineRasterizationMode", 1);
+
+    print_VkBool32(obj.stippledLineEnable, "stippledLineEnable", 1);
+
+    print_uint32_t(obj.lineStippleFactor, "lineStippleFactor", 1);
+
+    print_uint16_t(obj.lineStipplePattern, "lineStipplePattern", 0);
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+static void print_VkPipelineRasterizationLineStateCreateInfoKHR(
+    const VkPipelineRasterizationLineStateCreateInfoKHR *obj, const std::string &s, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj->sType, "sType", 1);
+
+    if (obj->pNext)
+    {
+        dumpPNextChain(obj->pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_VkLineRasterizationModeKHR(obj->lineRasterizationMode, "lineRasterizationMode", 1);
+
+    print_VkBool32(obj->stippledLineEnable, "stippledLineEnable", 1);
+
+    print_uint32_t(obj->lineStippleFactor, "lineStippleFactor", 1);
+
+    print_uint16_t(obj->lineStipplePattern, "lineStipplePattern", 0);
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+
+static std::map<uint64_t, std::string> VkTimeDomainKHR_map = {
+    std::make_pair(0, "VK_TIME_DOMAIN_DEVICE_KHR"),
+    std::make_pair(1, "VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR"),
+    std::make_pair(2, "VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_KHR"),
+    std::make_pair(3, "VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR"),
+};
+static void print_VkTimeDomainKHR(VkTimeDomainKHR obj, const std::string &str, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    if (str != "")
+        _OUT << "\"" << str << "\""
+             << " : ";
+    if (commaNeeded)
+        _OUT << "\"" << VkTimeDomainKHR_map[obj] << "\"," << std::endl;
+    else
+        _OUT << "\"" << VkTimeDomainKHR_map[obj] << "\"" << std::endl;
+}
+static void print_VkTimeDomainKHR(const VkTimeDomainKHR *obj, const std::string &str, bool commaNeeded = true)
+{
+    PRINT_SPACE
+    if (str != "")
+        _OUT << "\"" << str << "\""
+             << " : ";
+    if (commaNeeded)
+        _OUT << "\"" << VkTimeDomainKHR_map[*obj] << "\"," << std::endl;
+    else
+        _OUT << "\"" << VkTimeDomainKHR_map[*obj] << "\"" << std::endl;
+}
+
+static void print_VkCalibratedTimestampInfoKHR(VkCalibratedTimestampInfoKHR obj, const std::string &s,
+                                               bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj.sType, "sType", 1);
+
+    if (obj.pNext)
+    {
+        dumpPNextChain(obj.pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_VkTimeDomainKHR(obj.timeDomain, "timeDomain", 0);
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+static void print_VkCalibratedTimestampInfoKHR(const VkCalibratedTimestampInfoKHR *obj, const std::string &s,
+                                               bool commaNeeded = true)
+{
+    PRINT_SPACE
+    _OUT << "{" << std::endl;
+    INDENT(4);
+
+    print_VkStructureType(obj->sType, "sType", 1);
+
+    if (obj->pNext)
+    {
+        dumpPNextChain(obj->pNext);
+    }
+    else
+    {
+        PRINT_SPACE
+        _OUT << "\"pNext\":"
+             << "\"NULL\""
+             << "," << std::endl;
+    }
+
+    print_VkTimeDomainKHR(obj->timeDomain, "timeDomain", 0);
+
+    INDENT(-4);
+    PRINT_SPACE
+    if (commaNeeded)
+        _OUT << "}," << std::endl;
+    else
+        _OUT << "}" << std::endl;
+}
+
+static void print_VkPhysicalDeviceTextureCompressionASTCHDRFeatures(
+    VkPhysicalDeviceTextureCompressionASTCHDRFeatures obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -37445,8 +36738,8 @@ static void print_VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT(
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT(
-    const VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT *obj, const std::string &s, bool commaNeeded = true)
+static void print_VkPhysicalDeviceTextureCompressionASTCHDRFeatures(
+    const VkPhysicalDeviceTextureCompressionASTCHDRFeatures *obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -37475,6 +36768,8 @@ static void print_VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT(
     else
         _OUT << "}" << std::endl;
 }
+
+typedef VkPhysicalDeviceTextureCompressionASTCHDRFeatures VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT;
 
 static void print_VkImageViewASTCDecodeModeEXT(VkImageViewASTCDecodeModeEXT obj, const std::string &s,
                                                bool commaNeeded = true)
@@ -37627,37 +36922,6 @@ static void print_VkSurfaceCounterFlagBitsEXT(const VkSurfaceCounterFlagBitsEXT 
 }
 
 static void print_VkSurfaceCounterFlagsEXT(VkSurfaceCounterFlagsEXT obj, const std::string &str,
-                                           bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkSurfaceCounterFlagBitsEXT_map[1ULL << i] << " | ";
-            else
-                _OUT << VkSurfaceCounterFlagBitsEXT_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkSurfaceCounterFlagsEXT(const VkSurfaceCounterFlagsEXT *obj, const std::string &str,
                                            bool commaNeeded = true)
 {
     PRINT_SPACE
@@ -38174,17 +37438,6 @@ static void print_VkPipelineDiscardRectangleStateCreateFlagsEXT(VkPipelineDiscar
         _OUT << "\"" << str << "\""
              << " : " << obj << std::endl;
 }
-static void print_VkPipelineDiscardRectangleStateCreateFlagsEXT(
-    const VkPipelineDiscardRectangleStateCreateFlagsEXT *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
 
 static void print_VkPhysicalDeviceDiscardRectanglePropertiesEXT(VkPhysicalDeviceDiscardRectanglePropertiesEXT obj,
                                                                 const std::string &s, bool commaNeeded = true)
@@ -38401,17 +37654,6 @@ static void print_VkPipelineRasterizationConservativeStateCreateFlagsEXT(
         _OUT << "\"" << str << "\""
              << " : " << obj << std::endl;
 }
-static void print_VkPipelineRasterizationConservativeStateCreateFlagsEXT(
-    const VkPipelineRasterizationConservativeStateCreateFlagsEXT *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
 
 static void print_VkPhysicalDeviceConservativeRasterizationPropertiesEXT(
     VkPhysicalDeviceConservativeRasterizationPropertiesEXT obj, const std::string &s, bool commaNeeded = true)
@@ -38577,17 +37819,6 @@ static void print_VkPipelineRasterizationConservativeStateCreateInfoEXT(
 
 static void print_VkPipelineRasterizationDepthClipStateCreateFlagsEXT(
     VkPipelineRasterizationDepthClipStateCreateFlagsEXT obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
-static void print_VkPipelineRasterizationDepthClipStateCreateFlagsEXT(
-    const VkPipelineRasterizationDepthClipStateCreateFlagsEXT *obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (commaNeeded)
@@ -38888,16 +38119,6 @@ static void print_VkDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT obj, const s
     else
         _OUT << "\"" << str << "\"" << std::endl;
 }
-static void print_VkDebugUtilsMessengerEXT(const VkDebugUtilsMessengerEXT *obj, const std::string &str,
-                                           bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\"" << std::endl;
-}
 
 static std::map<uint64_t, std::string> VkDebugUtilsMessageSeverityFlagBitsEXT_map = {
     std::make_pair(1ULL << 0, "VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT"),
@@ -38934,6 +38155,7 @@ static std::map<uint64_t, std::string> VkDebugUtilsMessageTypeFlagBitsEXT_map = 
     std::make_pair(1ULL << 0, "VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT"),
     std::make_pair(1ULL << 1, "VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT"),
     std::make_pair(1ULL << 2, "VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT"),
+    std::make_pair(1ULL << 3, "VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT"),
 };
 static void print_VkDebugUtilsMessageTypeFlagBitsEXT(VkDebugUtilsMessageTypeFlagBitsEXT obj, const std::string &str,
                                                      bool commaNeeded = true)
@@ -38971,50 +38193,8 @@ static void print_VkDebugUtilsMessengerCallbackDataFlagsEXT(VkDebugUtilsMessenge
         _OUT << "\"" << str << "\""
              << " : " << obj << std::endl;
 }
-static void print_VkDebugUtilsMessengerCallbackDataFlagsEXT(const VkDebugUtilsMessengerCallbackDataFlagsEXT *obj,
-                                                            const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
 
 static void print_VkDebugUtilsMessageTypeFlagsEXT(VkDebugUtilsMessageTypeFlagsEXT obj, const std::string &str,
-                                                  bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkDebugUtilsMessageTypeFlagBitsEXT_map[1ULL << i] << " | ";
-            else
-                _OUT << VkDebugUtilsMessageTypeFlagBitsEXT_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
-static void print_VkDebugUtilsMessageTypeFlagsEXT(const VkDebugUtilsMessageTypeFlagsEXT *obj, const std::string &str,
                                                   bool commaNeeded = true)
 {
     PRINT_SPACE
@@ -39077,51 +38257,9 @@ static void print_VkDebugUtilsMessageSeverityFlagsEXT(VkDebugUtilsMessageSeverit
              << "";
     _OUT << std::endl;
 }
-static void print_VkDebugUtilsMessageSeverityFlagsEXT(const VkDebugUtilsMessageSeverityFlagsEXT *obj,
-                                                      const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    const int max_bits = 64; // We don't expect the number to be larger.
-    std::bitset<max_bits> b(obj);
-    _OUT << "\"";
-    if (obj == 0)
-        _OUT << "0";
-    for (unsigned int i = 0, bitCount = 0; i < b.size(); i++)
-    {
-        if (b[i] == 1)
-        {
-            bitCount++;
-            if (bitCount < b.count())
-                _OUT << VkDebugUtilsMessageSeverityFlagBitsEXT_map[1ULL << i] << " | ";
-            else
-                _OUT << VkDebugUtilsMessageSeverityFlagBitsEXT_map[1ULL << i];
-        }
-    }
-    if (commaNeeded)
-        _OUT << "\""
-             << ",";
-    else
-        _OUT << "\""
-             << "";
-    _OUT << std::endl;
-}
 
 static void print_VkDebugUtilsMessengerCreateFlagsEXT(VkDebugUtilsMessengerCreateFlagsEXT obj, const std::string &str,
                                                       bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
-static void print_VkDebugUtilsMessengerCreateFlagsEXT(const VkDebugUtilsMessengerCreateFlagsEXT *obj,
-                                                      const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (commaNeeded)
@@ -40549,84 +39687,86 @@ static void print_VkPipelineColorBlendAdvancedStateCreateInfoEXT(
         _OUT << "}" << std::endl;
 }
 
-static std::map<uint64_t, std::string> VkFormatFeatureFlagBits2KHR_map = {
-    std::make_pair(1ULL << 0, "VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT_KHR"),
-    std::make_pair(1ULL << 1, "VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT_KHR"),
-    std::make_pair(1ULL << 2, "VK_FORMAT_FEATURE_2_STORAGE_IMAGE_ATOMIC_BIT_KHR"),
-    std::make_pair(1ULL << 3, "VK_FORMAT_FEATURE_2_UNIFORM_TEXEL_BUFFER_BIT_KHR"),
-    std::make_pair(1ULL << 4, "VK_FORMAT_FEATURE_2_STORAGE_TEXEL_BUFFER_BIT_KHR"),
-    std::make_pair(1ULL << 5, "VK_FORMAT_FEATURE_2_STORAGE_TEXEL_BUFFER_ATOMIC_BIT_KHR"),
-    std::make_pair(1ULL << 6, "VK_FORMAT_FEATURE_2_VERTEX_BUFFER_BIT_KHR"),
-    std::make_pair(1ULL << 7, "VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT_KHR"),
-    std::make_pair(1ULL << 8, "VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BLEND_BIT_KHR"),
-    std::make_pair(1ULL << 9, "VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT_KHR"),
-    std::make_pair(1ULL << 10, "VK_FORMAT_FEATURE_2_BLIT_SRC_BIT_KHR"),
-    std::make_pair(1ULL << 11, "VK_FORMAT_FEATURE_2_BLIT_DST_BIT_KHR"),
-    std::make_pair(1ULL << 12, "VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT_KHR"),
-    std::make_pair(1ULL << 13, "VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_CUBIC_BIT_EXT"),
-    std::make_pair(1ULL << 14, "VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT_KHR"),
-    std::make_pair(1ULL << 15, "VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT_KHR"),
-    std::make_pair(1ULL << 16, "VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_MINMAX_BIT_KHR"),
-    std::make_pair(1ULL << 17, "VK_FORMAT_FEATURE_2_MIDPOINT_CHROMA_SAMPLES_BIT_KHR"),
-    std::make_pair(1ULL << 18, "VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT_KHR"),
-    std::make_pair(1ULL << 19,
-                   "VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT_KHR"),
-    std::make_pair(1ULL << 20,
-                   "VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT_KHR"),
-    std::make_pair(
-        1ULL << 21,
-        "VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT_KHR"),
-    std::make_pair(1ULL << 22, "VK_FORMAT_FEATURE_2_DISJOINT_BIT_KHR"),
-    std::make_pair(1ULL << 23, "VK_FORMAT_FEATURE_2_COSITED_CHROMA_SAMPLES_BIT_KHR"),
-    std::make_pair(1ULL << 31, "VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR"),
-    std::make_pair(1ULL << 32, "VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR"),
-    std::make_pair(1ULL << 33, "VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR"),
+static std::map<uint64_t, std::string> VkFormatFeatureFlagBits2_map = {
+    std::make_pair(1ULL << 0, "VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT"),
+    std::make_pair(1ULL << 1, "VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT"),
+    std::make_pair(1ULL << 2, "VK_FORMAT_FEATURE_2_STORAGE_IMAGE_ATOMIC_BIT"),
+    std::make_pair(1ULL << 3, "VK_FORMAT_FEATURE_2_UNIFORM_TEXEL_BUFFER_BIT"),
+    std::make_pair(1ULL << 4, "VK_FORMAT_FEATURE_2_STORAGE_TEXEL_BUFFER_BIT"),
+    std::make_pair(1ULL << 5, "VK_FORMAT_FEATURE_2_STORAGE_TEXEL_BUFFER_ATOMIC_BIT"),
+    std::make_pair(1ULL << 6, "VK_FORMAT_FEATURE_2_VERTEX_BUFFER_BIT"),
+    std::make_pair(1ULL << 7, "VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT"),
+    std::make_pair(1ULL << 8, "VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BLEND_BIT"),
+    std::make_pair(1ULL << 9, "VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT"),
+    std::make_pair(1ULL << 10, "VK_FORMAT_FEATURE_2_BLIT_SRC_BIT"),
+    std::make_pair(1ULL << 11, "VK_FORMAT_FEATURE_2_BLIT_DST_BIT"),
+    std::make_pair(1ULL << 12, "VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT"),
+    std::make_pair(1ULL << 13, "VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_CUBIC_BIT"),
+    std::make_pair(1ULL << 14, "VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT"),
+    std::make_pair(1ULL << 15, "VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT"),
+    std::make_pair(1ULL << 16, "VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_MINMAX_BIT"),
+    std::make_pair(1ULL << 17, "VK_FORMAT_FEATURE_2_MIDPOINT_CHROMA_SAMPLES_BIT"),
+    std::make_pair(1ULL << 18, "VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT"),
+    std::make_pair(1ULL << 19, "VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT"),
+    std::make_pair(1ULL << 20, "VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT"),
+    std::make_pair(1ULL << 21,
+                   "VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT"),
+    std::make_pair(1ULL << 22, "VK_FORMAT_FEATURE_2_DISJOINT_BIT"),
+    std::make_pair(1ULL << 23, "VK_FORMAT_FEATURE_2_COSITED_CHROMA_SAMPLES_BIT"),
+    std::make_pair(1ULL << 31, "VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT"),
+    std::make_pair(1ULL << 32, "VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT"),
+    std::make_pair(1ULL << 33, "VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT"),
     std::make_pair(1ULL << 25, "VK_FORMAT_FEATURE_2_VIDEO_DECODE_OUTPUT_BIT_KHR"),
     std::make_pair(1ULL << 26, "VK_FORMAT_FEATURE_2_VIDEO_DECODE_DPB_BIT_KHR"),
     std::make_pair(1ULL << 29, "VK_FORMAT_FEATURE_2_ACCELERATION_STRUCTURE_VERTEX_BUFFER_BIT_KHR"),
     std::make_pair(1ULL << 24, "VK_FORMAT_FEATURE_2_FRAGMENT_DENSITY_MAP_BIT_EXT"),
     std::make_pair(1ULL << 30, "VK_FORMAT_FEATURE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
+    std::make_pair(1ULL << 44, "VK_FORMAT_FEATURE_2_RESERVED_44_BIT_EXT"),
+    std::make_pair(1ULL << 45, "VK_FORMAT_FEATURE_2_RESERVED_45_BIT_EXT"),
+    std::make_pair(1ULL << 46, "VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT"),
     std::make_pair(1ULL << 27, "VK_FORMAT_FEATURE_2_VIDEO_ENCODE_INPUT_BIT_KHR"),
     std::make_pair(1ULL << 28, "VK_FORMAT_FEATURE_2_VIDEO_ENCODE_DPB_BIT_KHR"),
+    std::make_pair(1ULL << 51, "VK_FORMAT_FEATURE_2_RESERVED_51_BIT_EXT"),
+    std::make_pair(1ULL << 38, "VK_FORMAT_FEATURE_2_LINEAR_COLOR_ATTACHMENT_BIT_NV"),
+    std::make_pair(1ULL << 34, "VK_FORMAT_FEATURE_2_WEIGHT_IMAGE_BIT_QCOM"),
+    std::make_pair(1ULL << 35, "VK_FORMAT_FEATURE_2_WEIGHT_SAMPLED_IMAGE_BIT_QCOM"),
+    std::make_pair(1ULL << 36, "VK_FORMAT_FEATURE_2_BLOCK_MATCHING_BIT_QCOM"),
+    std::make_pair(1ULL << 37, "VK_FORMAT_FEATURE_2_BOX_FILTER_SAMPLED_BIT_QCOM"),
+    std::make_pair(1ULL << 47, "VK_FORMAT_FEATURE_2_RESERVED_47_BIT_ARM"),
+    std::make_pair(1ULL << 39, "VK_FORMAT_FEATURE_2_RESERVED_39_BIT_EXT"),
+    std::make_pair(1ULL << 40, "VK_FORMAT_FEATURE_2_OPTICAL_FLOW_IMAGE_BIT_NV"),
+    std::make_pair(1ULL << 41, "VK_FORMAT_FEATURE_2_OPTICAL_FLOW_VECTOR_BIT_NV"),
+    std::make_pair(1ULL << 42, "VK_FORMAT_FEATURE_2_OPTICAL_FLOW_COST_BIT_NV"),
+    std::make_pair(1ULL << 48, "VK_FORMAT_FEATURE_2_RESERVED_48_BIT_EXT"),
+    std::make_pair(1ULL << 49, "VK_FORMAT_FEATURE_2_RESERVED_49_BIT_KHR"),
+    std::make_pair(1ULL << 50, "VK_FORMAT_FEATURE_2_RESERVED_50_BIT_KHR"),
 };
-static void print_VkFormatFeatureFlagBits2KHR(VkFormatFeatureFlagBits2KHR obj, const std::string &str,
-                                              bool commaNeeded = true)
+static void print_VkFormatFeatureFlagBits2(VkFormatFeatureFlagBits2 obj, const std::string &str,
+                                           bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
         _OUT << "\"" << str << "\""
              << " : ";
     if (commaNeeded)
-        _OUT << "\"" << VkFormatFeatureFlagBits2KHR_map[obj] << "\"," << std::endl;
+        _OUT << "\"" << VkFormatFeatureFlagBits2_map[obj] << "\"," << std::endl;
     else
-        _OUT << "\"" << VkFormatFeatureFlagBits2KHR_map[obj] << "\"" << std::endl;
+        _OUT << "\"" << VkFormatFeatureFlagBits2_map[obj] << "\"" << std::endl;
 }
-static void print_VkFormatFeatureFlagBits2KHR(const VkFormatFeatureFlagBits2KHR *obj, const std::string &str,
-                                              bool commaNeeded = true)
+static void print_VkFormatFeatureFlagBits2(const VkFormatFeatureFlagBits2 *obj, const std::string &str,
+                                           bool commaNeeded = true)
 {
     PRINT_SPACE
     if (str != "")
         _OUT << "\"" << str << "\""
              << " : ";
     if (commaNeeded)
-        _OUT << "\"" << VkFormatFeatureFlagBits2KHR_map[*obj] << "\"," << std::endl;
+        _OUT << "\"" << VkFormatFeatureFlagBits2_map[*obj] << "\"," << std::endl;
     else
-        _OUT << "\"" << VkFormatFeatureFlagBits2KHR_map[*obj] << "\"" << std::endl;
+        _OUT << "\"" << VkFormatFeatureFlagBits2_map[*obj] << "\"" << std::endl;
 }
 
-static void print_VkFormatFeatureFlags2KHR(VkFormatFeatureFlags2KHR obj, const std::string &str,
-                                           bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
-static void print_VkFormatFeatureFlags2KHR(const VkFormatFeatureFlags2KHR *obj, const std::string &str,
-                                           bool commaNeeded = true)
+static void print_VkFormatFeatureFlags2(VkFormatFeatureFlags2 obj, const std::string &str, bool commaNeeded = true)
 {
     PRINT_SPACE
     if (commaNeeded)
@@ -41182,7 +40322,7 @@ static void print_VkDrmFormatModifierProperties2EXT(VkDrmFormatModifierPropertie
 
     print_uint32_t(obj.drmFormatModifierPlaneCount, "drmFormatModifierPlaneCount", 1);
 
-    print_VkFormatFeatureFlags2KHR(obj.drmFormatModifierTilingFeatures, "drmFormatModifierTilingFeatures", 0);
+    print_VkFormatFeatureFlags2(obj.drmFormatModifierTilingFeatures, "drmFormatModifierTilingFeatures", 0);
 
     INDENT(-4);
     PRINT_SPACE
@@ -41202,7 +40342,7 @@ static void print_VkDrmFormatModifierProperties2EXT(const VkDrmFormatModifierPro
 
     print_uint32_t(obj->drmFormatModifierPlaneCount, "drmFormatModifierPlaneCount", 1);
 
-    print_VkFormatFeatureFlags2KHR(obj->drmFormatModifierTilingFeatures, "drmFormatModifierTilingFeatures", 0);
+    print_VkFormatFeatureFlags2(obj->drmFormatModifierTilingFeatures, "drmFormatModifierTilingFeatures", 0);
 
     INDENT(-4);
     PRINT_SPACE
@@ -41447,98 +40587,6 @@ static void print_VkFilterCubicImageViewImageFormatPropertiesEXT(
         _OUT << "}" << std::endl;
 }
 
-static std::map<uint64_t, std::string> VkQueueGlobalPriorityEXT_map = {
-    std::make_pair(128, "VK_QUEUE_GLOBAL_PRIORITY_LOW_EXT"),
-    std::make_pair(256, "VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT"),
-    std::make_pair(512, "VK_QUEUE_GLOBAL_PRIORITY_HIGH_EXT"),
-    std::make_pair(1024, "VK_QUEUE_GLOBAL_PRIORITY_REALTIME_EXT"),
-};
-static void print_VkQueueGlobalPriorityEXT(VkQueueGlobalPriorityEXT obj, const std::string &str,
-                                           bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    if (commaNeeded)
-        _OUT << "\"" << VkQueueGlobalPriorityEXT_map[obj] << "\"," << std::endl;
-    else
-        _OUT << "\"" << VkQueueGlobalPriorityEXT_map[obj] << "\"" << std::endl;
-}
-static void print_VkQueueGlobalPriorityEXT(const VkQueueGlobalPriorityEXT *obj, const std::string &str,
-                                           bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    if (commaNeeded)
-        _OUT << "\"" << VkQueueGlobalPriorityEXT_map[*obj] << "\"," << std::endl;
-    else
-        _OUT << "\"" << VkQueueGlobalPriorityEXT_map[*obj] << "\"" << std::endl;
-}
-
-static void print_VkDeviceQueueGlobalPriorityCreateInfoEXT(VkDeviceQueueGlobalPriorityCreateInfoEXT obj,
-                                                           const std::string &s, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "{" << std::endl;
-    INDENT(4);
-
-    print_VkStructureType(obj.sType, "sType", 1);
-
-    if (obj.pNext)
-    {
-        dumpPNextChain(obj.pNext);
-    }
-    else
-    {
-        PRINT_SPACE
-        _OUT << "\"pNext\":"
-             << "\"NULL\""
-             << "," << std::endl;
-    }
-
-    print_VkQueueGlobalPriorityEXT(obj.globalPriority, "globalPriority", 0);
-
-    INDENT(-4);
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "}," << std::endl;
-    else
-        _OUT << "}" << std::endl;
-}
-static void print_VkDeviceQueueGlobalPriorityCreateInfoEXT(const VkDeviceQueueGlobalPriorityCreateInfoEXT *obj,
-                                                           const std::string &s, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "{" << std::endl;
-    INDENT(4);
-
-    print_VkStructureType(obj->sType, "sType", 1);
-
-    if (obj->pNext)
-    {
-        dumpPNextChain(obj->pNext);
-    }
-    else
-    {
-        PRINT_SPACE
-        _OUT << "\"pNext\":"
-             << "\"NULL\""
-             << "," << std::endl;
-    }
-
-    print_VkQueueGlobalPriorityEXT(obj->globalPriority, "globalPriority", 0);
-
-    INDENT(-4);
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "}," << std::endl;
-    else
-        _OUT << "}" << std::endl;
-}
-
 static void print_VkImportMemoryHostPointerInfoEXT(VkImportMemoryHostPointerInfoEXT obj, const std::string &s,
                                                    bool commaNeeded = true)
 {
@@ -41726,368 +40774,6 @@ static void print_VkPhysicalDeviceExternalMemoryHostPropertiesEXT(
         _OUT << "}" << std::endl;
 }
 
-static std::map<uint64_t, std::string> VkTimeDomainEXT_map = {
-    std::make_pair(0, "VK_TIME_DOMAIN_DEVICE_EXT"),
-    std::make_pair(1, "VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT"),
-    std::make_pair(2, "VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT"),
-    std::make_pair(3, "VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT"),
-};
-static void print_VkTimeDomainEXT(VkTimeDomainEXT obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    if (commaNeeded)
-        _OUT << "\"" << VkTimeDomainEXT_map[obj] << "\"," << std::endl;
-    else
-        _OUT << "\"" << VkTimeDomainEXT_map[obj] << "\"" << std::endl;
-}
-static void print_VkTimeDomainEXT(const VkTimeDomainEXT *obj, const std::string &str, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (str != "")
-        _OUT << "\"" << str << "\""
-             << " : ";
-    if (commaNeeded)
-        _OUT << "\"" << VkTimeDomainEXT_map[*obj] << "\"," << std::endl;
-    else
-        _OUT << "\"" << VkTimeDomainEXT_map[*obj] << "\"" << std::endl;
-}
-
-static void print_VkCalibratedTimestampInfoEXT(VkCalibratedTimestampInfoEXT obj, const std::string &s,
-                                               bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "{" << std::endl;
-    INDENT(4);
-
-    print_VkStructureType(obj.sType, "sType", 1);
-
-    if (obj.pNext)
-    {
-        dumpPNextChain(obj.pNext);
-    }
-    else
-    {
-        PRINT_SPACE
-        _OUT << "\"pNext\":"
-             << "\"NULL\""
-             << "," << std::endl;
-    }
-
-    print_VkTimeDomainEXT(obj.timeDomain, "timeDomain", 0);
-
-    INDENT(-4);
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "}," << std::endl;
-    else
-        _OUT << "}" << std::endl;
-}
-static void print_VkCalibratedTimestampInfoEXT(const VkCalibratedTimestampInfoEXT *obj, const std::string &s,
-                                               bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "{" << std::endl;
-    INDENT(4);
-
-    print_VkStructureType(obj->sType, "sType", 1);
-
-    if (obj->pNext)
-    {
-        dumpPNextChain(obj->pNext);
-    }
-    else
-    {
-        PRINT_SPACE
-        _OUT << "\"pNext\":"
-             << "\"NULL\""
-             << "," << std::endl;
-    }
-
-    print_VkTimeDomainEXT(obj->timeDomain, "timeDomain", 0);
-
-    INDENT(-4);
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "}," << std::endl;
-    else
-        _OUT << "}" << std::endl;
-}
-
-static void print_VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT(
-    VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR obj, const std::string &s, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "{" << std::endl;
-    INDENT(4);
-
-    print_VkStructureType(obj.sType, "sType", 1);
-
-    if (obj.pNext)
-    {
-        dumpPNextChain(obj.pNext);
-    }
-    else
-    {
-        PRINT_SPACE
-        _OUT << "\"pNext\":"
-             << "\"NULL\""
-             << "," << std::endl;
-    }
-
-    print_uint32_t(obj.maxVertexAttribDivisor, "maxVertexAttribDivisor", 0);
-
-    INDENT(-4);
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "}," << std::endl;
-    else
-        _OUT << "}" << std::endl;
-}
-static void print_VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT(
-    const VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR *obj, const std::string &s, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "{" << std::endl;
-    INDENT(4);
-
-    print_VkStructureType(obj->sType, "sType", 1);
-
-    if (obj->pNext)
-    {
-        dumpPNextChain(obj->pNext);
-    }
-    else
-    {
-        PRINT_SPACE
-        _OUT << "\"pNext\":"
-             << "\"NULL\""
-             << "," << std::endl;
-    }
-
-    print_uint32_t(obj->maxVertexAttribDivisor, "maxVertexAttribDivisor", 0);
-
-    INDENT(-4);
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "}," << std::endl;
-    else
-        _OUT << "}" << std::endl;
-}
-
-static void print_VkVertexInputBindingDivisorDescriptionEXT(VkVertexInputBindingDivisorDescriptionEXT obj,
-                                                            const std::string &s, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "{" << std::endl;
-    INDENT(4);
-
-    print_uint32_t(obj.binding, "binding", 1);
-
-    print_uint32_t(obj.divisor, "divisor", 0);
-
-    INDENT(-4);
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "}," << std::endl;
-    else
-        _OUT << "}" << std::endl;
-}
-static void print_VkVertexInputBindingDivisorDescriptionEXT(const VkVertexInputBindingDivisorDescriptionEXT *obj,
-                                                            const std::string &s, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "{" << std::endl;
-    INDENT(4);
-
-    print_uint32_t(obj->binding, "binding", 1);
-
-    print_uint32_t(obj->divisor, "divisor", 0);
-
-    INDENT(-4);
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "}," << std::endl;
-    else
-        _OUT << "}" << std::endl;
-}
-
-static void print_VkPipelineVertexInputDivisorStateCreateInfoEXT(VkPipelineVertexInputDivisorStateCreateInfoEXT obj,
-                                                                 const std::string &s, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "{" << std::endl;
-    INDENT(4);
-
-    print_VkStructureType(obj.sType, "sType", 1);
-
-    if (obj.pNext)
-    {
-        dumpPNextChain(obj.pNext);
-    }
-    else
-    {
-        PRINT_SPACE
-        _OUT << "\"pNext\":"
-             << "\"NULL\""
-             << "," << std::endl;
-    }
-
-    print_uint32_t(obj.vertexBindingDivisorCount, "vertexBindingDivisorCount", 1);
-
-    PRINT_SPACE
-    _OUT << "\"pVertexBindingDivisors\": " << std::endl;
-    if (obj.pVertexBindingDivisors)
-    {
-        PRINT_SPACE
-        _OUT << "[" << std::endl;
-        for (unsigned int i = 0; i < obj.vertexBindingDivisorCount; i++)
-        {
-            if (i + 1 == obj.vertexBindingDivisorCount)
-                print_VkVertexInputBindingDivisorDescriptionEXT(obj.pVertexBindingDivisors[i], "pVertexBindingDivisors",
-                                                                0);
-            else
-                print_VkVertexInputBindingDivisorDescriptionEXT(obj.pVertexBindingDivisors[i], "pVertexBindingDivisors",
-                                                                1);
-        }
-        PRINT_SPACE
-        _OUT << "]" << std::endl;
-    }
-    else
-    {
-        PRINT_SPACE _OUT << "\"NULL\""
-                         << "" << std::endl;
-    }
-
-    INDENT(-4);
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "}," << std::endl;
-    else
-        _OUT << "}" << std::endl;
-}
-static void print_VkPipelineVertexInputDivisorStateCreateInfoEXT(
-    const VkPipelineVertexInputDivisorStateCreateInfoEXT *obj, const std::string &s, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "{" << std::endl;
-    INDENT(4);
-
-    print_VkStructureType(obj->sType, "sType", 1);
-
-    if (obj->pNext)
-    {
-        dumpPNextChain(obj->pNext);
-    }
-    else
-    {
-        PRINT_SPACE
-        _OUT << "\"pNext\":"
-             << "\"NULL\""
-             << "," << std::endl;
-    }
-
-    print_uint32_t(obj->vertexBindingDivisorCount, "vertexBindingDivisorCount", 1);
-
-    PRINT_SPACE
-    _OUT << "\"pVertexBindingDivisors\": " << std::endl;
-    if (obj->pVertexBindingDivisors)
-    {
-        PRINT_SPACE
-        _OUT << "[" << std::endl;
-        for (unsigned int i = 0; i < obj->vertexBindingDivisorCount; i++)
-        {
-            if (i + 1 == obj->vertexBindingDivisorCount)
-                print_VkVertexInputBindingDivisorDescriptionEXT(obj->pVertexBindingDivisors[i],
-                                                                "pVertexBindingDivisors", 0);
-            else
-                print_VkVertexInputBindingDivisorDescriptionEXT(obj->pVertexBindingDivisors[i],
-                                                                "pVertexBindingDivisors", 1);
-        }
-        PRINT_SPACE
-        _OUT << "]" << std::endl;
-    }
-    else
-    {
-        PRINT_SPACE _OUT << "\"NULL\""
-                         << "" << std::endl;
-    }
-
-    INDENT(-4);
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "}," << std::endl;
-    else
-        _OUT << "}" << std::endl;
-}
-
-static void print_VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT(
-    VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT obj, const std::string &s, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "{" << std::endl;
-    INDENT(4);
-
-    print_VkStructureType(obj.sType, "sType", 1);
-
-    if (obj.pNext)
-    {
-        dumpPNextChain(obj.pNext);
-    }
-    else
-    {
-        PRINT_SPACE
-        _OUT << "\"pNext\":"
-             << "\"NULL\""
-             << "," << std::endl;
-    }
-
-    print_VkBool32(obj.vertexAttributeInstanceRateDivisor, "vertexAttributeInstanceRateDivisor", 1);
-
-    print_VkBool32(obj.vertexAttributeInstanceRateZeroDivisor, "vertexAttributeInstanceRateZeroDivisor", 0);
-
-    INDENT(-4);
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "}," << std::endl;
-    else
-        _OUT << "}" << std::endl;
-}
-static void print_VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT(
-    const VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT *obj, const std::string &s, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "{" << std::endl;
-    INDENT(4);
-
-    print_VkStructureType(obj->sType, "sType", 1);
-
-    if (obj->pNext)
-    {
-        dumpPNextChain(obj->pNext);
-    }
-    else
-    {
-        PRINT_SPACE
-        _OUT << "\"pNext\":"
-             << "\"NULL\""
-             << "," << std::endl;
-    }
-
-    print_VkBool32(obj->vertexAttributeInstanceRateDivisor, "vertexAttributeInstanceRateDivisor", 1);
-
-    print_VkBool32(obj->vertexAttributeInstanceRateZeroDivisor, "vertexAttributeInstanceRateZeroDivisor", 0);
-
-    INDENT(-4);
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "}," << std::endl;
-    else
-        _OUT << "}" << std::endl;
-}
-
 static void print_VkPhysicalDevicePCIBusInfoPropertiesEXT(VkPhysicalDevicePCIBusInfoPropertiesEXT obj,
                                                           const std::string &s, bool commaNeeded = true)
 {
@@ -42161,8 +40847,8 @@ static void print_VkPhysicalDevicePCIBusInfoPropertiesEXT(const VkPhysicalDevice
         _OUT << "}" << std::endl;
 }
 
-static void print_VkPhysicalDeviceSubgroupSizeControlFeaturesEXT(VkPhysicalDeviceSubgroupSizeControlFeaturesEXT obj,
-                                                                 const std::string &s, bool commaNeeded = true)
+static void print_VkPhysicalDeviceSubgroupSizeControlFeatures(VkPhysicalDeviceSubgroupSizeControlFeatures obj,
+                                                              const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -42193,8 +40879,8 @@ static void print_VkPhysicalDeviceSubgroupSizeControlFeaturesEXT(VkPhysicalDevic
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkPhysicalDeviceSubgroupSizeControlFeaturesEXT(
-    const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT *obj, const std::string &s, bool commaNeeded = true)
+static void print_VkPhysicalDeviceSubgroupSizeControlFeatures(const VkPhysicalDeviceSubgroupSizeControlFeatures *obj,
+                                                              const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -42226,8 +40912,10 @@ static void print_VkPhysicalDeviceSubgroupSizeControlFeaturesEXT(
         _OUT << "}" << std::endl;
 }
 
-static void print_VkPhysicalDeviceSubgroupSizeControlPropertiesEXT(VkPhysicalDeviceSubgroupSizeControlPropertiesEXT obj,
-                                                                   const std::string &s, bool commaNeeded = true)
+typedef VkPhysicalDeviceSubgroupSizeControlFeatures VkPhysicalDeviceSubgroupSizeControlFeaturesEXT;
+
+static void print_VkPhysicalDeviceSubgroupSizeControlProperties(VkPhysicalDeviceSubgroupSizeControlProperties obj,
+                                                                const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -42262,8 +40950,8 @@ static void print_VkPhysicalDeviceSubgroupSizeControlPropertiesEXT(VkPhysicalDev
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkPhysicalDeviceSubgroupSizeControlPropertiesEXT(
-    const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT *obj, const std::string &s, bool commaNeeded = true)
+static void print_VkPhysicalDeviceSubgroupSizeControlProperties(
+    const VkPhysicalDeviceSubgroupSizeControlProperties *obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -42299,8 +40987,10 @@ static void print_VkPhysicalDeviceSubgroupSizeControlPropertiesEXT(
         _OUT << "}" << std::endl;
 }
 
-static void print_VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT(
-    VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT obj, const std::string &s, bool commaNeeded = true)
+typedef VkPhysicalDeviceSubgroupSizeControlProperties VkPhysicalDeviceSubgroupSizeControlPropertiesEXT;
+
+static void print_VkPipelineShaderStageRequiredSubgroupSizeCreateInfo(
+    VkPipelineShaderStageRequiredSubgroupSizeCreateInfo obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -42329,8 +41019,8 @@ static void print_VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT(
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT(
-    const VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT *obj, const std::string &s, bool commaNeeded = true)
+static void print_VkPipelineShaderStageRequiredSubgroupSizeCreateInfo(
+    const VkPipelineShaderStageRequiredSubgroupSizeCreateInfo *obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -42359,6 +41049,8 @@ static void print_VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT(
     else
         _OUT << "}" << std::endl;
 }
+
+typedef VkPipelineShaderStageRequiredSubgroupSizeCreateInfo VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT;
 
 static void print_VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT(
     VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT obj, const std::string &s, bool commaNeeded = true)
@@ -42890,17 +41582,6 @@ static void print_VkHeadlessSurfaceCreateFlagsEXT(VkHeadlessSurfaceCreateFlagsEX
         _OUT << "\"" << str << "\""
              << " : " << obj << std::endl;
 }
-static void print_VkHeadlessSurfaceCreateFlagsEXT(const VkHeadlessSurfaceCreateFlagsEXT *obj, const std::string &str,
-                                                  bool commaNeeded = true)
-{
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "\"" << str << "\""
-             << " : " << obj << "," << std::endl;
-    else
-        _OUT << "\"" << str << "\""
-             << " : " << obj << std::endl;
-}
 
 static void print_VkHeadlessSurfaceCreateInfoEXT(VkHeadlessSurfaceCreateInfoEXT obj, const std::string &s,
                                                  bool commaNeeded = true)
@@ -42964,10 +41645,10 @@ static void print_VkHeadlessSurfaceCreateInfoEXT(const VkHeadlessSurfaceCreateIn
 }
 
 static std::map<uint64_t, std::string> VkLineRasterizationModeEXT_map = {
-    std::make_pair(0, "VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT"),
-    std::make_pair(1, "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT"),
-    std::make_pair(2, "VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT"),
-    std::make_pair(3, "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT"),
+    std::make_pair(0, "VK_LINE_RASTERIZATION_MODE_DEFAULT_KHR"),
+    std::make_pair(1, "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_KHR"),
+    std::make_pair(2, "VK_LINE_RASTERIZATION_MODE_BRESENHAM_KHR"),
+    std::make_pair(3, "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_KHR"),
 };
 static void print_VkLineRasterizationModeEXT(VkLineRasterizationModeEXT obj, const std::string &str,
                                              bool commaNeeded = true)
@@ -42994,220 +41675,11 @@ static void print_VkLineRasterizationModeEXT(const VkLineRasterizationModeEXT *o
         _OUT << "\"" << VkLineRasterizationModeEXT_map[*obj] << "\"" << std::endl;
 }
 
-static void print_VkPhysicalDeviceLineRasterizationFeaturesEXT(VkPhysicalDeviceLineRasterizationFeaturesEXT obj,
-                                                               const std::string &s, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "{" << std::endl;
-    INDENT(4);
+typedef VkPhysicalDeviceLineRasterizationFeaturesKHR VkPhysicalDeviceLineRasterizationFeaturesEXT;
 
-    print_VkStructureType(obj.sType, "sType", 1);
+typedef VkPhysicalDeviceLineRasterizationPropertiesKHR VkPhysicalDeviceLineRasterizationPropertiesEXT;
 
-    if (obj.pNext)
-    {
-        dumpPNextChain(obj.pNext);
-    }
-    else
-    {
-        PRINT_SPACE
-        _OUT << "\"pNext\":"
-             << "\"NULL\""
-             << "," << std::endl;
-    }
-
-    print_VkBool32(obj.rectangularLines, "rectangularLines", 1);
-
-    print_VkBool32(obj.bresenhamLines, "bresenhamLines", 1);
-
-    print_VkBool32(obj.smoothLines, "smoothLines", 1);
-
-    print_VkBool32(obj.stippledRectangularLines, "stippledRectangularLines", 1);
-
-    print_VkBool32(obj.stippledBresenhamLines, "stippledBresenhamLines", 1);
-
-    print_VkBool32(obj.stippledSmoothLines, "stippledSmoothLines", 0);
-
-    INDENT(-4);
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "}," << std::endl;
-    else
-        _OUT << "}" << std::endl;
-}
-static void print_VkPhysicalDeviceLineRasterizationFeaturesEXT(const VkPhysicalDeviceLineRasterizationFeaturesEXT *obj,
-                                                               const std::string &s, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "{" << std::endl;
-    INDENT(4);
-
-    print_VkStructureType(obj->sType, "sType", 1);
-
-    if (obj->pNext)
-    {
-        dumpPNextChain(obj->pNext);
-    }
-    else
-    {
-        PRINT_SPACE
-        _OUT << "\"pNext\":"
-             << "\"NULL\""
-             << "," << std::endl;
-    }
-
-    print_VkBool32(obj->rectangularLines, "rectangularLines", 1);
-
-    print_VkBool32(obj->bresenhamLines, "bresenhamLines", 1);
-
-    print_VkBool32(obj->smoothLines, "smoothLines", 1);
-
-    print_VkBool32(obj->stippledRectangularLines, "stippledRectangularLines", 1);
-
-    print_VkBool32(obj->stippledBresenhamLines, "stippledBresenhamLines", 1);
-
-    print_VkBool32(obj->stippledSmoothLines, "stippledSmoothLines", 0);
-
-    INDENT(-4);
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "}," << std::endl;
-    else
-        _OUT << "}" << std::endl;
-}
-
-static void print_VkPhysicalDeviceLineRasterizationPropertiesEXT(VkPhysicalDeviceLineRasterizationPropertiesEXT obj,
-                                                                 const std::string &s, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "{" << std::endl;
-    INDENT(4);
-
-    print_VkStructureType(obj.sType, "sType", 1);
-
-    if (obj.pNext)
-    {
-        dumpPNextChain(obj.pNext);
-    }
-    else
-    {
-        PRINT_SPACE
-        _OUT << "\"pNext\":"
-             << "\"NULL\""
-             << "," << std::endl;
-    }
-
-    print_uint32_t(obj.lineSubPixelPrecisionBits, "lineSubPixelPrecisionBits", 0);
-
-    INDENT(-4);
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "}," << std::endl;
-    else
-        _OUT << "}" << std::endl;
-}
-static void print_VkPhysicalDeviceLineRasterizationPropertiesEXT(
-    const VkPhysicalDeviceLineRasterizationPropertiesEXT *obj, const std::string &s, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "{" << std::endl;
-    INDENT(4);
-
-    print_VkStructureType(obj->sType, "sType", 1);
-
-    if (obj->pNext)
-    {
-        dumpPNextChain(obj->pNext);
-    }
-    else
-    {
-        PRINT_SPACE
-        _OUT << "\"pNext\":"
-             << "\"NULL\""
-             << "," << std::endl;
-    }
-
-    print_uint32_t(obj->lineSubPixelPrecisionBits, "lineSubPixelPrecisionBits", 0);
-
-    INDENT(-4);
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "}," << std::endl;
-    else
-        _OUT << "}" << std::endl;
-}
-
-static void print_VkPipelineRasterizationLineStateCreateInfoEXT(VkPipelineRasterizationLineStateCreateInfoEXT obj,
-                                                                const std::string &s, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "{" << std::endl;
-    INDENT(4);
-
-    print_VkStructureType(obj.sType, "sType", 1);
-
-    if (obj.pNext)
-    {
-        dumpPNextChain(obj.pNext);
-    }
-    else
-    {
-        PRINT_SPACE
-        _OUT << "\"pNext\":"
-             << "\"NULL\""
-             << "," << std::endl;
-    }
-
-    print_VkLineRasterizationModeEXT(obj.lineRasterizationMode, "lineRasterizationMode", 1);
-
-    print_VkBool32(obj.stippledLineEnable, "stippledLineEnable", 1);
-
-    print_uint32_t(obj.lineStippleFactor, "lineStippleFactor", 1);
-
-    print_uint16_t(obj.lineStipplePattern, "lineStipplePattern", 0);
-
-    INDENT(-4);
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "}," << std::endl;
-    else
-        _OUT << "}" << std::endl;
-}
-static void print_VkPipelineRasterizationLineStateCreateInfoEXT(
-    const VkPipelineRasterizationLineStateCreateInfoEXT *obj, const std::string &s, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "{" << std::endl;
-    INDENT(4);
-
-    print_VkStructureType(obj->sType, "sType", 1);
-
-    if (obj->pNext)
-    {
-        dumpPNextChain(obj->pNext);
-    }
-    else
-    {
-        PRINT_SPACE
-        _OUT << "\"pNext\":"
-             << "\"NULL\""
-             << "," << std::endl;
-    }
-
-    print_VkLineRasterizationModeEXT(obj->lineRasterizationMode, "lineRasterizationMode", 1);
-
-    print_VkBool32(obj->stippledLineEnable, "stippledLineEnable", 1);
-
-    print_uint32_t(obj->lineStippleFactor, "lineStippleFactor", 1);
-
-    print_uint16_t(obj->lineStipplePattern, "lineStipplePattern", 0);
-
-    INDENT(-4);
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "}," << std::endl;
-    else
-        _OUT << "}" << std::endl;
-}
+typedef VkPipelineRasterizationLineStateCreateInfoKHR VkPipelineRasterizationLineStateCreateInfoEXT;
 
 static void print_VkPhysicalDeviceShaderAtomicFloatFeaturesEXT(VkPhysicalDeviceShaderAtomicFloatFeaturesEXT obj,
                                                                const std::string &s, bool commaNeeded = true)
@@ -43314,66 +41786,7 @@ static void print_VkPhysicalDeviceShaderAtomicFloatFeaturesEXT(const VkPhysicalD
         _OUT << "}" << std::endl;
 }
 
-static void print_VkPhysicalDeviceIndexTypeUint8FeaturesEXT(VkPhysicalDeviceIndexTypeUint8FeaturesEXT obj,
-                                                            const std::string &s, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "{" << std::endl;
-    INDENT(4);
-
-    print_VkStructureType(obj.sType, "sType", 1);
-
-    if (obj.pNext)
-    {
-        dumpPNextChain(obj.pNext);
-    }
-    else
-    {
-        PRINT_SPACE
-        _OUT << "\"pNext\":"
-             << "\"NULL\""
-             << "," << std::endl;
-    }
-
-    print_VkBool32(obj.indexTypeUint8, "indexTypeUint8", 0);
-
-    INDENT(-4);
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "}," << std::endl;
-    else
-        _OUT << "}" << std::endl;
-}
-static void print_VkPhysicalDeviceIndexTypeUint8FeaturesEXT(const VkPhysicalDeviceIndexTypeUint8FeaturesEXT *obj,
-                                                            const std::string &s, bool commaNeeded = true)
-{
-    PRINT_SPACE
-    _OUT << "{" << std::endl;
-    INDENT(4);
-
-    print_VkStructureType(obj->sType, "sType", 1);
-
-    if (obj->pNext)
-    {
-        dumpPNextChain(obj->pNext);
-    }
-    else
-    {
-        PRINT_SPACE
-        _OUT << "\"pNext\":"
-             << "\"NULL\""
-             << "," << std::endl;
-    }
-
-    print_VkBool32(obj->indexTypeUint8, "indexTypeUint8", 0);
-
-    INDENT(-4);
-    PRINT_SPACE
-    if (commaNeeded)
-        _OUT << "}," << std::endl;
-    else
-        _OUT << "}" << std::endl;
-}
+typedef VkPhysicalDeviceIndexTypeUint8FeaturesKHR VkPhysicalDeviceIndexTypeUint8FeaturesEXT;
 
 static void print_VkPhysicalDeviceExtendedDynamicStateFeaturesEXT(VkPhysicalDeviceExtendedDynamicStateFeaturesEXT obj,
                                                                   const std::string &s, bool commaNeeded = true)
@@ -43436,8 +41849,8 @@ static void print_VkPhysicalDeviceExtendedDynamicStateFeaturesEXT(
         _OUT << "}" << std::endl;
 }
 
-static void print_VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT(
-    VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT obj, const std::string &s, bool commaNeeded = true)
+static void print_VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures(
+    VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -43466,8 +41879,8 @@ static void print_VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT(
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT(
-    const VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT *obj, const std::string &s, bool commaNeeded = true)
+static void print_VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures(
+    const VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures *obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -43496,6 +41909,9 @@ static void print_VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT(
     else
         _OUT << "}" << std::endl;
 }
+
+typedef VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures
+    VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT;
 
 static void print_VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT(VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT obj,
                                                                   const std::string &s, bool commaNeeded = true)
@@ -43558,8 +41974,8 @@ static void print_VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT(
         _OUT << "}" << std::endl;
 }
 
-static void print_VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT(
-    VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT obj, const std::string &s, bool commaNeeded = true)
+static void print_VkPhysicalDeviceTexelBufferAlignmentProperties(VkPhysicalDeviceTexelBufferAlignmentProperties obj,
+                                                                 const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -43594,8 +42010,8 @@ static void print_VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT(
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT(
-    const VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT *obj, const std::string &s, bool commaNeeded = true)
+static void print_VkPhysicalDeviceTexelBufferAlignmentProperties(
+    const VkPhysicalDeviceTexelBufferAlignmentProperties *obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -43632,6 +42048,8 @@ static void print_VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT(
     else
         _OUT << "}" << std::endl;
 }
+
+typedef VkPhysicalDeviceTexelBufferAlignmentProperties VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT;
 
 static void print_VkPhysicalDeviceRobustness2FeaturesEXT(VkPhysicalDeviceRobustness2FeaturesEXT obj,
                                                          const std::string &s, bool commaNeeded = true)
@@ -44019,8 +42437,8 @@ static void print_VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT(
         _OUT << "}" << std::endl;
 }
 
-static void print_VkPhysicalDeviceImageRobustnessFeaturesEXT(VkPhysicalDeviceImageRobustnessFeaturesEXT obj,
-                                                             const std::string &s, bool commaNeeded = true)
+static void print_VkPhysicalDeviceImageRobustnessFeatures(VkPhysicalDeviceImageRobustnessFeatures obj,
+                                                          const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -44049,8 +42467,8 @@ static void print_VkPhysicalDeviceImageRobustnessFeaturesEXT(VkPhysicalDeviceIma
     else
         _OUT << "}" << std::endl;
 }
-static void print_VkPhysicalDeviceImageRobustnessFeaturesEXT(const VkPhysicalDeviceImageRobustnessFeaturesEXT *obj,
-                                                             const std::string &s, bool commaNeeded = true)
+static void print_VkPhysicalDeviceImageRobustnessFeatures(const VkPhysicalDeviceImageRobustnessFeatures *obj,
+                                                          const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -44079,6 +42497,8 @@ static void print_VkPhysicalDeviceImageRobustnessFeaturesEXT(const VkPhysicalDev
     else
         _OUT << "}" << std::endl;
 }
+
+typedef VkPhysicalDeviceImageRobustnessFeatures VkPhysicalDeviceImageRobustnessFeaturesEXT;
 
 static void print_VkPhysicalDevice4444FormatsFeaturesEXT(VkPhysicalDevice4444FormatsFeaturesEXT obj,
                                                          const std::string &s, bool commaNeeded = true)
@@ -44671,6 +43091,9 @@ static void dumpPNextChain(const void *pNext)
 
         switch (pBase->sType)
         {
+        case VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO:
+            print_VkPipelineLayoutCreateInfo((VkPipelineLayoutCreateInfo *)pNext, "VkPipelineLayoutCreateInfo", true);
+            break;
         case VK_STRUCTURE_TYPE_DISPLAY_PRESENT_INFO_KHR:
             print_VkDisplayPresentInfoKHR((VkDisplayPresentInfoKHR *)pNext, "VkDisplayPresentInfoKHR", true);
             break;
@@ -44928,8 +43351,21 @@ static void dumpPNextChain(const void *pNext)
                                                          "VkPhysicalDeviceHostQueryResetFeatures", true);
             break;
         case VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_KHR:
-            print_VkDeviceQueueGlobalPriorityCreateInfoEXT((VkDeviceQueueGlobalPriorityCreateInfoEXT *)pNext,
-                                                           "VkDeviceQueueGlobalPriorityCreateInfoEXT", true);
+            print_VkDeviceQueueGlobalPriorityCreateInfoKHR((VkDeviceQueueGlobalPriorityCreateInfoKHR *)pNext,
+                                                           "VkDeviceQueueGlobalPriorityCreateInfoKHR", true);
+            break;
+        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_KHR:
+            print_VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR(
+                (VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR *)pNext,
+                "VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR", true);
+            break;
+        case VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES_KHR:
+            print_VkQueueFamilyGlobalPriorityPropertiesKHR((VkQueueFamilyGlobalPriorityPropertiesKHR *)pNext,
+                                                           "VkQueueFamilyGlobalPriorityPropertiesKHR", true);
+            break;
+        case VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT:
+            print_VkDebugUtilsObjectNameInfoEXT((VkDebugUtilsObjectNameInfoEXT *)pNext, "VkDebugUtilsObjectNameInfoEXT",
+                                                true);
             break;
         case VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT:
             print_VkDebugUtilsMessengerCreateInfoEXT((VkDebugUtilsMessengerCreateInfoEXT *)pNext,
@@ -44992,14 +43428,14 @@ static void dumpPNextChain(const void *pNext)
                                                 true);
             break;
         case VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_KHR:
-            print_VkPipelineVertexInputDivisorStateCreateInfoEXT(
-                (VkPipelineVertexInputDivisorStateCreateInfoEXT *)pNext,
-                "VkPipelineVertexInputDivisorStateCreateInfoEXT", true);
+            print_VkPipelineVertexInputDivisorStateCreateInfoKHR(
+                (VkPipelineVertexInputDivisorStateCreateInfoKHR *)pNext,
+                "VkPipelineVertexInputDivisorStateCreateInfoKHR", true);
             break;
         case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_KHR:
-            print_VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT(
+            print_VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR(
                 (VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR *)pNext,
-                "VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT", true);
+                "VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR", true);
             break;
         case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT:
             print_VkPhysicalDevicePCIBusInfoPropertiesEXT((VkPhysicalDevicePCIBusInfoPropertiesEXT *)pNext,
@@ -45022,9 +43458,9 @@ static void dumpPNextChain(const void *pNext)
                                                                "VkPhysicalDeviceShaderAtomicFloatFeaturesEXT", true);
             break;
         case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_KHR:
-            print_VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT(
-                (VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT *)pNext,
-                "VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT", true);
+            print_VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR(
+                (VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR *)pNext,
+                "VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR", true);
             break;
         case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES:
             print_VkPhysicalDeviceDepthStencilResolveProperties((VkPhysicalDeviceDepthStencilResolveProperties *)pNext,
@@ -45113,10 +43549,10 @@ static void dumpPNextChain(const void *pNext)
             print_VkRenderPassAttachmentBeginInfo((VkRenderPassAttachmentBeginInfo *)pNext,
                                                   "VkRenderPassAttachmentBeginInfo", true);
             break;
-        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXTURE_COMPRESSION_ASTC_HDR_FEATURES_EXT:
-            print_VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT(
-                (VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT *)pNext,
-                "VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT", true);
+        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXTURE_COMPRESSION_ASTC_HDR_FEATURES:
+            print_VkPhysicalDeviceTextureCompressionASTCHDRFeatures(
+                (VkPhysicalDeviceTextureCompressionASTCHDRFeatures *)pNext,
+                "VkPhysicalDeviceTextureCompressionASTCHDRFeatures", true);
             break;
         case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_YCBCR_IMAGE_ARRAYS_FEATURES_EXT:
             print_VkPhysicalDeviceYcbcrImageArraysFeaturesEXT((VkPhysicalDeviceYcbcrImageArraysFeaturesEXT *)pNext,
@@ -45146,9 +43582,9 @@ static void dumpPNextChain(const void *pNext)
             print_VkPhysicalDeviceShaderClockFeaturesKHR((VkPhysicalDeviceShaderClockFeaturesKHR *)pNext,
                                                          "VkPhysicalDeviceShaderClockFeaturesKHR", true);
             break;
-        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT:
-            print_VkPhysicalDeviceIndexTypeUint8FeaturesEXT((VkPhysicalDeviceIndexTypeUint8FeaturesEXT *)pNext,
-                                                            "VkPhysicalDeviceIndexTypeUint8FeaturesEXT", true);
+        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_KHR:
+            print_VkPhysicalDeviceIndexTypeUint8FeaturesKHR((VkPhysicalDeviceIndexTypeUint8FeaturesKHR *)pNext,
+                                                            "VkPhysicalDeviceIndexTypeUint8FeaturesKHR", true);
             break;
         case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_INTERLOCK_FEATURES_EXT:
             print_VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT(
@@ -45168,52 +43604,50 @@ static void dumpPNextChain(const void *pNext)
             print_VkAttachmentDescriptionStencilLayout((VkAttachmentDescriptionStencilLayout *)pNext,
                                                        "VkAttachmentDescriptionStencilLayout", true);
             break;
-        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT:
-            print_VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT(
-                (VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT *)pNext,
-                "VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT", true);
+        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES:
+            print_VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures(
+                (VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures *)pNext,
+                "VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures", true);
             break;
         case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT:
             print_VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT(
                 (VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT *)pNext,
                 "VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT", true);
             break;
-        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT:
-            print_VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT(
-                (VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT *)pNext,
-                "VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT", true);
+        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES:
+            print_VkPhysicalDeviceTexelBufferAlignmentProperties(
+                (VkPhysicalDeviceTexelBufferAlignmentProperties *)pNext,
+                "VkPhysicalDeviceTexelBufferAlignmentProperties", true);
             break;
-        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT:
-            print_VkPhysicalDeviceSubgroupSizeControlFeaturesEXT(
-                (VkPhysicalDeviceSubgroupSizeControlFeaturesEXT *)pNext,
-                "VkPhysicalDeviceSubgroupSizeControlFeaturesEXT", true);
+        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES:
+            print_VkPhysicalDeviceSubgroupSizeControlFeatures((VkPhysicalDeviceSubgroupSizeControlFeatures *)pNext,
+                                                              "VkPhysicalDeviceSubgroupSizeControlFeatures", true);
             break;
-        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT:
-            print_VkPhysicalDeviceSubgroupSizeControlPropertiesEXT(
-                (VkPhysicalDeviceSubgroupSizeControlPropertiesEXT *)pNext,
-                "VkPhysicalDeviceSubgroupSizeControlPropertiesEXT", true);
+        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES:
+            print_VkPhysicalDeviceSubgroupSizeControlProperties((VkPhysicalDeviceSubgroupSizeControlProperties *)pNext,
+                                                                "VkPhysicalDeviceSubgroupSizeControlProperties", true);
             break;
-        case VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT:
-            print_VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT(
-                (VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT *)pNext,
-                "VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT", true);
+        case VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO:
+            print_VkPipelineShaderStageRequiredSubgroupSizeCreateInfo(
+                (VkPipelineShaderStageRequiredSubgroupSizeCreateInfo *)pNext,
+                "VkPipelineShaderStageRequiredSubgroupSizeCreateInfo", true);
             break;
         case VK_STRUCTURE_TYPE_MEMORY_OPAQUE_CAPTURE_ADDRESS_ALLOCATE_INFO:
             print_VkMemoryOpaqueCaptureAddressAllocateInfo((VkMemoryOpaqueCaptureAddressAllocateInfo *)pNext,
                                                            "VkMemoryOpaqueCaptureAddressAllocateInfo", true);
             break;
-        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_EXT:
-            print_VkPhysicalDeviceLineRasterizationFeaturesEXT((VkPhysicalDeviceLineRasterizationFeaturesEXT *)pNext,
-                                                               "VkPhysicalDeviceLineRasterizationFeaturesEXT", true);
+        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_KHR:
+            print_VkPhysicalDeviceLineRasterizationFeaturesKHR((VkPhysicalDeviceLineRasterizationFeaturesKHR *)pNext,
+                                                               "VkPhysicalDeviceLineRasterizationFeaturesKHR", true);
             break;
-        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT:
-            print_VkPhysicalDeviceLineRasterizationPropertiesEXT(
-                (VkPhysicalDeviceLineRasterizationPropertiesEXT *)pNext,
-                "VkPhysicalDeviceLineRasterizationPropertiesEXT", true);
+        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_KHR:
+            print_VkPhysicalDeviceLineRasterizationPropertiesKHR(
+                (VkPhysicalDeviceLineRasterizationPropertiesKHR *)pNext,
+                "VkPhysicalDeviceLineRasterizationPropertiesKHR", true);
             break;
-        case VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT:
-            print_VkPipelineRasterizationLineStateCreateInfoEXT((VkPipelineRasterizationLineStateCreateInfoEXT *)pNext,
-                                                                "VkPipelineRasterizationLineStateCreateInfoEXT", true);
+        case VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_KHR:
+            print_VkPipelineRasterizationLineStateCreateInfoKHR((VkPipelineRasterizationLineStateCreateInfoKHR *)pNext,
+                                                                "VkPipelineRasterizationLineStateCreateInfoKHR", true);
             break;
         case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES:
             print_VkPhysicalDeviceVulkan11Features((VkPhysicalDeviceVulkan11Features *)pNext,
@@ -45269,9 +43703,9 @@ static void dumpPNextChain(const void *pNext)
             print_VkPhysicalDeviceRobustness2PropertiesEXT((VkPhysicalDeviceRobustness2PropertiesEXT *)pNext,
                                                            "VkPhysicalDeviceRobustness2PropertiesEXT", true);
             break;
-        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES_EXT:
-            print_VkPhysicalDeviceImageRobustnessFeaturesEXT((VkPhysicalDeviceImageRobustnessFeaturesEXT *)pNext,
-                                                             "VkPhysicalDeviceImageRobustnessFeaturesEXT", true);
+        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES:
+            print_VkPhysicalDeviceImageRobustnessFeatures((VkPhysicalDeviceImageRobustnessFeatures *)pNext,
+                                                          "VkPhysicalDeviceImageRobustnessFeatures", true);
             break;
         case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT:
             print_VkPhysicalDevice4444FormatsFeaturesEXT((VkPhysicalDevice4444FormatsFeaturesEXT *)pNext,
@@ -45301,10 +43735,10 @@ static void dumpPNextChain(const void *pNext)
                 (VkPhysicalDeviceFragmentShadingRatePropertiesKHR *)pNext,
                 "VkPhysicalDeviceFragmentShadingRatePropertiesKHR", true);
             break;
-        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TERMINATE_INVOCATION_FEATURES_KHR:
-            print_VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR(
-                (VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR *)pNext,
-                "VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR", true);
+        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TERMINATE_INVOCATION_FEATURES:
+            print_VkPhysicalDeviceShaderTerminateInvocationFeatures(
+                (VkPhysicalDeviceShaderTerminateInvocationFeatures *)pNext,
+                "VkPhysicalDeviceShaderTerminateInvocationFeatures", true);
             break;
         case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT:
             print_VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT(
@@ -45319,16 +43753,16 @@ static void dumpPNextChain(const void *pNext)
             print_VkPipelineColorWriteCreateInfoEXT((VkPipelineColorWriteCreateInfoEXT *)pNext,
                                                     "VkPipelineColorWriteCreateInfoEXT", true);
             break;
-        case VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR:
-            print_VkMemoryBarrier2KHR((VkMemoryBarrier2KHR *)pNext, "VkMemoryBarrier2KHR", true);
+        case VK_STRUCTURE_TYPE_MEMORY_BARRIER_2:
+            print_VkMemoryBarrier2((VkMemoryBarrier2 *)pNext, "VkMemoryBarrier2", true);
             break;
         case VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_2_NV:
             print_VkQueueFamilyCheckpointProperties2NV((VkQueueFamilyCheckpointProperties2NV *)pNext,
                                                        "VkQueueFamilyCheckpointProperties2NV", true);
             break;
-        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR:
-            print_VkPhysicalDeviceSynchronization2FeaturesKHR((VkPhysicalDeviceSynchronization2FeaturesKHR *)pNext,
-                                                              "VkPhysicalDeviceSynchronization2FeaturesKHR", true);
+        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES:
+            print_VkPhysicalDeviceSynchronization2Features((VkPhysicalDeviceSynchronization2Features *)pNext,
+                                                           "VkPhysicalDeviceSynchronization2Features", true);
             break;
         case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_PROPERTIES:
             print_VkPhysicalDeviceVulkanSC10Properties((VkPhysicalDeviceVulkanSC10Properties *)pNext,

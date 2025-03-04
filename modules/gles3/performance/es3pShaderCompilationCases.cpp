@@ -289,7 +289,7 @@ static string getShaderInfoLog(const glw::Functions &gl, uint32_t shader)
 
     gl.getShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogLen);
     infoLogBuf.resize(infoLogLen + 1);
-    gl.getShaderInfoLog(shader, infoLogLen + 1, DE_NULL, &infoLogBuf[0]);
+    gl.getShaderInfoLog(shader, infoLogLen + 1, nullptr, &infoLogBuf[0]);
     result = &infoLogBuf[0];
 
     return result;
@@ -303,7 +303,7 @@ static string getProgramInfoLog(const glw::Functions &gl, uint32_t program)
 
     gl.getProgramiv(program, GL_INFO_LOG_LENGTH, &infoLogLen);
     infoLogBuf.resize(infoLogLen + 1);
-    gl.getProgramInfoLog(program, infoLogLen + 1, DE_NULL, &infoLogBuf[0]);
+    gl.getProgramInfoLog(program, infoLogLen + 1, nullptr, &infoLogBuf[0]);
     result = &infoLogBuf[0];
 
     return result;
@@ -1528,9 +1528,9 @@ static string textureLookupFragmentTemplate(int numLookups, ConditionalUsage con
     const char *conditionalTerm = conditionalType == CONDITIONAL_TYPE_STATIC  ? "1.0 > 0.0" :
                                   conditionalType == CONDITIONAL_TYPE_UNIFORM ? "u_condition${NAME_SPEC} > 0.0" :
                                   conditionalType == CONDITIONAL_TYPE_DYNAMIC ? "v_condition${NAME_SPEC} > 0.0" :
-                                                                                DE_NULL;
+                                                                                nullptr;
 
-    DE_ASSERT(conditionalTerm != DE_NULL);
+    DE_ASSERT(conditionalTerm != nullptr);
 
     if (conditionalUsage == CONDITIONAL_USAGE_FIRST_HALF)
         resultTemplate += string("") + "    if (" + conditionalTerm +
@@ -1760,8 +1760,8 @@ void ShaderCompilerCase::setShaderSources(uint32_t vertShader, uint32_t fragShad
     const glw::Functions &gl         = m_context.getRenderContext().getFunctions();
     const char *vertShaderSourceCStr = progCtx.vertShaderSource.c_str();
     const char *fragShaderSourceCStr = progCtx.fragShaderSource.c_str();
-    gl.shaderSource(vertShader, 1, &vertShaderSourceCStr, DE_NULL);
-    gl.shaderSource(fragShader, 1, &fragShaderSourceCStr, DE_NULL);
+    gl.shaderSource(vertShader, 1, &vertShaderSourceCStr, nullptr);
+    gl.shaderSource(fragShader, 1, &fragShaderSourceCStr, nullptr);
 }
 
 bool ShaderCompilerCase::compileShader(uint32_t shader) const
@@ -2247,7 +2247,7 @@ ShaderCompilerLightCase::ShaderCompilerLightCase(Context &context, const char *n
     , m_numLights(numLights)
     , m_isVertexCase(isVertexCase)
     , m_lightType(lightType)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
 {
 }
 
@@ -2259,7 +2259,7 @@ ShaderCompilerLightCase::~ShaderCompilerLightCase(void)
 void ShaderCompilerLightCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 }
 
 void ShaderCompilerLightCase::init(void)
@@ -2268,7 +2268,7 @@ void ShaderCompilerLightCase::init(void)
 
     // Setup texture.
 
-    DE_ASSERT(m_texture == DE_NULL);
+    DE_ASSERT(m_texture == nullptr);
 
     m_texture =
         new glu::Texture2D(m_context.getRenderContext(), GL_RGB, GL_UNSIGNED_BYTE, TEXTURE_WIDTH, TEXTURE_HEIGHT);
@@ -2516,8 +2516,8 @@ void InvalidShaderCompilerCase::setShaderSources(const Shaders &shaders, const P
     const glw::Functions &gl         = m_context.getRenderContext().getFunctions();
     const char *vertShaderSourceCStr = progCtx.vertShaderSource.c_str();
     const char *fragShaderSourceCStr = progCtx.fragShaderSource.c_str();
-    gl.shaderSource(shaders.vertShader, 1, &vertShaderSourceCStr, DE_NULL);
-    gl.shaderSource(shaders.fragShader, 1, &fragShaderSourceCStr, DE_NULL);
+    gl.shaderSource(shaders.vertShader, 1, &vertShaderSourceCStr, nullptr);
+    gl.shaderSource(shaders.fragShader, 1, &fragShaderSourceCStr, nullptr);
 }
 
 bool InvalidShaderCompilerCase::compileShader(uint32_t shader) const
@@ -3010,9 +3010,9 @@ void addShaderCompilationPerformanceCases(TestCaseGroup &parentGroup)
         {
             const char *lightTypeName = lightType == (int)LIGHT_DIRECTIONAL ? "directional" :
                                         lightType == (int)LIGHT_POINT       ? "point" :
-                                                                              DE_NULL;
+                                                                              nullptr;
 
-            DE_ASSERT(lightTypeName != DE_NULL);
+            DE_ASSERT(lightTypeName != nullptr);
 
             for (int isFrag = 0; isFrag <= 1; isFrag++)
             {
@@ -3045,9 +3045,9 @@ void addShaderCompilationPerformanceCases(TestCaseGroup &parentGroup)
                                 invalidCharLightingGroup :
                             invalidityType == (int)InvalidShaderCompilerCase::INVALIDITY_SEMANTIC_ERROR ?
                                 semanticErrorLightingGroup :
-                                DE_NULL;
+                                nullptr;
 
-                        DE_ASSERT(curInvalidGroup != DE_NULL);
+                        DE_ASSERT(curInvalidGroup != nullptr);
 
                         curInvalidGroup->addChild(new InvalidShaderCompilerLightCase(
                             context, caseName.c_str(), "", caseID++,
@@ -3081,9 +3081,9 @@ void addShaderCompilationPerformanceCases(TestCaseGroup &parentGroup)
             const char *conditionalUsageName = conditionalUsage == (int)CONDITIONAL_USAGE_NONE ? "no_conditionals" :
                                                conditionalUsage == (int)CONDITIONAL_USAGE_FIRST_HALF  ? "first_half" :
                                                conditionalUsage == (int)CONDITIONAL_USAGE_EVERY_OTHER ? "every_other" :
-                                                                                                        DE_NULL;
+                                                                                                        nullptr;
 
-            DE_ASSERT(conditionalUsageName != DE_NULL);
+            DE_ASSERT(conditionalUsageName != nullptr);
 
             int lastConditionalType = conditionalUsage == (int)CONDITIONAL_USAGE_NONE ? 1 : (int)CONDITIONAL_TYPE_LAST;
 
@@ -3093,9 +3093,9 @@ void addShaderCompilationPerformanceCases(TestCaseGroup &parentGroup)
                     conditionalType == (int)CONDITIONAL_TYPE_STATIC  ? "static_conditionals" :
                     conditionalType == (int)CONDITIONAL_TYPE_UNIFORM ? "uniform_conditionals" :
                     conditionalType == (int)CONDITIONAL_TYPE_DYNAMIC ? "dynamic_conditionals" :
-                                                                       DE_NULL;
+                                                                       nullptr;
 
-                DE_ASSERT(conditionalTypeName != DE_NULL);
+                DE_ASSERT(conditionalTypeName != nullptr);
 
                 for (int lookupCountNdx = 0; lookupCountNdx < DE_LENGTH_OF_ARRAY(texLookupCounts); lookupCountNdx++)
                 {
@@ -3124,9 +3124,9 @@ void addShaderCompilationPerformanceCases(TestCaseGroup &parentGroup)
                                 invalidCharTexGroup :
                             invalidityType == (int)InvalidShaderCompilerCase::INVALIDITY_SEMANTIC_ERROR ?
                                 semanticErrorTexGroup :
-                                DE_NULL;
+                                nullptr;
 
-                        DE_ASSERT(curInvalidGroup != DE_NULL);
+                        DE_ASSERT(curInvalidGroup != nullptr);
 
                         curInvalidGroup->addChild(new InvalidShaderCompilerTextureCase(
                             context, caseName.c_str(), "", caseID++,
@@ -3162,9 +3162,9 @@ void addShaderCompilationPerformanceCases(TestCaseGroup &parentGroup)
             const char *loopTypeName = loopType == (int)LOOP_TYPE_STATIC  ? "static" :
                                        loopType == (int)LOOP_TYPE_UNIFORM ? "uniform" :
                                        loopType == (int)LOOP_TYPE_DYNAMIC ? "dynamic" :
-                                                                            DE_NULL;
+                                                                            nullptr;
 
-            DE_ASSERT(loopTypeName != DE_NULL);
+            DE_ASSERT(loopTypeName != nullptr);
 
             TestCaseGroup *validLoopTypeGroup         = new TestCaseGroup(context, loopTypeName, "");
             TestCaseGroup *invalidCharLoopTypeGroup   = new TestCaseGroup(context, loopTypeName, "");
@@ -3214,9 +3214,9 @@ void addShaderCompilationPerformanceCases(TestCaseGroup &parentGroup)
                                     invalidCharLoopTypeGroup :
                                 invalidityType == (int)InvalidShaderCompilerCase::INVALIDITY_SEMANTIC_ERROR ?
                                     semanticErrorLoopTypeGroup :
-                                    DE_NULL;
+                                    nullptr;
 
-                            DE_ASSERT(curInvalidGroup != DE_NULL);
+                            DE_ASSERT(curInvalidGroup != nullptr);
 
                             string invalidCaseName = de::toString(nestingDepth) + "_levels_" + vertFragStr;
 
@@ -3282,9 +3282,9 @@ void addShaderCompilationPerformanceCases(TestCaseGroup &parentGroup)
                             invalidCharMulGroup :
                         invalidityType == (int)InvalidShaderCompilerCase::INVALIDITY_SEMANTIC_ERROR ?
                             semanticErrorMulGroup :
-                            DE_NULL;
+                            nullptr;
 
-                    DE_ASSERT(curInvalidGroup != DE_NULL);
+                    DE_ASSERT(curInvalidGroup != nullptr);
 
                     curInvalidGroup->addChild(new InvalidShaderCompilerOperCase(
                         context, caseName.c_str(), "", caseID++,
@@ -3334,9 +3334,9 @@ void addShaderCompilationPerformanceCases(TestCaseGroup &parentGroup)
                         invalidCharMandelbrotGroup :
                     invalidityType == (int)InvalidShaderCompilerCase::INVALIDITY_SEMANTIC_ERROR ?
                         semanticErrorMandelbrotGroup :
-                        DE_NULL;
+                        nullptr;
 
-                DE_ASSERT(curInvalidGroup != DE_NULL);
+                DE_ASSERT(curInvalidGroup != nullptr);
 
                 curInvalidGroup->addChild(new InvalidShaderCompilerMandelbrotCase(
                     context, caseName.c_str(), "", caseID++, (InvalidShaderCompilerCase::InvalidityType)invalidityType,

@@ -1,19 +1,17 @@
 {
-    "register_extension":
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_extensions": [
         {
-            "type": "device",
-            "core": ""
-        },
-    "mandatory_extensions":
-        [
-            {
-                "extension": "VK_KHR_pipeline_library",
-                "requirements": [
-                    "physicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline"
-                ],
-                "mandatory_variant": [
-                    "vulkan"
-                ]
-            }
-        ]
+            "extension": "VK_KHR_pipeline_library",
+            "requirements": [
+                "physicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline"
+            ],
+            "mandatory_variant": [
+                "vulkan"
+            ]
+        }
+    ]
 }

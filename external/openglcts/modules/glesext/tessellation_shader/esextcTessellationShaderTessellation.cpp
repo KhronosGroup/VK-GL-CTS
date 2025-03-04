@@ -1234,7 +1234,7 @@ void TessellationShaderTessellationgl_InvocationID_PatchVerticesIn_PrimitiveID::
         DE_ASSERT(run.drawcall_count_multiplier > 1);
 
         const unsigned int interleave_rate = run.n_patch_vertices * 2;
-        unsigned char *bo_contents         = DE_NULL;
+        unsigned char *bo_contents         = nullptr;
         unsigned int bo_size =
             static_cast<unsigned int>(sizeof(unsigned char) * run.n_patch_vertices * run.drawcall_count_multiplier);
 
@@ -1360,7 +1360,7 @@ tcu::TestNode::IterateResult TessellationShaderTessellationgl_InvocationID_Patch
          * tessellated coordinate, TE stage will output 5 integers. */
         glw::GLint bo_size = static_cast<glw::GLint>(run.n_result_vertices * 5 /* ints */ * sizeof(int));
 
-        gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, DE_NULL, GL_STATIC_DRAW);
+        gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, nullptr, GL_STATIC_DRAW);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed");
 
         /* Render the geometry */
@@ -1376,13 +1376,13 @@ tcu::TestNode::IterateResult TessellationShaderTessellationgl_InvocationID_Patch
                 if (run.n_instances != 1)
                 {
                     gl.drawElementsInstanced(m_glExtTokens.PATCHES, drawcall_count, GL_UNSIGNED_BYTE,
-                                             DE_NULL, /* indices */
+                                             nullptr, /* indices */
                                              run.n_instances);
                     GLU_EXPECT_NO_ERROR(gl.getError(), "glDrawElementsInstanced() failed");
                 } /* if (run.n_instances != 0) */
                 else
                 {
-                    gl.drawElements(m_glExtTokens.PATCHES, drawcall_count, GL_UNSIGNED_BYTE, DE_NULL); /* indices */
+                    gl.drawElements(m_glExtTokens.PATCHES, drawcall_count, GL_UNSIGNED_BYTE, nullptr); /* indices */
                     GLU_EXPECT_NO_ERROR(gl.getError(), "glDrawElements() failed");
                 }
             } /* if (run.drawcall_is_indiced) */
@@ -2200,8 +2200,8 @@ TessellationShaderTessellationMaxInOut::TessellationShaderTessellationMaxInOut(C
     , m_gl_max_transform_feedback_interleaved_components_value(0)
     , m_gl_max_tess_patch_components_value(0)
     , m_gl_max_vertex_output_components_value(0)
-    , m_ref_vertex_attributes(DE_NULL)
-    , m_tf_varyings_names(DE_NULL)
+    , m_ref_vertex_attributes(nullptr)
+    , m_tf_varyings_names(nullptr)
 {
     m_ref_patch_attributes[0] = 0.0f;
     m_ref_patch_attributes[1] = 0.0f;
@@ -2221,29 +2221,29 @@ void TessellationShaderTessellationMaxInOut::deinit(void)
     }
 
     /* Deallocate dynamic arrays */
-    if (m_ref_vertex_attributes != DE_NULL)
+    if (m_ref_vertex_attributes != nullptr)
     {
         free(m_ref_vertex_attributes);
 
-        m_ref_vertex_attributes = DE_NULL;
+        m_ref_vertex_attributes = nullptr;
     }
 
     /* Deallocate the varyings array */
-    if (m_tf_varyings_names != DE_NULL)
+    if (m_tf_varyings_names != nullptr)
     {
         for (int i = 0; i < (m_gl_max_tess_evaluation_output_components_value) / 4 - 1 /* gl_Position */; i++)
         {
-            if (m_tf_varyings_names[i] != DE_NULL)
+            if (m_tf_varyings_names[i] != nullptr)
             {
                 free(m_tf_varyings_names[i]);
 
-                m_tf_varyings_names[i] = DE_NULL;
+                m_tf_varyings_names[i] = nullptr;
             }
         }
 
         free(m_tf_varyings_names);
 
-        m_tf_varyings_names = DE_NULL;
+        m_tf_varyings_names = nullptr;
     }
 
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
@@ -2541,7 +2541,7 @@ void TessellationShaderTessellationMaxInOut::initProgramObjects(void)
 
     m_tf_varyings_names = (char **)malloc((m_gl_max_tess_evaluation_output_components_value / 4) * sizeof(char *));
 
-    if (m_tf_varyings_names == DE_NULL)
+    if (m_tf_varyings_names == nullptr)
     {
         throw tcu::ResourceError("Unable to allocate memory!");
     }
@@ -2550,7 +2550,7 @@ void TessellationShaderTessellationMaxInOut::initProgramObjects(void)
          i++)
     {
         std::stringstream tf_varying_stream;
-        const char *tf_varying_raw_ptr = DE_NULL;
+        const char *tf_varying_raw_ptr = nullptr;
         std::string tf_varying_string;
 
         tf_varying_stream << "Vertex.value[" << i << "]";
@@ -2558,7 +2558,7 @@ void TessellationShaderTessellationMaxInOut::initProgramObjects(void)
         tf_varying_raw_ptr = tf_varying_string.c_str();
 
         m_tf_varyings_names[i] = (char *)malloc(strlen(tf_varying_raw_ptr) + 1 /* '\0' */);
-        if (m_tf_varyings_names[i] == DE_NULL)
+        if (m_tf_varyings_names[i] == nullptr)
         {
             throw tcu::ResourceError("Unable to allocate memory!");
         }
@@ -2568,7 +2568,7 @@ void TessellationShaderTessellationMaxInOut::initProgramObjects(void)
 
     m_tf_varyings_names[m_gl_max_tess_evaluation_output_components_value / 4 - 1 /* gl_Position */] =
         (char *)malloc(sizeof(position_varying));
-    if (m_tf_varyings_names[m_gl_max_tess_evaluation_output_components_value / 4 - 1 /* gl_Position */] == DE_NULL)
+    if (m_tf_varyings_names[m_gl_max_tess_evaluation_output_components_value / 4 - 1 /* gl_Position */] == nullptr)
     {
         throw tcu::ResourceError("Unable to allocate memory!");
     }
@@ -2663,7 +2663,7 @@ void TessellationShaderTessellationMaxInOut::initReferenceValues(void)
                                                  m_gl_max_tess_evaluation_output_components_value)));
 
     m_ref_vertex_attributes = (glw::GLfloat *)malloc(sizeof(glw::GLfloat) * (max_array_size));
-    if (m_ref_vertex_attributes == DE_NULL)
+    if (m_ref_vertex_attributes == nullptr)
     {
         throw tcu::ResourceError("Unable to allocate memory!");
     }

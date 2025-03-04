@@ -58,7 +58,7 @@ private:
     Expression *m_child;
 };
 
-CustomAbsOp::CustomAbsOp(void) : m_function("abs"), m_type(VariableType::TYPE_FLOAT, 1), m_child(DE_NULL)
+CustomAbsOp::CustomAbsOp(void) : m_function("abs"), m_type(VariableType::TYPE_FLOAT, 1), m_child(nullptr)
 {
     m_value.setStorage(m_type);
 }
@@ -76,7 +76,7 @@ void CustomAbsOp::setChild(Expression *expression)
 Expression *CustomAbsOp::createNextChild(GeneratorState &)
 {
     DE_ASSERT(0);
-    return DE_NULL;
+    return nullptr;
 }
 
 void CustomAbsOp::tokenize(GeneratorState &state, TokenStream &str) const
@@ -199,8 +199,8 @@ BinaryOp<Precedence, Assoc>::BinaryOp(Token::Type operatorToken)
     : m_operator(operatorToken)
     , m_leftValueRange(m_type)
     , m_rightValueRange(m_type)
-    , m_leftValueExpr(DE_NULL)
-    , m_rightValueExpr(DE_NULL)
+    , m_leftValueExpr(nullptr)
+    , m_rightValueExpr(nullptr)
 {
 }
 
@@ -217,14 +217,14 @@ Expression *BinaryOp<Precedence, Assoc>::createNextChild(GeneratorState &state)
     int leftPrec  = Assoc == ASSOCIATIVITY_LEFT ? Precedence : Precedence - 1;
     int rightPrec = Assoc == ASSOCIATIVITY_LEFT ? Precedence - 1 : Precedence;
 
-    if (m_rightValueExpr == DE_NULL)
+    if (m_rightValueExpr == nullptr)
     {
         state.pushPrecedence(rightPrec);
         m_rightValueExpr = Expression::createRandom(state, m_rightValueRange.asAccess());
         state.popPrecedence();
         return m_rightValueExpr;
     }
-    else if (m_leftValueExpr == DE_NULL)
+    else if (m_leftValueExpr == nullptr)
     {
         state.pushPrecedence(leftPrec);
         m_leftValueExpr = Expression::createRandom(state, m_leftValueRange.asAccess());
@@ -319,7 +319,7 @@ Expression *BinaryOp<Precedence, Assoc>::createNextChild(GeneratorState &state)
             break;
         }
 
-        return DE_NULL;
+        return nullptr;
     }
 }
 

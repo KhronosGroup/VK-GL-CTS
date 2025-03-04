@@ -55,7 +55,7 @@ struct FenceConfig
 tcu::TestStatus basicOneFenceCase(Context &context, FenceConfig config)
 {
     de::MovePtr<VideoDevice> videoDevice(
-        config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : DE_NULL);
+        config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : nullptr);
     const DeviceInterface &vk       = getSyncDeviceInterface(videoDevice, context);
     const VkDevice device           = getSyncDevice(videoDevice, context);
     const VkQueue queue             = getSyncQueue(videoDevice, context);
@@ -66,22 +66,22 @@ tcu::TestStatus basicOneFenceCase(Context &context, FenceConfig config)
 
     const VkFenceCreateInfo fenceInfo = {
         VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, // VkStructureType      sType;
-        DE_NULL,                             // const void*          pNext;
+        nullptr,                             // const void*          pNext;
         0u,                                  // VkFenceCreateFlags   flags;
     };
 
     const Unique<VkFence> fence(createFence(vk, device, &fenceInfo));
 
     const VkSubmitInfo submitInfo = {
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,         // VkStructureType                sType;
-        DE_NULL,                               // const void*                    pNext;
-        0u,                                    // uint32_t                       waitSemaphoreCount;
-        DE_NULL,                               // const VkSemaphore*             pWaitSemaphores;
-        (const VkPipelineStageFlags *)DE_NULL, // const VkPipelineStageFlags*    pWaitDstStageMask;
-        1u,                                    // uint32_t                       commandBufferCount;
-        &cmdBuffer.get(),                      // const VkCommandBuffer*         pCommandBuffers;
-        0u,                                    // uint32_t                       signalSemaphoreCount;
-        DE_NULL,                               // const VkSemaphore*             pSignalSemaphores;
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType                sType;
+        nullptr,                       // const void*                    pNext;
+        0u,                            // uint32_t                       waitSemaphoreCount;
+        nullptr,                       // const VkSemaphore*             pWaitSemaphores;
+        nullptr,                       // const VkPipelineStageFlags*    pWaitDstStageMask;
+        1u,                            // uint32_t                       commandBufferCount;
+        &cmdBuffer.get(),              // const VkCommandBuffer*         pCommandBuffers;
+        0u,                            // uint32_t                       signalSemaphoreCount;
+        nullptr,                       // const VkSemaphore*             pSignalSemaphores;
     };
 
     if (VK_NOT_READY != vk.getFenceStatus(device, *fence))
@@ -132,7 +132,7 @@ void checkCommandBufferSimultaneousUseSupport(Context &context, FenceConfig conf
 tcu::TestStatus basicSignaledCase(Context &context, FenceConfig config)
 {
     de::MovePtr<VideoDevice> videoDevice(
-        config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : DE_NULL);
+        config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : nullptr);
     const DeviceInterface &vkd = getSyncDeviceInterface(videoDevice, context);
     const VkDevice device      = getSyncDevice(videoDevice, context);
 
@@ -173,7 +173,7 @@ tcu::TestStatus basicMultiFenceCase(Context &context, FenceConfig config)
     };
 
     de::MovePtr<VideoDevice> videoDevice(
-        config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : DE_NULL);
+        config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : nullptr);
     const DeviceInterface &vk       = getSyncDeviceInterface(videoDevice, context);
     const VkDevice device           = getSyncDevice(videoDevice, context);
     const VkQueue queue             = getSyncQueue(videoDevice, context);
@@ -184,7 +184,7 @@ tcu::TestStatus basicMultiFenceCase(Context &context, FenceConfig config)
 
     const VkFenceCreateInfo fenceInfo = {
         VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, // VkStructureType      sType;
-        DE_NULL,                             // const void*          pNext;
+        nullptr,                             // const void*          pNext;
         0u,                                  // VkFenceCreateFlags   flags;
     };
 
@@ -194,21 +194,21 @@ tcu::TestStatus basicMultiFenceCase(Context &context, FenceConfig config)
 
     const VkCommandBufferBeginInfo info = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,  // VkStructureType                          sType;
-        DE_NULL,                                      // const void*                              pNext;
+        nullptr,                                      // const void*                              pNext;
         VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT, // VkCommandBufferUsageFlags                flags;
-        DE_NULL,                                      // const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
+        nullptr,                                      // const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
     };
 
     const VkSubmitInfo submitInfo = {
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,         // VkStructureType                sType;
-        DE_NULL,                               // const void*                    pNext;
-        0u,                                    // uint32_t                       waitSemaphoreCount;
-        DE_NULL,                               // const VkSemaphore*             pWaitSemaphores;
-        (const VkPipelineStageFlags *)DE_NULL, // const VkPipelineStageFlags*    pWaitDstStageMask;
-        1u,                                    // uint32_t                       commandBufferCount;
-        &cmdBuffer.get(),                      // const VkCommandBuffer*         pCommandBuffers;
-        0u,                                    // uint32_t                       signalSemaphoreCount;
-        DE_NULL,                               // const VkSemaphore*             pSignalSemaphores;
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType                sType;
+        nullptr,                       // const void*                    pNext;
+        0u,                            // uint32_t                       waitSemaphoreCount;
+        nullptr,                       // const VkSemaphore*             pWaitSemaphores;
+        nullptr,                       // const VkPipelineStageFlags*    pWaitDstStageMask;
+        1u,                            // uint32_t                       commandBufferCount;
+        &cmdBuffer.get(),              // const VkCommandBuffer*         pCommandBuffers;
+        0u,                            // uint32_t                       signalSemaphoreCount;
+        nullptr,                       // const VkSemaphore*             pSignalSemaphores;
     };
 
     VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &info));
@@ -238,20 +238,20 @@ tcu::TestStatus basicMultiFenceCase(Context &context, FenceConfig config)
 tcu::TestStatus emptySubmitCase(Context &context, FenceConfig config)
 {
     de::MovePtr<VideoDevice> videoDevice(
-        config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : DE_NULL);
+        config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : nullptr);
     const DeviceInterface &vk = getSyncDeviceInterface(videoDevice, context);
     const VkDevice device     = getSyncDevice(videoDevice, context);
     const VkQueue queue       = getSyncQueue(videoDevice, context);
 
     const VkFenceCreateInfo fenceCreateInfo = {
         VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, // VkStructureType       sType;
-        DE_NULL,                             // const void*           pNext;
+        nullptr,                             // const void*           pNext;
         (VkFenceCreateFlags)0,               // VkFenceCreateFlags    flags;
     };
 
     const Unique<VkFence> fence(createFence(vk, device, &fenceCreateInfo));
 
-    VK_CHECK(vk.queueSubmit(queue, 0u, DE_NULL, *fence));
+    VK_CHECK(vk.queueSubmit(queue, 0u, nullptr, *fence));
 
     if (VK_SUCCESS != vk.waitForFences(device, 1u, &fence.get(), true, LONG_FENCE_WAIT))
         return tcu::TestStatus::fail("vkWaitForFences should return VK_SUCCESS");
@@ -268,7 +268,7 @@ tcu::TestStatus basicMultiFenceWaitAllFalseCase(Context &context, FenceConfig co
     };
 
     de::MovePtr<VideoDevice> videoDevice(
-        config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : DE_NULL);
+        config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : nullptr);
     const DeviceInterface &vk       = getSyncDeviceInterface(videoDevice, context);
     const VkDevice device           = getSyncDevice(videoDevice, context);
     const VkQueue queue             = getSyncQueue(videoDevice, context);
@@ -279,7 +279,7 @@ tcu::TestStatus basicMultiFenceWaitAllFalseCase(Context &context, FenceConfig co
 
     const VkFenceCreateInfo fenceInfo = {
         VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, // VkStructureType     sType;
-        DE_NULL,                             // const void*         pNext;
+        nullptr,                             // const void*         pNext;
         0u,                                  // VkFenceCreateFlags  flags;
     };
 
@@ -289,21 +289,21 @@ tcu::TestStatus basicMultiFenceWaitAllFalseCase(Context &context, FenceConfig co
 
     const VkCommandBufferBeginInfo info = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,  // VkStructureType                          sType;
-        DE_NULL,                                      // const void*                              pNext;
+        nullptr,                                      // const void*                              pNext;
         VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT, // VkCommandBufferUsageFlags                flags;
-        DE_NULL,                                      // const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
+        nullptr,                                      // const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
     };
 
     const VkSubmitInfo submitInfo = {
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,         // VkStructureType                sType;
-        DE_NULL,                               // const void*                    pNext;
-        0u,                                    // uint32_t                       waitSemaphoreCount;
-        DE_NULL,                               // const VkSemaphore*             pWaitSemaphores;
-        (const VkPipelineStageFlags *)DE_NULL, // const VkPipelineStageFlags*    pWaitDstStageMask;
-        1u,                                    // uint32_t                       commandBufferCount;
-        &cmdBuffer.get(),                      // const VkCommandBuffer*         pCommandBuffers;
-        0u,                                    // uint32_t                       signalSemaphoreCount;
-        DE_NULL,                               // const VkSemaphore*             pSignalSemaphores;
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType                sType;
+        nullptr,                       // const void*                    pNext;
+        0u,                            // uint32_t                       waitSemaphoreCount;
+        nullptr,                       // const VkSemaphore*             pWaitSemaphores;
+        nullptr,                       // const VkPipelineStageFlags*    pWaitDstStageMask;
+        1u,                            // uint32_t                       commandBufferCount;
+        &cmdBuffer.get(),              // const VkCommandBuffer*         pCommandBuffers;
+        0u,                            // uint32_t                       signalSemaphoreCount;
+        nullptr,                       // const VkSemaphore*             pSignalSemaphores;
     };
 
     VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &info));

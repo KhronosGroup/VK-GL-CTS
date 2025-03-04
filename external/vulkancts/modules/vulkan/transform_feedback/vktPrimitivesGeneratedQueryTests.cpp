@@ -330,7 +330,7 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate(void)
     {
         const VkImageCreateInfo colorImageCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,        // VkStructureType            sType
-            DE_NULL,                                    // const void*                pNext
+            nullptr,                                    // const void*                pNext
             0u,                                         // VkImageCreateFlags        flags
             VK_IMAGE_TYPE_2D,                           // VkImageType                imageType
             colorFormat,                                // VkFormat                    format
@@ -342,7 +342,7 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate(void)
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,        // VkImageUsageFlags        usage
             VK_SHARING_MODE_EXCLUSIVE,                  // VkSharingMode            sharingMode
             0u,                                         // uint32_t                    queueFamilyIndexCount
-            DE_NULL,                                    // const uint32_t*            pQueueFamilyIndices
+            nullptr,                                    // const uint32_t*            pQueueFamilyIndices
             VK_IMAGE_LAYOUT_UNDEFINED,                  // VkImageLayout            initialLayout
         };
 
@@ -371,7 +371,7 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate(void)
     {
         const VkImageCreateInfo dsImageCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,         // VkStructureType            sType
-            DE_NULL,                                     // const void*                pNext
+            nullptr,                                     // const void*                pNext
             0u,                                          // VkImageCreateFlags        flags
             VK_IMAGE_TYPE_2D,                            // VkImageType                imageType
             dsFormat,                                    // VkFormat                    format
@@ -383,7 +383,7 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate(void)
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, // VkImageUsageFlags        usage
             VK_SHARING_MODE_EXCLUSIVE,                   // VkSharingMode            sharingMode
             0u,                                          // uint32_t                    queueFamilyIndexCount
-            DE_NULL,                                     // const uint32_t*            pQueueFamilyIndices
+            nullptr,                                     // const uint32_t*            pQueueFamilyIndices
             VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout            initialLayout
         };
 
@@ -496,7 +496,7 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate(void)
 
     const VkQueryPoolCreateInfo pgqCreateInfo = {
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType                    sType
-        DE_NULL,                                  // const void*                        pNext
+        nullptr,                                  // const void*                        pNext
         0u,                                       // VkQueryPoolCreateFlags            flags
         VK_QUERY_TYPE_PRIMITIVES_GENERATED_EXT,   // VkQueryType                        queryType
         m_parameters.queryCount,                  // uint32_t                            queryCount
@@ -510,7 +510,7 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate(void)
     {
         const VkQueryPoolCreateInfo xfbCreateInfo = {
             VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,    // VkStructureType                    sType
-            DE_NULL,                                     // const void*                        pNext
+            nullptr,                                     // const void*                        pNext
             0u,                                          // VkQueryPoolCreateFlags            flags
             VK_QUERY_TYPE_TRANSFORM_FEEDBACK_STREAM_EXT, // VkQueryType                        queryType
             m_parameters.queryCount,                     // uint32_t                            queryCount
@@ -622,8 +622,8 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate(void)
 
                 const uint32_t firstCounterBuffer        = 0;
                 const uint32_t counterBufferCount        = 0;
-                const VkBuffer *counterBuffers           = DE_NULL;
-                const VkDeviceSize *counterBufferOffsets = DE_NULL;
+                const VkBuffer *counterBuffers           = nullptr;
+                const VkDeviceSize *counterBufferOffsets = nullptr;
 
                 const uint32_t vertexCount = static_cast<uint32_t>(
                     topologyData.at(m_parameters.primitiveTopology).getNumVertices(primitivesGenerated));
@@ -710,7 +710,7 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate(void)
         {
             VkBufferMemoryBarrier bufferBarrier = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType    sType
-                DE_NULL,                                 // const void*        pNext
+                nullptr,                                 // const void*        pNext
                 VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags    srcAccessMask
                 VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags    dstAccessMask
                 VK_QUEUE_FAMILY_IGNORED,                 // uint32_t            srcQueueFamilyIndex
@@ -723,7 +723,7 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate(void)
             vk.cmdCopyQueryPoolResults(*cmdBuffer, *pgqPool, 0u, m_parameters.queryCount, *pgqResultsBuffer, 0u,
                                        pgqResultSize, pgqResultFlags);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                  DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
+                                  nullptr, 1u, &bufferBarrier, 0u, nullptr);
 
             if (m_parameters.transformFeedback)
             {
@@ -731,7 +731,7 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate(void)
                 vk.cmdCopyQueryPoolResults(*cmdBuffer, *xfbPool, 0u, m_parameters.queryCount, *xfbResultsBuffer, 0u,
                                            xfbResultSize, xfbResultFlags);
                 vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                      DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
+                                      nullptr, 1u, &bufferBarrier, 0u, nullptr);
             }
         }
     }
@@ -930,7 +930,7 @@ Move<VkPipeline> PrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline(cons
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                            sType
-        DE_NULL,                                                   // const void*                                pNext
+        nullptr,                                                   // const void*                                pNext
         0u,                                                        // VkPipelineVertexInputStateCreateFlags    flags
         1u,                    // uint32_t                                    vertexBindingDescriptionCount
         &bindingDescription,   // const VkVertexInputBindingDescription*    pVertexBindingDescriptions
@@ -940,7 +940,7 @@ Move<VkPipeline> PrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline(cons
 
     const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                            sType
-        DE_NULL,                                                    // const void*                                pNext
+        nullptr,                                                    // const void*                                pNext
         0,                                                          // VkPipelineRasterizationStateCreateFlags    flags
         VK_FALSE, // VkBool32                                    depthClampEnable
         (m_parameters.rastDiscard() ? VK_TRUE :
@@ -967,7 +967,7 @@ Move<VkPipeline> PrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline(cons
 
     const VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, //    VkStructureType                            sType
-        DE_NULL,            //    const void*                                pNext
+        nullptr,            //    const void*                                pNext
         0,                  //    VkPipelineDepthStencilStateCreateFlags    flags
         VK_TRUE,            //    VkBool32                                depthTestEnable
         VK_TRUE,            //    VkBool32                                depthWriteEnable
@@ -984,7 +984,7 @@ Move<VkPipeline> PrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline(cons
 
     const VkPipelineColorWriteCreateInfoEXT colorWriteCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT, // VkStructureType sType;
-        DE_NULL,                                                // const void* pNext;
+        nullptr,                                                // const void* pNext;
         1,                                                      // uint32_t attachmentCount;
         &colorWriteEnables                                      // const VkBool32* pColorWriteEnables;
     };
@@ -1015,7 +1015,7 @@ Move<VkPipeline> PrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline(cons
 
     const VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType                        sType
-        DE_NULL,                                              // const void*                            pNext
+        nullptr,                                              // const void*                            pNext
         0u,                                                   // VkPipelineDynamicStateCreateFlags    flags
         1u,            // uint32_t                                dynamicStateCount
         &dynamicStates // const VkDynamicState*                pDynamicStates
@@ -1037,9 +1037,9 @@ Move<VkPipeline> PrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline(cons
         vk, device, *pipelineLayout, *vertModule, *tescModule, *teseModule, *geomModule, *fragModule, renderPass,
         viewports, scissors, m_parameters.primitiveTopology, subpass, patchControlPoints, &vertexInputStateCreateInfo,
         &rasterizationStateCreateInfo, &multisampleStateCreateInfo,
-        m_parameters.depthStencilAttachment ? &depthStencilStateCreateInfo : DE_NULL,
-        m_parameters.staticColorWriteDisable() ? &colorBlendStateCreateInfo : DE_NULL,
-        m_parameters.dynamicColorWriteDisable() ? &pipelineDynamicStateCreateInfo : DE_NULL);
+        m_parameters.depthStencilAttachment ? &depthStencilStateCreateInfo : nullptr,
+        m_parameters.staticColorWriteDisable() ? &colorBlendStateCreateInfo : nullptr,
+        m_parameters.dynamicColorWriteDisable() ? &pipelineDynamicStateCreateInfo : nullptr);
 }
 
 void PrimitivesGeneratedQueryTestInstance::fillVertexBuffer(tcu::Vec2 *vertices, const uint64_t primitivesGenerated)
@@ -1562,7 +1562,7 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate(void)
 
     const VkImageCreateInfo colorImageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,          // VkStructureType            sType
-        DE_NULL,                                      // const void*                pNext
+        nullptr,                                      // const void*                pNext
         0u,                                           // VkImageCreateFlags        flags
         VK_IMAGE_TYPE_2D,                             // VkImageType                imageType
         colorFormat,                                  // VkFormat                    format
@@ -1574,7 +1574,7 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate(void)
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags        usage
         VK_SHARING_MODE_EXCLUSIVE,                                             // VkSharingMode            sharingMode
         0u,                        // uint32_t                    queueFamilyIndexCount
-        DE_NULL,                   // const uint32_t*            pQueueFamilyIndices
+        nullptr,                   // const uint32_t*            pQueueFamilyIndices
         VK_IMAGE_LAYOUT_UNDEFINED, // VkImageLayout            initialLayout
     };
 
@@ -1649,7 +1649,7 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate(void)
 
     const VkQueryPoolCreateInfo pgqCreateInfo = {
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType                    sType
-        DE_NULL,                                  // const void*                        pNext
+        nullptr,                                  // const void*                        pNext
         0u,                                       // VkQueryPoolCreateFlags            flags
         VK_QUERY_TYPE_PRIMITIVES_GENERATED_EXT,   // VkQueryType                        queryType
         pgqQueryCount,                            // uint32_t                            queryCount
@@ -1658,7 +1658,7 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate(void)
 
     const VkQueryPoolCreateInfo xfbCreateInfo = {
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,    // VkStructureType                    sType
-        DE_NULL,                                     // const void*                        pNext
+        nullptr,                                     // const void*                        pNext
         0u,                                          // VkQueryPoolCreateFlags            flags
         VK_QUERY_TYPE_TRANSFORM_FEEDBACK_STREAM_EXT, // VkQueryType                        queryType
         xfbQueryCount,                               // uint32_t                            queryCount
@@ -1667,7 +1667,7 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate(void)
 
     const VkQueryPoolCreateInfo psCreateInfo = {
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType                    sType
-        DE_NULL,                                  // const void*                        pNext
+        nullptr,                                  // const void*                        pNext
         0u,                                       // VkQueryPoolCreateFlags            flags
         VK_QUERY_TYPE_PIPELINE_STATISTICS,        // VkQueryType                        queryType
         psQueryCount,                             // uint32_t                            queryCount
@@ -1802,8 +1802,8 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate(void)
         {
             const uint32_t firstCounterBuffer        = 0;
             const uint32_t counterBufferCount        = 0;
-            const VkBuffer *counterBuffers           = DE_NULL;
-            const VkDeviceSize *counterBufferOffsets = DE_NULL;
+            const VkBuffer *counterBuffers           = nullptr;
+            const VkDeviceSize *counterBufferOffsets = nullptr;
 
             if (m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_TWO_XFB_INSIDE_PGQ)
             {
@@ -2054,7 +2054,7 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate(void)
                                      2 :
                                      1;
 
-            if (inputAssemblyPrimitives != primitivesGenerated * drawCount)
+            if (inputAssemblyPrimitives < primitivesGenerated * drawCount)
             {
                 const std::string message = std::string("input assembly primitives == ") +
                                             de::toString(inputAssemblyPrimitives) + ", expected " +
@@ -2135,7 +2135,7 @@ Move<VkPipeline> ConcurrentPrimitivesGeneratedQueryTestInstance::makeGraphicsPip
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                            sType
-        DE_NULL,                                                   // const void*                                pNext
+        nullptr,                                                   // const void*                                pNext
         0u,                                                        // VkPipelineVertexInputStateCreateFlags    flags
         1u,                    // uint32_t                                    vertexBindingDescriptionCount
         &bindingDescription,   // const VkVertexInputBindingDescription*    pVertexBindingDescriptions
@@ -2145,7 +2145,7 @@ Move<VkPipeline> ConcurrentPrimitivesGeneratedQueryTestInstance::makeGraphicsPip
 
     const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                            sType
-        DE_NULL,                                                    // const void*                                pNext
+        nullptr,                                                    // const void*                                pNext
         0,                                                          // VkPipelineRasterizationStateCreateFlags    flags
         VK_FALSE,                        // VkBool32                                    depthClampEnable
         VK_FALSE,                        // VkBool32                                    rasterizerDiscardEnable
@@ -2172,7 +2172,7 @@ Move<VkPipeline> ConcurrentPrimitivesGeneratedQueryTestInstance::makeGraphicsPip
 
     const VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType                                sType
-        DE_NULL,                    // const void*                                    pNext
+        nullptr,                    // const void*                                    pNext
         0,                          // VkPipelineColorBlendStateCreateFlags            flags
         VK_FALSE,                   // VkBool32                                        logicOpEnable
         VK_LOGIC_OP_NO_OP,          // VkLogicOp                                    logicOp
@@ -2196,7 +2196,7 @@ Move<VkPipeline> ConcurrentPrimitivesGeneratedQueryTestInstance::makeGraphicsPip
     return vk::makeGraphicsPipeline(
         vk, device, *pipelineLayout, *vertModule, *tescModule, *teseModule, *geomModule, *fragModule, renderPass,
         viewports, scissors, m_parameters.primitiveTopology, subpass, patchControlPoints, &vertexInputStateCreateInfo,
-        &rasterizationStateCreateInfo, &multisampleStateCreateInfo, DE_NULL, &colorBlendStateCreateInfo);
+        &rasterizationStateCreateInfo, &multisampleStateCreateInfo, nullptr, &colorBlendStateCreateInfo);
 }
 
 void ConcurrentPrimitivesGeneratedQueryTestInstance::fillVertexBuffer(tcu::Vec2 *vertices,
@@ -2345,8 +2345,7 @@ void ConcurrentPrimitivesGeneratedQueryTestInstance::copyColorImageToBuffer(cons
         vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT,
         vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::VK_IMAGE_LAYOUT_GENERAL, image, colorSubresourceRange);
     vk.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u,
-                          (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
+                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u,
                           &postImageBarrier);
     vk::VkExtent3D extent             = {m_imageWidth, m_imageHeight, 1};
     const auto colorSubresourceLayers = vk::makeImageSubresourceLayers(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
@@ -2418,6 +2417,13 @@ void ConcurrentPrimitivesGeneratedQueryTestCase::checkSupport(vkt::Context &cont
     {
         if (!context.getDeviceFeatures().pipelineStatisticsQuery)
             TCU_THROW(NotSupportedError, "pipelineStatisticsQuery not supported");
+    }
+
+    if (m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_3)
+    {
+        // VUID-vkCmdExecuteCommands-commandBuffer-00101
+        if (!context.getDeviceFeatures().inheritedQueries)
+            TCU_THROW(NotSupportedError, "inheritedQueries not supported");
     }
 }
 

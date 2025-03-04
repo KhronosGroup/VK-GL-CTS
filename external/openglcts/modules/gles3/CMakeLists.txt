@@ -7,6 +7,8 @@ set(GLCTS_ES3_SRCS
 	es3cCopyTexImageConversionsTests.hpp
 	es3cNumberParsingTests.cpp
 	es3cNumberParsingTests.hpp
+    es3cDriverErrorTests.cpp
+    es3cDriverErrorTests.hpp
 	)
 
 set(GLCTS_ES3_LIBS

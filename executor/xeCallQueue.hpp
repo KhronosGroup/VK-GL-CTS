@@ -72,11 +72,11 @@ public:
 
     const uint8_t *getData(void) const
     {
-        return m_data.empty() ? DE_NULL : &m_data[0];
+        return m_data.empty() ? nullptr : &m_data[0];
     }
     uint8_t *getData(void)
     {
-        return m_data.empty() ? DE_NULL : &m_data[0];
+        return m_data.empty() ? nullptr : &m_data[0];
     }
 
 private:
@@ -88,7 +88,7 @@ class CallReader
 {
 public:
     CallReader(Call *call);
-    CallReader(void) : m_call(DE_NULL), m_curPos(0)
+    CallReader(void) : m_call(nullptr), m_curPos(0)
     {
     }
 

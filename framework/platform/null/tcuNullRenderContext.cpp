@@ -482,7 +482,7 @@ GLW_APICALL const glw::GLubyte *GLW_APIENTRY glGetString(GLenum name)
         return (const glw::GLubyte *)ctx->extensions.c_str();
     default:
         ctx->lastError = GL_INVALID_ENUM;
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -497,13 +497,13 @@ GLW_APICALL const glw::GLubyte *GLW_APIENTRY glGetStringi(GLenum name, GLuint in
         else
         {
             ctx->lastError = GL_INVALID_VALUE;
-            return DE_NULL;
+            return nullptr;
         }
     }
     else
     {
         ctx->lastError = GL_INVALID_ENUM;
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -767,7 +767,7 @@ static tcu::RenderTarget toRenderTarget(const RenderConfig &renderCfg)
 RenderContext::RenderContext(const RenderConfig &renderCfg)
     : m_ctxType(renderCfg.type)
     , m_renderTarget(toRenderTarget(renderCfg))
-    , m_context(DE_NULL)
+    , m_context(nullptr)
 {
     m_context = new Context(m_ctxType);
 
@@ -777,7 +777,7 @@ RenderContext::RenderContext(const RenderConfig &renderCfg)
 
 RenderContext::~RenderContext(void)
 {
-    setCurrentContext(DE_NULL);
+    setCurrentContext(nullptr);
     delete m_context;
 }
 

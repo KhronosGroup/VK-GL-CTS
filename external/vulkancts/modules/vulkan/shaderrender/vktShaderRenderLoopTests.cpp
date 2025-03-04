@@ -307,7 +307,7 @@ public:
     ShaderLoopCase(tcu::TestContext &testCtx, const std::string &name, bool isVertexCase, ShaderEvalFunc evalFunc,
                    UniformSetup *uniformSetup, const std::string &vertexShaderSource,
                    const std::string &fragmentShaderSource)
-        : ShaderRenderCase(testCtx, name, isVertexCase, evalFunc, uniformSetup, DE_NULL)
+        : ShaderRenderCase(testCtx, name, isVertexCase, evalFunc, uniformSetup, nullptr)
     {
         m_vertShaderSource = vertexShaderSource;
         m_fragShaderSource = fragmentShaderSource;

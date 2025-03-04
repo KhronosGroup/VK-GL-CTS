@@ -148,7 +148,7 @@ DiscardTestInstance::DiscardTestInstance(Context &context, vk::PipelineConstruct
     m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
 
     const vk::VkDescriptorSetLayoutBinding binding = {0u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-                                                      vk::VK_SHADER_STAGE_FRAGMENT_BIT, DE_NULL};
+                                                      vk::VK_SHADER_STAGE_FRAGMENT_BIT, nullptr};
 
     DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo(1, &binding);
     m_otherSetLayout = vk::createDescriptorSetLayout(m_vk, device, &descriptorSetLayoutCreateInfo);
@@ -170,9 +170,9 @@ void DiscardTestInstance::initRenderPass(const vk::VkDevice device)
 
     const vk::VkAttachmentReference stencilAttachmentReference = {1, vk::VK_IMAGE_LAYOUT_GENERAL};
 
-    renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, DE_NULL, 1,
-                                                       &colorAttachmentReference, DE_NULL, stencilAttachmentReference,
-                                                       0, DE_NULL));
+    renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, nullptr, 1,
+                                                       &colorAttachmentReference, nullptr, stencilAttachmentReference,
+                                                       0, nullptr));
 
     m_renderPass = vk::RenderPassWrapper(m_pipelineConstructionType, m_vk, device, &renderPassCreateInfo);
 }
@@ -254,12 +254,12 @@ void DiscardTestInstance::beginRenderPass(const vk::VkClearColorValue &clearColo
                             &subresourceRange);
 
     const vk::VkMemoryBarrier memBarrier = {
-        vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER, DE_NULL, vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+        vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, vk::VK_ACCESS_TRANSFER_WRITE_BIT,
         vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT};
 
     m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                            vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 1, &memBarrier, 0, DE_NULL, 0,
-                            DE_NULL);
+                            vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 1, &memBarrier, 0, nullptr, 0,
+                            nullptr);
 
     if (isFormatStencil(m_depthStencilAttachmentFormat))
     {
@@ -306,7 +306,7 @@ tcu::TestStatus DiscardTestInstance::iterate(void)
     };
     const VkDescriptorPoolCreateInfo poolInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
         1u, // maxSets
         DE_LENGTH_OF_ARRAY(poolSizes),
@@ -329,18 +329,18 @@ tcu::TestStatus DiscardTestInstance::iterate(void)
         const vk::VkDescriptorBufferInfo bufferInfo    = makeDescriptorBufferInfo(*buffer, 0, size);
         const vk::VkWriteDescriptorSet descriptorWrite = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            DE_NULL,
+            nullptr,
             *descriptorSet,
             0u, // dstBinding
             0u, // dstArrayElement
             1u, // descriptorCount
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            DE_NULL,
+            nullptr,
             &bufferInfo,
-            DE_NULL,
+            nullptr,
         };
 
-        m_vk.updateDescriptorSets(device, 1, &descriptorWrite, 0u, DE_NULL);
+        m_vk.updateDescriptorSets(device, 1, &descriptorWrite, 0u, nullptr);
     }
 
     const vk::VkClearColorValue clearColor = {{0.0f, 0.0f, 0.0f, 1.0f}};
@@ -494,7 +494,18 @@ public:
     virtual void setDynamicState(void)
     {
         vk::VkRect2D scissor = vk::makeRect2D(tcu::UVec2(WIDTH, HEIGHT));
-        m_vk.cmdSetScissor(*m_cmdBuffer, 0, 1, &scissor);
+        if (vk::isConstructionTypeShaderObject(m_pipelineConstructionType))
+        {
+#ifndef CTS_USES_VULKANSC
+            m_vk.cmdSetScissorWithCount(*m_cmdBuffer, 1, &scissor);
+#else
+            m_vk.cmdSetScissorWithCountEXT(*m_cmdBuffer, 1, &scissor);
+#endif
+        }
+        else
+        {
+            m_vk.cmdSetScissor(*m_cmdBuffer, 0, 1, &scissor);
+        }
     }
 
     virtual tcu::TestStatus verifyResults(void)

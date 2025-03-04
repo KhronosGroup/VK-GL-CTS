@@ -37,7 +37,7 @@ PlatformDriver::PlatformDriver(const tcu::FunctionLibrary &library)
 {
     m_vk.getInstanceProcAddr = (GetInstanceProcAddrFunc)library.getFunction("vkGetInstanceProcAddr");
 
-#define GET_PROC_ADDR(NAME) m_vk.getInstanceProcAddr(DE_NULL, NAME)
+#define GET_PROC_ADDR(NAME) m_vk.getInstanceProcAddr(nullptr, NAME)
 #include "vkInitPlatformFunctionPointers.inl"
 #undef GET_PROC_ADDR
 }
@@ -80,14 +80,14 @@ std::pair<void **, void *> prepareDeviceGroupPatch(const VkDeviceCreateInfo *pCr
         const StructureBase *pNext;
     };
 
-    const StructureBase *prev = DE_NULL;
+    const StructureBase *prev = nullptr;
     const StructureBase *curr = reinterpret_cast<const StructureBase *>(pCreateInfo);
 
     while (curr)
     {
         if (curr->sType == VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO)
         {
-            if (prev != DE_NULL)
+            if (prev != nullptr)
                 return std::pair<void **, void *>((void **)&prev->pNext, (void *)curr);
         }
 
@@ -95,14 +95,14 @@ std::pair<void **, void *> prepareDeviceGroupPatch(const VkDeviceCreateInfo *pCr
         curr = reinterpret_cast<const StructureBase *>(curr->pNext);
     }
 
-    return std::pair<void **, void *>(DE_NULL, DE_NULL);
+    return std::pair<void **, void *>(nullptr, nullptr);
 }
 
 VkResult InstanceDriverSC::createDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo *pCreateInfo,
                                         const VkAllocationCallbacks *pAllocator, VkDevice *pDevice) const
 {
     std::pair<void *, void *> patch = prepareDeviceGroupPatch(pCreateInfo);
-    const bool patchNeeded          = patch.first != DE_NULL;
+    const bool patchNeeded          = patch.first != nullptr;
 
     // Structure restored from JSON does not contain valid physicalDevice.
     // Workaround: set to delivered physicalDevice argument.
@@ -112,7 +112,7 @@ VkResult InstanceDriverSC::createDevice(VkPhysicalDevice physicalDevice, const V
 
         DE_ASSERT(p->physicalDeviceCount == 1);
 
-        if (p->physicalDeviceCount == 1 && p->pPhysicalDevices[0] == DE_NULL)
+        if (p->physicalDeviceCount == 1 && p->pPhysicalDevices[0] == nullptr)
         {
             VkPhysicalDevice *v = const_cast<VkPhysicalDevice *>(p->pPhysicalDevices);
             v[0]                = physicalDevice;
@@ -232,13 +232,13 @@ void DeviceDriverSC::createDescriptorSetLayoutHandlerStat(VkDevice device,
             m_resourceInterface->getStatMax().descriptorSetLayoutBindingLimit, pCreateInfo->pBindings[i].binding + 1);
         if ((pCreateInfo->pBindings[i].descriptorType == VK_DESCRIPTOR_TYPE_SAMPLER ||
              pCreateInfo->pBindings[i].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) &&
-            pCreateInfo->pBindings[i].pImmutableSamplers != DE_NULL)
+            pCreateInfo->pBindings[i].pImmutableSamplers != nullptr)
             immutableSamplersCount += pCreateInfo->pBindings[i].descriptorCount;
     }
     m_resourceInterface->getStatMax().maxImmutableSamplersPerDescriptorSetLayout =
         de::max(m_resourceInterface->getStatMax().maxImmutableSamplersPerDescriptorSetLayout, immutableSamplersCount);
 
-    *pSetLayout = VkDescriptorSetLayout(m_resourceInterface->incResourceCounter());
+    *pSetLayout = m_resourceInterface->incResourceCounter<VkDescriptorSetLayout>();
     m_descriptorSetLayouts.insert({*pSetLayout, *pCreateInfo});
     m_resourceInterface->registerObjectHash(
         pSetLayout->getInternal(),
@@ -271,7 +271,7 @@ void DeviceDriverSC::allocateDescriptorSetsHandlerStat(VkDevice device,
     DDSTAT_LOCK();
     DDSTAT_HANDLE_CREATE(descriptorSetRequestCount, pAllocateInfo->descriptorSetCount);
     for (uint32_t i = 0; i < pAllocateInfo->descriptorSetCount; ++i)
-        pDescriptorSets[i] = Handle<HANDLE_TYPE_DESCRIPTOR_SET>(m_resourceInterface->incResourceCounter());
+        pDescriptorSets[i] = m_resourceInterface->incResourceCounter<VkDescriptorSet>();
     for (uint32_t i = 0; i < pAllocateInfo->descriptorSetCount; ++i)
         m_descriptorSetsInPool[pDescriptorSets[i]] = pAllocateInfo->descriptorPool;
 }
@@ -346,7 +346,7 @@ void DeviceDriverSC::createImageViewHandler(VkDevice device, const VkImageViewCr
         m_resourceInterface->getStatMax().maxLayeredImageViewMipLevels =
             de::max(m_resourceInterface->getStatMax().maxLayeredImageViewMipLevels, levelCount);
 
-    *pView = VkImageView(m_resourceInterface->incResourceCounter());
+    *pView = m_resourceInterface->incResourceCounter<VkImageView>();
     m_imageViews.insert({*pView, *pCreateInfo});
 }
 
@@ -393,7 +393,7 @@ void DeviceDriverSC::createQueryPoolHandler(VkDevice device, const VkQueryPoolCr
         break;
     }
     // We don't have to track queryPool resources as we do with image views because they're not removed from memory in Vulkan SC.
-    *pQueryPool = VkQueryPool(m_resourceInterface->incResourceCounter());
+    *pQueryPool = m_resourceInterface->incResourceCounter<VkQueryPool>();
 }
 
 VkResult DeviceDriverSC::createPipelineLayoutHandlerNorm(VkDevice device, const VkPipelineLayoutCreateInfo *pCreateInfo,
@@ -414,7 +414,7 @@ void DeviceDriverSC::createPipelineLayoutHandlerStat(VkDevice device, const VkPi
 {
     DDSTAT_LOCK();
     DDSTAT_HANDLE_CREATE(pipelineLayoutRequestCount, 1);
-    *pPipelineLayout = VkPipelineLayout(m_resourceInterface->incResourceCounter());
+    *pPipelineLayout = m_resourceInterface->incResourceCounter<VkPipelineLayout>();
     m_resourceInterface->registerObjectHash(
         pPipelineLayout->getInternal(),
         calculatePipelineLayoutHash(*pCreateInfo, m_resourceInterface->getObjectHashes()));
@@ -446,7 +446,7 @@ void DeviceDriverSC::createGraphicsPipelinesHandlerStat(VkDevice device, VkPipel
     DDSTAT_HANDLE_CREATE(graphicsPipelineRequestCount, createInfoCount);
     for (uint32_t i = 0; i < createInfoCount; ++i)
     {
-        pPipelines[i] = VkPipeline(m_resourceInterface->incResourceCounter());
+        pPipelines[i] = m_resourceInterface->incResourceCounter<VkPipeline>();
         m_graphicsPipelines.insert({pPipelines[i], pCreateInfos[i]});
     }
 
@@ -479,7 +479,7 @@ void DeviceDriverSC::createComputePipelinesHandlerStat(VkDevice device, VkPipeli
     DDSTAT_HANDLE_CREATE(computePipelineRequestCount, createInfoCount);
     for (uint32_t i = 0; i < createInfoCount; ++i)
     {
-        pPipelines[i] = VkPipeline(m_resourceInterface->incResourceCounter());
+        pPipelines[i] = m_resourceInterface->incResourceCounter<VkPipeline>();
         m_computePipelines.insert({pPipelines[i], pCreateInfos[i]});
     }
 
@@ -533,7 +533,7 @@ void DeviceDriverSC::createFramebufferHandlerStat(VkDevice device, const VkFrame
     checkFramebufferSupport(pCreateInfo);
     DDSTAT_HANDLE_CREATE(framebufferRequestCount, 1);
 
-    *pFramebuffer = Handle<HANDLE_TYPE_FRAMEBUFFER>(m_resourceInterface->incResourceCounter());
+    *pFramebuffer = m_resourceInterface->incResourceCounter<VkFramebuffer>();
 }
 
 VkResult DeviceDriverSC::createRenderPassHandlerNorm(VkDevice device, const VkRenderPassCreateInfo *pCreateInfo,
@@ -571,7 +571,7 @@ void DeviceDriverSC::createRenderPassHandlerStat(VkDevice device, const VkRender
     DDSTAT_HANDLE_CREATE(subpassDescriptionRequestCount, pCreateInfo->subpassCount);
     DDSTAT_HANDLE_CREATE(attachmentDescriptionRequestCount, pCreateInfo->attachmentCount);
 
-    *pRenderPass = VkRenderPass(m_resourceInterface->incResourceCounter());
+    *pRenderPass = m_resourceInterface->incResourceCounter<VkRenderPass>();
     m_renderPasses.insert({*pRenderPass, *pCreateInfo});
     m_resourceInterface->registerObjectHash(
         pRenderPass->getInternal(), calculateRenderPassHash(*pCreateInfo, m_resourceInterface->getObjectHashes()));
@@ -613,7 +613,7 @@ void DeviceDriverSC::createRenderPass2HandlerStat(VkDevice device, const VkRende
     DDSTAT_HANDLE_CREATE(subpassDescriptionRequestCount, pCreateInfo->subpassCount);
     DDSTAT_HANDLE_CREATE(attachmentDescriptionRequestCount, pCreateInfo->attachmentCount);
 
-    *pRenderPass = VkRenderPass(m_resourceInterface->incResourceCounter());
+    *pRenderPass = m_resourceInterface->incResourceCounter<VkRenderPass>();
     m_renderPasses2.insert({*pRenderPass, *pCreateInfo});
     m_resourceInterface->registerObjectHash(
         pRenderPass->getInternal(), calculateRenderPass2Hash(*pCreateInfo, m_resourceInterface->getObjectHashes()));
@@ -662,7 +662,7 @@ void DeviceDriverSC::createSamplerHandlerStat(VkDevice device, const VkSamplerCr
 {
     DDSTAT_LOCK();
     DDSTAT_HANDLE_CREATE(samplerRequestCount, 1);
-    *pSampler = VkSampler(m_resourceInterface->incResourceCounter());
+    *pSampler = m_resourceInterface->incResourceCounter<VkSampler>();
     m_resourceInterface->registerObjectHash(pSampler->getInternal(),
                                             calculateSamplerHash(*pCreateInfo, m_resourceInterface->getObjectHashes()));
     m_resourceInterface->createSampler(device, pCreateInfo, pAllocator, pSampler);
@@ -688,7 +688,7 @@ void DeviceDriverSC::createSamplerYcbcrConversionHandlerStat(VkDevice device,
 {
     DDSTAT_LOCK();
     DDSTAT_HANDLE_CREATE(samplerYcbcrConversionRequestCount, 1);
-    *pYcbcrConversion = VkSamplerYcbcrConversion(m_resourceInterface->incResourceCounter());
+    *pYcbcrConversion = m_resourceInterface->incResourceCounter<VkSamplerYcbcrConversion>();
     m_resourceInterface->registerObjectHash(
         pYcbcrConversion->getInternal(),
         calculateSamplerYcbcrConversionHash(*pCreateInfo, m_resourceInterface->getObjectHashes()));
@@ -729,7 +729,7 @@ VkResult DeviceDriverSC::createCommandPoolHandlerNorm(VkDevice device, const VkC
 
     VkCommandPoolCreateInfo pCreateInfoCopy = *pCreateInfo;
     VkCommandPoolMemoryReservationCreateInfo cpMemReservationCI;
-    if (chainedMemoryReservation == DE_NULL)
+    if (chainedMemoryReservation == nullptr)
     {
         VkDeviceSize cmdPoolSize = de::max(memC.maxCommandPoolReservedSize, m_commandPoolMinimumSize);
         cmdPoolSize              = de::max(cmdPoolSize, memC.commandBufferCount * m_commandBufferMinimumSize);
@@ -738,7 +738,7 @@ VkResult DeviceDriverSC::createCommandPoolHandlerNorm(VkDevice device, const VkC
                                   m_physicalDeviceVulkanSC10Properties.maxCommandBufferSize * memC.commandBufferCount);
         cpMemReservationCI = {
             VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_RESERVATION_CREATE_INFO, // VkStructureType        sType
-            DE_NULL,                                                       // const void*            pNext
+            nullptr,                                                       // const void*            pNext
             de::max(cmdPoolSize, m_commandBufferMinimumSize), // VkDeviceSize            commandPoolReservedSize
             de::max(memC.commandBufferCount, 1u)              // uint32_t                commandPoolMaxCommandBuffers
         };
@@ -772,12 +772,12 @@ void DeviceDriverSC::createCommandPoolHandlerStat(VkDevice device, const VkComma
         (VkCommandPoolMemoryReservationCreateInfo *)findStructureInChain(
             pCreateInfo->pNext, VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_RESERVATION_CREATE_INFO);
 
-    if (chainedMemoryReservation != DE_NULL)
+    if (chainedMemoryReservation != nullptr)
         DDSTAT_HANDLE_CREATE(commandBufferRequestCount, chainedMemoryReservation->commandPoolMaxCommandBuffers);
     else
         DDSTAT_HANDLE_CREATE(commandBufferRequestCount, 1);
 
-    *pCommandPool = Handle<HANDLE_TYPE_COMMAND_POOL>(m_resourceInterface->incResourceCounter());
+    *pCommandPool = m_resourceInterface->incResourceCounter<VkCommandPool>();
     m_resourceInterface->createCommandPool(device, pCreateInfo, pAllocator, pCommandPool);
 }
 
@@ -793,7 +793,7 @@ void DeviceDriverSC::allocateCommandBuffersHandler(VkDevice device, const VkComm
     DDSTAT_LOCK();
     DDSTAT_HANDLE_CREATE(commandBufferRequestCount, pAllocateInfo->commandBufferCount);
     for (uint32_t i = 0; i < pAllocateInfo->commandBufferCount; ++i)
-        pCommandBuffers[i] = (VkCommandBuffer)m_resourceInterface->incResourceCounter();
+        pCommandBuffers[i] = m_resourceInterface->incResourceCounter<VkCommandBuffer>();
     m_resourceInterface->allocateCommandBuffers(device, pAllocateInfo, pCommandBuffers);
 }
 

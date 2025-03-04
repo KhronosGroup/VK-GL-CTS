@@ -66,7 +66,7 @@ VarType &VarType::operator=(const VarType &other)
     if (this == &other)
         return *this; // Self-assignment.
 
-    VarType *oldElementType = m_type == VARTYPE_ARRAY ? m_data.array.elementType : DE_NULL;
+    VarType *oldElementType = m_type == VARTYPE_ARRAY ? m_data.array.elementType : nullptr;
 
     m_type = other.m_type;
     m_data = Data();
@@ -215,7 +215,7 @@ const char *getMemoryAccessQualifierName(MemoryAccessQualifier qualifier)
         return "writeonly";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 

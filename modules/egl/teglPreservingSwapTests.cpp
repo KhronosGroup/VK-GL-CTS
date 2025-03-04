@@ -274,11 +274,11 @@ PreservingSwapTest::PreservingSwapTest(EglTestContext &eglTestCtx, bool preserve
     , m_preSwapDrawType(preSwapDrawType)
     , m_postSwapDrawType(postSwapDrawType)
     , m_eglDisplay(EGL_NO_DISPLAY)
-    , m_window(DE_NULL)
+    , m_window(nullptr)
     , m_eglSurface(EGL_NO_SURFACE)
     , m_eglContext(EGL_NO_CONTEXT)
-    , m_gles2Program(DE_NULL)
-    , m_refProgram(DE_NULL)
+    , m_gles2Program(nullptr)
+    , m_refProgram(nullptr)
 {
 }
 
@@ -319,9 +319,9 @@ void PreservingSwapTest::initEGLSurface(EGLConfig config)
         eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 
     m_window =
-        factory.createWindow(&m_eglTestCtx.getNativeDisplay(), m_eglDisplay, config, DE_NULL,
+        factory.createWindow(&m_eglTestCtx.getNativeDisplay(), m_eglDisplay, config, nullptr,
                              eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
-    m_eglSurface = eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_eglDisplay, config, DE_NULL);
+    m_eglSurface = eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_eglDisplay, config, nullptr);
 }
 
 void PreservingSwapTest::initEGLContext(EGLConfig config)
@@ -343,7 +343,7 @@ void PreservingSwapTest::init(void)
     m_eglDisplay = eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
     m_eglConfig  = getEGLConfig(m_eglTestCtx.getLibrary(), m_eglDisplay, m_preserveColorbuffer);
 
-    if (m_eglConfig == DE_NULL)
+    if (m_eglConfig == nullptr)
         TCU_THROW(NotSupportedError, "No supported config found");
 
     initEGLSurface(m_eglConfig);
@@ -360,10 +360,10 @@ void PreservingSwapTest::deinit(void)
     const Library &egl = m_eglTestCtx.getLibrary();
 
     delete m_refProgram;
-    m_refProgram = DE_NULL;
+    m_refProgram = nullptr;
 
     delete m_gles2Program;
-    m_gles2Program = DE_NULL;
+    m_gles2Program = nullptr;
 
     if (m_eglContext != EGL_NO_CONTEXT)
     {
@@ -385,7 +385,7 @@ void PreservingSwapTest::deinit(void)
     }
 
     delete m_window;
-    m_window = DE_NULL;
+    m_window = nullptr;
 }
 
 bool compareToReference(tcu::TestLog &log, const char *name, const char *description, const tcu::Surface &reference,

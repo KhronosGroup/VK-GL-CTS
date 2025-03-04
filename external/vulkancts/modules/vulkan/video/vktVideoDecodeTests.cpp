@@ -174,6 +174,10 @@ enum TestType
     TEST_TYPE_H264_BOTH_DECODE_ENCODE_INTERLEAVED, // Case 23 TODO
     TEST_TYPE_H264_H265_DECODE_INTERLEAVED,        // Case 24
 
+    // VK_KHR_video_maintenance2
+    TEST_TYPE_H264_DECODE_INLINE_SESSION_PARAMS,
+    TEST_TYPE_H264_DECODE_RELAXED_SESSION_PARAMS,
+
     TEST_TYPE_H265_DECODE_I,   // Case 15
     TEST_TYPE_H265_DECODE_I_P, // Case 16
     TEST_TYPE_H265_DECODE_CLIP_D,
@@ -185,6 +189,10 @@ enum TestType
     TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES,
     TEST_TYPE_H265_DECODE_SLIST_A,
     TEST_TYPE_H265_DECODE_SLIST_B,
+
+    // VK_KHR_video_maintenance2
+    TEST_TYPE_H265_DECODE_INLINE_SESSION_PARAMS,
+    TEST_TYPE_H265_DECODE_RELAXED_SESSION_PARAMS,
 
     TEST_TYPE_AV1_DECODE_I,
     TEST_TYPE_AV1_DECODE_I_P,
@@ -211,6 +219,10 @@ enum TestType
     TEST_TYPE_AV1_DECODE_ARGON_TEST_787,
 
     TEST_TYPE_AV1_DECODE_ARGON_SEQCHANGE_AFFINE_8,
+
+    // VK_KHR_video_maintenance2
+    TEST_TYPE_AV1_DECODE_INLINE_SESSION_PARAMS,
+    TEST_TYPE_AV1_DECODE_RELAXED_SESSION_PARAMS,
 
     TEST_TYPE_LAST
 };
@@ -348,6 +360,16 @@ static const char *testTypeToStr(TestType type)
     case TEST_TYPE_AV1_DECODE_ARGON_TEST_787:
         testName = "argon_test787";
         break;
+    case TEST_TYPE_H264_DECODE_INLINE_SESSION_PARAMS:
+    case TEST_TYPE_H265_DECODE_INLINE_SESSION_PARAMS:
+    case TEST_TYPE_AV1_DECODE_INLINE_SESSION_PARAMS:
+        testName = "inline_session_params";
+        break;
+    case TEST_TYPE_H264_DECODE_RELAXED_SESSION_PARAMS:
+    case TEST_TYPE_H265_DECODE_RELAXED_SESSION_PARAMS:
+    case TEST_TYPE_AV1_DECODE_RELAXED_SESSION_PARAMS:
+        testName = "relaxed_session_params";
+        break;
     default:
         TCU_THROW(InternalError, "Unknown TestType");
     }
@@ -371,6 +393,8 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE_DPB:
     case TEST_TYPE_H264_DECODE_INTERLEAVED:
     case TEST_TYPE_H264_H265_DECODE_INTERLEAVED:
+    case TEST_TYPE_H264_DECODE_INLINE_SESSION_PARAMS:
+    case TEST_TYPE_H264_DECODE_RELAXED_SESSION_PARAMS:
         return TEST_CODEC_H264;
 
     case TEST_TYPE_H265_DECODE_I:
@@ -384,6 +408,8 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES:
     case TEST_TYPE_H265_DECODE_SLIST_A:
     case TEST_TYPE_H265_DECODE_SLIST_B:
+    case TEST_TYPE_H265_DECODE_INLINE_SESSION_PARAMS:
+    case TEST_TYPE_H265_DECODE_RELAXED_SESSION_PARAMS:
         return TEST_CODEC_H265;
 
     case TEST_TYPE_AV1_DECODE_I:
@@ -409,6 +435,8 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_AV1_DECODE_CDEF_10:
     case TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10:
     case TEST_TYPE_AV1_DECODE_ARGON_TEST_787:
+    case TEST_TYPE_AV1_DECODE_INLINE_SESSION_PARAMS:
+    case TEST_TYPE_AV1_DECODE_RELAXED_SESSION_PARAMS:
         return TEST_CODEC_AV1;
 
     default:
@@ -437,6 +465,9 @@ enum DecoderOption : uint32_t
     FilmGrainPresent         = 1 << 5,
     IntraOnlyDecoding        = 1 << 6,
     AnnexB                   = 1 << 7,
+
+    UseInlineSessionParams    = 1 << 8,
+    ResetCodecNoSessionParams = 1 << 9,
 };
 
 static const int ALL_FRAMES = 0;
@@ -454,60 +485,72 @@ struct DecodeTestParam
     BaseDecodeParam stream;
 
 } g_DecodeTests[] = {
-    {TEST_TYPE_H264_DECODE_I, {CLIP_A, 1, DecoderOption::Default}},
-    {TEST_TYPE_H264_DECODE_I_P, {CLIP_A, 2, DecoderOption::Default}},
-    {TEST_TYPE_H264_DECODE_I_P_NOT_MATCHING_ORDER, {CLIP_A, 2, DecoderOption::CachedDecoding}},
-    {TEST_TYPE_H264_DECODE_CLIP_A, {CLIP_A, ALL_FRAMES, DecoderOption::Default}},
-    {TEST_TYPE_H264_DECODE_I_P_B_13, {CLIP_H264_4K_26_IBP_MAIN, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_H264_DECODE_I, {CLIP_H264_DEC_A, 1, DecoderOption::Default}},
+    {TEST_TYPE_H264_DECODE_I_P, {CLIP_H264_DEC_A, 2, DecoderOption::Default}},
+    {TEST_TYPE_H264_DECODE_I_P_NOT_MATCHING_ORDER, {CLIP_H264_DEC_A, 2, DecoderOption::CachedDecoding}},
+    {TEST_TYPE_H264_DECODE_CLIP_A, {CLIP_H264_DEC_A, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_H264_DECODE_I_P_B_13, {CLIP_H264_DEC_4K_26_IBP_MAIN, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_H264_DECODE_I_P_B_13_NOT_MATCHING_ORDER,
-     {CLIP_H264_4K_26_IBP_MAIN, ALL_FRAMES, DecoderOption::CachedDecoding}},
-    {TEST_TYPE_H264_DECODE_QUERY_RESULT_WITH_STATUS, {CLIP_A, ALL_FRAMES, DecoderOption::UseStatusQueries}},
+     {CLIP_H264_DEC_4K_26_IBP_MAIN, ALL_FRAMES, DecoderOption::CachedDecoding}},
+    {TEST_TYPE_H264_DECODE_QUERY_RESULT_WITH_STATUS, {CLIP_H264_DEC_A, ALL_FRAMES, DecoderOption::UseStatusQueries}},
     {TEST_TYPE_H264_DECODE_INLINE_QUERY_RESULT_WITH_STATUS,
-     {CLIP_A, ALL_FRAMES, (DecoderOption)(DecoderOption::UseStatusQueries | DecoderOption::UseInlineStatusQueries)}},
-    {TEST_TYPE_H264_DECODE_RESOURCES_WITHOUT_PROFILES, {CLIP_A, ALL_FRAMES, DecoderOption::ResourcesWithoutProfiles}},
-    {TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE, {CLIP_C, ALL_FRAMES, DecoderOption::Default}},
-    {TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE_DPB, {CLIP_C, ALL_FRAMES, DecoderOption::RecreateDPBImages}},
+     {CLIP_H264_DEC_A, ALL_FRAMES,
+      (DecoderOption)(DecoderOption::UseStatusQueries | DecoderOption::UseInlineStatusQueries)}},
+    {TEST_TYPE_H264_DECODE_RESOURCES_WITHOUT_PROFILES,
+     {CLIP_H264_DEC_A, ALL_FRAMES, DecoderOption::ResourcesWithoutProfiles}},
+    {TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE, {CLIP_H264_DEC_C, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE_DPB, {CLIP_H264_DEC_C, ALL_FRAMES, DecoderOption::RecreateDPBImages}},
+    {TEST_TYPE_H264_DECODE_INLINE_SESSION_PARAMS, {CLIP_H264_DEC_A, 1, DecoderOption::UseInlineSessionParams}},
+    {TEST_TYPE_H264_DECODE_RELAXED_SESSION_PARAMS, {CLIP_H264_DEC_A, 1, DecoderOption::ResetCodecNoSessionParams}},
 
-    {TEST_TYPE_H265_DECODE_I, {CLIP_D, 1, DecoderOption::Default}},
-    {TEST_TYPE_H265_DECODE_I_P, {CLIP_D, 2, DecoderOption::Default}},
-    {TEST_TYPE_H265_DECODE_I_P_NOT_MATCHING_ORDER, {CLIP_D, 2, DecoderOption::CachedDecoding}},
-    {TEST_TYPE_H265_DECODE_I_P_B_13, {CLIP_JELLY_HEVC, ALL_FRAMES, DecoderOption::Default}},
-    {TEST_TYPE_H265_DECODE_I_P_B_13_NOT_MATCHING_ORDER, {CLIP_JELLY_HEVC, ALL_FRAMES, DecoderOption::CachedDecoding}},
-    {TEST_TYPE_H265_DECODE_CLIP_D, {CLIP_D, ALL_FRAMES, DecoderOption::Default}},
-    {TEST_TYPE_H265_DECODE_QUERY_RESULT_WITH_STATUS, {CLIP_D, ALL_FRAMES, DecoderOption::UseStatusQueries}},
+    {TEST_TYPE_H265_DECODE_I, {CLIP_H265_DEC_D, 1, DecoderOption::Default}},
+    {TEST_TYPE_H265_DECODE_I_P, {CLIP_H265_DEC_D, 2, DecoderOption::Default}},
+    {TEST_TYPE_H265_DECODE_I_P_NOT_MATCHING_ORDER, {CLIP_H265_DEC_D, 2, DecoderOption::CachedDecoding}},
+    {TEST_TYPE_H265_DECODE_I_P_B_13, {CLIP_H265_DEC_JELLY, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_H265_DECODE_I_P_B_13_NOT_MATCHING_ORDER,
+     {CLIP_H265_DEC_JELLY, ALL_FRAMES, DecoderOption::CachedDecoding}},
+    {TEST_TYPE_H265_DECODE_CLIP_D, {CLIP_H265_DEC_D, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_H265_DECODE_QUERY_RESULT_WITH_STATUS, {CLIP_H265_DEC_D, ALL_FRAMES, DecoderOption::UseStatusQueries}},
     {TEST_TYPE_H265_DECODE_INLINE_QUERY_RESULT_WITH_STATUS,
-     {CLIP_D, ALL_FRAMES, (DecoderOption)(DecoderOption::UseStatusQueries | DecoderOption::UseInlineStatusQueries)}},
-    {TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES, {CLIP_D, ALL_FRAMES, DecoderOption::ResourcesWithoutProfiles}},
-    {TEST_TYPE_H265_DECODE_SLIST_A, {CLIP_ITU_SLIST_A_HEVC, 28, DecoderOption::Default}},
-    {TEST_TYPE_H265_DECODE_SLIST_B, {CLIP_ITU_SLIST_B_HEVC, 28, DecoderOption::Default}},
+     {CLIP_H265_DEC_D, ALL_FRAMES,
+      (DecoderOption)(DecoderOption::UseStatusQueries | DecoderOption::UseInlineStatusQueries)}},
+    {TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES,
+     {CLIP_H265_DEC_D, ALL_FRAMES, DecoderOption::ResourcesWithoutProfiles}},
+    {TEST_TYPE_H265_DECODE_SLIST_A, {CLIP_H265_DEC_ITU_SLIST_A, 28, DecoderOption::Default}},
+    {TEST_TYPE_H265_DECODE_SLIST_B, {CLIP_H265_DEC_ITU_SLIST_B, 28, DecoderOption::Default}},
+    {TEST_TYPE_H265_DECODE_INLINE_SESSION_PARAMS, {CLIP_H265_DEC_D, 1, DecoderOption::UseInlineSessionParams}},
+    {TEST_TYPE_H265_DECODE_RELAXED_SESSION_PARAMS, {CLIP_H265_DEC_D, 1, DecoderOption::ResetCodecNoSessionParams}},
 
-    {TEST_TYPE_AV1_DECODE_I, {CLIP_BASIC_8, 1, DecoderOption::Default}},
-    {TEST_TYPE_AV1_DECODE_I_P, {CLIP_BASIC_8, 2, DecoderOption::Default}},
-    {TEST_TYPE_AV1_DECODE_I_P_NOT_MATCHING_ORDER, {CLIP_BASIC_8, 2, DecoderOption::CachedDecoding}},
-    {TEST_TYPE_AV1_DECODE_BASIC_8, {CLIP_BASIC_8, ALL_FRAMES, DecoderOption::Default}},
-    {TEST_TYPE_AV1_DECODE_BASIC_8_NOT_MATCHING_ORDER, {CLIP_BASIC_8, 24, DecoderOption::CachedDecoding}},
-    {TEST_TYPE_AV1_DECODE_ALLINTRA_8, {CLIP_ALLINTRA_8, ALL_FRAMES, DecoderOption::Default}},
-    {TEST_TYPE_AV1_DECODE_ALLINTRA_NOSETUP_8, {CLIP_ALLINTRA_8, ALL_FRAMES, DecoderOption::IntraOnlyDecoding}},
-    {TEST_TYPE_AV1_DECODE_ALLINTRA_BC_8, {CLIP_ALLINTRA_INTRABC_8, ALL_FRAMES, DecoderOption::Default}},
-    {TEST_TYPE_AV1_DECODE_CDFUPDATE_8, {CLIP_CDFUPDATE_8, ALL_FRAMES, DecoderOption::Default}},
-    {TEST_TYPE_AV1_DECODE_GLOBALMOTION_8, {CLIP_GLOBALMOTION_8, ALL_FRAMES, DecoderOption::Default}},
-    {TEST_TYPE_AV1_DECODE_FILMGRAIN_8, {CLIP_FILMGRAIN_8, ALL_FRAMES, DecoderOption::FilmGrainPresent}},
-    {TEST_TYPE_AV1_DECODE_SVCL1T2_8, {CLIP_SVCL1T2_8, ALL_FRAMES, DecoderOption::Default}},
-    {TEST_TYPE_AV1_DECODE_SUPERRES_8, {CLIP_SUPERRES_8, ALL_FRAMES, DecoderOption::Default}},
-    {TEST_TYPE_AV1_DECODE_SIZEUP_8, {CLIP_SIZEUP_8, ALL_FRAMES, DecoderOption::Default}},
-    {TEST_TYPE_AV1_DECODE_BASIC_10, {CLIP_BASIC_10, ALL_FRAMES, DecoderOption::Default}},
-    {TEST_TYPE_AV1_DECODE_ORDERHINT_10, {CLIP_ORDERHINT_10, ALL_FRAMES, DecoderOption::Default}},
-    {TEST_TYPE_AV1_DECODE_FORWARDKEYFRAME_10, {CLIP_FORWARDKEYFRAME_10, ALL_FRAMES, DecoderOption::Default}},
-    {TEST_TYPE_AV1_DECODE_LOSSLESS_10, {CLIP_LOSSLESS_10, ALL_FRAMES, DecoderOption::Default}},
-    {TEST_TYPE_AV1_DECODE_LOOPFILTER_10, {CLIP_LOOPFILTER_10, ALL_FRAMES, DecoderOption::Default}},
-    {TEST_TYPE_AV1_DECODE_CDEF_10, {CLIP_CDEF_10, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_I, {CLIP_AV1_DEC_BASIC_8, 1, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_I_P, {CLIP_AV1_DEC_BASIC_8, 2, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_I_P_NOT_MATCHING_ORDER, {CLIP_AV1_DEC_BASIC_8, 2, DecoderOption::CachedDecoding}},
+    {TEST_TYPE_AV1_DECODE_BASIC_8, {CLIP_AV1_DEC_BASIC_8, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_BASIC_8_NOT_MATCHING_ORDER, {CLIP_AV1_DEC_BASIC_8, 24, DecoderOption::CachedDecoding}},
+    {TEST_TYPE_AV1_DECODE_ALLINTRA_8, {CLIP_AV1_DEC_ALLINTRA_8, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_ALLINTRA_NOSETUP_8, {CLIP_AV1_DEC_ALLINTRA_8, ALL_FRAMES, DecoderOption::IntraOnlyDecoding}},
+    {TEST_TYPE_AV1_DECODE_ALLINTRA_BC_8, {CLIP_AV1_DEC_ALLINTRA_INTRABC_8, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_CDFUPDATE_8, {CLIP_AV1_DEC_CDFUPDATE_8, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_GLOBALMOTION_8, {CLIP_AV1_DEC_GLOBALMOTION_8, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_FILMGRAIN_8, {CLIP_AV1_DEC_FILMGRAIN_8, ALL_FRAMES, DecoderOption::FilmGrainPresent}},
+    {TEST_TYPE_AV1_DECODE_SVCL1T2_8, {CLIP_AV1_DEC_SVCL1T2_8, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_SUPERRES_8, {CLIP_AV1_DEC_SUPERRES_8, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_SIZEUP_8, {CLIP_AV1_DEC_SIZEUP_8, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_BASIC_10, {CLIP_AV1_DEC_BASIC_10, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_ORDERHINT_10, {CLIP_AV1_DEC_ORDERHINT_10, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_FORWARDKEYFRAME_10, {CLIP_AV1_DEC_FORWARDKEYFRAME_10, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_LOSSLESS_10, {CLIP_AV1_DEC_LOSSLESS_10, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_LOOPFILTER_10, {CLIP_AV1_DEC_LOOPFILTER_10, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_CDEF_10, {CLIP_AV1_DEC_CDEF_10, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_INLINE_SESSION_PARAMS, {CLIP_AV1_DEC_BASIC_8, 1, DecoderOption::UseInlineSessionParams}},
+    {TEST_TYPE_AV1_DECODE_RELAXED_SESSION_PARAMS, {CLIP_AV1_DEC_BASIC_8, 1, DecoderOption::ResetCodecNoSessionParams}},
 
     // TODO: Did not have sufficient implementations to find out why this is failing.
     // {TEST_TYPE_AV1_DECODE_ARGON_SEQCHANGE_AFFINE_8, {CLIP_ARGON_SEQCHANGE_AFFINE_8, 4, DecoderOption::AnnexB}},
 
     // TODO: Frames after the first hit asserts in the parser. First frame decodes correctly.
     // TODO: Filmgrain option not set here, because the first frame doesn't have it enabled.
-    {TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10, {CLIP_ARGON_FILMGRAIN_10, 1, (DecoderOption)(DecoderOption::AnnexB)}},
+    {TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10,
+     {CLIP_AV1_DEC_ARGON_FILMGRAIN_10, 1, (DecoderOption)(DecoderOption::AnnexB)}},
 
     // TODO: Did not have sufficient implementations to find out why this is failing.
     //{TEST_TYPE_AV1_DECODE_ARGON_TEST_787, {CLIP_ARGON_TEST_787, 2, DecoderOption::AnnexB}},
@@ -520,11 +563,11 @@ struct InterleavingDecodeTestParams
     BaseDecodeParam streamB;
 } g_InterleavingTests[] = {
     {TEST_TYPE_H264_DECODE_INTERLEAVED,
-     {CLIP_A, ALL_FRAMES, DecoderOption::CachedDecoding},
-     {CLIP_A, ALL_FRAMES, DecoderOption::CachedDecoding}},
+     {CLIP_H264_DEC_A, ALL_FRAMES, DecoderOption::CachedDecoding},
+     {CLIP_H264_DEC_A, ALL_FRAMES, DecoderOption::CachedDecoding}},
     {TEST_TYPE_H264_H265_DECODE_INTERLEAVED,
-     {CLIP_A, ALL_FRAMES, DecoderOption::CachedDecoding},
-     {CLIP_D, ALL_FRAMES, DecoderOption::CachedDecoding}},
+     {CLIP_H264_DEC_A, ALL_FRAMES, DecoderOption::CachedDecoding},
+     {CLIP_H265_DEC_D, ALL_FRAMES, DecoderOption::CachedDecoding}},
 };
 
 class TestDefinition
@@ -567,6 +610,13 @@ public:
     const char *getClipFilename() const
     {
         return m_info->filename;
+    }
+
+    std::string getClipFilePath() const
+    {
+        std::vector<std::string> resourcePathComponents = {"vulkan", "video", m_info->filename};
+        de::FilePath resourcePath                       = de::FilePath::join(resourcePathComponents);
+        return resourcePath.getPath();
     }
 
     const ClipInfo *getClipInfo() const
@@ -694,6 +744,8 @@ static std::shared_ptr<VideoBaseDecoder> decoderFromTestDefinition(DeviceContext
     params.layeredDpb                        = test.isLayered();
     params.queryDecodeStatus                 = test.hasOption(DecoderOption::UseStatusQueries);
     params.useInlineQueries                  = test.hasOption(DecoderOption::UseInlineStatusQueries);
+    params.useInlineSessionParams            = test.hasOption(DecoderOption::UseInlineSessionParams);
+    params.resetCodecNoSessionParams         = test.hasOption(DecoderOption::ResetCodecNoSessionParams);
     params.resourcesWithoutProfiles          = test.hasOption(DecoderOption::ResourcesWithoutProfiles);
     params.outOfOrderDecoding                = test.hasOption(DecoderOption::CachedDecoding);
     params.alwaysRecreateDPB                 = test.hasOption(DecoderOption::RecreateDPBImages);
@@ -723,7 +775,7 @@ struct DownloadedFrame
     }
 };
 
-DE_INLINE uint16_t roru16(uint16_t x, uint16_t n)
+inline uint16_t roru16(uint16_t x, uint16_t n)
 {
     return n == 0 ? x : (x >> n) | (x << (-n & 15));
 }
@@ -746,7 +798,7 @@ static void copyAllPlanesToBuffers(const DeviceDriver &vkd, const DecodedFrame &
 
             const VkImageMemoryBarrier preCopyBarrier = {
                 VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                DE_NULL,
+                nullptr,
                 0u,
                 VK_ACCESS_TRANSFER_READ_BIT,
                 VK_IMAGE_LAYOUT_GENERAL,
@@ -758,8 +810,7 @@ static void copyAllPlanesToBuffers(const DeviceDriver &vkd, const DecodedFrame &
 
             vkd.cmdPipelineBarrier(cmdbuf, (VkPipelineStageFlags)VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                                    (VkPipelineStageFlags)VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0u, 0u,
-                                   (const VkMemoryBarrier *)DE_NULL, 0u, (const VkBufferMemoryBarrier *)DE_NULL, 1u,
-                                   &preCopyBarrier);
+                                   nullptr, 0u, nullptr, 1u, &preCopyBarrier);
         }
         {
             const VkBufferImageCopy copy = {0u, // bufferOffset
@@ -773,7 +824,7 @@ static void copyAllPlanesToBuffers(const DeviceDriver &vkd, const DecodedFrame &
         }
         {
             const VkBufferMemoryBarrier postCopyBarrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                                           DE_NULL,
+                                                           nullptr,
                                                            VK_ACCESS_TRANSFER_WRITE_BIT,
                                                            VK_ACCESS_HOST_READ_BIT,
                                                            VK_QUEUE_FAMILY_IGNORED,
@@ -783,9 +834,8 @@ static void copyAllPlanesToBuffers(const DeviceDriver &vkd, const DecodedFrame &
                                                            VK_WHOLE_SIZE};
 
             vkd.cmdPipelineBarrier(cmdbuf, (VkPipelineStageFlags)VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                   (VkPipelineStageFlags)VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0u, 0u,
-                                   (const VkMemoryBarrier *)DE_NULL, 1u, &postCopyBarrier, 0u,
-                                   (const VkImageMemoryBarrier *)DE_NULL);
+                                   (VkPipelineStageFlags)VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0u, 0u, nullptr,
+                                   1u, &postCopyBarrier, 0u, nullptr);
         }
     }
 }
@@ -847,13 +897,13 @@ DownloadedFrame getDecodedImage(DeviceContext &devctx, VkImageLayout originalLay
     {
         const VkBufferCreateInfo bufferInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             (VkBufferCreateFlags)0u,
             computePlaneSize(imageExtent, planarDescription, plane),
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
             VK_SHARING_MODE_EXCLUSIVE,
             0u,
-            (const uint32_t *)DE_NULL,
+            nullptr,
         };
         planeBuffers.emplace_back(new BufferWithMemory(vkd, device, devctx.allocator(), bufferInfo,
                                                        MemoryRequirement::HostVisible | MemoryRequirement::Any));
@@ -908,7 +958,7 @@ DownloadedFrame getDecodedImage(DeviceContext &devctx, VkImageLayout originalLay
 
     const VkSubmitInfo transferSubmitInfo{
         VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType                              sType;
-        DE_NULL,                       // const void*                                  pNext;
+        nullptr,                       // const void*                                  pNext;
         1u,                            // uint32_t                                             waitSemaphoreCount;
         &*semaphore,                   // const VkSemaphore*                   pWaitSemaphores;
         &waitDstStageMask,             // const VkPipelineStageFlags*  pWaitDstStageMask;
@@ -1051,7 +1101,7 @@ DownloadedFrame getDecodedImage(DeviceContext &devctx, VkImageLayout originalLay
 
     const VkSubmitInfo transferSubmitInfo2{
         VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType                              sType;
-        DE_NULL,                       // const void*                                  pNext;
+        nullptr,                       // const void*                                  pNext;
         1u,                            // uint32_t                                             waitSemaphoreCount;
         &*semaphore,                   // const VkSemaphore*                   pWaitSemaphores;
         &waitDstStageMask,             // const VkPipelineStageFlags*  pWaitDstStageMask;
@@ -1069,14 +1119,14 @@ DownloadedFrame getDecodedImage(DeviceContext &devctx, VkImageLayout originalLay
 
     const VkSubmitInfo decodeSubmitInfo2{
         VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType                              sType;
-        DE_NULL,                       // const void*                                  pNext;
+        nullptr,                       // const void*                                  pNext;
         1u,                            // uint32_t                                             waitSemaphoreCount;
         &*semaphore,                   // const VkSemaphore*                   pWaitSemaphores;
         &waitDstStageMask,             // const VkPipelineStageFlags*  pWaitDstStageMask;
         1u,                            // uint32_t                                             commandBufferCount;
         &*cmdDecodeBuffer,             // const VkCommandBuffer*               pCommandBuffers;
         0u,                            // uint32_t                                             signalSemaphoreCount;
-        DE_NULL,                       // const VkSemaphore*                   pSignalSemaphores;
+        nullptr,                       // const VkSemaphore*                   pSignalSemaphores;
     };
     VK_CHECK(vkd.queueSubmit(queueDecode, 1u, &decodeSubmitInfo2, *decodeFence));
     VK_CHECK(vkd.waitForFences(device, 1, &*decodeFence, true, ~0ull));
@@ -1150,7 +1200,7 @@ static std::unique_ptr<FrameProcessor> createProcessor(const TestDefinition *td,
                                                        bool forceDisableFilmGrain = false)
 {
     Demuxer::Params demuxParams = {};
-    demuxParams.data            = std::make_unique<BufferedReader>(td->getClipFilename());
+    demuxParams.data            = std::make_unique<BufferedReader>(td->getClipFilePath());
     demuxParams.codecOperation  = td->getCodecOperation(0);
     demuxParams.framing         = td->getClipInfo()->framing;
 
@@ -1543,6 +1593,14 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_video_maintenance1");
         break;
     }
+    case TEST_TYPE_H264_DECODE_INLINE_SESSION_PARAMS:
+    case TEST_TYPE_H264_DECODE_RELAXED_SESSION_PARAMS:
+    {
+        context.requireDeviceFunctionality("VK_KHR_video_decode_h264");
+        context.requireDeviceFunctionality("VK_KHR_video_maintenance2");
+        break;
+    }
+
     case TEST_TYPE_H265_DECODE_I:
     case TEST_TYPE_H265_DECODE_I_P:
     case TEST_TYPE_H265_DECODE_CLIP_D:
@@ -1563,6 +1621,14 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_video_maintenance1");
         break;
     }
+    case TEST_TYPE_H265_DECODE_INLINE_SESSION_PARAMS:
+    case TEST_TYPE_H265_DECODE_RELAXED_SESSION_PARAMS:
+    {
+        context.requireDeviceFunctionality("VK_KHR_video_decode_h265");
+        context.requireDeviceFunctionality("VK_KHR_video_maintenance2");
+        break;
+    }
+
     case TEST_TYPE_AV1_DECODE_I:
     case TEST_TYPE_AV1_DECODE_I_P:
     case TEST_TYPE_AV1_DECODE_I_P_NOT_MATCHING_ORDER:
@@ -1590,6 +1656,14 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_video_decode_av1");
         break;
     }
+    case TEST_TYPE_AV1_DECODE_INLINE_SESSION_PARAMS:
+    case TEST_TYPE_AV1_DECODE_RELAXED_SESSION_PARAMS:
+    {
+        context.requireDeviceFunctionality("VK_KHR_video_decode_av1");
+        context.requireDeviceFunctionality("VK_KHR_video_maintenance2");
+        break;
+    }
+
     default:
         TCU_THROW(InternalError, "Unknown TestType");
     }

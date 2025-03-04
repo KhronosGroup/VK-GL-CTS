@@ -54,7 +54,7 @@ Move<VkDevice> createPostmortemDevice(Context &context)
     // Create a universal queue that supports graphics and compute
     const VkDeviceQueueCreateInfo queueParams = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         0u,                                         // VkDeviceQueueCreateFlags flags;
         context.getUniversalQueueFamilyIndex(),     // uint32_t queueFamilyIndex;
         1u,                                         // uint32_t queueCount;
@@ -63,15 +63,15 @@ Move<VkDevice> createPostmortemDevice(Context &context)
 
     const VkDeviceCreateInfo deviceParams = {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkDeviceCreateFlags flags;
         1u,                                   // uint32_t queueCreateInfoCount;
         &queueParams,                         // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u,                                   // uint32_t enabledLayerCount;
-        DE_NULL,                              // const char* const* ppEnabledLayerNames;
+        nullptr,                              // const char* const* ppEnabledLayerNames;
         0u,                                   // uint32_t enabledExtensionCount;
-        DE_NULL,                              // const char* const* ppEnabledExtensionNames;
-        DE_NULL                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
+        nullptr,                              // const char* const* ppEnabledExtensionNames;
+        nullptr                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
     return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),

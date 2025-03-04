@@ -72,7 +72,7 @@ static bool parseCommandLine(CommandLine &cmdLine, int argc, const char *const *
 
             for (; ndx < DE_LENGTH_OF_ARRAY(runTypes); ndx++)
             {
-                if (deStringEqual(runTypes[ndx].name, value))
+                if (strcmp(runTypes[ndx].name, value) == 0)
                 {
                     cmdLine.runType = runTypes[ndx].runType;
                     break;
@@ -96,7 +96,7 @@ static bool parseCommandLine(CommandLine &cmdLine, int argc, const char *const *
         {
             cmdLine.flags = glcts::TestRunner::PRINT_SUMMARY;
         }
-        else if (deStringEqual(arg, "--verbose"))
+        else if (strcmp(arg, "--verbose") == 0)
             cmdLine.flags = glcts::TestRunner::VERBOSE_ALL;
         else
             return false;

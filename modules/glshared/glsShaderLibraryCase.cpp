@@ -275,7 +275,7 @@ static string genFragmentShader(const ShaderCaseSpecification &spec)
     shader << "{\n";
 
     shader << "    ";
-    genCompareOp(shader, customColorOut ? "dEQP_FragColor" : "gl_FragColor", spec.values, "v_", DE_NULL);
+    genCompareOp(shader, customColorOut ? "dEQP_FragColor" : "gl_FragColor", spec.values, "v_", nullptr);
 
     shader << "}\n";
     return shader.str();
@@ -372,7 +372,7 @@ static string specializeFragmentShader(const ShaderCaseSpecification &spec, cons
     DE_ASSERT(spec.caseType == CASETYPE_FRAGMENT_ONLY);
 
     genCompareFunctions(decl, spec.values, false);
-    genCompareOp(output, fragColor, spec.values, "", DE_NULL);
+    genCompareOp(output, fragColor, spec.values, "", nullptr);
 
     if (customColorOut)
         decl << "layout(location = 0) out mediump vec4 dEQP_FragColor;\n";
@@ -487,7 +487,7 @@ static map<string, string> generateFragmentSpecialization(const ProgramSpecializ
     map<string, string> params;
 
     genCompareFunctions(decl, specParams.caseSpec.values, false);
-    genCompareOp(output, fragColor, specParams.caseSpec.values, "", DE_NULL);
+    genCompareOp(output, fragColor, specParams.caseSpec.values, "", nullptr);
 
     if (customColorOut)
         decl << "layout(location = 0) out mediump vec4 dEQP_FragColor;\n";
@@ -1027,7 +1027,7 @@ bool ShaderLibraryCase::execute(void)
 
     bool allCompilesOk     = true;
     bool allLinksOk        = true;
-    const char *failReason = DE_NULL;
+    const char *failReason = nullptr;
 
     vector<ProgramSources> specializedSources(m_spec.programs.size());
 
@@ -1195,7 +1195,7 @@ bool ShaderLibraryCase::execute(void)
         return false;
     }
 
-    if (failReason != DE_NULL)
+    if (failReason != nullptr)
     {
         // \todo [2010-06-07 petri] These should be handled in the test case?
         log << TestLog::Message << "ERROR: " << failReason << TestLog::EndMessage;
@@ -1403,7 +1403,7 @@ bool ShaderLibraryCase::execute(void)
             draw(m_renderCtx, vertexProgramID, (int)vertexArrays.size(), &vertexArrays[0],
                  (tessellationPresent) ? (pr::Patches(DE_LENGTH_OF_ARRAY(s_indices), &s_indices[0])) :
                                          (pr::Triangles(DE_LENGTH_OF_ARRAY(s_indices), &s_indices[0])),
-                 (m_spec.expectResult == EXPECT_VALIDATION_FAIL) ? (&beforeDrawValidator) : (DE_NULL));
+                 (m_spec.expectResult == EXPECT_VALIDATION_FAIL) ? (&beforeDrawValidator) : (nullptr));
 
             postDrawError = gl.getError();
 

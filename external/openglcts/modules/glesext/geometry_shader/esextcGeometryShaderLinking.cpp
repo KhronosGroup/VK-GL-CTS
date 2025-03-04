@@ -136,7 +136,7 @@ void GeometryShaderIncompleteProgramObjectsTest::initShaderObjects()
         glw::GLuint so_id         = (n_shader_type == 0) ? m_fs_id : m_gs_id;
 
         gl.shaderSource(so_id, 1,           /* count */
-                        &so_code, DE_NULL); /* length */
+                        &so_code, nullptr); /* length */
 
         GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed");
 
@@ -416,7 +416,7 @@ void GeometryShaderIncompleteGSTest::initShaderObjects(const _run &current_run, 
         glw::GLuint so_id = (n_shader_type == 0) ? m_fs_id : (n_shader_type == 1) ? m_gs_id : m_vs_id;
 
         gl.shaderSource(so_id, 1,           /* count */
-                        &so_code, DE_NULL); /* length */
+                        &so_code, nullptr); /* length */
 
         GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed");
 
@@ -779,7 +779,7 @@ void GeometryShaderInvalidArrayedInputVariablesTest::initShaderObjects(glw::GLen
         glw::GLuint so_id = (n_shader_type == 0) ? m_fs_id : (n_shader_type == 1) ? m_gs_id : m_vs_id;
 
         gl.shaderSource(so_id, 1,           /* count */
-                        &so_code, DE_NULL); /* length */
+                        &so_code, nullptr); /* length */
 
         GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed");
 

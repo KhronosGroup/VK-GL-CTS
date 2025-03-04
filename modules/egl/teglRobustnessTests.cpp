@@ -318,7 +318,7 @@ RobustnessTestCase::RobustnessTestCase(EglTestContext &eglTestCtx, const char *n
     , m_eglDisplay(EGL_NO_DISPLAY)
     , m_eglConfig(0)
     , m_eglSurface(EGL_NO_SURFACE)
-    , m_window(DE_NULL)
+    , m_window(nullptr)
 {
 }
 
@@ -329,7 +329,7 @@ RobustnessTestCase::RobustnessTestCase(EglTestContext &eglTestCtx, const char *n
     , m_eglDisplay(EGL_NO_DISPLAY)
     , m_eglConfig(0)
     , m_eglSurface(EGL_NO_SURFACE)
-    , m_window(DE_NULL)
+    , m_window(nullptr)
 {
 }
 
@@ -362,7 +362,7 @@ void RobustnessTestCase::deinit(void)
     }
 
     delete m_window;
-    m_window = DE_NULL;
+    m_window = nullptr;
 }
 
 EGLConfig RobustnessTestCase::getEGLConfig(void)
@@ -381,9 +381,9 @@ void RobustnessTestCase::initEGLSurface(void)
 
     const eglu::WindowParams windowParams =
         eglu::WindowParams(256, 256, eglu::parseWindowVisibility(m_testCtx.getCommandLine()));
-    m_window = factory.createWindow(&m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, DE_NULL, windowParams);
+    m_window = factory.createWindow(&m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, nullptr, windowParams);
     m_eglSurface =
-        eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_eglDisplay, m_eglConfig, DE_NULL);
+        eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_eglDisplay, m_eglConfig, nullptr);
 }
 
 glu::ApiType paramsToApiType(const RobustnessTestCase::Params &params)
@@ -733,7 +733,7 @@ void FixedFunctionOOB::setup(void)
     GLU_CHECK_GLW_CALL(m_gl, bindBuffer(GL_ARRAY_BUFFER, m_coordinatesBuffer));
     GLU_CHECK_GLW_CALL(m_gl, bufferData(GL_ARRAY_BUFFER, (glw::GLsizeiptr)sizeof(coords), coords, GL_STATIC_DRAW));
     GLU_CHECK_GLW_CALL(m_gl, enableVertexAttribArray(m_coordLocation));
-    GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(m_coordLocation, 2, GL_FLOAT, GL_FALSE, 0, DE_NULL));
+    GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(m_coordLocation, 2, GL_FLOAT, GL_FALSE, 0, nullptr));
 }
 
 void FixedFunctionOOB::draw(void)
@@ -1062,7 +1062,7 @@ void ShadersOOB::setup(void)
         GLU_CHECK_GLW_CALL(m_gl, bindBuffer(GL_ARRAY_BUFFER, m_coordinatesBuffer));
         GLU_CHECK_GLW_CALL(m_gl, bufferData(GL_ARRAY_BUFFER, (glw::GLsizeiptr)sizeof(coords), coords, GL_STATIC_DRAW));
         GLU_CHECK_GLW_CALL(m_gl, enableVertexAttribArray(m_coordLocation));
-        GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(m_coordLocation, 2, GL_FLOAT, GL_FALSE, 0, DE_NULL));
+        GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(m_coordLocation, 2, GL_FLOAT, GL_FALSE, 0, nullptr));
     }
 
     // Create unused data for filling buffer objects
@@ -1327,7 +1327,7 @@ de::SharedPtr<ContextReset> contextResetFactory(const RobustnessTestCase::Params
     else
     {
         DE_FATAL("Unknown context reset type");
-        return de::SharedPtr<ContextReset>(DE_NULL);
+        return de::SharedPtr<ContextReset>(nullptr);
     }
 }
 

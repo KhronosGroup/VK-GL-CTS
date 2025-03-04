@@ -102,7 +102,7 @@ inline VkImageCreateInfo makeImageCreateInfo(const Texture &texture, const VkFor
 
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         createFlags,                         // VkImageCreateFlags flags;
         mapImageType(texture.type()),        // VkImageType imageType;
         format,                              // VkFormat format;
@@ -114,7 +114,7 @@ inline VkImageCreateInfo makeImageCreateInfo(const Texture &texture, const VkFor
         VK_IMAGE_USAGE_STORAGE_BIT,          // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
     return imageParams;
@@ -359,13 +359,12 @@ tcu::TestStatus SizeTestInstance::iterate(void)
 
     vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet, 0u,
-                             DE_NULL);
+                             nullptr);
 
     commandBeforeCompute(*cmdBuffer);
     vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &shaderWriteBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &shaderWriteBarrier, 0, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
 
@@ -471,8 +470,7 @@ void ImageSizeTestInstance::commandBeforeCompute(const VkCommandBuffer cmdBuffer
                                m_image->get(), subresourceRange);
 
     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                          (const VkBufferMemoryBarrier *)DE_NULL, 1, &barrierSetImageLayout);
+                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &barrierSetImageLayout);
 }
 
 class BufferSizeTestInstance : public SizeTestInstance

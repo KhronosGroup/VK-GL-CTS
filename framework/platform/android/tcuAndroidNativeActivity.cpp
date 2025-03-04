@@ -115,23 +115,26 @@ namespace Android
 
 NativeActivity::NativeActivity(ANativeActivity *activity) : m_activity(activity)
 {
-    activity->instance                              = (void *)this;
-    activity->callbacks->onStart                    = onStartCallback;
-    activity->callbacks->onResume                   = onResumeCallback;
-    activity->callbacks->onSaveInstanceState        = onSaveInstanceStateCallback;
-    activity->callbacks->onPause                    = onPauseCallback;
-    activity->callbacks->onStop                     = onStopCallback;
-    activity->callbacks->onDestroy                  = onDestroyCallback;
-    activity->callbacks->onWindowFocusChanged       = onWindowFocusChangedCallback;
-    activity->callbacks->onNativeWindowCreated      = onNativeWindowCreatedCallback;
-    activity->callbacks->onNativeWindowResized      = onNativeWindowResizedCallback;
-    activity->callbacks->onNativeWindowRedrawNeeded = onNativeWindowRedrawNeededCallback;
-    activity->callbacks->onNativeWindowDestroyed    = onNativeWindowDestroyedCallback;
-    activity->callbacks->onInputQueueCreated        = onInputQueueCreatedCallback;
-    activity->callbacks->onInputQueueDestroyed      = onInputQueueDestroyedCallback;
-    activity->callbacks->onContentRectChanged       = onContentRectChangedCallback;
-    activity->callbacks->onConfigurationChanged     = onConfigurationChangedCallback;
-    activity->callbacks->onLowMemory                = onLowMemoryCallback;
+    if (activity)
+    {
+        activity->instance                              = (void *)this;
+        activity->callbacks->onStart                    = onStartCallback;
+        activity->callbacks->onResume                   = onResumeCallback;
+        activity->callbacks->onSaveInstanceState        = onSaveInstanceStateCallback;
+        activity->callbacks->onPause                    = onPauseCallback;
+        activity->callbacks->onStop                     = onStopCallback;
+        activity->callbacks->onDestroy                  = onDestroyCallback;
+        activity->callbacks->onWindowFocusChanged       = onWindowFocusChangedCallback;
+        activity->callbacks->onNativeWindowCreated      = onNativeWindowCreatedCallback;
+        activity->callbacks->onNativeWindowResized      = onNativeWindowResizedCallback;
+        activity->callbacks->onNativeWindowRedrawNeeded = onNativeWindowRedrawNeededCallback;
+        activity->callbacks->onNativeWindowDestroyed    = onNativeWindowDestroyedCallback;
+        activity->callbacks->onInputQueueCreated        = onInputQueueCreatedCallback;
+        activity->callbacks->onInputQueueDestroyed      = onInputQueueDestroyedCallback;
+        activity->callbacks->onContentRectChanged       = onContentRectChangedCallback;
+        activity->callbacks->onConfigurationChanged     = onConfigurationChangedCallback;
+        activity->callbacks->onLowMemory                = onLowMemoryCallback;
+    }
 }
 
 NativeActivity::~NativeActivity(void)
@@ -149,7 +152,7 @@ void NativeActivity::onResume(void)
 void *NativeActivity::onSaveInstanceState(size_t *outSize)
 {
     *outSize = 0;
-    return DE_NULL;
+    return nullptr;
 }
 
 void NativeActivity::onPause(void)

@@ -121,18 +121,18 @@ private:
 // Custom instances.
 
 CustomInstance createCustomInstanceWithExtensions(Context &context, const std::vector<std::string> &extension,
-                                                  const vk::VkAllocationCallbacks *pAllocator = DE_NULL,
+                                                  const vk::VkAllocationCallbacks *pAllocator = nullptr,
                                                   bool allowLayers                            = true);
 
 CustomInstance createCustomInstanceWithExtension(Context &context, const std::string &extension,
-                                                 const vk::VkAllocationCallbacks *pAllocator = DE_NULL,
+                                                 const vk::VkAllocationCallbacks *pAllocator = nullptr,
                                                  bool allowLayers                            = true);
 
-CustomInstance createCustomInstanceFromContext(Context &context, const vk::VkAllocationCallbacks *pAllocator = DE_NULL,
+CustomInstance createCustomInstanceFromContext(Context &context, const vk::VkAllocationCallbacks *pAllocator = nullptr,
                                                bool allowLayers = true);
 
 CustomInstance createCustomInstanceFromInfo(Context &context, const vk::VkInstanceCreateInfo *instanceCreateInfo,
-                                            const vk::VkAllocationCallbacks *pAllocator = DE_NULL,
+                                            const vk::VkAllocationCallbacks *pAllocator = nullptr,
                                             bool allowLayers                            = true);
 
 // Unchecked instance: creation allowed to fail.
@@ -147,7 +147,7 @@ vk::Move<vk::VkDevice> createCustomDevice(bool validationEnabled, const vk::Plat
                                           vk::VkInstance instance, const vk::InstanceInterface &vki,
                                           vk::VkPhysicalDevice physicalDevice,
                                           const vk::VkDeviceCreateInfo *pCreateInfo,
-                                          const vk::VkAllocationCallbacks *pAllocator = DE_NULL);
+                                          const vk::VkAllocationCallbacks *pAllocator = nullptr);
 
 // Unchecked device: creation allowed to fail.
 
@@ -181,6 +181,7 @@ public:
         VIDEO_DEVICE_FLAG_REQUIRE_TIMELINE_OR_NOT_SUPPORTED    = 0x00000008,
         VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_ENCODE_SUPPORT = 0x00000010,
         VIDEO_DEVICE_FLAG_REQUIRE_MAINTENANCE_1                = 0x00000020,
+        VIDEO_DEVICE_FLAG_REQUIRE_QUANTIZATION_MAP             = 0x00000040,
     };
 
     typedef uint32_t VideoDeviceFlags;

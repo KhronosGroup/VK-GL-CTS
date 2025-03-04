@@ -169,7 +169,7 @@ void GeometryShaderConstantVariables::initTest(void)
     /* Create and set up a buffer object we will use for the test */
     gl.genBuffers(1, &m_bo_id);
     gl.bindBuffer(GL_ARRAY_BUFFER, m_bo_id);
-    gl.bufferData(GL_ARRAY_BUFFER, sizeof(glw::GLint) * n_varyings, DE_NULL, GL_STATIC_COPY);
+    gl.bufferData(GL_ARRAY_BUFFER, sizeof(glw::GLint) * n_varyings, nullptr, GL_STATIC_COPY);
     gl.bindBuffer(GL_ARRAY_BUFFER, 0);
 
     GLU_EXPECT_NO_ERROR(gl.getError(), "Could not set a buffer object up");

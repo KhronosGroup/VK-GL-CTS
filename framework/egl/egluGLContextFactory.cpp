@@ -130,7 +130,7 @@ class RenderContext : public GLRenderContext
 public:
     RenderContext(const NativeDisplayFactory *displayFactory, const NativeWindowFactory *windowFactory,
                   const NativePixmapFactory *pixmapFactory, const glu::RenderConfig &config,
-                  const glu::RenderContext *sharedContext = DE_NULL);
+                  const glu::RenderContext *sharedContext = nullptr);
     virtual ~RenderContext(void);
 
     virtual glu::ContextType getType(void) const
@@ -197,16 +197,16 @@ RenderContext::RenderContext(const NativeDisplayFactory *displayFactory, const N
                              const glu::RenderContext *sharedContext)
     : m_renderConfig(config)
     , m_nativeWindowFactory(windowFactory)
-    , m_display(DE_NULL)
-    , m_window(DE_NULL)
-    , m_pixmap(DE_NULL)
+    , m_display(nullptr)
+    , m_window(nullptr)
+    , m_pixmap(nullptr)
 
     , m_eglDisplay(EGL_NO_DISPLAY)
     , m_eglSurface(EGL_NO_SURFACE)
     , m_eglContext(EGL_NO_CONTEXT)
     , m_eglSharedContext(EGL_NO_CONTEXT)
 
-    , m_dynamicGLLibrary(DE_NULL)
+    , m_dynamicGLLibrary(nullptr)
 {
     DE_ASSERT(displayFactory);
 
@@ -264,7 +264,7 @@ WindowSurfacePair createWindow(NativeDisplay *nativeDisplay, const NativeWindowF
     const int width  = (config.width == glu::RenderConfig::DONT_CARE ? WindowParams::SIZE_DONT_CARE : config.width);
     const int height = (config.height == glu::RenderConfig::DONT_CARE ? WindowParams::SIZE_DONT_CARE : config.height);
     const WindowParams::Visibility visibility = getNativeWindowVisibility(config.windowVisibility);
-    NativeWindow *nativeWindow                = DE_NULL;
+    NativeWindow *nativeWindow                = nullptr;
     EGLSurface surface                        = EGL_NO_SURFACE;
     const EGLAttrib attribList[]              = {EGL_NONE};
 
@@ -289,7 +289,7 @@ PixmapSurfacePair createPixmap(NativeDisplay *nativeDisplay, const NativePixmapF
 {
     const int width  = (config.width == glu::RenderConfig::DONT_CARE ? DEFAULT_OFFSCREEN_WIDTH : config.width);
     const int height = (config.height == glu::RenderConfig::DONT_CARE ? DEFAULT_OFFSCREEN_HEIGHT : config.height);
-    NativePixmap *nativePixmap   = DE_NULL;
+    NativePixmap *nativePixmap   = nullptr;
     EGLSurface surface           = EGL_NO_SURFACE;
     const EGLAttrib attribList[] = {EGL_NONE};
 
@@ -341,7 +341,7 @@ void RenderContext::create(const NativeDisplayFactory *displayFactory, const Nat
 
     DE_ASSERT(displayFactory);
 
-    if (DE_NULL == sharedContext)
+    if (nullptr == sharedContext)
         m_display = de::SharedPtr<NativeDisplay>(displayFactory->createDisplay());
     else
     {
@@ -373,7 +373,7 @@ void RenderContext::create(const NativeDisplayFactory *displayFactory, const Nat
         else if ((supportedTypes & EGL_PIXMAP_BIT) != 0)
             surfaceType = glu::RenderConfig::SURFACETYPE_OFFSCREEN_NATIVE;
         else
-            throw tcu::NotSupportedError("Selected EGL config doesn't support any surface types", DE_NULL, __FILE__,
+            throw tcu::NotSupportedError("Selected EGL config doesn't support any surface types", nullptr, __FILE__,
                                          __LINE__);
     }
 
@@ -389,7 +389,7 @@ void RenderContext::create(const NativeDisplayFactory *displayFactory, const Nat
             m_eglSurface = windowSurface.second;
         }
         else
-            throw tcu::NotSupportedError("EGL platform doesn't support windows", DE_NULL, __FILE__, __LINE__);
+            throw tcu::NotSupportedError("EGL platform doesn't support windows", nullptr, __FILE__, __LINE__);
         break;
     }
 
@@ -403,7 +403,7 @@ void RenderContext::create(const NativeDisplayFactory *displayFactory, const Nat
             m_eglSurface = pixmapSurface.second;
         }
         else
-            throw tcu::NotSupportedError("EGL platform doesn't support pixmaps", DE_NULL, __FILE__, __LINE__);
+            throw tcu::NotSupportedError("EGL platform doesn't support pixmaps", nullptr, __FILE__, __LINE__);
         break;
     }
 
@@ -454,7 +454,7 @@ void RenderContext::create(const NativeDisplayFactory *displayFactory, const Nat
 #endif
     else
     {
-        const char *libraryPath = DE_NULL;
+        const char *libraryPath = nullptr;
 
         if (glu::isContextTypeES(config.type))
         {
@@ -528,9 +528,9 @@ void RenderContext::destroy(void)
     delete m_pixmap;
     delete m_dynamicGLLibrary;
 
-    m_window           = DE_NULL;
-    m_pixmap           = DE_NULL;
-    m_dynamicGLLibrary = DE_NULL;
+    m_window           = nullptr;
+    m_pixmap           = nullptr;
+    m_dynamicGLLibrary = nullptr;
 }
 
 void RenderContext::postIterate(void)
@@ -539,6 +539,8 @@ void RenderContext::postIterate(void)
 
     if (m_window)
     {
+        EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
+
         EGLBoolean swapOk    = egl.swapBuffers(m_eglDisplay, m_eglSurface);
         EGLint error         = egl.getError();
         const bool badWindow = error == EGL_BAD_SURFACE || error == EGL_BAD_NATIVE_WINDOW;
@@ -559,7 +561,7 @@ void RenderContext::postIterate(void)
             m_eglSurface = EGL_NO_SURFACE;
 
             delete m_window;
-            m_window = DE_NULL;
+            m_window = nullptr;
 
             try
             {
@@ -583,7 +585,7 @@ void RenderContext::postIterate(void)
                 }
 
                 delete m_window;
-                m_window = DE_NULL;
+                m_window = nullptr;
 
                 throw tcu::ResourceError(string("Failed to re-create window: ") + e.what());
             }
@@ -641,7 +643,7 @@ glu::RenderContext *GLContextFactory::createContext(const glu::RenderConfig &con
     }
     catch (const tcu::NotSupportedError &)
     {
-        windowFactory = DE_NULL;
+        windowFactory = nullptr;
     }
 
     try
@@ -650,7 +652,7 @@ glu::RenderContext *GLContextFactory::createContext(const glu::RenderConfig &con
     }
     catch (const tcu::NotSupportedError &)
     {
-        pixmapFactory = DE_NULL;
+        pixmapFactory = nullptr;
     }
 
     return new RenderContext(&displayFactory, windowFactory, pixmapFactory, config, sharedContext);

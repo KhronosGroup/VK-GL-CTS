@@ -128,7 +128,7 @@ void BufferAllocator::deallocate(Context &context)
     const DeviceInterface &vk  = context.getDeviceInterface();
     const vk::VkDevice &device = context.getDevice();
 
-    vk.destroyBuffer(device, m_buffer.disown(), DE_NULL);
+    vk.destroyBuffer(device, m_buffer.disown(), nullptr);
     m_bufferAlloc.clear();
 }
 
@@ -210,7 +210,7 @@ void ImageAllocator::deallocate(Context &context)
     const DeviceInterface &vk = context.getDeviceInterface();
     const VkDevice &device    = context.getDevice();
 
-    vk.destroyImage(device, m_image.disown(), DE_NULL);
+    vk.destroyImage(device, m_image.disown(), nullptr);
     m_imageAlloc.clear();
 }
 
@@ -687,7 +687,7 @@ tcu::TestStatus AlignmentMatchingInstance::iterate(void)
 
     VkImageCreateInfo imageCreateInfo{
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         0u,                                  // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         VK_FORMAT_R8G8B8A8_UNORM,            // VkFormat format;
@@ -699,19 +699,19 @@ tcu::TestStatus AlignmentMatchingInstance::iterate(void)
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT,     // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
 
     VkBufferCreateInfo bufferCreateInfo{
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType
-        DE_NULL,                              // const void*            pNext
+        nullptr,                              // const void*            pNext
         0u,                                   // VkBufferCreateFlags    flags
         baseSize,                             // VkDeviceSize            size
         VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags    usage
         VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode        sharingMode
         0u,                                   // uint32_t                queueFamilyIndexCount
-        DE_NULL                               // const uint32_t*        pQueueFamilyIndices
+        nullptr                               // const uint32_t*        pQueueFamilyIndices
     };
 
     Move<VkImage> baseImage   = createImage(vk, device, &imageCreateInfo);
@@ -756,19 +756,19 @@ tcu::TestStatus AlignmentMatchingInstance::iterate(void)
 #ifndef CTS_USES_VULKANSC
         VkBufferMemoryRequirementsInfo2 bufferMemoryRequirementsInfo{
             VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2, // VkStructureType    sType
-            DE_NULL,                                             // const void*        pNext
+            nullptr,                                             // const void*        pNext
             *baseBuffer                                          // VkBuffer            buffer
         };
         VkImageMemoryRequirementsInfo2 imageMemoryRequirementsInfo{
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2, // VkStructureType    sType
-            DE_NULL,                                            // const void*        pNext
+            nullptr,                                            // const void*        pNext
             *baseImage                                          // VkImage            image
         };
         std::vector<VkMemoryRequirements2> requirements2(
             2,
             {
                 VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2, // VkStructureType        sType
-                DE_NULL,                                 // void*                pNext
+                nullptr,                                 // void*                pNext
                 {0, 0, 0}                                // VkMemoryRequirements    memoryRequirements
             });
 
@@ -784,7 +784,7 @@ tcu::TestStatus AlignmentMatchingInstance::iterate(void)
         // VkBufferCreateInfo values.
         vk.getBufferMemoryRequirements2(device, &bufferMemoryRequirementsInfo, &requirements2[0]);
         const VkDeviceBufferMemoryRequirementsKHR bufferMemInfo = {
-            VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS_KHR, DE_NULL, &bufferCreateInfo};
+            VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS_KHR, nullptr, &bufferCreateInfo};
         vk.getDeviceBufferMemoryRequirements(device, &bufferMemInfo, &requirements2[1]);
 
         if (!areRequirementsTheSame(requirements2[0], requirements2[1]))
@@ -800,7 +800,7 @@ tcu::TestStatus AlignmentMatchingInstance::iterate(void)
         // vkGetImageMemoryRequirements2 would if called with a VkImage created with the supplied VkImageCreateInfo
         vk.getImageMemoryRequirements2(device, &imageMemoryRequirementsInfo, &requirements2[0]);
         const VkDeviceImageMemoryRequirementsKHR imageMemInfo = {VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR,
-                                                                 DE_NULL, &imageCreateInfo,
+                                                                 nullptr, &imageCreateInfo,
                                                                  vk::VkImageAspectFlagBits(0)};
         vk.getDeviceImageMemoryRequirements(device, &imageMemInfo, &requirements2[1]);
 
