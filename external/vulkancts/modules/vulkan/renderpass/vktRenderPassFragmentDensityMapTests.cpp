@@ -1424,6 +1424,26 @@ void FragmentDensityMapTest::checkSupport(Context &context) const
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
+tcu::Vec2 getFormatDelta(VkFormat densityMapFormat)
+{
+    // A generic solution could use tcu::getTextureChannelClass, tcu::getTextureFormatBitDepth, etc to calculate a
+    // precision depending on the format and the format type. See vktPipelineSamplerBorderSwizzleTests.cpp for an
+    // example.
+    switch (densityMapFormat)
+    {
+    case VK_FORMAT_R8G8_UNORM:
+    {
+        const float prec = 1.0f / 255.0f;
+        return tcu::Vec2(prec, prec);
+    }
+    default:
+        break;
+    }
+
+    DE_ASSERT(false);
+    return tcu::Vec2(0.0f);
+}
+
 FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context, const TestParams &testParams)
     : vkt::TestInstance(context)
     , m_testParams(testParams)
@@ -1431,9 +1451,15 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
     m_renderSize = tcu::UVec2(
         deFloorFloatToInt32(m_testParams.renderMultiplier * static_cast<float>(m_testParams.densityMapSize.x())),
         deFloorFloatToInt32(m_testParams.renderMultiplier * static_cast<float>(m_testParams.densityMapSize.y())));
-    m_densityValue = tcu::Vec2(1.0f / static_cast<float>(m_testParams.fragmentArea.x()),
-                               1.0f / static_cast<float>(m_testParams.fragmentArea.y()));
-    m_viewMask     = (m_testParams.viewCount > 1) ? ((1u << m_testParams.viewCount) - 1u) : 0u;
+    const auto densityValueDelta = getFormatDelta(m_testParams.densityMapFormat);
+    const auto areaFloat         = m_testParams.fragmentArea.asFloat();
+    // This delta adjustment makes sure that the divison by m_densityValue to obtain the fragment area yields a result
+    // that is slightly above the desired value no matter what rounding is applied to the density value when storing it
+    // in the fragment density map, and this should result in the desired fragment area being a valid result according
+    // to the spec, which says the chosen density should have an area that is not larger than the desired one.
+    m_densityValue =
+        tcu::Vec2(1.0f / areaFloat.x() - densityValueDelta.x(), 1.0f / areaFloat.y() - densityValueDelta.y());
+    m_viewMask = (m_testParams.viewCount > 1) ? ((1u << m_testParams.viewCount) - 1u) : 0u;
 
     const DeviceInterface &vk               = m_context.getDeviceInterface();
     const VkDevice vkDevice                 = getDevice(m_context);
