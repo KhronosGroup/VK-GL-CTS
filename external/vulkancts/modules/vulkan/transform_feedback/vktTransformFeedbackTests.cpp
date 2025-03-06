@@ -25,8 +25,7 @@
 #include "vktTransformFeedbackSimpleTests.hpp"
 #include "vktTransformFeedbackFuzzLayoutTests.hpp"
 #include "vktPrimitivesGeneratedQueryTests.hpp"
-#include "vktTestGroupUtil.hpp"
-#include "vktTestCase.hpp"
+#include "vktTransformFeedbackPrimitiveRestartTests.hpp"
 #include "vkPipelineConstructionUtil.hpp"
 
 namespace vkt
@@ -51,6 +50,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
 
     transformFeedbackGroup->addChild(createTransformFeedbackFuzzLayoutTests(testCtx));
     transformFeedbackGroup->addChild(createPrimitivesGeneratedQueryTests(testCtx));
+    transformFeedbackGroup->addChild(createTransformFeedbackPrimitiveRestartTests(testCtx));
 
     return transformFeedbackGroup.release();
 }
