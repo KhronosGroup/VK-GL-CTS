@@ -2832,8 +2832,8 @@ public:
                     VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, // srcAccessMask
                     VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,          // dstAccessMask
 
-                    m_renderInfo.getInputAttachmentLayout(inputAttachmentNdx), // oldLayout
-                    m_renderInfo.getInputAttachmentLayout(inputAttachmentNdx), // newLayout;
+                    inputAttachmenLayout, // oldLayout
+                    inputAttachmenLayout, // newLayout;
 
                     VK_QUEUE_FAMILY_IGNORED, // srcQueueFamilyIndex;
                     VK_QUEUE_FAMILY_IGNORED, // destQueueFamilyIndex;
@@ -3403,14 +3403,11 @@ void pushDynamicRenderingCommands(const DeviceInterface &vk, VkCommandBuffer com
             {
                 if (renderingLayout == VK_IMAGE_LAYOUT_UNDEFINED)
                 {
-                    // find first subpass in which ds attachment is used
+                    // check all attachments and memorize first layout in which attachment should be
                     for (const AttachmentReference &attachmentReference : subpass.getColorAttachments())
                     {
                         if (attachmentIndex == attachmentReference.getAttachment())
-                        {
                             renderingLayout = attachmentReference.getImageLayout();
-                            break;
-                        }
                     }
                 }
                 else if (isAttachmentUsedAsSubpassInput(attachmentIndex, subpass))
