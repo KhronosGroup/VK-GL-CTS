@@ -309,6 +309,13 @@ vk::Move<vk::VkDevice> createTestDevice(const Context &context, const vk::Platfo
             deviceExtensions.push_back("VK_EXT_queue_family_foreign");
     }
 
+    if ((externalMemoryTypes & (vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT |
+                                vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLTEXTURE_BIT_EXT)) != 0u)
+    {
+        deviceExtensions.push_back("VK_EXT_external_memory_metal");
+        useExternalMemory = true;
+    }
+
     if (useExternalSemaphore)
     {
         if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_external_semaphore"))
@@ -5579,6 +5586,8 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests(tcu::TestContext &testCtx)
         createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID).release());
     group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT).release());
     group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA).release());
+    group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT).release());
+    group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLTEXTURE_BIT_EXT).release());
 
     return group;
 }
