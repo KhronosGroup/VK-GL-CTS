@@ -2482,6 +2482,12 @@ def writeTypeUtil (api, filename):
                     return True
             return False
 
+        def hasBitField (type):
+            for member in type.members:
+                if member.fieldWidth:
+                    return True
+            return False
+
         def hasCompositeMember (type):
             for member in type.members:
                 if member.pointer is not None and '*' not in member.pointer:
@@ -2494,7 +2500,8 @@ def writeTypeUtil (api, filename):
         type.members[0].type != "VkStructureType" and \
         not type.name in QUERY_RESULT_TYPES and \
         not hasArrayMember(type) and \
-        not hasCompositeMember(type)
+        not hasCompositeMember(type) and \
+        not hasBitField(type)
 
     def gen ():
         for type in api.compositeTypes:

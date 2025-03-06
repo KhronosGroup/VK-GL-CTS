@@ -213,16 +213,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceDepthClampControlFeaturesEXT.pNext;
 	}
 
-	vk::VkPhysicalDeviceDepthClampZeroOneFeaturesEXT physicalDeviceDepthClampZeroOneFeaturesEXT;
-	deMemset(&physicalDeviceDepthClampZeroOneFeaturesEXT, 0, sizeof(physicalDeviceDepthClampZeroOneFeaturesEXT));
-
-	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_depth_clamp_zero_one"))
-	{
-		physicalDeviceDepthClampZeroOneFeaturesEXT.sType = getStructureType<VkPhysicalDeviceDepthClampZeroOneFeaturesEXT>();
-		*nextPtr = &physicalDeviceDepthClampZeroOneFeaturesEXT;
-		nextPtr  = &physicalDeviceDepthClampZeroOneFeaturesEXT.pNext;
-	}
-
 	vk::VkPhysicalDeviceDepthClipControlFeaturesEXT physicalDeviceDepthClipControlFeaturesEXT;
 	deMemset(&physicalDeviceDepthClipControlFeaturesEXT, 0, sizeof(physicalDeviceDepthClipControlFeaturesEXT));
 
@@ -1421,15 +1411,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceDepthClampControlFeaturesEXT.depthClampControl == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature depthClampControl not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_depth_clamp_zero_one")) )
-	{
-		if ( physicalDeviceDepthClampZeroOneFeaturesEXT.depthClampZeroOne == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature depthClampZeroOne not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

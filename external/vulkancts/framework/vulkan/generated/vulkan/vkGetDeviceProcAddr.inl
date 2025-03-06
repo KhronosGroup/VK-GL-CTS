@@ -566,6 +566,9 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkReleaseCapturedPipelineDataKHR",
 		"vkGetFramebufferTilePropertiesQCOM",
 		"vkGetDynamicRenderingTilePropertiesQCOM",
+		"vkGetPhysicalDeviceCooperativeVectorPropertiesNV",
+		"vkConvertCooperativeVectorMatrixNV",
+		"vkCmdConvertCooperativeVectorMatrixNV",
 		"vkSetLatencySleepModeNV",
 		"vkLatencySleepNV",
 		"vkSetLatencyMarkerNV",
@@ -583,6 +586,10 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdPushDescriptorSetWithTemplate2KHR",
 		"vkCmdSetDescriptorBufferOffsets2EXT",
 		"vkCmdBindDescriptorBufferEmbeddedSamplers2EXT",
+		"vkGetClusterAccelerationStructureBuildSizesNV",
+		"vkCmdBuildClusterAccelerationStructureIndirectNV",
+		"vkGetPartitionedAccelerationStructuresBuildSizesNV",
+		"vkCmdBuildPartitionedAccelerationStructuresNV",
 		"vkGetGeneratedCommandsMemoryRequirementsEXT",
 		"vkCmdPreprocessGeneratedCommandsEXT",
 		"vkCmdExecuteGeneratedCommandsEXT",
@@ -594,6 +601,8 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkUpdateIndirectExecutionSetShaderEXT",
 		"vkCmdSetDepthClampRangeEXT",
 		"vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV",
+		"vkGetMemoryMetalHandleEXT",
+		"vkGetMemoryMetalHandlePropertiesEXT",
     };
 
     bool fail = false;

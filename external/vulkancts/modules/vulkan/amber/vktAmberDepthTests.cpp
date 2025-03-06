@@ -76,8 +76,8 @@ public:
 
             VkPhysicalDeviceFeatures2 features2 = initVulkanStructure();
 
-            VkPhysicalDeviceDepthClampZeroOneFeaturesEXT clampParams = {
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_EXT, // sType
+            VkPhysicalDeviceDepthClampZeroOneFeaturesKHR clampParams = {
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_KHR, // sType
                 nullptr,                                                             // pNext
                 VK_TRUE,                                                             // depthClampZeroOne
             };

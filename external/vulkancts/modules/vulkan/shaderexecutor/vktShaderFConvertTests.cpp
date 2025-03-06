@@ -740,7 +740,7 @@ void FConvertTestCase::initPrograms(vk::SourceCollections &programCollection) co
     }
     if (m_params.usesBFloat16())
     {
-        s("#extension GL_EXT_bfloat16_float8: require"); // This is needed for bfloat16 type.
+        s("#extension GL_EXT_bfloat16: require"); // This is needed for bfloat16 type.
     }
     s("layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;");
     s("layout(set = 0, binding = 0, std140) buffer issbodef { ", inputType, " val[", arraySize, "]; } issbo;");

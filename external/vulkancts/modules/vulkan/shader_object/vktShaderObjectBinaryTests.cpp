@@ -792,7 +792,7 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
     auto maintenance4Features                       = m_context.getMaintenance4Features();
     auto imageSlicedViewOf3DFeatures                = m_context.getImageSlicedViewOf3DFeaturesEXT();
     auto descriptorSetHostMappingFeatures           = m_context.getDescriptorSetHostMappingFeaturesVALVE();
-    auto depthClampZeroOneFeatures                  = m_context.getDepthClampZeroOneFeaturesEXT();
+    auto depthClampZeroOneFeatures                  = m_context.getDepthClampZeroOneFeatures();
     auto nonSeamlessCubeMapFeatures                 = m_context.getNonSeamlessCubeMapFeaturesEXT();
     auto fragmentDensityMapOffsetFeatures           = m_context.getFragmentDensityMapOffsetFeaturesQCOM();
     auto copyMemoryIndirectFeatures                 = m_context.getCopyMemoryIndirectFeatures();
