@@ -290,7 +290,7 @@ class GitRepo (Source):
                 run(["git", "clone", "--no-checkout", url, fullDstPath])
             except:
                 if backupUrl != None:
-                    run(["git", "clone", "--no-checkout", url, backupPath])
+                    execute(["git", "clone", "--no-checkout", backupUrl, fullDstPath])
 
         pushWorkingDir(fullDstPath)
 
@@ -338,9 +338,9 @@ PACKAGES = [
         "e7294a8ebed84f8c5bd3686c68dbe12a4e65b644",
         "spirv-headers"),
     GitRepo(
-        None,
+        "https://gitlab.khronos.org/vulkan/vulkan.git",
         "git@gitlab.khronos.org:vulkan/vulkan.git",
-        "0f5f876632537135f8d1f28c9ce2a8b7162962df",
+        "6d6596eb952e4317d6618ebdbd8046a49855a2a4",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",

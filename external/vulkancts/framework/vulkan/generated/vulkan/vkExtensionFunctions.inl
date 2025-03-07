@@ -1375,6 +1375,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_NV_ray_tracing_linear_swept_spheres")
+	{
+		return;
+	}
 	if (extName == "VK_NV_linear_color_attachment")
 	{
 		return;
@@ -1474,6 +1478,11 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	}
 	if (extName == "VK_NV_ray_tracing_invocation_reorder")
 	{
+		return;
+	}
+	if (extName == "VK_NV_cooperative_vector")
+	{
+		functions.push_back("vkGetPhysicalDeviceCooperativeVectorPropertiesNV");
 		return;
 	}
 	if (extName == "VK_NV_extended_sparse_address_space")
@@ -1638,6 +1647,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_NV_cluster_acceleration_structure")
+	{
+		return;
+	}
+	if (extName == "VK_NV_partitioned_acceleration_structure")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_device_generated_commands")
 	{
 		return;
@@ -1684,6 +1701,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_EXT_vertex_attribute_robustness")
+	{
+		return;
+	}
+	if (extName == "VK_NV_present_metering")
 	{
 		return;
 	}
@@ -3366,6 +3387,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkGetPipelineIndirectDeviceAddressNV");
 		return;
 	}
+	if (extName == "VK_NV_ray_tracing_linear_swept_spheres")
+	{
+		return;
+	}
 	if (extName == "VK_NV_linear_color_attachment")
 	{
 		return;
@@ -3665,6 +3690,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_NV_cooperative_vector")
+	{
+		functions.push_back("vkConvertCooperativeVectorMatrixNV");
+		functions.push_back("vkCmdConvertCooperativeVectorMatrixNV");
+		return;
+	}
 	if (extName == "VK_NV_extended_sparse_address_space")
 	{
 		return;
@@ -3846,6 +3877,18 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_NV_cluster_acceleration_structure")
+	{
+		functions.push_back("vkGetClusterAccelerationStructureBuildSizesNV");
+		functions.push_back("vkCmdBuildClusterAccelerationStructureIndirectNV");
+		return;
+	}
+	if (extName == "VK_NV_partitioned_acceleration_structure")
+	{
+		functions.push_back("vkGetPartitionedAccelerationStructuresBuildSizesNV");
+		functions.push_back("vkCmdBuildPartitionedAccelerationStructuresNV");
+		return;
+	}
 	if (extName == "VK_EXT_device_generated_commands")
 	{
 		functions.push_back("vkGetGeneratedCommandsMemoryRequirementsEXT");
@@ -3903,6 +3946,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_EXT_vertex_attribute_robustness")
+	{
+		return;
+	}
+	if (extName == "VK_NV_present_metering")
 	{
 		return;
 	}
@@ -4275,6 +4322,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_copy_memory_indirect",
 	"VK_NV_memory_decompression",
 	"VK_NV_device_generated_commands_compute",
+	"VK_NV_ray_tracing_linear_swept_spheres",
 	"VK_NV_linear_color_attachment",
 	"VK_KHR_shader_maximal_reconvergence",
 	"VK_EXT_image_compression_control_swapchain",
@@ -4298,6 +4346,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_SEC_amigo_profiling",
 	"VK_QCOM_multiview_per_view_viewports",
 	"VK_NV_ray_tracing_invocation_reorder",
+	"VK_NV_cooperative_vector",
 	"VK_NV_extended_sparse_address_space",
 	"VK_EXT_mutable_descriptor_type",
 	"VK_EXT_legacy_vertex_attributes",
@@ -4336,6 +4385,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_shader_atomic_float16_vector",
 	"VK_EXT_shader_replicated_composites",
 	"VK_NV_ray_tracing_validation",
+	"VK_NV_cluster_acceleration_structure",
+	"VK_NV_partitioned_acceleration_structure",
 	"VK_EXT_device_generated_commands",
 	"VK_KHR_maintenance8",
 	"VK_MESA_image_alignment_control",
@@ -4348,4 +4399,5 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_external_memory_metal",
 	"VK_KHR_depth_clamp_zero_one",
 	"VK_EXT_vertex_attribute_robustness",
+	"VK_NV_present_metering",
 };

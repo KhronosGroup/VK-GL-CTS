@@ -440,6 +440,30 @@ inline VkLayerSettingEXT makeLayerSettingEXT (const char* pLayerName, const char
 	return res;
 }
 
+inline VkStridedDeviceAddressNV makeStridedDeviceAddressNV (VkDeviceAddress startAddress, VkDeviceSize strideInBytes)
+{
+	VkStridedDeviceAddressNV res;
+	res.startAddress	= startAddress;
+	res.strideInBytes	= strideInBytes;
+	return res;
+}
+
+inline VkClusterAccelerationStructureMoveObjectsInfoNV makeClusterAccelerationStructureMoveObjectsInfoNV (VkDeviceAddress srcAccelerationStructure)
+{
+	VkClusterAccelerationStructureMoveObjectsInfoNV res;
+	res.srcAccelerationStructure	= srcAccelerationStructure;
+	return res;
+}
+
+inline VkClusterAccelerationStructureBuildClustersBottomLevelInfoNV makeClusterAccelerationStructureBuildClustersBottomLevelInfoNV (uint32_t clusterReferencesCount, uint32_t clusterReferencesStride, VkDeviceAddress clusterReferences)
+{
+	VkClusterAccelerationStructureBuildClustersBottomLevelInfoNV res;
+	res.clusterReferencesCount	= clusterReferencesCount;
+	res.clusterReferencesStride	= clusterReferencesStride;
+	res.clusterReferences		= clusterReferences;
+	return res;
+}
+
 inline VkBindShaderGroupIndirectCommandNV makeBindShaderGroupIndirectCommandNV (uint32_t groupIndex)
 {
 	VkBindShaderGroupIndirectCommandNV res;
@@ -755,6 +779,15 @@ inline VkColorBlendAdvancedEXT makeColorBlendAdvancedEXT (VkBlendOp advancedBlen
 	res.dstPremultiplied	= dstPremultiplied;
 	res.blendOverlap		= blendOverlap;
 	res.clampResults		= clampResults;
+	return res;
+}
+
+inline VkPartitionedAccelerationStructureUpdateInstanceDataNV makePartitionedAccelerationStructureUpdateInstanceDataNV (uint32_t instanceIndex, uint32_t instanceContributionToHitGroupIndex, VkDeviceAddress accelerationStructure)
+{
+	VkPartitionedAccelerationStructureUpdateInstanceDataNV res;
+	res.instanceIndex						= instanceIndex;
+	res.instanceContributionToHitGroupIndex	= instanceContributionToHitGroupIndex;
+	res.accelerationStructure				= accelerationStructure;
 	return res;
 }
 

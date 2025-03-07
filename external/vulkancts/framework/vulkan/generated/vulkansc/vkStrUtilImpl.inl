@@ -2982,6 +2982,21 @@ tcu::Format::Bitfield<32> getGeometryInstanceFlagsKHRStr (VkGeometryInstanceFlag
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
+tcu::Format::Bitfield<32> getClusterAccelerationStructureGeometryFlagsNVStr (VkClusterAccelerationStructureGeometryFlagsNV value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getClusterAccelerationStructureClusterFlagsNVStr (VkClusterAccelerationStructureClusterFlagsNV value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getClusterAccelerationStructureAddressResolutionFlagsNVStr (VkClusterAccelerationStructureAddressResolutionFlagsNV value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
 tcu::Format::Bitfield<32> getBuildAccelerationStructureFlagsKHRStr (VkBuildAccelerationStructureFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
@@ -3152,6 +3167,11 @@ tcu::Format::Bitfield<32> getExternalMemoryHandleTypeFlagsNVStr (VkExternalMemor
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
+tcu::Format::Bitfield<32> getClusterAccelerationStructureIndexFormatFlagsNVStr (VkClusterAccelerationStructureIndexFormatFlagsNV value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
 tcu::Format::Bitfield<32> getExternalMemoryFeatureFlagsNVStr (VkExternalMemoryFeatureFlagsNV value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
@@ -3228,6 +3248,11 @@ tcu::Format::Bitfield<32> getSwapchainImageUsageFlagsANDROIDStr (VkSwapchainImag
 }
 
 tcu::Format::Bitfield<32> getImageFormatConstraintsFlagsFUCHSIAStr (VkImageFormatConstraintsFlagsFUCHSIA value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getPartitionedAccelerationStructureInstanceFlagsNVStr (VkPartitionedAccelerationStructureInstanceFlagsNV value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
