@@ -599,7 +599,6 @@ dEQP-VK.spirv_assembly.instruction.compute.opudotaccsatkhr.small-nosat_uu_v4i8_o
 dEQP-VK.spirv_assembly.instruction.compute.physical_storage_buffer.addrs_in_ssbo
 dEQP-VK.spirv_assembly.instruction.compute.physical_storage_buffer.push_constants
 dEQP-VK.spirv_assembly.instruction.compute.physical_storage_buffer.push_constants_function
-dEQP-VK.spirv_assembly.instruction.compute.physical_storage_buffer.vertex_in_out_in
 dEQP-VK.spirv_assembly.instruction.compute.spirv_version.1_6_compute
 dEQP-VK.spirv_assembly.instruction.graphics.convertstof.int32_to_float16_m32768_frag
 dEQP-VK.spirv_assembly.instruction.graphics.convertstof.int32_to_float16_m32768_geom

@@ -6862,7 +6862,6 @@ dEQP-VK.spirv_assembly.instruction.compute.physical_pointers.compute.writes_two_
 dEQP-VK.spirv_assembly.instruction.compute.physical_storage_buffer.addrs_in_ssbo
 dEQP-VK.spirv_assembly.instruction.compute.physical_storage_buffer.push_constants
 dEQP-VK.spirv_assembly.instruction.compute.physical_storage_buffer.push_constants_function
-dEQP-VK.spirv_assembly.instruction.compute.physical_storage_buffer.vertex_in_out_in
 dEQP-VK.spirv_assembly.instruction.compute.pointer_parameter.buffer_memory
 dEQP-VK.spirv_assembly.instruction.compute.pointer_parameter.buffer_memory_variable_pointers
 dEQP-VK.spirv_assembly.instruction.compute.pointer_parameter.param_to_global
