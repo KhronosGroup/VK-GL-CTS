@@ -961,7 +961,9 @@ tcu::TestCaseGroup *createImage2DViewOf3DTests(tcu::TestContext &testCtx,
             std::vector<int32_t> layers = {0, computeMipLevelDimension(imageDimension, mipLevel) - 1};
             for (const auto &layer : layers)
             {
-                for (const auto &imageBindingType : {ImageBindingType::Normal, ImageBindingType::Sparse})
+                const auto imageBindingType = ImageBindingType::Normal;
+                // Replace above to include sparse binding tests, which currently aren't valid with VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT.
+                // for (const auto &imageBindingType : {ImageBindingType::Normal, ImageBindingType::Sparse})
                 {
                     TestParameters testParameters{
                         tcu::IVec3(imageDimension), // IVec3                        imageSize
