@@ -4573,6 +4573,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 1, "VK_KHR_maintenance7"),
 	std::make_tuple(1, 0, "VK_NV_shader_atomic_float16_vector"),
 	std::make_tuple(1, 0, "VK_EXT_shader_replicated_composites"),
+	std::make_tuple(1, 0, "VK_EXT_shader_float8"),
 	std::make_tuple(1, 0, "VK_NV_ray_tracing_validation"),
 	std::make_tuple(1, 0, "VK_NV_cluster_acceleration_structure"),
 	std::make_tuple(1, 0, "VK_NV_partitioned_acceleration_structure"),

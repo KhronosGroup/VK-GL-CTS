@@ -6193,6 +6193,46 @@ tcu::TestStatus testPhysicalDeviceFeatureDepthClampZeroOneFeaturesKHR (Context& 
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureShaderFloat8FeaturesEXT (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceShaderFloat8FeaturesEXT deviceShaderFloat8FeaturesEXT[count];
+    const bool                              isShaderFloat8FeaturesEXT = checkExtension(properties, "VK_EXT_shader_float8");
+
+    if (!isShaderFloat8FeaturesEXT)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceShaderFloat8FeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceShaderFloat8FeaturesEXT));
+        deviceShaderFloat8FeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT8_FEATURES_EXT;
+        deviceShaderFloat8FeaturesEXT[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceShaderFloat8FeaturesEXT[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceShaderFloat8FeaturesEXT[0] << TestLog::EndMessage;
+
+    if (
+        deviceShaderFloat8FeaturesEXT[0].shaderFloat8 != deviceShaderFloat8FeaturesEXT[1].shaderFloat8 ||
+        deviceShaderFloat8FeaturesEXT[0].shaderFloat8CooperativeMatrix != deviceShaderFloat8FeaturesEXT[1].shaderFloat8CooperativeMatrix)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceShaderFloat8FeaturesEXT");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus createDeviceWithPromoted11Structures (Context& context)
 {
     if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
@@ -6604,6 +6644,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "present_mode_fifo_latest_ready_features_ext", testPhysicalDeviceFeaturePresentModeFifoLatestReadyFeaturesEXT);
 	addFunctionCase(testGroup, "vertex_attribute_robustness_features_ext", testPhysicalDeviceFeatureVertexAttributeRobustnessFeaturesEXT);
 	addFunctionCase(testGroup, "depth_clamp_zero_one_features_khr", testPhysicalDeviceFeatureDepthClampZeroOneFeaturesKHR);
+	addFunctionCase(testGroup, "shader_float8_features_ext", testPhysicalDeviceFeatureShaderFloat8FeaturesEXT);
 	addFunctionCase(testGroup, "create_device_with_promoted11_structures", createDeviceWithPromoted11Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted12_structures", createDeviceWithPromoted12Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted13_structures", createDeviceWithPromoted13Structures);

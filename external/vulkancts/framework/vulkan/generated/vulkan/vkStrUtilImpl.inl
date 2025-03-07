@@ -2487,6 +2487,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_VULKAN_PROPERTIES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_VULKAN_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT8_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT8_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CLUSTER_ACCELERATION_STRUCTURE_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CLUSTER_ACCELERATION_STRUCTURE_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CLUSTER_ACCELERATION_STRUCTURE_PROPERTIES_NV:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CLUSTER_ACCELERATION_STRUCTURE_PROPERTIES_NV";
@@ -4175,6 +4176,8 @@ const char* getComponentTypeKHRName (VkComponentTypeKHR value)
 		case VK_COMPONENT_TYPE_UINT8_PACKED_NV:	return "VK_COMPONENT_TYPE_UINT8_PACKED_NV";
 		case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:	return "VK_COMPONENT_TYPE_FLOAT_E4M3_NV";
 		case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:	return "VK_COMPONENT_TYPE_FLOAT_E5M2_NV";
+		case VK_COMPONENT_TYPE_FLOAT8_E4M3_EXT:	return "VK_COMPONENT_TYPE_FLOAT8_E4M3_EXT";
+		case VK_COMPONENT_TYPE_FLOAT8_E5M2_EXT:	return "VK_COMPONENT_TYPE_FLOAT8_E5M2_EXT";
 		default:								return nullptr;
 	}
 }
@@ -20941,6 +20944,17 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalCompute
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\texternalDataSize = " << value.externalDataSize << '\n';
 	s << "\tmaxExternalQueues = " << value.maxExternalQueues << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderFloat8FeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceShaderFloat8FeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderFloat8 = " << value.shaderFloat8 << '\n';
+	s << "\tshaderFloat8CooperativeMatrix = " << value.shaderFloat8CooperativeMatrix << '\n';
 	s << '}';
 	return s;
 }

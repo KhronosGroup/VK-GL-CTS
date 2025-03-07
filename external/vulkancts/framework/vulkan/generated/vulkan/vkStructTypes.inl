@@ -10765,6 +10765,14 @@ struct VkPhysicalDeviceExternalComputeQueuePropertiesNV
 	uint32_t		maxExternalQueues;
 };
 
+struct VkPhysicalDeviceShaderFloat8FeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderFloat8;
+	VkBool32		shaderFloat8CooperativeMatrix;
+};
+
 struct StdVideoH264SpsVuiFlags
 {
 	uint32_t	aspect_ratio_info_present_flag:1;

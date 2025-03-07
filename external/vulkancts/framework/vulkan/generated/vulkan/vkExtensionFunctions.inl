@@ -1659,6 +1659,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_float8")
+	{
+		return;
+	}
 	if (extName == "VK_NV_ray_tracing_validation")
 	{
 		return;
@@ -3919,6 +3923,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_float8")
+	{
+		return;
+	}
 	if (extName == "VK_NV_ray_tracing_validation")
 	{
 		return;
@@ -4443,6 +4451,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_maintenance7",
 	"VK_NV_shader_atomic_float16_vector",
 	"VK_EXT_shader_replicated_composites",
+	"VK_EXT_shader_float8",
 	"VK_NV_ray_tracing_validation",
 	"VK_NV_cluster_acceleration_structure",
 	"VK_NV_partitioned_acceleration_structure",

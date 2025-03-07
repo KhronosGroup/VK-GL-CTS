@@ -196,6 +196,7 @@ const vk::VkPhysicalDeviceCommandBufferInheritanceFeaturesNV&				Context::getCom
 const vk::VkPhysicalDeviceMaintenance7FeaturesKHR&							Context::getMaintenance7Features							(void) const { return m_device->getMaintenance7Features();							}
 const vk::VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV&				Context::getShaderAtomicFloat16VectorFeaturesNV				(void) const { return m_device->getShaderAtomicFloat16VectorFeaturesNV();			}
 const vk::VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT&			Context::getShaderReplicatedCompositesFeaturesEXT			(void) const { return m_device->getShaderReplicatedCompositesFeaturesEXT();			}
+const vk::VkPhysicalDeviceShaderFloat8FeaturesEXT&							Context::getShaderFloat8FeaturesEXT							(void) const { return m_device->getShaderFloat8FeaturesEXT();						}
 const vk::VkPhysicalDeviceRayTracingValidationFeaturesNV&					Context::getRayTracingValidationFeaturesNV					(void) const { return m_device->getRayTracingValidationFeaturesNV();				}
 const vk::VkPhysicalDeviceClusterAccelerationStructureFeaturesNV&			Context::getClusterAccelerationStructureFeaturesNV			(void) const { return m_device->getClusterAccelerationStructureFeaturesNV();		}
 const vk::VkPhysicalDevicePartitionedAccelerationStructureFeaturesNV&		Context::getPartitionedAccelerationStructureFeaturesNV		(void) const { return m_device->getPartitionedAccelerationStructureFeaturesNV();	}

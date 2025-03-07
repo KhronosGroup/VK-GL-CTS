@@ -50,6 +50,7 @@
 #include <cassert>
 #include <type_traits>
 #include <optional>
+#include <cmath>
 
 namespace vkt
 {
@@ -137,6 +138,23 @@ std::vector<T> getRandomInteresting(de::Random &rnd, size_t numSamples)
     return result;
 }
 
+template <class T>
+std::vector<T> getExhaustive()
+{
+    std::vector<T> result;
+
+    uint32_t storageBits = 8 * sizeof(typename T::StorageType);
+    if (storageBits <= 16)
+    {
+        for (uint32_t i = 0; i < (1u << storageBits); ++i)
+        {
+            result.push_back(T(typename T::StorageType(i)));
+        }
+    }
+
+    return result;
+}
+
 // Helper class to build each vector only once in a thread-safe way.
 template <class T>
 struct StaticVectorHelper
@@ -176,19 +194,48 @@ std::vector<T2> convertVector(const std::vector<T1> &orig)
 template <class T>
 std::vector<T> getOtherNormals(de::Random &rnd);
 
+#ifndef CTS_USES_VULKANSC
 template <>
-std::vector<tcu::Float16> getOtherNormals<tcu::Float16>(de::Random &)
+std::vector<tcu::FloatE5M2> getOtherNormals<tcu::FloatE5M2>(de::Random &)
 {
-    // Nothing below tcu::Float16.
-    return std::vector<tcu::Float16>();
+    // Nothing below tcu::FloatE5M2.
+    return std::vector<tcu::FloatE5M2>();
+}
+
+template <>
+std::vector<tcu::FloatE4M3> getOtherNormals<tcu::FloatE4M3>(de::Random &)
+{
+    // Nothing below tcu::FloatE4M3.
+    return std::vector<tcu::FloatE4M3>();
+}
+#endif
+
+template <>
+std::vector<tcu::Float16> getOtherNormals<tcu::Float16>(de::Random &rnd)
+{
+#ifndef CTS_USES_VULKANSC
+    auto v1       = convertVector<tcu::FloatE5M2, tcu::Float16>(getRandomNormals<tcu::FloatE5M2>(rnd));
+    const auto v2 = convertVector<tcu::FloatE4M3, tcu::Float16>(getRandomNormals<tcu::FloatE4M3>(rnd));
+
+    v1.reserve(v1.size() + v2.size());
+    std::copy(v2.begin(), v2.end(), std::back_inserter(v1));
+    return v1;
+#else
+    DE_UNREF(rnd);
+    return {};
+#endif
 }
 
 #ifndef CTS_USES_VULKANSC
 template <>
-std::vector<BFloat16> getOtherNormals(de::Random &)
+std::vector<BFloat16> getOtherNormals(de::Random &rnd)
 {
-    // This specialization must exist for the code to be correctly compiled.
-    return {};
+    auto v1       = convertVector<tcu::FloatE5M2, BFloat16>(getRandomNormals<tcu::FloatE5M2>(rnd));
+    const auto v2 = convertVector<tcu::FloatE4M3, BFloat16>(getRandomNormals<tcu::FloatE4M3>(rnd));
+
+    v1.reserve(v1.size() + v2.size());
+    std::copy(v2.begin(), v2.end(), std::back_inserter(v1));
+    return v1;
 }
 #endif
 
@@ -199,12 +246,18 @@ std::vector<tcu::Float32> getOtherNormals<tcu::Float32>(de::Random &rnd)
     auto v1 = convertVector<tcu::Float16, tcu::Float32>(getRandomNormals<tcu::Float16>(rnd));
 #ifndef CTS_USES_VULKANSC
     const auto v2 = convertVector<BFloat16, tcu::Float32>(getRandomNormals<BFloat16>(rnd));
+    const auto v3 = convertVector<tcu::FloatE5M2, tcu::Float32>(getRandomNormals<tcu::FloatE5M2>(rnd));
+    const auto v4 = convertVector<tcu::FloatE4M3, tcu::Float32>(getRandomNormals<tcu::FloatE4M3>(rnd));
 #else
     const std::vector<tcu::Float32> v2;
+    const std::vector<tcu::Float32> v3;
+    const std::vector<tcu::Float32> v4;
 #endif
 
-    v1.reserve(v1.size() + v2.size());
+    v1.reserve(v1.size() + v2.size() + v3.size() + v4.size());
     std::copy(v2.begin(), v2.end(), std::back_inserter(v1));
+    std::copy(v3.begin(), v3.end(), std::back_inserter(v1));
+    std::copy(v4.begin(), v4.end(), std::back_inserter(v1));
     return v1;
 }
 
@@ -216,13 +269,19 @@ std::vector<tcu::Float64> getOtherNormals<tcu::Float64>(de::Random &rnd)
     const auto v2 = convertVector<tcu::Float32, tcu::Float64>(getRandomNormals<tcu::Float32>(rnd));
 #ifndef CTS_USES_VULKANSC
     const auto v3 = convertVector<BFloat16, tcu::Float64>(getRandomNormals<BFloat16>(rnd));
+    const auto v4 = convertVector<tcu::FloatE5M2, tcu::Float64>(getRandomNormals<tcu::FloatE5M2>(rnd));
+    const auto v5 = convertVector<tcu::FloatE4M3, tcu::Float64>(getRandomNormals<tcu::FloatE4M3>(rnd));
 #else
     const std::vector<tcu::Float64> v3;
+    const std::vector<tcu::Float64> v4;
+    const std::vector<tcu::Float64> v5;
 #endif
 
-    v1.reserve(v1.size() + v2.size() + v3.size());
+    v1.reserve(v1.size() + v2.size() + v3.size() + v4.size() + v5.size());
     std::copy(v2.begin(), v2.end(), std::back_inserter(v1));
     std::copy(v3.begin(), v3.end(), std::back_inserter(v1));
+    std::copy(v4.begin(), v4.end(), std::back_inserter(v1));
+    std::copy(v5.begin(), v5.end(), std::back_inserter(v1));
     return v1;
 }
 
@@ -233,19 +292,21 @@ std::vector<T> getInputValues(de::Random &rnd)
     auto &interesting = interestingSamples<T>();
     auto &normals     = getRandomNormals<T>(rnd);
     auto otherNormals = getOtherNormals<T>(rnd);
+    auto exhaustive   = getExhaustive<T>();
 
-    const size_t numValues   = interesting.size() + normals.size() + otherNormals.size();
+    const size_t numValues   = interesting.size() + normals.size() + otherNormals.size() + exhaustive.size();
     const size_t extraValues = numValues % kGCFNumFloats;
     const size_t needed      = ((extraValues == 0) ? 0 : (kGCFNumFloats - extraValues));
 
     auto extra = getRandomInteresting<T>(rnd, needed);
 
     std::vector<T> values;
-    values.reserve(interesting.size() + normals.size() + otherNormals.size() + extra.size());
+    values.reserve(interesting.size() + normals.size() + otherNormals.size() + exhaustive.size() + extra.size());
 
     std::copy(begin(interesting), end(interesting), std::back_inserter(values));
     std::copy(begin(normals), end(normals), std::back_inserter(values));
     std::copy(begin(otherNormals), end(otherNormals), std::back_inserter(values));
+    std::copy(begin(exhaustive), end(exhaustive), std::back_inserter(values));
     std::copy(begin(extra), end(extra), std::back_inserter(values));
 
     // Shuffle samples around a bit to make it more interesting.
@@ -279,6 +340,8 @@ private:
         , m_values64(getInputValues<tcu::Float64>(m_rnd))
 #ifndef CTS_USES_VULKANSC
         , m_bFloatValues(getInputValues<BFloat16>(m_rnd))
+        , m_valuesE5M2(getInputValues<tcu::FloatE5M2>(m_rnd))
+        , m_valuesE4M3(getInputValues<tcu::FloatE4M3>(m_rnd))
 #endif
     {
     }
@@ -293,6 +356,8 @@ private:
     std::vector<tcu::Float64> m_values64;
 #ifndef CTS_USES_VULKANSC
     std::vector<BFloat16> m_bFloatValues;
+    std::vector<tcu::FloatE5M2> m_valuesE5M2;
+    std::vector<tcu::FloatE4M3> m_valuesE4M3;
 #endif
 };
 
@@ -319,12 +384,22 @@ const std::vector<BFloat16> &InputGenerator::getValues() const
 {
     return m_bFloatValues;
 }
+template <>
+const std::vector<tcu::FloatE5M2> &InputGenerator::getValues() const
+{
+    return m_valuesE5M2;
+}
+template <>
+const std::vector<tcu::FloatE4M3> &InputGenerator::getValues() const
+{
+    return m_valuesE4M3;
+}
 #endif
 
 // Check single result is as expected.
 // Works for implementations of tcu::Float as T1 and T2.
 template <class T1, class T2>
-bool validConversion(const T1 &orig, const T2 &result)
+bool validConversion(const T1 &orig, const T2 &result, bool sat)
 {
     const T2 acceptedResults[] = {T2::convert(orig, tcu::ROUND_DOWNWARD), T2::convert(orig, tcu::ROUND_UPWARD)};
     bool valid                 = false;
@@ -333,13 +408,20 @@ bool validConversion(const T1 &orig, const T2 &result)
     {
         if (validResult.isNaN() && result.isNaN())
             valid = true;
-        else if (validResult.isInf() && result.isInf())
+        else if (!sat && validResult.isInf() && result.isInf())
             valid = true;
         else if (validResult.isZero() && result.isZero())
             valid = true;
+        // XXX This line should not include "result.isDenorm() ||" and is hiding a bug in tcu::Float denorm handling
         else if (validResult.isDenorm() && (result.isDenorm() || result.isZero()))
             valid = true;
-        else if (validResult.bits() == result.bits()) // Exact conversion, up or down.
+        // handle denorms being flushed
+        else if (orig.isDenorm() && result.isZero())
+            valid = true;
+        else if (validResult.bits() == result.bits() && !(sat && result.isInf())) // Exact conversion, up or down.
+            valid = true;
+        else if (sat && fabs(orig.asFloat()) > T2::largestNormal(1).asFloat() && orig.sign() == result.sign() &&
+                 result.asFloat() == T2::largestNormal(orig.sign()).asFloat())
             valid = true;
     }
 
@@ -348,7 +430,7 @@ bool validConversion(const T1 &orig, const T2 &result)
 
 // Check results vector is as expected.
 template <class TIn, class TOut>
-bool validConversion(const std::vector<TIn> &orig, const std::vector<TOut> &converted, tcu::TestLog &log)
+bool validConversion(const std::vector<TIn> &orig, const std::vector<TOut> &converted, tcu::TestLog &log, bool sat)
 {
     DE_ASSERT(orig.size() == converted.size());
 
@@ -356,7 +438,7 @@ bool validConversion(const std::vector<TIn> &orig, const std::vector<TOut> &conv
 
     for (size_t i = 0; i < orig.size(); ++i)
     {
-        const bool valid = validConversion(orig[i], converted[i]);
+        const bool valid = validConversion(orig[i], converted[i], sat);
 
         {
             double origD(-1.0);
@@ -385,10 +467,13 @@ bool validConversion(const std::vector<TIn> &orig, const std::vector<TOut> &conv
                 convD = converted[i].asDouble();
             }
 
-            msg << "[" << i << "] " << std::setprecision(std::numeric_limits<double>::digits10 + 2) << std::scientific
-                << origD << " converted to " << convD << ": " << (valid ? "OK" : "FAILURE");
+            if (!valid)
+            {
+                msg << "[" << i << "] " << std::setprecision(std::numeric_limits<double>::digits10 + 2)
+                    << std::scientific << origD << " converted to " << convD << ": " << (valid ? "OK" : "FAILURE");
 
-            log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+                log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+            }
         }
 
         if (!valid)
@@ -492,6 +577,8 @@ enum FloatType
     FLOAT_TYPE_64_BITS,
 #ifndef CTS_USES_VULKANSC
     BRAIN_FLOAT_16_BITS,
+    FLOAT_TYPE_E5M2,
+    FLOAT_TYPE_E4M3,
 #endif
     FLOAT_TYPE_MAX_ENUM,
 };
@@ -501,6 +588,10 @@ inline constexpr FloatType FloatTypeToEnum = FLOAT_TYPE_MAX_ENUM;
 #ifndef CTS_USES_VULKANSC
 template <>
 inline constexpr FloatType FloatTypeToEnum<BFloat16> = BRAIN_FLOAT_16_BITS;
+template <>
+inline constexpr FloatType FloatTypeToEnum<tcu::FloatE5M2> = FLOAT_TYPE_E5M2;
+template <>
+inline constexpr FloatType FloatTypeToEnum<tcu::FloatE4M3> = FLOAT_TYPE_E4M3;
 #endif
 template <>
 inline constexpr FloatType FloatTypeToEnum<tcu::Float16> = FLOAT_TYPE_16_BITS;
@@ -510,11 +601,9 @@ template <>
 inline constexpr FloatType FloatTypeToEnum<tcu::Float64> = FLOAT_TYPE_64_BITS;
 
 static const char *const kFloatNames[FLOAT_TYPE_MAX_ENUM] = {
-    "f16",
-    "f32",
-    "f64",
+    "f16",  "f32",   "f64",
 #ifndef CTS_USES_VULKANSC
-    "bf16",
+    "bf16", "fe5m2", "fe4m3",
 #endif
 };
 
@@ -537,12 +626,15 @@ struct TestParams
         {nullptr, "double", "dvec2", "dvec3", "dvec4"},
 #ifndef CTS_USES_VULKANSC
         {nullptr, vtn<BFloat16, 1>, vtn<BFloat16, 2>, vtn<BFloat16, 3>, vtn<BFloat16, 4>},
+        {nullptr, "floate5m2_t", "fe5m2vec2", "fe5m2vec3", "fe5m2vec4"},
+        {nullptr, "floate4m3_t", "fe4m3vec2", "fe4m3vec3", "fe4m3vec4"},
 #endif
     };
 
     FloatType from;
     FloatType to;
     size_t vectorLength;
+    bool saturatedConvert;
 
     void validate() const
     {
@@ -581,6 +673,16 @@ struct TestParams
         return ok;
     }
 
+    bool usesFP8() const
+    {
+#ifdef CTS_USES_VULKANSC
+        return false;
+#else
+        return (from == FLOAT_TYPE_E5M2) || (to == FLOAT_TYPE_E5M2) || (from == FLOAT_TYPE_E4M3) ||
+               (to == FLOAT_TYPE_E4M3);
+#endif
+    }
+
     static bool isConversionDoable(FloatType from, FloatType to)
     {
         DE_UNREF(from);
@@ -595,6 +697,7 @@ void verifyConversionTo(const std::vector<TIn> &inputValues, //
                         const std::vector<uint8_t> &memory,  //
                         size_t vectorLength,                 //
                         size_t expectedNumValues,            //
+                        bool sat,                            //
                         tcu::TestLog &testLog,               //
                         const Tuple &,                       //
                         std::index_sequence<Is...>)
@@ -606,7 +709,7 @@ void verifyConversionTo(const std::vector<TIn> &inputValues, //
          if (FloatTypeToEnum<TOut> == outType)
          {
              const auto outputValues = unpackFloats<TOut>(memory, vectorLength, expectedNumValues);
-             const bool conversionOk = validConversion(inputValues, outputValues, testLog);
+             const bool conversionOk = validConversion(inputValues, outputValues, testLog, sat);
              throw std::optional(conversionOk);
          }
      }());
@@ -619,6 +722,7 @@ void verifyConversionFrom(FloatType inType,                   //
                           const std::vector<uint8_t> &memory, //
                           size_t vectorLength,                //
                           size_t expectedNumValues,           //
+                          bool sat,                           //
                           tcu::TestLog &testLog,              //
                           const Tuple &t,                     //
                           std::index_sequence<Is...>)
@@ -630,7 +734,7 @@ void verifyConversionFrom(FloatType inType,                   //
          if (FloatTypeToEnum<TIn> == inType)
          {
              const auto &inputValues = InputGenerator::getInstance().getValues<TIn>();
-             verifyConversionTo(inputValues, outType, memory, vectorLength, expectedNumValues, testLog, t,
+             verifyConversionTo(inputValues, outType, memory, vectorLength, expectedNumValues, sat, testLog, t,
                                 std::index_sequence<Is...>{});
          }
      }());
@@ -644,11 +748,12 @@ std::optional<bool> verifyConversion(FloatType fromType,                 //
                                      const std::vector<uint8_t> &memory, //
                                      size_t vectorLength,                //
                                      size_t expectedNumValues,           //
+                                     bool sat,                           //
                                      tcu::TestLog &log)
 {
     try
     {
-        verifyConversionFrom(fromType, toType, memory, vectorLength, expectedNumValues, log, available,
+        verifyConversionFrom(fromType, toType, memory, vectorLength, expectedNumValues, sat, log, available,
                              std::index_sequence_for<U...>{});
     }
     catch (const std::optional<bool> &result)
@@ -707,6 +812,12 @@ void FConvertTestCase::initPrograms(vk::SourceCollections &programCollection) co
     case BRAIN_FLOAT_16_BITS:
         numValues = inputGenerator.getValues<BFloat16>().size();
         break;
+    case FLOAT_TYPE_E5M2:
+        numValues = inputGenerator.getValues<tcu::FloatE5M2>().size();
+        break;
+    case FLOAT_TYPE_E4M3:
+        numValues = inputGenerator.getValues<tcu::FloatE4M3>().size();
+        break;
 #endif
     case FLOAT_TYPE_16_BITS:
         numValues = inputGenerator.getValues<tcu::Float16>().size();
@@ -742,12 +853,24 @@ void FConvertTestCase::initPrograms(vk::SourceCollections &programCollection) co
     {
         s("#extension GL_EXT_bfloat16: require"); // This is needed for bfloat16 type.
     }
+    if (m_params.usesFP8())
+    {
+        s("#extension GL_EXT_float_e4m3 : enable");
+        s("#extension GL_EXT_float_e5m2 : enable");
+    }
     s("layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;");
     s("layout(set = 0, binding = 0, std140) buffer issbodef { ", inputType, " val[", arraySize, "]; } issbo;");
     s("layout(set = 0, binding = 1, std140) buffer ossbodef { ", outputType, " val[", arraySize, "]; } ossbo;");
     s("void main()");
     s("{");
-    s("    ossbo.val[gl_WorkGroupID.x] = ", outputType, "(issbo.val[gl_WorkGroupID.x]);");
+    if (m_params.saturatedConvert)
+    {
+        s("    saturatedConvertEXT(ossbo.val[gl_WorkGroupID.x], issbo.val[gl_WorkGroupID.x]);");
+    }
+    else
+    {
+        s("    ossbo.val[gl_WorkGroupID.x] = ", outputType, "(issbo.val[gl_WorkGroupID.x]);");
+    }
     s("}");
 
     programCollection.glslSources.add("comp") << glu::ComputeSource(glslShader.str());
@@ -788,6 +911,16 @@ void FConvertTestCase::checkSupport(Context &context) const
         }
 #endif
     }
+    if (m_params.usesFP8())
+    {
+#ifdef CTS_USES_VULKANSC
+        TCU_THROW(NotSupportedError, "VK_EXT_shader_float8 not available in VulkanSC");
+#else
+        auto &features8 = context.getShaderFloat8FeaturesEXT();
+        if (!features8.shaderFloat8)
+            TCU_THROW(NotSupportedError, VK_EXT_SHADER_FLOAT8_EXTENSION_NAME " not supported by device");
+#endif
+    }
 }
 
 tcu::TestStatus FConvertTestInstance::iterate(void)
@@ -817,6 +950,18 @@ tcu::TestStatus FConvertTestInstance::iterate(void)
         inputBufferSizeInfo = BufferSizeInfo::calculate<BFloat16>(inputValues.size(), m_params.vectorLength);
         inputMemory         = packFloats(inputValues, m_params.vectorLength);
     }
+    else if (m_params.from == FLOAT_TYPE_E5M2)
+    {
+        auto &inputValues   = InputGenerator::getInstance().getValues<tcu::FloatE5M2>();
+        inputBufferSizeInfo = BufferSizeInfo::calculate<tcu::FloatE5M2>(inputValues.size(), m_params.vectorLength);
+        inputMemory         = packFloats(inputValues, m_params.vectorLength);
+    }
+    else if (m_params.from == FLOAT_TYPE_E4M3)
+    {
+        auto &inputValues   = InputGenerator::getInstance().getValues<tcu::FloatE4M3>();
+        inputBufferSizeInfo = BufferSizeInfo::calculate<tcu::FloatE4M3>(inputValues.size(), m_params.vectorLength);
+        inputMemory         = packFloats(inputValues, m_params.vectorLength);
+    }
 #endif
     else
     {
@@ -831,6 +976,14 @@ tcu::TestStatus FConvertTestInstance::iterate(void)
     case BRAIN_FLOAT_16_BITS:
         outputBufferSizeInfo =
             BufferSizeInfo::calculate<BFloat16>(inputBufferSizeInfo.numValues, m_params.vectorLength);
+        break;
+    case FLOAT_TYPE_E5M2:
+        outputBufferSizeInfo =
+            BufferSizeInfo::calculate<tcu::FloatE5M2>(inputBufferSizeInfo.numValues, m_params.vectorLength);
+        break;
+    case FLOAT_TYPE_E4M3:
+        outputBufferSizeInfo =
+            BufferSizeInfo::calculate<tcu::FloatE4M3>(inputBufferSizeInfo.numValues, m_params.vectorLength);
         break;
 #endif
     case FLOAT_TYPE_16_BITS:
@@ -1067,12 +1220,13 @@ tcu::TestStatus FConvertTestInstance::iterate(void)
 #ifdef CTS_USES_VULKANSC
     const std::tuple<tcu::Float16, tcu::Float32, tcu::Float64>
 #else
-    const std::tuple<tcu::Float16, tcu::Float32, tcu::Float64, BFloat16>
+    const std::tuple<tcu::Float16, tcu::Float32, tcu::Float64, BFloat16, tcu::FloatE5M2, tcu::FloatE4M3>
 #endif
         availableTypes;
 
-    const std::optional<bool> res = verifyConversion(m_params.from, m_params.to, availableTypes, outputMemory,
-                                                     m_params.vectorLength, inputBufferSizeInfo.numValues, testLog);
+    const std::optional<bool> res =
+        verifyConversion(m_params.from, m_params.to, availableTypes, outputMemory, m_params.vectorLength,
+                         inputBufferSizeInfo.numValues, m_params.saturatedConvert, testLog);
     if (false == res.has_value())
     {
         // this should never happen
@@ -1092,31 +1246,44 @@ tcu::TestCaseGroup *createPrecisionFconvertGroup(tcu::TestContext &testCtx)
 #ifdef CTS_USES_VULKANSC
         FLOAT_TYPE_16_BITS, FLOAT_TYPE_32_BITS, FLOAT_TYPE_64_BITS
 #else
-        BRAIN_FLOAT_16_BITS, FLOAT_TYPE_16_BITS, FLOAT_TYPE_32_BITS, FLOAT_TYPE_64_BITS
+        FLOAT_TYPE_E5M2,    FLOAT_TYPE_E4M3,   BRAIN_FLOAT_16_BITS, FLOAT_TYPE_16_BITS,
+        FLOAT_TYPE_32_BITS, FLOAT_TYPE_64_BITS
 #endif
     };
 
     for (const FloatType from : floatTypes)
         for (const FloatType to : floatTypes)
             for (size_t k = kMinVectorLength; k <= kMaxVectorLength; ++k)
-            {
-                // No actual conversion if the types are the same.
-                if (from == to)
-                    continue;
-
-                // Skip unimplemened conversion.
-                if (false == TestParams::isConversionDoable(from, to))
+                // XXX TODO Do we need any floatcontrols stuff for inf/nan testing?
+                for (bool sat : {false, true})
                 {
-                    continue;
+                    // No actual conversion if the types are the same.
+                    if (from == to)
+                        continue;
+
+                    // Skip unimplemened conversion.
+                    if (false == TestParams::isConversionDoable(from, to))
+                    {
+                        continue;
+                    }
+
+                    if (sat &&
+#ifdef CTS_USES_VULKANSC
+                        true
+#else
+                        ((to != FLOAT_TYPE_E5M2 && to != FLOAT_TYPE_E4M3) ||
+                         (from == FLOAT_TYPE_E5M2 || from == FLOAT_TYPE_E4M3))
+#endif
+                    )
+                        continue;
+
+                    TestParams params = {from, to, k, sat};
+
+                    std::string testName = std::string() + kFloatNames[from] + "_to_" + kFloatNames[to] + "_size_" +
+                                           std::to_string(k) + (sat ? "_sat" : "");
+
+                    newGroup->addChild(new FConvertTestCase(testCtx, testName, params));
                 }
-
-                TestParams params = {from, to, k};
-
-                std::string testName =
-                    std::string() + kFloatNames[from] + "_to_" + kFloatNames[to] + "_size_" + std::to_string(k);
-
-                newGroup->addChild(new FConvertTestCase(testCtx, testName, params));
-            }
 
     return newGroup;
 }

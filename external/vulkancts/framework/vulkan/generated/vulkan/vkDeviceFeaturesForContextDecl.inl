@@ -196,6 +196,7 @@ const vk::VkPhysicalDeviceCommandBufferInheritanceFeaturesNV&				getCommandBuffe
 const vk::VkPhysicalDeviceMaintenance7FeaturesKHR&							getMaintenance7Features								(void) const;
 const vk::VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV&				getShaderAtomicFloat16VectorFeaturesNV				(void) const;
 const vk::VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT&			getShaderReplicatedCompositesFeaturesEXT			(void) const;
+const vk::VkPhysicalDeviceShaderFloat8FeaturesEXT&							getShaderFloat8FeaturesEXT							(void) const;
 const vk::VkPhysicalDeviceRayTracingValidationFeaturesNV&					getRayTracingValidationFeaturesNV					(void) const;
 const vk::VkPhysicalDeviceClusterAccelerationStructureFeaturesNV&			getClusterAccelerationStructureFeaturesNV			(void) const;
 const vk::VkPhysicalDevicePartitionedAccelerationStructureFeaturesNV&		getPartitionedAccelerationStructureFeaturesNV		(void) const;
