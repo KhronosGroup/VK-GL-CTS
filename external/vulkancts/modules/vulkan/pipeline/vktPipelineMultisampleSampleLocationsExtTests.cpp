@@ -55,6 +55,7 @@
 #include <vector>
 #include <set>
 #include <algorithm>
+#include <cmath>
 
 namespace vkt
 {
