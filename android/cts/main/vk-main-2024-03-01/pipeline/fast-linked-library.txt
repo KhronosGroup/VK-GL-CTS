@@ -12923,6 +12923,8 @@ dEQP-VK.pipeline.fast_linked_library.vertex_input.misc.stride_change_vert_frag
 dEQP-VK.pipeline.fast_linked_library.vertex_input.misc.stride_change_vert_geom_frag
 dEQP-VK.pipeline.fast_linked_library.vertex_input.misc.stride_change_vert_tess_frag
 dEQP-VK.pipeline.fast_linked_library.vertex_input.misc.stride_change_vert_tess_geom_frag
+dEQP-VK.pipeline.fast_linked_library.vertex_input.misc.unbound_input
+dEQP-VK.pipeline.fast_linked_library.vertex_input.misc.unbound_input_dynamic
 dEQP-VK.pipeline.fast_linked_library.vertex_input.misc.unused_binding
 dEQP-VK.pipeline.fast_linked_library.vertex_input.misc.unused_binding_dynamic
 dEQP-VK.pipeline.fast_linked_library.vertex_input.multiple_attributes.binding_one_to_many.attributes.f16vec2.f16vec3.f16vec4
