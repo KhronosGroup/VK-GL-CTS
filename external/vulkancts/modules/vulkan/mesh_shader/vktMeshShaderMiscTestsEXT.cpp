@@ -5832,7 +5832,9 @@ tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
             if (extraWrites)
                 continue;
 
-            for (const auto primType : types)
+            // Workaround. See VK-GL-CTS issue: https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/5589
+            // and GCC issue https://gcc.gnu.org/bugzilla/show_bug.cgi?id=118924
+            for (const auto &primType : types)
             {
                 std::unique_ptr<NoPrimitivesParams> params(new NoPrimitivesParams(
                     /*taskCount*/ (extraWrites ? tcu::just(tcu::UVec3(1u, 1u, 1u)) : tcu::Nothing),
