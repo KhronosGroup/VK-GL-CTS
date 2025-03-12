@@ -841,7 +841,7 @@ public:
         bool resourcesWithoutProfiles{};
         bool outOfOrderDecoding{};
         bool alwaysRecreateDPB{};
-        bool intraOnlyDecoding{};
+        bool intraOnlyDecodingNoSetupRef{};
         size_t pictureParameterUpdateTriggerHack{0};
         bool forceDisableFilmGrain{false};
         VkSharedBaseObj<VulkanVideoFrameBuffer> framebuffer;
@@ -991,7 +991,7 @@ public:
     bool m_resourcesWithoutProfiles{false};
     bool m_outOfOrderDecoding{false};
     bool m_alwaysRecreateDPB{false};
-    bool m_intraOnlyDecoding{false};
+    bool m_intraOnlyDecodingNoSetupRef{false};
     vector<VkParserPerFrameDecodeParameters *> m_pPerFrameDecodeParameters;
     vector<VkParserDecodePictureInfo *> m_pVulkanParserDecodePictureInfo;
     vector<NvVkDecodeFrameData *> m_pFrameDatas;
