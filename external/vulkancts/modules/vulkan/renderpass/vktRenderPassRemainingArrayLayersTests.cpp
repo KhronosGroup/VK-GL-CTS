@@ -284,13 +284,13 @@ tcu::TestStatus RemainingArrayLayersTestInstance::iterate(void)
     };
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType							sType;
-        nullptr,                                                   // const void*								pNext;
-        (VkPipelineVertexInputStateCreateFlags)0u,                 // VkPipelineVertexInputStateCreateFlags	    flags;
-        0u,                                                        // uint32_t									vertexBindingDescriptionCount;
-        nullptr, // const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
-        0u,      // uint32_t									vertexAttributeDescriptionCount;
-        nullptr  // const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                                   // const void* pNext;
+        (VkPipelineVertexInputStateCreateFlags)0u,                 // VkPipelineVertexInputStateCreateFlags     flags;
+        0u,                                                        // uint32_t vertexBindingDescriptionCount;
+        nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+        0u,      // uint32_t vertexAttributeDescriptionCount;
+        nullptr  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
     };
 
     const auto graphicsPipeline = makeGraphicsPipeline(
