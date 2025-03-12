@@ -1,0 +1,1 @@
+dEQP-VK.compute.pipeline.basic.concurrent_compute

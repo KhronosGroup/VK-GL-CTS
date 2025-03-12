@@ -30,10 +30,9 @@
 namespace vkt
 {
 
-tcu::TestCaseGroup* createRenderPassMultisampleResolveTests (tcu::TestContext& testCtx, const renderpass::SharedGroupParams groupParams);
-tcu::TestCaseGroup* createRenderPass2MultisampleResolveTests (tcu::TestContext& testCtx, const renderpass::SharedGroupParams groupParams);
-tcu::TestCaseGroup* createDynamicRenderingMultisampleResolveTests (tcu::TestContext& testCtx, const renderpass::SharedGroupParams groupParams);
+tcu::TestCaseGroup *createRenderPassMultisampleResolveTests(tcu::TestContext &testCtx,
+                                                            const renderpass::SharedGroupParams groupParams);
 
-} // vkt
+} // namespace vkt
 
 #endif // _VKTRENDERPASSMULTISAMPLERESOLVETESTS_HPP

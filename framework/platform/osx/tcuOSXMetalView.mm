@@ -18,7 +18,7 @@
  *
  *//*!
  * \file
- * \brief VK_MVK_macos_surface compatible view
+ * \brief VK_EXT_metal_surface compatible view
  *//*--------------------------------------------------------------------*/
 
 #include "tcuOSXMetalView.hpp"
@@ -30,17 +30,20 @@
 @end
 
 @implementation NativeMetalView
-- (id)initWithFrame:(NSRect) frame {
-	if(self = [super initWithFrame: frame]) {
-		// Make this a layer-backed view
-		self.wantsLayer = YES;
-	}
-	return self;
+- (id)initWithFrame:(NSRect)frame
+{
+    if (self = [super initWithFrame:frame])
+    {
+        // Make this a layer-backed view
+        self.wantsLayer = YES;
+    }
+    return self;
 }
 
 // Callback to create the backing metal layer
-- (CALayer*)makeBackingLayer {
-	return [CAMetalLayer layer];
+- (CALayer *)makeBackingLayer
+{
+    return [CAMetalLayer layer];
 }
 @end
 
@@ -48,19 +51,22 @@ namespace tcu
 {
 namespace osx
 {
-	MetalView::MetalView (int width, int height)
-	: m_view([[NativeMetalView alloc] initWithFrame:NSMakeRect(0, 0, width, height)])
-	{
-	}
+MetalView::MetalView(int width, int height)
+    : m_view([[NativeMetalView alloc]
+          initWithFrame:NSMakeRect(0, 0, width, height)])
+{
+}
 
-	void MetalView::setSize(int width, int height)
-	{
-		[(NativeMetalView*)m_view setFrame:NSMakeRect(0, 0, width, height)];
-	}
+void MetalView::setSize(int width, int height)
+{
+    [(NativeMetalView *)m_view setFrame:NSMakeRect(0, 0, width, height)];
+}
 
-	MetalView::~MetalView ()
-	{
-		[(NativeMetalView*)m_view dealloc];
-	}
-} // osx
-} // tcu
+vk::pt::CAMetalLayer MetalView::getLayer() const
+{
+    return vk::pt::CAMetalLayer((void *)[(NativeMetalView *)m_view layer]);
+}
+
+MetalView::~MetalView() { [(NativeMetalView *)m_view release]; }
+} // namespace osx
+} // namespace tcu

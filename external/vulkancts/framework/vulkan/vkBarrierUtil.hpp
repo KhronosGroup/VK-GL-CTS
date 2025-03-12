@@ -29,76 +29,59 @@
 namespace vk
 {
 
-VkBufferMemoryBarrier makeBufferMemoryBarrier (const VkAccessFlags	srcAccessMask,
-											   const VkAccessFlags	dstAccessMask,
-											   const VkBuffer		buffer,
-											   const VkDeviceSize	offset,
-											   const VkDeviceSize	bufferSizeBytes,
-											   const deUint32		srcQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED,
-											   const deUint32		dstQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED);
+VkBufferMemoryBarrier makeBufferMemoryBarrier(const VkAccessFlags srcAccessMask, const VkAccessFlags dstAccessMask,
+                                              const VkBuffer buffer, const VkDeviceSize offset,
+                                              const VkDeviceSize bufferSizeBytes,
+                                              const uint32_t srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                              const uint32_t dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED);
 
-VkBufferMemoryBarrier2KHR makeBufferMemoryBarrier2(const VkPipelineStageFlags2KHR	srcStageMask,
-												   const VkAccessFlags2KHR			srcAccessMask,
-												   const VkPipelineStageFlags2KHR	dstStageMask,
-												   const VkAccessFlags2KHR			dstAccessMask,
-												   const VkBuffer					buffer,
-												   const VkDeviceSize				offset,
-												   const VkDeviceSize				size,
-												   const deUint32					srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-												   const deUint32					dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED);
+VkBufferMemoryBarrier2KHR makeBufferMemoryBarrier2(const VkPipelineStageFlags2KHR srcStageMask,
+                                                   const VkAccessFlags2KHR srcAccessMask,
+                                                   const VkPipelineStageFlags2KHR dstStageMask,
+                                                   const VkAccessFlags2KHR dstAccessMask, const VkBuffer buffer,
+                                                   const VkDeviceSize offset, const VkDeviceSize size,
+                                                   const uint32_t srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                                   const uint32_t dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED);
 
-VkImageMemoryBarrier makeImageMemoryBarrier (const VkAccessFlags			srcAccessMask,
-											 const VkAccessFlags			dstAccessMask,
-											 const VkImageLayout			oldLayout,
-											 const VkImageLayout			newLayout,
-											 const VkImage					image,
-											 const VkImageSubresourceRange	subresourceRange,
-											 const deUint32					srcQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED,
-											 const deUint32					dstQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED);
+VkImageMemoryBarrier makeImageMemoryBarrier(const VkAccessFlags srcAccessMask, const VkAccessFlags dstAccessMask,
+                                            const VkImageLayout oldLayout, const VkImageLayout newLayout,
+                                            const VkImage image, const VkImageSubresourceRange subresourceRange,
+                                            const uint32_t srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                            const uint32_t dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED);
 
-VkImageMemoryBarrier2KHR makeImageMemoryBarrier2 (const VkPipelineStageFlags2KHR	srcStageMask,
-												  const VkAccessFlags2KHR			srcAccessMask,
-												  const VkPipelineStageFlags2KHR	dstStageMask,
-												  const VkAccessFlags2KHR			dstAccessMask,
-												  const VkImageLayout				oldLayout,
-												  const VkImageLayout				newLayout,
-												  const VkImage						image,
-												  const VkImageSubresourceRange		subresourceRange,
-												  const deUint32					srcQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED,
-												  const deUint32					dstQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED);
+VkImageMemoryBarrier2KHR makeImageMemoryBarrier2(const VkPipelineStageFlags2KHR srcStageMask,
+                                                 const VkAccessFlags2KHR srcAccessMask,
+                                                 const VkPipelineStageFlags2KHR dstStageMask,
+                                                 const VkAccessFlags2KHR dstAccessMask, const VkImageLayout oldLayout,
+                                                 const VkImageLayout newLayout, const VkImage image,
+                                                 const VkImageSubresourceRange subresourceRange,
+                                                 const uint32_t srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                                 const uint32_t dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED);
 
-VkMemoryBarrier makeMemoryBarrier (const VkAccessFlags	srcAccessMask,
-								   const VkAccessFlags	dstAccessMask);
+VkMemoryBarrier makeMemoryBarrier(const VkAccessFlags srcAccessMask, const VkAccessFlags dstAccessMask);
 
-VkMemoryBarrier2KHR makeMemoryBarrier2(const VkPipelineStageFlags2KHR	srcStageMask,
-									   const VkAccessFlags2KHR			srcAccessMask,
-									   const VkPipelineStageFlags2KHR	dstStageMask,
-									   const VkAccessFlags2KHR			dstAccessMask);
+VkMemoryBarrier2KHR makeMemoryBarrier2(const VkPipelineStageFlags2KHR srcStageMask,
+                                       const VkAccessFlags2KHR srcAccessMask,
+                                       const VkPipelineStageFlags2KHR dstStageMask,
+                                       const VkAccessFlags2KHR dstAccessMask);
 
-void cmdPipelineMemoryBarrier		(const DeviceInterface&			vk,
-									 const VkCommandBuffer			commandBuffer,
-									 const VkPipelineStageFlags		srcStageMask,
-									 const VkPipelineStageFlags		dstStageMask,
-									 const VkMemoryBarrier*			pMemoryBarriers,
-									 const size_t					memoryBarrierCount = 1u,
-									 const VkDependencyFlags		dependencyFlags = 0);
+void cmdPipelineMemoryBarrier(const DeviceInterface &vk, const VkCommandBuffer commandBuffer,
+                              const VkPipelineStageFlags srcStageMask, const VkPipelineStageFlags dstStageMask,
+                              const VkMemoryBarrier *pMemoryBarriers, const size_t memoryBarrierCount = 1u,
+                              const VkDependencyFlags dependencyFlags = 0);
 
-void cmdPipelineBufferMemoryBarrier	(const DeviceInterface&			vk,
-									 const VkCommandBuffer			commandBuffer,
-									 const VkPipelineStageFlags		srcStageMask,
-									 const VkPipelineStageFlags		dstStageMask,
-									 const VkBufferMemoryBarrier*	pBufferMemoryBarriers,
-									 const size_t					bufferMemoryBarrierCount = 1u,
-									 const VkDependencyFlags		dependencyFlags = 0);
+void cmdPipelineBufferMemoryBarrier(const DeviceInterface &vk, const VkCommandBuffer commandBuffer,
+                                    const VkPipelineStageFlags srcStageMask, const VkPipelineStageFlags dstStageMask,
+                                    const VkBufferMemoryBarrier *pBufferMemoryBarriers,
+                                    const size_t bufferMemoryBarrierCount   = 1u,
+                                    const VkDependencyFlags dependencyFlags = 0);
 
-void cmdPipelineImageMemoryBarrier	(const DeviceInterface&			vk,
-									 const VkCommandBuffer			commandBuffer,
-									 const VkPipelineStageFlags		srcStageMask,
-									 const VkPipelineStageFlags		dstStageMask,
-									 const VkImageMemoryBarrier*	pImageMemoryBarriers,
-									 const size_t					imageMemoryBarrierCount = 1u,
-									 const VkDependencyFlags		dependencyFlags = 0);
+void cmdPipelineImageMemoryBarrier(const DeviceInterface &vk, const VkCommandBuffer commandBuffer,
+                                   const VkPipelineStageFlags srcStageMask, const VkPipelineStageFlags dstStageMask,
+                                   const VkImageMemoryBarrier *pImageMemoryBarriers,
+                                   const size_t imageMemoryBarrierCount    = 1u,
+                                   const VkDependencyFlags dependencyFlags = 0);
 
-} // vk
+} // namespace vk
 
 #endif // _VKBARRIERUTIL_HPP

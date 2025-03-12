@@ -37,19 +37,29 @@ namespace null
 class Platform : public tcu::Platform, private glu::Platform, private eglu::Platform, private vk::Platform
 {
 public:
-									Platform			(void);
-	virtual							~Platform			(void);
+    Platform(void);
+    virtual ~Platform(void);
 
-	virtual const glu::Platform&	getGLPlatform		(void) const { return static_cast<const glu::Platform&>(*this); }
-	virtual const eglu::Platform&	getEGLPlatform		(void) const { return static_cast<const eglu::Platform&>(*this); }
-	virtual const vk::Platform&		getVulkanPlatform	(void) const { return static_cast<const vk::Platform&>(*this);	}
-	virtual void					getMemoryLimits		(tcu::PlatformMemoryLimits& limits) const;
+    virtual const glu::Platform &getGLPlatform(void) const
+    {
+        return static_cast<const glu::Platform &>(*this);
+    }
+    virtual const eglu::Platform &getEGLPlatform(void) const
+    {
+        return static_cast<const eglu::Platform &>(*this);
+    }
+    virtual const vk::Platform &getVulkanPlatform(void) const
+    {
+        return static_cast<const vk::Platform &>(*this);
+    }
+    virtual void getMemoryLimits(tcu::PlatformMemoryLimits &limits) const;
 
 private:
-	virtual vk::Library*			createLibrary		(vk::Platform::LibraryType libraryType = vk::Platform::LIBRARY_TYPE_VULKAN, const char* libraryPath = DE_NULL) const;
+    virtual vk::Library *createLibrary(vk::Platform::LibraryType libraryType = vk::Platform::LIBRARY_TYPE_VULKAN,
+                                       const char *libraryPath               = nullptr) const;
 };
 
-} // null
-} // tcu
+} // namespace null
+} // namespace tcu
 
 #endif // _TCUNULLPLATFORM_HPP

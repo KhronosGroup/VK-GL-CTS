@@ -36,18 +36,17 @@ namespace lnx
 class VulkanPlatform : public vk::Platform
 {
 public:
-						VulkanPlatform		(EventState& eventState);
-	vk::wsi::Display*	createWsiDisplay	(vk::wsi::Type wsiType) const;
-	vk::Library*		createLibrary		(LibraryType libraryType = LIBRARY_TYPE_VULKAN, const char* libraryPath = DE_NULL) const;
-	bool				hasDisplay			(vk::wsi::Type wsiType) const;
-	void				describePlatform	(std::ostream& dst) const;
+    VulkanPlatform(EventState &eventState);
+    vk::wsi::Display *createWsiDisplay(vk::wsi::Type wsiType) const;
+    vk::Library *createLibrary(LibraryType libraryType = LIBRARY_TYPE_VULKAN, const char *libraryPath = nullptr) const;
+    bool hasDisplay(vk::wsi::Type wsiType) const;
+    void describePlatform(std::ostream &dst) const;
 
-private :
-	 EventState&		m_eventState;
+private:
+    EventState &m_eventState;
 };
 
-
-} // linux
-} // tcu
+} // namespace lnx
+} // namespace tcu
 
 #endif // _TCULNXVULKANPLATFORM_HPP

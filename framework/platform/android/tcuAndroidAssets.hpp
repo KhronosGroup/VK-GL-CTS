@@ -36,35 +36,35 @@ namespace Android
 class AssetArchive : public Archive
 {
 public:
-						AssetArchive		(AAssetManager* assetMgr);
-						~AssetArchive		(void);
+    AssetArchive(AAssetManager *assetMgr);
+    ~AssetArchive(void);
 
-	Resource*			getResource			(const char* name) const;
+    Resource *getResource(const char *name) const;
 
 private:
-	AAssetManager*		m_assetMgr;
+    AAssetManager *m_assetMgr;
 };
 
 class AssetResource : public Resource
 {
 public:
-						AssetResource		(AAssetManager* assetMgr, const char* name);
-						~AssetResource		(void);
+    AssetResource(AAssetManager *assetMgr, const char *name);
+    ~AssetResource(void);
 
-	void				read				(deUint8* dst, int numBytes);
-	int					getPosition			(void) const;
-	void				setPosition			(int position);
-	bool				isFinished			(void) const;
-	int					getSize				(void) const;
+    void read(uint8_t *dst, int numBytes);
+    uint32_t getPosition(void) const;
+    void setPosition(uint32_t position);
+    bool isFinished(void) const;
+    uint32_t getSize(void) const;
 
 private:
-						AssetResource		(const AssetResource& other);
-	AssetResource		operator=			(const AssetResource& other);
+    AssetResource(const AssetResource &other);
+    AssetResource operator=(const AssetResource &other);
 
-	AAsset*				m_asset;
+    AAsset *m_asset;
 };
 
-} // Android
-} // tcu
+} // namespace Android
+} // namespace tcu
 
 #endif // _TCUANDROIDASSETS_HPP

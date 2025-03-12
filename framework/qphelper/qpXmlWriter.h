@@ -29,92 +29,93 @@
 
 DE_BEGIN_EXTERN_C
 
-typedef struct qpXmlWriter_s	qpXmlWriter;
+typedef struct qpXmlWriter_s qpXmlWriter;
 
 typedef enum qpXmlAttributeType_e
 {
-	QP_XML_ATTRIBUTE_STRING = 0,
-	QP_XML_ATTRIBUTE_INT,
-	QP_XML_ATTRIBUTE_BOOL,
+    QP_XML_ATTRIBUTE_STRING = 0,
+    QP_XML_ATTRIBUTE_INT,
+    QP_XML_ATTRIBUTE_BOOL,
 
-	QP_XML_ATTRIBUTE_LAST
+    QP_XML_ATTRIBUTE_LAST
 } qpXmlAttributeType;
 
 typedef struct qpXmlAttribute_s
 {
-	const char*			name;
-	qpXmlAttributeType	type;
-	const char*			stringValue;
-	int					intValue;
-	deBool				boolValue;
+    const char *name;
+    qpXmlAttributeType type;
+    const char *stringValue;
+    int intValue;
+    bool boolValue;
 } qpXmlAttribute;
 
-DE_INLINE qpXmlAttribute qpSetStringAttrib (const char* name, const char* value)
+static inline qpXmlAttribute qpSetStringAttrib(const char *name, const char *value)
 {
-	qpXmlAttribute attrib;
-	attrib.name			= name;
-	attrib.type			= QP_XML_ATTRIBUTE_STRING;
-	attrib.stringValue	= value;
-	attrib.intValue		= -678;
-	attrib.boolValue	= (deBool)0xFFFFFFFFu;
-	return attrib;
+    qpXmlAttribute attrib;
+    attrib.name        = name;
+    attrib.type        = QP_XML_ATTRIBUTE_STRING;
+    attrib.stringValue = value;
+    attrib.intValue    = -678;
+    attrib.boolValue   = (bool)0xFFFFFFFFu;
+    return attrib;
 }
 
-DE_INLINE qpXmlAttribute qpSetIntAttrib (const char* name, int value)
+static inline qpXmlAttribute qpSetIntAttrib(const char *name, int value)
 {
-	qpXmlAttribute attrib;
-	attrib.name			= name;
-	attrib.type			= QP_XML_ATTRIBUTE_INT;
-	attrib.stringValue	= "<intAttrib>";
-	attrib.intValue		= value;
-	attrib.boolValue	= (deBool)0xFFFFFFFFu;
-	return attrib;
+    qpXmlAttribute attrib;
+    attrib.name        = name;
+    attrib.type        = QP_XML_ATTRIBUTE_INT;
+    attrib.stringValue = "<intAttrib>";
+    attrib.intValue    = value;
+    attrib.boolValue   = (bool)0xFFFFFFFFu;
+    return attrib;
 }
 
-DE_INLINE qpXmlAttribute qpSetBoolAttrib (const char* name, deBool value)
+static inline qpXmlAttribute qpSetBoolAttrib(const char *name, bool value)
 {
-	qpXmlAttribute attrib;
-	attrib.name			= name;
-	attrib.type			= QP_XML_ATTRIBUTE_BOOL;
-	attrib.stringValue	= "<boolAttrib>";
-	attrib.intValue		= -679;
-	attrib.boolValue	= value;
-	return attrib;
+    qpXmlAttribute attrib;
+    attrib.name        = name;
+    attrib.type        = QP_XML_ATTRIBUTE_BOOL;
+    attrib.stringValue = "<boolAttrib>";
+    attrib.intValue    = -679;
+    attrib.boolValue   = value;
+    return attrib;
 }
 /*--------------------------------------------------------------------*//*!
  * \brief Create a file based XML Writer instance
  * \param fileName Name of the file
- * \param useCompression Set to DE_TRUE to use compression, if supported by implementation
- * \param flushAfterWrite Set to DE_TRUE to call fflush after writing each XML token
- * \return qpXmlWriter instance, or DE_NULL if cannot create file
+ * \param useCompression Set to true to use compression, if supported by implementation
+ * \param flushAfterWrite Set to true to call fflush after writing each XML token
+ * \return qpXmlWriter instance, or NULL if cannot create file
  *//*--------------------------------------------------------------------*/
-qpXmlWriter*	qpXmlWriter_createFileWriter (FILE* outFile, deBool useCompression, deBool flushAfterWrite);
+qpXmlWriter *qpXmlWriter_createFileWriter(FILE *outFile, bool useCompression, bool flushAfterWrite);
 
 /*--------------------------------------------------------------------*//*!
  * \brief XML Writer instance
- * \param a	qpXmlWriter instance
+ * \param a    qpXmlWriter instance
  *//*--------------------------------------------------------------------*/
-void			qpXmlWriter_destroy (qpXmlWriter* writer);
+void qpXmlWriter_destroy(qpXmlWriter *writer);
 
 /*--------------------------------------------------------------------*//*!
  * \brief XML Writer instance
- * \param a	qpXmlWriter instance
+ * \param a    qpXmlWriter instance
  *//*--------------------------------------------------------------------*/
-void			qpXmlWriter_flush (qpXmlWriter* writer);
+void qpXmlWriter_flush(qpXmlWriter *writer);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Start XML document
  * \param writer qpXmlWriter instance
+ * \param writeXmlHeader whether to write the <xml.. header
  * \return true on success, false on error
  *//*--------------------------------------------------------------------*/
-deBool			qpXmlWriter_startDocument (qpXmlWriter* writer);
+bool qpXmlWriter_startDocument(qpXmlWriter *writer, bool writeXmlHeader);
 
 /*--------------------------------------------------------------------*//*!
  * \brief End XML document
  * \param writer qpXmlWriter instance
  * \return true on success, false on error
  *//*--------------------------------------------------------------------*/
-deBool			qpXmlWriter_endDocument (qpXmlWriter* writer);
+bool qpXmlWriter_endDocument(qpXmlWriter *writer);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Start XML element
@@ -122,7 +123,8 @@ deBool			qpXmlWriter_endDocument (qpXmlWriter* writer);
  * \param elementName Name of the element
  * \return true on success, false on error
  *//*--------------------------------------------------------------------*/
-deBool			qpXmlWriter_startElement (qpXmlWriter* writer, const char* elementName, int numAttribs, const qpXmlAttribute* attribs);
+bool qpXmlWriter_startElement(qpXmlWriter *writer, const char *elementName, int numAttribs,
+                              const qpXmlAttribute *attribs);
 
 /*--------------------------------------------------------------------*//*!
  * \brief End XML element
@@ -130,7 +132,7 @@ deBool			qpXmlWriter_startElement (qpXmlWriter* writer, const char* elementName,
  * \param elementName Name of the element
  * \return true on success, false on error
  *//*--------------------------------------------------------------------*/
-deBool			qpXmlWriter_endElement (qpXmlWriter* writer, const char* elementName);
+bool qpXmlWriter_endElement(qpXmlWriter *writer, const char *elementName);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Write raw string into XML document
@@ -138,16 +140,16 @@ deBool			qpXmlWriter_endElement (qpXmlWriter* writer, const char* elementName);
  * \param content String to be written
  * \return true on success, false on error
  *//*--------------------------------------------------------------------*/
-deBool			qpXmlWriter_writeString (qpXmlWriter* writer, const char* content);
+bool qpXmlWriter_writeString(qpXmlWriter *writer, const char *content);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Write base64 encoded data into XML document
- * \param writer	qpXmlWriter instance
- * \param data		Pointer to data to be written
- * \param numBytes	Length of data in bytes
+ * \param writer    qpXmlWriter instance
+ * \param data        Pointer to data to be written
+ * \param numBytes    Length of data in bytes
  * \return true on success, false on error
  *//*--------------------------------------------------------------------*/
-deBool			qpXmlWriter_writeBase64 (qpXmlWriter* writer, const deUint8* data, size_t numBytes);
+bool qpXmlWriter_writeBase64(qpXmlWriter *writer, const uint8_t *data, size_t numBytes);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Convenience function for writing XML element
@@ -156,7 +158,7 @@ deBool			qpXmlWriter_writeBase64 (qpXmlWriter* writer, const deUint8* data, size
  * \param elementContent Contents of the element
  * \return true on success, false on error
  *//*--------------------------------------------------------------------*/
-deBool			qpXmlWriter_writeStringElement (qpXmlWriter* writer, const char* elementName, const char* elementContent);
+bool qpXmlWriter_writeStringElement(qpXmlWriter *writer, const char *elementName, const char *elementContent);
 
 DE_END_EXTERN_C
 

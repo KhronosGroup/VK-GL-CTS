@@ -32,39 +32,40 @@ DE_BEGIN_EXTERN_C
 /* Output stream struct, implemented as a wrapper to io stream */
 typedef struct deOutStream_s
 {
-	deIOStream ioStream;
+    deIOStream ioStream;
 } deOutStream;
 
-DE_INLINE deStreamResult	deOutStream_write		(deOutStream* stream, const void* buf, deInt32 bufSize, deInt32* numWritten);
-DE_INLINE deStreamResult	deOutStream_flush		(deOutStream* stream);
-DE_INLINE deStreamResult	deOutStream_deinit		(deOutStream* stream);
-DE_INLINE const char*		deOutStream_getError	(deOutStream* stream);
-DE_INLINE deStreamStatus	deOutStream_getStatus	(deOutStream* stream);
+static inline deStreamResult deOutStream_write(deOutStream *stream, const void *buf, int32_t bufSize,
+                                               int32_t *numWritten);
+static inline deStreamResult deOutStream_flush(deOutStream *stream);
+static inline deStreamResult deOutStream_deinit(deOutStream *stream);
+static inline const char *deOutStream_getError(deOutStream *stream);
+static inline deStreamStatus deOutStream_getStatus(deOutStream *stream);
 
-
-DE_INLINE deStreamResult deOutStream_write (deOutStream* stream, const void* buf, deInt32 bufSize, deInt32* numWritten)
+static inline deStreamResult deOutStream_write(deOutStream *stream, const void *buf, int32_t bufSize,
+                                               int32_t *numWritten)
 {
-	return deIOStream_write(&(stream->ioStream), buf, bufSize, numWritten);
+    return deIOStream_write(&(stream->ioStream), buf, bufSize, numWritten);
 }
 
-DE_INLINE deStreamResult deOutStream_flush (deOutStream* stream)
+static inline deStreamResult deOutStream_flush(deOutStream *stream)
 {
-	return deIOStream_flush(&(stream->ioStream));
+    return deIOStream_flush(&(stream->ioStream));
 }
 
-DE_INLINE deStreamResult deOutStream_deinit (deOutStream* stream)
+static inline deStreamResult deOutStream_deinit(deOutStream *stream)
 {
-	return deIOStream_deinit(&(stream->ioStream));
+    return deIOStream_deinit(&(stream->ioStream));
 }
 
-DE_INLINE const char* deOutStream_getError (deOutStream* stream)
+static inline const char *deOutStream_getError(deOutStream *stream)
 {
-	return deIOStream_getError(&(stream->ioStream));
+    return deIOStream_getError(&(stream->ioStream));
 }
 
-DE_INLINE deStreamStatus deOutStream_getStatus (deOutStream* stream)
+static inline deStreamStatus deOutStream_getStatus(deOutStream *stream)
 {
-	return deIOStream_getStatus(&(stream->ioStream));
+    return deIOStream_getStatus(&(stream->ioStream));
 }
 
 DE_END_EXTERN_C

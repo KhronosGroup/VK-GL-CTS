@@ -1,0 +1,112 @@
+#!amber
+
+DEVICE_EXTENSION VK_KHR_deferred_host_operations
+DEVICE_EXTENSION VK_KHR_acceleration_structure
+DEVICE_EXTENSION VK_KHR_ray_tracing_pipeline
+DEVICE_EXTENSION VK_KHR_buffer_device_address
+DEVICE_FEATURE   RayTracingPipelineFeaturesKHR.rayTracingPipeline
+DEVICE_FEATURE   AccelerationStructureFeaturesKHR.accelerationStructure
+DEVICE_FEATURE   BufferDeviceAddressFeatures.bufferDeviceAddress
+
+SHADER ray_generation raygen1 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  layout(location = 0) rayPayloadEXT uint payload;
+  layout(set = 0, binding = 0) uniform accelerationStructureEXT topLevelAS;
+  layout(r32ui, set = 0, binding = 1) uniform uimage2D result;
+  void main()
+  {
+    payload = 1u;
+    traceRayEXT(
+        topLevelAS,
+        gl_RayFlagsNoneEXT,                     /* rayFlags        */
+        0xFFu,                                  /* cullMask        */
+        0,                                      /* sbtRecordOffset */
+        0,                                      /* sbtRecordStride */
+        0,                                      /* missIndex       */
+        vec3(gl_LaunchIDEXT.x + 0.4, 0.4, 0.0), /* origin          */
+        0.0,                                    /* Tmin            */
+        vec3(0.0, 0.0, 1.0),                    /* direction       */
+        3.5,                                    /* Tmax            */
+        0                                       /* payload         */);
+    imageStore(result, ivec2(gl_LaunchIDEXT.xy), uvec4(payload, 0u, 0u, 0u));
+  }
+END
+
+SHADER miss miss1 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  layout(location = 0) rayPayloadInEXT uint payload;
+  void main()
+  {
+    payload += 1000;
+  }
+END
+
+SHADER closest_hit closesthit1 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  layout(location = 0) rayPayloadInEXT uint payload;
+  void main()
+  {
+    payload += 100;
+  }
+END
+
+SHADER any_hit anyhit1 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  layout(location = 0) rayPayloadInEXT uint payload;
+  void main()
+  {
+    payload += 10 * gl_PrimitiveID;
+  }
+END
+
+ACCELERATION_STRUCTURE BOTTOM_LEVEL triangles
+  GEOMETRY TRIANGLES
+    0.0 0.0 1.0
+    1.0 0.0 1.0
+    0.0 1.0 1.0
+
+    1.0 0.0 2.0
+    2.0 0.0 2.0
+    1.0 1.0 2.0
+
+    2.0 0.0 3.0
+    3.0 0.0 3.0
+    2.0 1.0 3.0
+
+    3.0 0.0 4.0
+    4.0 0.0 4.0
+    3.0 1.0 4.0
+  END
+END
+
+ACCELERATION_STRUCTURE TOP_LEVEL tlas1
+  BOTTOM_LEVEL_INSTANCE triangles
+  END
+END
+
+IMAGE img1 FORMAT R32_UINT DIM_2D WIDTH 4 HEIGHT 1 FILL 0
+
+PIPELINE raytracing my_rtpipeline
+  BIND ACCELERATION_STRUCTURE tlas1 DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER img1 AS storage_image DESCRIPTOR_SET 0 BINDING 1
+  SHADER_GROUP rgen_group raygen1
+  SHADER_GROUP miss_group miss1
+  SHADER_GROUP tri_group anyhit1 closesthit1
+  SHADER_BINDING_TABLE sbt1
+    rgen_group
+  END
+  SHADER_BINDING_TABLE sbt2
+    miss_group
+  END
+  SHADER_BINDING_TABLE sbt3
+    tri_group
+  END
+END
+
+RUN my_rtpipeline RAYGEN sbt1 MISS sbt2 HIT sbt3 4 1 1
+
+EXPECT img1 IDX 0 EQ 101 111 121 1001

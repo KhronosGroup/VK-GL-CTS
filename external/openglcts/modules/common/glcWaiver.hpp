@@ -23,7 +23,6 @@
  * \brief
  */ /*-------------------------------------------------------------------*/
 
-
 /* Bug 13788 - Waiver request for bug related to
    rendering last 2 columns of pixels in 16K wide textures / render buffers
 

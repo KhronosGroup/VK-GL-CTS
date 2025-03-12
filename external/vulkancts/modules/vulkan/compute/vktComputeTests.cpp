@@ -3,6 +3,8 @@
  * ------------------------
  *
  * Copyright (c) 2016 The Khronos Group Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,38 +33,56 @@
 #include "vktComputeWorkgroupMemoryExplicitLayoutTests.hpp"
 #endif // CTS_USES_VULKANSC
 #include "vktTestGroupUtil.hpp"
+#include "vkComputePipelineConstructionUtil.hpp"
 
 namespace vkt
 {
 namespace compute
 {
 
+using namespace vk;
+
 namespace
 {
 
-void createChildren (tcu::TestCaseGroup* computeTests)
+void createChildren(tcu::TestCaseGroup *computeTests, ComputePipelineConstructionType computePipelineConstructionType)
 {
-	tcu::TestContext&	testCtx		= computeTests->getTestContext();
+    tcu::TestContext &testCtx = computeTests->getTestContext();
 
-	computeTests->addChild(createBasicComputeShaderTests(testCtx));
-	computeTests->addChild(createBasicDeviceGroupComputeShaderTests(testCtx));
+    computeTests->addChild(createBasicComputeShaderTests(testCtx, computePipelineConstructionType));
+    computeTests->addChild(createBasicDeviceGroupComputeShaderTests(testCtx, computePipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
-	computeTests->addChild(createCooperativeMatrixTests(testCtx));
+    computeTests->addChild(createCooperativeMatrixTests(testCtx, computePipelineConstructionType));
 #endif
-	computeTests->addChild(createIndirectComputeDispatchTests(testCtx));
-	computeTests->addChild(createComputeShaderBuiltinVarTests(testCtx));
-	computeTests->addChild(createZeroInitializeWorkgroupMemoryTests(testCtx));
+    computeTests->addChild(createIndirectComputeDispatchTests(testCtx, computePipelineConstructionType));
+    computeTests->addChild(createComputeShaderBuiltinVarTests(testCtx, computePipelineConstructionType));
+    computeTests->addChild(createZeroInitializeWorkgroupMemoryTests(testCtx, computePipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
-	computeTests->addChild(createWorkgroupMemoryExplicitLayoutTests(testCtx));
+    computeTests->addChild(createWorkgroupMemoryExplicitLayoutTests(testCtx, computePipelineConstructionType));
 #endif // CTS_USES_VULKANSC
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
 {
-	return createTestGroup(testCtx, "compute", "Compute shader tests", createChildren);
+    de::MovePtr<tcu::TestCaseGroup> pipelineGroup(
+        createTestGroup(testCtx, "pipeline", createChildren, COMPUTE_PIPELINE_CONSTRUCTION_TYPE_PIPELINE));
+#ifndef CTS_USES_VULKANSC
+    de::MovePtr<tcu::TestCaseGroup> shaderObjectSpirvGroup(createTestGroup(
+        testCtx, "shader_object_spirv", createChildren, COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_SPIRV));
+    de::MovePtr<tcu::TestCaseGroup> shaderObjectBinaryGroup(createTestGroup(
+        testCtx, "shader_object_binary", createChildren, COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY));
+#endif
+
+    de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
+    mainGroup->addChild(pipelineGroup.release());
+#ifndef CTS_USES_VULKANSC
+    mainGroup->addChild(shaderObjectSpirvGroup.release());
+    mainGroup->addChild(shaderObjectBinaryGroup.release());
+#endif
+    return mainGroup.release();
 }
 
-} // compute
-} // vkt
+} // namespace compute
+} // namespace vkt

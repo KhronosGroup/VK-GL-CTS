@@ -1,2 +1,0 @@
-dEQP-VK.info.device_memory_budget
-dEQP-VK.info.device_mandatory_features

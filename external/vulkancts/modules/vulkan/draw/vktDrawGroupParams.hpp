@@ -33,21 +33,26 @@ namespace Draw
 // Structure containing parameters for all tests in draw group
 struct GroupParams
 {
-	// When this flag is set tests use dynamic rendering, otherwise renderpass object is used.
-	bool useDynamicRendering;
+    // When this flag is set tests use dynamic rendering, otherwise renderpass object is used.
+    bool useDynamicRendering;
 
-	// When this flag is true then secondary command buffer is created in test
-	bool useSecondaryCmdBuffer;
+    // When this flag is true then secondary command buffer is created in test
+    bool useSecondaryCmdBuffer;
 
-	// When true begin/endRendering is in secondary command buffer, when false those
-	// commands are recorded to primary command buffer. This flag is checked only when
-	// useSecondaryCmdBuffer is true.
-	bool secondaryCmdBufferCompletelyContainsDynamicRenderpass;
+    // When true begin/endRendering is in secondary command buffer, when false those
+    // commands are recorded to primary command buffer. This flag is checked only when
+    // useSecondaryCmdBuffer is true.
+    bool secondaryCmdBufferCompletelyContainsDynamicRenderpass;
+
+    // When true the secondary command buffer with the renderpass is nested
+    // within another secondary command buffer. This flag is checked only when
+    // useSecondaryCmdBuffer is true.
+    bool nestedSecondaryCmdBuffer;
 };
 
 typedef de::SharedPtr<GroupParams> SharedGroupParams;
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWGROUPPARAMS_HPP

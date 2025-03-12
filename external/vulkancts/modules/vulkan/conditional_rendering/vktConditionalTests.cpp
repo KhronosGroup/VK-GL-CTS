@@ -29,6 +29,7 @@
 #include "vktConditionalClearAttachmentTests.hpp"
 #include "vktConditionalDrawAndClearTests.hpp"
 #include "vktConditionalIgnoreTests.hpp"
+#include "vktConditionalTransformFeedbackTests.hpp"
 
 namespace vkt
 {
@@ -38,23 +39,24 @@ namespace conditional
 namespace
 {
 
-void createChildren (tcu::TestCaseGroup* group)
+void createChildren(tcu::TestCaseGroup *group)
 {
-	tcu::TestContext&	testCtx		= group->getTestContext();
+    tcu::TestContext &testCtx = group->getTestContext();
 
-	group->addChild(new ConditionalDrawTests(testCtx));
-	group->addChild(new ConditionalDispatchTests(testCtx));
-	group->addChild(new ConditionalClearAttachmentTests(testCtx));
-	group->addChild(new ConditionalRenderingDrawAndClearTests(testCtx));
-	group->addChild(new ConditionalIgnoreTests(testCtx));
+    group->addChild(new ConditionalDrawTests(testCtx));
+    group->addChild(new ConditionalDispatchTests(testCtx));
+    group->addChild(new ConditionalClearAttachmentTests(testCtx));
+    group->addChild(new ConditionalRenderingDrawAndClearTests(testCtx));
+    group->addChild(new ConditionalIgnoreTests(testCtx));
+    group->addChild(new ConditionalTransformFeedbackTests(testCtx));
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
 {
-	return createTestGroup(testCtx, "conditional_rendering", "Conditional Rendering Tests", createChildren);
+    return createTestGroup(testCtx, name.c_str(), createChildren);
 }
 
-} // conditional
-} // vkt
+} // namespace conditional
+} // namespace vkt

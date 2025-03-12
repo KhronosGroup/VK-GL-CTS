@@ -24,50 +24,75 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
+#include <cstddef>
+#include <type_traits>
 
 #if (DE_OS == DE_OS_ANDROID) && defined(__ARM_ARCH) && defined(__ARM_32BIT_STATE)
-#	define VKAPI_ATTR __attribute__((pcs("aapcs-vfp")))
+#define VKAPI_ATTR __attribute__((pcs("aapcs-vfp")))
 #else
-#	define VKAPI_ATTR
+#define VKAPI_ATTR
 #endif
 
-#if (DE_OS == DE_OS_WIN32) && ((defined(_MSC_VER) && _MSC_VER >= 800) || defined(__MINGW32__) || defined(_STDCALL_SUPPORTED))
-#	define VKAPI_CALL __stdcall
+#if (DE_OS == DE_OS_WIN32) && \
+    ((defined(_MSC_VER) && _MSC_VER >= 800) || defined(__MINGW32__) || defined(_STDCALL_SUPPORTED))
+#define VKAPI_CALL __stdcall
 #else
-#	define VKAPI_CALL
+#define VKAPI_CALL
 #endif
 
-#define VK_NULL_HANDLE									DE_NULL
-#define VK_DEFINE_HANDLE(NAME, TYPE)					typedef struct NAME##_s* NAME
-#define VK_DEFINE_NON_DISPATCHABLE_HANDLE(NAME, TYPE)	typedef Handle<TYPE> NAME
+// A helper to make sure VK_NULL_HANDLE is not accidentally used where it doesn't make sense.  When
+// assigned to a handle defined by VK_DEFINE_HANDLE below (a pointer), it is automatically cast to
+// nullptr.  When assigned to a Handle object, a special constructor that accepts this type sets it
+// internal value to 0.
+struct VkNullHandleType
+{
+    template <typename T>
+    operator T *()
+    {
+        return nullptr;
+    }
+};
 
-#define VK_DEFINE_PLATFORM_TYPE(NAME, COMPATIBLE)		\
-namespace pt {											\
-struct NAME {											\
-	COMPATIBLE internal;								\
-	explicit NAME (COMPATIBLE internal_)				\
-		: internal(internal_) {}						\
-};														\
-} // pt
+#define VK_NULL_HANDLE \
+    VkNullHandleType   \
+    {                  \
+    }
+#define VK_DEFINE_HANDLE(NAME, TYPE) typedef struct NAME##_s *NAME
+#define VK_DEFINE_NON_DISPATCHABLE_HANDLE(NAME, TYPE) typedef Handle<TYPE> NAME
 
-#define VK_MAKE_API_VERSION(VARIANT, MAJOR, MINOR, PATCH)	\
-												((((deUint32)(VARIANT)) << 29) | (((deUint32)(MAJOR)) << 22) | (((deUint32)(MINOR)) << 12) | ((deUint32)(PATCH)))
-#define VKSC_API_VARIANT						1
-#define VK_MAKE_VERSION(MAJOR, MINOR, PATCH)	VK_MAKE_API_VERSION(0, MAJOR, MINOR, PATCH)
-#define VK_BIT(NUM)								(1u<<(deUint32)(NUM))
+#define VK_DEFINE_PLATFORM_TYPE(NAME, COMPATIBLE)                 \
+    namespace pt                                                  \
+    {                                                             \
+    struct NAME                                                   \
+    {                                                             \
+        COMPATIBLE internal;                                      \
+        explicit NAME(COMPATIBLE internal_) : internal(internal_) \
+        {                                                         \
+        }                                                         \
+        NAME(std::nullptr_t) : internal()                         \
+        {                                                         \
+        }                                                         \
+    };                                                            \
+    } // pt
 
-#define VK_API_VERSION_VARIANT(version)			((deUint32)(version) >> 29)
-#define VK_API_VERSION_MAJOR(version)			(((deUint32)(version) >> 22) & 0x7FU)
-#define VK_API_VERSION_MINOR(version)			(((deUint32)(version) >> 12) & 0x3FFU)
-#define VK_API_VERSION_PATCH(version)			((deUint32)(version) & 0xFFFU)
+#define VK_MAKE_API_VERSION(VARIANT, MAJOR, MINOR, PATCH) \
+    ((((uint32_t)(VARIANT)) << 29) | (((uint32_t)(MAJOR)) << 22) | (((uint32_t)(MINOR)) << 12) | ((uint32_t)(PATCH)))
+#define VKSC_API_VARIANT 1
+#define VK_MAKE_VERSION(MAJOR, MINOR, PATCH) VK_MAKE_API_VERSION(0, MAJOR, MINOR, PATCH)
+#define VK_BIT(NUM) (1u << (uint32_t)(NUM))
 
-#define VK_CHECK(EXPR)							vk::checkResult((EXPR), #EXPR, __FILE__, __LINE__)
-#define VK_CHECK_SUPPORTED(EXPR)				vk::checkResultSupported((EXPR), #EXPR, __FILE__, __LINE__)
-#define VK_CHECK_MSG(EXPR, MSG)					vk::checkResult((EXPR), MSG, __FILE__, __LINE__)
-#define VK_CHECK_WSI(EXPR)						vk::checkWsiResult((EXPR), #EXPR, __FILE__, __LINE__)
+#define VK_API_VERSION_VARIANT(version) ((uint32_t)(version) >> 29)
+#define VK_API_VERSION_MAJOR(version) (((uint32_t)(version) >> 22) & 0x7FU)
+#define VK_API_VERSION_MINOR(version) (((uint32_t)(version) >> 12) & 0x3FFU)
+#define VK_API_VERSION_PATCH(version) ((uint32_t)(version)&0xFFFU)
+
+#define VK_CHECK(EXPR) vk::checkResult((EXPR), #EXPR, __FILE__, __LINE__)
+#define VK_CHECK_SUPPORTED(EXPR) vk::checkResultSupported((EXPR), #EXPR, __FILE__, __LINE__)
+#define VK_CHECK_MSG(EXPR, MSG) vk::checkResult((EXPR), MSG, __FILE__, __LINE__)
+#define VK_CHECK_WSI(EXPR) vk::checkWsiResult((EXPR), #EXPR, __FILE__, __LINE__)
 
 #define VK_MAKE_VIDEO_STD_VERSION(major, minor, patch) \
-    ((((deUint32)(major)) << 22) | (((deUint32)(minor)) << 12) | ((deUint32)(patch)))
+    ((((uint32_t)(major)) << 22) | (((uint32_t)(minor)) << 12) | ((uint32_t)(patch)))
 
 /*--------------------------------------------------------------------*//*!
  * \brief Vulkan utilities
@@ -75,69 +100,103 @@ struct NAME {											\
 namespace vk
 {
 
-typedef deUint64	VkDeviceSize;
-typedef deUint32	VkSampleMask;
-typedef deUint32	VkBool32;
-typedef deUint32	VkFlags;
-typedef deUint64	VkFlags64;
-typedef deUint64	VkDeviceAddress;
+typedef uint64_t VkDeviceSize;
+typedef uint32_t VkSampleMask;
+typedef uint32_t VkBool32;
+typedef uint32_t VkFlags;
+typedef uint64_t VkFlags64;
+typedef uint64_t VkDeviceAddress;
 
 // enum HandleType { HANDLE_TYPE_INSTANCE, ... };
 #include "vkHandleType.inl"
 
-template<HandleType Type>
+template <HandleType Type>
 class Handle
 {
 public:
-				Handle		(void) {} // \note Left uninitialized on purpose
-				Handle		(deUint64 internal) : m_internal(internal) {}
+    Handle(void)
+    {
+    } // \note Left uninitialized on purpose
+    Handle(VkNullHandleType) : m_internal(0)
+    {
+    }
 
-	Handle&		operator=	(deUint64 internal)					{ m_internal = internal; return *this;			}
+    // Helpers for vkNullDriver (an internal implementation of a Vulkan driver).
+    template <typename T>
+    Handle(const T *obj) : m_internal(reinterpret_cast<uintptr_t>(obj))
+    {
+    }
+    template <typename T>
+    T *as() const
+    {
+        return reinterpret_cast<T *>(m_internal);
+    }
 
-	bool		operator==	(const Handle<Type>& other) const	{ return this->m_internal == other.m_internal;	}
-	bool		operator!=	(const Handle<Type>& other) const	{ return this->m_internal != other.m_internal;	}
+    Handle &operator=(VkNullHandleType)
+    {
+        m_internal = 0;
+        return *this;
+    }
 
-	bool		operator!	(void) const						{ return !m_internal;							}
+    bool operator==(const Handle<Type> &other) const
+    {
+        return this->m_internal == other.m_internal;
+    }
+    bool operator!=(const Handle<Type> &other) const
+    {
+        return this->m_internal != other.m_internal;
+    }
 
-	deUint64	getInternal	(void) const						{ return m_internal;							}
+    bool operator!(void) const
+    {
+        return !m_internal;
+    }
 
-	enum { HANDLE_TYPE = Type };
+    uint64_t getInternal(void) const
+    {
+        return m_internal;
+    }
+
+    enum
+    {
+        HANDLE_TYPE = Type
+    };
 
 private:
-	deUint64	m_internal;
+    uint64_t m_internal;
 };
 
-template<HandleType Type>
-bool operator<(const Handle<Type>& lhs, const Handle<Type>& rhs)
+template <HandleType Type>
+bool operator<(const Handle<Type> &lhs, const Handle<Type> &rhs)
 {
-	return lhs.getInternal() < rhs.getInternal();
+    return lhs.getInternal() < rhs.getInternal();
 }
 
 #include "vkBasicTypes.inl"
 
-#define VK_CORE_FORMAT_LAST			((vk::VkFormat)(vk::VK_FORMAT_ASTC_12x12_SRGB_BLOCK+1))
-#define VK_CORE_IMAGE_TILING_LAST	((vk::VkImageTiling)(vk::VK_IMAGE_TILING_LINEAR+1))
-#define VK_CORE_IMAGE_TYPE_LAST		((vk::VkImageType)(vk::VK_IMAGE_TYPE_3D+1))
+#define VK_CORE_FORMAT_LAST ((vk::VkFormat)(vk::VK_FORMAT_ASTC_12x12_SRGB_BLOCK + 1))
+#define VK_CORE_IMAGE_TILING_LAST ((vk::VkImageTiling)(vk::VK_IMAGE_TILING_LINEAR + 1))
+#define VK_CORE_IMAGE_TYPE_LAST ((vk::VkImageType)(vk::VK_IMAGE_TYPE_3D + 1))
 
 enum SpirvVersion
 {
-	SPIRV_VERSION_1_0	= 0,	//!< SPIR-V 1.0
-	SPIRV_VERSION_1_1	= 1,	//!< SPIR-V 1.1
-	SPIRV_VERSION_1_2	= 2,	//!< SPIR-V 1.2
-	SPIRV_VERSION_1_3	= 3,	//!< SPIR-V 1.3
-	SPIRV_VERSION_1_4	= 4,	//!< SPIR-V 1.4
-	SPIRV_VERSION_1_5	= 5,	//!< SPIR-V 1.5
-	SPIRV_VERSION_1_6	= 6,	//!< SPIR-V 1.6
+    SPIRV_VERSION_1_0 = 0, //!< SPIR-V 1.0
+    SPIRV_VERSION_1_1 = 1, //!< SPIR-V 1.1
+    SPIRV_VERSION_1_2 = 2, //!< SPIR-V 1.2
+    SPIRV_VERSION_1_3 = 3, //!< SPIR-V 1.3
+    SPIRV_VERSION_1_4 = 4, //!< SPIR-V 1.4
+    SPIRV_VERSION_1_5 = 5, //!< SPIR-V 1.5
+    SPIRV_VERSION_1_6 = 6, //!< SPIR-V 1.6
 
-	SPIRV_VERSION_LAST
+    SPIRV_VERSION_LAST
 };
 
 typedef struct
 {
-	deUint32	magic;
-	deUint32	version;
-	deUint32	generator;
-	deUint32	bound;
+    uint32_t magic;
+    uint32_t version;
+    uint32_t generator;
+    uint32_t bound;
 } SpirvBinaryHeader;
 
 namespace wsi
@@ -145,98 +204,64 @@ namespace wsi
 
 enum Type
 {
-	TYPE_XLIB = 0,
-	TYPE_XCB,
-	TYPE_WAYLAND,
-	TYPE_ANDROID,
-	TYPE_WIN32,
-	TYPE_MACOS,
-	TYPE_HEADLESS,
-	TYPE_DIRECT_DRM,
+    TYPE_XLIB = 0,
+    TYPE_XCB,
+    TYPE_WAYLAND,
+    TYPE_ANDROID,
+    TYPE_WIN32,
+    TYPE_METAL,
+    TYPE_HEADLESS,
+    TYPE_DIRECT_DRM,
 
-	TYPE_LAST
+    TYPE_LAST
 };
 
-} // wsi
+} // namespace wsi
 
-typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkVoidFunction)					(void);
+typedef VKAPI_ATTR void(VKAPI_CALL *PFN_vkVoidFunction)(void);
 
-typedef VKAPI_ATTR void*	(VKAPI_CALL* PFN_vkAllocationFunction)				(void*						pUserData,
-																				 size_t						size,
-																				 size_t						alignment,
-																				 VkSystemAllocationScope	allocationScope);
-typedef VKAPI_ATTR void*	(VKAPI_CALL* PFN_vkReallocationFunction)			(void*						pUserData,
-																				 void*						pOriginal,
-																				 size_t						size,
-																				 size_t						alignment,
-																				 VkSystemAllocationScope	allocationScope);
-typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkFreeFunction)					(void*						pUserData,
-																				 void*						pMem);
-typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkInternalAllocationNotification)	(void*						pUserData,
-																				 size_t						size,
-																				 VkInternalAllocationType	allocationType,
-																				 VkSystemAllocationScope	allocationScope);
-typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkInternalFreeNotification)		(void*						pUserData,
-																				 size_t						size,
-																				 VkInternalAllocationType	allocationType,
-																				 VkSystemAllocationScope	allocationScope);
+typedef VKAPI_ATTR void *(VKAPI_CALL *PFN_vkAllocationFunction)(void *pUserData, size_t size, size_t alignment,
+                                                                VkSystemAllocationScope allocationScope);
+typedef VKAPI_ATTR void *(VKAPI_CALL *PFN_vkReallocationFunction)(void *pUserData, void *pOriginal, size_t size,
+                                                                  size_t alignment,
+                                                                  VkSystemAllocationScope allocationScope);
+typedef VKAPI_ATTR void(VKAPI_CALL *PFN_vkFreeFunction)(void *pUserData, void *pMem);
+typedef VKAPI_ATTR void(VKAPI_CALL *PFN_vkInternalAllocationNotification)(void *pUserData, size_t size,
+                                                                          VkInternalAllocationType allocationType,
+                                                                          VkSystemAllocationScope allocationScope);
+typedef VKAPI_ATTR void(VKAPI_CALL *PFN_vkInternalFreeNotification)(void *pUserData, size_t size,
+                                                                    VkInternalAllocationType allocationType,
+                                                                    VkSystemAllocationScope allocationScope);
 
 #ifndef CTS_USES_VULKANSC
 
-typedef VKAPI_ATTR VkBool32	(VKAPI_CALL* PFN_vkDebugReportCallbackEXT)			(VkDebugReportFlagsEXT		flags,
-																				 VkDebugReportObjectTypeEXT	objectType,
-																				 deUint64					object,
-																				 size_t						location,
-																				 deInt32					messageCode,
-																				 const char*				pLayerPrefix,
-																				 const char*				pMessage,
-																				 void*						pUserData);
+typedef VKAPI_ATTR VkBool32(VKAPI_CALL *PFN_vkDebugReportCallbackEXT)(VkDebugReportFlagsEXT flags,
+                                                                      VkDebugReportObjectTypeEXT objectType,
+                                                                      uint64_t object, size_t location,
+                                                                      int32_t messageCode, const char *pLayerPrefix,
+                                                                      const char *pMessage, void *pUserData);
 
-typedef VKAPI_ATTR PFN_vkVoidFunction (VKAPI_CALL* PFN_vkGetInstanceProcAddrLUNARG)	(VkInstance instance, const char pName);
+typedef VKAPI_ATTR PFN_vkVoidFunction(VKAPI_CALL *PFN_vkGetInstanceProcAddrLUNARG)(VkInstance instance,
+                                                                                   const char pName);
 
 #endif // CTS_USES_VULKANSC
 
-typedef VKAPI_ATTR VkBool32 (VKAPI_CALL *PFN_vkDebugUtilsMessengerCallbackEXT)	(VkDebugUtilsMessageSeverityFlagBitsEXT				messageSeverity,
-																				 VkDebugUtilsMessageTypeFlagsEXT					messageTypes,
-																				 const struct VkDebugUtilsMessengerCallbackDataEXT*	pCallbackData,
-																				 void*												pUserData);
+typedef VKAPI_ATTR VkBool32(VKAPI_CALL *PFN_vkDebugUtilsMessengerCallbackEXT)(
+    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+    const struct VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData);
 
-typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkDeviceMemoryReportCallbackEXT)	(const struct VkDeviceMemoryReportCallbackDataEXT*	pCallbackData,
-																				 void*												pUserData);
+typedef VKAPI_ATTR void(VKAPI_CALL *PFN_vkDeviceMemoryReportCallbackEXT)(
+    const struct VkDeviceMemoryReportCallbackDataEXT *pCallbackData, void *pUserData);
 
 #ifdef CTS_USES_VULKANSC
 struct VkFaultData;
-typedef VKAPI_ATTR void		(VKAPI_CALL *PFN_vkFaultCallbackFunction)			(VkBool32											incompleteFaultData,
-																				 deUint32											faultCount,
-																				 const VkFaultData*									pFaultData);
+typedef VKAPI_ATTR void(VKAPI_CALL *PFN_vkFaultCallbackFunction)(VkBool32 incompleteFaultData, uint32_t faultCount,
+                                                                 const VkFaultData *pFaultData);
 #endif // CTS_USES_VULKANSC
 
 #include "vkStructTypes.inl"
 
-#ifdef CTS_USES_VULKANSC
-
-// substitute required enums and structs removed from VulkanSC specification
-
-enum VkShaderModuleCreateFlagBits
-{
-	VK_SHADER_MODULE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF,
-};
-typedef deUint32 VkShaderModuleCreateFlags;
-
-#define VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO VkStructureType(16)
-
-struct VkShaderModuleCreateInfo
-{
-	VkStructureType				sType;
-	const void*					pNext;
-	VkShaderModuleCreateFlags	flags;
-	deUintptr					codeSize;
-	const deUint32*				pCode;
-};
-
-#endif // CTS_USES_VULKANSC
-
-typedef void* VkRemoteAddressNV;
+typedef void *VkRemoteAddressNV;
 
 extern "C"
 {
@@ -248,14 +273,18 @@ class PlatformInterface
 public:
 #include "vkVirtualPlatformInterface.inl"
 
-	virtual	GetInstanceProcAddrFunc	getGetInstanceProcAddr	() const = 0;
+    virtual GetInstanceProcAddrFunc getGetInstanceProcAddr() const = 0;
+
+    virtual ~PlatformInterface()
+    {
+    }
+    PlatformInterface(const PlatformInterface &)            = delete;
+    PlatformInterface &operator=(const PlatformInterface &) = delete;
 
 protected:
-									PlatformInterface		(void) {}
-
-private:
-									PlatformInterface		(const PlatformInterface&);
-	PlatformInterface&				operator=				(const PlatformInterface&);
+    PlatformInterface(void)
+    {
+    }
 };
 
 class InstanceInterface
@@ -263,12 +292,16 @@ class InstanceInterface
 public:
 #include "vkVirtualInstanceInterface.inl"
 
-protected:
-						InstanceInterface	(void) {}
+    virtual ~InstanceInterface()
+    {
+    }
+    InstanceInterface(const InstanceInterface &)            = delete;
+    InstanceInterface &operator=(const InstanceInterface &) = delete;
 
-private:
-						InstanceInterface	(const InstanceInterface&);
-	InstanceInterface&	operator=			(const InstanceInterface&);
+protected:
+    InstanceInterface(void)
+    {
+    }
 };
 
 class DeviceInterface
@@ -277,60 +310,76 @@ public:
 #include "vkVirtualDeviceInterface.inl"
 
 #ifdef CTS_USES_VULKANSC
-	virtual VkResult	createShaderModule	(VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkShaderModule* pShaderModule) const = 0;
+    virtual VkResult createShaderModule(VkDevice device, const VkShaderModuleCreateInfo *pCreateInfo,
+                                        const VkAllocationCallbacks *pAllocator,
+                                        VkShaderModule *pShaderModule) const = 0;
 #endif // CTS_USES_VULKANSC
 
-protected:
-						DeviceInterface		(void) {}
+    virtual ~DeviceInterface()
+    {
+    }
+    DeviceInterface(const DeviceInterface &)            = delete;
+    DeviceInterface &operator=(const DeviceInterface &) = delete;
 
-private:
-						DeviceInterface		(const DeviceInterface&);
-	DeviceInterface&	operator=			(const DeviceInterface&);
+protected:
+    DeviceInterface(void)
+    {
+    }
 };
 
 class Error : public tcu::TestError
 {
 public:
-					Error				(VkResult error, const char* message, const char* expr, const char* file, int line);
-					Error				(VkResult error, const std::string& message);
-	virtual			~Error				(void) throw();
+    Error(VkResult error, const char *message, const char *expr, const char *file, int line, qpTestResult result);
+    Error(VkResult error, const char *message, const char *expr, const char *file, int line);
+    Error(VkResult error, const std::string &message);
+    virtual ~Error(void) throw();
 
-	VkResult		getError			(void) const { return m_error; }
+    VkResult getError(void) const
+    {
+        return m_error;
+    }
 
 private:
-	const VkResult	m_error;
+    const VkResult m_error;
 };
 
 class NotSupportedError : public tcu::NotSupportedError
 {
 public:
-					NotSupportedError	(VkResult error, const char* message, const char* expr, const char* file, int line);
-					NotSupportedError	(VkResult error, const std::string& message);
-	virtual			~NotSupportedError	(void) throw();
+    NotSupportedError(VkResult error, const char *message, const char *expr, const char *file, int line);
+    NotSupportedError(VkResult error, const std::string &message);
+    virtual ~NotSupportedError(void) throw();
 
-	VkResult		getError			(void) const { return m_error; }
+    VkResult getError(void) const
+    {
+        return m_error;
+    }
 
 private:
-	const VkResult	m_error;
+    const VkResult m_error;
 };
 
 class OutOfMemoryError : public tcu::ResourceError
 {
 public:
-					OutOfMemoryError	(VkResult error, const char* message, const char* expr, const char* file, int line);
-					OutOfMemoryError	(VkResult error, const std::string& message);
-	virtual			~OutOfMemoryError	(void) throw();
+    OutOfMemoryError(VkResult error, const char *message, const char *expr, const char *file, int line);
+    OutOfMemoryError(VkResult error, const std::string &message);
+    virtual ~OutOfMemoryError(void) throw();
 
-	VkResult		getError			(void) const { return m_error; }
+    VkResult getError(void) const
+    {
+        return m_error;
+    }
 
 private:
-	const VkResult	m_error;
+    const VkResult m_error;
 };
 
-void			checkResult				(VkResult result, const char* message, const char* file, int line);
-void			checkResultSupported	(VkResult result, const char* message, const char* file, int line);
-void			checkWsiResult			(VkResult result, const char* message, const char* file, int line);
+void checkResult(VkResult result, const char *message, const char *file, int line);
+void checkResultSupported(VkResult result, const char *message, const char *file, int line);
+void checkWsiResult(VkResult result, const char *message, const char *file, int line);
 
-} // vk
+} // namespace vk
 
 #endif // _VKDEFS_HPP

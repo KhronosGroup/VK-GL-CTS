@@ -26,40 +26,40 @@
 namespace de
 {
 
-Sha1 Sha1::parse (const std::string& str)
+Sha1 Sha1::parse(const std::string &str)
 {
-	deSha1 hash;
+    deSha1 hash;
 
-	DE_CHECK_RUNTIME_ERR_MSG(str.size() >= 40, "Failed to parse SHA1. String is too short.");
-	DE_CHECK_RUNTIME_ERR_MSG(deSha1_parse(&hash, str.c_str()), "Failed to parse SHA1. Invalid characters..");
+    DE_CHECK_RUNTIME_ERR_MSG(str.size() >= 40, "Failed to parse SHA1. String is too short.");
+    DE_CHECK_RUNTIME_ERR_MSG(deSha1_parse(&hash, str.c_str()), "Failed to parse SHA1. Invalid characters..");
 
-	return Sha1(hash);
+    return Sha1(hash);
 }
 
-Sha1 Sha1::compute (size_t size, const void* data)
+Sha1 Sha1::compute(size_t size, const void *data)
 {
-	deSha1 hash;
+    deSha1 hash;
 
-	deSha1_compute(&hash, size, data);
-	return Sha1(hash);
+    deSha1_compute(&hash, size, data);
+    return Sha1(hash);
 }
 
-Sha1Stream::Sha1Stream (void)
+Sha1Stream::Sha1Stream(void)
 {
-	deSha1Stream_init(&m_stream);
+    deSha1Stream_init(&m_stream);
 }
 
-void Sha1Stream::process (size_t size, const void* data)
+void Sha1Stream::process(size_t size, const void *data)
 {
-	deSha1Stream_process(&m_stream, size, data);
+    deSha1Stream_process(&m_stream, size, data);
 }
 
-Sha1 Sha1Stream::finalize (void)
+Sha1 Sha1Stream::finalize(void)
 {
-	deSha1 hash;
-	deSha1Stream_finalize(&m_stream, &hash);
+    deSha1 hash;
+    deSha1Stream_finalize(&m_stream, &hash);
 
-	return Sha1(hash);
+    return Sha1(hash);
 }
 
-} // de
+} // namespace de

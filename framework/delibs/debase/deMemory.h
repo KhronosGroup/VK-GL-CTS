@@ -29,55 +29,55 @@
 
 DE_BEGIN_EXTERN_C
 
-#define DE_NEW(TYPE)			((TYPE*)deMalloc(sizeof(TYPE)))
-#define DE_DELETE(TYPE, PTR)	deFree(PTR)
+#define DE_NEW(TYPE) ((TYPE *)deMalloc(sizeof(TYPE)))
+#define DE_DELETE(TYPE, PTR) deFree(PTR)
 
-void*	deMalloc		(size_t numBytes);
-void*	deCalloc		(size_t numBytes);
-void*	deRealloc		(void* ptr, size_t numBytes);
-void	deFree			(void* ptr);
+void *deMalloc(size_t numBytes);
+void *deCalloc(size_t numBytes);
+void *deRealloc(void *ptr, size_t numBytes);
+void deFree(void *ptr);
 
-void*	deAlignedMalloc	(size_t numBytes, size_t alignBytes);
-void*	deAlignedRealloc(void* ptr, size_t numBytes, size_t alignBytes);
-void	deAlignedFree	(void* ptr);
+void *deAlignedMalloc(size_t numBytes, size_t alignBytes);
+void *deAlignedRealloc(void *ptr, size_t numBytes, size_t alignBytes);
+void deAlignedFree(void *ptr);
 
-char*	deStrdup		(const char* str);
+char *deStrdup(const char *str);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Fill a block of memory with an 8-bit value.
- * \param ptr		Pointer to memory to free.
- * \param value		Value to fill with.
- * \param numBytes	Number of bytes to write.
+ * \param ptr        Pointer to memory to free.
+ * \param value        Value to fill with.
+ * \param numBytes    Number of bytes to write.
  *//*--------------------------------------------------------------------*/
-DE_INLINE void deMemset (void* ptr, int value, size_t numBytes)
+static inline void deMemset(void *ptr, int value, size_t numBytes)
 {
-	DE_ASSERT((value & 0xFF) == value);
-	memset(ptr, value, numBytes);
+    DE_ASSERT((value & 0xFF) == value);
+    memset(ptr, value, numBytes);
 }
 
-DE_INLINE int deMemCmp (const void* a, const void* b, size_t numBytes)
+static inline int deMemCmp(const void *a, const void *b, size_t numBytes)
 {
-	return memcmp(a, b, numBytes);
+    return memcmp(a, b, numBytes);
 }
 
 /*--------------------------------------------------------------------*//*!
  * \brief Copy bytes between buffers
- * \param dst		Destination buffer
- * \param src		Source buffer
- * \param numBytes	Number of bytes to copy
+ * \param dst        Destination buffer
+ * \param src        Source buffer
+ * \param numBytes    Number of bytes to copy
  * \return Destination buffer.
  *//*--------------------------------------------------------------------*/
-DE_INLINE void* deMemcpy (void* dst, const void* src, size_t numBytes)
+static inline void *deMemcpy(void *dst, const void *src, size_t numBytes)
 {
-	return memcpy(dst, src, numBytes);
+    return memcpy(dst, src, numBytes);
 }
 
-DE_INLINE void* deMemmove (void* dst, const void* src, size_t numBytes)
+static inline void *deMemmove(void *dst, const void *src, size_t numBytes)
 {
-	return memmove(dst, src, numBytes);
+    return memmove(dst, src, numBytes);
 }
 
-void	deMemory_selfTest	(void);
+void deMemory_selfTest(void);
 
 DE_END_EXTERN_C
 

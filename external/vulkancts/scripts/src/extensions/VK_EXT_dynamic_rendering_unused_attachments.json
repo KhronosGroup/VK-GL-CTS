@@ -1,0 +1,18 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT": [
+            {
+                "features": [
+                    "dynamicRenderingUnusedAttachments"
+                ],
+                "requirements": [
+                    "VK_EXT_dynamic_rendering_unused_attachments"
+                ]
+            }
+        ]
+    }
+}

@@ -36,18 +36,18 @@ namespace Functional
 class PrimitiveBoundingBoxTests : public TestCaseGroup
 {
 public:
-								PrimitiveBoundingBoxTests	(Context& context);
-								~PrimitiveBoundingBoxTests	(void);
+    PrimitiveBoundingBoxTests(Context &context);
+    ~PrimitiveBoundingBoxTests(void);
 
 private:
-	void						init						(void);
+    void init(void);
 
-								PrimitiveBoundingBoxTests	(const PrimitiveBoundingBoxTests& other);
-	PrimitiveBoundingBoxTests&	operator=					(const PrimitiveBoundingBoxTests& other);
+    PrimitiveBoundingBoxTests(const PrimitiveBoundingBoxTests &other);
+    PrimitiveBoundingBoxTests &operator=(const PrimitiveBoundingBoxTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FPRIMITIVEBOUNDINGBOXTESTS_HPP

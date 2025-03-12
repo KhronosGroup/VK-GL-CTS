@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<!-- Coverage test for OpenGL 3.2 tokens and entry points -->
+<test mode="gl" pattern="coverage">
+    <enums>
+    <!-- GL_VERSION_3_2 -->
+    <enum>
+        <name>GL_VERSION_3_2</name>
+        <value>1</value>
+    </enum>
+    <enum>
+        <name>GL_CONTEXT_CORE_PROFILE_BIT</name>
+        <value>0x00000001</value>
+    </enum>
+    <enum>
+        <name>GL_CONTEXT_COMPATIBILITY_PROFILE_BIT</name>
+        <value>0x00000002</value>
+    </enum>
+    <enum>
+        <name>GL_LINES_ADJACENCY</name>
+        <value>0x000A</value>
+    </enum>
+    <enum>
+        <name>GL_LINE_STRIP_ADJACENCY</name>
+        <value>0x000B</value>
+    </enum>
+    <enum>
+        <name>GL_TRIANGLES_ADJACENCY</name>
+        <value>0x000C</value>
+    </enum>
+    <enum>
+        <name>GL_TRIANGLE_STRIP_ADJACENCY</name>
+        <value>0x000D</value>
+    </enum>
+    <enum>
+        <name>GL_PROGRAM_POINT_SIZE</name>
+        <value>GL_VERTEX_PROGRAM_POINT_SIZE</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS</name>
+        <value>0x8C29</value>
+    </enum>
+    <enum>
+        <name>GL_FRAMEBUFFER_ATTACHMENT_LAYERED</name>
+        <value>0x8DA7</value>
+    </enum>
+    <enum>
+        <name>GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS</name>
+        <value>0x8DA8</value>
+    </enum>
+    <enum>
+        <name>GL_GEOMETRY_SHADER</name>
+        <value>0x8DD9</value>
+    </enum>
+    <enum>
+        <name>GL_GEOMETRY_VERTICES_OUT</name>
+        <value>0x8916</value>
+    </enum>
+    <enum>
+        <name>GL_GEOMETRY_INPUT_TYPE</name>
+        <value>0x8917</value>
+    </enum>
+    <enum>
+        <name>GL_GEOMETRY_OUTPUT_TYPE</name>
+        <value>0x8918</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_GEOMETRY_UNIFORM_COMPONENTS</name>
+        <value>0x8DDF</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_GEOMETRY_OUTPUT_VERTICES</name>
+        <value>0x8DE0</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS</name>
+        <value>0x8DE1</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_VERTEX_OUTPUT_COMPONENTS</name>
+        <value>0x9122</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_GEOMETRY_INPUT_COMPONENTS</name>
+        <value>0x9123</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_GEOMETRY_OUTPUT_COMPONENTS</name>
+        <value>0x9124</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_FRAGMENT_INPUT_COMPONENTS</name>
+        <value>0x9125</value>
+    </enum>
+    <enum>
+        <name>GL_CONTEXT_PROFILE_MASK</name>
+        <value>0x9126</value>
+    </enum>
+    <!-- reuse GL_MAX_VARYING_COMPONENTS -->
+    <!-- reuse GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER -->
+    <!-- reuse GL_DEPTH_CLAMP -->
+    <!-- reuse GL_QUADS_FOLLOW_PROVOKING_VERTEX_CONVENTION -->
+    <!-- reuse GL_FIRST_VERTEX_CONVENTION -->
+    <!-- reuse GL_LAST_VERTEX_CONVENTION -->
+    <!-- reuse GL_PROVOKING_VERTEX -->
+    <!-- reuse GL_TEXTURE_CUBE_MAP_SEAMLESS -->
+    <!-- reuse GL_MAX_SERVER_WAIT_TIMEOUT -->
+    <!-- reuse GL_OBJECT_TYPE -->
+    <!-- reuse GL_SYNC_CONDITION -->
+    <!-- reuse GL_SYNC_STATUS -->
+    <!-- reuse GL_SYNC_FLAGS -->
+    <!-- reuse GL_SYNC_FENCE -->
+    <!-- reuse GL_SYNC_GPU_COMMANDS_COMPLETE -->
+    <!-- reuse GL_UNSIGNALED -->
+    <!-- reuse GL_SIGNALED -->
+    <!-- reuse GL_ALREADY_SIGNALED -->
+    <!-- reuse GL_TIMEOUT_EXPIRED -->
+    <!-- reuse GL_CONDITION_SATISFIED -->
+    <!-- reuse GL_WAIT_FAILED -->
+    <!-- reuse GL_TIMEOUT_IGNORED -->
+    <!-- reuse GL_SYNC_FLUSH_COMMANDS_BIT -->
+    <!-- reuse GL_TIMEOUT_IGNORED -->
+    <!-- reuse GL_SAMPLE_POSITION -->
+    <!-- reuse GL_SAMPLE_MASK -->
+    <!-- reuse GL_SAMPLE_MASK_VALUE -->
+    <!-- reuse GL_MAX_SAMPLE_MASK_WORDS -->
+    <!-- reuse GL_TEXTURE_2D_MULTISAMPLE -->
+    <!-- reuse GL_PROXY_TEXTURE_2D_MULTISAMPLE -->
+    <!-- reuse GL_TEXTURE_2D_MULTISAMPLE_ARRAY -->
+    <!-- reuse GL_PROXY_TEXTURE_2D_MULTISAMPLE_ARRAY -->
+    <!-- reuse GL_TEXTURE_BINDING_2D_MULTISAMPLE -->
+    <!-- reuse GL_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY -->
+    <!-- reuse GL_TEXTURE_SAMPLES -->
+    <!-- reuse GL_TEXTURE_FIXED_SAMPLE_LOCATIONS -->
+    <!-- reuse GL_SAMPLER_2D_MULTISAMPLE -->
+    <!-- reuse GL_INT_SAMPLER_2D_MULTISAMPLE -->
+    <!-- reuse GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE -->
+    <!-- reuse GL_SAMPLER_2D_MULTISAMPLE_ARRAY -->
+    <!-- reuse GL_INT_SAMPLER_2D_MULTISAMPLE_ARRAY -->
+    <!-- reuse GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY -->
+    <!-- reuse GL_MAX_COLOR_TEXTURE_SAMPLES -->
+    <!-- reuse GL_MAX_DEPTH_TEXTURE_SAMPLES -->
+    <!-- reuse GL_MAX_INTEGER_SAMPLES -->
+    <!-- Reuse tokens from GL_ARB_depth_clamp -->
+    <enum>
+        <name>GL_DEPTH_CLAMP</name>
+        <value>0x864F</value>
+    </enum>
+    <!-- Reuse tokens from GL_ARB_draw_elements_base_vertex -->
+    <!-- Reuse tokens from GL_ARB_fragment_coord_conventions -->
+    <!-- Reuse tokens from GL_ARB_provoking_vertex -->
+    <enum>
+        <name>GL_QUADS_FOLLOW_PROVOKING_VERTEX_CONVENTION</name>
+        <value>0x8E4C</value>
+    </enum>
+    <enum>
+        <name>GL_FIRST_VERTEX_CONVENTION</name>
+        <value>0x8E4D</value>
+    </enum>
+    <enum>
+        <name>GL_LAST_VERTEX_CONVENTION</name>
+        <value>0x8E4E</value>
+    </enum>
+    <enum>
+        <name>GL_PROVOKING_VERTEX</name>
+        <value>0x8E4F</value>
+    </enum>
+    <!-- Reuse tokens from GL_ARB_seamless_cube_map -->
+    <enum>
+        <name>GL_TEXTURE_CUBE_MAP_SEAMLESS</name>
+        <value>0x884F</value>
+    </enum>
+    <!-- Reuse tokens from GL_ARB_sync -->
+    <enum>
+        <name>GL_MAX_SERVER_WAIT_TIMEOUT</name>
+        <value>0x9111</value>
+    </enum>
+    <enum>
+        <name>GL_OBJECT_TYPE</name>
+        <value>0x9112</value>
+    </enum>
+    <enum>
+        <name>GL_SYNC_CONDITION</name>
+        <value>0x9113</value>
+    </enum>
+    <enum>
+        <name>GL_SYNC_STATUS</name>
+        <value>0x9114</value>
+    </enum>
+    <enum>
+        <name>GL_SYNC_FLAGS</name>
+        <value>0x9115</value>
+    </enum>
+    <enum>
+        <name>GL_SYNC_FENCE</name>
+        <value>0x9116</value>
+    </enum>
+    <enum>
+        <name>GL_SYNC_GPU_COMMANDS_COMPLETE</name>
+        <value>0x9117</value>
+    </enum>
+    <enum>
+        <name>GL_UNSIGNALED</name>
+        <value>0x9118</value>
+    </enum>
+    <enum>
+        <name>GL_SIGNALED</name>
+        <value>0x9119</value>
+    </enum>
+    <enum>
+        <name>GL_ALREADY_SIGNALED</name>
+        <value>0x911A</value>
+    </enum>
+    <enum>
+        <name>GL_TIMEOUT_EXPIRED</name>
+        <value>0x911B</value>
+    </enum>
+    <enum>
+        <name>GL_CONDITION_SATISFIED</name>
+        <value>0x911C</value>
+    </enum>
+    <enum>
+        <name>GL_WAIT_FAILED</name>
+        <value>0x911D</value>
+    </enum>
+    <enum>
+        <name>GL_SYNC_FLUSH_COMMANDS_BIT</name>
+        <value>0x00000001</value>
+    </enum>
+    <enum>
+        <name>GL_TIMEOUT_IGNORED</name>
+        <value>0xFFFFFFFFFFFFFFFFull</value>
+    </enum>
+    <!-- Reuse tokens from GL_ARB_texture_multisample -->
+    <enum>
+        <name>GL_SAMPLE_POSITION</name>
+        <value>0x8E50</value>
+    </enum>
+    <enum>
+        <name>GL_SAMPLE_MASK</name>
+        <value>0x8E51</value>
+    </enum>
+    <enum>
+        <name>GL_SAMPLE_MASK_VALUE</name>
+        <value>0x8E52</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_SAMPLE_MASK_WORDS</name>
+        <value>0x8E59</value>
+    </enum>
+    <enum>
+        <name>GL_TEXTURE_2D_MULTISAMPLE</name>
+        <value>0x9100</value>
+    </enum>
+    <enum>
+        <name>GL_PROXY_TEXTURE_2D_MULTISAMPLE</name>
+        <value>0x9101</value>
+    </enum>
+    <enum>
+        <name>GL_TEXTURE_2D_MULTISAMPLE_ARRAY</name>
+        <value>0x9102</value>
+    </enum>
+    <enum>
+        <name>GL_PROXY_TEXTURE_2D_MULTISAMPLE_ARRAY</name>
+        <value>0x9103</value>
+    </enum>
+    <enum>
+        <name>GL_TEXTURE_BINDING_2D_MULTISAMPLE</name>
+        <value>0x9104</value>
+    </enum>
+    <enum>
+        <name>GL_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY</name>
+        <value>0x9105</value>
+    </enum>
+    <enum>
+        <name>GL_TEXTURE_SAMPLES</name>
+        <value>0x9106</value>
+    </enum>
+    <enum>
+        <name>GL_TEXTURE_FIXED_SAMPLE_LOCATIONS</name>
+        <value>0x9107</value>
+    </enum>
+    <enum>
+        <name>GL_SAMPLER_2D_MULTISAMPLE</name>
+        <value>0x9108</value>
+    </enum>
+    <enum>
+        <name>GL_INT_SAMPLER_2D_MULTISAMPLE</name>
+        <value>0x9109</value>
+    </enum>
+    <enum>
+        <name>GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE</name>
+        <value>0x910A</value>
+    </enum>
+    <enum>
+        <name>GL_SAMPLER_2D_MULTISAMPLE_ARRAY</name>
+        <value>0x910B</value>
+    </enum>
+    <enum>
+        <name>GL_INT_SAMPLER_2D_MULTISAMPLE_ARRAY</name>
+        <value>0x910C</value>
+    </enum>
+    <enum>
+        <name>GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY</name>
+        <value>0x910D</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_COLOR_TEXTURE_SAMPLES</name>
+        <value>0x910E</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_DEPTH_TEXTURE_SAMPLES</name>
+        <value>0x910F</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_INTEGER_SAMPLES</name>
+        <value>0x9110</value>
+    </enum>
+    <!-- Reuse tokens from GL_ARB_vertex_array_bgra -->
+    <!-- reuse GL_BGRA -->
+    </enums>
+    <funcs>
+    <!-- GL_VERSION_3_2 -->
+    <func>
+        <name>glGetInteger64i_v</name>
+    </func>
+    <func>
+        <name>glGetBufferParameteri64v</name>
+    </func>
+    <func>
+        <name>glFramebufferTexture</name>
+    </func>
+    <!-- Reuse entry points from GL_ARB_depth_clamp -->
+    <!-- Reuse entry points from GL_ARB_draw_elements_base_vertex -->
+    <func>
+        <name>glDrawElementsBaseVertex</name>
+    </func>
+    <func>
+        <name>glDrawRangeElementsBaseVertex</name>
+    </func>
+    <func>
+        <name>glDrawElementsInstancedBaseVertex</name>
+    </func>
+    <func>
+        <name>glMultiDrawElementsBaseVertex</name>
+    </func>
+    <!-- Reuse entry points from GL_ARB_fragment_coord_conventions -->
+    <!-- Reuse entry points from GL_ARB_provoking_vertex -->
+    <func>
+        <name>glProvokingVertex</name>
+    </func>
+    <!-- Reuse entry points from GL_ARB_seamless_cube_map -->
+    <!-- Reuse entry points from GL_ARB_sync -->
+    <func>
+        <name>glFenceSync</name>
+    </func>
+    <func>
+        <name>glIsSync</name>
+    </func>
+    <func>
+        <name>glDeleteSync</name>
+    </func>
+    <func>
+        <name>glClientWaitSync</name>
+    </func>
+    <func>
+        <name>glWaitSync</name>
+    </func>
+    <func>
+        <name>glGetInteger64v</name>
+    </func>
+    <func>
+        <name>glGetSynciv</name>
+    </func>
+    <!-- Reuse entry points from GL_ARB_texture_multisample -->
+    <func>
+        <name>glTexImage2DMultisample</name>
+    </func>
+    <func>
+        <name>glTexImage3DMultisample</name>
+    </func>
+    <func>
+        <name>glGetMultisamplefv</name>
+    </func>
+    <func>
+        <name>glSampleMaski</name>
+    </func>
+    <!-- Reuse entry points from GL_ARB_vertex_array_bgra -->
+    </funcs>
+</test>

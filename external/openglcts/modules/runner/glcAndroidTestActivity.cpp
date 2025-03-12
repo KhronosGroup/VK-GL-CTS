@@ -36,95 +36,146 @@ namespace glcts
 namespace Android
 {
 
-using tcu::Android::Platform;
 using tcu::Android::AssetArchive;
 using tcu::Android::NativeActivity;
+using tcu::Android::Platform;
 
-static const char* DEFAULT_LOG_PATH = "/sdcard";
+static const char *DEFAULT_LOG_PATH = "/sdcard";
 
-static std::string getWaiverPath(ANativeActivity* activity)
+static const char *DEFAULT_TEST_PARAM_FILE_NAME = "/sdcard/cts-run-params.xml";
+
+static std::string getWaiverPath(ANativeActivity *activity)
 {
-	return tcu::Android::getIntentStringExtra(activity, "waivers");
+    return tcu::Android::getIntentStringExtra(activity, "waivers");
 }
 
-static std::string getLogPath(ANativeActivity* activity)
+static std::string getLogPath(ANativeActivity *activity)
 {
-	std::string path = tcu::Android::getIntentStringExtra(activity, "logdir");
-	return path.empty() ? std::string(DEFAULT_LOG_PATH) : path;
+    std::string path = tcu::Android::getIntentStringExtra(activity, "logdir");
+    return path.empty() ? std::string(DEFAULT_LOG_PATH) : path;
 }
 
-static deUint32 getFlags(ANativeActivity* activity)
+static std::string getTestRunParamFilePath(ANativeActivity *activity)
 {
-	deUint32 flags = 0;
-	if (tcu::Android::getIntentStringExtra(activity, "verbose") == "true")
-		flags |= TestRunner::VERBOSE_ALL;
-	else if (tcu::Android::getIntentStringExtra(activity, "summary") == "true")
-		flags |= TestRunner::PRINT_SUMMARY;
-	return flags;
+    std::string path = tcu::Android::getIntentStringExtra(activity, "khronosCTSTestParamFileName");
+    return path.empty() ? std::string(DEFAULT_TEST_PARAM_FILE_NAME) : path;
 }
 
-TestThread::TestThread(NativeActivity& activity, tcu::Android::AssetArchive& archive, const std::string& waiverPath,
-					   const std::string& logPath, glu::ApiType runType, deUint32 runFlags)
-	: RenderThread(activity)
-	, m_platform(activity)
-	, m_archive(archive)
-	, m_app(m_platform, m_archive, waiverPath.c_str(), logPath.c_str(), runType, runFlags)
-	, m_finished(false)
+static uint32_t getFlags(ANativeActivity *activity)
+{
+    uint32_t flags = 0;
+    if (tcu::Android::getIntentStringExtra(activity, "verbose") == "true")
+        flags |= TestRunner::VERBOSE_ALL;
+    else if (tcu::Android::getIntentStringExtra(activity, "summary") == "true")
+        flags |= TestRunner::PRINT_SUMMARY;
+    return flags;
+}
+
+TestThread::TestThread(NativeActivity &activity, tcu::Android::AssetArchive &archive, const std::string &waiverPath,
+                       const std::string &logPath, glu::ApiType runType, uint32_t runFlags)
+    : RenderThread(activity)
+    , m_platform(activity)
+    , m_archive(archive)
+    , m_app(m_platform, m_archive, waiverPath.c_str(), logPath.c_str(), runType, runFlags)
+    , m_finished(false)
 {
 }
 
 TestThread::~TestThread(void)
 {
-	// \note m_testApp is managed by thread.
+    // \note m_testApp is managed by thread.
 }
 
 void TestThread::run(void)
 {
-	RenderThread::run();
+    RenderThread::run();
 }
 
-void TestThread::onWindowCreated(ANativeWindow* window)
+void TestThread::onWindowCreated(ANativeWindow *window)
 {
-	m_platform.getWindowRegistry().addWindow(window);
+    m_platform.getWindowRegistry().addWindow(window);
 }
 
-void TestThread::onWindowDestroyed(ANativeWindow* window)
+void TestThread::onWindowDestroyed(ANativeWindow *window)
 {
-	m_platform.getWindowRegistry().destroyWindow(window);
+    m_platform.getWindowRegistry().destroyWindow(window);
 }
 
-void TestThread::onWindowResized(ANativeWindow* window)
+void TestThread::onWindowResized(ANativeWindow *window)
 {
-	// \todo [2013-05-12 pyry] Handle this in some sane way.
-	DE_UNREF(window);
-	tcu::print("Warning: Native window was resized, results may be undefined");
+    // \todo [2013-05-12 pyry] Handle this in some sane way.
+    DE_UNREF(window);
+    tcu::print("Warning: Native window was resized, results may be undefined");
 }
 
 bool TestThread::render(void)
 {
-	if (!m_finished)
-		m_finished = !m_app.iterate();
-	return !m_finished;
+    if (!m_finished)
+        m_finished = !m_app.iterate();
+    return !m_finished;
+}
+
+GetTestParamThread::GetTestParamThread(NativeActivity &activity, const std::string &testParamsFilePath,
+                                       glu::ApiType runType)
+    : RenderThread(activity)
+    , m_platform(activity)
+    , m_app(m_platform, testParamsFilePath.c_str(), runType)
+    , m_finished(false)
+{
+}
+
+GetTestParamThread::~GetTestParamThread(void)
+{
+    // \note m_testApp is managed by thread.
+}
+
+void GetTestParamThread::run(void)
+{
+    RenderThread::run();
+}
+
+void GetTestParamThread::onWindowCreated(ANativeWindow *window)
+{
+    m_platform.getWindowRegistry().addWindow(window);
+}
+
+void GetTestParamThread::onWindowDestroyed(ANativeWindow *window)
+{
+    m_platform.getWindowRegistry().destroyWindow(window);
+}
+
+void GetTestParamThread::onWindowResized(ANativeWindow *window)
+{
+    // \todo [2013-05-12 pyry] Handle this in some sane way.
+    DE_UNREF(window);
+    tcu::print("Warning: Native window was resized, results may be undefined");
+}
+
+bool GetTestParamThread::render(void)
+{
+    if (!m_finished)
+        m_finished = !m_app.iterate();
+    return !m_finished;
 }
 
 // TestActivity
 
-TestActivity::TestActivity(ANativeActivity* activity, glu::ApiType runType)
-	: RenderActivity(activity)
-	, m_archive(activity->assetManager)
-	, m_cmdLine(tcu::Android::getIntentStringExtra(activity, "cmdLine"))
-	, m_testThread(*this, m_archive, getWaiverPath(activity), getLogPath(activity), runType, getFlags(activity))
-	, m_started(false)
+TestActivity::TestActivity(ANativeActivity *activity, glu::ApiType runType)
+    : RenderActivity(activity)
+    , m_archive(activity->assetManager)
+    , m_cmdLine(tcu::Android::getIntentStringExtra(activity, "cmdLine"))
+    , m_testThread(*this, m_archive, getWaiverPath(activity), getLogPath(activity), runType, getFlags(activity))
+    , m_started(false)
 {
-	// Set initial orientation.
-	tcu::Android::setRequestedOrientation(getNativeActivity(),
-										  tcu::Android::mapScreenRotation(m_cmdLine.getScreenRotation()));
+    // Set initial orientation.
+    tcu::Android::setRequestedOrientation(getNativeActivity(),
+                                          tcu::Android::mapScreenRotation(m_cmdLine.getScreenRotation()));
 
-	// Set up window flags.
-	ANativeActivity_setWindowFlags(activity,
-								   AWINDOW_FLAG_KEEP_SCREEN_ON | AWINDOW_FLAG_TURN_SCREEN_ON | AWINDOW_FLAG_FULLSCREEN |
-									   AWINDOW_FLAG_SHOW_WHEN_LOCKED,
-								   0);
+    // Set up window flags.
+    ANativeActivity_setWindowFlags(activity,
+                                   AWINDOW_FLAG_KEEP_SCREEN_ON | AWINDOW_FLAG_TURN_SCREEN_ON | AWINDOW_FLAG_FULLSCREEN |
+                                       AWINDOW_FLAG_SHOW_WHEN_LOCKED,
+                                   0);
 }
 
 TestActivity::~TestActivity(void)
@@ -133,40 +184,86 @@ TestActivity::~TestActivity(void)
 
 void TestActivity::onStart(void)
 {
-	if (!m_started)
-	{
-		setThread(&m_testThread);
-		m_testThread.start();
-		m_started = true;
-	}
+    if (!m_started)
+    {
+        setThread(&m_testThread);
+        m_testThread.start();
+        m_started = true;
+    }
 
-	RenderActivity::onStart();
+    RenderActivity::onStart();
 }
 
 void TestActivity::onDestroy(void)
 {
-	if (m_started)
-	{
-		setThread(DE_NULL);
-		m_testThread.stop();
-		m_started = false;
-	}
+    if (m_started)
+    {
+        setThread(nullptr);
+        m_testThread.stop();
+        m_started = false;
+    }
 
-	RenderActivity::onDestroy();
+    RenderActivity::onDestroy();
 
-	// Kill this process.
-	tcu::print("Done, killing process");
-	exit(0);
+    // Kill this process.
+    tcu::print("Done, killing process");
+    exit(0);
 }
 
 void TestActivity::onConfigurationChanged(void)
 {
-	RenderActivity::onConfigurationChanged();
+    RenderActivity::onConfigurationChanged();
 
-	// Update rotation.
-	tcu::Android::setRequestedOrientation(getNativeActivity(),
-										  tcu::Android::mapScreenRotation(m_cmdLine.getScreenRotation()));
+    // Update rotation.
+    tcu::Android::setRequestedOrientation(getNativeActivity(),
+                                          tcu::Android::mapScreenRotation(m_cmdLine.getScreenRotation()));
 }
 
-} // Android
-} // glcts
+// GetTestParamActivity
+
+GetTestParamActivity::GetTestParamActivity(ANativeActivity *activity, glu::ApiType runType)
+    : RenderActivity(activity)
+    , m_testThread(*this, getTestRunParamFilePath(activity), runType)
+    , m_started(false)
+{
+}
+
+GetTestParamActivity::~GetTestParamActivity(void)
+{
+}
+
+void GetTestParamActivity::onStart(void)
+{
+    if (!m_started)
+    {
+        setThread(&m_testThread);
+        m_testThread.start();
+        m_started = true;
+    }
+
+    RenderActivity::onStart();
+}
+
+void GetTestParamActivity::onDestroy(void)
+{
+    if (m_started)
+    {
+        setThread(nullptr);
+        m_testThread.stop();
+        m_started = false;
+    }
+
+    RenderActivity::onDestroy();
+
+    // Kill this process.
+    tcu::print("Done, killing GetTestParamActivity process");
+    exit(0);
+}
+
+void GetTestParamActivity::onConfigurationChanged(void)
+{
+    RenderActivity::onConfigurationChanged();
+}
+
+} // namespace Android
+} // namespace glcts

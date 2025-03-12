@@ -1,0 +1,26 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": "0.1.4.0"
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR": [
+            {
+                "features": [
+                    "vertexAttributeInstanceRateDivisor"
+                ],
+                "requirements": [
+                    "VK_EXT_vertex_attribute_divisor"
+                ]
+            },
+            {
+                "features": [
+                    "vertexAttributeInstanceRateDivisor"
+                ],
+                "requirements": [
+                    "VK_KHR_vertex_attribute_divisor"
+                ]
+            }
+        ]
+    }
+}

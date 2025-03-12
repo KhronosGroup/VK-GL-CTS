@@ -42,60 +42,63 @@ namespace Android
 class Window
 {
 public:
-	enum State
-	{
-		STATE_AVAILABLE	= 0,
-		STATE_IN_USE,
-		STATE_PENDING_DESTROY,
-		STATE_READY_FOR_DESTROY,
-		STATE_ACQUIRED_FOR_DESTROY,
+    enum State
+    {
+        STATE_AVAILABLE = 0,
+        STATE_IN_USE,
+        STATE_PENDING_DESTROY,
+        STATE_READY_FOR_DESTROY,
+        STATE_ACQUIRED_FOR_DESTROY,
 
-		STATE_LAST
-	};
+        STATE_LAST
+    };
 
-							Window				(ANativeWindow* window);
-							~Window				(void);
+    Window(ANativeWindow *window);
+    ~Window(void);
 
-	bool					tryAcquire			(void);
-	void					release				(void);
+    bool tryAcquire(void);
+    void release(void);
 
-	void					markForDestroy		(void);
-	bool					isPendingDestroy	(void) const;
-	bool					tryAcquireForDestroy(bool onlyMarked);
+    void markForDestroy(void);
+    bool isPendingDestroy(void) const;
+    bool tryAcquireForDestroy(bool onlyMarked);
 
-	ANativeWindow*			getNativeWindow		(void)	{ return m_window;	}
+    ANativeWindow *getNativeWindow(void)
+    {
+        return m_window;
+    }
 
-	void					setBuffersGeometry	(int width, int height, int32_t format);
+    void setBuffersGeometry(int width, int height, int32_t format);
 
-	IVec2					getSize				(void) const;
+    IVec2 getSize(void) const;
 
 private:
-							Window				(const Window& other);
-	Window&					operator=			(const Window& other);
+    Window(const Window &other);
+    Window &operator=(const Window &other);
 
-	ANativeWindow*			m_window;
-	mutable de::Mutex		m_stateLock;
-	State					m_state;
+    ANativeWindow *m_window;
+    mutable de::Mutex m_stateLock;
+    State m_state;
 };
 
 class WindowRegistry
 {
 public:
-							WindowRegistry		(void);
-							~WindowRegistry		(void);
+    WindowRegistry(void);
+    ~WindowRegistry(void);
 
-	void					addWindow			(ANativeWindow* window);
-	void					destroyWindow		(ANativeWindow* window);
+    void addWindow(ANativeWindow *window);
+    void destroyWindow(ANativeWindow *window);
 
-	Window*					tryAcquireWindow	(void);
+    Window *tryAcquireWindow(void);
 
-	void					garbageCollect		(void);
+    void garbageCollect(void);
 
 private:
-	std::vector<Window*>	m_windows;
+    std::vector<Window *> m_windows;
 };
 
-} // Android
-} // tcu
+} // namespace Android
+} // namespace tcu
 
 #endif // _TCUANDROIDWINDOW_HPP

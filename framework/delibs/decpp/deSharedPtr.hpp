@@ -33,66 +33,63 @@ namespace de
 {
 
 //! Shared pointer self-test.
-void SharedPtr_selfTest (void);
+void SharedPtr_selfTest(void);
 
 class DeadReferenceException : public std::exception
 {
 public:
-				DeadReferenceException	(void) throw()
-		: std::exception()
-	{
-	}
+    DeadReferenceException(void) throw() : std::exception()
+    {
+    }
 
-	const char*	what					(void) const throw()
-	{
-		return "DeadReferenceException";
-	}
+    const char *what(void) const throw()
+    {
+        return "DeadReferenceException";
+    }
 };
 
 struct SharedPtrStateBase
 {
-	SharedPtrStateBase (void)
-		: strongRefCount	(0)
-		, weakRefCount		(0)
-	{
-	}
+    SharedPtrStateBase(void) : strongRefCount(0), weakRefCount(0)
+    {
+    }
 
-	virtual				~SharedPtrStateBase	(void) throw() {}
-	virtual void		deletePtr			(void) throw() = 0;
+    virtual ~SharedPtrStateBase(void) throw()
+    {
+    }
+    virtual void deletePtr(void) throw() = 0;
 
-	volatile deInt32	strongRefCount;
-	volatile deInt32	weakRefCount;		//!< WeakPtr references + StrongPtr references.
+    volatile int32_t strongRefCount;
+    volatile int32_t weakRefCount; //!< WeakPtr references + StrongPtr references.
 };
 
-template<typename Type, typename Deleter>
+template <typename Type, typename Deleter>
 struct SharedPtrState : public SharedPtrStateBase
 {
-	SharedPtrState (Type* ptr, Deleter deleter)
-		: m_ptr		(ptr)
-		, m_deleter	(deleter)
-	{
-	}
+    SharedPtrState(Type *ptr, Deleter deleter) : m_ptr(ptr), m_deleter(deleter)
+    {
+    }
 
-	virtual ~SharedPtrState (void) throw()
-	{
-		DE_ASSERT(!m_ptr);
-	}
+    virtual ~SharedPtrState(void) throw()
+    {
+        DE_ASSERT(!m_ptr);
+    }
 
-	virtual void deletePtr (void) throw()
-	{
-		m_deleter(m_ptr);
-		m_ptr = DE_NULL;
-	}
+    virtual void deletePtr(void) throw()
+    {
+        m_deleter(m_ptr);
+        m_ptr = nullptr;
+    }
 
 private:
-	Type*		m_ptr;
-	Deleter		m_deleter;
+    Type *m_ptr;
+    Deleter m_deleter;
 };
 
-template<typename T>
+template <typename T>
 class SharedPtr;
 
-template<typename T>
+template <typename T>
 class WeakPtr;
 
 /*--------------------------------------------------------------------*//*!
@@ -104,57 +101,69 @@ class WeakPtr;
  *
  * SharedPtr can also be NULL.
  *//*--------------------------------------------------------------------*/
-template<typename T>
+template <typename T>
 class SharedPtr
 {
 public:
-								SharedPtr			(void);
-								SharedPtr			(const SharedPtr<T>& other);
-	explicit					SharedPtr			(T* ptr);
+    SharedPtr(void);
+    SharedPtr(const SharedPtr<T> &other);
+    explicit SharedPtr(T *ptr);
 
-	template<typename Deleter>
-								SharedPtr			(T* ptr, Deleter deleter);
+    template <typename Deleter>
+    SharedPtr(T *ptr, Deleter deleter);
 
-	template<typename Y>
-	explicit					SharedPtr			(const SharedPtr<Y>& other);
+    template <typename Y>
+    explicit SharedPtr(const SharedPtr<Y> &other);
 
-	template<typename Y>
-	explicit					SharedPtr			(const WeakPtr<Y>& other);
+    template <typename Y>
+    explicit SharedPtr(const WeakPtr<Y> &other);
 
-								~SharedPtr			(void);
+    ~SharedPtr(void);
 
-	template<typename Y>
-	SharedPtr&					operator=			(const SharedPtr<Y>& other);
-	SharedPtr&					operator=			(const SharedPtr<T>& other);
+    template <typename Y>
+    SharedPtr &operator=(const SharedPtr<Y> &other);
+    SharedPtr &operator=(const SharedPtr<T> &other);
 
-	template<typename Y>
-	SharedPtr&					operator=			(const WeakPtr<Y>& other);
+    template <typename Y>
+    SharedPtr &operator=(const WeakPtr<Y> &other);
 
-	T*							get					(void) const throw() { return m_ptr;	}	//!< Get stored pointer.
-	T*							operator->			(void) const throw() { return m_ptr;	}	//!< Get stored pointer.
-	T&							operator*			(void) const throw() { return *m_ptr;	}	//!< De-reference pointer.
+    T *get(void) const throw()
+    {
+        return m_ptr;
+    } //!< Get stored pointer.
+    T *operator->(void) const throw()
+    {
+        return m_ptr;
+    } //!< Get stored pointer.
+    T &operator*(void) const throw()
+    {
+        return *m_ptr;
+    } //!< De-reference pointer.
 
-	operator					bool				(void) const throw() { return !!m_ptr;	}
+    operator bool(void) const throw()
+    {
+        return !!m_ptr;
+    }
 
-	void						swap				(SharedPtr<T>& other);
+    void swap(SharedPtr<T> &other);
 
-	void						clear				(void);
+    void clear(void);
 
-	template<typename Y>
-	operator SharedPtr<Y>		(void) const;
+    template <typename Y>
+    operator SharedPtr<Y>(void) const;
 
 private:
-	void						acquire				(void);
-	void						acquireFromWeak		(const WeakPtr<T>& other);
-	void						release				(void);
+    void acquire(void);
+    void acquireFromWeak(const WeakPtr<T> &other);
+    void release(void);
 
-	T*							m_ptr;
-	SharedPtrStateBase*			m_state;
+    T *m_ptr;
+    SharedPtrStateBase *m_state;
 
-	friend class WeakPtr<T>;
+    friend class WeakPtr<T>;
 
-	template<typename U>
-	friend class SharedPtr;
+    template <typename U>
+    friend class SharedPtr;
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -169,29 +178,29 @@ private:
  * if the object is no longer live. In such case DeadReferenceException
  * will be thrown.
  *//*--------------------------------------------------------------------*/
-template<typename T>
+template <typename T>
 class WeakPtr
 {
 public:
-						WeakPtr		(void);
-						WeakPtr		(const WeakPtr<T>& other);
+    WeakPtr(void);
+    WeakPtr(const WeakPtr<T> &other);
 
-	explicit			WeakPtr		(const SharedPtr<T>& other);
-						~WeakPtr	(void);
+    explicit WeakPtr(const SharedPtr<T> &other);
+    ~WeakPtr(void);
 
-	WeakPtr&			operator=	(const WeakPtr<T>& other);
-	WeakPtr&			operator=	(const SharedPtr<T>& other);
+    WeakPtr &operator=(const WeakPtr<T> &other);
+    WeakPtr &operator=(const SharedPtr<T> &other);
 
-	SharedPtr<T>		lock		(void);
+    SharedPtr<T> lock(void);
 
 private:
-	void				acquire		(void);
-	void				release		(void);
+    void acquire(void);
+    void release(void);
 
-	T*					m_ptr;
-	SharedPtrStateBase*	m_state;
+    T *m_ptr;
+    SharedPtrStateBase *m_state;
 
-	friend class SharedPtr<T>;
+    friend class SharedPtr<T>;
 };
 
 // SharedPtr template implementation.
@@ -199,10 +208,9 @@ private:
 /*--------------------------------------------------------------------*//*!
  * \brief Construct empty shared pointer.
  *//*--------------------------------------------------------------------*/
-template<typename T>
-inline SharedPtr<T>::SharedPtr (void)
-	: m_ptr		(DE_NULL)
-	, m_state	(DE_NULL)
+template <typename T>
+inline SharedPtr<T>::SharedPtr(void) : m_ptr(nullptr)
+                                     , m_state(nullptr)
 {
 }
 
@@ -216,24 +224,23 @@ inline SharedPtr<T>::SharedPtr (void)
  * If allocation of shared state fails. The "ptr" argument will not be
  * released.
  *//*--------------------------------------------------------------------*/
-template<typename T>
-inline SharedPtr<T>::SharedPtr (T* ptr)
-	: m_ptr		(DE_NULL)
-	, m_state	(DE_NULL)
+template <typename T>
+inline SharedPtr<T>::SharedPtr(T *ptr) : m_ptr(nullptr)
+                                       , m_state(nullptr)
 {
-	try
-	{
-		m_ptr	= ptr;
-		m_state	= new SharedPtrState<T, DefaultDeleter<T> >(ptr, DefaultDeleter<T>());
-		m_state->strongRefCount	= 1;
-		m_state->weakRefCount	= 1;
-	}
-	catch (...)
-	{
-		// \note ptr is not released.
-		delete m_state;
-		throw;
-	}
+    try
+    {
+        m_ptr                   = ptr;
+        m_state                 = new SharedPtrState<T, DefaultDeleter<T>>(ptr, DefaultDeleter<T>());
+        m_state->strongRefCount = 1;
+        m_state->weakRefCount   = 1;
+    }
+    catch (...)
+    {
+        // \note ptr is not released.
+        delete m_state;
+        throw;
+    }
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -251,37 +258,35 @@ inline SharedPtr<T>::SharedPtr (T* ptr)
  *
  * Calling deleter or calling destructor for deleter should never throw.
  *//*--------------------------------------------------------------------*/
-template<typename T>
-template<typename Deleter>
-inline SharedPtr<T>::SharedPtr (T* ptr, Deleter deleter)
-	: m_ptr		(DE_NULL)
-	, m_state	(DE_NULL)
+template <typename T>
+template <typename Deleter>
+inline SharedPtr<T>::SharedPtr(T *ptr, Deleter deleter) : m_ptr(nullptr)
+                                                        , m_state(nullptr)
 {
-	try
-	{
-		m_ptr	= ptr;
-		m_state	= new SharedPtrState<T, Deleter>(ptr, deleter);
-		m_state->strongRefCount	= 1;
-		m_state->weakRefCount	= 1;
-	}
-	catch (...)
-	{
-		// \note ptr is not released.
-		delete m_state;
-		throw;
-	}
+    try
+    {
+        m_ptr                   = ptr;
+        m_state                 = new SharedPtrState<T, Deleter>(ptr, deleter);
+        m_state->strongRefCount = 1;
+        m_state->weakRefCount   = 1;
+    }
+    catch (...)
+    {
+        // \note ptr is not released.
+        delete m_state;
+        throw;
+    }
 }
 
 /*--------------------------------------------------------------------*//*!
  * \brief Initialize shared pointer from another SharedPtr.
  * \param other Pointer to be shared.
  *//*--------------------------------------------------------------------*/
-template<typename T>
-inline SharedPtr<T>::SharedPtr (const SharedPtr<T>& other)
-	: m_ptr		(other.m_ptr)
-	, m_state	(other.m_state)
+template <typename T>
+inline SharedPtr<T>::SharedPtr(const SharedPtr<T> &other) : m_ptr(other.m_ptr)
+                                                          , m_state(other.m_state)
 {
-	acquire();
+    acquire();
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -290,13 +295,12 @@ inline SharedPtr<T>::SharedPtr (const SharedPtr<T>& other)
  *
  * Y* must be convertible to T*.
  *//*--------------------------------------------------------------------*/
-template<typename T>
-template<typename Y>
-inline SharedPtr<T>::SharedPtr (const SharedPtr<Y>& other)
-	: m_ptr		(other.m_ptr)
-	, m_state	(other.m_state)
+template <typename T>
+template <typename Y>
+inline SharedPtr<T>::SharedPtr(const SharedPtr<Y> &other) : m_ptr(other.m_ptr)
+                                                          , m_state(other.m_state)
 {
-	acquire();
+    acquire();
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -305,19 +309,18 @@ inline SharedPtr<T>::SharedPtr (const SharedPtr<Y>& other)
  *
  * Y* must be convertible to T*.
  *//*--------------------------------------------------------------------*/
-template<typename T>
-template<typename Y>
-inline SharedPtr<T>::SharedPtr (const WeakPtr<Y>& other)
-	: m_ptr		(DE_NULL)
-	, m_state	(DE_NULL)
+template <typename T>
+template <typename Y>
+inline SharedPtr<T>::SharedPtr(const WeakPtr<Y> &other) : m_ptr(nullptr)
+                                                        , m_state(nullptr)
 {
-	acquireFromWeak(other);
+    acquireFromWeak(other);
 }
 
-template<typename T>
-inline SharedPtr<T>::~SharedPtr (void)
+template <typename T>
+inline SharedPtr<T>::~SharedPtr(void)
 {
-	release();
+    release();
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -330,23 +333,23 @@ inline SharedPtr<T>::~SharedPtr (void)
  *
  * Y* must be convertible to T*.
  *//*--------------------------------------------------------------------*/
-template<typename T>
-template<typename Y>
-inline SharedPtr<T>& SharedPtr<T>::operator= (const SharedPtr<Y>& other)
+template <typename T>
+template <typename Y>
+inline SharedPtr<T> &SharedPtr<T>::operator=(const SharedPtr<Y> &other)
 {
-	if (m_state == other.m_state)
-		return *this;
+    if (m_state == other.m_state)
+        return *this;
 
-	// Release current reference.
-	release();
+    // Release current reference.
+    release();
 
-	// Copy from other and acquire reference.
-	m_ptr	= other.m_ptr;
-	m_state	= other.m_state;
+    // Copy from other and acquire reference.
+    m_ptr   = other.m_ptr;
+    m_state = other.m_state;
 
-	acquire();
+    acquire();
 
-	return *this;
+    return *this;
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -357,22 +360,22 @@ inline SharedPtr<T>& SharedPtr<T>::operator= (const SharedPtr<Y>& other)
  * Reference to current pointer is released and reference to new pointer is
  * acquired.
  *//*--------------------------------------------------------------------*/
-template<typename T>
-inline SharedPtr<T>& SharedPtr<T>::operator= (const SharedPtr<T>& other)
+template <typename T>
+inline SharedPtr<T> &SharedPtr<T>::operator=(const SharedPtr<T> &other)
 {
-	if (m_state == other.m_state)
-		return *this;
+    if (m_state == other.m_state)
+        return *this;
 
-	// Release current reference.
-	release();
+    // Release current reference.
+    release();
 
-	// Copy from other and acquire reference.
-	m_ptr	= other.m_ptr;
-	m_state	= other.m_state;
+    // Copy from other and acquire reference.
+    m_ptr   = other.m_ptr;
+    m_state = other.m_state;
 
-	acquire();
+    acquire();
 
-	return *this;
+    return *this;
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -391,19 +394,19 @@ inline SharedPtr<T>& SharedPtr<T>::operator= (const SharedPtr<T>& other)
  *
  * Y* must be convertible to T*.
  *//*--------------------------------------------------------------------*/
-template<typename T>
-template<typename Y>
-inline SharedPtr<T>& SharedPtr<T>::operator= (const WeakPtr<Y>& other)
+template <typename T>
+template <typename Y>
+inline SharedPtr<T> &SharedPtr<T>::operator=(const WeakPtr<Y> &other)
 {
-	if (m_state == other.m_state)
-		return *this;
+    if (m_state == other.m_state)
+        return *this;
 
-	{
-		SharedPtr<T> sharedOther(other);
-		*this = other;
-	}
+    {
+        SharedPtr<T> sharedOther(other);
+        *this = other;
+    }
 
-	return *this;
+    return *this;
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -411,11 +414,11 @@ inline SharedPtr<T>& SharedPtr<T>::operator= (const WeakPtr<Y>& other)
  *
  * T* must be convertible to Y*.
  *//*--------------------------------------------------------------------*/
-template<class T>
-template<typename Y>
-inline SharedPtr<T>::operator SharedPtr<Y> (void) const
+template <class T>
+template <typename Y>
+inline SharedPtr<T>::operator SharedPtr<Y>(void) const
 {
-	return SharedPtr<Y>(*this);
+    return SharedPtr<Y>(*this);
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -424,10 +427,10 @@ inline SharedPtr<T>::operator SharedPtr<Y> (void) const
  * \param b B
  * \return true if A and B point to same object, false otherwise.
  *//*--------------------------------------------------------------------*/
-template<class T, class U>
-inline bool operator== (const SharedPtr<T>& a, const SharedPtr<U>& b) throw()
+template <class T, class U>
+inline bool operator==(const SharedPtr<T> &a, const SharedPtr<U> &b) throw()
 {
-	return a.get() == b.get();
+    return a.get() == b.get();
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -436,26 +439,26 @@ inline bool operator== (const SharedPtr<T>& a, const SharedPtr<U>& b) throw()
  * \param b B
  * \return true if A and B point to different objects, false otherwise.
  *//*--------------------------------------------------------------------*/
-template<class T, class U>
-inline bool operator!= (const SharedPtr<T>& a, const SharedPtr<U>& b) throw()
+template <class T, class U>
+inline bool operator!=(const SharedPtr<T> &a, const SharedPtr<U> &b) throw()
 {
-	return a.get() != b.get();
+    return a.get() != b.get();
 }
 
 /** Swap pointer contents. */
-template<typename T>
-inline void SharedPtr<T>::swap (SharedPtr<T>& other)
+template <typename T>
+inline void SharedPtr<T>::swap(SharedPtr<T> &other)
 {
-	using std::swap;
-	swap(m_ptr,		other.m_ptr);
-	swap(m_state,	other.m_state);
+    using std::swap;
+    swap(m_ptr, other.m_ptr);
+    swap(m_state, other.m_state);
 }
 
 /** Swap operator for SharedPtr's. */
-template<typename T>
-inline void swap (SharedPtr<T>& a, SharedPtr<T>& b)
+template <typename T>
+inline void swap(SharedPtr<T> &a, SharedPtr<T> &b)
 {
-	a.swap(b);
+    a.swap(b);
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -463,70 +466,71 @@ inline void swap (SharedPtr<T>& a, SharedPtr<T>& b)
  *
  * clear() removes current reference and sets pointer to null value.
  *//*--------------------------------------------------------------------*/
-template<typename T>
-inline void SharedPtr<T>::clear (void)
+template <typename T>
+inline void SharedPtr<T>::clear(void)
 {
-	release();
-	m_ptr	= DE_NULL;
-	m_state	= DE_NULL;
+    release();
+    m_ptr   = nullptr;
+    m_state = nullptr;
 }
 
-template<typename T>
-inline void SharedPtr<T>::acquireFromWeak (const WeakPtr<T>& weakRef)
+template <typename T>
+inline void SharedPtr<T>::acquireFromWeak(const WeakPtr<T> &weakRef)
 {
-	DE_ASSERT(!m_ptr && !m_state);
+    DE_ASSERT(!m_ptr && !m_state);
 
-	SharedPtrStateBase* state = weakRef.m_state;
+    SharedPtrStateBase *state = weakRef.m_state;
 
-	if (!state)
-		return; // Empty reference.
+    if (!state)
+        return; // Empty reference.
 
-	{
-		deInt32 oldCount, newCount;
+    {
+        int32_t oldCount, newCount;
 
-		// Do atomic compare and increment.
-		do
-		{
-			oldCount = state->strongRefCount;
-			if (oldCount == 0)
-				throw DeadReferenceException();
-			newCount = oldCount+1;
-		} while (deAtomicCompareExchange32((deUint32 volatile*)&state->strongRefCount, (deUint32)oldCount, (deUint32)newCount) != (deUint32)oldCount);
+        // Do atomic compare and increment.
+        do
+        {
+            oldCount = state->strongRefCount;
+            if (oldCount == 0)
+                throw DeadReferenceException();
+            newCount = oldCount + 1;
+        } while (deAtomicCompareExchange32((uint32_t volatile *)&state->strongRefCount, (uint32_t)oldCount,
+                                           (uint32_t)newCount) != (uint32_t)oldCount);
 
-		deAtomicIncrement32(&state->weakRefCount);
-	}
+        deAtomicIncrement32(&state->weakRefCount);
+    }
 
-	m_ptr	= weakRef.m_ptr;
-	m_state	= state;
+    m_ptr   = weakRef.m_ptr;
+    m_state = state;
 }
 
-template<typename T>
-inline void SharedPtr<T>::acquire (void)
+template <typename T>
+inline void SharedPtr<T>::acquire(void)
 {
-	if (m_state)
-	{
-		deAtomicIncrement32(&m_state->strongRefCount);
-		deAtomicIncrement32(&m_state->weakRefCount);
-	}
+    if (m_state)
+    {
+        deAtomicIncrement32(&m_state->strongRefCount);
+        deAtomicIncrement32(&m_state->weakRefCount);
+    }
 }
 
-template<typename T>
-inline void SharedPtr<T>::release (void)
+template <typename T>
+inline void SharedPtr<T>::release(void)
 {
-	if (m_state)
-	{
-		if (deAtomicDecrement32(&m_state->strongRefCount) == 0)
-		{
-			m_ptr = DE_NULL;
-			m_state->deletePtr();
-		}
+    if (m_state)
+    {
+        if (deAtomicDecrement32(&m_state->strongRefCount) == 0)
+        {
+            m_ptr = nullptr;
+            m_state->deletePtr();
+        }
 
-		if (deAtomicDecrement32(&m_state->weakRefCount) == 0)
-		{
-			delete m_state;
-			m_state = DE_NULL;
-		}
-	}
+        if (deAtomicDecrement32(&m_state->weakRefCount) == 0)
+        {
+            delete m_state;
+            m_state = nullptr;
+        }
+    }
 }
 
 // WeakPtr template implementation.
@@ -534,10 +538,9 @@ inline void SharedPtr<T>::release (void)
 /*--------------------------------------------------------------------*//*!
  * \brief Construct empty weak pointer.
  *//*--------------------------------------------------------------------*/
-template<typename T>
-inline WeakPtr<T>::WeakPtr (void)
-	: m_ptr		(DE_NULL)
-	, m_state	(DE_NULL)
+template <typename T>
+inline WeakPtr<T>::WeakPtr(void) : m_ptr(nullptr)
+                                 , m_state(nullptr)
 {
 }
 
@@ -545,30 +548,28 @@ inline WeakPtr<T>::WeakPtr (void)
  * \brief Construct weak pointer from other weak reference.
  * \param other Weak reference.
  *//*--------------------------------------------------------------------*/
-template<typename T>
-inline WeakPtr<T>::WeakPtr (const WeakPtr<T>& other)
-	: m_ptr		(other.m_ptr)
-	, m_state	(other.m_state)
+template <typename T>
+inline WeakPtr<T>::WeakPtr(const WeakPtr<T> &other) : m_ptr(other.m_ptr)
+                                                    , m_state(other.m_state)
 {
-	acquire();
+    acquire();
 }
 
 /*--------------------------------------------------------------------*//*!
  * \brief Construct weak pointer from shared pointer.
  * \param other Shared pointer.
  *//*--------------------------------------------------------------------*/
-template<typename T>
-inline WeakPtr<T>::WeakPtr (const SharedPtr<T>& other)
-	: m_ptr		(other.m_ptr)
-	, m_state	(other.m_state)
+template <typename T>
+inline WeakPtr<T>::WeakPtr(const SharedPtr<T> &other) : m_ptr(other.m_ptr)
+                                                      , m_state(other.m_state)
 {
-	acquire();
+    acquire();
 }
 
-template<typename T>
-inline WeakPtr<T>::~WeakPtr (void)
+template <typename T>
+inline WeakPtr<T>::~WeakPtr(void)
 {
-	release();
+    release();
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -579,20 +580,20 @@ inline WeakPtr<T>::~WeakPtr (void)
  * The current weak reference is removed first and then a new weak reference
  * to the object pointed by other is taken.
  *//*--------------------------------------------------------------------*/
-template<typename T>
-inline WeakPtr<T>& WeakPtr<T>::operator= (const WeakPtr<T>& other)
+template <typename T>
+inline WeakPtr<T> &WeakPtr<T>::operator=(const WeakPtr<T> &other)
 {
-	if (this == &other)
-		return *this;
+    if (this == &other)
+        return *this;
 
-	release();
+    release();
 
-	m_ptr	= other.m_ptr;
-	m_state	= other.m_state;
+    m_ptr   = other.m_ptr;
+    m_state = other.m_state;
 
-	acquire();
+    acquire();
 
-	return *this;
+    return *this;
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -603,40 +604,40 @@ inline WeakPtr<T>& WeakPtr<T>::operator= (const WeakPtr<T>& other)
  * The current weak reference is removed first and then a new weak reference
  * to the object pointed by other is taken.
  *//*--------------------------------------------------------------------*/
-template<typename T>
-inline WeakPtr<T>& WeakPtr<T>::operator= (const SharedPtr<T>& other)
+template <typename T>
+inline WeakPtr<T> &WeakPtr<T>::operator=(const SharedPtr<T> &other)
 {
-	release();
+    release();
 
-	m_ptr	= other.m_ptr;
-	m_state	= other.m_state;
+    m_ptr   = other.m_ptr;
+    m_state = other.m_state;
 
-	acquire();
+    acquire();
 
-	return *this;
+    return *this;
 }
 
-template<typename T>
-inline void WeakPtr<T>::acquire (void)
+template <typename T>
+inline void WeakPtr<T>::acquire(void)
 {
-	if (m_state)
-		deAtomicIncrement32(&m_state->weakRefCount);
+    if (m_state)
+        deAtomicIncrement32(&m_state->weakRefCount);
 }
 
-template<typename T>
-inline void WeakPtr<T>::release (void)
+template <typename T>
+inline void WeakPtr<T>::release(void)
 {
-	if (m_state)
-	{
-		if (deAtomicDecrement32(&m_state->weakRefCount) == 0)
-		{
-			delete m_state;
-			m_state	= DE_NULL;
-			m_ptr	= DE_NULL;
-		}
-	}
+    if (m_state)
+    {
+        if (deAtomicDecrement32(&m_state->weakRefCount) == 0)
+        {
+            delete m_state;
+            m_state = nullptr;
+            m_ptr   = nullptr;
+        }
+    }
 }
 
-} // de
+} // namespace de
 
 #endif // _DESHAREDPTR_HPP

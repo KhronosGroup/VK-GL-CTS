@@ -35,46 +35,48 @@
 namespace rsg
 {
 
-void		computeUnifiedUniforms		(const Shader& vertexShader, const Shader& fragmentShader, std::vector<const ShaderInput*>& uniforms);
-void		computeUniformValues		(de::Random& rnd, std::vector<VariableValue>& values, const std::vector<const ShaderInput*>& uniforms);
+void computeUnifiedUniforms(const Shader &vertexShader, const Shader &fragmentShader,
+                            std::vector<const ShaderInput *> &uniforms);
+void computeUniformValues(de::Random &rnd, std::vector<VariableValue> &values,
+                          const std::vector<const ShaderInput *> &uniforms);
 
 // \todo [2011-03-26 pyry] Move to ExpressionUtils!
 
-bool			isUndefinedValueRange			(ConstValueRangeAccess valueRange);
+bool isUndefinedValueRange(ConstValueRangeAccess valueRange);
 
-int				getConservativeValueExprDepth	(const GeneratorState& state, ConstValueRangeAccess valueRange);
-int				getTypeConstructorDepth			(const VariableType& type);
+int getConservativeValueExprDepth(const GeneratorState &state, ConstValueRangeAccess valueRange);
+int getTypeConstructorDepth(const VariableType &type);
 
-VariableType	computeRandomType				(GeneratorState& state, int maxScalars);
-void			computeRandomValueRange			(GeneratorState& state, ValueRangeAccess valueRange);
+VariableType computeRandomType(GeneratorState &state, int maxScalars);
+void computeRandomValueRange(GeneratorState &state, ValueRangeAccess valueRange);
 
-float			computeDynamicRangeWeight		(ConstValueRangeAccess valueRange);
+float computeDynamicRangeWeight(ConstValueRangeAccess valueRange);
 
-inline float getQuantizedFloat (de::Random& rnd, float min, float max, float step)
+inline float getQuantizedFloat(de::Random &rnd, float min, float max, float step)
 {
-	int numSteps = (int)((max-min)/step);
-	return min + step * (float)rnd.getInt(0, numSteps);
+    int numSteps = (int)((max - min) / step);
+    return min + step * (float)rnd.getInt(0, numSteps);
 }
 
-inline bool quantizeFloatRange (float& min, float& max)
+inline bool quantizeFloatRange(float &min, float &max)
 {
-	const float	subdiv = 8;
+    const float subdiv = 8;
 
-	float newMin = deFloatCeil(min*subdiv)/subdiv;
-	if (newMin <= max)
-		min = newMin; // Minimum value quantized
-	else
-		return false;
+    float newMin = deFloatCeil(min * subdiv) / subdiv;
+    if (newMin <= max)
+        min = newMin; // Minimum value quantized
+    else
+        return false;
 
-	float newMax = deFloatFloor(max*subdiv)/subdiv;
-	if (min <= newMax)
-		max = newMax;
-	else
-		return false;
+    float newMax = deFloatFloor(max * subdiv) / subdiv;
+    if (min <= newMax)
+        max = newMax;
+    else
+        return false;
 
-	return true;
+    return true;
 }
 
-} // rsg
+} // namespace rsg
 
 #endif // _RSGUTILS_HPP

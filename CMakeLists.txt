@@ -1,9 +1,17 @@
 # dEQP cmake file
 
 # Module FindGit requires cmake >= 2.8.2
-cmake_minimum_required(VERSION 3.17.2)
+# Using AFTER in target_include_directories requires >= 3.20.0
+cmake_minimum_required(VERSION 3.20.0)
 
-option(GLES_ALLOW_DIRECT_LINK "Allow direct linking to GLES libraries" ON)
+option(GLES_ALLOW_DIRECT_LINK "Allow direct linking to GLES libraries" OFF)
+option(DEQP_ANDROID_EXE "Build dEQP modules as executables rather than a library on Android" OFF)
+
+# Target selection:
+# SELECTED_BUILD_TARGETS is a CMake option that can be set to a list of targets
+# that will be built. If the variable is empty (as is the default), all targets
+# will be built normally.
+set(SELECTED_BUILD_TARGETS "" CACHE STRING "Select some specific targets to build, separated by spaces")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/framework/delibs/cmake")
 find_package(Git)
@@ -57,6 +65,21 @@ include_directories(
 # Include target-specific definitions
 include(targets/${DEQP_TARGET}/${DEQP_TARGET}.cmake)
 
+# Handle target selection list.
+string(STRIP "${SELECTED_BUILD_TARGETS}" SBT_STRIPPED)
+if ("${SBT_STRIPPED}" STREQUAL "" OR (NOT (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)))
+	set(MAYBE_EXCLUDE_FROM_ALL)
+else ()
+	# If a non-empty target selection list is provided, exclude all subdirectories by default.
+	set(MAYBE_EXCLUDE_FROM_ALL EXCLUDE_FROM_ALL)
+
+	# Each target in the target selection list will be added as a dependency of a new fake target.
+	# The new fake target will be added as a dependency of the default build target.
+	string(REGEX REPLACE "[ \t\r\n]+" ";" SBT_LIST "${SBT_STRIPPED}")
+	add_custom_target(sbt_list_target ALL)
+	add_dependencies(sbt_list_target ${SBT_LIST})
+endif ()
+
 # zlib
 find_package(ZLIB)
 # dEQP CMake compatibility (as for libpng)
@@ -65,7 +88,7 @@ set(ZLIB_LIBRARY ${ZLIB_LIBRARIES})
 
 if (NOT ZLIB_INCLUDE_PATH OR NOT ZLIB_LIBRARY)
 	message(STATUS "System version of zlib not found, using external/zlib")
-	add_subdirectory(external/zlib)
+	add_subdirectory(external/zlib EXCLUDE_FROM_ALL)
 	# \note ZLIB_LIBRARY and ZLIB_INCLUDE_PATH are promoted from external/zlib/CMakeLists.txt
 endif ()
 
@@ -90,15 +113,20 @@ set(PNG_LIBRARY ${PNG_LIBRARIES})
 
 if (NOT PNG_INCLUDE_PATH OR NOT PNG_LIBRARY)
 	message(STATUS "System version of libpng not found, using external/libpng")
-	add_subdirectory(external/libpng)
+	add_subdirectory(external/libpng EXCLUDE_FROM_ALL)
 	# \note PNG_LIBRARY and PNG_INCLUDE_PATH are promoted from external/libpng/CMakeLists.txt
 endif ()
 
-# glslang
-add_subdirectory(external/glslang)
+# vulkan-validationlayers.  Supported only on 64-bit
+if ("${DE_CPU}" STREQUAL "DE_CPU_X86_64" OR "${DE_CPU}" STREQUAL "DE_CPU_ARM_64")
+	add_subdirectory(external/vulkan-validationlayers ${MAYBE_EXCLUDE_FROM_ALL})
+endif ()
 
 # spirv-tools
-add_subdirectory(external/spirv-tools)
+add_subdirectory(external/spirv-tools EXCLUDE_FROM_ALL)
+
+# glslang
+add_subdirectory(external/glslang EXCLUDE_FROM_ALL)
 
 # spirv-headers
 set(SPIRV_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/spirv-headers/src/include")
@@ -108,18 +136,24 @@ endif()
 include_directories(${SPIRV_INCLUDE_PATH})
 
 # Amber
-add_subdirectory(external/amber)
+add_subdirectory(external/amber EXCLUDE_FROM_ALL)
 include_directories(external/amber)
 
 # jsoncpp
-add_subdirectory(external/jsoncpp)
+add_subdirectory(external/jsoncpp EXCLUDE_FROM_ALL)
 include_directories(external/jsoncpp/src/include)
 
 # RenderDoc API
 include_directories(external/renderdoc/src)
 
+# Vulkan video support libraries
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
-	add_subdirectory(external/ESExtractor)
+   # Some of the parsing / codec code is used from here.
+   add_subdirectory(external/nvidia-video-samples EXCLUDE_FROM_ALL)
+   # Video encoder library
+   add_subdirectory(external/vulkan-video-samples EXCLUDE_FROM_ALL)
+   # YUV Video generator library
+   add_subdirectory(external/video_generator EXCLUDE_FROM_ALL)
 endif()
 
 include_directories(${PNG_INCLUDE_PATH})
@@ -175,6 +209,22 @@ if (DEFINED DEQP_EGL_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_EGL_DIRECT_LINK=1)
 endif ()
 
+# Android build variants
+if (DE_OS_IS_ANDROID)
+	if (DEQP_ANDROID_EXE)
+		message(STATUS "DEQP_ANDROID_BUILD      = EXE")
+		set(DEQP_ANDROID_APP OFF)
+	else ()
+		message(STATUS "DEQP_ANDROID_BUILD      = APP")
+		set(DEQP_ANDROID_APP ON)
+
+		add_definitions(-DDEQP_IS_ANDROID_APP=1)
+	endif ()
+else ()
+	set(DEQP_ANDROID_EXE OFF)
+	set(DEQP_ANDROID_APP OFF)
+endif ()
+
 # Legacy APIs that don't support run-time loading
 if (DEQP_SUPPORT_GLES1)
 	add_definitions(-DDEQP_SUPPORT_GLES1=1)
@@ -216,19 +266,19 @@ macro(PCH SRCS PCHCPP)
 endmacro(PCH)
 
 # delibs projects
-add_subdirectory(framework/delibs/debase)
-add_subdirectory(framework/delibs/depool)
-add_subdirectory(framework/delibs/dethread)
-add_subdirectory(framework/delibs/destream)
-add_subdirectory(framework/delibs/deutil)
-add_subdirectory(framework/delibs/decpp)
+add_subdirectory(framework/delibs/debase ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(framework/delibs/depool ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(framework/delibs/dethread ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(framework/delibs/destream ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(framework/delibs/deutil ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(framework/delibs/decpp ${MAYBE_EXCLUDE_FROM_ALL})
 
 # ExecServer
-add_subdirectory(execserver)
+add_subdirectory(execserver ${MAYBE_EXCLUDE_FROM_ALL})
 
 # Executor framework and tools
 if (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/executor)
-	add_subdirectory(executor)
+	add_subdirectory(executor ${MAYBE_EXCLUDE_FROM_ALL})
 endif ()
 
 # Test framework include directories
@@ -244,10 +294,9 @@ include_directories(
 	framework/egl/wrapper
 	framework/xexml
 	external/vulkancts/framework/vulkan
-	external/vulkancts/framework/vulkan/generated/vulkan
 	)
 
-if (DE_OS_IS_ANDROID OR DE_OS_IS_IOS)
+if (DEQP_ANDROID_APP OR DE_OS_IS_IOS)
 	# On Android deqp modules are compiled as libraries and linked into final .so
 	set(DEQP_MODULE_LIBRARIES )
 	set(DEQP_MODULE_ENTRY_POINTS )
@@ -291,7 +340,7 @@ macro (add_deqp_module MODULE_NAME SRCS LIBS EXECLIBS ENTRY)
 	set(DEQP_MODULE_LIBRARIES		${DEQP_MODULE_LIBRARIES} PARENT_SCOPE)
 	set(DEQP_MODULE_ENTRY_POINTS	${DEQP_MODULE_ENTRY_POINTS} PARENT_SCOPE)
 
-	if (NOT DE_OS_IS_ANDROID AND NOT DE_OS_IS_IOS)
+	if (NOT DEQP_ANDROID_APP AND NOT DE_OS_IS_IOS)
 		# Executable target
 		add_executable(${MODULE_NAME} ${PROJECT_SOURCE_DIR}/framework/platform/tcuMain.cpp ${ENTRY})
 		target_link_libraries(${MODULE_NAME} PUBLIC "${EXECLIBS}" "${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}")
@@ -313,7 +362,7 @@ macro (add_deqp_module_skip_android MODULE_NAME SRCS LIBS EXECLIBS ENTRY)
 	add_library("${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}" STATIC ${SRCS})
 	target_link_libraries("${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}" ${LIBS})
 
-	if (NOT DE_OS_IS_ANDROID AND NOT DE_OS_IS_IOS)
+	if (NOT DEQP_ANDROID_APP AND NOT DE_OS_IS_IOS)
 		# Executable target
 		add_executable(${MODULE_NAME} ${PROJECT_SOURCE_DIR}/framework/platform/tcuMain.cpp ${ENTRY})
 		target_link_libraries(${MODULE_NAME} PUBLIC "${EXECLIBS}" "${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}")
@@ -327,10 +376,10 @@ endmacro (add_deqp_module_skip_android)
 
 # Macro for adding data dirs to module
 macro (add_data_dir MODULE_NAME SRC_DIR DST_DIR)
-	if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX OR DE_OS_IS_QNX)
+	if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX OR DE_OS_IS_QNX OR DEQP_ANDROID_EXE)
 		add_custom_command(TARGET "${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}" POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/${DST_DIR})
 
-	elseif (DE_OS_IS_ANDROID)
+	elseif (DEQP_ANDROID_APP)
 		add_custom_command(TARGET "${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}" POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR} ${CMAKE_BINARY_DIR}/assets/${DST_DIR})
 
 	elseif (DE_OS_IS_IOS)
@@ -340,10 +389,10 @@ endmacro (add_data_dir)
 
 # Macro for adding individual data files to module
 macro (add_data_file MODULE_NAME SRC_FILE DST_FILE)
-	if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX OR DE_OS_IS_QNX)
+	if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX OR DE_OS_IS_QNX OR DEQP_ANDROID_EXE)
 		add_custom_command(TARGET "${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}" POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${DST_FILE})
 
-	elseif (DE_OS_IS_ANDROID)
+	elseif (DEQP_ANDROID_APP)
 		add_custom_command(TARGET "${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}" POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE} ${CMAKE_BINARY_DIR}/assets/${DST_FILE})
 
 	elseif (DE_OS_IS_IOS)
@@ -351,21 +400,26 @@ macro (add_data_file MODULE_NAME SRC_FILE DST_FILE)
 	endif ()
 endmacro (add_data_file)
 
-add_subdirectory(framework)
-add_subdirectory(external/vulkancts/framework/vulkan)
+add_subdirectory(framework ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(external/vulkancts/framework/vulkan ${MAYBE_EXCLUDE_FROM_ALL})
 
 if (DE_COMPILER_IS_MSC)
 	add_compile_options(/bigobj) # Required by glsBuiltinPrecisionTests.cpp
 endif ()
 
-add_subdirectory(modules)
-add_subdirectory(external/vulkancts/modules/vulkan)
-add_subdirectory(external/vulkancts/vkscserver)
-add_subdirectory(external/vulkancts/vkscpc)
-add_subdirectory(external/openglcts)
+if (DE_COMPILER_IS_GCC)
+	# Should reduce memory usage by the GCC linker, which sometimes gets killed with -9
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-keep-memory")
+endif ()
+
+add_subdirectory(modules ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(external/vulkancts/modules/vulkan ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(external/vulkancts/vkscserver ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(external/vulkancts/vkscpc ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(external/openglcts ${MAYBE_EXCLUDE_FROM_ALL})
 
 # Single-binary targets
-if (DE_OS_IS_ANDROID)
+if (DEQP_ANDROID_APP)
 	include_directories(executor)
 	include_directories(${PROJECT_BINARY_DIR}/external/vulkancts/framework/vulkan)
 

@@ -41,42 +41,76 @@ namespace Android
 class TestThread : public tcu::Android::RenderThread
 {
 public:
-	TestThread(tcu::Android::NativeActivity& nativeActivity, tcu::Android::AssetArchive& archive,
-			   const std::string& waiverPath, const std::string& logPath, glu::ApiType runType, deUint32 runFlags);
-	~TestThread(void);
+    TestThread(tcu::Android::NativeActivity &nativeActivity, tcu::Android::AssetArchive &archive,
+               const std::string &waiverPath, const std::string &logPath, glu::ApiType runType, uint32_t runFlags);
+    ~TestThread(void);
 
-	void run(void);
+    void run(void);
 
 protected:
-	virtual void onWindowCreated(ANativeWindow* window);
-	virtual void onWindowResized(ANativeWindow* window);
-	virtual void onWindowDestroyed(ANativeWindow* window);
-	virtual bool render(void);
+    virtual void onWindowCreated(ANativeWindow *window);
+    virtual void onWindowResized(ANativeWindow *window);
+    virtual void onWindowDestroyed(ANativeWindow *window);
+    virtual bool render(void);
 
-	tcu::Android::Platform		m_platform;
-	tcu::Android::AssetArchive& m_archive;
-	TestRunner					m_app;
-	bool						m_finished; //!< Is execution finished.
+    tcu::Android::Platform m_platform;
+    tcu::Android::AssetArchive &m_archive;
+    TestRunner m_app;
+    bool m_finished; //!< Is execution finished.
 };
 
 class TestActivity : public tcu::Android::RenderActivity
 {
 public:
-	TestActivity(ANativeActivity* nativeActivity, glu::ApiType runType);
-	~TestActivity(void);
+    TestActivity(ANativeActivity *nativeActivity, glu::ApiType runType);
+    ~TestActivity(void);
 
-	virtual void onStart(void);
-	virtual void onDestroy(void);
-	virtual void onConfigurationChanged(void);
+    virtual void onStart(void);
+    virtual void onDestroy(void);
+    virtual void onConfigurationChanged(void);
 
 private:
-	tcu::Android::AssetArchive m_archive;
-	tcu::CommandLine		   m_cmdLine;
-	TestThread				   m_testThread;
-	bool					   m_started;
+    tcu::Android::AssetArchive m_archive;
+    tcu::CommandLine m_cmdLine;
+    TestThread m_testThread;
+    bool m_started;
 };
 
-} // Android
-} // glcts
+class GetTestParamThread : public tcu::Android::RenderThread
+{
+public:
+    GetTestParamThread(tcu::Android::NativeActivity &nativeActivity, const std::string &logPath, glu::ApiType runType);
+    ~GetTestParamThread(void);
+
+    void run(void);
+
+protected:
+    virtual void onWindowCreated(ANativeWindow *window);
+    virtual void onWindowResized(ANativeWindow *window);
+    virtual void onWindowDestroyed(ANativeWindow *window);
+    virtual bool render(void);
+
+    tcu::Android::Platform m_platform;
+    TestParamCollectorRunner m_app;
+    bool m_finished; //!< Is execution finished.
+};
+
+class GetTestParamActivity : public tcu::Android::RenderActivity
+{
+public:
+    GetTestParamActivity(ANativeActivity *nativeActivity, glu::ApiType runType);
+    ~GetTestParamActivity(void);
+
+    virtual void onStart(void);
+    virtual void onDestroy(void);
+    virtual void onConfigurationChanged(void);
+
+private:
+    GetTestParamThread m_testThread;
+    bool m_started;
+};
+
+} // namespace Android
+} // namespace glcts
 
 #endif // _GLCANDROIDTESTACTIVITY_HPP

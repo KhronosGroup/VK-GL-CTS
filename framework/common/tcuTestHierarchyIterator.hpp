@@ -44,33 +44,33 @@ class CaseListFilter;
 class TestHierarchyInflater
 {
 public:
-									TestHierarchyInflater	(void);
+    TestHierarchyInflater(void);
 
-	virtual void					enterTestPackage		(TestPackage* testPackage, std::vector<TestNode*>& children) = 0;
-	virtual void					leaveTestPackage		(TestPackage* testPackage) = 0;
+    virtual void enterTestPackage(TestPackage *testPackage, std::vector<TestNode *> &children) = 0;
+    virtual void leaveTestPackage(TestPackage *testPackage)                                    = 0;
 
-	virtual void					enterGroupNode			(TestCaseGroup* testGroup, std::vector<TestNode*>& children) = 0;
-	virtual void					leaveGroupNode			(TestCaseGroup* testGroup) = 0;
+    virtual void enterGroupNode(TestCaseGroup *testGroup, std::vector<TestNode *> &children) = 0;
+    virtual void leaveGroupNode(TestCaseGroup *testGroup)                                    = 0;
 
 protected:
-									~TestHierarchyInflater	(void);
+    ~TestHierarchyInflater(void);
 };
 
 // \todo [2015-02-26 pyry] Hierarchy traversal should not depend on TestContext
 class DefaultHierarchyInflater : public TestHierarchyInflater
 {
 public:
-									DefaultHierarchyInflater	(TestContext& testCtx);
-									~DefaultHierarchyInflater	(void);
+    DefaultHierarchyInflater(TestContext &testCtx);
+    ~DefaultHierarchyInflater(void);
 
-	virtual void					enterTestPackage			(TestPackage* testPackage, std::vector<TestNode*>& children);
-	virtual void					leaveTestPackage			(TestPackage* testPackage);
+    virtual void enterTestPackage(TestPackage *testPackage, std::vector<TestNode *> &children);
+    virtual void leaveTestPackage(TestPackage *testPackage);
 
-	virtual void					enterGroupNode				(TestCaseGroup* testGroup, std::vector<TestNode*>& children);
-	virtual void					leaveGroupNode				(TestCaseGroup* testGroup);
+    virtual void enterGroupNode(TestCaseGroup *testGroup, std::vector<TestNode *> &children);
+    virtual void leaveGroupNode(TestCaseGroup *testGroup);
 
 protected:
-	TestContext&					m_testCtx;
+    TestContext &m_testCtx;
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -107,99 +107,94 @@ protected:
 class TestHierarchyIterator
 {
 public:
-							TestHierarchyIterator	(TestPackageRoot& rootNode, TestHierarchyInflater& inflater, const CaseListFilter& caseListFilter);
-							~TestHierarchyIterator	(void);
+    TestHierarchyIterator(TestPackageRoot &rootNode, TestHierarchyInflater &inflater,
+                          const CaseListFilter &caseListFilter);
+    ~TestHierarchyIterator(void);
 
-	enum State
-	{
-		STATE_ENTER_NODE = 0,
-		STATE_LEAVE_NODE,
-		STATE_FINISHED,
+    enum State
+    {
+        STATE_ENTER_NODE = 0,
+        STATE_LEAVE_NODE,
+        STATE_FINISHED,
 
-		STATE_LAST
-	};
+        STATE_LAST
+    };
 
-	State					getState				(void) const;
+    State getState(void) const;
 
-	TestNode*				getNode					(void) const;
-	const std::string&		getNodePath				(void) const;
+    TestNode *getNode(void) const;
+    const std::string &getNodePath(void) const;
 
-	void					next					(void);
+    void next(void);
 
 private:
-	struct NodeIter
-	{
-		enum State
-		{
-			NISTATE_INIT = 0,
-			NISTATE_ENTER,
-			NISTATE_TRAVERSE_CHILDREN,
-			NISTATE_LEAVE,
+    struct NodeIter
+    {
+        enum State
+        {
+            NISTATE_INIT = 0,
+            NISTATE_ENTER,
+            NISTATE_TRAVERSE_CHILDREN,
+            NISTATE_LEAVE,
 
-			NISTATE_LAST
-		};
+            NISTATE_LAST
+        };
 
-		NodeIter (void)
-			: node			(DE_NULL)
-			, curChildNdx	(-1)
-			, m_state		(NISTATE_LAST)
-		{
-		}
+        NodeIter(void) : node(nullptr), curChildNdx(-1), m_state(NISTATE_LAST)
+        {
+        }
 
-		NodeIter (TestNode* node_)
-			: node			(node_)
-			, curChildNdx	(-1)
-			, m_state		(NISTATE_INIT)
-		{
-		}
+        NodeIter(TestNode *node_) : node(node_), curChildNdx(-1), m_state(NISTATE_INIT)
+        {
+        }
 
-		State getState (void) const
-		{
-			return m_state;
-		}
+        State getState(void) const
+        {
+            return m_state;
+        }
 
-		void setState (State newState)
-		{
-			switch (newState)
-			{
-				case NISTATE_TRAVERSE_CHILDREN:
-					curChildNdx = -1;
-					break;
+        void setState(State newState)
+        {
+            switch (newState)
+            {
+            case NISTATE_TRAVERSE_CHILDREN:
+                curChildNdx = -1;
+                break;
 
-				default:
-					break;
-			}
+            default:
+                break;
+            }
 
-			m_state = newState;
-		}
+            m_state = newState;
+        }
 
-		TestNode*				node;
-		std::vector<TestNode*>	children;
-		int						curChildNdx;
+        TestNode *node;
+        std::vector<TestNode *> children;
+        int curChildNdx;
 
-	private:
-		State					m_state;
-	};
+    private:
+        State m_state;
+    };
 
-							TestHierarchyIterator	(const TestHierarchyIterator&);		// not allowed!
-	TestHierarchyIterator&	operator=				(const TestHierarchyIterator&);		// not allowed!
+    TestHierarchyIterator(const TestHierarchyIterator &);            // not allowed!
+    TestHierarchyIterator &operator=(const TestHierarchyIterator &); // not allowed!
 
-	bool					matchFolderName			(const std::string& folderName) const;
-	bool					matchCaseName			(const std::string& caseName) const;
+    bool matchFolderName(const std::string &folderName) const;
+    bool matchCaseName(const std::string &caseName) const;
 
-	static std::string		buildNodePath			(const std::vector<NodeIter>& nodeStack);
+    static std::string buildNodePath(const std::vector<NodeIter> &nodeStack);
 
-	TestHierarchyInflater&	m_inflater;
-	const CaseListFilter&	m_caseListFilter;
+    TestHierarchyInflater &m_inflater;
+    const CaseListFilter &m_caseListFilter;
 
-	// Current session state.
-	std::vector<NodeIter>	m_sessionStack;
-	std::string				m_nodePath;
+    // Current session state.
+    std::vector<NodeIter> m_sessionStack;
+    std::string m_nodePath;
 
-	// Counter that increments by one for each bottom-level test group
-	int						m_groupNumber;
+    // Counter that increments by one for each bottom-level test group
+    int m_groupNumber;
 };
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUTESTHIERARCHYITERATOR_HPP

@@ -42,11 +42,11 @@
 #	define EGLW_APIENTRY
 #endif
 
-typedef deInt32		EGLint;
-typedef deUint32	EGLenum;
-typedef deUint32	EGLBoolean;
-typedef deIntptr	EGLAttrib;
-typedef deUint64	EGLTime;
+typedef int32_t		EGLint;
+typedef uint32_t	EGLenum;
+typedef uint32_t	EGLBoolean;
+typedef intptr_t	EGLAttrib;
+typedef uint64_t	EGLTime;
 
 typedef void*		EGLDisplay;
 typedef void*		EGLConfig;

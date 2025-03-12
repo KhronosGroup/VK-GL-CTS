@@ -29,27 +29,25 @@
 namespace vk
 {
 
-ApiVersion unpackVersion (deUint32 version)
+ApiVersion unpackVersion(uint32_t version)
 {
-	return ApiVersion(VK_API_VERSION_VARIANT(version),
-					  VK_API_VERSION_MAJOR(version),
-					  VK_API_VERSION_MINOR(version),
-					  VK_API_VERSION_PATCH(version));
+    return ApiVersion(VK_API_VERSION_VARIANT(version), VK_API_VERSION_MAJOR(version), VK_API_VERSION_MINOR(version),
+                      VK_API_VERSION_PATCH(version));
 }
 
-deUint32 pack (const ApiVersion& version)
+uint32_t pack(const ApiVersion &version)
 {
-	DE_ASSERT((version.variantNum & ~0x7)   == 0);
-	DE_ASSERT((version.majorNum   & ~0x7F)  == 0);
-	DE_ASSERT((version.minorNum   & ~0x3FF) == 0);
-	DE_ASSERT((version.patchNum   & ~0xFFF) == 0);
+    DE_ASSERT((version.variantNum & ~0x7) == 0);
+    DE_ASSERT((version.majorNum & ~0x7F) == 0);
+    DE_ASSERT((version.minorNum & ~0x3FF) == 0);
+    DE_ASSERT((version.patchNum & ~0xFFF) == 0);
 
-	return (version.variantNum << 29) | (version.majorNum << 22) | (version.minorNum << 12) | version.patchNum;
+    return (version.variantNum << 29) | (version.majorNum << 22) | (version.minorNum << 12) | version.patchNum;
 }
 
-deUint32 apiVersionClearPatch(deUint32 version)
+uint32_t apiVersionClearPatch(uint32_t version)
 {
-	return version & ~0xFFF;
+    return version & ~0xFFF;
 }
 
 // Direct acyclic graph of Vulkan API versions and its predecessors.
@@ -58,83 +56,91 @@ deUint32 apiVersionClearPatch(deUint32 version)
 // Moreover - when in the future new Vulkan SC 1.1 version will be created - it's possible that
 // it will have 2 predecessors : Vulkan SC 1.0 and Vulkan 1.3 ( or later version - it's just example )
 // When it happens : two new predecessors will look like this:
-//	{ VK_MAKE_API_VERSION(1, 1, 1, 0), VK_MAKE_API_VERSION(1, 1, 0, 0) },
-//	{ VK_MAKE_API_VERSION(1, 1, 1, 0), VK_MAKE_API_VERSION(0, 1, 3, 0) },
+//    { VK_MAKE_API_VERSION(1, 1, 1, 0), VK_MAKE_API_VERSION(1, 1, 0, 0) },
+//    { VK_MAKE_API_VERSION(1, 1, 1, 0), VK_MAKE_API_VERSION(0, 1, 3, 0) },
 
-const static std::vector<std::pair<deUint32,deUint32>> apiVersionPredecessors =
-{
-	{ VK_MAKE_API_VERSION(0, 1, 0, 0), 0 },
-	{ VK_MAKE_API_VERSION(0, 1, 1, 0), VK_MAKE_API_VERSION(0, 1, 0, 0) },
-	{ VK_MAKE_API_VERSION(0, 1, 2, 0), VK_MAKE_API_VERSION(0, 1, 1, 0) },
-	{ VK_MAKE_API_VERSION(1, 1, 0, 0), VK_MAKE_API_VERSION(0, 1, 2, 0) },
-	{ VK_MAKE_API_VERSION(0, 1, 3, 0), VK_MAKE_API_VERSION(0, 1, 2, 0) },
+const static std::vector<std::pair<uint32_t, uint32_t>> apiVersionPredecessors = {
+    {VK_MAKE_API_VERSION(0, 1, 0, 0), 0},
+    {VK_MAKE_API_VERSION(0, 1, 1, 0), VK_MAKE_API_VERSION(0, 1, 0, 0)},
+    {VK_MAKE_API_VERSION(0, 1, 2, 0), VK_MAKE_API_VERSION(0, 1, 1, 0)},
+    {VK_MAKE_API_VERSION(1, 1, 0, 0), VK_MAKE_API_VERSION(0, 1, 2, 0)},
+    {VK_MAKE_API_VERSION(0, 1, 3, 0), VK_MAKE_API_VERSION(0, 1, 2, 0)},
+    {VK_MAKE_API_VERSION(0, 1, 4, 0), VK_MAKE_API_VERSION(0, 1, 3, 0)},
 };
 
-bool isApiVersionEqual(deUint32 lhs, deUint32 rhs)
+bool isApiVersionEqual(uint32_t lhs, uint32_t rhs)
 {
-	deUint32 lhsp = apiVersionClearPatch(lhs);
-	deUint32 rhsp = apiVersionClearPatch(rhs);
-	return lhsp == rhsp;
+    uint32_t lhsp = apiVersionClearPatch(lhs);
+    uint32_t rhsp = apiVersionClearPatch(rhs);
+    return lhsp == rhsp;
 }
 
-bool isApiVersionPredecessor(deUint32 version, deUint32 predVersion)
+bool isApiVersionPredecessor(uint32_t version, uint32_t predVersion)
 {
-	std::vector<deUint32> versions;
-	versions.push_back(apiVersionClearPatch(version));
+    std::vector<uint32_t> versions;
+    versions.push_back(apiVersionClearPatch(version));
 
-	deUint32 p = apiVersionClearPatch(predVersion);
+    uint32_t p = apiVersionClearPatch(predVersion);
 
-	while (!versions.empty())
-	{
-		deUint32 v = versions.back();
-		versions.pop_back();
+    while (!versions.empty())
+    {
+        uint32_t v = versions.back();
+        versions.pop_back();
 
-		for (auto it = begin(apiVersionPredecessors); it != end(apiVersionPredecessors); ++it)
-		{
-			if (it->first != v)
-				continue;
-			if (it->second == p)
-				return true;
-			versions.push_back(it->second);
-		}
-	}
-	return false;
+        for (auto it = begin(apiVersionPredecessors); it != end(apiVersionPredecessors); ++it)
+        {
+            if (it->first != v)
+                continue;
+            if (it->second == p)
+                return true;
+            versions.push_back(it->second);
+        }
+    }
+    return false;
 }
 
-bool isApiVersionSupported(deUint32 yourVersion, deUint32 versionInQuestion)
+bool isApiVersionSupported(uint32_t yourVersion, uint32_t versionInQuestion)
 {
-	if (isApiVersionEqual(yourVersion, versionInQuestion))
-		return true;
-	return isApiVersionPredecessor(yourVersion, versionInQuestion);
+    if (isApiVersionEqual(yourVersion, versionInQuestion))
+        return true;
+    return isApiVersionPredecessor(yourVersion, versionInQuestion);
 }
 
-deUint32 minVulkanAPIVersion(deUint32 lhs, deUint32 rhs)
+uint32_t minVulkanAPIVersion(uint32_t lhs, uint32_t rhs)
 {
-	deUint32 lhsp = apiVersionClearPatch(lhs);
-	deUint32 rhsp = apiVersionClearPatch(rhs);
-	if (lhsp == rhsp)
-		return de::min(lhs, rhs);
-	if (isApiVersionPredecessor(rhs, lhs))
-		return lhs;
-	if (isApiVersionPredecessor(lhs, rhs))
-		return rhs;
-	// both versions are located in different DAG paths - we will return common predecessor
-	static std::vector<deUint32> commonPredecessors;
-	if (commonPredecessors.empty())
-	{
-		std::set<deUint32> pred;
-		for (auto it = begin(apiVersionPredecessors); it != end(apiVersionPredecessors); ++it)
-		{
-			if (pred.find(it->second) != end(pred))
-				commonPredecessors.push_back(it->second);
-			pred.insert(it->second);
-		}
-		std::sort(begin(commonPredecessors), end(commonPredecessors), [](deUint32 xlhs, deUint32 xrhs) { return isApiVersionPredecessor(xrhs, xlhs); });
-	}
-	for (auto it = begin(commonPredecessors); it != end(commonPredecessors); ++it)
-		if (isApiVersionPredecessor(rhs, *it) && isApiVersionPredecessor(lhs, *it))
-			return *it;
-	return 0;
+    uint32_t lhsp = apiVersionClearPatch(lhs);
+    uint32_t rhsp = apiVersionClearPatch(rhs);
+    if (lhsp == rhsp)
+        return de::min(lhs, rhs);
+    if (isApiVersionPredecessor(rhs, lhs))
+        return lhs;
+    if (isApiVersionPredecessor(lhs, rhs))
+        return rhs;
+    // both versions are located in different DAG paths - we will return common predecessor
+    static std::vector<uint32_t> commonPredecessors;
+    if (commonPredecessors.empty())
+    {
+        std::set<uint32_t> pred;
+        for (auto it = begin(apiVersionPredecessors); it != end(apiVersionPredecessors); ++it)
+        {
+            if (pred.find(it->second) != end(pred))
+                commonPredecessors.push_back(it->second);
+            pred.insert(it->second);
+        }
+        std::sort(begin(commonPredecessors), end(commonPredecessors),
+                  [](uint32_t xlhs, uint32_t xrhs) { return isApiVersionPredecessor(xrhs, xlhs); });
+    }
+    for (auto it = begin(commonPredecessors); it != end(commonPredecessors); ++it)
+        if (isApiVersionPredecessor(rhs, *it) && isApiVersionPredecessor(lhs, *it))
+            return *it;
+
+#ifndef CTS_USES_VULKANSC
+    // If we got to this point, it means we are dealing with an unknown version.
+    // We assume it to be valid, and we default to VK_API_MAX_FRAMEWORK_VERSION which is generated from the spec.
+    return VK_API_MAX_FRAMEWORK_VERSION;
+#else
+    return VKSC_API_MAX_FRAMEWORK_VERSION;
+#endif
 }
 
-} // vk
+} // namespace vk

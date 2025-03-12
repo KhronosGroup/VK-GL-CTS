@@ -1,0 +1,14 @@
+{
+    "mandatory_features": {
+        "VkPhysicalDeviceFrameBoundaryFeaturesEXT": [
+            {
+                "features": [
+                    "frameBoundary"
+                ],
+                "requirements": [
+                    "VK_EXT_frame_boundary"
+                ]
+            }
+        ]
+    }
+}

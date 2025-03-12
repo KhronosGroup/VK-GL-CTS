@@ -37,78 +37,79 @@
 
 // ExecService entry points.
 
-static jfieldID getExecServiceField (JNIEnv* env, jobject obj)
+static jfieldID getExecServiceField(JNIEnv *env, jobject obj)
 {
-	jclass cls = env->GetObjectClass(obj);
-	TCU_CHECK_INTERNAL(cls);
+    jclass cls = env->GetObjectClass(obj);
+    TCU_CHECK_INTERNAL(cls);
 
-	jfieldID fid = env->GetFieldID(cls, "m_server", "J");
-	TCU_CHECK_INTERNAL(fid);
+    jfieldID fid = env->GetFieldID(cls, "m_server", "J");
+    TCU_CHECK_INTERNAL(fid);
 
-	return fid;
+    return fid;
 }
 
-static tcu::Android::ExecService* getExecService (JNIEnv* env, jobject obj)
+static tcu::Android::ExecService *getExecService(JNIEnv *env, jobject obj)
 {
-	jfieldID field = getExecServiceField(env, obj);
-	return (tcu::Android::ExecService*)(deIntptr)env->GetLongField(obj, field);
+    jfieldID field = getExecServiceField(env, obj);
+    return (tcu::Android::ExecService *)(intptr_t)env->GetLongField(obj, field);
 }
 
-static void setExecService (JNIEnv* env, jobject obj, tcu::Android::ExecService* service)
+static void setExecService(JNIEnv *env, jobject obj, tcu::Android::ExecService *service)
 {
-	jfieldID field = getExecServiceField(env, obj);
-	env->SetLongField(obj, field, (jlong)(deIntptr)service);
+    jfieldID field = getExecServiceField(env, obj);
+    env->SetLongField(obj, field, (jlong)(intptr_t)service);
 }
 
-static void logException (const std::exception& e)
+static void logException(const std::exception &e)
 {
-	__android_log_print(ANDROID_LOG_ERROR, "dEQP", "%s", e.what());
+    __android_log_print(ANDROID_LOG_ERROR, "dEQP", "%s", e.what());
 }
 
 DE_BEGIN_EXTERN_C
 
-JNIEXPORT void JNICALL Java_com_drawelements_deqp_execserver_ExecService_startServer (JNIEnv* env, jobject obj, jint port)
+JNIEXPORT void JNICALL Java_com_drawelements_deqp_execserver_ExecService_startServer(JNIEnv *env, jobject obj,
+                                                                                     jint port)
 {
-	tcu::Android::ExecService*	service		= DE_NULL;
-	JavaVM*						vm			= DE_NULL;
+    tcu::Android::ExecService *service = nullptr;
+    JavaVM *vm                         = nullptr;
 
-	try
-	{
-		DE_ASSERT(!getExecService(env, obj));
+    try
+    {
+        DE_ASSERT(!getExecService(env, obj));
 
-		env->GetJavaVM(&vm);
-		TCU_CHECK_INTERNAL(vm);
+        env->GetJavaVM(&vm);
+        TCU_CHECK_INTERNAL(vm);
 
-		service = new tcu::Android::ExecService(vm, obj, port);
-		service->start();
+        service = new tcu::Android::ExecService(vm, obj, port);
+        service->start();
 
-		setExecService(env, obj, service);
-	}
-	catch (const std::exception& e)
-	{
-		logException(e);
-		delete service;
-		tcu::die("ExecService.startServer() failed");
-	}
+        setExecService(env, obj, service);
+    }
+    catch (const std::exception &e)
+    {
+        logException(e);
+        delete service;
+        tcu::die("ExecService.startServer() failed");
+    }
 }
 
-JNIEXPORT void JNICALL Java_com_drawelements_deqp_execserver_ExecService_stopServer (JNIEnv* env, jobject obj)
+JNIEXPORT void JNICALL Java_com_drawelements_deqp_execserver_ExecService_stopServer(JNIEnv *env, jobject obj)
 {
-	try
-	{
-		tcu::Android::ExecService* service = getExecService(env, obj);
-		TCU_CHECK_INTERNAL(service);
+    try
+    {
+        tcu::Android::ExecService *service = getExecService(env, obj);
+        TCU_CHECK_INTERNAL(service);
 
-		service->stop();
-		delete service;
+        service->stop();
+        delete service;
 
-		setExecService(env, obj, DE_NULL);
-	}
-	catch (const std::exception& e)
-	{
-		logException(e);
-		tcu::die("ExecService.stopServer() failed");
-	}
+        setExecService(env, obj, nullptr);
+    }
+    catch (const std::exception &e)
+    {
+        logException(e);
+        tcu::die("ExecService.stopServer() failed");
+    }
 }
 
 DE_END_EXTERN_C

@@ -31,19 +31,11 @@
 
 DE_BEGIN_EXTERN_C
 
-deUint32	deStringHash			(const char* str);
-deUint32	deStringHashLeading		(const char* str, int numLeadingChars);
-deBool		deStringEqual			(const char* a, const char* b);
-deBool		deStringBeginsWith		(const char* str, const char* leading);
+uint32_t deStringHash(const char *str);
+uint32_t deStringHashLeading(const char *str, int numLeadingChars);
+bool deStringBeginsWith(const char *str, const char *leading);
 
-deUint32	deMemoryHash			(const void* ptr, size_t numBytes);
-deBool		deMemoryEqual			(const void* ptr, const void* cmp, size_t numBytes);
-
-deInt32		deVsprintf				(char* string, size_t size, const char* format, va_list args);
-deInt32		deSprintf				(char* string, size_t size, const char* format, ...) DE_PRINTF_FUNC_ATTR(3, 4);
-char*		deStrcpy				(char* dst, size_t size, const char* src);
-char*		deStrcat				(char* s1, size_t size, const char* s2);
-size_t		deStrnlen				(const char* string, size_t maxSize);
+uint32_t deMemoryHash(const void *ptr, size_t numBytes);
 
 DE_END_EXTERN_C
 

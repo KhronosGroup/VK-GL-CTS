@@ -30,51 +30,55 @@ using namespace eglw;
 
 // NativePixmap
 
-NativePixmap::NativePixmap (Capability capabilities)
-	: m_capabilities(capabilities)
+NativePixmap::NativePixmap(Capability capabilities) : m_capabilities(capabilities)
 {
 }
 
-EGLNativePixmapType NativePixmap::getLegacyNative (void)
+EGLNativePixmapType NativePixmap::getLegacyNative(void)
 {
-	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_CREATE_SURFACE_LEGACY) == 0);
-	throw tcu::NotSupportedError("eglu::NativePixmap doesn't support eglCreatePixmapSurface()", DE_NULL, __FILE__, __LINE__);
+    TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_CREATE_SURFACE_LEGACY) == 0);
+    throw tcu::NotSupportedError("eglu::NativePixmap doesn't support eglCreatePixmapSurface()", nullptr, __FILE__,
+                                 __LINE__);
 }
 
-void* NativePixmap::getPlatformExtension (void)
+void *NativePixmap::getPlatformExtension(void)
 {
-	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_CREATE_SURFACE_PLATFORM_EXTENSION) == 0);
-	throw tcu::NotSupportedError("eglu::NativePixmap doesn't support eglCreatePlatformPixmapSurfaceEXT()", DE_NULL, __FILE__, __LINE__);
+    TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_CREATE_SURFACE_PLATFORM_EXTENSION) == 0);
+    throw tcu::NotSupportedError("eglu::NativePixmap doesn't support eglCreatePlatformPixmapSurfaceEXT()", nullptr,
+                                 __FILE__, __LINE__);
 }
 
-void* NativePixmap::getPlatformNative (void)
+void *NativePixmap::getPlatformNative(void)
 {
-	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_CREATE_SURFACE_PLATFORM) == 0);
-	throw tcu::NotSupportedError("eglu::NativePixmap doesn't support eglCreatePlatformPixmapSurface()", DE_NULL, __FILE__, __LINE__);
+    TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_CREATE_SURFACE_PLATFORM) == 0);
+    throw tcu::NotSupportedError("eglu::NativePixmap doesn't support eglCreatePlatformPixmapSurface()", nullptr,
+                                 __FILE__, __LINE__);
 }
 
-void NativePixmap::readPixels (tcu::TextureLevel*)
+void NativePixmap::readPixels(tcu::TextureLevel *)
 {
-	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_READ_PIXELS) == 0);
-	throw tcu::NotSupportedError("eglu::NativePixmap doesn't support readPixels", DE_NULL, __FILE__, __LINE__);
+    TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_READ_PIXELS) == 0);
+    throw tcu::NotSupportedError("eglu::NativePixmap doesn't support readPixels", nullptr, __FILE__, __LINE__);
 }
 
 // NativePixmapFactory
 
-NativePixmapFactory::NativePixmapFactory (const std::string& name, const std::string& description, NativePixmap::Capability capabilities)
-	: FactoryBase	(name, description)
-	, m_capabilities(capabilities)
+NativePixmapFactory::NativePixmapFactory(const std::string &name, const std::string &description,
+                                         NativePixmap::Capability capabilities)
+    : FactoryBase(name, description)
+    , m_capabilities(capabilities)
 {
 }
 
-NativePixmapFactory::~NativePixmapFactory (void)
+NativePixmapFactory::~NativePixmapFactory(void)
 {
 }
 
-NativePixmap* NativePixmapFactory::createPixmap (NativeDisplay* nativeDisplay, EGLDisplay display, EGLConfig config, const EGLAttrib* attribList, int width, int height) const
+NativePixmap *NativePixmapFactory::createPixmap(NativeDisplay *nativeDisplay, EGLDisplay display, EGLConfig config,
+                                                const EGLAttrib *attribList, int width, int height) const
 {
-	DE_UNREF(display && config && attribList);
-	return createPixmap(nativeDisplay, width, height);
+    DE_UNREF(display && config && attribList);
+    return createPixmap(nativeDisplay, width, height);
 }
 
-} // eglu
+} // namespace eglu

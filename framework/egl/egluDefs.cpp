@@ -36,79 +36,83 @@ namespace eglu
 
 using namespace eglw;
 
-void checkError (deUint32 err, const char* message, const char* file, int line)
+void checkError(uint32_t err, const char *message, const char *file, int line)
 {
-	if (err != EGL_SUCCESS)
-	{
-		std::ostringstream desc;
-		desc << "Got " << eglu::getErrorStr(err);
-		if (message)
-			desc << ": " << message;
+    if (err != EGL_SUCCESS)
+    {
+        std::ostringstream desc;
+        desc << "Got " << eglu::getErrorStr(err);
+        if (message)
+            desc << ": " << message;
 
-		if (err == EGL_BAD_ALLOC)
-			throw BadAllocError(desc.str().c_str(), DE_NULL, file, line);
-		else
-			throw Error(err, desc.str().c_str(), DE_NULL, file, line);
-	}
+        if (err == EGL_BAD_ALLOC)
+            throw BadAllocError(desc.str().c_str(), nullptr, file, line);
+        else
+            throw Error(err, desc.str().c_str(), nullptr, file, line);
+    }
 }
 
-Error::Error (deUint32 errCode, const char* errStr)
-	: tcu::TestError	((std::string("EGL returned ") + getErrorName(errCode)).c_str(), errStr ? errStr : "", __FILE__, __LINE__)
-	, m_error			(errCode)
-{
-}
-
-Error::Error (deUint32 errCode, const char* message, const char* expr, const char* file, int line)
-	: tcu::TestError	(message, expr, file, line)
-	, m_error			(errCode)
+Error::Error(uint32_t errCode, const char *errStr)
+    : tcu::TestError((std::string("EGL returned ") + getErrorName(errCode)).c_str(), errStr ? errStr : "", __FILE__,
+                     __LINE__)
+    , m_error(errCode)
 {
 }
 
-BadAllocError::BadAllocError (const char* errStr)
-	: tcu::ResourceError(errStr)
+Error::Error(uint32_t errCode, const char *message, const char *expr, const char *file, int line)
+    : tcu::TestError(message, expr, file, line)
+    , m_error(errCode)
 {
 }
 
-BadAllocError::BadAllocError (const char* message, const char* expr, const char* file, int line)
-	: tcu::ResourceError(message, expr, file, line)
+BadAllocError::BadAllocError(const char *errStr) : tcu::ResourceError(errStr)
 {
 }
 
-bool Version::operator< (const Version& v) const
+BadAllocError::BadAllocError(const char *message, const char *expr, const char *file, int line)
+    : tcu::ResourceError(message, expr, file, line)
 {
-	if		(m_major < v.m_major)	return true;
-	else if	(m_major > v.m_major)	return false;
-
-	if		(m_minor < v.m_minor)	return true;
-
-	return false;
 }
 
-bool Version::operator== (const Version& v) const
+bool Version::operator<(const Version &v) const
 {
-	if (m_major == v.m_major && m_minor == v.m_minor) return true;
+    if (m_major < v.m_major)
+        return true;
+    else if (m_major > v.m_major)
+        return false;
 
-	return false;
+    if (m_minor < v.m_minor)
+        return true;
+
+    return false;
 }
 
-bool Version::operator!= (const Version& v) const
+bool Version::operator==(const Version &v) const
 {
-	return !(*this == v);
+    if (m_major == v.m_major && m_minor == v.m_minor)
+        return true;
+
+    return false;
 }
 
-bool Version::operator> (const Version& v) const
+bool Version::operator!=(const Version &v) const
 {
-	return !(*this < v && *this == v);
+    return !(*this == v);
 }
 
-bool Version::operator<= (const Version& v) const
+bool Version::operator>(const Version &v) const
 {
-	return (*this < v && *this == v);
+    return !(*this < v && *this == v);
 }
 
-bool Version::operator>= (const Version& v) const
+bool Version::operator<=(const Version &v) const
 {
-	return !(*this < v);
+    return (*this < v && *this == v);
 }
 
-} // eglu
+bool Version::operator>=(const Version &v) const
+{
+    return !(*this < v);
+}
+
+} // namespace eglu

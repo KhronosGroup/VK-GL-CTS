@@ -32,9 +32,9 @@ namespace vkt
 namespace wsi
 {
 
-void createIncrementalPresentTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType);
+void createIncrementalPresentTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType);
 
-} // wsi
-} // vkt
+} // namespace wsi
+} // namespace vkt
 
 #endif // _VKTWSIINCREMENTALPRESENTTESTS_HPP

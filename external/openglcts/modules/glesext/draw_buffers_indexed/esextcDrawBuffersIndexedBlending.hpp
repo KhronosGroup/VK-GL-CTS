@@ -40,29 +40,29 @@ namespace glcts
 class DrawBuffersIndexedBlending : public DrawBuffersIndexedBase
 {
 public:
-	/** Public methods
-	 **/
-	DrawBuffersIndexedBlending(Context& context, const ExtParameters& extParams, const char* name,
-							   const char* description);
+    /** Public methods
+     **/
+    DrawBuffersIndexedBlending(Context &context, const ExtParameters &extParams, const char *name,
+                               const char *description);
 
-	virtual ~DrawBuffersIndexedBlending()
-	{
-	}
+    virtual ~DrawBuffersIndexedBlending()
+    {
+    }
 
 private:
-	/** Private methods
-	 **/
-	virtual IterateResult iterate();
+    /** Private methods
+     **/
+    virtual IterateResult iterate();
 
-	void		prepareFramebuffer(void);
-	void		releaseFramebuffer(void);
-	std::string GenVS();
-	std::string GenFS(int maxDrawBuffers);
-	unsigned int NumComponents(glw::GLenum format);
-	tcu::RGBA GetEpsilon();
-	bool VerifyImg(const tcu::TextureLevel& textureLevel, tcu::RGBA expectedColor, tcu::RGBA epsilon);
+    void prepareFramebuffer(void);
+    void releaseFramebuffer(void);
+    std::string GenVS();
+    std::string GenFS(int maxDrawBuffers);
+    unsigned int NumComponents(glw::GLenum format);
+    tcu::RGBA GetEpsilon();
+    bool VerifyImg(const tcu::TextureLevel &textureLevel, tcu::RGBA expectedColor, tcu::RGBA epsilon);
 
-	glw::GLuint m_fbo;
+    glw::GLuint m_fbo;
 };
 
 } // namespace glcts

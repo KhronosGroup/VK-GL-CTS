@@ -44,22 +44,26 @@ namespace glcts
  *  @param name        Test case's name
  *  @param description Test case's description
  **/
-DisjointTimerQueryBase::DisjointTimerQueryBase (Context& context, const ExtParameters& extParams,
-											    const char* name, const char* description)
-	: TestCaseBase(context, extParams, name, description)
+DisjointTimerQueryBase::DisjointTimerQueryBase(Context &context, const ExtParameters &extParams, const char *name,
+                                               const char *description)
+    : TestCaseBase(context, extParams, name, description)
 {
-	glGenQueriesEXT				= (glGenQueriesEXTFunc)context.getRenderContext().getProcAddress("glGenQueriesEXT");
-	glDeleteQueriesEXT			= (glDeleteQueriesEXTFunc)context.getRenderContext().getProcAddress("glDeleteQueriesEXT");
-	glIsQueryEXT				= (glIsQueryEXTFunc)context.getRenderContext().getProcAddress("glIsQueryEXT");
-	glBeginQueryEXT				= (glBeginQueryEXTFunc)context.getRenderContext().getProcAddress("glBeginQueryEXT");
-	glEndQueryEXT				= (glEndQueryEXTFunc)context.getRenderContext().getProcAddress("glEndQueryEXT");
-	glQueryCounterEXT			= (glQueryCounterEXTFunc)context.getRenderContext().getProcAddress("glQueryCounterEXT");
-	glGetQueryivEXT				= (glGetQueryivEXTFunc)context.getRenderContext().getProcAddress("glGetQueryivEXT");
-	glGetQueryObjectivEXT		= (glGetQueryObjectivEXTFunc)context.getRenderContext().getProcAddress("glGetQueryObjectivEXT");
-	glGetQueryObjectuivEXT		= (glGetQueryObjectuivEXTFunc)context.getRenderContext().getProcAddress("glGetQueryObjectuivEXT");
-	glGetQueryObjecti64vEXT		= (glGetQueryObjecti64vEXTFunc)context.getRenderContext().getProcAddress("glGetQueryObjecti64vEXT");
-	glGetQueryObjectui64vEXT	= (glGetQueryObjectui64vEXTFunc)context.getRenderContext().getProcAddress("glGetQueryObjectui64vEXT");
-	glGetInteger64vEXT			= (glGetInteger64vEXTFunc)context.getRenderContext().getProcAddress("glGetInteger64vEXT");
+    glGenQueriesEXT    = (glGenQueriesEXTFunc)context.getRenderContext().getProcAddress("glGenQueriesEXT");
+    glDeleteQueriesEXT = (glDeleteQueriesEXTFunc)context.getRenderContext().getProcAddress("glDeleteQueriesEXT");
+    glIsQueryEXT       = (glIsQueryEXTFunc)context.getRenderContext().getProcAddress("glIsQueryEXT");
+    glBeginQueryEXT    = (glBeginQueryEXTFunc)context.getRenderContext().getProcAddress("glBeginQueryEXT");
+    glEndQueryEXT      = (glEndQueryEXTFunc)context.getRenderContext().getProcAddress("glEndQueryEXT");
+    glQueryCounterEXT  = (glQueryCounterEXTFunc)context.getRenderContext().getProcAddress("glQueryCounterEXT");
+    glGetQueryivEXT    = (glGetQueryivEXTFunc)context.getRenderContext().getProcAddress("glGetQueryivEXT");
+    glGetQueryObjectivEXT =
+        (glGetQueryObjectivEXTFunc)context.getRenderContext().getProcAddress("glGetQueryObjectivEXT");
+    glGetQueryObjectuivEXT =
+        (glGetQueryObjectuivEXTFunc)context.getRenderContext().getProcAddress("glGetQueryObjectuivEXT");
+    glGetQueryObjecti64vEXT =
+        (glGetQueryObjecti64vEXTFunc)context.getRenderContext().getProcAddress("glGetQueryObjecti64vEXT");
+    glGetQueryObjectui64vEXT =
+        (glGetQueryObjectui64vEXTFunc)context.getRenderContext().getProcAddress("glGetQueryObjectui64vEXT");
+    glGetInteger64vEXT = (glGetInteger64vEXTFunc)context.getRenderContext().getProcAddress("glGetInteger64vEXT");
 }
 
 } // namespace glcts

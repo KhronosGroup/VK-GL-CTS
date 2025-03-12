@@ -108,42 +108,42 @@ namespace glcts
 class TextureBufferPrecision : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TextureBufferPrecision(Context& context, const ExtParameters& extParams, const char* name, const char* description);
+    /* Public methods */
+    TextureBufferPrecision(Context &context, const ExtParameters &extParams, const char *name, const char *description);
 
-	virtual ~TextureBufferPrecision()
-	{
-	}
+    virtual ~TextureBufferPrecision()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	glw::GLboolean verifyShaderCompilationStatus(glw::GLenum shader_type, const char** sh_code_parts,
-												 const glw::GLuint parts_count, const glw::GLint expected_status);
+    /* Private methods */
+    glw::GLboolean verifyShaderCompilationStatus(glw::GLenum shader_type, const char **sh_code_parts,
+                                                 const glw::GLuint parts_count, const glw::GLint expected_status);
 
-	/* Private variables */
-	glw::GLuint m_po_id; /* Program object */
-	glw::GLuint m_sh_id; /* Shader object */
+    /* Private variables */
+    glw::GLuint m_po_id; /* Program object */
+    glw::GLuint m_sh_id; /* Shader object */
 
-	static const char* const m_cs_code_head; /* Head of the compute shader. */
-	static const char* const m_cs_code_declaration_without_precision
-		[3]; /* Variables declarations for the compute shader without usage of the precision qualifier. */
-	static const char* const m_cs_code_declaration_with_precision
-		[3]; /* Variables declarations for the compute shader with usage of the precision qualifier. */
-	static const char* const
-							 m_cs_code_global_precision[3]; /* The default precision qualifier declarations for the compute shader. */
-	static const char* const m_cs_code_body;				/* The compute shader body. */
+    static const char *const m_cs_code_head; /* Head of the compute shader. */
+    static const char *const m_cs_code_declaration_without_precision
+        [3]; /* Variables declarations for the compute shader without usage of the precision qualifier. */
+    static const char *const m_cs_code_declaration_with_precision
+        [3]; /* Variables declarations for the compute shader with usage of the precision qualifier. */
+    static const char
+        *const m_cs_code_global_precision[3]; /* The default precision qualifier declarations for the compute shader. */
+    static const char *const m_cs_code_body;  /* The compute shader body. */
 
-	static const char* const m_fs_code_head; /* Head of the fragment shader. */
-	static const char* const m_fs_code_declaration_without_precision
-		[3]; /* Variables declarations for the fragment shader without usage of the precision qualifier. */
-	static const char* const m_fs_code_declaration_with_precision
-		[3]; /* Variables declarations for the fragment shader with usage of the precision qualifier. */
-	static const char* const
-							 m_fs_code_global_precision[3]; /* The default precision qualifier declarations for the fragment shader. */
-	static const char* const m_fs_code_body;				/* The fragment shader body. */
+    static const char *const m_fs_code_head; /* Head of the fragment shader. */
+    static const char *const m_fs_code_declaration_without_precision
+        [3]; /* Variables declarations for the fragment shader without usage of the precision qualifier. */
+    static const char *const m_fs_code_declaration_with_precision
+        [3]; /* Variables declarations for the fragment shader with usage of the precision qualifier. */
+    static const char *const
+        m_fs_code_global_precision[3];       /* The default precision qualifier declarations for the fragment shader. */
+    static const char *const m_fs_code_body; /* The fragment shader body. */
 };
 
 } // namespace glcts

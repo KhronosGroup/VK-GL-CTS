@@ -21,6 +21,7 @@ const char*	getImageLayoutName										(VkImageLayout value);
 const char*	getImageTilingName										(VkImageTiling value);
 const char*	getImageTypeName										(VkImageType value);
 const char*	getImageViewTypeName									(VkImageViewType value);
+const char*	getIndirectCommandsTokenTypeEXTName						(VkIndirectCommandsTokenTypeEXT value);
 const char*	getSharingModeName										(VkSharingMode value);
 const char*	getIndexTypeName										(VkIndexType value);
 const char*	getLogicOpName											(VkLogicOp value);
@@ -38,6 +39,9 @@ const char*	getSamplerAddressModeName								(VkSamplerAddressMode value);
 const char*	getFilterName											(VkFilter value);
 const char*	getSamplerMipmapModeName								(VkSamplerMipmapMode value);
 const char*	getVertexInputRateName									(VkVertexInputRate value);
+const char*	getClusterAccelerationStructureTypeNVName				(VkClusterAccelerationStructureTypeNV value);
+const char*	getClusterAccelerationStructureOpTypeNVName				(VkClusterAccelerationStructureOpTypeNV value);
+const char*	getClusterAccelerationStructureOpModeNVName				(VkClusterAccelerationStructureOpModeNV value);
 const char*	getObjectTypeName										(VkObjectType value);
 const char*	getRayTracingInvocationReorderModeNVName				(VkRayTracingInvocationReorderModeNV value);
 const char*	getIndirectCommandsTokenTypeNVName						(VkIndirectCommandsTokenTypeNV value);
@@ -49,8 +53,8 @@ const char*	getCoverageModulationModeNVName							(VkCoverageModulationModeNV va
 const char*	getCoverageReductionModeNVName							(VkCoverageReductionModeNV value);
 const char*	getValidationCacheHeaderVersionEXTName					(VkValidationCacheHeaderVersionEXT value);
 const char*	getShaderInfoTypeAMDName								(VkShaderInfoTypeAMD value);
-const char*	getQueueGlobalPriorityKHRName							(VkQueueGlobalPriorityKHR value);
-const char*	getTimeDomainEXTName									(VkTimeDomainEXT value);
+const char*	getQueueGlobalPriorityName								(VkQueueGlobalPriority value);
+const char*	getTimeDomainKHRName									(VkTimeDomainKHR value);
 const char*	getConservativeRasterizationModeEXTName					(VkConservativeRasterizationModeEXT value);
 const char*	getSemaphoreTypeName									(VkSemaphoreType value);
 const char*	getBuildAccelerationStructureModeKHRName				(VkBuildAccelerationStructureModeKHR value);
@@ -61,10 +65,10 @@ const char*	getRayTracingShaderGroupTypeKHRName						(VkRayTracingShaderGroupTyp
 const char*	getAccelerationStructureMemoryRequirementsTypeNVName	(VkAccelerationStructureMemoryRequirementsTypeNV value);
 const char*	getAccelerationStructureBuildTypeKHRName				(VkAccelerationStructureBuildTypeKHR value);
 const char*	getAccelerationStructureCompatibilityKHRName			(VkAccelerationStructureCompatibilityKHR value);
+const char*	getRayTracingLssIndexingModeNVName						(VkRayTracingLssIndexingModeNV value);
+const char*	getRayTracingLssPrimitiveEndCapsModeNVName				(VkRayTracingLssPrimitiveEndCapsModeNV value);
 const char*	getShaderGroupShaderKHRName								(VkShaderGroupShaderKHR value);
 const char*	getMemoryOverallocationBehaviorAMDName					(VkMemoryOverallocationBehaviorAMD value);
-const char*	getScopeNVName											(VkScopeNV value);
-const char*	getComponentTypeNVName									(VkComponentTypeNV value);
 const char*	getPerformanceCounterScopeKHRName						(VkPerformanceCounterScopeKHR value);
 const char*	getPerformanceCounterUnitKHRName						(VkPerformanceCounterUnitKHR value);
 const char*	getPerformanceCounterStorageKHRName						(VkPerformanceCounterStorageKHR value);
@@ -73,13 +77,13 @@ const char*	getQueryPoolSamplingModeINTELName						(VkQueryPoolSamplingModeINTEL
 const char*	getPerformanceOverrideTypeINTELName						(VkPerformanceOverrideTypeINTEL value);
 const char*	getPerformanceParameterTypeINTELName					(VkPerformanceParameterTypeINTEL value);
 const char*	getPerformanceValueTypeINTELName						(VkPerformanceValueTypeINTEL value);
-const char*	getLineRasterizationModeEXTName							(VkLineRasterizationModeEXT value);
+const char*	getLineRasterizationModeName							(VkLineRasterizationMode value);
 const char*	getFragmentShadingRateNVName							(VkFragmentShadingRateNV value);
 const char*	getFragmentShadingRateTypeNVName						(VkFragmentShadingRateTypeNV value);
 const char*	getSubpassMergeStatusEXTName							(VkSubpassMergeStatusEXT value);
 const char*	getProvokingVertexModeEXTName							(VkProvokingVertexModeEXT value);
-const char*	getPipelineRobustnessBufferBehaviorEXTName				(VkPipelineRobustnessBufferBehaviorEXT value);
-const char*	getPipelineRobustnessImageBehaviorEXTName				(VkPipelineRobustnessImageBehaviorEXT value);
+const char*	getPipelineRobustnessBufferBehaviorName					(VkPipelineRobustnessBufferBehavior value);
+const char*	getPipelineRobustnessImageBehaviorName					(VkPipelineRobustnessImageBehavior value);
 const char*	getDeviceAddressBindingTypeEXTName						(VkDeviceAddressBindingTypeEXT value);
 const char*	getMicromapTypeEXTName									(VkMicromapTypeEXT value);
 const char*	getBuildMicromapModeEXTName								(VkBuildMicromapModeEXT value);
@@ -87,9 +91,25 @@ const char*	getCopyMicromapModeEXTName								(VkCopyMicromapModeEXT value);
 const char*	getOpacityMicromapFormatEXTName							(VkOpacityMicromapFormatEXT value);
 const char*	getOpacityMicromapSpecialIndexEXTName					(VkOpacityMicromapSpecialIndexEXT value);
 const char*	getDeviceFaultVendorBinaryHeaderVersionEXTName			(VkDeviceFaultVendorBinaryHeaderVersionEXT value);
+const char*	getIndirectExecutionSetInfoTypeEXTName					(VkIndirectExecutionSetInfoTypeEXT value);
+const char*	getDepthBiasRepresentationEXTName						(VkDepthBiasRepresentationEXT value);
 const char*	getDirectDriverLoadingModeLUNARGName					(VkDirectDriverLoadingModeLUNARG value);
+const char*	getPartitionedAccelerationStructureOpTypeNVName			(VkPartitionedAccelerationStructureOpTypeNV value);
+const char*	getAntiLagModeAMDName									(VkAntiLagModeAMD value);
+const char*	getAntiLagStageAMDName									(VkAntiLagStageAMD value);
+const char*	getDisplacementMicromapFormatNVName						(VkDisplacementMicromapFormatNV value);
+const char*	getShaderCodeTypeEXTName								(VkShaderCodeTypeEXT value);
+const char*	getScopeKHRName											(VkScopeKHR value);
+const char*	getComponentTypeKHRName									(VkComponentTypeKHR value);
+const char*	getCubicFilterWeightsQCOMName							(VkCubicFilterWeightsQCOM value);
+const char*	getBlockMatchWindowCompareModeQCOMName					(VkBlockMatchWindowCompareModeQCOM value);
+const char*	getLayeredDriverUnderlyingApiMSFTName					(VkLayeredDriverUnderlyingApiMSFT value);
+const char*	getPhysicalDeviceLayeredApiKHRName						(VkPhysicalDeviceLayeredApiKHR value);
+const char*	getDepthClampModeEXTName								(VkDepthClampModeEXT value);
+const char*	getCooperativeVectorMatrixLayoutNVName					(VkCooperativeVectorMatrixLayoutNV value);
 const char*	getColorSpaceKHRName									(VkColorSpaceKHR value);
 const char*	getPresentModeKHRName									(VkPresentModeKHR value);
+const char*	getDisplaySurfaceStereoTypeNVName						(VkDisplaySurfaceStereoTypeNV value);
 const char*	getDebugReportObjectTypeEXTName							(VkDebugReportObjectTypeEXT value);
 const char*	getDeviceMemoryReportEventTypeEXTName					(VkDeviceMemoryReportEventTypeEXT value);
 const char*	getRasterizationOrderAMDName							(VkRasterizationOrderAMD value);
@@ -111,6 +131,9 @@ const char*	getFragmentShadingRateCombinerOpKHRName					(VkFragmentShadingRateCo
 const char*	getOpticalFlowPerformanceLevelNVName					(VkOpticalFlowPerformanceLevelNV value);
 const char*	getOpticalFlowSessionBindingPointNVName					(VkOpticalFlowSessionBindingPointNV value);
 const char*	getDeviceFaultAddressTypeEXTName						(VkDeviceFaultAddressTypeEXT value);
+const char*	getLayerSettingTypeEXTName								(VkLayerSettingTypeEXT value);
+const char*	getLatencyMarkerNVName									(VkLatencyMarkerNV value);
+const char*	getOutOfBandQueueTypeNVName								(VkOutOfBandQueueTypeNV value);
 const char*	getVendorIdName											(VkVendorId value);
 const char*	getDriverIdName											(VkDriverId value);
 const char*	getShadingRatePaletteEntryNVName						(VkShadingRatePaletteEntryNV value);
@@ -118,8 +141,8 @@ const char*	getCoarseSampleOrderTypeNVName							(VkCoarseSampleOrderTypeNV valu
 const char*	getPipelineExecutableStatisticFormatKHRName				(VkPipelineExecutableStatisticFormatKHR value);
 const char*	getQueryResultStatusKHRName								(VkQueryResultStatusKHR value);
 const char*	getVideoEncodeTuningModeKHRName							(VkVideoEncodeTuningModeKHR value);
-const char*	getVideoEncodeH264RateControlStructureEXTName			(VkVideoEncodeH264RateControlStructureEXT value);
-const char*	getVideoEncodeH265RateControlStructureEXTName			(VkVideoEncodeH265RateControlStructureEXT value);
+const char*	getVideoEncodeAV1PredictionModeKHRName					(VkVideoEncodeAV1PredictionModeKHR value);
+const char*	getVideoEncodeAV1RateControlGroupKHRName				(VkVideoEncodeAV1RateControlGroupKHR value);
 const char*	getAccelerationStructureMotionInstanceTypeNVName		(VkAccelerationStructureMotionInstanceTypeNV value);
 const char*	getdVideoH264ChromaFormatIdcName						(StdVideoH264ChromaFormatIdc value);
 const char*	getdVideoH264ProfileIdcName								(StdVideoH264ProfileIdc value);
@@ -141,6 +164,17 @@ const char*	getdVideoH265LevelIdcName								(StdVideoH265LevelIdc value);
 const char*	getdVideoH265SliceTypeName								(StdVideoH265SliceType value);
 const char*	getdVideoH265PictureTypeName							(StdVideoH265PictureType value);
 const char*	getdVideoH265AspectRatioIdcName							(StdVideoH265AspectRatioIdc value);
+const char*	getdVideoAV1ProfileName									(StdVideoAV1Profile value);
+const char*	getdVideoAV1LevelName									(StdVideoAV1Level value);
+const char*	getdVideoAV1FrameTypeName								(StdVideoAV1FrameType value);
+const char*	getdVideoAV1ReferenceNameName							(StdVideoAV1ReferenceName value);
+const char*	getdVideoAV1InterpolationFilterName						(StdVideoAV1InterpolationFilter value);
+const char*	getdVideoAV1TxModeName									(StdVideoAV1TxMode value);
+const char*	getdVideoAV1FrameRestorationTypeName					(StdVideoAV1FrameRestorationType value);
+const char*	getdVideoAV1ColorPrimariesName							(StdVideoAV1ColorPrimaries value);
+const char*	getdVideoAV1TransferCharacteristicsName					(StdVideoAV1TransferCharacteristics value);
+const char*	getdVideoAV1MatrixCoefficientsName						(StdVideoAV1MatrixCoefficients value);
+const char*	getdVideoAV1ChromaSamplePositionName					(StdVideoAV1ChromaSamplePosition value);
 
 inline tcu::Format::Enum<VkAttachmentLoadOp>								getAttachmentLoadOpStr								(VkAttachmentLoadOp value)								{ return tcu::Format::Enum<VkAttachmentLoadOp>(getAttachmentLoadOpName, value);																}
 inline tcu::Format::Enum<VkAttachmentStoreOp>								getAttachmentStoreOpStr								(VkAttachmentStoreOp value)								{ return tcu::Format::Enum<VkAttachmentStoreOp>(getAttachmentStoreOpName, value);															}
@@ -160,6 +194,7 @@ inline tcu::Format::Enum<VkImageLayout>										getImageLayoutStr									(VkIm
 inline tcu::Format::Enum<VkImageTiling>										getImageTilingStr									(VkImageTiling value)									{ return tcu::Format::Enum<VkImageTiling>(getImageTilingName, value);																		}
 inline tcu::Format::Enum<VkImageType>										getImageTypeStr										(VkImageType value)										{ return tcu::Format::Enum<VkImageType>(getImageTypeName, value);																			}
 inline tcu::Format::Enum<VkImageViewType>									getImageViewTypeStr									(VkImageViewType value)									{ return tcu::Format::Enum<VkImageViewType>(getImageViewTypeName, value);																	}
+inline tcu::Format::Enum<VkIndirectCommandsTokenTypeEXT>					getIndirectCommandsTokenTypeEXTStr					(VkIndirectCommandsTokenTypeEXT value)					{ return tcu::Format::Enum<VkIndirectCommandsTokenTypeEXT>(getIndirectCommandsTokenTypeEXTName, value);										}
 inline tcu::Format::Enum<VkSharingMode>										getSharingModeStr									(VkSharingMode value)									{ return tcu::Format::Enum<VkSharingMode>(getSharingModeName, value);																		}
 inline tcu::Format::Enum<VkIndexType>										getIndexTypeStr										(VkIndexType value)										{ return tcu::Format::Enum<VkIndexType>(getIndexTypeName, value);																			}
 inline tcu::Format::Enum<VkLogicOp>											getLogicOpStr										(VkLogicOp value)										{ return tcu::Format::Enum<VkLogicOp>(getLogicOpName, value);																				}
@@ -177,6 +212,9 @@ inline tcu::Format::Enum<VkSamplerAddressMode>								getSamplerAddressModeStr		
 inline tcu::Format::Enum<VkFilter>											getFilterStr										(VkFilter value)										{ return tcu::Format::Enum<VkFilter>(getFilterName, value);																					}
 inline tcu::Format::Enum<VkSamplerMipmapMode>								getSamplerMipmapModeStr								(VkSamplerMipmapMode value)								{ return tcu::Format::Enum<VkSamplerMipmapMode>(getSamplerMipmapModeName, value);															}
 inline tcu::Format::Enum<VkVertexInputRate>									getVertexInputRateStr								(VkVertexInputRate value)								{ return tcu::Format::Enum<VkVertexInputRate>(getVertexInputRateName, value);																}
+inline tcu::Format::Enum<VkClusterAccelerationStructureTypeNV>				getClusterAccelerationStructureTypeNVStr			(VkClusterAccelerationStructureTypeNV value)			{ return tcu::Format::Enum<VkClusterAccelerationStructureTypeNV>(getClusterAccelerationStructureTypeNVName, value);							}
+inline tcu::Format::Enum<VkClusterAccelerationStructureOpTypeNV>			getClusterAccelerationStructureOpTypeNVStr			(VkClusterAccelerationStructureOpTypeNV value)			{ return tcu::Format::Enum<VkClusterAccelerationStructureOpTypeNV>(getClusterAccelerationStructureOpTypeNVName, value);						}
+inline tcu::Format::Enum<VkClusterAccelerationStructureOpModeNV>			getClusterAccelerationStructureOpModeNVStr			(VkClusterAccelerationStructureOpModeNV value)			{ return tcu::Format::Enum<VkClusterAccelerationStructureOpModeNV>(getClusterAccelerationStructureOpModeNVName, value);						}
 inline tcu::Format::Enum<VkObjectType>										getObjectTypeStr									(VkObjectType value)									{ return tcu::Format::Enum<VkObjectType>(getObjectTypeName, value);																			}
 inline tcu::Format::Enum<VkRayTracingInvocationReorderModeNV>				getRayTracingInvocationReorderModeNVStr				(VkRayTracingInvocationReorderModeNV value)				{ return tcu::Format::Enum<VkRayTracingInvocationReorderModeNV>(getRayTracingInvocationReorderModeNVName, value);							}
 inline tcu::Format::Enum<VkIndirectCommandsTokenTypeNV>						getIndirectCommandsTokenTypeNVStr					(VkIndirectCommandsTokenTypeNV value)					{ return tcu::Format::Enum<VkIndirectCommandsTokenTypeNV>(getIndirectCommandsTokenTypeNVName, value);										}
@@ -188,8 +226,8 @@ inline tcu::Format::Enum<VkCoverageModulationModeNV>						getCoverageModulationM
 inline tcu::Format::Enum<VkCoverageReductionModeNV>							getCoverageReductionModeNVStr						(VkCoverageReductionModeNV value)						{ return tcu::Format::Enum<VkCoverageReductionModeNV>(getCoverageReductionModeNVName, value);												}
 inline tcu::Format::Enum<VkValidationCacheHeaderVersionEXT>					getValidationCacheHeaderVersionEXTStr				(VkValidationCacheHeaderVersionEXT value)				{ return tcu::Format::Enum<VkValidationCacheHeaderVersionEXT>(getValidationCacheHeaderVersionEXTName, value);								}
 inline tcu::Format::Enum<VkShaderInfoTypeAMD>								getShaderInfoTypeAMDStr								(VkShaderInfoTypeAMD value)								{ return tcu::Format::Enum<VkShaderInfoTypeAMD>(getShaderInfoTypeAMDName, value);															}
-inline tcu::Format::Enum<VkQueueGlobalPriorityKHR>							getQueueGlobalPriorityKHRStr						(VkQueueGlobalPriorityKHR value)						{ return tcu::Format::Enum<VkQueueGlobalPriorityKHR>(getQueueGlobalPriorityKHRName, value);													}
-inline tcu::Format::Enum<VkTimeDomainEXT>									getTimeDomainEXTStr									(VkTimeDomainEXT value)									{ return tcu::Format::Enum<VkTimeDomainEXT>(getTimeDomainEXTName, value);																	}
+inline tcu::Format::Enum<VkQueueGlobalPriority>								getQueueGlobalPriorityStr							(VkQueueGlobalPriority value)							{ return tcu::Format::Enum<VkQueueGlobalPriority>(getQueueGlobalPriorityName, value);														}
+inline tcu::Format::Enum<VkTimeDomainKHR>									getTimeDomainKHRStr									(VkTimeDomainKHR value)									{ return tcu::Format::Enum<VkTimeDomainKHR>(getTimeDomainKHRName, value);																	}
 inline tcu::Format::Enum<VkConservativeRasterizationModeEXT>				getConservativeRasterizationModeEXTStr				(VkConservativeRasterizationModeEXT value)				{ return tcu::Format::Enum<VkConservativeRasterizationModeEXT>(getConservativeRasterizationModeEXTName, value);								}
 inline tcu::Format::Enum<VkSemaphoreType>									getSemaphoreTypeStr									(VkSemaphoreType value)									{ return tcu::Format::Enum<VkSemaphoreType>(getSemaphoreTypeName, value);																	}
 inline tcu::Format::Enum<VkBuildAccelerationStructureModeKHR>				getBuildAccelerationStructureModeKHRStr				(VkBuildAccelerationStructureModeKHR value)				{ return tcu::Format::Enum<VkBuildAccelerationStructureModeKHR>(getBuildAccelerationStructureModeKHRName, value);							}
@@ -200,10 +238,10 @@ inline tcu::Format::Enum<VkRayTracingShaderGroupTypeKHR>					getRayTracingShader
 inline tcu::Format::Enum<VkAccelerationStructureMemoryRequirementsTypeNV>	getAccelerationStructureMemoryRequirementsTypeNVStr	(VkAccelerationStructureMemoryRequirementsTypeNV value)	{ return tcu::Format::Enum<VkAccelerationStructureMemoryRequirementsTypeNV>(getAccelerationStructureMemoryRequirementsTypeNVName, value);	}
 inline tcu::Format::Enum<VkAccelerationStructureBuildTypeKHR>				getAccelerationStructureBuildTypeKHRStr				(VkAccelerationStructureBuildTypeKHR value)				{ return tcu::Format::Enum<VkAccelerationStructureBuildTypeKHR>(getAccelerationStructureBuildTypeKHRName, value);							}
 inline tcu::Format::Enum<VkAccelerationStructureCompatibilityKHR>			getAccelerationStructureCompatibilityKHRStr			(VkAccelerationStructureCompatibilityKHR value)			{ return tcu::Format::Enum<VkAccelerationStructureCompatibilityKHR>(getAccelerationStructureCompatibilityKHRName, value);					}
+inline tcu::Format::Enum<VkRayTracingLssIndexingModeNV>						getRayTracingLssIndexingModeNVStr					(VkRayTracingLssIndexingModeNV value)					{ return tcu::Format::Enum<VkRayTracingLssIndexingModeNV>(getRayTracingLssIndexingModeNVName, value);										}
+inline tcu::Format::Enum<VkRayTracingLssPrimitiveEndCapsModeNV>				getRayTracingLssPrimitiveEndCapsModeNVStr			(VkRayTracingLssPrimitiveEndCapsModeNV value)			{ return tcu::Format::Enum<VkRayTracingLssPrimitiveEndCapsModeNV>(getRayTracingLssPrimitiveEndCapsModeNVName, value);						}
 inline tcu::Format::Enum<VkShaderGroupShaderKHR>							getShaderGroupShaderKHRStr							(VkShaderGroupShaderKHR value)							{ return tcu::Format::Enum<VkShaderGroupShaderKHR>(getShaderGroupShaderKHRName, value);														}
 inline tcu::Format::Enum<VkMemoryOverallocationBehaviorAMD>					getMemoryOverallocationBehaviorAMDStr				(VkMemoryOverallocationBehaviorAMD value)				{ return tcu::Format::Enum<VkMemoryOverallocationBehaviorAMD>(getMemoryOverallocationBehaviorAMDName, value);								}
-inline tcu::Format::Enum<VkScopeNV>											getScopeNVStr										(VkScopeNV value)										{ return tcu::Format::Enum<VkScopeNV>(getScopeNVName, value);																				}
-inline tcu::Format::Enum<VkComponentTypeNV>									getComponentTypeNVStr								(VkComponentTypeNV value)								{ return tcu::Format::Enum<VkComponentTypeNV>(getComponentTypeNVName, value);																}
 inline tcu::Format::Enum<VkPerformanceCounterScopeKHR>						getPerformanceCounterScopeKHRStr					(VkPerformanceCounterScopeKHR value)					{ return tcu::Format::Enum<VkPerformanceCounterScopeKHR>(getPerformanceCounterScopeKHRName, value);											}
 inline tcu::Format::Enum<VkPerformanceCounterUnitKHR>						getPerformanceCounterUnitKHRStr						(VkPerformanceCounterUnitKHR value)						{ return tcu::Format::Enum<VkPerformanceCounterUnitKHR>(getPerformanceCounterUnitKHRName, value);											}
 inline tcu::Format::Enum<VkPerformanceCounterStorageKHR>					getPerformanceCounterStorageKHRStr					(VkPerformanceCounterStorageKHR value)					{ return tcu::Format::Enum<VkPerformanceCounterStorageKHR>(getPerformanceCounterStorageKHRName, value);										}
@@ -212,13 +250,13 @@ inline tcu::Format::Enum<VkQueryPoolSamplingModeINTEL>						getQueryPoolSampling
 inline tcu::Format::Enum<VkPerformanceOverrideTypeINTEL>					getPerformanceOverrideTypeINTELStr					(VkPerformanceOverrideTypeINTEL value)					{ return tcu::Format::Enum<VkPerformanceOverrideTypeINTEL>(getPerformanceOverrideTypeINTELName, value);										}
 inline tcu::Format::Enum<VkPerformanceParameterTypeINTEL>					getPerformanceParameterTypeINTELStr					(VkPerformanceParameterTypeINTEL value)					{ return tcu::Format::Enum<VkPerformanceParameterTypeINTEL>(getPerformanceParameterTypeINTELName, value);									}
 inline tcu::Format::Enum<VkPerformanceValueTypeINTEL>						getPerformanceValueTypeINTELStr						(VkPerformanceValueTypeINTEL value)						{ return tcu::Format::Enum<VkPerformanceValueTypeINTEL>(getPerformanceValueTypeINTELName, value);											}
-inline tcu::Format::Enum<VkLineRasterizationModeEXT>						getLineRasterizationModeEXTStr						(VkLineRasterizationModeEXT value)						{ return tcu::Format::Enum<VkLineRasterizationModeEXT>(getLineRasterizationModeEXTName, value);												}
+inline tcu::Format::Enum<VkLineRasterizationMode>							getLineRasterizationModeStr							(VkLineRasterizationMode value)							{ return tcu::Format::Enum<VkLineRasterizationMode>(getLineRasterizationModeName, value);													}
 inline tcu::Format::Enum<VkFragmentShadingRateNV>							getFragmentShadingRateNVStr							(VkFragmentShadingRateNV value)							{ return tcu::Format::Enum<VkFragmentShadingRateNV>(getFragmentShadingRateNVName, value);													}
 inline tcu::Format::Enum<VkFragmentShadingRateTypeNV>						getFragmentShadingRateTypeNVStr						(VkFragmentShadingRateTypeNV value)						{ return tcu::Format::Enum<VkFragmentShadingRateTypeNV>(getFragmentShadingRateTypeNVName, value);											}
 inline tcu::Format::Enum<VkSubpassMergeStatusEXT>							getSubpassMergeStatusEXTStr							(VkSubpassMergeStatusEXT value)							{ return tcu::Format::Enum<VkSubpassMergeStatusEXT>(getSubpassMergeStatusEXTName, value);													}
 inline tcu::Format::Enum<VkProvokingVertexModeEXT>							getProvokingVertexModeEXTStr						(VkProvokingVertexModeEXT value)						{ return tcu::Format::Enum<VkProvokingVertexModeEXT>(getProvokingVertexModeEXTName, value);													}
-inline tcu::Format::Enum<VkPipelineRobustnessBufferBehaviorEXT>				getPipelineRobustnessBufferBehaviorEXTStr			(VkPipelineRobustnessBufferBehaviorEXT value)			{ return tcu::Format::Enum<VkPipelineRobustnessBufferBehaviorEXT>(getPipelineRobustnessBufferBehaviorEXTName, value);						}
-inline tcu::Format::Enum<VkPipelineRobustnessImageBehaviorEXT>				getPipelineRobustnessImageBehaviorEXTStr			(VkPipelineRobustnessImageBehaviorEXT value)			{ return tcu::Format::Enum<VkPipelineRobustnessImageBehaviorEXT>(getPipelineRobustnessImageBehaviorEXTName, value);							}
+inline tcu::Format::Enum<VkPipelineRobustnessBufferBehavior>				getPipelineRobustnessBufferBehaviorStr				(VkPipelineRobustnessBufferBehavior value)				{ return tcu::Format::Enum<VkPipelineRobustnessBufferBehavior>(getPipelineRobustnessBufferBehaviorName, value);								}
+inline tcu::Format::Enum<VkPipelineRobustnessImageBehavior>					getPipelineRobustnessImageBehaviorStr				(VkPipelineRobustnessImageBehavior value)				{ return tcu::Format::Enum<VkPipelineRobustnessImageBehavior>(getPipelineRobustnessImageBehaviorName, value);								}
 inline tcu::Format::Enum<VkDeviceAddressBindingTypeEXT>						getDeviceAddressBindingTypeEXTStr					(VkDeviceAddressBindingTypeEXT value)					{ return tcu::Format::Enum<VkDeviceAddressBindingTypeEXT>(getDeviceAddressBindingTypeEXTName, value);										}
 inline tcu::Format::Enum<VkMicromapTypeEXT>									getMicromapTypeEXTStr								(VkMicromapTypeEXT value)								{ return tcu::Format::Enum<VkMicromapTypeEXT>(getMicromapTypeEXTName, value);																}
 inline tcu::Format::Enum<VkBuildMicromapModeEXT>							getBuildMicromapModeEXTStr							(VkBuildMicromapModeEXT value)							{ return tcu::Format::Enum<VkBuildMicromapModeEXT>(getBuildMicromapModeEXTName, value);														}
@@ -226,9 +264,25 @@ inline tcu::Format::Enum<VkCopyMicromapModeEXT>								getCopyMicromapModeEXTStr
 inline tcu::Format::Enum<VkOpacityMicromapFormatEXT>						getOpacityMicromapFormatEXTStr						(VkOpacityMicromapFormatEXT value)						{ return tcu::Format::Enum<VkOpacityMicromapFormatEXT>(getOpacityMicromapFormatEXTName, value);												}
 inline tcu::Format::Enum<VkOpacityMicromapSpecialIndexEXT>					getOpacityMicromapSpecialIndexEXTStr				(VkOpacityMicromapSpecialIndexEXT value)				{ return tcu::Format::Enum<VkOpacityMicromapSpecialIndexEXT>(getOpacityMicromapSpecialIndexEXTName, value);									}
 inline tcu::Format::Enum<VkDeviceFaultVendorBinaryHeaderVersionEXT>			getDeviceFaultVendorBinaryHeaderVersionEXTStr		(VkDeviceFaultVendorBinaryHeaderVersionEXT value)		{ return tcu::Format::Enum<VkDeviceFaultVendorBinaryHeaderVersionEXT>(getDeviceFaultVendorBinaryHeaderVersionEXTName, value);				}
+inline tcu::Format::Enum<VkIndirectExecutionSetInfoTypeEXT>					getIndirectExecutionSetInfoTypeEXTStr				(VkIndirectExecutionSetInfoTypeEXT value)				{ return tcu::Format::Enum<VkIndirectExecutionSetInfoTypeEXT>(getIndirectExecutionSetInfoTypeEXTName, value);								}
+inline tcu::Format::Enum<VkDepthBiasRepresentationEXT>						getDepthBiasRepresentationEXTStr					(VkDepthBiasRepresentationEXT value)					{ return tcu::Format::Enum<VkDepthBiasRepresentationEXT>(getDepthBiasRepresentationEXTName, value);											}
 inline tcu::Format::Enum<VkDirectDriverLoadingModeLUNARG>					getDirectDriverLoadingModeLUNARGStr					(VkDirectDriverLoadingModeLUNARG value)					{ return tcu::Format::Enum<VkDirectDriverLoadingModeLUNARG>(getDirectDriverLoadingModeLUNARGName, value);									}
+inline tcu::Format::Enum<VkPartitionedAccelerationStructureOpTypeNV>		getPartitionedAccelerationStructureOpTypeNVStr		(VkPartitionedAccelerationStructureOpTypeNV value)		{ return tcu::Format::Enum<VkPartitionedAccelerationStructureOpTypeNV>(getPartitionedAccelerationStructureOpTypeNVName, value);				}
+inline tcu::Format::Enum<VkAntiLagModeAMD>									getAntiLagModeAMDStr								(VkAntiLagModeAMD value)								{ return tcu::Format::Enum<VkAntiLagModeAMD>(getAntiLagModeAMDName, value);																	}
+inline tcu::Format::Enum<VkAntiLagStageAMD>									getAntiLagStageAMDStr								(VkAntiLagStageAMD value)								{ return tcu::Format::Enum<VkAntiLagStageAMD>(getAntiLagStageAMDName, value);																}
+inline tcu::Format::Enum<VkDisplacementMicromapFormatNV>					getDisplacementMicromapFormatNVStr					(VkDisplacementMicromapFormatNV value)					{ return tcu::Format::Enum<VkDisplacementMicromapFormatNV>(getDisplacementMicromapFormatNVName, value);										}
+inline tcu::Format::Enum<VkShaderCodeTypeEXT>								getShaderCodeTypeEXTStr								(VkShaderCodeTypeEXT value)								{ return tcu::Format::Enum<VkShaderCodeTypeEXT>(getShaderCodeTypeEXTName, value);															}
+inline tcu::Format::Enum<VkScopeKHR>										getScopeKHRStr										(VkScopeKHR value)										{ return tcu::Format::Enum<VkScopeKHR>(getScopeKHRName, value);																				}
+inline tcu::Format::Enum<VkComponentTypeKHR>								getComponentTypeKHRStr								(VkComponentTypeKHR value)								{ return tcu::Format::Enum<VkComponentTypeKHR>(getComponentTypeKHRName, value);																}
+inline tcu::Format::Enum<VkCubicFilterWeightsQCOM>							getCubicFilterWeightsQCOMStr						(VkCubicFilterWeightsQCOM value)						{ return tcu::Format::Enum<VkCubicFilterWeightsQCOM>(getCubicFilterWeightsQCOMName, value);													}
+inline tcu::Format::Enum<VkBlockMatchWindowCompareModeQCOM>					getBlockMatchWindowCompareModeQCOMStr				(VkBlockMatchWindowCompareModeQCOM value)				{ return tcu::Format::Enum<VkBlockMatchWindowCompareModeQCOM>(getBlockMatchWindowCompareModeQCOMName, value);								}
+inline tcu::Format::Enum<VkLayeredDriverUnderlyingApiMSFT>					getLayeredDriverUnderlyingApiMSFTStr				(VkLayeredDriverUnderlyingApiMSFT value)				{ return tcu::Format::Enum<VkLayeredDriverUnderlyingApiMSFT>(getLayeredDriverUnderlyingApiMSFTName, value);									}
+inline tcu::Format::Enum<VkPhysicalDeviceLayeredApiKHR>						getPhysicalDeviceLayeredApiKHRStr					(VkPhysicalDeviceLayeredApiKHR value)					{ return tcu::Format::Enum<VkPhysicalDeviceLayeredApiKHR>(getPhysicalDeviceLayeredApiKHRName, value);										}
+inline tcu::Format::Enum<VkDepthClampModeEXT>								getDepthClampModeEXTStr								(VkDepthClampModeEXT value)								{ return tcu::Format::Enum<VkDepthClampModeEXT>(getDepthClampModeEXTName, value);															}
+inline tcu::Format::Enum<VkCooperativeVectorMatrixLayoutNV>					getCooperativeVectorMatrixLayoutNVStr				(VkCooperativeVectorMatrixLayoutNV value)				{ return tcu::Format::Enum<VkCooperativeVectorMatrixLayoutNV>(getCooperativeVectorMatrixLayoutNVName, value);								}
 inline tcu::Format::Enum<VkColorSpaceKHR>									getColorSpaceKHRStr									(VkColorSpaceKHR value)									{ return tcu::Format::Enum<VkColorSpaceKHR>(getColorSpaceKHRName, value);																	}
 inline tcu::Format::Enum<VkPresentModeKHR>									getPresentModeKHRStr								(VkPresentModeKHR value)								{ return tcu::Format::Enum<VkPresentModeKHR>(getPresentModeKHRName, value);																	}
+inline tcu::Format::Enum<VkDisplaySurfaceStereoTypeNV>						getDisplaySurfaceStereoTypeNVStr					(VkDisplaySurfaceStereoTypeNV value)					{ return tcu::Format::Enum<VkDisplaySurfaceStereoTypeNV>(getDisplaySurfaceStereoTypeNVName, value);											}
 inline tcu::Format::Enum<VkDebugReportObjectTypeEXT>						getDebugReportObjectTypeEXTStr						(VkDebugReportObjectTypeEXT value)						{ return tcu::Format::Enum<VkDebugReportObjectTypeEXT>(getDebugReportObjectTypeEXTName, value);												}
 inline tcu::Format::Enum<VkDeviceMemoryReportEventTypeEXT>					getDeviceMemoryReportEventTypeEXTStr				(VkDeviceMemoryReportEventTypeEXT value)				{ return tcu::Format::Enum<VkDeviceMemoryReportEventTypeEXT>(getDeviceMemoryReportEventTypeEXTName, value);									}
 inline tcu::Format::Enum<VkRasterizationOrderAMD>							getRasterizationOrderAMDStr							(VkRasterizationOrderAMD value)							{ return tcu::Format::Enum<VkRasterizationOrderAMD>(getRasterizationOrderAMDName, value);													}
@@ -250,6 +304,9 @@ inline tcu::Format::Enum<VkFragmentShadingRateCombinerOpKHR>				getFragmentShadi
 inline tcu::Format::Enum<VkOpticalFlowPerformanceLevelNV>					getOpticalFlowPerformanceLevelNVStr					(VkOpticalFlowPerformanceLevelNV value)					{ return tcu::Format::Enum<VkOpticalFlowPerformanceLevelNV>(getOpticalFlowPerformanceLevelNVName, value);									}
 inline tcu::Format::Enum<VkOpticalFlowSessionBindingPointNV>				getOpticalFlowSessionBindingPointNVStr				(VkOpticalFlowSessionBindingPointNV value)				{ return tcu::Format::Enum<VkOpticalFlowSessionBindingPointNV>(getOpticalFlowSessionBindingPointNVName, value);								}
 inline tcu::Format::Enum<VkDeviceFaultAddressTypeEXT>						getDeviceFaultAddressTypeEXTStr						(VkDeviceFaultAddressTypeEXT value)						{ return tcu::Format::Enum<VkDeviceFaultAddressTypeEXT>(getDeviceFaultAddressTypeEXTName, value);											}
+inline tcu::Format::Enum<VkLayerSettingTypeEXT>								getLayerSettingTypeEXTStr							(VkLayerSettingTypeEXT value)							{ return tcu::Format::Enum<VkLayerSettingTypeEXT>(getLayerSettingTypeEXTName, value);														}
+inline tcu::Format::Enum<VkLatencyMarkerNV>									getLatencyMarkerNVStr								(VkLatencyMarkerNV value)								{ return tcu::Format::Enum<VkLatencyMarkerNV>(getLatencyMarkerNVName, value);																}
+inline tcu::Format::Enum<VkOutOfBandQueueTypeNV>							getOutOfBandQueueTypeNVStr							(VkOutOfBandQueueTypeNV value)							{ return tcu::Format::Enum<VkOutOfBandQueueTypeNV>(getOutOfBandQueueTypeNVName, value);														}
 inline tcu::Format::Enum<VkVendorId>										getVendorIdStr										(VkVendorId value)										{ return tcu::Format::Enum<VkVendorId>(getVendorIdName, value);																				}
 inline tcu::Format::Enum<VkDriverId>										getDriverIdStr										(VkDriverId value)										{ return tcu::Format::Enum<VkDriverId>(getDriverIdName, value);																				}
 inline tcu::Format::Enum<VkShadingRatePaletteEntryNV>						getShadingRatePaletteEntryNVStr						(VkShadingRatePaletteEntryNV value)						{ return tcu::Format::Enum<VkShadingRatePaletteEntryNV>(getShadingRatePaletteEntryNVName, value);											}
@@ -257,8 +314,8 @@ inline tcu::Format::Enum<VkCoarseSampleOrderTypeNV>							getCoarseSampleOrderTy
 inline tcu::Format::Enum<VkPipelineExecutableStatisticFormatKHR>			getPipelineExecutableStatisticFormatKHRStr			(VkPipelineExecutableStatisticFormatKHR value)			{ return tcu::Format::Enum<VkPipelineExecutableStatisticFormatKHR>(getPipelineExecutableStatisticFormatKHRName, value);						}
 inline tcu::Format::Enum<VkQueryResultStatusKHR>							getQueryResultStatusKHRStr							(VkQueryResultStatusKHR value)							{ return tcu::Format::Enum<VkQueryResultStatusKHR>(getQueryResultStatusKHRName, value);														}
 inline tcu::Format::Enum<VkVideoEncodeTuningModeKHR>						getVideoEncodeTuningModeKHRStr						(VkVideoEncodeTuningModeKHR value)						{ return tcu::Format::Enum<VkVideoEncodeTuningModeKHR>(getVideoEncodeTuningModeKHRName, value);												}
-inline tcu::Format::Enum<VkVideoEncodeH264RateControlStructureEXT>			getVideoEncodeH264RateControlStructureEXTStr		(VkVideoEncodeH264RateControlStructureEXT value)		{ return tcu::Format::Enum<VkVideoEncodeH264RateControlStructureEXT>(getVideoEncodeH264RateControlStructureEXTName, value);					}
-inline tcu::Format::Enum<VkVideoEncodeH265RateControlStructureEXT>			getVideoEncodeH265RateControlStructureEXTStr		(VkVideoEncodeH265RateControlStructureEXT value)		{ return tcu::Format::Enum<VkVideoEncodeH265RateControlStructureEXT>(getVideoEncodeH265RateControlStructureEXTName, value);					}
+inline tcu::Format::Enum<VkVideoEncodeAV1PredictionModeKHR>					getVideoEncodeAV1PredictionModeKHRStr				(VkVideoEncodeAV1PredictionModeKHR value)				{ return tcu::Format::Enum<VkVideoEncodeAV1PredictionModeKHR>(getVideoEncodeAV1PredictionModeKHRName, value);								}
+inline tcu::Format::Enum<VkVideoEncodeAV1RateControlGroupKHR>				getVideoEncodeAV1RateControlGroupKHRStr				(VkVideoEncodeAV1RateControlGroupKHR value)				{ return tcu::Format::Enum<VkVideoEncodeAV1RateControlGroupKHR>(getVideoEncodeAV1RateControlGroupKHRName, value);							}
 inline tcu::Format::Enum<VkAccelerationStructureMotionInstanceTypeNV>		getAccelerationStructureMotionInstanceTypeNVStr		(VkAccelerationStructureMotionInstanceTypeNV value)		{ return tcu::Format::Enum<VkAccelerationStructureMotionInstanceTypeNV>(getAccelerationStructureMotionInstanceTypeNVName, value);			}
 inline tcu::Format::Enum<StdVideoH264ChromaFormatIdc>						getdVideoH264ChromaFormatIdcStr						(StdVideoH264ChromaFormatIdc value)						{ return tcu::Format::Enum<StdVideoH264ChromaFormatIdc>(getdVideoH264ChromaFormatIdcName, value);											}
 inline tcu::Format::Enum<StdVideoH264ProfileIdc>							getdVideoH264ProfileIdcStr							(StdVideoH264ProfileIdc value)							{ return tcu::Format::Enum<StdVideoH264ProfileIdc>(getdVideoH264ProfileIdcName, value);														}
@@ -280,6 +337,17 @@ inline tcu::Format::Enum<StdVideoH265LevelIdc>								getdVideoH265LevelIdcStr		
 inline tcu::Format::Enum<StdVideoH265SliceType>								getdVideoH265SliceTypeStr							(StdVideoH265SliceType value)							{ return tcu::Format::Enum<StdVideoH265SliceType>(getdVideoH265SliceTypeName, value);														}
 inline tcu::Format::Enum<StdVideoH265PictureType>							getdVideoH265PictureTypeStr							(StdVideoH265PictureType value)							{ return tcu::Format::Enum<StdVideoH265PictureType>(getdVideoH265PictureTypeName, value);													}
 inline tcu::Format::Enum<StdVideoH265AspectRatioIdc>						getdVideoH265AspectRatioIdcStr						(StdVideoH265AspectRatioIdc value)						{ return tcu::Format::Enum<StdVideoH265AspectRatioIdc>(getdVideoH265AspectRatioIdcName, value);												}
+inline tcu::Format::Enum<StdVideoAV1Profile>								getdVideoAV1ProfileStr								(StdVideoAV1Profile value)								{ return tcu::Format::Enum<StdVideoAV1Profile>(getdVideoAV1ProfileName, value);																}
+inline tcu::Format::Enum<StdVideoAV1Level>									getdVideoAV1LevelStr								(StdVideoAV1Level value)								{ return tcu::Format::Enum<StdVideoAV1Level>(getdVideoAV1LevelName, value);																	}
+inline tcu::Format::Enum<StdVideoAV1FrameType>								getdVideoAV1FrameTypeStr							(StdVideoAV1FrameType value)							{ return tcu::Format::Enum<StdVideoAV1FrameType>(getdVideoAV1FrameTypeName, value);															}
+inline tcu::Format::Enum<StdVideoAV1ReferenceName>							getdVideoAV1ReferenceNameStr						(StdVideoAV1ReferenceName value)						{ return tcu::Format::Enum<StdVideoAV1ReferenceName>(getdVideoAV1ReferenceNameName, value);													}
+inline tcu::Format::Enum<StdVideoAV1InterpolationFilter>					getdVideoAV1InterpolationFilterStr					(StdVideoAV1InterpolationFilter value)					{ return tcu::Format::Enum<StdVideoAV1InterpolationFilter>(getdVideoAV1InterpolationFilterName, value);										}
+inline tcu::Format::Enum<StdVideoAV1TxMode>									getdVideoAV1TxModeStr								(StdVideoAV1TxMode value)								{ return tcu::Format::Enum<StdVideoAV1TxMode>(getdVideoAV1TxModeName, value);																}
+inline tcu::Format::Enum<StdVideoAV1FrameRestorationType>					getdVideoAV1FrameRestorationTypeStr					(StdVideoAV1FrameRestorationType value)					{ return tcu::Format::Enum<StdVideoAV1FrameRestorationType>(getdVideoAV1FrameRestorationTypeName, value);									}
+inline tcu::Format::Enum<StdVideoAV1ColorPrimaries>							getdVideoAV1ColorPrimariesStr						(StdVideoAV1ColorPrimaries value)						{ return tcu::Format::Enum<StdVideoAV1ColorPrimaries>(getdVideoAV1ColorPrimariesName, value);												}
+inline tcu::Format::Enum<StdVideoAV1TransferCharacteristics>				getdVideoAV1TransferCharacteristicsStr				(StdVideoAV1TransferCharacteristics value)				{ return tcu::Format::Enum<StdVideoAV1TransferCharacteristics>(getdVideoAV1TransferCharacteristicsName, value);								}
+inline tcu::Format::Enum<StdVideoAV1MatrixCoefficients>						getdVideoAV1MatrixCoefficientsStr					(StdVideoAV1MatrixCoefficients value)					{ return tcu::Format::Enum<StdVideoAV1MatrixCoefficients>(getdVideoAV1MatrixCoefficientsName, value);										}
+inline tcu::Format::Enum<StdVideoAV1ChromaSamplePosition>					getdVideoAV1ChromaSamplePositionStr					(StdVideoAV1ChromaSamplePosition value)					{ return tcu::Format::Enum<StdVideoAV1ChromaSamplePosition>(getdVideoAV1ChromaSamplePositionName, value);									}
 
 inline std::ostream&	operator<<	(std::ostream& s, VkAttachmentLoadOp value)									{ return s << getAttachmentLoadOpStr(value);								}
 inline std::ostream&	operator<<	(std::ostream& s, VkAttachmentStoreOp value)								{ return s << getAttachmentStoreOpStr(value);								}
@@ -299,6 +367,7 @@ inline std::ostream&	operator<<	(std::ostream& s, VkImageLayout value)										
 inline std::ostream&	operator<<	(std::ostream& s, VkImageTiling value)										{ return s << getImageTilingStr(value);										}
 inline std::ostream&	operator<<	(std::ostream& s, VkImageType value)										{ return s << getImageTypeStr(value);										}
 inline std::ostream&	operator<<	(std::ostream& s, VkImageViewType value)									{ return s << getImageViewTypeStr(value);									}
+inline std::ostream&	operator<<	(std::ostream& s, VkIndirectCommandsTokenTypeEXT value)						{ return s << getIndirectCommandsTokenTypeEXTStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkSharingMode value)										{ return s << getSharingModeStr(value);										}
 inline std::ostream&	operator<<	(std::ostream& s, VkIndexType value)										{ return s << getIndexTypeStr(value);										}
 inline std::ostream&	operator<<	(std::ostream& s, VkLogicOp value)											{ return s << getLogicOpStr(value);											}
@@ -316,6 +385,9 @@ inline std::ostream&	operator<<	(std::ostream& s, VkSamplerAddressMode value)			
 inline std::ostream&	operator<<	(std::ostream& s, VkFilter value)											{ return s << getFilterStr(value);											}
 inline std::ostream&	operator<<	(std::ostream& s, VkSamplerMipmapMode value)								{ return s << getSamplerMipmapModeStr(value);								}
 inline std::ostream&	operator<<	(std::ostream& s, VkVertexInputRate value)									{ return s << getVertexInputRateStr(value);									}
+inline std::ostream&	operator<<	(std::ostream& s, VkClusterAccelerationStructureTypeNV value)				{ return s << getClusterAccelerationStructureTypeNVStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, VkClusterAccelerationStructureOpTypeNV value)				{ return s << getClusterAccelerationStructureOpTypeNVStr(value);			}
+inline std::ostream&	operator<<	(std::ostream& s, VkClusterAccelerationStructureOpModeNV value)				{ return s << getClusterAccelerationStructureOpModeNVStr(value);			}
 inline std::ostream&	operator<<	(std::ostream& s, VkObjectType value)										{ return s << getObjectTypeStr(value);										}
 inline std::ostream&	operator<<	(std::ostream& s, VkRayTracingInvocationReorderModeNV value)				{ return s << getRayTracingInvocationReorderModeNVStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkIndirectCommandsTokenTypeNV value)						{ return s << getIndirectCommandsTokenTypeNVStr(value);						}
@@ -327,8 +399,8 @@ inline std::ostream&	operator<<	(std::ostream& s, VkCoverageModulationModeNV val
 inline std::ostream&	operator<<	(std::ostream& s, VkCoverageReductionModeNV value)							{ return s << getCoverageReductionModeNVStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkValidationCacheHeaderVersionEXT value)					{ return s << getValidationCacheHeaderVersionEXTStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkShaderInfoTypeAMD value)								{ return s << getShaderInfoTypeAMDStr(value);								}
-inline std::ostream&	operator<<	(std::ostream& s, VkQueueGlobalPriorityKHR value)							{ return s << getQueueGlobalPriorityKHRStr(value);							}
-inline std::ostream&	operator<<	(std::ostream& s, VkTimeDomainEXT value)									{ return s << getTimeDomainEXTStr(value);									}
+inline std::ostream&	operator<<	(std::ostream& s, VkQueueGlobalPriority value)								{ return s << getQueueGlobalPriorityStr(value);								}
+inline std::ostream&	operator<<	(std::ostream& s, VkTimeDomainKHR value)									{ return s << getTimeDomainKHRStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, VkConservativeRasterizationModeEXT value)					{ return s << getConservativeRasterizationModeEXTStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkSemaphoreType value)									{ return s << getSemaphoreTypeStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, VkBuildAccelerationStructureModeKHR value)				{ return s << getBuildAccelerationStructureModeKHRStr(value);				}
@@ -339,10 +411,10 @@ inline std::ostream&	operator<<	(std::ostream& s, VkRayTracingShaderGroupTypeKHR
 inline std::ostream&	operator<<	(std::ostream& s, VkAccelerationStructureMemoryRequirementsTypeNV value)	{ return s << getAccelerationStructureMemoryRequirementsTypeNVStr(value);	}
 inline std::ostream&	operator<<	(std::ostream& s, VkAccelerationStructureBuildTypeKHR value)				{ return s << getAccelerationStructureBuildTypeKHRStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkAccelerationStructureCompatibilityKHR value)			{ return s << getAccelerationStructureCompatibilityKHRStr(value);			}
+inline std::ostream&	operator<<	(std::ostream& s, VkRayTracingLssIndexingModeNV value)						{ return s << getRayTracingLssIndexingModeNVStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkRayTracingLssPrimitiveEndCapsModeNV value)				{ return s << getRayTracingLssPrimitiveEndCapsModeNVStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkShaderGroupShaderKHR value)								{ return s << getShaderGroupShaderKHRStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkMemoryOverallocationBehaviorAMD value)					{ return s << getMemoryOverallocationBehaviorAMDStr(value);					}
-inline std::ostream&	operator<<	(std::ostream& s, VkScopeNV value)											{ return s << getScopeNVStr(value);											}
-inline std::ostream&	operator<<	(std::ostream& s, VkComponentTypeNV value)									{ return s << getComponentTypeNVStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceCounterScopeKHR value)						{ return s << getPerformanceCounterScopeKHRStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceCounterUnitKHR value)						{ return s << getPerformanceCounterUnitKHRStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceCounterStorageKHR value)						{ return s << getPerformanceCounterStorageKHRStr(value);					}
@@ -351,13 +423,13 @@ inline std::ostream&	operator<<	(std::ostream& s, VkQueryPoolSamplingModeINTEL v
 inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceOverrideTypeINTEL value)						{ return s << getPerformanceOverrideTypeINTELStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceParameterTypeINTEL value)					{ return s << getPerformanceParameterTypeINTELStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceValueTypeINTEL value)						{ return s << getPerformanceValueTypeINTELStr(value);						}
-inline std::ostream&	operator<<	(std::ostream& s, VkLineRasterizationModeEXT value)							{ return s << getLineRasterizationModeEXTStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkLineRasterizationMode value)							{ return s << getLineRasterizationModeStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkFragmentShadingRateNV value)							{ return s << getFragmentShadingRateNVStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkFragmentShadingRateTypeNV value)						{ return s << getFragmentShadingRateTypeNVStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkSubpassMergeStatusEXT value)							{ return s << getSubpassMergeStatusEXTStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkProvokingVertexModeEXT value)							{ return s << getProvokingVertexModeEXTStr(value);							}
-inline std::ostream&	operator<<	(std::ostream& s, VkPipelineRobustnessBufferBehaviorEXT value)				{ return s << getPipelineRobustnessBufferBehaviorEXTStr(value);				}
-inline std::ostream&	operator<<	(std::ostream& s, VkPipelineRobustnessImageBehaviorEXT value)				{ return s << getPipelineRobustnessImageBehaviorEXTStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, VkPipelineRobustnessBufferBehavior value)					{ return s << getPipelineRobustnessBufferBehaviorStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, VkPipelineRobustnessImageBehavior value)					{ return s << getPipelineRobustnessImageBehaviorStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkDeviceAddressBindingTypeEXT value)						{ return s << getDeviceAddressBindingTypeEXTStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkMicromapTypeEXT value)									{ return s << getMicromapTypeEXTStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, VkBuildMicromapModeEXT value)								{ return s << getBuildMicromapModeEXTStr(value);							}
@@ -365,9 +437,25 @@ inline std::ostream&	operator<<	(std::ostream& s, VkCopyMicromapModeEXT value)		
 inline std::ostream&	operator<<	(std::ostream& s, VkOpacityMicromapFormatEXT value)							{ return s << getOpacityMicromapFormatEXTStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkOpacityMicromapSpecialIndexEXT value)					{ return s << getOpacityMicromapSpecialIndexEXTStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkDeviceFaultVendorBinaryHeaderVersionEXT value)			{ return s << getDeviceFaultVendorBinaryHeaderVersionEXTStr(value);			}
+inline std::ostream&	operator<<	(std::ostream& s, VkIndirectExecutionSetInfoTypeEXT value)					{ return s << getIndirectExecutionSetInfoTypeEXTStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkDepthBiasRepresentationEXT value)						{ return s << getDepthBiasRepresentationEXTStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkDirectDriverLoadingModeLUNARG value)					{ return s << getDirectDriverLoadingModeLUNARGStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkPartitionedAccelerationStructureOpTypeNV value)			{ return s << getPartitionedAccelerationStructureOpTypeNVStr(value);		}
+inline std::ostream&	operator<<	(std::ostream& s, VkAntiLagModeAMD value)									{ return s << getAntiLagModeAMDStr(value);									}
+inline std::ostream&	operator<<	(std::ostream& s, VkAntiLagStageAMD value)									{ return s << getAntiLagStageAMDStr(value);									}
+inline std::ostream&	operator<<	(std::ostream& s, VkDisplacementMicromapFormatNV value)						{ return s << getDisplacementMicromapFormatNVStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkShaderCodeTypeEXT value)								{ return s << getShaderCodeTypeEXTStr(value);								}
+inline std::ostream&	operator<<	(std::ostream& s, VkScopeKHR value)											{ return s << getScopeKHRStr(value);										}
+inline std::ostream&	operator<<	(std::ostream& s, VkComponentTypeKHR value)									{ return s << getComponentTypeKHRStr(value);								}
+inline std::ostream&	operator<<	(std::ostream& s, VkCubicFilterWeightsQCOM value)							{ return s << getCubicFilterWeightsQCOMStr(value);							}
+inline std::ostream&	operator<<	(std::ostream& s, VkBlockMatchWindowCompareModeQCOM value)					{ return s << getBlockMatchWindowCompareModeQCOMStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkLayeredDriverUnderlyingApiMSFT value)					{ return s << getLayeredDriverUnderlyingApiMSFTStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkPhysicalDeviceLayeredApiKHR value)						{ return s << getPhysicalDeviceLayeredApiKHRStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkDepthClampModeEXT value)								{ return s << getDepthClampModeEXTStr(value);								}
+inline std::ostream&	operator<<	(std::ostream& s, VkCooperativeVectorMatrixLayoutNV value)					{ return s << getCooperativeVectorMatrixLayoutNVStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkColorSpaceKHR value)									{ return s << getColorSpaceKHRStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, VkPresentModeKHR value)									{ return s << getPresentModeKHRStr(value);									}
+inline std::ostream&	operator<<	(std::ostream& s, VkDisplaySurfaceStereoTypeNV value)						{ return s << getDisplaySurfaceStereoTypeNVStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportObjectTypeEXT value)							{ return s << getDebugReportObjectTypeEXTStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkDeviceMemoryReportEventTypeEXT value)					{ return s << getDeviceMemoryReportEventTypeEXTStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkRasterizationOrderAMD value)							{ return s << getRasterizationOrderAMDStr(value);							}
@@ -389,6 +477,9 @@ inline std::ostream&	operator<<	(std::ostream& s, VkFragmentShadingRateCombinerO
 inline std::ostream&	operator<<	(std::ostream& s, VkOpticalFlowPerformanceLevelNV value)					{ return s << getOpticalFlowPerformanceLevelNVStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkOpticalFlowSessionBindingPointNV value)					{ return s << getOpticalFlowSessionBindingPointNVStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkDeviceFaultAddressTypeEXT value)						{ return s << getDeviceFaultAddressTypeEXTStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkLayerSettingTypeEXT value)								{ return s << getLayerSettingTypeEXTStr(value);								}
+inline std::ostream&	operator<<	(std::ostream& s, VkLatencyMarkerNV value)									{ return s << getLatencyMarkerNVStr(value);									}
+inline std::ostream&	operator<<	(std::ostream& s, VkOutOfBandQueueTypeNV value)								{ return s << getOutOfBandQueueTypeNVStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkVendorId value)											{ return s << getVendorIdStr(value);										}
 inline std::ostream&	operator<<	(std::ostream& s, VkDriverId value)											{ return s << getDriverIdStr(value);										}
 inline std::ostream&	operator<<	(std::ostream& s, VkShadingRatePaletteEntryNV value)						{ return s << getShadingRatePaletteEntryNVStr(value);						}
@@ -396,8 +487,8 @@ inline std::ostream&	operator<<	(std::ostream& s, VkCoarseSampleOrderTypeNV valu
 inline std::ostream&	operator<<	(std::ostream& s, VkPipelineExecutableStatisticFormatKHR value)				{ return s << getPipelineExecutableStatisticFormatKHRStr(value);			}
 inline std::ostream&	operator<<	(std::ostream& s, VkQueryResultStatusKHR value)								{ return s << getQueryResultStatusKHRStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkVideoEncodeTuningModeKHR value)							{ return s << getVideoEncodeTuningModeKHRStr(value);						}
-inline std::ostream&	operator<<	(std::ostream& s, VkVideoEncodeH264RateControlStructureEXT value)			{ return s << getVideoEncodeH264RateControlStructureEXTStr(value);			}
-inline std::ostream&	operator<<	(std::ostream& s, VkVideoEncodeH265RateControlStructureEXT value)			{ return s << getVideoEncodeH265RateControlStructureEXTStr(value);			}
+inline std::ostream&	operator<<	(std::ostream& s, VkVideoEncodeAV1PredictionModeKHR value)					{ return s << getVideoEncodeAV1PredictionModeKHRStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkVideoEncodeAV1RateControlGroupKHR value)				{ return s << getVideoEncodeAV1RateControlGroupKHRStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkAccelerationStructureMotionInstanceTypeNV value)		{ return s << getAccelerationStructureMotionInstanceTypeNVStr(value);		}
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoH264ChromaFormatIdc value)						{ return s << getdVideoH264ChromaFormatIdcStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoH264ProfileIdc value)								{ return s << getdVideoH264ProfileIdcStr(value);							}
@@ -419,6 +510,17 @@ inline std::ostream&	operator<<	(std::ostream& s, StdVideoH265LevelIdc value)			
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoH265SliceType value)								{ return s << getdVideoH265SliceTypeStr(value);								}
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoH265PictureType value)							{ return s << getdVideoH265PictureTypeStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoH265AspectRatioIdc value)							{ return s << getdVideoH265AspectRatioIdcStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1Profile value)									{ return s << getdVideoAV1ProfileStr(value);								}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1Level value)									{ return s << getdVideoAV1LevelStr(value);									}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1FrameType value)								{ return s << getdVideoAV1FrameTypeStr(value);								}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1ReferenceName value)							{ return s << getdVideoAV1ReferenceNameStr(value);							}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1InterpolationFilter value)						{ return s << getdVideoAV1InterpolationFilterStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1TxMode value)									{ return s << getdVideoAV1TxModeStr(value);									}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1FrameRestorationType value)					{ return s << getdVideoAV1FrameRestorationTypeStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1ColorPrimaries value)							{ return s << getdVideoAV1ColorPrimariesStr(value);							}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1TransferCharacteristics value)					{ return s << getdVideoAV1TransferCharacteristicsStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1MatrixCoefficients value)						{ return s << getdVideoAV1MatrixCoefficientsStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1ChromaSamplePosition value)					{ return s << getdVideoAV1ChromaSamplePositionStr(value);					}
 
 tcu::Format::Bitfield<32>	getFramebufferCreateFlagsStr								(VkFramebufferCreateFlags value);
 tcu::Format::Bitfield<32>	getQueryPoolCreateFlagsStr									(VkQueryPoolCreateFlags value);
@@ -466,6 +568,7 @@ tcu::Format::Bitfield<32>	getCommandBufferResetFlagsStr								(VkCommandBufferR
 tcu::Format::Bitfield<32>	getCommandBufferUsageFlagsStr								(VkCommandBufferUsageFlags value);
 tcu::Format::Bitfield<32>	getQueryPipelineStatisticFlagsStr							(VkQueryPipelineStatisticFlags value);
 tcu::Format::Bitfield<32>	getMemoryMapFlagsStr										(VkMemoryMapFlags value);
+tcu::Format::Bitfield<32>	getMemoryUnmapFlagsStr										(VkMemoryUnmapFlags value);
 tcu::Format::Bitfield<32>	getImageAspectFlagsStr										(VkImageAspectFlags value);
 tcu::Format::Bitfield<32>	getSparseMemoryBindFlagsStr									(VkSparseMemoryBindFlags value);
 tcu::Format::Bitfield<32>	getSparseImageFormatFlagsStr								(VkSparseImageFormatFlags value);
@@ -483,6 +586,9 @@ tcu::Format::Bitfield<32>	getIndirectCommandsLayoutUsageFlagsNVStr					(VkIndire
 tcu::Format::Bitfield<32>	getIndirectStateFlagsNVStr									(VkIndirectStateFlagsNV value);
 tcu::Format::Bitfield<32>	getGeometryFlagsKHRStr										(VkGeometryFlagsKHR value);
 tcu::Format::Bitfield<32>	getGeometryInstanceFlagsKHRStr								(VkGeometryInstanceFlagsKHR value);
+tcu::Format::Bitfield<32>	getClusterAccelerationStructureGeometryFlagsNVStr			(VkClusterAccelerationStructureGeometryFlagsNV value);
+tcu::Format::Bitfield<32>	getClusterAccelerationStructureClusterFlagsNVStr			(VkClusterAccelerationStructureClusterFlagsNV value);
+tcu::Format::Bitfield<32>	getClusterAccelerationStructureAddressResolutionFlagsNVStr	(VkClusterAccelerationStructureAddressResolutionFlagsNV value);
 tcu::Format::Bitfield<32>	getBuildAccelerationStructureFlagsKHRStr					(VkBuildAccelerationStructureFlagsKHR value);
 tcu::Format::Bitfield<32>	getPrivateDataSlotCreateFlagsStr							(VkPrivateDataSlotCreateFlags value);
 tcu::Format::Bitfield<32>	getAccelerationStructureCreateFlagsKHRStr					(VkAccelerationStructureCreateFlagsKHR value);
@@ -504,7 +610,11 @@ tcu::Format::Bitfield<32>	getRenderingFlagsStr										(VkRenderingFlags value)
 tcu::Format::Bitfield<64>	getMemoryDecompressionMethodFlagsNVStr						(VkMemoryDecompressionMethodFlagsNV value);
 tcu::Format::Bitfield<32>	getBuildMicromapFlagsEXTStr									(VkBuildMicromapFlagsEXT value);
 tcu::Format::Bitfield<32>	getMicromapCreateFlagsEXTStr								(VkMicromapCreateFlagsEXT value);
+tcu::Format::Bitfield<32>	getIndirectCommandsLayoutUsageFlagsEXTStr					(VkIndirectCommandsLayoutUsageFlagsEXT value);
+tcu::Format::Bitfield<32>	getIndirectCommandsInputModeFlagsEXTStr						(VkIndirectCommandsInputModeFlagsEXT value);
 tcu::Format::Bitfield<32>	getDirectDriverLoadingFlagsLUNARGStr						(VkDirectDriverLoadingFlagsLUNARG value);
+tcu::Format::Bitfield<64>	getPipelineCreateFlags2Str									(VkPipelineCreateFlags2 value);
+tcu::Format::Bitfield<64>	getBufferUsageFlags2Str										(VkBufferUsageFlags2 value);
 tcu::Format::Bitfield<32>	getCompositeAlphaFlagsKHRStr								(VkCompositeAlphaFlagsKHR value);
 tcu::Format::Bitfield<32>	getDisplayPlaneAlphaFlagsKHRStr								(VkDisplayPlaneAlphaFlagsKHR value);
 tcu::Format::Bitfield<32>	getSurfaceTransformFlagsKHRStr								(VkSurfaceTransformFlagsKHR value);
@@ -531,6 +641,7 @@ tcu::Format::Bitfield<32>	getDeviceGroupPresentModeFlagsKHRStr						(VkDeviceGro
 tcu::Format::Bitfield<32>	getDebugReportFlagsEXTStr									(VkDebugReportFlagsEXT value);
 tcu::Format::Bitfield<32>	getCommandPoolTrimFlagsStr									(VkCommandPoolTrimFlags value);
 tcu::Format::Bitfield<32>	getExternalMemoryHandleTypeFlagsNVStr						(VkExternalMemoryHandleTypeFlagsNV value);
+tcu::Format::Bitfield<32>	getClusterAccelerationStructureIndexFormatFlagsNVStr		(VkClusterAccelerationStructureIndexFormatFlagsNV value);
 tcu::Format::Bitfield<32>	getExternalMemoryFeatureFlagsNVStr							(VkExternalMemoryFeatureFlagsNV value);
 tcu::Format::Bitfield<32>	getExternalMemoryHandleTypeFlagsStr							(VkExternalMemoryHandleTypeFlags value);
 tcu::Format::Bitfield<32>	getExternalMemoryFeatureFlagsStr							(VkExternalMemoryFeatureFlags value);
@@ -562,6 +673,8 @@ tcu::Format::Bitfield<32>	getSwapchainImageUsageFlagsANDROIDStr						(VkSwapchai
 tcu::Format::Bitfield<32>	getToolPurposeFlagsStr										(VkToolPurposeFlags value);
 tcu::Format::Bitfield<32>	getSubmitFlagsStr											(VkSubmitFlags value);
 tcu::Format::Bitfield<32>	getImageFormatConstraintsFlagsFUCHSIAStr					(VkImageFormatConstraintsFlagsFUCHSIA value);
+tcu::Format::Bitfield<32>	getHostImageCopyFlagsStr									(VkHostImageCopyFlags value);
+tcu::Format::Bitfield<32>	getPartitionedAccelerationStructureInstanceFlagsNVStr		(VkPartitionedAccelerationStructureInstanceFlagsNV value);
 tcu::Format::Bitfield<32>	getImageConstraintsInfoFlagsFUCHSIAStr						(VkImageConstraintsInfoFlagsFUCHSIA value);
 tcu::Format::Bitfield<32>	getGraphicsPipelineLibraryFlagsEXTStr						(VkGraphicsPipelineLibraryFlagsEXT value);
 tcu::Format::Bitfield<32>	getImageCompressionFlagsEXTStr								(VkImageCompressionFlagsEXT value);
@@ -572,8 +685,11 @@ tcu::Format::Bitfield<32>	getOpticalFlowGridSizeFlagsNVStr							(VkOpticalFlowG
 tcu::Format::Bitfield<32>	getOpticalFlowUsageFlagsNVStr								(VkOpticalFlowUsageFlagsNV value);
 tcu::Format::Bitfield<32>	getOpticalFlowSessionCreateFlagsNVStr						(VkOpticalFlowSessionCreateFlagsNV value);
 tcu::Format::Bitfield<32>	getOpticalFlowExecuteFlagsNVStr								(VkOpticalFlowExecuteFlagsNV value);
+tcu::Format::Bitfield<32>	getFrameBoundaryFlagsEXTStr									(VkFrameBoundaryFlagsEXT value);
 tcu::Format::Bitfield<32>	getPresentScalingFlagsEXTStr								(VkPresentScalingFlagsEXT value);
 tcu::Format::Bitfield<32>	getPresentGravityFlagsEXTStr								(VkPresentGravityFlagsEXT value);
+tcu::Format::Bitfield<32>	getShaderCreateFlagsEXTStr									(VkShaderCreateFlagsEXT value);
+tcu::Format::Bitfield<64>	getPhysicalDeviceSchedulingControlsFlagsARMStr				(VkPhysicalDeviceSchedulingControlsFlagsARM value);
 tcu::Format::Bitfield<32>	getVideoCodecOperationFlagsKHRStr							(VkVideoCodecOperationFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoCapabilityFlagsKHRStr								(VkVideoCapabilityFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoSessionCreateFlagsKHRStr							(VkVideoSessionCreateFlagsKHR value);
@@ -594,11 +710,19 @@ tcu::Format::Bitfield<32>	getVideoEncodeRateControlFlagsKHRStr						(VkVideoEnco
 tcu::Format::Bitfield<32>	getVideoEncodeRateControlModeFlagsKHRStr					(VkVideoEncodeRateControlModeFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoChromaSubsamplingFlagsKHRStr						(VkVideoChromaSubsamplingFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoComponentBitDepthFlagsKHRStr						(VkVideoComponentBitDepthFlagsKHR value);
-tcu::Format::Bitfield<32>	getVideoEncodeH264CapabilityFlagsEXTStr						(VkVideoEncodeH264CapabilityFlagsEXT value);
-tcu::Format::Bitfield<32>	getVideoEncodeH265CapabilityFlagsEXTStr						(VkVideoEncodeH265CapabilityFlagsEXT value);
-tcu::Format::Bitfield<32>	getVideoEncodeH265CtbSizeFlagsEXTStr						(VkVideoEncodeH265CtbSizeFlagsEXT value);
-tcu::Format::Bitfield<32>	getVideoEncodeH265TransformBlockSizeFlagsEXTStr				(VkVideoEncodeH265TransformBlockSizeFlagsEXT value);
-tcu::Format::Bitfield<32>	getMemoryUnmapFlagsKHRStr									(VkMemoryUnmapFlagsKHR value);
+tcu::Format::Bitfield<32>	getVideoEncodeH264CapabilityFlagsKHRStr						(VkVideoEncodeH264CapabilityFlagsKHR value);
+tcu::Format::Bitfield<32>	getVideoEncodeH264StdFlagsKHRStr							(VkVideoEncodeH264StdFlagsKHR value);
+tcu::Format::Bitfield<32>	getVideoEncodeH264RateControlFlagsKHRStr					(VkVideoEncodeH264RateControlFlagsKHR value);
+tcu::Format::Bitfield<32>	getVideoEncodeH265CapabilityFlagsKHRStr						(VkVideoEncodeH265CapabilityFlagsKHR value);
+tcu::Format::Bitfield<32>	getVideoEncodeH265StdFlagsKHRStr							(VkVideoEncodeH265StdFlagsKHR value);
+tcu::Format::Bitfield<32>	getVideoEncodeH265RateControlFlagsKHRStr					(VkVideoEncodeH265RateControlFlagsKHR value);
+tcu::Format::Bitfield<32>	getVideoEncodeH265CtbSizeFlagsKHRStr						(VkVideoEncodeH265CtbSizeFlagsKHR value);
+tcu::Format::Bitfield<32>	getVideoEncodeH265TransformBlockSizeFlagsKHRStr				(VkVideoEncodeH265TransformBlockSizeFlagsKHR value);
+tcu::Format::Bitfield<32>	getVideoEncodeAV1CapabilityFlagsKHRStr						(VkVideoEncodeAV1CapabilityFlagsKHR value);
+tcu::Format::Bitfield<32>	getVideoEncodeAV1StdFlagsKHRStr								(VkVideoEncodeAV1StdFlagsKHR value);
+tcu::Format::Bitfield<32>	getVideoEncodeAV1RateControlFlagsKHRStr						(VkVideoEncodeAV1RateControlFlagsKHR value);
+tcu::Format::Bitfield<32>	getVideoEncodeAV1SuperblockSizeFlagsKHRStr					(VkVideoEncodeAV1SuperblockSizeFlagsKHR value);
+tcu::Format::Bitfield<64>	getAccessFlags3KHRStr										(VkAccessFlags3KHR value);
 
 std::ostream&	operator<<	(std::ostream& s, const VkBaseOutStructure& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBaseInStructure& value);
@@ -633,6 +757,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkDescriptorBufferInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDescriptorImageInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkWriteDescriptorSet& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCopyDescriptorSet& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBufferUsageFlags2CreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferViewCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageSubresource& value);
@@ -667,6 +792,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkSpecializationMapEntry& value
 std::ostream&	operator<<	(std::ostream& s, const VkSpecializationInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineShaderStageCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkComputePipelineCreateInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkComputePipelineIndirectBufferInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineCreateFlags2CreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVertexInputBindingDescription& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVertexInputAttributeDescription& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineVertexInputStateCreateInfo& value);
@@ -684,6 +811,15 @@ std::ostream&	operator<<	(std::ostream& s, const VkGraphicsPipelineCreateInfo& v
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineCacheCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineCacheHeaderVersionOne& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPushConstantRange& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineBinaryCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineBinaryHandlesInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineBinaryDataKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineBinaryKeysAndDataKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineBinaryKeyKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineBinaryInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkReleaseCapturedPipelineDataInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineBinaryDataInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineLayoutCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSamplerCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCommandPoolCreateInfo& value);
@@ -721,6 +857,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkDisplayModePropertiesKHR& val
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayModeCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayPlaneCapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDisplaySurfaceCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDisplaySurfaceStereoCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayPresentInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceCapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidSurfaceCreateInfoKHR& value);
@@ -738,6 +875,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPresentInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkValidationFlagsEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkValidationFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkLayerSettingsCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkLayerSettingEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationStateRasterizationOrderAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerObjectNameInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerObjectTagInfoEXT& value);
@@ -752,10 +891,27 @@ std::ostream&	operator<<	(std::ostream& s, const VkImportMemoryWin32HandleInfoNV
 std::ostream&	operator<<	(std::ostream& s, const VkExportMemoryWin32HandleInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkWin32KeyedMutexAcquireReleaseInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDevicePrivateDataCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPrivateDataSlotCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePrivateDataFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceClusterAccelerationStructureFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceClusterAccelerationStructurePropertiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkStridedDeviceAddressNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRayTracingPipelineClusterAccelerationStructureCreateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkClusterAccelerationStructureGeometryIndexAndGeometryFlagsNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkClusterAccelerationStructureMoveObjectsInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkClusterAccelerationStructureBuildClustersBottomLevelInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkClusterAccelerationStructureBuildTriangleClusterInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkClusterAccelerationStructureBuildTriangleClusterTemplateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkClusterAccelerationStructureInstantiateClusterInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkClusterAccelerationStructureClustersBottomLevelInputNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkClusterAccelerationStructureTriangleClusterInputNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkClusterAccelerationStructureMoveObjectsInputNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkClusterAccelerationStructureOpInputNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkClusterAccelerationStructureInputInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkClusterAccelerationStructureCommandsInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiDrawPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkGraphicsShaderGroupCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkGraphicsPipelineShaderGroupsCreateInfoNV& value);
@@ -768,6 +924,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkIndirectCommandsLayoutTokenNV
 std::ostream&	operator<<	(std::ostream& s, const VkIndirectCommandsLayoutCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkGeneratedCommandsInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkGeneratedCommandsMemoryRequirementsInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineIndirectDeviceAddressInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBindPipelineIndirectCommandNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFeatures2& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceProperties2& value);
 std::ostream&	operator<<	(std::ostream& s, const VkFormatProperties2& value);
@@ -777,7 +935,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyProperties2& value
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMemoryProperties2& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSparseImageFormatProperties2& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSparseImageFormatInfo2& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePushDescriptorPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePushDescriptorProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkConformanceVersion& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDriverProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentRegionsKHR& value);
@@ -804,6 +962,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkImportMemoryFdInfoKHR& value)
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryFdPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetFdInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkWin32KeyedMutexAcquireReleaseInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImportMemoryMetalHandleInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryMetalHandlePropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetMetalHandleInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalSemaphoreInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExternalSemaphoreProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExportSemaphoreCreateInfo& value);
@@ -855,6 +1016,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentIdFeatur
 std::ostream&	operator<<	(std::ostream& s, const VkPresentIdKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentWaitFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkHdrMetadataEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkHdrVividDynamicMetadataHUAWEI& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayNativeHdrSurfaceCapabilitiesAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSwapchainDisplayNativeHdrCreateInfoAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRefreshCycleDurationGOOGLE& value);
@@ -879,6 +1041,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkSurfaceFormat2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayProperties2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayPlaneProperties2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayModeProperties2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDisplayModeStereoPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayPlaneInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayPlaneCapabilities2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSharedPresentSurfaceCapabilitiesKHR& value);
@@ -936,6 +1099,17 @@ std::ostream&	operator<<	(std::ostream& s, const VkShaderModuleValidationCacheCr
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance3Properties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance4Features& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance4Properties& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance5Features& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance5Properties& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance6Features& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance6Properties& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance7FeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance7PropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLayeredApiPropertiesListKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLayeredApiPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLayeredApiVulkanPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance8FeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRenderingAreaInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDescriptorSetLayoutSupport& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderDrawParametersFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderFloat16Int8Features& value);
@@ -943,9 +1117,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFloatControlsPr
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceHostQueryResetFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkShaderResourceUsageAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkShaderStatisticsInfoAMD& value);
-std::ostream&	operator<<	(std::ostream& s, const VkDeviceQueueGlobalPriorityCreateInfoKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyGlobalPriorityPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceQueueGlobalPriorityCreateInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGlobalPriorityQueryFeatures& value);
+std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyGlobalPriorityProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugUtilsObjectNameInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugUtilsObjectTagInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugUtilsLabelEXT& value);
@@ -958,7 +1132,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkImportMemoryHostPointerInfoEX
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryHostPointerPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalMemoryHostPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceConservativeRasterizationPropertiesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkCalibratedTimestampInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCalibratedTimestampInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderCorePropertiesAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderCoreProperties2AMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationConservativeStateCreateInfoEXT& value);
@@ -980,9 +1154,10 @@ std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreTypeCreateInfo& valu
 std::ostream&	operator<<	(std::ostream& s, const VkTimelineSemaphoreSubmitInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreWaitInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreSignalInfo& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVertexInputBindingDivisorDescriptionEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPipelineVertexInputDivisorStateCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVertexInputBindingDivisorDescription& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineVertexInputDivisorStateCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePCIBusInfoPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImportAndroidHardwareBufferInfoANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferUsageANDROID& value);
@@ -997,7 +1172,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVulkanMemoryMod
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderAtomicInt64Features& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderAtomicFloatFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyCheckpointPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCheckpointDataNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDepthStencilResolveProperties& value);
@@ -1012,7 +1187,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelineRepresentativeFragmen
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExclusiveScissorFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineViewportExclusiveScissorStateCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCornerSampledImageFeaturesNV& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceComputeShaderDerivativesFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceComputeShaderDerivativesPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderImageFootprintFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCopyMemoryIndirectFeaturesNV& value);
@@ -1117,6 +1293,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkQueryPoolPerformanceCreateInf
 std::ostream&	operator<<	(std::ostream& s, const VkPerformanceCounterResultKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAcquireProfilingLockInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPerformanceQuerySubmitInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPerformanceQueryReservationInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkHeadlessSurfaceCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCoverageReductionModeFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineCoverageReductionStateCreateInfoNV& value);
@@ -1131,7 +1308,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPerformanceStreamMarkerInfoIN
 std::ostream&	operator<<	(std::ostream& s, const VkPerformanceOverrideInfoINTEL& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPerformanceConfigurationAcquireInfoINTEL& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderClockFeaturesKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceIndexTypeUint8FeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceIndexTypeUint8Features& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderSMBuiltinsPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderSMBuiltinsFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT& value);
@@ -1157,9 +1334,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSubpassShadingP
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceClusterCullingShaderPropertiesHUAWEI& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryOpaqueCaptureAddressAllocateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceMemoryOpaqueCaptureAddressInfo& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLineRasterizationFeaturesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLineRasterizationPropertiesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationLineStateCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLineRasterizationFeatures& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLineRasterizationProperties& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationLineStateCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineCreationCacheControlFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVulkan11Features& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVulkan11Properties& value);
@@ -1167,6 +1344,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVulkan12Feature
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVulkan12Properties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVulkan13Features& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVulkan13Properties& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVulkan14Features& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVulkan14Properties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineCompilerControlCreateInfoAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCoherentMemoryFeaturesAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceToolProperties& value);
@@ -1177,9 +1356,12 @@ std::ostream&	operator<<	(std::ostream& s, const VkSamplerBorderColorComponentMa
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceBorderColorSwizzleFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceOrHostAddressKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceOrHostAddressConstKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceOrHostAddressConstAMDX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryTrianglesDataKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryAabbsDataKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryInstancesDataKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryLinearSweptSpheresDataNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometrySpheresDataNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryDataKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureBuildGeometryInfoKHR& value);
@@ -1204,6 +1386,16 @@ std::ostream&	operator<<	(std::ostream& s, const VkColorBlendAdvancedEXT& value)
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassTransformBeginInfoQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCopyCommandTransformInfoQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCommandBufferInheritanceRenderPassTransformInfoQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePartitionedAccelerationStructureFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePartitionedAccelerationStructurePropertiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBuildPartitionedAccelerationStructureIndirectCommandNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPartitionedAccelerationStructureFlagsNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPartitionedAccelerationStructureWriteInstanceDataNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPartitionedAccelerationStructureUpdateInstanceDataNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPartitionedAccelerationStructureWritePartitionTranslationDataNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkWriteDescriptorSetPartitionedAccelerationStructureNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPartitionedAccelerationStructureInstancesInputNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBuildPartitionedAccelerationStructureInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDiagnosticsConfigFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceDiagnosticsConfigCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeatures& value);
@@ -1217,6 +1409,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePortabilitySubs
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevice4444FormatsFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSubpassShadingFeaturesHUAWEI& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceClusterCullingShaderFeaturesHUAWEI& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceClusterCullingShaderVrsFeaturesHUAWEI& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferCopy2& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageCopy2& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageBlit2& value);
@@ -1241,13 +1434,42 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelineFragmentShadingRateEn
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureBuildSizesInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImage2DViewOf3DFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeListEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDepthClipControlFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkGeneratedCommandsPipelineInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkGeneratedCommandsShaderInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkGeneratedCommandsMemoryRequirementsInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkIndirectExecutionSetPipelineInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkIndirectExecutionSetShaderLayoutInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkIndirectExecutionSetShaderInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkIndirectExecutionSetInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkIndirectExecutionSetCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkGeneratedCommandsInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkWriteIndirectExecutionSetPipelineEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkWriteIndirectExecutionSetShaderEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkIndirectCommandsLayoutCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkIndirectCommandsLayoutTokenEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDrawIndirectCountIndirectCommandEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkIndirectCommandsVertexBufferTokenEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBindVertexBufferIndirectCommandEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkIndirectCommandsIndexBufferTokenEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBindIndexBufferIndirectCommandEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkIndirectCommandsPushConstantTokenEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkIndirectCommandsExecutionSetTokenEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkIndirectCommandsTokenDataEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineViewportDepthClipControlCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDepthClampControlFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineViewportDepthClampControlCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalMemoryRDMAFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVertexInputBindingDescription2EXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVertexInputAttributeDescription2EXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceColorWriteEnableFeaturesEXT& value);
@@ -1255,6 +1477,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelineColorWriteCreateInfoE
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryBarrier2& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageMemoryBarrier2& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferMemoryBarrier2& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryBarrierAccessFlags3KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDependencyInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreSubmitInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCommandBufferSubmitInfo& value);
@@ -1262,17 +1485,34 @@ std::ostream&	operator<<	(std::ostream& s, const VkSubmitInfo2& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyCheckpointProperties2NV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCheckpointData2NV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSynchronization2Features& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceHostImageCopyFeatures& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceHostImageCopyProperties& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryToImageCopy& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImageToMemoryCopy& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCopyMemoryToImageInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCopyImageToMemoryInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCopyImageToImageInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkHostImageLayoutTransitionInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSubresourceHostMemcpySize& value);
+std::ostream&	operator<<	(std::ostream& s, const VkHostImageCopyDevicePerformanceQuery& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLegacyDitheringFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSubpassResolvePerformanceQueryEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMultisampledRenderToSingleSampledInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineProtectedAccessFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineProtectedAccessFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyVideoPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyQueryResultStatusPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoProfileListInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoFormatInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoFormatPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeQuantizationMapCapabilitiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264QuantizationMapCapabilitiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265QuantizationMapCapabilitiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeAV1QuantizationMapCapabilitiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoFormatQuantizationMapPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoFormatH265QuantizationMapPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoFormatAV1QuantizationMapPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoProfileInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoCapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoSessionMemoryRequirementsKHR& value);
@@ -1282,52 +1522,94 @@ std::ostream&	operator<<	(std::ostream& s, const VkVideoReferenceSlotInfoKHR& va
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeCapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeUsageInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoMaintenance1FeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoMaintenance2FeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoInlineQueryInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH264ProfileInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH264CapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH264SessionParametersAddInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH264SessionParametersCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH264InlineSessionParametersInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH264PictureInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH264DpbSlotInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH265ProfileInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH265CapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH265SessionParametersAddInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH265SessionParametersCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH265InlineSessionParametersInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH265PictureInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH265DpbSlotInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeAV1ProfileInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeAV1CapabilitiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeAV1SessionParametersCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeAV1InlineSessionParametersInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeAV1PictureInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeAV1DpbSlotInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoSessionCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoSessionParametersCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoSessionParametersUpdateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeSessionParametersGetInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeSessionParametersFeedbackInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoBeginCodingInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEndCodingInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoCodingControlInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeUsageInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeQuantizationMapInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeQuantizationMapSessionParametersCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueryPoolVideoEncodeFeedbackCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeQualityLevelInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoEncodeQualityLevelInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeQualityLevelPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeRateControlInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeRateControlLayerInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeCapabilitiesKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264CapabilitiesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264SessionParametersAddInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264SessionParametersCreateInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264DpbSlotInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264VclFrameInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264ProfileInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264NaluSliceInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264RateControlInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264QpEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264FrameSizeEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264RateControlLayerInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265CapabilitiesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265SessionParametersAddInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265SessionParametersCreateInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265VclFrameInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265NaluSliceSegmentInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265RateControlInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265QpEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265FrameSizeEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265RateControlLayerInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265ProfileInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265DpbSlotInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264CapabilitiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264QualityLevelPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264SessionCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264SessionParametersAddInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264SessionParametersCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264SessionParametersGetInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264SessionParametersFeedbackInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264DpbSlotInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264PictureInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264ProfileInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264NaluSliceInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264RateControlInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264QpKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264FrameSizeKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264GopRemainingFrameInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264RateControlLayerInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265CapabilitiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265QualityLevelPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265SessionCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265SessionParametersAddInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265SessionParametersCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265SessionParametersGetInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265SessionParametersFeedbackInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265PictureInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265NaluSliceSegmentInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265RateControlInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265QpKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265FrameSizeKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265GopRemainingFrameInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265RateControlLayerInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265ProfileInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265DpbSlotInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeAV1CapabilitiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeAV1QualityLevelPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoEncodeAV1FeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeAV1SessionCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeAV1SessionParametersCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeAV1DpbSlotInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeAV1PictureInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeAV1ProfileInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeAV1RateControlInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeAV1QIndexKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeAV1FrameSizeKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeAV1GopRemainingFrameInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeAV1RateControlLayerInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceInheritedViewportScissorFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCommandBufferInheritanceViewportScissorInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT& value);
@@ -1335,6 +1617,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceProvokingVertex
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceProvokingVertexPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationProvokingVertexStateCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCuModuleCreateInfoNVX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCuModuleTexturingModeCreateInfoNVX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCuFunctionCreateInfoNVX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCuLaunchInfoNVX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDescriptorBufferFeaturesEXT& value);
@@ -1357,6 +1640,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDrmPropertiesEX
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingMotionBlurFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingValidationFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryMotionTrianglesDataNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureMotionInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSRTDataNV& value);
@@ -1375,6 +1660,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkSysmemColorSpaceFUCHSIA& valu
 std::ostream&	operator<<	(std::ostream& s, const VkImageFormatConstraintsInfoFUCHSIA& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageConstraintsInfoFUCHSIA& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferCollectionConstraintsInfoFUCHSIA& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCudaModuleCreateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCudaFunctionCreateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCudaLaunchInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkFormatProperties3& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDrmFormatModifierPropertiesList2EXT& value);
@@ -1394,11 +1682,16 @@ std::ostream&	operator<<	(std::ostream& s, const VkImageViewMinLodCreateInfoEXT&
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLinearColorAttachmentFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineBinaryFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDevicePipelineBinaryInternalCacheControlKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineBinaryPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkGraphicsPipelineLibraryCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDescriptorSetHostMappingFeaturesVALVE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDescriptorSetBindingReferenceVALVE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDescriptorSetLayoutHostMappingInfoVALVE& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceNestedCommandBufferFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceNestedCommandBufferPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineShaderStageModuleIdentifierCreateInfoEXT& value);
@@ -1407,8 +1700,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkImageCompressionControlEXT& v
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageCompressionControlFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageCompressionPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkImageSubresource2EXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkSubresourceLayout2EXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImageSubresource2& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSubresourceLayout2& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassCreationControlEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassCreationFeedbackInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassCreationFeedbackCreateInfoEXT& value);
@@ -1427,6 +1720,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkMicromapTriangleEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceOpacityMicromapFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceOpacityMicromapPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureTrianglesOpacityMicromapEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDisplacementMicromapFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDisplacementMicromapPropertiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureTrianglesDisplacementMicromapNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelinePropertiesIdentifierEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelinePropertiesFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD& value);
@@ -1444,9 +1740,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkImportMetalIOSurfaceInfoEXT& 
 std::ostream&	operator<<	(std::ostream& s, const VkExportMetalSharedEventInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImportMetalSharedEventInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineRobustnessFeaturesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPipelineRobustnessCreateInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineRobustnessPropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineRobustnessFeatures& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineRobustnessCreateInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineRobustnessProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageViewSampleWeightCreateInfoQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageProcessingFeaturesQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageProcessingPropertiesQCOM& value);
@@ -1455,7 +1751,6 @@ std::ostream&	operator<<	(std::ostream& s, const VkTilePropertiesQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAmigoProfilingFeaturesSEC& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAmigoProfilingSubmitInfoSEC& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDepthClampZeroOneFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAddressBindingReportFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceAddressBindingCallbackDataEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceOpticalFlowFeaturesNV& value);
@@ -1472,9 +1767,14 @@ std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultCountsEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultVendorBinaryHeaderVersionOneEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDepthBiasInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDepthBiasRepresentationInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDecompressMemoryRegionNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkFrameBoundaryEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFrameBoundaryFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfacePresentModeEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfacePresentScalingCapabilitiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfacePresentModeCompatibilityEXT& value);
@@ -1484,17 +1784,118 @@ std::ostream&	operator<<	(std::ostream& s, const VkSwapchainPresentModesCreateIn
 std::ostream&	operator<<	(std::ostream& s, const VkSwapchainPresentModeInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSwapchainPresentScalingCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkReleaseSwapchainImagesInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDepthBiasControlFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExtendedSparseAddressSpaceFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExtendedSparseAddressSpacePropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDirectDriverLoadingInfoLUNARG& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDirectDriverLoadingListLUNARG& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceImageSubresourceInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderCorePropertiesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMultiviewPerViewRenderAreasRenderPassBeginInfoQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueryLowLatencySupportNV& value);
-std::ostream&	operator<<	(std::ostream& s, const VkMemoryMapInfoKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkMemoryUnmapInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryMapInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryUnmapInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderObjectFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderObjectPropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkShaderCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderTileImageFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderTileImagePropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImportScreenBufferInfoQNX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkScreenBufferPropertiesQNX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkScreenBufferFormatPropertiesQNX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExternalFormatQNX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatrixFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCooperativeMatrixPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatrixPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderEnqueuePropertiesAMDX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderEnqueueFeaturesAMDX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExecutionGraphPipelineCreateInfoAMDX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineShaderStageNodeCreateInfoAMDX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExecutionGraphPipelineScratchSizeAMDX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDispatchGraphInfoAMDX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDispatchGraphCountInfoAMDX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAntiLagFeaturesAMD& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAntiLagDataAMD& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAntiLagPresentationInfoAMD& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBindMemoryStatus& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBindDescriptorSetsInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPushConstantsInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPushDescriptorSetInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPushDescriptorSetWithTemplateInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSetDescriptorBufferOffsetsInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBindDescriptorBufferEmbeddedSamplersInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCubicClampFeaturesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceYcbcrDegammaFeaturesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSamplerYcbcrConversionYcbcrDegammaCreateInfoQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCubicWeightsFeaturesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSamplerCubicWeightsCreateInfoQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBlitImageCubicWeightsInfoQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageProcessing2FeaturesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageProcessing2PropertiesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSamplerBlockMatchWindowCreateInfoQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLayeredDriverPropertiesMSFT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePerStageDescriptorSetFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalFormatResolveFeaturesANDROID& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalFormatResolvePropertiesANDROID& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferFormatResolvePropertiesANDROID& value);
+std::ostream&	operator<<	(std::ostream& s, const VkLatencySleepModeInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkLatencySleepInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSetLatencyMarkerInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkGetLatencyMarkerInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkLatencyTimingsFrameReportNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkOutOfBandQueueTypeInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkLatencySubmissionPresentIdNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSwapchainLatencyCreateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkLatencySurfaceCapabilitiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCudaKernelLaunchFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCudaKernelLaunchPropertiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceQueueShaderCoreControlCreateInfoARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSchedulingControlsFeaturesARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSchedulingControlsPropertiesARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRelaxedLineRasterizationFeaturesIMG& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRenderPassStripedFeaturesARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRenderPassStripedPropertiesARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRenderPassStripeInfoARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRenderPassStripeBeginInfoARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRenderPassStripeSubmitInfoARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineOpacityMicromapFeaturesARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderSubgroupRotateFeatures& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderExpectAssumeFeatures& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderFloatControls2Features& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDynamicRenderingLocalReadFeatures& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRenderingAttachmentLocationInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRenderingInputAttachmentIndexInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderQuadControlFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMapMemoryPlacedFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMapMemoryPlacedPropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryMapPlacedInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRawAccessChainsFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCommandBufferInheritanceFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageAlignmentControlFeaturesMESA& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageAlignmentControlPropertiesMESA& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImageAlignmentControlCreateInfoMESA& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDepthClampRangeEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatrix2FeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatrix2PropertiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCooperativeMatrixFlexibleDimensionsPropertiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceHdrVividFeaturesHUAWEI& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDepthClampZeroOneFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeVectorFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCooperativeVectorPropertiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeVectorPropertiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkConvertCooperativeVectorMatrixInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SpsVuiFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264HrdParameters& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SequenceParameterSetVui& value);
@@ -1544,7 +1945,7 @@ std::ostream&	operator<<	(std::ostream& s, const StdVideoDecodeH265ReferenceInfo
 std::ostream&	operator<<	(std::ostream& s, const StdVideoDecodeH265ReferenceInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265WeightTableFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265WeightTable& value);
-std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265SliceSegmentLongTermRefPics& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265LongTermRefPics& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265SliceSegmentHeaderFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265SliceSegmentHeader& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265ReferenceListsInfoFlags& value);
@@ -1553,3 +1954,33 @@ std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265PictureInfoFl
 std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265PictureInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265ReferenceInfoFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265ReferenceInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1ColorConfigFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1ColorConfig& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1TimingInfoFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1TimingInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1SequenceHeaderFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1SequenceHeader& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1LoopFilterFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1LoopFilter& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1QuantizationFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1Quantization& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1Segmentation& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1TileInfoFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1TileInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1CDEF& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1LoopRestoration& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1GlobalMotion& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1FilmGrainFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1FilmGrain& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoDecodeAV1PictureInfoFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoDecodeAV1PictureInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoDecodeAV1ReferenceInfoFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoDecodeAV1ReferenceInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeAV1ExtensionHeader& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeAV1DecoderModelInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeAV1OperatingPointInfoFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeAV1OperatingPointInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeAV1PictureInfoFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeAV1PictureInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeAV1ReferenceInfoFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeAV1ReferenceInfo& value);

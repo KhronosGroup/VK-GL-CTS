@@ -35,18 +35,18 @@ namespace Functional
 class ShaderLoopTests : public TestCaseGroup
 {
 public:
-							ShaderLoopTests			(Context& context);
-	virtual					~ShaderLoopTests		(void);
+    ShaderLoopTests(Context &context);
+    virtual ~ShaderLoopTests(void);
 
-	virtual void			init					(void);
+    virtual void init(void);
 
 private:
-							ShaderLoopTests			(const ShaderLoopTests&);		// not allowed!
-	ShaderLoopTests&		operator=				(const ShaderLoopTests&);		// not allowed!
+    ShaderLoopTests(const ShaderLoopTests &);            // not allowed!
+    ShaderLoopTests &operator=(const ShaderLoopTests &); // not allowed!
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FSHADERLOOPTESTS_HPP

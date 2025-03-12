@@ -35,68 +35,69 @@ namespace gl3cts
 class TestCaseWrapper : public tcu::TestCaseExecutor
 {
 public:
-	TestCaseWrapper(deqp::TestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism);
-	~TestCaseWrapper(void);
+    TestCaseWrapper(deqp::TestPackage &package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism);
+    ~TestCaseWrapper(void);
 
-	void init(tcu::TestCase* testCase, const std::string& path);
-	void deinit(tcu::TestCase* testCase);
-	tcu::TestNode::IterateResult iterate(tcu::TestCase* testCase);
+    void init(tcu::TestCase *testCase, const std::string &path);
+    void deinit(tcu::TestCase *testCase);
+    tcu::TestNode::IterateResult iterate(tcu::TestCase *testCase);
 
 private:
-	deqp::TestPackage&				m_testPackage;
-	de::SharedPtr<tcu::WaiverUtil>	m_waiverMechanism;
+    deqp::TestPackage &m_testPackage;
+    de::SharedPtr<tcu::WaiverUtil> m_waiverMechanism;
 };
 
 class GL30TestPackage : public deqp::TestPackage
 {
 public:
-	GL30TestPackage(tcu::TestContext& testCtx, const char* packageName,
-					const char*		 description	   = "OpenGL 3.0 Conformance Tests",
-					glu::ContextType renderContextType = glu::ContextType(3, 0, glu::PROFILE_CORE));
+    GL30TestPackage(tcu::TestContext &testCtx, const char *packageName,
+                    const char *description            = "OpenGL 3.0 Conformance Tests",
+                    glu::ContextType renderContextType = glu::ContextType(3, 0, glu::PROFILE_CORE));
 
-	~GL30TestPackage(void);
+    ~GL30TestPackage(void);
 
-	tcu::TestCaseExecutor* createExecutor(void) const;
+    tcu::TestCaseExecutor *createExecutor(void) const;
 
-	void init(void);
+    void init(void);
 
-	using deqp::TestPackage::getContext;
+    using deqp::TestPackage::getContext;
 };
 
 class GL31TestPackage : public GL30TestPackage
 {
 public:
-	GL31TestPackage(tcu::TestContext& testCtx, const char* packageName,
-					const char*		 description	   = "OpenGL 3.1 Conformance Tests",
-					glu::ContextType renderContextType = glu::ContextType(3, 1, glu::PROFILE_CORE));
+    GL31TestPackage(tcu::TestContext &testCtx, const char *packageName,
+                    const char *description            = "OpenGL 3.1 Conformance Tests",
+                    glu::ContextType renderContextType = glu::ContextType(3, 1, glu::PROFILE_CORE,
+                                                                          glu::CONTEXT_FORWARD_COMPATIBLE));
 
-	~GL31TestPackage(void);
+    ~GL31TestPackage(void);
 
-	void init(void);
+    void init(void);
 };
 
 class GL32TestPackage : public GL31TestPackage
 {
 public:
-	GL32TestPackage(tcu::TestContext& testCtx, const char* packageName,
-					const char*		 description	   = "OpenGL 3.2 Conformance Tests",
-					glu::ContextType renderContextType = glu::ContextType(3, 2, glu::PROFILE_CORE));
-	~GL32TestPackage(void);
+    GL32TestPackage(tcu::TestContext &testCtx, const char *packageName,
+                    const char *description            = "OpenGL 3.2 Conformance Tests",
+                    glu::ContextType renderContextType = glu::ContextType(3, 2, glu::PROFILE_CORE));
+    ~GL32TestPackage(void);
 
-	void init(void);
+    void init(void);
 };
 
 class GL33TestPackage : public GL32TestPackage
 {
 public:
-	GL33TestPackage(tcu::TestContext& testCtx, const char* packageName,
-					const char*		 description	   = "OpenGL 3.3 Conformance Tests",
-					glu::ContextType renderContextType = glu::ContextType(3, 3, glu::PROFILE_CORE));
-	~GL33TestPackage(void);
+    GL33TestPackage(tcu::TestContext &testCtx, const char *packageName,
+                    const char *description            = "OpenGL 3.3 Conformance Tests",
+                    glu::ContextType renderContextType = glu::ContextType(3, 3, glu::PROFILE_CORE));
+    ~GL33TestPackage(void);
 
-	void init(void);
+    void init(void);
 };
 
-} // gl3cts
+} // namespace gl3cts
 
 #endif // _GL3CTESTPACKAGES_HPP

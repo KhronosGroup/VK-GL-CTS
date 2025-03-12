@@ -1,0 +1,77 @@
+#!amber
+# Copyright (c) 2024 The Khronos Group Inc.
+# Copyright (c) 2024 AMD
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Immediate/inline arguments to packed 16-bit operations might handled
+# incorrectly in the compiler backend.
+
+DEVICE_FEATURE Storage16BitFeatures.storageBuffer16BitAccess
+DEVICE_FEATURE shaderInt16
+
+SHADER compute compute_shader GLSL
+#version 460
+#extension GL_EXT_shader_16bit_storage : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+struct Output {
+  i16vec2 nw;
+  i16vec2 n;
+  i16vec2 ne;
+  i16vec2 w;
+  i16vec2 e;
+  i16vec2 sw;
+  i16vec2 s;
+  i16vec2 se;
+};
+
+layout(set = 0, binding = 0) buffer Result {
+  Output arr[];
+} result;
+
+void main() {
+  ivec2 id32 = ivec2(gl_LocalInvocationID.xy);
+  i16vec2 id16 = i16vec2(gl_LocalInvocationID.xy);
+
+  int idx = id32.y * 8 + id32.x;
+
+  result.arr[idx].nw = id16 + i16vec2(-1s,  1s);
+  result.arr[idx].n  = id16 + i16vec2( 0s,  1s);
+  result.arr[idx].ne = id16 + i16vec2( 1s,  1s);
+  result.arr[idx].w  = id16 + i16vec2(-1s,  0s);
+  result.arr[idx].e  = id16 + i16vec2( 1s,  0s);
+  result.arr[idx].sw = id16 + i16vec2(-1s, -1s);
+  result.arr[idx].s  = id16 + i16vec2( 0s, -1s);
+  result.arr[idx].se = id16 + i16vec2( 1s, -1s);
+}
+END
+
+BUFFER result DATA_TYPE int16 SIZE 1024 FILL 0
+
+PIPELINE compute pipeline
+  ATTACH compute_shader
+
+  BIND BUFFER result AS storage DESCRIPTOR_SET 0 BINDING 0
+END
+
+RUN pipeline 1 1 1
+
+# Amber bug and/or misleading behavior: index must be given in bytes
+EXPECT result IDX   0 EQ -1  1  0  1  1  1 -1  0  1  0 -1 -1  0 -1  1 -1
+EXPECT result IDX  32 EQ  0  1  1  1  2  1  0  0  2  0  0 -1  1 -1  2 -1
+EXPECT result IDX  64 EQ  1  1  2  1  3  1  1  0  3  0  1 -1  2 -1  3 -1
+EXPECT result IDX 256 EQ -1  2  0  2  1  2 -1  1  1  1 -1  0  0  0  1  0
+EXPECT result IDX 288 EQ  0  2  1  2  2  2  0  1  2  1  0  0  1  0  2  0

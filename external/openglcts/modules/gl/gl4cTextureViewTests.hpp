@@ -41,45 +41,45 @@ namespace TextureView
 
 enum _format
 {
-	FORMAT_FLOAT,
-	FORMAT_RGBE,
-	FORMAT_SIGNED_INTEGER,
-	FORMAT_SNORM,
-	FORMAT_UNORM,
-	FORMAT_UNSIGNED_INTEGER,
+    FORMAT_FLOAT,
+    FORMAT_RGBE,
+    FORMAT_SIGNED_INTEGER,
+    FORMAT_SNORM,
+    FORMAT_UNORM,
+    FORMAT_UNSIGNED_INTEGER,
 
-	FORMAT_UNDEFINED
+    FORMAT_UNDEFINED
 };
 
 enum _sampler_type
 {
-	SAMPLER_TYPE_FLOAT,
-	SAMPLER_TYPE_SIGNED_INTEGER,
-	SAMPLER_TYPE_UNSIGNED_INTEGER,
+    SAMPLER_TYPE_FLOAT,
+    SAMPLER_TYPE_SIGNED_INTEGER,
+    SAMPLER_TYPE_UNSIGNED_INTEGER,
 
-	SAMPLER_TYPE_UNDEFINED
+    SAMPLER_TYPE_UNDEFINED
 };
 
 enum _view_class
 {
-	VIEW_CLASS_FIRST,
+    VIEW_CLASS_FIRST,
 
-	VIEW_CLASS_128_BITS = VIEW_CLASS_FIRST,
-	VIEW_CLASS_96_BITS,
-	VIEW_CLASS_64_BITS,
-	VIEW_CLASS_48_BITS,
-	VIEW_CLASS_32_BITS,
-	VIEW_CLASS_24_BITS,
-	VIEW_CLASS_16_BITS,
-	VIEW_CLASS_8_BITS,
-	VIEW_CLASS_RGTC1_RED,
-	VIEW_CLASS_RGTC2_RG,
-	VIEW_CLASS_BPTC_UNORM,
-	VIEW_CLASS_BPTC_FLOAT,
+    VIEW_CLASS_128_BITS = VIEW_CLASS_FIRST,
+    VIEW_CLASS_96_BITS,
+    VIEW_CLASS_64_BITS,
+    VIEW_CLASS_48_BITS,
+    VIEW_CLASS_32_BITS,
+    VIEW_CLASS_24_BITS,
+    VIEW_CLASS_16_BITS,
+    VIEW_CLASS_8_BITS,
+    VIEW_CLASS_RGTC1_RED,
+    VIEW_CLASS_RGTC2_RG,
+    VIEW_CLASS_BPTC_UNORM,
+    VIEW_CLASS_BPTC_FLOAT,
 
-	/* Always last */
-	VIEW_CLASS_COUNT,
-	VIEW_CLASS_UNDEFINED = VIEW_CLASS_COUNT
+    /* Always last */
+    VIEW_CLASS_COUNT,
+    VIEW_CLASS_UNDEFINED = VIEW_CLASS_COUNT
 };
 
 } // namespace TextureView
@@ -88,92 +88,92 @@ enum _view_class
 class TextureViewUtilities
 {
 public:
-	/* Public type definitions */
-	typedef glw::GLenum _original_texture_internalformat;
-	typedef glw::GLenum _original_texture_target;
-	typedef glw::GLenum _view_texture_internalformat;
-	typedef glw::GLenum _view_texture_target;
-	typedef std::pair<_original_texture_internalformat, _view_texture_internalformat> _internalformat_pair;
-	typedef std::vector<glw::GLenum>		 _internalformats;
-	typedef _internalformats::const_iterator _internalformats_const_iterator;
-	typedef _internalformats::iterator		 _internalformats_iterator;
-	typedef std::pair<_original_texture_target, _view_texture_target> _texture_target_pair;
-	typedef std::vector<_internalformat_pair>				   _compatible_internalformat_pairs;
-	typedef _compatible_internalformat_pairs::const_iterator   _compatible_internalformat_pairs_const_iterator;
-	typedef std::vector<_texture_target_pair>				   _compatible_texture_target_pairs;
-	typedef _compatible_texture_target_pairs::const_iterator   _compatible_texture_target_pairs_const_iterator;
-	typedef std::vector<_internalformat_pair>				   _incompatible_internalformat_pairs;
-	typedef _incompatible_internalformat_pairs::const_iterator _incompatible_internalformat_pairs_const_iterator;
-	typedef _incompatible_internalformat_pairs::iterator	   _incompatible_internalformat_pairs_iterator;
-	typedef std::vector<_texture_target_pair>				   _incompatible_texture_target_pairs;
-	typedef _incompatible_texture_target_pairs::const_iterator _incompatible_texture_target_pairs_const_iterator;
-	typedef _incompatible_texture_target_pairs::iterator	   _incompatible_texture_target_pairs_iterator;
+    /* Public type definitions */
+    typedef glw::GLenum _original_texture_internalformat;
+    typedef glw::GLenum _original_texture_target;
+    typedef glw::GLenum _view_texture_internalformat;
+    typedef glw::GLenum _view_texture_target;
+    typedef std::pair<_original_texture_internalformat, _view_texture_internalformat> _internalformat_pair;
+    typedef std::vector<glw::GLenum> _internalformats;
+    typedef _internalformats::const_iterator _internalformats_const_iterator;
+    typedef _internalformats::iterator _internalformats_iterator;
+    typedef std::pair<_original_texture_target, _view_texture_target> _texture_target_pair;
+    typedef std::vector<_internalformat_pair> _compatible_internalformat_pairs;
+    typedef _compatible_internalformat_pairs::const_iterator _compatible_internalformat_pairs_const_iterator;
+    typedef std::vector<_texture_target_pair> _compatible_texture_target_pairs;
+    typedef _compatible_texture_target_pairs::const_iterator _compatible_texture_target_pairs_const_iterator;
+    typedef std::vector<_internalformat_pair> _incompatible_internalformat_pairs;
+    typedef _incompatible_internalformat_pairs::const_iterator _incompatible_internalformat_pairs_const_iterator;
+    typedef _incompatible_internalformat_pairs::iterator _incompatible_internalformat_pairs_iterator;
+    typedef std::vector<_texture_target_pair> _incompatible_texture_target_pairs;
+    typedef _incompatible_texture_target_pairs::const_iterator _incompatible_texture_target_pairs_const_iterator;
+    typedef _incompatible_texture_target_pairs::iterator _incompatible_texture_target_pairs_iterator;
 
-	/* Public methods */
+    /* Public methods */
 
-	static unsigned int getAmountOfComponentsForInternalformat(const glw::GLenum internalformat);
+    static unsigned int getAmountOfComponentsForInternalformat(const glw::GLenum internalformat);
 
-	static unsigned int getBlockSizeForCompressedInternalformat(const glw::GLenum internalformat);
+    static unsigned int getBlockSizeForCompressedInternalformat(const glw::GLenum internalformat);
 
-	static void getComponentSizeForInternalformat(const glw::GLenum internalformat, unsigned int* out_rgba_size);
+    static void getComponentSizeForInternalformat(const glw::GLenum internalformat, unsigned int *out_rgba_size);
 
-	static void getComponentSizeForType(const glw::GLenum type, unsigned int* out_rgba_size);
+    static void getComponentSizeForType(const glw::GLenum type, unsigned int *out_rgba_size);
 
-	static const char* getErrorCodeString(const glw::GLint error_code);
+    static const char *getErrorCodeString(const glw::GLint error_code);
 
-	static TextureView::_format getFormatOfInternalformat(const glw::GLenum internalformat);
+    static TextureView::_format getFormatOfInternalformat(const glw::GLenum internalformat);
 
-	static glw::GLenum getGLFormatOfInternalformat(const glw::GLenum internalformat);
+    static glw::GLenum getGLFormatOfInternalformat(const glw::GLenum internalformat);
 
-	static const char* getGLSLDataTypeForSamplerType(const TextureView::_sampler_type sampler_type,
-													 const unsigned int				  n_components);
+    static const char *getGLSLDataTypeForSamplerType(const TextureView::_sampler_type sampler_type,
+                                                     const unsigned int n_components);
 
-	static const char* getGLSLTypeForSamplerType(const TextureView::_sampler_type sampler_type);
+    static const char *getGLSLTypeForSamplerType(const TextureView::_sampler_type sampler_type);
 
-	static _incompatible_internalformat_pairs getIllegalTextureAndViewInternalformatCombinations();
+    static _incompatible_internalformat_pairs getIllegalTextureAndViewInternalformatCombinations();
 
-	static _incompatible_texture_target_pairs getIllegalTextureAndViewTargetCombinations();
+    static _incompatible_texture_target_pairs getIllegalTextureAndViewTargetCombinations();
 
-	static _internalformats getInternalformatsFromViewClass(TextureView::_view_class view_class);
+    static _internalformats getInternalformatsFromViewClass(TextureView::_view_class view_class);
 
-	static const char* getInternalformatString(const glw::GLenum internalformat);
+    static const char *getInternalformatString(const glw::GLenum internalformat);
 
-	static _compatible_internalformat_pairs getLegalTextureAndViewInternalformatCombinations();
+    static _compatible_internalformat_pairs getLegalTextureAndViewInternalformatCombinations();
 
-	static _compatible_texture_target_pairs getLegalTextureAndViewTargetCombinations();
+    static _compatible_texture_target_pairs getLegalTextureAndViewTargetCombinations();
 
-	static void getMajorMinorVersionFromContextVersion(const glu::ContextType& context_type,
-													   glw::GLint* out_major_version, glw::GLint* out_minor_version);
+    static void getMajorMinorVersionFromContextVersion(const glu::ContextType &context_type,
+                                                       glw::GLint *out_major_version, glw::GLint *out_minor_version);
 
-	static TextureView::_sampler_type getSamplerTypeForInternalformat(const glw::GLenum internalformat);
+    static TextureView::_sampler_type getSamplerTypeForInternalformat(const glw::GLenum internalformat);
 
-	static unsigned int getTextureDataSize(const glw::GLenum internalformat, const glw::GLenum type,
-										   const unsigned int width, const unsigned int height);
+    static unsigned int getTextureDataSize(const glw::GLenum internalformat, const glw::GLenum type,
+                                           const unsigned int width, const unsigned int height);
 
-	static const char* getTextureTargetString(const glw::GLenum texture_target);
+    static const char *getTextureTargetString(const glw::GLenum texture_target);
 
-	static glw::GLenum getTypeCompatibleWithInternalformat(const glw::GLenum internalformat);
+    static glw::GLenum getTypeCompatibleWithInternalformat(const glw::GLenum internalformat);
 
-	static TextureView::_view_class getViewClassForInternalformat(const glw::GLenum internalformat);
+    static TextureView::_view_class getViewClassForInternalformat(const glw::GLenum internalformat);
 
-	static void initTextureStorage(const glw::Functions& gl, bool init_mutable_to, glw::GLenum texture_target,
-								   glw::GLint texture_depth, glw::GLint texture_height, glw::GLint texture_width,
-								   glw::GLenum texture_internalformat, glw::GLenum texture_format,
-								   glw::GLenum texture_type, unsigned int n_levels_needed,
-								   unsigned int n_cubemaps_needed, glw::GLint bo_id);
+    static void initTextureStorage(const glw::Functions &gl, bool init_mutable_to, glw::GLenum texture_target,
+                                   glw::GLint texture_depth, glw::GLint texture_height, glw::GLint texture_width,
+                                   glw::GLenum texture_internalformat, glw::GLenum texture_format,
+                                   glw::GLenum texture_type, unsigned int n_levels_needed,
+                                   unsigned int n_cubemaps_needed, glw::GLint bo_id);
 
-	static bool isInternalformatCompatibleForTextureView(glw::GLenum original_internalformat,
-														 glw::GLenum view_internalformat);
+    static bool isInternalformatCompatibleForTextureView(glw::GLenum original_internalformat,
+                                                         glw::GLenum view_internalformat);
 
-	static bool isInternalformatCompressed(const glw::GLenum internalformat);
+    static bool isInternalformatCompressed(const glw::GLenum internalformat);
 
-	static bool isInternalformatSRGB(const glw::GLenum internalformat);
+    static bool isInternalformatSRGB(const glw::GLenum internalformat);
 
-	static bool isInternalformatSupported(glw::GLenum internalformat, const glw::GLint major_version,
-										  const glw::GLint minor_version);
+    static bool isInternalformatSupported(glw::GLenum internalformat, const glw::GLint major_version,
+                                          const glw::GLint minor_version);
 
-	static bool isLegalTextureTargetForTextureView(glw::GLenum original_texture_target,
-												   glw::GLenum view_texture_target);
+    static bool isLegalTextureTargetForTextureView(glw::GLenum original_texture_target,
+                                                   glw::GLenum view_texture_target);
 };
 
 /**
@@ -244,72 +244,72 @@ public:
 class TextureViewTestGetTexParameter : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	TextureViewTestGetTexParameter(deqp::Context& context);
+    /* Public methods */
+    TextureViewTestGetTexParameter(deqp::Context &context);
 
-	virtual ~TextureViewTestGetTexParameter()
-	{
-	}
+    virtual ~TextureViewTestGetTexParameter()
+    {
+    }
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private type definitions */
-	enum _test_texture_type
-	{
-		TEST_TEXTURE_TYPE_NO_STORAGE_ALLOCATED,
-		TEST_TEXTURE_TYPE_IMMUTABLE_TEXTURE_OBJECT,
-		TEST_TEXTURE_TYPE_MUTABLE_TEXTURE_OBJECT,
-		TEST_TEXTURE_TYPE_TEXTURE_VIEW_CREATED_FROM_IMMUTABLE_TEXTURE_OBJECT,
-		TEST_TEXTURE_TYPE_TEXTURE_VIEW_CREATED_FROM_TEXTURE_VIEW,
+    /* Private type definitions */
+    enum _test_texture_type
+    {
+        TEST_TEXTURE_TYPE_NO_STORAGE_ALLOCATED,
+        TEST_TEXTURE_TYPE_IMMUTABLE_TEXTURE_OBJECT,
+        TEST_TEXTURE_TYPE_MUTABLE_TEXTURE_OBJECT,
+        TEST_TEXTURE_TYPE_TEXTURE_VIEW_CREATED_FROM_IMMUTABLE_TEXTURE_OBJECT,
+        TEST_TEXTURE_TYPE_TEXTURE_VIEW_CREATED_FROM_TEXTURE_VIEW,
 
-		/* Always last */
-		TEST_TEXTURE_TYPE_UNDEFINED
-	};
+        /* Always last */
+        TEST_TEXTURE_TYPE_UNDEFINED
+    };
 
-	struct _test_run
-	{
-		glw::GLint expected_n_immutable_levels;
-		glw::GLint expected_n_min_layer;
-		glw::GLint expected_n_min_level;
-		glw::GLint expected_n_num_layers;
-		glw::GLint expected_n_num_levels;
+    struct _test_run
+    {
+        glw::GLint expected_n_immutable_levels;
+        glw::GLint expected_n_min_layer;
+        glw::GLint expected_n_min_level;
+        glw::GLint expected_n_num_layers;
+        glw::GLint expected_n_num_levels;
 
-		glw::GLuint parent_texture_object_id;
-		glw::GLuint texture_view_object_created_from_immutable_to_id;
-		glw::GLuint texture_view_object_created_from_view_to_id;
+        glw::GLuint parent_texture_object_id;
+        glw::GLuint texture_view_object_created_from_immutable_to_id;
+        glw::GLuint texture_view_object_created_from_view_to_id;
 
-		glw::GLenum		   texture_target;
-		_test_texture_type texture_type;
+        glw::GLenum texture_target;
+        _test_texture_type texture_type;
 
-		/* Constructor */
-		_test_run()
-		{
-			expected_n_immutable_levels = 0;
-			expected_n_min_layer		= 0;
-			expected_n_min_level		= 0;
-			expected_n_num_layers		= 0;
-			expected_n_num_levels		= 0;
+        /* Constructor */
+        _test_run()
+        {
+            expected_n_immutable_levels = 0;
+            expected_n_min_layer        = 0;
+            expected_n_min_level        = 0;
+            expected_n_num_layers       = 0;
+            expected_n_num_levels       = 0;
 
-			parent_texture_object_id						 = 0;
-			texture_view_object_created_from_immutable_to_id = 0;
-			texture_view_object_created_from_view_to_id		 = 0;
+            parent_texture_object_id                         = 0;
+            texture_view_object_created_from_immutable_to_id = 0;
+            texture_view_object_created_from_view_to_id      = 0;
 
-			texture_target = GL_NONE;
-			texture_type   = TEST_TEXTURE_TYPE_UNDEFINED;
-		}
-	};
+            texture_target = GL_NONE;
+            texture_type   = TEST_TEXTURE_TYPE_UNDEFINED;
+        }
+    };
 
-	typedef std::vector<_test_run>	 _test_runs;
-	typedef _test_runs::const_iterator _test_runs_const_iterator;
-	typedef _test_runs::iterator	   _test_runs_iterator;
+    typedef std::vector<_test_run> _test_runs;
+    typedef _test_runs::const_iterator _test_runs_const_iterator;
+    typedef _test_runs::iterator _test_runs_iterator;
 
-	/* Private methods */
-	void initTestRuns();
+    /* Private methods */
+    void initTestRuns();
 
-	/* Private fields */
-	_test_runs m_test_runs;
+    /* Private fields */
+    _test_runs m_test_runs;
 };
 
 /** Verify glTextureView() generates errors as described in the
@@ -393,35 +393,35 @@ private:
 class TextureViewTestErrors : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	TextureViewTestErrors(deqp::Context& context);
+    /* Public methods */
+    TextureViewTestErrors(deqp::Context &context);
 
-	virtual ~TextureViewTestErrors()
-	{
-	}
+    virtual ~TextureViewTestErrors()
+    {
+    }
 
-	virtual void deinit();
+    virtual void deinit();
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private fields */
-	glw::GLuint m_bo_id;
-	glw::GLuint m_reference_immutable_to_1d_id;
-	glw::GLuint m_reference_immutable_to_2d_id;
-	glw::GLuint m_reference_immutable_to_2d_array_id;
-	glw::GLuint m_reference_immutable_to_2d_array_32_by_33_id;
-	glw::GLuint m_reference_immutable_to_2d_multisample_id;
-	glw::GLuint m_reference_immutable_to_3d_id;
-	glw::GLuint m_reference_immutable_to_cube_map_id;
-	glw::GLuint m_reference_immutable_to_cube_map_array_id;
-	glw::GLuint m_reference_immutable_to_rectangle_id;
-	glw::GLuint m_reference_mutable_to_2d_id;
-	glw::GLuint m_test_modified_to_id_1;
-	glw::GLuint m_test_modified_to_id_2;
-	glw::GLuint m_test_modified_to_id_3;
-	glw::GLuint m_view_bound_to_id;
-	glw::GLuint m_view_never_bound_to_id;
+    /* Private fields */
+    glw::GLuint m_bo_id;
+    glw::GLuint m_reference_immutable_to_1d_id;
+    glw::GLuint m_reference_immutable_to_2d_id;
+    glw::GLuint m_reference_immutable_to_2d_array_id;
+    glw::GLuint m_reference_immutable_to_2d_array_32_by_33_id;
+    glw::GLuint m_reference_immutable_to_2d_multisample_id;
+    glw::GLuint m_reference_immutable_to_3d_id;
+    glw::GLuint m_reference_immutable_to_cube_map_id;
+    glw::GLuint m_reference_immutable_to_cube_map_array_id;
+    glw::GLuint m_reference_immutable_to_rectangle_id;
+    glw::GLuint m_reference_mutable_to_2d_id;
+    glw::GLuint m_test_modified_to_id_1;
+    glw::GLuint m_test_modified_to_id_2;
+    glw::GLuint m_test_modified_to_id_3;
+    glw::GLuint m_view_bound_to_id;
+    glw::GLuint m_view_never_bound_to_id;
 };
 
 /** Verify that sampling data from texture views, that use internal
@@ -501,140 +501,140 @@ private:
 class TextureViewTestViewSampling : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	TextureViewTestViewSampling(deqp::Context& context);
+    /* Public methods */
+    TextureViewTestViewSampling(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 protected:
-	/* Protected methods */
-	virtual void deinit();
+    /* Protected methods */
+    virtual void deinit();
 
 private:
-	/* Private type declarations */
-	struct _reference_color_storage
-	{
-		tcu::Vec4* data;
+    /* Private type declarations */
+    struct _reference_color_storage
+    {
+        tcu::Vec4 *data;
 
-		unsigned int n_faces;
-		unsigned int n_layers;
-		unsigned int n_mipmaps;
-		unsigned int n_samples;
+        unsigned int n_faces;
+        unsigned int n_layers;
+        unsigned int n_mipmaps;
+        unsigned int n_samples;
 
-		/** Constructor.
-		 *
-		 *  @param in_n_faces   Amount of faces to initialize the storage for.
-		 *                      Must not be 0.
-		 *  @param in_n_layers  Amount of layers to initialize the storage for.
-		 *                      Must not be 0.
-		 *  @param in_n_mipmaps Amount of mip-maps to initialize the storage for.
-		 *                      Must not be 0.
-		 *  @param in_n_samples Amount of samples to initialize the storage for.
-		 *                      Must not be 0.
-		 **/
-		explicit _reference_color_storage(const unsigned int in_n_faces, const unsigned int in_n_layers,
-										  const unsigned int in_n_mipmaps, const unsigned int in_n_samples)
-		{
-			DE_ASSERT(in_n_faces != 0);
-			DE_ASSERT(in_n_layers != 0);
-			DE_ASSERT(in_n_mipmaps != 0);
-			DE_ASSERT(in_n_samples != 0);
+        /** Constructor.
+         *
+         *  @param in_n_faces   Amount of faces to initialize the storage for.
+         *                      Must not be 0.
+         *  @param in_n_layers  Amount of layers to initialize the storage for.
+         *                      Must not be 0.
+         *  @param in_n_mipmaps Amount of mip-maps to initialize the storage for.
+         *                      Must not be 0.
+         *  @param in_n_samples Amount of samples to initialize the storage for.
+         *                      Must not be 0.
+         **/
+        explicit _reference_color_storage(const unsigned int in_n_faces, const unsigned int in_n_layers,
+                                          const unsigned int in_n_mipmaps, const unsigned int in_n_samples)
+        {
+            DE_ASSERT(in_n_faces != 0);
+            DE_ASSERT(in_n_layers != 0);
+            DE_ASSERT(in_n_mipmaps != 0);
+            DE_ASSERT(in_n_samples != 0);
 
-			n_faces   = in_n_faces;
-			n_layers  = in_n_layers;
-			n_mipmaps = in_n_mipmaps;
-			n_samples = in_n_samples;
+            n_faces   = in_n_faces;
+            n_layers  = in_n_layers;
+            n_mipmaps = in_n_mipmaps;
+            n_samples = in_n_samples;
 
-			data = new tcu::Vec4[in_n_faces * in_n_layers * in_n_mipmaps * in_n_samples];
-		}
+            data = new tcu::Vec4[in_n_faces * in_n_layers * in_n_mipmaps * in_n_samples];
+        }
 
-		/** Destructor */
-		~_reference_color_storage()
-		{
-			if (data != DE_NULL)
-			{
-				delete[] data;
+        /** Destructor */
+        ~_reference_color_storage()
+        {
+            if (data != nullptr)
+            {
+                delete[] data;
 
-				data = DE_NULL;
-			}
-		}
-	};
+                data = nullptr;
+            }
+        }
+    };
 
-	/* Private methods */
-	void deinitIterationSpecificProgramAndShaderObjects();
-	void deinitPerSampleFillerProgramAndShaderObjects();
-	void deinitTextureObjects();
-	bool executeTest();
-	void initIterationSpecificProgramObject();
-	void initParentTextureContents();
-	void initPerSampleFillerProgramObject();
-	void initTest();
+    /* Private methods */
+    void deinitIterationSpecificProgramAndShaderObjects();
+    void deinitPerSampleFillerProgramAndShaderObjects();
+    void deinitTextureObjects();
+    bool executeTest();
+    void initIterationSpecificProgramObject();
+    void initParentTextureContents();
+    void initPerSampleFillerProgramObject();
+    void initTest();
 
-	void initTextureObject(bool is_view_texture, glw::GLenum texture_target, glw::GLenum view_texture_target);
+    void initTextureObject(bool is_view_texture, glw::GLenum texture_target, glw::GLenum view_texture_target);
 
-	tcu::Vec4 getRandomReferenceColor();
+    tcu::Vec4 getRandomReferenceColor();
 
-	tcu::Vec4 getReferenceColor(unsigned int n_layer, unsigned int n_face, unsigned int n_mipmap,
-								unsigned int n_sample);
+    tcu::Vec4 getReferenceColor(unsigned int n_layer, unsigned int n_face, unsigned int n_mipmap,
+                                unsigned int n_sample);
 
-	glw::GLint getMaxConformantSampleCount(glw::GLenum target, glw::GLenum internalFormat);
+    glw::GLint getMaxConformantSampleCount(glw::GLenum target, glw::GLenum internalFormat);
 
-	void resetReferenceColorStorage(unsigned int n_layers, unsigned int n_faces, unsigned int n_mipmaps,
-									unsigned int n_samples);
+    void resetReferenceColorStorage(unsigned int n_layers, unsigned int n_faces, unsigned int n_mipmaps,
+                                    unsigned int n_samples);
 
-	void setReferenceColor(unsigned int n_layer, unsigned int n_face, unsigned int n_mipmap, unsigned int n_sample,
-						   tcu::Vec4 color);
+    void setReferenceColor(unsigned int n_layer, unsigned int n_face, unsigned int n_mipmap, unsigned int n_sample,
+                           tcu::Vec4 color);
 
-	/* Private variables */
-	glw::GLuint m_bo_id;
-	glw::GLuint m_fs_id;
-	glw::GLuint m_gs_id;
-	glw::GLuint m_po_id;
-	glw::GLint  m_po_lod_location;
-	glw::GLint  m_po_n_face_location;
-	glw::GLint  m_po_reference_colors_location;
-	glw::GLint  m_po_texture_location;
-	glw::GLint  m_po_z_float_location;
-	glw::GLint  m_po_z_int_location;
-	glw::GLuint m_tc_id;
-	glw::GLuint m_te_id;
-	glw::GLuint m_vs_id;
+    /* Private variables */
+    glw::GLuint m_bo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_po_id;
+    glw::GLint m_po_lod_location;
+    glw::GLint m_po_n_face_location;
+    glw::GLint m_po_reference_colors_location;
+    glw::GLint m_po_texture_location;
+    glw::GLint m_po_z_float_location;
+    glw::GLint m_po_z_int_location;
+    glw::GLuint m_tc_id;
+    glw::GLuint m_te_id;
+    glw::GLuint m_vs_id;
 
-	glw::GLuint m_per_sample_filler_fs_id;
-	glw::GLuint m_per_sample_filler_gs_id;
-	glw::GLuint m_per_sample_filler_po_id;
-	glw::GLint  m_per_sample_filler_po_layer_id_location;
-	glw::GLint  m_per_sample_filler_po_reference_colors_location;
-	glw::GLuint m_per_sample_filler_vs_id;
+    glw::GLuint m_per_sample_filler_fs_id;
+    glw::GLuint m_per_sample_filler_gs_id;
+    glw::GLuint m_per_sample_filler_po_id;
+    glw::GLint m_per_sample_filler_po_layer_id_location;
+    glw::GLint m_per_sample_filler_po_reference_colors_location;
+    glw::GLuint m_per_sample_filler_vs_id;
 
-	glw::GLuint m_result_to_id;
-	glw::GLuint m_to_id;
-	glw::GLuint m_view_to_id;
+    glw::GLuint m_result_to_id;
+    glw::GLuint m_to_id;
+    glw::GLuint m_view_to_id;
 
-	glw::GLuint m_fbo_id;
-	glw::GLuint m_vao_id;
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_vao_id;
 
-	glw::GLint m_max_color_texture_samples_gl_value;
+    glw::GLint m_max_color_texture_samples_gl_value;
 
-	glw::GLuint m_iteration_parent_texture_depth;
-	glw::GLuint m_iteration_parent_texture_height;
-	glw::GLuint m_iteration_parent_texture_n_levels;
-	glw::GLuint m_iteration_parent_texture_n_samples;
-	glw::GLenum m_iteration_parent_texture_target;
-	glw::GLuint m_iteration_parent_texture_width;
-	glw::GLuint m_iteration_view_texture_minlayer;
-	glw::GLuint m_iteration_view_texture_numlayers;
-	glw::GLuint m_iteration_view_texture_minlevel;
-	glw::GLuint m_iteration_view_texture_numlevels;
-	glw::GLenum m_iteration_view_texture_target;
+    glw::GLuint m_iteration_parent_texture_depth;
+    glw::GLuint m_iteration_parent_texture_height;
+    glw::GLuint m_iteration_parent_texture_n_levels;
+    glw::GLuint m_iteration_parent_texture_n_samples;
+    glw::GLenum m_iteration_parent_texture_target;
+    glw::GLuint m_iteration_parent_texture_width;
+    glw::GLuint m_iteration_view_texture_minlayer;
+    glw::GLuint m_iteration_view_texture_numlayers;
+    glw::GLuint m_iteration_view_texture_minlevel;
+    glw::GLuint m_iteration_view_texture_numlevels;
+    glw::GLenum m_iteration_view_texture_target;
 
-	const glw::GLuint m_reference_texture_depth;
-	const glw::GLuint m_reference_texture_height;
-	const glw::GLuint m_reference_texture_n_mipmaps;
-	const glw::GLuint m_reference_texture_width;
+    const glw::GLuint m_reference_texture_depth;
+    const glw::GLuint m_reference_texture_height;
+    const glw::GLuint m_reference_texture_n_mipmaps;
+    const glw::GLuint m_reference_texture_width;
 
-	_reference_color_storage* m_reference_color_storage;
-	unsigned char*			  m_result_data;
+    _reference_color_storage *m_reference_color_storage;
+    unsigned char *m_result_data;
 };
 
 /** Verify view class functionality.
@@ -658,52 +658,52 @@ private:
 class TextureViewTestViewClasses : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	TextureViewTestViewClasses(deqp::Context& context);
+    /* Public methods */
+    TextureViewTestViewClasses(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 protected:
-	/* Protected methods */
-	virtual void deinit();
+    /* Protected methods */
+    virtual void deinit();
 
 private:
-	/* Private methods */
-	void getComponentDataForByteAlignedInternalformat(const unsigned char* data, const unsigned int n_components,
-													  const unsigned int*		 component_sizes,
-													  const TextureView::_format format, void* result);
+    /* Private methods */
+    void getComponentDataForByteAlignedInternalformat(const unsigned char *data, const unsigned int n_components,
+                                                      const unsigned int *component_sizes,
+                                                      const TextureView::_format format, void *result);
 
-	void initBufferObject(glw::GLenum texture_internalformat, glw::GLenum view_internalformat);
+    void initBufferObject(glw::GLenum texture_internalformat, glw::GLenum view_internalformat);
 
-	void initProgramObject(glw::GLenum texture_internalformat, glw::GLenum view_internalformat);
+    void initProgramObject(glw::GLenum texture_internalformat, glw::GLenum view_internalformat);
 
-	void initTest();
+    void initTest();
 
-	void initTextureObject(bool should_init_parent_texture, glw::GLenum texture_internalformat,
-						   glw::GLenum view_internalformat);
+    void initTextureObject(bool should_init_parent_texture, glw::GLenum texture_internalformat,
+                           glw::GLenum view_internalformat);
 
-	void verifyResultData(glw::GLenum texture_internalformat, glw::GLenum view_internalformat,
-						  const unsigned char* texture_data_ptr, const unsigned char* view_data_ptr);
+    void verifyResultData(glw::GLenum texture_internalformat, glw::GLenum view_internalformat,
+                          const unsigned char *texture_data_ptr, const unsigned char *view_data_ptr);
 
-	/* Private fields */
-	glw::GLuint m_bo_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_to_id;
-	glw::GLuint m_to_temp_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_view_to_id;
-	glw::GLuint m_vs_id;
+    /* Private fields */
+    glw::GLuint m_bo_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_to_id;
+    glw::GLuint m_to_temp_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_view_to_id;
+    glw::GLuint m_vs_id;
 
-	unsigned char* m_decompressed_mipmap_data;
-	unsigned char* m_mipmap_data;
+    unsigned char *m_decompressed_mipmap_data;
+    unsigned char *m_mipmap_data;
 
-	unsigned int	   m_bo_size;
-	bool			   m_has_test_failed;
-	const unsigned int m_texture_height;
-	const glw::GLenum  m_texture_unit_for_parent_texture;
-	const glw::GLenum  m_texture_unit_for_view_texture;
-	const unsigned int m_texture_width;
-	unsigned int	   m_view_data_offset;
+    unsigned int m_bo_size;
+    bool m_has_test_failed;
+    const unsigned int m_texture_height;
+    const glw::GLenum m_texture_unit_for_parent_texture;
+    const glw::GLenum m_texture_unit_for_view_texture;
+    const unsigned int m_texture_width;
+    unsigned int m_view_data_offset;
 };
 
 /**
@@ -762,91 +762,91 @@ private:
 class TextureViewTestCoherency : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	TextureViewTestCoherency(deqp::Context& context);
+    /* Public methods */
+    TextureViewTestCoherency(deqp::Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private type definitions */
-	enum _barrier_type
-	{
-		BARRIER_TYPE_NONE,
-		BARRIER_TYPE_TEXTURE_FETCH_BARRIER_BIT,
-		BARRIER_TYPE_TEXTURE_UPDATE_BUFFER_BIT
-	};
+    /* Private type definitions */
+    enum _barrier_type
+    {
+        BARRIER_TYPE_NONE,
+        BARRIER_TYPE_TEXTURE_FETCH_BARRIER_BIT,
+        BARRIER_TYPE_TEXTURE_UPDATE_BUFFER_BIT
+    };
 
-	enum _texture_type
-	{
-		TEXTURE_TYPE_PARENT_TEXTURE,
-		TEXTURE_TYPE_TEXTURE_VIEW,
-		TEXTURE_TYPE_IMAGE
-	};
+    enum _texture_type
+    {
+        TEXTURE_TYPE_PARENT_TEXTURE,
+        TEXTURE_TYPE_TEXTURE_VIEW,
+        TEXTURE_TYPE_IMAGE
+    };
 
-	enum _verification_mean
-	{
-		VERIFICATION_MEAN_PROGRAM,
-		VERIFICATION_MEAN_GLGETTEXIMAGE
-	};
+    enum _verification_mean
+    {
+        VERIFICATION_MEAN_PROGRAM,
+        VERIFICATION_MEAN_GLGETTEXIMAGE
+    };
 
-	/* Private methods */
-	void checkAPICallCoherency(_texture_type texture_type, bool should_use_glTexSubImage2D);
+    /* Private methods */
+    void checkAPICallCoherency(_texture_type texture_type, bool should_use_glTexSubImage2D);
 
-	void checkProgramWriteCoherency(_texture_type texture_type, bool should_use_images, _barrier_type barrier_type,
-									_verification_mean verification_mean);
+    void checkProgramWriteCoherency(_texture_type texture_type, bool should_use_images, _barrier_type barrier_type,
+                                    _verification_mean verification_mean);
 
-	unsigned char* getHorizontalGradientData() const;
+    unsigned char *getHorizontalGradientData() const;
 
-	void getReadPropertiesForTextureType(_texture_type texture_type, glw::GLuint* out_to_id,
-										 unsigned int* out_read_lod) const;
+    void getReadPropertiesForTextureType(_texture_type texture_type, glw::GLuint *out_to_id,
+                                         unsigned int *out_read_lod) const;
 
-	unsigned char* getStaticColorTextureData(unsigned int width, unsigned int height) const;
+    unsigned char *getStaticColorTextureData(unsigned int width, unsigned int height) const;
 
-	void getWritePropertiesForTextureType(_texture_type texture_type, glw::GLuint* out_to_id, unsigned int* out_width,
-										  unsigned int* out_height) const;
+    void getWritePropertiesForTextureType(_texture_type texture_type, glw::GLuint *out_to_id, unsigned int *out_width,
+                                          unsigned int *out_height) const;
 
-	void initBufferObjects();
-	void initFBO();
-	void initPrograms();
-	void initTextureContents();
-	void initTextures();
-	void initVAO();
+    void initBufferObjects();
+    void initFBO();
+    void initPrograms();
+    void initTextureContents();
+    void initTextures();
+    void initVAO();
 
-	/* Private fields */
-	bool		m_are_images_supported;
-	glw::GLuint m_bo_id;
-	glw::GLuint m_draw_fbo_id;
-	glw::GLuint m_gradient_verification_po_id;
-	glw::GLint  m_gradient_verification_po_sample_exact_uv_location;
-	glw::GLint  m_gradient_verification_po_lod_location;
-	glw::GLint  m_gradient_verification_po_texture_location;
-	glw::GLuint m_gradient_verification_vs_id;
-	glw::GLint  m_gradient_image_write_image_size_location;
-	glw::GLuint m_gradient_image_write_po_id;
-	glw::GLuint m_gradient_image_write_vs_id;
-	glw::GLuint m_gradient_write_po_id;
-	glw::GLuint m_gradient_write_fs_id;
-	glw::GLuint m_gradient_write_vs_id;
-	glw::GLuint m_read_fbo_id;
-	glw::GLuint m_static_to_id;
-	glw::GLuint m_to_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_view_to_id;
-	glw::GLint  m_verification_po_expected_color_location;
-	glw::GLint  m_verification_po_lod_location;
-	glw::GLuint m_verification_po_id;
-	glw::GLuint m_verification_vs_id;
+    /* Private fields */
+    bool m_are_images_supported;
+    glw::GLuint m_bo_id;
+    glw::GLuint m_draw_fbo_id;
+    glw::GLuint m_gradient_verification_po_id;
+    glw::GLint m_gradient_verification_po_sample_exact_uv_location;
+    glw::GLint m_gradient_verification_po_lod_location;
+    glw::GLint m_gradient_verification_po_texture_location;
+    glw::GLuint m_gradient_verification_vs_id;
+    glw::GLint m_gradient_image_write_image_size_location;
+    glw::GLuint m_gradient_image_write_po_id;
+    glw::GLuint m_gradient_image_write_vs_id;
+    glw::GLuint m_gradient_write_po_id;
+    glw::GLuint m_gradient_write_fs_id;
+    glw::GLuint m_gradient_write_vs_id;
+    glw::GLuint m_read_fbo_id;
+    glw::GLuint m_static_to_id;
+    glw::GLuint m_to_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_view_to_id;
+    glw::GLint m_verification_po_expected_color_location;
+    glw::GLint m_verification_po_lod_location;
+    glw::GLuint m_verification_po_id;
+    glw::GLuint m_verification_vs_id;
 
-	unsigned char m_static_color_byte[4 /* rgba */];
-	float		  m_static_color_float[4 /* rgba */];
+    unsigned char m_static_color_byte[4 /* rgba */];
+    float m_static_color_float[4 /* rgba */];
 
-	const unsigned int m_static_texture_height;
-	const unsigned int m_static_texture_width;
-	const unsigned int m_texture_height;
-	const unsigned int m_texture_n_components;
-	const unsigned int m_texture_n_levels;
-	const unsigned int m_texture_width;
+    const unsigned int m_static_texture_height;
+    const unsigned int m_static_texture_width;
+    const unsigned int m_texture_height;
+    const unsigned int m_texture_n_components;
+    const unsigned int m_texture_n_levels;
+    const unsigned int m_texture_width;
 };
 
 /** Verify GL_TEXTURE_BASE_LEVEL and GL_TEXTURE_MAX_LEVEL are
@@ -901,39 +901,39 @@ private:
 class TextureViewTestBaseAndMaxLevels : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	TextureViewTestBaseAndMaxLevels(deqp::Context& context);
+    /* Public methods */
+    TextureViewTestBaseAndMaxLevels(deqp::Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void initProgram();
-	void initTest();
-	void initTextures();
+    /* Private methods */
+    void initProgram();
+    void initTest();
+    void initTextures();
 
-	/* Private fields */
-	const unsigned int m_texture_height;
-	const unsigned int m_texture_n_components;
-	const unsigned int m_texture_n_levels;
-	const unsigned int m_texture_width;
-	const unsigned int m_view_height;
-	const unsigned int m_view_width;
+    /* Private fields */
+    const unsigned int m_texture_height;
+    const unsigned int m_texture_n_components;
+    const unsigned int m_texture_n_levels;
+    const unsigned int m_texture_width;
+    const unsigned int m_view_height;
+    const unsigned int m_view_width;
 
-	unsigned char* m_layer_data_lod0;
-	unsigned char* m_layer_data_lod1;
+    unsigned char *m_layer_data_lod0;
+    unsigned char *m_layer_data_lod1;
 
-	glw::GLuint m_fbo_id;
-	glw::GLuint m_fs_id;
-	glw::GLuint m_po_id;
-	glw::GLint  m_po_lod_index_uniform_location;
-	glw::GLint  m_po_to_sampler_uniform_location;
-	glw::GLuint m_result_to_id;
-	glw::GLuint m_to_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_view_to_id;
-	glw::GLuint m_vs_id;
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_po_id;
+    glw::GLint m_po_lod_index_uniform_location;
+    glw::GLint m_po_to_sampler_uniform_location;
+    glw::GLuint m_result_to_id;
+    glw::GLuint m_to_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_view_to_id;
+    glw::GLuint m_vs_id;
 };
 
 /** Verify texture view reference counting is implemented correctly.
@@ -972,76 +972,76 @@ private:
 class TextureViewTestReferenceCounting : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	TextureViewTestReferenceCounting(deqp::Context& context);
+    /* Public methods */
+    TextureViewTestReferenceCounting(deqp::Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private type definitions */
-	struct _norm_vec4
-	{
-		unsigned char rgba[4];
+    /* Private type definitions */
+    struct _norm_vec4
+    {
+        unsigned char rgba[4];
 
-		/* Constructor
-		 *
-		 * @param r Red value to store for the component
-		 * @param g Green value to store for the component
-		 * @param b Blue value to store for the component
-		 * @param a Alpha value to store for the component.
-		 */
-		explicit _norm_vec4(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
-		{
-			rgba[0] = r;
-			rgba[1] = g;
-			rgba[2] = b;
-			rgba[3] = a;
-		}
-	};
+        /* Constructor
+         *
+         * @param r Red value to store for the component
+         * @param g Green value to store for the component
+         * @param b Blue value to store for the component
+         * @param a Alpha value to store for the component.
+         */
+        explicit _norm_vec4(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+        {
+            rgba[0] = r;
+            rgba[1] = g;
+            rgba[2] = b;
+            rgba[3] = a;
+        }
+    };
 
-	/* Private methods */
-	void initProgram();
-	void initTest();
-	void initTextures();
-	void initXFB();
+    /* Private methods */
+    void initProgram();
+    void initTest();
+    void initTextures();
+    void initXFB();
 
-	/* Private variables */
-	glw::GLuint m_bo_id;
-	glw::GLuint m_parent_to_id;
-	glw::GLuint m_po_id;
-	glw::GLint  m_po_expected_texel_uniform_location;
-	glw::GLint  m_po_lod_uniform_location;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_view_to_id;
-	glw::GLuint m_view_view_to_id;
-	glw::GLuint m_vs_id;
+    /* Private variables */
+    glw::GLuint m_bo_id;
+    glw::GLuint m_parent_to_id;
+    glw::GLuint m_po_id;
+    glw::GLint m_po_expected_texel_uniform_location;
+    glw::GLint m_po_lod_uniform_location;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_view_to_id;
+    glw::GLuint m_view_view_to_id;
+    glw::GLuint m_vs_id;
 
-	const glw::GLuint m_texture_height;
-	const glw::GLuint m_texture_n_levels;
-	const glw::GLuint m_texture_width;
+    const glw::GLuint m_texture_height;
+    const glw::GLuint m_texture_n_levels;
+    const glw::GLuint m_texture_width;
 
-	std::vector<_norm_vec4> m_mipmap_colors;
+    std::vector<_norm_vec4> m_mipmap_colors;
 };
 
 /** Group class for texture view conformance tests */
 class TextureViewTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	TextureViewTests(deqp::Context& context);
-	virtual ~TextureViewTests()
-	{
-	}
+    /* Public methods */
+    TextureViewTests(deqp::Context &context);
+    virtual ~TextureViewTests()
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	/* Private methods */
-	TextureViewTests(const TextureViewTests&);
-	TextureViewTests& operator=(const TextureViewTests&);
+    /* Private methods */
+    TextureViewTests(const TextureViewTests &);
+    TextureViewTests &operator=(const TextureViewTests &);
 };
 
-} /* gl4cts namespace */
+} // namespace gl4cts
 
 #endif // _GL4CTEXTUREVIEWTESTS_HPP

@@ -1,0 +1,18 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceExternalFormatResolveFeaturesANDROID": [
+            {
+                "features": [
+                    "externalFormatResolve"
+                ],
+                "requirements": [
+                    "VK_ANDROID_external_format_resolve"
+                ]
+            }
+        ]
+    }
+}

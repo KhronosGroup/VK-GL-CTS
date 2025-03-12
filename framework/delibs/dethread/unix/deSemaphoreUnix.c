@@ -23,62 +23,63 @@
 
 #include "deSemaphore.h"
 
-#if (DE_OS == DE_OS_UNIX || DE_OS == DE_OS_ANDROID || DE_OS == DE_OS_SYMBIAN || DE_OS == DE_OS_QNX) || (DE_OS == DE_OS_FUCHSIA)
+#if (DE_OS == DE_OS_UNIX || DE_OS == DE_OS_ANDROID || DE_OS == DE_OS_SYMBIAN || DE_OS == DE_OS_QNX) || \
+    (DE_OS == DE_OS_FUCHSIA)
 
 #include "deMemory.h"
 
 #include <semaphore.h>
 
-DE_STATIC_ASSERT(sizeof(deSemaphore) >= sizeof(sem_t*));
+DE_STATIC_ASSERT(sizeof(deSemaphore) >= sizeof(sem_t *));
 
-deSemaphore deSemaphore_create (int initialValue, const deSemaphoreAttributes* attributes)
+deSemaphore deSemaphore_create(int initialValue, const deSemaphoreAttributes *attributes)
 {
-	sem_t*	sem	= (sem_t*)deMalloc(sizeof(sem_t));
+    sem_t *sem = (sem_t *)deMalloc(sizeof(sem_t));
 
-	DE_UNREF(attributes);
-	DE_ASSERT(initialValue >= 0);
+    DE_UNREF(attributes);
+    DE_ASSERT(initialValue >= 0);
 
-	if (!sem)
-		return 0;
+    if (!sem)
+        return 0;
 
-	if (sem_init(sem, 0, (unsigned int)initialValue) != 0)
-	{
-		deFree(sem);
-		return 0;
-	}
+    if (sem_init(sem, 0, (unsigned int)initialValue) != 0)
+    {
+        deFree(sem);
+        return 0;
+    }
 
-	return (deSemaphore)sem;
+    return (deSemaphore)sem;
 }
 
-void deSemaphore_destroy (deSemaphore semaphore)
+void deSemaphore_destroy(deSemaphore semaphore)
 {
-	sem_t* sem = (sem_t*)semaphore;
-	DE_ASSERT(sem);
-	sem_destroy(sem);
-	deFree(sem);
+    sem_t *sem = (sem_t *)semaphore;
+    DE_ASSERT(sem);
+    sem_destroy(sem);
+    deFree(sem);
 }
 
-void deSemaphore_increment (deSemaphore semaphore)
+void deSemaphore_increment(deSemaphore semaphore)
 {
-	sem_t*	sem	= (sem_t*)semaphore;
-	int		ret	= sem_post(sem);
-	DE_ASSERT(ret == 0);
-	DE_UNREF(ret);
+    sem_t *sem = (sem_t *)semaphore;
+    int ret    = sem_post(sem);
+    DE_ASSERT(ret == 0);
+    DE_UNREF(ret);
 }
 
-void deSemaphore_decrement (deSemaphore semaphore)
+void deSemaphore_decrement(deSemaphore semaphore)
 {
-	sem_t*	sem	= (sem_t*)semaphore;
-	int		ret	= sem_wait(sem);
-	DE_ASSERT(ret == 0);
-	DE_UNREF(ret);
+    sem_t *sem = (sem_t *)semaphore;
+    int ret    = sem_wait(sem);
+    DE_ASSERT(ret == 0);
+    DE_UNREF(ret);
 }
 
-deBool deSemaphore_tryDecrement (deSemaphore semaphore)
+bool deSemaphore_tryDecrement(deSemaphore semaphore)
 {
-	sem_t* sem = (sem_t*)semaphore;
-	DE_ASSERT(sem);
-	return (sem_trywait(sem) == 0);
+    sem_t *sem = (sem_t *)semaphore;
+    DE_ASSERT(sem);
+    return (sem_trywait(sem) == 0);
 }
 
 #endif /* DE_OS */

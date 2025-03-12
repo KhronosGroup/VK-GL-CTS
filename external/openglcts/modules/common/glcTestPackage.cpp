@@ -32,9 +32,9 @@
 namespace deqp
 {
 
-PackageContext::PackageContext(tcu::TestContext& testCtx, glu::ContextType renderContextType)
-	: m_context			(testCtx, renderContextType)
-	, m_caseWrapper		(m_context)
+PackageContext::PackageContext(tcu::TestContext &testCtx, glu::ContextType renderContextType)
+    : m_context(testCtx, renderContextType)
+    , m_caseWrapper(m_context)
 {
 }
 
@@ -42,57 +42,57 @@ PackageContext::~PackageContext(void)
 {
 }
 
-TestPackage::TestPackage(tcu::TestContext& testCtx, const char* name, const char* description,
-						 glu::ContextType renderContextType, const char* resourcesPath)
-	: tcu::TestPackage		(testCtx, name, description)
-	, m_waiverMechanism		(new tcu::WaiverUtil)
-	, m_renderContextType	(renderContextType)
-	, m_packageCtx			(DE_NULL)
-	, m_archive				(testCtx.getRootArchive(), resourcesPath)
+TestPackage::TestPackage(tcu::TestContext &testCtx, const char *name, const char *description,
+                         glu::ContextType renderContextType, const char *resourcesPath)
+    : tcu::TestPackage(testCtx, name, description)
+    , m_waiverMechanism(new tcu::WaiverUtil)
+    , m_renderContextType(renderContextType)
+    , m_packageCtx(nullptr)
+    , m_archive(testCtx.getRootArchive(), resourcesPath)
 {
 }
 
 TestPackage::~TestPackage(void)
 {
-	// Destroy all children before destroying context since destructors may access context.
-	tcu::TestNode::deinit();
-	delete m_packageCtx;
+    // Destroy all children before destroying context since destructors may access context.
+    tcu::TestNode::deinit();
+    delete m_packageCtx;
 }
 
 void TestPackage::init(void)
 {
-	try
-	{
-		// Create context
-		m_packageCtx = new PackageContext(m_testCtx, m_renderContextType);
+    try
+    {
+        // Create context
+        m_packageCtx = new PackageContext(m_testCtx, m_renderContextType);
 
-		// Setup waiver mechanism
-		if (m_testCtx.getCommandLine().getRunMode() == tcu::RUNMODE_EXECUTE)
-		{
-			Context&				context		= m_packageCtx->getContext();
-			const glu::ContextInfo&	contextInfo = context.getContextInfo();
-			std::string				vendor		= contextInfo.getString(GL_VENDOR);
-			std::string				renderer	= contextInfo.getString(GL_RENDERER);
-			const tcu::CommandLine&	commandLine	= context.getTestContext().getCommandLine();
-			tcu::SessionInfo		sessionInfo	(vendor, renderer, commandLine.getInitialCmdLine());
-			m_waiverMechanism->setup(commandLine.getWaiverFileName(), m_name, vendor, renderer, sessionInfo);
-			context.getTestContext().getLog().writeSessionInfo(sessionInfo.get());
-		}
-	}
-	catch (...)
-	{
-		delete m_packageCtx;
-		m_packageCtx = DE_NULL;
+        // Setup waiver mechanism
+        if (m_testCtx.getCommandLine().getRunMode() == tcu::RUNMODE_EXECUTE)
+        {
+            Context &context                    = m_packageCtx->getContext();
+            const glu::ContextInfo &contextInfo = context.getContextInfo();
+            std::string vendor                  = contextInfo.getString(GL_VENDOR);
+            std::string renderer                = contextInfo.getString(GL_RENDERER);
+            const tcu::CommandLine &commandLine = context.getTestContext().getCommandLine();
+            tcu::SessionInfo sessionInfo(vendor, renderer, commandLine.getInitialCmdLine());
+            m_waiverMechanism->setup(commandLine.getWaiverFileName(), m_name, vendor, renderer, sessionInfo);
+            context.getTestContext().getLog().writeSessionInfo(sessionInfo.get());
+        }
+    }
+    catch (...)
+    {
+        delete m_packageCtx;
+        m_packageCtx = nullptr;
 
-		throw;
-	}
+        throw;
+    }
 }
 
 void TestPackage::deinit(void)
 {
-	tcu::TestNode::deinit();
-	delete m_packageCtx;
-	m_packageCtx = DE_NULL;
+    tcu::TestNode::deinit();
+    delete m_packageCtx;
+    m_packageCtx = nullptr;
 }
 
-} // deqp
+} // namespace deqp

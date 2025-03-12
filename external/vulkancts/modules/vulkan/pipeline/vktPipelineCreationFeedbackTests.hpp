@@ -32,9 +32,13 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createCreationFeedbackTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
+tcu::TestCaseGroup *createCreationFeedbackTests(tcu::TestContext &testCtx,
+                                                vk::PipelineConstructionType pipelineConstructionType);
+de::MovePtr<tcu::TestCaseGroup> addPipelineBinaryCreationFeedbackTests(
+    tcu::TestContext &testCtx, vk::PipelineConstructionType pipelineConstructionType,
+    de::MovePtr<tcu::TestCaseGroup> binaryGroup);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINECREATIONFEEDBACKTESTS_HPP

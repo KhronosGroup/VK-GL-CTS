@@ -46,6 +46,8 @@ set(DEQP_VK_SYNCHRONIZATION_SRCS
     vktGlobalPriorityQueueTests.hpp
     vktGlobalPriorityQueueUtils.cpp
     vktGlobalPriorityQueueUtils.hpp
+	vktSynchronizationImplicitTests.cpp
+	vktSynchronizationImplicitTests.hpp
 	)
 
 PCH(DEQP_VK_SYNCHRONIZATION_SRCS ../pch.cpp)
@@ -54,5 +56,4 @@ add_library(deqp-vk-synchronization STATIC ${DEQP_VK_VKSC_SYNCHRONIZATION_SRCS} 
 target_link_libraries(deqp-vk-synchronization tcutil vkutil)
 
 add_library(deqp-vksc-synchronization STATIC ${DEQP_VK_VKSC_SYNCHRONIZATION_SRCS})
-target_include_directories(deqp-vksc-synchronization BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-synchronization PUBLIC deqp-vksc-util tcutil vkscutil)

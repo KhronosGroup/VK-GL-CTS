@@ -21,20 +21,18 @@
  *
  *//*!
  * \file
- * \brief Invariant decoration tests.
+ * \brief Invariant and precise decoration tests.
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
 
-namespace vkt
-{
-namespace sr
+namespace vkt::sr
 {
 
-tcu::TestCaseGroup*	createShaderInvarianceTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createShaderPreciseTests(tcu::TestContext &testCtx);
 
-} // sr
-} // vkt
+} // namespace vkt::sr
 
 #endif // _VKTSHADERRENDERINVARIANCETESTS_HPP

@@ -36,6 +36,8 @@ set(DEQP_VK_VKSC_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmGraphicsShaderTestUtil.hpp
 	vktSpvAsmInstructionTests.cpp
 	vktSpvAsmInstructionTests.hpp
+	vktSpvAsmMultipleShadersTests.cpp
+	vktSpvAsmMultipleShadersTests.hpp
 	vktSpvAsmPointerParameterTests.cpp
 	vktSpvAsmPointerParameterTests.hpp
 	vktSpvAsmSignedIntCompareTests.cpp
@@ -70,6 +72,8 @@ set(DEQP_VK_VKSC_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmWorkgroupMemoryTests.hpp
 	vktSpvAsmNonSemanticInfoTests.cpp
 	vktSpvAsmNonSemanticInfoTests.hpp
+	vktSpvAsmRelaxedWithForwardReferenceTests.cpp
+	vktSpvAsmRelaxedWithForwardReferenceTests.hpp
 	vktSpvAsmPtrAccessChainTests.cpp
 	vktSpvAsmPtrAccessChainTests.hpp
 	vktSpvAsmVectorShuffleTests.cpp
@@ -80,11 +84,17 @@ set(DEQP_VK_VKSC_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmTrinaryMinMaxTests.hpp
 	vktSpvAsmPhysicalStorageBufferPointerTests.cpp
 	vktSpvAsmPhysicalStorageBufferPointerTests.hpp
+	vktSpvAsmRawAccessChainTests.cpp
+	vktSpvAsmRawAccessChainTests.hpp
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
+	vktSpvAsmFloatControls2Tests.cpp
+	vktSpvAsmFloatControls2Tests.hpp
 	vktSpvAsmIntegerDotProductTests.cpp
 	vktSpvAsmIntegerDotProductTests.hpp
+	vktSpvAsmComputeShaderDerivativesTests.cpp
+	vktSpvAsmComputeShaderDerivativesTests.hpp
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_LIBS
@@ -108,5 +118,4 @@ add_library(deqp-vk-spirv-assembly STATIC ${DEQP_VK_VKSC_SPIRV_ASSEMBLY_SRCS} ${
 target_link_libraries(deqp-vk-spirv-assembly ${DEQP_VK_SPIRV_ASSEMBLY_LIBS})
 
 add_library(deqp-vksc-spirv-assembly STATIC ${DEQP_VK_VKSC_SPIRV_ASSEMBLY_SRCS})
-target_include_directories(deqp-vksc-spirv-assembly BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-spirv-assembly PUBLIC deqp-vksc-util tcutil vkscutil)

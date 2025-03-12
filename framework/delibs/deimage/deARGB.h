@@ -27,43 +27,61 @@
 #include "deInt32.h"
 
 /* ARGB color in descending A, R, G, B order (alpha is in most significant byte). */
-typedef deUint32 deARGB;
+typedef uint32_t deARGB;
 
-DE_INLINE deARGB	deARGB_set (int r, int g, int b, int a)
+static inline deARGB deARGB_set(int r, int g, int b, int a)
 {
-	DE_ASSERT(deInBounds32(r, 0, 256));
-	DE_ASSERT(deInBounds32(g, 0, 256));
-	DE_ASSERT(deInBounds32(b, 0, 256));
-	DE_ASSERT(deInBounds32(a, 0, 256));
-	return (a<<24) | (r<<16) | (g<<8) | (b<<0);
+    DE_ASSERT(deInBounds32(r, 0, 256));
+    DE_ASSERT(deInBounds32(g, 0, 256));
+    DE_ASSERT(deInBounds32(b, 0, 256));
+    DE_ASSERT(deInBounds32(a, 0, 256));
+    return (a << 24) | (r << 16) | (g << 8) | (b << 0);
 }
 
-DE_INLINE deARGB	deARGB_white		(void)			{ return deARGB_set(0xFF, 0xFF, 0xFF, 0xFF); }
-DE_INLINE deARGB	deARGB_black		(void)			{ return deARGB_set(0, 0, 0, 0xFF); }
-
-DE_INLINE int		deARGB_getRed		(deARGB argb)	{ return (int)((argb >> 16) & 0xFF); }
-DE_INLINE int		deARGB_getGreen		(deARGB argb)	{ return (int)((argb >>  8) & 0xFF); }
-DE_INLINE int		deARGB_getBlue		(deARGB argb)	{ return (int)((argb >>  0) & 0xFF); }
-DE_INLINE int		deARGB_getAlpha		(deARGB argb)	{ return (int)((argb >> 24) & 0xFF); }
-
-DE_INLINE deARGB deARGB_multiply (deARGB argb, int f)
+static inline deARGB deARGB_white(void)
 {
-	DE_ASSERT(deInRange32(f, 0, 256));
-	{
-		int r = (deARGB_getRed(argb) * f + 128) >> 8;
-		int g = (deARGB_getGreen(argb) * f + 128) >> 8;
-		int b = (deARGB_getBlue(argb) * f + 128) >> 8;
-		int a = (deARGB_getAlpha(argb) * f + 128) >> 8;
-		return deARGB_set(r, g, b, a);
-	}
+    return deARGB_set(0xFF, 0xFF, 0xFF, 0xFF);
+}
+static inline deARGB deARGB_black(void)
+{
+    return deARGB_set(0, 0, 0, 0xFF);
 }
 
-DE_INLINE deARGB deARGB_add (deARGB a, deARGB b)
+static inline int deARGB_getRed(deARGB argb)
 {
-	return deARGB_set(deClamp32(deARGB_getRed(a)   + deARGB_getRed(b),   0, 255),
-					  deClamp32(deARGB_getGreen(a) + deARGB_getGreen(b), 0, 255),
-					  deClamp32(deARGB_getBlue(a)  + deARGB_getBlue(b),  0, 255),
-					  deClamp32(deARGB_getAlpha(a) + deARGB_getAlpha(b), 0, 255));
+    return (int)((argb >> 16) & 0xFF);
+}
+static inline int deARGB_getGreen(deARGB argb)
+{
+    return (int)((argb >> 8) & 0xFF);
+}
+static inline int deARGB_getBlue(deARGB argb)
+{
+    return (int)((argb >> 0) & 0xFF);
+}
+static inline int deARGB_getAlpha(deARGB argb)
+{
+    return (int)((argb >> 24) & 0xFF);
+}
+
+static inline deARGB deARGB_multiply(deARGB argb, int f)
+{
+    DE_ASSERT(deInRange32(f, 0, 256));
+    {
+        int r = (deARGB_getRed(argb) * f + 128) >> 8;
+        int g = (deARGB_getGreen(argb) * f + 128) >> 8;
+        int b = (deARGB_getBlue(argb) * f + 128) >> 8;
+        int a = (deARGB_getAlpha(argb) * f + 128) >> 8;
+        return deARGB_set(r, g, b, a);
+    }
+}
+
+static inline deARGB deARGB_add(deARGB a, deARGB b)
+{
+    return deARGB_set(deClamp32(deARGB_getRed(a) + deARGB_getRed(b), 0, 255),
+                      deClamp32(deARGB_getGreen(a) + deARGB_getGreen(b), 0, 255),
+                      deClamp32(deARGB_getBlue(a) + deARGB_getBlue(b), 0, 255),
+                      deClamp32(deARGB_getAlpha(a) + deARGB_getAlpha(b), 0, 255));
 }
 
 #endif /* _DEARGB_H */

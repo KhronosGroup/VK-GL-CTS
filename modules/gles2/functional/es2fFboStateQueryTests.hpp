@@ -36,17 +36,17 @@ namespace Functional
 class FboStateQueryTests : public TestCaseGroup
 {
 public:
-																		FboStateQueryTests	(Context& context);
+    FboStateQueryTests(Context &context);
 
-	void																init				(void);
+    void init(void);
 
 private:
-																		FboStateQueryTests	(const FboStateQueryTests& other);
-	FboStateQueryTests&													operator=			(const FboStateQueryTests& other);
+    FboStateQueryTests(const FboStateQueryTests &other);
+    FboStateQueryTests &operator=(const FboStateQueryTests &other);
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FFBOSTATEQUERYTESTS_HPP

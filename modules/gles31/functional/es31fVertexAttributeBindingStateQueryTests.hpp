@@ -36,18 +36,18 @@ namespace Functional
 class VertexAttributeBindingStateQueryTests : public TestCaseGroup
 {
 public:
-											VertexAttributeBindingStateQueryTests	(Context& context);
-											~VertexAttributeBindingStateQueryTests	(void);
+    VertexAttributeBindingStateQueryTests(Context &context);
+    ~VertexAttributeBindingStateQueryTests(void);
 
-	void									init									(void);
+    void init(void);
 
 private:
-											VertexAttributeBindingStateQueryTests	(const VertexAttributeBindingStateQueryTests& other);
-	VertexAttributeBindingStateQueryTests&	operator=								(const VertexAttributeBindingStateQueryTests& other);
+    VertexAttributeBindingStateQueryTests(const VertexAttributeBindingStateQueryTests &other);
+    VertexAttributeBindingStateQueryTests &operator=(const VertexAttributeBindingStateQueryTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FVERTEXATTRIBUTEBINDINGSTATEQUERYTESTS_HPP

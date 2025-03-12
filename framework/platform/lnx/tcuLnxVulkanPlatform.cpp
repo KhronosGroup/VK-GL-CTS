@@ -38,25 +38,29 @@
 
 using de::MovePtr;
 using de::UniquePtr;
-#if DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
+#if DEQP_SUPPORT_DRM && !defined(CTS_USES_VULKANSC)
 using tcu::LibDrm;
 #endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 
-#if defined (DEQP_SUPPORT_X11)
-#	include "tcuLnxX11.hpp"
-#	if defined (DEQP_SUPPORT_XCB)
-#		include "tcuLnxX11Xcb.hpp"
-#	endif // DEQP_SUPPORT_XCB
-#	define X11_DISPLAY ""
+#if defined(DEQP_SUPPORT_X11)
+#include "tcuLnxX11.hpp"
+#if defined(DEQP_SUPPORT_XCB)
+#include "tcuLnxX11Xcb.hpp"
+#endif // DEQP_SUPPORT_XCB
+#define X11_DISPLAY ""
 #endif // DEQP_SUPPORT_X11
 
-#if defined (DEQP_SUPPORT_WAYLAND)
-#	include "tcuLnxWayland.hpp"
-#	define WAYLAND_DISPLAY DE_NULL
+#if defined(DEQP_SUPPORT_WAYLAND)
+#include "tcuLnxWayland.hpp"
+#define WAYLAND_DISPLAY nullptr
 #endif // DEQP_SUPPORT_WAYLAND
 
 #if !defined(DEQP_VULKAN_LIBRARY_PATH)
-#   define DEQP_VULKAN_LIBRARY_PATH "libvulkan.so.1"
+#ifdef CTS_USES_VULKANSC
+#define DEQP_VULKAN_LIBRARY_PATH "libvulkansc.so.1"
+#else
+#define DEQP_VULKAN_LIBRARY_PATH "libvulkan.so.1"
+#endif
 #endif
 
 namespace tcu
@@ -64,281 +68,292 @@ namespace tcu
 namespace lnx
 {
 
-#if defined (DEQP_SUPPORT_X11)
+#if defined(DEQP_SUPPORT_X11)
 
 class VulkanWindowXlib : public vk::wsi::XlibWindowInterface
 {
 public:
-	VulkanWindowXlib (MovePtr<x11::XlibWindow> window)
-		: vk::wsi::XlibWindowInterface	(vk::pt::XlibWindow(window->getXID()))
-		, m_window						(window)
-	{
-	}
+    VulkanWindowXlib(MovePtr<x11::XlibWindow> window)
+        : vk::wsi::XlibWindowInterface(vk::pt::XlibWindow(window->getXID()))
+        , m_window(window)
+    {
+    }
 
-	void setVisible(bool visible)
-	{
-		m_window->setVisibility(visible);
-	}
+    void setVisible(bool visible)
+    {
+        m_window->setVisibility(visible);
+    }
 
-	void resize (const UVec2& newSize)
-	{
-		m_window->setDimensions((int)newSize.x(), (int)newSize.y());
-	}
+    void resize(const UVec2 &newSize)
+    {
+        m_window->setDimensions((int)newSize.x(), (int)newSize.y());
+    }
 
-	void setMinimized(bool minimized)
-	{
-		DE_UNREF(minimized);
-		TCU_THROW(NotSupportedError, "Minimized on X11 is not implemented");
-	}
+    void setMinimized(bool minimized)
+    {
+        DE_UNREF(minimized);
+        TCU_THROW(NotSupportedError, "Minimized on X11 is not implemented");
+    }
 
 private:
-	UniquePtr<x11::XlibWindow>	m_window;
+    UniquePtr<x11::XlibWindow> m_window;
 };
 
 class VulkanDisplayXlib : public vk::wsi::XlibDisplayInterface
 {
 public:
-	VulkanDisplayXlib (MovePtr<x11::DisplayBase> display)
-		: vk::wsi::XlibDisplayInterface	(vk::pt::XlibDisplayPtr(((x11::XlibDisplay*)display.get())->getXDisplay()))
-		, m_display	(display)
-	{
-	}
+    VulkanDisplayXlib(MovePtr<x11::DisplayBase> display)
+        : vk::wsi::XlibDisplayInterface(vk::pt::XlibDisplayPtr(((x11::XlibDisplay *)display.get())->getXDisplay()))
+        , m_display(display)
+    {
+    }
 
-	vk::wsi::Window* createWindow (const Maybe<UVec2>& initialSize) const
-	{
-		x11::XlibDisplay*	instance	= (x11::XlibDisplay*)(m_display.get());
-		const deUint32		height		= !initialSize ? (deUint32)DEFAULT_WINDOW_HEIGHT : initialSize->y();
-		const deUint32		width		= !initialSize ? (deUint32)DEFAULT_WINDOW_WIDTH : initialSize->x();
-		return new VulkanWindowXlib(MovePtr<x11::XlibWindow>(new x11::XlibWindow(*instance, (int)width, (int)height, instance->getVisual(0))));
-	}
+    vk::wsi::Window *createWindow(const Maybe<UVec2> &initialSize) const
+    {
+        x11::XlibDisplay *instance = (x11::XlibDisplay *)(m_display.get());
+        const uint32_t height      = !initialSize ? (uint32_t)DEFAULT_WINDOW_HEIGHT : initialSize->y();
+        const uint32_t width       = !initialSize ? (uint32_t)DEFAULT_WINDOW_WIDTH : initialSize->x();
+        return new VulkanWindowXlib(
+            MovePtr<x11::XlibWindow>(new x11::XlibWindow(*instance, (int)width, (int)height, instance->getVisual(0))));
+    }
 
 private:
-	MovePtr<x11::DisplayBase> m_display;
+    MovePtr<x11::DisplayBase> m_display;
 };
 
 #endif // DEQP_SUPPORT_X11
 
-#if defined (DEQP_SUPPORT_XCB)
+#if defined(DEQP_SUPPORT_XCB)
 
 class VulkanWindowXcb : public vk::wsi::XcbWindowInterface
 {
 public:
-	VulkanWindowXcb (MovePtr<x11::XcbWindow> window)
-		: vk::wsi::XcbWindowInterface	(vk::pt::XcbWindow(window->getXID()))
-		, m_window						(window)
-	{
-	}
+    VulkanWindowXcb(MovePtr<x11::XcbWindow> window)
+        : vk::wsi::XcbWindowInterface(vk::pt::XcbWindow(window->getXID()))
+        , m_window(window)
+    {
+    }
 
-	void setVisible(bool visible)
-	{
-		m_window->setVisibility(visible);
-	}
+    void setVisible(bool visible)
+    {
+        m_window->setVisibility(visible);
+    }
 
-	void resize (const UVec2& newSize)
-	{
-		m_window->setDimensions((int)newSize.x(), (int)newSize.y());
-	}
+    void resize(const UVec2 &newSize)
+    {
+        m_window->setDimensions((int)newSize.x(), (int)newSize.y());
+    }
 
-	void setMinimized(bool minimized)
-	{
-		DE_UNREF(minimized);
-		TCU_THROW(NotSupportedError, "Minimized on xcb is not implemented");
-	}
+    void setMinimized(bool minimized)
+    {
+        DE_UNREF(minimized);
+        TCU_THROW(NotSupportedError, "Minimized on xcb is not implemented");
+    }
 
 private:
-	UniquePtr<x11::XcbWindow>	m_window;
+    UniquePtr<x11::XcbWindow> m_window;
 };
 
 class VulkanDisplayXcb : public vk::wsi::XcbDisplayInterface
 {
 public:
-	VulkanDisplayXcb (MovePtr<x11::DisplayBase> display)
-		: vk::wsi::XcbDisplayInterface	(vk::pt::XcbConnectionPtr(((x11::XcbDisplay*)display.get())->getConnection()))
-		, m_display		(display)
-	{
-	}
+    VulkanDisplayXcb(MovePtr<x11::DisplayBase> display)
+        : vk::wsi::XcbDisplayInterface(vk::pt::XcbConnectionPtr(((x11::XcbDisplay *)display.get())->getConnection()))
+        , m_display(display)
+    {
+    }
 
-	vk::wsi::Window* createWindow (const Maybe<UVec2>& initialSize) const
-	{
-		x11::XcbDisplay*	instance	= (x11::XcbDisplay*)(m_display.get());
-		const deUint32		height		= !initialSize ? (deUint32)DEFAULT_WINDOW_HEIGHT : initialSize->y();
-		const deUint32		width		= !initialSize ? (deUint32)DEFAULT_WINDOW_WIDTH : initialSize->x();
-		return new VulkanWindowXcb(MovePtr<x11::XcbWindow>(new x11::XcbWindow(*instance, (int)width, (int)height, DE_NULL)));
-	}
+    vk::wsi::Window *createWindow(const Maybe<UVec2> &initialSize) const
+    {
+        x11::XcbDisplay *instance = (x11::XcbDisplay *)(m_display.get());
+        const uint32_t height     = !initialSize ? (uint32_t)DEFAULT_WINDOW_HEIGHT : initialSize->y();
+        const uint32_t width      = !initialSize ? (uint32_t)DEFAULT_WINDOW_WIDTH : initialSize->x();
+        return new VulkanWindowXcb(
+            MovePtr<x11::XcbWindow>(new x11::XcbWindow(*instance, (int)width, (int)height, nullptr)));
+    }
 
 private:
-	MovePtr<x11::DisplayBase> m_display;
+    MovePtr<x11::DisplayBase> m_display;
 };
 #endif // DEQP_SUPPORT_XCB
 
-#if defined (DEQP_SUPPORT_WAYLAND)
+#if defined(DEQP_SUPPORT_WAYLAND)
 class VulkanWindowWayland : public vk::wsi::WaylandWindowInterface
 {
 public:
-	VulkanWindowWayland (MovePtr<wayland::Window> window)
-		: vk::wsi::WaylandWindowInterface	(vk::pt::WaylandSurfacePtr(window->getSurface()))
-		, m_window							(window)
-	{
-	}
+    VulkanWindowWayland(MovePtr<wayland::Window> window)
+        : vk::wsi::WaylandWindowInterface(vk::pt::WaylandSurfacePtr(window->getSurface()))
+        , m_window(window)
+    {
+    }
 
-	void setVisible(bool visible)
-	{
-		m_window->setVisibility(visible);
-	}
+    void setVisible(bool visible)
+    {
+        m_window->setVisibility(visible);
+    }
 
-	void resize (const UVec2& newSize)
-	{
-		m_window->setDimensions((int)newSize.x(), (int)newSize.y());
-	}
+    void resize(const UVec2 &newSize)
+    {
+        m_window->setDimensions((int)newSize.x(), (int)newSize.y());
+    }
 
-	void setMinimized(bool minimized)
-	{
-		DE_UNREF(minimized);
-		TCU_THROW(NotSupportedError, "Minimized on wayland is not implemented");
-	}
+    void setMinimized(bool minimized)
+    {
+        DE_UNREF(minimized);
+        TCU_THROW(NotSupportedError, "Minimized on wayland is not implemented");
+    }
 
 private:
-	UniquePtr<wayland::Window>	m_window;
+    UniquePtr<wayland::Window> m_window;
 };
 
 class VulkanDisplayWayland : public vk::wsi::WaylandDisplayInterface
 {
 public:
-	VulkanDisplayWayland (MovePtr<wayland::Display> display)
-		: vk::wsi::WaylandDisplayInterface	(vk::pt::WaylandDisplayPtr(display->getDisplay()))
-		, m_display		(display)
-	{
-	}
+    VulkanDisplayWayland(MovePtr<wayland::Display> display)
+        : vk::wsi::WaylandDisplayInterface(vk::pt::WaylandDisplayPtr(display->getDisplay()))
+        , m_display(display)
+    {
+    }
 
-	vk::wsi::Window* createWindow (const Maybe<UVec2>& initialSize) const
-	{
-		const deUint32	height		= !initialSize ? (deUint32)DEFAULT_WINDOW_HEIGHT : initialSize->y();
-		const deUint32	width		= !initialSize ? (deUint32)DEFAULT_WINDOW_WIDTH : initialSize->x();
-		return new VulkanWindowWayland(MovePtr<wayland::Window>(new wayland::Window(*m_display, (int)width, (int)height)));
-	}
+    vk::wsi::Window *createWindow(const Maybe<UVec2> &initialSize) const
+    {
+        const uint32_t height = !initialSize ? (uint32_t)DEFAULT_WINDOW_HEIGHT : initialSize->y();
+        const uint32_t width  = !initialSize ? (uint32_t)DEFAULT_WINDOW_WIDTH : initialSize->x();
+        return new VulkanWindowWayland(
+            MovePtr<wayland::Window>(new wayland::Window(*m_display, (int)width, (int)height)));
+    }
 
 private:
-	MovePtr<wayland::Display> m_display;
+    MovePtr<wayland::Display> m_display;
 };
 #endif // DEQP_SUPPORT_WAYLAND
 
-#if defined (DEQP_SUPPORT_HEADLESS)
+#if defined(DEQP_SUPPORT_HEADLESS)
 
 struct VulkanWindowHeadless : public vk::wsi::Window
 {
 public:
-	void resize (const UVec2&)
-	{
-	}
+    void resize(const UVec2 &)
+    {
+    }
 };
 
 class VulkanDisplayHeadless : public vk::wsi::Display
 {
 public:
-	VulkanDisplayHeadless ()
-	{
-	}
+    VulkanDisplayHeadless()
+    {
+    }
 
-	vk::wsi::Window* createWindow (const Maybe<UVec2>&) const
-	{
-		return new VulkanWindowHeadless();
-	}
+    vk::wsi::Window *createWindow(const Maybe<UVec2> &) const
+    {
+        return new VulkanWindowHeadless();
+    }
 };
 
 #endif // DEQP_SUPPORT_HEADLESS
 
-#if DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
+#if DEQP_SUPPORT_DRM && !defined(CTS_USES_VULKANSC)
 
 struct VulkanWindowDirectDrm : public vk::wsi::Window
 {
 public:
-	void resize (const UVec2&)
-	{
-	}
+    void setVisible(bool visible) override
+    {
+        DE_UNREF(visible);
+    }
+    void resize(const UVec2 &) override
+    {
+    }
 };
 
 class VulkanDisplayDirectDrm : public vk::wsi::DirectDrmDisplayInterface
 {
 public:
-	VulkanDisplayDirectDrm (void)
-	{
-	}
+    VulkanDisplayDirectDrm(void)
+    {
+    }
 
-	vk::wsi::Window* createWindow (const Maybe<UVec2>&) const override
-	{
-		return new VulkanWindowDirectDrm();
-	}
+    vk::wsi::Window *createWindow(const Maybe<UVec2> &) const override
+    {
+        return new VulkanWindowDirectDrm();
+    }
 
-	void initializeDisplay (const vk::InstanceInterface& vki, vk::VkInstance instance, const tcu::CommandLine& cmdLine) override
-	{
-		if (m_initialized)
-			return;
+    void initializeDisplay(const vk::InstanceInterface &vki, vk::VkInstance instance,
+                           const tcu::CommandLine &cmdLine) override
+    {
+        if (m_initialized)
+            return;
 
-		vk::VkPhysicalDevice physDevice = vk::chooseDevice(vki, instance, cmdLine);
+        vk::VkPhysicalDevice physDevice = vk::chooseDevice(vki, instance, cmdLine);
 
-		/* Get a Drm fd that matches the device. */
+        /* Get a Drm fd that matches the device. */
 
-		vk::VkPhysicalDeviceProperties2			deviceProperties2;
-		vk::VkPhysicalDeviceDrmPropertiesEXT	deviceDrmProperties;
+        vk::VkPhysicalDeviceProperties2 deviceProperties2;
+        vk::VkPhysicalDeviceDrmPropertiesEXT deviceDrmProperties;
 
-		deMemset(&deviceDrmProperties, 0, sizeof(deviceDrmProperties));
-		deviceDrmProperties.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT;
-		deviceDrmProperties.pNext = DE_NULL;
+        deMemset(&deviceDrmProperties, 0, sizeof(deviceDrmProperties));
+        deviceDrmProperties.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT;
+        deviceDrmProperties.pNext = nullptr;
 
-		deMemset(&deviceProperties2, 0, sizeof(deviceProperties2));
-		deviceProperties2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-		deviceProperties2.pNext = &deviceDrmProperties;
+        deMemset(&deviceProperties2, 0, sizeof(deviceProperties2));
+        deviceProperties2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+        deviceProperties2.pNext = &deviceDrmProperties;
 
-		vki.getPhysicalDeviceProperties2(physDevice, &deviceProperties2);
+        vki.getPhysicalDeviceProperties2(physDevice, &deviceProperties2);
 
-		if (!deviceDrmProperties.hasPrimary)
-			TCU_THROW(NotSupportedError, "No DRM primary device.");
+        if (!deviceDrmProperties.hasPrimary)
+            TCU_THROW(NotSupportedError, "No DRM primary device.");
 
-		LibDrm libDrm;
-		int numDrmDevices;
-		drmDevicePtr* drmDevices = libDrm.getDevices(&numDrmDevices);
-		const char* drmNode = libDrm.findDeviceNode(drmDevices, numDrmDevices, deviceDrmProperties.primaryMajor, deviceDrmProperties.primaryMinor);
+        LibDrm libDrm;
+        int numDrmDevices;
+        drmDevicePtr *drmDevices = libDrm.getDevices(&numDrmDevices);
+        const char *drmNode      = libDrm.findDeviceNode(drmDevices, numDrmDevices, deviceDrmProperties.primaryMajor,
+                                                         deviceDrmProperties.primaryMinor);
 
-		if (!drmNode)
-			TCU_THROW(NotSupportedError, "No DRM node.");
+        if (!drmNode)
+            TCU_THROW(NotSupportedError, "No DRM node.");
 
-		m_fdPtr = libDrm.openFd(drmNode).move();
-		if (!m_fdPtr)
-			TCU_THROW(NotSupportedError, "Could not open DRM.");
-		int fd = *m_fdPtr;
+        m_fdPtr = libDrm.openFd(drmNode).move();
+        if (!m_fdPtr)
+            TCU_THROW(NotSupportedError, "Could not open DRM.");
+        int fd = *m_fdPtr;
 
-		/* Get a connector to the display. */
+        /* Get a connector to the display. */
 
-		LibDrm::ResPtr res = libDrm.getResources(fd);
-		if (!res)
-			TCU_THROW(NotSupportedError, "Could not get DRM resources.");
+        LibDrm::ResPtr res = libDrm.getResources(fd);
+        if (!res)
+            TCU_THROW(NotSupportedError, "Could not get DRM resources.");
 
-		deUint32 connectorId = 0;
-		for (int i = 0; i < res->count_connectors; ++i) {
-			LibDrm::ConnectorPtr conn = libDrm.getConnector(fd, res->connectors[i]);
+        uint32_t connectorId = 0;
+        for (int i = 0; i < res->count_connectors; ++i)
+        {
+            LibDrm::ConnectorPtr conn = libDrm.getConnector(fd, res->connectors[i]);
 
-			if (conn && conn->connection == DRM_MODE_CONNECTED) {
-				connectorId = res->connectors[i];
-				break;
-			}
-		}
-		if (!connectorId)
-			TCU_THROW(NotSupportedError, "Could not find a DRM connector.");
+            if (conn && conn->connection == DRM_MODE_CONNECTED)
+            {
+                connectorId = res->connectors[i];
+                break;
+            }
+        }
+        if (!connectorId)
+            TCU_THROW(NotSupportedError, "Could not find a DRM connector.");
 
-		/* Get and acquire the display for the connector. */
+        /* Get and acquire the display for the connector. */
 
-		vk::VkDisplayKHR* display = const_cast<vk::VkDisplayKHR*>(&m_native);
-		VK_CHECK_SUPPORTED(vki.getDrmDisplayEXT(physDevice, fd, connectorId, display));
+        vk::VkDisplayKHR *display = const_cast<vk::VkDisplayKHR *>(&m_native);
+        VK_CHECK_SUPPORTED(vki.getDrmDisplayEXT(physDevice, fd, connectorId, display));
 
-		if (m_native == DE_NULL)
-			TCU_THROW(NotSupportedError, "vkGetDrmDisplayEXT did not set display.");
+        if (m_native == VK_NULL_HANDLE)
+            TCU_THROW(NotSupportedError, "vkGetDrmDisplayEXT did not set display.");
 
-		VK_CHECK_SUPPORTED(vki.acquireDrmDisplayEXT(physDevice, fd, m_native));
-		m_initialized = true;
-	}
+        VK_CHECK_SUPPORTED(vki.acquireDrmDisplayEXT(physDevice, fd, m_native));
+        m_initialized = true;
+    }
 
-	MovePtr<LibDrm::FdPtr::element_type, LibDrm::FdPtr::deleter_type> m_fdPtr;
-	bool m_initialized = false;
+    MovePtr<LibDrm::FdPtr::element_type, LibDrm::FdPtr::deleter_type> m_fdPtr;
+    bool m_initialized = false;
 };
 
 #endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
@@ -346,142 +361,117 @@ public:
 class VulkanLibrary : public vk::Library
 {
 public:
-	VulkanLibrary (const char* libraryPath)
-		: m_library	(libraryPath != DE_NULL ? libraryPath : DEQP_VULKAN_LIBRARY_PATH)
-		, m_driver	(m_library)
-	{
-	}
+    VulkanLibrary(const char *libraryPath)
+        : m_library(libraryPath != nullptr ? libraryPath : DEQP_VULKAN_LIBRARY_PATH)
+        , m_driver(m_library)
+    {
+    }
 
-	const vk::PlatformInterface&	getPlatformInterface	(void) const
-	{
-		return m_driver;
-	}
+    const vk::PlatformInterface &getPlatformInterface(void) const
+    {
+        return m_driver;
+    }
 
-	const tcu::FunctionLibrary&		getFunctionLibrary		(void) const
-	{
-		return m_library;
-	}
-
-private:
-	const DynamicFunctionLibrary	m_library;
-	const vk::PlatformDriver		m_driver;
-};
-
-class VulkanVideoDecodeParserLibrary : public vk::Library
-{
-public:
-	VulkanVideoDecodeParserLibrary(void)
-		: m_library("./libnvidia-vkvideo-parser.so")
-	{
-	}
-
-	const vk::PlatformInterface& getPlatformInterface(void) const
-	{
-		TCU_THROW(InternalError, "getPlatformInterface is not possible for VulkanVideoDecodeParserLibrary");
-	}
-	const tcu::FunctionLibrary& getFunctionLibrary(void) const
-	{
-		return m_library;
-	}
+    const tcu::FunctionLibrary &getFunctionLibrary(void) const
+    {
+        return m_library;
+    }
 
 private:
-	const tcu::DynamicFunctionLibrary	m_library;
+    const DynamicFunctionLibrary m_library;
+    const vk::PlatformDriver m_driver;
 };
 
-
-VulkanPlatform::VulkanPlatform (EventState& eventState)
-	: m_eventState(eventState)
+VulkanPlatform::VulkanPlatform(EventState &eventState) : m_eventState(eventState)
 {
 }
 
-vk::wsi::Display* VulkanPlatform::createWsiDisplay (vk::wsi::Type wsiType) const
+vk::wsi::Display *VulkanPlatform::createWsiDisplay(vk::wsi::Type wsiType) const
 {
-	if (!hasDisplay(wsiType))
-	{
-	    throw NotSupportedError("This display type is not available: ", NULL, __FILE__, __LINE__);
-	}
+    if (!hasDisplay(wsiType))
+    {
+        throw NotSupportedError("This display type is not available: ", NULL, __FILE__, __LINE__);
+    }
 
-	switch(wsiType)
-	{
-#if defined (DEQP_SUPPORT_X11)
-	case vk::wsi::TYPE_XLIB:
-		return new VulkanDisplayXlib(MovePtr<x11::DisplayBase>(new x11::XlibDisplay(m_eventState,X11_DISPLAY)));
+    switch (wsiType)
+    {
+#if defined(DEQP_SUPPORT_X11)
+    case vk::wsi::TYPE_XLIB:
+        return new VulkanDisplayXlib(MovePtr<x11::DisplayBase>(new x11::XlibDisplay(m_eventState, X11_DISPLAY)));
 #endif // DEQP_SUPPORT_X11
-#if defined (DEQP_SUPPORT_XCB)
-	case vk::wsi::TYPE_XCB:
-		return new VulkanDisplayXcb(MovePtr<x11::DisplayBase>(new x11::XcbDisplay(m_eventState,X11_DISPLAY)));
+#if defined(DEQP_SUPPORT_XCB)
+    case vk::wsi::TYPE_XCB:
+        return new VulkanDisplayXcb(MovePtr<x11::DisplayBase>(new x11::XcbDisplay(m_eventState, X11_DISPLAY)));
 #endif // DEQP_SUPPORT_XCB
-#if defined (DEQP_SUPPORT_WAYLAND)
-	case vk::wsi::TYPE_WAYLAND:
-		return new VulkanDisplayWayland(MovePtr<wayland::Display>(new wayland::Display(m_eventState, WAYLAND_DISPLAY)));
+#if defined(DEQP_SUPPORT_WAYLAND)
+    case vk::wsi::TYPE_WAYLAND:
+        return new VulkanDisplayWayland(MovePtr<wayland::Display>(new wayland::Display(m_eventState, WAYLAND_DISPLAY)));
 #endif // DEQP_SUPPORT_WAYLAND
-#if defined (DEQP_SUPPORT_HEADLESS)
-	case vk::wsi::TYPE_HEADLESS:
-		return new VulkanDisplayHeadless();
+#if defined(DEQP_SUPPORT_HEADLESS)
+    case vk::wsi::TYPE_HEADLESS:
+        return new VulkanDisplayHeadless();
 #endif // DEQP_SUPPORT_HEADLESS
-#if DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
-	case vk::wsi::TYPE_DIRECT_DRM:
-		return new VulkanDisplayDirectDrm();
+#if DEQP_SUPPORT_DRM && !defined(CTS_USES_VULKANSC)
+    case vk::wsi::TYPE_DIRECT_DRM:
+        return new VulkanDisplayDirectDrm();
 #endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 
-	default:
-		TCU_THROW(NotSupportedError, "WSI type not supported");
-
-	}
+    default:
+        TCU_THROW(NotSupportedError, "WSI type not supported");
+    }
 }
-bool VulkanPlatform::hasDisplay (vk::wsi::Type wsiType) const
+bool VulkanPlatform::hasDisplay(vk::wsi::Type wsiType) const
 {
-	switch(wsiType)
-	{
-#if defined (DEQP_SUPPORT_X11)
-	case vk::wsi::TYPE_XLIB:
-		return x11::XlibDisplay::hasDisplay(X11_DISPLAY);
+    switch (wsiType)
+    {
+#if defined(DEQP_SUPPORT_X11)
+    case vk::wsi::TYPE_XLIB:
+        return x11::XlibDisplay::hasDisplay(X11_DISPLAY);
 #endif // DEQP_SUPPORT_X11
-#if defined (DEQP_SUPPORT_XCB)
-	case vk::wsi::TYPE_XCB:
-		return x11::XcbDisplay::hasDisplay(X11_DISPLAY);
+#if defined(DEQP_SUPPORT_XCB)
+    case vk::wsi::TYPE_XCB:
+        return x11::XcbDisplay::hasDisplay(X11_DISPLAY);
 #endif // DEQP_SUPPORT_XCB
-#if defined (DEQP_SUPPORT_WAYLAND)
-	case vk::wsi::TYPE_WAYLAND:
-		return wayland::Display::hasDisplay(WAYLAND_DISPLAY);
+#if defined(DEQP_SUPPORT_WAYLAND)
+    case vk::wsi::TYPE_WAYLAND:
+        return wayland::Display::hasDisplay(WAYLAND_DISPLAY);
 #endif // DEQP_SUPPORT_WAYLAND
-#if defined (DEQP_SUPPORT_HEADLESS)
-       case vk::wsi::TYPE_HEADLESS:
-               return true;
+#if defined(DEQP_SUPPORT_HEADLESS)
+    case vk::wsi::TYPE_HEADLESS:
+        return true;
 #endif // DEQP_SUPPORT_HEADLESS
-#if DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
-	case vk::wsi::TYPE_DIRECT_DRM:
-		return true;
+#if DEQP_SUPPORT_DRM && !defined(CTS_USES_VULKANSC)
+    case vk::wsi::TYPE_DIRECT_DRM:
+        return true;
 #endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
-	default:
-		return false;
-
-	}
+    default:
+        return false;
+    }
 }
 
-vk::Library* VulkanPlatform::createLibrary (LibraryType libraryType, const char* libraryPath) const
+vk::Library *VulkanPlatform::createLibrary(LibraryType libraryType, const char *libraryPath) const
 {
-	switch(libraryType)
-	{
-		case LIBRARY_TYPE_VULKAN:						return new VulkanLibrary(libraryPath);
-		case LIBRARY_TYPE_VULKAN_VIDEO_DECODE_PARSER:	return new VulkanVideoDecodeParserLibrary();
+    switch (libraryType)
+    {
+    case LIBRARY_TYPE_VULKAN:
+        return new VulkanLibrary(libraryPath);
 
-		default: TCU_THROW(InternalError, "Unknown library type requested");
-	}
+    default:
+        TCU_THROW(InternalError, "Unknown library type requested");
+    }
 }
 
-void VulkanPlatform::describePlatform (std::ostream& dst) const
+void VulkanPlatform::describePlatform(std::ostream &dst) const
 {
-	utsname		sysInfo;
-	deMemset(&sysInfo, 0, sizeof(sysInfo));
+    utsname sysInfo;
+    deMemset(&sysInfo, 0, sizeof(sysInfo));
 
-	if (uname(&sysInfo) != 0)
-		throw std::runtime_error("uname() failed");
+    if (uname(&sysInfo) != 0)
+        throw std::runtime_error("uname() failed");
 
-	dst << "OS: " << sysInfo.sysname << " " << sysInfo.release << " " << sysInfo.version << "\n";
-	dst << "CPU: " << sysInfo.machine << "\n";
+    dst << "OS: " << sysInfo.sysname << " " << sysInfo.release << " " << sysInfo.version << "\n";
+    dst << "CPU: " << sysInfo.machine << "\n";
 }
 
-} // linux
-} // tcu
-
+} // namespace lnx
+} // namespace tcu

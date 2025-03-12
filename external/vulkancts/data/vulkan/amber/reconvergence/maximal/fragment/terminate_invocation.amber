@@ -1,0 +1,81 @@
+#!amber
+
+SHADER vertex vert_shader PASSTHROUGH
+
+SHADER fragment frag_shader GLSL TARGET_ENV spv1.6
+#version 450
+
+#extension GL_EXT_maximal_reconvergence : require
+#extension GL_KHR_shader_subgroup_ballot : require
+#extension GL_EXT_terminate_invocation : require
+
+#define UINT_MAX	0xFFFFFFFF
+
+layout(binding = 0) readonly buffer X { uint fragment; };
+layout(binding = 1)          buffer Y { uint result; };
+layout(location = 0) out vec4 dEQP_FragColor;
+
+void resetBit(in out uvec4 ballot, uint bit) { if (bit < gl_SubgroupSize) ballot[bit/32] &= (UINT_MAX ^ (1u << (bit % 32))); }
+uvec4 ballotResetBit(uvec4 ballot, uint bit) { resetBit(ballot, bit); return ballot; }
+uint findBallotLSB(uvec4 ballot) { return subgroupBallotBitCount(ballot) > 0 ? subgroupBallotFindLSB(ballot) : UINT_MAX; }
+
+void main()
+[[maximally_reconverges]]
+{
+	const uint	fragmentID				= uint(gl_FragCoord.y) * 16 + uint(gl_FragCoord.x);
+	const uvec4	terminateSubgroupBallot	= subgroupBallot(fragmentID == fragment);
+	const uint	terminateInvocationID	= findBallotLSB(terminateSubgroupBallot);
+	const bool	terminateSubgroup		= terminateInvocationID < gl_SubgroupSize;
+	const uvec4	referenceBallot			= ballotResetBit(subgroupBallot(true), terminateInvocationID);
+
+
+	if (terminateSubgroup && (gl_SubgroupInvocationID == terminateInvocationID))
+	{
+		discard;
+	}
+
+	const uvec4	resultBallot	= subgroupBallot(true);
+
+	const uvec4 nonHelperBallot = subgroupBallot( ! gl_HelperInvocation );
+	const uint	writeInvocation	= subgroupBallotFindLSB(nonHelperBallot);
+
+	if (terminateSubgroup && (gl_SubgroupInvocationID == writeInvocation))
+	{
+		result = (resultBallot == referenceBallot) ? 1 : 0;
+	}
+
+	dEQP_FragColor = vec4(1.0);
+}
+END
+
+BUFFER vertices DATA_TYPE R32G32_SFLOAT DATA
+-1.0 3.5    -1.0 -1.0    3.5 -1.0
+END
+
+BUFFER fragments DATA_TYPE R32_UINT DATA
+    136
+END
+
+BUFFER result DATA_TYPE R32_UINT DATA 99 END
+
+BUFFER framebuffer FORMAT R32G32B32A32_SFLOAT
+
+PIPELINE graphics mainPipeline
+	ATTACH vert_shader
+	ATTACH frag_shader
+
+	FRAMEBUFFER_SIZE 16 16
+
+    BIND BUFFER fragments AS storage DESCRIPTOR_SET 0 BINDING 0
+	BIND BUFFER result AS storage DESCRIPTOR_SET 0 BINDING 1
+	VERTEX_DATA vertices LOCATION 0
+	BIND BUFFER framebuffer AS color LOCATION 0
+END
+
+CLEAR_COLOR mainPipeline 0 0 0 0
+CLEAR mainPipeline
+
+RUN mainPipeline DRAW_ARRAY AS TRIANGLE_LIST START_IDX 0 COUNT 3
+
+EXPECT result IDX 0 EQ 1
+

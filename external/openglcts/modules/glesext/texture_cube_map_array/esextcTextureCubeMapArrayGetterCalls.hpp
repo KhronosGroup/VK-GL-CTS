@@ -60,59 +60,59 @@ namespace glcts
 class TextureCubeMapArrayGetterCalls : public TestCaseBase
 {
 public:
-	/* Public functions */
-	TextureCubeMapArrayGetterCalls(Context& context, const ExtParameters& extParams, const char* name,
-								   const char* description);
+    /* Public functions */
+    TextureCubeMapArrayGetterCalls(Context &context, const ExtParameters &extParams, const char *name,
+                                   const char *description);
 
-	virtual ~TextureCubeMapArrayGetterCalls()
-	{
-	}
+    virtual ~TextureCubeMapArrayGetterCalls()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private functions */
-	void initTest(void);
-	void verifyTextureBindings(void);
-	void verifyGetTexParameter(glw::GLenum pname, glw::GLint expected_value);
-	void verifyGetTexLevelParameters(void);
+    /* Private functions */
+    void initTest(void);
+    void verifyTextureBindings(void);
+    void verifyGetTexParameter(glw::GLenum pname, glw::GLint expected_value);
+    void verifyGetTexLevelParameters(void);
 
-	static const char* getStringForGetTexParameterPname(glw::GLenum pname);
-	static const char* getStringForGetTexLevelParameterPname(glw::GLenum pname);
+    static const char *getStringForGetTexParameterPname(glw::GLenum pname);
+    static const char *getStringForGetTexLevelParameterPname(glw::GLenum pname);
 
-	/* Private variables */
-	glw::GLuint	m_to_id;
-	glw::GLboolean m_test_passed;
+    /* Private variables */
+    glw::GLuint m_to_id;
+    glw::GLboolean m_test_passed;
 
-	static const glw::GLuint  m_depth;
-	static const glw::GLsizei m_height;
-	static const glw::GLsizei m_width;
-	static const glw::GLuint  m_n_components;
+    static const glw::GLuint m_depth;
+    static const glw::GLsizei m_height;
+    static const glw::GLsizei m_width;
+    static const glw::GLuint m_n_components;
 
-	/* Values represented by variables below are used by
-	 * verifyTextureLevelParameterValues() */
-	glw::GLint m_expected_alpha_size;
-	glw::GLint m_expected_alpha_type;
-	glw::GLint m_expected_blue_size;
-	glw::GLint m_expected_blue_type;
-	glw::GLint m_expected_compressed;
-	glw::GLint m_expected_depth_size;
-	glw::GLint m_expected_depth_type;
-	glw::GLint m_expected_green_size;
-	glw::GLint m_expected_green_type;
-	glw::GLint m_expected_red_size;
-	glw::GLint m_expected_red_type;
-	glw::GLint m_expected_shared_size;
-	glw::GLint m_expected_stencil_size;
-	glw::GLint m_expected_texture_internal_format;
+    /* Values represented by variables below are used by
+     * verifyTextureLevelParameterValues() */
+    glw::GLint m_expected_alpha_size;
+    glw::GLint m_expected_alpha_type;
+    glw::GLint m_expected_blue_size;
+    glw::GLint m_expected_blue_type;
+    glw::GLint m_expected_compressed;
+    glw::GLint m_expected_depth_size;
+    glw::GLint m_expected_depth_type;
+    glw::GLint m_expected_green_size;
+    glw::GLint m_expected_green_type;
+    glw::GLint m_expected_red_size;
+    glw::GLint m_expected_red_type;
+    glw::GLint m_expected_shared_size;
+    glw::GLint m_expected_stencil_size;
+    glw::GLint m_expected_texture_internal_format;
 
-	typedef std::map<glw::GLenum, glw::GLint> PNamesMap;
-	typedef std::vector<glw::GLenum> PNamesVec;
+    typedef std::map<glw::GLenum, glw::GLint> PNamesMap;
+    typedef std::vector<glw::GLenum> PNamesVec;
 
-	PNamesMap pnames_for_gettexparameter_default;
-	PNamesMap pnames_for_gettexparameter_modified;
-	PNamesVec pnames_for_gettexlevelparameter;
+    PNamesMap pnames_for_gettexparameter_default;
+    PNamesMap pnames_for_gettexparameter_modified;
+    PNamesVec pnames_for_gettexlevelparameter;
 };
 
 } // namespace glcts

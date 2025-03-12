@@ -42,75 +42,102 @@ namespace eglu
 class NativeDisplay
 {
 public:
-	enum Capability
-	{
-		CAPABILITY_GET_DISPLAY_LEGACY		= (1<<0),	//!< Query EGL display using eglGetDisplay()
-		CAPABILITY_GET_DISPLAY_PLATFORM		= (1<<1),	//!< Query EGL display using eglGetPlatformDisplay()
-		CAPABILITY_GET_DISPLAY_PLATFORM_EXT	= (1<<2)	//!< Query EGL display using eglGetPlatformDisplayEXT()
-	};
+    enum Capability
+    {
+        CAPABILITY_GET_DISPLAY_LEGACY       = (1 << 0), //!< Query EGL display using eglGetDisplay()
+        CAPABILITY_GET_DISPLAY_PLATFORM     = (1 << 1), //!< Query EGL display using eglGetPlatformDisplay()
+        CAPABILITY_GET_DISPLAY_PLATFORM_EXT = (1 << 2)  //!< Query EGL display using eglGetPlatformDisplayEXT()
+    };
 
-	virtual								~NativeDisplay				(void);
+    virtual ~NativeDisplay(void);
 
-	virtual const eglw::Library&		getLibrary					(void) const = 0;
+    virtual const eglw::Library &getLibrary(void) const = 0;
 
-	Capability							getCapabilities				(void) const { return m_capabilities; }
-	eglw::EGLenum						getPlatformType				(void) const { return m_platformType; }
-	const char*							getPlatformExtensionName	(void) const { return (m_platformExtension.empty() ? DE_NULL : m_platformExtension.c_str()); }
+    Capability getCapabilities(void) const
+    {
+        return m_capabilities;
+    }
+    eglw::EGLenum getPlatformType(void) const
+    {
+        return m_platformType;
+    }
+    const char *getPlatformExtensionName(void) const
+    {
+        return (m_platformExtension.empty() ? nullptr : m_platformExtension.c_str());
+    }
 
-	//! Get EGLNativeDisplayType that can be used with eglGetDisplay(). Default implementation throws tcu::NotSupportedError().
-	virtual eglw::EGLNativeDisplayType	getLegacyNative				(void);
+    //! Get EGLNativeDisplayType that can be used with eglGetDisplay(). Default implementation throws tcu::NotSupportedError().
+    virtual eglw::EGLNativeDisplayType getLegacyNative(void);
 
-	//! Return display pointer that can be used with eglGetPlatformDisplay(). Default implementations throw tcu::NotSupportedError()
-	virtual void*						getPlatformNative			(void);
+    //! Return display pointer that can be used with eglGetPlatformDisplay(). Default implementations throw tcu::NotSupportedError()
+    virtual void *getPlatformNative(void);
 
-	//! Attributes to pass to eglGetPlatformDisplay(EXT)
-	virtual const eglw::EGLAttrib*		getPlatformAttributes		(void) const;
+    //! Attributes to pass to eglGetPlatformDisplay(EXT)
+    virtual const eglw::EGLAttrib *getPlatformAttributes(void) const;
 
 protected:
-										NativeDisplay				(Capability capabilities, eglw::EGLenum platformType, const char* platformExtension);
-										NativeDisplay				(Capability capabilities);
+    NativeDisplay(Capability capabilities, eglw::EGLenum platformType, const char *platformExtension);
+    NativeDisplay(Capability capabilities);
 
 private:
-										NativeDisplay				(const NativeDisplay&);
-	NativeDisplay&						operator=					(const NativeDisplay&);
+    NativeDisplay(const NativeDisplay &);
+    NativeDisplay &operator=(const NativeDisplay &);
 
-	const Capability					m_capabilities;
-	const eglw::EGLenum					m_platformType;				//!< EGL platform type, or EGL_NONE if not supported.
-	const std::string					m_platformExtension;
+    const Capability m_capabilities;
+    const eglw::EGLenum m_platformType; //!< EGL platform type, or EGL_NONE if not supported.
+    const std::string m_platformExtension;
 };
 
 class NativeDisplayFactory : public tcu::FactoryBase
 {
 public:
-	virtual								~NativeDisplayFactory		(void);
+    virtual ~NativeDisplayFactory(void);
 
-	virtual NativeDisplay*				createDisplay				(const eglw::EGLAttrib* attribList = DE_NULL) const = 0;
+    virtual NativeDisplay *createDisplay(const eglw::EGLAttrib *attribList = nullptr) const = 0;
 
-	NativeDisplay::Capability			getCapabilities				(void) const { return m_capabilities; }
-	eglw::EGLenum						getPlatformType				(void) const { return m_platformType; }
-	const char*							getPlatformExtensionName	(void) const { return (m_platformExtension.empty() ? DE_NULL : m_platformExtension.c_str()); }
+    NativeDisplay::Capability getCapabilities(void) const
+    {
+        return m_capabilities;
+    }
+    eglw::EGLenum getPlatformType(void) const
+    {
+        return m_platformType;
+    }
+    const char *getPlatformExtensionName(void) const
+    {
+        return (m_platformExtension.empty() ? nullptr : m_platformExtension.c_str());
+    }
 
-	const NativeWindowFactoryRegistry&	getNativeWindowRegistry		(void) const { return m_nativeWindowRegistry; }
-	const NativePixmapFactoryRegistry&	getNativePixmapRegistry		(void) const { return m_nativePixmapRegistry; }
+    const NativeWindowFactoryRegistry &getNativeWindowRegistry(void) const
+    {
+        return m_nativeWindowRegistry;
+    }
+    const NativePixmapFactoryRegistry &getNativePixmapRegistry(void) const
+    {
+        return m_nativePixmapRegistry;
+    }
 
 protected:
-										NativeDisplayFactory		(const std::string& name, const std::string& description, NativeDisplay::Capability capabilities);
-										NativeDisplayFactory		(const std::string& name, const std::string& description, NativeDisplay::Capability capabilities, eglw::EGLenum platformType, const char* platformExtension);
+    NativeDisplayFactory(const std::string &name, const std::string &description,
+                         NativeDisplay::Capability capabilities);
+    NativeDisplayFactory(const std::string &name, const std::string &description,
+                         NativeDisplay::Capability capabilities, eglw::EGLenum platformType,
+                         const char *platformExtension);
 
-	NativeWindowFactoryRegistry			m_nativeWindowRegistry;
-	NativePixmapFactoryRegistry			m_nativePixmapRegistry;
+    NativeWindowFactoryRegistry m_nativeWindowRegistry;
+    NativePixmapFactoryRegistry m_nativePixmapRegistry;
 
 private:
-										NativeDisplayFactory		(const NativeDisplayFactory&);
-	NativeDisplayFactory&				operator=					(const NativeDisplayFactory&);
+    NativeDisplayFactory(const NativeDisplayFactory &);
+    NativeDisplayFactory &operator=(const NativeDisplayFactory &);
 
-	const NativeDisplay::Capability		m_capabilities;
-	const eglw::EGLenum					m_platformType;
-	const std::string					m_platformExtension;
+    const NativeDisplay::Capability m_capabilities;
+    const eglw::EGLenum m_platformType;
+    const std::string m_platformExtension;
 };
 
 typedef tcu::FactoryRegistry<NativeDisplayFactory> NativeDisplayFactoryRegistry;
 
-} // eglu
+} // namespace eglu
 
 #endif // _EGLUNATIVEDISPLAY_HPP

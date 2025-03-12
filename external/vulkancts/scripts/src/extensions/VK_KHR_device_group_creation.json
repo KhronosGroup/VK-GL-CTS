@@ -1,7 +1,6 @@
 {
-	"register_extension":
-	{
-		"type": "instance",
-		"core": "0.1.1.0"
-	}
+    "register_extension": {
+        "type": "instance",
+        "core": "0.1.1.0"
+    }
 }

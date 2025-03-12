@@ -34,13 +34,13 @@ namespace egl
 class InfoTests : public TestCaseGroup
 {
 public:
-				InfoTests		(EglTestContext& eglTestCtx);
-				~InfoTests		(void);
+    InfoTests(EglTestContext &eglTestCtx);
+    ~InfoTests(void);
 
-	void		init			(void);
+    void init(void);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLINFOTESTS_HPP

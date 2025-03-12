@@ -33,158 +33,61 @@ DE_BEGIN_EXTERN_C
 
 /*--------------------------------------------------------------------*//*!
  * \brief Compute hash from string.
- * \param str	String to compute hash value for.
+ * \param str    String to compute hash value for.
  * \return Computed hash value.
  *//*--------------------------------------------------------------------*/
-deUint32 deStringHash (const char* str)
+uint32_t deStringHash(const char *str)
 {
-	/* \note [pyry] This hash is used in DT_GNU_HASH and is proven
-	to be robust for symbol hashing. */
-	/* \see http://sources.redhat.com/ml/binutils/2006-06/msg00418.html */
-	deUint32 hash = 5381;
-	unsigned int c;
+    /* \note [pyry] This hash is used in DT_GNU_HASH and is proven
+    to be robust for symbol hashing. */
+    /* \see http://sources.redhat.com/ml/binutils/2006-06/msg00418.html */
+    uint32_t hash = 5381;
+    unsigned int c;
 
-	DE_ASSERT(str);
-	while ((c = (unsigned int)*str++) != 0)
-		hash = (hash << 5) + hash + c;
+    DE_ASSERT(str);
+    while ((c = (unsigned int)*str++) != 0)
+        hash = (hash << 5) + hash + c;
 
-	return hash;
+    return hash;
 }
 
-deUint32 deStringHashLeading (const char* str, int numLeadingChars)
+uint32_t deStringHashLeading(const char *str, int numLeadingChars)
 {
-	deUint32 hash = 5381;
-	unsigned int c;
+    uint32_t hash = 5381;
+    unsigned int c;
 
-	DE_ASSERT(str);
-	while (numLeadingChars-- && (c = (unsigned int)*str++) != 0)
-		hash = (hash << 5) + hash + c;
+    DE_ASSERT(str);
+    while (numLeadingChars-- && (c = (unsigned int)*str++) != 0)
+        hash = (hash << 5) + hash + c;
 
-	return hash;
+    return hash;
 }
 
-deUint32 deMemoryHash (const void* ptr, size_t numBytes)
+uint32_t deMemoryHash(const void *ptr, size_t numBytes)
 {
-	/* \todo [2010-05-10 pyry] Better generic hash function? */
-	const deUint8*	input	= (const deUint8*)ptr;
-	deUint32		hash	= 5381;
+    /* \todo [2010-05-10 pyry] Better generic hash function? */
+    const uint8_t *input = (const uint8_t *)ptr;
+    uint32_t hash        = 5381;
 
-	DE_ASSERT(ptr);
-	while (numBytes--)
-		hash = (hash << 5) + hash + *input++;
+    DE_ASSERT(ptr);
+    while (numBytes--)
+        hash = (hash << 5) + hash + *input++;
 
-	return hash;
+    return hash;
 }
 
-deBool deMemoryEqual (const void* ptr, const void* cmp, size_t numBytes)
+bool deStringBeginsWith(const char *str, const char *lead)
 {
-	return memcmp(ptr, cmp, numBytes) == 0;
-}
+    const char *a = str;
+    const char *b = lead;
 
-/*--------------------------------------------------------------------*//*!
- * \brief Compare two strings for equality.
- * \param a		First string.
- * \param b		Second string.
- * \return True if strings equal, false otherwise.
- *//*--------------------------------------------------------------------*/
-deBool deStringEqual (const char* a, const char* b)
-{
-	DE_ASSERT(a && b);
-	return (strcmp(a, b) == 0);
-}
+    while (*b)
+    {
+        if (*a++ != *b++)
+            return false;
+    }
 
-deBool deStringBeginsWith (const char* str, const char* lead)
-{
-	const char* a = str;
-	const char* b = lead;
-
-	while (*b)
-	{
-		if (*a++ != *b++)
-			return DE_FALSE;
-	}
-
-	return DE_TRUE;
-}
-
-int deVsprintf (char* string, size_t size, const char* format, va_list list)
-{
-	int			res;
-
-	DE_ASSERT(string && format);
-
-#if (DE_COMPILER == DE_COMPILER_MSC)
-#	if (DE_OS == DE_OS_WINCE)
-	res = _vsnprintf(string, size, format, list);
-#	else
-	res = vsnprintf_s(string, size, _TRUNCATE, format, list);
-#	endif
-#else
-	res = vsnprintf(string, size, format, list);
-#endif
-
-	return res;
-}
-
-/*--------------------------------------------------------------------*//*!
- * \brief	Safe string print
- * \note	This has the new safe signature, i.e., string length is a
- *			required parameter.
- *//*--------------------------------------------------------------------*/
-int deSprintf (char* string, size_t size, const char* format, ...)
-{
-	va_list		list;
-	int			res;
-
-	DE_ASSERT(string && format);
-
-	va_start(list, format);
-
-	res = deVsprintf(string, size, format, list);
-
-	va_end(list);
-
-	return res;
-}
-
-/*--------------------------------------------------------------------*//*!
- * \note	This has the new safe signature, i.e., string length is a
- *			required parameter.
- *//*--------------------------------------------------------------------*/
-char* deStrcpy (char* dst, size_t size, const char* src)
-{
-#if (DE_COMPILER == DE_COMPILER_MSC) && (DE_OS != DE_OS_WINCE)
-	(void)strcpy_s(dst, size, src);
-	return dst;
-#else
-	return strncpy(dst, src, size);
-#endif
-}
-
-/*--------------------------------------------------------------------*//*!
- * \note	This has the new safe signature, i.e., string length is a
- *			required parameter.
- *//*--------------------------------------------------------------------*/
-char* deStrcat (char* s1, size_t size, const char* s2)
-{
-#if (DE_COMPILER == DE_COMPILER_MSC) && (DE_OS != DE_OS_WINCE)
-	(void)strcat_s(s1, size, s2);
-	return s1;
-#else
-	return strncat(s1, s2, size);
-#endif
-}
-
-size_t deStrnlen (const char* string, size_t maxSize)
-{
-#if ((DE_COMPILER == DE_COMPILER_MSC) && (DE_OS != DE_OS_WINCE))
-	return strnlen_s(string, maxSize);
-#else
-	size_t len = 0;
-	while (len < maxSize && string[len] != 0)
-		++len;
-	return len;
-#endif
+    return true;
 }
 
 DE_END_EXTERN_C

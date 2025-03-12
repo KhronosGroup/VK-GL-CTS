@@ -33,92 +33,98 @@ namespace TexVerifierUtil
 
 // Error bound utilities
 
-float		computeFloatingPointError			(const float value, const int numAccurateBits);
-float		computeFixedPointError				(const int numAccurateBits);
-float		computeColorBitsError				(const int bits, const int numAccurateBits);
+float computeFloatingPointError(const float value, const int numAccurateBits);
+float computeFixedPointError(const int numAccurateBits);
+float computeColorBitsError(const int bits, const int numAccurateBits);
 
-template<int Size>
-inline Vector<float, Size> computeFloatingPointError (const Vector<float, Size>& value, const Vector<deInt32, Size>& numAccurateBits)
+template <int Size>
+inline Vector<float, Size> computeFloatingPointError(const Vector<float, Size> &value,
+                                                     const Vector<int32_t, Size> &numAccurateBits)
 {
-	Vector<float, Size> res;
-	for (int ndx = 0; ndx < Size; ndx++)
-		res[ndx] = computeFloatingPointError(value[ndx], numAccurateBits[ndx]);
-	return res;
+    Vector<float, Size> res;
+    for (int ndx = 0; ndx < Size; ndx++)
+        res[ndx] = computeFloatingPointError(value[ndx], numAccurateBits[ndx]);
+    return res;
 }
 
-template<int Size>
-inline Vector<float, Size> computeFixedPointError (const Vector<deInt32, Size>& numAccurateBits)
+template <int Size>
+inline Vector<float, Size> computeFixedPointError(const Vector<int32_t, Size> &numAccurateBits)
 {
-	Vector<float, Size> res;
-	for (int ndx = 0; ndx < Size; ndx++)
-		res[ndx] = computeFixedPointError(numAccurateBits[ndx]);
-	return res;
+    Vector<float, Size> res;
+    for (int ndx = 0; ndx < Size; ndx++)
+        res[ndx] = computeFixedPointError(numAccurateBits[ndx]);
+    return res;
 }
 
-template<int Size>
-inline Vector<float, Size> computeColorBitsError(const Vector<deInt32, Size>& bits, const Vector<deInt32, Size>& numAccurateBits)
+template <int Size>
+inline Vector<float, Size> computeColorBitsError(const Vector<int32_t, Size> &bits,
+                                                 const Vector<int32_t, Size> &numAccurateBits)
 {
-	Vector<float, Size> res;
-	for (int ndx = 0; ndx < Size; ndx++)
-		res[ndx] = computeColorBitsError(bits[ndx], numAccurateBits[ndx]);
-	return res;
+    Vector<float, Size> res;
+    for (int ndx = 0; ndx < Size; ndx++)
+        res[ndx] = computeColorBitsError(bits[ndx], numAccurateBits[ndx]);
+    return res;
 }
 
 // Sampler introspection
 
 inline bool isNearestMipmapFilter(const Sampler::FilterMode mode)
 {
-	return mode == Sampler::NEAREST_MIPMAP_NEAREST || mode == Sampler::LINEAR_MIPMAP_NEAREST || mode == Sampler::CUBIC_MIPMAP_NEAREST;
+    return mode == Sampler::NEAREST_MIPMAP_NEAREST || mode == Sampler::LINEAR_MIPMAP_NEAREST ||
+           mode == Sampler::CUBIC_MIPMAP_NEAREST;
 }
 
 inline bool isLinearMipmapFilter(const Sampler::FilterMode mode)
 {
-	return mode == Sampler::NEAREST_MIPMAP_LINEAR || mode == Sampler::LINEAR_MIPMAP_LINEAR || mode == Sampler::CUBIC_MIPMAP_LINEAR;
+    return mode == Sampler::NEAREST_MIPMAP_LINEAR || mode == Sampler::LINEAR_MIPMAP_LINEAR ||
+           mode == Sampler::CUBIC_MIPMAP_LINEAR;
 }
 
 inline bool isMipmapFilter(const Sampler::FilterMode mode)
 {
-	return isNearestMipmapFilter(mode) || isLinearMipmapFilter(mode);
+    return isNearestMipmapFilter(mode) || isLinearMipmapFilter(mode);
 }
 
 inline bool isNearestFilter(const Sampler::FilterMode mode)
 {
-	return mode == Sampler::NEAREST || mode == Sampler::NEAREST_MIPMAP_NEAREST || mode == Sampler::NEAREST_MIPMAP_LINEAR;
+    return mode == Sampler::NEAREST || mode == Sampler::NEAREST_MIPMAP_NEAREST ||
+           mode == Sampler::NEAREST_MIPMAP_LINEAR;
 }
 
 inline bool isLinearFilter(const Sampler::FilterMode mode)
 {
-	return mode == Sampler::LINEAR || mode == Sampler::LINEAR_MIPMAP_NEAREST || mode == Sampler::LINEAR_MIPMAP_LINEAR;
+    return mode == Sampler::LINEAR || mode == Sampler::LINEAR_MIPMAP_NEAREST || mode == Sampler::LINEAR_MIPMAP_LINEAR;
 }
 
 inline bool isCubicFilter(const Sampler::FilterMode mode)
 {
-	return mode == Sampler::CUBIC || mode == Sampler::CUBIC_MIPMAP_NEAREST || mode == Sampler::CUBIC_MIPMAP_LINEAR;
+    return mode == Sampler::CUBIC || mode == Sampler::CUBIC_MIPMAP_NEAREST || mode == Sampler::CUBIC_MIPMAP_LINEAR;
 }
 
 inline Sampler::FilterMode getLevelFilter(const Sampler::FilterMode mode)
 {
-	if (isNearestFilter(mode))
-		return Sampler::NEAREST;
-	if (isLinearFilter(mode))
-		return Sampler::LINEAR;
-	return Sampler::CUBIC;
+    if (isNearestFilter(mode))
+        return Sampler::NEAREST;
+    if (isLinearFilter(mode))
+        return Sampler::LINEAR;
+    return Sampler::CUBIC;
 }
 
-inline bool isWrapModeSupported (const Sampler::WrapMode mode)
+inline bool isWrapModeSupported(const Sampler::WrapMode mode)
 {
-	return mode != Sampler::MIRRORED_REPEAT_CL && mode != Sampler::REPEAT_CL;
+    return mode != Sampler::MIRRORED_REPEAT_CL && mode != Sampler::REPEAT_CL;
 }
 
 // Misc utilities
 
-Vec2		computeNonNormalizedCoordBounds		(const bool normalizedCoords, const int dim, const float coord, const int coordBits, const int uvBits);
-void		getPossibleCubeFaces				(const Vec3& coord, const IVec3& bits, CubeFace* faces, int& numFaces);
+Vec2 computeNonNormalizedCoordBounds(const bool normalizedCoords, const int dim, const float coord, const int coordBits,
+                                     const int uvBits);
+void getPossibleCubeFaces(const Vec3 &coord, const IVec3 &bits, CubeFace *faces, int &numFaces);
 
-Sampler		getUnnormalizedCoordSampler			(const Sampler& sampler);
-int			wrap								(Sampler::WrapMode mode, int c, int size);
+Sampler getUnnormalizedCoordSampler(const Sampler &sampler);
+int wrap(Sampler::WrapMode mode, int c, int size);
 
-} // TexVerifierUtil
-} // tcu
+} // namespace TexVerifierUtil
+} // namespace tcu
 
 #endif // _TCUTEXVERIFIERUTIL_HPP

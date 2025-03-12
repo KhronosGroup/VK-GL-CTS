@@ -1,0 +1,14 @@
+{
+    "mandatory_features": {
+        "VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT": [
+            {
+                "features": [
+                    "shaderReplicatedComposites"
+                ],
+                "requirements": [
+                    "VK_EXT_shader_replicated_composites"
+                ]
+            }
+        ]
+    }
+}

@@ -42,107 +42,107 @@ template <typename InputType, typename OutputType>
 class TestConfiguration
 {
 public:
-	/* Public functions */
-	TestConfiguration(glw::GLsizei nInputComponents, glw::GLsizei nOutputComponents, glw::GLenum target,
-					  glw::GLenum inputInternalFormat, glw::GLenum outputInternalFormat, glw::GLenum filtering,
-					  glw::GLenum inputFormat, glw::GLenum outputFormat, glw::GLuint width, glw::GLuint height,
-					  glw::GLuint depth, InputType initValue, InputType initBorderColor, OutputType expectedValue,
-					  OutputType expectedBorderColor, glw::GLenum inputType, glw::GLenum outputType);
+    /* Public functions */
+    TestConfiguration(glw::GLsizei nInputComponents, glw::GLsizei nOutputComponents, glw::GLenum target,
+                      glw::GLenum inputInternalFormat, glw::GLenum outputInternalFormat, glw::GLenum filtering,
+                      glw::GLenum inputFormat, glw::GLenum outputFormat, glw::GLuint width, glw::GLuint height,
+                      glw::GLuint depth, InputType initValue, InputType initBorderColor, OutputType expectedValue,
+                      OutputType expectedBorderColor, glw::GLenum inputType, glw::GLenum outputType);
 
-	TestConfiguration(const TestConfiguration& configuration);
+    TestConfiguration(const TestConfiguration &configuration);
 
-	virtual ~TestConfiguration()
-	{
-	}
+    virtual ~TestConfiguration()
+    {
+    }
 
-	inline glw::GLsizei get_n_in_components(void) const
-	{
-		return m_n_in_components;
-	}
-	inline glw::GLsizei get_n_out_components(void) const
-	{
-		return m_n_out_components;
-	}
-	inline glw::GLenum get_target(void) const
-	{
-		return m_target;
-	}
-	inline glw::GLenum get_input_internal_format(void) const
-	{
-		return m_input_internal_format;
-	}
-	inline glw::GLenum get_output_internal_format(void) const
-	{
-		return m_output_internal_format;
-	}
-	inline glw::GLenum get_filtering(void) const
-	{
-		return m_filtering;
-	}
-	inline glw::GLenum get_input_format(void) const
-	{
-		return m_input_format;
-	}
-	inline glw::GLenum get_output_format(void) const
-	{
-		return m_output_format;
-	}
-	inline glw::GLuint get_width(void) const
-	{
-		return m_width;
-	}
-	inline glw::GLuint get_height(void) const
-	{
-		return m_height;
-	}
-	inline glw::GLuint get_depth(void) const
-	{
-		return m_depth;
-	}
-	inline InputType get_init_value(void) const
-	{
-		return m_init_value;
-	}
-	inline InputType get_init_border_color(void) const
-	{
-		return m_init_border_color;
-	}
-	inline OutputType get_expected_value(void) const
-	{
-		return m_expected_value;
-	}
-	inline OutputType get_expected_border_color(void) const
-	{
-		return m_expected_border_color;
-	}
-	inline glw::GLenum get_input_type(void) const
-	{
-		return m_input_type;
-	}
-	inline glw::GLenum get_output_type(void) const
-	{
-		return m_output_type;
-	}
+    inline glw::GLsizei get_n_in_components(void) const
+    {
+        return m_n_in_components;
+    }
+    inline glw::GLsizei get_n_out_components(void) const
+    {
+        return m_n_out_components;
+    }
+    inline glw::GLenum get_target(void) const
+    {
+        return m_target;
+    }
+    inline glw::GLenum get_input_internal_format(void) const
+    {
+        return m_input_internal_format;
+    }
+    inline glw::GLenum get_output_internal_format(void) const
+    {
+        return m_output_internal_format;
+    }
+    inline glw::GLenum get_filtering(void) const
+    {
+        return m_filtering;
+    }
+    inline glw::GLenum get_input_format(void) const
+    {
+        return m_input_format;
+    }
+    inline glw::GLenum get_output_format(void) const
+    {
+        return m_output_format;
+    }
+    inline glw::GLuint get_width(void) const
+    {
+        return m_width;
+    }
+    inline glw::GLuint get_height(void) const
+    {
+        return m_height;
+    }
+    inline glw::GLuint get_depth(void) const
+    {
+        return m_depth;
+    }
+    inline InputType get_init_value(void) const
+    {
+        return m_init_value;
+    }
+    inline InputType get_init_border_color(void) const
+    {
+        return m_init_border_color;
+    }
+    inline OutputType get_expected_value(void) const
+    {
+        return m_expected_value;
+    }
+    inline OutputType get_expected_border_color(void) const
+    {
+        return m_expected_border_color;
+    }
+    inline glw::GLenum get_input_type(void) const
+    {
+        return m_input_type;
+    }
+    inline glw::GLenum get_output_type(void) const
+    {
+        return m_output_type;
+    }
 
 private:
-	/* Private variables */
-	glw::GLsizei m_n_in_components;
-	glw::GLsizei m_n_out_components;
-	glw::GLenum  m_target;
-	glw::GLenum  m_input_internal_format;
-	glw::GLenum  m_output_internal_format;
-	glw::GLenum  m_filtering;
-	glw::GLenum  m_input_format;
-	glw::GLenum  m_output_format;
-	glw::GLuint  m_width;
-	glw::GLuint  m_height;
-	glw::GLuint  m_depth;
-	InputType	m_init_value;
-	InputType	m_init_border_color;
-	OutputType   m_expected_value;
-	OutputType   m_expected_border_color;
-	glw::GLenum  m_input_type;
-	glw::GLenum  m_output_type;
+    /* Private variables */
+    glw::GLsizei m_n_in_components;
+    glw::GLsizei m_n_out_components;
+    glw::GLenum m_target;
+    glw::GLenum m_input_internal_format;
+    glw::GLenum m_output_internal_format;
+    glw::GLenum m_filtering;
+    glw::GLenum m_input_format;
+    glw::GLenum m_output_format;
+    glw::GLuint m_width;
+    glw::GLuint m_height;
+    glw::GLuint m_depth;
+    InputType m_init_value;
+    InputType m_init_border_color;
+    OutputType m_expected_value;
+    OutputType m_expected_border_color;
+    glw::GLenum m_input_type;
+    glw::GLenum m_output_type;
 };
 
 /*   Implementation of Test 7 from CTS_EXT_texture_border_clamp. Description follows
@@ -292,51 +292,51 @@ template <typename InputType, typename OutputType>
 class TextureBorderClampSamplingTexture : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TextureBorderClampSamplingTexture(Context& context, const ExtParameters& extParams, const char* name,
-									  const char* description,
-									  const TestConfiguration<InputType, OutputType>& configuration);
+    /* Public methods */
+    TextureBorderClampSamplingTexture(Context &context, const ExtParameters &extParams, const char *name,
+                                      const char *description,
+                                      const TestConfiguration<InputType, OutputType> &configuration);
 
-	virtual ~TextureBorderClampSamplingTexture()
-	{
-	}
+    virtual ~TextureBorderClampSamplingTexture()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	void initTest(void);
-	void setInitData(std::vector<InputType>& buffer);
-	void checkFramebufferStatus(glw::GLenum framebuffer);
-	bool checkResult(OutputType expectedValue, OutputType expectedBorderColor, glw::GLint layer);
-	bool checkNearest(std::vector<OutputType>& buffer, OutputType expectedValue, OutputType expectedBorderColor,
-					  glw::GLint layer);
-	bool checkLinear(std::vector<OutputType>& buffer, glw::GLint layer);
-	void		 createTextures(void);
-	glw::GLfloat getCoordinateValue(glw::GLint index);
-	std::string getFragmentShaderCode(void);
-	std::string getVertexShaderCode(void);
-	glw::GLint  getStartingLayerIndex();
-	glw::GLint  getLastLayerIndex();
+    /* Private methods */
+    void initTest(void);
+    void setInitData(std::vector<InputType> &buffer);
+    void checkFramebufferStatus(glw::GLenum framebuffer);
+    bool checkResult(OutputType expectedValue, OutputType expectedBorderColor, glw::GLint layer);
+    bool checkNearest(std::vector<OutputType> &buffer, OutputType expectedValue, OutputType expectedBorderColor,
+                      glw::GLint layer);
+    bool checkLinear(std::vector<OutputType> &buffer, glw::GLint layer);
+    void createTextures(void);
+    glw::GLfloat getCoordinateValue(glw::GLint index);
+    std::string getFragmentShaderCode(void);
+    std::string getVertexShaderCode(void);
+    glw::GLint getStartingLayerIndex();
+    glw::GLint getLastLayerIndex();
 
-	/* Private variables */
-	glw::GLint  m_attr_position_location;
-	glw::GLint  m_attr_texcoord_location;
-	glw::GLuint m_fbo_id;
-	glw::GLuint m_fs_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_sampler_id;
-	TestConfiguration<InputType, OutputType> m_test_configuration;
-	glw::GLuint m_input_to_id;
-	glw::GLuint m_output_to_id;
-	glw::GLuint m_position_vbo_id;
-	glw::GLuint m_text_coord_vbo_id;
-	glw::GLuint m_vs_id;
-	glw::GLuint m_vao_id;
+    /* Private variables */
+    glw::GLint m_attr_position_location;
+    glw::GLint m_attr_texcoord_location;
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_sampler_id;
+    TestConfiguration<InputType, OutputType> m_test_configuration;
+    glw::GLuint m_input_to_id;
+    glw::GLuint m_output_to_id;
+    glw::GLuint m_position_vbo_id;
+    glw::GLuint m_text_coord_vbo_id;
+    glw::GLuint m_vs_id;
+    glw::GLuint m_vao_id;
 
-	/* Private static variables */
-	static const glw::GLuint m_texture_unit;
+    /* Private static variables */
+    static const glw::GLuint m_texture_unit;
 };
 
 } // namespace glcts

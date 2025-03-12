@@ -28,86 +28,86 @@ namespace tcu
 
 // AbstractFactory
 
-AbstractFactory::AbstractFactory (void)
+AbstractFactory::AbstractFactory(void)
 {
 }
 
-AbstractFactory::~AbstractFactory (void)
+AbstractFactory::~AbstractFactory(void)
 {
 }
 
 // GenericFactoryRegistry
 
-GenericFactoryRegistry::GenericFactoryRegistry (void)
+GenericFactoryRegistry::GenericFactoryRegistry(void)
 {
 }
 
-GenericFactoryRegistry::~GenericFactoryRegistry (void)
+GenericFactoryRegistry::~GenericFactoryRegistry(void)
 {
-	for (std::vector<AbstractFactory*>::const_iterator i = m_factories.begin(); i != m_factories.end(); ++i)
-		delete *i;
+    for (std::vector<AbstractFactory *>::const_iterator i = m_factories.begin(); i != m_factories.end(); ++i)
+        delete *i;
 }
 
-AbstractFactory* GenericFactoryRegistry::getFactoryByIndex (size_t index)
+AbstractFactory *GenericFactoryRegistry::getFactoryByIndex(size_t index)
 {
-	DE_ASSERT(index < m_factories.size());
-	return m_factories[index];
+    DE_ASSERT(index < m_factories.size());
+    return m_factories[index];
 }
 
-const AbstractFactory* GenericFactoryRegistry::getFactoryByIndex (size_t index) const
+const AbstractFactory *GenericFactoryRegistry::getFactoryByIndex(size_t index) const
 {
-	DE_ASSERT(index < m_factories.size());
-	return m_factories[index];
+    DE_ASSERT(index < m_factories.size());
+    return m_factories[index];
 }
 
-AbstractFactory* GenericFactoryRegistry::getFactoryByName (const std::string& name)
+AbstractFactory *GenericFactoryRegistry::getFactoryByName(const std::string &name)
 {
-	for (size_t index = 0; index < m_factories.size(); index++)
-	{
-		if (name == m_factories[index]->getName())
-			return m_factories[index];
-	}
+    for (size_t index = 0; index < m_factories.size(); index++)
+    {
+        if (name == m_factories[index]->getName())
+            return m_factories[index];
+    }
 
-	return DE_NULL;
+    return nullptr;
 }
 
-const AbstractFactory* GenericFactoryRegistry::getFactoryByName (const std::string& name) const
+const AbstractFactory *GenericFactoryRegistry::getFactoryByName(const std::string &name) const
 {
-	for (size_t index = 0; index < m_factories.size(); index++)
-	{
-		if (name == m_factories[index]->getName())
-			return m_factories[index];
-	}
+    for (size_t index = 0; index < m_factories.size(); index++)
+    {
+        if (name == m_factories[index]->getName())
+            return m_factories[index];
+    }
 
-	return DE_NULL;
+    return nullptr;
 }
 
-void GenericFactoryRegistry::registerFactory (AbstractFactory* factory)
+void GenericFactoryRegistry::registerFactory(AbstractFactory *factory)
 {
-	DE_ASSERT(!getFactoryByName(factory->getName()));
-	m_factories.push_back(factory);
+    DE_ASSERT(!getFactoryByName(factory->getName()));
+    m_factories.push_back(factory);
 }
 
 // FactoryBase
 
-FactoryBase::FactoryBase (const std::string& name, const std::string& description)
-	: m_name		(name)
-	, m_description	(description)
+FactoryBase::FactoryBase(const std::string &name, const std::string &description)
+    : m_name(name)
+    , m_description(description)
 {
 }
 
-FactoryBase::~FactoryBase (void)
+FactoryBase::~FactoryBase(void)
 {
 }
 
-const char* FactoryBase::getName (void) const
+const char *FactoryBase::getName(void) const
 {
-	return m_name.c_str();
+    return m_name.c_str();
 }
 
-const char* FactoryBase::getDescription (void) const
+const char *FactoryBase::getDescription(void) const
 {
-	return m_description.c_str();
+    return m_description.c_str();
 }
 
-} // tcu
+} // namespace tcu

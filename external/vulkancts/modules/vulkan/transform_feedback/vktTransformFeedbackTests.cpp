@@ -27,23 +27,33 @@
 #include "vktPrimitivesGeneratedQueryTests.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktTestCase.hpp"
-
+#include "vkPipelineConstructionUtil.hpp"
 
 namespace vkt
 {
 namespace TransformFeedback
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
 {
-	de::MovePtr<tcu::TestCaseGroup> transformFeedbackGroup (new tcu::TestCaseGroup(testCtx, "transform_feedback", "Transform Feedback tests"));
+    de::MovePtr<tcu::TestCaseGroup> transformFeedbackGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
-	transformFeedbackGroup->addChild(createTransformFeedbackSimpleTests(testCtx));
-	transformFeedbackGroup->addChild(createTransformFeedbackFuzzLayoutTests(testCtx));
-	transformFeedbackGroup->addChild(createPrimitivesGeneratedQueryTests(testCtx));
+    {
+        // For simple tests, we're going to run them with different GPL construction types.
+        const vk::PipelineConstructionType constructionTypes[]{
+            vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC,
+            vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY,
+            vk::PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY,
+        };
+        for (const auto &constructionType : constructionTypes)
+            transformFeedbackGroup->addChild(createTransformFeedbackSimpleTests(testCtx, constructionType));
+    }
 
-	return transformFeedbackGroup.release();
+    transformFeedbackGroup->addChild(createTransformFeedbackFuzzLayoutTests(testCtx));
+    transformFeedbackGroup->addChild(createPrimitivesGeneratedQueryTests(testCtx));
+
+    return transformFeedbackGroup.release();
 }
 
-} // TransformFeedback
-} // vkt
+} // namespace TransformFeedback
+} // namespace vkt

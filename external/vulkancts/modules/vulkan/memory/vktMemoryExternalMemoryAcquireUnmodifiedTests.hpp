@@ -29,9 +29,9 @@ namespace vkt
 namespace memory
 {
 
-tcu::TestCaseGroup* createExternalMemoryAcquireUnmodifiedTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createExternalMemoryAcquireUnmodifiedTests(tcu::TestContext &testCtx);
 
-} // memory
-} // vkt
+} // namespace memory
+} // namespace vkt
 
 #endif // _VKTMEMORYEXTERNALMEMORYACQUIREUNMODIFIEDTESTS_HPP

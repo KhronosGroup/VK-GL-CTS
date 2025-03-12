@@ -37,81 +37,86 @@ namespace egl
 class RenderCase : public SimpleConfigCase
 {
 public:
-						RenderCase				(EglTestContext& eglTestCtx, const char* name, const char* description, eglw::EGLint surfaceTypeMask, const eglu::FilterList& filters);
-	virtual				~RenderCase				(void);
+    RenderCase(EglTestContext &eglTestCtx, const char *name, const char *description, eglw::EGLint surfaceTypeMask,
+               const eglu::FilterList &filters);
+    virtual ~RenderCase(void);
 
 protected:
-	struct Config
-	{
-		eglw::EGLConfig		config;
-		eglw::EGLint		surfaceTypeBit;
-		eglw::EGLint		apiBits;
+    struct Config
+    {
+        eglw::EGLConfig config;
+        eglw::EGLint surfaceTypeBit;
+        eglw::EGLint apiBits;
 
-		Config (eglw::EGLConfig config_, eglw::EGLint surfaceTypeBit_, eglw::EGLint apiBits_)
-			: config			(config_)
-			, surfaceTypeBit	(surfaceTypeBit_)
-			, apiBits			(apiBits_)
-		{
-		}
-	};
+        Config(eglw::EGLConfig config_, eglw::EGLint surfaceTypeBit_, eglw::EGLint apiBits_)
+            : config(config_)
+            , surfaceTypeBit(surfaceTypeBit_)
+            , apiBits(apiBits_)
+        {
+        }
+    };
 
-	virtual void		executeForConfig		(eglw::EGLDisplay display, eglw::EGLConfig config);
-	virtual void		executeForSurface		(eglw::EGLDisplay display, eglw::EGLSurface surface, const Config& config) = DE_NULL;
+    virtual void executeForConfig(eglw::EGLDisplay display, eglw::EGLConfig config);
+    virtual void executeForSurface(eglw::EGLDisplay display, eglw::EGLSurface surface, const Config &config) = 0;
 
-	eglw::EGLint		m_surfaceTypeMask;
+    eglw::EGLint m_surfaceTypeMask;
 };
 
 class SingleContextRenderCase : public RenderCase
 {
 public:
-					SingleContextRenderCase		(EglTestContext& eglTestCtx, const char* name, const char* description, eglw::EGLint apiMask, eglw::EGLint surfaceTypeMask, const eglu::FilterList& filters);
-	virtual			~SingleContextRenderCase	(void);
+    SingleContextRenderCase(EglTestContext &eglTestCtx, const char *name, const char *description, eglw::EGLint apiMask,
+                            eglw::EGLint surfaceTypeMask, const eglu::FilterList &filters);
+    virtual ~SingleContextRenderCase(void);
 
 protected:
-	virtual void	executeForSurface			(eglw::EGLDisplay display, eglw::EGLSurface surface, const Config& config);
-	virtual void	executeForContext			(eglw::EGLDisplay display, eglw::EGLContext context, eglw::EGLSurface surface, const Config& config) = DE_NULL;
+    virtual void executeForSurface(eglw::EGLDisplay display, eglw::EGLSurface surface, const Config &config);
+    virtual void executeForContext(eglw::EGLDisplay display, eglw::EGLContext context, eglw::EGLSurface surface,
+                                   const Config &config) = 0;
 
-	eglw::EGLint	m_apiMask;
+    eglw::EGLint m_apiMask;
 };
 
 class MultiContextRenderCase : public RenderCase
 {
 public:
-					MultiContextRenderCase		(EglTestContext& eglTestCtx, const char* name, const char* description, eglw::EGLint api, eglw::EGLint surfaceType, const eglu::FilterList& filters, int numContextsPerApi);
-	virtual			~MultiContextRenderCase		(void);
+    MultiContextRenderCase(EglTestContext &eglTestCtx, const char *name, const char *description, eglw::EGLint api,
+                           eglw::EGLint surfaceType, const eglu::FilterList &filters, int numContextsPerApi);
+    virtual ~MultiContextRenderCase(void);
 
 protected:
-	virtual void	executeForSurface			(eglw::EGLDisplay display, eglw::EGLSurface surface, const Config& config);
-	virtual void	executeForContexts			(eglw::EGLDisplay display, eglw::EGLSurface surface, const Config& config, const std::vector<std::pair<eglw::EGLint, eglw::EGLContext> >& contexts) = DE_NULL;
+    virtual void executeForSurface(eglw::EGLDisplay display, eglw::EGLSurface surface, const Config &config);
+    virtual void executeForContexts(eglw::EGLDisplay display, eglw::EGLSurface surface, const Config &config,
+                                    const std::vector<std::pair<eglw::EGLint, eglw::EGLContext>> &contexts) = 0;
 
-	int				m_numContextsPerApi;
-	eglw::EGLint	m_apiMask;
+    int m_numContextsPerApi;
+    eglw::EGLint m_apiMask;
 };
 
 class RenderFilterList : public NamedFilterList
 {
 public:
-	RenderFilterList (const char* name, const char* description, eglw::EGLint surfaceTypeMask)
-		: NamedFilterList	(name, description)
-		, m_surfaceTypeMask	(surfaceTypeMask)
-	{
-	}
+    RenderFilterList(const char *name, const char *description, eglw::EGLint surfaceTypeMask)
+        : NamedFilterList(name, description)
+        , m_surfaceTypeMask(surfaceTypeMask)
+    {
+    }
 
-	eglw::EGLint getSurfaceTypeMask (void) const
-	{
-		return m_surfaceTypeMask;
-	}
+    eglw::EGLint getSurfaceTypeMask(void) const
+    {
+        return m_surfaceTypeMask;
+    }
 
 private:
-	eglw::EGLint	m_surfaceTypeMask;
+    eglw::EGLint m_surfaceTypeMask;
 };
 
-void			getDefaultRenderFilterLists	(std::vector<RenderFilterList>& configSets, const eglu::FilterList& baseFilters);
+void getDefaultRenderFilterLists(std::vector<RenderFilterList> &configSets, const eglu::FilterList &baseFilters);
 
 //! Client APIs supported in current build
-eglw::EGLint	getBuildClientAPIMask		(void);
+eglw::EGLint getBuildClientAPIMask(void);
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLRENDERCASE_HPP

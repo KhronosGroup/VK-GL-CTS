@@ -58,17 +58,19 @@ namespace glu
 class Platform
 {
 public:
-									Platform						(void);
-									~Platform						(void);
+    Platform(void);
+    ~Platform(void);
 
-	const ContextFactoryRegistry&	getContextFactoryRegistry		(void) const { return m_contextFactoryRegistry;	}
+    const ContextFactoryRegistry &getContextFactoryRegistry(void) const
+    {
+        return m_contextFactoryRegistry;
+    }
 
 protected:
-
-	//! GL context factory registry. Add your context factories here in constructor.
-	ContextFactoryRegistry			m_contextFactoryRegistry;
+    //! GL context factory registry. Add your context factories here in constructor.
+    ContextFactoryRegistry m_contextFactoryRegistry;
 };
 
-} // glu
+} // namespace glu
 
 #endif // _GLUPLATFORM_HPP

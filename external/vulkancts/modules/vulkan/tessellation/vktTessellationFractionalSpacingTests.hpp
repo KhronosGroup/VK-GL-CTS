@@ -32,9 +32,9 @@ namespace vkt
 namespace tessellation
 {
 
-tcu::TestCaseGroup* createFractionalSpacingTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createFractionalSpacingTests(tcu::TestContext &testCtx);
 
-} // tessellation
-} // vkt
+} // namespace tessellation
+} // namespace vkt
 
 #endif // _VKTTESSELLATIONFRACTIONALSPACINGTESTS_HPP

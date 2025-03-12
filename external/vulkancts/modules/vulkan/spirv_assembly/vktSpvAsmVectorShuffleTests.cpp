@@ -32,43 +32,44 @@ namespace SpirVAssembly
 namespace
 {
 
-void createTests (tcu::TestCaseGroup* tests, const char* data_dir)
+void createTests(tcu::TestCaseGroup *tests, const char *data_dir)
 {
 #ifndef CTS_USES_VULKANSC
-	tcu::TestContext& testCtx = tests->getTestContext();
+    tcu::TestContext &testCtx = tests->getTestContext();
 
-	// Shader test files are saved in <path>/external/vulkancts/data/vulkan/amber/<data_dir>/<basename>.amber
-	struct Case {
-		const char*                    basename;
-		const char*                    description;
-		std::vector<std::string>       requirements;
-	};
-	const Case cases[] =
-	{
-		{ "vector_shuffle", "OpVectorShuffle with indices including -1" , { "VariablePointerFeatures.variablePointers" } },
-	};
+    // Shader test files are saved in <path>/external/vulkancts/data/vulkan/amber/<data_dir>/<basename>.amber
+    struct Case
+    {
+        const char *basename;
+        std::vector<std::string> requirements;
+    };
+    const Case cases[] = {
+        // OpVectorShuffle with indices including -1
+        {"vector_shuffle", {"VariablePointerFeatures.variablePointers"}},
+    };
 
-	for (unsigned i = 0; i < sizeof(cases)/sizeof(cases[0]) ; ++i)
-	{
-		std::string					file		= std::string(cases[i].basename) + ".amber";
-		cts_amber::AmberTestCase	*testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].basename, cases[i].description, data_dir, file, cases[i].requirements);
+    for (unsigned i = 0; i < sizeof(cases) / sizeof(cases[0]); ++i)
+    {
+        std::string file = std::string(cases[i].basename) + ".amber";
+        cts_amber::AmberTestCase *testCase =
+            cts_amber::createAmberTestCase(testCtx, cases[i].basename, data_dir, file, cases[i].requirements);
 
-		tests->addChild(testCase);
-	}
+        tests->addChild(testCase);
+    }
 #else
-	DE_UNREF(tests);
-	DE_UNREF(data_dir);
+    DE_UNREF(tests);
+    DE_UNREF(data_dir);
 #endif
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createVectorShuffleGroup (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createVectorShuffleGroup(tcu::TestContext &testCtx)
 {
-	// Location of the Amber script files under the data/vulkan/amber source tree.
-	const char* data_dir = "spirv_assembly/instruction/compute/vector_shuffle";
-	return createTestGroup(testCtx, "vector_shuffle", "OpVectorShuffle edge cases", createTests, data_dir);
+    // Location of the Amber script files under the data/vulkan/amber source tree.
+    const char *data_dir = "spirv_assembly/instruction/compute/vector_shuffle";
+    return createTestGroup(testCtx, "vector_shuffle", createTests, data_dir);
 }
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt

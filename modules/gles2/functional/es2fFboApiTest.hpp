@@ -36,14 +36,14 @@ namespace Functional
 class FboApiTestGroup : public TestCaseGroup
 {
 public:
-					FboApiTestGroup			(Context& context);
-	virtual			~FboApiTestGroup		(void);
+    FboApiTestGroup(Context &context);
+    virtual ~FboApiTestGroup(void);
 
-	virtual void	init					(void);
+    virtual void init(void);
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FFBOAPITEST_HPP

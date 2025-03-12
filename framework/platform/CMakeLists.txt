@@ -73,23 +73,29 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 			add_definitions(-DDEQP_SUPPORT_WAYLAND=1)
 			include_directories(lnx/wayland)
 
-			pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
-
-			if (NOT WAYLAND_SCANNER)
-				pkg_get_variable(WAYLAND_SCANNER wayland-scanner wayland_scanner)
-			endif()
-
-			set(DEQP_XDG_SHELL_PROTOCOL ${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml)
 			set(DEQP_XDG_SHELL_GEN_OUTPUTS_DIR ${PROJECT_BINARY_DIR}/framework/platform)
 			set(DEQP_XDG_SHELL_OUTPUTS
 				${DEQP_XDG_SHELL_GEN_OUTPUTS_DIR}/xdg-shell.c
 				${DEQP_XDG_SHELL_GEN_OUTPUTS_DIR}/xdg-shell.h)
 
-			add_custom_command(
-				COMMAND ${WAYLAND_SCANNER} ARGS client-header ${DEQP_XDG_SHELL_PROTOCOL} xdg-shell.h
-				COMMAND ${WAYLAND_SCANNER} ARGS public-code ${DEQP_XDG_SHELL_PROTOCOL} xdg-shell.c
-				DEPENDS ${DEQP_XDG_SHELL_PROTOCOL}
-				OUTPUT ${DEQP_XDG_SHELL_OUTPUTS})
+			if (WAYLAND_XDG_SHELL_SRC_DIR)
+				# Allow xdg-shell.c and xdg-shell.h to be source files specified in an external directory
+				configure_file(${WAYLAND_XDG_SHELL_SRC_DIR}/xdg-shell.c ${DEQP_XDG_SHELL_GEN_OUTPUTS_DIR}/xdg-shell.c COPYONLY)
+				configure_file(${WAYLAND_XDG_SHELL_SRC_DIR}/xdg-shell.h ${DEQP_XDG_SHELL_GEN_OUTPUTS_DIR}/xdg-shell.h COPYONLY)
+			else ()
+				pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
+
+				if (NOT WAYLAND_SCANNER)
+					pkg_get_variable(WAYLAND_SCANNER wayland-scanner wayland_scanner)
+				endif()
+
+				set(DEQP_XDG_SHELL_PROTOCOL ${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml)
+				add_custom_command(
+					COMMAND ${WAYLAND_SCANNER} ARGS client-header ${DEQP_XDG_SHELL_PROTOCOL} xdg-shell.h
+					COMMAND ${WAYLAND_SCANNER} ARGS public-code ${DEQP_XDG_SHELL_PROTOCOL} xdg-shell.c
+					DEPENDS ${DEQP_XDG_SHELL_PROTOCOL}
+					OUTPUT ${DEQP_XDG_SHELL_OUTPUTS})
+			endif()
 
 			add_custom_target(
 				deqp-xdg-shell ALL
@@ -220,9 +226,9 @@ if (DE_OS_IS_WIN32)
 	target_link_libraries(tcutil-platform "version")
 endif()
 
-# Add similar library for Vulkan SC ( uses same code as vkutil, but with different INL files )
+# Add similar library for Vulkan SC ( uses same code as vkutil, but with different INL files. These
+# are picked up via the version of vkutil that is linked against )
 add_library(tcutil-sc-platform STATIC ${TCUTIL_PLATFORM_SRCS})
-target_include_directories(tcutil-sc-platform BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 
 # Add vkscutil to the deps before tcutil so that it picks up the c++11 dependencies
 target_link_libraries(tcutil-sc-platform vkscutil)
@@ -258,4 +264,3 @@ endif ()
 if (DE_OS_IS_WIN32)
 	target_link_libraries(tcutil-sc-platform "version")
 endif()
-

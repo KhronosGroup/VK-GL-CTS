@@ -37,24 +37,24 @@ namespace geometry
 namespace
 {
 
-void createChildren (tcu::TestCaseGroup* geometryTests)
+void createChildren(tcu::TestCaseGroup *geometryTests)
 {
-	tcu::TestContext& testCtx = geometryTests->getTestContext();
+    tcu::TestContext &testCtx = geometryTests->getTestContext();
 
-	geometryTests->addChild(createInputGeometryShaderTests		(testCtx));
-	geometryTests->addChild(createBasicGeometryShaderTests		(testCtx));
-	geometryTests->addChild(createLayeredRenderingTests			(testCtx));
-	geometryTests->addChild(createInstancedRenderingTests		(testCtx));
-	geometryTests->addChild(createVaryingGeometryShaderTests	(testCtx));
-	geometryTests->addChild(createEmitGeometryShaderTests		(testCtx));
+    geometryTests->addChild(createInputGeometryShaderTests(testCtx));
+    geometryTests->addChild(createBasicGeometryShaderTests(testCtx));
+    geometryTests->addChild(createLayeredRenderingTests(testCtx));
+    geometryTests->addChild(createInstancedRenderingTests(testCtx));
+    geometryTests->addChild(createVaryingGeometryShaderTests(testCtx));
+    geometryTests->addChild(createEmitGeometryShaderTests(testCtx));
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
 {
-	return createTestGroup(testCtx, "geometry", "Geometry shader tests", createChildren);
+    return createTestGroup(testCtx, name.c_str(), createChildren);
 }
 
-} // geometry
-} // vkt
+} // namespace geometry
+} // namespace vkt

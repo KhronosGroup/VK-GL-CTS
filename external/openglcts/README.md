@@ -104,7 +104,7 @@ the Standard Template Library (STL).
 Configuring and Building the Tests
 ------------------------
 The CTS is built via CMake build system. The requirements for the build are as follows:
-- CMake 3.17.2 or newer
+- CMake 3.20.0 or newer
 - C++ compiler with STL and exceptions support
 - Unix: Make + GCC / Clang
 - Windows: Visual Studio or Windows SDK (available free-of-charge)
@@ -203,12 +203,6 @@ set(DEQP_PLATFORM_COPY_LIBRARIES )
 set(DEQP_USE_X11 OFF)
 ```
 
-- Embed the test files in the test Before building with this set (if GTF module is present), run these commands:
-```
-cd external/kc-cts/src/GTF_ES/glsl/GTF
-perl mergeTestFilesToCSource.pl
-```
-
  In your target `.cmake` file add
 ```
 set(DEQP_EMBED_TESTS ON)
@@ -224,26 +218,6 @@ To download sources, run:
 
 	python external/fetch_sources.py
 
-For OpenGL CTS releases, and OpenGL ES CTS releases prior to opengl-es-cts-3.2.4.0
-download Khronos Confidential Conformance Test Suite:
-
-	python external/fetch_kc_cts.py
-
-For OpenGL CTS releases, and OpenGL ES CTS releases prior to opengl-es-cts-3.2.4.0
-the results for the tests included in this suite must be included in a
-conformance submission.
-
-**NOTE**: You need to be a Khronos Adopter and have an active account
-at [Khronos Gitlab](https://gitlab.khronos.org/) to be able to download
-Khronos Confidential CTS.
-It is possible to run and build the CTS without the Khronos Confidential CTS.
-For OpenGL CTS releases, and OpenGL ES CTS releases prior to opengl-es-cts-3.2.4.0
-Khronos Confidential CTS is mandatory if you plan to make a
-conformance submission (see [Creating a Submission Package](#creating-a-submission-package)).
-For opengl-es-cts-3.2.4.0 and later OpenGL ES CTS releases Khronos Confidential CTS
-results must not be included in a submission package.
-
-
 With CMake out-of-source builds are always recommended. Create a build directory
 of your choosing, and in that directory generate Makefiles or IDE project
 using Cmake.
@@ -252,7 +226,6 @@ using Cmake.
 
 Requirements:
 - Visual Studio (2015 or newer recommended) or Windows SDK
-- CMake 3.17.2 Windows native version (i.e. not Cygwin version)
 - For GL/ES2/ES3.x tests: OpengGL, OpenGL ES 2 or ES 3.x libraries and headers
 
 To choose the backend build system for CMake, choose one of the following Generator Names for the
@@ -264,15 +237,6 @@ Building GL, ES2, or ES3.x conformance tests:
 
 	cmake <path to VK-GL-CTS> -DDEQP_TARGET=default -G"<Generator Name>"
 	cmake --build external/openglcts
-
-Khronos Confidential CTS doesn't support run-time selection of API context.
-If you intend to run it you need to additionally supply `GLCTS_GTF_TARGET`
-option to you cmake command, e.g.:
-
-	cmake <path to VK-GL-CTS> -DDEQP_TARGET=default -DGLCTS_GTF_TARGET=<target> -G"<Generator Name>"
-
-Available `<target>`s are `gles2`, `gles3`, `gles31`, `gles32`, and `gl`.
-The default `<target>` is `gles32`.
 
 It's also possible to build `GL-CTS.sln` in Visual Studio instead of running
 the `cmake --build external/openglcts` command.
@@ -299,24 +263,12 @@ function wcmake () {
 
 Required tools:
 - Standard build utilities (make, gcc, etc.)
-- CMake 3.17.2
 - Necessary API libraries (OpenGL, GLES, EGL depending on configuration)
 
-Building ES2 or ES3.x conformance tests:
+Building OpenGL, OpenGL ES2 or ES3.x conformance tests:
 
-	cmake <path to VK-GL-CTS> -DDEQP_TARGET=null -DGLCTS_GTF_TARGET=gles32
+	cmake <path to VK-GL-CTS> -DDEQP_TARGET=null
 	cmake --build external/openglcts
-
-Building OpenGL conformance tests:
-
-	cmake <path to VK-GL-CTS> -DDEQP_TARGET=null -DGLCTS_GTF_TARGET=gl
-	cmake --build external/openglcts
-
-Khronos Confidential CTS doesn't support run-time selection of API context.
-If you intend to run it then the `GLCTS_GTF_TARGET` option is necessary.
-
-Available values for `GLCTS_GTF_TARGET` are `gles2`, `gles3`, `gles31`, `gles32`, and `gl`.
-The default value is `gles32`.
 
 CMake chooses to generate Makefiles by default. Other generators can be used
 as well. See CMake help for more details.
@@ -330,21 +282,20 @@ are needed in order to build an Android binary:
 - Android SDK with API 28 packages and tools installed
 - Apache Ant
 
-An Android binary (for ES 3.2) can be built using command:
+There are two types of builds for Android:
+
+#### App
+
+This builds an APK that needs to be invoked via `adb shell` and the output needs
+to be read via `adb logcat`, it's the preferred way for long-running invocations
+on Android since it doesn't depend on an active connection from the host PC.
+
+An Android APK (for ES 3.2) can be built using command:
 
 	python scripts/android/build_apk.py --target=openglcts --sdk <path to Android SDK> --ndk <path to Android NDK>
 
 By default the CTS package will be built for the Android API level 28.
 Another API level may be supplied using --native-api command line option.
-
-If Khronos Confidential CTS is present then the script will set `GLCTS_GTF_TARGET`
-to `gles32` by default.
-It is possible to specify a different `GLCTS_GTF_TARGET` target by invoking the script
-with the `--kc-cts-target` option, e.g.:
-
-	python scripts/android/build_apk.py --target=openglcts --kc-cts-target=gles31 --sdk <path to Android SDK> --ndk <path to Android NDK>
-
-Available values for `--kc-cts-target` are `gles32`, `gles31`, `gles3`, `gles2` and `gl`.
 
 The package can be installed by either running:
 
@@ -357,6 +308,29 @@ To pick which ABI to use at install time, following commands must be used
 instead:
 
 	adb install -g --abi <ABI name> <build root>/Khronos-CTS.apk /data/local/tmp/Khronos-CTS.apk
+
+#### Executable
+
+This is identical to the builds on other platforms and is better for iterative
+runs of headless tests as CTS can be invoked and the output can be checked from
+a single interactive terminal.
+
+This build doesn't support WSI tests and shouldn't be used for conformance
+submissions, it also isn't recommended for longer running tests since Android
+will terminate this process as soon as the `adb shell` session ends which may
+happen due to an unintentional device disconnection.
+
+	cmake <path to openglcts> -GNinja -DCMAKE_BUILD_TYPE=Debug \
+	      -DCMAKE_TOOLCHAIN_FILE=<NDK path>/build/cmake/android.toolchain.cmake \
+	      -DCMAKE_ANDROID_NDK=<NDK path> -DANDROID_ABI=<ABI to build eg: arm64-v8a> \
+	      -DDE_ANDROID_API=<API level> -DDEQP_TARGET_TOOLCHAIN=ndk-modern \
+	      -DDEQP_TARGET=android -DDEQP_ANDROID_EXE=ON
+	ninja all
+
+The build needs to be transferred to the device via `adb push` to a directory
+under `/data/` on the device, such as `/data/local/tmp/` which should be writeable
+for non-rooted devices. It should be noted that anywhere on `/sdcard/` won't work
+since it's mounted as `noexec`.
 
 Porting
 ------------------------
@@ -476,13 +450,11 @@ To direct logs to a directory, add `--logdir=[path]` parameter.
 
 To specify waived tests, add `--waivers=[path]` parameter.
 
-**NOTE**: Due to the lack of support for run-time selection of API context in the
-Khronos Confidential CTS, a conformance run may fail if it is executed for an API
-version that doesn't match the `GLCTS_GTF_TARGET` value used during the build step.
-
 #### Android
 
-Once the CTS binary is built and installed on the device, a new application
+#### App
+
+Once the CTS APK is built and installed on the device, a new application
 called `ES3.2 CTS`, `ES3.1 CTS`, `ES3 CTS`, `ES2 CTS`, `GL4.5 CTS`, or `GL4.6 CTS`
 (depending on the test version you built) should appear in the launcher.
 Conformance test runs can be done by launching the applications.
@@ -515,11 +487,25 @@ Waivers can be specified by supplying a `waivers` string extra. See the followin
 **NOTE**: Supplying a `summary` = `"true"` string extra will result in the `cts-run-summary.xml` file
 being written out but no tests will be executed.
 
+For GLES 3.2 conformance test, the conformance run configurations can be
+generated and written to a customized file, by specifying the file name through
+`khronosCTSTestParamFileName` argument. Example:
+
+	am start -n org.khronos.gl_cts/org.khronos.cts.ES32GetTestParamActivity -e khronosCTSTestParamFileName "/sdcard/cts-test-params.xml"
+
 Individual tests can be launched as well by targeting
 `org.khronos.gl_cts/android.app.NativeActivity` activity. Command line
 arguments must be supplied in a `cmdLine` string extra. See following example:
 
 	am start -n org.khronos.gl_cts/android.app.NativeActivity -e cmdLine "cts --deqp-case=KHR-GLES32.info.version --deqp-gl-config-id=1 --deqp-log-filename=/sdcard/ES32-egl-config-1.qpa --deqp-surface-width=128 --deqp-surface-height=128"
+
+#### Executable
+
+Identical to [Linux](#linux-1), but within `adb shell` instead:
+
+	adb shell
+	> cd <pushed build directory>/external/openglcts/modules
+	> ./glcts --deqp-caselist-file=...
 
 In addition to the detailed `*.qpa` output files, the Android port of the CTS
 logs a summary of the test run, including the pass/fail status of each test.
@@ -554,6 +540,9 @@ Full list of parameters for the `glcts` binary:
 ```
   -h, --help
     Show this help
+
+  -q, --quiet
+    Suppress messages to standard output
 
   -n, --deqp-case=<value>
     Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*)
@@ -671,6 +660,13 @@ Full list of parameters for the `glcts` binary:
     Enable or disable log file fflush
     default: 'enable'
 
+  --deqp-log-compact=[enable|disable]
+    Enable or disable the compact version of the log
+    default: 'disable'
+
+  --deqp-duplicate-case-name-check=[enable|disable]
+    Check for duplicate case names when creating test hierarchy
+    default: 'enable' in Debug mode, 'disable' in Release mode
 
   --deqp-renderdoc=[enable|disable]
     Enable RenderDoc frame markers
@@ -695,6 +691,10 @@ Full list of parameters for the `glcts` binary:
   --deqp-terminate-on-fail=[enable|disable]
     Terminate the run on first failure
     default: 'disable'
+
+  --deqp-terminate-on-device-lost=[enable|disable]
+    Terminate the run on first device lost error
+    default: 'enable'
 
   --deqp-egl-config-id=<value>
     Legacy name for --deqp-gl-config-id

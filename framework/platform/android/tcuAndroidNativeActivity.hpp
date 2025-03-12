@@ -41,40 +41,43 @@ namespace Android
 class NativeActivity
 {
 public:
-						NativeActivity				(ANativeActivity* activity);
-	virtual				~NativeActivity				(void);
+    NativeActivity(ANativeActivity *activity);
+    virtual ~NativeActivity(void);
 
-	virtual void		onStart						(void);
-	virtual void		onResume					(void);
-	virtual void*		onSaveInstanceState			(size_t* outSize);
-	virtual void		onPause						(void);
-	virtual void		onStop						(void);
-	virtual void		onDestroy					(void);
+    virtual void onStart(void);
+    virtual void onResume(void);
+    virtual void *onSaveInstanceState(size_t *outSize);
+    virtual void onPause(void);
+    virtual void onStop(void);
+    virtual void onDestroy(void);
 
-	virtual void		onWindowFocusChanged		(int hasFocus);
-	virtual void		onNativeWindowCreated		(ANativeWindow* window);
-	virtual void		onNativeWindowResized		(ANativeWindow* window);
-	virtual void		onNativeWindowRedrawNeeded	(ANativeWindow* window);
-	virtual void		onNativeWindowDestroyed		(ANativeWindow* window);
+    virtual void onWindowFocusChanged(int hasFocus);
+    virtual void onNativeWindowCreated(ANativeWindow *window);
+    virtual void onNativeWindowResized(ANativeWindow *window);
+    virtual void onNativeWindowRedrawNeeded(ANativeWindow *window);
+    virtual void onNativeWindowDestroyed(ANativeWindow *window);
 
-	virtual void		onInputQueueCreated			(AInputQueue* queue);
-	virtual void		onInputQueueDestroyed		(AInputQueue* queue);
+    virtual void onInputQueueCreated(AInputQueue *queue);
+    virtual void onInputQueueDestroyed(AInputQueue *queue);
 
-	virtual void		onContentRectChanged		(const ARect* rect);
-	virtual void		onConfigurationChanged		(void);
-	virtual void		onLowMemory					(void);
+    virtual void onContentRectChanged(const ARect *rect);
+    virtual void onConfigurationChanged(void);
+    virtual void onLowMemory(void);
 
-	ANativeActivity*	getNativeActivity			(void) { return m_activity; }
-	void				finish						(void);
+    ANativeActivity *getNativeActivity(void)
+    {
+        return m_activity;
+    }
+    void finish(void);
 
 private:
-						NativeActivity				(const NativeActivity& other);
-	NativeActivity&		operator=					(const NativeActivity& other);
+    NativeActivity(const NativeActivity &other);
+    NativeActivity &operator=(const NativeActivity &other);
 
-	ANativeActivity*	m_activity;
+    ANativeActivity *m_activity;
 };
 
-} // Android
-} // tcu
+} // namespace Android
+} // namespace tcu
 
 #endif // _TCUANDROIDNATIVEACTIVITY_HPP

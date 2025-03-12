@@ -34,11 +34,12 @@ namespace null
 class NullGLContextFactory : public glu::ContextFactory
 {
 public:
-						NullGLContextFactory	(void);
-	glu::RenderContext*	createContext			(const glu::RenderConfig& config, const tcu::CommandLine&, const glu::RenderContext*) const;
+    NullGLContextFactory(void);
+    glu::RenderContext *createContext(const glu::RenderConfig &config, const tcu::CommandLine &,
+                                      const glu::RenderContext *) const;
 };
 
-} // null
-} // tcu
+} // namespace null
+} // namespace tcu
 
 #endif // _TCUNULLCONTEXTFACTORY_HPP

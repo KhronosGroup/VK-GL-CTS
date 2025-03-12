@@ -33,19 +33,21 @@ namespace glcts
 class TessellationShaderTests : public glcts::TestCaseGroupBase
 {
 public:
-	/* Public methods */
-	TessellationShaderTests(glcts::Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderTests(glcts::Context &context, const ExtParameters &extParams);
 
-	virtual ~TessellationShaderTests(void)
-	{
-	}
+    virtual ~TessellationShaderTests(void)
+    {
+    }
 
-	void init(void);
+    void init(void);
 
 private:
-	/* Private methods */
-	TessellationShaderTests(const TessellationShaderTests& other);
-	TessellationShaderTests& operator=(const TessellationShaderTests& other);
+    /* Private methods */
+    TessellationShaderTests(const TessellationShaderTests &other);
+    TessellationShaderTests &operator=(const TessellationShaderTests &other);
+
+    void addTessellationShaderVertexSpacingTest(TestCaseGroupBase *vertexGroup);
 };
 
 } // namespace glcts

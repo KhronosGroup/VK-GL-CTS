@@ -22,7 +22,6 @@
  * \file
  * \brief Multiview tests.
  * Tests functionality provided by the three multiview extensions.
- * Note that this file is formatted using external/openglcts/.clang-format
 */ /*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
@@ -38,14 +37,14 @@ namespace Functional
 class MultiviewTests : public TestCaseGroup
 {
 public:
-	MultiviewTests(Context& context);
-	~MultiviewTests();
+    MultiviewTests(Context &context);
+    ~MultiviewTests();
 
-	void init();
+    void init();
 
 private:
-	MultiviewTests(const MultiviewTests& other);
-	MultiviewTests& operator=(const MultiviewTests& other);
+    MultiviewTests(const MultiviewTests &other);
+    MultiviewTests &operator=(const MultiviewTests &other);
 };
 
 } // namespace Functional

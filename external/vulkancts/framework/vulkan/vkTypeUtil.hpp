@@ -28,280 +28,307 @@
 
 namespace vk
 {
-
 #include "vkTypeUtil.inl"
 
-inline VkClearValue makeClearValueColorF32 (float r, float g, float b, float a)
+inline VkBool32 makeVkBool(bool b)
 {
-	VkClearValue v;
-	v.color.float32[0] = r;
-	v.color.float32[1] = g;
-	v.color.float32[2] = b;
-	v.color.float32[3] = a;
-	return v;
+    return (b ? VK_TRUE : VK_FALSE);
 }
 
-inline VkClearValue makeClearValueColorVec4 (tcu::Vec4 vec)
+inline VkClearValue makeClearValueColorF32(float r, float g, float b, float a)
 {
-	return makeClearValueColorF32(vec.x(), vec.y(), vec.z(), vec.w());
+    VkClearValue v;
+    v.color.float32[0] = r;
+    v.color.float32[1] = g;
+    v.color.float32[2] = b;
+    v.color.float32[3] = a;
+    return v;
 }
 
-inline VkClearValue makeClearValueColorU32 (deUint32 r, deUint32 g, deUint32 b, deUint32 a)
+inline VkClearValue makeClearValueColorVec4(tcu::Vec4 vec)
 {
-	VkClearValue v;
-	v.color.uint32[0] = r;
-	v.color.uint32[1] = g;
-	v.color.uint32[2] = b;
-	v.color.uint32[3] = a;
-	return v;
+    return makeClearValueColorF32(vec.x(), vec.y(), vec.z(), vec.w());
 }
 
-inline VkClearValue makeClearValueColorI32 (deInt32 r, deInt32 g, deInt32 b, deInt32 a)
+inline VkClearValue makeClearValueColorU32(uint32_t r, uint32_t g, uint32_t b, uint32_t a)
 {
-	VkClearValue v;
-	v.color.int32[0] = r;
-	v.color.int32[1] = g;
-	v.color.int32[2] = b;
-	v.color.int32[3] = a;
-	return v;
+    VkClearValue v;
+    v.color.uint32[0] = r;
+    v.color.uint32[1] = g;
+    v.color.uint32[2] = b;
+    v.color.uint32[3] = a;
+    return v;
 }
 
-inline VkClearValue makeClearValueColor (const tcu::Vec4& color)
+inline VkClearValue makeClearValueColorI32(int32_t r, int32_t g, int32_t b, int32_t a)
 {
-	VkClearValue v;
-	v.color.float32[0] = color[0];
-	v.color.float32[1] = color[1];
-	v.color.float32[2] = color[2];
-	v.color.float32[3] = color[3];
-	return v;
+    VkClearValue v;
+    v.color.int32[0] = r;
+    v.color.int32[1] = g;
+    v.color.int32[2] = b;
+    v.color.int32[3] = a;
+    return v;
 }
 
-inline VkClearValue makeClearValueDepthStencil (float depth, deUint32 stencil)
+inline VkClearValue makeClearValueColor(const tcu::Vec4 &color)
 {
-	VkClearValue v;
-	v.depthStencil.depth	= depth;
-	v.depthStencil.stencil	= stencil;
-	return v;
+    VkClearValue v;
+    v.color.float32[0] = color[0];
+    v.color.float32[1] = color[1];
+    v.color.float32[2] = color[2];
+    v.color.float32[3] = color[3];
+    return v;
 }
 
-inline VkClearValue makeClearValue (VkClearColorValue color)
+inline VkClearValue makeClearValueDepthStencil(float depth, uint32_t stencil)
 {
-	VkClearValue v;
-	v.color = color;
-	return v;
+    VkClearValue v;
+    v.depthStencil.depth   = depth;
+    v.depthStencil.stencil = stencil;
+    return v;
 }
 
-inline VkComponentMapping makeComponentMappingRGBA (void)
+inline VkClearValue makeClearValue(VkClearColorValue color)
 {
-	return makeComponentMapping(VK_COMPONENT_SWIZZLE_R,
-								VK_COMPONENT_SWIZZLE_G,
-								VK_COMPONENT_SWIZZLE_B,
-								VK_COMPONENT_SWIZZLE_A);
+    VkClearValue v;
+    v.color = color;
+    return v;
 }
 
-inline VkComponentMapping makeComponentMappingIdentity (void)
+inline VkComponentMapping makeComponentMappingRGBA(void)
 {
-	return makeComponentMapping(VK_COMPONENT_SWIZZLE_IDENTITY,
-								VK_COMPONENT_SWIZZLE_IDENTITY,
-								VK_COMPONENT_SWIZZLE_IDENTITY,
-								VK_COMPONENT_SWIZZLE_IDENTITY);
+    return makeComponentMapping(VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B,
+                                VK_COMPONENT_SWIZZLE_A);
 }
 
-inline VkExtent3D makeExtent3D (const tcu::IVec3& vec)
+inline VkComponentMapping makeComponentMappingIdentity(void)
 {
-	return makeExtent3D((deUint32)vec.x(), (deUint32)vec.y(), (deUint32)vec.z());
+    return makeComponentMapping(VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
+                                VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY);
 }
 
-inline VkExtent3D makeExtent3D (const tcu::UVec3& vec)
+inline VkExtent3D makeExtent3D(const tcu::IVec3 &vec)
 {
-	return makeExtent3D(vec.x(), vec.y(), vec.z());
+    return makeExtent3D((uint32_t)vec.x(), (uint32_t)vec.y(), (uint32_t)vec.z());
 }
 
-inline VkRect2D makeRect2D (deInt32 x, deInt32 y, deUint32 width, deUint32 height)
+inline VkExtent3D makeExtent3D(const tcu::UVec3 &vec)
 {
-	VkRect2D r;
-	r.offset.x		= x;
-	r.offset.y		= y;
-	r.extent.width	= width;
-	r.extent.height	= height;
-
-	return r;
+    return makeExtent3D(vec.x(), vec.y(), vec.z());
 }
 
-inline VkRect2D makeRect2D(const tcu::IVec2& vec)
+inline VkRect2D makeRect2D(int32_t x, int32_t y, uint32_t width, uint32_t height)
 {
-	return makeRect2D(0, 0, vec.x(), vec.y());
+    VkRect2D r;
+    r.offset.x      = x;
+    r.offset.y      = y;
+    r.extent.width  = width;
+    r.extent.height = height;
+
+    return r;
 }
 
-inline VkRect2D makeRect2D(const tcu::IVec3& vec)
+inline VkRect2D makeRect2D(const tcu::IVec2 &vec)
 {
-	return makeRect2D(0, 0, vec.x(), vec.y());
+    return makeRect2D(0, 0, vec.x(), vec.y());
 }
 
-inline VkRect2D makeRect2D(const tcu::UVec2& vec)
+inline VkRect2D makeRect2D(const tcu::IVec3 &vec)
 {
-	return makeRect2D(0, 0, vec.x(), vec.y());
+    return makeRect2D(0, 0, vec.x(), vec.y());
 }
 
-inline VkRect2D makeRect2D(const VkExtent3D& extent)
+inline VkRect2D makeRect2D(const tcu::UVec2 &vec)
 {
-	return makeRect2D(0, 0, extent.width, extent.height);
+    return makeRect2D(0, 0, vec.x(), vec.y());
 }
 
-inline VkRect2D makeRect2D(const VkExtent2D& extent)
+inline VkRect2D makeRect2D(const VkExtent3D &extent)
 {
-	return makeRect2D(0, 0, extent.width, extent.height);
+    return makeRect2D(0, 0, extent.width, extent.height);
 }
 
-inline VkRect2D makeRect2D(const deUint32 width, const deUint32 height)
+inline VkRect2D makeRect2D(const VkExtent2D &extent)
 {
-	return makeRect2D(0, 0, width, height);
+    return makeRect2D(0, 0, extent.width, extent.height);
 }
 
-inline VkViewport makeViewport(const tcu::IVec2& vec)
+inline VkRect2D makeRect2D(const uint32_t width, const uint32_t height)
 {
-	return makeViewport(0.0f, 0.0f, (float)vec.x(), (float)vec.y(), 0.0f, 1.0f);
+    return makeRect2D(0, 0, width, height);
 }
 
-inline VkViewport makeViewport(const tcu::IVec3& vec)
+inline VkViewport makeViewport(const tcu::IVec2 &vec)
 {
-	return makeViewport(0.0f, 0.0f, (float)vec.x(), (float)vec.y(), 0.0f, 1.0f);
+    return makeViewport(0.0f, 0.0f, (float)vec.x(), (float)vec.y(), 0.0f, 1.0f);
 }
 
-inline VkViewport makeViewport(const tcu::UVec2& vec)
+inline VkViewport makeViewport(const tcu::IVec3 &vec)
 {
-	return makeViewport(0.0f, 0.0f, (float)vec.x(), (float)vec.y(), 0.0f, 1.0f);
+    return makeViewport(0.0f, 0.0f, (float)vec.x(), (float)vec.y(), 0.0f, 1.0f);
 }
 
-inline VkViewport makeViewport(const VkExtent3D& extent)
+inline VkViewport makeViewport(const tcu::UVec2 &vec)
 {
-	return makeViewport(0.0f, 0.0f, (float)extent.width, (float)extent.height, 0.0f, 1.0f);
+    return makeViewport(0.0f, 0.0f, (float)vec.x(), (float)vec.y(), 0.0f, 1.0f);
 }
 
-inline VkViewport makeViewport(const VkExtent2D& extent)
+inline VkViewport makeViewport(const VkExtent3D &extent)
 {
-	return makeViewport(0.0f, 0.0f, (float)extent.width, (float)extent.height, 0.0f, 1.0f);
+    return makeViewport(0.0f, 0.0f, (float)extent.width, (float)extent.height, 0.0f, 1.0f);
 }
 
-inline VkViewport makeViewport(const deUint32 width, const deUint32 height)
+inline VkViewport makeViewport(const VkExtent2D &extent)
 {
-	return makeViewport(0.0f, 0.0f, (float)width, (float)height, 0.0f, 1.0f);
+    return makeViewport(0.0f, 0.0f, (float)extent.width, (float)extent.height, 0.0f, 1.0f);
 }
 
-inline VkSemaphoreSubmitInfoKHR makeSemaphoreSubmitInfo (VkSemaphore semaphore, VkPipelineStageFlags2KHR stageMask, uint64_t value = 0, uint32_t deviceIndex = 0)
+inline VkViewport makeViewport(const uint32_t width, const uint32_t height)
 {
-	return VkSemaphoreSubmitInfoKHR
-	{
-		VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR,	//  VkStructureType				sType;
-		DE_NULL,										//  const void*					pNext;
-		semaphore,										//  VkSemaphore					semaphore;
-		value,											//  uint64_t					value;
-		stageMask,										//  VkPipelineStageFlags2KHR	stageMask;
-		deviceIndex,									//  uint32_t					deviceIndex;
-	};
+    return makeViewport(0.0f, 0.0f, (float)width, (float)height, 0.0f, 1.0f);
 }
 
-inline VkPrimitiveTopology primitiveTopologyCastToList (const VkPrimitiveTopology primitiveTopology)
+inline VkSemaphoreSubmitInfoKHR makeSemaphoreSubmitInfo(VkSemaphore semaphore, VkPipelineStageFlags2KHR stageMask,
+                                                        uint64_t value = 0, uint32_t deviceIndex = 0)
 {
-	DE_STATIC_ASSERT(static_cast<deUint64>(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST) + 1 == static_cast<deUint64>(VK_PRIMITIVE_TOPOLOGY_LAST));
-
-	switch (primitiveTopology)
-	{
-		case VK_PRIMITIVE_TOPOLOGY_POINT_LIST:						return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:						return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:						return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:					return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:					return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:					return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:		return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:		return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:	return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:	return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		case VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:						return VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
-		default: TCU_THROW(InternalError, "Unknown primitive topology.");
-	}
+    return VkSemaphoreSubmitInfoKHR{
+        VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, //  VkStructureType sType;
+        nullptr,                                     //  const void* pNext;
+        semaphore,                                   //  VkSemaphore semaphore;
+        value,                                       //  uint64_t value;
+        stageMask,                                   //  VkPipelineStageFlags2KHR stageMask;
+        deviceIndex,                                 //  uint32_t deviceIndex;
+    };
 }
 
-inline bool isPrimitiveTopologyPoint (const VkPrimitiveTopology primitiveTopology)
+inline VkPipelineShaderStageCreateInfo makePipelineShaderStageCreateInfo(
+    VkShaderStageFlagBits stage, VkShaderModule module, const VkSpecializationInfo *pSpecializationInfo = nullptr,
+    const void *pNext = nullptr)
 {
-	return primitiveTopologyCastToList(primitiveTopology) == VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+    const VkPipelineShaderStageCreateInfo stageInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
+        pNext,                                               // const void* pNext;
+        0u,                                                  // VkPipelineShaderStageCreateFlags flags;
+        stage,                                               // VkShaderStageFlagBits stage;
+        module,                                              // VkShaderModule module;
+        "main",                                              // const char* pName;
+        pSpecializationInfo,                                 // const VkSpecializationInfo* pSpecializationInfo;
+    };
+    return stageInfo;
 }
 
-inline bool isPrimitiveTopologyLine (const VkPrimitiveTopology primitiveTopology)
+inline VkPrimitiveTopology primitiveTopologyCastToList(const VkPrimitiveTopology primitiveTopology)
 {
-	return primitiveTopologyCastToList(primitiveTopology) == VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+    DE_STATIC_ASSERT(static_cast<uint64_t>(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST) + 1 ==
+                     static_cast<uint64_t>(VK_PRIMITIVE_TOPOLOGY_LAST));
+
+    switch (primitiveTopology)
+    {
+    case VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+        return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+    case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+        return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+    case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
+        return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+    case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+        return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
+        return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
+        return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+        return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+    case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
+        return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+    case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+        return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+        return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    case VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
+        return VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+    default:
+        TCU_THROW(InternalError, "Unknown primitive topology.");
+    }
 }
 
-inline bool isPrimitiveTopologyTriangle (const VkPrimitiveTopology primitiveTopology)
+inline bool isPrimitiveTopologyPoint(const VkPrimitiveTopology primitiveTopology)
 {
-	return primitiveTopologyCastToList(primitiveTopology) == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    return primitiveTopologyCastToList(primitiveTopology) == VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
 }
 
-inline bool isPrimitiveTopologyPatch (const VkPrimitiveTopology primitiveTopology)
+inline bool isPrimitiveTopologyLine(const VkPrimitiveTopology primitiveTopology)
 {
-	return primitiveTopologyCastToList(primitiveTopology) == VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+    return primitiveTopologyCastToList(primitiveTopology) == VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 }
 
-inline bool isAllInStage (const VkShaderStageFlags shaderStageFlags, const VkShaderStageFlags stageMask)
+inline bool isPrimitiveTopologyTriangle(const VkPrimitiveTopology primitiveTopology)
 {
-	return (shaderStageFlags & stageMask) != 0 && ((shaderStageFlags & ~stageMask) == 0);
+    return primitiveTopologyCastToList(primitiveTopology) == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 }
 
-inline bool isAllComputeStages (const VkShaderStageFlags shaderStageFlags)
+inline bool isPrimitiveTopologyPatch(const VkPrimitiveTopology primitiveTopology)
 {
-	return isAllInStage(shaderStageFlags, VK_SHADER_STAGE_COMPUTE_BIT);
+    return primitiveTopologyCastToList(primitiveTopology) == VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
 }
 
-inline bool isAllGraphicsStages (const VkShaderStageFlags shaderStageFlags)
+inline bool isAllInStage(const VkShaderStageFlags shaderStageFlags, const VkShaderStageFlags stageMask)
 {
-	return isAllInStage(shaderStageFlags, VK_SHADER_STAGE_ALL_GRAPHICS);
+    return (shaderStageFlags & stageMask) != 0 && ((shaderStageFlags & ~stageMask) == 0);
+}
+
+inline bool isAllComputeStages(const VkShaderStageFlags shaderStageFlags)
+{
+    return isAllInStage(shaderStageFlags, VK_SHADER_STAGE_COMPUTE_BIT);
+}
+
+inline bool isAllGraphicsStages(const VkShaderStageFlags shaderStageFlags)
+{
+    return isAllInStage(shaderStageFlags, VK_SHADER_STAGE_ALL_GRAPHICS);
 }
 
 #ifndef CTS_USES_VULKANSC
-inline bool isAllRayTracingStages (const VkShaderStageFlags shaderStageFlags)
+inline bool isAllRayTracingStages(const VkShaderStageFlags shaderStageFlags)
 {
-	const VkShaderStageFlags	rayTracingStageFlags	= VK_SHADER_STAGE_RAYGEN_BIT_KHR
-														| VK_SHADER_STAGE_ANY_HIT_BIT_KHR
-														| VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
-														| VK_SHADER_STAGE_MISS_BIT_KHR
-														| VK_SHADER_STAGE_INTERSECTION_BIT_KHR
-														| VK_SHADER_STAGE_CALLABLE_BIT_KHR;
+    const VkShaderStageFlags rayTracingStageFlags =
+        VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |
+        VK_SHADER_STAGE_MISS_BIT_KHR | VK_SHADER_STAGE_INTERSECTION_BIT_KHR | VK_SHADER_STAGE_CALLABLE_BIT_KHR;
 
-	return isAllInStage(shaderStageFlags, rayTracingStageFlags);
+    return isAllInStage(shaderStageFlags, rayTracingStageFlags);
 }
 
-inline bool isAllMeshShadingStages (const VkShaderStageFlags shaderStageFlags)
+inline bool isAllMeshShadingStages(const VkShaderStageFlags shaderStageFlags)
 {
-	const VkShaderStageFlags meshStages = (VK_SHADER_STAGE_MESH_BIT_EXT | VK_SHADER_STAGE_TASK_BIT_EXT);
-	return isAllInStage(shaderStageFlags, meshStages);
+    const VkShaderStageFlags meshStages = (VK_SHADER_STAGE_MESH_BIT_EXT | VK_SHADER_STAGE_TASK_BIT_EXT);
+    return isAllInStage(shaderStageFlags, meshStages);
 }
+
+#endif // CTS_USES_VULKANSC
 
 template <typename T>
 class StructChainAdder
 {
 public:
-	StructChainAdder (T* baseStruct)
-		: m_baseStruct(baseStruct)
-		{}
+    StructChainAdder(T *baseStruct) : m_baseStruct(baseStruct)
+    {
+    }
 
-	template <typename U>
-	void operator()(U* nextStruct) const
-	{
-		nextStruct->pNext	= m_baseStruct->pNext;
-		m_baseStruct->pNext	= nextStruct;
-	}
+    template <typename U>
+    void operator()(U *nextStruct) const
+    {
+        nextStruct->pNext   = m_baseStruct->pNext;
+        m_baseStruct->pNext = nextStruct;
+    }
 
 private:
-	T* const m_baseStruct;
+    T *const m_baseStruct;
 };
 
-template<typename T>
-StructChainAdder<T> makeStructChainAdder (T* baseStruct)
+template <typename T>
+StructChainAdder<T> makeStructChainAdder(T *baseStruct)
 {
-	return StructChainAdder<T>(baseStruct);
+    return StructChainAdder<T>(baseStruct);
 }
 
-#endif // CTS_USES_VULKANSC
-} // vk
+} // namespace vk
 
 #endif // _VKTYPEUTIL_HPP

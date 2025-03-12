@@ -37,183 +37,189 @@ DE_STATIC_ASSERT(sizeof(deThread) >= sizeof(HANDLE));
 
 typedef struct ThreadEntry_s
 {
-	deThreadFunc	func;
-	void*			arg;
+    deThreadFunc func;
+    void *arg;
 } ThreadEntry;
 
-static int mapPriority (deThreadPriority priority)
+static int mapPriority(deThreadPriority priority)
 {
-	switch (priority)
-	{
-		case DE_THREADPRIORITY_LOWEST:	return THREAD_PRIORITY_IDLE;
-		case DE_THREADPRIORITY_LOW:		return THREAD_PRIORITY_LOWEST;
-		case DE_THREADPRIORITY_NORMAL:	return THREAD_PRIORITY_NORMAL;
-		case DE_THREADPRIORITY_HIGH:	return THREAD_PRIORITY_ABOVE_NORMAL;
-		case DE_THREADPRIORITY_HIGHEST:	return THREAD_PRIORITY_HIGHEST;
-		default:	DE_ASSERT(DE_FALSE);
-	}
-	return 0;
+    switch (priority)
+    {
+    case DE_THREADPRIORITY_LOWEST:
+        return THREAD_PRIORITY_IDLE;
+    case DE_THREADPRIORITY_LOW:
+        return THREAD_PRIORITY_LOWEST;
+    case DE_THREADPRIORITY_NORMAL:
+        return THREAD_PRIORITY_NORMAL;
+    case DE_THREADPRIORITY_HIGH:
+        return THREAD_PRIORITY_ABOVE_NORMAL;
+    case DE_THREADPRIORITY_HIGHEST:
+        return THREAD_PRIORITY_HIGHEST;
+    default:
+        DE_ASSERT(false);
+    }
+    return 0;
 }
 
-static DWORD __stdcall startThread (LPVOID entryPtr)
+static DWORD __stdcall startThread(LPVOID entryPtr)
 {
-	ThreadEntry*	entry	= (ThreadEntry*)entryPtr;
-	deThreadFunc	func	= entry->func;
-	void*			arg		= entry->arg;
+    ThreadEntry *entry = (ThreadEntry *)entryPtr;
+    deThreadFunc func  = entry->func;
+    void *arg          = entry->arg;
 
-	deFree(entry);
+    deFree(entry);
 
-	func(arg);
+    func(arg);
 
-	return 0;
+    return 0;
 }
 
-deThread deThread_create (deThreadFunc func, void* arg, const deThreadAttributes* attributes)
+deThread deThread_create(deThreadFunc func, void *arg, const deThreadAttributes *attributes)
 {
-	ThreadEntry*	entry	= (ThreadEntry*)deMalloc(sizeof(ThreadEntry));
-	HANDLE			thread	= 0;
+    ThreadEntry *entry = (ThreadEntry *)deMalloc(sizeof(ThreadEntry));
+    HANDLE thread      = 0;
 
-	if (!entry)
-		return 0;
+    if (!entry)
+        return 0;
 
-	entry->func	= func;
-	entry->arg	= arg;
+    entry->func = func;
+    entry->arg  = arg;
 
-	thread = CreateThread(DE_NULL, 0, startThread, entry, 0, DE_NULL);
-	if (!thread)
-	{
-		deFree(entry);
-		return 0;
-	}
+    thread = CreateThread(NULL, 0, startThread, entry, 0, NULL);
+    if (!thread)
+    {
+        deFree(entry);
+        return 0;
+    }
 
-	if (attributes)
-		SetThreadPriority(thread, mapPriority(attributes->priority));
+    if (attributes)
+        SetThreadPriority(thread, mapPriority(attributes->priority));
 
-	return (deThread)thread;
+    return (deThread)thread;
 }
 
-deBool deThread_join (deThread thread)
+bool deThread_join(deThread thread)
 {
-	HANDLE	handle		= (HANDLE)thread;
-	WaitForSingleObject(handle, INFINITE);
+    HANDLE handle = (HANDLE)thread;
+    WaitForSingleObject(handle, INFINITE);
 
-	return DE_TRUE;
+    return true;
 }
 
-void deThread_destroy (deThread thread)
+void deThread_destroy(deThread thread)
 {
-	HANDLE	handle		= (HANDLE)thread;
-	CloseHandle(handle);
+    HANDLE handle = (HANDLE)thread;
+    CloseHandle(handle);
 }
 
-void deSleep (deUint32 milliseconds)
+void deSleep(uint32_t milliseconds)
 {
-	Sleep((DWORD)milliseconds);
+    Sleep((DWORD)milliseconds);
 }
 
-void deYield (void)
+void deYield(void)
 {
-	SwitchToThread();
+    SwitchToThread();
 }
 
-static SYSTEM_LOGICAL_PROCESSOR_INFORMATION* getWin32ProcessorInfo (deUint32* numBytes)
+static SYSTEM_LOGICAL_PROCESSOR_INFORMATION *getWin32ProcessorInfo(uint32_t *numBytes)
 {
-	deUint32								curSize	= (deUint32)sizeof(PSYSTEM_LOGICAL_PROCESSOR_INFORMATION)*8;
-	SYSTEM_LOGICAL_PROCESSOR_INFORMATION*	info	= (SYSTEM_LOGICAL_PROCESSOR_INFORMATION*)deMalloc(curSize);
+    uint32_t curSize                           = (uint32_t)sizeof(PSYSTEM_LOGICAL_PROCESSOR_INFORMATION) * 8;
+    SYSTEM_LOGICAL_PROCESSOR_INFORMATION *info = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION *)deMalloc(curSize);
 
-	for (;;)
-	{
-		DWORD	inOutLen	= curSize;
-		DWORD	err;
+    for (;;)
+    {
+        DWORD inOutLen = curSize;
+        DWORD err;
 
-		if (GetLogicalProcessorInformation(info, &inOutLen))
-		{
-			*numBytes = inOutLen;
-			return info;
-		}
-		else
-		{
-			err = GetLastError();
+        if (GetLogicalProcessorInformation(info, &inOutLen))
+        {
+            *numBytes = inOutLen;
+            return info;
+        }
+        else
+        {
+            err = GetLastError();
 
-			if (err == ERROR_INSUFFICIENT_BUFFER)
-			{
-				curSize <<= 1;
-				info = deRealloc(info, curSize);
-			}
-			else
-			{
-				deFree(info);
-				return DE_NULL;
-			}
-		}
-	}
+            if (err == ERROR_INSUFFICIENT_BUFFER)
+            {
+                curSize <<= 1;
+                info = deRealloc(info, curSize);
+            }
+            else
+            {
+                deFree(info);
+                return NULL;
+            }
+        }
+    }
 }
 
 typedef struct ProcessorInfo_s
 {
-	deUint32	numPhysicalCores;
-	deUint32	numLogicalCores;
+    uint32_t numPhysicalCores;
+    uint32_t numLogicalCores;
 } ProcessorInfo;
 
-void parseWin32ProcessorInfo (ProcessorInfo* dst, const SYSTEM_LOGICAL_PROCESSOR_INFORMATION* src, deUint32 numBytes)
+void parseWin32ProcessorInfo(ProcessorInfo *dst, const SYSTEM_LOGICAL_PROCESSOR_INFORMATION *src, uint32_t numBytes)
 {
-	const SYSTEM_LOGICAL_PROCESSOR_INFORMATION*	cur		= src;
+    const SYSTEM_LOGICAL_PROCESSOR_INFORMATION *cur = src;
 
-	deMemset(dst, 0, sizeof(ProcessorInfo));
+    deMemset(dst, 0, sizeof(ProcessorInfo));
 
-	while (((const deUint8*)cur - (const deUint8*)src) + sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION) <= numBytes)
-	{
-		if (cur->Relationship == RelationProcessorCore)
-		{
-			dst->numPhysicalCores	+= 1;
+    while (((const uint8_t *)cur - (const uint8_t *)src) + sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION) <= numBytes)
+    {
+        if (cur->Relationship == RelationProcessorCore)
+        {
+            dst->numPhysicalCores += 1;
 #if (DE_PTR_SIZE == 8)
-			dst->numLogicalCores	+= dePop64(cur->ProcessorMask);
+            dst->numLogicalCores += dePop64(cur->ProcessorMask);
 #else
-			dst->numLogicalCores	+= dePop32(cur->ProcessorMask);
+            dst->numLogicalCores += dePop32(cur->ProcessorMask);
 #endif
-		}
+        }
 
-		cur++;
-	}
+        cur++;
+    }
 }
 
-deBool getProcessorInfo (ProcessorInfo* info)
+bool getProcessorInfo(ProcessorInfo *info)
 {
-	deUint32								numBytes	= 0;
-	SYSTEM_LOGICAL_PROCESSOR_INFORMATION*	rawInfo		= getWin32ProcessorInfo(&numBytes);
+    uint32_t numBytes                             = 0;
+    SYSTEM_LOGICAL_PROCESSOR_INFORMATION *rawInfo = getWin32ProcessorInfo(&numBytes);
 
-	if (!numBytes)
-		return DE_FALSE;
+    if (!numBytes)
+        return false;
 
-	parseWin32ProcessorInfo(info, rawInfo, numBytes);
-	deFree(rawInfo);
+    parseWin32ProcessorInfo(info, rawInfo, numBytes);
+    deFree(rawInfo);
 
-	return DE_TRUE;
+    return true;
 }
 
-deUint32 deGetNumTotalPhysicalCores (void)
+uint32_t deGetNumTotalPhysicalCores(void)
 {
-	ProcessorInfo	info;
+    ProcessorInfo info;
 
-	if (!getProcessorInfo(&info))
-		return 1u;
+    if (!getProcessorInfo(&info))
+        return 1u;
 
-	return info.numPhysicalCores;
+    return info.numPhysicalCores;
 }
 
-deUint32 deGetNumTotalLogicalCores (void)
+uint32_t deGetNumTotalLogicalCores(void)
 {
-	ProcessorInfo	info;
+    ProcessorInfo info;
 
-	if (!getProcessorInfo(&info))
-		return 1u;
+    if (!getProcessorInfo(&info))
+        return 1u;
 
-	return info.numLogicalCores;
+    return info.numLogicalCores;
 }
 
-deUint32 deGetNumAvailableLogicalCores (void)
+uint32_t deGetNumAvailableLogicalCores(void)
 {
-	return deGetNumTotalLogicalCores();
+    return deGetNumTotalLogicalCores();
 }
 
 #endif /* DE_OS */

@@ -33,18 +33,18 @@ namespace deqp
 class ShaderFunctionTests : public TestCaseGroup
 {
 public:
-	ShaderFunctionTests(Context& context, glu::GLSLVersion glslVersion);
-	virtual ~ShaderFunctionTests(void);
+    ShaderFunctionTests(Context &context, glu::GLSLVersion glslVersion);
+    virtual ~ShaderFunctionTests(void);
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	ShaderFunctionTests(const ShaderFunctionTests&);			// not allowed!
-	ShaderFunctionTests& operator=(const ShaderFunctionTests&); // not allowed!
+    ShaderFunctionTests(const ShaderFunctionTests &);            // not allowed!
+    ShaderFunctionTests &operator=(const ShaderFunctionTests &); // not allowed!
 
-	glu::GLSLVersion m_glslVersion;
+    glu::GLSLVersion m_glslVersion;
 };
 
-} // deqp
+} // namespace deqp
 
 #endif // _GLCSHADERFUNCTIONTESTS_HPP

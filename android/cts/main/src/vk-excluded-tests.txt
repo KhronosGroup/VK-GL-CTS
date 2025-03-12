@@ -55,3 +55,18 @@ dEQP-VK.api.driver_properties.conformance_version
 # Excluded them as Intel HW is failing these tests.
 dEQP-VK.pipeline.*.blend.dual_source.format.r8g8b8a8_srgb.states.color_ca_1ms1a_sub_alpha_1msa_1mca_sub-color_1msc_da_max_alpha_o_da_add-color_s1c_s1a_max_alpha_dc_1ms1a_sub-color_s1a_z_sub_alpha_1msa_1msc_max
 dEQP-VK.pipeline.*.blend.dual_source.format.r8g8b8a8_srgb.states.color_ca_1ms1a_sub_alpha_1msa_1mdc_sub-color_1mda_sas_add_alpha_o_ca_add-color_sa_1mdc_sub_alpha_o_1mca_rsub-color_s1c_1msa_rsub_alpha_1msa_1mca_add
+
+# Issue: b/235946943
+dEQP-VK.texture.conversion.snorm_clamp_linear.a8b8g8r8_snorm_pack32
+dEQP-VK.texture.conversion.snorm_clamp_linear.b8g8r8a8_snorm
+dEQP-VK.texture.conversion.snorm_clamp_linear.r16g16b16a16_snorm
+dEQP-VK.texture.conversion.snorm_clamp_linear.r16g16b16_snorm
+dEQP-VK.texture.conversion.snorm_clamp_linear.r16g16_snorm
+dEQP-VK.texture.conversion.snorm_clamp_linear.r16_snorm
+dEQP-VK.texture.conversion.snorm_clamp_linear.r8g8b8a8_snorm
+dEQP-VK.texture.conversion.snorm_clamp_linear.r8g8_snorm
+dEQP-VK.texture.conversion.snorm_clamp_linear.r8_snorm
+
+# VK-GL-CTS 3005
+dEQP-VK.ray_tracing_pipeline.build.cpuht*1048576_1_1
+dEQP-VK.ray_tracing_pipeline.build.cpuht*65536_4_4

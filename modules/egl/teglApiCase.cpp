@@ -33,141 +33,145 @@ namespace deqp
 namespace egl
 {
 
-using tcu::TestLog;
 using std::vector;
+using tcu::TestLog;
 using namespace eglw;
 
-ApiCase::ApiCase (EglTestContext& eglTestCtx, const char* name, const char* description)
-	: TestCase		(eglTestCtx, name, description)
-	, CallLogWrapper(eglTestCtx.getLibrary(), eglTestCtx.getTestContext().getLog())
-	, m_display		(EGL_NO_DISPLAY)
+ApiCase::ApiCase(EglTestContext &eglTestCtx, const char *name, const char *description)
+    : TestCase(eglTestCtx, name, description)
+    , CallLogWrapper(eglTestCtx.getLibrary(), eglTestCtx.getTestContext().getLog())
+    , m_display(EGL_NO_DISPLAY)
 {
 }
 
-ApiCase::~ApiCase (void)
+ApiCase::~ApiCase(void)
 {
 }
 
-void ApiCase::init (void)
+void ApiCase::init(void)
 {
-	m_display				= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
-	m_supportedClientAPIs	= eglu::getClientAPIs(m_eglTestCtx.getLibrary(), m_display);
+    m_display             = eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
+    m_supportedClientAPIs = eglu::getClientAPIs(m_eglTestCtx.getLibrary(), m_display);
 }
 
-void ApiCase::deinit (void)
+void ApiCase::deinit(void)
 {
-	const Library&	egl	= m_eglTestCtx.getLibrary();
-	egl.terminate(m_display);
+    const Library &egl = m_eglTestCtx.getLibrary();
+    egl.terminate(m_display);
 
-	m_display = EGL_NO_DISPLAY;
-	m_supportedClientAPIs.clear();
+    m_display = EGL_NO_DISPLAY;
+    m_supportedClientAPIs.clear();
 }
 
-ApiCase::IterateResult ApiCase::iterate (void)
+ApiCase::IterateResult ApiCase::iterate(void)
 {
-	// Initialize result to pass.
-	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+    // Initialize result to pass.
+    m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
-	// Enable call logging.
-	enableLogging(true);
+    // Enable call logging.
+    enableLogging(true);
 
-	// Run test.
-	test();
+    // Run test.
+    test();
 
-	return STOP;
+    return STOP;
 }
 
-bool ApiCase::isAPISupported (eglw::EGLenum api) const
+bool ApiCase::isAPISupported(eglw::EGLenum api) const
 {
-	return de::contains(m_supportedClientAPIs.begin(), m_supportedClientAPIs.end(), api);
+    return de::contains(m_supportedClientAPIs.begin(), m_supportedClientAPIs.end(), api);
 }
 
-void ApiCase::expectError (EGLenum expected)
+void ApiCase::expectError(EGLenum expected)
 {
-	EGLenum err = m_eglTestCtx.getLibrary().getError();
-	if (err != expected)
-	{
-		m_testCtx.getLog() << TestLog::Message << "// ERROR expected: " << eglu::getErrorStr(expected) << ", Got: " << eglu::getErrorStr(err) << TestLog::EndMessage;
-		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid error");
-	}
+    EGLenum err = m_eglTestCtx.getLibrary().getError();
+    if (err != expected)
+    {
+        m_testCtx.getLog() << TestLog::Message << "// ERROR expected: " << eglu::getErrorStr(expected)
+                           << ", Got: " << eglu::getErrorStr(err) << TestLog::EndMessage;
+        if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid error");
+    }
 }
 
-void ApiCase::expectEitherError (EGLenum expectedA, EGLenum expectedB)
+void ApiCase::expectEitherError(EGLenum expectedA, EGLenum expectedB)
 {
-	EGLenum err = m_eglTestCtx.getLibrary().getError();
-	if (err != expectedA && err != expectedB)
-	{
-		m_testCtx.getLog() << TestLog::Message << "// ERROR expected: " << eglu::getErrorStr(expectedA) << " or " << eglu::getErrorStr(expectedB) << ", Got: " << eglu::getErrorStr(err) << TestLog::EndMessage;
-		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid error");
-	}
+    EGLenum err = m_eglTestCtx.getLibrary().getError();
+    if (err != expectedA && err != expectedB)
+    {
+        m_testCtx.getLog() << TestLog::Message << "// ERROR expected: " << eglu::getErrorStr(expectedA) << " or "
+                           << eglu::getErrorStr(expectedB) << ", Got: " << eglu::getErrorStr(err)
+                           << TestLog::EndMessage;
+        if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid error");
+    }
 }
 
-void ApiCase::expectBoolean (EGLBoolean expected, EGLBoolean got)
+void ApiCase::expectBoolean(EGLBoolean expected, EGLBoolean got)
 {
-	if (expected != got)
-	{
-		m_testCtx.getLog() << TestLog::Message << "// ERROR expected: " << eglu::getBooleanStr(expected) <<  ", Got: " << eglu::getBooleanStr(got) << TestLog::EndMessage;
-		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
-	}
+    if (expected != got)
+    {
+        m_testCtx.getLog() << TestLog::Message << "// ERROR expected: " << eglu::getBooleanStr(expected)
+                           << ", Got: " << eglu::getBooleanStr(got) << TestLog::EndMessage;
+        if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
+    }
 }
 
-void ApiCase::expectNoContext (EGLContext got)
+void ApiCase::expectNoContext(EGLContext got)
 {
-	if (got != EGL_NO_CONTEXT)
-	{
-		m_testCtx.getLog() << TestLog::Message << "// ERROR expected: EGL_NO_CONTEXT" << TestLog::EndMessage;
-		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
-		eglDestroyContext(getDisplay(), got);
-	}
+    if (got != EGL_NO_CONTEXT)
+    {
+        m_testCtx.getLog() << TestLog::Message << "// ERROR expected: EGL_NO_CONTEXT" << TestLog::EndMessage;
+        if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
+        eglDestroyContext(getDisplay(), got);
+    }
 }
 
-void ApiCase::expectNoSurface (EGLSurface got)
+void ApiCase::expectNoSurface(EGLSurface got)
 {
-	if (got != EGL_NO_SURFACE)
-	{
-		m_testCtx.getLog() << TestLog::Message << "// ERROR expected: EGL_NO_SURFACE" << TestLog::EndMessage;
-		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
-		eglDestroySurface(getDisplay(), got);
-	}
+    if (got != EGL_NO_SURFACE)
+    {
+        m_testCtx.getLog() << TestLog::Message << "// ERROR expected: EGL_NO_SURFACE" << TestLog::EndMessage;
+        if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
+        eglDestroySurface(getDisplay(), got);
+    }
 }
 
-void ApiCase::expectNoDisplay (EGLDisplay got)
+void ApiCase::expectNoDisplay(EGLDisplay got)
 {
-	if (got != EGL_NO_DISPLAY)
-	{
-		m_testCtx.getLog() << TestLog::Message << "// ERROR expected: EGL_NO_DISPLAY" << TestLog::EndMessage;
-		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
-	}
+    if (got != EGL_NO_DISPLAY)
+    {
+        m_testCtx.getLog() << TestLog::Message << "// ERROR expected: EGL_NO_DISPLAY" << TestLog::EndMessage;
+        if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
+    }
 }
 
-void ApiCase::expectNull (const void* got)
+void ApiCase::expectNull(const void *got)
 {
-	if (got != DE_NULL)
-	{
-		m_testCtx.getLog() << TestLog::Message << "// ERROR expected: NULL" << TestLog::EndMessage;
-		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
-	}
+    if (got != nullptr)
+    {
+        m_testCtx.getLog() << TestLog::Message << "// ERROR expected: NULL" << TestLog::EndMessage;
+        if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
+    }
 }
 
-bool ApiCase::getConfig (EGLConfig* config, const eglu::FilterList& filters)
+bool ApiCase::getConfig(EGLConfig *config, const eglu::FilterList &filters)
 {
-	try
-	{
-		*config = eglu::chooseSingleConfig(m_eglTestCtx.getLibrary(), m_display, filters);
-		return true;
-	}
-	catch (const tcu::NotSupportedError&)
-	{
-		return false;
-	}
+    try
+    {
+        *config = eglu::chooseSingleConfig(m_eglTestCtx.getLibrary(), m_display, filters);
+        return true;
+    }
+    catch (const tcu::NotSupportedError &)
+    {
+        return false;
+    }
 }
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp

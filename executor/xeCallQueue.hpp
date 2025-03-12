@@ -40,113 +40,133 @@ class CallQueue;
 
 // \todo [2012-07-10 pyry] Optimize memory management in Call
 // \todo [2012-07-10 pyry] CallQueue API could be improved to match TestLog API more closely.
-//						   In order to do that, reference counting system for call object management is needed.
+//                           In order to do that, reference counting system for call object management is needed.
 
 class Call
 {
 public:
-	typedef void (*Function) (CallReader& data);
+    typedef void (*Function)(CallReader &data);
 
-								Call				(void);
-								~Call				(void);
+    Call(void);
+    ~Call(void);
 
-	void						clear				(void);
+    void clear(void);
 
-	Function					getFunction			(void) const	{ return m_func;				}
-	void						setFunction			(Function func)	{ m_func = func;				}
+    Function getFunction(void) const
+    {
+        return m_func;
+    }
+    void setFunction(Function func)
+    {
+        m_func = func;
+    }
 
-	size_t						getDataSize			(void) const	{ return m_data.size();			}
-	void						setDataSize			(size_t size)	{ m_data.resize(size);			}
+    size_t getDataSize(void) const
+    {
+        return m_data.size();
+    }
+    void setDataSize(size_t size)
+    {
+        m_data.resize(size);
+    }
 
-	const deUint8*				getData				(void) const	{ return m_data.empty() ? DE_NULL : &m_data[0];	}
-	deUint8*					getData				(void)			{ return m_data.empty() ? DE_NULL : &m_data[0];	}
+    const uint8_t *getData(void) const
+    {
+        return m_data.empty() ? nullptr : &m_data[0];
+    }
+    uint8_t *getData(void)
+    {
+        return m_data.empty() ? nullptr : &m_data[0];
+    }
 
 private:
-	Function					m_func;
-	std::vector<deUint8>		m_data;
+    Function m_func;
+    std::vector<uint8_t> m_data;
 };
 
 class CallReader
 {
 public:
-					CallReader			(Call* call);
-					CallReader			(void) : m_call(DE_NULL), m_curPos(0) {}
+    CallReader(Call *call);
+    CallReader(void) : m_call(nullptr), m_curPos(0)
+    {
+    }
 
-	void			read				(deUint8* bytes, size_t numBytes);
-	const deUint8*	getDataBlock		(size_t numBytes);					//!< \note Valid only during call.
-	bool			isDataConsumed		(void) const;						//!< all data has been consumed
+    void read(uint8_t *bytes, size_t numBytes);
+    const uint8_t *getDataBlock(size_t numBytes); //!< \note Valid only during call.
+    bool isDataConsumed(void) const;              //!< all data has been consumed
 
 private:
-					CallReader			(const CallReader& other);	//!< disallowed
-	CallReader&		operator=			(const CallReader& other);	//!< disallowed
+    CallReader(const CallReader &other);            //!< disallowed
+    CallReader &operator=(const CallReader &other); //!< disallowed
 
-	Call*			m_call;
-	size_t			m_curPos;
+    Call *m_call;
+    size_t m_curPos;
 };
 
 class CallWriter
 {
 public:
-					CallWriter			(CallQueue* queue, Call::Function function);
-					~CallWriter			(void);
+    CallWriter(CallQueue *queue, Call::Function function);
+    ~CallWriter(void);
 
-	void			write				(const deUint8* bytes, size_t numBytes);
-	void			enqueue				(void);
+    void write(const uint8_t *bytes, size_t numBytes);
+    void enqueue(void);
 
 private:
-					CallWriter			(const CallWriter& other);
-	CallWriter&		operator=			(const CallWriter& other);
+    CallWriter(const CallWriter &other);
+    CallWriter &operator=(const CallWriter &other);
 
-	CallQueue*		m_queue;
-	Call*			m_call;
-	bool			m_enqueued;
+    CallQueue *m_queue;
+    Call *m_call;
+    bool m_enqueued;
 };
 
 class CallQueue
 {
 public:
-							CallQueue			(void);
-							~CallQueue			(void);
+    CallQueue(void);
+    ~CallQueue(void);
 
-	void					callNext			(void); //!< Executes and removes first call in queue. Will block if queue is empty.
+    void callNext(void); //!< Executes and removes first call in queue. Will block if queue is empty.
 
-	Call*					getEmptyCall		(void);
-	void					enqueue				(Call* call);
-	void					freeCall			(Call* call);
-	void					cancel				(void);
+    Call *getEmptyCall(void);
+    void enqueue(Call *call);
+    void freeCall(Call *call);
+    void cancel(void);
 
 private:
-							CallQueue			(const CallQueue& other);
-	CallQueue&				operator=			(const CallQueue& other);
+    CallQueue(const CallQueue &other);
+    CallQueue &operator=(const CallQueue &other);
 
-	bool					m_canceled;
-	de::Semaphore			m_callSem;
+    bool m_canceled;
+    de::Semaphore m_callSem;
 
-	de::Mutex				m_lock;
-	std::vector<Call*>		m_calls;
-	std::vector<Call*>		m_freeCalls;
-	de::RingBuffer<Call*>	m_callQueue;
+    de::Mutex m_lock;
+    std::vector<Call *> m_calls;
+    std::vector<Call *> m_freeCalls;
+    de::RingBuffer<Call *> m_callQueue;
 };
 
 // Stream operators for call reader / writer.
 
-CallReader&		operator>>	(CallReader& reader, std::string& value);
-CallWriter&		operator<<	(CallWriter& writer, const char* str);
+CallReader &operator>>(CallReader &reader, std::string &value);
+CallWriter &operator<<(CallWriter &writer, const char *str);
 
 template <typename T>
-CallReader& operator>> (CallReader& reader, T& value)
+CallReader &operator>>(CallReader &reader, T &value)
 {
-	reader.read((deUint8*)&value, sizeof(T));
-	return reader;
+    reader.read((uint8_t *)&value, sizeof(T));
+    return reader;
 }
 
 template <typename T>
-CallWriter& operator<< (CallWriter& writer, T& value)
+CallWriter &operator<<(CallWriter &writer, T &value)
 {
-	writer.write((const deUint8*)&value, sizeof(T));
-	return writer;
+    writer.write((const uint8_t *)&value, sizeof(T));
+    return writer;
 }
 
-} // xe
+} // namespace xe
 
 #endif // _XECALLQUEUE_HPP

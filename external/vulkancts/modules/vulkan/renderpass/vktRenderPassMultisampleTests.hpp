@@ -23,16 +23,17 @@
  * \brief Tests for render passses with multisample attachments
  *//*--------------------------------------------------------------------*/
 
-#include "tcuDefs.hpp"
-#include "tcuTestCase.hpp"
+#include "vktTestCase.hpp"
 #include "vktRenderPassGroupParams.hpp"
 
 namespace vkt
 {
+namespace renderpass
+{
 
-tcu::TestCaseGroup*	createRenderPassMultisampleTests	(tcu::TestContext& testCtx);
-tcu::TestCaseGroup* createRenderPass2MultisampleTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createRenderPassMultisampleTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams);
 
-} // vkt
+} // namespace renderpass
+} // namespace vkt
 
 #endif // _VKTRENDERPASSMULTISAMPLETESTS_HPP

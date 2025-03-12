@@ -35,86 +35,124 @@ namespace vkt
 namespace conditional
 {
 
-enum ConditionalBufferMemory { LOCAL, HOST };
+enum ConditionalBufferMemory
+{
+    LOCAL,
+    HOST
+};
 
 struct ConditionalData
 {
-	bool						conditionInPrimaryCommandBuffer;
-	bool						conditionInSecondaryCommandBuffer;
-	bool						conditionInverted;
-	bool						conditionInherited;
-	deUint32					conditionValue;
-	bool						padConditionValue;
-	bool						allocationOffset;	// Apply an offset to the condition variable buffer allocation.
-	bool						clearInRenderPass;	// Clear the color attachment as part of beginning the render pass instead of outside.
+    bool conditionInPrimaryCommandBuffer;
+    bool conditionInSecondaryCommandBuffer;
+    bool conditionInverted;
+    bool conditionInherited;
+    uint32_t conditionValue;
+    bool padConditionValue;
+    bool allocationOffset;  // Apply an offset to the condition variable buffer allocation.
+    bool clearInRenderPass; // Clear the color attachment as part of beginning the render pass instead of outside.
+    bool secondaryCommandBufferNested;
 
-	bool						expectCommandExecution;
+    bool expectCommandExecution;
 
-	ConditionalBufferMemory		memoryType;
+    ConditionalBufferMemory memoryType;
 };
 
-static const ConditionalData s_testsData[] =
-{
-	//	CONDPRI	CONDSEC	INV		INH		V	PAD		ALLOCOFFSET	RP_CLEAR	RES		MEM
-	{	true,	false,	false,	false,	1,	false,	false,		false,		true,	HOST	},
-	{	true,	false,	false,	false,	0,	false,	false,		false,		false,	HOST	},
-	{	true,	false,	true,	false,	0,	false,	false,		false,		true,	HOST	},
-	{	true,	false,	true,	false,	1,	false,	false,		false,		false,	HOST	},
-	{	true,	false,	false,	true,	1,	false,	false,		false,		true,	HOST	},
-	{	true,	false,	false,	true,	0,	false,	false,		false,		false,	HOST	},
-	{	true,	false,	true,	true,	0,	false,	false,		false,		true,	HOST	},
-	{	true,	false,	true,	true,	1,	false,	false,		false,		false,	HOST	},
+static const ConditionalData s_testsData[] = {
+    //    CONDPRI    CONDSEC    INV        INH        V    PAD        ALLOCOFFSET    RP_CLEAR    NEST        RES        MEM
+    {true, false, false, false, 1, false, false, false, false, true, HOST},
+    {true, false, false, false, 0, false, false, false, false, false, HOST},
+    {true, false, true, false, 0, false, false, false, false, true, HOST},
+    {true, false, true, false, 1, false, false, false, false, false, HOST},
+    {true, false, false, true, 1, false, false, false, false, true, HOST},
+    {true, false, false, true, 0, false, false, false, false, false, HOST},
+    {true, false, true, true, 0, false, false, false, false, true, HOST},
+    {true, false, true, true, 1, false, false, false, false, false, HOST},
 
-	{	true,	false,	false,	false,	1,	false,	false,		false,		true,	LOCAL	},
-	{	true,	false,	false,	false,	0,	false,	false,		false,		false,	LOCAL	},
-	{	true,	false,	true,	false,	0,	false,	false,		false,		true,	LOCAL	},
-	{	true,	false,	true,	false,	1,	false,	false,		false,		false,	LOCAL	},
-	{	true,	false,	false,	true,	1,	false,	false,		false,		true,	LOCAL	},
-	{	true,	false,	false,	true,	0,	false,	false,		false,		false,	LOCAL	},
-	{	true,	false,	true,	true,	0,	false,	false,		false,		true,	LOCAL	},
-	{	true,	false,	true,	true,	1,	false,	false,		false,		false,	LOCAL	},
+    {true, false, false, false, 1, false, false, false, false, true, LOCAL},
+    {true, false, false, false, 0, false, false, false, false, false, LOCAL},
+    {true, false, true, false, 0, false, false, false, false, true, LOCAL},
+    {true, false, true, false, 1, false, false, false, false, false, LOCAL},
+    {true, false, false, true, 1, false, false, false, false, true, LOCAL},
+    {true, false, false, true, 0, false, false, false, false, false, LOCAL},
+    {true, false, true, true, 0, false, false, false, false, true, LOCAL},
+    {true, false, true, true, 1, false, false, false, false, false, LOCAL},
 
-	{	false,	true,	false,	false,	1,	false,	false,		false,		true,	HOST	},
-	{	false,	true,	false,	false,	0,	false,	false,		false,		false,	HOST	},
-	{	false,	true,	true,	false,	0,	false,	false,		false,		true,	HOST	},
-	{	false,	true,	true,	false,	1,	false,	false,		false,		false,	HOST	},
+    {false, true, false, false, 1, false, false, false, false, true, HOST},
+    {false, true, false, false, 0, false, false, false, false, false, HOST},
+    {false, true, true, false, 0, false, false, false, false, true, HOST},
+    {false, true, true, false, 1, false, false, false, false, false, HOST},
 
-	{	false,	true,	false,	false,	1,	false,	false,		false,		true,	LOCAL	},
-	{	false,	true,	false,	false,	0,	false,	false,		false,		false,	LOCAL	},
-	{	false,	true,	true,	false,	0,	false,	false,		false,		true,	LOCAL	},
-	{	false,	true,	true,	false,	1,	false,	false,		false,		false,	LOCAL	},
+    {false, true, false, false, 1, false, false, false, false, true, LOCAL},
+    {false, true, false, false, 0, false, false, false, false, false, LOCAL},
+    {false, true, true, false, 0, false, false, false, false, true, LOCAL},
+    {false, true, true, false, 1, false, false, false, false, false, LOCAL},
 
-	// Test that inheritance does not affect outcome of secondary command buffer with conditional rendering or not.
-	{	false,	false,	false,	true,	0,	false,	false,		false,		true,	HOST	},
-	{	false,	false,	false,	true,	0,	false,	false,		false,		true,	LOCAL	},
+    // Test that inheritance does not affect outcome of secondary command buffer with conditional rendering or not.
+    {false, false, false, true, 0, false, false, false, false, true, HOST},
+    {false, false, false, true, 0, false, false, false, false, true, LOCAL},
 
-	{	false,	true,	false,	true,	1,	false,	false,		false,		true,	HOST	},
-	{	false,	true,	false,	true,	0,	false,	false,		false,		false,	HOST	},
-	{	false,	true,	true,	true,	1,	false,	false,		false,		false,	HOST	},
-	{	false,	true,	true,	true,	0,	false,	false,		false,		true,	HOST	},
+    {false, true, false, true, 1, false, false, false, false, true, HOST},
+    {false, true, false, true, 0, false, false, false, false, false, HOST},
+    {false, true, true, true, 1, false, false, false, false, false, HOST},
+    {false, true, true, true, 0, false, false, false, false, true, HOST},
 
-	{	false,	true,	false,	true,	1,	false,	false,		false,		true,	LOCAL	},
-	{	false,	true,	false,	true,	0,	false,	false,		false,		false,	LOCAL	},
-	{	false,	true,	true,	true,	1,	false,	false,		false,		false,	LOCAL	},
-	{	false,	true,	true,	true,	0,	false,	false,		false,		true,	LOCAL	},
+    {false, true, false, true, 1, false, false, false, false, true, LOCAL},
+    {false, true, false, true, 0, false, false, false, false, false, LOCAL},
+    {false, true, true, true, 1, false, false, false, false, false, LOCAL},
+    {false, true, true, true, 0, false, false, false, false, true, LOCAL},
 
-	// Test clearing the attachment when beginning the render pass.
-	{	true,	false,	false,	false,	1,	false,	false,		true,		true,	HOST	},
-	{	true,	false,	false,	false,	0,	false,	false,		true,		false,	HOST	},
-	{	true,	false,	true,	false,	0,	false,	false,		true,		true,	HOST	},
-	{	true,	false,	true,	false,	1,	false,	false,		true,		false,	HOST	},
+    // Test clearing the attachment when beginning the render pass.
+    {true, false, false, false, 1, false, false, true, true, true, HOST},
+    {true, false, false, false, 0, false, false, true, true, false, HOST},
+    {true, false, true, false, 0, false, false, true, true, true, HOST},
+    {true, false, true, false, 1, false, false, true, true, false, HOST},
+
+    // Test secondary buffers with nesting
+    {true, false, false, true, 1, false, false, false, true, true, HOST},
+    {true, false, false, true, 0, false, false, false, true, false, HOST},
+    {true, false, true, true, 0, false, false, false, true, true, HOST},
+    {true, false, true, true, 1, false, false, false, true, false, HOST},
+
+    {true, false, false, true, 1, false, false, false, true, true, LOCAL},
+    {true, false, false, true, 0, false, false, false, true, false, LOCAL},
+    {true, false, true, true, 0, false, false, false, true, true, LOCAL},
+    {true, false, true, true, 1, false, false, false, true, false, LOCAL},
+
+    {false, true, false, false, 1, false, false, false, true, true, HOST},
+    {false, true, false, false, 0, false, false, false, true, false, HOST},
+    {false, true, true, false, 0, false, false, false, true, true, HOST},
+    {false, true, true, false, 1, false, false, false, true, false, HOST},
+
+    {false, true, false, false, 1, false, false, false, true, true, LOCAL},
+    {false, true, false, false, 0, false, false, false, true, false, LOCAL},
+    {false, true, true, false, 0, false, false, false, true, true, LOCAL},
+    {false, true, true, false, 1, false, false, false, true, false, LOCAL},
+
+    {false, false, false, true, 0, false, false, false, true, true, HOST},
+    {false, false, false, true, 0, false, false, false, true, true, LOCAL},
+
+    {false, true, false, true, 1, false, false, false, true, true, HOST},
+    {false, true, false, true, 0, false, false, false, true, false, HOST},
+    {false, true, true, true, 1, false, false, false, true, false, HOST},
+    {false, true, true, true, 0, false, false, false, true, true, HOST},
+
+    {false, true, false, true, 1, false, false, false, true, true, LOCAL},
+    {false, true, false, true, 0, false, false, false, true, false, LOCAL},
+    {false, true, true, true, 1, false, false, false, true, false, LOCAL},
+    {false, true, true, true, 0, false, false, false, true, true, LOCAL},
 };
 
-std::ostream&				operator<< (std::ostream& str, ConditionalData const& c);
+std::ostream &operator<<(std::ostream &str, ConditionalData const &c);
 
-void						checkConditionalRenderingCapabilities	(vkt::Context& context, const ConditionalData& data);
-de::SharedPtr<Draw::Buffer>	createConditionalRenderingBuffer		(vkt::Context& context, const ConditionalData& data);
-void						beginConditionalRendering				(const vk::DeviceInterface& vk,
-																	 vk::VkCommandBuffer cmdBuffer,
-																	 Draw::Buffer& buffer,
-																	 const ConditionalData& data);
+void checkConditionalRenderingCapabilities(vkt::Context &context, const ConditionalData &data);
+void checkNestedRenderPassCapabilities(vkt::Context &context);
+de::SharedPtr<Draw::Buffer> createConditionalRenderingBuffer(vkt::Context &context, const ConditionalData &data,
+                                                             bool computeQueue = false);
+void beginConditionalRendering(const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer, Draw::Buffer &buffer,
+                               const ConditionalData &data);
 
-} // conditional
-} // vkt
+} // namespace conditional
+} // namespace vkt
 
 #endif // _VKTCONDITIONALRENDERINGTESTUTIL_HPP

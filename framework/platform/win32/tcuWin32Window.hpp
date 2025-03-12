@@ -35,29 +35,35 @@ namespace win32
 class Window
 {
 public:
-				Window				(HINSTANCE instance, int width, int height);
-				~Window				(void);
+    Window(HINSTANCE instance, int width, int height);
+    ~Window(void);
 
-	void		setVisible			(bool visible);
-	void		setForeground		(void);
-	void		setSize				(int width, int height);
-	void		setMinimized		(bool minimize);
+    void setVisible(bool visible);
+    bool setForeground(void);
+    void setSize(int width, int height);
+    void setMinimized(bool minimize);
 
-	LRESULT		windowProc			(UINT uMsg, WPARAM wParam, LPARAM lParam);
-	void		processEvents		(void);
+    LRESULT windowProc(UINT uMsg, WPARAM wParam, LPARAM lParam);
+    void processEvents(void);
 
-	IVec2		getSize				(void) const;
-	HWND		getHandle			(void) const { return m_window;			}
-	HDC			getDeviceContext	(void) const { return GetDC(m_window);	}
+    IVec2 getSize(void) const;
+    HWND getHandle(void) const
+    {
+        return m_window;
+    }
+    HDC getDeviceContext(void) const
+    {
+        return GetDC(m_window);
+    }
 
 private:
-				Window				(const Window&);
-	Window		operator=			(const Window&);
+    Window(const Window &);
+    Window operator=(const Window &);
 
-	HWND		m_window;
+    HWND m_window;
 };
 
-} // win32
-} // tcu
+} // namespace win32
+} // namespace tcu
 
 #endif // _TCUWIN32WINDOW_HPP

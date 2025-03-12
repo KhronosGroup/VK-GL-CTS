@@ -30,7 +30,6 @@
 
 using namespace deqp::gls::StateQueryUtil;
 
-
 namespace deqp
 {
 namespace gles3
@@ -38,67 +37,62 @@ namespace gles3
 namespace Functional
 {
 
-static const char* getVerifierSuffix (QueryType type)
+static const char *getVerifierSuffix(QueryType type)
 {
-	switch (type)
-	{
-		case QUERY_SAMPLER_PARAM_INTEGER:	return "_getsamplerparameteri";
-		case QUERY_SAMPLER_PARAM_FLOAT:		return "_getsamplerparameterf";
-		default:
-			DE_ASSERT(DE_FALSE);
-			return DE_NULL;
-	}
+    switch (type)
+    {
+    case QUERY_SAMPLER_PARAM_INTEGER:
+        return "_getsamplerparameteri";
+    case QUERY_SAMPLER_PARAM_FLOAT:
+        return "_getsamplerparameterf";
+    default:
+        DE_ASSERT(false);
+        return nullptr;
+    }
 }
 
-#define FOR_EACH_VERIFIER(VERIFIERS, CODE_BLOCK)												\
-	for (int _verifierNdx = 0; _verifierNdx < DE_LENGTH_OF_ARRAY(VERIFIERS); _verifierNdx++)	\
-	{																							\
-		QueryType verifier = (VERIFIERS)[_verifierNdx];											\
-		CODE_BLOCK;																				\
-	}
+#define FOR_EACH_VERIFIER(VERIFIERS, CODE_BLOCK)                                             \
+    for (int _verifierNdx = 0; _verifierNdx < DE_LENGTH_OF_ARRAY(VERIFIERS); _verifierNdx++) \
+    {                                                                                        \
+        QueryType verifier = (VERIFIERS)[_verifierNdx];                                      \
+        CODE_BLOCK;                                                                          \
+    }
 
-SamplerStateQueryTests::SamplerStateQueryTests (Context& context)
-	: TestCaseGroup(context, "sampler", "Sampler State Query tests")
+SamplerStateQueryTests::SamplerStateQueryTests(Context &context)
+    : TestCaseGroup(context, "sampler", "Sampler State Query tests")
 {
 }
-void SamplerStateQueryTests::init (void)
+void SamplerStateQueryTests::init(void)
 {
-	using namespace gls::TextureStateQueryTests;
+    using namespace gls::TextureStateQueryTests;
 
-	static const QueryType verifiers[] =
-	{
-		QUERY_SAMPLER_PARAM_INTEGER,
-		QUERY_SAMPLER_PARAM_FLOAT
-	};
-	static const struct
-	{
-		const char*	name;
-		const char*	desc;
-		TesterType	tester;
-	} states[] =
-	{
-		{ "sampler_texture_wrap_s",				"TEXTURE_WRAP_S",			TESTER_TEXTURE_WRAP_S			},
-		{ "sampler_texture_wrap_t",				"TEXTURE_WRAP_T",			TESTER_TEXTURE_WRAP_T			},
-		{ "sampler_texture_wrap_r",				"TEXTURE_WRAP_R",			TESTER_TEXTURE_WRAP_R			},
-		{ "sampler_texture_mag_filter",			"TEXTURE_MAG_FILTER",		TESTER_TEXTURE_MAG_FILTER		},
-		{ "sampler_texture_min_filter",			"TEXTURE_MIN_FILTER",		TESTER_TEXTURE_MIN_FILTER		},
-		{ "sampler_texture_min_lod",			"TEXTURE_MIN_LOD",			TESTER_TEXTURE_MIN_LOD			},
-		{ "sampler_texture_max_lod",			"TEXTURE_MAX_LOD",			TESTER_TEXTURE_MAX_LOD			},
-		{ "sampler_texture_compare_mode",		"TEXTURE_COMPARE_MODE",		TESTER_TEXTURE_COMPARE_MODE		},
-		{ "sampler_texture_compare_func",		"TEXTURE_COMPARE_FUNC",		TESTER_TEXTURE_COMPARE_FUNC		},
-	};
+    static const QueryType verifiers[] = {QUERY_SAMPLER_PARAM_INTEGER, QUERY_SAMPLER_PARAM_FLOAT};
+    static const struct
+    {
+        const char *name;
+        const char *desc;
+        TesterType tester;
+    } states[] = {
+        {"sampler_texture_wrap_s", "TEXTURE_WRAP_S", TESTER_TEXTURE_WRAP_S},
+        {"sampler_texture_wrap_t", "TEXTURE_WRAP_T", TESTER_TEXTURE_WRAP_T},
+        {"sampler_texture_wrap_r", "TEXTURE_WRAP_R", TESTER_TEXTURE_WRAP_R},
+        {"sampler_texture_mag_filter", "TEXTURE_MAG_FILTER", TESTER_TEXTURE_MAG_FILTER},
+        {"sampler_texture_min_filter", "TEXTURE_MIN_FILTER", TESTER_TEXTURE_MIN_FILTER},
+        {"sampler_texture_min_lod", "TEXTURE_MIN_LOD", TESTER_TEXTURE_MIN_LOD},
+        {"sampler_texture_max_lod", "TEXTURE_MAX_LOD", TESTER_TEXTURE_MAX_LOD},
+        {"sampler_texture_compare_mode", "TEXTURE_COMPARE_MODE", TESTER_TEXTURE_COMPARE_MODE},
+        {"sampler_texture_compare_func", "TEXTURE_COMPARE_FUNC", TESTER_TEXTURE_COMPARE_FUNC},
+    };
 
-	for (int stateNdx = 0; stateNdx < DE_LENGTH_OF_ARRAY(states); ++stateNdx)
-	{
-		FOR_EACH_VERIFIER(verifiers, addChild(createSamplerParamTest(m_testCtx,
-																	 m_context.getRenderContext(),
-																	 std::string() + states[stateNdx].name + getVerifierSuffix(verifier),
-																	 states[stateNdx].desc,
-																	 verifier,
-																	 states[stateNdx].tester)))
-	}
+    for (int stateNdx = 0; stateNdx < DE_LENGTH_OF_ARRAY(states); ++stateNdx)
+    {
+        FOR_EACH_VERIFIER(verifiers, addChild(createSamplerParamTest(
+                                         m_testCtx, m_context.getRenderContext(),
+                                         std::string() + states[stateNdx].name + getVerifierSuffix(verifier),
+                                         states[stateNdx].desc, verifier, states[stateNdx].tester)))
+    }
 }
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp

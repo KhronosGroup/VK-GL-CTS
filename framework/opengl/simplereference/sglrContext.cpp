@@ -32,52 +32,54 @@ namespace sglr
 
 using std::vector;
 
-void Context::texImage2D (deUint32 target, int level, deUint32 internalFormat, const tcu::Surface& src)
+void Context::texImage2D(uint32_t target, int level, uint32_t internalFormat, const tcu::Surface &src)
 {
-	int		width	= src.getWidth();
-	int		height	= src.getHeight();
-	texImage2D(target, level, internalFormat, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, src.getAccess().getDataPtr());
+    int width  = src.getWidth();
+    int height = src.getHeight();
+    texImage2D(target, level, internalFormat, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+               src.getAccess().getDataPtr());
 }
 
-void Context::texImage2D (deUint32 target, int level, deUint32 internalFormat, int width, int height)
+void Context::texImage2D(uint32_t target, int level, uint32_t internalFormat, int width, int height)
 {
-	deUint32	format		= GL_NONE;
-	deUint32	dataType	= GL_NONE;
+    uint32_t format   = GL_NONE;
+    uint32_t dataType = GL_NONE;
 
-	switch (internalFormat)
-	{
-		case GL_ALPHA:
-		case GL_LUMINANCE:
-		case GL_LUMINANCE_ALPHA:
-		case GL_RGB:
-		case GL_RGBA:
-			format		= internalFormat;
-			dataType	= GL_UNSIGNED_BYTE;
-			break;
+    switch (internalFormat)
+    {
+    case GL_ALPHA:
+    case GL_LUMINANCE:
+    case GL_LUMINANCE_ALPHA:
+    case GL_RGB:
+    case GL_RGBA:
+        format   = internalFormat;
+        dataType = GL_UNSIGNED_BYTE;
+        break;
 
-		default:
-		{
-			glu::TransferFormat transferFmt = glu::getTransferFormat(glu::mapGLInternalFormat(internalFormat));
-			format		= transferFmt.format;
-			dataType	= transferFmt.dataType;
-			break;
-		}
-	}
+    default:
+    {
+        glu::TransferFormat transferFmt = glu::getTransferFormat(glu::mapGLInternalFormat(internalFormat));
+        format                          = transferFmt.format;
+        dataType                        = transferFmt.dataType;
+        break;
+    }
+    }
 
-	texImage2D(target, level, internalFormat, width, height, 0, format, dataType, DE_NULL);
+    texImage2D(target, level, internalFormat, width, height, 0, format, dataType, nullptr);
 }
 
-void Context::texSubImage2D (deUint32 target, int level, int xoffset, int yoffset, const tcu::Surface& src)
+void Context::texSubImage2D(uint32_t target, int level, int xoffset, int yoffset, const tcu::Surface &src)
 {
-	int		width	= src.getWidth();
-	int		height	= src.getHeight();
-	texSubImage2D(target, level, xoffset, yoffset, width, height, GL_RGBA, GL_UNSIGNED_BYTE, src.getAccess().getDataPtr());
+    int width  = src.getWidth();
+    int height = src.getHeight();
+    texSubImage2D(target, level, xoffset, yoffset, width, height, GL_RGBA, GL_UNSIGNED_BYTE,
+                  src.getAccess().getDataPtr());
 }
 
-void Context::readPixels (tcu::Surface& dst, int x, int y, int width, int height)
+void Context::readPixels(tcu::Surface &dst, int x, int y, int width, int height)
 {
-	dst.setSize(width, height);
-	readPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, dst.getAccess().getDataPtr());
+    dst.setSize(width, height);
+    readPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, dst.getAccess().getDataPtr());
 }
 
-} // sglr
+} // namespace sglr

@@ -33,9 +33,9 @@ namespace vkt
 namespace renderpass
 {
 
-tcu::TestCaseGroup* createRenderPassDitheringTests (tcu::TestContext& testCtx, const RenderingType renderingType);
+tcu::TestCaseGroup *createRenderPassDitheringTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams);
 
-} // renderpass
-} // vkt
+} // namespace renderpass
+} // namespace vkt
 
 #endif // _VKTRENDERPASSDITHERINGTESTS_HPP

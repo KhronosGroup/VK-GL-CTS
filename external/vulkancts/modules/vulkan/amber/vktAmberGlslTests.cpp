@@ -34,49 +34,49 @@ namespace vkt
 namespace cts_amber
 {
 
-tcu::TestCaseGroup*	createCombinedOperationsGroup (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createCombinedOperationsGroup(tcu::TestContext &testCtx)
 {
-	static const std::string										kGroupName				= "combined_operations";
-	static const std::vector<std::pair<std::string, std::string>>	combinedOperationsTests	=
-	{
-		{ "notxor",			"Bitwise negation of a bitwise xor operation"		},
-		{ "negintdivand",	"Bitwise and of a negative value that was divided"	},
-	};
+    static const std::string kGroupName                                                   = "combined_operations";
+    static const std::vector<std::pair<std::string, std::string>> combinedOperationsTests = {
+        {"notxor", "Bitwise negation of a bitwise xor operation"},
+        {"negintdivand", "Bitwise and of a negative value that was divided"},
+    };
 
-	de::MovePtr<tcu::TestCaseGroup> group{new tcu::TestCaseGroup{testCtx, kGroupName.c_str(), "Combined operations test group"}};
-	for (const auto& test : combinedOperationsTests)
-	{
-		group->addChild(createAmberTestCase(testCtx, test.first.c_str(), test.second.c_str(), kGroupName.c_str(), test.first + ".amber"));
-	}
-	return group.release();
+    de::MovePtr<tcu::TestCaseGroup> group{new tcu::TestCaseGroup{testCtx, kGroupName.c_str()}};
+    for (const auto &test : combinedOperationsTests)
+    {
+        group->addChild(createAmberTestCase(testCtx, test.first.c_str(), test.second.c_str(), kGroupName.c_str(),
+                                            test.first + ".amber"));
+    }
+    return group.release();
 }
 
-tcu::TestCaseGroup*	createCrashTestGroup (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createCrashTestGroup(tcu::TestContext &testCtx)
 {
-	struct TestParameters
-	{
-		std::string					name;
-		std::string					description;
-		std::vector<std::string>	requirements;
-	};
-	static const std::string					kGroupName				= "crash_test";
-	static const std::vector<TestParameters>	crashTestParameters	=
-	{
-		{ "divbyzero_vert",		"Vertex shader division by zero tests",						{}								},
-		{ "divbyzero_tesc",		"Tessellation control shader division by zero tests",		{ "Features.tessellationShader"	}},
-		{ "divbyzero_tese",		"Tessellation evaluation shader division by zero tests",	{ "Features.tessellationShader"	}},
-		{ "divbyzero_geom",		"Geoemtry shader division by zero tests",					{ "Features.geometryShader"		}},
-		{ "divbyzero_frag",		"Fragment shader division by zero tests",					{}								},
-		{ "divbyzero_comp",		"Compute shader division by zero tests",					{}								},
-	};
+    struct TestParameters
+    {
+        std::string name;
+        std::string description;
+        std::vector<std::string> requirements;
+    };
+    static const std::string kGroupName                          = "crash_test";
+    static const std::vector<TestParameters> crashTestParameters = {
+        {"divbyzero_vert", "Vertex shader division by zero tests", {}},
+        {"divbyzero_tesc", "Tessellation control shader division by zero tests", {"Features.tessellationShader"}},
+        {"divbyzero_tese", "Tessellation evaluation shader division by zero tests", {"Features.tessellationShader"}},
+        {"divbyzero_geom", "Geoemtry shader division by zero tests", {"Features.geometryShader"}},
+        {"divbyzero_frag", "Fragment shader division by zero tests", {}},
+        {"divbyzero_comp", "Compute shader division by zero tests", {}},
+    };
 
-	de::MovePtr<tcu::TestCaseGroup>				group{new tcu::TestCaseGroup{testCtx, kGroupName.c_str(), "Crash test group"}};
-	for (const auto& params : crashTestParameters)
-	{
-		group->addChild(createAmberTestCase(testCtx, params.name.c_str(), params.description.c_str(), kGroupName.c_str(), params.name + ".amber", params.requirements));
-	}
-	return group.release();
+    de::MovePtr<tcu::TestCaseGroup> group{new tcu::TestCaseGroup{testCtx, kGroupName.c_str()}};
+    for (const auto &params : crashTestParameters)
+    {
+        group->addChild(createAmberTestCase(testCtx, params.name.c_str(), params.description.c_str(),
+                                            kGroupName.c_str(), params.name + ".amber", params.requirements));
+    }
+    return group.release();
 }
 
-} // cts_amber
-} // vkt
+} // namespace cts_amber
+} // namespace vkt

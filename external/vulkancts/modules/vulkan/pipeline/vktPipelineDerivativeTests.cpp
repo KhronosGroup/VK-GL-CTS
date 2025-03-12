@@ -57,136 +57,134 @@ using namespace vk;
 namespace
 {
 
-// Helper functions
-
-void initComputeDerivativePrograms (SourceCollections& sources)
+void checkSupport(Context &context, bool useMaintenance5)
 {
-	std::ostringstream computeSource;
-
-	// Trivial do-nothing compute shader
-	computeSource <<
-		"#version 310 es\n"
-		"layout(local_size_x=1) in;\n"
-		"void main (void)\n"
-		"{\n"
-		"}\n";
-
-	sources.glslSources.add("comp") << glu::ComputeSource(computeSource.str());
+    if (useMaintenance5)
+        context.requireDeviceFunctionality("VK_KHR_maintenance5");
 }
 
-tcu::TestStatus testComputeDerivativeByHandle (Context& context)
+void initComputeDerivativePrograms(SourceCollections &sources, bool)
 {
-	const DeviceInterface&		vk				= context.getDeviceInterface();
-	const VkDevice				vkDevice		= context.getDevice();
-	Move<VkShaderModule>		shaderModule	= createShaderModule(vk, vkDevice, context.getBinaryCollection().get("comp"), 0);
+    std::ostringstream computeSource;
 
-	Move<VkPipelineLayout>		layout			= makePipelineLayout(vk, vkDevice);
+    // Trivial do-nothing compute shader
+    computeSource << "#version 310 es\n"
+                     "layout(local_size_x=1) in;\n"
+                     "void main (void)\n"
+                     "{\n"
+                     "}\n";
 
-	VkComputePipelineCreateInfo	cpci			= {
-		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-		DE_NULL,
-		VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			DE_NULL,
-			0,
-			VK_SHADER_STAGE_COMPUTE_BIT,
-			shaderModule.get(),
-			"main",
-			DE_NULL
-		},
-		layout.get(),
-		0,
-		-1
-	};
-
-	Move<VkPipeline>			basePipeline	= createComputePipeline(vk, vkDevice, DE_NULL, &cpci);
-
-	// Create second (identical) pipeline based on first
-	cpci.flags = VK_PIPELINE_CREATE_DERIVATIVE_BIT;
-	cpci.basePipelineHandle = basePipeline.get();
-
-	Move<VkPipeline>			derivedPipeline	= createComputePipeline(vk, vkDevice, DE_NULL, &cpci);
-
-	// If we got here without crashing, success.
-	return tcu::TestStatus::pass("OK");
+    sources.glslSources.add("comp") << glu::ComputeSource(computeSource.str());
 }
 
-tcu::TestStatus testComputeDerivativeByIndex (Context& context)
+tcu::TestStatus testComputeDerivativeByHandle(Context &context, bool useMaintenance5)
 {
-	const DeviceInterface&		vk				= context.getDeviceInterface();
-	const VkDevice				vkDevice		= context.getDevice();
-	Move<VkShaderModule>		shaderModule	= createShaderModule(vk, vkDevice, context.getBinaryCollection().get("comp"), 0);
+    const DeviceInterface &vk         = context.getDeviceInterface();
+    const VkDevice vkDevice           = context.getDevice();
+    Move<VkShaderModule> shaderModule = createShaderModule(vk, vkDevice, context.getBinaryCollection().get("comp"), 0);
 
-	Move<VkPipelineLayout>		layout			= makePipelineLayout(vk, vkDevice);
+    Move<VkPipelineLayout> layout = makePipelineLayout(vk, vkDevice);
 
-	VkComputePipelineCreateInfo	cpci[2]			= { {
-		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-		DE_NULL,
-		VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			DE_NULL,
-			0,
-			VK_SHADER_STAGE_COMPUTE_BIT,
-			shaderModule.get(),
-			"main",
-			DE_NULL
-		},
-		layout.get(),
-		0,
-		-1
-	}, {
-		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-		DE_NULL,
-		VK_PIPELINE_CREATE_DERIVATIVE_BIT,
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			DE_NULL,
-			0,
-			VK_SHADER_STAGE_COMPUTE_BIT,
-			shaderModule.get(),
-			"main",
-			DE_NULL
-		},
-		layout.get(),
-		0,
-		0,
-	} };
+    VkComputePipelineCreateInfo cpci = {VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+                                        nullptr,
+                                        VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,
+                                        {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, 0,
+                                         VK_SHADER_STAGE_COMPUTE_BIT, shaderModule.get(), "main", nullptr},
+                                        layout.get(),
+                                        VK_NULL_HANDLE,
+                                        -1};
 
-	std::vector<VkPipeline>		rawPipelines(2);
-	vk.createComputePipelines(vkDevice, 0, 2, cpci, DE_NULL, rawPipelines.data());
+#ifndef CTS_USES_VULKANSC
+    VkPipelineCreateFlags2CreateInfoKHR flags2CreateInfo = initVulkanStructure();
+    if (useMaintenance5)
+    {
+        flags2CreateInfo.flags = VK_PIPELINE_CREATE_2_ALLOW_DERIVATIVES_BIT_KHR;
+        cpci.flags             = 0;
+        cpci.pNext             = &flags2CreateInfo;
+    }
+#else
+    DE_UNREF(useMaintenance5);
+#endif // CTS_USES_VULKANSC
 
-	for (deUint32 i = 0; i < rawPipelines.size(); i++) {
-		vk.destroyPipeline(vkDevice, rawPipelines[i], DE_NULL);
-	}
+    Move<VkPipeline> basePipeline = createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &cpci);
 
-	// If we got here without crashing, success.
-	return tcu::TestStatus::pass("OK");
+    // Create second (identical) pipeline based on first
+    cpci.flags              = VK_PIPELINE_CREATE_DERIVATIVE_BIT;
+    cpci.basePipelineHandle = basePipeline.get();
+
+#ifndef CTS_USES_VULKANSC
+    if (useMaintenance5)
+    {
+        flags2CreateInfo.flags = VK_PIPELINE_CREATE_2_DERIVATIVE_BIT_KHR;
+        cpci.flags             = 0;
+    }
+#endif // CTS_USES_VULKANSC
+
+    Move<VkPipeline> derivedPipeline = createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &cpci);
+
+    // If we got here without crashing, success.
+    return tcu::TestStatus::pass("OK");
 }
 
-} // anonymous
-
-tcu::TestCaseGroup* createDerivativeTests (tcu::TestContext& testCtx)
+tcu::TestStatus testComputeDerivativeByIndex(Context &context, bool)
 {
-	de::MovePtr<tcu::TestCaseGroup> derivativeTests (new tcu::TestCaseGroup(testCtx, "derivative", "pipeline derivative tests"));
-	de::MovePtr<tcu::TestCaseGroup> computeTests (new tcu::TestCaseGroup(testCtx, "compute", "compute tests"));
+    const DeviceInterface &vk         = context.getDeviceInterface();
+    const VkDevice vkDevice           = context.getDevice();
+    Move<VkShaderModule> shaderModule = createShaderModule(vk, vkDevice, context.getBinaryCollection().get("comp"), 0);
 
-	addFunctionCaseWithPrograms(computeTests.get(),
-								"derivative_by_handle",
-								"",
-								initComputeDerivativePrograms,
-								testComputeDerivativeByHandle);
-	addFunctionCaseWithPrograms(computeTests.get(),
-								"derivative_by_index",
-								"",
-								initComputeDerivativePrograms,
-								testComputeDerivativeByIndex);
+    Move<VkPipelineLayout> layout = makePipelineLayout(vk, vkDevice);
 
-	derivativeTests->addChild(computeTests.release());
-	return derivativeTests.release();
+    VkComputePipelineCreateInfo cpci[2] = {{VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+                                            nullptr,
+                                            VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,
+                                            {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, 0,
+                                             VK_SHADER_STAGE_COMPUTE_BIT, shaderModule.get(), "main", nullptr},
+                                            layout.get(),
+                                            VK_NULL_HANDLE,
+                                            -1},
+                                           {
+                                               VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+                                               nullptr,
+                                               VK_PIPELINE_CREATE_DERIVATIVE_BIT,
+                                               {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, 0,
+                                                VK_SHADER_STAGE_COMPUTE_BIT, shaderModule.get(), "main", nullptr},
+                                               layout.get(),
+                                               VK_NULL_HANDLE,
+                                               0,
+                                           }};
+
+    std::vector<VkPipeline> rawPipelines(2);
+    vk.createComputePipelines(vkDevice, VK_NULL_HANDLE, 2, cpci, nullptr, rawPipelines.data());
+
+    for (uint32_t i = 0; i < rawPipelines.size(); i++)
+    {
+        vk.destroyPipeline(vkDevice, rawPipelines[i], nullptr);
+    }
+
+    // If we got here without crashing, success.
+    return tcu::TestStatus::pass("OK");
 }
 
-} // pipeline
+} // namespace
 
-} // vkt
+tcu::TestCaseGroup *createDerivativeTests(tcu::TestContext &testCtx)
+{
+    de::MovePtr<tcu::TestCaseGroup> derivativeTests(new tcu::TestCaseGroup(testCtx, "derivative"));
+    de::MovePtr<tcu::TestCaseGroup> computeTests(new tcu::TestCaseGroup(testCtx, "compute"));
+
+    addFunctionCaseWithPrograms(computeTests.get(), "derivative_by_handle", initComputeDerivativePrograms,
+                                testComputeDerivativeByHandle, false);
+#ifndef CTS_USES_VULKANSC
+    addFunctionCaseWithPrograms(computeTests.get(), "derivative_by_handle_maintenance5", checkSupport,
+                                initComputeDerivativePrograms, testComputeDerivativeByHandle, true);
+#endif // CTS_USES_VULKANSC
+    addFunctionCaseWithPrograms(computeTests.get(), "derivative_by_index", initComputeDerivativePrograms,
+                                testComputeDerivativeByIndex, false);
+
+    derivativeTests->addChild(computeTests.release());
+    return derivativeTests.release();
+}
+
+} // namespace pipeline
+
+} // namespace vkt

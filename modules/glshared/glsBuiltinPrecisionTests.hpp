@@ -43,25 +43,23 @@ class CaseFactory;
 class CaseFactories
 {
 public:
-	virtual											~CaseFactories	(void) {}
-	virtual const std::vector<const CaseFactory*>	getFactories	(void) const = 0;
+    virtual ~CaseFactories(void)
+    {
+    }
+    virtual const std::vector<const CaseFactory *> getFactories(void) const = 0;
 };
 
-de::MovePtr<const CaseFactories>		createES3BuiltinCases		(void);
-de::MovePtr<const CaseFactories>		createES31BuiltinCases		(void);
+de::MovePtr<const CaseFactories> createES3BuiltinCases(void);
+de::MovePtr<const CaseFactories> createES31BuiltinCases(void);
 
-void							addBuiltinPrecisionTests (
-	tcu::TestContext&					testCtx,
-	glu::RenderContext&					renderCtx,
-	const CaseFactories&				cases,
-	const std::vector<glu::ShaderType>&	shaderTypes,
-	tcu::TestCaseGroup&					dstGroup);
+void addBuiltinPrecisionTests(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, const CaseFactories &cases,
+                              const std::vector<glu::ShaderType> &shaderTypes, tcu::TestCaseGroup &dstGroup);
 
-} // BuiltinPrecisionTests
+} // namespace BuiltinPrecisionTests
 
 using BuiltinPrecisionTests::addBuiltinPrecisionTests;
 
-} // gls
-} // deqp
+} // namespace gls
+} // namespace deqp
 
 #endif // _GLSBUILTINPRECISIONTESTS_HPP

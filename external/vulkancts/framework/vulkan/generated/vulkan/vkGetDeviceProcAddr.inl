@@ -17,57 +17,46 @@ namespace vkt
 
 using namespace vk;
 
-tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
+tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 {
-	tcu::TestLog&								log						(context.getTestContext().getLog());
-	const PlatformInterface&					platformInterface		= context.getPlatformInterface();
-	const auto									validationEnabled		= context.getTestContext().getCommandLine().isValidationEnabled();
-	const CustomInstance						instance				(createCustomInstanceFromContext(context));
-	const InstanceDriver&						instanceDriver			= instance.getDriver();
-	const VkPhysicalDevice						physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32								queueFamilyIndex		= 0;
-	const deUint32								queueCount				= 1;
-	const float									queuePriority			= 1.0f;
-	const std::vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+    tcu::TestLog&                                log                        (context.getTestContext().getLog());
+    const PlatformInterface&                    platformInterface = context.getPlatformInterface();
+    const auto                                    validationEnabled = context.getTestContext().getCommandLine().isValidationEnabled();
+    const CustomInstance                        instance                (createCustomInstanceFromContext(context));
+    const InstanceDriver&                        instanceDriver = instance.getDriver();
+    const VkPhysicalDevice                        physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const uint32_t                                queueFamilyIndex = 0;
+    const uint32_t                                queueCount = 1;
+    const float                                    queuePriority = 1.0f;
+    const std::vector<VkQueueFamilyProperties>    queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
-	const VkDeviceQueueCreateInfo			deviceQueueCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	//  VkStructureType				sType;
-		DE_NULL,									//  const void*					pNext;
-		(VkDeviceQueueCreateFlags)0u,				//  VkDeviceQueueCreateFlags	flags;
-		queueFamilyIndex,							//  deUint32					queueFamilyIndex;
-		queueCount,									//  deUint32					queueCount;
-		&queuePriority,								//  const float*				pQueuePriorities;
-	};
+    const VkDeviceQueueCreateInfo            deviceQueueCreateInfo =
+    {
+        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, //  VkStructureType sType;
+        nullptr, //  const void* pNext;
+        (VkDeviceQueueCreateFlags)0u, //  VkDeviceQueueCreateFlags flags;
+        queueFamilyIndex, //  uint32_t queueFamilyIndex;
+        queueCount, //  uint32_t queueCount;
+        &queuePriority, //  const float* pQueuePriorities;
+    };
 
-	const VkDeviceCreateInfo				deviceCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,		//  VkStructureType					sType;
-		DE_NULL,									//  const void*						pNext;
-		(VkDeviceCreateFlags)0u,					//  VkDeviceCreateFlags				flags;
-		1u,											//  deUint32						queueCreateInfoCount;
-		&deviceQueueCreateInfo,						//  const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
-		0u,											//  deUint32						enabledLayerCount;
-		DE_NULL,									//  const char* const*				ppEnabledLayerNames;
-		0u,											//  deUint32						enabledExtensionCount;
-		DE_NULL,									//  const char* const*				ppEnabledExtensionNames;
-		DE_NULL,									//  const VkPhysicalDeviceFeatures*	pEnabledFeatures;
-	};
-	const Unique<VkDevice>					device			(createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get());
+    const VkDeviceCreateInfo                deviceCreateInfo =
+    {
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, //  VkStructureType sType;
+        nullptr, //  const void* pNext;
+        (VkDeviceCreateFlags)0u, //  VkDeviceCreateFlags flags;
+        1u, //  uint32_t queueCreateInfoCount;
+        &deviceQueueCreateInfo, //  const VkDeviceQueueCreateInfo* pQueueCreateInfos;
+        0u, //  uint32_t enabledLayerCount;
+        nullptr, //  const char* const* ppEnabledLayerNames;
+        0u, //  uint32_t enabledExtensionCount;
+        nullptr, //  const char* const* ppEnabledExtensionNames;
+        nullptr, //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
+    };
+    const Unique<VkDevice>                    device            (createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+    const DeviceDriver                        deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 
-	const std::vector<std::string> loaderExceptions{
-		"vkSetDebugUtilsObjectNameEXT",
-		"vkSetDebugUtilsObjectTagEXT",
-		"vkQueueBeginDebugUtilsLabelEXT",
-		"vkQueueEndDebugUtilsLabelEXT",
-		"vkQueueInsertDebugUtilsLabelEXT",
-		"vkCmdBeginDebugUtilsLabelEXT",
-		"vkCmdEndDebugUtilsLabelEXT",
-		"vkCmdInsertDebugUtilsLabelEXT",
-	};
-
-	const std::vector<std::string> functions{
+    const std::vector<std::string> functions{
 		"vkDestroySurfaceKHR",
 		"vkGetPhysicalDeviceSurfaceSupportKHR",
 		"vkGetPhysicalDeviceSurfaceCapabilitiesKHR",
@@ -132,6 +121,7 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkDestroyCuFunctionNVX",
 		"vkCmdCuLaunchKernelNVX",
 		"vkGetImageViewHandleNVX",
+		"vkGetImageViewHandle64NVX",
 		"vkGetImageViewAddressNVX",
 		"vkCmdDrawIndirectCountAMD",
 		"vkCmdDrawIndexedIndirectCountAMD",
@@ -169,7 +159,6 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkImportSemaphoreFdKHR",
 		"vkGetSemaphoreFdKHR",
 		"vkCmdPushDescriptorSetKHR",
-		"vkCmdPushDescriptorSetWithTemplateKHR",
 		"vkCmdPushDescriptorSetWithTemplateKHR",
 		"vkCmdBeginConditionalRenderingEXT",
 		"vkCmdEndConditionalRenderingEXT",
@@ -227,6 +216,13 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkSubmitDebugUtilsMessageEXT",
 		"vkGetAndroidHardwareBufferPropertiesANDROID",
 		"vkGetMemoryAndroidHardwareBufferANDROID",
+		"vkCreateExecutionGraphPipelinesAMDX",
+		"vkGetExecutionGraphPipelineScratchSizeAMDX",
+		"vkGetExecutionGraphPipelineNodeIndexAMDX",
+		"vkCmdInitializeGraphScratchMemoryAMDX",
+		"vkCmdDispatchGraphAMDX",
+		"vkCmdDispatchGraphIndirectAMDX",
+		"vkCmdDispatchGraphIndirectCountAMDX",
 		"vkCmdSetSampleLocationsEXT",
 		"vkGetPhysicalDeviceMultisamplePropertiesEXT",
 		"vkGetImageMemoryRequirements2KHR",
@@ -284,6 +280,7 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkCmdDrawIndexedIndirectCountKHR",
 		"vkGetMemoryHostPointerPropertiesEXT",
 		"vkCmdWriteBufferMarkerAMD",
+		"vkCmdWriteBufferMarker2AMD",
 		"vkGetPhysicalDeviceCalibrateableTimeDomainsEXT",
 		"vkGetCalibratedTimestampsEXT",
 		"vkCmdDrawMeshTasksNV",
@@ -293,6 +290,7 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkCmdSetExclusiveScissorNV",
 		"vkCmdSetCheckpointNV",
 		"vkGetQueueCheckpointDataNV",
+		"vkGetQueueCheckpointData2NV",
 		"vkGetSemaphoreCounterValueKHR",
 		"vkWaitSemaphoresKHR",
 		"vkSignalSemaphoreKHR",
@@ -310,6 +308,8 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkCreateMetalSurfaceEXT",
 		"vkGetPhysicalDeviceFragmentShadingRatesKHR",
 		"vkCmdSetFragmentShadingRateKHR",
+		"vkCmdSetRenderingAttachmentLocationsKHR",
+		"vkCmdSetRenderingInputAttachmentIndicesKHR",
 		"vkGetBufferDeviceAddressEXT",
 		"vkGetPhysicalDeviceToolPropertiesEXT",
 		"vkWaitForPresentKHR",
@@ -318,7 +318,6 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkGetPhysicalDeviceSurfacePresentModes2EXT",
 		"vkAcquireFullScreenExclusiveModeEXT",
 		"vkReleaseFullScreenExclusiveModeEXT",
-		"vkGetDeviceGroupSurfacePresentModes2EXT",
 		"vkGetDeviceGroupSurfacePresentModes2EXT",
 		"vkCreateHeadlessSurfaceEXT",
 		"vkGetBufferDeviceAddressKHR",
@@ -346,6 +345,11 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkGetPipelineExecutablePropertiesKHR",
 		"vkGetPipelineExecutableStatisticsKHR",
 		"vkGetPipelineExecutableInternalRepresentationsKHR",
+		"vkCopyMemoryToImageEXT",
+		"vkCopyImageToMemoryEXT",
+		"vkCopyImageToImageEXT",
+		"vkTransitionImageLayoutEXT",
+		"vkGetImageSubresourceLayout2EXT",
 		"vkMapMemory2KHR",
 		"vkUnmapMemory2KHR",
 		"vkReleaseSwapchainImagesEXT",
@@ -355,13 +359,22 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkCmdBindPipelineShaderGroupNV",
 		"vkCreateIndirectCommandsLayoutNV",
 		"vkDestroyIndirectCommandsLayoutNV",
+		"vkCmdSetDepthBias2EXT",
 		"vkAcquireDrmDisplayEXT",
 		"vkGetDrmDisplayEXT",
 		"vkCreatePrivateDataSlotEXT",
 		"vkDestroyPrivateDataSlotEXT",
 		"vkSetPrivateDataEXT",
 		"vkGetPrivateDataEXT",
+		"vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR",
+		"vkGetEncodedVideoSessionParametersKHR",
 		"vkCmdEncodeVideoKHR",
+		"vkCreateCudaModuleNV",
+		"vkGetCudaModuleCacheNV",
+		"vkCreateCudaFunctionNV",
+		"vkDestroyCudaModuleNV",
+		"vkDestroyCudaFunctionNV",
+		"vkCmdCudaLaunchKernelNV",
 		"vkExportMetalObjectsEXT",
 		"vkCmdSetEvent2KHR",
 		"vkCmdResetEvent2KHR",
@@ -369,8 +382,6 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkCmdPipelineBarrier2KHR",
 		"vkCmdWriteTimestamp2KHR",
 		"vkQueueSubmit2KHR",
-		"vkCmdWriteBufferMarker2AMD",
-		"vkGetQueueCheckpointData2NV",
 		"vkGetDescriptorSetLayoutSizeEXT",
 		"vkGetDescriptorSetLayoutBindingOffsetEXT",
 		"vkGetDescriptorEXT",
@@ -448,6 +459,74 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkCmdCopyMemoryToImageIndirectNV",
 		"vkCmdDecompressMemoryNV",
 		"vkCmdDecompressMemoryIndirectCountNV",
+		"vkGetPipelineIndirectMemoryRequirementsNV",
+		"vkCmdUpdatePipelineIndirectBufferNV",
+		"vkGetPipelineIndirectDeviceAddressNV",
+		"vkCmdSetDepthClampEnableEXT",
+		"vkCmdSetPolygonModeEXT",
+		"vkCmdSetRasterizationSamplesEXT",
+		"vkCmdSetSampleMaskEXT",
+		"vkCmdSetAlphaToCoverageEnableEXT",
+		"vkCmdSetAlphaToOneEnableEXT",
+		"vkCmdSetLogicOpEnableEXT",
+		"vkCmdSetColorBlendEnableEXT",
+		"vkCmdSetColorBlendEquationEXT",
+		"vkCmdSetColorWriteMaskEXT",
+		"vkCmdSetTessellationDomainOriginEXT",
+		"vkCmdSetRasterizationStreamEXT",
+		"vkCmdSetConservativeRasterizationModeEXT",
+		"vkCmdSetExtraPrimitiveOverestimationSizeEXT",
+		"vkCmdSetDepthClipEnableEXT",
+		"vkCmdSetSampleLocationsEnableEXT",
+		"vkCmdSetColorBlendAdvancedEXT",
+		"vkCmdSetProvokingVertexModeEXT",
+		"vkCmdSetLineRasterizationModeEXT",
+		"vkCmdSetLineStippleEnableEXT",
+		"vkCmdSetDepthClipNegativeOneToOneEXT",
+		"vkCmdSetViewportWScalingEnableNV",
+		"vkCmdSetViewportSwizzleNV",
+		"vkCmdSetCoverageToColorEnableNV",
+		"vkCmdSetCoverageToColorLocationNV",
+		"vkCmdSetCoverageModulationModeNV",
+		"vkCmdSetCoverageModulationTableEnableNV",
+		"vkCmdSetCoverageModulationTableNV",
+		"vkCmdSetShadingRateImageEnableNV",
+		"vkCmdSetRepresentativeFragmentTestEnableNV",
+		"vkCmdSetCoverageReductionModeNV",
+		"vkGetShaderModuleIdentifierEXT",
+		"vkGetShaderModuleCreateInfoIdentifierEXT",
+		"vkGetPhysicalDeviceOpticalFlowImageFormatsNV",
+		"vkCreateOpticalFlowSessionNV",
+		"vkDestroyOpticalFlowSessionNV",
+		"vkBindOpticalFlowSessionImageNV",
+		"vkCmdOpticalFlowExecuteNV",
+		"vkCmdBindIndexBuffer2KHR",
+		"vkGetRenderingAreaGranularityKHR",
+		"vkGetDeviceImageSubresourceLayoutKHR",
+		"vkGetImageSubresourceLayout2KHR",
+		"vkAntiLagUpdateAMD",
+		"vkCreateShadersEXT",
+		"vkDestroyShaderEXT",
+		"vkGetShaderBinaryDataEXT",
+		"vkCmdBindShadersEXT",
+		"vkCmdSetCullModeEXT",
+		"vkCmdSetFrontFaceEXT",
+		"vkCmdSetPrimitiveTopologyEXT",
+		"vkCmdSetViewportWithCountEXT",
+		"vkCmdSetScissorWithCountEXT",
+		"vkCmdBindVertexBuffers2EXT",
+		"vkCmdSetDepthTestEnableEXT",
+		"vkCmdSetDepthWriteEnableEXT",
+		"vkCmdSetDepthCompareOpEXT",
+		"vkCmdSetDepthBoundsTestEnableEXT",
+		"vkCmdSetStencilTestEnableEXT",
+		"vkCmdSetStencilOpEXT",
+		"vkCmdSetVertexInputEXT",
+		"vkCmdSetPatchControlPointsEXT",
+		"vkCmdSetRasterizerDiscardEnableEXT",
+		"vkCmdSetDepthBiasEnableEXT",
+		"vkCmdSetLogicOpEXT",
+		"vkCmdSetPrimitiveRestartEnableEXT",
 		"vkCmdSetTessellationDomainOriginEXT",
 		"vkCmdSetDepthClampEnableEXT",
 		"vkCmdSetPolygonModeEXT",
@@ -479,38 +558,70 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkCmdSetShadingRateImageEnableNV",
 		"vkCmdSetRepresentativeFragmentTestEnableNV",
 		"vkCmdSetCoverageReductionModeNV",
-		"vkGetShaderModuleIdentifierEXT",
-		"vkGetShaderModuleCreateInfoIdentifierEXT",
-		"vkGetPhysicalDeviceOpticalFlowImageFormatsNV",
-		"vkCreateOpticalFlowSessionNV",
-		"vkDestroyOpticalFlowSessionNV",
-		"vkBindOpticalFlowSessionImageNV",
-		"vkCmdOpticalFlowExecuteNV",
+		"vkCmdSetDepthClampRangeEXT",
+		"vkCreatePipelineBinariesKHR",
+		"vkDestroyPipelineBinaryKHR",
+		"vkGetPipelineKeyKHR",
+		"vkGetPipelineBinaryDataKHR",
+		"vkReleaseCapturedPipelineDataKHR",
 		"vkGetFramebufferTilePropertiesQCOM",
 		"vkGetDynamicRenderingTilePropertiesQCOM",
-	};
+		"vkGetPhysicalDeviceCooperativeVectorPropertiesNV",
+		"vkConvertCooperativeVectorMatrixNV",
+		"vkCmdConvertCooperativeVectorMatrixNV",
+		"vkSetLatencySleepModeNV",
+		"vkLatencySleepNV",
+		"vkSetLatencyMarkerNV",
+		"vkGetLatencyTimingsNV",
+		"vkQueueNotifyOutOfBandNV",
+		"vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR",
+		"vkCmdSetAttachmentFeedbackLoopEnableEXT",
+		"vkGetScreenBufferPropertiesQNX",
+		"vkCmdSetLineStippleKHR",
+		"vkGetPhysicalDeviceCalibrateableTimeDomainsKHR",
+		"vkGetCalibratedTimestampsKHR",
+		"vkCmdBindDescriptorSets2KHR",
+		"vkCmdPushConstants2KHR",
+		"vkCmdPushDescriptorSet2KHR",
+		"vkCmdPushDescriptorSetWithTemplate2KHR",
+		"vkCmdSetDescriptorBufferOffsets2EXT",
+		"vkCmdBindDescriptorBufferEmbeddedSamplers2EXT",
+		"vkGetClusterAccelerationStructureBuildSizesNV",
+		"vkCmdBuildClusterAccelerationStructureIndirectNV",
+		"vkGetPartitionedAccelerationStructuresBuildSizesNV",
+		"vkCmdBuildPartitionedAccelerationStructuresNV",
+		"vkGetGeneratedCommandsMemoryRequirementsEXT",
+		"vkCmdPreprocessGeneratedCommandsEXT",
+		"vkCmdExecuteGeneratedCommandsEXT",
+		"vkCreateIndirectCommandsLayoutEXT",
+		"vkDestroyIndirectCommandsLayoutEXT",
+		"vkCreateIndirectExecutionSetEXT",
+		"vkDestroyIndirectExecutionSetEXT",
+		"vkUpdateIndirectExecutionSetPipelineEXT",
+		"vkUpdateIndirectExecutionSetShaderEXT",
+		"vkCmdSetDepthClampRangeEXT",
+		"vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV",
+		"vkGetMemoryMetalHandleEXT",
+		"vkGetMemoryMetalHandlePropertiesEXT",
+    };
 
-	bool fail = false;
-	for (const auto& function : functions)
-	{
-		if (std::find(loaderExceptions.begin(), loaderExceptions.end(), function) != loaderExceptions.end())
-		{
-			continue;
-		}
-		if (deviceDriver.getDeviceProcAddr(device.get(), function.c_str()) != DE_NULL)
-		{
-			fail = true;
-			log << tcu::TestLog::Message << "Function " << function << " is not NULL" << tcu::TestLog::EndMessage;
-		}
-	}
-	if (fail)
-		return tcu::TestStatus::fail("Fail");
-	return tcu::TestStatus::pass("All functions are NULL");
+    bool fail = false;
+    for (const auto& function : functions)
+    {
+        if (deviceDriver.getDeviceProcAddr(device.get(), function.c_str()) != nullptr)
+        {
+            fail = true;
+            log << tcu::TestLog::Message << "Function " << function << " is not NULL" << tcu::TestLog::EndMessage;
+        }
+    }
+    if (fail)
+        return tcu::TestStatus::fail("Fail");
+    return tcu::TestStatus::pass("All functions are NULL");
 }
 
 void addGetDeviceProcAddrTests (tcu::TestCaseGroup* testGroup)
 {
-	addFunctionCase(testGroup, "non_enabled", "GetDeviceProcAddr", testGetDeviceProcAddr);
+	addFunctionCase(testGroup, "non_enabled", testGetDeviceProcAddr);
 }
 
 }

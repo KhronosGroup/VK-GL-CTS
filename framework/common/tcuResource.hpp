@@ -45,20 +45,27 @@ namespace tcu
 class Resource
 {
 public:
-	virtual				~Resource		(void) {}
+    virtual ~Resource(void)
+    {
+    }
 
-	virtual void		read			(deUint8* dst, int numBytes) = 0;
-	virtual int			getSize			(void) const = 0;
-	virtual int			getPosition		(void) const = 0;
-	virtual void		setPosition		(int position) = 0;
+    virtual void read(uint8_t *dst, int numBytes) = 0;
+    virtual uint32_t getSize(void) const          = 0;
+    virtual uint32_t getPosition(void) const      = 0;
+    virtual void setPosition(uint32_t position)   = 0;
 
-	const std::string&	getName			(void) const { return m_name; }
+    const std::string &getName(void) const
+    {
+        return m_name;
+    }
 
 protected:
-						Resource		(const std::string& name) : m_name(name) {}
+    Resource(const std::string &name) : m_name(name)
+    {
+    }
 
 private:
-	std::string			m_name;
+    std::string m_name;
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -67,22 +74,26 @@ private:
 class Archive
 {
 public:
-	virtual				~Archive		(void) {}
+    virtual ~Archive(void)
+    {
+    }
 
-	/*--------------------------------------------------------------------*//*!
-	 * \brief Open resource
-	 *
-	 * Throws resource error if no resource with given name exists.
-	 *
-	 * Resource object must be deleted after use
-	 *
-	 * \param name Resource path
-	 * \return Resource object
-	 *//*--------------------------------------------------------------------*/
-	virtual Resource*	getResource		(const char* name) const = 0;
+    /*--------------------------------------------------------------------*//*!
+     * \brief Open resource
+     *
+     * Throws resource error if no resource with given name exists.
+     *
+     * Resource object must be deleted after use
+     *
+     * \param name Resource path
+     * \return Resource object
+     *//*--------------------------------------------------------------------*/
+    virtual Resource *getResource(const char *name) const = 0;
 
 protected:
-						Archive			() {}
+    Archive()
+    {
+    }
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -91,51 +102,59 @@ protected:
 class DirArchive : public Archive
 {
 public:
-						DirArchive			(const char* path);
-						~DirArchive			(void);
+    DirArchive(const char *path);
+    ~DirArchive(void);
 
-	Resource*			getResource			(const char* name) const;
+    Resource *getResource(const char *name) const;
 
-	// \note Assignment and copy allowed
-						DirArchive			(const DirArchive& other) : Archive(), m_path(other.m_path) {}
-	DirArchive&			operator=			(const DirArchive& other) { m_path = other.m_path; return *this; }
+    // \note Assignment and copy allowed
+    DirArchive(const DirArchive &other) : Archive(), m_path(other.m_path)
+    {
+    }
+    DirArchive &operator=(const DirArchive &other)
+    {
+        m_path = other.m_path;
+        return *this;
+    }
 
 private:
-	std::string			m_path;
-
+    std::string m_path;
 };
 
 class FileResource : public Resource
 {
 public:
-						FileResource	(const char* filename);
-						~FileResource	(void);
+    FileResource(const char *filename);
+    ~FileResource(void);
 
-	void				read			(deUint8* dst, int numBytes);
-	int					getSize			(void) const;
-	int					getPosition		(void) const;
-	void				setPosition		(int position);
+    void read(uint8_t *dst, int numBytes);
+    void read(uint16_t *dst, int numBytes);
+    uint32_t getSize(void) const;
+    uint32_t getPosition(void) const;
+    void setPosition(uint32_t position);
 
 private:
-						FileResource	(const FileResource& other);
-	FileResource&		operator=		(const FileResource& other);
+    FileResource(const FileResource &other);
+    FileResource &operator=(const FileResource &other);
 
-	FILE*				m_file;
+    FILE *m_file;
 };
 
 class ResourcePrefix : public Archive
 {
 public:
-								ResourcePrefix		(const Archive& archive, const char* prefix);
-	virtual						~ResourcePrefix		(void) {}
+    ResourcePrefix(const Archive &archive, const char *prefix);
+    virtual ~ResourcePrefix(void)
+    {
+    }
 
-	virtual Resource*			getResource			(const char* name) const;
+    virtual Resource *getResource(const char *name) const;
 
 private:
-	const Archive&				m_archive;
-	std::string					m_prefix;
+    const Archive &m_archive;
+    std::string m_prefix;
 };
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCURESOURCE_HPP

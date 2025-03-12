@@ -11,6 +11,8 @@ set(DEQP_VK_VKSC_MEMORY_SRCS
 	vktMemoryTests.hpp
 	vktMemoryAllocationTests.cpp
 	vktMemoryAllocationTests.hpp
+	vktMemoryConcurrentAccessTests.cpp
+	vktMemoryConcurrentAccessTests.hpp
 	vktMemoryPipelineBarrierTests.hpp
 	vktMemoryPipelineBarrierTests.cpp
 	vktMemoryRequirementsTests.cpp
@@ -38,5 +40,4 @@ add_library(deqp-vk-memory STATIC ${DEQP_VK_VKSC_MEMORY_SRCS} ${DEQP_VK_MEMORY_S
 target_link_libraries(deqp-vk-memory tcutil vkutil)
 
 add_library(deqp-vksc-memory STATIC ${DEQP_VK_VKSC_MEMORY_SRCS})
-target_include_directories(deqp-vksc-memory BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-memory PUBLIC deqp-vksc-util tcutil vkscutil)

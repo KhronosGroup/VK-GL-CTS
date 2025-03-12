@@ -39,126 +39,119 @@ class Context;
 namespace synchronization
 {
 
-struct QueueGlobalPriorities
-{
-	typedef vk::VkQueueGlobalPriorityKHR Priority;
-	typedef std::set<Priority> Priorities;
-	QueueGlobalPriorities	();
-	QueueGlobalPriorities	(const QueueGlobalPriorities& other);
-	QueueGlobalPriorities	(const vk::VkQueueFamilyGlobalPriorityPropertiesKHR& source);
-	QueueGlobalPriorities	(std::initializer_list<Priority> priorities);
-	static QueueGlobalPriorities full ();
-	auto			make	(void* pNext = nullptr) const -> vk::VkQueueFamilyGlobalPriorityPropertiesKHR;
-	bool			insert	(const Priority& prio);
-	bool			remove	(const Priority& prio);
-	bool			any		(const Priority& prio) const;
-	bool			any		(const QueueGlobalPriorities& other) const;
-	bool			all		(const QueueGlobalPriorities& other) const;
-protected:
-	Priorities	m_priorities;
-};
+constexpr uint32_t INVALID_UINT32 = (~(static_cast<uint32_t>(0u)));
 
-deUint32 findQueueFamilyIndex (const vk::InstanceInterface&	vki,
-							   vk::VkPhysicalDevice			dev,
-							   vk::VkQueueFlags				includeFlags,
-							   vk::VkQueueFlags				excludeFlags			= 0,
-							   bool							priorityQueryEnabled	= false,
-							   QueueGlobalPriorities		priorities				= QueueGlobalPriorities::full(),
-							   const bool					eitherAnyOrAll = true);
-
-constexpr deUint32 INVALID_UINT32 = (~(static_cast<deUint32>(0u)));
+uint32_t findQueueFamilyIndex(const vk::InstanceInterface &vki, vk::VkPhysicalDevice dev,
+                              vk::VkQueueGlobalPriority priority, vk::VkQueueFlags includeFlags,
+                              vk::VkQueueFlags excludeFlags, uint32_t excludeIndex = INVALID_UINT32);
 
 struct SpecialDevice
 {
-							SpecialDevice		(SpecialDevice&&				src);
-							SpecialDevice		(Context&						ctx,
-												 vk::VkQueueFlagBits			transitionFrom,
-												 vk::VkQueueFlagBits			transitionTo,
-												 vk::VkQueueGlobalPriorityKHR	priorityFrom,
-												 vk::VkQueueGlobalPriorityKHR	priorityTo,
-												 bool							enableProtected,
-												 bool							enableSparseBinding);
-	static vk::VkQueueFlags	getColissionFlags	(vk::VkQueueFlagBits			bits);
-	virtual					~SpecialDevice		();
-	bool					isValid				(vk::VkResult&					creationResult) const;
+    SpecialDevice(Context &ctx, vk::VkQueueFlagBits transitionFrom, vk::VkQueueFlagBits transitionTo,
+                  vk::VkQueueGlobalPriority priorityFrom, vk::VkQueueGlobalPriority priorityTo, bool enableProtected,
+                  bool enableSparseBinding);
+    SpecialDevice(const SpecialDevice &)            = delete;
+    SpecialDevice &operator=(const SpecialDevice &) = delete;
+    static vk::VkQueueFlags getColissionFlags(vk::VkQueueFlags flags);
+    virtual ~SpecialDevice();
 
 public:
-	const deUint32&			queueFamilyIndexFrom;
-	const deUint32&			queueFamilyIndexTo;
-	const vk::VkDevice&		device;
-	const vk::VkQueue&		queueFrom;
-	const vk::VkQueue&		queueTo;
-	vk::Allocator&			getAllocator() const;
+    const uint32_t &queueFamilyIndexFrom;
+    const uint32_t &queueFamilyIndexTo;
+    const vk::VkDevice &handle;
+    const vk::VkQueue &queueFrom;
+    const vk::VkQueue &queueTo;
+    const vk::VkResult &createResult;
+    const char *const &createExpression;
+    const char *const &createFileName;
+    const int32_t &createFileLine;
+    vk::Allocator &getAllocator() const
+    {
+        return *m_allocator;
+    }
 
 protected:
-	const vk::DeviceInterface&		m_vkd;
-	vk::VkQueueFlagBits				m_transitionFrom;
-	vk::VkQueueFlagBits				m_transitionTo;
-	deUint32						m_queueFamilyIndexFrom;
-	deUint32						m_queueFamilyIndexTo;
-	vk::VkDevice					m_device;
-	vk::VkQueue						m_queueFrom;
-	vk::VkQueue						m_queueTo;
-	de::MovePtr<vk::Allocator>		m_allocator;
-	vk::VkResult					m_creationResult;
+    Context &m_context;
+    vk::VkQueueFlagBits m_transitionFrom;
+    vk::VkQueueFlagBits m_transitionTo;
+    uint32_t m_queueFamilyIndexFrom;
+    uint32_t m_queueFamilyIndexTo;
+    vk::VkDevice m_deviceHandle;
+    vk::VkQueue m_queueFrom;
+    vk::VkQueue m_queueTo;
+    de::MovePtr<vk::Allocator> m_allocator;
+    vk::VkResult m_createResult;
+    const char *m_createExpression;
+    const char *m_createFileName;
+    int32_t m_createFileLine;
 };
 
 class BufferWithMemory
 {
 public:
-							BufferWithMemory	(const vk::InstanceInterface&	vki,
-												 const vk::DeviceInterface&		vkd,
-												 const vk::VkPhysicalDevice		phys,
-												 const vk::VkDevice				device,
-												 vk::Allocator&					allocator,
-												 const vk::VkBufferCreateInfo&	bufferCreateInfo,
-												 const vk::MemoryRequirement	memoryRequirement,
-												 const vk::VkQueue				sparseQueue = vk::VkQueue(0));
+    BufferWithMemory(const vk::InstanceInterface &vki, const vk::DeviceInterface &vkd, const vk::VkPhysicalDevice phys,
+                     const vk::VkDevice device, vk::Allocator &allocator,
+                     const vk::VkBufferCreateInfo &bufferCreateInfo, const vk::MemoryRequirement memoryRequirement,
+                     const vk::VkQueue sparseQueue = VK_NULL_HANDLE);
 
-	const vk::VkBuffer&		get					(void) const { return *m_buffer; }
-	const vk::VkBuffer&		operator*			(void) const { return get(); }
-	void*					getHostPtr			(void) const;
-	vk::VkDeviceSize		getSize				() const { return m_requirements.size; }
-	void					invalidateAlloc		(const vk::DeviceInterface&		vk,
-												 const vk::VkDevice				device) const;
-	void					flushAlloc			(const vk::DeviceInterface&		vk,
-												 const vk::VkDevice				device) const;
+    const vk::VkBuffer &get(void) const
+    {
+        return *m_buffer;
+    }
+    const vk::VkBuffer *getPtr(void) const
+    {
+        return &(*m_buffer);
+    }
+    const vk::VkBuffer &operator*(void) const
+    {
+        return get();
+    }
+    void *getHostPtr(void) const;
+    vk::VkDeviceSize getSize() const
+    {
+        return m_size;
+    }
+    void invalidateAlloc(const vk::DeviceInterface &vk, const vk::VkDevice device) const;
+    void flushAlloc(const vk::DeviceInterface &vk, const vk::VkDevice device) const;
 
 protected:
-	void					assertIAmSparse		() const;
+    void assertIAmSparse() const;
 
-	const bool									m_amISparse;
-	const vk::Unique<vk::VkBuffer>				m_buffer;
-	const vk::VkMemoryRequirements				m_requirements;
-	std::vector<de::SharedPtr<vk::Allocation>>	m_allocations;
+    const bool m_amISparse;
+    const vk::Unique<vk::VkBuffer> m_buffer;
+    const vk::VkMemoryRequirements m_requirements;
+    std::vector<de::SharedPtr<vk::Allocation>> m_allocations;
+    const vk::VkDeviceSize m_size;
 
-										BufferWithMemory	(const BufferWithMemory&);
-	BufferWithMemory					operator=			(const BufferWithMemory&);
+    BufferWithMemory(const BufferWithMemory &);
+    BufferWithMemory operator=(const BufferWithMemory &);
 };
 
 class ImageWithMemory : public image::Image
 {
 public:
-							ImageWithMemory	(const vk::InstanceInterface&	vki,
-											 const vk::DeviceInterface&		vkd,
-											 const vk::VkPhysicalDevice		phys,
-											 const vk::VkDevice				device,
-											 vk::Allocator&					allocator,
-											 const vk::VkImageCreateInfo&	imageCreateInfo,
-											 const vk::VkQueue				sparseQueue = vk::VkQueue(0),
-											 const vk::MemoryRequirement	memoryRequirement = vk::MemoryRequirement::Any);
+    ImageWithMemory(const vk::InstanceInterface &vki, const vk::DeviceInterface &vkd, const vk::VkPhysicalDevice phys,
+                    const vk::VkDevice device, vk::Allocator &allocator, const vk::VkImageCreateInfo &imageCreateInfo,
+                    const vk::VkQueue sparseQueue                 = VK_NULL_HANDLE,
+                    const vk::MemoryRequirement memoryRequirement = vk::MemoryRequirement::Any);
 
-	const vk::VkImage&		get				(void) const { return m_image->get(); }
-	const vk::VkImage&		operator*		(void) const { return m_image->get(); }
+    const vk::VkImage &get(void) const
+    {
+        return m_image->get();
+    }
+    const vk::VkImage &operator*(void) const
+    {
+        return m_image->get();
+    }
 
 protected:
-	de::MovePtr<image::Image>	m_image;
+    de::MovePtr<image::Image> m_image;
 
 private:
-	ImageWithMemory&		operator=		(const ImageWithMemory&);
+    ImageWithMemory &operator=(const ImageWithMemory &);
 };
 
-} // synchronization
-} // vkt
+} // namespace synchronization
+} // namespace vkt
 
 #endif // _VKTGLOBALPRIORITYQUEUEUTILS_HPP

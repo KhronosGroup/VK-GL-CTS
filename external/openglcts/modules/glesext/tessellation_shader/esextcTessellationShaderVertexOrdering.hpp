@@ -63,68 +63,68 @@ namespace glcts
 class TessellationShaderVertexOrdering : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TessellationShaderVertexOrdering(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderVertexOrdering(Context &context, const ExtParameters &extParams);
 
-	virtual ~TessellationShaderVertexOrdering(void)
-	{
-	}
+    virtual ~TessellationShaderVertexOrdering(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	void				  initTest(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    void initTest(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private type definitions */
-	typedef struct _test_iteration
-	{
-		char*								 data;
-		float								 inner_tess_levels[2];
-		bool								 is_point_mode_enabled;
-		unsigned int						 n_vertices;
-		float								 outer_tess_levels[4];
-		_tessellation_primitive_mode		 primitive_mode;
-		_tessellation_shader_vertex_ordering vertex_ordering;
+    /* Private type definitions */
+    typedef struct _test_iteration
+    {
+        char *data;
+        float inner_tess_levels[2];
+        bool is_point_mode_enabled;
+        unsigned int n_vertices;
+        float outer_tess_levels[4];
+        _tessellation_primitive_mode primitive_mode;
+        _tessellation_shader_vertex_ordering vertex_ordering;
 
-		_test_iteration()
-		{
-			memset(inner_tess_levels, 0, sizeof(inner_tess_levels));
-			memset(outer_tess_levels, 0, sizeof(outer_tess_levels));
+        _test_iteration()
+        {
+            memset(inner_tess_levels, 0, sizeof(inner_tess_levels));
+            memset(outer_tess_levels, 0, sizeof(outer_tess_levels));
 
-			data					= DE_NULL;
-			is_point_mode_enabled	= false;
-			n_vertices				= 0;
-			primitive_mode			= TESSELLATION_SHADER_PRIMITIVE_MODE_UNKNOWN;
-			vertex_ordering			= TESSELLATION_SHADER_VERTEX_ORDERING_UNKNOWN;
-		}
-	} _test_iteration;
+            data                  = nullptr;
+            is_point_mode_enabled = false;
+            n_vertices            = 0;
+            primitive_mode        = TESSELLATION_SHADER_PRIMITIVE_MODE_UNKNOWN;
+            vertex_ordering       = TESSELLATION_SHADER_VERTEX_ORDERING_UNKNOWN;
+        }
+    } _test_iteration;
 
-	typedef std::vector<_test_iteration>	 _test_iterations;
-	typedef _test_iterations::const_iterator _test_iterations_const_iterator;
+    typedef std::vector<_test_iteration> _test_iterations;
+    typedef _test_iterations::const_iterator _test_iterations_const_iterator;
 
-	/* Private methods */
-	void deinitTestIteration(_test_iteration& test_iteration);
+    /* Private methods */
+    void deinitTestIteration(_test_iteration &test_iteration);
 
-	_test_iteration initTestIteration(const float* inner_tess_levels, const float* outer_tess_levels,
-									  _tessellation_primitive_mode		   primitive_mode,
-									  _tessellation_shader_vertex_ordering vertex_ordering, bool is_point_mode_enabled,
-									  TessellationShaderUtils* utils);
+    _test_iteration initTestIteration(const float *inner_tess_levels, const float *outer_tess_levels,
+                                      _tessellation_primitive_mode primitive_mode,
+                                      _tessellation_shader_vertex_ordering vertex_ordering, bool is_point_mode_enabled,
+                                      TessellationShaderUtils *utils);
 
-	void verifyVertexOrderingCorrectness(const _test_iteration& test_iteration);
+    void verifyVertexOrderingCorrectness(const _test_iteration &test_iteration);
 
-	void verifyVertexOrderingDoesNotChangeGeneratedPoints(const _test_iteration& test_iteration_a,
-														  const _test_iteration& test_iteration_b);
+    void verifyVertexOrderingDoesNotChangeGeneratedPoints(const _test_iteration &test_iteration_a,
+                                                          const _test_iteration &test_iteration_b);
 
-	/* Private variables */
-	glw::GLuint m_bo_id;
-	glw::GLuint m_fs_id;
-	glw::GLuint m_tc_id;
-	glw::GLuint m_vs_id;
-	glw::GLuint m_vao_id;
+    /* Private variables */
+    glw::GLuint m_bo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_tc_id;
+    glw::GLuint m_vs_id;
+    glw::GLuint m_vao_id;
 
-	_test_iterations		 m_tests;
-	_test_iterations		 m_tests_points;
-	TessellationShaderUtils* m_utils;
+    _test_iterations m_tests;
+    _test_iterations m_tests_points;
+    TessellationShaderUtils *m_utils;
 };
 
 } // namespace glcts

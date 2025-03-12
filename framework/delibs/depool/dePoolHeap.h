@@ -29,15 +29,15 @@
 
 DE_BEGIN_EXTERN_C
 
-void			dePoolHeap_selfTest			(void);
+void dePoolHeap_selfTest(void);
 
 DE_END_EXTERN_C
 
 /*--------------------------------------------------------------------*//*!
  * \brief Declare a template pool heap class.
- * \param TYPENAME	Type name of the declared heap.
- * \param VALUETYPE	Type of the value contained in the heap.
- * \param CMPFUNC	Comparison function of two elements returning (-1, 0, +1).
+ * \param TYPENAME    Type name of the declared heap.
+ * \param VALUETYPE    Type of the value contained in the heap.
+ * \param CMPFUNC    Comparison function of two elements returning (-1, 0, +1).
  *
  * This macro declares a pool heap with all the necessary functions for
  * operating with it. All allocated memory is taken from the memory pool
@@ -48,121 +48,125 @@ DE_END_EXTERN_C
  * \code
  * Heap*    Heap_create            (deMemPool* pool);
  * int      Heap_getNumElements    (const Heap* heap);
- * deBool   Heap_reserve           (Heap* heap, int size);
- * void		Heap_reset             (Heap* heap);
- * deBool   Heap_push              (Heap* heap, Element elem);
+ * bool   Heap_reserve           (Heap* heap, int size);
+ * void        Heap_reset             (Heap* heap);
+ * bool   Heap_push              (Heap* heap, Element elem);
  * Element  Heap_popMin            (Heap* heap);
  * \endcode
 *//*--------------------------------------------------------------------*/
-#define DE_DECLARE_POOL_HEAP(TYPENAME, VALUETYPE, CMPFUNC)		\
-    \
-DE_DECLARE_POOL_ARRAY(TYPENAME##Array, VALUETYPE);		\
-\
-typedef struct TYPENAME##_s    \
-{    \
-	TYPENAME##Array*	array;		\
-} TYPENAME; /* NOLINT(TYPENAME) */  \
-\
-DE_INLINE TYPENAME*	TYPENAME##_create			(deMemPool* pool);													\
-DE_INLINE int		TYPENAME##_getNumElements	(const TYPENAME* heap)							DE_UNUSED_FUNCTION;	\
-DE_INLINE deBool	TYPENAME##_reserve			(DE_PTR_TYPE(TYPENAME) heap, int capacity)		DE_UNUSED_FUNCTION;	\
-DE_INLINE void		TYPENAME##_reset			(DE_PTR_TYPE(TYPENAME) heap)					DE_UNUSED_FUNCTION;	\
-DE_INLINE void		TYPENAME##_moveDown			(DE_PTR_TYPE(TYPENAME) heap, int ndx)			DE_UNUSED_FUNCTION;	\
-DE_INLINE void		TYPENAME##_moveUp			(DE_PTR_TYPE(TYPENAME) heap, int ndx)			DE_UNUSED_FUNCTION;	\
-DE_INLINE deBool	TYPENAME##_push				(DE_PTR_TYPE(TYPENAME) heap, VALUETYPE elem)	DE_UNUSED_FUNCTION;	\
-DE_INLINE VALUETYPE	TYPENAME##_popMin			(DE_PTR_TYPE(TYPENAME) heap)					DE_UNUSED_FUNCTION;	\
-\
-DE_INLINE TYPENAME* TYPENAME##_create (deMemPool* pool)    \
-{    \
-	DE_PTR_TYPE(TYPENAME) heap = DE_POOL_NEW(pool, TYPENAME);	\
-	if (!heap)				\
-		return DE_NULL;		\
-	heap->array = TYPENAME##Array_create(pool);	\
-	if (!heap->array)		\
-		return DE_NULL;		\
-	return heap;			\
-}    \
-\
-DE_INLINE int TYPENAME##_getNumElements (const TYPENAME* heap)    \
-{    \
-	return TYPENAME##Array_getNumElements(heap->array);    \
-}    \
-\
-DE_INLINE deBool TYPENAME##_reserve (DE_PTR_TYPE(TYPENAME) heap, int capacity)    \
-{    \
-	return TYPENAME##Array_reserve(heap->array, capacity);    \
-}    \
-\
-DE_INLINE void TYPENAME##_reset (DE_PTR_TYPE(TYPENAME) heap)    \
-{    \
-	TYPENAME##Array_setSize(heap->array, 0);    \
-}    \
-\
-DE_INLINE void TYPENAME##_moveDown (DE_PTR_TYPE(TYPENAME) heap, int ndx)    \
-{   \
-	TYPENAME##Array*	array		= heap->array;	\
-	int					numElements	= TYPENAME##Array_getNumElements(array);	\
-	for (;;)	\
-	{	\
-		int childNdx0	= 2*ndx + 1;								\
-		if (childNdx0 < numElements)	\
-		{	\
-			int childNdx1	= deMin32(childNdx0 + 1, numElements - 1);	\
-			int childCmpRes	= CMPFUNC(TYPENAME##Array_get(array, childNdx0), TYPENAME##Array_get(array, childNdx1)); \
-			int minChildNdx	= (childCmpRes == 1) ? childNdx1 : childNdx0;	\
-			int cmpRes		= CMPFUNC(TYPENAME##Array_get(array, ndx), TYPENAME##Array_get(array, minChildNdx)); \
-			if (cmpRes == 1)	\
-			{	\
-				TYPENAME##Array_swap(array, ndx, minChildNdx);	\
-				ndx = minChildNdx;	\
-			}	\
-			else	\
-				break;	\
-		}	\
-		else	\
-			break;	\
-	}	\
-}    \
-\
-DE_INLINE void TYPENAME##_moveUp (DE_PTR_TYPE(TYPENAME) heap, int ndx)    \
-{    \
-	TYPENAME##Array* array = heap->array;	\
-	while (ndx > 0)	\
-	{	\
-		int parentNdx	= (ndx-1) >> 1;								\
-		int cmpRes		= CMPFUNC(TYPENAME##Array_get(array, ndx), TYPENAME##Array_get(array, parentNdx)); \
-		if (cmpRes == -1)	\
-		{	\
-			TYPENAME##Array_swap(array, ndx, parentNdx);	\
-			ndx = parentNdx;	\
-		}	\
-		else	\
-			break;	\
-	}	\
-}    \
-\
-DE_INLINE deBool TYPENAME##_push (DE_PTR_TYPE(TYPENAME) heap, VALUETYPE elem)    \
-{    \
-	TYPENAME##Array* array = heap->array;	\
-	int numElements = TYPENAME##Array_getNumElements(array);	\
-	if (!TYPENAME##Array_setSize(array, numElements + 1)) \
-		return DE_FALSE; \
-	TYPENAME##Array_set(array, numElements, elem); \
-	TYPENAME##_moveUp(heap, numElements);	\
-	return DE_TRUE;    \
-}    \
-\
-DE_INLINE VALUETYPE TYPENAME##_popMin (DE_PTR_TYPE(TYPENAME) heap)    \
-{    \
-	TYPENAME##Array* array = heap->array;	\
-	VALUETYPE	tmp			= TYPENAME##Array_get(array, 0);	\
-	int			numElements	= TYPENAME##Array_getNumElements(array);	\
-	TYPENAME##Array_set(array, 0, TYPENAME##Array_get(array, numElements-1));	\
-	TYPENAME##Array_setSize(array, numElements-1);	\
-	TYPENAME##_moveDown(heap, 0);	\
-	return tmp;	\
-}    \
-\
-struct TYPENAME##Unused_s { int unused; }
+#define DE_DECLARE_POOL_HEAP(TYPENAME, VALUETYPE, CMPFUNC)                                                           \
+                                                                                                                     \
+    DE_DECLARE_POOL_ARRAY(TYPENAME##Array, VALUETYPE);                                                               \
+                                                                                                                     \
+    typedef struct TYPENAME##_s                                                                                      \
+    {                                                                                                                \
+        TYPENAME##Array *array;                                                                                      \
+    } TYPENAME; /* NOLINT(TYPENAME) */                                                                               \
+                                                                                                                     \
+    static inline TYPENAME *TYPENAME##_create(deMemPool *pool);                                                      \
+    static inline int TYPENAME##_getNumElements(const TYPENAME *heap) DE_UNUSED_FUNCTION;                            \
+    static inline bool TYPENAME##_reserve(DE_PTR_TYPE(TYPENAME) heap, int capacity) DE_UNUSED_FUNCTION;              \
+    static inline void TYPENAME##_reset(DE_PTR_TYPE(TYPENAME) heap) DE_UNUSED_FUNCTION;                              \
+    static inline void TYPENAME##_moveDown(DE_PTR_TYPE(TYPENAME) heap, int ndx) DE_UNUSED_FUNCTION;                  \
+    static inline void TYPENAME##_moveUp(DE_PTR_TYPE(TYPENAME) heap, int ndx) DE_UNUSED_FUNCTION;                    \
+    static inline bool TYPENAME##_push(DE_PTR_TYPE(TYPENAME) heap, VALUETYPE elem) DE_UNUSED_FUNCTION;               \
+    static inline VALUETYPE TYPENAME##_popMin(DE_PTR_TYPE(TYPENAME) heap) DE_UNUSED_FUNCTION;                        \
+                                                                                                                     \
+    static inline TYPENAME *TYPENAME##_create(deMemPool *pool)                                                       \
+    {                                                                                                                \
+        DE_PTR_TYPE(TYPENAME) heap = DE_POOL_NEW(pool, TYPENAME);                                                    \
+        if (!heap)                                                                                                   \
+            return NULL;                                                                                             \
+        heap->array = TYPENAME##Array_create(pool);                                                                  \
+        if (!heap->array)                                                                                            \
+            return NULL;                                                                                             \
+        return heap;                                                                                                 \
+    }                                                                                                                \
+                                                                                                                     \
+    static inline int TYPENAME##_getNumElements(const TYPENAME *heap)                                                \
+    {                                                                                                                \
+        return TYPENAME##Array_getNumElements(heap->array);                                                          \
+    }                                                                                                                \
+                                                                                                                     \
+    static inline bool TYPENAME##_reserve(DE_PTR_TYPE(TYPENAME) heap, int capacity)                                  \
+    {                                                                                                                \
+        return TYPENAME##Array_reserve(heap->array, capacity);                                                       \
+    }                                                                                                                \
+                                                                                                                     \
+    static inline void TYPENAME##_reset(DE_PTR_TYPE(TYPENAME) heap)                                                  \
+    {                                                                                                                \
+        TYPENAME##Array_setSize(heap->array, 0);                                                                     \
+    }                                                                                                                \
+                                                                                                                     \
+    static inline void TYPENAME##_moveDown(DE_PTR_TYPE(TYPENAME) heap, int ndx)                                      \
+    {                                                                                                                \
+        TYPENAME##Array *array = heap->array;                                                                        \
+        int numElements        = TYPENAME##Array_getNumElements(array);                                              \
+        for (;;)                                                                                                     \
+        {                                                                                                            \
+            int childNdx0 = 2 * ndx + 1;                                                                             \
+            if (childNdx0 < numElements)                                                                             \
+            {                                                                                                        \
+                int childNdx1 = deMin32(childNdx0 + 1, numElements - 1);                                             \
+                int childCmpRes =                                                                                    \
+                    CMPFUNC(TYPENAME##Array_get(array, childNdx0), TYPENAME##Array_get(array, childNdx1));           \
+                int minChildNdx = (childCmpRes == 1) ? childNdx1 : childNdx0;                                        \
+                int cmpRes      = CMPFUNC(TYPENAME##Array_get(array, ndx), TYPENAME##Array_get(array, minChildNdx)); \
+                if (cmpRes == 1)                                                                                     \
+                {                                                                                                    \
+                    TYPENAME##Array_swap(array, ndx, minChildNdx);                                                   \
+                    ndx = minChildNdx;                                                                               \
+                }                                                                                                    \
+                else                                                                                                 \
+                    break;                                                                                           \
+            }                                                                                                        \
+            else                                                                                                     \
+                break;                                                                                               \
+        }                                                                                                            \
+    }                                                                                                                \
+                                                                                                                     \
+    static inline void TYPENAME##_moveUp(DE_PTR_TYPE(TYPENAME) heap, int ndx)                                        \
+    {                                                                                                                \
+        TYPENAME##Array *array = heap->array;                                                                        \
+        while (ndx > 0)                                                                                              \
+        {                                                                                                            \
+            int parentNdx = (ndx - 1) >> 1;                                                                          \
+            int cmpRes    = CMPFUNC(TYPENAME##Array_get(array, ndx), TYPENAME##Array_get(array, parentNdx));         \
+            if (cmpRes == -1)                                                                                        \
+            {                                                                                                        \
+                TYPENAME##Array_swap(array, ndx, parentNdx);                                                         \
+                ndx = parentNdx;                                                                                     \
+            }                                                                                                        \
+            else                                                                                                     \
+                break;                                                                                               \
+        }                                                                                                            \
+    }                                                                                                                \
+                                                                                                                     \
+    static inline bool TYPENAME##_push(DE_PTR_TYPE(TYPENAME) heap, VALUETYPE elem)                                   \
+    {                                                                                                                \
+        TYPENAME##Array *array = heap->array;                                                                        \
+        int numElements        = TYPENAME##Array_getNumElements(array);                                              \
+        if (!TYPENAME##Array_setSize(array, numElements + 1))                                                        \
+            return false;                                                                                            \
+        TYPENAME##Array_set(array, numElements, elem);                                                               \
+        TYPENAME##_moveUp(heap, numElements);                                                                        \
+        return true;                                                                                                 \
+    }                                                                                                                \
+                                                                                                                     \
+    static inline VALUETYPE TYPENAME##_popMin(DE_PTR_TYPE(TYPENAME) heap)                                            \
+    {                                                                                                                \
+        TYPENAME##Array *array = heap->array;                                                                        \
+        VALUETYPE tmp          = TYPENAME##Array_get(array, 0);                                                      \
+        int numElements        = TYPENAME##Array_getNumElements(array);                                              \
+        TYPENAME##Array_set(array, 0, TYPENAME##Array_get(array, numElements - 1));                                  \
+        TYPENAME##Array_setSize(array, numElements - 1);                                                             \
+        TYPENAME##_moveDown(heap, 0);                                                                                \
+        return tmp;                                                                                                  \
+    }                                                                                                                \
+                                                                                                                     \
+    struct TYPENAME##Unused_s                                                                                        \
+    {                                                                                                                \
+        int unused;                                                                                                  \
+    }
 
 #endif /* _DEPOOLHEAP_H */

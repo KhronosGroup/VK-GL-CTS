@@ -34,24 +34,24 @@ namespace FragmentShadingRate
 // Structure containing parameters for all tests in fragment_shading_rate group
 struct GroupParams
 {
-	// When this flag is set tests use dynamic rendering, otherwise renderpass object is used.
-	bool useDynamicRendering;
+    // When this flag is set tests use dynamic rendering, otherwise renderpass object is used.
+    bool useDynamicRendering;
 
-	// When this flag is true then secondary command buffer is created in test
-	bool useSecondaryCmdBuffer;
+    // When this flag is true then secondary command buffer is created in test
+    bool useSecondaryCmdBuffer;
 
-	// When true begin/endRendering is in secondary command buffer, when false those
-	// commands are recorded to primary command buffer. This flag is checked only when
-	// useSecondaryCmdBuffer is true.
-	bool secondaryCmdBufferCompletelyContainsDynamicRenderpass;
+    // When true begin/endRendering is in secondary command buffer, when false those
+    // commands are recorded to primary command buffer. This flag is checked only when
+    // useSecondaryCmdBuffer is true.
+    bool secondaryCmdBufferCompletelyContainsDynamicRenderpass;
 
-	// Specifies if monolithic pipeline is used or if VK_EXT_graphics_pipeline_library is used.
-	vk::PipelineConstructionType pipelineConstructionType;
+    // Specifies if monolithic pipeline is used or if VK_EXT_graphics_pipeline_library is used.
+    vk::PipelineConstructionType pipelineConstructionType;
 };
 
 typedef de::SharedPtr<GroupParams> SharedGroupParams;
 
-} // FragmentShadingRate
-} // vkt
+} // namespace FragmentShadingRate
+} // namespace vkt
 
 #endif // _VKTFRAGMENTSHADINGRATEGROUPPARAMS_HPP

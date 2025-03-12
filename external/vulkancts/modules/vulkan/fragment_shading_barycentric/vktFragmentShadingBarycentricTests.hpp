@@ -31,9 +31,9 @@ namespace vkt
 namespace FragmentShadingBarycentric
 {
 
-tcu::TestCaseGroup*	createTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name);
 
-} // FragmentShadingBarycentric
-} // vkt
+} // namespace FragmentShadingBarycentric
+} // namespace vkt
 
 #endif // _VKTFRAGMENTSHADINGBARYCENTRICTESTS_HPP

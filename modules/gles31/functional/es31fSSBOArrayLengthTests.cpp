@@ -43,270 +43,279 @@ namespace
 class SSBOArrayLengthCase : public TestCase
 {
 public:
-	enum ArrayAccess
-	{
-		ACCESS_DEFAULT = 0,
-		ACCESS_WRITEONLY,
-		ACCESS_READONLY,
+    enum ArrayAccess
+    {
+        ACCESS_DEFAULT = 0,
+        ACCESS_WRITEONLY,
+        ACCESS_READONLY,
 
-		ACCESS_LAST
-	};
+        ACCESS_LAST
+    };
 
-						SSBOArrayLengthCase		(Context& context, const char* name, const char* desc, ArrayAccess access, bool sized);
-						~SSBOArrayLengthCase	(void);
+    SSBOArrayLengthCase(Context &context, const char *name, const char *desc, ArrayAccess access, bool sized);
+    ~SSBOArrayLengthCase(void);
 
-	void				init					(void);
-	void				deinit					(void);
-	IterateResult		iterate					(void);
+    void init(void);
+    void deinit(void);
+    IterateResult iterate(void);
 
 private:
-	std::string			genComputeSource		(void) const;
+    std::string genComputeSource(void) const;
 
-	const ArrayAccess	m_access;
-	const bool			m_sized;
+    const ArrayAccess m_access;
+    const bool m_sized;
 
-	glu::ShaderProgram*	m_shader;
-	deUint32			m_targetBufferID;
-	deUint32			m_outputBufferID;
+    glu::ShaderProgram *m_shader;
+    uint32_t m_targetBufferID;
+    uint32_t m_outputBufferID;
 
-	static const int	s_fixedBufferSize = 16;
+    static const int s_fixedBufferSize = 16;
 };
 
-SSBOArrayLengthCase::SSBOArrayLengthCase (Context& context, const char* name, const char* desc, ArrayAccess access, bool sized)
-	: TestCase			(context, name, desc)
-	, m_access			(access)
-	, m_sized			(sized)
-	, m_shader			(DE_NULL)
-	, m_targetBufferID	(0)
-	, m_outputBufferID	(0)
+SSBOArrayLengthCase::SSBOArrayLengthCase(Context &context, const char *name, const char *desc, ArrayAccess access,
+                                         bool sized)
+    : TestCase(context, name, desc)
+    , m_access(access)
+    , m_sized(sized)
+    , m_shader(nullptr)
+    , m_targetBufferID(0)
+    , m_outputBufferID(0)
 {
 }
 
-SSBOArrayLengthCase::~SSBOArrayLengthCase (void)
+SSBOArrayLengthCase::~SSBOArrayLengthCase(void)
 {
-	deinit();
+    deinit();
 }
 
-void SSBOArrayLengthCase::init (void)
+void SSBOArrayLengthCase::init(void)
 {
-	const glw::Functions&	gl				= m_context.getRenderContext().getFunctions();
-	const deUint32			invalidValues[]	= { 0xFFFFFFFFUL, 0xAAAAAAAAUL };
+    const glw::Functions &gl       = m_context.getRenderContext().getFunctions();
+    const uint32_t invalidValues[] = {0xFFFFFFFFUL, 0xAAAAAAAAUL};
 
-	// program
-	m_shader = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(genComputeSource()));
-	m_testCtx.getLog() << *m_shader;
+    // program
+    m_shader = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
+                                                                        << glu::ComputeSource(genComputeSource()));
+    m_testCtx.getLog() << *m_shader;
 
-	if (!m_shader->isOk())
-		throw tcu::TestError("Failed to build shader");
+    if (!m_shader->isOk())
+        throw tcu::TestError("Failed to build shader");
 
-	// gen and attach buffers
-	gl.genBuffers(1, &m_outputBufferID);
-	gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, m_outputBufferID);
-	gl.bufferData(GL_SHADER_STORAGE_BUFFER, 2 * (int)sizeof(deUint32), invalidValues, GL_DYNAMIC_COPY);
+    // gen and attach buffers
+    gl.genBuffers(1, &m_outputBufferID);
+    gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, m_outputBufferID);
+    gl.bufferData(GL_SHADER_STORAGE_BUFFER, 2 * (int)sizeof(uint32_t), invalidValues, GL_DYNAMIC_COPY);
 
-	gl.genBuffers(1, &m_targetBufferID);
-	gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, m_targetBufferID);
+    gl.genBuffers(1, &m_targetBufferID);
+    gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, m_targetBufferID);
 
-	GLU_EXPECT_NO_ERROR(gl.getError(), "create buffers");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "create buffers");
 
-	gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_outputBufferID);
-	gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_targetBufferID);
+    gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_outputBufferID);
+    gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_targetBufferID);
 
-	GLU_EXPECT_NO_ERROR(gl.getError(), "bind buffers");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "bind buffers");
 
-	// check the ssbo has expected layout
-	{
-		const deUint32		index	= gl.getProgramResourceIndex(m_shader->getProgram(), GL_BUFFER_VARIABLE, "Out.outLength");
-		const glw::GLenum	prop	= GL_OFFSET;
-		glw::GLint			result	= 0;
+    // check the ssbo has expected layout
+    {
+        const uint32_t index = gl.getProgramResourceIndex(m_shader->getProgram(), GL_BUFFER_VARIABLE, "Out.outLength");
+        const glw::GLenum prop = GL_OFFSET;
+        glw::GLint result      = 0;
 
-		if (index == GL_INVALID_INDEX)
-			throw tcu::TestError("Failed to find outLength variable");
+        if (index == GL_INVALID_INDEX)
+            throw tcu::TestError("Failed to find outLength variable");
 
-		gl.getProgramResourceiv(m_shader->getProgram(), GL_BUFFER_VARIABLE, index, 1, &prop, 1, DE_NULL, &result);
+        gl.getProgramResourceiv(m_shader->getProgram(), GL_BUFFER_VARIABLE, index, 1, &prop, 1, nullptr, &result);
 
-		if (result != 0)
-			throw tcu::TestError("Unexpected outLength location");
-	}
-	{
-		const deUint32		index	= gl.getProgramResourceIndex(m_shader->getProgram(), GL_BUFFER_VARIABLE, "Out.unused");
-		const glw::GLenum	prop	= GL_OFFSET;
-		glw::GLint			result	= 0;
+        if (result != 0)
+            throw tcu::TestError("Unexpected outLength location");
+    }
+    {
+        const uint32_t index   = gl.getProgramResourceIndex(m_shader->getProgram(), GL_BUFFER_VARIABLE, "Out.unused");
+        const glw::GLenum prop = GL_OFFSET;
+        glw::GLint result      = 0;
 
-		if (index == GL_INVALID_INDEX)
-			throw tcu::TestError("Failed to find unused variable");
+        if (index == GL_INVALID_INDEX)
+            throw tcu::TestError("Failed to find unused variable");
 
-		gl.getProgramResourceiv(m_shader->getProgram(), GL_BUFFER_VARIABLE, index, 1, &prop, 1, DE_NULL, &result);
+        gl.getProgramResourceiv(m_shader->getProgram(), GL_BUFFER_VARIABLE, index, 1, &prop, 1, nullptr, &result);
 
-		if (result != 4)
-			throw tcu::TestError("Unexpected unused location");
-	}
-	{
-		const deUint32		index	= gl.getProgramResourceIndex(m_shader->getProgram(), GL_BUFFER_VARIABLE, "Target.array");
-		const glw::GLenum	prop	= GL_ARRAY_STRIDE;
-		glw::GLint			result	= 0;
+        if (result != 4)
+            throw tcu::TestError("Unexpected unused location");
+    }
+    {
+        const uint32_t index   = gl.getProgramResourceIndex(m_shader->getProgram(), GL_BUFFER_VARIABLE, "Target.array");
+        const glw::GLenum prop = GL_ARRAY_STRIDE;
+        glw::GLint result      = 0;
 
-		if (index == GL_INVALID_INDEX)
-			throw tcu::TestError("Failed to find array variable");
+        if (index == GL_INVALID_INDEX)
+            throw tcu::TestError("Failed to find array variable");
 
-		gl.getProgramResourceiv(m_shader->getProgram(), GL_BUFFER_VARIABLE, index, 1, &prop, 1, DE_NULL, &result);
+        gl.getProgramResourceiv(m_shader->getProgram(), GL_BUFFER_VARIABLE, index, 1, &prop, 1, nullptr, &result);
 
-		if (result != 4)
-			throw tcu::TestError("Unexpected array stride");
-	}
+        if (result != 4)
+            throw tcu::TestError("Unexpected array stride");
+    }
 }
 
-void SSBOArrayLengthCase::deinit (void)
+void SSBOArrayLengthCase::deinit(void)
 {
-	if (m_shader)
-	{
-		delete m_shader;
-		m_shader = DE_NULL;
-	}
+    if (m_shader)
+    {
+        delete m_shader;
+        m_shader = nullptr;
+    }
 
-	if (m_targetBufferID)
-	{
-		m_context.getRenderContext().getFunctions().deleteBuffers(1, &m_targetBufferID);
-		m_targetBufferID = 0;
-	}
+    if (m_targetBufferID)
+    {
+        m_context.getRenderContext().getFunctions().deleteBuffers(1, &m_targetBufferID);
+        m_targetBufferID = 0;
+    }
 
-	if (m_outputBufferID)
-	{
-		m_context.getRenderContext().getFunctions().deleteBuffers(1, &m_outputBufferID);
-		m_outputBufferID = 0;
-	}
+    if (m_outputBufferID)
+    {
+        m_context.getRenderContext().getFunctions().deleteBuffers(1, &m_outputBufferID);
+        m_outputBufferID = 0;
+    }
 }
 
-SSBOArrayLengthCase::IterateResult SSBOArrayLengthCase::iterate (void)
+SSBOArrayLengthCase::IterateResult SSBOArrayLengthCase::iterate(void)
 {
-	const glw::Functions&	gl		= m_context.getRenderContext().getFunctions();
-	bool					error	= false;
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+    bool error               = false;
 
-	// Update buffer size
+    // Update buffer size
 
-	m_testCtx.getLog() << tcu::TestLog::Message << "Allocating float memory buffer with " << static_cast<int>(s_fixedBufferSize) << " elements." << tcu::TestLog::EndMessage;
+    m_testCtx.getLog() << tcu::TestLog::Message << "Allocating float memory buffer with "
+                       << static_cast<int>(s_fixedBufferSize) << " elements." << tcu::TestLog::EndMessage;
 
-	gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, m_targetBufferID);
-	gl.bufferData(GL_SHADER_STORAGE_BUFFER, s_fixedBufferSize * (int)sizeof(float), DE_NULL, GL_DYNAMIC_COPY);
+    gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, m_targetBufferID);
+    gl.bufferData(GL_SHADER_STORAGE_BUFFER, s_fixedBufferSize * (int)sizeof(float), nullptr, GL_DYNAMIC_COPY);
 
-	GLU_EXPECT_NO_ERROR(gl.getError(), "update buffer");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "update buffer");
 
-	// Run compute
+    // Run compute
 
-	m_testCtx.getLog() << tcu::TestLog::Message << "Running compute shader." << tcu::TestLog::EndMessage;
+    m_testCtx.getLog() << tcu::TestLog::Message << "Running compute shader." << tcu::TestLog::EndMessage;
 
-	gl.useProgram(m_shader->getProgram());
-	gl.dispatchCompute(1, 1, 1);
+    gl.useProgram(m_shader->getProgram());
+    gl.dispatchCompute(1, 1, 1);
 
-	GLU_EXPECT_NO_ERROR(gl.getError(), "dispatch");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "dispatch");
 
-	// Verify
-	{
-		const void* ptr;
+    // Verify
+    {
+        const void *ptr;
 
-		gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, m_outputBufferID);
-		ptr = gl.mapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, (int)sizeof(deUint32), GL_MAP_READ_BIT);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "map");
+        gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, m_outputBufferID);
+        ptr = gl.mapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, (int)sizeof(uint32_t), GL_MAP_READ_BIT);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "map");
 
-		if (!ptr)
-			throw tcu::TestError("mapBufferRange returned NULL");
+        if (!ptr)
+            throw tcu::TestError("mapBufferRange returned NULL");
 
-		if (*(const deUint32*)ptr != (deUint32)s_fixedBufferSize)
-		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: Length returned was " << *(const deUint32*)ptr << ", expected " << static_cast<int>(s_fixedBufferSize) << tcu::TestLog::EndMessage;
-			error = true;
-		}
-		else
-			m_testCtx.getLog() << tcu::TestLog::Message << "Length returned was correct." << tcu::TestLog::EndMessage;
+        if (*(const uint32_t *)ptr != (uint32_t)s_fixedBufferSize)
+        {
+            m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: Length returned was " << *(const uint32_t *)ptr
+                               << ", expected " << static_cast<int>(s_fixedBufferSize) << tcu::TestLog::EndMessage;
+            error = true;
+        }
+        else
+            m_testCtx.getLog() << tcu::TestLog::Message << "Length returned was correct." << tcu::TestLog::EndMessage;
 
-		if (gl.unmapBuffer(GL_SHADER_STORAGE_BUFFER) == GL_FALSE)
-			throw tcu::TestError("unmapBuffer returned false");
+        if (gl.unmapBuffer(GL_SHADER_STORAGE_BUFFER) == GL_FALSE)
+            throw tcu::TestError("unmapBuffer returned false");
 
-		GLU_EXPECT_NO_ERROR(gl.getError(), "unmap");
-	}
+        GLU_EXPECT_NO_ERROR(gl.getError(), "unmap");
+    }
 
-	if (!error)
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	else
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-	return STOP;
+    if (!error)
+        m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+    else
+        m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+    return STOP;
 }
 
-std::string SSBOArrayLengthCase::genComputeSource (void) const
+std::string SSBOArrayLengthCase::genComputeSource(void) const
 {
-	const std::string qualifierStr	= (m_access == ACCESS_READONLY) ? ("readonly ") : (m_access == ACCESS_WRITEONLY) ? ("writeonly ") : ("");
-	const std::string sizeStr		= (m_sized) ? (de::toString(static_cast<int>(s_fixedBufferSize))) : ("");
+    const std::string qualifierStr = (m_access == ACCESS_READONLY)  ? ("readonly ") :
+                                     (m_access == ACCESS_WRITEONLY) ? ("writeonly ") :
+                                                                      ("");
+    const std::string sizeStr      = (m_sized) ? (de::toString(static_cast<int>(s_fixedBufferSize))) : ("");
 
-	std::ostringstream buf;
-	buf << "#version 310 es\n"
-		<< "layout(local_size_x = 1, local_size_y = 1) in;\n"
-		<< "layout(std430) buffer;\n"
-		<< "\n"
-		<< "layout(binding = 0) buffer Out\n"
-		<< "{\n"
-		<< "    int outLength;\n"
-		<< "    uint unused;\n"
-		<< "} sb_out;\n"
-		<< "layout(binding = 1) " << qualifierStr << "buffer Target\n"
-		<< "{\n"
-		<< "    float array[" << sizeStr << "];\n"
-		<< "} sb_target;\n\n"
-		<< "void main (void)\n"
-		<< "{\n";
+    std::ostringstream buf;
+    buf << "#version 310 es\n"
+        << "layout(local_size_x = 1, local_size_y = 1) in;\n"
+        << "layout(std430) buffer;\n"
+        << "\n"
+        << "layout(binding = 0) buffer Out\n"
+        << "{\n"
+        << "    int outLength;\n"
+        << "    uint unused;\n"
+        << "} sb_out;\n"
+        << "layout(binding = 1) " << qualifierStr << "buffer Target\n"
+        << "{\n"
+        << "    float array[" << sizeStr << "];\n"
+        << "} sb_target;\n\n"
+        << "void main (void)\n"
+        << "{\n";
 
-	// read
-	if (m_access == ACCESS_READONLY || m_access == ACCESS_DEFAULT)
-		buf << "    sb_out.unused = uint(sb_target.array[1]);\n";
+    // read
+    if (m_access == ACCESS_READONLY || m_access == ACCESS_DEFAULT)
+        buf << "    sb_out.unused = uint(sb_target.array[1]);\n";
 
-	// write
-	if (m_access == ACCESS_WRITEONLY || m_access == ACCESS_DEFAULT)
-		buf << "    sb_target.array[2] = float(sb_out.unused);\n";
+    // write
+    if (m_access == ACCESS_WRITEONLY || m_access == ACCESS_DEFAULT)
+        buf << "    sb_target.array[2] = float(sb_out.unused);\n";
 
-	// actual test
-	buf << "\n"
-		<< "    sb_out.outLength = sb_target.array.length();\n"
-		<< "}\n";
+    // actual test
+    buf << "\n"
+        << "    sb_out.outLength = sb_target.array.length();\n"
+        << "}\n";
 
-	return buf.str();
+    return buf.str();
 }
 
-} // anonymous
+} // namespace
 
-SSBOArrayLengthTests::SSBOArrayLengthTests (Context& context)
-	: TestCaseGroup(context, "array_length", "Test array.length()")
-{
-}
-
-SSBOArrayLengthTests::~SSBOArrayLengthTests (void)
+SSBOArrayLengthTests::SSBOArrayLengthTests(Context &context)
+    : TestCaseGroup(context, "array_length", "Test array.length()")
 {
 }
 
-void SSBOArrayLengthTests::init (void)
+SSBOArrayLengthTests::~SSBOArrayLengthTests(void)
 {
-	static const struct Qualifier
-	{
-		SSBOArrayLengthCase::ArrayAccess	access;
-		const char*							name;
-		const char*							desc;
-	}  qualifiers[] =
-	{
-		{ SSBOArrayLengthCase::ACCESS_DEFAULT,		"",				""			},
-		{ SSBOArrayLengthCase::ACCESS_WRITEONLY,	"writeonly_",	"writeonly"	},
-		{ SSBOArrayLengthCase::ACCESS_READONLY,		"readonly_",	"readonly"	},
-	};
-
-	static const bool arraysSized[]	= { true, false };
-
-	for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(arraysSized); ++sizeNdx)
-	for (int qualifierNdx = 0; qualifierNdx < DE_LENGTH_OF_ARRAY(qualifiers); ++qualifierNdx)
-	{
-		const std::string name = std::string() + ((arraysSized[sizeNdx]) ? ("sized_") : ("unsized_")) + qualifiers[qualifierNdx].name + "array";
-		const std::string desc = std::string("Test length() of ") + ((arraysSized[sizeNdx]) ? ("sized ") : ("unsized ")) + qualifiers[qualifierNdx].name + " array";
-
-		this->addChild(new SSBOArrayLengthCase(m_context, name.c_str(), desc.c_str(), qualifiers[qualifierNdx].access, arraysSized[sizeNdx]));
-	}
 }
 
-} // Functional
-} // gles31
-} // deqp
+void SSBOArrayLengthTests::init(void)
+{
+    static const struct Qualifier
+    {
+        SSBOArrayLengthCase::ArrayAccess access;
+        const char *name;
+        const char *desc;
+    } qualifiers[] = {
+        {SSBOArrayLengthCase::ACCESS_DEFAULT, "", ""},
+        {SSBOArrayLengthCase::ACCESS_WRITEONLY, "writeonly_", "writeonly"},
+        {SSBOArrayLengthCase::ACCESS_READONLY, "readonly_", "readonly"},
+    };
+
+    static const bool arraysSized[] = {true, false};
+
+    for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(arraysSized); ++sizeNdx)
+        for (int qualifierNdx = 0; qualifierNdx < DE_LENGTH_OF_ARRAY(qualifiers); ++qualifierNdx)
+        {
+            const std::string name = std::string() + ((arraysSized[sizeNdx]) ? ("sized_") : ("unsized_")) +
+                                     qualifiers[qualifierNdx].name + "array";
+            const std::string desc = std::string("Test length() of ") +
+                                     ((arraysSized[sizeNdx]) ? ("sized ") : ("unsized ")) +
+                                     qualifiers[qualifierNdx].name + " array";
+
+            this->addChild(new SSBOArrayLengthCase(m_context, name.c_str(), desc.c_str(),
+                                                   qualifiers[qualifierNdx].access, arraysSized[sizeNdx]));
+        }
+}
+
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp

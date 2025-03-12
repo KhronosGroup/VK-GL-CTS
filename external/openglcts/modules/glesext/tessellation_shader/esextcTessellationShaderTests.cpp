@@ -48,10 +48,10 @@ namespace glcts
  * @param context       Test context
  * @param glslVersion   GLSL version
  **/
-TessellationShaderTests::TessellationShaderTests(glcts::Context& context, const ExtParameters& extParams)
-	: TestCaseGroupBase(context, extParams, "tessellation_shader", "EXT_tessellation_shader tests")
+TessellationShaderTests::TessellationShaderTests(glcts::Context &context, const ExtParameters &extParams)
+    : TestCaseGroupBase(context, extParams, "tessellation_shader", "EXT_tessellation_shader tests")
 {
-	/* No implementation needed */
+    /* No implementation needed */
 }
 
 /**
@@ -59,34 +59,65 @@ TessellationShaderTests::TessellationShaderTests(glcts::Context& context, const 
  **/
 void TessellationShaderTests::init(void)
 {
-	TestCaseGroupBase* vertexGroup = new TestCaseGroupBase(m_context, m_extParams, "vertex", "");
-	vertexGroup->addChild(new TessellationShaderVertexOrdering(m_context, m_extParams));
-	vertexGroup->addChild(new TessellationShaderVertexSpacing(m_context, m_extParams));
-	addChild(vertexGroup);
+    TestCaseGroupBase *vertexGroup = new TestCaseGroupBase(m_context, m_extParams, "vertex", "");
+    vertexGroup->addChild(new TessellationShaderVertexOrdering(m_context, m_extParams));
+    addTessellationShaderVertexSpacingTest(vertexGroup);
+    addChild(vertexGroup);
 
-	TestCaseGroupBase* singleGroup = new TestCaseGroupBase(m_context, m_extParams, "single", "");
+    TestCaseGroupBase *singleGroup = new TestCaseGroupBase(m_context, m_extParams, "single", "");
 
-	singleGroup->addChild(new TessellationShaderPropertiesDefaultContextWideValues(m_context, m_extParams));
+    singleGroup->addChild(new TessellationShaderPropertiesDefaultContextWideValues(m_context, m_extParams));
 
-	singleGroup->addChild(new TessellationShadersIsolines(m_context, m_extParams));
+    singleGroup->addChild(new TessellationShadersIsolines(m_context, m_extParams));
 
-	singleGroup->addChild(new TessellationShaderProgramInterfaces(m_context, m_extParams));
+    singleGroup->addChild(new TessellationShaderProgramInterfaces(m_context, m_extParams));
 
-	singleGroup->addChild(new TessellationShaderPropertiesProgramObject(m_context, m_extParams));
-	singleGroup->addChild(new TessellationShaderXFB(m_context, m_extParams));
-	singleGroup->addChild(new TessellationShaderMaxPatchVertices(m_context, m_extParams));
-	singleGroup->addChild(new TessellationShaderPrimitiveCoverage(m_context, m_extParams));
-	addChild(singleGroup);
+    singleGroup->addChild(new TessellationShaderPropertiesProgramObject(m_context, m_extParams));
+    singleGroup->addChild(new TessellationShaderXFB(m_context, m_extParams));
+    singleGroup->addChild(new TessellationShaderMaxPatchVertices(m_context, m_extParams));
+    singleGroup->addChild(new TessellationShaderPrimitiveCoverage(m_context, m_extParams));
+    addChild(singleGroup);
 
-	addChild(new TessellationShaderQuadsTests(m_context, m_extParams));
-	addChild(new TessellationShaderTCTETests(m_context, m_extParams));
-	addChild(new TessellationShaderTessellationTests(m_context, m_extParams));
-	addChild(new TessellationShaderTrianglesTests(m_context, m_extParams));
-	addChild(new TessellationShaderPointsTests(m_context, m_extParams));
-	addChild(new TessellationShaderBarrierTests(m_context, m_extParams));
-	addChild(new TessellationShaderErrors(m_context, m_extParams));
-	addChild(new TessellationShaderInvarianceTests(m_context, m_extParams));
-	addChild(new TesselationShaderWindingTests(m_context, m_extParams));
+    addChild(new TessellationShaderQuadsTests(m_context, m_extParams));
+    addChild(new TessellationShaderTCTETests(m_context, m_extParams));
+    addChild(new TessellationShaderTessellationTests(m_context, m_extParams));
+    addChild(new TessellationShaderTrianglesTests(m_context, m_extParams));
+    addChild(new TessellationShaderPointsTests(m_context, m_extParams));
+    addChild(new TessellationShaderBarrierTests(m_context, m_extParams));
+    addChild(new TessellationShaderErrors(m_context, m_extParams));
+    addChild(new TessellationShaderInvarianceTests(m_context, m_extParams));
+    addChild(new TesselationShaderWindingTests(m_context, m_extParams));
+}
+
+void TessellationShaderTests::addTessellationShaderVertexSpacingTest(TestCaseGroupBase *vertexGroup)
+{
+    if (vertexGroup == nullptr)
+    {
+        return;
+    }
+
+    const _tessellation_shader_vertex_spacing vs_modes[] = {
+        TESSELLATION_SHADER_VERTEX_SPACING_EQUAL, TESSELLATION_SHADER_VERTEX_SPACING_FRACTIONAL_EVEN,
+        TESSELLATION_SHADER_VERTEX_SPACING_FRACTIONAL_ODD, TESSELLATION_SHADER_VERTEX_SPACING_DEFAULT};
+    const unsigned int n_vs_modes = sizeof(vs_modes) / sizeof(vs_modes[0]);
+
+    const _tessellation_primitive_mode primitive_modes[] = {TESSELLATION_SHADER_PRIMITIVE_MODE_ISOLINES,
+                                                            TESSELLATION_SHADER_PRIMITIVE_MODE_TRIANGLES,
+                                                            TESSELLATION_SHADER_PRIMITIVE_MODE_QUADS};
+    const unsigned int n_primitive_modes                 = sizeof(primitive_modes) / sizeof(primitive_modes[0]);
+
+    /* Iterate through all primitive modes */
+    for (unsigned int n_primitive_mode = 0; n_primitive_mode < n_primitive_modes; ++n_primitive_mode)
+    {
+        /* Iterate through all vertex spacing modes */
+        for (unsigned int n_vs_mode = 0; n_vs_mode < n_vs_modes; ++n_vs_mode)
+        {
+            _tessellation_shader_vertex_spacing vs_mode = vs_modes[n_vs_mode];
+            _tessellation_primitive_mode primitive_mode = primitive_modes[n_primitive_mode];
+
+            vertexGroup->addChild(new TessellationShaderVertexSpacing(m_context, m_extParams, primitive_mode, vs_mode));
+        }
+    }
 }
 
 } // namespace glcts

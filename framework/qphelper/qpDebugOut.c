@@ -30,150 +30,153 @@
 
 typedef enum MessageType_e
 {
-	MESSAGETYPE_INFO	= 0,
-	MESSAGETYPE_ERROR,
-	MESSAGETYPE_NONFATAL_ERROR,
+    MESSAGETYPE_INFO = 0,
+    MESSAGETYPE_ERROR,
+    MESSAGETYPE_NONFATAL_ERROR,
 
-	MESSAGETYPE_LAST
+    MESSAGETYPE_LAST
 } MessageType;
 
-static writePtr		writeRedirect		= 0;
-static writeFtmPtr	writeFtmRedirect	= 0;
+static writePtr writeRedirect       = 0;
+static writeFtmPtr writeFtmRedirect = 0;
 
-static void		printRaw		(MessageType type, const char* msg);
-static void		printFmt		(MessageType type, const char* fmt, va_list args);
-static void		exitProcess		(void);
+static void printRaw(MessageType type, const char *msg);
+static void printFmt(MessageType type, const char *fmt, va_list args);
+static void exitProcess(void);
 
-void qpRedirectOut (writePtr w, writeFtmPtr wftm)
+void qpRedirectOut(writePtr w, writeFtmPtr wftm)
 {
-	writeRedirect = w;
-	writeFtmRedirect = wftm;
+    writeRedirect    = w;
+    writeFtmRedirect = wftm;
 }
 
-void qpPrint (const char* message)
+void qpPrint(const char *message)
 {
-	printRaw(MESSAGETYPE_INFO, message);
+    printRaw(MESSAGETYPE_INFO, message);
 }
 
-void qpPrintf (const char* format, ...)
+void qpPrintf(const char *format, ...)
 {
-	va_list args;
-	va_start(args, format);
-	printFmt(MESSAGETYPE_INFO, format, args);
-	va_end(args);
+    va_list args;
+    va_start(args, format);
+    printFmt(MESSAGETYPE_INFO, format, args);
+    va_end(args);
 }
 
-void qpPrintErrorf (const char* format, ...)
+void qpPrintErrorf(const char *format, ...)
 {
-	va_list args;
-	va_start(args, format);
-	printFmt(MESSAGETYPE_NONFATAL_ERROR, format, args);
-	va_end(args);
+    va_list args;
+    va_start(args, format);
+    printFmt(MESSAGETYPE_NONFATAL_ERROR, format, args);
+    va_end(args);
 }
 
-void qpPrintv (const char* format, va_list args)
+void qpPrintv(const char *format, va_list args)
 {
-	printFmt(MESSAGETYPE_INFO, format, args);
+    printFmt(MESSAGETYPE_INFO, format, args);
 }
 
-void qpPrintErrorv (const char* format, va_list args)
+void qpPrintErrorv(const char *format, va_list args)
 {
-	printFmt(MESSAGETYPE_NONFATAL_ERROR, format, args);
+    printFmt(MESSAGETYPE_NONFATAL_ERROR, format, args);
 }
 
-void qpDief (const char* format, ...)
+void qpDief(const char *format, ...)
 {
-	va_list args;
-	va_start(args, format);
-	printFmt(MESSAGETYPE_ERROR, format, args);
-	va_end(args);
+    va_list args;
+    va_start(args, format);
+    printFmt(MESSAGETYPE_ERROR, format, args);
+    va_end(args);
 
-	exitProcess();
+    exitProcess();
 }
 
-void qpDiev (const char* format, va_list args)
+void qpDiev(const char *format, va_list args)
 {
-	printFmt(MESSAGETYPE_ERROR, format, args);
-	exitProcess();
+    printFmt(MESSAGETYPE_ERROR, format, args);
+    exitProcess();
 }
 
 /* print() implementation. */
-#if (DE_OS == DE_OS_ANDROID)
+#if defined(DEQP_IS_ANDROID_APP)
 
 #include <android/log.h>
 
-static android_LogPriority getLogPriority (MessageType type)
+static android_LogPriority getLogPriority(MessageType type)
 {
-	switch (type)
-	{
-		case MESSAGETYPE_INFO:	return ANDROID_LOG_INFO;
-		case MESSAGETYPE_ERROR:	return ANDROID_LOG_FATAL;
-		default:				return ANDROID_LOG_DEBUG;
-	}
+    switch (type)
+    {
+    case MESSAGETYPE_INFO:
+        return ANDROID_LOG_INFO;
+    case MESSAGETYPE_ERROR:
+        return ANDROID_LOG_FATAL;
+    default:
+        return ANDROID_LOG_DEBUG;
+    }
 }
 
-void printRaw (MessageType type, const char* message)
+void printRaw(MessageType type, const char *message)
 {
-	if (writeRedirect && !writeRedirect(type, message))
-		return;
+    if (writeRedirect && !writeRedirect(type, message))
+        return;
 
-	__android_log_write(getLogPriority(type), "dEQP", message);
+    __android_log_write(getLogPriority(type), "dEQP", message);
 }
 
-void printFmt (MessageType type, const char* format, va_list args)
+void printFmt(MessageType type, const char *format, va_list args)
 {
-	if (writeFtmRedirect && !writeFtmRedirect(type, format, args))
-		return;
+    if (writeFtmRedirect && !writeFtmRedirect(type, format, args))
+        return;
 
-	__android_log_vprint(getLogPriority(type), "dEQP", format, args);
+    __android_log_vprint(getLogPriority(type), "dEQP", format, args);
 }
 
 #else
 
-static FILE* getOutFile (MessageType type)
+static FILE *getOutFile(MessageType type)
 {
-	if (type == MESSAGETYPE_ERROR || type == MESSAGETYPE_NONFATAL_ERROR)
-		return stderr;
-	else
-		return stdout;
+    if (type == MESSAGETYPE_ERROR || type == MESSAGETYPE_NONFATAL_ERROR)
+        return stderr;
+    else
+        return stdout;
 }
 
-void printRaw (MessageType type, const char* message)
+void printRaw(MessageType type, const char *message)
 {
-	if (writeRedirect && !writeRedirect(type, message))
-		return;
+    if (writeRedirect && !writeRedirect(type, message))
+        return;
 
-	FILE* out = getOutFile(type);
+    FILE *out = getOutFile(type);
 
-	if (type == MESSAGETYPE_ERROR)
-		fprintf(out, "FATAL ERROR: ");
+    if (type == MESSAGETYPE_ERROR)
+        fprintf(out, "FATAL ERROR: ");
 
-	fputs(message, out);
+    fputs(message, out);
 
-	if (type == MESSAGETYPE_ERROR)
-	{
-		putc('\n', out);
-		fflush(out);
-	}
+    if (type == MESSAGETYPE_ERROR)
+    {
+        putc('\n', out);
+        fflush(out);
+    }
 }
 
-void printFmt (MessageType type, const char* format, va_list args)
+void printFmt(MessageType type, const char *format, va_list args)
 {
-	if (writeFtmRedirect && !writeFtmRedirect(type, format, args))
-		return;
+    if (writeFtmRedirect && !writeFtmRedirect(type, format, args))
+        return;
 
-	FILE* out = getOutFile(type);
+    FILE *out = getOutFile(type);
 
-	if (type == MESSAGETYPE_ERROR)
-		fprintf(out, "FATAL ERROR: ");
+    if (type == MESSAGETYPE_ERROR)
+        fprintf(out, "FATAL ERROR: ");
 
-	vfprintf(out, format, args);
+    vfprintf(out, format, args);
 
-	if (type == MESSAGETYPE_ERROR)
-	{
-		putc('\n', out);
-		fflush(out);
-	}
+    if (type == MESSAGETYPE_ERROR)
+    {
+        putc('\n', out);
+        fflush(out);
+    }
 }
 
 #endif
@@ -186,44 +189,44 @@ void printFmt (MessageType type, const char* format, va_list args)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-static void exitProcess (void)
+static void exitProcess(void)
 {
-	/* Some API implementations register atexit() functions that may hang.
-	   By using TerminateProcess() we can avoid calling any potentially hanging exit routines. */
-	HANDLE curProc = GetCurrentProcess();
-	TerminateProcess(curProc, -1);
+    /* Some API implementations register atexit() functions that may hang.
+       By using TerminateProcess() we can avoid calling any potentially hanging exit routines. */
+    HANDLE curProc = GetCurrentProcess();
+    TerminateProcess(curProc, -1);
 }
 
 #else
 
 #if (DE_OS == DE_OS_IOS)
-#	include "deThread.h"	/*!< for deSleep() */
+#include "deThread.h" /*!< for deSleep() */
 #endif
 
 #if defined(QP_USE_SIGNAL_HANDLER)
-#	include <signal.h>
+#include <signal.h>
 #endif
 
-static void exitProcess (void)
+static void exitProcess(void)
 {
 #if (DE_OS == DE_OS_IOS)
-	/* Since tests are in the same process as execserver, we want to give it
-	   a chance to stream complete log data before terminating. */
-	deSleep(5000);
+    /* Since tests are in the same process as execserver, we want to give it
+       a chance to stream complete log data before terminating. */
+    deSleep(5000);
 #endif
 
 #if defined(QP_USE_SIGNAL_HANDLER)
-	/* QP_USE_SIGNAL_HANDLER defined, this means this function could have
-	   been called from a signal handler. Calling exit() inside a signal
-	   handler is not safe. */
+    /* QP_USE_SIGNAL_HANDLER defined, this means this function could have
+       been called from a signal handler. Calling exit() inside a signal
+       handler is not safe. */
 
-	/* Flush all open FILES */
-	fflush(DE_NULL);
+    /* Flush all open FILES */
+    fflush(NULL);
 
-	/* Kill without calling any _at_exit handlers as those might hang */
-	raise(SIGKILL);
+    /* Kill without calling any _at_exit handlers as those might hang */
+    raise(SIGKILL);
 #else
-	exit(-1);
+    exit(-1);
 #endif
 }
 

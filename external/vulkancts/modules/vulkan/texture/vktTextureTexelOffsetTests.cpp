@@ -33,27 +33,26 @@ namespace vkt
 namespace texture
 {
 
-tcu::TestCaseGroup* createTextureTexelOffsetTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTextureTexelOffsetTests(tcu::TestContext &testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> texelOffset (new tcu::TestCaseGroup(testCtx, "texel_offset", "Test texel offset"));
+    de::MovePtr<tcu::TestCaseGroup> texelOffset(new tcu::TestCaseGroup(testCtx, "texel_offset"));
 #ifndef CTS_USES_VULKANSC
-	static const char			dataDir[]	= "texture/texel_offset";
-	static const std::string	cases[][2]		=
-	{
-		{ "texel_offset",	"A fragment shader that uses texture loads with an offset specified" }
-	};
+    static const char dataDir[]         = "texture/texel_offset";
+    static const std::string cases[][2] = {
+        {"texel_offset", "A fragment shader that uses texture loads with an offset specified"}};
 
-	for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
-	{
-		const std::string			fileName	= cases[i][0] + ".amber";
-		cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, cases[i][0].c_str(), cases[i][1].c_str(), dataDir, fileName);
+    for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
+    {
+        const std::string fileName = cases[i][0] + ".amber";
+        cts_amber::AmberTestCase *testCase =
+            cts_amber::createAmberTestCase(testCtx, cases[i][0].c_str(), cases[i][1].c_str(), dataDir, fileName);
 
-		texelOffset->addChild(testCase);
-	}
+        texelOffset->addChild(testCase);
+    }
 #endif
 
-	return texelOffset.release();
+    return texelOffset.release();
 }
 
-} // texture
-} // vkt
+} // namespace texture
+} // namespace vkt

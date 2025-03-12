@@ -39,187 +39,140 @@ namespace wsi
 
 struct PlatformProperties
 {
-	enum FeatureFlags
-	{
-		FEATURE_INITIAL_WINDOW_SIZE		= (1<<0),		//!< Platform honors initial window size request
-		FEATURE_RESIZE_WINDOW			= (1<<1),		//!< Platform supports resizing window
-	};
+    enum FeatureFlags
+    {
+        FEATURE_INITIAL_WINDOW_SIZE = (1 << 0), //!< Platform honors initial window size request
+        FEATURE_RESIZE_WINDOW       = (1 << 1), //!< Platform supports resizing window
+    };
 
-	enum SwapchainExtent
-	{
-		SWAPCHAIN_EXTENT_MUST_MATCH_WINDOW_SIZE = 0,	//!< Swapchain extent must match window size
-		SWAPCHAIN_EXTENT_SETS_WINDOW_SIZE,				//!< Window will be resized to swapchain size when first image is presented
-		SWAPCHAIN_EXTENT_SCALED_TO_WINDOW_SIZE,			//!< Presented image contents will be scaled to window size
+    enum SwapchainExtent
+    {
+        SWAPCHAIN_EXTENT_MUST_MATCH_WINDOW_SIZE = 0, //!< Swapchain extent must match window size
+        SWAPCHAIN_EXTENT_SETS_WINDOW_SIZE, //!< Window will be resized to swapchain size when first image is presented
+        SWAPCHAIN_EXTENT_SCALED_TO_WINDOW_SIZE, //!< Presented image contents will be scaled to window size
 
-		SWAPCHAIN_EXTENT_LAST
-	};
+        SWAPCHAIN_EXTENT_LAST
+    };
 
-	deUint32		features;
-	SwapchainExtent	swapchainExtent;
-	deUint32		maxDisplays;
-	deUint32		maxWindowsPerDisplay;
+    uint32_t features;
+    SwapchainExtent swapchainExtent;
+    uint32_t maxDisplays;
+    uint32_t maxWindowsPerDisplay;
 };
 
-const char*						getName									(Type wsiType);
-const char*						getExtensionName						(Type wsiType);
+const char *getName(Type wsiType);
+const char *getExtensionName(Type wsiType);
 
-const PlatformProperties&		getPlatformProperties					(Type wsiType);
+const PlatformProperties &getPlatformProperties(Type wsiType);
 
-VkResult						createSurface							(const InstanceInterface&		vki,
-																		 VkInstance						instance,
-																		 Type							wsiType,
-																		 const Display&					nativeDisplay,
-																		 const Window&					nativeWindow,
-																		 const tcu::CommandLine&		cmdLine,
-																		 const VkAllocationCallbacks*	pAllocator,
-																		 VkSurfaceKHR*					pSurface);
+VkResult createSurface(const InstanceInterface &vki, VkInstance instance, Type wsiType, const Display &nativeDisplay,
+                       const Window &nativeWindow, const tcu::CommandLine &cmdLine,
+                       const VkAllocationCallbacks *pAllocator, VkSurfaceKHR *pSurface);
 
-Move<VkSurfaceKHR>				createSurface							(const InstanceInterface&		vki,
-																		 VkInstance						instance,
-																		 Type							wsiType,
-																		 const Display&					nativeDisplay,
-																		 const Window&					nativeWindow,
-																		 const tcu::CommandLine&		cmdLine,
-																		 const VkAllocationCallbacks*	pAllocator = DE_NULL);
+Move<VkSurfaceKHR> createSurface(const InstanceInterface &vki, VkInstance instance, Type wsiType,
+                                 const Display &nativeDisplay, const Window &nativeWindow,
+                                 const tcu::CommandLine &cmdLine, const VkAllocationCallbacks *pAllocator = nullptr);
 
-VkBool32						getPhysicalDeviceSurfaceSupport			(const InstanceInterface&		vki,
-																		 VkPhysicalDevice				physicalDevice,
-																		 deUint32						queueFamilyIndex,
-																		 VkSurfaceKHR					surface);
+VkBool32 getPhysicalDeviceSurfaceSupport(const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
+                                         uint32_t queueFamilyIndex, VkSurfaceKHR surface);
 
-VkBool32						getPhysicalDevicePresentationSupport	(const InstanceInterface&		vki,
-																		 VkPhysicalDevice				physicalDevice,
-																		 deUint32						queueFamilyIndex,
-																		 Type							wsiType,
-																		 const Display&					nativeDisplay);
+VkBool32 getPhysicalDevicePresentationSupport(const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
+                                              uint32_t queueFamilyIndex, Type wsiType, const Display &nativeDisplay);
 
-VkSurfaceCapabilitiesKHR		getPhysicalDeviceSurfaceCapabilities	(const InstanceInterface&		vki,
-																		 VkPhysicalDevice				physicalDevice,
-																		 VkSurfaceKHR					surface);
+VkSurfaceCapabilitiesKHR getPhysicalDeviceSurfaceCapabilities(const InstanceInterface &vki,
+                                                              VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 
-VkSurfaceCapabilities2EXT		getPhysicalDeviceSurfaceCapabilities2EXT(const InstanceInterface&		vki,
-																		 VkPhysicalDevice				physicalDevice,
-																		 VkSurfaceKHR					surface);
+VkSurfaceCapabilities2EXT getPhysicalDeviceSurfaceCapabilities2EXT(const InstanceInterface &vki,
+                                                                   VkPhysicalDevice physicalDevice,
+                                                                   VkSurfaceKHR surface);
 
-bool							sameSurfaceCapabilities					(const VkSurfaceCapabilitiesKHR&	khr,
-																		 const VkSurfaceCapabilities2EXT&	ext);
+bool sameSurfaceCapabilities(const VkSurfaceCapabilitiesKHR &khr, const VkSurfaceCapabilities2EXT &ext);
 
-std::vector<VkSurfaceFormatKHR>	getPhysicalDeviceSurfaceFormats			(const InstanceInterface&		vki,
-																		 VkPhysicalDevice				physicalDevice,
-																		 VkSurfaceKHR					surface);
+std::vector<VkSurfaceFormatKHR> getPhysicalDeviceSurfaceFormats(const InstanceInterface &vki,
+                                                                VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 
-std::vector<VkPresentModeKHR>	getPhysicalDeviceSurfacePresentModes	(const InstanceInterface&		vki,
-																		 VkPhysicalDevice				physicalDevice,
-																		 VkSurfaceKHR					surface);
+std::vector<VkPresentModeKHR> getPhysicalDeviceSurfacePresentModes(const InstanceInterface &vki,
+                                                                   VkPhysicalDevice physicalDevice,
+                                                                   VkSurfaceKHR surface);
 
-std::vector<VkImage>			getSwapchainImages						(const DeviceInterface&			vkd,
-																		 VkDevice						device,
-																		 VkSwapchainKHR					swapchain);
+std::vector<VkImage> getSwapchainImages(const DeviceInterface &vkd, VkDevice device, VkSwapchainKHR swapchain);
 
-deUint32						chooseQueueFamilyIndex					(const InstanceInterface&			vki,
-																		 VkPhysicalDevice					physicalDevice,
-																		 const std::vector<VkSurfaceKHR>&	surfaces);
+uint32_t chooseQueueFamilyIndex(const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
+                                const std::vector<VkSurfaceKHR> &surfaces);
 
-deUint32						chooseQueueFamilyIndex					(const InstanceInterface&		vki,
-																		 VkPhysicalDevice				physicalDevice,
-																		 VkSurfaceKHR					surface);
+uint32_t chooseQueueFamilyIndex(const InstanceInterface &vki, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 
-std::vector<deUint32>			getCompatibleQueueFamilyIndices			(const InstanceInterface&			vki,
-																		 VkPhysicalDevice					physicalDevice,
-																		 const std::vector<VkSurfaceKHR>&	surface);
+std::vector<uint32_t> getCompatibleQueueFamilyIndices(const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
+                                                      const std::vector<VkSurfaceKHR> &surface);
 
-tcu::UVec2						getFullScreenSize						(const vk::wsi::Type			wsiType,
-																		 const vk::wsi::Display&		display,
-																		 const tcu::UVec2&				fallbackSize);
+tcu::UVec2 getFullScreenSize(const vk::wsi::Type wsiType, const vk::wsi::Display &display,
+                             const tcu::UVec2 &fallbackSize);
 
-
-VkBool32						isDisplaySurface						(Type							wsiType);
+VkBool32 isDisplaySurface(Type wsiType);
 
 class WsiTriangleRenderer
 {
 public:
-										WsiTriangleRenderer	(const DeviceInterface&		vkd,
-															 const VkDevice				device,
-															 Allocator&					allocator,
-															 const BinaryCollection&	binaryRegistry,
-															 bool						explicitLayoutTransitions,
-															 const std::vector<VkImage>	swapchainImages,
-															 const std::vector<VkImage>	aliasImages,
-															 const VkFormat				framebufferFormat,
-															 const tcu::UVec2&			renderSize);
+    WsiTriangleRenderer(const DeviceInterface &vkd, const VkDevice device, Allocator &allocator,
+                        const BinaryCollection &binaryRegistry, bool explicitLayoutTransitions,
+                        const std::vector<VkImage> swapchainImages, const std::vector<VkImage> aliasImages,
+                        const VkFormat framebufferFormat, const tcu::UVec2 &renderSize);
 
-										WsiTriangleRenderer	(WsiTriangleRenderer&&		other);
+    WsiTriangleRenderer(WsiTriangleRenderer &&other);
 
-										~WsiTriangleRenderer(void);
+    ~WsiTriangleRenderer(void);
 
-	void								recordFrame			(VkCommandBuffer			cmdBuffer,
-															 deUint32					imageNdx,
-															 deUint32					frameNdx) const;
+    void recordFrame(VkCommandBuffer cmdBuffer, uint32_t imageNdx, uint32_t frameNdx) const;
 
-	void								recordDeviceGroupFrame (VkCommandBuffer			cmdBuffer,
-																deUint32				imageNdx,
-																deUint32				firstDeviceID,
-																deUint32				secondDeviceID,
-																deUint32				devicesCount,
-																deUint32				frameNdx) const;
+    void recordDeviceGroupFrame(VkCommandBuffer cmdBuffer, uint32_t imageNdx, uint32_t firstDeviceID,
+                                uint32_t secondDeviceID, uint32_t devicesCount, uint32_t frameNdx) const;
 
-	static void							getPrograms			(SourceCollections& dst);
+    static void getPrograms(SourceCollections &dst);
 
 private:
-	static Move<VkRenderPass>			createRenderPass	(const DeviceInterface&		vkd,
-															 const VkDevice				device,
-															 const VkFormat				colorAttachmentFormat,
-															 const bool					explicitLayoutTransitions);
+    static Move<VkRenderPass> createRenderPass(const DeviceInterface &vkd, const VkDevice device,
+                                               const VkFormat colorAttachmentFormat,
+                                               const bool explicitLayoutTransitions);
 
-	static Move<VkPipelineLayout>		createPipelineLayout(const DeviceInterface&		vkd,
-															 VkDevice					device);
+    static Move<VkPipelineLayout> createPipelineLayout(const DeviceInterface &vkd, VkDevice device);
 
-	static Move<VkPipeline>				createPipeline		(const DeviceInterface&		vkd,
-															 const VkDevice				device,
-															 const VkRenderPass			renderPass,
-															 const VkPipelineLayout		pipelineLayout,
-															 const BinaryCollection&	binaryCollection,
-															 const tcu::UVec2&			renderSize);
+    static Move<VkPipeline> createPipeline(const DeviceInterface &vkd, const VkDevice device,
+                                           const VkRenderPass renderPass, const VkPipelineLayout pipelineLayout,
+                                           const BinaryCollection &binaryCollection, const tcu::UVec2 &renderSize);
 
-	static Move<VkImageView>			createAttachmentView(const DeviceInterface&		vkd,
-															 const VkDevice				device,
-															 const VkImage				image,
-															 const VkFormat				format);
+    static Move<VkImageView> createAttachmentView(const DeviceInterface &vkd, const VkDevice device,
+                                                  const VkImage image, const VkFormat format);
 
-	static Move<VkFramebuffer>			createFramebuffer	(const DeviceInterface&		vkd,
-															 const VkDevice				device,
-															 const VkRenderPass			renderPass,
-															 const VkImageView			colorAttachment,
-															 const tcu::UVec2&			renderSize);
+    static Move<VkFramebuffer> createFramebuffer(const DeviceInterface &vkd, const VkDevice device,
+                                                 const VkRenderPass renderPass, const VkImageView colorAttachment,
+                                                 const tcu::UVec2 &renderSize);
 
-	static Move<VkBuffer>				createBuffer		(const DeviceInterface&		vkd,
-															 VkDevice					device,
-															 VkDeviceSize				size,
-															 VkBufferUsageFlags			usage);
+    static Move<VkBuffer> createBuffer(const DeviceInterface &vkd, VkDevice device, VkDeviceSize size,
+                                       VkBufferUsageFlags usage);
 
-	const DeviceInterface&				m_vkd;
+    const DeviceInterface &m_vkd;
 
-	bool								m_explicitLayoutTransitions;
-	std::vector<VkImage>				m_swapchainImages;
-	std::vector<VkImage>				m_aliasImages;
-	tcu::UVec2							m_renderSize;
+    bool m_explicitLayoutTransitions;
+    std::vector<VkImage> m_swapchainImages;
+    std::vector<VkImage> m_aliasImages;
+    tcu::UVec2 m_renderSize;
 
-	Move<VkRenderPass>					m_renderPass;
-	Move<VkPipelineLayout>				m_pipelineLayout;
-	Move<VkPipeline>					m_pipeline;
+    Move<VkRenderPass> m_renderPass;
+    Move<VkPipelineLayout> m_pipelineLayout;
+    Move<VkPipeline> m_pipeline;
 
-	Move<VkBuffer>						m_vertexBuffer;
-	de::MovePtr<Allocation>				m_vertexBufferMemory;
+    Move<VkBuffer> m_vertexBuffer;
+    de::MovePtr<Allocation> m_vertexBufferMemory;
 
-	using ImageViewSp	= de::SharedPtr<Unique<VkImageView>>;
-	using FramebufferSp	= de::SharedPtr<Unique<VkFramebuffer>>;
+    using ImageViewSp   = de::SharedPtr<Unique<VkImageView>>;
+    using FramebufferSp = de::SharedPtr<Unique<VkFramebuffer>>;
 
-	std::vector<ImageViewSp>			m_attachmentViews;
-	mutable std::vector<VkImageLayout>	m_attachmentLayouts;
-	std::vector<FramebufferSp>			m_framebuffers;
+    std::vector<ImageViewSp> m_attachmentViews;
+    mutable std::vector<VkImageLayout> m_attachmentLayouts;
+    std::vector<FramebufferSp> m_framebuffers;
 };
 
-} // wsi
-} // vk
+} // namespace wsi
+} // namespace vk
 
 #endif // _VKWSIUTIL_HPP

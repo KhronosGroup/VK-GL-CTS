@@ -8,6 +8,8 @@ set(DEQP_VK_SPARSE_RESOURCES_SRCS
 	vktSparseResourcesBase.hpp
 	vktSparseResourcesBufferMemoryAliasing.cpp
 	vktSparseResourcesBufferMemoryAliasing.hpp
+	vktSparseResourcesBufferRebind.cpp
+	vktSparseResourcesBufferRebind.hpp
 	vktSparseResourcesBufferSparseBinding.cpp
 	vktSparseResourcesBufferSparseBinding.hpp
 	vktSparseResourcesBufferSparseResidency.cpp
@@ -16,6 +18,8 @@ set(DEQP_VK_SPARSE_RESOURCES_SRCS
 	vktSparseResourcesBufferTests.hpp
 	vktSparseResourcesImageMemoryAliasing.cpp
 	vktSparseResourcesImageMemoryAliasing.hpp
+	vktSparseResourcesImageRebind.cpp
+	vktSparseResourcesImageRebind.hpp
 	vktSparseResourcesImageSparseBinding.cpp
 	vktSparseResourcesImageSparseBinding.hpp
 	vktSparseResourcesImageSparseResidency.cpp
@@ -40,6 +44,12 @@ set(DEQP_VK_SPARSE_RESOURCES_SRCS
 	vktSparseResourcesTests.hpp
 	vktSparseResourcesTestsUtil.cpp
 	vktSparseResourcesTestsUtil.hpp
+	vktSparseResourcesTransferQueueTests.cpp
+	vktSparseResourcesTransferQueueTests.hpp
+	vktSparseResourcesMultisampledImageSparseBinding.cpp
+	vktSparseResourcesMultisampledImageSparseBinding.hpp
+	vktSparseResourcesMultisampledImageSparseResidency.cpp
+	vktSparseResourcesMultisampledImageSparseResidency.hpp
 	)
 
 PCH(DEQP_VK_SPARSE_RESOURCES_SRCS ../pch.cpp)

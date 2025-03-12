@@ -11,8 +11,16 @@ include_directories(subgroups)
 set(GLCTS_COMMON_SRCS
 	glcAggressiveShaderOptimizationsTests.cpp
 	glcAggressiveShaderOptimizationsTests.hpp
+	glcApiCoverageTests.cpp
+	glcApiCoverageTests.hpp
+    glcBindImageTextureTests.cpp
+    glcBindImageTextureTests.hpp
 	glcBlendEquationAdvancedTests.cpp
 	glcBlendEquationAdvancedTests.hpp
+	glcBufferObjectsTests.cpp
+	glcBufferObjectsTests.hpp
+	glcClipDistance.cpp
+	glcClipDistance.hpp
 	glcConfigList.hpp
 	glcConfigList.cpp
 	glcConfigListCase.cpp
@@ -27,10 +35,16 @@ set(GLCTS_COMMON_SRCS
 	glcContext.hpp
 	glcContextFlagsTests.cpp
 	glcContextFlagsTests.hpp
+	glcCullDistance.cpp
+	glcCullDistance.hpp
 	glcExposedExtensionsTests.cpp
 	glcExposedExtensionsTests.hpp
+    glcFragCoordConventionsTests.cpp
+    glcFragCoordConventionsTests.hpp
 	glcFragDepthTests.cpp
 	glcFragDepthTests.hpp
+	glcFramebufferBlitTests.cpp
+	glcFramebufferBlitTests.hpp
 	glcInfoTests.cpp
 	glcInfoTests.hpp
 	glcInternalformatTests.cpp
@@ -99,14 +113,26 @@ set(GLCTS_COMMON_SRCS
 	glcTestPackage.hpp
 	glcTextureCompatibilityTests.cpp
 	glcTextureCompatibilityTests.hpp
+	glcTextureLodBiasTests.cpp
+	glcTextureLodBiasTests.hpp
 	glcTextureFilterAnisotropicTests.cpp
 	glcTextureFilterAnisotropicTests.hpp
+	glcTextureLodBasicTests.cpp
+	glcTextureLodBasicTests.hpp
+    glcTextureStencil8Tests.cpp
+    glcTextureStencil8Tests.hpp
 	glcTextureRepeatModeTests.cpp
 	glcTextureRepeatModeTests.hpp
+	glcTextureStorageTests.cpp
+	glcTextureStorageTests.hpp
+	glcTransformFeedbackTests.cpp
+	glcTransformFeedbackTests.hpp
 	glcUniformBlockCase.cpp
 	glcUniformBlockCase.hpp
 	glcUniformBlockTests.cpp
 	glcUniformBlockTests.hpp
+	glcUniformBlockNegativeTests.cpp
+	glcUniformBlockNegativeTests.hpp
 	glcViewportArrayTests.cpp
 	glcViewportArrayTests.hpp
 	glcTestSubcase.cpp
@@ -125,11 +151,16 @@ set(GLCTS_COMMON_SRCS
 	glcCompressedFormatTests_data.inl
 	glcCompressedFormatTests.cpp
 	glcCompressedFormatTests.hpp
+	glcShaderImageLoadStoreTests.cpp
+	glcShaderImageLoadStoreTests.hpp
+	glcShaderStorageBufferObjectTests.cpp
+	glcShaderStorageBufferObjectTests.hpp
 	)
 
 set(GLCTS_COMMON_LIBS
 	glutil
 	tcutil
+	tcutil-platform
 	eglutil
 	deqp-gl-subgroups
 	)

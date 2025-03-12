@@ -20,7 +20,7 @@
  *
  *//*!
  * \file
- * \brief VK_EXT_debug_report utilities
+ * \brief VK_EXT_debug_utils utilities
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
@@ -34,81 +34,76 @@ namespace vk
 
 #ifndef CTS_USES_VULKANSC
 
-struct DebugReportMessage
+struct DebugUtilsMessage
 {
-	VkDebugReportFlagsEXT		flags;
-	VkDebugReportObjectTypeEXT	objectType;
-	deUint64					object;
-	size_t						location;
-	deInt32						messageCode;
-	std::string					layerPrefix;
-	std::string					message;
+    VkDebugUtilsMessageSeverityFlagBitsEXT severity;
+    VkDebugUtilsMessageTypeFlagsEXT type;
+    std::string vuid;
+    std::string message;
 
-	DebugReportMessage (void)
-		: flags			(0)
-		, objectType	((VkDebugReportObjectTypeEXT)0)
-		, object		(0)
-		, location		(0)
-		, messageCode	(0)
-	{}
+    DebugUtilsMessage(void) : severity{}, type{}
+    {
+    }
 
-	DebugReportMessage (VkDebugReportFlagsEXT		flags_,
-						VkDebugReportObjectTypeEXT	objectType_,
-						deUint64					object_,
-						size_t						location_,
-						deInt32						messageCode_,
-						const std::string&			layerPrefix_,
-						const std::string&			message_)
-		: flags			(flags_)
-		, objectType	(objectType_)
-		, object		(object_)
-		, location		(location_)
-		, messageCode	(messageCode_)
-		, layerPrefix	(layerPrefix_)
-		, message		(message_)
-	{}
+    DebugUtilsMessage(VkDebugUtilsMessageSeverityFlagBitsEXT severity_, VkDebugUtilsMessageTypeFlagsEXT type_,
+                      std::string vuid_, std::string message_)
+        : severity(severity_)
+        , type(type_)
+        , vuid(vuid_)
+        , message(message_)
+    {
+    }
 
-	bool isError		() const
-	{
-		static const vk::VkDebugReportFlagsEXT errorFlags = vk::VK_DEBUG_REPORT_ERROR_BIT_EXT;
-		return ((flags & errorFlags) != 0u);
-	}
+    bool isError() const
+    {
+        static const vk::VkDebugUtilsMessageSeverityFlagsEXT errorFlags =
+            vk::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+        return (severity & errorFlags) != 0u;
+    }
 
-	bool shouldBeLogged	() const
-	{
-		// \note We are not logging INFORMATION and DEBUG messages
-		static const vk::VkDebugReportFlagsEXT otherFlags	= vk::VK_DEBUG_REPORT_WARNING_BIT_EXT
-															| vk::VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
-		return (isError() || ((flags & otherFlags) != 0u));
-	}
+    bool shouldBeLogged() const
+    {
+        // \note We are not logging INFORMATION and DEBUG messages. They are diabled when creating
+        // the debug utils messenger.
+        return true;
+    }
 };
 
-std::ostream& operator<< (std::ostream& str, const DebugReportMessage& message);
+std::ostream &operator<<(std::ostream &str, const DebugUtilsMessage &message);
 
 class DebugReportRecorder
 {
 public:
-	using MessageList = de::AppendList<DebugReportMessage>;
+    using MessageList = de::AppendList<DebugUtilsMessage>;
 
-											DebugReportRecorder		(bool printValidationErrors);
-											~DebugReportRecorder	(void);
+    DebugReportRecorder(bool printValidationErrors);
+    ~DebugReportRecorder(void);
 
-	MessageList&							getMessages				(void) { return m_messages; }
-	void									clearMessages			(void) { m_messages.clear(); }
-	bool									errorPrinting			(void) const { return m_print_errors; }
+    MessageList &getMessages(void)
+    {
+        return m_messages;
+    }
+    void clearMessages(void)
+    {
+        m_messages.clear();
+    }
+    bool errorPrinting(void) const
+    {
+        return m_print_errors;
+    }
 
-	VkDebugReportCallbackCreateInfoEXT		makeCreateInfo			(void);
-	Move<VkDebugReportCallbackEXT>			createCallback			(const InstanceInterface& vki, VkInstance instance);
+    VkDebugUtilsMessengerCreateInfoEXT makeCreateInfo(void);
+    Move<VkDebugUtilsMessengerEXT> createCallback(const InstanceInterface &vki, VkInstance instance);
 
 private:
-	MessageList								m_messages;
-	const bool								m_print_errors;
+    MessageList m_messages;
+    const bool m_print_errors;
 };
 
 #endif // CTS_USES_VULKANSC
 
-bool isDebugReportSupported (const PlatformInterface& vkp);
+bool isDebugUtilsSupported(const PlatformInterface &vkp);
 
-} // vk
+} // namespace vk
 
 #endif // _VKDEBUGREPORTUTIL_HPP

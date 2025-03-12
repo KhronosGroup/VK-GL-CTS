@@ -50,240 +50,320 @@ const float unusedValueWeight = 0.05f;
 class Expression
 {
 public:
-	virtual							~Expression			(void);
+    virtual ~Expression(void);
 
-	// Shader generation API
-	virtual Expression*				createNextChild		(GeneratorState& state) = DE_NULL;
-	virtual void					tokenize			(GeneratorState& state, TokenStream& str) const	= DE_NULL;
+    // Shader generation API
+    virtual Expression *createNextChild(GeneratorState &state)           = 0;
+    virtual void tokenize(GeneratorState &state, TokenStream &str) const = 0;
 
-	// Execution API
-	virtual void					evaluate			(ExecutionContext& ctx)	= DE_NULL;
-	virtual ExecConstValueAccess	getValue			(void) const			= DE_NULL;
-	virtual ExecValueAccess			getLValue			(void) const { DE_ASSERT(DE_FALSE); throw Exception("Expression::getLValue(): not L-value node"); }
+    // Execution API
+    virtual void evaluate(ExecutionContext &ctx)      = 0;
+    virtual ExecConstValueAccess getValue(void) const = 0;
+    virtual ExecValueAccess getLValue(void) const
+    {
+        DE_ASSERT(false);
+        throw Exception("Expression::getLValue(): not L-value node");
+    }
 
-	static Expression*				createRandom		(GeneratorState& state, ConstValueRangeAccess valueRange);
-	static Expression*				createRandomLValue	(GeneratorState& state, ConstValueRangeAccess valueRange);
+    static Expression *createRandom(GeneratorState &state, ConstValueRangeAccess valueRange);
+    static Expression *createRandomLValue(GeneratorState &state, ConstValueRangeAccess valueRange);
 };
 
 class VariableAccess : public Expression
 {
 public:
-	virtual						~VariableAccess		(void) {}
+    virtual ~VariableAccess(void)
+    {
+    }
 
-	Expression*					createNextChild		(GeneratorState& state)							{ DE_UNREF(state); return DE_NULL;						}
-	void						tokenize			(GeneratorState& state, TokenStream& str) const	{ DE_UNREF(state); str << Token(m_variable->getName());	}
+    Expression *createNextChild(GeneratorState &state)
+    {
+        DE_UNREF(state);
+        return nullptr;
+    }
+    void tokenize(GeneratorState &state, TokenStream &str) const
+    {
+        DE_UNREF(state);
+        str << Token(m_variable->getName());
+    }
 
-	void						evaluate			(ExecutionContext& ctx);
-	ExecConstValueAccess		getValue			(void) const									{ return m_valueAccess;									}
-	ExecValueAccess				getLValue			(void) const									{ return m_valueAccess;									}
+    void evaluate(ExecutionContext &ctx);
+    ExecConstValueAccess getValue(void) const
+    {
+        return m_valueAccess;
+    }
+    ExecValueAccess getLValue(void) const
+    {
+        return m_valueAccess;
+    }
 
 protected:
-								VariableAccess		(void) : m_variable(DE_NULL) {}
+    VariableAccess(void) : m_variable(nullptr)
+    {
+    }
 
-	const Variable*				m_variable;
-	ExecValueAccess				m_valueAccess;
+    const Variable *m_variable;
+    ExecValueAccess m_valueAccess;
 };
 
 class VariableRead : public VariableAccess
 {
 public:
-								VariableRead		(GeneratorState& state, ConstValueRangeAccess valueRange);
-								VariableRead		(const Variable* variable);
-	virtual						~VariableRead		(void) {}
+    VariableRead(GeneratorState &state, ConstValueRangeAccess valueRange);
+    VariableRead(const Variable *variable);
+    virtual ~VariableRead(void)
+    {
+    }
 
-	static float				getWeight			(const GeneratorState& state, ConstValueRangeAccess valueRange);
+    static float getWeight(const GeneratorState &state, ConstValueRangeAccess valueRange);
 };
 
 class VariableWrite : public VariableAccess
 {
 public:
-								VariableWrite		(GeneratorState& state, ConstValueRangeAccess valueRange);
-	virtual						~VariableWrite		(void) {}
+    VariableWrite(GeneratorState &state, ConstValueRangeAccess valueRange);
+    virtual ~VariableWrite(void)
+    {
+    }
 
-	static float				getWeight			(const GeneratorState& state, ConstValueRangeAccess valueRange);
+    static float getWeight(const GeneratorState &state, ConstValueRangeAccess valueRange);
 };
 
 class FloatLiteral : public Expression
 {
 public:
-								FloatLiteral		(GeneratorState& state, ConstValueRangeAccess valueRange);
-								FloatLiteral		(float customValue);
-	virtual						~FloatLiteral		(void) {}
+    FloatLiteral(GeneratorState &state, ConstValueRangeAccess valueRange);
+    FloatLiteral(float customValue);
+    virtual ~FloatLiteral(void)
+    {
+    }
 
-	Expression*					createNextChild		(GeneratorState& state) { DE_UNREF(state); return DE_NULL; }
-	void						tokenize			(GeneratorState& state, TokenStream& str) const;
+    Expression *createNextChild(GeneratorState &state)
+    {
+        DE_UNREF(state);
+        return nullptr;
+    }
+    void tokenize(GeneratorState &state, TokenStream &str) const;
 
-	static float				getWeight			(const GeneratorState& state, ConstValueRangeAccess valueRange);
+    static float getWeight(const GeneratorState &state, ConstValueRangeAccess valueRange);
 
-	void						evaluate			(ExecutionContext& ctx) { DE_UNREF(ctx); }
-	ExecConstValueAccess		getValue			(void) const { return m_value.getValue(VariableType::getScalarType(VariableType::TYPE_FLOAT)); }
+    void evaluate(ExecutionContext &ctx)
+    {
+        DE_UNREF(ctx);
+    }
+    ExecConstValueAccess getValue(void) const
+    {
+        return m_value.getValue(VariableType::getScalarType(VariableType::TYPE_FLOAT));
+    }
 
 private:
-	ExecValueStorage			m_value;
+    ExecValueStorage m_value;
 };
 
 class IntLiteral : public Expression
 {
 public:
-								IntLiteral			(GeneratorState& state, ConstValueRangeAccess valueRange);
-	virtual						~IntLiteral			(void) {}
+    IntLiteral(GeneratorState &state, ConstValueRangeAccess valueRange);
+    virtual ~IntLiteral(void)
+    {
+    }
 
-	Expression*					createNextChild		(GeneratorState& state) { DE_UNREF(state); return DE_NULL; }
-	void						tokenize			(GeneratorState& state, TokenStream& str) const;
+    Expression *createNextChild(GeneratorState &state)
+    {
+        DE_UNREF(state);
+        return nullptr;
+    }
+    void tokenize(GeneratorState &state, TokenStream &str) const;
 
-	static float				getWeight			(const GeneratorState& state, ConstValueRangeAccess valueRange);
+    static float getWeight(const GeneratorState &state, ConstValueRangeAccess valueRange);
 
-	void						evaluate			(ExecutionContext& ctx) { DE_UNREF(ctx); }
-	ExecConstValueAccess		getValue			(void) const { return m_value.getValue(VariableType::getScalarType(VariableType::TYPE_INT)); }
+    void evaluate(ExecutionContext &ctx)
+    {
+        DE_UNREF(ctx);
+    }
+    ExecConstValueAccess getValue(void) const
+    {
+        return m_value.getValue(VariableType::getScalarType(VariableType::TYPE_INT));
+    }
 
 private:
-	ExecValueStorage			m_value;
+    ExecValueStorage m_value;
 };
 
 class BoolLiteral : public Expression
 {
 public:
-								BoolLiteral			(GeneratorState& state, ConstValueRangeAccess valueRange);
-								BoolLiteral			(bool customValue);
-	virtual						~BoolLiteral		(void) {}
+    BoolLiteral(GeneratorState &state, ConstValueRangeAccess valueRange);
+    BoolLiteral(bool customValue);
+    virtual ~BoolLiteral(void)
+    {
+    }
 
-	Expression*					createNextChild		(GeneratorState& state) { DE_UNREF(state); return DE_NULL; }
-	void						tokenize			(GeneratorState& state, TokenStream& str) const;
+    Expression *createNextChild(GeneratorState &state)
+    {
+        DE_UNREF(state);
+        return nullptr;
+    }
+    void tokenize(GeneratorState &state, TokenStream &str) const;
 
-	static float				getWeight			(const GeneratorState& state, ConstValueRangeAccess valueRange);
+    static float getWeight(const GeneratorState &state, ConstValueRangeAccess valueRange);
 
-	void						evaluate			(ExecutionContext& ctx) { DE_UNREF(ctx); }
-	ExecConstValueAccess		getValue			(void) const { return m_value.getValue(VariableType::getScalarType(VariableType::TYPE_BOOL)); }
+    void evaluate(ExecutionContext &ctx)
+    {
+        DE_UNREF(ctx);
+    }
+    ExecConstValueAccess getValue(void) const
+    {
+        return m_value.getValue(VariableType::getScalarType(VariableType::TYPE_BOOL));
+    }
 
 private:
-	ExecValueStorage			m_value;
+    ExecValueStorage m_value;
 };
 
 class ConstructorOp : public Expression
 {
 public:
-								ConstructorOp		(GeneratorState& state, ConstValueRangeAccess valueRange);
-	virtual						~ConstructorOp		(void);
+    ConstructorOp(GeneratorState &state, ConstValueRangeAccess valueRange);
+    virtual ~ConstructorOp(void);
 
-	Expression*					createNextChild		(GeneratorState& state);
-	void						tokenize			(GeneratorState& state, TokenStream& str) const;
+    Expression *createNextChild(GeneratorState &state);
+    void tokenize(GeneratorState &state, TokenStream &str) const;
 
-	static float				getWeight			(const GeneratorState& state, ConstValueRangeAccess valueRange);
+    static float getWeight(const GeneratorState &state, ConstValueRangeAccess valueRange);
 
-	void						evaluate			(ExecutionContext& ctx);
-	ExecConstValueAccess		getValue			(void) const { return m_value.getValue(m_valueRange.getType()); }
+    void evaluate(ExecutionContext &ctx);
+    ExecConstValueAccess getValue(void) const
+    {
+        return m_value.getValue(m_valueRange.getType());
+    }
 
 private:
-	ValueRange					m_valueRange;
-	ExecValueStorage			m_value;
+    ValueRange m_valueRange;
+    ExecValueStorage m_value;
 
-	std::vector<ValueRange>		m_inputValueRanges;
-	std::vector<Expression*>	m_inputExpressions;
+    std::vector<ValueRange> m_inputValueRanges;
+    std::vector<Expression *> m_inputExpressions;
 };
 
 class AssignOp : public Expression
 {
 public:
-								AssignOp			(GeneratorState& state, ConstValueRangeAccess valueRange);
-	virtual						~AssignOp			(void);
+    AssignOp(GeneratorState &state, ConstValueRangeAccess valueRange);
+    virtual ~AssignOp(void);
 
-	Expression*					createNextChild		(GeneratorState& state);
-	void						tokenize			(GeneratorState& state, TokenStream& str) const;
+    Expression *createNextChild(GeneratorState &state);
+    void tokenize(GeneratorState &state, TokenStream &str) const;
 
-	static float				getWeight			(const GeneratorState& state, ConstValueRangeAccess valueRange);
+    static float getWeight(const GeneratorState &state, ConstValueRangeAccess valueRange);
 
-	// \todo [2011-02-28 pyry] LValue variant of AssignOp
-//	static float				getLValueWeight		(const GeneratorState& state, ConstValueRangeAccess valueRange);
+    // \todo [2011-02-28 pyry] LValue variant of AssignOp
+    // static float getLValueWeight (const GeneratorState& state, ConstValueRangeAccess valueRange);
 
-	void						evaluate			(ExecutionContext& ctx);
-	ExecConstValueAccess		getValue			(void) const { return m_value.getValue(m_valueRange.getType()); }
+    void evaluate(ExecutionContext &ctx);
+    ExecConstValueAccess getValue(void) const
+    {
+        return m_value.getValue(m_valueRange.getType());
+    }
 
 private:
-	ValueRange					m_valueRange;
-	ExecValueStorage			m_value;
+    ValueRange m_valueRange;
+    ExecValueStorage m_value;
 
-	Expression*					m_lvalueExpr;
-	Expression*					m_rvalueExpr;
+    Expression *m_lvalueExpr;
+    Expression *m_rvalueExpr;
 };
 
 class ParenOp : public Expression
 {
 public:
-								ParenOp				(GeneratorState& state, ConstValueRangeAccess valueRange);
-	virtual						~ParenOp			(void);
+    ParenOp(GeneratorState &state, ConstValueRangeAccess valueRange);
+    virtual ~ParenOp(void);
 
-	Expression*					createNextChild		(GeneratorState& state);
-	void						tokenize			(GeneratorState& state, TokenStream& str) const;
+    Expression *createNextChild(GeneratorState &state);
+    void tokenize(GeneratorState &state, TokenStream &str) const;
 
-	void						setChild			(Expression* expression);
-	static float				getWeight			(const GeneratorState& state, ConstValueRangeAccess valueRange);
+    void setChild(Expression *expression);
+    static float getWeight(const GeneratorState &state, ConstValueRangeAccess valueRange);
 
-	void						evaluate			(ExecutionContext& execCtx)		{ m_child->evaluate(execCtx);	}
-	ExecConstValueAccess		getValue			(void) const					{ return m_child->getValue();	}
+    void evaluate(ExecutionContext &execCtx)
+    {
+        m_child->evaluate(execCtx);
+    }
+    ExecConstValueAccess getValue(void) const
+    {
+        return m_child->getValue();
+    }
 
 private:
-	ValueRange					m_valueRange;
-	Expression*					m_child;
+    ValueRange m_valueRange;
+    Expression *m_child;
 };
 
 class SwizzleOp : public Expression
 {
 public:
-								SwizzleOp			(GeneratorState& state, ConstValueRangeAccess valueRange);
-	virtual						~SwizzleOp			(void);
+    SwizzleOp(GeneratorState &state, ConstValueRangeAccess valueRange);
+    virtual ~SwizzleOp(void);
 
-	Expression*					createNextChild		(GeneratorState& state);
-	void						tokenize			(GeneratorState& state, TokenStream& str) const;
+    Expression *createNextChild(GeneratorState &state);
+    void tokenize(GeneratorState &state, TokenStream &str) const;
 
-	static float				getWeight			(const GeneratorState& state, ConstValueRangeAccess valueRange);
+    static float getWeight(const GeneratorState &state, ConstValueRangeAccess valueRange);
 
-	void						evaluate			(ExecutionContext& execCtx);
-	ExecConstValueAccess		getValue			(void) const					{ return m_value.getValue(m_outValueRange.getType()); }
+    void evaluate(ExecutionContext &execCtx);
+    ExecConstValueAccess getValue(void) const
+    {
+        return m_value.getValue(m_outValueRange.getType());
+    }
 
 private:
-	ValueRange					m_outValueRange;
-	int							m_numInputElements;
-	deUint8						m_swizzle[4];
-	Expression*					m_child;
-	ExecValueStorage			m_value;
+    ValueRange m_outValueRange;
+    int m_numInputElements;
+    uint8_t m_swizzle[4];
+    Expression *m_child;
+    ExecValueStorage m_value;
 };
 
 class TexLookup : public Expression
 {
 public:
-								TexLookup			(GeneratorState& state, ConstValueRangeAccess valueRange);
-	virtual						~TexLookup			(void);
+    TexLookup(GeneratorState &state, ConstValueRangeAccess valueRange);
+    virtual ~TexLookup(void);
 
-	Expression*					createNextChild		(GeneratorState& state);
-	void						tokenize			(GeneratorState& state, TokenStream& str) const;
+    Expression *createNextChild(GeneratorState &state);
+    void tokenize(GeneratorState &state, TokenStream &str) const;
 
-	static float				getWeight			(const GeneratorState& state, ConstValueRangeAccess valueRange);
+    static float getWeight(const GeneratorState &state, ConstValueRangeAccess valueRange);
 
-	void						evaluate			(ExecutionContext& execCtx);
-	ExecConstValueAccess		getValue			(void) const { return m_value.getValue(m_valueType); }
+    void evaluate(ExecutionContext &execCtx);
+    ExecConstValueAccess getValue(void) const
+    {
+        return m_value.getValue(m_valueType);
+    }
 
 private:
-	enum Type
-	{
-		TYPE_TEXTURE2D,
-		TYPE_TEXTURE2D_LOD,
-		TYPE_TEXTURE2D_PROJ,
-		TYPE_TEXTURE2D_PROJ_LOD,
+    enum Type
+    {
+        TYPE_TEXTURE2D,
+        TYPE_TEXTURE2D_LOD,
+        TYPE_TEXTURE2D_PROJ,
+        TYPE_TEXTURE2D_PROJ_LOD,
 
-		TYPE_TEXTURECUBE,
-		TYPE_TEXTURECUBE_LOD,
+        TYPE_TEXTURECUBE,
+        TYPE_TEXTURECUBE_LOD,
 
-		TYPE_LAST
-	};
+        TYPE_LAST
+    };
 
-	Type						m_type;
-	const Variable*				m_sampler;
-	Expression*					m_coordExpr;
-	Expression*					m_lodBiasExpr;
-	VariableType				m_valueType;
-	ExecValueStorage			m_value;
+    Type m_type;
+    const Variable *m_sampler;
+    Expression *m_coordExpr;
+    Expression *m_lodBiasExpr;
+    VariableType m_valueType;
+    ExecValueStorage m_value;
 };
 
-} // rsg
+} // namespace rsg
 
 #endif // _RSGEXPRESSION_HPP

@@ -1,7 +1,6 @@
 {
-	"register_extension":
-	{
-		"type": "device",
-		"core": ""
-	}
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    }
 }

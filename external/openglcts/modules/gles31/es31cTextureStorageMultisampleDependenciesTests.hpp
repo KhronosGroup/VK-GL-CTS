@@ -40,17 +40,17 @@ namespace glcts
 class MultisampleTextureDependenciesFBOIncompleteness1Test : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureDependenciesFBOIncompleteness1Test(Context& context);
+    /* Public methods */
+    MultisampleTextureDependenciesFBOIncompleteness1Test(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private variables */
-	glw::GLuint fbo_id;
-	glw::GLuint to_id_multisample_2d_array;
-	glw::GLuint to_ids_multisample_2d[2];
+    /* Private variables */
+    glw::GLuint fbo_id;
+    glw::GLuint to_id_multisample_2d_array;
+    glw::GLuint to_ids_multisample_2d[2];
 };
 
 /** Test case: FBOs with multisample texture and normal 2D texture attachments should be
@@ -59,18 +59,18 @@ private:
 class MultisampleTextureDependenciesFBOIncompleteness2Test : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureDependenciesFBOIncompleteness2Test(Context& context);
+    /* Public methods */
+    MultisampleTextureDependenciesFBOIncompleteness2Test(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private variables */
-	glw::GLuint fbo_id;
-	glw::GLuint to_id_2d;
-	glw::GLuint to_id_multisample_2d;
-	glw::GLuint to_id_multisample_2d_array;
+    /* Private variables */
+    glw::GLuint fbo_id;
+    glw::GLuint to_id_2d;
+    glw::GLuint to_id_multisample_2d;
+    glw::GLuint to_id_multisample_2d_array;
 };
 
 /** Test case: FBOs with multisample texture attachments of different "fixed sample
@@ -80,19 +80,19 @@ private:
 class MultisampleTextureDependenciesFBOIncompleteness3Test : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureDependenciesFBOIncompleteness3Test(Context& context);
+    /* Public methods */
+    MultisampleTextureDependenciesFBOIncompleteness3Test(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private variables */
-	glw::GLuint fbo_id;
-	glw::GLuint to_id_2d_multisample_color_1;
-	glw::GLuint to_id_2d_multisample_color_2;
-	glw::GLuint to_id_2d_multisample_depth;
-	glw::GLuint to_id_2d_multisample_depth_stencil;
+    /* Private variables */
+    glw::GLuint fbo_id;
+    glw::GLuint to_id_2d_multisample_color_1;
+    glw::GLuint to_id_2d_multisample_color_2;
+    glw::GLuint to_id_2d_multisample_depth;
+    glw::GLuint to_id_2d_multisample_depth_stencil;
 };
 
 /** Test case: FBOs with multisample texture attachments of different "fixed sample
@@ -103,18 +103,18 @@ private:
 class MultisampleTextureDependenciesFBOIncompleteness4Test : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureDependenciesFBOIncompleteness4Test(Context& context);
+    /* Public methods */
+    MultisampleTextureDependenciesFBOIncompleteness4Test(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private variables */
-	glw::GLuint fbo_id;
-	glw::GLuint rbo_id;
-	glw::GLuint to_id_2d_multisample_array_color;
-	glw::GLuint to_id_2d_multisample_color;
+    /* Private variables */
+    glw::GLuint fbo_id;
+    glw::GLuint rbo_id;
+    glw::GLuint to_id_2d_multisample_array_color;
+    glw::GLuint to_id_2d_multisample_color;
 };
 
 /** Test case: FBOs with renderbuffer and multisample texture attachments, where amount
@@ -125,18 +125,18 @@ private:
 class MultisampleTextureDependenciesFBOIncompleteness5Test : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureDependenciesFBOIncompleteness5Test(Context& context);
+    /* Public methods */
+    MultisampleTextureDependenciesFBOIncompleteness5Test(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private variables */
-	glw::GLuint fbo_id;
-	glw::GLuint rbo_id;
-	glw::GLuint to_id_multisample_2d;
-	glw::GLuint to_id_multisample_2d_array;
+    /* Private variables */
+    glw::GLuint fbo_id;
+    glw::GLuint rbo_id;
+    glw::GLuint to_id_multisample_2d;
+    glw::GLuint to_id_multisample_2d_array;
 };
 
 /** Test case: GL_INVALID_OPERATION error is reported if 2D or cube-map texture target is
@@ -145,19 +145,19 @@ private:
 class MultisampleTextureDependenciesInvalidFramebufferTexture2DCalls1Test : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureDependenciesInvalidFramebufferTexture2DCalls1Test(Context& context);
+    /* Public methods */
+    MultisampleTextureDependenciesInvalidFramebufferTexture2DCalls1Test(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void initInternals();
+    /* Private methods */
+    void initInternals();
 
-	/* Private variables */
-	glw::GLuint fbo_id;
-	glw::GLuint to_id;
+    /* Private variables */
+    glw::GLuint fbo_id;
+    glw::GLuint to_id;
 };
 
 /** Test case: GL_INVALID_VALUE error is reported if a glFramebufferTexture2D() call is
@@ -166,19 +166,19 @@ private:
 class MultisampleTextureDependenciesInvalidFramebufferTexture2DCalls2Test : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureDependenciesInvalidFramebufferTexture2DCalls2Test(Context& context);
+    /* Public methods */
+    MultisampleTextureDependenciesInvalidFramebufferTexture2DCalls2Test(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void initInternals();
+    /* Private methods */
+    void initInternals();
 
-	/* Private variables */
-	glw::GLuint fbo_id;
-	glw::GLuint to_id;
+    /* Private variables */
+    glw::GLuint fbo_id;
+    glw::GLuint to_id;
 };
 
 /** Test case: GL_INVALID_OPERATION error is reported if a multisample 2D texture
@@ -187,19 +187,19 @@ private:
 class MultisampleTextureDependenciesInvalidFramebufferTextureLayerCalls1Test : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureDependenciesInvalidFramebufferTextureLayerCalls1Test(Context& context);
+    /* Public methods */
+    MultisampleTextureDependenciesInvalidFramebufferTextureLayerCalls1Test(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void initInternals();
+    /* Private methods */
+    void initInternals();
 
-	/* Private variables */
-	glw::GLuint fbo_id;
-	glw::GLuint to_id;
+    /* Private variables */
+    glw::GLuint fbo_id;
+    glw::GLuint to_id;
 };
 
 /** Test case: GL_INVALID_VALUE error is reported if a glFramebufferTextureLayer() call
@@ -209,19 +209,19 @@ private:
 class MultisampleTextureDependenciesInvalidFramebufferTextureLayerCalls2Test : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureDependenciesInvalidFramebufferTextureLayerCalls2Test(Context& context);
+    /* Public methods */
+    MultisampleTextureDependenciesInvalidFramebufferTextureLayerCalls2Test(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void initInternals();
+    /* Private methods */
+    void initInternals();
 
-	/* Private variables */
-	glw::GLuint fbo_id;
-	glw::GLuint to_id;
+    /* Private variables */
+    glw::GLuint fbo_id;
+    glw::GLuint to_id;
 };
 
 /** Test case: GL_INVALID_OPERATION error is reported for
@@ -231,18 +231,18 @@ private:
 class MultisampleTextureDependenciesInvalidRenderbufferStorageMultisampleCalls1Test : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureDependenciesInvalidRenderbufferStorageMultisampleCalls1Test(Context& context);
+    /* Public methods */
+    MultisampleTextureDependenciesInvalidRenderbufferStorageMultisampleCalls1Test(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void initInternals();
+    /* Private methods */
+    void initInternals();
 
-	/* Private variables */
-	glw::GLuint rbo_id;
+    /* Private variables */
+    glw::GLuint rbo_id;
 };
 
 /** Test case: GL_INVALID_OPERATION error is reported for
@@ -252,18 +252,18 @@ private:
 class MultisampleTextureDependenciesInvalidRenderbufferStorageMultisampleCalls2Test : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureDependenciesInvalidRenderbufferStorageMultisampleCalls2Test(Context& context);
+    /* Public methods */
+    MultisampleTextureDependenciesInvalidRenderbufferStorageMultisampleCalls2Test(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void initInternals();
+    /* Private methods */
+    void initInternals();
 
-	/* Private variables */
-	glw::GLuint rbo_id;
+    /* Private variables */
+    glw::GLuint rbo_id;
 };
 
 /** Test case: No error is reported by glFramebufferTexture2D() calls, for
@@ -272,19 +272,19 @@ private:
 class MultisampleTextureDependenciesNoErrorGeneratedForValidFramebufferTexture2DCallsTest : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureDependenciesNoErrorGeneratedForValidFramebufferTexture2DCallsTest(Context& context);
+    /* Public methods */
+    MultisampleTextureDependenciesNoErrorGeneratedForValidFramebufferTexture2DCallsTest(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void initInternals();
+    /* Private methods */
+    void initInternals();
 
-	/* Private variables */
-	glw::GLuint fbo_id;
-	glw::GLuint to_id;
+    /* Private variables */
+    glw::GLuint fbo_id;
+    glw::GLuint to_id;
 };
 
 /** Test case: No error is reported for glRenderbufferStorageMultisample() calls, for
@@ -293,21 +293,21 @@ private:
  *             for integer internalformats.
  */
 class MultisampleTextureDependenciesNoErrorGeneratedForValidRenderbufferStorageMultisampleCallsTest
-	: public glcts::TestCase
+    : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureDependenciesNoErrorGeneratedForValidRenderbufferStorageMultisampleCallsTest(Context& context);
+    /* Public methods */
+    MultisampleTextureDependenciesNoErrorGeneratedForValidRenderbufferStorageMultisampleCallsTest(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void initInternals();
+    /* Private methods */
+    void initInternals();
 
-	/* Private variables */
-	glw::GLuint rbo_id;
+    /* Private variables */
+    glw::GLuint rbo_id;
 };
 
 /** Test case: When used against multisample texture targets, glTexParameter*() should not generate
@@ -318,21 +318,21 @@ private:
 class MultisampleTextureDependenciesTexParameterTest : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureDependenciesTexParameterTest(Context& context);
+    /* Public methods */
+    MultisampleTextureDependenciesTexParameterTest(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void checkAllTexParameterInvocations(glw::GLenum expected_error_code, glw::GLint value, glw::GLenum pname,
-										 glw::GLenum texture_target);
+    /* Private methods */
+    void checkAllTexParameterInvocations(glw::GLenum expected_error_code, glw::GLint value, glw::GLenum pname,
+                                         glw::GLenum texture_target);
 
-	/* Private variables */
-	glw::GLuint to_id_multisample_2d;
-	glw::GLuint to_id_multisample_2d_array;
+    /* Private variables */
+    glw::GLuint to_id_multisample_2d;
+    glw::GLuint to_id_multisample_2d_array;
 };
-} /* glcts namespace */
+} // namespace glcts
 
 #endif // _ES31CTEXTURESTORAGEMULTISAMPLEDEPENDENCIESTESTS_HPP

@@ -36,14 +36,16 @@
 #include "es31cSeparateShaderObjsTests.hpp"
 #include "es31cShaderAtomicCountersTests.hpp"
 #include "es31cShaderBitfieldOperationTests.hpp"
-#include "es31cShaderImageLoadStoreTests.hpp"
+#include "glcShaderImageLoadStoreTests.hpp"
 #include "es31cShaderImageSizeTests.hpp"
-#include "es31cShaderStorageBufferObjectTests.hpp"
+#include "glcShaderStorageBufferObjectTests.hpp"
 #include "es31cTextureGatherTests.hpp"
 #include "es31cTextureStorageMultisampleTests.hpp"
 #include "es31cVertexAttribBindingTests.hpp"
 #include "glcAggressiveShaderOptimizationsTests.hpp"
+#include "glcBindImageTextureTests.hpp"
 #include "glcBlendEquationAdvancedTests.hpp"
+#include "glcFragCoordConventionsTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcInternalformatTests.hpp"
 #include "glcLayoutLocationTests.hpp"
@@ -58,6 +60,7 @@
 #include "glcNearestEdgeTests.hpp"
 #include "glcFramebufferCompleteness.hpp"
 #include "glcCompressedFormatTests.hpp"
+#include "glcTextureStencil8Tests.hpp"
 
 #include "gluStateReset.hpp"
 #include "gluContextInfo.hpp"
@@ -81,20 +84,21 @@ namespace es31cts
 class TestCaseWrapper : public tcu::TestCaseExecutor
 {
 public:
-	TestCaseWrapper(ES31TestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism);
-	~TestCaseWrapper(void);
+    TestCaseWrapper(ES31TestPackage &package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism);
+    ~TestCaseWrapper(void);
 
-	void init(tcu::TestCase* testCase, const std::string& path);
-	void deinit(tcu::TestCase* testCase);
-	tcu::TestNode::IterateResult iterate(tcu::TestCase* testCase);
+    void init(tcu::TestCase *testCase, const std::string &path);
+    void deinit(tcu::TestCase *testCase);
+    tcu::TestNode::IterateResult iterate(tcu::TestCase *testCase);
 
 private:
-	ES31TestPackage& m_testPackage;
-	de::SharedPtr<tcu::WaiverUtil> m_waiverMechanism;
+    ES31TestPackage &m_testPackage;
+    de::SharedPtr<tcu::WaiverUtil> m_waiverMechanism;
 };
 
-TestCaseWrapper::TestCaseWrapper(ES31TestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism)
-	: m_testPackage(package), m_waiverMechanism(waiverMechanism)
+TestCaseWrapper::TestCaseWrapper(ES31TestPackage &package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism)
+    : m_testPackage(package)
+    , m_waiverMechanism(waiverMechanism)
 {
 }
 
@@ -102,149 +106,152 @@ TestCaseWrapper::~TestCaseWrapper(void)
 {
 }
 
-void TestCaseWrapper::init(tcu::TestCase* testCase, const std::string& path)
+void TestCaseWrapper::init(tcu::TestCase *testCase, const std::string &path)
 {
-	if (m_waiverMechanism->isOnWaiverList(path))
-		throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
+    if (m_waiverMechanism->isOnWaiverList(path))
+        throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
 
-	glu::resetState(m_testPackage.getContext().getRenderContext(), m_testPackage.getContext().getContextInfo());
+    glu::resetState(m_testPackage.getContext().getRenderContext(), m_testPackage.getContext().getContextInfo());
 
-	testCase->init();
+    testCase->init();
 }
 
-void TestCaseWrapper::deinit(tcu::TestCase* testCase)
+void TestCaseWrapper::deinit(tcu::TestCase *testCase)
 {
-	testCase->deinit();
+    testCase->deinit();
 
-	glu::resetState(m_testPackage.getContext().getRenderContext(), m_testPackage.getContext().getContextInfo());
+    glu::resetState(m_testPackage.getContext().getRenderContext(), m_testPackage.getContext().getContextInfo());
 }
 
-tcu::TestNode::IterateResult TestCaseWrapper::iterate(tcu::TestCase* testCase)
+tcu::TestNode::IterateResult TestCaseWrapper::iterate(tcu::TestCase *testCase)
 {
-	tcu::TestContext&   testCtx   = m_testPackage.getContext().getTestContext();
-	glu::RenderContext& renderCtx = m_testPackage.getContext().getRenderContext();
+    tcu::TestContext &testCtx     = m_testPackage.getContext().getTestContext();
+    glu::RenderContext &renderCtx = m_testPackage.getContext().getRenderContext();
 
-	// Clear to black
-	{
-		const glw::Functions& gl = renderCtx.getFunctions();
-		gl.clearColor(0.0f, 0.0f, 0.0f, 1.f);
-		gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	}
+    // Clear to black
+    {
+        const glw::Functions &gl = renderCtx.getFunctions();
+        gl.clearColor(0.0f, 0.0f, 0.0f, 1.f);
+        gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    }
 
-	const tcu::TestCase::IterateResult result = testCase->iterate();
+    const tcu::TestCase::IterateResult result = testCase->iterate();
 
-	// Call implementation specific post-iterate routine (usually handles native events and swaps buffers)
-	try
-	{
-		m_testPackage.getContext().getRenderContext().postIterate();
-		return result;
-	}
-	catch (const tcu::ResourceError& e)
-	{
-		testCtx.getLog() << e;
-		testCtx.setTestResult(QP_TEST_RESULT_RESOURCE_ERROR, "Resource error in context post-iteration routine");
-		testCtx.setTerminateAfter(true);
-		return tcu::TestNode::STOP;
-	}
-	catch (const std::exception& e)
-	{
-		testCtx.getLog() << e;
-		testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Error in context post-iteration routine");
-		return tcu::TestNode::STOP;
-	}
+    // Call implementation specific post-iterate routine (usually handles native events and swaps buffers)
+    try
+    {
+        m_testPackage.getContext().getRenderContext().postIterate();
+        return result;
+    }
+    catch (const tcu::ResourceError &e)
+    {
+        testCtx.getLog() << e;
+        testCtx.setTestResult(QP_TEST_RESULT_RESOURCE_ERROR, "Resource error in context post-iteration routine");
+        testCtx.setTerminateAfter(true);
+        return tcu::TestNode::STOP;
+    }
+    catch (const std::exception &e)
+    {
+        testCtx.getLog() << e;
+        testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Error in context post-iteration routine");
+        return tcu::TestNode::STOP;
+    }
 }
 
-ES31TestPackage::ES31TestPackage(tcu::TestContext& testCtx, const char* packageName)
-	: deqp::TestPackage(testCtx, packageName, "OpenGL ES 3.1 Conformance Tests",
-						glu::ContextType(glu::ApiType::es(3, 1)), "gl_cts/data/gles31/")
+ES31TestPackage::ES31TestPackage(tcu::TestContext &testCtx, const char *packageName)
+    : deqp::TestPackage(testCtx, packageName, "OpenGL ES 3.1 Conformance Tests",
+                        glu::ContextType(glu::ApiType::es(3, 1)), "gl_cts/data/gles31/")
 {
 }
 
 ES31TestPackage::~ES31TestPackage(void)
 {
-	deqp::TestPackage::deinit();
+    deqp::TestPackage::deinit();
 }
 
 class ShaderTests : public deqp::TestCaseGroup
 {
 public:
-	ShaderTests(deqp::Context& context) : TestCaseGroup(context, "shaders", "Shading Language Tests")
-	{
-	}
+    ShaderTests(deqp::Context &context) : TestCaseGroup(context, "shaders", "Shading Language Tests")
+    {
+    }
 
-	void init(void)
-	{
-		addChild(new deqp::ShaderNegativeTests(m_context, glu::GLSL_VERSION_310_ES));
-		addChild(new glcts::AggressiveShaderOptimizationsTests(m_context));
-		addChild(new glcts::LayoutLocationTests(m_context));
-	}
+    void init(void)
+    {
+        addChild(new deqp::ShaderNegativeTests(m_context, glu::GLSL_VERSION_310_ES));
+        addChild(new glcts::AggressiveShaderOptimizationsTests(m_context));
+        addChild(new glcts::LayoutLocationTests(m_context));
+    }
 };
 
 void ES31TestPackage::init(void)
 {
-	// Call init() in parent - this creates context.
-	deqp::TestPackage::init();
+    // Call init() in parent - this creates context.
+    deqp::TestPackage::init();
 
-	try
-	{
-		tcu::TestCaseGroup* coreGroup = new tcu::TestCaseGroup(getTestContext(), "core", "core tests");
+    try
+    {
+        tcu::TestCaseGroup *coreGroup = new tcu::TestCaseGroup(getTestContext(), "core", "core tests");
 
-		coreGroup->addChild(new glcts::TextureStorageMultisampleTests(getContext()));
-		coreGroup->addChild(new glcts::ShaderAtomicCountersTests(getContext()));
-		coreGroup->addChild(new glcts::TextureGatherTests(getContext()));
-		coreGroup->addChild(new glcts::SampleShadingTests(getContext(), glu::GLSL_VERSION_310_ES));
-		coreGroup->addChild(new deqp::SampleVariablesTests(getContext(), glu::GLSL_VERSION_310_ES));
-		coreGroup->addChild(new glcts::SeparateShaderObjsTests(getContext(), glu::GLSL_VERSION_310_ES));
-		coreGroup->addChild(new glcts::ShaderBitfieldOperationTests(getContext(), glu::GLSL_VERSION_310_ES));
-		coreGroup->addChild(new deqp::ShaderMultisampleInterpolationTests(getContext(), glu::GLSL_VERSION_310_ES));
-		coreGroup->addChild(new glcts::LayoutBindingTests(getContext(), glu::GLSL_VERSION_310_ES));
-		coreGroup->addChild(new deqp::ShaderIntegerMixTests(getContext(), glu::GLSL_VERSION_310_ES));
-		coreGroup->addChild(new glcts::ShaderConstExprTests(getContext()));
-		coreGroup->addChild(new glcts::BlendEquationAdvancedTests(getContext(), glu::GLSL_VERSION_310_ES));
-		coreGroup->addChild(new glcts::VertexAttribBindingTests(getContext()));
-		coreGroup->addChild(new glcts::ShaderMacroTests(getContext()));
-		coreGroup->addChild(new glcts::ShaderStorageBufferObjectTests(getContext()));
-		coreGroup->addChild(new glcts::ComputeShaderTests(getContext()));
-		coreGroup->addChild(new glcts::ShaderImageLoadStoreTests(getContext()));
-		coreGroup->addChild(new glcts::ShaderImageSizeTests(getContext()));
-		coreGroup->addChild(new glcts::DrawIndirectTestsES31(getContext()));
-		coreGroup->addChild(new glcts::ExplicitUniformLocationES31Tests(getContext()));
-		coreGroup->addChild(new glcts::ProgramInterfaceQueryTests(getContext()));
-		coreGroup->addChild(new glcts::FramebufferNoAttachmentsTests(getContext()));
-		coreGroup->addChild(new glcts::ArrayOfArraysTestGroup(getContext()));
-		coreGroup->addChild(new glcts::PolygonOffsetClamp(getContext()));
-		coreGroup->addChild(new glcts::ShaderGroupVote(getContext()));
-		coreGroup->addChild(new glcts::InternalformatTests(getContext()));
-		coreGroup->addChild(new glcts::NearestEdgeCases(getContext()));
-		coreGroup->addChild(new glcts::FramebufferCompletenessTests(getContext()));
-		coreGroup->addChild(new glcts::CompressedFormatTests(getContext()));
+        coreGroup->addChild(new glcts::TextureStorageMultisampleTests(getContext()));
+        coreGroup->addChild(new glcts::ShaderAtomicCountersTests(getContext()));
+        coreGroup->addChild(new glcts::TextureGatherTests(getContext()));
+        coreGroup->addChild(new glcts::SampleShadingTests(getContext(), glu::GLSL_VERSION_310_ES));
+        coreGroup->addChild(new deqp::SampleVariablesTests(getContext(), glu::GLSL_VERSION_310_ES));
+        coreGroup->addChild(new glcts::SeparateShaderObjsTests(getContext(), glu::GLSL_VERSION_310_ES));
+        coreGroup->addChild(new glcts::ShaderBitfieldOperationTests(getContext(), glu::GLSL_VERSION_310_ES));
+        coreGroup->addChild(new deqp::ShaderMultisampleInterpolationTests(getContext(), glu::GLSL_VERSION_310_ES));
+        coreGroup->addChild(new glcts::LayoutBindingTests(getContext(), glu::GLSL_VERSION_310_ES));
+        coreGroup->addChild(new deqp::ShaderIntegerMixTests(getContext(), glu::GLSL_VERSION_310_ES));
+        coreGroup->addChild(new glcts::ShaderConstExprTests(getContext()));
+        coreGroup->addChild(new glcts::BlendEquationAdvancedTests(getContext(), glu::GLSL_VERSION_310_ES));
+        coreGroup->addChild(new glcts::VertexAttribBindingTests(getContext()));
+        coreGroup->addChild(new glcts::ShaderMacroTests(getContext()));
+        coreGroup->addChild(new glcts::ShaderStorageBufferObjectTests(getContext()));
+        coreGroup->addChild(new glcts::ComputeShaderTests(getContext()));
+        coreGroup->addChild(new glcts::ShaderImageLoadStoreTests(getContext()));
+        coreGroup->addChild(new glcts::ShaderImageSizeTests(getContext()));
+        coreGroup->addChild(new glcts::DrawIndirectTestsES31(getContext()));
+        coreGroup->addChild(new glcts::ExplicitUniformLocationES31Tests(getContext()));
+        coreGroup->addChild(new glcts::ProgramInterfaceQueryTests(getContext()));
+        coreGroup->addChild(new glcts::FramebufferNoAttachmentsTests(getContext()));
+        coreGroup->addChild(new glcts::ArrayOfArraysTestGroup(getContext()));
+        coreGroup->addChild(new glcts::PolygonOffsetClamp(getContext()));
+        coreGroup->addChild(new glcts::ShaderGroupVote(getContext()));
+        coreGroup->addChild(new glcts::InternalformatTests(getContext()));
+        coreGroup->addChild(new glcts::NearestEdgeCases(getContext()));
+        coreGroup->addChild(new glcts::FramebufferCompletenessTests(getContext()));
+        coreGroup->addChild(new glcts::CompressedFormatTests(getContext()));
+        coreGroup->addChild(new glcts::FragCoordConventionsTests(getContext()));
+        coreGroup->addChild(new glcts::TextureStencil8Tests(getContext()));
+        coreGroup->addChild(new glcts::BindImageTextureTests(getContext()));
 
-		glcts::ExtParameters extParams(glu::GLSL_VERSION_310_ES, glcts::EXTENSIONTYPE_OES);
-		coreGroup->addChild(new glcts::GeometryShaderTests(getContext(), extParams));
-		coreGroup->addChild(new glcts::GPUShader5Tests(getContext(), extParams));
-		coreGroup->addChild(new glcts::TessellationShaderTests(getContext(), extParams));
-		coreGroup->addChild(new glcts::TextureCubeMapArrayTests(getContext(), extParams));
-		coreGroup->addChild(new glcts::TextureBorderClampTests(getContext(), extParams));
-		coreGroup->addChild(new glcts::TextureBufferTests(getContext(), extParams));
-		coreGroup->addChild(new glcts::DrawBuffersIndexedTests(getContext(), extParams));
-		coreGroup->addChild(new glcts::ViewportArrayTests(getContext(), extParams));
-		coreGroup->addChild(new glcts::PixelStorageModesTests(getContext(), glu::GLSL_VERSION_310_ES));
+        glcts::ExtParameters extParams(glu::GLSL_VERSION_310_ES, glcts::EXTENSIONTYPE_OES);
+        coreGroup->addChild(new glcts::GeometryShaderTests(getContext(), extParams));
+        coreGroup->addChild(new glcts::GPUShader5Tests(getContext(), extParams));
+        coreGroup->addChild(new glcts::TessellationShaderTests(getContext(), extParams));
+        coreGroup->addChild(new glcts::TextureCubeMapArrayTests(getContext(), extParams));
+        coreGroup->addChild(new glcts::TextureBorderClampTests(getContext(), extParams));
+        coreGroup->addChild(new glcts::TextureBufferTests(getContext(), extParams));
+        coreGroup->addChild(new glcts::DrawBuffersIndexedTests(getContext(), extParams));
+        coreGroup->addChild(new glcts::ViewportArrayTests(getContext(), extParams));
+        coreGroup->addChild(new glcts::PixelStorageModesTests(getContext(), glu::GLSL_VERSION_310_ES));
 
-		addChild(coreGroup);
+        addChild(coreGroup);
 
-		addChild(new ShaderTests(getContext()));
-	}
-	catch (...)
-	{
-		// Destroy context.
-		deqp::TestPackage::deinit();
-		throw;
-	}
+        addChild(new ShaderTests(getContext()));
+    }
+    catch (...)
+    {
+        // Destroy context.
+        deqp::TestPackage::deinit();
+        throw;
+    }
 }
 
-tcu::TestCaseExecutor* ES31TestPackage::createExecutor(void) const
+tcu::TestCaseExecutor *ES31TestPackage::createExecutor(void) const
 {
-	return new TestCaseWrapper(const_cast<ES31TestPackage&>(*this), m_waiverMechanism);
+    return new TestCaseWrapper(const_cast<ES31TestPackage &>(*this), m_waiverMechanism);
 }
 
-} // es31cts
+} // namespace es31cts

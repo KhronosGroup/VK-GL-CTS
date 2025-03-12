@@ -36,182 +36,194 @@
 #include <iostream>
 #include <stdexcept>
 
-using std::vector;
-using std::string;
-using std::set;
 using std::map;
+using std::set;
+using std::string;
+using std::vector;
 
 enum Flags
 {
-	FLAG_USE_LAST_INFO = (1<<0)
+    FLAG_USE_LAST_INFO = (1 << 0)
 };
 
 struct CommandLine
 {
-	CommandLine (void)
-		: flags(0)
-	{
-	}
+    CommandLine(void) : flags(0)
+    {
+    }
 
-	vector<string>	srcFilenames;
-	string			dstFilename;
-	deUint32		flags;
+    vector<string> srcFilenames;
+    string dstFilename;
+    uint32_t flags;
 };
 
 class LogHandler : public xe::TestLogHandler
 {
 public:
-	LogHandler (xe::BatchResult* batchResult, deUint32 flags)
-		: m_batchResult	(batchResult)
-		, m_flags		(flags)
-	{
-	}
+    LogHandler(xe::BatchResult *batchResult, uint32_t flags) : m_batchResult(batchResult), m_flags(flags)
+    {
+    }
 
-	void setSessionInfo (const xe::SessionInfo& info)
-	{
-		xe::SessionInfo& combinedInfo = m_batchResult->getSessionInfo();
+    void setSessionInfo(const xe::SessionInfo &info)
+    {
+        xe::SessionInfo &combinedInfo = m_batchResult->getSessionInfo();
 
-		if (m_flags & FLAG_USE_LAST_INFO)
-		{
-			if (!info.targetName.empty())		combinedInfo.targetName			= info.targetName;
-			if (!info.releaseId.empty())		combinedInfo.releaseId			= info.releaseId;
-			if (!info.releaseName.empty())		combinedInfo.releaseName		= info.releaseName;
-			if (!info.candyTargetName.empty())	combinedInfo.candyTargetName	= info.candyTargetName;
-			if (!info.configName.empty())		combinedInfo.configName			= info.configName;
-			if (!info.resultName.empty())		combinedInfo.resultName			= info.resultName;
-			if (!info.timestamp.empty())		combinedInfo.timestamp			= info.timestamp;
-		}
-		else
-		{
-			if (combinedInfo.targetName.empty())		combinedInfo.targetName			= info.targetName;
-			if (combinedInfo.releaseId.empty())			combinedInfo.releaseId			= info.releaseId;
-			if (combinedInfo.releaseName.empty())		combinedInfo.releaseName		= info.releaseName;
-			if (combinedInfo.candyTargetName.empty())	combinedInfo.candyTargetName	= info.candyTargetName;
-			if (combinedInfo.configName.empty())		combinedInfo.configName			= info.configName;
-			if (combinedInfo.resultName.empty())		combinedInfo.resultName			= info.resultName;
-			if (combinedInfo.timestamp.empty())			combinedInfo.timestamp			= info.timestamp;
-		}
-	}
+        if (m_flags & FLAG_USE_LAST_INFO)
+        {
+            if (!info.targetName.empty())
+                combinedInfo.targetName = info.targetName;
+            if (!info.releaseId.empty())
+                combinedInfo.releaseId = info.releaseId;
+            if (!info.releaseName.empty())
+                combinedInfo.releaseName = info.releaseName;
+            if (!info.candyTargetName.empty())
+                combinedInfo.candyTargetName = info.candyTargetName;
+            if (!info.configName.empty())
+                combinedInfo.configName = info.configName;
+            if (!info.resultName.empty())
+                combinedInfo.resultName = info.resultName;
+            if (!info.timestamp.empty())
+                combinedInfo.timestamp = info.timestamp;
+        }
+        else
+        {
+            if (combinedInfo.targetName.empty())
+                combinedInfo.targetName = info.targetName;
+            if (combinedInfo.releaseId.empty())
+                combinedInfo.releaseId = info.releaseId;
+            if (combinedInfo.releaseName.empty())
+                combinedInfo.releaseName = info.releaseName;
+            if (combinedInfo.candyTargetName.empty())
+                combinedInfo.candyTargetName = info.candyTargetName;
+            if (combinedInfo.configName.empty())
+                combinedInfo.configName = info.configName;
+            if (combinedInfo.resultName.empty())
+                combinedInfo.resultName = info.resultName;
+            if (combinedInfo.timestamp.empty())
+                combinedInfo.timestamp = info.timestamp;
+        }
+    }
 
-	xe::TestCaseResultPtr startTestCaseResult (const char* casePath)
-	{
-		if (m_batchResult->hasTestCaseResult(casePath))
-		{
-			xe::TestCaseResultPtr existingResult = m_batchResult->getTestCaseResult(casePath);
-			existingResult->clear();
-			return existingResult;
-		}
-		else
-			return m_batchResult->createTestCaseResult(casePath);
-	}
+    xe::TestCaseResultPtr startTestCaseResult(const char *casePath)
+    {
+        if (m_batchResult->hasTestCaseResult(casePath))
+        {
+            xe::TestCaseResultPtr existingResult = m_batchResult->getTestCaseResult(casePath);
+            existingResult->clear();
+            return existingResult;
+        }
+        else
+            return m_batchResult->createTestCaseResult(casePath);
+    }
 
-	void testCaseResultUpdated (const xe::TestCaseResultPtr&)
-	{
-		// Ignored.
-	}
+    void testCaseResultUpdated(const xe::TestCaseResultPtr &)
+    {
+        // Ignored.
+    }
 
-	void testCaseResultComplete (const xe::TestCaseResultPtr&)
-	{
-		// Ignored.
-	}
+    void testCaseResultComplete(const xe::TestCaseResultPtr &)
+    {
+        // Ignored.
+    }
 
 private:
-	xe::BatchResult* const	m_batchResult;
-	const deUint32			m_flags;
+    xe::BatchResult *const m_batchResult;
+    const uint32_t m_flags;
 };
 
-static void readLogFile (xe::BatchResult* dstResult, const char* filename, deUint32 flags)
+static void readLogFile(xe::BatchResult *dstResult, const char *filename, uint32_t flags)
 {
-	std::ifstream		in				(filename, std::ifstream::binary|std::ifstream::in);
-	LogHandler			resultHandler	(dstResult, flags);
-	xe::TestLogParser	parser			(&resultHandler);
-	deUint8				buf				[2048];
-	int					numRead			= 0;
+    std::ifstream in(filename, std::ifstream::binary | std::ifstream::in);
+    LogHandler resultHandler(dstResult, flags);
+    xe::TestLogParser parser(&resultHandler);
+    uint8_t buf[2048];
+    int numRead = 0;
 
-	if (!in.good())
-		throw std::runtime_error(string("Failed to open '") + filename + "'");
+    if (!in.good())
+        throw std::runtime_error(string("Failed to open '") + filename + "'");
 
-	for (;;)
-	{
-		in.read((char*)&buf[0], DE_LENGTH_OF_ARRAY(buf));
-		numRead = (int)in.gcount();
+    for (;;)
+    {
+        in.read((char *)&buf[0], DE_LENGTH_OF_ARRAY(buf));
+        numRead = (int)in.gcount();
 
-		if (numRead <= 0)
-			break;
+        if (numRead <= 0)
+            break;
 
-		parser.parse(&buf[0], numRead);
-	}
+        parser.parse(&buf[0], numRead);
+    }
 
-	in.close();
+    in.close();
 }
 
-static void mergeTestLogs (const CommandLine& cmdLine)
+static void mergeTestLogs(const CommandLine &cmdLine)
 {
-	xe::BatchResult batchResult;
+    xe::BatchResult batchResult;
 
-	for (vector<string>::const_iterator filename = cmdLine.srcFilenames.begin(); filename != cmdLine.srcFilenames.end(); ++filename)
-		readLogFile(&batchResult, filename->c_str(), cmdLine.flags);
+    for (vector<string>::const_iterator filename = cmdLine.srcFilenames.begin(); filename != cmdLine.srcFilenames.end();
+         ++filename)
+        readLogFile(&batchResult, filename->c_str(), cmdLine.flags);
 
-	if (!cmdLine.dstFilename.empty())
-		xe::writeBatchResultToFile(batchResult, cmdLine.dstFilename.c_str());
-	else
-		xe::writeTestLog(batchResult, std::cout);
+    if (!cmdLine.dstFilename.empty())
+        xe::writeBatchResultToFile(batchResult, cmdLine.dstFilename.c_str());
+    else
+        xe::writeTestLog(batchResult, std::cout);
 }
 
-static void printHelp (const char* binName)
+static void printHelp(const char *binName)
 {
-	printf("%s: [filename] [[filename 2] ...]\n", binName);
-	printf("  --dst=[filename]    Write final log to file, otherwise written to stdout.\n");
-	printf("  --info=[first|last] Select which session info to use (default: first).\n");
+    printf("%s: [filename] [[filename 2] ...]\n", binName);
+    printf("  --dst=[filename]    Write final log to file, otherwise written to stdout.\n");
+    printf("  --info=[first|last] Select which session info to use (default: first).\n");
 }
 
-static bool parseCommandLine (CommandLine& cmdLine, int argc, const char* const* argv)
+static bool parseCommandLine(CommandLine &cmdLine, int argc, const char *const *argv)
 {
-	for (int argNdx = 1; argNdx < argc; argNdx++)
-	{
-		const char* arg = argv[argNdx];
+    for (int argNdx = 1; argNdx < argc; argNdx++)
+    {
+        const char *arg = argv[argNdx];
 
-		if (!deStringBeginsWith(arg, "--"))
-			cmdLine.srcFilenames.push_back(arg);
-		else if (deStringBeginsWith(arg, "--dst="))
-		{
-			if (!cmdLine.dstFilename.empty())
-				return false;
-			cmdLine.dstFilename = arg+6;
-		}
-		else if (deStringEqual(arg, "--info=first"))
-			cmdLine.flags &= ~FLAG_USE_LAST_INFO;
-		else if (deStringEqual(arg, "--info=last"))
-			cmdLine.flags |= FLAG_USE_LAST_INFO;
-		else
-			return false;
-	}
+        if (!deStringBeginsWith(arg, "--"))
+            cmdLine.srcFilenames.push_back(arg);
+        else if (deStringBeginsWith(arg, "--dst="))
+        {
+            if (!cmdLine.dstFilename.empty())
+                return false;
+            cmdLine.dstFilename = arg + 6;
+        }
+        else if (strcmp(arg, "--info=first") == 0)
+            cmdLine.flags &= ~FLAG_USE_LAST_INFO;
+        else if (strcmp(arg, "--info=last") == 0)
+            cmdLine.flags |= FLAG_USE_LAST_INFO;
+        else
+            return false;
+    }
 
-	if (cmdLine.srcFilenames.empty())
-		return false;
+    if (cmdLine.srcFilenames.empty())
+        return false;
 
-	return true;
+    return true;
 }
 
-int main (int argc, const char* const* argv)
+int main(int argc, const char *const *argv)
 {
-	try
-	{
-		CommandLine cmdLine;
+    try
+    {
+        CommandLine cmdLine;
 
-		if (!parseCommandLine(cmdLine, argc, argv))
-		{
-			printHelp(argv[0]);
-			return -1;
-		}
+        if (!parseCommandLine(cmdLine, argc, argv))
+        {
+            printHelp(argv[0]);
+            return -1;
+        }
 
-		mergeTestLogs(cmdLine);
-	}
-	catch (const std::exception& e)
-	{
-		printf("FATAL ERROR: %s\n", e.what());
-		return -1;
-	}
+        mergeTestLogs(cmdLine);
+    }
+    catch (const std::exception &e)
+    {
+        printf("FATAL ERROR: %s\n", e.what());
+        return -1;
+    }
 
-	return 0;
+    return 0;
 }

@@ -42,28 +42,28 @@ namespace TextureSwizzle
 class Utils
 {
 public:
-	/** Store information about program object
-	 *
-	 **/
-	struct programInfo
-	{
-		programInfo(deqp::Context& context);
-		~programInfo();
+    /** Store information about program object
+     *
+     **/
+    struct programInfo
+    {
+        programInfo(deqp::Context &context);
+        ~programInfo();
 
-		void build(const glw::GLchar* fragment_shader_code, const glw::GLchar* vertex_shader_code);
-		void compile(glw::GLuint shader_id, const glw::GLchar* shader_code) const;
-		void link() const;
+        void build(const glw::GLchar *fragment_shader_code, const glw::GLchar *vertex_shader_code);
+        void compile(glw::GLuint shader_id, const glw::GLchar *shader_code) const;
+        void link() const;
 
-		deqp::Context& m_context;
+        deqp::Context &m_context;
 
-		glw::GLuint m_fragment_shader_id;
-		glw::GLuint m_program_object_id;
-		glw::GLuint m_vertex_shader_id;
-	};
+        glw::GLuint m_fragment_shader_id;
+        glw::GLuint m_program_object_id;
+        glw::GLuint m_vertex_shader_id;
+    };
 
-	/* Public static methods */
-	static void replaceToken(const glw::GLchar* token, size_t& search_position, const glw::GLchar* text,
-							 std::string& string);
+    /* Public static methods */
+    static void replaceToken(const glw::GLchar *token, size_t &search_position, const glw::GLchar *text,
+                             std::string &string);
 };
 
 /** Implements APIErrors test, description follows:
@@ -82,18 +82,18 @@ public:
 class APIErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	APIErrorsTest(deqp::Context& context);
+    /* Public methods */
+    APIErrorsTest(deqp::Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void verifyError(const glw::GLenum expected_error);
+    /* Private methods */
+    void verifyError(const glw::GLenum expected_error);
 
-	/* Private fields */
-	glw::GLuint m_id;
+    /* Private fields */
+    glw::GLuint m_id;
 };
 
 /** Implements IntialState test, description follows:
@@ -116,18 +116,18 @@ private:
 class IntialStateTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	IntialStateTest(deqp::Context& context);
+    /* Public methods */
+    IntialStateTest(deqp::Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void verifyValues(const glw::GLenum texture_target);
+    /* Private methods */
+    void verifyValues(const glw::GLenum texture_target);
 
-	/* Private fields */
-	glw::GLuint m_id;
+    /* Private fields */
+    glw::GLuint m_id;
 };
 
 /** Implements Smoke test, description follows:
@@ -194,87 +194,91 @@ private:
 class SmokeTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	SmokeTest(deqp::Context& context);
-	SmokeTest(deqp::Context& context, const glw::GLchar* name, const glw::GLchar* description);
+    /* Public methods */
+    SmokeTest(deqp::Context &context);
+    SmokeTest(deqp::Context &context, size_t access_idx, size_t channel_idx);
+    SmokeTest(deqp::Context &context, const glw::GLchar *name, const glw::GLchar *description);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 protected:
-	/* Protected types */
-	struct testCase
-	{
-		size_t	 m_channel_index;
-		size_t	 m_source_texture_format_index;
-		size_t	 m_source_texture_target_index;
-		size_t	 m_texture_access_index;
-		glw::GLint m_texture_swizzle_red;
-		glw::GLint m_texture_swizzle_green;
-		glw::GLint m_texture_swizzle_blue;
-		glw::GLint m_texture_swizzle_alpha;
-		glw::GLint m_texture_sizes[4];
-	};
+    /* Protected types */
+    struct testCase
+    {
+        size_t m_channel_index;
+        size_t m_source_texture_format_index;
+        size_t m_source_texture_target_index;
+        size_t m_texture_access_index;
+        glw::GLint m_texture_swizzle_red;
+        glw::GLint m_texture_swizzle_green;
+        glw::GLint m_texture_swizzle_blue;
+        glw::GLint m_texture_swizzle_alpha;
+        glw::GLint m_texture_sizes[4];
+    };
 
-	/* Protected methods */
-	void captureAndVerify(const testCase& test_case, size_t output_format_index, glw::GLint output_channel_size,
-						  size_t index_of_swizzled_channel);
+    /* Protected methods */
+    void captureAndVerify(const testCase &test_case, size_t output_format_index, glw::GLint output_channel_size,
+                          size_t index_of_swizzled_channel);
 
-	void deinitOutputTexture();
-	void deinitTextures();
+    void deinitOutputTexture();
+    void deinitTextures();
 
-	void draw(glw::GLenum target, const glw::GLint* texture_swizzle, bool use_rgba_enum);
+    void draw(glw::GLenum target, const glw::GLint *texture_swizzle, bool use_rgba_enum);
 
-	void executeTestCase(const testCase& test_case);
+    void executeTestCase(const testCase &test_case);
 
-	virtual bool fillSourceTexture(size_t format_idx, size_t target_idx);
+    virtual bool fillSourceTexture(size_t format_idx, size_t target_idx);
 
-	std::string getFragmentShader(const testCase& test_case, size_t output_format_index, bool is_tested_stage);
+    std::string getFragmentShader(const testCase &test_case, size_t output_format_index, bool is_tested_stage);
 
-	std::string getVertexShader(const testCase& test_case, bool is_tested_stage);
+    std::string getVertexShader(const testCase &test_case, bool is_tested_stage);
 
-	bool isTargetSupported(size_t target_idx);
+    bool isTargetSupported(size_t target_idx);
 
-	bool isTargetSuppByAccess(size_t access_idx, size_t target_idx);
+    bool isTargetSuppByAccess(size_t access_idx, size_t target_idx);
 
-	bool isTargetSuppByFormat(size_t format_idx, size_t target_idx);
+    bool isTargetSuppByFormat(size_t format_idx, size_t target_idx);
 
-	void logTestCaseDetials(const testCase& test_case);
+    void logTestCaseDetials(const testCase &test_case);
 
-	void prepareAndTestProgram(const testCase& test_case, size_t output_format_index, glw::GLint output_channel_size,
-							   size_t index_of_swizzled_channel, bool test_vertex_stage);
+    void prepareAndTestProgram(const testCase &test_case, size_t output_format_index, glw::GLint output_channel_size,
+                               size_t index_of_swizzled_channel, bool test_vertex_stage);
 
-	std::string prepareArguments(const testCase& test_case);
-	std::string prepareCoordinates(const testCase& test_case);
+    std::string prepareArguments(const testCase &test_case);
+    std::string prepareCoordinates(const testCase &test_case);
 
-	std::string prepareDerivatives(const testCase& test_case, size_t index);
+    std::string prepareDerivatives(const testCase &test_case, size_t index);
 
-	std::string prepareOffsets(const testCase& test_case);
-	void prepareOutputTexture(size_t format_idx);
+    std::string prepareOffsets(const testCase &test_case);
+    void prepareOutputTexture(size_t format_idx);
 
-	std::string prepareSample();
-	void prepareSourceTexture(size_t format_idx, size_t target_idx, glw::GLint out_sizes[4]);
+    std::string prepareSample();
+    void prepareSourceTexture(size_t format_idx, size_t target_idx, glw::GLint out_sizes[4]);
 
-	void testInit();
+    void testInit();
 
-	virtual void verifyOutputImage(const testCase& test_case, size_t output_format_index,
-								   glw::GLint output_channel_size, size_t index_of_swizzled_channel,
-								   const glw::GLubyte* data);
+    virtual void verifyOutputImage(const testCase &test_case, size_t output_format_index,
+                                   glw::GLint output_channel_size, size_t index_of_swizzled_channel,
+                                   const glw::GLubyte *data);
 
-	/* Protected fields */
-	bool		m_is_ms_supported;
-	glw::GLuint m_prepare_fbo_id;
-	glw::GLuint m_out_tex_id;
-	glw::GLuint m_source_tex_id;
-	glw::GLuint m_test_fbo_id;
-	glw::GLuint m_vao_id;
+    /* Protected fields */
+    bool m_is_ms_supported;
+    glw::GLuint m_prepare_fbo_id;
+    glw::GLuint m_out_tex_id;
+    glw::GLuint m_source_tex_id;
+    glw::GLuint m_test_fbo_id;
+    glw::GLuint m_vao_id;
 
-	/* Protected constants */
-	static const glw::GLsizei m_depth;
-	static const glw::GLsizei m_height;
-	static const glw::GLsizei m_width;
-	static const glw::GLsizei m_output_height;
-	static const glw::GLsizei m_output_width;
+    /* Protected constants */
+    static const glw::GLsizei m_depth;
+    static const glw::GLsizei m_height;
+    static const glw::GLsizei m_width;
+    static const glw::GLsizei m_output_height;
+    static const glw::GLsizei m_output_width;
+
+    size_t m_access_idx;
+    size_t m_channel_idx;
 };
 
 /** Implements Functional test, description follows:
@@ -310,65 +314,70 @@ protected:
 class FunctionalTest : public SmokeTest
 {
 public:
-	/* Public methods */
-	FunctionalTest(deqp::Context& context);
+    /* Public methods */
+    FunctionalTest(deqp::Context &context, size_t format_idx, size_t tgt_idx);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 protected:
-	/* Protected methods */
-	virtual bool fillSourceTexture(size_t format_idx, size_t target_idx);
+    /* Protected methods */
+    virtual bool fillSourceTexture(size_t format_idx, size_t target_idx);
 
-	bool fillMSTexture(size_t format_idx, size_t target_idx);
+    bool fillMSTexture(size_t format_idx, size_t target_idx);
 
-	void prepareProgram(size_t format_idx, Utils::programInfo& program);
+    void prepareProgram(size_t format_idx, Utils::programInfo &program);
 
-	std::string prepareValues(size_t format_idx);
+    std::string prepareValues(size_t format_idx);
 
-	virtual void verifyOutputImage(const testCase& test_case, size_t output_format_index,
-								   glw::GLint output_channel_size, size_t index_of_swizzled_channel,
-								   const glw::GLubyte* data);
+    virtual void verifyOutputImage(const testCase &test_case, size_t output_format_index,
+                                   glw::GLint output_channel_size, size_t index_of_swizzled_channel,
+                                   const glw::GLubyte *data);
 
 private:
-	/* Private types */
-	class wrongResults : public std::exception
-	{
-	public:
-		wrongResults(const FunctionalTest::testCase& test_case) : m_test_case(test_case)
-		{
-		}
+    /* Private types */
+    class wrongResults : public std::exception
+    {
+    public:
+        wrongResults(const FunctionalTest::testCase &test_case) : m_test_case(test_case)
+        {
+        }
 
-		virtual ~wrongResults() throw()
-		{
-		}
+        virtual ~wrongResults() throw()
+        {
+        }
 
-		virtual const char* what() const throw()
-		{
-			return "Found pixel with wrong value";
-		}
+        virtual const char *what() const throw()
+        {
+            return "Found pixel with wrong value";
+        }
 
-		FunctionalTest::testCase m_test_case;
-	};
+        FunctionalTest::testCase m_test_case;
+    };
+    size_t m_format_idx;
+    size_t m_tgt_idx;
 };
-}
+} // namespace TextureSwizzle
 
 /** Group class for GPU Shader 5 conformance tests */
 class TextureSwizzleTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	TextureSwizzleTests(deqp::Context& context);
-	virtual ~TextureSwizzleTests()
-	{
-	}
+    /* Public methods */
+    TextureSwizzleTests(deqp::Context &context);
+    virtual ~TextureSwizzleTests()
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	/* Private methods */
-	TextureSwizzleTests(const TextureSwizzleTests&);
-	TextureSwizzleTests& operator=(const TextureSwizzleTests&);
+    /* Private methods */
+    TextureSwizzleTests(const TextureSwizzleTests &);
+    TextureSwizzleTests &operator=(const TextureSwizzleTests &);
+
+    void addSmokeTest();
+    void addFunctionalTest();
 };
-} /* gl3cts namespace */
+} // namespace gl3cts
 
 #endif // _GL3CTEXTURESWIZZLETESTS_HPP

@@ -26,183 +26,164 @@
 
 typedef struct FileStream_s
 {
-	deFile*			file;
-	deStreamStatus	status;
-	const char*		error;
+    deFile *file;
+    deStreamStatus status;
+    const char *error;
 } FileStream;
 
-static deStreamResult fileIOStream_read (deStreamData* stream, void* buf, deInt32 bufSize, deInt32* numRead)
+static deStreamResult fileIOStream_read(deStreamData *stream, void *buf, int32_t bufSize, int32_t *numRead)
 {
-	deInt64 _numRead = 0;
-	FileStream* fileStream = (FileStream*)stream;
+    int64_t _numRead       = 0;
+    FileStream *fileStream = (FileStream *)stream;
 
+    deFileResult result = deFile_read(fileStream->file, buf, bufSize, &_numRead);
+    *numRead            = (int32_t)_numRead;
 
-	deFileResult result = deFile_read(fileStream->file, buf, bufSize, &_numRead);
-	*numRead = (deInt32)_numRead;
+    switch (result)
+    {
+    case DE_FILERESULT_SUCCESS:
+        return DE_STREAMRESULT_SUCCESS;
 
-	switch (result)
-	{
-		case  DE_FILERESULT_SUCCESS:
-			return DE_STREAMRESULT_SUCCESS;
+    case DE_FILERESULT_ERROR:
+        fileStream->error  = "deFile: DE_FILERESULT_ERROR";
+        fileStream->status = DE_STREAMSTATUS_ERROR;
+        return DE_STREAMRESULT_ERROR;
 
-		case DE_FILERESULT_ERROR:
-			fileStream->error	= "deFile: DE_FILERESULT_ERROR";
-			fileStream->status	= DE_STREAMSTATUS_ERROR;
-			return DE_STREAMRESULT_ERROR;
+    case DE_FILERESULT_END_OF_FILE:
+        return DE_STREAMRESULT_END_OF_STREAM;
 
-		case DE_FILERESULT_END_OF_FILE:
-			return DE_STREAMRESULT_END_OF_STREAM;
-
-		default:
-			fileStream->error	= "Uknown: DE_FILERESULT";
-			fileStream->status	= DE_STREAMSTATUS_ERROR;
-			return DE_STREAMRESULT_ERROR;
-	}
+    default:
+        fileStream->error  = "Uknown: DE_FILERESULT";
+        fileStream->status = DE_STREAMSTATUS_ERROR;
+        return DE_STREAMRESULT_ERROR;
+    }
 }
 
-static deStreamResult fileIOStream_write (deStreamData* stream, const void* buf, deInt32 bufSize, deInt32* numWritten)
+static deStreamResult fileIOStream_write(deStreamData *stream, const void *buf, int32_t bufSize, int32_t *numWritten)
 {
-	deInt64	_numWritten = 0;
-	FileStream* fileStream = (FileStream*)stream;
+    int64_t _numWritten    = 0;
+    FileStream *fileStream = (FileStream *)stream;
 
-	deFileResult result = deFile_write(fileStream->file, buf, bufSize, &_numWritten);
-	*numWritten = (deInt32)_numWritten;
+    deFileResult result = deFile_write(fileStream->file, buf, bufSize, &_numWritten);
+    *numWritten         = (int32_t)_numWritten;
 
-	switch (result)
-	{
-		case  DE_FILERESULT_SUCCESS:
-			return DE_STREAMRESULT_SUCCESS;
+    switch (result)
+    {
+    case DE_FILERESULT_SUCCESS:
+        return DE_STREAMRESULT_SUCCESS;
 
-		case DE_FILERESULT_ERROR:
-			fileStream->error	= "deFile: DE_FILERESULT_ERROR";
-			fileStream->status	= DE_STREAMSTATUS_ERROR;
-			return DE_STREAMRESULT_ERROR;
+    case DE_FILERESULT_ERROR:
+        fileStream->error  = "deFile: DE_FILERESULT_ERROR";
+        fileStream->status = DE_STREAMSTATUS_ERROR;
+        return DE_STREAMRESULT_ERROR;
 
-		case DE_FILERESULT_END_OF_FILE:
-			return DE_STREAMRESULT_END_OF_STREAM;
+    case DE_FILERESULT_END_OF_FILE:
+        return DE_STREAMRESULT_END_OF_STREAM;
 
-		default:
-			fileStream->error	= "Uknown: DE_FILERESULT";
-			fileStream->status	= DE_STREAMSTATUS_ERROR;
-			return DE_STREAMRESULT_ERROR;
-	}
+    default:
+        fileStream->error  = "Uknown: DE_FILERESULT";
+        fileStream->status = DE_STREAMSTATUS_ERROR;
+        return DE_STREAMRESULT_ERROR;
+    }
 }
 
-static const char* fileIOStream_getError (deStreamData* stream)
+static const char *fileIOStream_getError(deStreamData *stream)
 {
-	FileStream* fileStream = (FileStream*)stream;
-	/* \note [mika] There is only error reporting through return value in deFile */
-	return fileStream->error;
+    FileStream *fileStream = (FileStream *)stream;
+    /* \note [mika] There is only error reporting through return value in deFile */
+    return fileStream->error;
 }
 
-static deStreamResult fileIOStream_flush (deStreamData* stream)
+static deStreamResult fileIOStream_flush(deStreamData *stream)
 {
-	/* \todo mika deFile doesn't have flush, how should this be handled? */
-	DE_UNREF(stream);
+    /* \todo mika deFile doesn't have flush, how should this be handled? */
+    DE_UNREF(stream);
 
-	return DE_STREAMRESULT_SUCCESS;
+    return DE_STREAMRESULT_SUCCESS;
 }
 
-static deStreamResult fileIOStream_deinit (deStreamData* stream)
+static deStreamResult fileIOStream_deinit(deStreamData *stream)
 {
-	FileStream* fileStream = (FileStream*)stream;
+    FileStream *fileStream = (FileStream *)stream;
 
-	deFile_destroy(fileStream->file);
+    deFile_destroy(fileStream->file);
 
-	free(fileStream);
+    free(fileStream);
 
-	return DE_STREAMRESULT_SUCCESS;
+    return DE_STREAMRESULT_SUCCESS;
 }
 
-static deStreamStatus fileIOStrem_getStatus (deStreamData* stream)
+static deStreamStatus fileIOStrem_getStatus(deStreamData *stream)
 {
-	FileStream* fileStream = (FileStream*)stream;
-	return fileStream->status;
+    FileStream *fileStream = (FileStream *)stream;
+    return fileStream->status;
 }
 
-static const deIOStreamVFTable fileIOStreamVFTable = {
-	fileIOStream_read,
-	fileIOStream_write,
-	fileIOStream_getError,
-	fileIOStream_flush,
-	fileIOStream_deinit,
-	fileIOStrem_getStatus
-};
+static const deIOStreamVFTable fileIOStreamVFTable = {fileIOStream_read,  fileIOStream_write,  fileIOStream_getError,
+                                                      fileIOStream_flush, fileIOStream_deinit, fileIOStrem_getStatus};
 
 static const deIOStreamVFTable fileInStreamVFTable = {
-	fileIOStream_read,
-	DE_NULL,
-	fileIOStream_getError,
-	DE_NULL,
-	fileIOStream_deinit,
-	fileIOStrem_getStatus
-};
+    fileIOStream_read, NULL, fileIOStream_getError, NULL, fileIOStream_deinit, fileIOStrem_getStatus};
 
 static const deIOStreamVFTable fileOutStreamVFTable = {
-	DE_NULL,
-	fileIOStream_write,
-	fileIOStream_getError,
-	fileIOStream_flush,
-	fileIOStream_deinit,
-	fileIOStrem_getStatus
-};
+    NULL, fileIOStream_write, fileIOStream_getError, fileIOStream_flush, fileIOStream_deinit, fileIOStrem_getStatus};
 
-void fileIOStream_init (deIOStream* stream, const char* filename, deFileMode mode)
+void fileIOStream_init(deIOStream *stream, const char *filename, deFileMode mode)
 {
-	FileStream* fileStream = DE_NULL;
+    FileStream *fileStream = NULL;
 
-	DE_ASSERT(stream);
+    DE_ASSERT(stream);
 
-	fileStream = malloc(sizeof(FileStream));
+    fileStream = malloc(sizeof(FileStream));
 
-	/* \note mika Check that file is readable and writeable, currently not supported by deFile */
-	stream->vfTable		= &fileIOStreamVFTable;
-	stream->streamData	= (deStreamData*)fileStream;
+    /* \note mika Check that file is readable and writeable, currently not supported by deFile */
+    stream->vfTable    = &fileIOStreamVFTable;
+    stream->streamData = (deStreamData *)fileStream;
 
-	fileStream->file	= deFile_create(filename, mode);
-	fileStream->status	= DE_STREAMSTATUS_GOOD;
-	fileStream->error	= DE_NULL;
+    fileStream->file   = deFile_create(filename, mode);
+    fileStream->status = DE_STREAMSTATUS_GOOD;
+    fileStream->error  = NULL;
 
-	if (!fileStream->file)
-		fileStream->status = DE_STREAMSTATUS_ERROR;
+    if (!fileStream->file)
+        fileStream->status = DE_STREAMSTATUS_ERROR;
 }
 
-void deFileInStream_init (deInStream* stream, const char* filename, deFileMode mode)
+void deFileInStream_init(deInStream *stream, const char *filename, deFileMode mode)
 {
-	FileStream* fileStream = DE_NULL;
+    FileStream *fileStream = NULL;
 
-	DE_ASSERT(stream);
+    DE_ASSERT(stream);
 
-	fileStream = malloc(sizeof(FileStream));
+    fileStream = malloc(sizeof(FileStream));
 
-	/* \note mika Check that file is readable, currently not supported by deFile */
-	stream->ioStream.vfTable		= &fileInStreamVFTable;
-	stream->ioStream.streamData		= (deStreamData*)fileStream;
+    /* \note mika Check that file is readable, currently not supported by deFile */
+    stream->ioStream.vfTable    = &fileInStreamVFTable;
+    stream->ioStream.streamData = (deStreamData *)fileStream;
 
-	fileStream->file	= deFile_create(filename, mode);
-	fileStream->status	= DE_STREAMSTATUS_GOOD;
-	fileStream->error	= DE_NULL;
+    fileStream->file   = deFile_create(filename, mode);
+    fileStream->status = DE_STREAMSTATUS_GOOD;
+    fileStream->error  = NULL;
 
-	if (!fileStream->file)
-		fileStream->status = DE_STREAMSTATUS_ERROR;
+    if (!fileStream->file)
+        fileStream->status = DE_STREAMSTATUS_ERROR;
 }
 
-void deFileOutStream_init (deOutStream* stream, const char* filename, deFileMode mode)
+void deFileOutStream_init(deOutStream *stream, const char *filename, deFileMode mode)
 {
-	FileStream* fileStream = DE_NULL;
+    FileStream *fileStream = NULL;
 
-	DE_ASSERT(stream);
+    DE_ASSERT(stream);
 
-	fileStream = malloc(sizeof(FileStream));
+    fileStream = malloc(sizeof(FileStream));
 
-	/* \note mika Check that file is writeable, currently not supported by deFile */
-	stream->ioStream.vfTable		= &fileOutStreamVFTable;
-	stream->ioStream.streamData		= (deStreamData*)fileStream;
+    /* \note mika Check that file is writeable, currently not supported by deFile */
+    stream->ioStream.vfTable    = &fileOutStreamVFTable;
+    stream->ioStream.streamData = (deStreamData *)fileStream;
 
-	fileStream->file	= deFile_create(filename, mode);
-	fileStream->status	= DE_STREAMSTATUS_GOOD;
-	fileStream->error	= DE_NULL;
+    fileStream->file   = deFile_create(filename, mode);
+    fileStream->status = DE_STREAMSTATUS_GOOD;
+    fileStream->error  = NULL;
 
-	if (!fileStream->file)
-		fileStream->status = DE_STREAMSTATUS_ERROR;
+    if (!fileStream->file)
+        fileStream->status = DE_STREAMSTATUS_ERROR;
 }

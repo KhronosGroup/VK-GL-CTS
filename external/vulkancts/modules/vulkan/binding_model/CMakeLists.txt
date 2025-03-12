@@ -28,8 +28,14 @@ set(DEQP_VK_BINDING_MODEL_SRCS
 	vktBindingDynamicOffsetTests.hpp
 	vktBindingMutableTests.cpp
 	vktBindingMutableTests.hpp
+	vktBindingDescriptorCombinationTests.cpp
+	vktBindingDescriptorCombinationTests.hpp
 	vktBindingDescriptorBufferTests.cpp
 	vktBindingDescriptorBufferTests.hpp
+	vktBindingStagesTests.cpp
+	vktBindingStagesTests.hpp
+	vktBindingDescriptorInlineUniformTests.cpp
+	vktBindingDescriptorInlineUniformTests.hpp
 	)
 
 PCH(DEQP_VK_BINDING_MODEL_SRCS ../pch.cpp)
@@ -38,5 +44,4 @@ add_library(deqp-vk-binding-model STATIC ${DEQP_VK_VKSC_BINDING_MODEL_SRCS} ${DE
 target_link_libraries(deqp-vk-binding-model tcutil vkutil)
 
 add_library(deqp-vksc-binding-model STATIC ${DEQP_VK_VKSC_BINDING_MODEL_SRCS})
-target_include_directories(deqp-vksc-binding-model BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-binding-model PUBLIC deqp-vksc-util tcutil vkscutil)

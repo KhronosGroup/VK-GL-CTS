@@ -37,42 +37,41 @@ namespace Draw
 namespace
 {
 
-void createTests (tcu::TestCaseGroup* testGroup)
+void createTests(tcu::TestCaseGroup *testGroup)
 {
-	tcu::TestContext&			testCtx		= testGroup->getTestContext();
-	static const char			dataDir[]	= "draw/depth_bias";
+    tcu::TestContext &testCtx   = testGroup->getTestContext();
+    static const char dataDir[] = "draw/depth_bias";
 
-	struct depthBiasCase
-	{
-		std::string					testName;
-		std::vector<std::string>	testRequirements;
-	};
+    struct depthBiasCase
+    {
+        std::string testName;
+        std::vector<std::string> testRequirements;
+    };
 
-	static const depthBiasCase	cases[] =
-	{
-		{ "depth_bias_triangle_list_fill",		{} },
-		{ "depth_bias_triangle_list_line",		{ "Features.fillModeNonSolid" } },
-		{ "depth_bias_triangle_list_point",		{ "Features.fillModeNonSolid" } },
-		{ "depth_bias_patch_list_tri_fill",		{ "Features.tessellationShader" } },
-		{ "depth_bias_patch_list_tri_line",		{ "Features.tessellationShader", "Features.fillModeNonSolid" } },
-		{ "depth_bias_patch_list_tri_point",	{ "Features.tessellationShader", "Features.fillModeNonSolid" } }
-	};
+    static const depthBiasCase cases[] = {
+        {"depth_bias_triangle_list_fill", {}},
+        {"depth_bias_triangle_list_line", {"Features.fillModeNonSolid"}},
+        {"depth_bias_triangle_list_point", {"Features.fillModeNonSolid"}},
+        {"depth_bias_patch_list_tri_fill", {"Features.tessellationShader"}},
+        {"depth_bias_patch_list_tri_line", {"Features.tessellationShader", "Features.fillModeNonSolid"}},
+        {"depth_bias_patch_list_tri_point", {"Features.tessellationShader", "Features.fillModeNonSolid"}}};
 
-	for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
-	{
-		std::vector<std::string>	requirements	= cases[i].testRequirements;
-		const std::string			fileName		= cases[i].testName + ".amber";
-		cts_amber::AmberTestCase*	testCase		= cts_amber::createAmberTestCase(testCtx, cases[i].testName.c_str(), "", dataDir, fileName, requirements);
-		testGroup->addChild(testCase);
-	}
+    for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
+    {
+        std::vector<std::string> requirements = cases[i].testRequirements;
+        const std::string fileName            = cases[i].testName + ".amber";
+        cts_amber::AmberTestCase *testCase =
+            cts_amber::createAmberTestCase(testCtx, cases[i].testName.c_str(), dataDir, fileName, requirements);
+        testGroup->addChild(testCase);
+    }
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createDepthBiasTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createDepthBiasTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "depth_bias", "Depth bias tests", createTests);
+    return createTestGroup(testCtx, "depth_bias", createTests);
 }
 
-}	// Draw
-}	// vkt
+} // namespace Draw
+} // namespace vkt

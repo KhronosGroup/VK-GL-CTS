@@ -1,0 +1,87 @@
+#!amber
+
+DEVICE_EXTENSION VK_KHR_acceleration_structure
+DEVICE_EXTENSION VK_KHR_ray_tracing_pipeline
+DEVICE_EXTENSION VK_KHR_buffer_device_address
+DEVICE_EXTENSION VK_KHR_pipeline_library
+DEVICE_FEATURE   RayTracingPipelineFeaturesKHR.rayTracingPipeline
+DEVICE_FEATURE   AccelerationStructureFeaturesKHR.accelerationStructure
+DEVICE_FEATURE   BufferDeviceAddressFeatures.bufferDeviceAddress
+
+SHADER ray_generation raygen1 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  layout(location = 0) rayPayloadEXT uint payload0;
+  layout(location = 1) rayPayloadEXT uvec4 payload1;
+  layout(set = 0, binding = 0) uniform accelerationStructureEXT topLevelAS;
+  layout(set = 0, binding = 1, r32ui) uniform uimage2D result;
+  void main()
+  {
+    float TMin      = 0.1;
+    float TMax      = 10;
+    uint  flags     = gl_RayFlagsNoneEXT;
+    uint  mask      = 0xFF;
+    vec3  Origin    = vec3(0, 0, 0); // Set origin to trigger miss
+    vec3  Direction = vec3(0, 0, -1);
+
+    payload0 = 100;
+    traceRayEXT(topLevelAS, flags, mask, 0, 0, 0, Origin, TMin, Direction, TMax, 0);
+    imageStore(result, ivec2(0, 0), uvec4(payload0, 0u, 0u, 0u));
+
+    payload1 = uvec4(200);
+    traceRayEXT(topLevelAS, flags, mask, 0, 0, 1, Origin, TMin, Direction, TMax, 1);
+    imageStore(result, ivec2(1, 0), uvec4(payload1.x, 0u, 0u, 0u));
+  }
+END
+
+SHADER miss miss1 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  layout(location = 0) rayPayloadInEXT uint payload;
+  void main()
+  {
+    payload = 1;
+  }
+END
+
+SHADER miss miss2 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  layout(location = 1) rayPayloadInEXT uvec4 payload;
+  void main()
+  {
+    payload.x = 2;
+  }
+END
+
+ACCELERATION_STRUCTURE BOTTOM_LEVEL triangle_blas
+  GEOMETRY TRIANGLES
+    0.0 -0.75 1.0
+    -0.75 0.75 1.0
+    0.75 0.75 1.0
+  END
+END
+ACCELERATION_STRUCTURE TOP_LEVEL triangle_tlas
+  BOTTOM_LEVEL_INSTANCE triangle_blas END
+END
+
+IMAGE img1 FORMAT R32_UINT DIM_2D WIDTH 2 HEIGHT 1 FILL 0
+
+PIPELINE raytracing my_rtpipeline
+  BIND ACCELERATION_STRUCTURE triangle_tlas DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER img1 AS storage_image DESCRIPTOR_SET 0 BINDING 1
+  SHADER_GROUP g_rgen raygen1
+  SHADER_GROUP g_miss1 miss1
+  SHADER_GROUP g_miss2 miss2
+  SHADER_BINDING_TABLE sbt_raygen
+    g_rgen
+  END
+  SHADER_BINDING_TABLE sbt_miss
+    g_miss1
+    g_miss2
+  END
+END
+
+RUN my_rtpipeline RAYGEN sbt_raygen MISS sbt_miss 1 1 1
+
+EXPECT img1 IDX 0 EQ 1 2

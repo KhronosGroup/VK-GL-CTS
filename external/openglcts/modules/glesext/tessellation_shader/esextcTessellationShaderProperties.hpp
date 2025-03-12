@@ -45,14 +45,14 @@ namespace glcts
 class TessellationShaderPropertiesDefaultContextWideValues : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TessellationShaderPropertiesDefaultContextWideValues(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderPropertiesDefaultContextWideValues(Context &context, const ExtParameters &extParams);
 
-	virtual ~TessellationShaderPropertiesDefaultContextWideValues(void)
-	{
-	}
+    virtual ~TessellationShaderPropertiesDefaultContextWideValues(void)
+    {
+    }
 
-	virtual IterateResult iterate(void);
+    virtual IterateResult iterate(void);
 };
 
 /*  Make sure that the following tessellation stage properties (some of which
@@ -74,53 +74,53 @@ public:
 class TessellationShaderPropertiesProgramObject : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TessellationShaderPropertiesProgramObject(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderPropertiesProgramObject(Context &context, const ExtParameters &extParams);
 
-	virtual ~TessellationShaderPropertiesProgramObject(void)
-	{
-	}
+    virtual ~TessellationShaderPropertiesProgramObject(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	void				  initTest(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    void initTest(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private type definitions */
-	/* Define a few different tc/te/tc+te shaders we'll attach to a program object,
-	 * which will then be queried for tessellation-specific properties
-	 */
-	typedef struct _test_descriptor
-	{
-		glw::GLint  expected_control_output_vertices_value;
-		glw::GLenum expected_gen_mode_value;
-		glw::GLenum expected_gen_point_mode_value;
-		glw::GLenum expected_gen_spacing_value;
-		glw::GLenum expected_gen_vertex_order_value;
-		const char* tc_body;
-		const char* te_body;
+    /* Private type definitions */
+    /* Define a few different tc/te/tc+te shaders we'll attach to a program object,
+     * which will then be queried for tessellation-specific properties
+     */
+    typedef struct _test_descriptor
+    {
+        glw::GLint expected_control_output_vertices_value;
+        glw::GLenum expected_gen_mode_value;
+        glw::GLenum expected_gen_point_mode_value;
+        glw::GLenum expected_gen_spacing_value;
+        glw::GLenum expected_gen_vertex_order_value;
+        const char *tc_body;
+        const char *te_body;
 
-		_test_descriptor()
-		{
-			expected_control_output_vertices_value = 0;
-			expected_gen_mode_value				   = 0;
-			expected_gen_point_mode_value		   = 0;
-			expected_gen_spacing_value			   = 0;
-			expected_gen_vertex_order_value		   = 0;
-			tc_body								   = DE_NULL;
-			te_body								   = DE_NULL;
-		}
-	} _test_descriptor;
+        _test_descriptor()
+        {
+            expected_control_output_vertices_value = 0;
+            expected_gen_mode_value                = 0;
+            expected_gen_point_mode_value          = 0;
+            expected_gen_spacing_value             = 0;
+            expected_gen_vertex_order_value        = 0;
+            tc_body                                = nullptr;
+            te_body                                = nullptr;
+        }
+    } _test_descriptor;
 
-	typedef std::vector<_test_descriptor> _tests;
-	typedef _tests::const_iterator		  _tests_const_iterator;
+    typedef std::vector<_test_descriptor> _tests;
+    typedef _tests::const_iterator _tests_const_iterator;
 
-	/* Private variables */
-	glw::GLuint m_fs_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_tc_id;
-	glw::GLuint m_te_id;
-	glw::GLuint m_vs_id;
+    /* Private variables */
+    glw::GLuint m_fs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_tc_id;
+    glw::GLuint m_te_id;
+    glw::GLuint m_vs_id;
 };
 
 } // namespace glcts

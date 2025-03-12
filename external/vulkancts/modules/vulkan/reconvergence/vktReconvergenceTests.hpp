@@ -31,8 +31,9 @@ namespace vkt
 {
 namespace Reconvergence
 {
-tcu::TestCaseGroup*		createTests (tcu::TestContext& testCtx, bool createExperimental);
-} // Reconvergence
-} // vkt
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name);
+tcu::TestCaseGroup *createTestsExperimental(tcu::TestContext &testCtx, const std::string &name);
+} // namespace Reconvergence
+} // namespace vkt
 
 #endif // _VKTRECONVERGENCETESTS_HPP

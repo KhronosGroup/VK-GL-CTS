@@ -26,16 +26,16 @@
 
 namespace eglw
 {
-static const eglw::Library*   s_library     = DE_NULL;
+static const eglw::Library *s_library = nullptr;
 
-void setCurrentThreadLibrary (const eglw::Library* egl)
+void setCurrentThreadLibrary(const eglw::Library *egl)
 {
-	s_library = egl;
+    s_library = egl;
 }
 
-inline const eglw::Library* getCurrentThreadLibrary (void)
+inline const eglw::Library *getCurrentThreadLibrary(void)
 {
-	return s_library;
+    return s_library;
 }
 
 DE_BEGIN_EXTERN_C
@@ -44,4 +44,4 @@ DE_BEGIN_EXTERN_C
 #include "eglwImplExt.inl"
 
 DE_END_EXTERN_C
-}
+} // namespace eglw

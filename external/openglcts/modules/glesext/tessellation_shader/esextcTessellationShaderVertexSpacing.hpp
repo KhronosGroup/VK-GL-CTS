@@ -29,6 +29,8 @@
 #include "tcuDefs.hpp"
 #include <deMath.h>
 
+#include <utility>
+
 namespace glcts
 {
 /** Implementation of Test Case 25
@@ -71,257 +73,284 @@ namespace glcts
 class TessellationShaderVertexSpacing : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TessellationShaderVertexSpacing(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderVertexSpacing(Context &context, const ExtParameters &extParams,
+                                    _tessellation_primitive_mode primitive_mode,
+                                    _tessellation_shader_vertex_spacing vs_mode);
 
-	virtual ~TessellationShaderVertexSpacing(void)
-	{
-	}
+    virtual ~TessellationShaderVertexSpacing(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	void				  initTest(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    void initTest(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private type definitions */
-	/** Stores properties of a single test run */
-	typedef struct _run
-	{
-		float								inner[2];
-		float								outer[4];
-		_tessellation_primitive_mode		primitive_mode;
-		_tessellation_shader_vertex_spacing vertex_spacing;
+    /* Private type definitions */
+    /** Stores properties of a single test run */
+    typedef struct _run
+    {
+        float inner[2];
+        float outer[4];
+        _tessellation_primitive_mode primitive_mode;
+        _tessellation_shader_vertex_spacing vertex_spacing;
 
-		std::vector<char> data;
-		float*			  data_cartesian; /* only used for 'triangles' case */
-		unsigned int	  n_vertices;
+        std::vector<char> data;
+        std::vector<float> data_cartesian; /* only used for 'triangles' case */
+        unsigned int n_vertices;
 
-		/* Constructor. Resets all fields to default values */
-		_run()
-		{
-			memset(inner, 0, sizeof(inner));
-			memset(outer, 0, sizeof(outer));
-			data_cartesian	= 0;
-			n_vertices		= 0;
-			primitive_mode	= TESSELLATION_SHADER_PRIMITIVE_MODE_UNKNOWN;
-			vertex_spacing	= TESSELLATION_SHADER_VERTEX_SPACING_UNKNOWN;
-		}
-	} _run;
+        /* Constructor. Resets all fields to default values */
+        _run()
+        {
+            memset(inner, 0, sizeof(inner));
+            memset(outer, 0, sizeof(outer));
+            n_vertices     = 0;
+            primitive_mode = TESSELLATION_SHADER_PRIMITIVE_MODE_UNKNOWN;
+            vertex_spacing = TESSELLATION_SHADER_VERTEX_SPACING_UNKNOWN;
+        }
 
-	/** Stores either barycentric or Cartesian coordinate data
-	 *  (depending on primitive mode of a test run this structure
-	 *  will be instantiated for)
-	 */
-	typedef struct _tess_coordinate
-	{
-		float u;
-		float v;
-		float w;
+        void swap(_run &other)
+        {
+            for (size_t i = 0u; i < de::arrayLength(inner); ++i)
+                std::swap(inner[i], other.inner[i]);
 
-		/* Constructor. Resets all fields to 0 */
-		_tess_coordinate()
-		{
-			u = 0.0f;
-			v = 0.0f;
-			w = 0.0f;
-		}
+            for (size_t i = 0u; i < de::arrayLength(outer); ++i)
+                std::swap(outer[i], other.outer[i]);
 
-		/* Constructor.
-		 *
-		 * @param u Value to set for U component;
-		 * @param v Value to set for V component;
-		 * @param w Value to set for W component;
-		 */
-		_tess_coordinate(float _u, float _v, float _w)
-		{
-			this->u = _u;
-			this->v = _v;
-			this->w = _w;
-		}
+            std::swap(primitive_mode, other.primitive_mode);
+            std::swap(vertex_spacing, other.vertex_spacing);
+            data.swap(other.data);
+            data_cartesian.swap(other.data_cartesian);
+            std::swap(n_vertices, other.n_vertices);
+        }
 
-		/** Compares two barycentric/Cartesian coordinates, using test-wide epsilon.
-		 *
-		 *  @param in Coordinate to compare current instance against.
-		 *
-		 *  @return true if the coordinates are equal, false otherwise.
-		 **/
-		bool operator==(const _tess_coordinate& in) const;
-	} _tess_coordinate;
+        // Move constructor: we'll use this to efficiently emplace a copy of one object in the back of a vector.
+        _run(_run &&other) : _run()
+        {
+            this->swap(other);
+        }
+    } _run;
 
-	/** Stores Cartesian coordinate data. */
-	typedef struct _tess_coordinate_cartesian
-	{
-		float x;
-		float y;
+    /** Stores either barycentric or Cartesian coordinate data
+     *  (depending on primitive mode of a test run this structure
+     *  will be instantiated for)
+     */
+    typedef struct _tess_coordinate
+    {
+        float u;
+        float v;
+        float w;
 
-		/* Constructor. Resets all values to 0 */
-		_tess_coordinate_cartesian()
-		{
-			x = 0.0f;
-			y = 0.0f;
-		}
+        /* Constructor. Resets all fields to 0 */
+        _tess_coordinate()
+        {
+            u = 0.0f;
+            v = 0.0f;
+            w = 0.0f;
+        }
 
-		/* Constructor.
-		 *
-		 * @param x Value to use for X component;
-		 * @param y Value to use for Y component;
-		 */
-		_tess_coordinate_cartesian(float _x, float _y)
-		{
-			this->x = _x;
-			this->y = _y;
-		}
+        /* Constructor.
+         *
+         * @param u Value to set for U component;
+         * @param v Value to set for V component;
+         * @param w Value to set for W component;
+         */
+        _tess_coordinate(float _u, float _v, float _w)
+        {
+            this->u = _u;
+            this->v = _v;
+            this->w = _w;
+        }
 
-		/** Compares two Cartesian coordinates, using test-wide epsilon.
-		 *
-		 *  @param in Coordinate to compare current instance against.
-		 *
-		 *  @return true if the coordinates are equal, false otherwise.
-		 **/
-		bool operator==(const _tess_coordinate_cartesian& in) const;
-	} _tess_coordinate_cartesian;
+        /** Compares two barycentric/Cartesian coordinates, using test-wide epsilon.
+         *
+         *  @param in Coordinate to compare current instance against.
+         *
+         *  @return true if the coordinates are equal, false otherwise.
+         **/
+        bool operator==(const _tess_coordinate &in) const;
+    } _tess_coordinate;
 
-	/** Stores information on:
-	 *
-	 *  - a delta between two coordinates;
-	 *  - amount of segments that had exactly that length.
-	 **/
-	typedef struct _tess_coordinate_delta
-	{
-		unsigned int counter;
-		float		 delta;
+    /** Stores Cartesian coordinate data. */
+    typedef struct _tess_coordinate_cartesian
+    {
+        float x;
+        float y;
 
-		/* Constructor. Resets all values to 0 */
-		_tess_coordinate_delta()
-		{
-			counter = 0;
-			delta   = 0.0f;
-		}
-	} _tess_coordinate_delta;
+        /* Constructor. Resets all values to 0 */
+        _tess_coordinate_cartesian()
+        {
+            x = 0.0f;
+            y = 0.0f;
+        }
 
-	/** Vector of coordinate deltas */
-	typedef std::vector<_tess_coordinate_delta>		_tess_coordinate_deltas;
-	typedef _tess_coordinate_deltas::const_iterator _tess_coordinate_deltas_const_iterator;
-	typedef _tess_coordinate_deltas::iterator		_tess_coordinate_deltas_iterator;
+        /* Constructor.
+         *
+         * @param x Value to use for X component;
+         * @param y Value to use for Y component;
+         */
+        _tess_coordinate_cartesian(float _x, float _y)
+        {
+            this->x = _x;
+            this->y = _y;
+        }
 
-	/** Vector of Cartesian coordinates making up an edge. */
-	typedef std::vector<_tess_coordinate_cartesian> _tess_edge_points;
-	typedef _tess_edge_points::const_iterator		_tess_edge_points_const_iterator;
-	typedef _tess_edge_points::iterator				_tess_edge_points_iterator;
+        /** Compares two Cartesian coordinates, using test-wide epsilon.
+         *
+         *  @param in Coordinate to compare current instance against.
+         *
+         *  @return true if the coordinates are equal, false otherwise.
+         **/
+        bool operator==(const _tess_coordinate_cartesian &in) const;
+    } _tess_coordinate_cartesian;
 
-	/** Defines a single edge of a quad/triangle *or* a single isoline (depending
-	 *  on the primitive mode used for a test run, for which the edge is defined)
-	 */
-	typedef struct _tess_edge
-	{
-		_tess_edge_points points;
-		float			  edge_length;
-		float			  outermost_tess_level;
-		float			  tess_level;
+    /** Stores information on:
+     *
+     *  - a delta between two coordinates;
+     *  - amount of segments that had exactly that length.
+     **/
+    typedef struct _tess_coordinate_delta
+    {
+        unsigned int counter;
+        float delta;
 
-		/* Constructor.
-		 *
-		 * @param in_tess_level  Tessellation level value specific to the edge.
-		 * @param in_edge_length Total Euclidean length of the edge.
-		 */
-		_tess_edge(const float& in_tess_level, const float& in_outermost_tess_level, const float& in_edge_length)
-			: edge_length(in_edge_length), outermost_tess_level(in_outermost_tess_level), tess_level(in_tess_level)
-		{
-		}
-	} _tess_edge;
+        /* Constructor. Resets all values to 0 */
+        _tess_coordinate_delta()
+        {
+            counter = 0;
+            delta   = 0.0f;
+        }
+    } _tess_coordinate_delta;
 
-	/** Vector of edges */
-	typedef std::vector<_tess_edge>		_tess_edges;
-	typedef _tess_edges::const_iterator _tess_edges_const_iterator;
-	typedef _tess_edges::iterator		_tess_edges_iterator;
+    /** Vector of coordinate deltas */
+    typedef std::vector<_tess_coordinate_delta> _tess_coordinate_deltas;
+    typedef _tess_coordinate_deltas::const_iterator _tess_coordinate_deltas_const_iterator;
+    typedef _tess_coordinate_deltas::iterator _tess_coordinate_deltas_iterator;
 
-	/** Vector of test runs */
-	typedef std::vector<_run>	 _runs;
-	typedef _runs::const_iterator _runs_const_iterator;
+    /** Vector of Cartesian coordinates making up an edge. */
+    typedef std::vector<_tess_coordinate_cartesian> _tess_edge_points;
+    typedef _tess_edge_points::const_iterator _tess_edge_points_const_iterator;
+    typedef _tess_edge_points::iterator _tess_edge_points_iterator;
 
-	/** Comparator that is used to sort points relative to a certain origin. */
-	struct _comparator_relative_to_base_point
-	{
-		/* Constructor. Sets all fields to 0 */
-		_comparator_relative_to_base_point() : base_point(0, 0)
-		{
-		}
+    /** Defines a single edge of a quad/triangle *or* a single isoline (depending
+     *  on the primitive mode used for a test run, for which the edge is defined)
+     */
+    typedef struct _tess_edge
+    {
+        _tess_edge_points points;
+        float edge_length;
+        float outermost_tess_level;
+        float tess_level;
 
-		/* Constructor.
-		 *
-		 * @param base_point Origin, against which all comparisons should be run against.
-		 */
-		_comparator_relative_to_base_point(const _tess_coordinate_cartesian& _base_point) : base_point(_base_point)
-		{
-		}
+        /* Constructor.
+         *
+         * @param in_tess_level  Tessellation level value specific to the edge.
+         * @param in_edge_length Total Euclidean length of the edge.
+         */
+        _tess_edge(const float &in_tess_level, const float &in_outermost_tess_level, const float &in_edge_length)
+            : edge_length(in_edge_length)
+            , outermost_tess_level(in_outermost_tess_level)
+            , tess_level(in_tess_level)
+        {
+        }
+    } _tess_edge;
 
-		/* Tells which of the user-provided points is closer to the instance-specific
-		 * "origin".
-		 *
-		 * @param a First point to use.
-		 * @param b Second point to use.
-		 *
-		 * @return true if point @param a is closer to the "origin", false otherwise.
-		 */
-		bool operator()(_tess_coordinate_cartesian a, _tess_coordinate_cartesian b)
-		{
-			float distance_a_to_base =
-				deFloatSqrt((a.x - base_point.x) * (a.x - base_point.x) + (a.y - base_point.y) * (a.y - base_point.y));
-			float distance_b_to_base =
-				deFloatSqrt((b.x - base_point.x) * (b.x - base_point.x) + (b.y - base_point.y) * (b.y - base_point.y));
+    /** Vector of edges */
+    typedef std::vector<_tess_edge> _tess_edges;
+    typedef _tess_edges::const_iterator _tess_edges_const_iterator;
+    typedef _tess_edges::iterator _tess_edges_iterator;
 
-			return distance_a_to_base < distance_b_to_base;
-		}
+    /** Vector of test runs */
+    typedef std::vector<_run> _runs;
+    typedef _runs::const_iterator _runs_const_iterator;
 
-		_tess_coordinate_cartesian base_point;
-	};
+    /** Comparator that is used to sort points relative to a certain origin. */
+    struct _comparator_relative_to_base_point
+    {
+        /* Constructor. Sets all fields to 0 */
+        _comparator_relative_to_base_point() : base_point(0, 0)
+        {
+        }
 
-	/** Comparator that is used to compare two tessellation coordinates using FP value
-	 *  equal operator.
-	 */
-	struct _comparator_exact_tess_coordinate_match
-	{
-		/* Constructor.
-		 *
-		 * @param in_base_coordinate Base tessellation coordinate to compare against.
-		 */
-		_comparator_exact_tess_coordinate_match(const _tess_coordinate_cartesian& in_base_coordinate)
-			: base_coordinate(in_base_coordinate)
-		{
-		}
+        /* Constructor.
+         *
+         * @param base_point Origin, against which all comparisons should be run against.
+         */
+        _comparator_relative_to_base_point(const _tess_coordinate_cartesian &_base_point) : base_point(_base_point)
+        {
+        }
 
-		/* Tells if the user-provided tessellation coordinate exactly matches the base tessellation
-		 * coordinate.
-		 *
-		 * @param value Tessellation coordinate to use for the operation.
-		 *
-		 * @return true if the coordinates are equal, false otherwise.
-		 */
-		bool operator()(const _tess_coordinate_cartesian& value)
-		{
-			return (value.x == base_coordinate.x) && (value.y == base_coordinate.y);
-		}
+        /* Tells which of the user-provided points is closer to the instance-specific
+         * "origin".
+         *
+         * @param a First point to use.
+         * @param b Second point to use.
+         *
+         * @return true if point @param a is closer to the "origin", false otherwise.
+         */
+        bool operator()(_tess_coordinate_cartesian a, _tess_coordinate_cartesian b)
+        {
+            float distance_a_to_base =
+                deFloatSqrt((a.x - base_point.x) * (a.x - base_point.x) + (a.y - base_point.y) * (a.y - base_point.y));
+            float distance_b_to_base =
+                deFloatSqrt((b.x - base_point.x) * (b.x - base_point.x) + (b.y - base_point.y) * (b.y - base_point.y));
 
-		_tess_coordinate_cartesian base_coordinate;
-	};
+            return distance_a_to_base < distance_b_to_base;
+        }
 
-	/* Private methods */
-	static bool compareEdgeByX(_tess_coordinate_cartesian a, _tess_coordinate_cartesian b);
-	static bool compareEdgeByY(_tess_coordinate_cartesian a, _tess_coordinate_cartesian b);
+        _tess_coordinate_cartesian base_point;
+    };
 
-	bool isPointOnLine(const _tess_coordinate_cartesian& line_v1, const _tess_coordinate_cartesian& line_v2,
-					   const _tess_coordinate_cartesian& point);
+    /** Comparator that is used to compare two tessellation coordinates using FP value
+     *  equal operator.
+     */
+    struct _comparator_exact_tess_coordinate_match
+    {
+        /* Constructor.
+         *
+         * @param in_base_coordinate Base tessellation coordinate to compare against.
+         */
+        _comparator_exact_tess_coordinate_match(const _tess_coordinate_cartesian &in_base_coordinate)
+            : base_coordinate(in_base_coordinate)
+        {
+        }
 
-	_tess_edges getEdgesForIsolinesTessellation(const _run& run);
-	_tess_edges getEdgesForQuadsTessellation(const _run& run);
-	_tess_edges getEdgesForTrianglesTessellation(const _run& run);
-	void verifyEdges(const _tess_edges& edges, const _run& run);
+        /* Tells if the user-provided tessellation coordinate exactly matches the base tessellation
+         * coordinate.
+         *
+         * @param value Tessellation coordinate to use for the operation.
+         *
+         * @return true if the coordinates are equal, false otherwise.
+         */
+        bool operator()(const _tess_coordinate_cartesian &value)
+        {
+            return (value.x == base_coordinate.x) && (value.y == base_coordinate.y);
+        }
 
-	/* Private variables */
-	glw::GLint				 m_gl_max_tess_gen_level_value;
-	glw::GLuint				 m_vao_id;
-	_runs					 m_runs;
-	TessellationShaderUtils* m_utils;
+        _tess_coordinate_cartesian base_coordinate;
+    };
+
+    /* Private methods */
+    static bool compareEdgeByX(_tess_coordinate_cartesian a, _tess_coordinate_cartesian b);
+    static bool compareEdgeByY(_tess_coordinate_cartesian a, _tess_coordinate_cartesian b);
+
+    bool isPointOnLine(const _tess_coordinate_cartesian &line_v1, const _tess_coordinate_cartesian &line_v2,
+                       const _tess_coordinate_cartesian &point);
+
+    _tess_edges getEdgesForIsolinesTessellation(const _run &run);
+    _tess_edges getEdgesForQuadsTessellation(const _run &run);
+    _tess_edges getEdgesForTrianglesTessellation(const _run &run);
+    void verifyEdges(const _tess_edges &edges, const _run &run);
+
+    /* Private variables */
+    glw::GLint m_gl_max_tess_gen_level_value;
+    glw::GLuint m_vao_id;
+    _runs m_runs;
+    TessellationShaderUtils *m_utils;
+
+    _tessellation_primitive_mode m_primitive_mode;
+    _tessellation_shader_vertex_spacing m_vs_mode;
 };
 
 } // namespace glcts

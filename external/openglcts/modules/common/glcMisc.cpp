@@ -22,6 +22,8 @@
  */ /*-------------------------------------------------------------------*/
 
 #include "glcMisc.hpp"
+#include "gluDefs.hpp"
+#include "glw.h"
 
 using namespace glw;
 
@@ -35,61 +37,62 @@ const unsigned int HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP = 0x38000000;
 /* to Inf or Nan when stored as a half-float */
 const unsigned int HALF_FLOAT_MAX_BIASED_EXP_AS_SINGLE_FP_EXP = 0x47800000;
 /* 255 is the max exponent biased value */
-const unsigned int FLOAT_MAX_BIASED_EXP		 = (0xFF << 23);
+const unsigned int FLOAT_MAX_BIASED_EXP      = (0xFF << 23);
 const unsigned int HALF_FLOAT_MAX_BIASED_EXP = (0x1F << 10);
 
 GLhalf floatToHalfFloat(float f)
 {
-	union {
-		float		 v;
-		unsigned int x;
-	};
-	v				  = f;
-	unsigned int sign = (GLhalf)(x >> 31);
-	unsigned int mantissa;
-	unsigned int exp;
-	GLhalf		 hf;
+    union
+    {
+        float v;
+        unsigned int x;
+    };
+    v                 = f;
+    unsigned int sign = (GLhalf)(x >> 31);
+    unsigned int mantissa;
+    unsigned int exp;
+    GLhalf hf;
 
-	/* get mantissa */
-	mantissa = x & ((1 << 23) - 1);
-	/* get exponent bits */
-	exp = x & FLOAT_MAX_BIASED_EXP;
-	if (exp >= HALF_FLOAT_MAX_BIASED_EXP_AS_SINGLE_FP_EXP)
-	{
-		/* check if the original single precision float number is a NaN */
-		if (mantissa && (exp == FLOAT_MAX_BIASED_EXP))
-		{
-			/* we have a single precision NaN */
-			mantissa = (1 << 23) - 1;
-		}
-		else
-		{
-			/* 16-bit half-float representation stores number as Inf */
-			mantissa = 0;
-		}
-		hf = (((GLhalf)sign) << 15) | (GLhalf)(HALF_FLOAT_MAX_BIASED_EXP) | (GLhalf)(mantissa >> 13);
-	}
-	/* check if exponent is <= -15 */
-	else if (exp <= HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP)
-	{
-		/* store a denorm half-float value or zero */
-		exp = (HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP - exp) >> 23;
-		mantissa |= (1 << 23);
+    /* get mantissa */
+    mantissa = x & ((1 << 23) - 1);
+    /* get exponent bits */
+    exp = x & FLOAT_MAX_BIASED_EXP;
+    if (exp >= HALF_FLOAT_MAX_BIASED_EXP_AS_SINGLE_FP_EXP)
+    {
+        /* check if the original single precision float number is a NaN */
+        if (mantissa && (exp == FLOAT_MAX_BIASED_EXP))
+        {
+            /* we have a single precision NaN */
+            mantissa = (1 << 23) - 1;
+        }
+        else
+        {
+            /* 16-bit half-float representation stores number as Inf */
+            mantissa = 0;
+        }
+        hf = (((GLhalf)sign) << 15) | (GLhalf)(HALF_FLOAT_MAX_BIASED_EXP) | (GLhalf)(mantissa >> 13);
+    }
+    /* check if exponent is <= -15 */
+    else if (exp <= HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP)
+    {
+        /* store a denorm half-float value or zero */
+        exp = (HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP - exp) >> 23;
+        mantissa |= (1 << 23);
 
-		if (exp < 18)
-			mantissa >>= (14 + exp);
-		else
-			mantissa = 0;
+        if (exp < 18)
+            mantissa >>= (14 + exp);
+        else
+            mantissa = 0;
 
-		hf = (((GLhalf)sign) << 15) | (GLhalf)(mantissa);
-	}
-	else
-	{
-		hf = (((GLhalf)sign) << 15) | (GLhalf)((exp - HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP) >> 13) |
-			 (GLhalf)(mantissa >> 13);
-	}
+        hf = (((GLhalf)sign) << 15) | (GLhalf)(mantissa);
+    }
+    else
+    {
+        hf = (((GLhalf)sign) << 15) | (GLhalf)((exp - HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP) >> 13) |
+             (GLhalf)(mantissa >> 13);
+    }
 
-	return hf;
+    return hf;
 }
 
 /* -15 stored using a single precision bias of 127 */
@@ -97,80 +100,81 @@ const unsigned int FLOAT11_MIN_BIASED_EXP_AS_SINGLE_FP_EXP = 0x38000000;
 /* max exponent value in single precision that will be converted */
 /* to Inf or Nan when stored as a half-float */
 const unsigned int FLOAT11_MAX_BIASED_EXP_AS_SINGLE_FP_EXP = 0x47800000;
-const unsigned int FLOAT11_MAX_BIASED_EXP				   = (0x1F << 6);
+const unsigned int FLOAT11_MAX_BIASED_EXP                  = (0x1F << 6);
 
 GLuint floatToUnisgnedF11(float f)
 {
-	union {
-		float		 v;
-		unsigned int x;
-	};
-	v				  = f;
-	unsigned int sign = (GLhalf)(x >> 31);
-	unsigned int mantissa;
-	unsigned int exp;
-	GLuint		 f11;
+    union
+    {
+        float v;
+        unsigned int x;
+    };
+    v                 = f;
+    unsigned int sign = (GLhalf)(x >> 31);
+    unsigned int mantissa;
+    unsigned int exp;
+    GLuint f11;
 
-	/* get mantissa */
-	mantissa = x & ((1 << 23) - 1);
-	/* get exponent bits */
-	exp = x & FLOAT_MAX_BIASED_EXP;
+    /* get mantissa */
+    mantissa = x & ((1 << 23) - 1);
+    /* get exponent bits */
+    exp = x & FLOAT_MAX_BIASED_EXP;
 
-	/* minus f32 value */
-	if (sign > 0)
-	{
-		/* f32 NaN -> f11 NaN */
-		if (mantissa && (exp == FLOAT_MAX_BIASED_EXP))
-		{
-			f11 = (GLuint)(FLOAT11_MAX_BIASED_EXP) | (GLuint)(0x0000003F);
-		}
-		/* Others round to 0.0 */
-		else
-		{
-			f11 = 0x00000000;
-		}
+    /* minus f32 value */
+    if (sign > 0)
+    {
+        /* f32 NaN -> f11 NaN */
+        if (mantissa && (exp == FLOAT_MAX_BIASED_EXP))
+        {
+            f11 = (GLuint)(FLOAT11_MAX_BIASED_EXP) | (GLuint)(0x0000003F);
+        }
+        /* Others round to 0.0 */
+        else
+        {
+            f11 = 0x00000000;
+        }
 
-		return f11;
-	}
+        return f11;
+    }
 
-	/* only check positive value below */
-	if (exp >= FLOAT11_MAX_BIASED_EXP_AS_SINGLE_FP_EXP)
-	{
-		/* check if the original single precision float number is a NaN */
-		if (mantissa && (exp == FLOAT_MAX_BIASED_EXP))
-		{
-			/* we have a single precision NaN */
-			mantissa = (1 << 23) - 1;
-		}
-		else
-		{
-			/* 11-bit float representation stores number as Inf */
-			mantissa = 0;
-		}
-		f11 = (GLuint)(FLOAT11_MAX_BIASED_EXP) | (GLuint)(mantissa >> 17);
-	}
-	/* check if exponent is <= -15 */
-	else if (exp <= FLOAT11_MIN_BIASED_EXP_AS_SINGLE_FP_EXP)
-	{
-		/* store a denorm 11-bit float value or zero */
-		exp = (FLOAT11_MIN_BIASED_EXP_AS_SINGLE_FP_EXP - exp) >> 23;
-		mantissa |= (1 << 23);
-		if (18 + exp >= sizeof(mantissa) * 8)
-		{
-			mantissa = 0;
-		}
-		else
-		{
-			mantissa >>= (18 + exp);
-		}
-		f11 = mantissa;
-	}
-	else
-	{
-		f11 = ((exp - FLOAT11_MIN_BIASED_EXP_AS_SINGLE_FP_EXP) >> 17) | (mantissa >> 17);
-	}
+    /* only check positive value below */
+    if (exp >= FLOAT11_MAX_BIASED_EXP_AS_SINGLE_FP_EXP)
+    {
+        /* check if the original single precision float number is a NaN */
+        if (mantissa && (exp == FLOAT_MAX_BIASED_EXP))
+        {
+            /* we have a single precision NaN */
+            mantissa = (1 << 23) - 1;
+        }
+        else
+        {
+            /* 11-bit float representation stores number as Inf */
+            mantissa = 0;
+        }
+        f11 = (GLuint)(FLOAT11_MAX_BIASED_EXP) | (GLuint)(mantissa >> 17);
+    }
+    /* check if exponent is <= -15 */
+    else if (exp <= FLOAT11_MIN_BIASED_EXP_AS_SINGLE_FP_EXP)
+    {
+        /* store a denorm 11-bit float value or zero */
+        exp = (FLOAT11_MIN_BIASED_EXP_AS_SINGLE_FP_EXP - exp) >> 23;
+        mantissa |= (1 << 23);
+        if (18 + exp >= sizeof(mantissa) * 8)
+        {
+            mantissa = 0;
+        }
+        else
+        {
+            mantissa >>= (18 + exp);
+        }
+        f11 = mantissa;
+    }
+    else
+    {
+        f11 = ((exp - FLOAT11_MIN_BIASED_EXP_AS_SINGLE_FP_EXP) >> 17) | (mantissa >> 17);
+    }
 
-	return f11;
+    return f11;
 }
 
 /* -15 stored using a single precision bias of 127 */
@@ -178,231 +182,353 @@ const unsigned int FLOAT10_MIN_BIASED_EXP_AS_SINGLE_FP_EXP = 0x38000000;
 /* max exponent value in single precision that will be converted */
 /* to Inf or Nan when stored as a half-float */
 const unsigned int FLOAT10_MAX_BIASED_EXP_AS_SINGLE_FP_EXP = 0x47800000;
-const unsigned int FLOAT10_MAX_BIASED_EXP				   = (0x1F << 5);
+const unsigned int FLOAT10_MAX_BIASED_EXP                  = (0x1F << 5);
 
 GLuint floatToUnisgnedF10(float f)
 {
-	union {
-		float		 v;
-		unsigned int x;
-	};
-	v				  = f;
-	unsigned int sign = (GLhalf)(x >> 31);
-	unsigned int mantissa;
-	unsigned int exp;
-	GLuint		 f10;
+    union
+    {
+        float v;
+        unsigned int x;
+    };
+    v                 = f;
+    unsigned int sign = (GLhalf)(x >> 31);
+    unsigned int mantissa;
+    unsigned int exp;
+    GLuint f10;
 
-	/* get mantissa */
-	mantissa = x & ((1 << 23) - 1);
-	/* get exponent bits */
-	exp = x & FLOAT_MAX_BIASED_EXP;
+    /* get mantissa */
+    mantissa = x & ((1 << 23) - 1);
+    /* get exponent bits */
+    exp = x & FLOAT_MAX_BIASED_EXP;
 
-	/* minus f32 value */
-	if (sign > 0)
-	{
-		/* f32 NaN -> f10 NaN */
-		if (mantissa && (exp == FLOAT_MAX_BIASED_EXP))
-		{
-			f10 = (GLuint)(FLOAT10_MAX_BIASED_EXP) | (GLuint)(0x0000001F);
-		}
-		/* Others round to 0.0 */
-		else
-		{
-			f10 = 0x00000000;
-		}
+    /* minus f32 value */
+    if (sign > 0)
+    {
+        /* f32 NaN -> f10 NaN */
+        if (mantissa && (exp == FLOAT_MAX_BIASED_EXP))
+        {
+            f10 = (GLuint)(FLOAT10_MAX_BIASED_EXP) | (GLuint)(0x0000001F);
+        }
+        /* Others round to 0.0 */
+        else
+        {
+            f10 = 0x00000000;
+        }
 
-		return f10;
-	}
+        return f10;
+    }
 
-	/* only check positive value below */
-	if (exp >= FLOAT10_MAX_BIASED_EXP_AS_SINGLE_FP_EXP)
-	{
-		/* check if the original single precision float number is a NaN */
-		if (mantissa && (exp == FLOAT_MAX_BIASED_EXP))
-		{
-			/* we have a single precision NaN */
-			mantissa = (1 << 23) - 1;
-		}
-		else
-		{
-			/* 10-bit float representation stores number as Inf */
-			mantissa = 0;
-		}
-		f10 = (GLuint)(FLOAT10_MAX_BIASED_EXP) | (GLuint)(mantissa >> 18);
-	}
-	/* check if exponent is <= -15 */
-	else if (exp <= FLOAT10_MIN_BIASED_EXP_AS_SINGLE_FP_EXP)
-	{
-		/* store a denorm 11-bit float value or zero */
-		exp = (FLOAT10_MIN_BIASED_EXP_AS_SINGLE_FP_EXP - exp) >> 23;
-		mantissa |= (1 << 23);
-		if (19 + exp >= sizeof(mantissa) * 8)
-		{
-			mantissa = 0;
-		}
-		else
-		{
-			mantissa >>= (19 + exp);
-		}
-		f10 = mantissa;
-	}
-	else
-	{
-		f10 = ((exp - FLOAT10_MIN_BIASED_EXP_AS_SINGLE_FP_EXP) >> 18) | (mantissa >> 18);
-	}
+    /* only check positive value below */
+    if (exp >= FLOAT10_MAX_BIASED_EXP_AS_SINGLE_FP_EXP)
+    {
+        /* check if the original single precision float number is a NaN */
+        if (mantissa && (exp == FLOAT_MAX_BIASED_EXP))
+        {
+            /* we have a single precision NaN */
+            mantissa = (1 << 23) - 1;
+        }
+        else
+        {
+            /* 10-bit float representation stores number as Inf */
+            mantissa = 0;
+        }
+        f10 = (GLuint)(FLOAT10_MAX_BIASED_EXP) | (GLuint)(mantissa >> 18);
+    }
+    /* check if exponent is <= -15 */
+    else if (exp <= FLOAT10_MIN_BIASED_EXP_AS_SINGLE_FP_EXP)
+    {
+        /* store a denorm 11-bit float value or zero */
+        exp = (FLOAT10_MIN_BIASED_EXP_AS_SINGLE_FP_EXP - exp) >> 23;
+        mantissa |= (1 << 23);
+        if (19 + exp >= sizeof(mantissa) * 8)
+        {
+            mantissa = 0;
+        }
+        else
+        {
+            mantissa >>= (19 + exp);
+        }
+        f10 = mantissa;
+    }
+    else
+    {
+        f10 = ((exp - FLOAT10_MIN_BIASED_EXP_AS_SINGLE_FP_EXP) >> 18) | (mantissa >> 18);
+    }
 
-	return f10;
+    return f10;
 }
 
 float halfFloatToFloat(GLhalf hf)
 {
-	unsigned int sign	 = (unsigned int)(hf >> 15);
-	unsigned int mantissa = (unsigned int)(hf & ((1 << 10) - 1));
-	unsigned int exp	  = (unsigned int)(hf & HALF_FLOAT_MAX_BIASED_EXP);
-	union {
-		float		 f;
-		unsigned int ui;
-	};
+    unsigned int sign     = (unsigned int)(hf >> 15);
+    unsigned int mantissa = (unsigned int)(hf & ((1 << 10) - 1));
+    unsigned int exp      = (unsigned int)(hf & HALF_FLOAT_MAX_BIASED_EXP);
+    union
+    {
+        float f;
+        unsigned int ui;
+    };
 
-	if (exp == HALF_FLOAT_MAX_BIASED_EXP)
-	{
-		/* we have a half-float NaN or Inf */
-		/* half-float NaNs will be converted to a single precision NaN */
-		/* half-float Infs will be converted to a single precision Inf */
-		exp = FLOAT_MAX_BIASED_EXP;
-		if (mantissa)
-			mantissa = (1 << 23) - 1; /* set all bits to indicate a NaN */
-	}
-	else if (exp == 0x0)
-	{
-		/* convert half-float zero/denorm to single precision value */
-		if (mantissa)
-		{
-			mantissa <<= 1;
-			exp = HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP;
-			/* check for leading 1 in denorm mantissa */
-			while ((mantissa & (1 << 10)) == 0)
-			{
-				/* for every leading 0, decrement single precision exponent by 1 */
-				/* and shift half-float mantissa value to the left */
-				mantissa <<= 1;
-				exp -= (1 << 23);
-			}
-			/* clamp the mantissa to 10-bits */
-			mantissa &= ((1 << 10) - 1);
-			/* shift left to generate single-precision mantissa of 23-bits */
-			mantissa <<= 13;
-		}
-	}
-	else
-	{
-		/* shift left to generate single-precision mantissa of 23-bits */
-		mantissa <<= 13;
-		/* generate single precision biased exponent value */
-		exp = (exp << 13) + HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP;
-	}
-	ui = (sign << 31) | exp | mantissa;
-	return f;
+    if (exp == HALF_FLOAT_MAX_BIASED_EXP)
+    {
+        /* we have a half-float NaN or Inf */
+        /* half-float NaNs will be converted to a single precision NaN */
+        /* half-float Infs will be converted to a single precision Inf */
+        exp = FLOAT_MAX_BIASED_EXP;
+        if (mantissa)
+            mantissa = (1 << 23) - 1; /* set all bits to indicate a NaN */
+    }
+    else if (exp == 0x0)
+    {
+        /* convert half-float zero/denorm to single precision value */
+        if (mantissa)
+        {
+            mantissa <<= 1;
+            exp = HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP;
+            /* check for leading 1 in denorm mantissa */
+            while ((mantissa & (1 << 10)) == 0)
+            {
+                /* for every leading 0, decrement single precision exponent by 1 */
+                /* and shift half-float mantissa value to the left */
+                mantissa <<= 1;
+                exp -= (1 << 23);
+            }
+            /* clamp the mantissa to 10-bits */
+            mantissa &= ((1 << 10) - 1);
+            /* shift left to generate single-precision mantissa of 23-bits */
+            mantissa <<= 13;
+        }
+    }
+    else
+    {
+        /* shift left to generate single-precision mantissa of 23-bits */
+        mantissa <<= 13;
+        /* generate single precision biased exponent value */
+        exp = (exp << 13) + HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP;
+    }
+    ui = (sign << 31) | exp | mantissa;
+    return f;
 }
 
 float unsignedF11ToFloat(GLuint f11)
 {
-	unsigned int mantissa = (unsigned int)(f11 & ((1 << 6) - 1));
-	unsigned int exp	  = (unsigned int)(f11 & FLOAT11_MAX_BIASED_EXP);
-	union {
-		float		 f;
-		unsigned int ui;
-	};
+    unsigned int mantissa = (unsigned int)(f11 & ((1 << 6) - 1));
+    unsigned int exp      = (unsigned int)(f11 & FLOAT11_MAX_BIASED_EXP);
+    union
+    {
+        float f;
+        unsigned int ui;
+    };
 
-	if (exp == FLOAT11_MAX_BIASED_EXP)
-	{
-		/* we have a f11 NaN or Inf */
-		/* f11 NaNs will be converted to a single precision NaN */
-		/* f11 Infs will be converted to a single precision Inf */
-		exp = FLOAT_MAX_BIASED_EXP;
-		if (mantissa)
-			mantissa = (1 << 23) - 1; /* set all bits to indicate a NaN */
-	}
-	else if (exp == 0x0)
-	{
-		/* convert f11 zero/denorm to single precision value */
-		if (mantissa)
-		{
-			mantissa <<= 1;
-			exp = FLOAT11_MIN_BIASED_EXP_AS_SINGLE_FP_EXP;
-			/* check for leading 1 in denorm mantissa */
-			while ((mantissa & (1 << 10)) == 0)
-			{
-				/* for every leading 0, decrement single precision exponent by 1 */
-				/* and shift half-float mantissa value to the left */
-				mantissa <<= 1;
-				exp -= (1 << 23);
-			}
-			/* clamp the mantissa to 6-bits */
-			mantissa &= ((1 << 6) - 1);
-			/* shift left to generate single-precision mantissa of 23-bits */
-			mantissa <<= 17;
-		}
-	}
-	else
-	{
-		/* shift left to generate single-precision mantissa of 23-bits */
-		mantissa <<= 17;
-		/* generate single precision biased exponent value */
-		exp = (exp << 17) + FLOAT11_MIN_BIASED_EXP_AS_SINGLE_FP_EXP;
-	}
-	ui = exp | mantissa;
-	return f;
+    if (exp == FLOAT11_MAX_BIASED_EXP)
+    {
+        /* we have a f11 NaN or Inf */
+        /* f11 NaNs will be converted to a single precision NaN */
+        /* f11 Infs will be converted to a single precision Inf */
+        exp = FLOAT_MAX_BIASED_EXP;
+        if (mantissa)
+            mantissa = (1 << 23) - 1; /* set all bits to indicate a NaN */
+    }
+    else if (exp == 0x0)
+    {
+        /* convert f11 zero/denorm to single precision value */
+        if (mantissa)
+        {
+            mantissa <<= 1;
+            exp = FLOAT11_MIN_BIASED_EXP_AS_SINGLE_FP_EXP;
+            /* check for leading 1 in denorm mantissa */
+            while ((mantissa & (1 << 10)) == 0)
+            {
+                /* for every leading 0, decrement single precision exponent by 1 */
+                /* and shift half-float mantissa value to the left */
+                mantissa <<= 1;
+                exp -= (1 << 23);
+            }
+            /* clamp the mantissa to 6-bits */
+            mantissa &= ((1 << 6) - 1);
+            /* shift left to generate single-precision mantissa of 23-bits */
+            mantissa <<= 17;
+        }
+    }
+    else
+    {
+        /* shift left to generate single-precision mantissa of 23-bits */
+        mantissa <<= 17;
+        /* generate single precision biased exponent value */
+        exp = (exp << 17) + FLOAT11_MIN_BIASED_EXP_AS_SINGLE_FP_EXP;
+    }
+    ui = exp | mantissa;
+    return f;
 }
 
 float unsignedF10ToFloat(GLuint f10)
 {
-	unsigned int mantissa = (unsigned int)(f10 & ((1 << 5) - 1));
-	unsigned int exp	  = (unsigned int)(f10 & FLOAT10_MAX_BIASED_EXP);
-	union {
-		float		 f;
-		unsigned int ui;
-	};
+    unsigned int mantissa = (unsigned int)(f10 & ((1 << 5) - 1));
+    unsigned int exp      = (unsigned int)(f10 & FLOAT10_MAX_BIASED_EXP);
+    union
+    {
+        float f;
+        unsigned int ui;
+    };
 
-	if (exp == FLOAT10_MAX_BIASED_EXP)
-	{
-		/* we have a f11 NaN or Inf */
-		/* f11 NaNs will be converted to a single precision NaN */
-		/* f11 Infs will be converted to a single precision Inf */
-		exp = FLOAT_MAX_BIASED_EXP;
-		if (mantissa)
-			mantissa = (1 << 23) - 1; /* set all bits to indicate a NaN */
-	}
-	else if (exp == 0x0)
-	{
-		/* convert f11 zero/denorm to single precision value */
-		if (mantissa)
-		{
-			mantissa <<= 1;
-			exp = FLOAT10_MIN_BIASED_EXP_AS_SINGLE_FP_EXP;
-			/* check for leading 1 in denorm mantissa */
-			while ((mantissa & (1 << 10)) == 0)
-			{
-				/* for every leading 0, decrement single precision exponent by 1 */
-				/* and shift half-float mantissa value to the left */
-				mantissa <<= 1;
-				exp -= (1 << 23);
-			}
-			/* clamp the mantissa to 5-bits */
-			mantissa &= ((1 << 5) - 1);
-			/* shift left to generate single-precision mantissa of 23-bits */
-			mantissa <<= 18;
-		}
-	}
-	else
-	{
-		/* shift left to generate single-precision mantissa of 23-bits */
-		mantissa <<= 18;
-		/* generate single precision biased exponent value */
-		exp = (exp << 18) + FLOAT10_MIN_BIASED_EXP_AS_SINGLE_FP_EXP;
-	}
-	ui = exp | mantissa;
-	return f;
+    if (exp == FLOAT10_MAX_BIASED_EXP)
+    {
+        /* we have a f11 NaN or Inf */
+        /* f11 NaNs will be converted to a single precision NaN */
+        /* f11 Infs will be converted to a single precision Inf */
+        exp = FLOAT_MAX_BIASED_EXP;
+        if (mantissa)
+            mantissa = (1 << 23) - 1; /* set all bits to indicate a NaN */
+    }
+    else if (exp == 0x0)
+    {
+        /* convert f11 zero/denorm to single precision value */
+        if (mantissa)
+        {
+            mantissa <<= 1;
+            exp = FLOAT10_MIN_BIASED_EXP_AS_SINGLE_FP_EXP;
+            /* check for leading 1 in denorm mantissa */
+            while ((mantissa & (1 << 10)) == 0)
+            {
+                /* for every leading 0, decrement single precision exponent by 1 */
+                /* and shift half-float mantissa value to the left */
+                mantissa <<= 1;
+                exp -= (1 << 23);
+            }
+            /* clamp the mantissa to 5-bits */
+            mantissa &= ((1 << 5) - 1);
+            /* shift left to generate single-precision mantissa of 23-bits */
+            mantissa <<= 18;
+        }
+    }
+    else
+    {
+        /* shift left to generate single-precision mantissa of 23-bits */
+        mantissa <<= 18;
+        /* generate single precision biased exponent value */
+        exp = (exp << 18) + FLOAT10_MIN_BIASED_EXP_AS_SINGLE_FP_EXP;
+    }
+    ui = exp | mantissa;
+    return f;
 }
 
-} // glcts
+bool getBits(const glw::Functions &gl, bool isContextES, GLenum target, GLenum bits, GLint *value)
+{
+    if (!isContextES)
+    {
+        GLint colorAttachment    = 0;
+        GLenum depthAttachment   = GL_DEPTH;
+        GLenum stencilAttachment = GL_STENCIL;
+        GLint fbo                = 0;
+        if (target == GL_READ_FRAMEBUFFER)
+        {
+            gl.getIntegerv(GL_READ_FRAMEBUFFER_BINDING, &fbo);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
+        }
+        else
+        {
+            gl.getIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
+        }
+
+        if (fbo)
+        {
+            depthAttachment   = GL_DEPTH_ATTACHMENT;
+            stencilAttachment = GL_STENCIL_ATTACHMENT;
+        }
+        if (target == GL_READ_FRAMEBUFFER)
+        {
+            gl.getIntegerv(GL_READ_BUFFER, &colorAttachment);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
+        }
+        else
+        {
+            gl.getIntegerv(GL_DRAW_BUFFER, &colorAttachment);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
+        }
+
+        if (colorAttachment == GL_BACK)
+            colorAttachment = GL_BACK_LEFT;
+        else if (colorAttachment == GL_FRONT)
+            colorAttachment = GL_FRONT_LEFT;
+
+        switch (bits)
+        {
+        case GL_RED_BITS:
+            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_RED_SIZE, value);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
+            break;
+        case GL_GREEN_BITS:
+            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_GREEN_SIZE,
+                                                   value);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
+            break;
+        case GL_BLUE_BITS:
+            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_BLUE_SIZE, value);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
+            break;
+        case GL_ALPHA_BITS:
+            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE,
+                                                   value);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
+            break;
+        case GL_DEPTH_BITS:
+        case GL_STENCIL_BITS:
+            /*
+             * OPENGL SPECS 4.5: Paragraph  9.2. BINDING AND MANAGING FRAMEBUFFER OBJECTS p.335
+             * If the value of GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE is GL_NONE, then either no framebuffer is bound to target;
+             * or a default framebuffer is queried, attachment is GL_DEPTH or GL_STENCIL,
+             * and the number of depth or stencil bits, respectively, is zero....
+             * and all other queries will generate an INVALID_OPERATION error.
+             * */
+            if (fbo == 0)
+            { //default framebuffer
+                gl.getFramebufferAttachmentParameteriv(target, (bits == GL_DEPTH_BITS ? GL_DEPTH : GL_STENCIL),
+                                                       GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, value);
+                GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
+                if (*value == GL_NONE)
+                {
+                    *value = 0;
+                    break;
+                }
+            }
+            switch (bits)
+            {
+            case GL_DEPTH_BITS:
+                gl.getFramebufferAttachmentParameteriv(target, depthAttachment, GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE,
+                                                       value);
+                GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
+                break;
+            case GL_STENCIL_BITS:
+                gl.getFramebufferAttachmentParameteriv(target, stencilAttachment,
+                                                       GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE, value);
+                GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
+                break;
+            }
+            break;
+        default:
+            gl.getIntegerv(bits, value);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
+            break;
+        }
+    }
+    else
+    {
+        gl.getIntegerv(bits, value);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
+    }
+    return true;
+}
+
+bool getReadbufferBits(const glw::Functions &gl, bool isContextES, GLenum bits, GLint *value)
+{
+    return getBits(gl, isContextES, GL_READ_FRAMEBUFFER, bits, value);
+}
+
+bool getDrawbufferBits(const glw::Functions &gl, bool isContextES, GLenum bits, GLint *value)
+{
+    return getBits(gl, isContextES, GL_DRAW_FRAMEBUFFER, bits, value);
+}
+
+} // namespace glcts

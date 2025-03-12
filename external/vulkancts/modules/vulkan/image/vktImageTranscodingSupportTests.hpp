@@ -31,9 +31,9 @@ namespace vkt
 namespace image
 {
 
-tcu::TestCaseGroup* createImageTranscodingSupportTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageTranscodingSupportTests(tcu::TestContext &testCtx);
 
-} // image
-} // vkt
+} // namespace image
+} // namespace vkt
 
 #endif // _VKTIMAGETRANSCODINGSUPPORTTESTS_HPP

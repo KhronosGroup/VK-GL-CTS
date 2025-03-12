@@ -36,188 +36,227 @@ class TokenStream;
 class VariableType
 {
 public:
-	enum Type
-	{
-		TYPE_VOID = 0,
-		TYPE_FLOAT,
-		TYPE_INT,
-		TYPE_BOOL,
-		TYPE_STRUCT,
-		TYPE_ARRAY,
-		TYPE_SAMPLER_2D,
-		TYPE_SAMPLER_CUBE,
+    enum Type
+    {
+        TYPE_VOID = 0,
+        TYPE_FLOAT,
+        TYPE_INT,
+        TYPE_BOOL,
+        TYPE_STRUCT,
+        TYPE_ARRAY,
+        TYPE_SAMPLER_2D,
+        TYPE_SAMPLER_CUBE,
 
-		TYPE_LAST
-	};
+        TYPE_LAST
+    };
 
-	enum Precision
-	{
-		PRECISION_NONE = 0,
-		PRECISION_LOW,
-		PRECISION_MEDIUM,
-		PRECISION_HIGH,
+    enum Precision
+    {
+        PRECISION_NONE = 0,
+        PRECISION_LOW,
+        PRECISION_MEDIUM,
+        PRECISION_HIGH,
 
-		PRECISION_LAST
-	};
+        PRECISION_LAST
+    };
 
-	class Member
-	{
-	public:
-		Member (void)
-			: m_type(DE_NULL)
-			, m_name()
-		{
-		}
+    class Member
+    {
+    public:
+        Member(void) : m_type(nullptr), m_name()
+        {
+        }
 
-		Member (const VariableType& type, const char* name)
-			: m_type(new VariableType(type))
-			, m_name(name)
-		{
-		}
+        Member(const VariableType &type, const char *name) : m_type(new VariableType(type)), m_name(name)
+        {
+        }
 
-		~Member (void)
-		{
-			delete m_type;
-		}
+        ~Member(void)
+        {
+            delete m_type;
+        }
 
-		Member (const Member& other)
-			: m_type(DE_NULL)
-			, m_name(other.m_name)
-		{
-			if (other.m_type)
-				m_type = new VariableType(*other.m_type);
-		}
+        Member(const Member &other) : m_type(nullptr), m_name(other.m_name)
+        {
+            if (other.m_type)
+                m_type = new VariableType(*other.m_type);
+        }
 
-		Member& operator= (const Member& other)
-		{
-			if (this == &other)
-				return *this;
+        Member &operator=(const Member &other)
+        {
+            if (this == &other)
+                return *this;
 
-			delete m_type;
+            delete m_type;
 
-			m_type = DE_NULL;
-			m_name = other.m_name;
+            m_type = nullptr;
+            m_name = other.m_name;
 
-			if (other.m_type)
-				m_type = new VariableType(*other.m_type);
+            if (other.m_type)
+                m_type = new VariableType(*other.m_type);
 
-			return *this;
-		}
+            return *this;
+        }
 
-		bool operator!= (const Member& other) const
-		{
-			if (m_name != other.m_name)
-				return true;
-			if (!!m_type != !!other.m_type)
-				return true;
-			if (m_type && *m_type != *other.m_type)
-				return true;
-			return false;
-		}
+        bool operator!=(const Member &other) const
+        {
+            if (m_name != other.m_name)
+                return true;
+            if (!!m_type != !!other.m_type)
+                return true;
+            if (m_type && *m_type != *other.m_type)
+                return true;
+            return false;
+        }
 
-		bool operator== (const Member& other) const
-		{
-			return !(*this != other);
-		}
+        bool operator==(const Member &other) const
+        {
+            return !(*this != other);
+        }
 
-		const VariableType&		getType		(void) const	{ return *m_type;			}
-		const char*				getName		(void) const	{ return m_name.c_str();	}
+        const VariableType &getType(void) const
+        {
+            return *m_type;
+        }
+        const char *getName(void) const
+        {
+            return m_name.c_str();
+        }
 
-	private:
-		VariableType*			m_type;
-		std::string				m_name;
-	};
+    private:
+        VariableType *m_type;
+        std::string m_name;
+    };
 
-										VariableType		(void);
-										VariableType		(Type baseType, int numElements = 0);
-										VariableType		(Type baseType, const VariableType& elementType, int numElements);
-										VariableType		(Type baseType, const char* typeName);
-										~VariableType		(void);
+    VariableType(void);
+    VariableType(Type baseType, int numElements = 0);
+    VariableType(Type baseType, const VariableType &elementType, int numElements);
+    VariableType(Type baseType, const char *typeName);
+    ~VariableType(void);
 
-	Type								getBaseType			(void) const	{ return m_baseType;			}
-	Precision							getPrecision		(void) const	{ return m_precision;			}
-	const char*							getTypeName			(void) const	{ return m_typeName.c_str();	}
-	int									getNumElements		(void) const	{ return m_numElements;			}
-	const VariableType&					getElementType		(void) const;
+    Type getBaseType(void) const
+    {
+        return m_baseType;
+    }
+    Precision getPrecision(void) const
+    {
+        return m_precision;
+    }
+    const char *getTypeName(void) const
+    {
+        return m_typeName.c_str();
+    }
+    int getNumElements(void) const
+    {
+        return m_numElements;
+    }
+    const VariableType &getElementType(void) const;
 
-	const std::vector<Member>&			getMembers			(void) const	{ return m_members;				}
-	std::vector<Member>&				getMembers			(void)			{ return m_members;				}
+    const std::vector<Member> &getMembers(void) const
+    {
+        return m_members;
+    }
+    std::vector<Member> &getMembers(void)
+    {
+        return m_members;
+    }
 
-	int									getScalarSize			(void) const;
-	int									getElementScalarOffset	(int elementNdx) const;
-	int									getMemberScalarOffset	(int memberNdx) const;
+    int getScalarSize(void) const;
+    int getElementScalarOffset(int elementNdx) const;
+    int getMemberScalarOffset(int memberNdx) const;
 
-	bool								operator!=			(const VariableType& other) const;
-	bool								operator==			(const VariableType& other) const;
+    bool operator!=(const VariableType &other) const;
+    bool operator==(const VariableType &other) const;
 
-	VariableType&						operator=			(const VariableType& other);
-										VariableType		(const VariableType& other);
+    VariableType &operator=(const VariableType &other);
+    VariableType(const VariableType &other);
 
-	void								tokenizeShortType	(TokenStream& str) const;
+    void tokenizeShortType(TokenStream &str) const;
 
-	bool								isStruct			(void) const	{ return m_baseType == TYPE_STRUCT; }
-	bool								isArray				(void) const	{ return m_baseType == TYPE_ARRAY;	}
-	bool								isFloatOrVec		(void) const	{ return m_baseType == TYPE_FLOAT;	}
-	bool								isIntOrVec			(void) const	{ return m_baseType == TYPE_INT;	}
-	bool								isBoolOrVec			(void) const	{ return m_baseType == TYPE_BOOL;	}
-	bool								isSampler			(void) const	{ return m_baseType == TYPE_SAMPLER_2D || m_baseType == TYPE_SAMPLER_CUBE; }
-	bool								isVoid				(void) const	{ return m_baseType == TYPE_VOID;	}
+    bool isStruct(void) const
+    {
+        return m_baseType == TYPE_STRUCT;
+    }
+    bool isArray(void) const
+    {
+        return m_baseType == TYPE_ARRAY;
+    }
+    bool isFloatOrVec(void) const
+    {
+        return m_baseType == TYPE_FLOAT;
+    }
+    bool isIntOrVec(void) const
+    {
+        return m_baseType == TYPE_INT;
+    }
+    bool isBoolOrVec(void) const
+    {
+        return m_baseType == TYPE_BOOL;
+    }
+    bool isSampler(void) const
+    {
+        return m_baseType == TYPE_SAMPLER_2D || m_baseType == TYPE_SAMPLER_CUBE;
+    }
+    bool isVoid(void) const
+    {
+        return m_baseType == TYPE_VOID;
+    }
 
-	static const VariableType&			getScalarType		(Type baseType);
+    static const VariableType &getScalarType(Type baseType);
 
 private:
-	Type								m_baseType;
-	Precision							m_precision;
-	std::string							m_typeName;
-	int									m_numElements;
-	VariableType*						m_elementType;
-	std::vector<Member>					m_members;
+    Type m_baseType;
+    Precision m_precision;
+    std::string m_typeName;
+    int m_numElements;
+    VariableType *m_elementType;
+    std::vector<Member> m_members;
 };
 
-inline VariableType::VariableType (void)
-	: m_baseType	(TYPE_VOID)
-	, m_precision	(PRECISION_NONE)
-	, m_typeName	()
-	, m_numElements	(0)
-	, m_elementType	(DE_NULL)
+inline VariableType::VariableType(void)
+    : m_baseType(TYPE_VOID)
+    , m_precision(PRECISION_NONE)
+    , m_typeName()
+    , m_numElements(0)
+    , m_elementType(nullptr)
 {
 }
 
-inline VariableType::VariableType (Type baseType, int numElements)
-	: m_baseType	(baseType)
-	, m_precision	(PRECISION_NONE)
-	, m_typeName	()
-	, m_numElements	(numElements)
-	, m_elementType	(DE_NULL)
+inline VariableType::VariableType(Type baseType, int numElements)
+    : m_baseType(baseType)
+    , m_precision(PRECISION_NONE)
+    , m_typeName()
+    , m_numElements(numElements)
+    , m_elementType(nullptr)
 {
-	DE_ASSERT(baseType != TYPE_ARRAY && baseType != TYPE_STRUCT);
+    DE_ASSERT(baseType != TYPE_ARRAY && baseType != TYPE_STRUCT);
 }
 
-inline VariableType::VariableType (Type baseType, const VariableType& elementType, int numElements)
-	: m_baseType	(baseType)
-	, m_precision	(PRECISION_NONE)
-	, m_typeName	()
-	, m_numElements	(numElements)
-	, m_elementType	(new VariableType(elementType))
+inline VariableType::VariableType(Type baseType, const VariableType &elementType, int numElements)
+    : m_baseType(baseType)
+    , m_precision(PRECISION_NONE)
+    , m_typeName()
+    , m_numElements(numElements)
+    , m_elementType(new VariableType(elementType))
 {
-	DE_ASSERT(baseType == TYPE_ARRAY);
+    DE_ASSERT(baseType == TYPE_ARRAY);
 }
 
-inline VariableType::VariableType (Type baseType, const char* typeName)
-	: m_baseType	(baseType)
-	, m_precision	(PRECISION_NONE)
-	, m_typeName	(typeName)
-	, m_numElements	(0)
-	, m_elementType	(DE_NULL)
+inline VariableType::VariableType(Type baseType, const char *typeName)
+    : m_baseType(baseType)
+    , m_precision(PRECISION_NONE)
+    , m_typeName(typeName)
+    , m_numElements(0)
+    , m_elementType(nullptr)
 {
-	DE_ASSERT(baseType == TYPE_STRUCT);
+    DE_ASSERT(baseType == TYPE_STRUCT);
 }
 
-inline VariableType::~VariableType (void)
+inline VariableType::~VariableType(void)
 {
-	delete m_elementType;
+    delete m_elementType;
 }
 
-} // rsg
+} // namespace rsg
 
 #endif // _RSGVARIABLETYPE_HPP

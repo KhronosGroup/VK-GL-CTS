@@ -21,7 +21,7 @@
  *//*!
  * \file
  * \brief Test copying struct which contains an empty struct.
-		  Test pointer comparisons of empty struct members.
+          Test pointer comparisons of empty struct members.
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
@@ -32,9 +32,9 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup*	createEmptyStructComputeGroup	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createEmptyStructComputeGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMEMPTYSTRUCTTESTS_HPP

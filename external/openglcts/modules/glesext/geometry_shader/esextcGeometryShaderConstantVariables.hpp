@@ -89,50 +89,50 @@ namespace glcts
 class GeometryShaderConstantVariables : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderConstantVariables(Context& context, const ExtParameters& extParams, const char* name,
-									const char* description);
+    /* Public methods */
+    GeometryShaderConstantVariables(Context &context, const ExtParameters &extParams, const char *name,
+                                    const char *description);
 
-	virtual ~GeometryShaderConstantVariables()
-	{
-	}
+    virtual ~GeometryShaderConstantVariables()
+    {
+    }
 
-	void		  deinit(void);
-	IterateResult iterate(void);
+    void deinit(void);
+    IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	void initTest(void);
+    /* Private methods */
+    void initTest(void);
 
-	/* Private variables */
-	static const char* m_fragment_shader_code;
-	static const char* m_geometry_shader_code;
-	static const char* m_vertex_shader_code;
-	static const char* m_feedbackVaryings[];
+    /* Private variables */
+    static const char *m_fragment_shader_code;
+    static const char *m_geometry_shader_code;
+    static const char *m_vertex_shader_code;
+    static const char *m_feedbackVaryings[];
 
-	glw::GLuint m_fragment_shader_id;
-	glw::GLuint m_geometry_shader_id;
-	glw::GLuint m_vertex_shader_id;
-	glw::GLuint m_program_id;
+    glw::GLuint m_fragment_shader_id;
+    glw::GLuint m_geometry_shader_id;
+    glw::GLuint m_vertex_shader_id;
+    glw::GLuint m_program_id;
 
-	glw::GLuint m_bo_id;
-	glw::GLuint m_vao_id;
+    glw::GLuint m_bo_id;
+    glw::GLuint m_vao_id;
 
-	/* EXT_geometry_shader specific constant values */
-	const int m_min_MaxGeometryImagesUniforms;
-	const int m_min_MaxGeometryTextureImagesUnits;
-	const int m_min_MaxGeometryShaderStorageBlocks;
-	const int m_min_MaxGeometryAtomicCounterBuffers;
-	const int m_min_MaxGeometryAtomicCounters;
+    /* EXT_geometry_shader specific constant values */
+    const int m_min_MaxGeometryImagesUniforms;
+    const int m_min_MaxGeometryTextureImagesUnits;
+    const int m_min_MaxGeometryShaderStorageBlocks;
+    const int m_min_MaxGeometryAtomicCounterBuffers;
+    const int m_min_MaxGeometryAtomicCounters;
 
-	const int m_min_MaxFramebufferLayers;
-	const int m_min_MaxGeometryInputComponents;
-	const int m_min_MaxGeometryOutputComponents;
-	const int m_min_MaxGeometryOutputVertices;
-	const int m_min_MaxGeometryShaderInvocations;
-	const int m_min_MaxGeometryTotalOutputComponents;
-	const int m_min_MaxGeometryUniformBlocks;
-	const int m_min_MaxGeometryUniformComponents;
+    const int m_min_MaxFramebufferLayers;
+    const int m_min_MaxGeometryInputComponents;
+    const int m_min_MaxGeometryOutputComponents;
+    const int m_min_MaxGeometryOutputVertices;
+    const int m_min_MaxGeometryShaderInvocations;
+    const int m_min_MaxGeometryTotalOutputComponents;
+    const int m_min_MaxGeometryUniformBlocks;
+    const int m_min_MaxGeometryUniformComponents;
 };
 
 } // namespace glcts

@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 3338ed0db494d6a4db7f76627b38f0b1892db096.
+ * Generated from Khronos EGL API description (egl.xml) revision 682c662d48fbae076c5ed89a1bd5b2aa7e2e4449.
  */
 
 static const char* s_EGL14[] =
@@ -497,6 +497,11 @@ static const char* s_EGL_ANGLE_query_surface_pointer[] =
 	"eglQuerySurfacePointerANGLE",
 };
 
+static const char* s_EGL_ANGLE_sync_control_rate[] =
+{
+	"eglGetMscRateANGLE",
+};
+
 static const char* s_EGL_EXT_client_sync[] =
 {
 	"eglClientSignalSyncEXT",
@@ -694,6 +699,12 @@ static const char* s_EGL_MESA_image_dma_buf_export[] =
 	"eglExportDMABUFImageQueryMESA",
 };
 
+static const char* s_EGL_MESA_query_driver[] =
+{
+	"eglGetDisplayDriverConfig",
+	"eglGetDisplayDriverName",
+};
+
 static const char* s_EGL_NOK_swap_region[] =
 {
 	"eglSwapBuffersRegionNOK",
@@ -719,6 +730,14 @@ static const char* s_EGL_NV_post_sub_buffer[] =
 static const char* s_EGL_NV_stream_consumer_gltexture_yuv[] =
 {
 	"eglStreamConsumerGLTextureExternalAttribsNV",
+};
+
+static const char* s_EGL_NV_stream_consumer_eglimage[] =
+{
+	"eglStreamImageConsumerConnectNV",
+	"eglQueryStreamConsumerEventNV",
+	"eglStreamAcquireImageNV",
+	"eglStreamReleaseImageNV",
 };
 
 static const char* s_EGL_NV_stream_flush[] =
@@ -768,6 +787,28 @@ static const char* s_EGL_EXT_compositor[] =
 	"eglCompositorBindTexWindowEXT",
 	"eglCompositorSetSizeEXT",
 	"eglCompositorSwapPolicyEXT",
+};
+
+static const char* s_EGL_EXT_surface_compression[] =
+{
+	"eglQuerySupportedCompressionRatesEXT",
+};
+
+static const char* s_EGL_WL_bind_wayland_display[] =
+{
+	"eglBindWaylandDisplayWL",
+	"eglUnbindWaylandDisplayWL",
+	"eglQueryWaylandBufferWL",
+};
+
+static const char* s_EGL_WL_create_wayland_buffer_from_image[] =
+{
+	"eglCreateWaylandBufferFromImageWL",
+};
+
+static const char* s_EGL_EXT_device_persistent_id[] =
+{
+	"eglQueryDeviceBinaryEXT",
 };
 
 static const char* s_GL_APPLE_copy_texture_levels[] =
@@ -1987,6 +2028,7 @@ static const struct
 	{ "EGL_ANDROID_presentation_time",						DE_LENGTH_OF_ARRAY(s_EGL_ANDROID_presentation_time),					s_EGL_ANDROID_presentation_time						},
 	{ "EGL_ANDROID_get_frame_timestamps",					DE_LENGTH_OF_ARRAY(s_EGL_ANDROID_get_frame_timestamps),					s_EGL_ANDROID_get_frame_timestamps					},
 	{ "EGL_ANGLE_query_surface_pointer",					DE_LENGTH_OF_ARRAY(s_EGL_ANGLE_query_surface_pointer),					s_EGL_ANGLE_query_surface_pointer					},
+	{ "EGL_ANGLE_sync_control_rate",						DE_LENGTH_OF_ARRAY(s_EGL_ANGLE_sync_control_rate),						s_EGL_ANGLE_sync_control_rate						},
 	{ "EGL_EXT_client_sync",								DE_LENGTH_OF_ARRAY(s_EGL_EXT_client_sync),								s_EGL_EXT_client_sync								},
 	{ "EGL_EXT_device_base",								DE_LENGTH_OF_ARRAY(s_EGL_EXT_device_base),								s_EGL_EXT_device_base								},
 	{ "EGL_EXT_device_enumeration",							DE_LENGTH_OF_ARRAY(s_EGL_EXT_device_enumeration),						s_EGL_EXT_device_enumeration						},
@@ -2018,11 +2060,13 @@ static const struct
 	{ "EGL_KHR_wait_sync",									DE_LENGTH_OF_ARRAY(s_EGL_KHR_wait_sync),								s_EGL_KHR_wait_sync									},
 	{ "EGL_MESA_drm_image",									DE_LENGTH_OF_ARRAY(s_EGL_MESA_drm_image),								s_EGL_MESA_drm_image								},
 	{ "EGL_MESA_image_dma_buf_export",						DE_LENGTH_OF_ARRAY(s_EGL_MESA_image_dma_buf_export),					s_EGL_MESA_image_dma_buf_export						},
+	{ "EGL_MESA_query_driver",								DE_LENGTH_OF_ARRAY(s_EGL_MESA_query_driver),							s_EGL_MESA_query_driver								},
 	{ "EGL_NOK_swap_region",								DE_LENGTH_OF_ARRAY(s_EGL_NOK_swap_region),								s_EGL_NOK_swap_region								},
 	{ "EGL_NOK_swap_region2",								DE_LENGTH_OF_ARRAY(s_EGL_NOK_swap_region2),								s_EGL_NOK_swap_region2								},
 	{ "EGL_NV_native_query",								DE_LENGTH_OF_ARRAY(s_EGL_NV_native_query),								s_EGL_NV_native_query								},
 	{ "EGL_NV_post_sub_buffer",								DE_LENGTH_OF_ARRAY(s_EGL_NV_post_sub_buffer),							s_EGL_NV_post_sub_buffer							},
 	{ "EGL_NV_stream_consumer_gltexture_yuv",				DE_LENGTH_OF_ARRAY(s_EGL_NV_stream_consumer_gltexture_yuv),				s_EGL_NV_stream_consumer_gltexture_yuv				},
+	{ "EGL_NV_stream_consumer_eglimage",					DE_LENGTH_OF_ARRAY(s_EGL_NV_stream_consumer_eglimage),					s_EGL_NV_stream_consumer_eglimage					},
 	{ "EGL_NV_stream_flush",								DE_LENGTH_OF_ARRAY(s_EGL_NV_stream_flush),								s_EGL_NV_stream_flush								},
 	{ "EGL_NV_stream_metadata",								DE_LENGTH_OF_ARRAY(s_EGL_NV_stream_metadata),							s_EGL_NV_stream_metadata							},
 	{ "EGL_NV_stream_reset",								DE_LENGTH_OF_ARRAY(s_EGL_NV_stream_reset),								s_EGL_NV_stream_reset								},
@@ -2030,6 +2074,10 @@ static const struct
 	{ "EGL_NV_sync",										DE_LENGTH_OF_ARRAY(s_EGL_NV_sync),										s_EGL_NV_sync										},
 	{ "EGL_NV_system_time",									DE_LENGTH_OF_ARRAY(s_EGL_NV_system_time),								s_EGL_NV_system_time								},
 	{ "EGL_EXT_compositor",									DE_LENGTH_OF_ARRAY(s_EGL_EXT_compositor),								s_EGL_EXT_compositor								},
+	{ "EGL_EXT_surface_compression",						DE_LENGTH_OF_ARRAY(s_EGL_EXT_surface_compression),						s_EGL_EXT_surface_compression						},
+	{ "EGL_WL_bind_wayland_display",						DE_LENGTH_OF_ARRAY(s_EGL_WL_bind_wayland_display),						s_EGL_WL_bind_wayland_display						},
+	{ "EGL_WL_create_wayland_buffer_from_image",			DE_LENGTH_OF_ARRAY(s_EGL_WL_create_wayland_buffer_from_image),			s_EGL_WL_create_wayland_buffer_from_image			},
+	{ "EGL_EXT_device_persistent_id",						DE_LENGTH_OF_ARRAY(s_EGL_EXT_device_persistent_id),						s_EGL_EXT_device_persistent_id						},
 	{ "GL_APPLE_copy_texture_levels",						DE_LENGTH_OF_ARRAY(s_GL_APPLE_copy_texture_levels),						s_GL_APPLE_copy_texture_levels						},
 	{ "GL_APPLE_framebuffer_multisample",					DE_LENGTH_OF_ARRAY(s_GL_APPLE_framebuffer_multisample),					s_GL_APPLE_framebuffer_multisample					},
 	{ "GL_APPLE_sync",										DE_LENGTH_OF_ARRAY(s_GL_APPLE_sync),									s_GL_APPLE_sync										},

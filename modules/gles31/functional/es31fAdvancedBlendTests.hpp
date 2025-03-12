@@ -36,18 +36,18 @@ namespace Functional
 class AdvancedBlendTests : public TestCaseGroup
 {
 public:
-							AdvancedBlendTests		(Context& context);
-							~AdvancedBlendTests		(void);
+    AdvancedBlendTests(Context &context);
+    ~AdvancedBlendTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							AdvancedBlendTests		(const AdvancedBlendTests&);
-	AdvancedBlendTests&		operator=				(const AdvancedBlendTests&);
+    AdvancedBlendTests(const AdvancedBlendTests &);
+    AdvancedBlendTests &operator=(const AdvancedBlendTests &);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FADVANCEDBLENDTESTS_HPP

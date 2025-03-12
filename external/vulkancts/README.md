@@ -19,7 +19,7 @@ The following tools must be installed and present in the PATH variable:
 
  * Git (for checking out sources)
  * Python 3.x (for the build related scripts, some other scripts still use Python 2.7.x)
- * CMake 3.17.2 or newer
+ * CMake 3.20.0 or newer
 
 ### Win32
 
@@ -107,6 +107,14 @@ If building for 32-bit x86 with GCC, you probably also want to add `-msse2
 
 ### Android
 
+There's two types of builds for Android:
+
+#### App
+
+This builds an APK that needs to be invoked via `adb shell` and the output needs
+to be read via `adb logcat`, it's the preferred way for long-running invocations
+on Android since it doesn't depend on an active connection from the host PC.
+
 Following command will build dEQP.apk:
 
 	python3 scripts/android/build_apk.py --sdk <path to Android SDK> --ndk <path to Android NDK>
@@ -126,6 +134,28 @@ To pick which ABI to use at _install time_, use the following command instead:
 
 	adb install -g --abi <ABI name> <build-root>/package/dEQP.apk
 
+#### Executable
+
+This is identical to the builds on other platforms and is better for iterative
+runs of headless tests as CTS can be invoked and the output can be checked from
+a single interactive terminal.
+
+This build doesn't support WSI tests and shouldn't be used for conformance
+submissions, it also isn't recommended for longer running tests since Android
+will terminate this process as soon as the `adb shell` session ends which may
+happen due to an unintentional device disconnection.
+
+	cmake <path to vulkancts> -GNinja -DCMAKE_BUILD_TYPE=Debug \
+	      -DCMAKE_TOOLCHAIN_FILE=<NDK path>/build/cmake/android.toolchain.cmake \
+	      -DCMAKE_ANDROID_NDK=<NDK path> -DANDROID_ABI=<ABI to build eg: arm64-v8a> \
+	      -DDE_ANDROID_API=<API level> -DDEQP_TARGET_TOOLCHAIN=ndk-modern \
+	      -DDEQP_TARGET=android -DDEQP_ANDROID_EXE=ON
+	ninja all
+
+The build needs to be transferred to the device via `adb push` to a directory
+under `/data/` on the device, such as `/data/local/tmp/` which should be writeable
+for non-rooted devices. It should be noted that anywhere on `/sdcard/` won't work
+since it's mounted as `noexec`.
 
 Building Mustpass
 -----------------
@@ -136,7 +166,7 @@ Current Vulkan mustpass is checked into repository and can be found at:
 
 Current Vulkan SC mustpass can be found at:
 
-	external/vulkancts/mustpass/master/vksc-default.txt
+	external/vulkancts/mustpass/main/vksc-default.txt
 
 This file contains list of files located in vk-default or vksc-default subdirectory. Those files contain
 tests from bigest test groups and together they contain all test cases that should pass.
@@ -155,7 +185,7 @@ Following command line options MUST be used when running CTS:
 	--deqp-log-images=disable
 	--deqp-log-shader-sources=disable
 
-If an implementation ships with [implicit layers](https://github.com/KhronosGroup/Vulkan-Loader/blob/master/loader/LoaderAndLayerInterface.md#implicit-vs-explicit-layers) enabled, then such layers must be enabled
+If an implementation ships with [implicit layers](https://github.com/KhronosGroup/Vulkan-Loader/blob/main/loader/LoaderAndLayerInterface.md#implicit-vs-explicit-layers) enabled, then such layers must be enabled
 when running CTS.
 
 In addition, on multi-device systems the device for which conformance is claimed
@@ -191,9 +221,9 @@ CTS execution may be split into N fractions ( for the purpose of running it in p
 
 	--deqp-fraction=I,N
 
-where I denotes index of current CTS execution ( I=[0..N-1], N=[1..8] )
+where I denotes index of current CTS execution ( I=[0..N-1], N=[1..16] )
 
-When collecting results for a Conformance Submission Package the number of fractions must not exceed 8,
+When collecting results for a Conformance Submission Package the number of fractions must not exceed 16,
 and a list of mandatory information tests for each fraction must be supplied:
 
 	--deqp-fraction-mandatory-caselist-file=<vulkancts>external/vulkancts/mustpass/main/vk-fraction-mandatory-tests.txt
@@ -212,6 +242,10 @@ Also non-informative empty LogInfo sections can be removed
 from output into log by specifying:
 
 	--deqp-log-empty-loginfo=disable
+
+Vulkan compute-only implementations must be tested using option
+
+	--deqp-compute-only=enable
 
 There are several additional options used only in conjunction with Vulkan SC tests
 ( for Vulkan SC CTS tests deqp-vksc application should be used ).
@@ -272,6 +306,10 @@ It informs deqp-vksc application that it works as subprocess:
 
 	--deqp-subprocess=[enable|disable]
 
+For platforms where it is needed to override the default loader library path, this option can be used (e.g. loader library vulkan-1.dll):
+
+	--deqp-vk-library-path=<path>
+
 No other command line options are allowed.
 
 ### Win32
@@ -307,6 +345,8 @@ Test log will be written into TestResults.qpa
 
 ### Android
 
+#### App
+
 For Android build using SDK 29 or greater, it is recommended to use `/sdcard/Documents/` instead of `/sdcard/` due to scoped storage.
 
 	adb push <vulkancts>/external/vulkancts/mustpass/main/vk-default.txt /sdcard/vk-default.txt
@@ -322,6 +362,13 @@ Test progress will be written to device log and can be displayed with:
 
 Test log will be written into `/sdcard/TestResults.qpa`.
 
+#### Executable
+
+Identical to [Linux](#linux-1), but within `adb shell` instead:
+
+	adb shell
+	> cd <pushed build directory>/external/vulkancts/modules/vulkan
+	> ./deqp-vk --deqp-caselist-file=...
 
 Conformance Submission Package Requirements
 -------------------------------------------
@@ -513,9 +560,11 @@ are excluded from the log, but that can be customized by modifying
 `vk::DebugReportMessage::shouldBeLogged()` in `vkDebugReportUtil.hpp`.
 
 On the Android target, layers can be added to the APK during the build process
-by setting the `--layers-path` command line option to point into the NDK or to
-a locally-built layers tree. The layers are expected to be found under $abi/
-under the layers path.
+by setting the `--layers-path` command line option to point to the downloaded
+Validation Layers binaries or a locally-built layers tree. The layers are
+expected to be found under $abi/ under the layers path.
+The Validation Layers releases including prebuilt binaries are available at
+https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases.
 
 
 Cherry GUI
@@ -657,7 +706,7 @@ to Vulkan SC requirements:
 
 - Vulkan SC CTS contains its own mustpass list
 
-  external/vulkancts/mustpass/master/vksc-default.txt
+  external/vulkancts/mustpass/main/vksc-default.txt
 
 - Vulkan SC CTS uses its own executable module to perform tests: deqp-vksc
 
@@ -693,6 +742,9 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
 
   -h, --help
     Show this help
+
+  -q, --quiet
+    Suppress messages to standard output
 
   -n, --deqp-case=<value>
     Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*)
@@ -785,12 +837,24 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
     Enable or disable log file fflush
     default: 'enable'
 
+  --deqp-log-compact=[enable|disable]
+    Enable or disable the compact version of the log
+    default: 'disable'
+
   --deqp-validation=[enable|disable]
     Enable or disable test case validation
     default: 'disable'
 
+  --deqp-spirv-validation=[enable|disable]
+    Enable or disable spir-v shader validation
+    default: 'disable' in release builds, 'enable' in debug builds
+
   --deqp-print-validation-errors
     Print validation errors to standard error
+
+  --deqp-duplicate-case-name-check=[enable|disable]
+    Check for duplicate case names when creating test hierarchy
+    default: 'enable' in Debug mode, 'disable' in Release mode
 
   --deqp-optimization-recipe=<value>
     Shader optimization recipe (0=disabled, 1=performance, 2=size)
@@ -834,6 +898,14 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
 
   --deqp-terminate-on-fail=[enable|disable]
     Terminate the run on first failure
+    default: 'disable'
+
+  --deqp-terminate-on-device-lost=[enable|disable]
+    Terminate the run on first device lost error
+    default: 'enable'
+
+  --deqp-compute-only=[enable|disable]
+    Perform tests for devices implementing compute-only functionality
     default: 'disable'
 
   --deqp-subprocess=[enable|disable]

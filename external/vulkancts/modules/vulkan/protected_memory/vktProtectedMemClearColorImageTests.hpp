@@ -32,9 +32,9 @@ namespace vkt
 namespace ProtectedMem
 {
 
-tcu::TestCaseGroup*		createClearColorImageTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createClearColorImageTests(tcu::TestContext &testCtx);
 
-} // ProtectedContent
-} // vkt
+} // namespace ProtectedMem
+} // namespace vkt
 
 #endif // _VKTPROTECTEDMEMCLEARCOLORIMAGETESTS_HPP

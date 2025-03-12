@@ -22,21 +22,22 @@
 const char* mustpassDir = "gl_cts/data/mustpass/gles/khronos_mustpass/main/";
 
 static const RunParams khronos_mustpass_es_first_cfg[] = {
-	{ glu::ApiType::es(2, 0), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::es(3, 0), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::es(3, 1), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::es(3, 2), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::es(3, 2), "khr-master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::es(3, 2), "khr-master", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-	{ glu::ApiType::es(3, 2), "khr-master", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
+	{ glu::ApiType::es(2, 0), "khr-main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::es(3, 0), "khr-main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::es(3, 1), "khr-main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::es(3, 2), "khr-main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::es(3, 2), "khr-main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::es(3, 2), "khr-main", nullptr, "unspecified", 3, "rgba8888d24s8", 64, -1 },
+	{ glu::ApiType::es(3, 2), "khr-main", nullptr, "unspecified", 3, "rgba8888d24s8", -1, 64 },
+	{ glu::ApiType::es(3, 2), "khr-glesext", nullptr, "unspecified", 1, nullptr, 64, 64 },
 };
 
 static const RunParams khronos_mustpass_es_other_cfg[] = {
-	{ glu::ApiType::es(2, 0), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::es(3, 0), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::es(3, 1), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::es(3, 2), "khr-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::es(3, 2), "khr-master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
+	{ glu::ApiType::es(2, 0), "khr-main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::es(3, 0), "khr-main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::es(3, 1), "khr-main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::es(3, 2), "khr-main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::es(3, 2), "khr-main", nullptr, "unspecified", 2, nullptr, 113, 47 },
 };
 
 #endif // _GLCKHRONOSMUSTPASSES_HPP

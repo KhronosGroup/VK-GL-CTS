@@ -35,18 +35,18 @@ namespace glcts
 class FragmentShadingRateErrors : public TestCaseBase
 {
 public:
-	FragmentShadingRateErrors(Context& context, const ExtParameters& extParams, const char* name,
-							  const char* description);
+    FragmentShadingRateErrors(Context &context, const ExtParameters &extParams, const char *name,
+                              const char *description);
 
-	~FragmentShadingRateErrors() override
-	{
-	}
-	void				  init(void) override;
-	void				  deinit(void) override;
-	IterateResult		  iterate(void) override;
+    ~FragmentShadingRateErrors() override
+    {
+    }
+    void init(void) override;
+    void deinit(void) override;
+    IterateResult iterate(void) override;
 
 private:
-	glw::GLboolean verifyError(const glw::GLenum expected_error, const char* description) const;
+    glw::GLboolean verifyError(const glw::GLenum expected_error, const char *description) const;
 };
 
 } // namespace glcts

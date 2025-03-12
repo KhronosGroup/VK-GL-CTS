@@ -34,6 +34,7 @@ set(DEQP_VK_TESSELLATION_SRCS
 	vktTessellationGeometryPointSizeTests.cpp
 	vktTessellationGeometryGridRenderTests.hpp
 	vktTessellationGeometryGridRenderTests.cpp
+	vktTessellationMaxIOTests.cpp
 	)
 
 PCH(DEQP_VK_TESSELLATION_SRCS ../pch.cpp)
@@ -42,5 +43,4 @@ add_library(deqp-vk-tessellation STATIC ${DEQP_VK_TESSELLATION_SRCS})
 target_link_libraries(deqp-vk-tessellation tcutil vkutil)
 
 add_library(deqp-vksc-tessellation STATIC ${DEQP_VK_TESSELLATION_SRCS})
-target_include_directories(deqp-vksc-tessellation BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-tessellation PUBLIC deqp-vksc-util tcutil vkscutil)

@@ -32,12 +32,12 @@ namespace dit
 class BuildInfoTests : public tcu::TestCaseGroup
 {
 public:
-					BuildInfoTests		(tcu::TestContext& testCtx);
-					~BuildInfoTests		(void);
+    BuildInfoTests(tcu::TestContext &testCtx);
+    ~BuildInfoTests(void);
 
-	void			init				(void);
+    void init(void);
 };
 
-} // dit
+} // namespace dit
 
 #endif // _DITBUILDINFOTESTS_HPP
