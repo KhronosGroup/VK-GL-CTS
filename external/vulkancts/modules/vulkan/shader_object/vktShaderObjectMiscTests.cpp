@@ -1167,7 +1167,7 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
         vk.cmdSetSampleLocationsEXT(cmdBuffer, &sampleLocationsInfo);
     if (m_params.provokingVertex && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_PROVOKING_VERTEX_MODE_EXT))
         vk.cmdSetProvokingVertexModeEXT(cmdBuffer, vk::VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT);
-    if ((!m_params.rasterizerDiscardEnable && m_params.lineRasterization && m_params.lines))
+    if (!m_params.rasterizerDiscardEnable && m_params.lineRasterization && m_params.lines && !m_params.meshShader)
     {
         if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_RASTERIZATION_MODE_EXT))
             vk.cmdSetLineRasterizationModeEXT(cmdBuffer, vk::VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT);
@@ -3442,6 +3442,15 @@ tcu::TestCaseGroup *createShaderObjectMiscTests(tcu::TestContext &testCtx)
                 params.stippledLineEnable = linesTest.stippledLineEnable;
                 params.lineRasterization  = linesTest.lineRasterization;
                 linesGroup->addChild(new ShaderObjectStateCase(testCtx, linesTest.name, params));
+
+                params.rasterizerDiscardEnable            = true;
+                const std::string rasterizer_discard_name = std::string(linesTest.name) + "_rasterizer_discard";
+                linesGroup->addChild(new ShaderObjectStateCase(testCtx, rasterizer_discard_name.c_str(), params));
+
+                params.discardRectanglesEnable  = false;
+                params.lines                    = false;
+                const std::string topology_name = std::string(linesTest.name) + "_topology_triangles";
+                linesGroup->addChild(new ShaderObjectStateCase(testCtx, topology_name.c_str(), params));
             }
             shadersGroup->addChild(linesGroup.release());
             params.reset();
