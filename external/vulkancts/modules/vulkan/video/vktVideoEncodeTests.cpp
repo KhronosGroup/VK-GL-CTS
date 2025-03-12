@@ -1638,10 +1638,11 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
     const MovePtr<VkVideoEncodeH265QuantizationMapCapabilitiesKHR> H265QuantizationMapCapabilities =
         getVideoEncodeH265QuantizationMapCapabilities();
 
+    const bool quantizationMapEnabled = useDeltaMap | useEmphasisMap;
     const MovePtr<VkVideoEncodeH264CapabilitiesKHR> videoH264CapabilitiesExtension =
-        getVideoCapabilitiesExtensionH264E(H264QuantizationMapCapabilities.get());
+        getVideoCapabilitiesExtensionH264E(quantizationMapEnabled ? H264QuantizationMapCapabilities.get() : nullptr);
     const MovePtr<VkVideoEncodeH265CapabilitiesKHR> videoH265CapabilitiesExtension =
-        getVideoCapabilitiesExtensionH265E(H265QuantizationMapCapabilities.get());
+        getVideoCapabilitiesExtensionH265E(quantizationMapEnabled ? H265QuantizationMapCapabilities.get() : nullptr);
 
     void *videoCapabilitiesExtensionPtr = NULL;
 
@@ -2141,8 +2142,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
         }
         DE_ASSERT(dpbSlotInfoPtr);
 
-        dpbImageVideoReferenceSlots.push_back(
-            makeVideoReferenceSlot(swapOrder ? j : -1, dpbPictureResources[j].get(), dpbSlotInfoPtr));
+        dpbImageVideoReferenceSlots.push_back(makeVideoReferenceSlot(-1, dpbPictureResources[j].get(), dpbSlotInfoPtr));
 
         j++;
     }
@@ -2446,38 +2446,13 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
             VkCommandBuffer encodeCmdBuffer =
                 (NALIdx == 1 && swapOrder) ? *secondEncodeCmdBuffer : *firstEncodeCmdBuffer;
 
+            // Reset dpb slots list.
+            for (uint32_t dpb = 0; dpb < dpbSlots; dpb++)
+                dpbImageVideoReferenceSlots[dpb].slotIndex = -1;
+
             beginCommandBuffer(videoDeviceDriver, encodeCmdBuffer, 0u);
 
             videoDeviceDriver.cmdResetQueryPool(encodeCmdBuffer, encodeQueryPool.get(), 0, 2);
-
-            de::MovePtr<VkVideoBeginCodingInfoKHR> videoBeginCodingFrameInfoKHR = getVideoBeginCodingInfo(
-                *videoEncodeSession,
-                resolutionChange ? videoEncodeSessionParameters[GOPIdx].get() : videoEncodeSessionParameters[0].get(),
-                dpbSlots, &dpbImageVideoReferenceSlots[0],
-                (activeRateControl && NALIdx > 0) ? videoEncodeRateControlInfo.get() : nullptr);
-
-            videoDeviceDriver.cmdBeginVideoCodingKHR(encodeCmdBuffer, videoBeginCodingFrameInfoKHR.get());
-
-            de::MovePtr<VkVideoCodingControlInfoKHR> resetVideoEncodingControl =
-                getVideoCodingControlInfo(VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR);
-
-            if (NALIdx == 0)
-            {
-                videoDeviceDriver.cmdControlVideoCodingKHR(encodeCmdBuffer, resetVideoEncodingControl.get());
-
-                if (disableRateControl || activeRateControl)
-                {
-                    de::MovePtr<VkVideoCodingControlInfoKHR> videoRateConstrolInfo = getVideoCodingControlInfo(
-                        VK_VIDEO_CODING_CONTROL_ENCODE_RATE_CONTROL_BIT_KHR, videoEncodeRateControlInfo.get());
-                    videoDeviceDriver.cmdControlVideoCodingKHR(encodeCmdBuffer, videoRateConstrolInfo.get());
-                }
-                if (useQualityLevel)
-                {
-                    de::MovePtr<VkVideoCodingControlInfoKHR> videoQualityControlInfo = getVideoCodingControlInfo(
-                        VK_VIDEO_CODING_CONTROL_ENCODE_QUALITY_LEVEL_BIT_KHR, videoEncodeQualityLevelInfo.get());
-                    videoDeviceDriver.cmdControlVideoCodingKHR(encodeCmdBuffer, videoQualityControlInfo.get());
-                }
-            }
 
             StdVideoH264PictureType stdVideoH264PictureType = getH264PictureType(m_testDefinition->frameType(NALIdx));
             StdVideoH265PictureType stdVideoH265PictureType = getH265PictureType(m_testDefinition->frameType(NALIdx));
@@ -2542,6 +2517,74 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
                 }
             }
 
+            int32_t startRefSlot    = refsPool == 0 ? -1 : m_testDefinition->refSlots(NALIdx)[0];
+            int32_t startRefSlotIdx = separateReferenceImages && startRefSlot > -1 ? startRefSlot : 0;
+
+            VkVideoReferenceSlotInfoKHR *referenceSlots;
+            std::vector<VkVideoReferenceSlotInfoKHR> usedReferenceSlots;
+            uint8_t refsCount = 0;
+
+            if (pType || bType)
+            {
+                std::vector<uint32_t> tmpSlotIds;
+                for (int32_t s = 0; s < numL0; s++)
+                {
+                    tmpSlotIds.push_back(H264RefPicList0[s]);
+                }
+                for (int32_t s = 0; s < numL1; s++)
+                {
+                    tmpSlotIds.push_back(H264RefPicList1[s]);
+                }
+
+                // Sort and remove redundant ids
+                sort(tmpSlotIds.begin(), tmpSlotIds.end());
+                tmpSlotIds.erase(unique(tmpSlotIds.begin(), tmpSlotIds.end()), tmpSlotIds.end());
+
+                for (auto idx : tmpSlotIds)
+                {
+                    dpbImageVideoReferenceSlots[idx].slotIndex = idx;
+                    usedReferenceSlots.push_back(dpbImageVideoReferenceSlots[idx]);
+                }
+                referenceSlots = &usedReferenceSlots[0];
+                refsCount      = (uint8_t)usedReferenceSlots.size();
+            }
+            else
+            {
+                referenceSlots = &dpbImageVideoReferenceSlots[startRefSlotIdx];
+                refsCount      = m_testDefinition->refsCount(NALIdx);
+            }
+
+            de::MovePtr<VkVideoBeginCodingInfoKHR> videoBeginCodingFrameInfoKHR = getVideoBeginCodingInfo(
+                *videoEncodeSession,
+                resolutionChange ? videoEncodeSessionParameters[GOPIdx].get() : videoEncodeSessionParameters[0].get(),
+                dpbSlots, &dpbImageVideoReferenceSlots[0],
+                ((activeRateControl || disableRateControl) && (NALIdx > 0 || GOPIdx > 0)) ?
+                    videoEncodeRateControlInfo.get() :
+                    nullptr);
+
+            videoDeviceDriver.cmdBeginVideoCodingKHR(encodeCmdBuffer, videoBeginCodingFrameInfoKHR.get());
+
+            de::MovePtr<VkVideoCodingControlInfoKHR> resetVideoEncodingControl =
+                getVideoCodingControlInfo(VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR);
+
+            if (NALIdx == 0)
+            {
+                videoDeviceDriver.cmdControlVideoCodingKHR(encodeCmdBuffer, resetVideoEncodingControl.get());
+
+                if (disableRateControl || activeRateControl)
+                {
+                    de::MovePtr<VkVideoCodingControlInfoKHR> videoRateConstrolInfo = getVideoCodingControlInfo(
+                        VK_VIDEO_CODING_CONTROL_ENCODE_RATE_CONTROL_BIT_KHR, videoEncodeRateControlInfo.get());
+                    videoDeviceDriver.cmdControlVideoCodingKHR(encodeCmdBuffer, videoRateConstrolInfo.get());
+                }
+                if (useQualityLevel)
+                {
+                    de::MovePtr<VkVideoCodingControlInfoKHR> videoQualityControlInfo = getVideoCodingControlInfo(
+                        VK_VIDEO_CODING_CONTROL_ENCODE_QUALITY_LEVEL_BIT_KHR, videoEncodeQualityLevelInfo.get());
+                    videoDeviceDriver.cmdControlVideoCodingKHR(encodeCmdBuffer, videoQualityControlInfo.get());
+                }
+            }
+
             bool h264ActiveOverrideFlag =
                 (stdVideoH264SliceType != STD_VIDEO_H264_SLICE_TYPE_I) &&
                 ((m_testDefinition->ppsActiveRefs0() != m_testDefinition->shActiveRefs0(NALIdx)) ||
@@ -2599,10 +2642,6 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
                 setupReferenceSlotPtr->slotIndex = curSlotIdx;
             }
 
-            int32_t startRefSlot = refsPool == 0 ? -1 : m_testDefinition->refSlots(NALIdx)[0];
-            VkVideoReferenceSlotInfoKHR *referenceSlots =
-                &dpbImageVideoReferenceSlots[separateReferenceImages && startRefSlot > -1 ? startRefSlot : 0];
-            uint8_t refsCount              = m_testDefinition->refsCount(NALIdx);
             uint32_t srcPictureResourceIdx = (GOPIdx * gopFrameCount) + m_testDefinition->frameIdx(NALIdx);
 
             VkDeviceSize dstBufferOffset;
