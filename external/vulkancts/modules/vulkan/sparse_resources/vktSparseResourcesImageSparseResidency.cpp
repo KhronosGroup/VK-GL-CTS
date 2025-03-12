@@ -1739,9 +1739,9 @@ tcu::TestStatus ImageMutableSparseTestInstance::iterate(void)
         }
 
         VkSparseImageMemoryBindInfo imageResidencyBindInfo = {
-            *imageSparse,                              // VkImage						    image;
-            de::sizeU32(imageResidencyMemoryBinds),    // uint32_t						    bindCount;
-            de::dataOrNull(imageResidencyMemoryBinds), // const VkSparseImageMemoryBind*	pBinds;
+            *imageSparse,                              // VkImage     image;
+            de::sizeU32(imageResidencyMemoryBinds),    // uint32_t     bindCount;
+            de::dataOrNull(imageResidencyMemoryBinds), // const VkSparseImageMemoryBind* pBinds;
         };
 
         VkSparseImageOpaqueMemoryBindInfo imageMipTailBindInfo;

@@ -578,6 +578,8 @@ ShaderRenderCase::ShaderRenderCase(tcu::TestContext &testCtx, const std::string 
                                    const ShaderEvalFunc evalFunc, const UniformSetup *uniformSetup,
                                    const AttributeSetupFunc attribFunc)
     : vkt::TestCase(testCtx, name)
+    , m_vertShaderBuildOptions(nullptr)
+    , m_fragShaderBuildOptions(nullptr)
     , m_isVertexCase(isVertexCase)
     , m_evaluator(new ShaderEvaluator(evalFunc))
     , m_uniformSetup(uniformSetup ? uniformSetup : new UniformSetup())
@@ -589,6 +591,8 @@ ShaderRenderCase::ShaderRenderCase(tcu::TestContext &testCtx, const std::string 
                                    const ShaderEvaluator *evaluator, const UniformSetup *uniformSetup,
                                    const AttributeSetupFunc attribFunc)
     : vkt::TestCase(testCtx, name)
+    , m_vertShaderBuildOptions(nullptr)
+    , m_fragShaderBuildOptions(nullptr)
     , m_isVertexCase(isVertexCase)
     , m_evaluator(evaluator)
     , m_uniformSetup(uniformSetup ? uniformSetup : new UniformSetup())
@@ -602,8 +606,13 @@ ShaderRenderCase::~ShaderRenderCase(void)
 
 void ShaderRenderCase::initPrograms(vk::SourceCollections &programCollection) const
 {
-    programCollection.glslSources.add("vert") << glu::VertexSource(m_vertShaderSource);
-    programCollection.glslSources.add("frag") << glu::FragmentSource(m_fragShaderSource);
+    const ShaderBuildOptions vertBuildOptions =
+        (m_vertShaderBuildOptions ? *m_vertShaderBuildOptions : ShaderBuildOptions());
+    const ShaderBuildOptions fragBuildOptions =
+        (m_fragShaderBuildOptions ? *m_fragShaderBuildOptions : ShaderBuildOptions());
+
+    programCollection.glslSources.add("vert") << glu::VertexSource(m_vertShaderSource) << vertBuildOptions;
+    programCollection.glslSources.add("frag") << glu::FragmentSource(m_fragShaderSource) << fragBuildOptions;
 }
 
 TestInstance *ShaderRenderCase::createInstance(Context &context) const
