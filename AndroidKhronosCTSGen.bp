@@ -902,6 +902,7 @@ cc_library_static {
         "external/openglcts/modules/common/glcMisc.cpp",
         "external/openglcts/modules/common/glcMultipleContextsTests.cpp",
         "external/openglcts/modules/common/glcNearestEdgeTests.cpp",
+        "external/openglcts/modules/common/glcNegativeTextureLookupFunctionsBiasTests.cpp",
         "external/openglcts/modules/common/glcNoDefaultContextPackage.cpp",
         "external/openglcts/modules/common/glcNoErrorTests.cpp",
         "external/openglcts/modules/common/glcPackedDepthStencilTests.cpp",

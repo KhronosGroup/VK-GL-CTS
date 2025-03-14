@@ -89,6 +89,7 @@
 #include "glcViewportArrayTests.hpp"
 #include "glcPixelStorageModesTests.hpp"
 #include "gl4cClearTexImageAndSubImageTests.hpp"
+#include "glcNegativeTextureLookupFunctionsBiasTests.hpp"
 
 #include "../gles31/es31cDrawIndirectTests.hpp"
 #include "../gles31/es31cExplicitUniformLocationTest.hpp"
@@ -447,6 +448,7 @@ void GL45TestPackage::init(void)
         addChild(new gl4cts::SpirvExtensionsTests(getContext()));
         addChild(new gl4cts::GlSpirvTests(getContext()));
         addChild(new gl4cts::es31compatibility::Tests(getContext()));
+        addChild(new glcts::NegativeTextureLookupFunctionsBiasTests(getContext()));
     }
     catch (...)
     {
