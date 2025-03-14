@@ -134,11 +134,11 @@ void beginConditionalRendering(const DeviceInterface &vkd, VkCommandBuffer cmdBu
         flags |= VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT;
 
     const VkConditionalRenderingBeginInfoEXT beginInfo = {
-        VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT, //	VkStructureType					sType;
-        nullptr,                                                //	const void*						pNext;
-        conditionBuffer,                                        //	VkBuffer						buffer;
-        0ull,                                                   //	VkDeviceSize					offset;
-        flags,                                                  //	VkConditionalRenderingFlagsEXT	flags;
+        VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT, // VkStructureType sType;
+        nullptr,                                                // const void* pNext;
+        conditionBuffer,                                        // VkBuffer buffer;
+        0ull,                                                   // VkDeviceSize offset;
+        flags,                                                  // VkConditionalRenderingFlagsEXT flags;
     };
     vkd.cmdBeginConditionalRenderingEXT(cmdBuffer, &beginInfo);
 }

@@ -2550,7 +2550,18 @@ PointSizeTestInstance::PointSizeTestInstance(Context &context, uint32_t renderSi
 
 tcu::TestStatus PointSizeTestInstance::iterate(void)
 {
-    tcu::TextureLevel resultBuffer(mapVkFormat(m_format), m_renderSize, m_renderSize);
+    tcu::TextureLevel resultBuffer(mapVkFormat(m_format));
+
+    try
+    {
+        resultBuffer.setSize(m_renderSize, m_renderSize);
+    }
+    catch (const std::bad_alloc &)
+    {
+        // Don't treat allocation failure as a test failure.
+        return tcu::TestStatus(QP_TEST_RESULT_NOT_SUPPORTED, "Too big system memory allocation");
+    }
+
     tcu::PixelBufferAccess access(resultBuffer.getAccess());
     PointSceneSpec::ScenePoint point;
 

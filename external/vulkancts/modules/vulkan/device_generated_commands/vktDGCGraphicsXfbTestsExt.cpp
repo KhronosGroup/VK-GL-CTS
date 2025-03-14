@@ -337,20 +337,20 @@ Move<VkShaderEXT> makeShader(const vk::DeviceInterface &vkd, vk::VkDevice device
     }
 
     const VkShaderCreateInfoEXT shaderCreateInfo = {
-        VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, //	VkStructureType					sType;
-        nullptr,                                  //	const void*						pNext;
-        shaderFlags,                              //	VkShaderCreateFlagsEXT			flags;
-        stage,                                    //	VkShaderStageFlagBits			stage;
-        nextStage,                                //	VkShaderStageFlags				nextStage;
-        VK_SHADER_CODE_TYPE_SPIRV_EXT,            //	VkShaderCodeTypeEXT				codeType;
-        shaderBinary.getSize(),                   //	size_t							codeSize;
-        shaderBinary.getBinary(),                 //	const void*						pCode;
-        "main",                                   //	const char*						pName;
-        de::sizeU32(setLayouts),                  //	uint32_t						setLayoutCount;
-        de::dataOrNull(setLayouts),               //	const VkDescriptorSetLayout*	pSetLayouts;
-        de::sizeU32(pushConstantRanges),          //	uint32_t						pushConstantRangeCount;
-        de::dataOrNull(pushConstantRanges),       //	const VkPushConstantRange*		pPushConstantRanges;
-        nullptr,                                  //	const VkSpecializationInfo*		pSpecializationInfo;
+        VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, // VkStructureType sType;
+        nullptr,                                  // const void* pNext;
+        shaderFlags,                              // VkShaderCreateFlagsEXT flags;
+        stage,                                    // VkShaderStageFlagBits stage;
+        nextStage,                                // VkShaderStageFlags nextStage;
+        VK_SHADER_CODE_TYPE_SPIRV_EXT,            // VkShaderCodeTypeEXT codeType;
+        shaderBinary.getSize(),                   // size_t codeSize;
+        shaderBinary.getBinary(),                 // const void* pCode;
+        "main",                                   // const char* pName;
+        de::sizeU32(setLayouts),                  // uint32_t setLayoutCount;
+        de::dataOrNull(setLayouts),               // const VkDescriptorSetLayout* pSetLayouts;
+        de::sizeU32(pushConstantRanges),          // uint32_t pushConstantRangeCount;
+        de::dataOrNull(pushConstantRanges),       // const VkPushConstantRange* pPushConstantRanges;
+        nullptr,                                  // const VkSpecializationInfo* pSpecializationInfo;
     };
 
     shaderBinary.setUsed();

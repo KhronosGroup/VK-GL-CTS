@@ -295,18 +295,17 @@ tcu::TestStatus maxIndirectCommandsTokenCountRun(Context &context, uint32_t pcSi
     ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
     ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
     {
-        const DGCGenCmdsInfo cmdsInfo(
-            stageFlags,                          //	VkShaderStageFlags			shaderStages;
-            VK_NULL_HANDLE,                      //	VkIndirectExecutionSetEXT	indirectExecutionSet;
-            *cmdsLayout,                         //	VkIndirectCommandsLayoutEXT	indirectCommandsLayout;
-            genCmdsBuffer.getDeviceAddress(),    //	VkDeviceAddress				indirectAddress;
-            genCmdsBufferSize,                   //	VkDeviceSize				indirectAddressSize;
-            preprocessBuffer.getDeviceAddress(), //	VkDeviceAddress				preprocessAddress;
-            preprocessBuffer.getSize(),          //	VkDeviceSize				preprocessSize;
-            1u,                                  //	uint32_t					maxSequenceCount;
-            0ull,                                //	VkDeviceAddress				sequenceCountAddress;
-            0u,                                  //	uint32_t					maxDrawCount;
-            *pipeline);
+        const DGCGenCmdsInfo cmdsInfo(stageFlags,     // VkShaderStageFlags shaderStages;
+                                      VK_NULL_HANDLE, // VkIndirectExecutionSetEXT indirectExecutionSet;
+                                      *cmdsLayout,    // VkIndirectCommandsLayoutEXT indirectCommandsLayout;
+                                      genCmdsBuffer.getDeviceAddress(),    // VkDeviceAddress indirectAddress;
+                                      genCmdsBufferSize,                   // VkDeviceSize indirectAddressSize;
+                                      preprocessBuffer.getDeviceAddress(), // VkDeviceAddress preprocessAddress;
+                                      preprocessBuffer.getSize(),          // VkDeviceSize preprocessSize;
+                                      1u,                                  // uint32_t maxSequenceCount;
+                                      0ull,                                // VkDeviceAddress sequenceCountAddress;
+                                      0u,                                  // uint32_t maxDrawCount;
+                                      *pipeline);
         ctx.vkd.cmdExecuteGeneratedCommandsEXT(cmdBuffer, VK_FALSE, &cmdsInfo.get());
     }
     {
@@ -467,18 +466,17 @@ tcu::TestStatus maxIndirectCommandsTokenOffsetRun(Context &context)
     ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
     ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
     {
-        const DGCGenCmdsInfo cmdsInfo(
-            stageFlags,                          //	VkShaderStageFlags			shaderStages;
-            VK_NULL_HANDLE,                      //	VkIndirectExecutionSetEXT	indirectExecutionSet;
-            *cmdsLayout,                         //	VkIndirectCommandsLayoutEXT	indirectCommandsLayout;
-            genCmdsBuffer.getDeviceAddress(),    //	VkDeviceAddress				indirectAddress;
-            genCmdsBufferSize,                   //	VkDeviceSize				indirectAddressSize;
-            preprocessBuffer.getDeviceAddress(), //	VkDeviceAddress				preprocessAddress;
-            preprocessBuffer.getSize(),          //	VkDeviceSize				preprocessSize;
-            1u,                                  //	uint32_t					maxSequenceCount;
-            0ull,                                //	VkDeviceAddress				sequenceCountAddress;
-            0u,                                  //	uint32_t					maxDrawCount;
-            *pipeline);
+        const DGCGenCmdsInfo cmdsInfo(stageFlags,     // VkShaderStageFlags shaderStages;
+                                      VK_NULL_HANDLE, // VkIndirectExecutionSetEXT indirectExecutionSet;
+                                      *cmdsLayout,    // VkIndirectCommandsLayoutEXT indirectCommandsLayout;
+                                      genCmdsBuffer.getDeviceAddress(),    // VkDeviceAddress indirectAddress;
+                                      genCmdsBufferSize,                   // VkDeviceSize indirectAddressSize;
+                                      preprocessBuffer.getDeviceAddress(), // VkDeviceAddress preprocessAddress;
+                                      preprocessBuffer.getSize(),          // VkDeviceSize preprocessSize;
+                                      1u,                                  // uint32_t maxSequenceCount;
+                                      0ull,                                // VkDeviceAddress sequenceCountAddress;
+                                      0u,                                  // uint32_t maxDrawCount;
+                                      *pipeline);
         ctx.vkd.cmdExecuteGeneratedCommandsEXT(cmdBuffer, VK_FALSE, &cmdsInfo.get());
     }
     {
@@ -632,18 +630,17 @@ tcu::TestStatus maxIndirectCommandsIndirectStrideRun(Context &context)
     ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
     ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
     {
-        const DGCGenCmdsInfo cmdsInfo(
-            stageFlags,                          //	VkShaderStageFlags			shaderStages;
-            VK_NULL_HANDLE,                      //	VkIndirectExecutionSetEXT	indirectExecutionSet;
-            *cmdsLayout,                         //	VkIndirectCommandsLayoutEXT	indirectCommandsLayout;
-            genCmdsBuffer.getDeviceAddress(),    //	VkDeviceAddress				indirectAddress;
-            genCmdsBufferSize,                   //	VkDeviceSize				indirectAddressSize;
-            preprocessBuffer.getDeviceAddress(), //	VkDeviceAddress				preprocessAddress;
-            preprocessBuffer.getSize(),          //	VkDeviceSize				preprocessSize;
-            maxSequences,                        //	uint32_t					maxSequenceCount;
-            0ull,                                //	VkDeviceAddress				sequenceCountAddress;
-            0u,                                  //	uint32_t					maxDrawCount;
-            *pipeline);
+        const DGCGenCmdsInfo cmdsInfo(stageFlags,     // VkShaderStageFlags shaderStages;
+                                      VK_NULL_HANDLE, // VkIndirectExecutionSetEXT indirectExecutionSet;
+                                      *cmdsLayout,    // VkIndirectCommandsLayoutEXT indirectCommandsLayout;
+                                      genCmdsBuffer.getDeviceAddress(),    // VkDeviceAddress indirectAddress;
+                                      genCmdsBufferSize,                   // VkDeviceSize indirectAddressSize;
+                                      preprocessBuffer.getDeviceAddress(), // VkDeviceAddress preprocessAddress;
+                                      preprocessBuffer.getSize(),          // VkDeviceSize preprocessSize;
+                                      maxSequences,                        // uint32_t maxSequenceCount;
+                                      0ull,                                // VkDeviceAddress sequenceCountAddress;
+                                      0u,                                  // uint32_t maxDrawCount;
+                                      *pipeline);
         ctx.vkd.cmdExecuteGeneratedCommandsEXT(cmdBuffer, VK_FALSE, &cmdsInfo.get());
     }
     {
