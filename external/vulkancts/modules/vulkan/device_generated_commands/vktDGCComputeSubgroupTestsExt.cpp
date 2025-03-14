@@ -301,16 +301,16 @@ tcu::TestStatus verifyBuiltins(Context &context, BuiltinParams params)
     }
 
     {
-        DGCGenCmdsInfo cmdsInfo(stageFlags,                       //	VkShaderStageFlags			shaderStages;
-                                executionSetHandle,               //	VkIndirectExecutionSetEXT	indirectExecutionSet;
-                                *cmdsLayout,                      //	VkIndirectCommandsLayoutEXT	indirectCommandsLayout;
-                                genCmdsBuffer.getDeviceAddress(), //	VkDeviceAddress				indirectAddress;
-                                genCmdsBufferSize,                //	VkDeviceSize				indirectAddressSize;
-                                preprocessBuffer.getDeviceAddress(), //	VkDeviceAddress				preprocessAddress;
-                                preprocessBuffer.getSize(),          //	VkDeviceSize				preprocessSize;
-                                1u,                                  //	uint32_t					maxSequenceCount;
-                                0ull,                                //	VkDeviceAddress				sequenceCountAddress;
-                                0u,                                  //	uint32_t					maxDrawCount;
+        DGCGenCmdsInfo cmdsInfo(stageFlags,                       // VkShaderStageFlags shaderStages;
+                                executionSetHandle,               // VkIndirectExecutionSetEXT indirectExecutionSet;
+                                *cmdsLayout,                      // VkIndirectCommandsLayoutEXT indirectCommandsLayout;
+                                genCmdsBuffer.getDeviceAddress(), // VkDeviceAddress indirectAddress;
+                                genCmdsBufferSize,                // VkDeviceSize indirectAddressSize;
+                                preprocessBuffer.getDeviceAddress(), // VkDeviceAddress preprocessAddress;
+                                preprocessBuffer.getSize(),          // VkDeviceSize preprocessSize;
+                                1u,                                  // uint32_t maxSequenceCount;
+                                0ull,                                // VkDeviceAddress sequenceCountAddress;
+                                0u,                                  // uint32_t maxDrawCount;
                                 *normalPipeline);
         ctx.vkd.cmdExecuteGeneratedCommandsEXT(cmdBuffer, VK_FALSE, &cmdsInfo.get());
     }
