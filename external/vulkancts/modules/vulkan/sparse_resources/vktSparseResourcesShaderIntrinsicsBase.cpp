@@ -694,8 +694,9 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
 
         DE_ASSERT((imageMemoryRequirements.size % imageMemoryRequirements.alignment) == 0);
 
-        const uint32_t memoryType =
-            findMatchingMemoryType(instance, physicalDevice, imageMemoryRequirements, MemoryRequirement::Any);
+        const auto devMemProps    = getPhysicalDeviceMemoryProperties(instance, physicalDevice);
+        const uint32_t memoryType = selectBestMemoryType(devMemProps, imageMemoryRequirements.memoryTypeBits,
+                                                         MemoryRequirement::Any, tcu::just(HostIntent::NONE));
 
         if (memoryType == NO_MATCH_FOUND)
             return tcu::TestStatus::fail("No matching memory type found");
@@ -874,7 +875,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
 
     const Unique<VkImage> imageTexels(createImage(deviceInterface, getDevice(), &imageTexelsInfo));
     const de::UniquePtr<Allocation> imageTexelsAlloc(
-        bindImage(deviceInterface, getDevice(), getAllocator(), *imageTexels, MemoryRequirement::Any));
+        bindImage(deviceInterface, getDevice(), getAllocator(), *imageTexels, HostIntent::NONE));
 
     // Create image to store residency info copied from sparse image
     imageResidencyInfo        = imageTexelsInfo;
@@ -893,7 +894,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
 
     const Unique<VkImage> imageResidency(createImage(deviceInterface, getDevice(), &imageResidencyInfo));
     const de::UniquePtr<Allocation> imageResidencyAlloc(
-        bindImage(deviceInterface, getDevice(), getAllocator(), *imageResidency, MemoryRequirement::Any));
+        bindImage(deviceInterface, getDevice(), getAllocator(), *imageResidency, HostIntent::NONE));
 
     std::vector<VkBufferImageCopy> bufferImageSparseCopy(formatDescription.numPlanes * imageSparseInfo.mipLevels);
 
@@ -938,7 +939,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
         makeBufferCreateInfo(imageSparseSizeInBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
     const Unique<VkBuffer> inputBuffer(createBuffer(deviceInterface, getDevice(), &inputBufferCreateInfo));
     const de::UniquePtr<Allocation> inputBufferAlloc(
-        bindBuffer(deviceInterface, getDevice(), getAllocator(), *inputBuffer, MemoryRequirement::HostVisible));
+        bindBuffer(deviceInterface, getDevice(), getAllocator(), *inputBuffer, HostIntent::W));
 
     // Fill input buffer with reference data
     std::vector<uint8_t> referenceData(imageSparseSizeInBytes);
@@ -1016,7 +1017,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
         makeBufferCreateInfo(imageSparseSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
     const Unique<VkBuffer> bufferTexels(createBuffer(deviceInterface, getDevice(), &bufferTexelsCreateInfo));
     const de::UniquePtr<Allocation> bufferTexelsAlloc(
-        bindBuffer(deviceInterface, getDevice(), getAllocator(), *bufferTexels, MemoryRequirement::HostVisible));
+        bindBuffer(deviceInterface, getDevice(), getAllocator(), *bufferTexels, HostIntent::R));
 
     // Copy data from texels image to buffer
     deviceInterface.cmdCopyImageToBuffer(*commandBuffer, *imageTexels, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -1031,7 +1032,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
         makeBufferCreateInfo(imageResidencySizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
     const Unique<VkBuffer> bufferResidency(createBuffer(deviceInterface, getDevice(), &bufferResidencyCreateInfo));
     const de::UniquePtr<Allocation> bufferResidencyAlloc(
-        bindBuffer(deviceInterface, getDevice(), getAllocator(), *bufferResidency, MemoryRequirement::HostVisible));
+        bindBuffer(deviceInterface, getDevice(), getAllocator(), *bufferResidency, HostIntent::R));
 
     // Copy data from residency image to buffer
     std::vector<VkBufferImageCopy> bufferImageResidencyCopy(formatDescription.numPlanes * imageSparseInfo.mipLevels);
