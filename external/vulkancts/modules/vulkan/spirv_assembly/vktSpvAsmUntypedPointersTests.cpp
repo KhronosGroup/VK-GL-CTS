@@ -2495,49 +2495,48 @@ std::string createShaderAnnotations(POINTER_TEST_CASE testCase)
 
 std::string createShaderAnnotations(WORKGROUP_TEST_CASE testCase)
 {
-    std::string annotations = std::string("OpDecorate %id BuiltIn GlobalInvocationId\n");
+    std::string annotations = std::string("OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+                                          "OpMemberDecorate %input_buffer_0    0             Offset 0\n"
+                                          "OpMemberDecorate %input_buffer_0    1             Offset ${vecOffset}\n"
+                                          "OpDecorate       %input_buffer_0    Block\n"
+                                          "OpDecorate       %input_data_0_var  DescriptorSet 0\n"
+                                          "OpDecorate       %input_data_0_var  Binding       0\n"
+
+                                          "OpMemberDecorate %input_buffer_1    0             Offset 0\n"
+                                          "OpMemberDecorate %input_buffer_1    1             Offset ${vecOffset}\n"
+                                          "OpDecorate       %input_buffer_1    Block\n"
+                                          "OpDecorate       %input_data_1_var  DescriptorSet 0\n"
+                                          "OpDecorate       %input_data_1_var  Binding       1\n"
+
+                                          "OpMemberDecorate %output_buffer_0   0             Offset 0\n"
+                                          "OpMemberDecorate %output_buffer_0   1             Offset ${vecOffset}\n"
+                                          "OpDecorate       %output_buffer_0   Block\n"
+                                          "OpDecorate       %output_data_0_var DescriptorSet 0\n"
+                                          "OpDecorate       %output_data_0_var Binding       2\n"
+
+                                          "OpMemberDecorate %output_buffer_1   0             Offset 0\n"
+                                          "OpMemberDecorate %output_buffer_1   1             Offset ${vecOffset}\n"
+                                          "OpDecorate       %output_buffer_1   Block\n"
+                                          "OpDecorate       %output_data_1_var DescriptorSet 0\n"
+                                          "OpDecorate       %output_data_1_var Binding       3\n"
+
+                                          "OpMemberDecorate %data_buffer       0             Offset 0\n"
+                                          "OpMemberDecorate %data_buffer       1             Offset ${vecOffset}\n"
+                                          "OpDecorate       %data_buffer       Block\n");
 
     switch (testCase)
     {
     case WorkgroupTestCases::ALIASED:
     {
-        annotations += std::string("OpMemberDecorate %input_buffer    0             Offset 0\n"
-                                   "OpMemberDecorate %input_buffer    1             Offset ${vecOffset}\n"
-                                   "OpDecorate       %input_buffer    Block\n"
-                                   "OpDecorate       %input_data_var  DescriptorSet 0\n"
-                                   "OpDecorate       %input_data_var  Binding       0\n"
+        annotations += std::string(
 
-                                   "OpMemberDecorate %output_buffer   0             Offset 0\n"
-                                   "OpMemberDecorate %output_buffer   1             Offset ${vecOffset}\n"
-                                   "OpDecorate       %output_buffer   Block\n"
-                                   "OpDecorate       %output_data_var DescriptorSet 0\n"
-                                   "OpDecorate       %output_data_var Binding       1\n"
-
-                                   "OpMemberDecorate %data_buffer     0             Offset 0\n"
-                                   "OpMemberDecorate %data_buffer     1             Offset ${vecOffset}\n"
-                                   "OpDecorate       %data_buffer     Block\n"
-
-                                   "OpDecorate       %data_buffer_0_untyped_var     Aliased\n"
-                                   "OpDecorate       %data_buffer_1_untyped_var     Aliased\n");
+            "OpDecorate       %data_buffer_0_untyped_var     Aliased\n"
+            "OpDecorate       %data_buffer_1_untyped_var     Aliased\n");
         break;
     }
     case WorkgroupTestCases::NOT_ALIASED:
     {
-        annotations += std::string("OpMemberDecorate %input_buffer    0             Offset 0\n"
-                                   "OpMemberDecorate %input_buffer    1             Offset ${vecOffset}\n"
-                                   "OpDecorate       %input_buffer    Block\n"
-                                   "OpDecorate       %input_data_var  DescriptorSet 0\n"
-                                   "OpDecorate       %input_data_var  Binding       0\n"
-
-                                   "OpMemberDecorate %output_buffer   0             Offset 0\n"
-                                   "OpMemberDecorate %output_buffer   1             Offset ${vecOffset}\n"
-                                   "OpDecorate       %output_buffer   Block\n"
-                                   "OpDecorate       %output_data_var DescriptorSet 0\n"
-                                   "OpDecorate       %output_data_var Binding       1\n"
-
-                                   "OpMemberDecorate %data_buffer     0             Offset 0\n"
-                                   "OpMemberDecorate %data_buffer     1             Offset ${vecOffset}\n"
-                                   "OpDecorate       %data_buffer     Block\n");
         break;
     }
     default:
@@ -3983,23 +3982,31 @@ std::string createShaderVariables(WORKGROUP_TEST_CASE testCase)
     {
         variables += std::string(
             /* Struct */
-            "%input_buffer                        = OpTypeStruct            %vec4_${baseType} %${baseType}\n"
-            "%output_buffer                       = OpTypeStruct            %vec4_${baseType} %${baseType}\n"
-            "%data_buffer                         = OpTypeStruct            %vec4_${baseType} %${baseType}\n"
+            "%input_buffer_0                        = OpTypeStruct            %vec4_${baseType} %${baseType}\n"
+            "%input_buffer_1                        = OpTypeStruct            %vec4_${baseType} %${baseType}\n"
+            "%output_buffer_0                       = OpTypeStruct            %vec4_${baseType} %${baseType}\n"
+            "%output_buffer_1                       = OpTypeStruct            %vec4_${baseType} %${baseType}\n"
+            "%data_buffer                           = OpTypeStruct            %vec4_${baseType} %${baseType}\n"
 
             /* Pointers */
             "%${baseType}_storage_buffer_ptr      = OpTypePointer           StorageBuffer     %${baseType}\n"
             "%vec4_${baseType}_storage_buffer_ptr = OpTypePointer           StorageBuffer     %vec4_${baseType}\n"
             "%${baseType}_workgroup_ptr           = OpTypePointer           Workgroup         %${baseType}\n"
             "%vec4_${baseType}_workgroup_ptr      = OpTypePointer           Workgroup         %vec4_${baseType}\n"
-            "%input_buffer_storage_buffer_ptr     = OpTypePointer           StorageBuffer     %input_buffer\n"
-            "%output_buffer_storage_buffer_ptr    = OpTypePointer           StorageBuffer     %output_buffer\n"
+            "%input_buffer_0_storage_buffer_ptr     = OpTypePointer           StorageBuffer     %input_buffer_0\n"
+            "%input_buffer_1_storage_buffer_ptr     = OpTypePointer           StorageBuffer     %input_buffer_0\n"
+            "%output_buffer_0_storage_buffer_ptr    = OpTypePointer           StorageBuffer     %output_buffer_0\n"
+            "%output_buffer_1_storage_buffer_ptr    = OpTypePointer           StorageBuffer     %output_buffer_1\n"
             "%workgroup_untyped_ptr               = OpTypeUntypedPointerKHR Workgroup\n"
 
             /* Objects */
-            "%input_data_var                      = OpVariable              %input_buffer_storage_buffer_ptr  "
+            "%input_data_0_var                      = OpVariable              %input_buffer_0_storage_buffer_ptr  "
             "StorageBuffer\n"
-            "%output_data_var                     = OpVariable              %output_buffer_storage_buffer_ptr "
+            "%input_data_1_var                      = OpVariable              %input_buffer_1_storage_buffer_ptr  "
+            "StorageBuffer\n"
+            "%output_data_0_var                     = OpVariable              %output_buffer_0_storage_buffer_ptr "
+            "StorageBuffer\n"
+            "%output_data_1_var                     = OpVariable              %output_buffer_1_storage_buffer_ptr "
             "StorageBuffer\n"
             "%data_buffer_0_untyped_var           = OpUntypedVariableKHR    %workgroup_untyped_ptr            "
             "Workgroup     %data_buffer\n"
@@ -5102,28 +5109,43 @@ std::string createShaderMain(WORKGROUP_TEST_CASE testCase)
     case WorkgroupTestCases::ALIASED:
     {
         main += std::string(
-            /* Writting to shared memory */
-            "%input_data_scalar_loc    = OpAccessChain           %${baseType}_storage_buffer_ptr      %input_data_var  "
-            "                           %c_uint32_1\n"
-            "%input_data_vector_loc    = OpAccessChain           %vec4_${baseType}_storage_buffer_ptr %input_data_var  "
-            "                           %c_uint32_0\n"
+            /* Acesses */
+            "%input_data_0_scalar_loc    = OpAccessChain           %${baseType}_storage_buffer_ptr      "
+            "%input_data_0_var %c_uint32_1\n"
+            "%input_data_0_vector_loc    = OpAccessChain           %vec4_${baseType}_storage_buffer_ptr "
+            "%input_data_0_var %c_uint32_0\n"
+            "%input_data_1_scalar_loc    = OpAccessChain           %${baseType}_storage_buffer_ptr      "
+            "%input_data_1_var %c_uint32_1\n"
+            "%input_data_1_vector_loc    = OpAccessChain           %vec4_${baseType}_storage_buffer_ptr "
+            "%input_data_1_var %c_uint32_0\n"
+
             "%data_buffer_0_scalar_loc = OpUntypedAccessChainKHR %workgroup_untyped_ptr               %data_buffer     "
             "%data_buffer_0_untyped_var %c_uint32_1\n"
             "%data_buffer_0_vector_loc = OpUntypedAccessChainKHR %workgroup_untyped_ptr               %data_buffer     "
             "%data_buffer_0_untyped_var %c_uint32_0\n"
-            "%output_data_scalar_loc   = OpAccessChain           %${baseType}_storage_buffer_ptr      %output_data_var "
-            "                           %c_uint32_1\n"
-            "%output_data_vector_loc   = OpAccessChain           %vec4_${baseType}_storage_buffer_ptr %output_data_var "
-            "                           %c_uint32_0\n"
+            "%data_buffer_1_scalar_loc = OpUntypedAccessChainKHR %workgroup_untyped_ptr               %data_buffer     "
+            "%data_buffer_1_untyped_var %c_uint32_1\n"
+            "%data_buffer_1_vector_loc = OpUntypedAccessChainKHR %workgroup_untyped_ptr               %data_buffer     "
+            "%data_buffer_1_untyped_var %c_uint32_0\n"
 
-            "%input_data_scalar        = OpLoad                  %${baseType}                         "
-            "%input_data_scalar_loc\n"
-            "                            OpStore                 %data_buffer_0_scalar_loc            "
-            "%input_data_scalar\n"
-            "%input_data_vector        = OpLoad                  %vec4_${baseType}                    "
-            "%input_data_vector_loc\n"
-            "                            OpStore                 %data_buffer_0_vector_loc            "
-            "%input_data_vector\n"
+            "%output_data_0_scalar_loc   = OpAccessChain         %${baseType}_storage_buffer_ptr       "
+            "%output_data_0_var %c_uint32_1\n"
+            "%output_data_0_vector_loc   = OpAccessChain         %vec4_${baseType}_storage_buffer_ptr  "
+            "%output_data_0_var %c_uint32_0\n"
+            "%output_data_1_scalar_loc   = OpAccessChain         %${baseType}_storage_buffer_ptr       "
+            "%output_data_1_var %c_uint32_1\n"
+            "%output_data_1_vector_loc   = OpAccessChain         %vec4_${baseType}_storage_buffer_ptr  "
+            "%output_data_1_var %c_uint32_0\n"
+
+            /* Writting to shared memory */
+            "%input_data_0_scalar        = OpLoad  %${baseType}              %input_data_0_scalar_loc\n"
+            "                              OpStore %data_buffer_0_scalar_loc %input_data_0_scalar\n"
+            "%input_data_0_vector        = OpLoad  %vec4_${baseType}         %input_data_0_vector_loc\n"
+            "                              OpStore %data_buffer_0_vector_loc %input_data_0_vector\n"
+            "%input_data_1_scalar        = OpLoad  %${baseType}              %input_data_1_scalar_loc\n"
+            "                              OpStore %data_buffer_1_scalar_loc %input_data_1_scalar\n"
+            "%input_data_1_vector        = OpLoad  %vec4_${baseType}         %input_data_1_vector_loc\n"
+            "                              OpStore %data_buffer_1_vector_loc %input_data_1_vector\n"
 
             /* Barriers */
             "                            OpMemoryBarrier         %c_uint32_1                          %c_uint32_264\n"
@@ -5131,14 +5153,14 @@ std::string createShaderMain(WORKGROUP_TEST_CASE testCase)
             "                           %c_uint32_264\n"
 
             /* Reading from shared memory */
-            "%data_buffer_0_scalar     = OpLoad                  %${baseType}                         "
-            "%data_buffer_0_scalar_loc\n"
-            "                            OpStore                 %output_data_scalar_loc              "
-            "%data_buffer_0_scalar\n"
-            "%data_buffer_0_vector     = OpLoad                  %vec4_${baseType}                    "
-            "%data_buffer_0_vector_loc\n"
-            "                            OpStore                 %output_data_vector_loc              "
-            "%data_buffer_0_vector\n");
+            "%data_buffer_0_scalar     = OpLoad  %${baseType}              %data_buffer_0_scalar_loc\n"
+            "                            OpStore %output_data_0_scalar_loc %data_buffer_0_scalar\n"
+            "%data_buffer_0_vector     = OpLoad  %vec4_${baseType}         %data_buffer_0_vector_loc\n"
+            "                            OpStore %output_data_0_vector_loc %data_buffer_0_vector\n"
+            "%data_buffer_1_scalar     = OpLoad  %${baseType}              %data_buffer_1_scalar_loc\n"
+            "                            OpStore %output_data_1_scalar_loc %data_buffer_1_scalar\n"
+            "%data_buffer_1_vector     = OpLoad  %vec4_${baseType}         %data_buffer_1_vector_loc\n"
+            "                            OpStore %output_data_1_vector_loc %data_buffer_1_vector\n");
         break;
     }
     default:
@@ -9316,7 +9338,8 @@ void addWorkgroupMemoryExplicitLayoutInteractionTests(tcu::TestCaseGroup *testGr
     tcu::TestContext &testCtx = testGroup->getTestContext();
 
     tcu::StringTemplate shaderHeader(
-        createShaderHeader("%input_data_var %data_buffer_0_untyped_var %data_buffer_1_untyped_var %output_data_var"));
+        createShaderHeader("%input_data_0_var %input_data_1_var %data_buffer_0_untyped_var %data_buffer_1_untyped_var "
+                           "%output_data_0_var %output_data_1_var"));
 
     tcu::StringTemplate shaderAnnotations(createShaderAnnotations(testCase));
 
@@ -9365,13 +9388,25 @@ void addWorkgroupMemoryExplicitLayoutInteractionTests(tcu::TestCaseGroup *testGr
         desc.fillType       = FillingTypes::VALUE;
         desc.value          = 1;
 
-        Resource inputOutput = createFilledResource(desc);
+        Resource input0 = createFilledResource(desc);
+        desc.value      = 4;
+        Resource input1 = createFilledResource(desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(Constants::numThreads, 1, 1);
         spec.spirvVersion  = SPIRV_VERSION_1_4; // workgroup memory explicit layout requires SPIR-V 1.4
-        spec.inputs.push_back(inputOutput);
-        spec.outputs.push_back(inputOutput);
+        spec.inputs.push_back(input0);
+        spec.inputs.push_back(input1);
+        if (testCase == WorkgroupTestCases::ALIASED)
+        {
+            spec.outputs.push_back(input1);
+            spec.outputs.push_back(input1);
+        }
+        else // WorkgroupTestCases::NOT_ALIASED
+        {
+            spec.outputs.push_back(input0);
+            spec.outputs.push_back(input1);
+        }
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 
         testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
