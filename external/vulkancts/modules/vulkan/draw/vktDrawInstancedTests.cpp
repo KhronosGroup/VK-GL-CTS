@@ -702,9 +702,19 @@ tcu::TestStatus InstancedDrawInstance::iterate()
                 drawData.vertexBufferAddress = getBufferDeviceAddress(m_vk, device, drawData.vertexBuffer->object());
                 drawData.instanceBufferAddress =
                     getBufferDeviceAddress(m_vk, device, drawData.instanceBuffer->object());
-                drawData.indexBufferAddress = getBufferDeviceAddress(m_vk, device, drawData.indexBuffer->object());
-                drawData.indirectBufferAddress =
-                    getBufferDeviceAddress(m_vk, device, drawData.indirectBuffer->object());
+
+                if (m_params.function == TestParams::FUNCTION_DRAW_INDEXED ||
+                    m_params.function == TestParams::FUNCTION_DRAW_INDEXED_INDIRECT)
+                {
+                    drawData.indexBufferAddress = getBufferDeviceAddress(m_vk, device, drawData.indexBuffer->object());
+                }
+
+                if (m_params.function == TestParams::FUNCTION_DRAW_INDIRECT ||
+                    m_params.function == TestParams::FUNCTION_DRAW_INDEXED_INDIRECT)
+                {
+                    drawData.indirectBufferAddress =
+                        getBufferDeviceAddress(m_vk, device, drawData.indirectBuffer->object());
+                }
             }
 
             const uint32_t layerCount = (m_params.testMultiview) ? 2u : 1u;
