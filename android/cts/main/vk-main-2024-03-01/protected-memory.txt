@@ -1,2 +1,5 @@
+dEQP-VK.protected_memory.buffer.copy.float_buffer.primary.static.test_device_address
+dEQP-VK.protected_memory.buffer.fill.float_buffer.primary.static.test_device_address
+dEQP-VK.protected_memory.buffer.update.float_buffer.primary.static.test_device_address
 dEQP-VK.protected_memory.image.access.misc.maintenance5_no_protected_access
 dEQP-VK.protected_memory.image.access.misc.maintenance5_protected_access
