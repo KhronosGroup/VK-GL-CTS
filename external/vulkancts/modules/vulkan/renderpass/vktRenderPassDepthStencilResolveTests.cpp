@@ -914,6 +914,34 @@ void DepthStencilResolveTest::submit(void)
         {
             if (i == 0 || m_config.sampleMask)
             {
+                if (i > 0)
+                {
+                    // If this is not the first renderpass, add a barrier to
+                    // ensure we observe the store_op -> load_op.
+                    const VkImageMemoryBarrier barrier = {
+                        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                        nullptr,
+
+                        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+
+                        m_config.separateDepthStencilLayouts ? VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL :
+                                                               VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                        m_config.separateDepthStencilLayouts ? VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL :
+                                                               VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+
+                        VK_QUEUE_FAMILY_IGNORED,
+                        VK_QUEUE_FAMILY_IGNORED,
+
+                        **m_multisampleImage,
+                        {(m_config.separateDepthStencilLayouts) ? VkImageAspectFlags(VK_IMAGE_ASPECT_STENCIL_BIT) :
+                                                                  aspectFlagsForFormat(m_config.format),
+                         0u, 1u, 0u, m_config.viewLayers}};
+
+                    vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                                           VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0, 0, 0, 0, 0, 1u, &barrier);
+                }
+
                 VkClearValue clearValues[2];
                 clearValues[0].depthStencil = m_config.clearValue;
                 clearValues[1].depthStencil = m_config.clearValue;
@@ -929,8 +957,7 @@ void DepthStencilResolveTest::submit(void)
 
                     2u,
                     clearValues};
-                vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                                       VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, 0, 0, 0, 0, 0);
+
                 RenderpassSubpass2::cmdBeginRenderPass(vkd, *commandBuffer, &beginInfo, &subpassBeginInfo);
             }
             // For stencil we can set reference value for just one sample at a time
