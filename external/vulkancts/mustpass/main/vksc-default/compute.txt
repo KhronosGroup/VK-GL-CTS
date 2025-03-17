@@ -15,6 +15,7 @@ dEQP-VKSC.compute.pipeline.basic.image_atomic_op_local_size_1
 dEQP-VKSC.compute.pipeline.basic.image_atomic_op_local_size_8
 dEQP-VKSC.compute.pipeline.basic.image_barrier_multiple
 dEQP-VKSC.compute.pipeline.basic.image_barrier_single
+dEQP-VKSC.compute.pipeline.basic.indirect_after_base_dispatch
 dEQP-VKSC.compute.pipeline.basic.max_local_size_x
 dEQP-VKSC.compute.pipeline.basic.max_local_size_y
 dEQP-VKSC.compute.pipeline.basic.max_local_size_z
