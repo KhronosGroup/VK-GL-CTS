@@ -860,14 +860,11 @@ bool exportImportMemoryExplicitModifiersCase(Context &context, const VkFormat fo
     vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                            (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &dstImageBarrier);
 
-    VkImageBlit imageBlit{
-        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
-        {{0, 0, 0}, {64, 64, 1}},
-        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
-        {{0, 0, 0}, {64, 64, 1}},
+    VkImageCopy imageCopy{
+        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}, {0, 0, 0}, {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}, {0, 0, 0}, {64, 64, 1},
     };
-    vkd.cmdBlitImage(*cmdBuffer, *srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstImage,
-                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_NEAREST);
+    vkd.cmdCopyImage(*cmdBuffer, *srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstImage,
+                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopy);
 
     const VkImageMemoryBarrier exportImageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
@@ -991,14 +988,11 @@ bool exportImportMemoryExplicitModifiersCase(Context &context, const VkFormat fo
     vkd.cmdPipelineBarrier(*cmdBuffer2, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                            (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &outImageBarrier);
 
-    VkImageBlit imageBlit2{
-        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
-        {{0, 0, 0}, {64, 64, 1}},
-        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
-        {{0, 0, 0}, {64, 64, 1}},
+    VkImageCopy imageCopy2{
+        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}, {0, 0, 0}, {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}, {0, 0, 0}, {64, 64, 1},
     };
-    vkd.cmdBlitImage(*cmdBuffer2, *importedSrcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *outImage,
-                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit2, VK_FILTER_NEAREST);
+    vkd.cmdCopyImage(*cmdBuffer2, *importedSrcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *outImage,
+                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopy2);
 
     copyImageToBuffer(vkd, *cmdBuffer2, *outImage, outputBuffer->get(), tcu::IVec2(imageSize.x(), imageSize.y()),
                       VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
@@ -1217,16 +1211,13 @@ bool exportImportMemoryExplicitModifiersWithSuballocationCase(Context &context, 
                            (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)nullptr, 0,
                            (const VkBufferMemoryBarrier *)nullptr, 1, &dstSubImageBarrier);
 
-    VkImageBlit imageBlit{
-        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
-        {{0, 0, 0}, {64, 64, 1}},
-        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
-        {{0, 0, 0}, {64, 64, 1}},
+    VkImageCopy imageCopy{
+        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}, {0, 0, 0}, {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}, {0, 0, 0}, {64, 64, 1},
     };
-    vkd.cmdBlitImage(*cmdBuffer, *srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstImage,
-                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_NEAREST);
-    vkd.cmdBlitImage(*cmdBuffer, *srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstSubImage,
-                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_NEAREST);
+    vkd.cmdCopyImage(*cmdBuffer, *srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstImage,
+                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopy);
+    vkd.cmdCopyImage(*cmdBuffer, *srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstSubImage,
+                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopy);
 
     const VkImageMemoryBarrier exportImageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
@@ -1437,16 +1428,13 @@ bool exportImportMemoryExplicitModifiersWithSuballocationCase(Context &context, 
                            (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)nullptr, 0,
                            (const VkBufferMemoryBarrier *)nullptr, 1, &outSubImageBarrier);
 
-    VkImageBlit imageBlit2{
-        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
-        {{0, 0, 0}, {64, 64, 1}},
-        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
-        {{0, 0, 0}, {64, 64, 1}},
+    VkImageCopy imageCopy2{
+        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}, {0, 0, 0}, {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}, {0, 0, 0}, {64, 64, 1},
     };
-    vkd.cmdBlitImage(*cmdBuffer2, *importedSrcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *outImage,
-                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit2, VK_FILTER_NEAREST);
-    vkd.cmdBlitImage(*cmdBuffer2, *importedSrcSubImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *outSubImage,
-                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit2, VK_FILTER_NEAREST);
+    vkd.cmdCopyImage(*cmdBuffer2, *importedSrcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *outImage,
+                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopy2);
+    vkd.cmdCopyImage(*cmdBuffer2, *importedSrcSubImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *outSubImage,
+                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopy2);
 
     copyImageToBuffer(vkd, *cmdBuffer2, *outImage, outputBuffer->get(), tcu::IVec2(imageSize.x(), imageSize.y()),
                       VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
