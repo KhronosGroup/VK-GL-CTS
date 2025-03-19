@@ -3741,7 +3741,10 @@ def writeApiExtensionDependencyInfo(api, filename):
         yield 'static const std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>\treleasedApiVersions[]\t='
         yield '{'
         for f in reversed(api.features):
-            apiVariant = '0' if f.api == 'vulkan' else '1'
+            apis = f.api.split(',')
+            if not api.apiName in apis:
+                continue;
+            apiVariant = '0' if api.apiName == 'vulkan' else '1'
             major, minor = f.number.split('.')
             version = (int(apiVariant) << 29) | (int(major) << 22) | (int(minor) << 12)
             yield '\tstd::make_tuple({}, {}, {}, {}),'.format(version, apiVariant, major, minor)
