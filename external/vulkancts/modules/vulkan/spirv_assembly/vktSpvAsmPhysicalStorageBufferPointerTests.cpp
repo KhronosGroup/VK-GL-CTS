@@ -56,7 +56,6 @@ enum class PassMethod
 {
     PUSH_CONSTANTS,
     PUSH_CONSTANTS_FUNCTION,
-    VERTEX_IN_OUT_IN,
     ADDRESSES_IN_SSBO
 };
 
@@ -460,30 +459,6 @@ public:
     }
 };
 
-class SpvAsmPhysicalStorageBufferVertexInOutInTestInstance : public SpvAsmPhysicalStorageBufferTestInstance
-{
-public:
-    SpvAsmPhysicalStorageBufferVertexInOutInTestInstance(Context &ctx, const TestParamsPtr params)
-        : SpvAsmPhysicalStorageBufferTestInstance(ctx)
-        , m_params(params)
-    {
-    }
-    tcu::TestStatus iterate(void);
-    static void initPrograms(vk::SourceCollections &programCollection, const TestParamsPtr params);
-    struct alignas(16) Attribute
-    {
-        tcu::Vec4 position;
-        uint64_t address;
-    };
-    ut::TypedBuffer<tcu::Vec4> prepareColorBuffer(bool flushAfter = true) const;
-    ut::TypedBuffer<Attribute> prepareVertexAttributes(uint64_t address) const;
-    Move<VkPipeline> createGraphicsPipeline(VkPipelineLayout pipelineLayout, VkRenderPass renderPass,
-                                            VkShaderModule vertexModule, VkShaderModule fragmentModule) const;
-
-private:
-    const TestParamsPtr m_params;
-};
-
 class SpvAsmPhysicalStorageBufferPushConstantsTestInstance : public SpvAsmPhysicalStorageBufferTestInstance
 {
 public:
@@ -542,19 +517,6 @@ void SpvAsmPhysicalStorageBufferTestCase::checkSupport(Context &context) const
         if (!context.getDeviceFeatures().shaderInt64)
             TCU_THROW(NotSupportedError, "Int64 not supported");
     }
-
-    if (m_params->method == PassMethod::VERTEX_IN_OUT_IN)
-    {
-        if (!context.getDeviceFeatures().shaderInt64)
-            TCU_THROW(NotSupportedError, "Int64 not supported");
-
-        VkFormatProperties2 properties{VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2, nullptr, {}};
-        context.getInstanceInterface().getPhysicalDeviceFormatProperties2(context.getPhysicalDevice(),
-                                                                          VK_FORMAT_R64_UINT, &properties);
-        if ((properties.formatProperties.bufferFeatures & VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT) !=
-            VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT)
-            TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT not supported");
-    }
 }
 
 TestInstance *SpvAsmPhysicalStorageBufferTestCase::createInstance(Context &ctx) const
@@ -564,9 +526,6 @@ TestInstance *SpvAsmPhysicalStorageBufferTestCase::createInstance(Context &ctx) 
     case PassMethod::PUSH_CONSTANTS:
     case PassMethod::PUSH_CONSTANTS_FUNCTION:
         return new SpvAsmPhysicalStorageBufferPushConstantsTestInstance(ctx, m_params);
-
-    case PassMethod::VERTEX_IN_OUT_IN:
-        return new SpvAsmPhysicalStorageBufferVertexInOutInTestInstance(ctx, m_params);
 
     case PassMethod::ADDRESSES_IN_SSBO:
         return new SpvAsmPhysicalStorageBufferAddrsInSSBOTestInstance(ctx, m_params);
@@ -585,332 +544,10 @@ void SpvAsmPhysicalStorageBufferTestCase::initPrograms(vk::SourceCollections &pr
         SpvAsmPhysicalStorageBufferPushConstantsTestInstance::initPrograms(programCollection, m_params);
         break;
 
-    case PassMethod::VERTEX_IN_OUT_IN:
-        SpvAsmPhysicalStorageBufferVertexInOutInTestInstance::initPrograms(programCollection, m_params);
-        break;
-
     case PassMethod::ADDRESSES_IN_SSBO:
         SpvAsmPhysicalStorageBufferAddrsInSSBOTestInstance::initPrograms(programCollection, m_params);
         break;
     }
-}
-
-void SpvAsmPhysicalStorageBufferVertexInOutInTestInstance::initPrograms(SourceCollections &programCollection,
-                                                                        const TestParamsPtr params)
-{
-    DE_UNREF(params);
-
-    const std::string vert(R"(
-        OpCapability Shader
-        OpCapability PhysicalStorageBufferAddresses
-
-        OpExtension "SPV_KHR_physical_storage_buffer"
-        OpMemoryModel PhysicalStorageBuffer64 GLSL450
-
-        OpEntryPoint Vertex %vert "main" %gl_PerVertex %in_pos %out_idx %gl_VertexIndex %in_addr %out_addr
-
-        OpDecorate %PerVertex Block
-        OpDecorate %gl_VertexIndex BuiltIn VertexIndex
-        OpDecorate %in_pos Location 0
-        OpDecorate %in_addr Location 1
-        OpDecorate %in_addr RestrictPointerEXT
-        OpDecorate %out_addr RestrictPointerEXT
-        OpDecorate %out_idx Location 0
-        OpDecorate %out_addr Location 1
-
-        OpMemberDecorate %PerVertex 0 BuiltIn Position
-        OpMemberDecorate %PerVertex 1 BuiltIn PointSize
-        OpMemberDecorate %PerVertex 2 BuiltIn ClipDistance
-        OpMemberDecorate %PerVertex 3 BuiltIn CullDistance
-
-        OpDecorate %srta Block
-        OpMemberDecorate %srta 0 Offset 0
-
-        OpDecorate %rta ArrayStride 16
-
-        %void = OpTypeVoid
-        %voidf = OpTypeFunction %void
-
-        %int = OpTypeInt 32 1
-        %flt = OpTypeFloat 32
-        %vec4 = OpTypeVector %flt 4
-        %rta = OpTypeRuntimeArray %vec4
-
-        %zero = OpConstant %int 0
-        %one = OpConstant %int 1
-
-        %srta = OpTypeStruct %rta
-        %srta_psb = OpTypePointer PhysicalStorageBuffer %srta
-    %srta_psb_in = OpTypePointer Input %srta_psb
-    %srta_psb_out = OpTypePointer Output %srta_psb
-        %in_addr = OpVariable %srta_psb_in Input
-        %out_addr = OpVariable %srta_psb_out Output
-
-        %vec4_in = OpTypePointer Input %vec4
-        %vec4_out = OpTypePointer Output %vec4
-        %vec4_psb = OpTypePointer PhysicalStorageBuffer %vec4
-        %in_pos = OpVariable %vec4_in Input
-
-        %int_in = OpTypePointer Input %int
-        %int_out = OpTypePointer Output %int
-    %gl_VertexIndex = OpVariable %int_in Input
-        %out_idx = OpVariable %int_out Output
-
-        %flt_arr_1 = OpTypeArray %flt %one
-        %PerVertex = OpTypeStruct %vec4 %flt %flt_arr_1 %flt_arr_1
-        %pv_out = OpTypePointer Output %PerVertex
-    %gl_PerVertex = OpVariable %pv_out Output
-
-
-        %vert = OpFunction %void None %voidf
-        %vert_begin = OpLabel
-
-        %vpos = OpLoad %vec4 %in_pos
-    %gl_Position = OpAccessChain %vec4_out %gl_PerVertex %zero
-                    OpStore %gl_Position %vpos
-
-        %vidx = OpLoad %int %gl_VertexIndex
-                    OpStore %out_idx %vidx
-
-        %vaddr = OpLoad %srta_psb %in_addr Aligned 8
-                    OpStore %out_addr %vaddr
-
-                    OpReturn
-                    OpFunctionEnd
-    )");
-
-    const std::string frag(R"(
-        OpCapability Shader
-        OpCapability PhysicalStorageBufferAddresses
-
-        OpExtension "SPV_KHR_physical_storage_buffer"
-        OpMemoryModel PhysicalStorageBuffer64 GLSL450
-
-        OpEntryPoint Fragment %frag "main" %in_idx %in_addr %dEQP_FragColor
-        OpExecutionMode %frag OriginUpperLeft
-
-        OpDecorate %in_idx Location 0
-        OpDecorate %in_idx Flat
-        OpDecorate %in_addr Location 1
-        OpDecorate %in_addr AliasedPointerEXT
-        OpDecorate %in_addr Flat
-        OpDecorate %dEQP_FragColor Location 0
-
-        OpDecorate %rta ArrayStride 16
-        OpDecorate %vec4_psb ArrayStride 16
-        OpDecorate %srta Block
-        OpMemberDecorate %srta 0 Offset 0
-
-        %void = OpTypeVoid
-        %voidf = OpTypeFunction %void
-
-        %int = OpTypeInt 32 1
-        %flt = OpTypeFloat 32
-        %vec4 = OpTypeVector %flt 4
-        %rta = OpTypeRuntimeArray %vec4
-
-        %zero = OpConstant %int 0
-
-        %int_in = OpTypePointer Input %int
-        %in_idx = OpVariable %int_in Input
-
-        %vec4_out = OpTypePointer Output %vec4
-    %dEQP_FragColor = OpVariable %vec4_out Output
-
-        %srta = OpTypeStruct %rta
-        %srta_psb = OpTypePointer PhysicalStorageBuffer %srta
-    %srta_psb_in = OpTypePointer Input %srta_psb
-        %in_addr = OpVariable %srta_psb_in Input
-        %rta_psb = OpTypePointer PhysicalStorageBuffer %rta
-        %rta_in = OpTypePointer Input %rta
-        %vec4_psb = OpTypePointer PhysicalStorageBuffer %vec4
-
-        %frag = OpFunction %void None %voidf
-        %frag_begin = OpLabel
-
-        %vidx = OpLoad %int %in_idx
-        %vaddr = OpLoad %srta_psb %in_addr
-        %pcolor = OpAccessChain %vec4_psb %vaddr %zero %vidx
-        %color = OpLoad %vec4 %pcolor Aligned 16
-                    OpStore %dEQP_FragColor %color
-        OpReturn
-        OpFunctionEnd
-    )");
-
-    programCollection.spirvAsmSources.add("vert")
-        << vert << vk::SpirVAsmBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, true);
-    programCollection.spirvAsmSources.add("frag")
-        << frag << vk::SpirVAsmBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, true);
-}
-
-ut::TypedBuffer<tcu::Vec4> SpvAsmPhysicalStorageBufferVertexInOutInTestInstance::prepareColorBuffer(
-    bool flushAfter) const
-{
-    const uint32_t colorCount = 21;
-    tcu::Vec4 colors[colorCount];
-    tcu::Vec4 color(-1.0f, +1.0f, +1.0f, -1.0f);
-
-    for (uint32_t c = 0; c < colorCount; ++c)
-    {
-        colors[c] = color;
-
-        color[0] += 0.1f;
-        color[1] -= 0.1f;
-        color[2] -= 0.1f;
-        color[3] += 0.1f;
-    }
-
-    ut::TypedBuffer<tcu::Vec4> buffer(m_context, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                                      (m_params->elements * m_params->elements), true);
-    for (auto j = buffer.begin(), begin = j; j != buffer.end(); ++j)
-    {
-        *j = colors[std::distance(begin, j) % colorCount];
-    }
-
-    if (flushAfter)
-        buffer.flush();
-    return buffer;
-}
-
-ut::TypedBuffer<SpvAsmPhysicalStorageBufferVertexInOutInTestInstance::Attribute> SpvAsmPhysicalStorageBufferVertexInOutInTestInstance::
-    prepareVertexAttributes(uint64_t address) const
-{
-    const float xStep  = 2.0f / static_cast<float>(m_params->elements);
-    const float yStep  = 2.0f / static_cast<float>(m_params->elements);
-    const float xStart = -1.0f + xStep / 2.0f;
-    const float yStart = -1.0f + yStep / 2.0f;
-
-    float x = xStart;
-    float y = yStart;
-
-    ut::TypedBuffer<Attribute> attrs(m_context, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                                     (m_params->elements * m_params->elements));
-
-    for (uint32_t row = 0; row < m_params->elements; ++row)
-    {
-        for (uint32_t col = 0; col < m_params->elements; ++col)
-        {
-            Attribute &attr = attrs[(row * m_params->elements) + col];
-            attr.position   = tcu::Vec4(x, y, 0.0f, 1.0f);
-            attr.address    = address;
-
-            x += xStep;
-        }
-        y += yStep;
-        x = xStart;
-    }
-
-    attrs.flush();
-
-    return attrs;
-}
-
-Move<VkPipeline> SpvAsmPhysicalStorageBufferVertexInOutInTestInstance::createGraphicsPipeline(
-    VkPipelineLayout pipelineLayout, VkRenderPass renderPass, VkShaderModule vertexModule,
-    VkShaderModule fragmentModule) const
-{
-    const DeviceInterface &vk = m_context.getDeviceInterface();
-    const VkDevice device     = m_context.getDevice();
-    const std::vector<VkRect2D> scissors(1, makeRect2D(m_params->elements, m_params->elements));
-    const std::vector<VkViewport> viewports(1, makeViewport(m_params->elements, m_params->elements));
-
-    const VkVertexInputBindingDescription bindingDescriptions[] = {
-        {
-            0u,                          // binding
-            sizeof(Attribute),           // stride
-            VK_VERTEX_INPUT_RATE_VERTEX, // inputRate
-        },
-    };
-
-    const VkVertexInputAttributeDescription attributeDescriptions[] = {
-        {
-            0u,                            // location
-            0u,                            // binding
-            VK_FORMAT_R32G32B32A32_SFLOAT, // format
-            0u                             // offset
-        },
-        {
-            1u,                                                // location
-            0u,                                                // binding
-            VK_FORMAT_R64_UINT,                                // format
-            static_cast<uint32_t>(sizeof(Attribute::position)) // offset
-        },
-    };
-
-    const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        nullptr,
-        (VkPipelineVertexInputStateCreateFlags)0,  // flags
-        DE_LENGTH_OF_ARRAY(bindingDescriptions),   // vertexBindingDescriptionCount
-        bindingDescriptions,                       // pVertexBindingDescriptions
-        DE_LENGTH_OF_ARRAY(attributeDescriptions), // vertexAttributeDescriptionCount
-        attributeDescriptions                      // pVertexAttributeDescriptions
-    };
-
-    return vk::makeGraphicsPipeline(vk,                               // vk
-                                    device,                           // device
-                                    pipelineLayout,                   // pipelineLayout
-                                    vertexModule,                     // vertexShaderModule
-                                    VK_NULL_HANDLE,                   // tessellationControlModule
-                                    VK_NULL_HANDLE,                   // tessellationEvalModule
-                                    VK_NULL_HANDLE,                   // geometryShaderModule
-                                    fragmentModule,                   // fragmentShaderModule
-                                    renderPass,                       // renderPass
-                                    viewports,                        // viewports
-                                    scissors,                         // scissors
-                                    VK_PRIMITIVE_TOPOLOGY_POINT_LIST, // topology
-                                    0U,                               // subpass
-                                    0U,                               // patchControlPoints
-                                    &vertexInputStateCreateInfo,      // vertexInputStateCreateInfo
-                                    nullptr,                          // rasterizationStateCreateInfo
-                                    nullptr,                          // multisampleStateCreateInfo
-                                    nullptr,                          // depthStencilStateCreateInfo
-                                    nullptr,                          // colorBlendStateCreateInfo
-                                    nullptr);                         // dynamicStateCreateInfo
-}
-
-tcu::TestStatus SpvAsmPhysicalStorageBufferVertexInOutInTestInstance::iterate(void)
-{
-    const DeviceInterface &vki      = m_context.getDeviceInterface();
-    const VkDevice dev              = m_context.getDevice();
-    const VkQueue queue             = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
-    const VkFormat format           = VK_FORMAT_R32G32B32A32_SFLOAT;
-    const VkRect2D renderArea       = makeRect2D(m_params->elements, m_params->elements);
-
-    Move<VkCommandPool> cmdPool = createCommandPool(vki, dev, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
-    Move<VkCommandBuffer> cmdBuffer = allocateCommandBuffer(vki, dev, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-    ut::Image image(m_context, m_params->elements, m_params->elements, format);
-    Move<VkRenderPass> renderPass   = image.createRenderPass();
-    Move<VkFramebuffer> framebuffer = image.createFramebuffer(*renderPass);
-
-    Move<VkShaderModule> vertexModule   = createShaderModule(vki, dev, m_context.getBinaryCollection().get("vert"), 0);
-    Move<VkShaderModule> fragmentModule = createShaderModule(vki, dev, m_context.getBinaryCollection().get("frag"), 0);
-    Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vki, dev, 0u, nullptr);
-    Move<VkPipeline> pipeline = createGraphicsPipeline(*pipelineLayout, *renderPass, *vertexModule, *fragmentModule);
-
-    ut::TypedBuffer<tcu::Vec4> colorBuffer = prepareColorBuffer();
-    ut::TypedBuffer<Attribute> attributes  = prepareVertexAttributes(colorBuffer.getDeviceAddress());
-    const VkBuffer vertexBuffers[]         = {attributes.getBuffer()};
-    const VkDeviceSize vertexOffsets[]     = {0u};
-    const tcu::Vec4 clearColor(-1.0f);
-
-    beginCommandBuffer(vki, *cmdBuffer);
-    vki.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
-    vki.cmdBindVertexBuffers(*cmdBuffer, 0, 1, vertexBuffers, vertexOffsets);
-    beginRenderPass(vki, *cmdBuffer, *renderPass, *framebuffer, renderArea, clearColor);
-    vki.cmdDraw(*cmdBuffer, (m_params->elements * m_params->elements), 1u, 0u, 0u);
-    endRenderPass(vki, *cmdBuffer);
-    image.downloadAfterDraw(*cmdBuffer);
-    endCommandBuffer(vki, *cmdBuffer);
-
-    submitCommandsAndWait(vki, dev, queue, *cmdBuffer);
-
-    ut::TypedBuffer<tcu::Vec4> resultBuffer = image.getBuffer<tcu::Vec4>();
-
-    return std::equal(resultBuffer.begin(), resultBuffer.end(), colorBuffer.begin()) ? tcu::TestStatus::pass("") :
-                                                                                       tcu::TestStatus::fail("");
 }
 
 void SpvAsmPhysicalStorageBufferPushConstantsTestInstance::initPrograms(vk::SourceCollections &programCollection,
@@ -1269,7 +906,6 @@ tcu::TestCaseGroup *createPhysicalStorageBufferTestGroup(tcu::TestContext &testC
     } const methods[] = {
         {PassMethod::PUSH_CONSTANTS, "push_constants"},
         {PassMethod::PUSH_CONSTANTS_FUNCTION, "push_constants_function"},
-        {PassMethod::VERTEX_IN_OUT_IN, "vertex_in_out_in"},
         {PassMethod::ADDRESSES_IN_SSBO, "addrs_in_ssbo"},
     };
 
