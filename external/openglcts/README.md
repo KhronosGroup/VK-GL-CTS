@@ -218,12 +218,12 @@ To download sources, run:
 
 	python external/fetch_sources.py
 
-For OpenGL CTS releases, and OpenGL ES CTS releases prior to opengl-es-cts-3.2.4.0
+For OpenGL CTS releases prior to opengl-cts-4.6.6, and OpenGL ES CTS releases prior to opengl-es-cts-3.2.4.0
 download Khronos Confidential Conformance Test Suite:
 
 	python external/fetch_kc_cts.py
 
-For OpenGL CTS releases, and OpenGL ES CTS releases prior to opengl-es-cts-3.2.4.0
+For OpenGL CTS releases prior to opengl-cts-4.6.6, and OpenGL ES CTS releases prior to opengl-es-cts-3.2.4.0
 the results for the tests included in this suite must be included in a
 conformance submission.
 
