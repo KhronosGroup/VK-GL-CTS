@@ -428,8 +428,8 @@ void PolygonOffsetClampValueTestCaseBase::test(const glw::Functions &gl)
     gl.disableVertexAttribArray(0);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glDisableVertexAttribArray");
 
-    gl.deleteVertexArrays(1, &arrayBuffer);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteVertexArrays");
+    gl.deleteBuffers(1, &arrayBuffer);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteBuffers");
 
     gl.deleteVertexArrays(1, &vao);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteVertexArrays");
