@@ -1,7 +1,9 @@
+dEQP-VK.sparse_resources.buffer.indirect_dispatch.sparse_residency
 dEQP-VK.sparse_resources.buffer.transfer.rebind.buffer_size_2_16
 dEQP-VK.sparse_resources.buffer.transfer.rebind.buffer_size_2_18
 dEQP-VK.sparse_resources.buffer.transfer.rebind.buffer_size_2_20
 dEQP-VK.sparse_resources.buffer.transfer.rebind.buffer_size_2_24
+dEQP-VK.sparse_resources.buffer.transform_feedback.sparse_residency
 dEQP-VK.sparse_resources.device_group_image_sparse_binding.multiple_bind_sparse_info.1d.r16.1024_1_1
 dEQP-VK.sparse_resources.device_group_image_sparse_binding.multiple_bind_sparse_info.1d.r16.11_1_1
 dEQP-VK.sparse_resources.device_group_image_sparse_binding.multiple_bind_sparse_info.1d.r16.512_1_1
