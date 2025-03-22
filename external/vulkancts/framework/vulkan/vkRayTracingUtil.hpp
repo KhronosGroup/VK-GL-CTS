@@ -175,6 +175,20 @@ public:
         m_hasOpacityMicromap      = true;
         m_opacityGeometryMicromap = *opacityGeometryMicromap;
     }
+    inline bool getHasMotionBlur(void) const
+    {
+        return m_hasMotionBlur;
+    }
+    inline VkAccelerationStructureGeometryMotionTrianglesDataNV &getMotionBlurData(void)
+    {
+        return m_motionData;
+    }
+    inline void setMotionBlur(const VkAccelerationStructureGeometryMotionTrianglesDataNV *motionBlurData)
+    {
+        DE_ASSERT(motionBlurData);
+        m_hasMotionBlur = true;
+        m_motionData    = *motionBlurData;
+    }
     virtual uint32_t getVertexCount(void) const                           = 0;
     virtual const uint8_t *getVertexPointer(void) const                   = 0;
     virtual VkDeviceSize getVertexStride(void) const                      = 0;
@@ -198,7 +212,9 @@ private:
     VkIndexType m_indexType;
     VkGeometryFlagsKHR m_geometryFlags;
     bool m_hasOpacityMicromap;
+    bool m_hasMotionBlur;
     VkAccelerationStructureTrianglesOpacityMicromapEXT m_opacityGeometryMicromap;
+    VkAccelerationStructureGeometryMotionTrianglesDataNV m_motionData;
 };
 
 template <typename T>
@@ -879,7 +895,8 @@ public:
     virtual void addGeometry(de::SharedPtr<RaytracedGeometryBase> &raytracedGeometry);
     virtual void addGeometry(
         const std::vector<tcu::Vec3> &geometryData, const bool triangles, const VkGeometryFlagsKHR geometryFlags = 0u,
-        const VkAccelerationStructureTrianglesOpacityMicromapEXT *opacityGeometryMicromap = nullptr);
+        const VkAccelerationStructureTrianglesOpacityMicromapEXT *opacityGeometryMicromap = nullptr,
+        const VkAccelerationStructureGeometryMotionTrianglesDataNV *motionData            = nullptr);
 
     virtual void setBuildType(const VkAccelerationStructureBuildTypeKHR buildType)                         = 0;
     virtual VkAccelerationStructureBuildTypeKHR getBuildType() const                                       = 0;
@@ -1098,6 +1115,7 @@ public:
                                             const uint32_t indirectBufferStride)                           = 0;
     virtual void setUsePPGeometries(const bool usePPGeometries)                                            = 0;
     virtual void setTryCachedMemory(const bool tryCachedMemory)                                            = 0;
+    virtual void setMaxMotionInstances(const uint32_t maxMotionInstances)                                  = 0;
     virtual VkBuildAccelerationStructureFlagsKHR getBuildFlags() const                                     = 0;
     VkAccelerationStructureBuildSizesInfoKHR getStructureBuildSizes() const;
 

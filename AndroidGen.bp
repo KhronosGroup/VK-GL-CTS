@@ -474,6 +474,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingPositionFetchTests.cpp",
         "external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingProceduralGeometryTests.cpp",
         "external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingShaderBindingTableTests.cpp",
+        "external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingShaderExecutionReorderTests.cpp",
         "external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingTests.cpp",
         "external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingTraceRaysTests.cpp",
         "external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingTraversalControlTests.cpp",

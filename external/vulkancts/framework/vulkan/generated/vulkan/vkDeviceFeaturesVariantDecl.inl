@@ -148,6 +148,7 @@ typedef std::variant<
     , VkPhysicalDeviceDescriptorSetHostMappingFeaturesVALVE
     , VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT
     , VkPhysicalDeviceRenderPassStripedFeaturesARM
+    , VkPhysicalDeviceCopyMemoryIndirectFeaturesNV
     , VkPhysicalDeviceMemoryDecompressionFeaturesNV
     , VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV
     , VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV
@@ -176,7 +177,6 @@ typedef std::variant<
     , VkPhysicalDeviceAmigoProfilingFeaturesSEC
     , VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR
     , VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM
-    , VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV
     , VkPhysicalDeviceCooperativeVectorFeaturesNV
     , VkPhysicalDeviceExtendedSparseAddressSpaceFeaturesNV
     , VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT
@@ -223,6 +223,7 @@ typedef std::variant<
     , VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT
     , VkPhysicalDeviceMaintenance8FeaturesKHR
     , VkPhysicalDeviceImageAlignmentControlFeaturesMESA
+    , VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT
     , VkPhysicalDeviceDepthClampControlFeaturesEXT
     , VkPhysicalDeviceMaintenance9FeaturesKHR
     , VkPhysicalDeviceVideoMaintenance2FeaturesKHR

@@ -465,9 +465,6 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
     vk::SpirVAsmBuildOptions defaultSpirvAsmBuildOptions(usedVulkanVersion, baselineSpirvVersion);
     vk::SourceCollections sourceProgs(usedVulkanVersion, defaultGlslBuildOptions, defaultHlslBuildOptions,
                                       defaultSpirvAsmBuildOptions);
-    const tcu::CommandLine &commandLine = m_contextManager->getCommandLine();
-    const bool doShaderLog              = commandLine.isLogDecompiledSpirvEnabled() && log.isShaderLoggingEnabled();
-
     {
 #ifdef CTS_USES_VULKANSC
         // Some functions, such as checkSupport() or initDeviceCapabilities(), and especially
@@ -481,6 +478,9 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
     }
 
     m_context = m_contextManager->findContext(m_contextManager, vktCase, m_context, m_progCollection);
+
+    const tcu::CommandLine &commandLine = m_context->getTestContext().getCommandLine();
+    const bool doShaderLog              = commandLine.isLogDecompiledSpirvEnabled() && log.isShaderLoggingEnabled();
 
     {
 #ifdef CTS_USES_VULKANSC
