@@ -28,6 +28,7 @@
 #include "vktTestGroupUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
 #include "vktRenderPassTestsUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
@@ -42,6 +43,7 @@
 #include <sstream>
 #include <vector>
 #include <set>
+#include <mutex>
 
 // Each test generates an image with a color gradient where all colors should be unique when rendered without density map
 // ( and for multi_view tests - the quantity of each color in a histogram should be 2 instead of 1 ).
@@ -113,12 +115,20 @@ struct Vertex4RGBA
     tcu::Vec4 color;
 };
 
-de::SharedPtr<Move<vk::VkDevice>> g_singletonDevice;
-
-VkDevice getDevice(Context &context)
+class DeviceHelper
 {
-    if (!g_singletonDevice)
+public:
+    DeviceHelper(Context &context)
+        : m_instance()
+        , m_physicalDevice(VK_NULL_HANDLE)
+        , m_device()
+        , m_vkd()
+        , m_queueFamilyIndex(context.getUniversalQueueFamilyIndex())
+        , m_queue(VK_NULL_HANDLE)
+        , m_allocator()
     {
+        m_instance = createCustomInstanceWithExtensions(context, context.getInstanceExtensions());
+
         const float queuePriority = 1.0f;
 
         // Create a universal queue that supports graphics and compute
@@ -126,7 +136,7 @@ VkDevice getDevice(Context &context)
             VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
             DE_NULL,                                    // const void* pNext;
             0u,                                         // VkDeviceQueueCreateFlags flags;
-            context.getUniversalQueueFamilyIndex(),     // uint32_t queueFamilyIndex;
+            m_queueFamilyIndex,                         // uint32_t queueFamilyIndex;
             1u,                                         // uint32_t queueCount;
             &queuePriority                              // const float* pQueuePriorities;
         };
@@ -166,7 +176,11 @@ VkDevice getDevice(Context &context)
 
         addFeatures(&fragmentDensityMapFeatures);
 
-        context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+        const auto &vki     = m_instance.getDriver();
+        const auto &cmdLine = context.getTestContext().getCommandLine();
+        m_physicalDevice    = chooseDevice(vki, m_instance, cmdLine);
+
+        vki.getPhysicalDeviceFeatures2(m_physicalDevice, &features2);
         features2.features.robustBufferAccess = VK_FALSE;
 
         const VkDeviceCreateInfo deviceCreateInfo{
@@ -182,13 +196,73 @@ VkDevice getDevice(Context &context)
             nullptr,                              //pEnabledFeatures;
         };
 
-        Move<VkDevice> device = createCustomDevice(
-            context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(),
-            context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &deviceCreateInfo);
-        g_singletonDevice = de::SharedPtr<Move<VkDevice>>(new Move<VkDevice>(device));
+        const auto &vkp = context.getPlatformInterface();
+
+        m_device = createCustomDevice(cmdLine.isValidationEnabled(), vkp, m_instance, vki, m_physicalDevice,
+                                      &deviceCreateInfo);
+
+        m_vkd.reset(new DeviceDriver(vkp, m_instance, *m_device, context.getUsedApiVersion(), cmdLine));
+        m_vkd->getDeviceQueue(*m_device, m_queueFamilyIndex, 0u, &m_queue);
+
+        VkPhysicalDeviceMemoryProperties memoryProperties;
+        vki.getPhysicalDeviceMemoryProperties(m_physicalDevice, &memoryProperties);
+        m_allocator.reset(new SimpleAllocator(*m_vkd, *m_device, memoryProperties));
     }
 
-    return g_singletonDevice->get();
+    const InstanceInterface &getInstanceInterface() const
+    {
+        return m_instance.getDriver();
+    }
+    VkInstance getInstance() const
+    {
+        return m_instance;
+    }
+    VkPhysicalDevice getPhysicalDevice() const
+    {
+        return m_physicalDevice;
+    }
+    const DeviceInterface &getDeviceInterface() const
+    {
+        return *m_vkd;
+    }
+    VkDevice getDevice() const
+    {
+        return *m_device;
+    }
+    uint32_t getQueueFamilyIndex() const
+    {
+        return m_queueFamilyIndex;
+    }
+    VkQueue getQueue() const
+    {
+        return m_queue;
+    }
+    Allocator &getAllocator() const
+    {
+        return *m_allocator;
+    }
+
+protected:
+    CustomInstance m_instance;
+    VkPhysicalDevice m_physicalDevice;
+    Move<VkDevice> m_device;
+    std::unique_ptr<DeviceDriver> m_vkd;
+    uint32_t m_queueFamilyIndex;
+    VkQueue m_queue;
+    std::unique_ptr<SimpleAllocator> m_allocator;
+};
+
+// With non-null context, creates and gets the device. With null context, destroys it.
+std::unique_ptr<DeviceHelper> g_deviceHelperPtr;
+
+DeviceHelper &getDeviceHelper(Context &context)
+{
+    std::mutex creationMutex;
+    std::lock_guard<std::mutex> lockGuard(creationMutex);
+
+    if (!g_deviceHelperPtr)
+        g_deviceHelperPtr.reset(new DeviceHelper(context));
+    return *g_deviceHelperPtr;
 }
 
 std::vector<Vertex4RGBA> createFullscreenMesh(uint32_t viewCount, tcu::Vec2 redGradient, tcu::Vec2 greenGradient)
@@ -229,7 +303,7 @@ std::vector<Vertex4RGBA> createFullscreenMesh(uint32_t viewCount, tcu::Vec2 redG
 
 template <typename T>
 void createVertexBuffer(const DeviceInterface &vk, VkDevice vkDevice, const uint32_t &queueFamilyIndex,
-                        SimpleAllocator &memAlloc, const std::vector<T> &vertices, Move<VkBuffer> &vertexBuffer,
+                        Allocator &memAlloc, const std::vector<T> &vertices, Move<VkBuffer> &vertexBuffer,
                         de::MovePtr<Allocation> &vertexAlloc)
 {
     const VkBufferCreateInfo vertexBufferParams = {
@@ -253,7 +327,7 @@ void createVertexBuffer(const DeviceInterface &vk, VkDevice vkDevice, const uint
     flushAlloc(vk, vkDevice, *vertexAlloc);
 }
 
-void prepareImageAndImageView(const DeviceInterface &vk, VkDevice vkDevice, SimpleAllocator &memAlloc,
+void prepareImageAndImageView(const DeviceInterface &vk, VkDevice vkDevice, Allocator &memAlloc,
                               VkImageCreateFlags imageCreateFlags, VkFormat format, VkExtent3D extent,
                               uint32_t arrayLayers, VkSampleCountFlagBits samples, VkImageUsageFlags usage,
                               uint32_t queueFamilyIndex, VkImageViewCreateFlags viewFlags, VkImageViewType viewType,
@@ -1078,19 +1152,20 @@ public:
 private:
     typedef std::shared_ptr<RenderPassWrapperBase> RenderPassWrapperBasePtr;
 
-    void drawDynamicDensityMap(VkCommandBuffer cmdBuffer);
-    void drawSubsampledImage(VkCommandBuffer cmdBuffer);
-    void drawCopySubsampledImage(VkCommandBuffer cmdBuffer);
-    void drawResampleSubsampledImage(VkCommandBuffer cmdBuffer);
-    void drawOutputSubsampledImage(VkCommandBuffer cmdBuffer);
-    void remapingBeforeCopySubsampledImage(VkCommandBuffer cmdBuffer);
-    void createCommandBufferForRenderpass(RenderPassWrapperBasePtr renderPassWrapper, const VkExtent3D &colorImageSize,
+    void drawDynamicDensityMap(const DeviceInterface &vk, VkCommandBuffer cmdBuffer);
+    void drawSubsampledImage(const DeviceInterface &vk, VkCommandBuffer cmdBuffer);
+    void drawCopySubsampledImage(const DeviceInterface &vk, VkCommandBuffer cmdBuffer);
+    void drawResampleSubsampledImage(const DeviceInterface &vk, VkCommandBuffer cmdBuffer);
+    void drawOutputSubsampledImage(const DeviceInterface &vk, VkCommandBuffer cmdBuffer);
+    void remapingBeforeCopySubsampledImage(const DeviceInterface &vk, VkCommandBuffer cmdBuffer);
+    void createCommandBufferForRenderpass(const DeviceInterface &vk, VkDevice device,
+                                          RenderPassWrapperBasePtr renderPassWrapper, const VkExtent3D &colorImageSize,
                                           const VkRect2D &dynamicDensityMapRenderArea,
                                           const VkRect2D &colorImageRenderArea, const VkRect2D &outputRenderArea);
-    void createCommandBufferForDynamicRendering(const VkRect2D &dynamicDensityMapRenderArea,
-                                                const VkRect2D &colorImageRenderArea, const VkRect2D &outputRenderArea,
-                                                const VkDevice &vkDevice);
-    tcu::TestStatus verifyImage(void);
+    void createCommandBufferForDynamicRendering(const DeviceInterface &vk, VkDevice vkDevice,
+                                                const VkRect2D &dynamicDensityMapRenderArea,
+                                                const VkRect2D &colorImageRenderArea, const VkRect2D &outputRenderArea);
+    tcu::TestStatus verifyImage(const DeviceHelper &deviceHelper);
 
 private:
     typedef de::SharedPtr<Unique<VkSampler>> VkSamplerSp;
@@ -1453,13 +1528,12 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
                                1.0f / static_cast<float>(m_testParams.fragmentArea.y()));
     m_viewMask     = (m_testParams.viewCount > 1) ? ((1u << m_testParams.viewCount) - 1u) : 0u;
 
-    const DeviceInterface &vk               = m_context.getDeviceInterface();
-    const VkDevice vkDevice                 = getDevice(m_context);
-    const VkPhysicalDevice vkPhysicalDevice = m_context.getPhysicalDevice();
-    const uint32_t queueFamilyIndex         = m_context.getUniversalQueueFamilyIndex();
-    const VkQueue queue                     = getDeviceQueue(vk, vkDevice, queueFamilyIndex, 0);
-    SimpleAllocator memAlloc(vk, vkDevice,
-                             getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), vkPhysicalDevice));
+    const auto &deviceHelper                      = getDeviceHelper(m_context);
+    const DeviceInterface &vk                     = deviceHelper.getDeviceInterface();
+    const VkDevice vkDevice                       = deviceHelper.getDevice();
+    const uint32_t queueFamilyIndex               = deviceHelper.getQueueFamilyIndex();
+    const VkQueue queue                           = deviceHelper.getQueue();
+    auto &memAlloc                                = deviceHelper.getAllocator();
     const VkComponentMapping componentMappingRGBA = makeComponentMappingRGBA();
     RenderPassWrapperBasePtr renderPassWrapper;
 
@@ -1703,7 +1777,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
             {
                 return VkFramebufferAttachmentImageInfo{
                     VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO, // VkStructureType sType;
-                    DE_NULL,                                             // const void* pNext;
+                    nullptr,                                             // const void* pNext;
                     createFlags,                                         // VkImageCreateFlags flags;
                     usageFlags,                                          // VkImageUsageFlags usage;
                     extent.width,                                        // uint32_t width;
@@ -2058,16 +2132,15 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
     m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
     if (isDynamicRendering)
-        createCommandBufferForDynamicRendering(dynamicDensityMapRenderArea[0], colorImageRect, outputRenderArea[0],
-                                               vkDevice);
+        createCommandBufferForDynamicRendering(vk, vkDevice, dynamicDensityMapRenderArea[0], colorImageRect,
+                                               outputRenderArea[0]);
     else
-        createCommandBufferForRenderpass(renderPassWrapper, colorImageSize, dynamicDensityMapRenderArea[0],
-                                         colorImageRect, outputRenderArea[0]);
+        createCommandBufferForRenderpass(vk, vkDevice, renderPassWrapper, colorImageSize,
+                                         dynamicDensityMapRenderArea[0], colorImageRect, outputRenderArea[0]);
 }
 
-void FragmentDensityMapTestInstance::drawDynamicDensityMap(VkCommandBuffer cmdBuffer)
+void FragmentDensityMapTestInstance::drawDynamicDensityMap(const DeviceInterface &vk, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vk             = m_context.getDeviceInterface();
     const VkDeviceSize vertexBufferOffset = 0;
 
     vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineProduceDynamicDensityMap);
@@ -2075,9 +2148,8 @@ void FragmentDensityMapTestInstance::drawDynamicDensityMap(VkCommandBuffer cmdBu
     vk.cmdDraw(cmdBuffer, (uint32_t)m_verticesDDM.size(), 1, 0, 0);
 }
 
-void FragmentDensityMapTestInstance::drawSubsampledImage(VkCommandBuffer cmdBuffer)
+void FragmentDensityMapTestInstance::drawSubsampledImage(const DeviceInterface &vk, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vk             = m_context.getDeviceInterface();
     const VkDeviceSize vertexBufferOffset = 0;
 
     vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineProduceSubsampledImage);
@@ -2085,9 +2157,8 @@ void FragmentDensityMapTestInstance::drawSubsampledImage(VkCommandBuffer cmdBuff
     vk.cmdDraw(cmdBuffer, (uint32_t)m_vertices.size(), 1, 0, 0);
 }
 
-void FragmentDensityMapTestInstance::drawCopySubsampledImage(VkCommandBuffer cmdBuffer)
+void FragmentDensityMapTestInstance::drawCopySubsampledImage(const DeviceInterface &vk, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vk             = m_context.getDeviceInterface();
     const VkDeviceSize vertexBufferOffset = 0;
 
     vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineCopySubsampledImage);
@@ -2097,9 +2168,8 @@ void FragmentDensityMapTestInstance::drawCopySubsampledImage(VkCommandBuffer cmd
     vk.cmdDraw(cmdBuffer, (uint32_t)m_vertices.size(), 1, 0, 0);
 }
 
-void FragmentDensityMapTestInstance::drawResampleSubsampledImage(VkCommandBuffer cmdBuffer)
+void FragmentDensityMapTestInstance::drawResampleSubsampledImage(const DeviceInterface &vk, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vk             = m_context.getDeviceInterface();
     const VkDeviceSize vertexBufferOffset = 0;
 
     vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineUpdateSubsampledImage);
@@ -2109,9 +2179,8 @@ void FragmentDensityMapTestInstance::drawResampleSubsampledImage(VkCommandBuffer
     vk.cmdDraw(cmdBuffer, (uint32_t)m_vertices.size(), 1, 0, 0);
 }
 
-void FragmentDensityMapTestInstance::drawOutputSubsampledImage(VkCommandBuffer cmdBuffer)
+void FragmentDensityMapTestInstance::drawOutputSubsampledImage(const DeviceInterface &vk, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vk             = m_context.getDeviceInterface();
     const VkDeviceSize vertexBufferOffset = 0;
 
     vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineOutputSubsampledImage);
@@ -2121,10 +2190,9 @@ void FragmentDensityMapTestInstance::drawOutputSubsampledImage(VkCommandBuffer c
     vk.cmdDraw(cmdBuffer, (uint32_t)m_verticesOutput.size(), 1, 0, 0);
 }
 
-void FragmentDensityMapTestInstance::remapingBeforeCopySubsampledImage(VkCommandBuffer cmdBuffer)
+void FragmentDensityMapTestInstance::remapingBeforeCopySubsampledImage(const DeviceInterface &vk,
+                                                                       VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
-
     // Barier before next subpass
     VkMemoryBarrier memoryBarrier =
         makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT);
@@ -2139,14 +2207,13 @@ void FragmentDensityMapTestInstance::remapingBeforeCopySubsampledImage(VkCommand
     vk.cmdSetRenderingAttachmentLocationsKHR(cmdBuffer, &renderingAttachmentLocationInfo);
 }
 
-void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPassWrapperBasePtr renderPassWrapper,
+void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(const DeviceInterface &vk, VkDevice vkDevice,
+                                                                      RenderPassWrapperBasePtr renderPassWrapper,
                                                                       const VkExtent3D &colorImageSize,
                                                                       const VkRect2D &dynamicDensityMapRenderArea,
                                                                       const VkRect2D &colorImageRenderArea,
                                                                       const VkRect2D &outputRenderArea)
 {
-    const DeviceInterface &vk               = m_context.getDeviceInterface();
-    const VkDevice vkDevice                 = getDevice(m_context);
     const bool isColorImageMultisampled     = m_testParams.colorSamples != VK_SAMPLE_COUNT_1_BIT;
     const VkClearValue attachmentClearValue = makeClearValueColorF32(0.0f, 0.0f, 0.0f, 1.0f);
     const VkClearValue depthClearValue      = makeClearValueDepthStencil(1.0f, 0u);
@@ -2178,7 +2245,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
             m_dynamicDensityMapSecCmdBuffer =
                 allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
             vk.beginCommandBuffer(*m_dynamicDensityMapSecCmdBuffer, &commandBufBeginParams);
-            drawDynamicDensityMap(*m_dynamicDensityMapSecCmdBuffer);
+            drawDynamicDensityMap(vk, *m_dynamicDensityMapSecCmdBuffer);
             endCommandBuffer(vk, *m_dynamicDensityMapSecCmdBuffer);
         }
 
@@ -2187,11 +2254,11 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
         m_subsampledImageSecCmdBuffer =
             allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
         vk.beginCommandBuffer(*m_subsampledImageSecCmdBuffer, &commandBufBeginParams);
-        drawSubsampledImage(*m_subsampledImageSecCmdBuffer);
+        drawSubsampledImage(vk, *m_subsampledImageSecCmdBuffer);
         if (m_testParams.makeCopy)
         {
             renderPassWrapper->cmdNextSubpass(*m_subsampledImageSecCmdBuffer);
-            drawCopySubsampledImage(*m_subsampledImageSecCmdBuffer);
+            drawCopySubsampledImage(vk, *m_subsampledImageSecCmdBuffer);
         }
         endCommandBuffer(vk, *m_subsampledImageSecCmdBuffer);
 
@@ -2202,7 +2269,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
             m_resampleSubsampledImageSecCmdBuffer =
                 allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
             vk.beginCommandBuffer(*m_resampleSubsampledImageSecCmdBuffer, &commandBufBeginParams);
-            drawResampleSubsampledImage(*m_resampleSubsampledImageSecCmdBuffer);
+            drawResampleSubsampledImage(vk, *m_resampleSubsampledImageSecCmdBuffer);
             endCommandBuffer(vk, *m_resampleSubsampledImageSecCmdBuffer);
         }
 
@@ -2211,7 +2278,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
         m_outputSubsampledImageSecCmdBuffer =
             allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
         vk.beginCommandBuffer(*m_outputSubsampledImageSecCmdBuffer, &commandBufBeginParams);
-        drawOutputSubsampledImage(*m_outputSubsampledImageSecCmdBuffer);
+        drawOutputSubsampledImage(vk, *m_outputSubsampledImageSecCmdBuffer);
         endCommandBuffer(vk, *m_outputSubsampledImageSecCmdBuffer);
     }
 
@@ -2244,7 +2311,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
         if (m_testParams.groupParams->useSecondaryCmdBuffer)
             vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_dynamicDensityMapSecCmdBuffer);
         else
-            drawDynamicDensityMap(*m_cmdBuffer);
+            drawDynamicDensityMap(vk, *m_cmdBuffer);
 
         renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
     }
@@ -2292,11 +2359,11 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
             vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_subsampledImageSecCmdBuffer);
         else
         {
-            drawSubsampledImage(*m_cmdBuffer);
+            drawSubsampledImage(vk, *m_cmdBuffer);
             if (m_testParams.makeCopy)
             {
                 renderPassWrapper->cmdNextSubpass(*m_cmdBuffer);
-                drawCopySubsampledImage(*m_cmdBuffer);
+                drawCopySubsampledImage(vk, *m_cmdBuffer);
             }
         }
 
@@ -2328,7 +2395,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
         if (m_testParams.groupParams->useSecondaryCmdBuffer)
             vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_resampleSubsampledImageSecCmdBuffer);
         else
-            drawResampleSubsampledImage(*m_cmdBuffer);
+            drawResampleSubsampledImage(vk, *m_cmdBuffer);
 
         renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
     }
@@ -2356,19 +2423,19 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
     if (m_testParams.groupParams->useSecondaryCmdBuffer)
         vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_outputSubsampledImageSecCmdBuffer);
     else
-        drawOutputSubsampledImage(*m_cmdBuffer);
+        drawOutputSubsampledImage(vk, *m_cmdBuffer);
 
     renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
 
     endCommandBuffer(vk, *m_cmdBuffer);
 }
 
-void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(const VkRect2D &dynamicDensityMapRenderArea,
+void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(const DeviceInterface &vk,
+                                                                            VkDevice vkDevice,
+                                                                            const VkRect2D &dynamicDensityMapRenderArea,
                                                                             const VkRect2D &colorImageRenderArea,
-                                                                            const VkRect2D &outputRenderArea,
-                                                                            const VkDevice &vkDevice)
+                                                                            const VkRect2D &outputRenderArea)
 {
-    const DeviceInterface &vk           = m_context.getDeviceInterface();
     const bool isColorImageMultisampled = m_testParams.colorSamples != VK_SAMPLE_COUNT_1_BIT;
     std::vector<VkClearValue> attachmentClearValuesDDM{makeClearValueColorF32(1.0f, 1.0f, 1.0f, 1.0f)};
     const VkClearValue attachmentClearValue = makeClearValueColorF32(0.0f, 0.0f, 0.0f, 1.0f);
@@ -2607,7 +2674,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
             {
                 vk.beginCommandBuffer(*m_dynamicDensityMapSecCmdBuffer, &commandBufBeginParams);
                 vk.cmdBeginRendering(*m_dynamicDensityMapSecCmdBuffer, &dynamicDensityMapRenderingInfo);
-                drawDynamicDensityMap(*m_dynamicDensityMapSecCmdBuffer);
+                drawDynamicDensityMap(vk, *m_dynamicDensityMapSecCmdBuffer);
                 vk.cmdEndRendering(*m_dynamicDensityMapSecCmdBuffer);
                 endCommandBuffer(vk, *m_dynamicDensityMapSecCmdBuffer);
             }
@@ -2616,11 +2683,11 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
             inheritanceRenderingInfo.rasterizationSamples    = m_testParams.colorSamples;
             vk.beginCommandBuffer(*m_subsampledImageSecCmdBuffer, &commandBufBeginParams);
             vk.cmdBeginRendering(*m_subsampledImageSecCmdBuffer, &subsampledImageRenderingInfo);
-            drawSubsampledImage(*m_subsampledImageSecCmdBuffer);
+            drawSubsampledImage(vk, *m_subsampledImageSecCmdBuffer);
             if (m_testParams.makeCopy)
             {
-                remapingBeforeCopySubsampledImage(*m_subsampledImageSecCmdBuffer);
-                drawCopySubsampledImage(*m_subsampledImageSecCmdBuffer);
+                remapingBeforeCopySubsampledImage(vk, *m_subsampledImageSecCmdBuffer);
+                drawCopySubsampledImage(vk, *m_subsampledImageSecCmdBuffer);
             }
             vk.cmdEndRendering(*m_subsampledImageSecCmdBuffer);
             endCommandBuffer(vk, *m_subsampledImageSecCmdBuffer);
@@ -2629,7 +2696,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
             {
                 vk.beginCommandBuffer(*m_resampleSubsampledImageSecCmdBuffer, &commandBufBeginParams);
                 vk.cmdBeginRendering(*m_resampleSubsampledImageSecCmdBuffer, &resampleSubsampledImageRenderingInfo);
-                drawResampleSubsampledImage(*m_resampleSubsampledImageSecCmdBuffer);
+                drawResampleSubsampledImage(vk, *m_resampleSubsampledImageSecCmdBuffer);
                 vk.cmdEndRendering(*m_resampleSubsampledImageSecCmdBuffer);
                 endCommandBuffer(vk, *m_resampleSubsampledImageSecCmdBuffer);
             }
@@ -2638,7 +2705,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
             inheritanceRenderingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
             vk.beginCommandBuffer(*m_outputSubsampledImageSecCmdBuffer, &commandBufBeginParams);
             vk.cmdBeginRendering(*m_outputSubsampledImageSecCmdBuffer, &copySubsampledRenderingInfo);
-            drawOutputSubsampledImage(*m_outputSubsampledImageSecCmdBuffer);
+            drawOutputSubsampledImage(vk, *m_outputSubsampledImageSecCmdBuffer);
             vk.cmdEndRendering(*m_outputSubsampledImageSecCmdBuffer);
             endCommandBuffer(vk, *m_outputSubsampledImageSecCmdBuffer);
         }
@@ -2649,27 +2716,27 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
             if (m_testParams.dynamicDensityMap)
             {
                 vk.beginCommandBuffer(*m_dynamicDensityMapSecCmdBuffer, &commandBufBeginParams);
-                drawDynamicDensityMap(*m_dynamicDensityMapSecCmdBuffer);
+                drawDynamicDensityMap(vk, *m_dynamicDensityMapSecCmdBuffer);
                 endCommandBuffer(vk, *m_dynamicDensityMapSecCmdBuffer);
             }
 
             inheritanceRenderingInfo.pColorAttachmentFormats = &colorImageFormat;
             inheritanceRenderingInfo.rasterizationSamples    = m_testParams.colorSamples;
             vk.beginCommandBuffer(*m_subsampledImageSecCmdBuffer, &commandBufBeginParams);
-            drawSubsampledImage(*m_subsampledImageSecCmdBuffer);
+            drawSubsampledImage(vk, *m_subsampledImageSecCmdBuffer);
             endCommandBuffer(vk, *m_subsampledImageSecCmdBuffer);
 
             if (m_testParams.subsampledLoads)
             {
                 vk.beginCommandBuffer(*m_resampleSubsampledImageSecCmdBuffer, &commandBufBeginParams);
-                drawResampleSubsampledImage(*m_resampleSubsampledImageSecCmdBuffer);
+                drawResampleSubsampledImage(vk, *m_resampleSubsampledImageSecCmdBuffer);
                 endCommandBuffer(vk, *m_resampleSubsampledImageSecCmdBuffer);
             }
 
             inheritanceRenderingInfo.viewMask             = 0u;
             inheritanceRenderingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
             vk.beginCommandBuffer(*m_outputSubsampledImageSecCmdBuffer, &commandBufBeginParams);
-            drawOutputSubsampledImage(*m_outputSubsampledImageSecCmdBuffer);
+            drawOutputSubsampledImage(vk, *m_outputSubsampledImageSecCmdBuffer);
             endCommandBuffer(vk, *m_outputSubsampledImageSecCmdBuffer);
         }
 
@@ -2765,7 +2832,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
                                   &dynamicDensitMapBarrier);
 
             vk.cmdBeginRendering(*m_cmdBuffer, &dynamicDensityMapRenderingInfo);
-            drawDynamicDensityMap(*m_cmdBuffer);
+            drawDynamicDensityMap(vk, *m_cmdBuffer);
             vk.cmdEndRendering(*m_cmdBuffer);
 
             // barrier that will change layout of density map
@@ -2783,11 +2850,11 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
 
         // Render subsampled image
         vk.cmdBeginRendering(*m_cmdBuffer, &subsampledImageRenderingInfo);
-        drawSubsampledImage(*m_cmdBuffer);
+        drawSubsampledImage(vk, *m_cmdBuffer);
         if (m_testParams.makeCopy)
         {
-            remapingBeforeCopySubsampledImage(*m_cmdBuffer);
-            drawCopySubsampledImage(*m_cmdBuffer);
+            remapingBeforeCopySubsampledImage(vk, *m_cmdBuffer);
+            drawCopySubsampledImage(vk, *m_cmdBuffer);
         }
         vk.cmdEndRendering(*m_cmdBuffer);
 
@@ -2795,7 +2862,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
         if (m_testParams.subsampledLoads)
         {
             vk.cmdBeginRendering(*m_cmdBuffer, &resampleSubsampledImageRenderingInfo);
-            drawResampleSubsampledImage(*m_cmdBuffer);
+            drawResampleSubsampledImage(vk, *m_cmdBuffer);
             vk.cmdEndRendering(*m_cmdBuffer);
         }
 
@@ -2809,7 +2876,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
                               0, 0, DE_NULL, 0, DE_NULL, 1, &outputImageBarrier);
 
         vk.cmdBeginRendering(*m_cmdBuffer, &copySubsampledRenderingInfo);
-        drawOutputSubsampledImage(*m_cmdBuffer);
+        drawOutputSubsampledImage(vk, *m_cmdBuffer);
         vk.cmdEndRendering(*m_cmdBuffer);
 
         endCommandBuffer(vk, *m_cmdBuffer);
@@ -2818,17 +2885,15 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
 
 tcu::TestStatus FragmentDensityMapTestInstance::iterate(void)
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
-    const VkDevice vkDevice   = getDevice(m_context);
-    const VkQueue queue       = getDeviceQueue(vk, vkDevice, m_context.getUniversalQueueFamilyIndex(), 0);
-
-    submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+    const auto &deviceHelper = getDeviceHelper(m_context);
+    submitCommandsAndWait(deviceHelper.getDeviceInterface(), deviceHelper.getDevice(), deviceHelper.getQueue(),
+                          m_cmdBuffer.get());
 
     // approximations used when coarse reconstruction is specified are implementation defined
     if (m_testParams.coarseReconstruction)
         return tcu::TestStatus::pass("Pass");
 
-    return verifyImage();
+    return verifyImage(deviceHelper);
 }
 
 struct Vec4Sorter
@@ -2845,19 +2910,18 @@ struct Vec4Sorter
     }
 };
 
-tcu::TestStatus FragmentDensityMapTestInstance::verifyImage(void)
+tcu::TestStatus FragmentDensityMapTestInstance::verifyImage(const DeviceHelper &deviceHelper)
 {
-    const DeviceInterface &vk       = m_context.getDeviceInterface();
-    const VkDevice vkDevice         = getDevice(m_context);
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
-    const VkQueue queue             = getDeviceQueue(vk, vkDevice, queueFamilyIndex, 0);
-    SimpleAllocator memAlloc(
-        vk, vkDevice,
-        getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
+    const auto &vk      = deviceHelper.getDeviceInterface();
+    const auto vkDevice = deviceHelper.getDevice();
+    const auto qfIndex  = deviceHelper.getQueueFamilyIndex();
+    const auto queue    = deviceHelper.getQueue();
+    auto &memAlloc      = deviceHelper.getAllocator();
     tcu::UVec2 renderSize(m_renderSize.x(), m_renderSize.y());
-    de::UniquePtr<tcu::TextureLevel> outputImage(pipeline::readColorAttachment(vk, vkDevice, queue, queueFamilyIndex,
-                                                                               memAlloc, *m_outputImage,
-                                                                               VK_FORMAT_R8G8B8A8_UNORM, renderSize)
+
+    de::UniquePtr<tcu::TextureLevel> outputImage(pipeline::readColorAttachment(vk, vkDevice, queue, qfIndex, memAlloc,
+                                                                               *m_outputImage, VK_FORMAT_R8G8B8A8_UNORM,
+                                                                               renderSize)
                                                      .release());
     const tcu::ConstPixelBufferAccess &outputAccess(outputImage->getAccess());
     tcu::TestLog &log(m_context.getTestContext().getLog());
@@ -3264,7 +3328,7 @@ static void cleanupGroup(tcu::TestCaseGroup *group, const SharedGroupParams)
 {
     DE_UNREF(group);
     // Destroy singleton objects.
-    g_singletonDevice.clear();
+    g_deviceHelperPtr.reset(nullptr);
 }
 
 tcu::TestCaseGroup *createFragmentDensityMapTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams)
