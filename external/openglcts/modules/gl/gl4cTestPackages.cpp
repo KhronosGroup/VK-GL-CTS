@@ -67,6 +67,7 @@
 #include "gl4cTextureViewTests.hpp"
 #include "gl4cVertexAttrib64BitTest.hpp"
 #include "gl4cVertexAttribBindingTests.hpp"
+#include "gl4cTextureQueryLevelsTests.hpp"
 #include "glcAggressiveShaderOptimizationsTests.hpp"
 #include "gl4cTextureQueryLodTests.hpp"
 #include "glcBindImageTextureTests.hpp"
@@ -316,6 +317,7 @@ void GL43TestPackage::init(void)
         addChild(new glcts::ShaderConstExprTests(getContext()));
         addChild(new gl4cts::ClearTextureImageTestCases(getContext()));
         addChild(new glcts::AggressiveShaderOptimizationsTests(getContext()));
+        addChild(new gl4cts::TextureQueryLevelsTests(getContext()));
         addChild(new gl4cts::TextureQueryLodTests(getContext()));
         addChild(new gl4cts::TextureBufferTests(getContext()));
     }

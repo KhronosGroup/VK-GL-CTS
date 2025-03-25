@@ -1025,6 +1025,7 @@ cc_library_static {
         "external/openglcts/modules/gl/gl4cTextureBufferTests.cpp",
         "external/openglcts/modules/gl/gl4cTextureFilterMinmaxTests.cpp",
         "external/openglcts/modules/gl/gl4cTextureGatherTests.cpp",
+        "external/openglcts/modules/gl/gl4cTextureQueryLevelsTests.cpp",
         "external/openglcts/modules/gl/gl4cTextureQueryLodTests.cpp",
         "external/openglcts/modules/gl/gl4cTextureViewTests.cpp",
         "external/openglcts/modules/gl/gl4cVertexAttrib64BitTest.cpp",
