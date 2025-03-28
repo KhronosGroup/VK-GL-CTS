@@ -221,6 +221,21 @@ enum class PointerTestCases : uint8_t
 };
 using POINTER_TEST_CASE = PointerTestCases;
 
+enum class MemoryInterpretationTestCases : uint8_t
+{
+    LARGE_ARRAY_STRIDE = 0,
+    NON_ZERO_OFFSET,
+    MIXED_OFFSETS,
+    MULTIPLE_ACCESS_CHAINS,
+    SHORT2_NO_STORAGE_CAP,
+    CHAR4_NO_STORAGE_CAP,
+    CHAR2_16BIT_STORAGE_CAP,
+    UNTYPED_FROM_TYPED_VAR,
+    UNTYPED_FROM_TYPED_ACCESS_CHAIN,
+    _ENUM_COUNT,
+};
+using MEMORY_INTERPRETATION_TEST_CASE = MemoryInterpretationTestCases;
+
 enum class WorkgroupTestCases : uint8_t
 {
     ALIASED = 0,
@@ -680,6 +695,23 @@ const char *toString(POINTER_TEST_CASE testCase)
         "private_variable",        // PRIVATE_VARIABLE_VARIABLE_PTR
         "multiple_access_chains",  // MULTIPLE_ACCESS_CHAINS_VARIABLE_PTR
         "workgroup_memory",        // WORKGROUP_MEMORY_VARIABLE_PTR
+    };
+
+    return translateTable[DE_ENUM_INDEX(testCase)];
+}
+
+const char *toString(MEMORY_INTERPRETATION_TEST_CASE testCase)
+{
+    static const char *const translateTable[DE_ENUM_COUNT(MemoryInterpretationTestCases)] = {
+        "large_array_stride",              // LARGE_ARRAY_STRIDE
+        "non_zero_offset",                 // NON_ZERO_OFFSET
+        "mixed_offsets",                   // MIXED_OFFSETS
+        "multiple_access_chains",          // MULTIPLE_ACCESS_CHAINS
+        "short2_no_storage_cap",           // SHORT2_NO_STORAGE_CAP
+        "char4_no_storage_cap",            // CHAR4_NO_STORAGE_CAP
+        "char2_16bit_storage_cap",         // CHAR2_16BIT_STORAGE_CAP
+        "untyped_from_typed_var",          // UNTYPED_FROM_TYPED_VAR
+        "untyped_from_typed_access_chain", // UNTYPED_FROM_TYPED_ACCESS_CHAIN
     };
 
     return translateTable[DE_ENUM_INDEX(testCase)];
@@ -1580,6 +1612,43 @@ static void adjustSpecForUntypedPointers(ComputeShaderSpec &spec, std::vector<co
     spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 }
 
+static void adjustSpecForMemoryInterpretation(ComputeShaderSpec &spec, std::vector<const char *> & /*spvExtensions*/,
+                                              std::vector<const char *> &spvCapabilities,
+                                              MEMORY_INTERPRETATION_TEST_CASE testCase)
+{
+    switch (testCase)
+    {
+    case MemoryInterpretationTestCases::SHORT2_NO_STORAGE_CAP:
+    {
+        spvCapabilities.push_back("OpCapability Int16\n");
+        spec.requestedVulkanFeatures.coreFeatures.shaderInt16 = VK_TRUE;
+
+        break;
+    }
+    case MemoryInterpretationTestCases::CHAR4_NO_STORAGE_CAP:
+    {
+        spvCapabilities.push_back("OpCapability Int8\n");
+        spec.requestedVulkanFeatures.extFloat16Int8.shaderInt8 = VK_TRUE;
+
+        break;
+    }
+    case MemoryInterpretationTestCases::CHAR2_16BIT_STORAGE_CAP:
+    {
+        spvCapabilities.push_back("OpCapability Int8\n");
+        spvCapabilities.push_back("OpCapability Int16\n");
+        spec.requestedVulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = VK_TRUE;
+        spec.requestedVulkanFeatures.extFloat16Int8.shaderInt8                = VK_TRUE;
+        spec.requestedVulkanFeatures.coreFeatures.shaderInt16                 = VK_TRUE;
+
+        break;
+    }
+    default:
+    {
+        break;
+    }
+    }
+}
+
 static void adjustSpecForSmallContainerType(CONTAINER_TYPE containerType, DATA_TYPE dataType, ComputeShaderSpec &spec,
                                             std::vector<const char *> &spvExtensions,
                                             std::vector<const char *> &spvCapabilities)
@@ -1778,6 +1847,140 @@ std::string toString(const std::vector<const char *> &vec)
         result += str;
     }
     return result;
+}
+
+std::vector<uint32_t> getOffsets(MEMORY_INTERPRETATION_TEST_CASE testCase)
+{
+    const uint32_t numOffsets = 4;
+    std::vector<uint32_t> offsets(numOffsets, 0);
+    switch (testCase)
+    {
+    case MemoryInterpretationTestCases::LARGE_ARRAY_STRIDE:
+    {
+        // The large array stride is 32 bytes or 8 uint32s.
+        offsets[0] = 16; // offset = 64 bytes
+        offsets[1] = 24; // offset = 96 bytes
+        offsets[2] = 32; // offset = 128 bytes
+        offsets[3] = 40; // offset = 160 bytes
+
+        break;
+    }
+    case MemoryInterpretationTestCases::NON_ZERO_OFFSET:
+    {
+        // Struct members start at offset 16 and are strided every 24 bytes.
+        offsets[0] = 5;  // offset = 20 bytes
+        offsets[1] = 17; // offset = 68 bytes
+        offsets[2] = 29; // offset = 116 bytes
+        offsets[3] = 41; // offset = 164 bytes
+
+        break;
+    }
+    case MemoryInterpretationTestCases::MIXED_OFFSETS:
+    {
+        offsets[0] = 16; // offset = 64 bytes
+        offsets[1] = 2;  // offset = 8 bytes
+        offsets[2] = 12; // offset = 48 bytes
+        offsets[3] = 0;  // offset = 0 bytes
+
+        break;
+    }
+    case MemoryInterpretationTestCases::MULTIPLE_ACCESS_CHAINS:
+    {
+        offsets[0] = 15; // offset = 60 bytes
+        offsets[1] = 27; // offset = 108 bytes
+        offsets[2] = 33; // offset = 132 bytes
+        offsets[3] = 39; // offset = 156 bytes
+
+        break;
+    }
+    case MemoryInterpretationTestCases::SHORT2_NO_STORAGE_CAP:
+    case MemoryInterpretationTestCases::CHAR4_NO_STORAGE_CAP:
+    case MemoryInterpretationTestCases::CHAR2_16BIT_STORAGE_CAP:
+    case MemoryInterpretationTestCases::UNTYPED_FROM_TYPED_VAR:
+    case MemoryInterpretationTestCases::UNTYPED_FROM_TYPED_ACCESS_CHAIN:
+    {
+        offsets[0] = 1; // offset = 4 bytes
+        offsets[1] = 3; // offset = 12 bytes
+        offsets[2] = 5; // offset = 20 bytes
+        offsets[3] = 7; // offset = 28 bytes
+
+        break;
+    }
+    default:
+    {
+        DE_ASSERT(0);
+        DE_FATAL("Unknown test case.");
+        break;
+    }
+    }
+
+    return offsets;
+}
+
+std::vector<uint32_t> getIndices(MEMORY_INTERPRETATION_TEST_CASE testCase)
+{
+    const uint32_t numOffsets = 4;
+    std::vector<uint32_t> indices(numOffsets, 0);
+    switch (testCase)
+    {
+    case MemoryInterpretationTestCases::LARGE_ARRAY_STRIDE:
+    {
+        indices[0] = 2;
+        indices[1] = 3;
+        indices[2] = 4;
+        indices[3] = 5;
+
+        break;
+    }
+    case MemoryInterpretationTestCases::NON_ZERO_OFFSET:
+    {
+        indices[0] = 0;
+        indices[1] = 2;
+        indices[2] = 4;
+        indices[3] = 6;
+        break;
+    }
+    case MemoryInterpretationTestCases::MIXED_OFFSETS:
+    {
+        indices[0] = 0;
+        indices[1] = 1;
+        indices[2] = 2;
+        indices[3] = 3;
+
+        break;
+    }
+    case MemoryInterpretationTestCases::MULTIPLE_ACCESS_CHAINS:
+    {
+        indices[0] = 2;
+        indices[1] = 4;
+        indices[2] = 5;
+        indices[3] = 6;
+
+        break;
+    }
+    case MemoryInterpretationTestCases::SHORT2_NO_STORAGE_CAP:
+    case MemoryInterpretationTestCases::CHAR4_NO_STORAGE_CAP:
+    case MemoryInterpretationTestCases::CHAR2_16BIT_STORAGE_CAP:
+    case MemoryInterpretationTestCases::UNTYPED_FROM_TYPED_VAR:
+    case MemoryInterpretationTestCases::UNTYPED_FROM_TYPED_ACCESS_CHAIN:
+    {
+        // The char2 case internally doubles the index.
+        indices[0] = 1;
+        indices[1] = 3;
+        indices[2] = 5;
+        indices[3] = 7;
+
+        break;
+    }
+    default:
+    {
+        DE_ASSERT(0);
+        DE_FATAL("Unknown test case.");
+        break;
+    }
+    }
+
+    return indices;
 }
 
 enum class FillingTypes : uint8_t
@@ -2798,6 +3001,86 @@ std::string createShaderAnnotations(POINTER_TEST_CASE testCase)
 
                                    "OpMemberDecorate %shared_buffer             0             Offset 0\n"
                                    "OpDecorate       %shared_buffer             Block\n");
+        break;
+    }
+    default:
+    {
+        DE_ASSERT(0);
+        DE_FATAL("Unknown test case.");
+        break;
+    }
+    }
+
+    return annotations;
+}
+
+std::string createShaderAnnotations(MEMORY_INTERPRETATION_TEST_CASE testCase, bool /* read */)
+{
+    std::string annotations = std::string("OpDecorate %id BuiltIn GlobalInvocationId\n"
+                                          "OpDecorate %array ArrayStride 4\n"
+                                          "OpDecorate %block Block\n"
+                                          "OpMemberDecorate %block 0 Offset 0\n"
+
+                                          "OpDecorate %in_var DescriptorSet 0\n"
+                                          "OpDecorate %in_var Binding 0\n"
+                                          "OpDecorate %indices_var DescriptorSet 0\n"
+                                          "OpDecorate %indices_var Binding 1\n"
+                                          "OpDecorate %out_var DescriptorSet 0\n"
+                                          "OpDecorate %out_var Binding 2\n");
+
+    switch (testCase)
+    {
+    case MemoryInterpretationTestCases::LARGE_ARRAY_STRIDE:
+    {
+        annotations += std::string("OpDecorate %large_array ArrayStride 32\n");
+
+        break;
+    }
+    case MemoryInterpretationTestCases::NON_ZERO_OFFSET:
+    {
+        annotations += std::string("OpMemberDecorate %test_struct 0 Offset 16\n"
+                                   "OpMemberDecorate %test_struct 1 Offset 20\n"
+                                   "OpDecorate %test_array ArrayStride 24\n");
+
+        break;
+    }
+    case MemoryInterpretationTestCases::MIXED_OFFSETS:
+    {
+        annotations += std::string("OpMemberDecorate %test_struct 0 Offset 64\n"
+                                   "OpMemberDecorate %test_struct 1 Offset 8\n"
+                                   "OpMemberDecorate %test_struct 2 Offset 48\n"
+                                   "OpMemberDecorate %test_struct 3 Offset 0\n");
+
+        break;
+    }
+    case MemoryInterpretationTestCases::MULTIPLE_ACCESS_CHAINS:
+    {
+        annotations += std::string("OpDecorate %type_1 ArrayStride 8\n"
+                                   "OpDecorate %type_2 Block\n"
+                                   "OpMemberDecorate %type_2 0 Offset 0\n"
+                                   "OpMemberDecorate %type_2 1 Offset 12\n"
+                                   "OpDecorate %type_2_array ArrayStride 4\n"
+                                   "OpDecorate %type_3 ArrayStride 12\n");
+
+        break;
+    }
+    case MemoryInterpretationTestCases::SHORT2_NO_STORAGE_CAP:
+    case MemoryInterpretationTestCases::CHAR4_NO_STORAGE_CAP:
+    {
+        break;
+    }
+    case MemoryInterpretationTestCases::CHAR2_16BIT_STORAGE_CAP:
+    {
+        annotations += std::string("OpDecorate %out_array ArrayStride 4\n"
+                                   "OpDecorate %uchar2_array ArrayStride 2\n"
+                                   "OpDecorate %out_block Block\n"
+                                   "OpMemberDecorate %out_block 0 Offset 0\n");
+
+        break;
+    }
+    case MemoryInterpretationTestCases::UNTYPED_FROM_TYPED_VAR:
+    case MemoryInterpretationTestCases::UNTYPED_FROM_TYPED_ACCESS_CHAIN:
+    {
         break;
     }
     default:
@@ -4390,6 +4673,162 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
     return variables;
 }
 
+std::string createShaderVariables(MEMORY_INTERPRETATION_TEST_CASE testCase, bool read)
+{
+    std::string variables = std::string(
+        /* Base types */
+        "%void                  = OpTypeVoid\n"
+        "%bool                  = OpTypeBool\n"
+        "%uint32                = OpTypeInt 32 0\n"
+        "%vec2_uint32           = OpTypeVector %uint32      2\n"
+        "%vec3_uint32           = OpTypeVector %uint32      3\n"
+        "%vec4_uint32           = OpTypeVector %uint32      4\n"
+        "%array                 = OpTypeRuntimeArray %uint32\n"
+        "%block                 = OpTypeStruct %array\n"
+
+        /* Function types */
+        "%void_func             = OpTypeFunction %void\n"
+
+        /* Constants */
+        "%c_uint32_0            = OpConstant %uint32 0\n"
+        "%c_uint32_1            = OpConstant %uint32 1\n"
+        "%c_uint32_2            = OpConstant %uint32 2\n"
+        "%c_uint32_3            = OpConstant %uint32 3\n"
+        "%c_uint32_64           = OpConstant %uint32 64\n"
+
+        /* Pointers */
+        "%uint32_storage_ptr    = OpTypePointer StorageBuffer %uint32\n"
+        "%ptr_struct_block      = OpTypePointer StorageBuffer %block\n"
+        "%untyped_ptr           = OpTypeUntypedPointerKHR StorageBuffer\n"
+        "%uint32_input_ptr      = OpTypePointer Input %uint32\n"
+        "%vec3_uint32_input_ptr = OpTypePointer Input %vec3_uint32\n"
+
+        /* Variables */
+        "%id                    = OpVariable %vec3_uint32_input_ptr Input\n"
+        "%indices_var           = OpVariable %ptr_struct_block StorageBuffer\n");
+
+    bool skipVars = false;
+
+    // Case-specific types
+    switch (testCase)
+    {
+    case MemoryInterpretationTestCases::LARGE_ARRAY_STRIDE:
+    {
+        variables += std::string("%large_array = OpTypeRuntimeArray %uint32\n");
+
+        break;
+    }
+    case MemoryInterpretationTestCases::NON_ZERO_OFFSET:
+    {
+        variables += std::string("%test_struct = OpTypeStruct %uint32 %uint32\n"
+                                 "%test_array  = OpTypeRuntimeArray %test_struct\n");
+
+        break;
+    }
+    case MemoryInterpretationTestCases::MIXED_OFFSETS:
+    {
+        variables += std::string("%test_struct = OpTypeStruct %uint32 %uint32 %uint32 %uint32\n");
+
+        break;
+    }
+    case MemoryInterpretationTestCases::MULTIPLE_ACCESS_CHAINS:
+    {
+        variables += std::string("%type_1       = OpTypeArray %uint32 %c_uint32_64\n"
+                                 "%type_2_array = OpTypeRuntimeArray %uint32\n"
+                                 "%type_2       = OpTypeStruct %uint32 %type_2_array\n"
+                                 "%type_3       = OpTypeArray %uint32 %c_uint32_64\n");
+
+        break;
+    }
+    case MemoryInterpretationTestCases::SHORT2_NO_STORAGE_CAP:
+    {
+        variables += std::string("%short        = OpTypeInt 16 1\n"
+                                 "%short2       = OpTypeVector %short 2\n");
+
+        break;
+    }
+    case MemoryInterpretationTestCases::CHAR4_NO_STORAGE_CAP:
+    {
+        variables += std::string("%uchar        = OpTypeInt 8 0\n"
+                                 "%uchar4       = OpTypeVector %uchar 4\n");
+
+        break;
+    }
+    case MemoryInterpretationTestCases::CHAR2_16BIT_STORAGE_CAP:
+    {
+        skipVars = true;
+        variables += std::string("%uchar        = OpTypeInt 8 0\n"
+                                 "%uchar2       = OpTypeVector %uchar 2\n"
+                                 "%uchar2_array = OpTypeRuntimeArray %uchar2\n"
+                                 "%ushort       = OpTypeInt 16 0\n"
+                                 "%out_array    = OpTypeRuntimeArray %ushort\n"
+                                 "%out_block    = OpTypeStruct %out_array\n"
+                                 "%ptr_struct_out_block = OpTypePointer StorageBuffer %out_block\n"
+                                 "%ushort_storage_ptr   = OpTypePointer StorageBuffer %ushort\n");
+
+        if (read)
+        {
+            variables += std::string("%out_var = OpVariable %ptr_struct_out_block StorageBuffer\n"
+
+                                     "%in_var  = OpUntypedVariableKHR %untyped_ptr StorageBuffer %block\n");
+        }
+        else
+        {
+            variables += std::string("%out_var = OpUntypedVariableKHR %untyped_ptr StorageBuffer %block\n"
+
+                                     "%in_var  = OpVariable %ptr_struct_out_block StorageBuffer\n");
+        }
+
+        break;
+    }
+    case MemoryInterpretationTestCases::UNTYPED_FROM_TYPED_VAR:
+    case MemoryInterpretationTestCases::UNTYPED_FROM_TYPED_ACCESS_CHAIN:
+    {
+        skipVars = true;
+        variables += std::string("%ptr_array_storage = OpTypePointer StorageBuffer %array\n");
+        if (read)
+        {
+            variables += std::string("%out_var = OpVariable %ptr_struct_block StorageBuffer\n"
+
+                                     "%in_var  = OpVariable %ptr_struct_block StorageBuffer\n");
+        }
+        else
+        {
+            variables += std::string("%out_var = OpVariable %ptr_struct_block StorageBuffer\n"
+
+                                     "%in_var  = OpVariable %ptr_struct_block StorageBuffer\n");
+        }
+
+        break;
+    }
+    default:
+    {
+        DE_ASSERT(0);
+        DE_FATAL("Unknown test case.");
+        break;
+    }
+    }
+
+    // Variables
+    if (!skipVars)
+    {
+        if (read)
+        {
+            variables += std::string("%out_var = OpVariable %ptr_struct_block StorageBuffer\n"
+
+                                     "%in_var  = OpUntypedVariableKHR %untyped_ptr StorageBuffer %block\n");
+        }
+        else
+        {
+            variables += std::string("%out_var = OpUntypedVariableKHR %untyped_ptr StorageBuffer %block\n"
+
+                                     "%in_var  = OpVariable %ptr_struct_block StorageBuffer\n");
+        }
+    }
+
+    return variables;
+}
+
 std::string createShaderVariables(WORKGROUP_TEST_CASE testCase)
 {
     std::string variables = std::string(
@@ -5582,6 +6021,254 @@ std::string createShaderMain(POINTER_TEST_CASE testCase)
         DE_FATAL("Unknown test case.");
         break;
     }
+    }
+
+    main += std::string("                OpReturn\n"
+                        "                OpFunctionEnd\n");
+
+    return main;
+}
+
+std::string createShaderMain(MEMORY_INTERPRETATION_TEST_CASE testCase, bool read)
+{
+    std::string main =
+        std::string("%main               = OpFunction %void None %void_func\n"
+                    "%label_main         = OpLabel\n"
+                    "%gid                = OpLoad %vec3_uint32 %id\n"
+                    "%gid_x              = OpCompositeExtract %uint32 %gid 0\n"
+                    "%index_access       = OpAccessChain %uint32_storage_ptr %indices_var %c_uint32_0 %gid_x\n"
+                    "%index              = OpLoad %uint32 %index_access\n");
+
+    if (read)
+    {
+        switch (testCase)
+        {
+        case MemoryInterpretationTestCases::LARGE_ARRAY_STRIDE:
+        {
+            main += std::string("%in_access    = OpUntypedAccessChainKHR %untyped_ptr %large_array %in_var %index\n"
+                                "%in_load      = OpLoad %uint32 %in_access\n");
+
+            break;
+        }
+        case MemoryInterpretationTestCases::NON_ZERO_OFFSET:
+        {
+            main += std::string(
+                "%in_access    = OpUntypedAccessChainKHR %untyped_ptr %test_array %in_var %index %c_uint32_1\n"
+                "%in_load      = OpLoad %uint32 %in_access\n");
+            break;
+        }
+        case MemoryInterpretationTestCases::MIXED_OFFSETS:
+        {
+            main +=
+                std::string("                OpSelectionMerge %merge None\n"
+                            "                OpSwitch %index %merge 0 %case_0 1 %case_1 2 %case_2 3 %case_3\n"
+                            "\n"
+                            "%case_0       = OpLabel\n"
+                            "%in_access_0  = OpUntypedAccessChainKHR %untyped_ptr %test_struct %in_var %c_uint32_0\n"
+                            "%in_load_0    = OpLoad %uint32 %in_access_0\n"
+                            "                OpBranch %merge\n"
+                            "\n"
+                            "%case_1       = OpLabel\n"
+                            "%in_access_1  = OpUntypedAccessChainKHR %untyped_ptr %test_struct %in_var %c_uint32_1\n"
+                            "%in_load_1    = OpLoad %uint32 %in_access_1\n"
+                            "                OpBranch %merge\n"
+                            "\n"
+                            "%case_2       = OpLabel\n"
+                            "%in_access_2  = OpUntypedAccessChainKHR %untyped_ptr %test_struct %in_var %c_uint32_2\n"
+                            "%in_load_2    = OpLoad %uint32 %in_access_2\n"
+                            "                OpBranch %merge\n"
+                            "\n"
+                            "%case_3       = OpLabel\n"
+                            "%in_access_3  = OpUntypedAccessChainKHR %untyped_ptr %test_struct %in_var %c_uint32_3\n"
+                            "%in_load_3    = OpLoad %uint32 %in_access_3\n"
+                            "                OpBranch %merge\n"
+                            "\n"
+                            "%merge        = OpLabel\n"
+                            "%in_load      = OpPhi %uint32 %in_load_0 %case_0 %in_load_1 %case_1 %in_load_2 "
+                            "%case_2 %in_load_3 %case_3 %c_uint32_0 %label_main\n");
+
+            break;
+        }
+        case MemoryInterpretationTestCases::MULTIPLE_ACCESS_CHAINS:
+        {
+            main += std::string(
+                "%in_access_1 = OpUntypedAccessChainKHR %untyped_ptr %type_1 %in_var %index\n"
+                "%in_access_2 = OpUntypedAccessChainKHR %untyped_ptr %type_2 %in_access_1 %c_uint32_1 %index\n"
+                "%in_access_3 = OpUntypedAccessChainKHR %untyped_ptr %type_3 %in_access_2 %index\n"
+                "%in_load     = OpLoad %uint32 %in_access_3\n");
+
+            break;
+        }
+        case MemoryInterpretationTestCases::SHORT2_NO_STORAGE_CAP:
+        {
+            main += std::string("%in_access   = OpUntypedAccessChainKHR %untyped_ptr %array %in_var %index\n"
+                                "%load        = OpLoad %short2 %in_access\n"
+                                "%in_load     = OpBitcast %uint32 %load\n");
+
+            break;
+        }
+        case MemoryInterpretationTestCases::CHAR4_NO_STORAGE_CAP:
+        {
+            main += std::string("%in_access   = OpUntypedAccessChainKHR %untyped_ptr %array %in_var %index\n"
+                                "%load        = OpLoad %uchar4 %in_access\n"
+                                "%in_load     = OpBitcast %uint32 %load\n");
+
+            break;
+        }
+        case MemoryInterpretationTestCases::CHAR2_16BIT_STORAGE_CAP:
+        {
+            main += std::string("%mul         = OpIMul %uint32 %index %c_uint32_2\n"
+                                "%in_access   = OpUntypedAccessChainKHR %untyped_ptr %uchar2_array %in_var %mul\n"
+                                "%load        = OpLoad %uchar2 %in_access\n"
+                                "%in_load     = OpBitcast %ushort %load\n"
+                                "%out_access  = OpAccessChain %ushort_storage_ptr %out_var %c_uint32_0 %gid_x\n"
+                                "               OpStore %out_access %in_load\n");
+
+            break;
+        }
+        case MemoryInterpretationTestCases::UNTYPED_FROM_TYPED_VAR:
+        {
+            main += std::string("%in_access    = OpUntypedAccessChainKHR %untyped_ptr %array %in_var %index\n"
+                                "%in_load      = OpLoad %uint32 %in_access\n");
+
+            break;
+        }
+        case MemoryInterpretationTestCases::UNTYPED_FROM_TYPED_ACCESS_CHAIN:
+        {
+            main += std::string("%typed_access = OpAccessChain %ptr_array_storage %in_var %c_uint32_0\n"
+                                "%in_access    = OpUntypedAccessChainKHR %untyped_ptr %array %typed_access %index\n"
+                                "%in_load      = OpLoad %uint32 %in_access\n");
+
+            break;
+        }
+        default:
+        {
+            DE_ASSERT(0);
+            DE_FATAL("Unknown test case.");
+            break;
+        }
+        }
+
+        if (testCase != MemoryInterpretationTestCases::CHAR2_16BIT_STORAGE_CAP)
+        {
+            main += std::string("%out_access   = OpAccessChain %uint32_storage_ptr %out_var %c_uint32_0 %gid_x\n"
+                                "                OpStore %out_access %in_load\n");
+        }
+    }
+    else
+    {
+        if (testCase != MemoryInterpretationTestCases::CHAR2_16BIT_STORAGE_CAP)
+        {
+            main += std::string("%in_access    = OpAccessChain %uint32_storage_ptr %in_var %c_uint32_0 %gid_x\n"
+                                "%in_load      = OpLoad %uint32 %in_access\n");
+        }
+
+        switch (testCase)
+        {
+        case MemoryInterpretationTestCases::LARGE_ARRAY_STRIDE:
+        {
+            main += std::string("%out_access   = OpUntypedAccessChainKHR %untyped_ptr %large_array %out_var %index\n"
+                                "                OpStore %out_access %in_load\n");
+
+            break;
+        }
+        case MemoryInterpretationTestCases::NON_ZERO_OFFSET:
+        {
+            main += std::string(
+                "%out_access   = OpUntypedAccessChainKHR %untyped_ptr %test_array %out_var %index %c_uint32_1\n"
+                "                OpStore %out_access %in_load\n");
+
+            break;
+        }
+        case MemoryInterpretationTestCases::MIXED_OFFSETS:
+        {
+            main +=
+                std::string("                OpSelectionMerge %merge None\n"
+                            "                OpSwitch %index %merge 0 %case_0 1 %case_1 2 %case_2 3 %case_3\n"
+                            "\n"
+                            "%case_0       = OpLabel\n"
+                            "%out_access_0 = OpUntypedAccessChainKHR %untyped_ptr %test_struct %out_var %c_uint32_0\n"
+                            "                OpStore %out_access_0 %in_load\n"
+                            "                OpBranch %merge\n"
+                            "\n"
+                            "%case_1       = OpLabel\n"
+                            "%out_access_1 = OpUntypedAccessChainKHR %untyped_ptr %test_struct %out_var %c_uint32_1\n"
+                            "                OpStore %out_access_1 %in_load\n"
+                            "                OpBranch %merge\n"
+                            "\n"
+                            "%case_2       = OpLabel\n"
+                            "%out_access_2 = OpUntypedAccessChainKHR %untyped_ptr %test_struct %out_var %c_uint32_2\n"
+                            "                OpStore %out_access_2 %in_load\n"
+                            "                OpBranch %merge\n"
+                            "\n"
+                            "%case_3       = OpLabel\n"
+                            "%out_access_3 = OpUntypedAccessChainKHR %untyped_ptr %test_struct %out_var %c_uint32_3\n"
+                            "                OpStore %out_access_3 %in_load\n"
+                            "                OpBranch %merge\n"
+                            "\n"
+                            "%merge        = OpLabel\n");
+
+            break;
+        }
+        case MemoryInterpretationTestCases::MULTIPLE_ACCESS_CHAINS:
+        {
+            main += std::string(
+                "%out_access_1 = OpUntypedAccessChainKHR %untyped_ptr %type_1 %out_var %index\n"
+                "%out_access_2 = OpUntypedAccessChainKHR %untyped_ptr %type_2 %out_access_1 %c_uint32_1 %index\n"
+                "%out_access_3 = OpUntypedAccessChainKHR %untyped_ptr %type_3 %out_access_2 %index\n"
+                "                OpStore %out_access_3 %in_load\n");
+
+            break;
+        }
+        case MemoryInterpretationTestCases::SHORT2_NO_STORAGE_CAP:
+        {
+            main += std::string("%out_access   = OpUntypedAccessChainKHR %untyped_ptr %array %out_var %index\n"
+                                "%cast         = OpBitcast %short2 %in_load\n"
+                                "                OpStore %out_access %cast\n");
+
+            break;
+        }
+        case MemoryInterpretationTestCases::CHAR4_NO_STORAGE_CAP:
+        {
+            main += std::string("%out_access   = OpUntypedAccessChainKHR %untyped_ptr %array %out_var %index\n"
+                                "%cast         = OpBitcast %uchar4 %in_load\n"
+                                "                OpStore %out_access %cast\n");
+
+            break;
+        }
+        case MemoryInterpretationTestCases::CHAR2_16BIT_STORAGE_CAP:
+        {
+            main += std::string("%in_access    = OpAccessChain %ushort_storage_ptr %in_var %c_uint32_0 %gid_x\n"
+                                "%in_load      = OpLoad %ushort %in_access\n"
+                                "%mul          = OpIMul %uint32 %index %c_uint32_2\n"
+                                "%out_access   = OpUntypedAccessChainKHR %untyped_ptr %uchar2_array %out_var %mul\n"
+                                "%cast         = OpBitcast %uchar2 %in_load\n"
+                                "                OpStore %out_access %cast\n");
+
+            break;
+        }
+        case MemoryInterpretationTestCases::UNTYPED_FROM_TYPED_VAR:
+        {
+            main += std::string("%out_access   = OpUntypedAccessChainKHR %untyped_ptr %array %out_var %index\n"
+                                "                OpStore %out_access %in_load\n");
+
+            break;
+        }
+        case MemoryInterpretationTestCases::UNTYPED_FROM_TYPED_ACCESS_CHAIN:
+        {
+            main += std::string("%typed_access = OpAccessChain %ptr_array_storage %out_var %c_uint32_0\n"
+                                "%out_access   = OpUntypedAccessChainKHR %untyped_ptr %array %typed_access %index\n"
+                                "                OpStore %out_access %in_load\n");
+
+            break;
+        }
+        default:
+        {
+            DE_ASSERT(0);
+            DE_FATAL("Unknown test case.");
+            break;
+        }
+        }
     }
 
     main += std::string("                OpReturn\n"
@@ -10411,6 +11098,82 @@ void addStructAsTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
     }
 }
 
+void addMemoryReinterpretationTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel, bool read)
+{
+    tcu::TestContext &testCtx = testGroup->getTestContext();
+
+    tcu::StringTemplate shaderHeader(createShaderHeader());
+
+    const uint32_t numWGs     = 4;
+    const uint32_t bufferSize = 128;
+
+    for (uint32_t i = 0; i < DE_ENUM_COUNT(MemoryInterpretationTestCases); ++i)
+    {
+        MemoryInterpretationTestCases testCase = static_cast<MemoryInterpretationTestCases>(i);
+
+        std::string testName = toString(testCase);
+
+        tcu::StringTemplate shaderAnnotations(createShaderAnnotations(testCase, read));
+
+        tcu::StringTemplate shaderVariables(createShaderVariables(testCase, read));
+
+        tcu::StringTemplate shaderFunctions(createShaderMain(testCase, read));
+
+        std::map<std::string, std::string> specMap;
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForMemoryInterpretation(spec, spvExts, spvCaps, testCase);
+
+        specMap["memModelOp"]   = memModelOp;
+        specMap["extensions"]   = toString(spvExts);
+        specMap["capabilities"] = toString(spvCaps);
+
+        const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
+                                      shaderVariables.specialize(specMap) + shaderFunctions.specialize(specMap);
+
+        const std::vector<uint32_t> offsets = getOffsets(testCase);
+        DE_ASSERT(offsets.size() == numWGs);
+        const std::vector<uint32_t> indices = getIndices(testCase);
+        DE_ASSERT(indices.size() == numWGs);
+
+        uint32_t magic      = 42;
+        uint32_t inputSize  = read ? bufferSize : numWGs;
+        uint32_t outputSize = read ? numWGs : bufferSize;
+        std::vector<uint32_t> inputData(inputSize, 0);
+        std::vector<uint32_t> outputData(outputSize, 0xffffffff);
+        for (uint32_t o = 0; o < offsets.size(); ++o)
+        {
+            const uint32_t outputVal =
+                testCase == MemoryInterpretationTestCases::CHAR2_16BIT_STORAGE_CAP ? 0xffff0000 | magic : magic;
+            uint32_t inputIdx     = read ? offsets[o] : o;
+            uint32_t outputIdx    = read ? o : offsets[o];
+            inputData[inputIdx]   = magic;
+            outputData[outputIdx] = outputVal;
+            magic++;
+        }
+
+        Resource inputResource =
+            Resource(BufferSp(new Buffer<uint32_t>(inputData, 0)), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        Resource indicesResource =
+            Resource(BufferSp(new Buffer<uint32_t>(indices, 0)), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        Resource outputResource =
+            Resource(BufferSp(new Buffer<uint32_t>(outputData, 0)), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+        spec.assembly      = shaderAsm;
+        spec.numWorkGroups = tcu::IVec3(numWGs, 1, 1);
+        spec.inputs.push_back(inputResource);
+        spec.inputs.push_back(indicesResource);
+        spec.outputs.push_back(outputResource);
+        spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
+
+        testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+    }
+}
+
 void addMultipleAccessChainTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
 {
     tcu::TestContext &testCtx = testGroup->getTestContext();
@@ -11484,10 +12247,17 @@ void addBasicUsecaseTestGroup(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE m
     addTestGroup(testGroup, "descriptor_array", addDescriptorArrayTests, memModel);
 }
 
+void addMemoryInterpretationTestGroup(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
+{
+    addTestGroup(testGroup, "read", addMemoryReinterpretationTests, memModel, true);
+    addTestGroup(testGroup, "write", addMemoryReinterpretationTests, memModel, false);
+}
+
 void addDataReinterpretTestGroup(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
 {
     addTestGroup(testGroup, "struct_as_type", addStructAsTypeTests, memModel);
     addTestGroup(testGroup, "multiple_access_chains", addMultipleAccessChainTests, memModel);
+    addTestGroup(testGroup, "memory_interpretation", addMemoryInterpretationTestGroup, memModel);
 }
 
 void addTypePunningTestGroup(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
