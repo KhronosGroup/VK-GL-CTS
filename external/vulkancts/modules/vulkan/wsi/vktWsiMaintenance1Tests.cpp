@@ -1675,7 +1675,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
                 VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
                 nullptr,
                 0,
-                0,
+                VK_ACCESS_TRANSFER_WRITE_BIT,
                 VK_IMAGE_LAYOUT_UNDEFINED,
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 VK_QUEUE_FAMILY_IGNORED,
@@ -1684,7 +1684,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
                 range,
             };
 
-            vkd.cmdPipelineBarrier(**commandBuffers[i], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            vkd.cmdPipelineBarrier(**commandBuffers[i], VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
                                    VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0, nullptr, 0, nullptr, 1, &barrier);
 
             const tcu::UVec2 halfSwapchainSize = swapchainSize / 2u;
@@ -1703,6 +1703,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
             barrier.oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
             barrier.newLayout     = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
             barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            barrier.dstAccessMask = 0;
 
             vkd.cmdPipelineBarrier(**commandBuffers[i], VK_PIPELINE_STAGE_TRANSFER_BIT,
                                    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0u, 0, nullptr, 0, nullptr, 1, &barrier);
