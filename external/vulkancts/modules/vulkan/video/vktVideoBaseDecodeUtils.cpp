@@ -447,7 +447,8 @@ void VideoBaseDecoder::Deinitialize()
 
     // Sometimes(eg. scaling lists decoding tesets) decoding finishes before the current
     // picture params are flushed, which leads to a memory leak and validation errors.
-    m_currentPictureParameters->FlushPictureParametersQueue(m_videoSession);
+    if (m_currentPictureParameters)
+        m_currentPictureParameters->FlushPictureParametersQueue(m_videoSession);
 
     if (queueDecode)
         vkd.queueWaitIdle(queueDecode);
@@ -555,9 +556,6 @@ void VideoBaseDecoder::StartVideoSequence(const VkParserDetectedVideoFormat *pVi
                                             m_useInlineQueries, m_useInlineSessionParams, m_videoSession));
         // after creating a new video session, we need codec reset.
         m_resetDecoder = true;
-        // The current picture parameters doesn't matter with new video session created.
-        // Note that this fixes VVL error(04855) of the test encode.h264.resolution_change_dpb.
-        m_currentPictureParameters = nullptr;
     }
 
     if (m_currentPictureParameters)
