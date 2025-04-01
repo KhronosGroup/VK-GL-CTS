@@ -1824,6 +1824,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES";
 		case VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK:							return "VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK";
 		case VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_INLINE_UNIFORM_BLOCK_CREATE_INFO:					return "VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_INLINE_UNIFORM_BLOCK_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_BFLOAT16_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_BFLOAT16_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT:											return "VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_SAMPLE_LOCATIONS_BEGIN_INFO_EXT:							return "VK_STRUCTURE_TYPE_RENDER_PASS_SAMPLE_LOCATIONS_BEGIN_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_SAMPLE_LOCATIONS_STATE_CREATE_INFO_EXT:						return "VK_STRUCTURE_TYPE_PIPELINE_SAMPLE_LOCATIONS_STATE_CREATE_INFO_EXT";
@@ -4143,6 +4144,7 @@ const char* getComponentTypeKHRName (VkComponentTypeKHR value)
 		case VK_COMPONENT_TYPE_UINT16_KHR:		return "VK_COMPONENT_TYPE_UINT16_KHR";
 		case VK_COMPONENT_TYPE_UINT32_KHR:		return "VK_COMPONENT_TYPE_UINT32_KHR";
 		case VK_COMPONENT_TYPE_UINT64_KHR:		return "VK_COMPONENT_TYPE_UINT64_KHR";
+		case VK_COMPONENT_TYPE_BFLOAT16_KHR:	return "VK_COMPONENT_TYPE_BFLOAT16_KHR";
 		case VK_COMPONENT_TYPE_SINT8_PACKED_NV:	return "VK_COMPONENT_TYPE_SINT8_PACKED_NV";
 		case VK_COMPONENT_TYPE_UINT8_PACKED_NV:	return "VK_COMPONENT_TYPE_UINT8_PACKED_NV";
 		case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:	return "VK_COMPONENT_TYPE_FLOAT_E4M3_NV";
@@ -20476,6 +20478,18 @@ std::ostream& operator<< (std::ostream& s, const VkMemoryMapPlacedInfoEXT& value
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpPlacedAddress = " << value.pPlacedAddress << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderBfloat16FeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceShaderBfloat16FeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderBFloat16Type = " << value.shaderBFloat16Type << '\n';
+	s << "\tshaderBFloat16DotProduct = " << value.shaderBFloat16DotProduct << '\n';
+	s << "\tshaderBFloat16CooperativeMatrix = " << value.shaderBFloat16CooperativeMatrix << '\n';
 	s << '}';
 	return s;
 }

@@ -10442,6 +10442,15 @@ struct VkMemoryMapPlacedInfoEXT
 	void*			pPlacedAddress;
 };
 
+struct VkPhysicalDeviceShaderBfloat16FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderBFloat16Type;
+	VkBool32		shaderBFloat16DotProduct;
+	VkBool32		shaderBFloat16CooperativeMatrix;
+};
+
 struct VkPhysicalDeviceRawAccessChainsFeaturesNV
 {
 	VkStructureType	sType;
