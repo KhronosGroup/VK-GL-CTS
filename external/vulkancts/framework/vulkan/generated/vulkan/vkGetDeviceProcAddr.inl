@@ -603,6 +603,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV",
 		"vkGetMemoryMetalHandleEXT",
 		"vkGetMemoryMetalHandlePropertiesEXT",
+		"vkCmdEndRendering2EXT",
     };
 
     bool fail = false;

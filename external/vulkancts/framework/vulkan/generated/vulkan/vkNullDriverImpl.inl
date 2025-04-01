@@ -3964,6 +3964,12 @@ VKAPI_ATTR void VKAPI_CALL cmdEndRendering (VkCommandBuffer commandBuffer)
 	DE_UNREF(commandBuffer);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdEndRendering2EXT (VkCommandBuffer commandBuffer, const VkRenderingEndInfoEXT* pRenderingEndInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pRenderingEndInfo);
+}
+
 VKAPI_ATTR void VKAPI_CALL getDescriptorSetLayoutHostMappingInfoVALVE (VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping)
 {
 	DE_UNREF(device);
@@ -4983,6 +4989,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdCudaLaunchKernelNV,										cmdCudaLaunchKernelNV),
 	VK_NULL_FUNC_ENTRY(vkCmdBeginRendering,											cmdBeginRendering),
 	VK_NULL_FUNC_ENTRY(vkCmdEndRendering,											cmdEndRendering),
+	VK_NULL_FUNC_ENTRY(vkCmdEndRendering2EXT,										cmdEndRendering2EXT),
 	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetLayoutHostMappingInfoVALVE,				getDescriptorSetLayoutHostMappingInfoVALVE),
 	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetHostMappingVALVE,							getDescriptorSetHostMappingVALVE),
 	VK_NULL_FUNC_ENTRY(vkCreateMicromapEXT,											createMicromapEXT),

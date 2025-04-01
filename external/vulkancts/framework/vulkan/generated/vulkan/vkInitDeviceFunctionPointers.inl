@@ -818,6 +818,7 @@ if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 3, 0))
     m_vk.cmdEndRendering = (CmdEndRenderingFunc) GET_PROC_ADDR("vkCmdEndRendering");
 if (!m_vk.cmdEndRendering)
     m_vk.cmdEndRendering = (CmdEndRenderingFunc) GET_PROC_ADDR("vkCmdEndRenderingKHR");
+m_vk.cmdEndRendering2EXT = (CmdEndRendering2EXTFunc) GET_PROC_ADDR("vkCmdEndRendering2EXT");
 m_vk.getDescriptorSetLayoutHostMappingInfoVALVE = (GetDescriptorSetLayoutHostMappingInfoVALVEFunc) GET_PROC_ADDR("vkGetDescriptorSetLayoutHostMappingInfoVALVE");
 m_vk.getDescriptorSetHostMappingVALVE = (GetDescriptorSetHostMappingVALVEFunc) GET_PROC_ADDR("vkGetDescriptorSetHostMappingVALVE");
 m_vk.createMicromapEXT = (CreateMicromapEXTFunc) GET_PROC_ADDR("vkCreateMicromapEXT");

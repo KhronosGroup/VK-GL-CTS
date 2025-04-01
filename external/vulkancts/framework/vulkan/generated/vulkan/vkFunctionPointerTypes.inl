@@ -649,6 +649,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginRenderingFunc)													(VkC
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginRenderingKHRFunc)												(VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRenderingFunc)													(VkCommandBuffer commandBuffer);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRenderingKHRFunc)												(VkCommandBuffer commandBuffer);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRendering2EXTFunc)												(VkCommandBuffer commandBuffer, const VkRenderingEndInfoEXT* pRenderingEndInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetDescriptorSetLayoutHostMappingInfoVALVEFunc)						(VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetDescriptorSetHostMappingVALVEFunc)									(VkDevice device, VkDescriptorSet descriptorSet, void** ppData);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateMicromapEXTFunc)													(VkDevice device, const VkMicromapCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkMicromapEXT* pMicromap);

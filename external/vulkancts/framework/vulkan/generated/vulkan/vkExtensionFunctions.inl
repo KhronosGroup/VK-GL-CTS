@@ -554,6 +554,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_bfloat16")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_sample_locations")
 	{
 		functions.push_back("vkGetPhysicalDeviceMultisamplePropertiesEXT");
@@ -1708,6 +1712,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_fragment_density_map_offset")
+	{
+		return;
+	}
 	if (extName == "vulkan_video_codecs_common")
 	{
 		return;
@@ -2337,6 +2345,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_EXT_shader_stencil_export")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_shader_bfloat16")
 	{
 		return;
 	}
@@ -3953,6 +3965,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_fragment_density_map_offset")
+	{
+		functions.push_back("vkCmdEndRendering2EXT");
+		return;
+	}
 	if (extName == "vulkan_video_codecs_common")
 	{
 		return;
@@ -4130,6 +4147,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_AMD_shader_fragment_mask",
 	"VK_EXT_inline_uniform_block",
 	"VK_EXT_shader_stencil_export",
+	"VK_KHR_shader_bfloat16",
 	"VK_EXT_sample_locations",
 	"VK_KHR_relaxed_block_layout",
 	"VK_KHR_get_memory_requirements2",
@@ -4400,4 +4418,5 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_depth_clamp_zero_one",
 	"VK_EXT_vertex_attribute_robustness",
 	"VK_NV_present_metering",
+	"VK_EXT_fragment_density_map_offset",
 };

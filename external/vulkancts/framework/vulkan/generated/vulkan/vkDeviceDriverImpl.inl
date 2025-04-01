@@ -2438,6 +2438,12 @@ void DeviceDriver::cmdEndRendering (VkCommandBuffer commandBuffer) const
     m_vk.cmdEndRendering(commandBuffer);
 }
 
+void DeviceDriver::cmdEndRendering2EXT (VkCommandBuffer commandBuffer, const VkRenderingEndInfoEXT* pRenderingEndInfo) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdEndRendering2EXT(commandBuffer, pRenderingEndInfo);
+}
+
 void DeviceDriver::getDescriptorSetLayoutHostMappingInfoVALVE (VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping) const
 {
     m_vk.getDescriptorSetLayoutHostMappingInfoVALVE(device, pBindingReference, pHostMapping);

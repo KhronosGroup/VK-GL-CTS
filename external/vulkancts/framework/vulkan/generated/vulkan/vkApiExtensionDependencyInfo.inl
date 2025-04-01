@@ -1090,6 +1090,18 @@ bool check_VK_EXT_inline_uniform_block(const tcu::UVec2& v, const ExtPropVect& v
 	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_maintenance1")));
 }
 
+bool check_VK_KHR_shader_bfloat16(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_shader_bfloat16"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+}
+
 bool check_VK_EXT_sample_locations(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3832,6 +3844,18 @@ bool check_VK_EXT_vertex_attribute_robustness(const tcu::UVec2& v, const ExtProp
 	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
+bool check_VK_EXT_fragment_density_map_offset(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_fragment_density_map_offset"))
+		return true;
+
+	// depends attribute in xml: (VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_EXT_fragment_density_map+(VK_KHR_create_renderpass2,VK_VERSION_1_2)+(VK_VERSION_1_3,VK_KHR_dynamic_rendering)
+	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && isSupported(vDEP, "VK_EXT_fragment_density_map") && ((isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_create_renderpass2"))) && (isCompatibile(1, 3, v) || (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_dynamic_rendering")));
+}
+
 static const DependencyCheckVect deviceExtensionDependencies
 {
 	std::make_pair("VK_KHR_swapchain",										&check_VK_KHR_swapchain),
@@ -3889,6 +3913,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_sampler_filter_minmax",							&check_VK_EXT_sampler_filter_minmax),
 	std::make_pair("VK_AMDX_shader_enqueue",								&check_VK_AMDX_shader_enqueue),
 	std::make_pair("VK_EXT_inline_uniform_block",							&check_VK_EXT_inline_uniform_block),
+	std::make_pair("VK_KHR_shader_bfloat16",								&check_VK_KHR_shader_bfloat16),
 	std::make_pair("VK_EXT_sample_locations",								&check_VK_EXT_sample_locations),
 	std::make_pair("VK_EXT_blend_operation_advanced",						&check_VK_EXT_blend_operation_advanced),
 	std::make_pair("VK_KHR_acceleration_structure",							&check_VK_KHR_acceleration_structure),
@@ -4110,6 +4135,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_external_memory_metal",							&check_VK_EXT_external_memory_metal),
 	std::make_pair("VK_KHR_depth_clamp_zero_one",							&check_VK_KHR_depth_clamp_zero_one),
 	std::make_pair("VK_EXT_vertex_attribute_robustness",					&check_VK_EXT_vertex_attribute_robustness),
+	std::make_pair("VK_EXT_fragment_density_map_offset",					&check_VK_EXT_fragment_density_map_offset),
 };
 
 static const std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>	releasedApiVersions[]	=
@@ -4238,6 +4264,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_AMD_shader_fragment_mask"),
 	std::make_tuple(1, 0, "VK_EXT_inline_uniform_block"),
 	std::make_tuple(1, 0, "VK_EXT_shader_stencil_export"),
+	std::make_tuple(1, 0, "VK_KHR_shader_bfloat16"),
 	std::make_tuple(1, 0, "VK_EXT_sample_locations"),
 	std::make_tuple(1, 0, "VK_KHR_relaxed_block_layout"),
 	std::make_tuple(1, 0, "VK_KHR_get_memory_requirements2"),
@@ -4521,4 +4548,5 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_KHR_depth_clamp_zero_one"),
 	std::make_tuple(1, 0, "VK_EXT_vertex_attribute_robustness"),
 	std::make_tuple(1, 0, "VK_NV_present_metering"),
+	std::make_tuple(1, 0, "VK_EXT_fragment_density_map_offset"),
 };
