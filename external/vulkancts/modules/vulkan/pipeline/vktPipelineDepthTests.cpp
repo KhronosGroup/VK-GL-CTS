@@ -2119,7 +2119,7 @@ tcu::TestStatus DepthOnlyInstance::iterate(void)
     const auto cmdBuffer = *cmd.cmdBuffer;
 
     // Closure to draw on the left with a given depth.
-    const auto drawLeft = [&ctx, &cmdBuffer, &pipelineLayout, &vertices](const float depth)
+    const auto drawLeft = [&](const float depth)
     {
         const PushConstants pcValues{
             tcu::Vec2(1.0f, 2.0f),
@@ -2131,7 +2131,7 @@ tcu::TestStatus DepthOnlyInstance::iterate(void)
     };
 
     // Closure to draw full screen with a given depth.
-    const auto drawFull = [&ctx, &cmdBuffer, &pipelineLayout, &vertices](const float depth)
+    const auto drawFull = [&](const float depth)
     {
         const PushConstants pcValues{
             tcu::Vec2(2.0f, 2.0f),
