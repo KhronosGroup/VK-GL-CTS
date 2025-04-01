@@ -4836,7 +4836,7 @@ struct VkPhysicalDeviceFragmentDensityMap2FeaturesEXT
 	VkBool32		fragmentDensityMapDeferred;
 };
 
-struct VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM
+struct VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -4862,7 +4862,7 @@ struct VkPhysicalDeviceFragmentDensityMap2PropertiesEXT
 	uint32_t		maxDescriptorSetSubsampledSamplers;
 };
 
-struct VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM
+struct VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -4876,7 +4876,7 @@ struct VkRenderPassFragmentDensityMapCreateInfoEXT
 	VkAttachmentReference	fragmentDensityMapAttachment;
 };
 
-struct VkSubpassFragmentDensityMapOffsetEndInfoQCOM
+struct VkRenderPassFragmentDensityMapOffsetEndInfoEXT
 {
 	VkStructureType		sType;
 	const void*			pNext;
@@ -8665,6 +8665,12 @@ struct VkPipelineRenderingCreateInfo
 	VkFormat		stencilAttachmentFormat;
 };
 
+struct VkRenderingEndInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+};
+
 struct VkRenderingAttachmentInfo
 {
 	VkStructureType			sType;
@@ -9574,25 +9580,25 @@ struct VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT
 	VkBool32		dynamicRenderingUnusedAttachments;
 };
 
-struct VkSurfacePresentModeEXT
+struct VkSurfacePresentModeKHR
 {
 	VkStructureType		sType;
 	void*				pNext;
 	VkPresentModeKHR	presentMode;
 };
 
-struct VkSurfacePresentScalingCapabilitiesEXT
+struct VkSurfacePresentScalingCapabilitiesKHR
 {
 	VkStructureType				sType;
 	void*						pNext;
-	VkPresentScalingFlagsEXT	supportedPresentScaling;
-	VkPresentGravityFlagsEXT	supportedPresentGravityX;
-	VkPresentGravityFlagsEXT	supportedPresentGravityY;
+	VkPresentScalingFlagsKHR	supportedPresentScaling;
+	VkPresentGravityFlagsKHR	supportedPresentGravityX;
+	VkPresentGravityFlagsKHR	supportedPresentGravityY;
 	VkExtent2D					minScaledImageExtent;
 	VkExtent2D					maxScaledImageExtent;
 };
 
-struct VkSurfacePresentModeCompatibilityEXT
+struct VkSurfacePresentModeCompatibilityKHR
 {
 	VkStructureType		sType;
 	void*				pNext;
@@ -9600,14 +9606,14 @@ struct VkSurfacePresentModeCompatibilityEXT
 	VkPresentModeKHR*	pPresentModes;
 };
 
-struct VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT
+struct VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		swapchainMaintenance1;
 };
 
-struct VkSwapchainPresentFenceInfoEXT
+struct VkSwapchainPresentFenceInfoKHR
 {
 	VkStructureType	sType;
 	const void*		pNext;
@@ -9615,7 +9621,7 @@ struct VkSwapchainPresentFenceInfoEXT
 	const VkFence*	pFences;
 };
 
-struct VkSwapchainPresentModesCreateInfoEXT
+struct VkSwapchainPresentModesCreateInfoKHR
 {
 	VkStructureType			sType;
 	const void*				pNext;
@@ -9623,7 +9629,7 @@ struct VkSwapchainPresentModesCreateInfoEXT
 	const VkPresentModeKHR*	pPresentModes;
 };
 
-struct VkSwapchainPresentModeInfoEXT
+struct VkSwapchainPresentModeInfoKHR
 {
 	VkStructureType			sType;
 	const void*				pNext;
@@ -9631,16 +9637,16 @@ struct VkSwapchainPresentModeInfoEXT
 	const VkPresentModeKHR*	pPresentModes;
 };
 
-struct VkSwapchainPresentScalingCreateInfoEXT
+struct VkSwapchainPresentScalingCreateInfoKHR
 {
 	VkStructureType				sType;
 	const void*					pNext;
-	VkPresentScalingFlagsEXT	scalingBehavior;
-	VkPresentGravityFlagsEXT	presentGravityX;
-	VkPresentGravityFlagsEXT	presentGravityY;
+	VkPresentScalingFlagsKHR	scalingBehavior;
+	VkPresentGravityFlagsKHR	presentGravityX;
+	VkPresentGravityFlagsKHR	presentGravityY;
 };
 
-struct VkReleaseSwapchainImagesInfoEXT
+struct VkReleaseSwapchainImagesInfoKHR
 {
 	VkStructureType	sType;
 	const void*		pNext;
@@ -10436,6 +10442,15 @@ struct VkMemoryMapPlacedInfoEXT
 	void*			pPlacedAddress;
 };
 
+struct VkPhysicalDeviceShaderBfloat16FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderBFloat16Type;
+	VkBool32		shaderBFloat16DotProduct;
+	VkBool32		shaderBFloat16CooperativeMatrix;
+};
+
 struct VkPhysicalDeviceRawAccessChainsFeaturesNV
 {
 	VkStructureType	sType;
@@ -10604,6 +10619,21 @@ struct VkConvertCooperativeVectorMatrixInfoNV
 	size_t								srcStride;
 	VkCooperativeVectorMatrixLayoutNV	dstLayout;
 	size_t								dstStride;
+};
+
+struct VkSetPresentConfigNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		numFramesPerBatch;
+	uint32_t		presentConfigFeedback;
+};
+
+struct VkPhysicalDevicePresentMeteringFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		presentMetering;
 };
 
 struct StdVideoH264SpsVuiFlags
@@ -12312,6 +12342,12 @@ typedef VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR VkPhysicalDeviceComp
 
 typedef VkImageStencilUsageCreateInfo VkImageStencilUsageCreateInfoEXT;
 
+typedef VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM;
+
+typedef VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM;
+
+typedef VkRenderPassFragmentDensityMapOffsetEndInfoEXT VkSubpassFragmentDensityMapOffsetEndInfoQCOM;
+
 typedef VkPhysicalDeviceScalarBlockLayoutFeatures VkPhysicalDeviceScalarBlockLayoutFeaturesEXT;
 
 typedef VkPhysicalDeviceUniformBufferStandardLayoutFeatures VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR;
@@ -12499,6 +12535,24 @@ typedef VkPhysicalDevicePipelineRobustnessFeatures VkPhysicalDevicePipelineRobus
 typedef VkPipelineRobustnessCreateInfo VkPipelineRobustnessCreateInfoEXT;
 
 typedef VkPhysicalDevicePipelineRobustnessProperties VkPhysicalDevicePipelineRobustnessPropertiesEXT;
+
+typedef VkSurfacePresentModeKHR VkSurfacePresentModeEXT;
+
+typedef VkSurfacePresentScalingCapabilitiesKHR VkSurfacePresentScalingCapabilitiesEXT;
+
+typedef VkSurfacePresentModeCompatibilityKHR VkSurfacePresentModeCompatibilityEXT;
+
+typedef VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT;
+
+typedef VkSwapchainPresentFenceInfoKHR VkSwapchainPresentFenceInfoEXT;
+
+typedef VkSwapchainPresentModesCreateInfoKHR VkSwapchainPresentModesCreateInfoEXT;
+
+typedef VkSwapchainPresentModeInfoKHR VkSwapchainPresentModeInfoEXT;
+
+typedef VkSwapchainPresentScalingCreateInfoKHR VkSwapchainPresentScalingCreateInfoEXT;
+
+typedef VkReleaseSwapchainImagesInfoKHR VkReleaseSwapchainImagesInfoEXT;
 
 typedef VkDeviceImageSubresourceInfo VkDeviceImageSubresourceInfoKHR;
 

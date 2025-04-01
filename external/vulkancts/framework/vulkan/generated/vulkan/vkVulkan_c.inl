@@ -1962,7 +1962,7 @@ extern "C" {
 #define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)// Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 307
+#define VK_HEADER_VERSION 311
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 4, VK_HEADER_VERSION)
@@ -2551,6 +2551,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_NODE_CREATE_INFO_AMDX = 1000134004,
 #endif
     VK_STRUCTURE_TYPE_ATTACHMENT_SAMPLE_COUNT_INFO_AMD = 1000044008,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_BFLOAT16_FEATURES_KHR = 1000141000,
     VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT = 1000143000,
     VK_STRUCTURE_TYPE_RENDER_PASS_SAMPLE_LOCATIONS_BEGIN_INFO_EXT = 1000143001,
     VK_STRUCTURE_TYPE_PIPELINE_SAMPLE_LOCATIONS_STATE_CREATE_INFO_EXT = 1000143002,
@@ -2703,15 +2704,6 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_PROPERTIES_EXT = 1000272001,
     VK_STRUCTURE_TYPE_MEMORY_MAP_PLACED_INFO_EXT = 1000272002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT = 1000273000,
-    VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT = 1000274000,
-    VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT = 1000274001,
-    VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_COMPATIBILITY_EXT = 1000274002,
-    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT = 1000275000,
-    VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT = 1000275001,
-    VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_EXT = 1000275002,
-    VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODE_INFO_EXT = 1000275003,
-    VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT = 1000275004,
-    VK_STRUCTURE_TYPE_RELEASE_SWAPCHAIN_IMAGES_INFO_EXT = 1000275005,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_PROPERTIES_NV = 1000277000,
     VK_STRUCTURE_TYPE_GRAPHICS_SHADER_GROUP_CREATE_INFO_NV = 1000277001,
     VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_SHADER_GROUPS_CREATE_INFO_NV = 1000277002,
@@ -2755,11 +2747,21 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_PARAMETERS_FEEDBACK_INFO_KHR = 1000299010,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV = 1000300000,
     VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV = 1000300001,
+#ifdef VK_ENABLE_BETA_EXTENSIONS
     VK_STRUCTURE_TYPE_CUDA_MODULE_CREATE_INFO_NV = 1000307000,
+#endif
+#ifdef VK_ENABLE_BETA_EXTENSIONS
     VK_STRUCTURE_TYPE_CUDA_FUNCTION_CREATE_INFO_NV = 1000307001,
+#endif
+#ifdef VK_ENABLE_BETA_EXTENSIONS
     VK_STRUCTURE_TYPE_CUDA_LAUNCH_INFO_NV = 1000307002,
+#endif
+#ifdef VK_ENABLE_BETA_EXTENSIONS
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUDA_KERNEL_LAUNCH_FEATURES_NV = 1000307003,
+#endif
+#ifdef VK_ENABLE_BETA_EXTENSIONS
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUDA_KERNEL_LAUNCH_PROPERTIES_NV = 1000307004,
+#endif
     VK_STRUCTURE_TYPE_QUERY_LOW_LATENCY_SUPPORT_NV = 1000310000,
     VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECT_CREATE_INFO_EXT = 1000311000,
     VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECTS_INFO_EXT = 1000311001,
@@ -2907,9 +2909,6 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_BEGIN_INFO_ARM = 1000424002,
     VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_INFO_ARM = 1000424003,
     VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_SUBMIT_INFO_ARM = 1000424004,
-    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_QCOM = 1000425000,
-    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_QCOM = 1000425001,
-    VK_STRUCTURE_TYPE_SUBPASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_QCOM = 1000425002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_NV = 1000426000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_NV = 1000426001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_FEATURES_NV = 1000427000,
@@ -2974,6 +2973,15 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM = 1000484001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC = 1000485000,
     VK_STRUCTURE_TYPE_AMIGO_PROFILING_SUBMIT_INFO_SEC = 1000485001,
+    VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_KHR = 1000274000,
+    VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_KHR = 1000274001,
+    VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_COMPATIBILITY_KHR = 1000274002,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_KHR = 1000275000,
+    VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_KHR = 1000275001,
+    VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_KHR = 1000275002,
+    VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODE_INFO_KHR = 1000275003,
+    VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_KHR = 1000275004,
+    VK_STRUCTURE_TYPE_RELEASE_SWAPCHAIN_IMAGES_INFO_KHR = 1000275005,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_VIEWPORTS_FEATURES_QCOM = 1000488000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_FEATURES_NV = 1000490000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_NV = 1000490001,
@@ -3120,6 +3128,16 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_MEMORY_GET_METAL_HANDLE_INFO_EXT = 1000602002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_KHR = 1000421000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT = 1000608000,
+#ifdef VK_ENABLE_BETA_EXTENSIONS
+    VK_STRUCTURE_TYPE_SET_PRESENT_CONFIG_NV = 1000613000,
+#endif
+#ifdef VK_ENABLE_BETA_EXTENSIONS
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_METERING_FEATURES_NV = 1000613001,
+#endif
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_EXT = 1000425000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_EXT = 1000425001,
+    VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_EXT = 1000425002,
+    VK_STRUCTURE_TYPE_RENDERING_END_INFO_EXT = 1000619003,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
   // VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT is a deprecated alias
@@ -3286,6 +3304,15 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_HOST_IMAGE_COPY_DEVICE_PERFORMANCE_QUERY_EXT = VK_STRUCTURE_TYPE_HOST_IMAGE_COPY_DEVICE_PERFORMANCE_QUERY,
     VK_STRUCTURE_TYPE_MEMORY_MAP_INFO_KHR = VK_STRUCTURE_TYPE_MEMORY_MAP_INFO,
     VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO_KHR = VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO,
+    VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT = VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_KHR,
+    VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT = VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_KHR,
+    VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_COMPATIBILITY_EXT = VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_COMPATIBILITY_KHR,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_KHR,
+    VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_KHR,
+    VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_EXT = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_KHR,
+    VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODE_INFO_EXT = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODE_INFO_KHR,
+    VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_KHR,
+    VK_STRUCTURE_TYPE_RELEASE_SWAPCHAIN_IMAGES_INFO_EXT = VK_STRUCTURE_TYPE_RELEASE_SWAPCHAIN_IMAGES_INFO_KHR,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES,
@@ -3330,6 +3357,9 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR = VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_ROTATE_FEATURES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_ROTATE_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_EXT = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_KHR,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_QCOM = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_EXT,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_QCOM = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_EXT,
+    VK_STRUCTURE_TYPE_SUBPASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_QCOM = VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_EXT,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_PROPERTIES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_PROPERTIES,
@@ -3454,8 +3484,12 @@ typedef enum VkObjectType {
     VK_OBJECT_TYPE_PERFORMANCE_CONFIGURATION_INTEL = 1000210000,
     VK_OBJECT_TYPE_DEFERRED_OPERATION_KHR = 1000268000,
     VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV = 1000277000,
+#ifdef VK_ENABLE_BETA_EXTENSIONS
     VK_OBJECT_TYPE_CUDA_MODULE_NV = 1000307000,
+#endif
+#ifdef VK_ENABLE_BETA_EXTENSIONS
     VK_OBJECT_TYPE_CUDA_FUNCTION_NV = 1000307001,
+#endif
     VK_OBJECT_TYPE_BUFFER_COLLECTION_FUCHSIA = 1000366000,
     VK_OBJECT_TYPE_MICROMAP_EXT = 1000396000,
     VK_OBJECT_TYPE_OPTICAL_FLOW_SESSION_NV = 1000464000,
@@ -4276,14 +4310,14 @@ typedef enum VkAccessFlagBits {
     VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR = 0x00400000,
     VK_ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT = 0x01000000,
     VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR = 0x00800000,
-    VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_NV = 0x00020000,
-    VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_NV = 0x00040000,
+    VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_EXT = 0x00020000,
+    VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_EXT = 0x00040000,
     VK_ACCESS_SHADING_RATE_IMAGE_READ_BIT_NV = VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR,
     VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV = VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR,
     VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,
+    VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_NV = VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_EXT,
+    VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_NV = VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_EXT,
     VK_ACCESS_NONE_KHR = VK_ACCESS_NONE,
-    VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_EXT = VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_NV,
-    VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_EXT = VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_NV,
     VK_ACCESS_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkAccessFlagBits;
 typedef VkFlags VkAccessFlags;
@@ -4375,14 +4409,15 @@ typedef enum VkImageCreateFlagBits {
     VK_IMAGE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT = 0x00010000,
     VK_IMAGE_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT = 0x00040000,
     VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT = 0x00020000,
-    VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_QCOM = 0x00008000,
     VK_IMAGE_CREATE_VIDEO_PROFILE_INDEPENDENT_BIT_KHR = 0x00100000,
+    VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_EXT = 0x00008000,
     VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR = VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT,
     VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR = VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT,
     VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR = VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT,
     VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR = VK_IMAGE_CREATE_EXTENDED_USAGE_BIT,
     VK_IMAGE_CREATE_DISJOINT_BIT_KHR = VK_IMAGE_CREATE_DISJOINT_BIT,
     VK_IMAGE_CREATE_ALIAS_BIT_KHR = VK_IMAGE_CREATE_ALIAS_BIT,
+    VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_QCOM = VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_EXT,
     VK_IMAGE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkImageCreateFlagBits;
 typedef VkFlags VkImageCreateFlags;
@@ -4502,16 +4537,16 @@ typedef enum VkPipelineStageFlagBits {
     VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR = 0x00200000,
     VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT = 0x00800000,
     VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR = 0x00400000,
-    VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV = 0x00020000,
     VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT = 0x00080000,
     VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT = 0x00100000,
+    VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_EXT = 0x00020000,
     VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV = VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,
     VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV = VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
     VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV = VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
     VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV = VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT,
     VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV = VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT,
+    VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV = VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_EXT,
     VK_PIPELINE_STAGE_NONE_KHR = VK_PIPELINE_STAGE_NONE,
-    VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_EXT = VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV,
     VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkPipelineStageFlagBits;
 typedef VkFlags VkPipelineStageFlags;
@@ -10511,7 +10546,8 @@ typedef enum VkSwapchainCreateFlagBitsKHR {
     VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR = 0x00000001,
     VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR = 0x00000002,
     VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR = 0x00000004,
-    VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_EXT = 0x00000008,
+    VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_KHR = 0x00000008,
+    VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_EXT = VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_KHR,
     VK_SWAPCHAIN_CREATE_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
 } VkSwapchainCreateFlagBitsKHR;
 typedef VkFlags VkSwapchainCreateFlagsKHR;
@@ -12584,6 +12620,20 @@ typedef VkMemoryDedicatedAllocateInfo VkMemoryDedicatedAllocateInfoKHR;
 #define VK_KHR_STORAGE_BUFFER_STORAGE_CLASS_EXTENSION_NAME "VK_KHR_storage_buffer_storage_class"
 
 
+// VK_KHR_shader_bfloat16 is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_shader_bfloat16 1
+#define VK_KHR_SHADER_BFLOAT16_SPEC_VERSION 1
+#define VK_KHR_SHADER_BFLOAT16_EXTENSION_NAME "VK_KHR_shader_bfloat16"
+typedef struct VkPhysicalDeviceShaderBfloat16FeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           shaderBFloat16Type;
+    VkBool32           shaderBFloat16DotProduct;
+    VkBool32           shaderBFloat16CooperativeMatrix;
+} VkPhysicalDeviceShaderBfloat16FeaturesKHR;
+
+
+
 // VK_KHR_relaxed_block_layout is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_relaxed_block_layout 1
 #define VK_KHR_RELAXED_BLOCK_LAYOUT_SPEC_VERSION 1
@@ -14047,6 +14097,113 @@ VKAPI_ATTR VkResult VKAPI_CALL vkReleaseCapturedPipelineDataKHR(
 #endif
 
 
+// VK_KHR_surface_maintenance1 is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_surface_maintenance1 1
+#define VK_KHR_SURFACE_MAINTENANCE_1_SPEC_VERSION 1
+#define VK_KHR_SURFACE_MAINTENANCE_1_EXTENSION_NAME "VK_KHR_surface_maintenance1"
+
+typedef enum VkPresentScalingFlagBitsKHR {
+    VK_PRESENT_SCALING_ONE_TO_ONE_BIT_KHR = 0x00000001,
+    VK_PRESENT_SCALING_ASPECT_RATIO_STRETCH_BIT_KHR = 0x00000002,
+    VK_PRESENT_SCALING_STRETCH_BIT_KHR = 0x00000004,
+    VK_PRESENT_SCALING_ONE_TO_ONE_BIT_EXT = VK_PRESENT_SCALING_ONE_TO_ONE_BIT_KHR,
+    VK_PRESENT_SCALING_ASPECT_RATIO_STRETCH_BIT_EXT = VK_PRESENT_SCALING_ASPECT_RATIO_STRETCH_BIT_KHR,
+    VK_PRESENT_SCALING_STRETCH_BIT_EXT = VK_PRESENT_SCALING_STRETCH_BIT_KHR,
+    VK_PRESENT_SCALING_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkPresentScalingFlagBitsKHR;
+typedef VkFlags VkPresentScalingFlagsKHR;
+
+typedef enum VkPresentGravityFlagBitsKHR {
+    VK_PRESENT_GRAVITY_MIN_BIT_KHR = 0x00000001,
+    VK_PRESENT_GRAVITY_MAX_BIT_KHR = 0x00000002,
+    VK_PRESENT_GRAVITY_CENTERED_BIT_KHR = 0x00000004,
+    VK_PRESENT_GRAVITY_MIN_BIT_EXT = VK_PRESENT_GRAVITY_MIN_BIT_KHR,
+    VK_PRESENT_GRAVITY_MAX_BIT_EXT = VK_PRESENT_GRAVITY_MAX_BIT_KHR,
+    VK_PRESENT_GRAVITY_CENTERED_BIT_EXT = VK_PRESENT_GRAVITY_CENTERED_BIT_KHR,
+    VK_PRESENT_GRAVITY_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkPresentGravityFlagBitsKHR;
+typedef VkFlags VkPresentGravityFlagsKHR;
+typedef struct VkSurfacePresentModeKHR {
+    VkStructureType     sType;
+    void*               pNext;
+    VkPresentModeKHR    presentMode;
+} VkSurfacePresentModeKHR;
+
+typedef struct VkSurfacePresentScalingCapabilitiesKHR {
+    VkStructureType             sType;
+    void*                       pNext;
+    VkPresentScalingFlagsKHR    supportedPresentScaling;
+    VkPresentGravityFlagsKHR    supportedPresentGravityX;
+    VkPresentGravityFlagsKHR    supportedPresentGravityY;
+    VkExtent2D                  minScaledImageExtent;
+    VkExtent2D                  maxScaledImageExtent;
+} VkSurfacePresentScalingCapabilitiesKHR;
+
+typedef struct VkSurfacePresentModeCompatibilityKHR {
+    VkStructureType      sType;
+    void*                pNext;
+    uint32_t             presentModeCount;
+    VkPresentModeKHR*    pPresentModes;
+} VkSurfacePresentModeCompatibilityKHR;
+
+
+
+// VK_KHR_swapchain_maintenance1 is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_swapchain_maintenance1 1
+#define VK_KHR_SWAPCHAIN_MAINTENANCE_1_SPEC_VERSION 1
+#define VK_KHR_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME "VK_KHR_swapchain_maintenance1"
+typedef struct VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           swapchainMaintenance1;
+} VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR;
+
+typedef struct VkSwapchainPresentFenceInfoKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+    uint32_t           swapchainCount;
+    const VkFence*     pFences;
+} VkSwapchainPresentFenceInfoKHR;
+
+typedef struct VkSwapchainPresentModesCreateInfoKHR {
+    VkStructureType            sType;
+    const void*                pNext;
+    uint32_t                   presentModeCount;
+    const VkPresentModeKHR*    pPresentModes;
+} VkSwapchainPresentModesCreateInfoKHR;
+
+typedef struct VkSwapchainPresentModeInfoKHR {
+    VkStructureType            sType;
+    const void*                pNext;
+    uint32_t                   swapchainCount;
+    const VkPresentModeKHR*    pPresentModes;
+} VkSwapchainPresentModeInfoKHR;
+
+typedef struct VkSwapchainPresentScalingCreateInfoKHR {
+    VkStructureType             sType;
+    const void*                 pNext;
+    VkPresentScalingFlagsKHR    scalingBehavior;
+    VkPresentGravityFlagsKHR    presentGravityX;
+    VkPresentGravityFlagsKHR    presentGravityY;
+} VkSwapchainPresentScalingCreateInfoKHR;
+
+typedef struct VkReleaseSwapchainImagesInfoKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkSwapchainKHR     swapchain;
+    uint32_t           imageIndexCount;
+    const uint32_t*    pImageIndices;
+} VkReleaseSwapchainImagesInfoKHR;
+
+typedef VkResult (VKAPI_PTR *PFN_vkReleaseSwapchainImagesKHR)(VkDevice device, const VkReleaseSwapchainImagesInfoKHR* pReleaseInfo);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR VkResult VKAPI_CALL vkReleaseSwapchainImagesKHR(
+    VkDevice                                    device,
+    const VkReleaseSwapchainImagesInfoKHR*      pReleaseInfo);
+#endif
+
+
 // VK_KHR_cooperative_matrix is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_cooperative_matrix 1
 #define VK_KHR_COOPERATIVE_MATRIX_SPEC_VERSION 2
@@ -14064,6 +14221,7 @@ typedef enum VkComponentTypeKHR {
     VK_COMPONENT_TYPE_UINT16_KHR = 8,
     VK_COMPONENT_TYPE_UINT32_KHR = 9,
     VK_COMPONENT_TYPE_UINT64_KHR = 10,
+    VK_COMPONENT_TYPE_BFLOAT16_KHR = 1000141000,
     VK_COMPONENT_TYPE_SINT8_PACKED_NV = 1000491000,
     VK_COMPONENT_TYPE_UINT8_PACKED_NV = 1000491001,
     VK_COMPONENT_TYPE_FLOAT_E4M3_NV = 1000491002,
@@ -18307,44 +18465,19 @@ typedef struct VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT {
 #define VK_EXT_surface_maintenance1 1
 #define VK_EXT_SURFACE_MAINTENANCE_1_SPEC_VERSION 1
 #define VK_EXT_SURFACE_MAINTENANCE_1_EXTENSION_NAME "VK_EXT_surface_maintenance1"
+typedef VkPresentScalingFlagBitsKHR VkPresentScalingFlagBitsEXT;
 
-typedef enum VkPresentScalingFlagBitsEXT {
-    VK_PRESENT_SCALING_ONE_TO_ONE_BIT_EXT = 0x00000001,
-    VK_PRESENT_SCALING_ASPECT_RATIO_STRETCH_BIT_EXT = 0x00000002,
-    VK_PRESENT_SCALING_STRETCH_BIT_EXT = 0x00000004,
-    VK_PRESENT_SCALING_FLAG_BITS_MAX_ENUM_EXT = 0x7FFFFFFF
-} VkPresentScalingFlagBitsEXT;
-typedef VkFlags VkPresentScalingFlagsEXT;
+typedef VkPresentScalingFlagsKHR VkPresentScalingFlagsEXT;
 
-typedef enum VkPresentGravityFlagBitsEXT {
-    VK_PRESENT_GRAVITY_MIN_BIT_EXT = 0x00000001,
-    VK_PRESENT_GRAVITY_MAX_BIT_EXT = 0x00000002,
-    VK_PRESENT_GRAVITY_CENTERED_BIT_EXT = 0x00000004,
-    VK_PRESENT_GRAVITY_FLAG_BITS_MAX_ENUM_EXT = 0x7FFFFFFF
-} VkPresentGravityFlagBitsEXT;
-typedef VkFlags VkPresentGravityFlagsEXT;
-typedef struct VkSurfacePresentModeEXT {
-    VkStructureType     sType;
-    void*               pNext;
-    VkPresentModeKHR    presentMode;
-} VkSurfacePresentModeEXT;
+typedef VkPresentGravityFlagBitsKHR VkPresentGravityFlagBitsEXT;
 
-typedef struct VkSurfacePresentScalingCapabilitiesEXT {
-    VkStructureType             sType;
-    void*                       pNext;
-    VkPresentScalingFlagsEXT    supportedPresentScaling;
-    VkPresentGravityFlagsEXT    supportedPresentGravityX;
-    VkPresentGravityFlagsEXT    supportedPresentGravityY;
-    VkExtent2D                  minScaledImageExtent;
-    VkExtent2D                  maxScaledImageExtent;
-} VkSurfacePresentScalingCapabilitiesEXT;
+typedef VkPresentGravityFlagsKHR VkPresentGravityFlagsEXT;
 
-typedef struct VkSurfacePresentModeCompatibilityEXT {
-    VkStructureType      sType;
-    void*                pNext;
-    uint32_t             presentModeCount;
-    VkPresentModeKHR*    pPresentModes;
-} VkSurfacePresentModeCompatibilityEXT;
+typedef VkSurfacePresentModeKHR VkSurfacePresentModeEXT;
+
+typedef VkSurfacePresentScalingCapabilitiesKHR VkSurfacePresentScalingCapabilitiesEXT;
+
+typedef VkSurfacePresentModeCompatibilityKHR VkSurfacePresentModeCompatibilityEXT;
 
 
 
@@ -18352,55 +18485,24 @@ typedef struct VkSurfacePresentModeCompatibilityEXT {
 #define VK_EXT_swapchain_maintenance1 1
 #define VK_EXT_SWAPCHAIN_MAINTENANCE_1_SPEC_VERSION 1
 #define VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME "VK_EXT_swapchain_maintenance1"
-typedef struct VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT {
-    VkStructureType    sType;
-    void*              pNext;
-    VkBool32           swapchainMaintenance1;
-} VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT;
+typedef VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT;
 
-typedef struct VkSwapchainPresentFenceInfoEXT {
-    VkStructureType    sType;
-    const void*        pNext;
-    uint32_t           swapchainCount;
-    const VkFence*     pFences;
-} VkSwapchainPresentFenceInfoEXT;
+typedef VkSwapchainPresentFenceInfoKHR VkSwapchainPresentFenceInfoEXT;
 
-typedef struct VkSwapchainPresentModesCreateInfoEXT {
-    VkStructureType            sType;
-    const void*                pNext;
-    uint32_t                   presentModeCount;
-    const VkPresentModeKHR*    pPresentModes;
-} VkSwapchainPresentModesCreateInfoEXT;
+typedef VkSwapchainPresentModesCreateInfoKHR VkSwapchainPresentModesCreateInfoEXT;
 
-typedef struct VkSwapchainPresentModeInfoEXT {
-    VkStructureType            sType;
-    const void*                pNext;
-    uint32_t                   swapchainCount;
-    const VkPresentModeKHR*    pPresentModes;
-} VkSwapchainPresentModeInfoEXT;
+typedef VkSwapchainPresentModeInfoKHR VkSwapchainPresentModeInfoEXT;
 
-typedef struct VkSwapchainPresentScalingCreateInfoEXT {
-    VkStructureType             sType;
-    const void*                 pNext;
-    VkPresentScalingFlagsEXT    scalingBehavior;
-    VkPresentGravityFlagsEXT    presentGravityX;
-    VkPresentGravityFlagsEXT    presentGravityY;
-} VkSwapchainPresentScalingCreateInfoEXT;
+typedef VkSwapchainPresentScalingCreateInfoKHR VkSwapchainPresentScalingCreateInfoEXT;
 
-typedef struct VkReleaseSwapchainImagesInfoEXT {
-    VkStructureType    sType;
-    const void*        pNext;
-    VkSwapchainKHR     swapchain;
-    uint32_t           imageIndexCount;
-    const uint32_t*    pImageIndices;
-} VkReleaseSwapchainImagesInfoEXT;
+typedef VkReleaseSwapchainImagesInfoKHR VkReleaseSwapchainImagesInfoEXT;
 
-typedef VkResult (VKAPI_PTR *PFN_vkReleaseSwapchainImagesEXT)(VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo);
+typedef VkResult (VKAPI_PTR *PFN_vkReleaseSwapchainImagesEXT)(VkDevice device, const VkReleaseSwapchainImagesInfoKHR* pReleaseInfo);
 
 #ifndef VK_NO_PROTOTYPES
 VKAPI_ATTR VkResult VKAPI_CALL vkReleaseSwapchainImagesEXT(
     VkDevice                                    device,
-    const VkReleaseSwapchainImagesInfoEXT*      pReleaseInfo);
+    const VkReleaseSwapchainImagesInfoKHR*      pReleaseInfo);
 #endif
 
 
@@ -20755,26 +20857,32 @@ typedef struct VkRenderPassStripeSubmitInfoARM {
 
 // VK_QCOM_fragment_density_map_offset is a preprocessor guard. Do not pass it to API calls.
 #define VK_QCOM_fragment_density_map_offset 1
-#define VK_QCOM_FRAGMENT_DENSITY_MAP_OFFSET_SPEC_VERSION 2
+#define VK_QCOM_FRAGMENT_DENSITY_MAP_OFFSET_SPEC_VERSION 3
 #define VK_QCOM_FRAGMENT_DENSITY_MAP_OFFSET_EXTENSION_NAME "VK_QCOM_fragment_density_map_offset"
-typedef struct VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM {
+typedef struct VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT {
     VkStructureType    sType;
     void*              pNext;
     VkBool32           fragmentDensityMapOffset;
-} VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM;
+} VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT;
 
-typedef struct VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM {
+typedef VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM;
+
+typedef struct VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT {
     VkStructureType    sType;
     void*              pNext;
     VkExtent2D         fragmentDensityOffsetGranularity;
-} VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM;
+} VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT;
 
-typedef struct VkSubpassFragmentDensityMapOffsetEndInfoQCOM {
+typedef VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM;
+
+typedef struct VkRenderPassFragmentDensityMapOffsetEndInfoEXT {
     VkStructureType      sType;
     const void*          pNext;
     uint32_t             fragmentDensityOffsetCount;
     const VkOffset2D*    pFragmentDensityOffsets;
-} VkSubpassFragmentDensityMapOffsetEndInfoQCOM;
+} VkRenderPassFragmentDensityMapOffsetEndInfoEXT;
+
+typedef VkRenderPassFragmentDensityMapOffsetEndInfoEXT VkSubpassFragmentDensityMapOffsetEndInfoQCOM;
 
 
 
@@ -23238,6 +23346,43 @@ typedef struct VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT {
     VkBool32           vertexAttributeRobustness;
 } VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT;
 
+
+
+// VK_NV_present_metering is a preprocessor guard. Do not pass it to API calls.
+#define VK_NV_present_metering 1
+#define VK_NV_PRESENT_METERING_SPEC_VERSION 1
+#define VK_NV_PRESENT_METERING_EXTENSION_NAME "VK_NV_present_metering"
+typedef struct VkSetPresentConfigNV {
+    VkStructureType    sType;
+    const void*        pNext;
+    uint32_t           numFramesPerBatch;
+    uint32_t           presentConfigFeedback;
+} VkSetPresentConfigNV;
+
+typedef struct VkPhysicalDevicePresentMeteringFeaturesNV {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           presentMetering;
+} VkPhysicalDevicePresentMeteringFeaturesNV;
+
+
+
+// VK_EXT_fragment_density_map_offset is a preprocessor guard. Do not pass it to API calls.
+#define VK_EXT_fragment_density_map_offset 1
+#define VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET_SPEC_VERSION 1
+#define VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET_EXTENSION_NAME "VK_EXT_fragment_density_map_offset"
+typedef struct VkRenderingEndInfoEXT {
+    VkStructureType    sType;
+    const void*        pNext;
+} VkRenderingEndInfoEXT;
+
+typedef void (VKAPI_PTR *PFN_vkCmdEndRendering2EXT)(VkCommandBuffer                   commandBuffer, const VkRenderingEndInfoEXT*        pRenderingEndInfo);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR void VKAPI_CALL vkCmdEndRendering2EXT(
+    VkCommandBuffer                             commandBuffer,
+    const VkRenderingEndInfoEXT*                pRenderingEndInfo);
+#endif
 
 
 // VK_KHR_acceleration_structure is a preprocessor guard. Do not pass it to API calls.

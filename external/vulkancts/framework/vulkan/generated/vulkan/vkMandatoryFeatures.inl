@@ -1114,7 +1114,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	vk::VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT physicalDeviceSwapchainMaintenance1FeaturesEXT;
 	deMemset(&physicalDeviceSwapchainMaintenance1FeaturesEXT, 0, sizeof(physicalDeviceSwapchainMaintenance1FeaturesEXT));
 
-	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_swapchain_maintenance1"))
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_swapchain_maintenance1", "VK_EXT_swapchain_maintenance1"))
 	{
 		physicalDeviceSwapchainMaintenance1FeaturesEXT.sType = getStructureType<VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT>();
 		*nextPtr = &physicalDeviceSwapchainMaintenance1FeaturesEXT;

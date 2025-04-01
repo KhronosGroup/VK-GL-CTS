@@ -566,6 +566,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkReleaseCapturedPipelineDataKHR",
 		"vkGetFramebufferTilePropertiesQCOM",
 		"vkGetDynamicRenderingTilePropertiesQCOM",
+		"vkReleaseSwapchainImagesKHR",
 		"vkGetPhysicalDeviceCooperativeVectorPropertiesNV",
 		"vkConvertCooperativeVectorMatrixNV",
 		"vkCmdConvertCooperativeVectorMatrixNV",
@@ -603,6 +604,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV",
 		"vkGetMemoryMetalHandleEXT",
 		"vkGetMemoryMetalHandlePropertiesEXT",
+		"vkCmdEndRendering2EXT",
     };
 
     bool fail = false;

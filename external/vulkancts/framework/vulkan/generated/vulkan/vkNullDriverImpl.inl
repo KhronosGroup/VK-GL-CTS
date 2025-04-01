@@ -3964,6 +3964,12 @@ VKAPI_ATTR void VKAPI_CALL cmdEndRendering (VkCommandBuffer commandBuffer)
 	DE_UNREF(commandBuffer);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdEndRendering2EXT (VkCommandBuffer commandBuffer, const VkRenderingEndInfoEXT* pRenderingEndInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pRenderingEndInfo);
+}
+
 VKAPI_ATTR void VKAPI_CALL getDescriptorSetLayoutHostMappingInfoVALVE (VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping)
 {
 	DE_UNREF(device);
@@ -4166,7 +4172,7 @@ VKAPI_ATTR void VKAPI_CALL cmdSetDepthBias2EXT (VkCommandBuffer commandBuffer, c
 	DE_UNREF(pDepthBiasInfo);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL releaseSwapchainImagesEXT (VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo)
+VKAPI_ATTR VkResult VKAPI_CALL releaseSwapchainImagesKHR (VkDevice device, const VkReleaseSwapchainImagesInfoKHR* pReleaseInfo)
 {
 	DE_UNREF(device);
 	DE_UNREF(pReleaseInfo);
@@ -4983,6 +4989,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdCudaLaunchKernelNV,										cmdCudaLaunchKernelNV),
 	VK_NULL_FUNC_ENTRY(vkCmdBeginRendering,											cmdBeginRendering),
 	VK_NULL_FUNC_ENTRY(vkCmdEndRendering,											cmdEndRendering),
+	VK_NULL_FUNC_ENTRY(vkCmdEndRendering2EXT,										cmdEndRendering2EXT),
 	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetLayoutHostMappingInfoVALVE,				getDescriptorSetLayoutHostMappingInfoVALVE),
 	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetHostMappingVALVE,							getDescriptorSetHostMappingVALVE),
 	VK_NULL_FUNC_ENTRY(vkCreateMicromapEXT,											createMicromapEXT),
@@ -5012,7 +5019,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdOpticalFlowExecuteNV,									cmdOpticalFlowExecuteNV),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceFaultInfoEXT,										getDeviceFaultInfoEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetDepthBias2EXT,										cmdSetDepthBias2EXT),
-	VK_NULL_FUNC_ENTRY(vkReleaseSwapchainImagesEXT,									releaseSwapchainImagesEXT),
+	VK_NULL_FUNC_ENTRY(vkReleaseSwapchainImagesKHR,									releaseSwapchainImagesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceImageSubresourceLayout,							getDeviceImageSubresourceLayout),
 	VK_NULL_FUNC_ENTRY(vkMapMemory2,												mapMemory2),
 	VK_NULL_FUNC_ENTRY(vkUnmapMemory2,												unmapMemory2),

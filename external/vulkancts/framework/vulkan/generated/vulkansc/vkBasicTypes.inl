@@ -3094,9 +3094,13 @@ typedef uint32_t VkOpticalFlowExecuteFlagsNV;
 
 typedef uint32_t VkFrameBoundaryFlagsEXT;
 
-typedef uint32_t VkPresentScalingFlagsEXT;
+typedef uint32_t VkPresentScalingFlagsKHR;
 
-typedef uint32_t VkPresentGravityFlagsEXT;
+typedef VkPresentScalingFlagsKHR VkPresentScalingFlagsEXT;
+
+typedef uint32_t VkPresentGravityFlagsKHR;
+
+typedef VkPresentGravityFlagsKHR VkPresentGravityFlagsEXT;
 
 typedef uint32_t VkShaderCreateFlagsEXT;
 

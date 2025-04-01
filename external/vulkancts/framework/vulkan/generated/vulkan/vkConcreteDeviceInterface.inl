@@ -465,6 +465,7 @@ virtual void				destroyCudaFunctionNV									(VkDevice device, VkCudaFunctionNV
 virtual void				cmdCudaLaunchKernelNV									(VkCommandBuffer commandBuffer, const VkCudaLaunchInfoNV* pLaunchInfo) const;
 virtual void				cmdBeginRendering										(VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo) const;
 virtual void				cmdEndRendering											(VkCommandBuffer commandBuffer) const;
+virtual void				cmdEndRendering2EXT										(VkCommandBuffer commandBuffer, const VkRenderingEndInfoEXT* pRenderingEndInfo) const;
 virtual void				getDescriptorSetLayoutHostMappingInfoVALVE				(VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping) const;
 virtual void				getDescriptorSetHostMappingVALVE						(VkDevice device, VkDescriptorSet descriptorSet, void** ppData) const;
 virtual VkResult			createMicromapEXT										(VkDevice device, const VkMicromapCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkMicromapEXT* pMicromap) const;
@@ -494,7 +495,7 @@ virtual VkResult			bindOpticalFlowSessionImageNV							(VkDevice device, VkOptic
 virtual void				cmdOpticalFlowExecuteNV									(VkCommandBuffer commandBuffer, VkOpticalFlowSessionNV session, const VkOpticalFlowExecuteInfoNV* pExecuteInfo) const;
 virtual VkResult			getDeviceFaultInfoEXT									(VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo) const;
 virtual void				cmdSetDepthBias2EXT										(VkCommandBuffer commandBuffer, const VkDepthBiasInfoEXT* pDepthBiasInfo) const;
-virtual VkResult			releaseSwapchainImagesEXT								(VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo) const;
+virtual VkResult			releaseSwapchainImagesKHR								(VkDevice device, const VkReleaseSwapchainImagesInfoKHR* pReleaseInfo) const;
 virtual void				getDeviceImageSubresourceLayout							(VkDevice device, const VkDeviceImageSubresourceInfo* pInfo, VkSubresourceLayout2* pLayout) const;
 virtual VkResult			mapMemory2												(VkDevice device, const VkMemoryMapInfo* pMemoryMapInfo, void** ppData) const;
 virtual VkResult			unmapMemory2											(VkDevice device, const VkMemoryUnmapInfo* pMemoryUnmapInfo) const;

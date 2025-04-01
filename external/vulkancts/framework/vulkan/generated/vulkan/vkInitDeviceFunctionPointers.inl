@@ -818,6 +818,7 @@ if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 3, 0))
     m_vk.cmdEndRendering = (CmdEndRenderingFunc) GET_PROC_ADDR("vkCmdEndRendering");
 if (!m_vk.cmdEndRendering)
     m_vk.cmdEndRendering = (CmdEndRenderingFunc) GET_PROC_ADDR("vkCmdEndRenderingKHR");
+m_vk.cmdEndRendering2EXT = (CmdEndRendering2EXTFunc) GET_PROC_ADDR("vkCmdEndRendering2EXT");
 m_vk.getDescriptorSetLayoutHostMappingInfoVALVE = (GetDescriptorSetLayoutHostMappingInfoVALVEFunc) GET_PROC_ADDR("vkGetDescriptorSetLayoutHostMappingInfoVALVE");
 m_vk.getDescriptorSetHostMappingVALVE = (GetDescriptorSetHostMappingVALVEFunc) GET_PROC_ADDR("vkGetDescriptorSetHostMappingVALVE");
 m_vk.createMicromapEXT = (CreateMicromapEXTFunc) GET_PROC_ADDR("vkCreateMicromapEXT");
@@ -852,7 +853,9 @@ m_vk.bindOpticalFlowSessionImageNV = (BindOpticalFlowSessionImageNVFunc) GET_PRO
 m_vk.cmdOpticalFlowExecuteNV = (CmdOpticalFlowExecuteNVFunc) GET_PROC_ADDR("vkCmdOpticalFlowExecuteNV");
 m_vk.getDeviceFaultInfoEXT = (GetDeviceFaultInfoEXTFunc) GET_PROC_ADDR("vkGetDeviceFaultInfoEXT");
 m_vk.cmdSetDepthBias2EXT = (CmdSetDepthBias2EXTFunc) GET_PROC_ADDR("vkCmdSetDepthBias2EXT");
-m_vk.releaseSwapchainImagesEXT = (ReleaseSwapchainImagesEXTFunc) GET_PROC_ADDR("vkReleaseSwapchainImagesEXT");
+m_vk.releaseSwapchainImagesKHR = (ReleaseSwapchainImagesKHRFunc) GET_PROC_ADDR("vkReleaseSwapchainImagesKHR");
+if (!m_vk.releaseSwapchainImagesKHR)
+    m_vk.releaseSwapchainImagesKHR = (ReleaseSwapchainImagesKHRFunc) GET_PROC_ADDR("vkReleaseSwapchainImagesEXT");
 if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
     m_vk.getDeviceImageSubresourceLayout = (GetDeviceImageSubresourceLayoutFunc) GET_PROC_ADDR("vkGetDeviceImageSubresourceLayout");
 if (!m_vk.getDeviceImageSubresourceLayout)
