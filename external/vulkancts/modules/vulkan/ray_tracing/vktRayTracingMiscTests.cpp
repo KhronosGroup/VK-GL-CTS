@@ -8242,24 +8242,24 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
         {
             deviceInterface.cmdFillBuffer(*cmdBufferPtr, **resultBufferPtr, 0, /* dstOffset */
                                           VK_WHOLE_SIZE, 0);                   /* data */
-
-            {
-                const auto postFillBarrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, /* srcAccessMask */
-                                                                     VK_ACCESS_SHADER_WRITE_BIT,   /* dstAccessMask */
-                                                                     **resultBufferPtr, 0,         /* offset */
-                                                                     VK_WHOLE_SIZE);
-
-                cmdPipelineBufferMemoryBarrier(deviceInterface, *cmdBufferPtr,
-                                               VK_PIPELINE_STAGE_TRANSFER_BIT,               /* srcStageMask */
-                                               VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, /* dstStageMask */
-                                               &postFillBarrier);
-            }
         }
         else
         {
             // ... otherwise copy given startdata to the gpubuffer
             const VkBufferCopy bufferCopy{0, 0, resultBufferSize};
             deviceInterface.cmdCopyBuffer(*cmdBufferPtr, **startBufferPtr, **resultBufferPtr, 1, &bufferCopy);
+        }
+
+        {
+            const auto postMemoryBarrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, /* srcAccessMask */
+                                                                   VK_ACCESS_SHADER_WRITE_BIT,   /* dstAccessMask */
+                                                                   **resultBufferPtr, 0,         /* offset */
+                                                                   VK_WHOLE_SIZE);
+
+            cmdPipelineBufferMemoryBarrier(deviceInterface, *cmdBufferPtr,
+                                           VK_PIPELINE_STAGE_TRANSFER_BIT,               /* srcStageMask */
+                                           VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, /* dstStageMask */
+                                           &postMemoryBarrier);
         }
 
         {
