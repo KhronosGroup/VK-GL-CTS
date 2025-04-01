@@ -1111,14 +1111,14 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceSubpassMergeFeedbackFeaturesEXT.pNext;
 	}
 
-	vk::VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT physicalDeviceSwapchainMaintenance1FeaturesEXT;
-	deMemset(&physicalDeviceSwapchainMaintenance1FeaturesEXT, 0, sizeof(physicalDeviceSwapchainMaintenance1FeaturesEXT));
+	vk::VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR physicalDeviceSwapchainMaintenance1FeaturesKHR;
+	deMemset(&physicalDeviceSwapchainMaintenance1FeaturesKHR, 0, sizeof(physicalDeviceSwapchainMaintenance1FeaturesKHR));
 
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_swapchain_maintenance1", "VK_EXT_swapchain_maintenance1"))
 	{
-		physicalDeviceSwapchainMaintenance1FeaturesEXT.sType = getStructureType<VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT>();
-		*nextPtr = &physicalDeviceSwapchainMaintenance1FeaturesEXT;
-		nextPtr  = &physicalDeviceSwapchainMaintenance1FeaturesEXT.pNext;
+		physicalDeviceSwapchainMaintenance1FeaturesKHR.sType = getStructureType<VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR>();
+		*nextPtr = &physicalDeviceSwapchainMaintenance1FeaturesKHR;
+		nextPtr  = &physicalDeviceSwapchainMaintenance1FeaturesKHR.pNext;
 	}
 
 	vk::VkPhysicalDeviceSynchronization2FeaturesKHR physicalDeviceSynchronization2FeaturesKHR;
@@ -2272,15 +2272,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_swapchain_maintenance1")) )
-	{
-		if ( physicalDeviceSwapchainMaintenance1FeaturesEXT.swapchainMaintenance1 == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature swapchainMaintenance1 not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_texel_buffer_alignment")) )
 	{
 		if ( physicalDeviceTexelBufferAlignmentFeaturesEXT.texelBufferAlignment == VK_FALSE )
@@ -2764,6 +2755,24 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceShaderTerminateInvocationFeaturesKHR.shaderTerminateInvocation == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderTerminateInvocation not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_swapchain_maintenance1")) )
+	{
+		if ( physicalDeviceSwapchainMaintenance1FeaturesKHR.swapchainMaintenance1 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature swapchainMaintenance1 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_swapchain_maintenance1")) )
+	{
+		if ( physicalDeviceSwapchainMaintenance1FeaturesKHR.swapchainMaintenance1 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature swapchainMaintenance1 not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
