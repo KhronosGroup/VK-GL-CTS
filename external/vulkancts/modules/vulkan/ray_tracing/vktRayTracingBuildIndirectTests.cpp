@@ -80,11 +80,12 @@ struct CaseDef
     uint32_t instancesCount    = 1;
     uint32_t maxInstancesCount = 1;
     int32_t instancesOffset    = 0;
+    bool doUpdate              = false;
 
-    const uint32_t width                = SQUARE_SIZE;
-    const uint32_t height               = SQUARE_SIZE;
-    const uint32_t depth                = 8;
-    const uint32_t geometriesGroupCount = depth;
+    static constexpr uint32_t width                = SQUARE_SIZE;
+    static constexpr uint32_t height               = SQUARE_SIZE;
+    static constexpr uint32_t depth                = 8;
+    static constexpr uint32_t geometriesGroupCount = depth;
 };
 
 uint32_t getShaderGroupSize(const InstanceInterface &vki, const VkPhysicalDevice physicalDevice)
@@ -371,9 +372,9 @@ std::vector<tcu::Vec3> makeAABBGeometry(const tcu::Vec3 offset)
         for (uint32_t x = 0; x < SQUARE_SIZE; ++x)
         {
             tcu::Vec3 min = {static_cast<float>(x) - 0.1f + offset.x(), static_cast<float>(y) - 0.1f + offset.y(),
-                             -0.1f};
+                             offset.z() - 0.1f};
             tcu::Vec3 max = {static_cast<float>(x) + 0.1f + offset.x(), static_cast<float>(y) + 0.1f + offset.y(),
-                             +0.1f};
+                             offset.z() + 0.1f};
             if (isMissTriangle(aabbId))
             {
                 min.z() += 2.0f;
@@ -561,11 +562,9 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildIndirectTestInsta
     result->setGeometryCount(m_data.geometriesGroupCount);
     result->setIndirectBuildParameters(indirectBuffer, indirectBufferOffset, indirectBufferStride);
     result->setTransformBufferAddressOffset(-m_data.transformOffset);
-    const int32_t TotalVertexOffsetInBytes = m_data.primitiveOffset + VERTEX_STRIDE * m_data.firstVertex;
-    result->setVertexBufferAddressOffset(-TotalVertexOffsetInBytes);
-    const uint32_t TriangleSizeInBytes = VERTEX_STRIDE * 3;
-    const uint32_t CeilVertexOffsetInTriangles =
-        (TotalVertexOffsetInBytes - 1 + TriangleSizeInBytes) / TriangleSizeInBytes;
+    const int32_t VertexOffsetInBytes          = m_data.primitiveOffset + VERTEX_STRIDE * m_data.firstVertex;
+    const uint32_t TriangleSizeInBytes         = VERTEX_STRIDE * 3;
+    const uint32_t CeilVertexOffsetInTriangles = (VertexOffsetInBytes - 1 + TriangleSizeInBytes) / TriangleSizeInBytes;
 
     for (uint32_t geoId = 0; geoId < m_data.geometriesGroupCount; ++geoId)
     {
@@ -573,6 +572,18 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildIndirectTestInsta
         const auto geoData     = makeTriangleGeometry(offset);
         auto rtGeo             = de::SharedPtr<RaytracedGeometryBase>(
             new RaytracedGeometry<tcu::Vec3, EmptyIndex>(vk::VK_GEOMETRY_TYPE_TRIANGLES_KHR));
+
+        if (m_data.doUpdate)
+        {
+            // add vertices to build invalid geometry 1st time, update will offset vertex buffer to correct vertices
+            for (uint32_t i = 0; i < geoData.indices.size() / 3; ++i)
+            {
+                rtGeo->addVertex({-9999.0f, -9999.0f, -9999.9f - static_cast<float>(i)});
+                rtGeo->addVertex({-9999.0f, -9999.9f, -9999.9f - static_cast<float>(i)});
+                rtGeo->addVertex({-9999.9f, -9999.0f, -9999.9f - static_cast<float>(i)});
+            }
+        }
+
         for (const auto &id : geoData.indices)
         {
             rtGeo->addVertex(geoData.vertices[id]);
@@ -594,7 +605,21 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildIndirectTestInsta
         result->setGeometryTransform(geoId, transformMatrix);
     }
 
-    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
+    if (m_data.doUpdate)
+    {
+        result->setBuildFlags(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR);
+        result->setVertexBufferAddressOffset(-VertexOffsetInBytes);
+        result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
+
+        const int32_t VertexByteSize = SQUARE_SIZE * SQUARE_SIZE * sizeof(tcu::Vec3) * 3;
+        result->setVertexBufferAddressOffset(-VertexOffsetInBytes + VertexByteSize);
+        result->build(vkd, device, cmdBuffer, result.get());
+    }
+    else
+    {
+        result->setVertexBufferAddressOffset(-VertexOffsetInBytes);
+        result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
+    }
 
     return de::SharedPtr<BottomLevelAccelerationStructure>(result.release());
 }
@@ -614,7 +639,6 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildTrianglesIndexed:
     result->setGeometryCount(m_data.geometriesGroupCount);
     result->setIndirectBuildParameters(indirectBuffer, indirectBufferOffset, indirectBufferStride);
     result->setTransformBufferAddressOffset(-m_data.transformOffset);
-    result->setIndexBufferAddressOffset(-m_data.primitiveOffset);
 
     for (uint32_t geoId = 0; geoId < m_data.geometriesGroupCount; ++geoId)
     {
@@ -637,10 +661,23 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildTrianglesIndexed:
             rtGeo->addVertex(vert);
         }
 
+        if (m_data.doUpdate)
+        {
+            // add indices covering only 1st triangle clockwise to build invalid geometry 1st time,
+            // update will offset index buffer to correct indices
+            for (uint32_t i = 0; i < geoData.indices.size() / 3; ++i)
+            {
+                rtGeo->addIndex(firstVertexReminder + 0);
+                rtGeo->addIndex(firstVertexReminder + 1);
+                rtGeo->addIndex(firstVertexReminder + SQUARE_SIZE + 1);
+            }
+        }
+
         for (const auto &id : geoData.indices)
         {
             rtGeo->addIndex(id + firstVertexReminder);
         }
+
         result->addGeometry(rtGeo);
 
         const VkTransformMatrixKHR transformMatrix = {{
@@ -651,7 +688,21 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildTrianglesIndexed:
         result->setGeometryTransform(geoId, transformMatrix);
     }
 
-    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
+    if (m_data.doUpdate)
+    {
+        result->setBuildFlags(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR);
+        result->setIndexBufferAddressOffset(-m_data.primitiveOffset);
+        result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
+
+        const int32_t IndexByteSize = SQUARE_SIZE * SQUARE_SIZE * sizeof(uint32_t) * 3;
+        result->setIndexBufferAddressOffset(-m_data.primitiveOffset + IndexByteSize);
+        result->build(vkd, device, cmdBuffer, result.get());
+    }
+    else
+    {
+        result->setIndexBufferAddressOffset(-m_data.primitiveOffset);
+        result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
+    }
 
     return de::SharedPtr<BottomLevelAccelerationStructure>(result.release());
 }
@@ -670,7 +721,6 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildAABBs::initBottom
 
     result->setGeometryCount(m_data.geometriesGroupCount);
     result->setIndirectBuildParameters(indirectBuffer, indirectBufferOffset, indirectBufferStride);
-    result->setVertexBufferAddressOffset(-m_data.primitiveOffset);
     const uint32_t AABBSizeInBytes         = sizeof(VkAabbPositionsKHR);
     const uint32_t CeilVertexOffsetInAABBs = (m_data.primitiveOffset - 1 + AABBSizeInBytes) / AABBSizeInBytes;
 
@@ -680,11 +730,23 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildAABBs::initBottom
         const auto geoData     = makeAABBGeometry(offset);
         auto rtGeo             = de::SharedPtr<RaytracedGeometryBase>(
             new RaytracedGeometry<tcu::Vec3, EmptyIndex>(vk::VK_GEOMETRY_TYPE_AABBS_KHR));
+
+        if (m_data.doUpdate)
+        {
+            // add fake vertices for doUpdate, first build will point to fake vertices,
+            // update will offset vertex buffer to correct geometry
+            for (uint32_t i = 0; i < geoData.size(); ++i)
+            {
+                rtGeo->addVertex(PADDING_VERTEX);
+            }
+        }
+
         for (const auto &vert : geoData)
         {
             rtGeo->addVertex(vert);
         }
         // add padding vertices to prevent running out of ppMaxPrimitiveCounts during build with bigger offsets
+
         for (uint32_t i = 0; i < CeilVertexOffsetInAABBs * 6; ++i)
         {
             rtGeo->addVertex(PADDING_VERTEX);
@@ -693,7 +755,21 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildAABBs::initBottom
         result->addGeometry(rtGeo);
     }
 
-    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
+    if (m_data.doUpdate)
+    {
+        result->setBuildFlags(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR);
+        result->setVertexBufferAddressOffset(-m_data.primitiveOffset);
+        result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
+
+        const int32_t VertexByteSize = SQUARE_SIZE * SQUARE_SIZE * sizeof(tcu::Vec3) * 2;
+        result->setVertexBufferAddressOffset(-m_data.primitiveOffset + VertexByteSize);
+        result->build(vkd, device, cmdBuffer, result.get());
+    }
+    else
+    {
+        result->setVertexBufferAddressOffset(-m_data.primitiveOffset);
+        result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
+    }
 
     return de::SharedPtr<BottomLevelAccelerationStructure>(result.release());
 }
@@ -710,8 +786,24 @@ de::SharedPtr<TopLevelAccelerationStructure> RayTracingBuildInstances::initTopAc
     AccelerationStructBufferProperties bufferProps;
     bufferProps.props.residency = ResourceResidency::TRADITIONAL;
 
-    result->setInstanceBufferAddressOffset(-m_data.instancesOffset);
-    result->setInstanceCount(m_data.maxInstancesCount + 1);
+    result->setInstanceCount(2 * m_data.maxInstancesCount + 1);
+    result->setIndirectBuildParameters(indirectBuffer, indirectBufferOffset, indirectBufferStride);
+
+    if (m_data.doUpdate)
+    {
+        // add fake instances, first build will point to fake blas,
+        // update will offset instance buffer to correct blas
+        const VkTransformMatrixKHR fakeTransformMatrix = {{
+            {1.0f, 0.0f, 0.0f, 0.0f},
+            {0.0f, 1.0f, 0.0f, 0.0f},
+            {0.0f, 0.0f, 1.0f, 999.0f},
+        }};
+        for (uint32_t instId = 0; instId < m_data.maxInstancesCount; ++instId)
+        {
+
+            result->addInstance(bottomLevelAccelerationStructure, fakeTransformMatrix);
+        }
+    }
 
     for (uint32_t instId = 0; instId < m_data.maxInstancesCount; ++instId)
     {
@@ -722,9 +814,23 @@ de::SharedPtr<TopLevelAccelerationStructure> RayTracingBuildInstances::initTopAc
         }};
         result->addInstance(bottomLevelAccelerationStructure, transformMatrix);
     }
-    result->setIndirectBuildParameters(indirectBuffer, indirectBufferOffset, indirectBufferStride);
 
-    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
+    if (m_data.doUpdate)
+    {
+        result->setBuildFlags(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR);
+        result->setInstanceBufferAddressOffset(-m_data.instancesOffset);
+        result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
+
+        const int32_t InstanceByteSize =
+            m_data.maxInstancesCount * static_cast<int32_t>(sizeof(VkAccelerationStructureInstanceKHR));
+        result->setInstanceBufferAddressOffset(-m_data.instancesOffset + InstanceByteSize);
+        result->build(vkd, device, cmdBuffer, result.get());
+    }
+    else
+    {
+        result->setInstanceBufferAddressOffset(-m_data.instancesOffset);
+        result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
+    }
 
     return de::SharedPtr<TopLevelAccelerationStructure>(result.release());
 }
@@ -1069,124 +1175,151 @@ tcu::TestStatus RayTracingBuildIndirectTestInstance::iterate(void)
 
 tcu::TestCaseGroup *createBuildIndirectTests(tcu::TestContext &testCtx)
 {
-    de::MovePtr<tcu::TestCaseGroup> trianglesIndexedGroup(new tcu::TestCaseGroup(testCtx, "triangles_indexed"));
-    de::MovePtr<tcu::TestCaseGroup> trianglesNoIndexGroup(new tcu::TestCaseGroup(testCtx, "triangles_no_index"));
-    de::MovePtr<tcu::TestCaseGroup> aabbsGroup(new tcu::TestCaseGroup(testCtx, "aabbs"));
-    de::MovePtr<tcu::TestCaseGroup> instancesGroup(new tcu::TestCaseGroup(testCtx, "instances"));
+    auto addIndirectTests = [&](bool doUpdate, de::MovePtr<tcu::TestCaseGroup> &group)
+    {
+        de::MovePtr<tcu::TestCaseGroup> trianglesIndexedGroup(new tcu::TestCaseGroup(testCtx, "triangles_indexed"));
+        de::MovePtr<tcu::TestCaseGroup> trianglesNoIndexGroup(new tcu::TestCaseGroup(testCtx, "triangles_no_index"));
+        de::MovePtr<tcu::TestCaseGroup> aabbsGroup(new tcu::TestCaseGroup(testCtx, "aabbs"));
+        de::MovePtr<tcu::TestCaseGroup> instancesGroup(new tcu::TestCaseGroup(testCtx, "instances"));
 
-    { // BLAS primitive_count
-        de::MovePtr<tcu::TestCaseGroup> trianglesIndexedPrimCount(new tcu::TestCaseGroup(testCtx, "primitive_count"));
-        de::MovePtr<tcu::TestCaseGroup> trianglesNoIndexPrimCount(new tcu::TestCaseGroup(testCtx, "primitive_count"));
-        de::MovePtr<tcu::TestCaseGroup> aabbPrimCount(new tcu::TestCaseGroup(testCtx, "primitive_count"));
+        { // BLAS primitive_count
+            de::MovePtr<tcu::TestCaseGroup> trianglesIndexedPrimCount(
+                new tcu::TestCaseGroup(testCtx, "primitive_count"));
+            de::MovePtr<tcu::TestCaseGroup> trianglesNoIndexPrimCount(
+                new tcu::TestCaseGroup(testCtx, "primitive_count"));
+            de::MovePtr<tcu::TestCaseGroup> aabbPrimCount(new tcu::TestCaseGroup(testCtx, "primitive_count"));
 
-        CaseDef caseDef = {};
-        for (uint32_t primCount = SQUARE_SIZE * SQUARE_SIZE; primCount >= SQUARE_SIZE; primCount -= SQUARE_SIZE)
-        {
-            caseDef.primitiveCount = primCount;
+            CaseDef caseDef  = {};
+            caseDef.doUpdate = doUpdate;
+            for (uint32_t primCount = SQUARE_SIZE * SQUARE_SIZE; primCount >= SQUARE_SIZE; primCount -= SQUARE_SIZE)
+            {
+                caseDef.primitiveCount = primCount;
 
-            trianglesIndexedPrimCount->addChild(new RayTracingTestCase<RayTracingBuildTrianglesIndexed, CaseDef>(
-                testCtx, std::to_string(primCount).c_str(), caseDef));
-            trianglesNoIndexPrimCount->addChild(new RayTracingTestCase<RayTracingBuildIndirectTestInstance, CaseDef>(
-                testCtx, std::to_string(primCount).c_str(), caseDef));
-            aabbPrimCount->addChild(new RayTracingTestCase<RayTracingBuildAABBs, CaseDef>(
-                testCtx, std::to_string(primCount).c_str(), caseDef));
+                trianglesIndexedPrimCount->addChild(new RayTracingTestCase<RayTracingBuildTrianglesIndexed, CaseDef>(
+                    testCtx, std::to_string(primCount).c_str(), caseDef));
+                trianglesNoIndexPrimCount->addChild(
+                    new RayTracingTestCase<RayTracingBuildIndirectTestInstance, CaseDef>(
+                        testCtx, std::to_string(primCount).c_str(), caseDef));
+                aabbPrimCount->addChild(new RayTracingTestCase<RayTracingBuildAABBs, CaseDef>(
+                    testCtx, std::to_string(primCount).c_str(), caseDef));
+            }
+            trianglesIndexedGroup->addChild(trianglesIndexedPrimCount.release());
+            trianglesNoIndexGroup->addChild(trianglesNoIndexPrimCount.release());
+            aabbsGroup->addChild(aabbPrimCount.release());
         }
-        trianglesIndexedGroup->addChild(trianglesIndexedPrimCount.release());
-        trianglesNoIndexGroup->addChild(trianglesNoIndexPrimCount.release());
-        aabbsGroup->addChild(aabbPrimCount.release());
-    }
-    { // TLAS primitive_count
-        de::MovePtr<tcu::TestCaseGroup> instancePrimCount(new tcu::TestCaseGroup(testCtx, "primitive_count"));
+        { // TLAS primitive_count
+            de::MovePtr<tcu::TestCaseGroup> instancePrimCount(new tcu::TestCaseGroup(testCtx, "primitive_count"));
 
-        CaseDef caseDef           = {};
-        caseDef.maxInstancesCount = 4;
-        for (uint32_t instancesCount = 1; instancesCount <= 4; ++instancesCount)
-        {
-            caseDef.instancesCount = instancesCount;
-            instancePrimCount->addChild(new RayTracingTestCase<RayTracingBuildInstances, CaseDef>(
-                testCtx, std::to_string(instancesCount).c_str(), caseDef));
+            CaseDef caseDef           = {};
+            caseDef.doUpdate          = doUpdate;
+            caseDef.maxInstancesCount = 4;
+            for (uint32_t instancesCount = 1; instancesCount <= 4; ++instancesCount)
+            {
+                caseDef.instancesCount = instancesCount;
+                instancePrimCount->addChild(new RayTracingTestCase<RayTracingBuildInstances, CaseDef>(
+                    testCtx, std::to_string(instancesCount).c_str(), caseDef));
+            }
+            instancesGroup->addChild(instancePrimCount.release());
         }
-        instancesGroup->addChild(instancePrimCount.release());
-    }
-    { // BLAS primitive_offset
-        de::MovePtr<tcu::TestCaseGroup> trianglesIndexedPrimOffset(new tcu::TestCaseGroup(testCtx, "primitive_offset"));
-        de::MovePtr<tcu::TestCaseGroup> trianglesNoIndexPrimOffset(new tcu::TestCaseGroup(testCtx, "primitive_offset"));
-        de::MovePtr<tcu::TestCaseGroup> aabbPrimOffset(new tcu::TestCaseGroup(testCtx, "primitive_offset"));
+        { // BLAS primitive_offset
+            de::MovePtr<tcu::TestCaseGroup> trianglesIndexedPrimOffset(
+                new tcu::TestCaseGroup(testCtx, "primitive_offset"));
+            de::MovePtr<tcu::TestCaseGroup> trianglesNoIndexPrimOffset(
+                new tcu::TestCaseGroup(testCtx, "primitive_offset"));
+            de::MovePtr<tcu::TestCaseGroup> aabbPrimOffset(new tcu::TestCaseGroup(testCtx, "primitive_offset"));
 
-        CaseDef caseDef = {};
-        for (uint32_t primOffset = 8; primOffset <= 8 * 6; primOffset += 8)
-        {
-            caseDef.primitiveOffset = primOffset;
-            trianglesIndexedPrimOffset->addChild(new RayTracingTestCase<RayTracingBuildTrianglesIndexed, CaseDef>(
-                testCtx, std::to_string(primOffset).c_str(), caseDef));
-            trianglesNoIndexPrimOffset->addChild(new RayTracingTestCase<RayTracingBuildIndirectTestInstance, CaseDef>(
-                testCtx, std::to_string(primOffset).c_str(), caseDef));
-            aabbPrimOffset->addChild(new RayTracingTestCase<RayTracingBuildAABBs, CaseDef>(
-                testCtx, std::to_string(primOffset).c_str(), caseDef));
+            CaseDef caseDef  = {};
+            caseDef.doUpdate = doUpdate;
+            for (uint32_t primOffset = 8; primOffset <= 8 * 6; primOffset += 8)
+            {
+                caseDef.primitiveOffset = primOffset;
+                trianglesIndexedPrimOffset->addChild(new RayTracingTestCase<RayTracingBuildTrianglesIndexed, CaseDef>(
+                    testCtx, std::to_string(primOffset).c_str(), caseDef));
+                trianglesNoIndexPrimOffset->addChild(
+                    new RayTracingTestCase<RayTracingBuildIndirectTestInstance, CaseDef>(
+                        testCtx, std::to_string(primOffset).c_str(), caseDef));
+                aabbPrimOffset->addChild(new RayTracingTestCase<RayTracingBuildAABBs, CaseDef>(
+                    testCtx, std::to_string(primOffset).c_str(), caseDef));
+            }
+            trianglesIndexedGroup->addChild(trianglesIndexedPrimOffset.release());
+            trianglesNoIndexGroup->addChild(trianglesNoIndexPrimOffset.release());
+            aabbsGroup->addChild(aabbPrimOffset.release());
         }
-        trianglesIndexedGroup->addChild(trianglesIndexedPrimOffset.release());
-        trianglesNoIndexGroup->addChild(trianglesNoIndexPrimOffset.release());
-        aabbsGroup->addChild(aabbPrimOffset.release());
-    }
-    { // TLAS primitive_offset
-        de::MovePtr<tcu::TestCaseGroup> instancePrimOffset(new tcu::TestCaseGroup(testCtx, "primitive_offset"));
+        { // TLAS primitive_offset
+            de::MovePtr<tcu::TestCaseGroup> instancePrimOffset(new tcu::TestCaseGroup(testCtx, "primitive_offset"));
 
-        CaseDef caseDef           = {};
-        caseDef.instancesCount    = 4;
-        caseDef.maxInstancesCount = 4;
-        for (uint32_t primOffset = 16; primOffset <= 16 * 8; primOffset += 16)
-        {
-            caseDef.instancesOffset = primOffset;
-            instancePrimOffset->addChild(new RayTracingTestCase<RayTracingBuildInstances, CaseDef>(
-                testCtx, std::to_string(primOffset).c_str(), caseDef));
+            CaseDef caseDef           = {};
+            caseDef.doUpdate          = doUpdate;
+            caseDef.instancesCount    = 4;
+            caseDef.maxInstancesCount = 4;
+            for (uint32_t primOffset = 16; primOffset <= 16 * 8; primOffset += 16)
+            {
+                caseDef.instancesOffset = primOffset;
+                instancePrimOffset->addChild(new RayTracingTestCase<RayTracingBuildInstances, CaseDef>(
+                    testCtx, std::to_string(primOffset).c_str(), caseDef));
+            }
+            instancesGroup->addChild(instancePrimOffset.release());
         }
-        instancesGroup->addChild(instancePrimOffset.release());
-    }
-    { // Triangles first_vertex
-        de::MovePtr<tcu::TestCaseGroup> trianglesIndexedFirstVert(new tcu::TestCaseGroup(testCtx, "first_vertex"));
-        de::MovePtr<tcu::TestCaseGroup> trianglesNoIndexFirstVert(new tcu::TestCaseGroup(testCtx, "first_vertex"));
+        { // Triangles first_vertex
+            de::MovePtr<tcu::TestCaseGroup> trianglesIndexedFirstVert(new tcu::TestCaseGroup(testCtx, "first_vertex"));
+            de::MovePtr<tcu::TestCaseGroup> trianglesNoIndexFirstVert(new tcu::TestCaseGroup(testCtx, "first_vertex"));
 
-        CaseDef caseDef = {};
-        for (uint32_t firstVert = 1; firstVert <= 8; ++firstVert)
-        {
-            caseDef.firstVertex = firstVert;
-            trianglesIndexedFirstVert->addChild(new RayTracingTestCase<RayTracingBuildTrianglesIndexed, CaseDef>(
-                testCtx, std::to_string(firstVert).c_str(), caseDef));
-            trianglesNoIndexFirstVert->addChild(new RayTracingTestCase<RayTracingBuildIndirectTestInstance, CaseDef>(
-                testCtx, std::to_string(firstVert).c_str(), caseDef));
+            CaseDef caseDef  = {};
+            caseDef.doUpdate = doUpdate;
+            for (uint32_t firstVert = 1; firstVert <= 8; ++firstVert)
+            {
+                caseDef.firstVertex = firstVert;
+                trianglesIndexedFirstVert->addChild(new RayTracingTestCase<RayTracingBuildTrianglesIndexed, CaseDef>(
+                    testCtx, std::to_string(firstVert).c_str(), caseDef));
+                trianglesNoIndexFirstVert->addChild(
+                    new RayTracingTestCase<RayTracingBuildIndirectTestInstance, CaseDef>(
+                        testCtx, std::to_string(firstVert).c_str(), caseDef));
+            }
+
+            trianglesNoIndexGroup->addChild(trianglesNoIndexFirstVert.release());
+            trianglesIndexedGroup->addChild(trianglesIndexedFirstVert.release());
+        }
+        { // Triangles transform_offset
+            de::MovePtr<tcu::TestCaseGroup> trianglesIndexedTransformOffset(
+                new tcu::TestCaseGroup(testCtx, "transform_offset"));
+            de::MovePtr<tcu::TestCaseGroup> trianglesNoIndexTransformOffset(
+                new tcu::TestCaseGroup(testCtx, "transform_offset"));
+
+            CaseDef caseDef  = {};
+            caseDef.doUpdate = doUpdate;
+            for (uint32_t transformOffset = 16; transformOffset <= 16 * 8; transformOffset += 16)
+            {
+                caseDef.transformOffset = transformOffset;
+                trianglesIndexedTransformOffset->addChild(
+                    new RayTracingTestCase<RayTracingBuildTrianglesIndexed, CaseDef>(
+                        testCtx, std::to_string(transformOffset).c_str(), caseDef));
+                trianglesNoIndexTransformOffset->addChild(
+                    new RayTracingTestCase<RayTracingBuildIndirectTestInstance, CaseDef>(
+                        testCtx, std::to_string(transformOffset).c_str(), caseDef));
+            }
+
+            trianglesNoIndexGroup->addChild(trianglesNoIndexTransformOffset.release());
+            trianglesIndexedGroup->addChild(trianglesIndexedTransformOffset.release());
         }
 
-        trianglesNoIndexGroup->addChild(trianglesNoIndexFirstVert.release());
-        trianglesIndexedGroup->addChild(trianglesIndexedFirstVert.release());
-    }
-    { // Triangles transform_offset
-        de::MovePtr<tcu::TestCaseGroup> trianglesIndexedTransformOffset(
-            new tcu::TestCaseGroup(testCtx, "transform_offset"));
-        de::MovePtr<tcu::TestCaseGroup> trianglesNoIndexTransformOffset(
-            new tcu::TestCaseGroup(testCtx, "transform_offset"));
+        group->addChild(trianglesIndexedGroup.release());
+        group->addChild(trianglesNoIndexGroup.release());
+        group->addChild(aabbsGroup.release());
+        group->addChild(instancesGroup.release());
+    };
 
-        CaseDef caseDef = {};
-        for (uint32_t transformOffset = 16; transformOffset <= 16 * 8; transformOffset += 16)
-        {
-            caseDef.transformOffset = transformOffset;
-            trianglesIndexedTransformOffset->addChild(new RayTracingTestCase<RayTracingBuildTrianglesIndexed, CaseDef>(
-                testCtx, std::to_string(transformOffset).c_str(), caseDef));
-            trianglesNoIndexTransformOffset->addChild(
-                new RayTracingTestCase<RayTracingBuildIndirectTestInstance, CaseDef>(
-                    testCtx, std::to_string(transformOffset).c_str(), caseDef));
-        }
+    de::MovePtr<tcu::TestCaseGroup> accelerationStrucutreGroup(
+        new tcu::TestCaseGroup(testCtx, "indirect_acceleration_structure"));
 
-        trianglesNoIndexGroup->addChild(trianglesNoIndexTransformOffset.release());
-        trianglesIndexedGroup->addChild(trianglesIndexedTransformOffset.release());
-    }
+    de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(testCtx, "build"));
+    addIndirectTests(false, buildGroup);
+    accelerationStrucutreGroup->addChild(buildGroup.release());
 
-    de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "indirect_build_structure"));
-    group->addChild(trianglesIndexedGroup.release());
-    group->addChild(trianglesNoIndexGroup.release());
-    group->addChild(aabbsGroup.release());
-    group->addChild(instancesGroup.release());
+    de::MovePtr<tcu::TestCaseGroup> updateGroup(new tcu::TestCaseGroup(testCtx, "update"));
+    addIndirectTests(true, updateGroup);
+    accelerationStrucutreGroup->addChild(updateGroup.release());
 
-    return group.release();
+    return accelerationStrucutreGroup.release();
 }
 
 } // namespace RayTracing

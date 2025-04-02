@@ -179,6 +179,16 @@ dEQP-VK.memory.binding.regular.overallocated.image_8_257
 dEQP-VK.memory.binding.regular.overallocated.image_8_33
 dEQP-VK.memory.binding.regular.overallocated.image_8_8
 dEQP-VK.memory.concurrent_access.shader_and_host
+dEQP-VK.memory.external_memory_acquire_unmodified.android_hardware_buffer.b8g8r8a8_unorm
+dEQP-VK.memory.external_memory_acquire_unmodified.android_hardware_buffer.r16g16b16a16_sfloat
+dEQP-VK.memory.external_memory_acquire_unmodified.android_hardware_buffer.r16g16b16a16_unorm
+dEQP-VK.memory.external_memory_acquire_unmodified.android_hardware_buffer.r32g32b32a32_sfloat
+dEQP-VK.memory.external_memory_acquire_unmodified.android_hardware_buffer.r8g8b8a8_unorm
+dEQP-VK.memory.external_memory_acquire_unmodified.dma_buf.b8g8r8a8_unorm
+dEQP-VK.memory.external_memory_acquire_unmodified.dma_buf.r16g16b16a16_sfloat
+dEQP-VK.memory.external_memory_acquire_unmodified.dma_buf.r16g16b16a16_unorm
+dEQP-VK.memory.external_memory_acquire_unmodified.dma_buf.r32g32b32a32_sfloat
+dEQP-VK.memory.external_memory_acquire_unmodified.dma_buf.r8g8b8a8_unorm
 dEQP-VK.memory.mapping.dedicated_alloc.buffer.full.1048577.flush_map2
 dEQP-VK.memory.mapping.dedicated_alloc.buffer.full.1048577.invalidate_map2
 dEQP-VK.memory.mapping.dedicated_alloc.buffer.full.1048577.remap_map2

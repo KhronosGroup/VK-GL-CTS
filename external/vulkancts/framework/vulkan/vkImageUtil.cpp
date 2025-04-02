@@ -5351,7 +5351,7 @@ vk::VkImageSubresourceLayers makeDefaultImageSubresourceLayers()
 
 ImageWithBuffer::ImageWithBuffer(const DeviceInterface &vkd, const VkDevice device, Allocator &alloc,
                                  vk::VkExtent3D extent, vk::VkFormat imageFormat, vk::VkImageUsageFlags usage,
-                                 vk::VkImageType imageType, vk::VkImageSubresourceRange ssr, uint32_t arrayLayers,
+                                 vk::VkImageType imageType, vk::VkImageSubresourceRange srr, uint32_t arrayLayers,
                                  vk::VkSampleCountFlagBits samples, vk::VkImageTiling tiling, uint32_t mipLevels,
                                  vk::VkSharingMode sharingMode)
 {
@@ -5362,7 +5362,7 @@ ImageWithBuffer::ImageWithBuffer(const DeviceInterface &vkd, const VkDevice devi
     DE_ASSERT(mipLevels > 0 && arrayLayers > 0);
 
     // Color attachment.
-    const VkImageCreateInfo colorAttachmentCreateInfo = {
+    const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
         nullptr,                             // const void* pNext;
         0u,                                  // VkImageCreateFlags flags;
@@ -5380,7 +5380,7 @@ ImageWithBuffer::ImageWithBuffer(const DeviceInterface &vkd, const VkDevice devi
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
     image = std::unique_ptr<ImageWithMemory>(
-        new ImageWithMemory(vkd, device, alloc, colorAttachmentCreateInfo, MemoryRequirement::Any));
+        new ImageWithMemory(vkd, device, alloc, imageCreateInfo, MemoryRequirement::Any));
 
     VkImageViewType viewType;
     switch (imageType)
@@ -5400,10 +5400,19 @@ ImageWithBuffer::ImageWithBuffer(const DeviceInterface &vkd, const VkDevice devi
     }
 
     // Color attachment view.
-    imageView = makeImageView(vkd, device, (*image).get(), viewType, imageFormat, ssr);
+    imageView = makeImageView(vkd, device, (*image).get(), viewType, imageFormat, srr);
 
     // Verification buffer.
-    const auto tcuFormat = mapVkFormat(imageFormat);
+    tcu::TextureFormat tcuFormat;
+    if (srr.aspectMask == static_cast<VkImageAspectFlags>(VK_IMAGE_ASPECT_COLOR_BIT))
+        tcuFormat = mapVkFormat(imageFormat);
+    else if (srr.aspectMask == static_cast<VkImageAspectFlags>(VK_IMAGE_ASPECT_DEPTH_BIT))
+        tcuFormat = getDepthCopyFormat(imageFormat);
+    else if (srr.aspectMask == static_cast<VkImageAspectFlags>(VK_IMAGE_ASPECT_STENCIL_BIT))
+        tcuFormat = getStencilCopyFormat(imageFormat);
+    else
+        DE_ASSERT(false);
+
     const auto verificationBufferSize =
         tcuFormat.getPixelSize() * extent.width * extent.height * arrayLayers * extent.depth;
     const auto verificationBufferCreateInfo =

@@ -445,6 +445,11 @@ void VideoBaseDecoder::Deinitialize()
     VkQueue queueDecode        = m_deviceContext->decodeQueue;
     VkQueue queueTransfer      = m_deviceContext->transferQueue;
 
+    // Sometimes(eg. scaling lists decoding tesets) decoding finishes before the current
+    // picture params are flushed, which leads to a memory leak and validation errors.
+    if (m_currentPictureParameters)
+        m_currentPictureParameters->FlushPictureParametersQueue(m_videoSession);
+
     if (queueDecode)
         vkd.queueWaitIdle(queueDecode);
 

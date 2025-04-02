@@ -2434,6 +2434,57 @@ tcu::TestStatus destroyOldSwapchainTest(Context &context, Type wsiType)
     return tcu::TestStatus::pass("Destroying an old swapchain has no effect.");
 }
 
+tcu::TestStatus destroyOldSwapchainWithAcquiredImageTest(Context &context, Type wsiType)
+{
+    const tcu::UVec2 desiredSize(256, 256);
+    const InstanceHelper instHelper(context, wsiType);
+    const NativeObjects native(context, instHelper.supportedExtensions, wsiType);
+    const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
+                                                     native.getWindow(), context.getTestContext().getCommandLine()));
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
+
+    // Create the first swapchain.
+    VkSwapchainCreateInfoKHR swapchainInfo =
+        getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
+    VkSwapchainKHR swapchain = VK_NULL_HANDLE;
+    VK_CHECK(devHelper.vkd.createSwapchainKHR(*devHelper.device, &swapchainInfo, nullptr, &swapchain));
+
+    uint32_t imageCount;
+    devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, swapchain, &imageCount, nullptr);
+    std::vector<VkImage> images(imageCount);
+    devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, swapchain, &imageCount, images.data());
+
+    const auto fences = createFences(devHelper.vkd, *devHelper.device, 2, false);
+    uint32_t imageIndex;
+    devHelper.vkd.acquireNextImageKHR(*devHelper.device, swapchain, std::numeric_limits<uint64_t>::max(),
+                                      VK_NULL_HANDLE, **fences[0], &imageIndex);
+    VK_CHECK(devHelper.vkd.waitForFences(*devHelper.device, 1u, &**fences[0], VK_TRUE,
+                                         std::numeric_limits<uint64_t>::max()));
+
+    // Create a new swapchain replacing the old one.
+    swapchainInfo.oldSwapchain        = swapchain;
+    VkSwapchainKHR recreatedSwapchain = VK_NULL_HANDLE;
+    VK_CHECK(devHelper.vkd.createSwapchainKHR(*devHelper.device, &swapchainInfo, nullptr, &recreatedSwapchain));
+
+    // Destroying the old swapchain should have no effect.
+    devHelper.vkd.destroySwapchainKHR(*devHelper.device, swapchain, nullptr);
+
+    uint32_t imageCount2;
+    devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, recreatedSwapchain, &imageCount2, nullptr);
+    std::vector<VkImage> images2(imageCount2);
+    devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, recreatedSwapchain, &imageCount2, images2.data());
+
+    devHelper.vkd.acquireNextImageKHR(*devHelper.device, recreatedSwapchain, std::numeric_limits<uint64_t>::max(),
+                                      VK_NULL_HANDLE, **fences[1], &imageIndex);
+    VK_CHECK(devHelper.vkd.waitForFences(*devHelper.device, 1u, &**fences[1], VK_TRUE,
+                                         std::numeric_limits<uint64_t>::max()));
+
+    // Destroy the new swapchain for cleanup.
+    devHelper.vkd.destroySwapchainKHR(*devHelper.device, recreatedSwapchain, nullptr);
+
+    return tcu::TestStatus::pass("Destroying an old swapchain has no effect.");
+}
+
 tcu::TestStatus acquireTooManyTest(Context &context, Type wsiType)
 {
     const tcu::UVec2 desiredSize(256, 256);
@@ -2601,6 +2652,8 @@ void populateDestroyGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
     addFunctionCase(testGroup, "null_handle", destroyNullHandleSwapchainTest, wsiType);
     // Destroying an old swapchain
     addFunctionCase(testGroup, "old_swapchain", destroyOldSwapchainTest, wsiType);
+    // Destroying an old swapchain after acquiring image
+    addFunctionCase(testGroup, "old_swapchain_acquired_image", destroyOldSwapchainWithAcquiredImageTest, wsiType);
 }
 
 void populateAcquireGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
