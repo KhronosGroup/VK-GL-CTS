@@ -312,8 +312,8 @@ PACKAGES = [
         "b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30",
         "zlib"),
     SourcePackage(
-        "https://prdownloads.sourceforge.net/libpng/libpng-1.6.27.tar.gz",
-        "c9d164ec247f426a525a7b89936694aefbc91fb7a50182b198898b8fc91174b4",
+        "https://github.com/pnggroup/libpng/archive/refs/tags/v1.6.33.tar.gz",
+        "0b0681ed912f8f6b0175fc4ebe4b05367dfbfcd4a6f23b8f2498db42eca998d4",
         "libpng",
         postExtract = postExtractLibpng),
     SourceFile(
