@@ -157,6 +157,7 @@ const int32_t defaultHalfSize                  = defaultSize / 2;
 const int32_t defaultQuarterSize               = defaultSize / 4;
 const int32_t defaultSixteenthSize             = defaultSize / 16;
 const int32_t defaultQuarterSquaredSize        = defaultQuarterSize * defaultQuarterSize;
+const int32_t defaultLargeSize                 = 4096;
 const uint32_t defaultRootSize                 = static_cast<uint32_t>(deSqrt(defaultSize));
 const VkExtent3D defaultExtent                 = {defaultSize, defaultSize, 1};
 const VkExtent3D defaultHalfExtent             = {defaultHalfSize, defaultHalfSize, 1};
@@ -14559,6 +14560,101 @@ void addBufferToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testGr
         }
 
         group->addChild(new BufferToBufferTestCase(testCtx, "unaligned_regions", params));
+    }
+
+    // Whole large
+    {
+        TestParams params;
+        params.src.buffer.size  = defaultLargeSize;
+        params.dst.buffer.size  = defaultLargeSize;
+        params.allocationKind   = testGroupParams->allocationKind;
+        params.extensionFlags   = testGroupParams->extensionFlags;
+        params.queueSelection   = testGroupParams->queueSelection;
+        params.useSparseBinding = testGroupParams->useSparseBinding;
+
+        const VkBufferCopy bufferCopy = {
+            0u,               // VkDeviceSize srcOffset;
+            0u,               // VkDeviceSize dstOffset;
+            defaultLargeSize, // VkDeviceSize size;
+        };
+
+        CopyRegion copyRegion;
+        copyRegion.bufferCopy = bufferCopy;
+        params.regions.push_back(copyRegion);
+
+        group->addChild(new BufferToBufferTestCase(testCtx, "whole_large", params));
+    }
+
+    // Partial large
+    {
+        TestParams params;
+        params.src.buffer.size  = defaultLargeSize;
+        params.dst.buffer.size  = defaultLargeSize;
+        params.allocationKind   = testGroupParams->allocationKind;
+        params.extensionFlags   = testGroupParams->extensionFlags;
+        params.queueSelection   = testGroupParams->queueSelection;
+        params.useSparseBinding = testGroupParams->useSparseBinding;
+
+        const VkBufferCopy bufferCopy = {
+            1024u,                // VkDeviceSize srcOffset;
+            defaultLargeSize / 2, // VkDeviceSize dstOffset;
+            defaultLargeSize / 2, // VkDeviceSize size;
+        };
+
+        CopyRegion copyRegion;
+        copyRegion.bufferCopy = bufferCopy;
+        params.regions.push_back(copyRegion);
+
+        group->addChild(new BufferToBufferTestCase(testCtx, "partial_large", params));
+    }
+
+    // Partial large unaligned size
+    {
+        TestParams params;
+        params.src.buffer.size  = 2 * defaultLargeSize;
+        params.dst.buffer.size  = 2 * defaultLargeSize;
+        params.allocationKind   = testGroupParams->allocationKind;
+        params.extensionFlags   = testGroupParams->extensionFlags;
+        params.queueSelection   = testGroupParams->queueSelection;
+        params.useSparseBinding = testGroupParams->useSparseBinding;
+
+        const VkBufferCopy bufferCopy = {
+            1024u,                // VkDeviceSize srcOffset;
+            defaultLargeSize / 2, // VkDeviceSize dstOffset;
+            1 + defaultLargeSize, // VkDeviceSize size;
+        };
+
+        CopyRegion copyRegion;
+        copyRegion.bufferCopy = bufferCopy;
+        params.regions.push_back(copyRegion);
+
+        group->addChild(new BufferToBufferTestCase(testCtx, "partial_large_unaligned_size", params));
+    }
+
+    // Unaligned regions large
+    {
+        TestParams params;
+        params.src.buffer.size  = 2 * defaultLargeSize;
+        params.dst.buffer.size  = 2 * defaultLargeSize;
+        params.allocationKind   = testGroupParams->allocationKind;
+        params.extensionFlags   = testGroupParams->extensionFlags;
+        params.queueSelection   = testGroupParams->queueSelection;
+        params.useSparseBinding = testGroupParams->useSparseBinding;
+
+        for (unsigned int i = 0; i < 5; i++)
+        {
+            const VkBufferCopy bufferCopy{
+                3 + i * 512,  // VkDeviceSize    srcOffset;
+                1 + i * 1024, // VkDeviceSize    dstOffset;
+                2 + i * 256,  // VkDeviceSize    size;
+            };
+
+            CopyRegion copyRegion;
+            copyRegion.bufferCopy = bufferCopy;
+            params.regions.push_back(copyRegion);
+        }
+
+        group->addChild(new BufferToBufferTestCase(testCtx, "unaligned_regions_large", params));
     }
 }
 
