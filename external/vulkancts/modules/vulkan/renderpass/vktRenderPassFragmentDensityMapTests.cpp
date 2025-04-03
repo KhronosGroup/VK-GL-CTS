@@ -3993,9 +3993,12 @@ FDMOffsetBaseInstance::QuadInfo FDMOffsetBaseInstance::getQuadInfo(const tcu::IV
 
 struct FDMOffsetOversizedFDMParams : public FDMOffsetBaseParams
 {
+    bool extraLarge;
+
     FDMOffsetOversizedFDMParams(const SharedGroupParams groupParams, OffsetType horizontalOffset_,
-                                OffsetType verticalOffset_, bool multiView_, bool resumeRendering_)
+                                OffsetType verticalOffset_, bool multiView_, bool resumeRendering_, bool extraLarge_)
         : FDMOffsetBaseParams(groupParams, horizontalOffset_, verticalOffset_, multiView_, resumeRendering_)
+        , extraLarge(extraLarge_)
     {
     }
 
@@ -4008,7 +4011,7 @@ struct FDMOffsetOversizedFDMParams : public FDMOffsetBaseParams
             return 1;
         case OffsetType::POSITIVE: // fallthrough.
         case OffsetType::NEGATIVE:
-            return 2;
+            return (extraLarge ? 4 : 2);
         default:
             break;
         }
@@ -4026,10 +4029,18 @@ struct FDMOffsetOversizedFDMParams : public FDMOffsetBaseParams
         return fbExtent / minTexelSize * factor;
     }
 
+    // How many times the framebuffer extent to offset by.
+    tcu::IVec3 getOffsetFactor() const
+    {
+        const auto baseFactor = (extraLarge ? 3 : 1);
+        const auto factor = tcu::IVec3(getSign(horizontalOffset) * baseFactor, getSign(verticalOffset) * baseFactor, 1);
+        return factor;
+    }
+
     std::vector<tcu::IVec2> getOffsets(const VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT *) const override
     {
         const auto fbExtent   = getFramebufferExtent();
-        const auto factor     = tcu::IVec3(getSign(horizontalOffset), getSign(verticalOffset), 1);
+        const auto factor     = getOffsetFactor();
         const auto realOffset = (fbExtent * factor).swizzle(0, 1);
 
         std::vector<tcu::IVec2> offsets;
@@ -4074,17 +4085,23 @@ void FDMOffsetOversizedFDMInstance::prepareFDMAccess(tcu::PixelBufferAccess &fdm
     // If the offset is zero, we'll clear to 1x1 on the left/top side, and 2x2 (or larger) on the right/bottom side.
     // If the offset is nonzero, the values are reversed to make sure we sample from the right/bottom side.
     // If the offset type is negative, values are reversed.
+
+    const auto osfdmParams = static_cast<const FDMOffsetOversizedFDMParams *>(m_params.get());
+    DE_ASSERT(!!osfdmParams);
+    const auto dimDivisor = (osfdmParams->extraLarge ? 4 : 2);
+
     for (int layer = 0; layer < fdmExtent.z(); ++layer)
     {
         const bool isZeroOffset = (fdmOffsets.at(layer) == zeroOffset);
 
         if (m_params->horizontalOffset != OffsetType::NONE)
         {
-            const int sideWidth  = fdmExtent.x() / 2;
+            const int sideWidth  = fdmExtent.x() / dimDivisor;
             const int sideHeight = fdmExtent.y();
 
-            const auto left  = tcu::getSubregion(fdmAccess, 0, 0, layer, sideWidth, sideHeight, 1);
-            const auto right = tcu::getSubregion(fdmAccess, sideWidth, 0, layer, sideWidth, sideHeight, 1);
+            const auto left = tcu::getSubregion(fdmAccess, 0, 0, layer, fdmExtent.x() - sideWidth, sideHeight, 1);
+            const auto right =
+                tcu::getSubregion(fdmAccess, fdmExtent.x() - sideWidth, 0, layer, sideWidth, sideHeight, 1);
 
             const bool isNegative = (m_params->horizontalOffset == OffsetType::NEGATIVE);
             const bool leftLow    = (isNegative && !isZeroOffset);
@@ -4094,10 +4111,11 @@ void FDMOffsetOversizedFDMInstance::prepareFDMAccess(tcu::PixelBufferAccess &fdm
         else if (m_params->verticalOffset != OffsetType::NONE)
         {
             const int sideWidth  = fdmExtent.x();
-            const int sideHeight = fdmExtent.y() / 2;
+            const int sideHeight = fdmExtent.y() / dimDivisor;
 
-            const auto top    = tcu::getSubregion(fdmAccess, 0, 0, layer, sideWidth, sideHeight, 1);
-            const auto bottom = tcu::getSubregion(fdmAccess, 0, sideHeight, layer, sideWidth, sideHeight, 1);
+            const auto top = tcu::getSubregion(fdmAccess, 0, 0, layer, sideWidth, fdmExtent.y() - sideHeight, 1);
+            const auto bottom =
+                tcu::getSubregion(fdmAccess, 0, fdmExtent.y() - sideHeight, layer, sideWidth, sideHeight, 1);
 
             const bool isNegative = (m_params->verticalOffset == OffsetType::NEGATIVE);
             const bool topLow     = (isNegative && !isZeroOffset);
@@ -5158,17 +5176,19 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
             for (const auto &offsetCase : offsetCases)
                 for (const auto multiView : {false, true})
                     for (const auto resumeRendering : {false, true})
-                    {
-                        if (groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING && resumeRendering)
-                            continue;
+                        for (const bool extraLarge : {false, true})
+                        {
+                            if (groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING && resumeRendering)
+                                continue;
 
-                        FDMOffsetParamsPtr params(new FDMOffsetOversizedFDMParams(groupParams, offsetCase.horOffsetType,
-                                                                                  offsetCase.vertOffsetType, multiView,
-                                                                                  resumeRendering));
-                        const auto testName = std::string(offsetCase.name) + (multiView ? "_multiview" : "") +
-                                              (resumeRendering ? "_suspend_resume" : "");
-                        oversizedFDMGroup->addChild(new FDMOffsetOversizedFDMCase(testCtx, testName, params));
-                    }
+                            FDMOffsetParamsPtr params(new FDMOffsetOversizedFDMParams(
+                                groupParams, offsetCase.horOffsetType, offsetCase.vertOffsetType, multiView,
+                                resumeRendering, extraLarge));
+                            const auto testName = std::string(offsetCase.name) + (multiView ? "_multiview" : "") +
+                                                  (resumeRendering ? "_suspend_resume" : "") +
+                                                  (extraLarge ? "_extra_large" : "");
+                            oversizedFDMGroup->addChild(new FDMOffsetOversizedFDMCase(testCtx, testName, params));
+                        }
 
             offsetGroup->addChild(oversizedFDMGroup.release());
         }
