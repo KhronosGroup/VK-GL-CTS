@@ -1440,13 +1440,14 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
 
         for (const auto &randomOrder : randomOrderTests)
         {
+            vk::VkShaderStageFlags taskNext =
+                meshShaders.mesh != UNUSED ? (vk::VkShaderStageFlags)vk::VK_SHADER_STAGE_MESH_BIT_EXT : 0u;
+            vk::VkShaderStageFlags meshNext =
+                meshShaders.fragment != UNUSED ? (vk::VkShaderStageFlags)vk::VK_SHADER_STAGE_FRAGMENT_BIT : 0u;
             MeshParams params = {
                 meshShaders,
                 randomOrder,
-                {
-                    0u,
-                    0u,
-                },
+                {taskNext, meshNext},
             };
 
             std::string randomOrderName = (randomOrder) ? "random_order" : "default";
@@ -1455,35 +1456,6 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
         }
         linkGroup->addChild(meshGroup.release());
     }
-
-    const struct
-    {
-        MeshNextStages nextStages;
-        const char *name;
-    } meshNextStageTests[] = {
-        {{
-             vk::VK_SHADER_STAGE_MESH_BIT_EXT,
-             0u,
-         },
-         "mesh"},
-        {{
-             0u,
-             vk::VK_SHADER_STAGE_FRAGMENT_BIT,
-         },
-         "frag"},
-    };
-
-    de::MovePtr<tcu::TestCaseGroup> meshNextStageGroup(new tcu::TestCaseGroup(testCtx, "meshnext_stage"));
-    for (const auto &meshNextStage : meshNextStageTests)
-    {
-        MeshParams params = {
-            {UNLINKED, UNLINKED, UNLINKED},
-            false,
-            meshNextStage.nextStages,
-        };
-        meshNextStageGroup->addChild(new MeshShaderObjectLinkCase(testCtx, meshNextStage.name, params));
-    }
-    linkGroup->addChild(meshNextStageGroup.release());
 
     return linkGroup.release();
 }
