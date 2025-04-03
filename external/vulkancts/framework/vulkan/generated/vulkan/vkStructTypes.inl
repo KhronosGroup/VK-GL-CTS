@@ -10478,7 +10478,7 @@ struct VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT
 	VkBool32		shaderReplicatedComposites;
 };
 
-struct VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT
+struct VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -10604,6 +10604,21 @@ struct VkConvertCooperativeVectorMatrixInfoNV
 	size_t								srcStride;
 	VkCooperativeVectorMatrixLayoutNV	dstLayout;
 	size_t								dstStride;
+};
+
+struct VkSetPresentConfigNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		numFramesPerBatch;
+	uint32_t		presentConfigFeedback;
+};
+
+struct VkPhysicalDevicePresentMeteringFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		presentMetering;
 };
 
 struct StdVideoH264SpsVuiFlags

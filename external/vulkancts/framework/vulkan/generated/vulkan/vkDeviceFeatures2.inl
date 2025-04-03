@@ -5957,7 +5957,7 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderReplicatedCompositesFeaturesEXT (
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
-tcu::TestStatus testPhysicalDeviceFeaturePresentModeFifoLatestReadyFeaturesEXT (Context& context)
+tcu::TestStatus testPhysicalDeviceFeaturePresentModeFifoLatestReadyFeaturesKHR (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
     const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
@@ -5967,31 +5967,31 @@ tcu::TestStatus testPhysicalDeviceFeaturePresentModeFifoLatestReadyFeaturesEXT (
     VkPhysicalDeviceFeatures2     extFeatures;
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
-    VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT devicePresentModeFifoLatestReadyFeaturesEXT[count];
-    const bool                                            isPresentModeFifoLatestReadyFeaturesEXT = checkExtension(properties, "VK_EXT_present_mode_fifo_latest_ready");
+    VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR devicePresentModeFifoLatestReadyFeaturesKHR[count];
+    const bool                                            isPresentModeFifoLatestReadyFeaturesKHR = checkExtension(properties, "VK_KHR_present_mode_fifo_latest_ready");
 
-    if (!isPresentModeFifoLatestReadyFeaturesEXT)
+    if (!isPresentModeFifoLatestReadyFeaturesKHR)
         return tcu::TestStatus::pass("Querying not supported");
 
     for (int ndx = 0; ndx < count; ++ndx)
     {
-        deMemset(&devicePresentModeFifoLatestReadyFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT));
-        devicePresentModeFifoLatestReadyFeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_EXT;
-        devicePresentModeFifoLatestReadyFeaturesEXT[ndx].pNext = nullptr;
+        deMemset(&devicePresentModeFifoLatestReadyFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR));
+        devicePresentModeFifoLatestReadyFeaturesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_KHR;
+        devicePresentModeFifoLatestReadyFeaturesKHR[ndx].pNext = nullptr;
 
         deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
         extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        extFeatures.pNext = &devicePresentModeFifoLatestReadyFeaturesEXT[ndx];
+        extFeatures.pNext = &devicePresentModeFifoLatestReadyFeaturesKHR[ndx];
 
         vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
     }
 
-    log << TestLog::Message << devicePresentModeFifoLatestReadyFeaturesEXT[0] << TestLog::EndMessage;
+    log << TestLog::Message << devicePresentModeFifoLatestReadyFeaturesKHR[0] << TestLog::EndMessage;
 
     if (
-        devicePresentModeFifoLatestReadyFeaturesEXT[0].presentModeFifoLatestReady != devicePresentModeFifoLatestReadyFeaturesEXT[1].presentModeFifoLatestReady)
+        devicePresentModeFifoLatestReadyFeaturesKHR[0].presentModeFifoLatestReady != devicePresentModeFifoLatestReadyFeaturesKHR[1].presentModeFifoLatestReady)
     {
-        TCU_FAIL("Mismatch between VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT");
+        TCU_FAIL("Mismatch between VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR");
     }
     return tcu::TestStatus::pass("Querying succeeded");
 }
@@ -6479,7 +6479,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "map_memory_placed_features_ext", testPhysicalDeviceFeatureMapMemoryPlacedFeaturesEXT);
 	addFunctionCase(testGroup, "image_alignment_control_features_mesa", testPhysicalDeviceFeatureImageAlignmentControlFeaturesMESA);
 	addFunctionCase(testGroup, "shader_replicated_composites_features_ext", testPhysicalDeviceFeatureShaderReplicatedCompositesFeaturesEXT);
-	addFunctionCase(testGroup, "present_mode_fifo_latest_ready_features_ext", testPhysicalDeviceFeaturePresentModeFifoLatestReadyFeaturesEXT);
+	addFunctionCase(testGroup, "present_mode_fifo_latest_ready_features_khr", testPhysicalDeviceFeaturePresentModeFifoLatestReadyFeaturesKHR);
 	addFunctionCase(testGroup, "vertex_attribute_robustness_features_ext", testPhysicalDeviceFeatureVertexAttributeRobustnessFeaturesEXT);
 	addFunctionCase(testGroup, "depth_clamp_zero_one_features_khr", testPhysicalDeviceFeatureDepthClampZeroOneFeaturesKHR);
 	addFunctionCase(testGroup, "create_device_with_promoted11_structures", createDeviceWithPromoted11Structures);
