@@ -927,7 +927,8 @@ void DisplayTimingTestInstance::render(void)
         else
         {
             desiredPresentTime = m_prevDesiredPresentTime + m_targetIPD;
-            if ((presentTime.presentID == 80) && (m_swapchainConfig.presentMode != vk::VK_PRESENT_MODE_MAILBOX_KHR))
+            if ((presentTime.presentID == 80) && (m_swapchainConfig.presentMode != vk::VK_PRESENT_MODE_MAILBOX_KHR) &&
+                (m_swapchainConfig.presentMode != vk::VK_PRESENT_MODE_FIFO_LATEST_READY_EXT))
             {
                 // Test if desiredPresentTime is 1 second earlier (i.e. before the previous image could have been presented)
                 presentTime.desiredPresentTime -= SECOND;
@@ -1089,6 +1090,7 @@ void createDisplayTimingTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiTy
         {vk::VK_PRESENT_MODE_FIFO_RELAXED_KHR, "fifo_relaxed"},
         {vk::VK_PRESENT_MODE_IMMEDIATE_KHR, "immediate"},
         {vk::VK_PRESENT_MODE_MAILBOX_KHR, "mailbox"},
+        {vk::VK_PRESENT_MODE_FIFO_LATEST_READY_EXT, "fifo_latest_ready"},
     };
 
     for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
