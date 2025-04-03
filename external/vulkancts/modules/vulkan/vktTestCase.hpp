@@ -176,8 +176,10 @@ public:
     }
 
 #ifndef CTS_USES_VULKANSC
-    bool hasDebugReportRecorder() const;
-    vk::DebugReportRecorder &getDebugReportRecorder() const;
+    bool hasDebugReportRecorders() const;
+    std::vector<vk::DebugReportRecorder *> getDebugReportRecorders() const;
+    void addExternalDebugReportRecorder(vk::DebugReportRecorder *);
+    void removeExternalDebugReportRecorder(vk::DebugReportRecorder *);
 #endif // CTS_USES_VULKANSC
 
     void checkPipelineConstructionRequirements(const vk::PipelineConstructionType pipelineConstructionType);
