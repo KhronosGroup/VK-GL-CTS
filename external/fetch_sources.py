@@ -370,7 +370,7 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Video-Samples.git",
         "git@github.com:KhronosGroup/Vulkan-Video-Samples.git",
-        "0e87744edbb84c9c56c3fc8de9ea5150af5ee4ea",
+        "09a1876679838dc3c802e29617e1e48cf179b084",
         "vulkan-video-samples"),
     # NOTE: Temporary video generator repo .
     GitRepo(
