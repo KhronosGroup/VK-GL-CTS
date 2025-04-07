@@ -1997,14 +1997,16 @@ tcu::TestStatus CopyImageToImageMipmap::iterate(void)
                               (int)m_params.src.image.extent.depth));
     generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.image.extent.width, m_params.src.image.extent.height,
                    m_params.src.image.extent.depth, m_params.src.image.fillMode);
-    uploadImage(m_sourceTextureLevel->getAccess(), m_source.get(), m_params.src.image, m_params.mipLevels);
+    uploadImage(m_sourceTextureLevel->getAccess(), m_source.get(), m_params.src.image, m_params.useGeneralLayout,
+                m_params.mipLevels);
 
     m_destinationTextureLevel = de::MovePtr<tcu::TextureLevel>(
         new tcu::TextureLevel(dstTcuFormat, (int)m_params.dst.image.extent.width, (int)m_params.dst.image.extent.height,
                               (int)m_params.dst.image.extent.depth));
     generateBuffer(m_destinationTextureLevel->getAccess(), m_params.dst.image.extent.width,
                    m_params.dst.image.extent.height, m_params.dst.image.extent.depth, FILL_MODE_RED);
-    uploadImage(m_destinationTextureLevel->getAccess(), m_destination.get(), m_params.dst.image, m_params.mipLevels);
+    uploadImage(m_destinationTextureLevel->getAccess(), m_destination.get(), m_params.dst.image,
+                m_params.useGeneralLayout, m_params.mipLevels);
 
     const DeviceInterface &vk                   = m_context.getDeviceInterface();
     const VkDevice vkDevice                     = m_device;
@@ -5859,7 +5861,8 @@ tcu::TestStatus BlittingMipmaps::iterate(void)
 
     uploadImage(m_sourceTextureLevel->getAccess(), m_source.get(), m_params.src.image, m_params.useGeneralLayout);
 
-    uploadImage(m_destinationTextureLevel->getAccess(), m_destination.get(), m_params.dst.image, m_params.mipLevels);
+    uploadImage(m_destinationTextureLevel->getAccess(), m_destination.get(), m_params.dst.image,
+                m_params.useGeneralLayout, m_params.mipLevels);
 
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice vkDevice   = m_device;
@@ -5881,7 +5884,8 @@ tcu::TestStatus BlittingMipmaps::iterate(void)
 
     // Copy source image to mip level 0 when generating mipmaps with multiple blit commands
     if (!m_params.singleCommand)
-        uploadImage(m_sourceTextureLevel->getAccess(), m_destination.get(), m_params.dst.image, 1u);
+        uploadImage(m_sourceTextureLevel->getAccess(), m_destination.get(), m_params.dst.image,
+                    m_params.useGeneralLayout, 1u);
 
     beginCommandBuffer(vk, *m_universalCmdBuffer);
 
