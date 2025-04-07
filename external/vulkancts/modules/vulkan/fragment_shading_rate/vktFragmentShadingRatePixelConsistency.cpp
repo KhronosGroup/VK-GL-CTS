@@ -39,6 +39,8 @@
 #include "vktTestGroupUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktCustomInstancesDevices.hpp"
+#include "vkSafetyCriticalUtil.hpp"
+#include "vkAppParamsUtil.hpp"
 
 #include "deDefs.h"
 #include "deMath.h"
@@ -82,64 +84,6 @@ Vertex basicTriangles[6] = {
 
     {-1.0f, 1.0f},  {1.0f, -1.0f}, {1.0f, 1.0f},
 };
-
-Move<VkDevice> createImageRobustnessDevice(Context &context, const vk::VkInstance &instance,
-                                           const InstanceInterface &vki)
-{
-    const VkPhysicalDevice physicalDevice = chooseDevice(vki, instance, context.getTestContext().getCommandLine());
-    const float queuePriority             = 1.0f;
-
-    // Create a universal queue
-    const VkDeviceQueueCreateInfo queueParams = {
-        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                    // const void* pNext;
-        0u,                                         // VkDeviceQueueCreateFlags flags;
-        context.getUniversalQueueFamilyIndex(),     // uint32_t queueFamilyIndex;
-        1u,                                         // uint32_t queueCount;
-        &queuePriority                              // const float* pQueuePriorities;
-    };
-
-    // Add image robustness extension if supported
-    std::vector<const char *> deviceExtensions;
-
-    deviceExtensions.push_back("VK_KHR_fragment_shading_rate");
-
-    if (context.isDeviceFunctionalitySupported("VK_EXT_image_robustness"))
-    {
-        deviceExtensions.push_back("VK_EXT_image_robustness");
-    }
-
-    VkPhysicalDeviceFragmentShadingRateFeaturesKHR fsrFeatures = {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR, // VkStructureType sType;
-        nullptr,                                                              // void* pNext;
-        false,                                                                // VkBool32 pipelineFragmentShadingRate;
-        false,                                                                // VkBool32 primitiveFragmentShadingRate;
-        false,                                                                // VkBool32 attachmentFragmentShadingRate;
-    };
-
-    VkPhysicalDeviceFeatures2 enabledFeatures;
-    enabledFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    enabledFeatures.pNext = &fsrFeatures;
-
-    vki.getPhysicalDeviceFeatures2(physicalDevice, &enabledFeatures);
-
-    const VkDeviceCreateInfo deviceParams = {
-        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,                      // VkStructureType sType;
-        &enabledFeatures,                                          // const void* pNext;
-        0u,                                                        // VkDeviceCreateFlags flags;
-        1u,                                                        // uint32_t queueCreateInfoCount;
-        &queueParams,                                              // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
-        0u,                                                        // uint32_t enabledLayerCount;
-        nullptr,                                                   // const char* const* ppEnabledLayerNames;
-        static_cast<uint32_t>(deviceExtensions.size()),            // uint32_t enabledExtensionCount;
-        deviceExtensions.empty() ? nullptr : &deviceExtensions[0], // const char* const* ppEnabledExtensionNames;
-        nullptr,                                                   // const VkPhysicalDeviceFeatures* pEnabledFeatures;
-    };
-
-    return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                              context.getPlatformInterface(), instance, vki, context.getPhysicalDevice(),
-                              &deviceParams);
-}
 
 class FSRPixelConsistencyInstance : public TestInstance
 {
@@ -189,9 +133,14 @@ class FSRPixelConsistencyTestCase : public TestCase
 public:
     FSRPixelConsistencyTestCase(tcu::TestContext &context, const char *name, const CaseDef data);
     ~FSRPixelConsistencyTestCase(void);
-    virtual void initPrograms(SourceCollections &programCollection) const;
-    virtual TestInstance *createInstance(Context &context) const;
-    virtual void checkSupport(Context &context) const;
+    virtual void initPrograms(SourceCollections &programCollection) const override;
+    virtual TestInstance *createInstance(Context &context) const override;
+    virtual void checkSupport(Context &context) const override;
+    virtual std::string getRequiredCapabilitiesId() const override
+    {
+        return std::type_index(typeid(this)).name();
+    }
+    virtual void initDeviceCapabilities(DevCaps &caps) override;
 
 private:
     CaseDef m_data;
@@ -319,6 +268,16 @@ void FSRPixelConsistencyTestCase::initPrograms(SourceCollections &programCollect
 TestInstance *FSRPixelConsistencyTestCase::createInstance(Context &context) const
 {
     return new FSRPixelConsistencyInstance(context, m_data);
+}
+
+void FSRPixelConsistencyTestCase::initDeviceCapabilities(DevCaps &caps)
+{
+    caps.shouldRemoveDeviceOnTestExit(true);
+
+    caps.addFeature<VkPhysicalDeviceFragmentShadingRateFeaturesKHR>();
+
+    caps.addExtension(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME);
+    caps.addExtension(VK_EXT_IMAGE_ROBUSTNESS_EXTENSION_NAME);
 }
 
 bool compareShadingRate(VkExtent2D ext1, VkExtent2D ext2)
@@ -467,30 +426,10 @@ tcu::TestStatus FSRPixelConsistencyInstance::verifyResult(tcu::ConstPixelBufferA
 
 tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
 {
-    const VkPhysicalDeviceMemoryProperties memoryProperties =
-        vk::getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
-
-    const VkInstance instance  = m_context.getInstance();
-    const auto &instanceDriver = m_context.getInstanceInterface();
-
-    Move<VkDevice> vkd    = createImageRobustnessDevice(m_context, instance, instanceDriver);
-    const VkDevice device = *vkd;
-#ifndef CTS_USES_VULKANSC
-    de::MovePtr<vk::DeviceDriver> deviceDriver = de::MovePtr<DeviceDriver>(
-        new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), device,
-                         m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine()));
-#else
-    de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> deviceDriver =
-        de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(
-            new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), device,
-                               m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(),
-                               m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(),
-                               m_context.getUsedApiVersion()),
-            vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), device));
-#endif // CTS_USES_VULKANSC
-    const DeviceInterface &vk        = *deviceDriver;
-    const VkQueue queue              = getDeviceQueue(vk, device, m_context.getUniversalQueueFamilyIndex(), 0);
-    de::MovePtr<Allocator> allocator = de::MovePtr<Allocator>(new SimpleAllocator(vk, device, memoryProperties));
+    const VkDevice device     = m_context.getDevice();
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkQueue queue       = m_context.getDeviceQueueInfo(0).queue;
+    Allocator &allocator      = m_context.getDefaultAllocator();
 
     // Create vertex buffer
     const VkDeviceSize vertexBufferSize = sizeof(basicTriangles);
@@ -499,7 +438,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
 
     de::MovePtr<BufferWithMemory> vertexBuffer;
     vertexBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
-        vk, device, *allocator, makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
+        vk, device, allocator, makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
         MemoryRequirement::HostVisible));
 
     float *vbuf = (float *)vertexBuffer->getAllocation().getHostPtr();
@@ -514,7 +453,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
 
     de::MovePtr<BufferWithMemory> colorOutputBuffer;
     colorOutputBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
-        vk, device, *allocator, makeBufferCreateInfo(colorOutputBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+        vk, device, allocator, makeBufferCreateInfo(colorOutputBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT),
         MemoryRequirement::HostVisible));
 
     // Create color attachment for subpass 0
@@ -546,7 +485,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
             VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
         };
         cbImagePass0 = de::MovePtr<ImageWithMemory>(
-            new ImageWithMemory(vk, device, *allocator, imageCreateInfo, MemoryRequirement::Any));
+            new ImageWithMemory(vk, device, allocator, imageCreateInfo, MemoryRequirement::Any));
 
         VkImageViewCreateInfo imageViewCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
@@ -601,7 +540,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
             VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
         };
         cbImagePass1 = de::MovePtr<ImageWithMemory>(
-            new ImageWithMemory(vk, device, *allocator, imageCreateInfo, MemoryRequirement::Any));
+            new ImageWithMemory(vk, device, allocator, imageCreateInfo, MemoryRequirement::Any));
 
         VkImageViewCreateInfo imageViewCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
