@@ -468,11 +468,23 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
     const tcu::CommandLine &commandLine = m_contextManager->getCommandLine();
     const bool doShaderLog              = commandLine.isLogDecompiledSpirvEnabled() && log.isShaderLoggingEnabled();
 
+    {
+#ifdef CTS_USES_VULKANSC
+        // Some functions, such as checkSupport() or initDeviceCapabilities(), and especially
+        // the function that creates a new device, may throw an exception. All messages, including
+        // logging, are disabled while the test is being processed by the SC in the main process,
+        // so in the event of an exception, control will immediately jump to the exception handler
+        // without any information about the situation. To handle this, we put the test on the list
+        // of tests to run in the subprocess before calling the functions that may throw an exception.
+        m_testsForSubprocess.push_back(casePath);
+#endif
+    }
+
     m_context = m_contextManager->findContext(m_contextManager, vktCase, m_context, m_progCollection);
 
     {
 #ifdef CTS_USES_VULKANSC
-        int currentSubprocessCount =
+        const int currentSubprocessCount =
             getCurrentSubprocessCount(casePath, m_contextManager->getCommandLine().getSubprocessTestCount());
         if (m_subprocessCount && currentSubprocessCount != m_subprocessCount)
         {
@@ -491,7 +503,6 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
             log.supressLogging(true);
         }
         m_subprocessCount = currentSubprocessCount;
-        m_testsForSubprocess.push_back(casePath);
 #endif // CTS_USES_VULKANSC
     }
 
