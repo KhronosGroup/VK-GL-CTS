@@ -249,6 +249,41 @@ private:
     TestInstance &operator=(const TestInstance &);
 };
 
+enum QueueCapabilities
+{
+    GRAPHICS_QUEUE = 0,
+    COMPUTE_QUEUE,
+    TRANSFER_QUEUE,
+};
+
+struct QueueData
+{
+    vk::VkQueue handle;
+    uint32_t familyIndex;
+
+    QueueData(vk::VkQueue queue, uint32_t ndx) : handle(queue), familyIndex(ndx)
+    {
+    }
+};
+
+class MultiQueueRunnerTestInstance : public TestInstance
+{
+public:
+    MultiQueueRunnerTestInstance(Context &context, QueueCapabilities queueCaps);
+    virtual ~MultiQueueRunnerTestInstance(void)
+    {
+    }
+
+    virtual tcu::TestStatus queuePass(const QueueData &queueData) = 0;
+
+private:
+    virtual tcu::TestStatus iterate(void) override;
+
+protected:
+    std::vector<QueueData> m_queues;
+    QueueCapabilities m_queueCaps;
+};
+
 inline TestCase::TestCase(tcu::TestContext &testCtx, const std::string &name) : tcu::TestCase(testCtx, name.c_str(), "")
 {
 }
