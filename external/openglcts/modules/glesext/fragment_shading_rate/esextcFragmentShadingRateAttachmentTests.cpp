@@ -81,6 +81,19 @@ void FragmentShadingRateAttachment::init(void)
     {
         throw tcu::NotSupportedError(MULTIVIEW_OVR_NOT_SUPPORTED, "", __FILE__, __LINE__);
     }
+
+    if (m_tcParam.layerCount > 1)
+    {
+        const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+        glw::GLint maxLayers     = 1;
+        gl.getIntegerv(GL_MAX_FRAGMENT_SHADING_RATE_ATTACHMENT_LAYERS_EXT, &maxLayers);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "Error getting MAX_FRAGMENT_SHADING_RATE_ATTACHMENT_LAYERS");
+
+        if (static_cast<glw::GLint>(m_tcParam.layerCount) > maxLayers)
+        {
+            throw tcu::NotSupportedError("Number of layers in FSR attachment exceeds limit", "", __FILE__, __LINE__);
+        }
+    }
 }
 
 /// Deinitializes all GLES objects created for the test.
