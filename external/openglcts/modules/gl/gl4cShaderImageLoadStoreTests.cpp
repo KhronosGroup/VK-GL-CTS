@@ -7469,6 +7469,9 @@ public:
             /* Copy texture data with imageLoad() and imageStore() operations */
             CopyRGBA8Texture(m_destination_texture_id, m_source_texture_id, n_layers);
 
+            /* Issue barrier to make data ready for read/comparison. */
+            glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
+
             /* Compare "source" and "destination" textures */
             if (false ==
                 CompareRGBA8Textures(m_destination_texture_id, m_source_texture_id, it->m_edge, n_layers, it->m_type))
