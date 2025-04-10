@@ -101,6 +101,10 @@ add_definitions(-DVK_USE_VIDEO_DECODE_QUEUE)
 add_definitions(-DVK_USE_VIDEO_ENCODE_QUEUE)
 add_definitions(-DVK_ENABLE_BETA_EXTENSIONS)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    add_definitions(-DVK_USE_PLATFORM_WIN32_KHR -DWIN32_LEAN_AND_MEAN -DNOMINMAX="1")
+endif()
+
 add_subdirectory(src/vk_video_encoder/libs)
 
 get_target_property(ENCODER_INCLUDE_DIRS vkvideo-encoder-static INCLUDE_DIRECTORIES)
