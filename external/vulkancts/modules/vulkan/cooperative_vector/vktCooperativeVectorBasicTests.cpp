@@ -885,11 +885,6 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
         }
     }
 
-    if (m_data.stage == STAGE_TESS_EVAL)
-    {
-        css << "   }\n";
-    }
-
     if (m_data.testType == TT_OUTERPRODUCT)
     {
         css << "   coopVecLoadNV(vecB, inputB.x, outputBase * inputElementSize);\n";
@@ -911,6 +906,12 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
         }
         css << ");\n";
     }
+
+    if (m_data.stage == STAGE_TESS_EVAL)
+    {
+        css << "   }\n";
+    }
+
     if (m_data.testType == TT_COMPOSITE_ARRAY)
     {
         css << "   " << vecAType.str() << " vecAArr[2];\n    vecAArr[1] = vecA; vecAArr[0] = " << vecAType.str()

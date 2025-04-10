@@ -1686,6 +1686,32 @@ static std::unordered_map<VkImageUsageFlagBits, VkFormatFeatureFlagBits> kUsageT
     {VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR, VK_FORMAT_FEATURE_VIDEO_ENCODE_DPB_BIT_KHR},
 };
 
+std::vector<uint64_t> getDrmFormatModifier(Context &context, de::SharedPtr<TestParams> params)
+{
+    const InstanceInterface &vki = context.getInstanceInterface();
+    const VkPhysicalDevice phys  = context.getPhysicalDevice();
+    //uint64_t drmModifier = -1;
+    std::vector<uint64_t> drmModifiers;
+
+    VkDrmFormatModifierPropertiesList2EXT drmFormatProperties = initVulkanStructure();
+    VkFormatProperties2 formatProperties2                     = initVulkanStructure(&drmFormatProperties);
+    vki.getPhysicalDeviceFormatProperties2(phys, params->format, &formatProperties2);
+
+    for (uint32_t i = 0; i < drmFormatProperties.drmFormatModifierCount; i++)
+    {
+        std::vector<VkDrmFormatModifierProperties2EXT> drmFormatModifiers;
+        drmFormatModifiers.resize(drmFormatProperties.drmFormatModifierCount);
+        drmFormatProperties.pDrmFormatModifierProperties = drmFormatModifiers.data();
+        vki.getPhysicalDeviceFormatProperties2(phys, params->format, &formatProperties2);
+
+        const VkDrmFormatModifierProperties2EXT drmFormatModifierProperties =
+            drmFormatProperties.pDrmFormatModifierProperties[i];
+        drmModifiers.push_back(drmFormatModifierProperties.drmFormatModifier);
+    }
+
+    return drmModifiers;
+}
+
 tcu::TestStatus test(Context &context, de::SharedPtr<TestParams> params)
 {
     const InstanceInterface &vki          = context.getInstanceInterface();
@@ -1711,23 +1737,52 @@ tcu::TestStatus test(Context &context, de::SharedPtr<TestParams> params)
         {
             foundMatchingFormat = true;
 
-            VkPhysicalDeviceImageFormatInfo2 imageFormatInfo2 = initVulkanStructure(&params->profileList);
-            imageFormatInfo2.format                           = formatProperty.format;
-            imageFormatInfo2.type                             = formatProperty.imageType;
-            imageFormatInfo2.tiling                           = formatProperty.imageTiling;
-            imageFormatInfo2.usage                            = formatProperty.imageUsageFlags;
-            imageFormatInfo2.flags                            = formatProperty.imageCreateFlags;
-            VkImageFormatProperties2 imageFormatProperties2   = initVulkanStructure();
-            VkResult r = vki.getPhysicalDeviceImageFormatProperties2(phys, &imageFormatInfo2, &imageFormatProperties2);
-            if (r != VK_SUCCESS)
-                return tcu::TestStatus::fail("inconsistent return values from getPhysicalDeviceImageFormatProperties2 "
-                                             "and getPhysicalDeviceVideoFormatPropertiesKHR");
-            if (formatProperty.imageTiling == VK_IMAGE_TILING_LINEAR &&
-                (formatProperties2.formatProperties.linearTilingFeatures & features) == 0)
-                return tcu::TestStatus::fail("bad linear features");
-            if (formatProperty.imageTiling == VK_IMAGE_TILING_OPTIMAL &&
-                (formatProperties2.formatProperties.optimalTilingFeatures & features) == 0)
-                return tcu::TestStatus::fail("bad optimal features");
+            uint32_t nCnt = 1;
+            std::vector<uint64_t> drmModifiers;
+
+            if (formatProperty.imageTiling == VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT)
+            {
+                drmModifiers = getDrmFormatModifier(context, params);
+                nCnt         = (uint32_t)drmModifiers.size();
+
+                if (nCnt == 0)
+                    continue;
+            }
+
+            for (uint32_t i = 0; i < nCnt; i++)
+            {
+                VkPhysicalDeviceImageDrmFormatModifierInfoEXT imageFormatModifierInfo = initVulkanStructure();
+                VkImageFormatListCreateInfo imageFormatListInfo                       = initVulkanStructure();
+                imageFormatListInfo.viewFormatCount                                   = 1;
+                imageFormatListInfo.pViewFormats                                      = &formatProperty.format;
+
+                if (drmModifiers.size() > 0)
+                {
+                    imageFormatModifierInfo.drmFormatModifier = drmModifiers[i];
+                    imageFormatListInfo.pNext                 = &imageFormatModifierInfo;
+                    params->profileList.pNext                 = &imageFormatListInfo;
+                }
+
+                VkPhysicalDeviceImageFormatInfo2 imageFormatInfo2 = initVulkanStructure(&params->profileList);
+                imageFormatInfo2.format                           = formatProperty.format;
+                imageFormatInfo2.type                             = formatProperty.imageType;
+                imageFormatInfo2.tiling                           = formatProperty.imageTiling;
+                imageFormatInfo2.usage                            = formatProperty.imageUsageFlags;
+                imageFormatInfo2.flags                            = formatProperty.imageCreateFlags;
+                VkImageFormatProperties2 imageFormatProperties2   = initVulkanStructure();
+                VkResult r =
+                    vki.getPhysicalDeviceImageFormatProperties2(phys, &imageFormatInfo2, &imageFormatProperties2);
+                if (r != VK_SUCCESS)
+                    return tcu::TestStatus::fail(
+                        "inconsistent return values from getPhysicalDeviceImageFormatProperties2 "
+                        "and getPhysicalDeviceVideoFormatPropertiesKHR");
+                if (formatProperty.imageTiling == VK_IMAGE_TILING_LINEAR &&
+                    (formatProperties2.formatProperties.linearTilingFeatures & features) == 0)
+                    return tcu::TestStatus::fail("bad linear features");
+                if (formatProperty.imageTiling == VK_IMAGE_TILING_OPTIMAL &&
+                    (formatProperties2.formatProperties.optimalTilingFeatures & features) == 0)
+                    return tcu::TestStatus::fail("bad optimal features");
+            }
         }
     }
 
