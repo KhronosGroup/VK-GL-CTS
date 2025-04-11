@@ -5,6 +5,7 @@
 cmake_minimum_required(VERSION 3.11)
 project(vk-video-samples-wrapper)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 include(FetchContent)
 include(src/cmake/FindVulkanSDK.cmake)
 
