@@ -1628,40 +1628,42 @@ tcu::TestStatus ImageMutableSparseTestInstance::iterate(void)
 
                 const VkImageSubresource subresource = {VK_IMAGE_ASPECT_COLOR_BIT, mipLevelIdx, layerNdx};
 
-                for (uint32_t z = 0; z < numSparseBinds.z(); ++z)
+                if (!(aspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT))
                 {
-                    for (uint32_t y = 0; y < numSparseBinds.y(); ++y)
+                    for (uint32_t z = 0; z < numSparseBinds.z(); ++z)
                     {
-                        for (uint32_t x = 0; x < numSparseBinds.x(); ++x)
+                        for (uint32_t y = 0; y < numSparseBinds.y(); ++y)
                         {
-                            VkOffset3D offset;
-                            offset.x = x * imageGranularity.width;
-                            offset.y = y * imageGranularity.height;
-                            offset.z = z * imageGranularity.depth;
+                            for (uint32_t x = 0; x < numSparseBinds.x(); ++x)
+                            {
+                                VkOffset3D offset;
+                                offset.x = x * imageGranularity.width;
+                                offset.y = y * imageGranularity.height;
+                                offset.z = z * imageGranularity.depth;
 
-                            VkExtent3D extent;
-                            extent.width = (x == numSparseBinds.x() - 1) ? lastBlockExtent.x() : imageGranularity.width;
-                            extent.height =
-                                (y == numSparseBinds.y() - 1) ? lastBlockExtent.y() : imageGranularity.height;
-                            extent.depth = (z == numSparseBinds.z() - 1) ? lastBlockExtent.z() : imageGranularity.depth;
+                                VkExtent3D extent;
+                                extent.width =
+                                    (x == numSparseBinds.x() - 1) ? lastBlockExtent.x() : imageGranularity.width;
+                                extent.height =
+                                    (y == numSparseBinds.y() - 1) ? lastBlockExtent.y() : imageGranularity.height;
+                                extent.depth =
+                                    (z == numSparseBinds.z() - 1) ? lastBlockExtent.z() : imageGranularity.depth;
 
-                            const VkSparseImageMemoryBind imageMemoryBind = makeSparseImageMemoryBind(
-                                deviceInterface, getDevice(), imageMemoryRequirements.alignment, memoryType,
-                                subresource, offset, extent);
+                                const VkSparseImageMemoryBind imageMemoryBind = makeSparseImageMemoryBind(
+                                    deviceInterface, getDevice(), imageMemoryRequirements.alignment, memoryType,
+                                    subresource, offset, extent);
 
-                            deviceMemUniquePtrVec.push_back(makeVkSharedPtr(
-                                Move<VkDeviceMemory>(check<VkDeviceMemory>(imageMemoryBind.memory),
-                                                     Deleter<VkDeviceMemory>(deviceInterface, getDevice(), nullptr))));
+                                deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(
+                                    check<VkDeviceMemory>(imageMemoryBind.memory),
+                                    Deleter<VkDeviceMemory>(deviceInterface, getDevice(), nullptr))));
 
-                            imageResidencyMemoryBinds.push_back(imageMemoryBind);
+                                imageResidencyMemoryBinds.push_back(imageMemoryBind);
+                            }
                         }
                     }
-                }
 
-                // Per-layer miptail allocation if per-layer maiptail
-                {
-                    if (!(aspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT) &&
-                        aspectRequirements.imageMipTailFirstLod < imageCreateInfo.mipLevels)
+                    // Per-layer miptail allocation if per-layer maiptail
+                    if (aspectRequirements.imageMipTailFirstLod < imageCreateInfo.mipLevels)
                     {
                         const VkSparseMemoryBind imageMipTailMemoryBind = makeSparseMemoryBind(
                             deviceInterface, getDevice(), aspectRequirements.imageMipTailSize, memoryType,
@@ -1738,11 +1740,7 @@ tcu::TestStatus ImageMutableSparseTestInstance::iterate(void)
             }
         }
 
-        VkSparseImageMemoryBindInfo imageResidencyBindInfo = {
-            *imageSparse,                              // VkImage     image;
-            de::sizeU32(imageResidencyMemoryBinds),    // uint32_t     bindCount;
-            de::dataOrNull(imageResidencyMemoryBinds), // const VkSparseImageMemoryBind* pBinds;
-        };
+        VkSparseImageMemoryBindInfo imageResidencyBindInfo;
 
         VkSparseImageOpaqueMemoryBindInfo imageMipTailBindInfo;
 
@@ -1755,11 +1753,21 @@ tcu::TestStatus ImageMutableSparseTestInstance::iterate(void)
             nullptr,                            //const VkSparseBufferMemoryBindInfo* pBufferBinds;
             0u,                                 //uint32_t imageOpaqueBindCount;
             nullptr,                            //const VkSparseImageOpaqueMemoryBindInfo* pImageOpaqueBinds;
-            1u,                                 //uint32_t imageBindCount;
-            &imageResidencyBindInfo,            //const VkSparseImageMemoryBindInfo* pImageBinds;
+            0u,                                 //uint32_t imageBindCount;
+            nullptr,                            //const VkSparseImageMemoryBindInfo* pImageBinds;
             1u,                                 //uint32_t signalSemaphoreCount;
             &imageMemoryBindSemaphore.get()     //const VkSemaphore* pSignalSemaphores;
         };
+
+        if (imageResidencyMemoryBinds.size() > 0)
+        {
+            imageResidencyBindInfo.image     = *imageSparse;
+            imageResidencyBindInfo.bindCount = de::sizeU32(imageResidencyMemoryBinds);
+            imageResidencyBindInfo.pBinds    = de::dataOrNull(imageResidencyMemoryBinds);
+
+            bindSparseInfo.imageBindCount = 1u;
+            bindSparseInfo.pImageBinds    = &imageResidencyBindInfo;
+        }
 
         if (imageMipTailMemoryBinds.size() > 0)
         {
