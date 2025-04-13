@@ -14,7 +14,7 @@ set(DEQP_VK_UTIL_SRCS
 )
 
 add_library(deqp-vk-util STATIC ${DEQP_VK_UTIL_SRCS})
-target_link_libraries(deqp-vk-util PUBLIC tcutil vkutil)
+target_link_libraries(deqp-vk-util PUBLIC referencerenderer tcutil vkutil)
 
 add_library(deqp-vksc-util STATIC ${DEQP_VK_UTIL_SRCS})
-target_link_libraries(deqp-vksc-util PUBLIC tcutil vkscutil)
+target_link_libraries(deqp-vksc-util PUBLIC referencerenderer tcutil vkscutil)
