@@ -1006,16 +1006,7 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
         viewport.maxDepth = 0.5f;
     if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT))
         vk.cmdSetViewportWithCount(cmdBuffer, 1u, &viewport);
-    vk::VkRect2D scissor = {
-        {
-            0,
-            0,
-        },
-        {
-            32,
-            32,
-        },
-    };
+    vk::VkRect2D scissor = {{0, 0}, {32, 32}};
     if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT))
         vk.cmdSetScissorWithCount(cmdBuffer, 1u, &scissor);
     if (!m_params.rasterizerDiscardEnable && m_params.lines &&
@@ -1139,7 +1130,10 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_MODE_EXT))
         vk.cmdSetDiscardRectangleModeEXT(cmdBuffer, vk::VK_DISCARD_RECTANGLE_MODE_EXCLUSIVE_EXT);
     if (m_params.discardRectanglesEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT))
-        vk.cmdSetDiscardRectangleEXT(cmdBuffer, 0u, 1u, &scissor);
+    {
+        for (uint32_t i = 0u; i < m_context.getDiscardRectanglePropertiesEXT().maxDiscardRectangles; ++i)
+            vk.cmdSetDiscardRectangleEXT(cmdBuffer, i, 1u, &scissor);
+    }
     if (!m_params.rasterizerDiscardEnable && m_params.conservativeRasterization &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_CONSERVATIVE_RASTERIZATION_MODE_EXT))
         vk.cmdSetConservativeRasterizationModeEXT(cmdBuffer,
@@ -1431,7 +1425,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
             m_params.depthClamp,                            // VkBool32 depthClampEnable;
             m_params.rasterizerDiscardEnable,               // VkBool32 rasterizerDiscardEnable;
             vk::VK_POLYGON_MODE_FILL,                       // VkPolygonMode polygonMode;
-            m_params.cullMode,                              // VkCullModeFlags cullMode;
+            (vk::VkCullModeFlags)m_params.cullMode,         // VkCullModeFlags cullMode;
             vk::VK_FRONT_FACE_CLOCKWISE,                    // VkFrontFace frontFace;
             m_params.depthBiasEnable ? VK_TRUE : VK_FALSE,  // VkBool32 depthBiasEnable;
             0.0f,                                           // float depthBiasConstantFactor;
@@ -1870,10 +1864,10 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
         const auto depthBuffer =
             readDepthAttachment(vk, device, queue, queueFamilyIndex, alloc, **depthImage, depthStencilAttachmentFormat,
                                 tcu::UVec2(width, height), vk::VK_IMAGE_LAYOUT_GENERAL);
-        const auto depthAccess   = depthBuffer->getAccess();
-        const auto stencilBuffer = readStencilAttachment(vk, device, queue, queueFamilyIndex, alloc, **depthImage,
-                                                         depthStencilAttachmentFormat, tcu::UVec2(width, height),
-                                                         vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        const auto depthAccess = depthBuffer->getAccess();
+        const auto stencilBuffer =
+            readStencilAttachment(vk, device, queue, queueFamilyIndex, alloc, **depthImage,
+                                  depthStencilAttachmentFormat, tcu::UVec2(width, height), vk::VK_IMAGE_LAYOUT_GENERAL);
         const auto stencilAccess = stencilBuffer->getAccess();
         const float depthEpsilon = 0.02f;
 
