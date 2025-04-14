@@ -1598,6 +1598,7 @@ tcu::TestCaseGroup *createOpAtomicGroup(tcu::TestContext &testCtx, bool useStora
         {
             spec.extensions.push_back("VK_KHR_vulkan_memory_model");
             spec.requestedVulkanFeatures.extVulkanMemoryModel.vulkanMemoryModel = true;
+            spec.spirvVersion                                                   = SPIRV_VERSION_1_3;
 
             // volatile, queuefamily scope
             specializations["SEMANTICS"] = "%volbit";

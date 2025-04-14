@@ -5099,6 +5099,8 @@ void ReplicatedCompositesTest::checkSupport(Context &context) const
 
 void ReplicatedCompositesTest::initPrograms(SourceCollections &sourceCollections) const
 {
+    const ShaderBuildOptions buildOptions(sourceCollections.usedVulkanVersion, SPIRV_VERSION_1_3, 0u);
+
     std::ostringstream src;
     src << "#version 460 core\n"
         << "#extension GL_EXT_scalar_block_layout : enable\n"
@@ -5301,7 +5303,7 @@ void ReplicatedCompositesTest::initPrograms(SourceCollections &sourceCollections
     }
     src << "}\n";
 
-    sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
+    sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str()) << buildOptions;
 }
 
 TestInstance *ReplicatedCompositesTest::createInstance(Context &context) const

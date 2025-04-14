@@ -331,7 +331,6 @@ dEQP-VK.spirv_assembly.instruction.compute.physical_pointers.compute.writes_sing
 dEQP-VK.spirv_assembly.instruction.compute.physical_pointers.compute.writes_two_buffers
 dEQP-VK.spirv_assembly.instruction.compute.ptr_access_chain.workgroup
 dEQP-VK.spirv_assembly.instruction.compute.ptr_access_chain.workgroup_bad_stride
-dEQP-VK.spirv_assembly.instruction.compute.ptr_access_chain.workgroup_no_stride
 dEQP-VK.spirv_assembly.instruction.compute.signed_int_compare.uint_sgreaterthan
 dEQP-VK.spirv_assembly.instruction.compute.signed_int_compare.uint_sgreaterthanequal
 dEQP-VK.spirv_assembly.instruction.compute.signed_int_compare.uint_slessthan
