@@ -3273,14 +3273,6 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                         }
                         if (tempRes == QP_TEST_RESULT_PASS)
                         {
-                            // If FP8 passes on the second try, without quantization, then
-                            // call it a quality warning.
-                            if (doQuantize == 0 && res == QP_TEST_RESULT_PASS &&
-                                (m_data.inputInterpretation == VK_COMPONENT_TYPE_FLOAT_E4M3_NV ||
-                                 m_data.inputInterpretation == VK_COMPONENT_TYPE_FLOAT_E5M2_NV))
-                            {
-                                res = QP_TEST_RESULT_QUALITY_WARNING;
-                            }
                             break;
                         }
                         // If FP8 fails on the first try, with quantization, then try again without.
