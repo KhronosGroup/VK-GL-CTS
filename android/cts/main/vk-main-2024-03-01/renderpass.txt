@@ -176,6 +176,7 @@ dEQP-VK.renderpass.dithering.v1.depth_stencil.stencilLess_depthLess_opLess_r8g8b
 dEQP-VK.renderpass.fragment_density_map.depth_format.d16_unorm
 dEQP-VK.renderpass.fragment_density_map.depth_format.d24_unorm_s8_uint
 dEQP-VK.renderpass.fragment_density_map.depth_format.d32_sfloat
+dEQP-VK.renderpass.multiple_subpasses_multiple_command_buffers.test_general_layout
 dEQP-VK.renderpass.nested_command_buffers.ext.inline_secondary.inline_secondary
 dEQP-VK.renderpass.nested_command_buffers.ext.inline_secondary.secondary_inline
 dEQP-VK.renderpass.nested_command_buffers.ext.secondary_inline.inline_secondary

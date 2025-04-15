@@ -87,3 +87,12 @@ The `--angle-path ~/chromium/src/out/Release/` option can then be used to link a
 ANGLE shared object files.   The full command would be:
 
 	python scripts/android/build_apk.py --sdk <path to Android SDK> --ndk <path to Android NDK> --abis arm64-v8a --angle-path ~/chromium/src/out/Release/
+
+Vulkan Video Samples
+--------------------------------
+
+In order to run the vulkan video *decode* test suite, you'll need to run the script `external/fetch_video_decode_samples.py`
+prior running any test suite such as `dEQP-VK.video.decode.*`. It will download the video clips  in `external/vulkancts/data/vulkan/video`.
+
+To run the vulkan video *encode* test suite, you'll need to run the script `external/fetch_video_encode_samples.py`
+prior running any test suite such as `dEQP-VK.video.encode.*`. It will download the video clips  in `external/vulkancts/data/vulkan/video`.

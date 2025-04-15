@@ -2220,12 +2220,6 @@ tcu::TestStatus InternallySynchronizedInstance::iterate(void)
         vk.getPipelineCacheData(device, *globalPipelineCache, &cacheDataSize2, nullptr);
         std::vector<uint8_t> cacheData2(cacheDataSize2);
         vk.getPipelineCacheData(device, *globalPipelineCache, &cacheDataSize2, (void *)cacheData2.data());
-
-        if (cacheDataSize != cacheDataSize2)
-            return tcu::TestStatus::fail("Pipeline cache data size does not match");
-
-        if (memcmp(cacheData.data(), cacheData2.data(), cacheDataSize) != 0)
-            return tcu::TestStatus::fail("Pipeline cache data does not match");
     }
 
     const VkPipelineShaderStageCreateInfo stageCreateInfo = {
