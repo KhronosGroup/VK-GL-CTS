@@ -316,12 +316,12 @@ tcu::TestStatus listModifiersCase(Context &context, VkFormat format)
             VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT, drmFormatModifiers[m].drmFormatModifier,
             VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT | VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT, imageProperties);
 
-        if (drmFormatModifiers[m].drmFormatModifierTilingFeatures == 0)
-            TCU_FAIL(de::toString(format) + " does not support any DRM modifier tiling features");
-
         if (!isCompatible)
             continue;
         noneCompatible = false;
+
+        if (drmFormatModifiers[m].drmFormatModifierTilingFeatures == 0)
+            TCU_FAIL(de::toString(format) + " does not support any DRM modifier tiling features");
 
         TCU_CHECK(imageProperties.imageFormatProperties.maxExtent.width >= 1 &&
                   imageProperties.imageFormatProperties.maxExtent.height >= 1);
