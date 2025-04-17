@@ -461,10 +461,10 @@ enum DecoderOption : uint32_t
     // a frame downsize), force the session to be recreated anyway.
     RecreateDPBImages = 1 << 3,
     // Test profile-less resources from the video_mainteance1 extension.
-    ResourcesWithoutProfiles = 1 << 4,
-    FilmGrainPresent         = 1 << 5,
-    IntraOnlyDecoding        = 1 << 6,
-    AnnexB                   = 1 << 7,
+    ResourcesWithoutProfiles    = 1 << 4,
+    FilmGrainPresent            = 1 << 5,
+    IntraOnlyDecodingNoSetupRef = 1 << 6,
+    AnnexB                      = 1 << 7,
 
     UseInlineSessionParams    = 1 << 8,
     ResetCodecNoSessionParams = 1 << 9,
@@ -506,9 +506,8 @@ struct DecodeTestParam
     {TEST_TYPE_H265_DECODE_I, {CLIP_H265_DEC_D, 1, DecoderOption::Default}},
     {TEST_TYPE_H265_DECODE_I_P, {CLIP_H265_DEC_D, 2, DecoderOption::Default}},
     {TEST_TYPE_H265_DECODE_I_P_NOT_MATCHING_ORDER, {CLIP_H265_DEC_D, 2, DecoderOption::CachedDecoding}},
-    {TEST_TYPE_H265_DECODE_I_P_B_13, {CLIP_H265_DEC_JELLY, ALL_FRAMES, DecoderOption::Default}},
-    {TEST_TYPE_H265_DECODE_I_P_B_13_NOT_MATCHING_ORDER,
-     {CLIP_H265_DEC_JELLY, ALL_FRAMES, DecoderOption::CachedDecoding}},
+    {TEST_TYPE_H265_DECODE_I_P_B_13, {CLIP_H265_DEC_BBB, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_H265_DECODE_I_P_B_13_NOT_MATCHING_ORDER, {CLIP_H265_DEC_BBB, ALL_FRAMES, DecoderOption::CachedDecoding}},
     {TEST_TYPE_H265_DECODE_CLIP_D, {CLIP_H265_DEC_D, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_H265_DECODE_QUERY_RESULT_WITH_STATUS, {CLIP_H265_DEC_D, ALL_FRAMES, DecoderOption::UseStatusQueries}},
     {TEST_TYPE_H265_DECODE_INLINE_QUERY_RESULT_WITH_STATUS,
@@ -527,7 +526,8 @@ struct DecodeTestParam
     {TEST_TYPE_AV1_DECODE_BASIC_8, {CLIP_AV1_DEC_BASIC_8, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_AV1_DECODE_BASIC_8_NOT_MATCHING_ORDER, {CLIP_AV1_DEC_BASIC_8, 24, DecoderOption::CachedDecoding}},
     {TEST_TYPE_AV1_DECODE_ALLINTRA_8, {CLIP_AV1_DEC_ALLINTRA_8, ALL_FRAMES, DecoderOption::Default}},
-    {TEST_TYPE_AV1_DECODE_ALLINTRA_NOSETUP_8, {CLIP_AV1_DEC_ALLINTRA_8, ALL_FRAMES, DecoderOption::IntraOnlyDecoding}},
+    {TEST_TYPE_AV1_DECODE_ALLINTRA_NOSETUP_8,
+     {CLIP_AV1_DEC_ALLINTRA_8, ALL_FRAMES, DecoderOption::IntraOnlyDecodingNoSetupRef}},
     {TEST_TYPE_AV1_DECODE_ALLINTRA_BC_8, {CLIP_AV1_DEC_ALLINTRA_INTRABC_8, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_AV1_DECODE_CDFUPDATE_8, {CLIP_AV1_DEC_CDFUPDATE_8, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_AV1_DECODE_GLOBALMOTION_8, {CLIP_AV1_DEC_GLOBALMOTION_8, ALL_FRAMES, DecoderOption::Default}},
@@ -752,7 +752,7 @@ static std::shared_ptr<VideoBaseDecoder> decoderFromTestDefinition(DeviceContext
     params.resourcesWithoutProfiles          = test.hasOption(DecoderOption::ResourcesWithoutProfiles);
     params.outOfOrderDecoding                = test.hasOption(DecoderOption::CachedDecoding);
     params.alwaysRecreateDPB                 = test.hasOption(DecoderOption::RecreateDPBImages);
-    params.intraOnlyDecoding                 = test.hasOption(DecoderOption::IntraOnlyDecoding);
+    params.intraOnlyDecodingNoSetupRef       = test.hasOption(DecoderOption::IntraOnlyDecodingNoSetupRef);
     params.pictureParameterUpdateTriggerHack = test.getParamaterUpdateHackRequirement();
     params.forceDisableFilmGrain             = forceDisableFilmGrain;
 
@@ -1234,7 +1234,8 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
             processorWithoutFilmGrain->decodeFrameOutOfOrder(m_testDefinition->framesToCheck());
     }
 
-    bool hasSeparateOutputImages = !processor->m_decoder->dpbAndOutputCoincide() || filmGrainPresent;
+    bool hasSeparateOutputImages     = !processor->m_decoder->dpbAndOutputCoincide() || filmGrainPresent;
+    bool intraOnlyDecodingNoSetupRef = m_testDefinition->hasOption(DecoderOption::IntraOnlyDecodingNoSetupRef);
 
     std::FILE *debug_OutputFileHandle;
 
@@ -1272,10 +1273,11 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
             openTemporaryFile(oss.str(), &debug_OutputFileHandle);
         }
 
-        DownloadedFrame downloadedFrame = getDecodedImage(
-            m_deviceContext,
-            hasSeparateOutputImages ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR : VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR,
-            frame);
+        DownloadedFrame downloadedFrame = getDecodedImage(m_deviceContext,
+                                                          (hasSeparateOutputImages || intraOnlyDecodingNoSetupRef) ?
+                                                              VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR :
+                                                              VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR,
+                                                          frame);
 
         DownloadedFrame downloadedFrameWithoutFilmGrain;
         if (processorWithoutFilmGrain)

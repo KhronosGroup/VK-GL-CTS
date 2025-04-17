@@ -879,6 +879,13 @@ public:
         return m_info->filename;
     }
 
+    std::string getClipFilePath() const
+    {
+        std::vector<std::string> resourcePathComponents = {"vulkan", "video", m_info->filename};
+        de::FilePath resourcePath                       = de::FilePath::join(resourcePathComponents);
+        return resourcePath.getPath();
+    }
+
     uint32_t getClipWidth() const
     {
         return m_info->frameWidth;
@@ -2220,7 +2227,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
     deMemset(encodeBufferHostPtr, 0x00, static_cast<size_t>(encodeBufferSize));
     flushAlloc(videoDeviceDriver, videoDevice, encodeBufferAlloc);
 
-    de::MovePtr<vector<uint8_t>> clip = loadVideoData(m_testDefinition->getClipFilename());
+    de::MovePtr<vector<uint8_t>> clip = loadVideoData(m_testDefinition->getClipFilePath());
 
     std::vector<de::MovePtr<std::vector<uint8_t>>> inVector;
 

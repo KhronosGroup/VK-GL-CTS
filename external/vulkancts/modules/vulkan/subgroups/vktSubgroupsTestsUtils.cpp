@@ -54,18 +54,40 @@ uint32_t getMaxWidth()
     return 1024u;
 }
 
+/* Taken from: graphics.stanford.edu/~seander/bithacks.html */
+uint32_t roundUpToPowerOf2(uint32_t value)
+{
+    --value;
+
+    value |= value >> 1;
+    value |= value >> 2;
+    value |= value >> 4;
+    value |= value >> 8;
+    value |= value >> 16;
+
+    ++value;
+
+    return value;
+}
+
+/* Gets the next power-of-two, or +/- 1 to ensure we test values either side */
 uint32_t getNextWidth(const uint32_t width)
 {
-    if (width < 128)
+    const uint32_t nextPOT = roundUpToPowerOf2(width);
+
+    // If this is an exact power-of-two, return width plus 1
+    if (width == nextPOT)
     {
-        // This ensures we test every value up to 128 (the max subgroup size).
         return width + 1;
     }
-    else
+    // If this is the next power-of-two minus 1, return next power-of-two
+    else if ((width + 1) == nextPOT)
     {
-        // And once we hit 128 we increment to only power of 2's to reduce testing time.
-        return width * 2;
+        return nextPOT;
     }
+
+    // This should be the previous power-of-two plus 1, return next power-of-two minus 1
+    return nextPOT - 1;
 }
 
 uint32_t getFormatSizeInBytes(const VkFormat format)

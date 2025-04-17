@@ -87,7 +87,7 @@ uint32_t findSpecificQueueFamilyIndex(const std::vector<VkQueueFamilyProperties>
 
 void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequirementsVec &queueRequirements,
                                                                bool requireShaderImageAtomicInt64Features,
-                                                               bool requireMaintenance5)
+                                                               bool requireMaintenance5, bool requireTransformFeedback)
 {
     typedef std::map<VkQueueFlags, std::vector<Queue>> QueuesMap;
     typedef std::map<uint32_t, QueueFamilyQueuesCount> SelectedQueuesMap;
@@ -210,16 +210,18 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
         queueInfos.push_back(queueInfo);
     }
 
-    vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT shaderImageAtomicInt64Features =
-        m_context.getShaderImageAtomicInt64FeaturesEXT();
-    vk::VkPhysicalDeviceMaintenance5FeaturesKHR maintenance5Features = m_context.getMaintenance5Features();
-    shaderImageAtomicInt64Features.pNext                             = nullptr;
-    maintenance5Features.pNext                                       = nullptr;
+    auto shaderImageAtomicInt64Features  = m_context.getShaderImageAtomicInt64FeaturesEXT();
+    auto maintenance5Features            = m_context.getMaintenance5Features();
+    auto transformFeedbackFeatures       = m_context.getTransformFeedbackFeaturesEXT();
+    shaderImageAtomicInt64Features.pNext = nullptr;
+    maintenance5Features.pNext           = nullptr;
+    transformFeedbackFeatures.pNext      = nullptr;
 
     const VkPhysicalDeviceFeatures deviceFeatures = getPhysicalDeviceFeatures(instanceDriver, physicalDevice);
     vk::VkPhysicalDeviceFeatures2 deviceFeatures2 = getPhysicalDeviceFeatures2(instanceDriver, physicalDevice);
 
-    const bool useFeatures2 = (requireShaderImageAtomicInt64Features || requireMaintenance5);
+    const bool useFeatures2 =
+        (requireShaderImageAtomicInt64Features || requireMaintenance5 || requireTransformFeedback);
 
     void *pNext = nullptr;
 
@@ -247,6 +249,14 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
             deviceFeatures2.pNext      = &maintenance5Features;
 
             deviceExtensions.push_back("VK_KHR_maintenance5");
+        }
+
+        if (requireTransformFeedback)
+        {
+            transformFeedbackFeatures.pNext = deviceFeatures2.pNext;
+            deviceFeatures2.pNext           = &transformFeedbackFeatures;
+
+            deviceExtensions.push_back("VK_EXT_transform_feedback");
         }
     }
     else if (m_useDeviceGroups)
