@@ -468,6 +468,7 @@ enum DecoderOption : uint32_t
 
     UseInlineSessionParams    = 1 << 8,
     ResetCodecNoSessionParams = 1 << 9,
+    ForceDisableFilmGrain     = 1 << 10,
 };
 
 static const int ALL_FRAMES = 0;
@@ -550,7 +551,8 @@ struct DecodeTestParam
     // TODO: Frames after the first hit asserts in the parser. First frame decodes correctly.
     // TODO: Filmgrain option not set here, because the first frame doesn't have it enabled.
     {TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10,
-     {CLIP_AV1_DEC_ARGON_FILMGRAIN_10, 1, (DecoderOption)(DecoderOption::AnnexB)}},
+     {CLIP_AV1_DEC_ARGON_FILMGRAIN_10, 1,
+      (DecoderOption)(DecoderOption::AnnexB | DecoderOption::ForceDisableFilmGrain)}},
 
     // TODO: Did not have sufficient implementations to find out why this is failing.
     //{TEST_TYPE_AV1_DECODE_ARGON_TEST_787, {CLIP_ARGON_TEST_787, 2, DecoderOption::AnnexB}},
@@ -1216,8 +1218,10 @@ static std::unique_ptr<FrameProcessor> createProcessor(const TestDefinition *td,
 
 tcu::TestStatus VideoDecodeTestInstance::iterate()
 {
-    bool filmGrainPresent                     = m_testDefinition->hasOption(DecoderOption::FilmGrainPresent);
-    std::unique_ptr<FrameProcessor> processor = createProcessor(m_testDefinition, &m_deviceContext);
+    bool filmGrainPresent      = m_testDefinition->hasOption(DecoderOption::FilmGrainPresent);
+    bool forceDisableFilmGrain = m_testDefinition->hasOption(DecoderOption::ForceDisableFilmGrain);
+    std::unique_ptr<FrameProcessor> processor =
+        createProcessor(m_testDefinition, &m_deviceContext, forceDisableFilmGrain);
     std::unique_ptr<FrameProcessor> processorWithoutFilmGrain;
     if (filmGrainPresent)
     {
