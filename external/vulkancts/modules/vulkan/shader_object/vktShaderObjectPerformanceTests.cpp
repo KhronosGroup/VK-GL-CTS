@@ -266,7 +266,8 @@ std::vector<vk::VkDynamicState> getDynamicStates(Context &context)
 }
 
 vk::VkShaderEXT createShaderFromBinary(const vk::DeviceInterface &vk, const vk::VkDevice device,
-                                       const vk::Move<vk::VkShaderEXT> &shader, vk::VkShaderStageFlagBits stage)
+                                       const vk::Move<vk::VkShaderEXT> &shader, vk::VkShaderStageFlagBits stage,
+                                       vk::VkShaderStageFlags nextStage)
 {
     size_t dataSize = 0;
     vk.getShaderBinaryDataEXT(device, *shader, &dataSize, DE_NULL);
@@ -278,7 +279,7 @@ vk::VkShaderEXT createShaderFromBinary(const vk::DeviceInterface &vk, const vk::
         DE_NULL,                                      // const void* pNext;
         0u,                                           // VkShaderCreateFlagsEXT flags;
         stage,                                        // VkShaderStageFlagBits stage;
-        0u,                                           // VkShaderStageFlags nextStage;
+        nextStage,                                    // VkShaderStageFlags nextStage;
         vk::VK_SHADER_CODE_TYPE_BINARY_EXT,           // VkShaderCodeTypeEXT codeType;
         dataSize,                                     // size_t codeSize;
         data.data(),                                  // const void* pCode;
@@ -472,18 +473,21 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate(void)
     else if (m_type == DRAW_BINARY || m_type == DRAW_BINARY_BIND)
     {
         refShaders.resize(5, VK_NULL_HANDLE);
-        refShaders[0] = createShaderFromBinary(vk, device, vertShader, vk::VK_SHADER_STAGE_VERTEX_BIT);
-        refShaders[1] = createShaderFromBinary(vk, device, fragShader, vk::VK_SHADER_STAGE_FRAGMENT_BIT);
+        refShaders[0] =
+            createShaderFromBinary(vk, device, vertShader, vk::VK_SHADER_STAGE_VERTEX_BIT, createInfos[0].nextStage);
+        refShaders[1] =
+            createShaderFromBinary(vk, device, fragShader, vk::VK_SHADER_STAGE_FRAGMENT_BIT, createInfos[1].nextStage);
         if (tessellationSupported)
         {
-            refShaders[2] =
-                createShaderFromBinary(vk, device, tescShader, vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
-            refShaders[3] =
-                createShaderFromBinary(vk, device, teseShader, vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
+            refShaders[2] = createShaderFromBinary(vk, device, tescShader, vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+                                                   createInfos[2].nextStage);
+            refShaders[3] = createShaderFromBinary(
+                vk, device, teseShader, vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, createInfos[3].nextStage);
         }
         if (geometrySupported)
         {
-            refShaders[geomIndex] = createShaderFromBinary(vk, device, geomShader, vk::VK_SHADER_STAGE_GEOMETRY_BIT);
+            refShaders[geomIndex] = createShaderFromBinary(vk, device, geomShader, vk::VK_SHADER_STAGE_GEOMETRY_BIT,
+                                                           createInfos[4].nextStage);
         }
     }
 
