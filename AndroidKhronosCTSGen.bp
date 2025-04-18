@@ -43,6 +43,12 @@ cc_defaults {
         "-DSPIRV_COLOR_TERMINAL",
         "-DSPIRV_TIMER_ENABLED",
 
+        // Android/Clang defines: _FORTIFY_SOURCE=3.
+        // This code uses malloc_usable_size(),
+        // and thus can't be built with _FORTIFY_SOURCE=3.
+        "-U_FORTIFY_SOURCE",
+        "-D_FORTIFY_SOURCE=2",
+
         // Android/Clang defines (not needed):
         // -D_FORTIFY_SOURCE=2
         // -DANDROID
@@ -1226,6 +1232,10 @@ cc_library_static {
         "external/vulkancts/framework/vulkan/vkPrograms.cpp",
         "external/vulkancts/framework/vulkan/vkQueryUtil.cpp",
         "external/vulkancts/framework/vulkan/vkRayTracingUtil.cpp",
+        "external/vulkancts/framework/vulkan/vkRayTracingUtil_BACKUP_1161373.cpp",
+        "external/vulkancts/framework/vulkan/vkRayTracingUtil_BASE_1161373.cpp",
+        "external/vulkancts/framework/vulkan/vkRayTracingUtil_LOCAL_1161373.cpp",
+        "external/vulkancts/framework/vulkan/vkRayTracingUtil_REMOTE_1161373.cpp",
         "external/vulkancts/framework/vulkan/vkRef.cpp",
         "external/vulkancts/framework/vulkan/vkRefUtil.cpp",
         "external/vulkancts/framework/vulkan/vkResourceInterface.cpp",

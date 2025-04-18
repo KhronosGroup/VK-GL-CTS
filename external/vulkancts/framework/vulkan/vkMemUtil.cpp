@@ -229,7 +229,8 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryAllocateInfo &allocI
     return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr, static_cast<size_t>(offset)));
 }
 
-MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReqs, MemoryRequirement requirement)
+MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReqs, MemoryRequirement requirement,
+                                              uint64_t memoryOpaqueCaptureAddr)
 {
     const auto memoryTypeNdx = selectMatchingMemoryType(m_memProps, memReqs.memoryTypeBits, requirement);
 
@@ -253,11 +254,22 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReq
         0,                                            //    uint32_t                deviceMask
     };
 
+    VkMemoryOpaqueCaptureAddressAllocateInfoKHR captureInfo = {
+        VK_STRUCTURE_TYPE_MEMORY_OPAQUE_CAPTURE_ADDRESS_ALLOCATE_INFO, // VkStructureType sType
+        nullptr,                                                       // const void*     pNext
+        memoryOpaqueCaptureAddr,                                       // uint64_t        opaqueCaptureAddress
+    };
+
     if (requirement & MemoryRequirement::DeviceAddress)
         allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
 
     if (requirement & MemoryRequirement::DeviceAddressCaptureReplay)
+    {
         allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
+
+        if (memoryOpaqueCaptureAddr)
+            allocFlagsInfo.pNext = &captureInfo;
+    }
 
     if (allocFlagsInfo.flags)
         allocInfo.pNext = &allocFlagsInfo;
