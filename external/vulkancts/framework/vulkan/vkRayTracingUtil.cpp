@@ -958,7 +958,8 @@ public:
     VkBuildAccelerationStructureFlagsKHR getBuildFlags() const override;
 
     void create(const DeviceInterface &vk, const VkDevice device, Allocator &allocator, VkDeviceSize structureSize,
-                VkDeviceAddress deviceAddress = 0u, const void *pNext = nullptr,
+                VkDeviceAddress deviceAddress = 0u, uint64_t bufferOpaqueCaptureAddr = 0u,
+                uint64_t memoryOpaqueCaptureAddr = 0u, const void *pNext = nullptr,
                 const MemoryRequirement &addMemoryRequirement = MemoryRequirement::Any,
                 const VkBuffer creationBuffer = VK_NULL_HANDLE, const VkDeviceSize creationBufferSize = 0u) override;
     void build(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
@@ -1007,7 +1008,7 @@ protected:
         std::vector<uint32_t> &maxPrimitiveCounts, VkDeviceSize vertexBufferOffset = 0,
         VkDeviceSize indexBufferOffset = 0) const;
 
-    virtual BufferWithMemory *getAccelerationStructureBuffer() const
+    virtual BufferWithMemory *getAccelerationStructureBuffer() const override
     {
         return m_accelerationStructureBuffer.get();
     }
@@ -1158,6 +1159,7 @@ VkBuildAccelerationStructureFlagsKHR BottomLevelAccelerationStructureKHR::getBui
 
 void BottomLevelAccelerationStructureKHR::create(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
                                                  VkDeviceSize structureSize, VkDeviceAddress deviceAddress,
+                                                 uint64_t bufferOpaqueCaptureAddr, uint64_t memoryOpaqueCaptureAddr,
                                                  const void *pNext, const MemoryRequirement &addMemoryRequirement,
                                                  const VkBuffer creationBuffer, const VkDeviceSize creationBufferSize)
 {
@@ -1234,31 +1236,51 @@ void BottomLevelAccelerationStructureKHR::create(const DeviceInterface &vk, cons
         VkBufferCreateInfo bufferCreateInfo =
             makeBufferCreateInfo(m_structureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR |
                                                       VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
-        VkBufferUsageFlags2CreateInfoKHR bufferUsageFlags2 = vk::initVulkanStructure();
+        VkBufferUsageFlags2CreateInfoKHR bufferUsageFlags2                    = vk::initVulkanStructure();
+        VkBufferOpaqueCaptureAddressCreateInfoKHR bufferOpaqueCaptureAddrInfo = vk::initVulkanStructure();
+        const void **pCurrentPnext                                            = &bufferCreateInfo.pNext;
+        const MemoryRequirement captureReplayReq =
+            (m_createFlags & VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR) ?
+                MemoryRequirement::DeviceAddressCaptureReplay :
+                MemoryRequirement::Any;
 
         if (m_useMaintenance5)
         {
             bufferUsageFlags2.usage = VK_BUFFER_USAGE_2_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR |
                                       VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR;
-            bufferCreateInfo.pNext = &bufferUsageFlags2;
             bufferCreateInfo.usage = 0;
+            *pCurrentPnext         = &bufferUsageFlags2;
+            pCurrentPnext          = &bufferUsageFlags2.pNext;
         }
 
-        const MemoryRequirement memoryRequirement = addMemoryRequirement | MemoryRequirement::HostVisible |
-                                                    MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress;
+        if (m_createFlags & VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR)
+        {
+            bufferCreateInfo.flags |= VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR;
+
+            if (bufferOpaqueCaptureAddr)
+            {
+                bufferOpaqueCaptureAddrInfo.opaqueCaptureAddress = bufferOpaqueCaptureAddr;
+                *pCurrentPnext                                   = &bufferOpaqueCaptureAddrInfo;
+            }
+        }
+
+        const MemoryRequirement memoryRequirement = addMemoryRequirement | captureReplayReq |
+                                                    MemoryRequirement::HostVisible | MemoryRequirement::Coherent |
+                                                    MemoryRequirement::DeviceAddress;
         const bool bindMemOnCreation = (!m_creationBufferUnbounded);
 
         try
         {
-            m_accelerationStructureBuffer = de::MovePtr<BufferWithMemory>(
-                new BufferWithMemory(vk, device, allocator, bufferCreateInfo,
-                                     (MemoryRequirement::Cached | memoryRequirement), bindMemOnCreation));
+            m_accelerationStructureBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+                vk, device, allocator, bufferCreateInfo, (MemoryRequirement::Cached | memoryRequirement),
+                bindMemOnCreation, memoryOpaqueCaptureAddr));
         }
         catch (const tcu::NotSupportedError &)
         {
             // retry without Cached flag
             m_accelerationStructureBuffer = de::MovePtr<BufferWithMemory>(
-                new BufferWithMemory(vk, device, allocator, bufferCreateInfo, memoryRequirement, bindMemOnCreation));
+                new BufferWithMemory(vk, device, allocator, bufferCreateInfo, memoryRequirement, bindMemOnCreation,
+                                     memoryOpaqueCaptureAddr));
         }
     }
 
@@ -1695,16 +1717,19 @@ uint32_t BottomLevelAccelerationStructure::getRequiredAllocationCount(void)
 
 void BottomLevelAccelerationStructure::createAndBuild(const DeviceInterface &vk, const VkDevice device,
                                                       const VkCommandBuffer cmdBuffer, Allocator &allocator,
-                                                      VkDeviceAddress deviceAddress)
+                                                      VkDeviceAddress deviceAddress, uint64_t bufferOpaqueCaptureAddr,
+                                                      uint64_t memoryOpaqueCaptureAddr)
 {
-    create(vk, device, allocator, 0u, deviceAddress);
+    create(vk, device, allocator, 0u, deviceAddress, bufferOpaqueCaptureAddr, memoryOpaqueCaptureAddr);
     build(vk, device, cmdBuffer);
 }
 
 void BottomLevelAccelerationStructure::createAndCopyFrom(const DeviceInterface &vk, const VkDevice device,
                                                          const VkCommandBuffer cmdBuffer, Allocator &allocator,
                                                          BottomLevelAccelerationStructure *accelerationStructure,
-                                                         VkDeviceSize compactCopySize, VkDeviceAddress deviceAddress)
+                                                         VkDeviceSize compactCopySize, VkDeviceAddress deviceAddress,
+                                                         uint64_t bufferOpaqueCaptureAddr,
+                                                         uint64_t memoryOpaqueCaptureAddr)
 {
     DE_ASSERT(accelerationStructure != NULL);
     VkDeviceSize copiedSize = compactCopySize > 0u ?
@@ -1712,17 +1737,20 @@ void BottomLevelAccelerationStructure::createAndCopyFrom(const DeviceInterface &
                                   accelerationStructure->getStructureBuildSizes().accelerationStructureSize;
     DE_ASSERT(copiedSize != 0u);
 
-    create(vk, device, allocator, copiedSize, deviceAddress);
+    create(vk, device, allocator, copiedSize, deviceAddress, bufferOpaqueCaptureAddr, memoryOpaqueCaptureAddr);
     copyFrom(vk, device, cmdBuffer, accelerationStructure, compactCopySize > 0u);
 }
 
 void BottomLevelAccelerationStructure::createAndDeserializeFrom(const DeviceInterface &vk, const VkDevice device,
                                                                 const VkCommandBuffer cmdBuffer, Allocator &allocator,
-                                                                SerialStorage *storage, VkDeviceAddress deviceAddress)
+                                                                SerialStorage *storage, VkDeviceAddress deviceAddress,
+                                                                uint64_t bufferOpaqueCaptureAddr,
+                                                                uint64_t memoryOpaqueCaptureAddr)
 {
     DE_ASSERT(storage != NULL);
     DE_ASSERT(storage->getStorageSize() >= SerialStorage::SERIAL_STORAGE_SIZE_MIN);
-    create(vk, device, allocator, storage->getDeserializedSize(), deviceAddress);
+    create(vk, device, allocator, storage->getDeserializedSize(), deviceAddress, bufferOpaqueCaptureAddr,
+           memoryOpaqueCaptureAddr);
     deserialize(vk, device, cmdBuffer, storage);
 }
 
@@ -1751,8 +1779,8 @@ public:
     BottomLevelAccelerationStructurePoolMember(BottomLevelAccelerationStructurePoolMember &&)      = delete;
     virtual ~BottomLevelAccelerationStructurePoolMember()                                          = default;
 
-    virtual void create(const DeviceInterface &, const VkDevice, Allocator &, VkDeviceSize, VkDeviceAddress,
-                        const void *, const MemoryRequirement &, const VkBuffer, const VkDeviceSize) override
+    virtual void create(const DeviceInterface &, const VkDevice, Allocator &, VkDeviceSize, VkDeviceAddress, uint64_t,
+                        uint64_t, const void *, const MemoryRequirement &, const VkBuffer, const VkDeviceSize) override
     {
         DE_ASSERT(0); // Silent this method
     }
@@ -2493,16 +2521,19 @@ VkAccelerationStructureBuildSizesInfoKHR TopLevelAccelerationStructure::getStruc
 
 void TopLevelAccelerationStructure::createAndBuild(const DeviceInterface &vk, const VkDevice device,
                                                    const VkCommandBuffer cmdBuffer, Allocator &allocator,
-                                                   VkDeviceAddress deviceAddress)
+                                                   VkDeviceAddress deviceAddress, uint64_t bufferOpaqueCaptureAddr,
+                                                   uint64_t memoryOpaqueCaptureAddr)
 {
-    create(vk, device, allocator, 0u, deviceAddress);
+    create(vk, device, allocator, 0u, deviceAddress, bufferOpaqueCaptureAddr, memoryOpaqueCaptureAddr);
     build(vk, device, cmdBuffer);
 }
 
 void TopLevelAccelerationStructure::createAndCopyFrom(const DeviceInterface &vk, const VkDevice device,
                                                       const VkCommandBuffer cmdBuffer, Allocator &allocator,
                                                       TopLevelAccelerationStructure *accelerationStructure,
-                                                      VkDeviceSize compactCopySize, VkDeviceAddress deviceAddress)
+                                                      VkDeviceSize compactCopySize, VkDeviceAddress deviceAddress,
+                                                      uint64_t bufferOpaqueCaptureAddr,
+                                                      uint64_t memoryOpaqueCaptureAddr)
 {
     DE_ASSERT(accelerationStructure != NULL);
     VkDeviceSize copiedSize = compactCopySize > 0u ?
@@ -2510,17 +2541,20 @@ void TopLevelAccelerationStructure::createAndCopyFrom(const DeviceInterface &vk,
                                   accelerationStructure->getStructureBuildSizes().accelerationStructureSize;
     DE_ASSERT(copiedSize != 0u);
 
-    create(vk, device, allocator, copiedSize, deviceAddress);
+    create(vk, device, allocator, copiedSize, deviceAddress, bufferOpaqueCaptureAddr, memoryOpaqueCaptureAddr);
     copyFrom(vk, device, cmdBuffer, accelerationStructure, compactCopySize > 0u);
 }
 
 void TopLevelAccelerationStructure::createAndDeserializeFrom(const DeviceInterface &vk, const VkDevice device,
                                                              const VkCommandBuffer cmdBuffer, Allocator &allocator,
-                                                             SerialStorage *storage, VkDeviceAddress deviceAddress)
+                                                             SerialStorage *storage, VkDeviceAddress deviceAddress,
+                                                             uint64_t bufferOpaqueCaptureAddr,
+                                                             uint64_t memoryOpaqueCaptureAddr)
 {
     DE_ASSERT(storage != NULL);
     DE_ASSERT(storage->getStorageSize() >= SerialStorage::SERIAL_STORAGE_SIZE_MIN);
-    create(vk, device, allocator, storage->getDeserializedSize(), deviceAddress);
+    create(vk, device, allocator, storage->getDeserializedSize(), deviceAddress, bufferOpaqueCaptureAddr,
+           memoryOpaqueCaptureAddr);
     if (storage->hasDeepFormat())
         createAndDeserializeBottoms(vk, device, cmdBuffer, allocator, storage);
     deserialize(vk, device, cmdBuffer, storage);
@@ -2651,7 +2685,8 @@ public:
     void getCreationSizes(const DeviceInterface &vk, const VkDevice device, const VkDeviceSize structureSize,
                           CreationSizes &sizes) override;
     void create(const DeviceInterface &vk, const VkDevice device, Allocator &allocator, VkDeviceSize structureSize,
-                VkDeviceAddress deviceAddress = 0u, const void *pNext = nullptr,
+                VkDeviceAddress deviceAddress = 0u, uint64_t bufferOpaqueCaptureAddr = 0u,
+                uint64_t memoryOpaqueCaptureAddr = 0u, const void *pNext = nullptr,
                 const MemoryRequirement &addMemoryRequirement = MemoryRequirement::Any,
                 const VkBuffer creationBuffer = VK_NULL_HANDLE, const VkDeviceSize creationBufferSize = 0u) override;
     void build(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
@@ -2672,6 +2707,11 @@ public:
 
     void updateInstanceMatrix(const DeviceInterface &vk, const VkDevice device, size_t instanceIndex,
                               const VkTransformMatrixKHR &matrix) override;
+
+    virtual BufferWithMemory *getAccelerationStructureBuffer() const override
+    {
+        return m_accelerationStructureBuffer.get();
+    }
 
 protected:
     VkAccelerationStructureBuildTypeKHR m_buildType;
@@ -2891,6 +2931,7 @@ void TopLevelAccelerationStructureKHR::getCreationSizes(const DeviceInterface &v
 
 void TopLevelAccelerationStructureKHR::create(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
                                               VkDeviceSize structureSize, VkDeviceAddress deviceAddress,
+                                              uint64_t bufferOpaqueCaptureAddr, uint64_t memoryOpaqueCaptureAddr,
                                               const void *pNext, const MemoryRequirement &addMemoryRequirement,
                                               const VkBuffer creationBuffer, const VkDeviceSize creationBufferSize)
 {
@@ -2954,24 +2995,42 @@ void TopLevelAccelerationStructureKHR::create(const DeviceInterface &vk, const V
 
     if (!externalCreationBuffer)
     {
-        const VkBufferCreateInfo bufferCreateInfo =
+        VkBufferCreateInfo bufferCreateInfo =
             makeBufferCreateInfo(m_structureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR |
                                                       VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
-        const MemoryRequirement memoryRequirement = addMemoryRequirement | MemoryRequirement::HostVisible |
-                                                    MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress;
+        VkBufferOpaqueCaptureAddressCreateInfoKHR bufferOpaqueCaptureAddrInfo = vk::initVulkanStructure();
+        const MemoryRequirement captureReplayReq =
+            (m_createFlags & VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR) ?
+                MemoryRequirement::DeviceAddressCaptureReplay :
+                MemoryRequirement::Any;
+        const MemoryRequirement memoryRequirement = captureReplayReq | addMemoryRequirement |
+                                                    MemoryRequirement::HostVisible | MemoryRequirement::Coherent |
+                                                    MemoryRequirement::DeviceAddress;
         const bool bindMemOnCreation = (!m_creationBufferUnbounded);
+
+        if (m_createFlags & VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR)
+        {
+            bufferCreateInfo.flags |= VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR;
+
+            if (bufferOpaqueCaptureAddr)
+            {
+                bufferOpaqueCaptureAddrInfo.opaqueCaptureAddress = bufferOpaqueCaptureAddr;
+                bufferCreateInfo.pNext                           = &bufferOpaqueCaptureAddrInfo;
+            }
+        }
 
         try
         {
-            m_accelerationStructureBuffer = de::MovePtr<BufferWithMemory>(
-                new BufferWithMemory(vk, device, allocator, bufferCreateInfo,
-                                     (MemoryRequirement::Cached | memoryRequirement), bindMemOnCreation));
+            m_accelerationStructureBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+                vk, device, allocator, bufferCreateInfo, (MemoryRequirement::Cached | memoryRequirement),
+                bindMemOnCreation, memoryOpaqueCaptureAddr));
         }
         catch (const tcu::NotSupportedError &)
         {
             // retry without Cached flag
             m_accelerationStructureBuffer = de::MovePtr<BufferWithMemory>(
-                new BufferWithMemory(vk, device, allocator, bufferCreateInfo, memoryRequirement, bindMemOnCreation));
+                new BufferWithMemory(vk, device, allocator, bufferCreateInfo, memoryRequirement, bindMemOnCreation,
+                                     memoryOpaqueCaptureAddr));
         }
     }
 

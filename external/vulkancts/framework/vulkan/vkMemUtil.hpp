@@ -151,8 +151,8 @@ public:
     }
 
     virtual de::MovePtr<Allocation> allocate(const VkMemoryAllocateInfo &allocInfo, VkDeviceSize alignment) = 0;
-    virtual de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memRequirements,
-                                             MemoryRequirement requirement)                                 = 0;
+    virtual de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memRequirements, MemoryRequirement requirement,
+                                             uint64_t memoryOpaqueCaptureAddr = 0u)                         = 0;
 };
 
 //! Allocator that backs every allocation with its own VkDeviceMemory
@@ -169,8 +169,9 @@ public:
     SimpleAllocator(const DeviceInterface &vk, VkDevice device, const VkPhysicalDeviceMemoryProperties &deviceMemProps,
                     const OptionalOffsetParams &offsetParams = tcu::Nothing);
 
-    de::MovePtr<Allocation> allocate(const VkMemoryAllocateInfo &allocInfo, VkDeviceSize alignment);
-    de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memRequirements, MemoryRequirement requirement);
+    de::MovePtr<Allocation> allocate(const VkMemoryAllocateInfo &allocInfo, VkDeviceSize alignment) override;
+    de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memRequirements, MemoryRequirement requirement,
+                                     uint64_t memoryOpaqueCaptureAddr = 0u) override;
 
 private:
     const DeviceInterface &m_vk;
