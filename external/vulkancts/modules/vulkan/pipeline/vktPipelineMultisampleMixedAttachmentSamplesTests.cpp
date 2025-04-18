@@ -1102,9 +1102,9 @@ void dispatchImageCheck(Context &context, const TestParams &params, WorkingData 
         const VkDescriptorImageInfo colorImageInfo = makeDescriptorImageInfo(
             VK_NULL_HANDLE, *subpassData.colorImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         const VkDescriptorImageInfo depthImageInfo = makeDescriptorImageInfo(
-            VK_NULL_HANDLE, *subpassData.depthOnlyImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            VK_NULL_HANDLE, *subpassData.depthOnlyImageView, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
         const VkDescriptorImageInfo stencilImageInfo = makeDescriptorImageInfo(
-            VK_NULL_HANDLE, *subpassData.stencilOnlyImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            VK_NULL_HANDLE, *subpassData.stencilOnlyImageView, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
 
         DescriptorSetUpdateBuilder builder;
 

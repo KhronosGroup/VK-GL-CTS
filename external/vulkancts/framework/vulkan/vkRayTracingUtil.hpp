@@ -804,10 +804,13 @@ public:
                                             const uint32_t indirectBufferStride)                           = 0;
     virtual VkBuildAccelerationStructureFlagsKHR getBuildFlags() const                                     = 0;
     VkAccelerationStructureBuildSizesInfoKHR getStructureBuildSizes() const;
+    virtual BufferWithMemory *getAccelerationStructureBuffer() const = 0;
 
     // methods specific for each acceleration structure
     virtual void create(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
-                        VkDeviceSize structureSize, VkDeviceAddress deviceAddress = 0u, const void *pNext = nullptr,
+                        VkDeviceSize structureSize, VkDeviceAddress deviceAddress = 0u,
+                        uint64_t bufferOpaqueCaptureAddr = 0u, uint64_t memoryOpaqueCaptureAddr = 0u,
+                        const void *pNext                             = nullptr,
                         const MemoryRequirement &addMemoryRequirement = MemoryRequirement::Any,
                         const VkBuffer creationBuffer = VK_NULL_HANDLE, const VkDeviceSize creationBufferSize = 0u) = 0;
     virtual void build(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
@@ -815,7 +818,7 @@ public:
                        VkPipelineStageFlags barrierDstStages =
                            static_cast<VkPipelineStageFlags>(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT))                   = 0;
     virtual void copyFrom(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
-                          BottomLevelAccelerationStructure *accelerationStructure, bool compactCopy)                = 0;
+                          BottomLevelAccelerationStructure *accelerationStructure, bool compactCopy) = DE_NULL;
 
     virtual void serialize(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
                            SerialStorage *storage)   = 0;
@@ -824,12 +827,15 @@ public:
 
     // helper methods for typical acceleration structure creation tasks
     void createAndBuild(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
-                        Allocator &allocator, VkDeviceAddress deviceAddress = 0u);
+                        Allocator &allocator, VkDeviceAddress deviceAddress = 0u, uint64_t bufferOpaqueCaptureAddr = 0u,
+                        uint64_t memoryOpaqueCaptureAddr = 0u);
     void createAndCopyFrom(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
                            Allocator &allocator, BottomLevelAccelerationStructure *accelerationStructure,
-                           VkDeviceSize compactCopySize = 0u, VkDeviceAddress deviceAddress = 0u);
+                           VkDeviceSize compactCopySize = 0u, VkDeviceAddress deviceAddress = 0u,
+                           uint64_t bufferOpaqueCaptureAddr = 0u, uint64_t memoryOpaqueCaptureAddr = 0u);
     void createAndDeserializeFrom(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
-                                  Allocator &allocator, SerialStorage *storage, VkDeviceAddress deviceAddress = 0u);
+                                  Allocator &allocator, SerialStorage *storage, VkDeviceAddress deviceAddress = 0u,
+                                  uint64_t bufferOpaqueCaptureAddr = 0u, uint64_t memoryOpaqueCaptureAddr = 0u);
     virtual const VkAccelerationStructureKHR *getPtr(void) const                                               = 0;
     virtual void updateGeometry(size_t geometryIndex, de::SharedPtr<RaytracedGeometryBase> &raytracedGeometry) = 0;
 
@@ -999,6 +1005,7 @@ public:
                                   CreationSizes &sizes)                                                             = 0;
     virtual void create(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
                         VkDeviceSize structureSize = 0u, VkDeviceAddress deviceAddress = 0u,
+                        uint64_t bufferOpaqueCaptureAddr = 0u, uint64_t memoryOpaqueCaptureAddr = 0u,
                         const void *pNext                             = nullptr,
                         const MemoryRequirement &addMemoryRequirement = MemoryRequirement::Any,
                         const VkBuffer creationBuffer = VK_NULL_HANDLE, const VkDeviceSize creationBufferSize = 0u) = 0;
@@ -1019,17 +1026,21 @@ public:
 
     // helper methods for typical acceleration structure creation tasks
     void createAndBuild(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
-                        Allocator &allocator, VkDeviceAddress deviceAddress = 0u);
+                        Allocator &allocator, VkDeviceAddress deviceAddress = 0u, uint64_t bufferOpaqueCaptureAddr = 0u,
+                        uint64_t memoryOpaqueCaptureAddr = 0u);
     void createAndCopyFrom(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
                            Allocator &allocator, TopLevelAccelerationStructure *accelerationStructure,
-                           VkDeviceSize compactCopySize = 0u, VkDeviceAddress deviceAddress = 0u);
+                           VkDeviceSize compactCopySize = 0u, VkDeviceAddress deviceAddress = 0u,
+                           uint64_t bufferOpaqueCaptureAddr = 0u, uint64_t memoryOpaqueCaptureAddr = 0u);
     void createAndDeserializeFrom(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
-                                  Allocator &allocator, SerialStorage *storage, VkDeviceAddress deviceAddress = 0u);
+                                  Allocator &allocator, SerialStorage *storage, VkDeviceAddress deviceAddress = 0u,
+                                  uint64_t bufferOpaqueCaptureAddr = 0u, uint64_t memoryOpaqueCaptureAddr = 0u);
 
     virtual const VkAccelerationStructureKHR *getPtr(void) const = 0;
 
     virtual void updateInstanceMatrix(const DeviceInterface &vk, const VkDevice device, size_t instanceIndex,
                                       const VkTransformMatrixKHR &matrix) = 0;
+    virtual BufferWithMemory *getAccelerationStructureBuffer() const      = 0;
 
 protected:
     std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> m_bottomLevelInstances;

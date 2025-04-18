@@ -4662,7 +4662,7 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
                 else
                     resources.rtBlas->setGeometryData(vertices, true);
                 resources.rtBlas->setCreateFlags(createFlags);
-                resources.rtBlas->create(*m_deviceInterface, *m_device, allocator, 0, 0, infoPtrs[0], memoryReqs);
+                resources.rtBlas->create(*m_deviceInterface, *m_device, allocator, 0, 0, 0, 0, infoPtrs[0], memoryReqs);
             }
 
             {
@@ -4671,7 +4671,7 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
                 resources.rtTlas = makeTopLevelAccelerationStructure();
                 resources.rtTlas->addInstance(resources.rtBlas);
                 resources.rtTlas->setCreateFlags(createFlags);
-                resources.rtTlas->create(*m_deviceInterface, *m_device, allocator, 0, 0, infoPtrs[1], memoryReqs);
+                resources.rtTlas->create(*m_deviceInterface, *m_device, allocator, 0, 0, 0, 0, infoPtrs[1], memoryReqs);
             }
 
             if (isCaptureDescriptor(binding.descriptorType) && replayableBinding)
