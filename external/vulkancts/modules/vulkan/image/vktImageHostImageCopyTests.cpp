@@ -440,6 +440,9 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
             sampledImageUsage |= vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
         else if (m_parameters.intermediateLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
             sampledImageUsage |= vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        else if (m_parameters.intermediateLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
+                 m_parameters.intermediateLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
+            sampledImageUsage |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
         vk::VkImageCreateInfo createInfo = {
             vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
@@ -1243,6 +1246,9 @@ void HostImageCopyTestCase::checkSupport(vkt::Context &context) const
         usage |= vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     else if (m_parameters.intermediateLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
         usage |= vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    else if (m_parameters.intermediateLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
+             m_parameters.intermediateLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
+        usage |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
     vk::VkImageCreateFlags flags = 0u;
     if (m_parameters.sparse)
@@ -1446,10 +1452,15 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
 
     if (m_srcLayout == vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+    else if (m_srcLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
-    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+    else if (m_srcLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    else if (m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
+             m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL ||
+             m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
+             m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
+        createInfo.usage |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
     de::MovePtr<ImageWithMemory> image = de::MovePtr<ImageWithMemory>(
         new ImageWithMemory(vk, device, *allocatorWithOffset, createInfo, vk::MemoryRequirement::HostVisible));
@@ -1573,7 +1584,7 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
     vk::beginCommandBuffer(vk, *cmdBuffer);
     {
         auto imageMemoryBarrier =
-            makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, m_srcLayout,
+            makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_READ_BIT, m_srcLayout,
                                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **image, subresourceRange);
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_NONE, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
                               nullptr, 0u, nullptr, 1, &imageMemoryBarrier);
@@ -1774,6 +1785,11 @@ void PreinitializedTestCase::checkSupport(vkt::Context &context) const
         usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
     if (m_srcLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
         usage |= vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
+        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL ||
+        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
+        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
+        usage |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
     vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,                         // VkStructureType sType;
