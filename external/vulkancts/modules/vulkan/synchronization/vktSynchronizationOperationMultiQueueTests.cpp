@@ -111,7 +111,7 @@ class MultiQueues
         std::vector<VkQueue> queue;
     };
 
-    MultiQueues(Context &context, SynchronizationType type, bool timelineSemaphore)
+    MultiQueues(Context &context, SynchronizationType type, bool timelineSemaphore, bool maintenance8)
 #ifdef CTS_USES_VULKANSC
         : m_instance(createCustomInstanceFromContext(context))
         ,
@@ -176,6 +176,8 @@ class MultiQueues
                 deviceExtensions.push_back("VK_KHR_synchronization2");
                 addToChainVulkanStructure(&nextPtr, synchronization2Features);
             }
+            if (maintenance8)
+                deviceExtensions.push_back("VK_KHR_maintenance8");
 
             void *pNext = &createPhysicalFeature;
 #ifdef CTS_USES_VULKANSC
@@ -378,11 +380,13 @@ public:
         return *m_allocator;
     }
 
-    static SharedPtr<MultiQueues> getInstance(Context &context, SynchronizationType type, bool timelineSemaphore)
+    static SharedPtr<MultiQueues> getInstance(Context &context, SynchronizationType type, bool timelineSemaphore,
+                                              bool maintenance8)
     {
-        uint32_t index = ((uint32_t)type << 1) | ((uint32_t)timelineSemaphore);
+        uint32_t index = ((uint32_t)type << 2) | ((uint32_t)timelineSemaphore << 1) | ((uint32_t)maintenance8);
         if (!m_multiQueues[index])
-            m_multiQueues[index] = SharedPtr<MultiQueues>(new MultiQueues(context, type, timelineSemaphore));
+            m_multiQueues[index] =
+                SharedPtr<MultiQueues>(new MultiQueues(context, type, timelineSemaphore, maintenance8));
 
         return m_multiQueues[index];
     }
@@ -510,10 +514,10 @@ class BaseTestInstance : public TestInstance
 public:
     BaseTestInstance(Context &context, SynchronizationType type, const ResourceDescription &resourceDesc,
                      const OperationSupport &writeOp, const OperationSupport &readOp,
-                     PipelineCacheData &pipelineCacheData, bool timelineSemaphore)
+                     PipelineCacheData &pipelineCacheData, bool timelineSemaphore, bool maintenance8)
         : TestInstance(context)
         , m_type(type)
-        , m_queues(MultiQueues::getInstance(context, type, timelineSemaphore))
+        , m_queues(MultiQueues::getInstance(context, type, timelineSemaphore, maintenance8))
         , m_opContext(new OperationContext(context, type, m_queues->getDeviceInterface(), m_queues->getDevice(),
                                            m_queues->getAllocator(), pipelineCacheData))
         , m_resourceDesc(resourceDesc)
@@ -538,7 +542,7 @@ public:
                                 const OperationSupport &writeOp, const OperationSupport &readOp,
                                 PipelineCacheData &pipelineCacheData, const VkSharingMode sharingMode,
                                 bool useAllStages)
-        : BaseTestInstance(context, type, resourceDesc, writeOp, readOp, pipelineCacheData, false)
+        : BaseTestInstance(context, type, resourceDesc, writeOp, readOp, pipelineCacheData, false, useAllStages)
         , m_sharingMode(sharingMode)
         , m_useAllStages(useAllStages)
     {
@@ -865,7 +869,7 @@ public:
     TimelineSemaphoreTestInstance(Context &context, SynchronizationType type, const ResourceDescription &resourceDesc,
                                   const SharedPtr<OperationSupport> &writeOp, const SharedPtr<OperationSupport> &readOp,
                                   PipelineCacheData &pipelineCacheData, const VkSharingMode sharingMode)
-        : BaseTestInstance(context, type, resourceDesc, *writeOp, *readOp, pipelineCacheData, true)
+        : BaseTestInstance(context, type, resourceDesc, *writeOp, *readOp, pipelineCacheData, true, false)
         , m_sharingMode(sharingMode)
     {
         uint32_t maxQueues = 0;
@@ -1047,7 +1051,7 @@ public:
     FenceTestInstance(Context &context, SynchronizationType type, const ResourceDescription &resourceDesc,
                       const OperationSupport &writeOp, const OperationSupport &readOp,
                       PipelineCacheData &pipelineCacheData, const VkSharingMode sharingMode)
-        : BaseTestInstance(context, type, resourceDesc, writeOp, readOp, pipelineCacheData, false)
+        : BaseTestInstance(context, type, resourceDesc, writeOp, readOp, pipelineCacheData, false, false)
         , m_sharingMode(sharingMode)
     {
     }

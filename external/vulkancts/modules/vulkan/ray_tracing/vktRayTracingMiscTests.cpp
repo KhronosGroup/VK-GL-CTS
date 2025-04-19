@@ -8823,7 +8823,7 @@ tcu::TestStatus reuseCreationBufferInstance(Context &context, const bool disturb
         bufferProps.extBuffer.buffer  = creationBuffer.get();
         bufferProps.extBuffer.size    = creationBufferSize;
 
-        bottomLevelAS->create(vkd, device, alloc, bufferProps, 0u, 0u, nullptr, MemoryRequirement::Any);
+        bottomLevelAS->create(vkd, device, alloc, bufferProps, 0u, 0u, 0u, 0u, nullptr, MemoryRequirement::Any);
         bottomLevelAS->build(vkd, device, bottomBuildCmd.get());
     }
     else
@@ -8844,7 +8844,7 @@ tcu::TestStatus reuseCreationBufferInstance(Context &context, const bool disturb
         bufferProps.extBuffer.buffer  = creationBuffer.get();
         bufferProps.extBuffer.size    = creationBufferSize;
 
-        bottomLevelOtherAS->create(vkd, device, alloc, bufferProps, 0u, 0u, nullptr, MemoryRequirement::Any);
+        bottomLevelOtherAS->create(vkd, device, alloc, bufferProps, 0u, 0u, 0u, 0u, nullptr, MemoryRequirement::Any);
         // Note how we have created the second bottom level accel structure reusing the buffer but we haven't built it.
     }
 
@@ -8864,7 +8864,7 @@ tcu::TestStatus reuseCreationBufferInstance(Context &context, const bool disturb
         bufferProps.extBuffer.buffer  = creationBuffer.get();
         bufferProps.extBuffer.size    = creationBufferSize;
 
-        topLevelAS->create(vkd, device, alloc, bufferProps, 0u, 0u, nullptr, MemoryRequirement::Any);
+        topLevelAS->create(vkd, device, alloc, bufferProps, 0u, 0u, 0u, 0u, nullptr, MemoryRequirement::Any);
         topLevelAS->build(vkd, device, topBuildCmd.get());
 
         bufferProps.useExternalBuffer = false;
@@ -8895,7 +8895,7 @@ tcu::TestStatus reuseCreationBufferInstance(Context &context, const bool disturb
 
         topLevelOtherAS->setInstanceCount(1);
         topLevelOtherAS->addInstance(blasOtherSharedPtr);
-        topLevelOtherAS->create(vkd, device, alloc, bufferProps, 0u, 0u, nullptr, MemoryRequirement::Any);
+        topLevelOtherAS->create(vkd, device, alloc, bufferProps, 0u, 0u, 0u, 0u, nullptr, MemoryRequirement::Any);
         // Note how we have created the second top level accel structure reusing the buffer but we haven't built it.
     }
 
