@@ -626,6 +626,7 @@ struct StateTestParams
     vk::VkCullModeFlagBits cullMode;
     bool stencilTestEnable;
     bool depthTestEnable;
+    bool depthWriteEnable;
     bool depthBiasEnable;
     bool depthBoundsTestEnable;
     bool logicOpEnable;
@@ -656,6 +657,7 @@ struct StateTestParams
         cullMode                              = vk::VK_CULL_MODE_NONE;
         stencilTestEnable                     = false;
         depthTestEnable                       = false;
+        depthWriteEnable                      = false;
         depthBiasEnable                       = false;
         depthBoundsTestEnable                 = false;
         logicOpEnable                         = false;
@@ -1041,8 +1043,9 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
         vk.cmdSetDepthCompareOp(cmdBuffer, vk::VK_COMPARE_OP_LESS);
     if (!m_params.rasterizerDiscardEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE))
         vk.cmdSetDepthTestEnable(cmdBuffer, m_params.depthTestEnable ? VK_TRUE : VK_FALSE);
-    if (!m_params.rasterizerDiscardEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE))
-        vk.cmdSetDepthWriteEnable(cmdBuffer, VK_TRUE);
+    if (!m_params.rasterizerDiscardEnable && (m_params.depthTestEnable || m_params.depthWriteEnable) &&
+        hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE))
+        vk.cmdSetDepthWriteEnable(cmdBuffer, m_params.depthWriteEnable);
     if (!m_params.rasterizerDiscardEnable &&
         (m_params.cullMode != vk::VK_CULL_MODE_NONE && m_params.cullMode != vk::VK_CULL_MODE_FRONT_AND_BACK) &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_FRONT_FACE))
@@ -1463,7 +1466,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
             nullptr,                                        // const void*                              pNext
             (vk::VkPipelineDepthStencilStateCreateFlags)0u, // VkPipelineDepthStencilStateCreateFlags   flags
             m_params.depthTestEnable ? VK_TRUE : VK_FALSE,  // VkBool32                                 depthTestEnable
-            VK_TRUE,                                        // VkBool32                                 depthWriteEnable
+            m_params.depthWriteEnable,                      // VkBool32                                 depthWriteEnable
             vk::VK_COMPARE_OP_LESS,                         // VkCompareOp                              depthCompareOp
             m_params.depthBoundsTestEnable ? VK_TRUE :
                                              VK_FALSE, // VkBool32                                 depthBoundsTestEnable
@@ -1880,7 +1883,8 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
                 bool inside       = isInsidePrimitive(i, j, width, height);
                 if (m_params.conservativeRasterization && m_params.conservativeRasterizationOverestimate && !inside)
                     continue;
-                if (inside && !m_params.depthBoundsTestEnable && !m_params.discardRectanglesEnable &&
+                if (inside && ((m_params.depthTestEnable && m_params.depthWriteEnable) || m_params.stencilTestEnable) &&
+                    !m_params.depthBoundsTestEnable && !m_params.discardRectanglesEnable &&
                     ((m_params.cullMode != vk::VK_CULL_MODE_FRONT_AND_BACK && m_params.cullMode != culled) ||
                      m_params.lines))
                 {
@@ -3148,6 +3152,7 @@ tcu::TestCaseGroup *createShaderObjectMiscTests(tcu::TestContext &testCtx)
     const struct
     {
         bool depthTestEnable;
+        bool depthWriteEnable;
         bool depthBounds;
         bool depthBoundsTestEnable;
         bool depthClamp;
@@ -3156,13 +3161,14 @@ tcu::TestCaseGroup *createShaderObjectMiscTests(tcu::TestContext &testCtx)
         bool depthBiasEnable;
         const char *name;
     } depthTests[]{
-        {false, false, false, false, false, false, false, "none"},
-        {true, true, false, false, false, false, false, "bounds_disabled"},
-        {true, true, true, false, false, false, false, "bounds_enabled"},
-        {true, false, false, true, false, false, false, "clamp"},
-        {true, false, false, false, true, false, false, "clip"},
-        {true, false, false, false, false, true, false, "clip_control"},
-        {true, false, false, false, false, false, true, "bias"},
+        {false, false, false, false, false, false, false, false, "none"},
+        {true, true, true, false, false, false, false, false, "bounds_disabled"},
+        {true, true, true, true, false, false, false, false, "bounds_enabled"},
+        {true, true, false, false, true, false, false, false, "clamp"},
+        {true, true, false, false, false, true, false, false, "clip"},
+        {true, true, false, false, false, false, true, false, "clip_control"},
+        {true, true, false, false, false, false, false, true, "bias"},
+        {false, true, false, false, false, false, false, false, "test_disabled_write_enabled"},
     };
 
     const struct
