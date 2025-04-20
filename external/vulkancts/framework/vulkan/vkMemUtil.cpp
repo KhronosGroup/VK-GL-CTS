@@ -232,7 +232,8 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryAllocateInfo &allocI
 }
 
 MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReqs, MemoryRequirement requirement,
-                                              const tcu::Maybe<HostIntent> &hostIntent)
+                                              const tcu::Maybe<HostIntent> &hostIntent,
+                                              uint64_t memoryOpaqueCaptureAddr)
 {
 #ifdef CTS_USES_VULKANSC
     const auto memoryTypeNdx = selectMatchingMemoryType(m_memProps, memReqs.memoryTypeBits, requirement);
@@ -261,11 +262,22 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReq
         0,                                            //    uint32_t                deviceMask
     };
 
+    VkMemoryOpaqueCaptureAddressAllocateInfoKHR captureInfo = {
+        VK_STRUCTURE_TYPE_MEMORY_OPAQUE_CAPTURE_ADDRESS_ALLOCATE_INFO, // VkStructureType sType
+        nullptr,                                                       // const void*     pNext
+        memoryOpaqueCaptureAddr,                                       // uint64_t        opaqueCaptureAddress
+    };
+
     if (requirement & MemoryRequirement::DeviceAddress)
         allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
 
     if (requirement & MemoryRequirement::DeviceAddressCaptureReplay)
+    {
         allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
+
+        if (memoryOpaqueCaptureAddr)
+            allocFlagsInfo.pNext = &captureInfo;
+    }
 
     if (allocFlagsInfo.flags)
         allocInfo.pNext = &allocFlagsInfo;
@@ -282,9 +294,10 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReq
     return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr, static_cast<size_t>(offset)));
 }
 
-MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReqs, MemoryRequirement requirement)
+MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReqs, MemoryRequirement requirement,
+                                              uint64_t memoryOpaqueCaptureAddr)
 {
-    return SimpleAllocator::allocate(memReqs, requirement, tcu::Nothing);
+    return SimpleAllocator::allocate(memReqs, requirement, tcu::Nothing, memoryOpaqueCaptureAddr);
 }
 
 MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReqs, HostIntent intent,

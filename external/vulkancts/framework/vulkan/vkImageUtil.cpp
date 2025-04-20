@@ -4637,10 +4637,10 @@ void copyBufferToImage(const DeviceInterface &vk, const VkCommandBuffer &cmdBuff
                                                   }};
 
     const VkMemoryBarrier memoryBarrier = {
-        VK_STRUCTURE_TYPE_MEMORY_BARRIER, // VkStructureType	sType;
-        nullptr,                          // const void*		pNext;
-        VK_ACCESS_TRANSFER_WRITE_BIT,     // VkAccessFlags	srcAccessMask;
-        destImageDstAccessMask            // VkAccessFlags	dstAccessMask;
+        VK_STRUCTURE_TYPE_MEMORY_BARRIER, // VkStructureType sType;
+        nullptr,                          // const void* pNext;
+        VK_ACCESS_TRANSFER_WRITE_BIT,     // VkAccessFlags srcAccessMask;
+        destImageDstAccessMask            // VkAccessFlags dstAccessMask;
     };
     const VkImageMemoryBarrier postImageBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
                                                    nullptr,                                // const void* pNext;

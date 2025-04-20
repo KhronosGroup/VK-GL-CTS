@@ -2729,10 +2729,10 @@ tcu::TestStatus CopyImageToBuffer::iterate(void)
 
     // Barriers for copying image to buffer
     const VkMemoryBarrier memoryBarrier = {
-        VK_STRUCTURE_TYPE_MEMORY_BARRIER, // VkStructureType	sType;
-        nullptr,                          // const void*		pNext;
-        VK_ACCESS_TRANSFER_WRITE_BIT,     // VkAccessFlags	srcAccessMask;
-        VK_ACCESS_TRANSFER_READ_BIT,      // VkAccessFlags	dstAccessMask;
+        VK_STRUCTURE_TYPE_MEMORY_BARRIER, // VkStructureType sType;
+        nullptr,                          // const void* pNext;
+        VK_ACCESS_TRANSFER_WRITE_BIT,     // VkAccessFlags srcAccessMask;
+        VK_ACCESS_TRANSFER_READ_BIT,      // VkAccessFlags dstAccessMask;
     };
     const VkImageMemoryBarrier imageBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
                                                nullptr,                                // const void* pNext;

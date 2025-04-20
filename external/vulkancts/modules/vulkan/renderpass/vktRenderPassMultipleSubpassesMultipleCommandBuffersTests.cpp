@@ -388,10 +388,10 @@ MultipleSubpassesMultipleCommandBuffersTestInstance::MultipleSubpassesMultipleCo
             preImageBarriers.emplace_back(preImageBarrierA);
 
             const VkMemoryBarrier postMemoryBarrierA = {
-                VK_STRUCTURE_TYPE_MEMORY_BARRIER, // VkStructureType	sType;
-                nullptr,                          // const void*		pNext;
-                VK_ACCESS_TRANSFER_WRITE_BIT,     // VkAccessFlags	srcAccessMask;
-                VK_ACCESS_SHADER_READ_BIT         // VkAccessFlags	dstAccessMask;
+                VK_STRUCTURE_TYPE_MEMORY_BARRIER, // VkStructureType sType;
+                nullptr,                          // const void* pNext;
+                VK_ACCESS_TRANSFER_WRITE_BIT,     // VkAccessFlags srcAccessMask;
+                VK_ACCESS_SHADER_READ_BIT         // VkAccessFlags dstAccessMask;
             };
 
             // From VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL to VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL.
@@ -442,10 +442,10 @@ MultipleSubpassesMultipleCommandBuffersTestInstance::MultipleSubpassesMultipleCo
             preImageBarriers.emplace_back(preImageBarrierB);
 
             const VkMemoryBarrier postMemoryBarrierB = {
-                VK_STRUCTURE_TYPE_MEMORY_BARRIER, // VkStructureType	sType;
-                nullptr,                          // const void*		pNext;
-                VK_ACCESS_TRANSFER_WRITE_BIT,     // VkAccessFlags	srcAccessMask;
-                VK_ACCESS_SHADER_READ_BIT         // VkAccessFlags	dstAccessMask;
+                VK_STRUCTURE_TYPE_MEMORY_BARRIER, // VkStructureType sType;
+                nullptr,                          // const void* pNext;
+                VK_ACCESS_TRANSFER_WRITE_BIT,     // VkAccessFlags srcAccessMask;
+                VK_ACCESS_SHADER_READ_BIT         // VkAccessFlags dstAccessMask;
             };
 
             // From VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL to VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL.

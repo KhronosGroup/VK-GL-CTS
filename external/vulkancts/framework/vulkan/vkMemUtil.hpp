@@ -159,8 +159,8 @@ public:
     }
 
     virtual de::MovePtr<Allocation> allocate(const VkMemoryAllocateInfo &allocInfo, VkDeviceSize alignment) = 0;
-    virtual de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memRequirements,
-                                             MemoryRequirement requirement)                                 = 0;
+    virtual de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memRequirements, MemoryRequirement requirement,
+                                             uint64_t memoryOpaqueCaptureAddr = 0u)                         = 0;
     virtual de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memReqs, HostIntent intent,
                                              VkMemoryAllocateFlags allocFlags = 0u)                         = 0;
 };
@@ -180,14 +180,14 @@ public:
                     const OptionalOffsetParams &offsetParams = tcu::Nothing);
 
     de::MovePtr<Allocation> allocate(const VkMemoryAllocateInfo &allocInfo, VkDeviceSize alignment) override;
-    de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memRequirements,
-                                     MemoryRequirement requirement) override;
+    de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memRequirements, MemoryRequirement requirement,
+                                     uint64_t memoryOpaqueCaptureAddr = 0u) override;
     de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memReqs, HostIntent intent,
                                      VkMemoryAllocateFlags allocFlags = 0u) override;
 
 private:
     de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memRequirements, MemoryRequirement requirement,
-                                     const tcu::Maybe<HostIntent> &hostIntent);
+                                     const tcu::Maybe<HostIntent> &hostIntent, uint64_t memoryOpaqueCaptureAddr = 0u);
 
     const DeviceInterface &m_vk;
     const VkDevice m_device;

@@ -652,10 +652,10 @@ void memoryBarrier(const vk::DeviceInterface &vk, const vk::VkCommandBuffer cmdB
                    const vk::VkPipelineStageFlags srcStageMask, const vk::VkPipelineStageFlags dstStageMask)
 {
     VkMemoryBarrier barrier = {
-        VK_STRUCTURE_TYPE_MEMORY_BARRIER, // VkStructureType	sType;
-        nullptr,                          // const void*		pNext;
-        srcAccessMask,                    // VkAccessFlags	srcAccessMask;
-        dstAccessMask,                    // VkAccessFlags	dstAccessMask;
+        VK_STRUCTURE_TYPE_MEMORY_BARRIER, // VkStructureType sType;
+        nullptr,                          // const void* pNext;
+        srcAccessMask,                    // VkAccessFlags srcAccessMask;
+        dstAccessMask,                    // VkAccessFlags dstAccessMask;
     };
     vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, (VkDependencyFlags)0, 1u, &barrier, 0u, nullptr, 0u,
                           nullptr);
