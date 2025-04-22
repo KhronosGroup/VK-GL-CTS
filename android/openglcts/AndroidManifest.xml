@@ -18,7 +18,43 @@
 					   android:value="createTestActivity" />
 		</activity>
 
-		<!-- Activity that exports test run session parameters -->
+		<!-- Activity that exports ES 2.0 test run session parameters -->
+		<activity android:name="org.khronos.cts.ES20GetTestParamActivity"
+				  android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+				  android:label="ES20 CTS test params"
+				  android:configChanges="orientation|keyboardHidden|screenLayout"
+				  android:exported="true">
+			<meta-data android:name="android.app.lib_name"
+					   android:value="deqp" />
+			<meta-data android:name="android.app.func_name"
+					   android:value="createExportES20TestParamActivity" />
+		</activity>
+
+		<!-- Activity that exports ES 3.0 test run session parameters -->
+		<activity android:name="org.khronos.cts.ES30GetTestParamActivity"
+				  android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+				  android:label="ES30 CTS test params"
+				  android:configChanges="orientation|keyboardHidden|screenLayout"
+				  android:exported="true">
+			<meta-data android:name="android.app.lib_name"
+					   android:value="deqp" />
+			<meta-data android:name="android.app.func_name"
+					   android:value="createExportES30TestParamActivity" />
+		</activity>
+
+		<!-- Activity that exports ES 3.1 test run session parameters -->
+		<activity android:name="org.khronos.cts.ES31GetTestParamActivity"
+				  android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+				  android:label="ES31 CTS test params"
+				  android:configChanges="orientation|keyboardHidden|screenLayout"
+				  android:exported="true">
+			<meta-data android:name="android.app.lib_name"
+					   android:value="deqp" />
+			<meta-data android:name="android.app.func_name"
+					   android:value="createExportES31TestParamActivity" />
+		</activity>
+
+		<!-- Activity that exports ES3.2 test run session parameters -->
 		<activity android:name="org.khronos.cts.ES32GetTestParamActivity"
 				  android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
 				  android:label="ES32 CTS test params"

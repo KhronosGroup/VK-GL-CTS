@@ -76,6 +76,54 @@ JNIEXPORT void JNICALL createGL46CTSActivity(ANativeActivity *activity, void *sa
     createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::core(4, 6));
 }
 
+JNIEXPORT void JNICALL createExportES20TestParamActivity(ANativeActivity *activity, void *savedState,
+                                                         size_t savedStateSize)
+{
+    DE_UNREF(savedState && savedStateSize);
+    try
+    {
+        glcts::Android::GetTestParamActivity *obj =
+            new glcts::Android::GetTestParamActivity(activity, glu::ApiType::es(2, 0));
+        DE_UNREF(obj);
+    }
+    catch (const std::exception &e)
+    {
+        tcu::die("Failed to create activity: %s", e.what());
+    }
+}
+
+JNIEXPORT void JNICALL createExportES30TestParamActivity(ANativeActivity *activity, void *savedState,
+                                                         size_t savedStateSize)
+{
+    DE_UNREF(savedState && savedStateSize);
+    try
+    {
+        glcts::Android::GetTestParamActivity *obj =
+            new glcts::Android::GetTestParamActivity(activity, glu::ApiType::es(3, 0));
+        DE_UNREF(obj);
+    }
+    catch (const std::exception &e)
+    {
+        tcu::die("Failed to create activity: %s", e.what());
+    }
+}
+
+JNIEXPORT void JNICALL createExportES31TestParamActivity(ANativeActivity *activity, void *savedState,
+                                                         size_t savedStateSize)
+{
+    DE_UNREF(savedState && savedStateSize);
+    try
+    {
+        glcts::Android::GetTestParamActivity *obj =
+            new glcts::Android::GetTestParamActivity(activity, glu::ApiType::es(3, 1));
+        DE_UNREF(obj);
+    }
+    catch (const std::exception &e)
+    {
+        tcu::die("Failed to create activity: %s", e.what());
+    }
+}
+
 JNIEXPORT void JNICALL createExportES32TestParamActivity(ANativeActivity *activity, void *savedState,
                                                          size_t savedStateSize)
 {
