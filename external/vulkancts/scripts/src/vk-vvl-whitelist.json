@@ -1,21 +1,21 @@
 {
-	"$schema": "https://json-schema.org/draft/2020-12/schema",
-	"description": "The whitelist includes cases where certain validation errors or warnings are permitted. The message outlines the validation error/warning that is allowed, while the description provides a justification for why these errors/warnings are deemed acceptable.",
-	"whitelist": [
-		{
-			"path": "dEQP-VK.dynamic_rendering.*.suballocation.unused_clear_attachments.*",
-			"message": "Undefined-Value-ShaderInputNotProduced-DynamicRendering",
-			"description": "Warning about attachments not being written in FS, however, this behavior is intentional."
-		},
-		{
-			"path": "dEQP-VK.dynamic_rendering.*.unused_attachments.*",
-			"message": "Undefined-Value-ShaderInputNotProduced-DynamicRendering",
-			"description": "Warning about attachments not being written in FS, however, this behavior is intentional."
-		},
-		{
-			"path": "dEQP-VK.draw.renderpass.shader_layer.*_shader_1",
-			"message": "Undefined-Layer-Written",
-			"description": "Warning when writing to gl_Layer while FramebufferCreateInfo::layer is set to 1. In these cases, tests are designed to write exclusively to layer 0. However, VVL does not recognize this distinction and incorrectly assumes that gl_Layer should not be used when there's only a single layer."
-		}
-	]
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "description": "The whitelist includes cases where certain validation errors or warnings are permitted. The message outlines the validation error/warning that is allowed, while the description provides a justification for why these errors/warnings are deemed acceptable.",
+    "whitelist": [
+        {
+            "path": "dEQP-VK.dynamic_rendering.*.suballocation.unused_clear_attachments.*",
+            "message": "Undefined-Value-ShaderInputNotProduced-DynamicRendering",
+            "description": "Warning about attachments not being written in FS, however, this behavior is intentional."
+        },
+        {
+            "path": "dEQP-VK.dynamic_rendering.*.unused_attachments.*",
+            "message": "Undefined-Value-ShaderInputNotProduced-DynamicRendering",
+            "description": "Warning about attachments not being written in FS, however, this behavior is intentional."
+        },
+        {
+            "path": "dEQP-VK.draw.renderpass.shader_layer.*_shader_1",
+            "message": "Undefined-Layer-Written",
+            "description": "Warning when writing to gl_Layer while FramebufferCreateInfo::layer is set to 1. In these cases, tests are designed to write exclusively to layer 0. However, VVL does not recognize this distinction and incorrectly assumes that gl_Layer should not be used when there's only a single layer."
+        }
+    ]
 }

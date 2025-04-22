@@ -7651,6 +7651,14 @@ tcu::TestCaseGroup *createMultisampleTests(tcu::TestContext &testCtx, PipelineCo
         // Sampling from a multisampled image texture (texelFetch), checking supersample positions
         multisampleTests->addChild(createMultisampleStandardSamplePositionTests(testCtx, pipelineConstructionType));
 
+        // Sampling from a multisampled image texture (texelFetch), checking if samples are mapped correctly
+        if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC ||
+            pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY ||
+            pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV)
+        {
+            multisampleTests->addChild(createMultisampleSamplesMappingOrderTests(testCtx, pipelineConstructionType));
+        }
+
         // VK_AMD_shader_fragment_mask
         multisampleTests->addChild(createMultisampleShaderFragmentMaskTests(testCtx, pipelineConstructionType));
 
