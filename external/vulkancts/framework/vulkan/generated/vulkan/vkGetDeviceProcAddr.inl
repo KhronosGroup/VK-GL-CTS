@@ -505,6 +505,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetDeviceImageSubresourceLayoutKHR",
 		"vkGetImageSubresourceLayout2KHR",
 		"vkAntiLagUpdateAMD",
+		"vkWaitForPresent2KHR",
 		"vkCreateShadersEXT",
 		"vkDestroyShaderEXT",
 		"vkGetShaderBinaryDataEXT",

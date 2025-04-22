@@ -798,6 +798,7 @@ m_vk.getImageViewOpaqueCaptureDescriptorDataEXT = (GetImageViewOpaqueCaptureDesc
 m_vk.getSamplerOpaqueCaptureDescriptorDataEXT = (GetSamplerOpaqueCaptureDescriptorDataEXTFunc) GET_PROC_ADDR("vkGetSamplerOpaqueCaptureDescriptorDataEXT");
 m_vk.getAccelerationStructureOpaqueCaptureDescriptorDataEXT = (GetAccelerationStructureOpaqueCaptureDescriptorDataEXTFunc) GET_PROC_ADDR("vkGetAccelerationStructureOpaqueCaptureDescriptorDataEXT");
 m_vk.setDeviceMemoryPriorityEXT = (SetDeviceMemoryPriorityEXTFunc) GET_PROC_ADDR("vkSetDeviceMemoryPriorityEXT");
+m_vk.waitForPresent2KHR = (WaitForPresent2KHRFunc) GET_PROC_ADDR("vkWaitForPresent2KHR");
 m_vk.waitForPresentKHR = (WaitForPresentKHRFunc) GET_PROC_ADDR("vkWaitForPresentKHR");
 m_vk.createBufferCollectionFUCHSIA = (CreateBufferCollectionFUCHSIAFunc) GET_PROC_ADDR("vkCreateBufferCollectionFUCHSIA");
 m_vk.setBufferCollectionBufferConstraintsFUCHSIA = (SetBufferCollectionBufferConstraintsFUCHSIAFunc) GET_PROC_ADDR("vkSetBufferCollectionBufferConstraintsFUCHSIA");

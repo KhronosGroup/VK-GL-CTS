@@ -451,6 +451,7 @@ GetImageViewOpaqueCaptureDescriptorDataEXTFunc				getImageViewOpaqueCaptureDescr
 GetSamplerOpaqueCaptureDescriptorDataEXTFunc				getSamplerOpaqueCaptureDescriptorDataEXT;
 GetAccelerationStructureOpaqueCaptureDescriptorDataEXTFunc	getAccelerationStructureOpaqueCaptureDescriptorDataEXT;
 SetDeviceMemoryPriorityEXTFunc								setDeviceMemoryPriorityEXT;
+WaitForPresent2KHRFunc										waitForPresent2KHR;
 WaitForPresentKHRFunc										waitForPresentKHR;
 CreateBufferCollectionFUCHSIAFunc							createBufferCollectionFUCHSIA;
 SetBufferCollectionBufferConstraintsFUCHSIAFunc				setBufferCollectionBufferConstraintsFUCHSIA;

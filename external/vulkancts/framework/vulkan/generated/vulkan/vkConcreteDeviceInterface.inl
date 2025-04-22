@@ -451,6 +451,7 @@ virtual VkResult			getImageViewOpaqueCaptureDescriptorDataEXT				(VkDevice devic
 virtual VkResult			getSamplerOpaqueCaptureDescriptorDataEXT				(VkDevice device, const VkSamplerCaptureDescriptorDataInfoEXT* pInfo, void* pData) const;
 virtual VkResult			getAccelerationStructureOpaqueCaptureDescriptorDataEXT	(VkDevice device, const VkAccelerationStructureCaptureDescriptorDataInfoEXT* pInfo, void* pData) const;
 virtual void				setDeviceMemoryPriorityEXT								(VkDevice device, VkDeviceMemory memory, float priority) const;
+virtual VkResult			waitForPresent2KHR										(VkDevice device, VkSwapchainKHR swapchain, const VkPresentWait2InfoKHR* pPresentWait2Info) const;
 virtual VkResult			waitForPresentKHR										(VkDevice device, VkSwapchainKHR swapchain, uint64_t presentId, uint64_t timeout) const;
 virtual VkResult			createBufferCollectionFUCHSIA							(VkDevice device, const VkBufferCollectionCreateInfoFUCHSIA* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBufferCollectionFUCHSIA* pCollection) const;
 virtual VkResult			setBufferCollectionBufferConstraintsFUCHSIA				(VkDevice device, VkBufferCollectionFUCHSIA collection, const VkBufferConstraintsInfoFUCHSIA* pBufferConstraintsInfo) const;

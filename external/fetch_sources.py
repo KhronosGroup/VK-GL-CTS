@@ -338,9 +338,11 @@ PACKAGES = [
         "e7294a8ebed84f8c5bd3686c68dbe12a4e65b644",
         "spirv-headers"),
     GitRepo(
-        "https://github.com/KhronosGroup/Vulkan-Docs.git",
-        "git@github.com:KhronosGroup/Vulkan-Docs.git",
-        "645c59c70e826d9738b6bb103316c03d887dfed3",
+        # Branch for VK_KHR_present_id2 + VK_KHR_present_wait2.
+        # See <https://gitlab.khronos.org/vulkan/vulkan/-/merge_requests/5223>.
+        "https://gitlab.khronos.org/vulkan/vulkan.git",
+        "git@gitlab.khronos.org:vulkan/vulkan.git",
+        "a94f6b05fa14d0a4c32973bb9c4778741cb6d152",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",

@@ -633,6 +633,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetAccelerationStructureOpaqueCaptur
 typedef VKAPI_ATTR void					(VKAPI_CALL* SetDeviceMemoryPriorityEXTFunc)										(VkDevice device, VkDeviceMemory memory, float priority);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AcquireDrmDisplayEXTFunc)												(VkPhysicalDevice physicalDevice, int32_t drmFd, VkDisplayKHR display);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDrmDisplayEXTFunc)													(VkPhysicalDevice physicalDevice, int32_t drmFd, uint32_t connectorId, VkDisplayKHR* display);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* WaitForPresent2KHRFunc)												(VkDevice device, VkSwapchainKHR swapchain, const VkPresentWait2InfoKHR* pPresentWait2Info);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* WaitForPresentKHRFunc)													(VkDevice device, VkSwapchainKHR swapchain, uint64_t presentId, uint64_t timeout);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateBufferCollectionFUCHSIAFunc)										(VkDevice device, const VkBufferCollectionCreateInfoFUCHSIA* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBufferCollectionFUCHSIA* pCollection);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetBufferCollectionBufferConstraintsFUCHSIAFunc)						(VkDevice device, VkBufferCollectionFUCHSIA collection, const VkBufferConstraintsInfoFUCHSIA* pBufferConstraintsInfo);

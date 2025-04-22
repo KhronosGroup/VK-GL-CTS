@@ -2765,11 +2765,41 @@ struct VkPresentIdKHR
 	const uint64_t*	pPresentIds;
 };
 
+struct VkPhysicalDevicePresentId2FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		presentId2;
+};
+
+struct VkPresentId2KHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		swapchainCount;
+	const uint64_t*	pPresentIds;
+};
+
+struct VkPresentWait2InfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint64_t		presentId;
+	uint64_t		timeout;
+};
+
 struct VkPhysicalDevicePresentWaitFeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		presentWait;
+};
+
+struct VkPhysicalDevicePresentWait2FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		presentWait2;
 };
 
 struct VkHdrMetadataEXT
@@ -7269,6 +7299,20 @@ struct VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT
 	VkBool32		multisampledRenderToSingleSampled;
 };
 
+struct VkSurfaceCapabilitiesPresentId2KHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		presentId2Supported;
+};
+
+struct VkSurfaceCapabilitiesPresentWait2KHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		presentWait2Supported;
+};
+
 struct VkSubpassResolvePerformanceQueryEXT
 {
 	VkStructureType	sType;
@@ -10604,6 +10648,21 @@ struct VkConvertCooperativeVectorMatrixInfoNV
 	size_t								srcStride;
 	VkCooperativeVectorMatrixLayoutNV	dstLayout;
 	size_t								dstStride;
+};
+
+struct VkSetPresentConfigNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		numFramesPerBatch;
+	uint32_t		presentConfigFeedback;
+};
+
+struct VkPhysicalDevicePresentMeteringFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		presentMetering;
 };
 
 struct StdVideoH264SpsVuiFlags

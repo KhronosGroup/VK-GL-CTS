@@ -2366,6 +2366,11 @@ void DeviceDriver::setDeviceMemoryPriorityEXT (VkDevice device, VkDeviceMemory m
     m_vk.setDeviceMemoryPriorityEXT(device, memory, priority);
 }
 
+VkResult DeviceDriver::waitForPresent2KHR (VkDevice device, VkSwapchainKHR swapchain, const VkPresentWait2InfoKHR* pPresentWait2Info) const
+{
+    return m_vk.waitForPresent2KHR(device, swapchain, pPresentWait2Info);
+}
+
 VkResult DeviceDriver::waitForPresentKHR (VkDevice device, VkSwapchainKHR swapchain, uint64_t presentId, uint64_t timeout) const
 {
     return m_vk.waitForPresentKHR(device, swapchain, presentId, timeout);

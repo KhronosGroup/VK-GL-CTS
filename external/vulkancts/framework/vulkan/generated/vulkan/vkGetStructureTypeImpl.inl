@@ -963,9 +963,29 @@ template<> VkStructureType getStructureType<VkPresentIdKHR> (void)
 	return VK_STRUCTURE_TYPE_PRESENT_ID_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevicePresentId2FeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_2_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPresentId2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PRESENT_ID_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPresentWait2InfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PRESENT_WAIT_2_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDevicePresentWaitFeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePresentWait2FeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_2_FEATURES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkHdrMetadataEXT> (void)
@@ -3128,6 +3148,16 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceMultisampledRenderTo
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkSurfaceCapabilitiesPresentId2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_PRESENT_ID_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkSurfaceCapabilitiesPresentWait2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_PRESENT_WAIT_2_KHR;
+}
+
 template<> VkStructureType getStructureType<VkSubpassResolvePerformanceQueryEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_SUBPASS_RESOLVE_PERFORMANCE_QUERY_EXT;
@@ -4996,5 +5026,15 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceCooperativeVectorPro
 template<> VkStructureType getStructureType<VkConvertCooperativeVectorMatrixInfoNV> (void)
 {
 	return VK_STRUCTURE_TYPE_CONVERT_COOPERATIVE_VECTOR_MATRIX_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkSetPresentConfigNV> (void)
+{
+	return VK_STRUCTURE_TYPE_SET_PRESENT_CONFIG_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePresentMeteringFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_METERING_FEATURES_NV;
 }
 

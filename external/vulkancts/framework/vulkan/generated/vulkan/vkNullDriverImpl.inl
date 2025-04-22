@@ -3905,6 +3905,14 @@ VKAPI_ATTR VkResult VKAPI_CALL getDrmDisplayEXT (VkPhysicalDevice physicalDevice
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL waitForPresent2KHR (VkDevice device, VkSwapchainKHR swapchain, const VkPresentWait2InfoKHR* pPresentWait2Info)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pPresentWait2Info);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL waitForPresentKHR (VkDevice device, VkSwapchainKHR swapchain, uint64_t presentId, uint64_t timeout)
 {
 	DE_UNREF(device);
@@ -4969,6 +4977,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetSamplerOpaqueCaptureDescriptorDataEXT,					getSamplerOpaqueCaptureDescriptorDataEXT),
 	VK_NULL_FUNC_ENTRY(vkGetAccelerationStructureOpaqueCaptureDescriptorDataEXT,	getAccelerationStructureOpaqueCaptureDescriptorDataEXT),
 	VK_NULL_FUNC_ENTRY(vkSetDeviceMemoryPriorityEXT,								setDeviceMemoryPriorityEXT),
+	VK_NULL_FUNC_ENTRY(vkWaitForPresent2KHR,										waitForPresent2KHR),
 	VK_NULL_FUNC_ENTRY(vkWaitForPresentKHR,											waitForPresentKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateBufferCollectionFUCHSIA,								createBufferCollectionFUCHSIA),
 	VK_NULL_FUNC_ENTRY(vkSetBufferCollectionBufferConstraintsFUCHSIA,				setBufferCollectionBufferConstraintsFUCHSIA),

@@ -1014,7 +1014,11 @@ std::ostream&	operator<<	(std::ostream& s, const VkDescriptorUpdateTemplateCreat
 std::ostream&	operator<<	(std::ostream& s, const VkXYColorEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentIdFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentIdKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentId2FeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPresentId2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPresentWait2InfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentWaitFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentWait2FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkHdrMetadataEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkHdrVividDynamicMetadataHUAWEI& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayNativeHdrSurfaceCapabilitiesAMD& value);
@@ -1498,6 +1502,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkHostImageCopyDevicePerformanc
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLegacyDitheringFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSurfaceCapabilitiesPresentId2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSurfaceCapabilitiesPresentWait2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSubpassResolvePerformanceQueryEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMultisampledRenderToSingleSampledInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineProtectedAccessFeatures& value);
@@ -1896,6 +1902,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeVect
 std::ostream&	operator<<	(std::ostream& s, const VkCooperativeVectorPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeVectorPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkConvertCooperativeVectorMatrixInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSetPresentConfigNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentMeteringFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SpsVuiFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264HrdParameters& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SequenceParameterSetVui& value);

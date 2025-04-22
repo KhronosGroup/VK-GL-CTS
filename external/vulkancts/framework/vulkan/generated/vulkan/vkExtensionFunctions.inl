@@ -1452,6 +1452,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_present_id2")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_present_wait2")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_ray_tracing_position_fetch")
 	{
 		return;
@@ -1697,6 +1705,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_EXT_vertex_attribute_robustness")
+	{
+		return;
+	}
+	if (extName == "VK_NV_present_metering")
 	{
 		return;
 	}
@@ -3545,6 +3557,15 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkAntiLagUpdateAMD");
 		return;
 	}
+	if (extName == "VK_KHR_present_id2")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_present_wait2")
+	{
+		functions.push_back("vkWaitForPresent2KHR");
+		return;
+	}
 	if (extName == "VK_KHR_ray_tracing_position_fetch")
 	{
 		return;
@@ -3937,6 +3958,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_NV_present_metering")
+	{
+		return;
+	}
 	if (extName == "vulkan_video_codecs_common")
 	{
 		return;
@@ -4323,6 +4348,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_ANDROID_external_format_resolve",
 	"VK_KHR_maintenance5",
 	"VK_AMD_anti_lag",
+	"VK_KHR_present_id2",
+	"VK_KHR_present_wait2",
 	"VK_KHR_ray_tracing_position_fetch",
 	"VK_EXT_shader_object",
 	"VK_KHR_pipeline_binary",
@@ -4382,4 +4409,5 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_external_memory_metal",
 	"VK_KHR_depth_clamp_zero_one",
 	"VK_EXT_vertex_attribute_robustness",
+	"VK_NV_present_metering",
 };
