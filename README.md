@@ -92,7 +92,7 @@ Vulkan Video Samples
 --------------------------------
 
 In order to run the vulkan video *decode* test suite, you'll need to run the script `external/fetch_video_decode_samples.py`
-prior running any test suite such as `dEQP-VK.video.decode.*`. It will download the video clips  in `external/vulkancts/data/vulkan/video`.
+prior building and running any test suite such as `dEQP-VK.video.decode.*`. It will download the video clips  in `external/vulkancts/data/vulkan/video`.
 
 To run the vulkan video *encode* test suite, you'll need to run the script `external/fetch_video_encode_samples.py`
-prior running any test suite such as `dEQP-VK.video.encode.*`. It will download the video clips  in `external/vulkancts/data/vulkan/video`.
+prior building and running any test suite such as `dEQP-VK.video.encode.*`. It will download the video clips  in `external/vulkancts/data/vulkan/video`.
