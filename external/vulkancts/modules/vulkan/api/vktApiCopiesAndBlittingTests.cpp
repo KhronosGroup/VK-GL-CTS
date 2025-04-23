@@ -1798,7 +1798,7 @@ public:
 
         checkExtensionSupport(context, m_params.extensionFlags);
 
-        const VkPhysicalDeviceLimits limits = context.getDeviceProperties().limits;
+        const VkPhysicalDeviceLimits &limits = context.getDeviceProperties().limits;
         VkImageFormatProperties properties;
 
         if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
@@ -2640,7 +2640,7 @@ CopyImageToBuffer::CopyImageToBuffer(Context &context, TestParams testParams)
             1u,                                                                // uint32_t mipLevels;
             getArraySize(m_params.src.image),                                  // uint32_t arraySize;
             VK_SAMPLE_COUNT_1_BIT,                                             // uint32_t samples;
-            VK_IMAGE_TILING_OPTIMAL,                                           // VkImageTiling tiling;
+            m_params.src.image.tiling,                                         // VkImageTiling tiling;
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,                                         // VkSharingMode sharingMode;
             0u,                                                                // uint32_t queueFamilyIndexCount;
@@ -2844,7 +2844,27 @@ public:
 
     virtual void checkSupport(Context &context) const
     {
+        if (m_params.allocationKind == ALLOCATION_KIND_DEDICATED)
+        {
+            if (!context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation"))
+                TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
+        }
+
         checkExtensionSupport(context, m_params.extensionFlags);
+
+        VkImageFormatProperties properties;
+
+        if (context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
+                context.getPhysicalDevice(), m_params.src.image.format, m_params.src.image.imageType,
+                m_params.src.image.tiling, VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0,
+                &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+        {
+            TCU_THROW(NotSupportedError, "Format not supported");
+        }
+
+        if (properties.maxArrayLayers < getArraySize(m_params.src.image))
+            TCU_THROW(NotSupportedError, "maxArrayLayers too small");
+
         // Check queue transfer granularity requirements
         if (m_params.queueSelection == QueueSelectionOptions::TransferOnly)
         {
@@ -13157,442 +13177,465 @@ void add2dImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
 {
     tcu::TestContext &testCtx = group->getTestContext();
 
-    {
-        TestParams params;
-        params.src.image.imageType       = VK_IMAGE_TYPE_2D;
-        params.src.image.format          = VK_FORMAT_R8G8B8A8_UNORM;
-        params.src.image.extent          = defaultExtent;
-        params.src.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        params.dst.buffer.size           = defaultSize * defaultSize;
-        params.allocationKind            = testGroupParams->allocationKind;
-        params.extensionFlags            = testGroupParams->extensionFlags;
-        params.queueSelection            = testGroupParams->queueSelection;
-        params.useSparseBinding          = testGroupParams->useSparseBinding;
-        params.useGeneralLayout          = testGroupParams->useGeneralLayout;
-
-        const VkBufferImageCopy bufferImageCopy = {
-            0u,                 // VkDeviceSize bufferOffset;
-            0u,                 // uint32_t bufferRowLength;
-            0u,                 // uint32_t bufferImageHeight;
-            defaultSourceLayer, // VkImageSubresourceLayers imageSubresource;
-            {0, 0, 0},          // VkOffset3D imageOffset;
-            defaultExtent       // VkExtent3D imageExtent;
-        };
-        CopyRegion copyRegion;
-        copyRegion.bufferImageCopy = bufferImageCopy;
-
-        params.regions.push_back(copyRegion);
-
-        group->addChild(new CopyImageToBufferTestCase(testCtx, "whole", params));
-    }
-
-    {
-        TestParams params;
-        params.src.image.imageType       = VK_IMAGE_TYPE_2D;
-        params.src.image.format          = VK_FORMAT_R8G8B8A8_UNORM;
-        params.src.image.extent          = defaultExtent;
-        params.src.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        params.dst.buffer.size           = defaultSize * defaultSize;
-        params.allocationKind            = testGroupParams->allocationKind;
-        params.extensionFlags            = testGroupParams->extensionFlags;
-        params.queueSelection            = testGroupParams->queueSelection;
-        params.useSparseBinding          = testGroupParams->useSparseBinding;
-        params.useGeneralLayout          = testGroupParams->useGeneralLayout;
-
-        const VkBufferImageCopy bufferImageCopy = {
-            defaultSize * defaultHalfSize,               // VkDeviceSize bufferOffset;
-            0u,                                          // uint32_t bufferRowLength;
-            0u,                                          // uint32_t bufferImageHeight;
-            defaultSourceLayer,                          // VkImageSubresourceLayers imageSubresource;
-            {defaultQuarterSize, defaultQuarterSize, 0}, // VkOffset3D imageOffset;
-            defaultHalfExtent                            // VkExtent3D imageExtent;
-        };
-        CopyRegion copyRegion;
-        copyRegion.bufferImageCopy = bufferImageCopy;
-
-        params.regions.push_back(copyRegion);
-
-        group->addChild(new CopyImageToBufferTestCase(testCtx, "buffer_offset", params));
-    }
-
-    if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
-    {
-        TestParams params;
-        params.src.image.imageType       = VK_IMAGE_TYPE_2D;
-        params.src.image.format          = VK_FORMAT_R8_UNORM;
-        params.src.image.extent          = defaultExtent;
-        params.src.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        params.dst.buffer.size           = defaultSize * defaultSize;
-        params.allocationKind            = testGroupParams->allocationKind;
-        params.extensionFlags            = testGroupParams->extensionFlags;
-        params.queueSelection            = testGroupParams->queueSelection;
-        params.useSparseBinding          = testGroupParams->useSparseBinding;
-        params.useGeneralLayout          = testGroupParams->useGeneralLayout;
-
-        const VkBufferImageCopy bufferImageCopy = {
-            defaultSize * defaultHalfSize + 1u,          // VkDeviceSize bufferOffset;
-            0u,                                          // uint32_t bufferRowLength;
-            0u,                                          // uint32_t bufferImageHeight;
-            defaultSourceLayer,                          // VkImageSubresourceLayers imageSubresource;
-            {defaultQuarterSize, defaultQuarterSize, 0}, // VkOffset3D imageOffset;
-            defaultHalfExtent                            // VkExtent3D imageExtent;
-        };
-        CopyRegion copyRegion;
-        copyRegion.bufferImageCopy = bufferImageCopy;
-
-        params.regions.push_back(copyRegion);
-
-        group->addChild(new CopyImageToBufferTestCase(testCtx, "buffer_offset_relaxed", params));
-    }
-
-    {
-        TestParams params;
-        params.src.image.imageType       = VK_IMAGE_TYPE_2D;
-        params.src.image.format          = VK_FORMAT_R8G8B8A8_UNORM;
-        params.src.image.extent          = defaultExtent;
-        params.src.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        params.dst.buffer.size           = defaultSize * defaultSize;
-        params.allocationKind            = testGroupParams->allocationKind;
-        params.extensionFlags            = testGroupParams->extensionFlags;
-        params.queueSelection            = testGroupParams->queueSelection;
-        params.useSparseBinding          = testGroupParams->useSparseBinding;
-        params.useGeneralLayout          = testGroupParams->useGeneralLayout;
-
-        const int pixelSize           = tcu::getPixelSize(mapVkFormat(params.src.image.format));
-        const VkDeviceSize bufferSize = pixelSize * params.dst.buffer.size;
-        const VkDeviceSize offsetSize = pixelSize * defaultQuarterSize * defaultQuarterSize;
-        uint32_t divisor              = 1;
-        for (VkDeviceSize offset = 0; offset < bufferSize - offsetSize; offset += offsetSize, ++divisor)
+    for (const auto format :
+         {VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8_UNORM, VK_FORMAT_R32G32B32_UINT, VK_FORMAT_R32G32B32_SFLOAT})
+        for (const auto tiling : {VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_TILING_LINEAR})
         {
-            const uint32_t bufferRowLength   = defaultQuarterSize;
-            const uint32_t bufferImageHeight = defaultQuarterSize;
-            const VkExtent3D imageExtent     = {defaultQuarterSize / divisor, defaultQuarterSize, 1};
-            DE_ASSERT(!bufferRowLength || bufferRowLength >= imageExtent.width);
-            DE_ASSERT(!bufferImageHeight || bufferImageHeight >= imageExtent.height);
-            DE_ASSERT(imageExtent.width * imageExtent.height * imageExtent.depth <= offsetSize);
+            const auto tcuFormat = mapVkFormat(format);
 
-            CopyRegion region;
-            const VkBufferImageCopy bufferImageCopy = {
-                offset,             // VkDeviceSize bufferOffset;
-                bufferRowLength,    // uint32_t bufferRowLength;
-                bufferImageHeight,  // uint32_t bufferImageHeight;
-                defaultSourceLayer, // VkImageSubresourceLayers imageSubresource;
-                {0, 0, 0},          // VkOffset3D imageOffset;
-                imageExtent         // VkExtent3D imageExtent;
-            };
-            region.bufferImageCopy = bufferImageCopy;
-            params.regions.push_back(region);
-        }
+            const auto testNameSuffix =
+                ((format != VK_FORMAT_R8G8B8A8_UNORM) ? ("_" + getFormatCaseName(format)) : std::string()) +
+                ((tiling == VK_IMAGE_TILING_LINEAR) ? "_linear" : "");
 
-        group->addChild(new CopyImageToBufferTestCase(testCtx, "regions", params));
-    }
+            {
+                TestParams params;
+                params.src.image.imageType       = VK_IMAGE_TYPE_2D;
+                params.src.image.format          = format;
+                params.src.image.extent          = defaultExtent;
+                params.src.image.tiling          = tiling;
+                params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                params.dst.buffer.size           = defaultSize * defaultSize;
+                params.allocationKind            = testGroupParams->allocationKind;
+                params.extensionFlags            = testGroupParams->extensionFlags;
+                params.queueSelection            = testGroupParams->queueSelection;
+                params.useSparseBinding          = testGroupParams->useSparseBinding;
+                params.useGeneralLayout          = testGroupParams->useGeneralLayout;
 
-    {
-        TestParams params;
-        params.src.image.imageType       = VK_IMAGE_TYPE_2D;
-        params.src.image.format          = VK_FORMAT_R8G8B8A8_UNORM;
-        params.src.image.extent          = defaultExtent;
-        params.src.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        params.dst.buffer.size           = (defaultHalfSize - 1u) * defaultSize + defaultHalfSize;
-        params.allocationKind            = testGroupParams->allocationKind;
-        params.extensionFlags            = testGroupParams->extensionFlags;
-        params.queueSelection            = testGroupParams->queueSelection;
-        params.useSparseBinding          = testGroupParams->useSparseBinding;
-        params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+                const VkBufferImageCopy bufferImageCopy = {
+                    0u,                 // VkDeviceSize bufferOffset;
+                    0u,                 // uint32_t bufferRowLength;
+                    0u,                 // uint32_t bufferImageHeight;
+                    defaultSourceLayer, // VkImageSubresourceLayers imageSubresource;
+                    {0, 0, 0},          // VkOffset3D imageOffset;
+                    defaultExtent       // VkExtent3D imageExtent;
+                };
+                CopyRegion copyRegion;
+                copyRegion.bufferImageCopy = bufferImageCopy;
 
-        const VkBufferImageCopy bufferImageCopy = {
-            0u,                                          // VkDeviceSize bufferOffset;
-            defaultSize,                                 // uint32_t bufferRowLength;
-            defaultSize,                                 // uint32_t bufferImageHeight;
-            defaultSourceLayer,                          // VkImageSubresourceLayers imageSubresource;
-            {defaultQuarterSize, defaultQuarterSize, 0}, // VkOffset3D imageOffset;
-            defaultHalfExtent                            // VkExtent3D imageExtent;
-        };
-        CopyRegion copyRegion;
-        copyRegion.bufferImageCopy = bufferImageCopy;
+                params.regions.push_back(copyRegion);
 
-        params.regions.push_back(copyRegion);
+                group->addChild(new CopyImageToBufferTestCase(testCtx, "whole" + testNameSuffix, params));
+            }
 
-        group->addChild(new CopyImageToBufferTestCase(testCtx, "tightly_sized_buffer", params));
-    }
+            {
+                TestParams params;
+                params.src.image.imageType       = VK_IMAGE_TYPE_2D;
+                params.src.image.format          = format;
+                params.src.image.extent          = defaultExtent;
+                params.src.image.tiling          = tiling;
+                params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                params.dst.buffer.size           = defaultSize * defaultSize;
+                params.allocationKind            = testGroupParams->allocationKind;
+                params.extensionFlags            = testGroupParams->extensionFlags;
+                params.queueSelection            = testGroupParams->queueSelection;
+                params.useSparseBinding          = testGroupParams->useSparseBinding;
+                params.useGeneralLayout          = testGroupParams->useGeneralLayout;
 
-    {
-        TestParams params;
-        uint32_t bufferImageHeight       = defaultSize + 1u;
-        params.src.image.imageType       = VK_IMAGE_TYPE_2D;
-        params.src.image.format          = VK_FORMAT_R8G8B8A8_UNORM;
-        params.src.image.extent          = defaultExtent;
-        params.src.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        params.dst.buffer.size           = bufferImageHeight * defaultSize;
-        params.allocationKind            = testGroupParams->allocationKind;
-        params.extensionFlags            = testGroupParams->extensionFlags;
-        params.queueSelection            = testGroupParams->queueSelection;
-        params.useSparseBinding          = testGroupParams->useSparseBinding;
-        params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+                const auto bufferOffset = de::roundUp(defaultSize * defaultHalfSize, tcu::getPixelSize(tcuFormat));
 
-        const VkBufferImageCopy bufferImageCopy = {
-            0u,                 // VkDeviceSize bufferOffset;
-            defaultSize,        // uint32_t bufferRowLength;
-            bufferImageHeight,  // uint32_t bufferImageHeight;
-            defaultSourceLayer, // VkImageSubresourceLayers imageSubresource;
-            {0, 0, 0},          // VkOffset3D imageOffset;
-            defaultExtent       // VkExtent3D imageExtent;
-        };
-        CopyRegion copyRegion;
-        copyRegion.bufferImageCopy = bufferImageCopy;
+                const VkBufferImageCopy bufferImageCopy = {
+                    static_cast<VkDeviceSize>(bufferOffset),     // VkDeviceSize bufferOffset;
+                    0u,                                          // uint32_t bufferRowLength;
+                    0u,                                          // uint32_t bufferImageHeight;
+                    defaultSourceLayer,                          // VkImageSubresourceLayers imageSubresource;
+                    {defaultQuarterSize, defaultQuarterSize, 0}, // VkOffset3D imageOffset;
+                    defaultHalfExtent                            // VkExtent3D imageExtent;
+                };
+                CopyRegion copyRegion;
+                copyRegion.bufferImageCopy = bufferImageCopy;
 
-        params.regions.push_back(copyRegion);
+                params.regions.push_back(copyRegion);
 
-        group->addChild(new CopyImageToBufferTestCase(testCtx, "larger_buffer", params));
-    }
+                group->addChild(new CopyImageToBufferTestCase(testCtx, "buffer_offset" + testNameSuffix, params));
+            }
 
-    {
-        TestParams params;
-        params.src.image.imageType       = VK_IMAGE_TYPE_2D;
-        params.src.image.format          = VK_FORMAT_R8G8B8A8_UNORM;
-        params.src.image.extent          = defaultExtent;
-        params.src.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        params.dst.buffer.size           = (defaultHalfSize - 1u) * defaultSize + defaultHalfSize + defaultQuarterSize;
-        params.allocationKind            = testGroupParams->allocationKind;
-        params.extensionFlags            = testGroupParams->extensionFlags;
-        params.queueSelection            = testGroupParams->queueSelection;
-        params.useSparseBinding          = testGroupParams->useSparseBinding;
-        params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+            if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
+            {
+                TestParams params;
+                params.src.image.imageType       = VK_IMAGE_TYPE_2D;
+                params.src.image.format          = format;
+                params.src.image.extent          = defaultExtent;
+                params.src.image.tiling          = tiling;
+                params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                params.dst.buffer.size           = defaultSize * defaultSize;
+                params.allocationKind            = testGroupParams->allocationKind;
+                params.extensionFlags            = testGroupParams->extensionFlags;
+                params.queueSelection            = testGroupParams->queueSelection;
+                params.useSparseBinding          = testGroupParams->useSparseBinding;
+                params.useGeneralLayout          = testGroupParams->useGeneralLayout;
 
-        const VkBufferImageCopy bufferImageCopy = {
-            defaultQuarterSize,                          // VkDeviceSize bufferOffset;
-            defaultSize,                                 // uint32_t bufferRowLength;
-            defaultSize,                                 // uint32_t bufferImageHeight;
-            defaultSourceLayer,                          // VkImageSubresourceLayers imageSubresource;
-            {defaultQuarterSize, defaultQuarterSize, 0}, // VkOffset3D imageOffset;
-            defaultHalfExtent                            // VkExtent3D imageExtent;
-        };
-        CopyRegion copyRegion;
-        copyRegion.bufferImageCopy = bufferImageCopy;
+                const auto bufferOffset = de::roundUp(defaultSize * defaultHalfSize + 1, tcu::getPixelSize(tcuFormat));
 
-        params.regions.push_back(copyRegion);
+                const VkBufferImageCopy bufferImageCopy = {
+                    static_cast<VkDeviceSize>(bufferOffset),     // VkDeviceSize bufferOffset;
+                    0u,                                          // uint32_t bufferRowLength;
+                    0u,                                          // uint32_t bufferImageHeight;
+                    defaultSourceLayer,                          // VkImageSubresourceLayers imageSubresource;
+                    {defaultQuarterSize, defaultQuarterSize, 0}, // VkOffset3D imageOffset;
+                    defaultHalfExtent                            // VkExtent3D imageExtent;
+                };
+                CopyRegion copyRegion;
+                copyRegion.bufferImageCopy = bufferImageCopy;
 
-        group->addChild(new CopyImageToBufferTestCase(testCtx, "tightly_sized_buffer_offset", params));
-    }
+                params.regions.push_back(copyRegion);
 
-    {
-        TestParams params;
-        uint32_t arrayLayers             = 16u;
-        params.src.image.imageType       = VK_IMAGE_TYPE_2D;
-        params.src.image.format          = VK_FORMAT_R8G8B8A8_UNORM;
-        params.src.image.extent          = defaultHalfExtent;
-        params.src.image.extent.depth    = arrayLayers;
-        params.src.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        params.dst.buffer.size           = defaultHalfSize * defaultHalfSize * arrayLayers;
-        params.allocationKind            = testGroupParams->allocationKind;
-        params.extensionFlags            = testGroupParams->extensionFlags;
-        params.queueSelection            = testGroupParams->queueSelection;
-        params.useSparseBinding          = testGroupParams->useSparseBinding;
-        params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+                group->addChild(
+                    new CopyImageToBufferTestCase(testCtx, "buffer_offset_relaxed" + testNameSuffix, params));
+            }
 
-        const int pixelSize = tcu::getPixelSize(mapVkFormat(params.src.image.format));
-        for (uint32_t arrayLayerNdx = 0; arrayLayerNdx < arrayLayers; arrayLayerNdx++)
-        {
-            const VkDeviceSize offset               = defaultHalfSize * defaultHalfSize * pixelSize * arrayLayerNdx;
-            const VkBufferImageCopy bufferImageCopy = {
-                offset, // VkDeviceSize bufferOffset;
-                0u,     // uint32_t bufferRowLength;
-                0u,     // uint32_t bufferImageHeight;
+            {
+                TestParams params;
+                params.src.image.imageType       = VK_IMAGE_TYPE_2D;
+                params.src.image.format          = format;
+                params.src.image.extent          = defaultExtent;
+                params.src.image.tiling          = tiling;
+                params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                params.dst.buffer.size           = defaultSize * defaultSize;
+                params.allocationKind            = testGroupParams->allocationKind;
+                params.extensionFlags            = testGroupParams->extensionFlags;
+                params.queueSelection            = testGroupParams->queueSelection;
+                params.useSparseBinding          = testGroupParams->useSparseBinding;
+                params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+
+                const int pixelSize           = tcu::getPixelSize(mapVkFormat(params.src.image.format));
+                const VkDeviceSize bufferSize = pixelSize * params.dst.buffer.size;
+                const VkDeviceSize offsetSize = pixelSize * defaultQuarterSize * defaultQuarterSize;
+                uint32_t divisor              = 1;
+                for (VkDeviceSize offset = 0; offset < bufferSize - offsetSize; offset += offsetSize, ++divisor)
                 {
+                    const uint32_t bufferRowLength   = defaultQuarterSize;
+                    const uint32_t bufferImageHeight = defaultQuarterSize;
+                    const VkExtent3D imageExtent     = {defaultQuarterSize / divisor, defaultQuarterSize, 1};
+                    DE_ASSERT(!bufferRowLength || bufferRowLength >= imageExtent.width);
+                    DE_ASSERT(!bufferImageHeight || bufferImageHeight >= imageExtent.height);
+                    DE_ASSERT(imageExtent.width * imageExtent.height * imageExtent.depth <= offsetSize);
+
+                    CopyRegion region;
+                    const VkBufferImageCopy bufferImageCopy = {
+                        offset,             // VkDeviceSize bufferOffset;
+                        bufferRowLength,    // uint32_t bufferRowLength;
+                        bufferImageHeight,  // uint32_t bufferImageHeight;
+                        defaultSourceLayer, // VkImageSubresourceLayers imageSubresource;
+                        {0, 0, 0},          // VkOffset3D imageOffset;
+                        imageExtent         // VkExtent3D imageExtent;
+                    };
+                    region.bufferImageCopy = bufferImageCopy;
+                    params.regions.push_back(region);
+                }
+
+                group->addChild(new CopyImageToBufferTestCase(testCtx, "regions" + testNameSuffix, params));
+            }
+
+            {
+                TestParams params;
+                params.src.image.imageType       = VK_IMAGE_TYPE_2D;
+                params.src.image.format          = format;
+                params.src.image.extent          = defaultExtent;
+                params.src.image.tiling          = tiling;
+                params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                params.dst.buffer.size           = (defaultHalfSize - 1u) * defaultSize + defaultHalfSize;
+                params.allocationKind            = testGroupParams->allocationKind;
+                params.extensionFlags            = testGroupParams->extensionFlags;
+                params.queueSelection            = testGroupParams->queueSelection;
+                params.useSparseBinding          = testGroupParams->useSparseBinding;
+                params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+
+                const VkBufferImageCopy bufferImageCopy = {
+                    0u,                                          // VkDeviceSize bufferOffset;
+                    defaultSize,                                 // uint32_t bufferRowLength;
+                    defaultSize,                                 // uint32_t bufferImageHeight;
+                    defaultSourceLayer,                          // VkImageSubresourceLayers imageSubresource;
+                    {defaultQuarterSize, defaultQuarterSize, 0}, // VkOffset3D imageOffset;
+                    defaultHalfExtent                            // VkExtent3D imageExtent;
+                };
+                CopyRegion copyRegion;
+                copyRegion.bufferImageCopy = bufferImageCopy;
+
+                params.regions.push_back(copyRegion);
+
+                group->addChild(
+                    new CopyImageToBufferTestCase(testCtx, "tightly_sized_buffer" + testNameSuffix, params));
+            }
+
+            {
+                TestParams params;
+                uint32_t bufferImageHeight       = defaultSize + 1u;
+                params.src.image.imageType       = VK_IMAGE_TYPE_2D;
+                params.src.image.format          = format;
+                params.src.image.extent          = defaultExtent;
+                params.src.image.tiling          = tiling;
+                params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                params.dst.buffer.size           = bufferImageHeight * defaultSize;
+                params.allocationKind            = testGroupParams->allocationKind;
+                params.extensionFlags            = testGroupParams->extensionFlags;
+                params.queueSelection            = testGroupParams->queueSelection;
+                params.useSparseBinding          = testGroupParams->useSparseBinding;
+                params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+
+                const VkBufferImageCopy bufferImageCopy = {
+                    0u,                 // VkDeviceSize bufferOffset;
+                    defaultSize,        // uint32_t bufferRowLength;
+                    bufferImageHeight,  // uint32_t bufferImageHeight;
+                    defaultSourceLayer, // VkImageSubresourceLayers imageSubresource;
+                    {0, 0, 0},          // VkOffset3D imageOffset;
+                    defaultExtent       // VkExtent3D imageExtent;
+                };
+                CopyRegion copyRegion;
+                copyRegion.bufferImageCopy = bufferImageCopy;
+
+                params.regions.push_back(copyRegion);
+
+                group->addChild(new CopyImageToBufferTestCase(testCtx, "larger_buffer" + testNameSuffix, params));
+            }
+
+            {
+                const auto bufferOffset = de::roundUp(defaultQuarterSize, tcu::getPixelSize(tcuFormat));
+
+                TestParams params;
+                params.src.image.imageType       = VK_IMAGE_TYPE_2D;
+                params.src.image.format          = format;
+                params.src.image.extent          = defaultExtent;
+                params.src.image.tiling          = tiling;
+                params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                params.dst.buffer.size  = (defaultHalfSize - 1u) * defaultSize + defaultHalfSize + bufferOffset;
+                params.allocationKind   = testGroupParams->allocationKind;
+                params.extensionFlags   = testGroupParams->extensionFlags;
+                params.queueSelection   = testGroupParams->queueSelection;
+                params.useSparseBinding = testGroupParams->useSparseBinding;
+                params.useGeneralLayout = testGroupParams->useGeneralLayout;
+
+                const VkBufferImageCopy bufferImageCopy = {
+                    static_cast<VkDeviceSize>(bufferOffset),     // VkDeviceSize bufferOffset;
+                    defaultSize,                                 // uint32_t bufferRowLength;
+                    defaultSize,                                 // uint32_t bufferImageHeight;
+                    defaultSourceLayer,                          // VkImageSubresourceLayers imageSubresource;
+                    {defaultQuarterSize, defaultQuarterSize, 0}, // VkOffset3D imageOffset;
+                    defaultHalfExtent                            // VkExtent3D imageExtent;
+                };
+                CopyRegion copyRegion;
+                copyRegion.bufferImageCopy = bufferImageCopy;
+
+                params.regions.push_back(copyRegion);
+
+                group->addChild(
+                    new CopyImageToBufferTestCase(testCtx, "tightly_sized_buffer_offset" + testNameSuffix, params));
+            }
+
+            {
+                TestParams params;
+                uint32_t arrayLayers             = 16u;
+                params.src.image.imageType       = VK_IMAGE_TYPE_2D;
+                params.src.image.format          = format;
+                params.src.image.extent          = defaultHalfExtent;
+                params.src.image.extent.depth    = arrayLayers;
+                params.src.image.tiling          = tiling;
+                params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                params.dst.buffer.size           = defaultHalfSize * defaultHalfSize * arrayLayers;
+                params.allocationKind            = testGroupParams->allocationKind;
+                params.extensionFlags            = testGroupParams->extensionFlags;
+                params.queueSelection            = testGroupParams->queueSelection;
+                params.useSparseBinding          = testGroupParams->useSparseBinding;
+                params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+
+                const int pixelSize = tcu::getPixelSize(mapVkFormat(params.src.image.format));
+                for (uint32_t arrayLayerNdx = 0; arrayLayerNdx < arrayLayers; arrayLayerNdx++)
+                {
+                    const VkDeviceSize offset = defaultHalfSize * defaultHalfSize * pixelSize * arrayLayerNdx;
+                    const VkBufferImageCopy bufferImageCopy = {
+                        offset, // VkDeviceSize bufferOffset;
+                        0u,     // uint32_t bufferRowLength;
+                        0u,     // uint32_t bufferImageHeight;
+                        {
+                            VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
+                            0u,                        // uint32_t mipLevel;
+                            arrayLayerNdx,             // uint32_t baseArrayLayer;
+                            1u,                        // uint32_t layerCount;
+                        },                             // VkImageSubresourceLayers imageSubresource;
+                        {0, 0, 0},                     // VkOffset3D imageOffset;
+                        defaultHalfExtent              // VkExtent3D imageExtent;
+                    };
+                    CopyRegion copyRegion;
+                    copyRegion.bufferImageCopy = bufferImageCopy;
+
+                    params.regions.push_back(copyRegion);
+                }
+                group->addChild(new CopyImageToBufferTestCase(testCtx, "array" + testNameSuffix, params));
+            }
+
+            {
+                TestParams params;
+                uint32_t arrayLayers             = 16u;
+                uint32_t imageBufferHeight       = defaultHalfSize + 1u;
+                params.src.image.imageType       = VK_IMAGE_TYPE_2D;
+                params.src.image.format          = format;
+                params.src.image.extent          = defaultHalfExtent;
+                params.src.image.extent.depth    = arrayLayers;
+                params.src.image.tiling          = tiling;
+                params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                params.dst.buffer.size           = defaultHalfSize * imageBufferHeight * arrayLayers;
+                params.allocationKind            = testGroupParams->allocationKind;
+                params.extensionFlags            = testGroupParams->extensionFlags;
+                params.queueSelection            = testGroupParams->queueSelection;
+                params.useSparseBinding          = testGroupParams->useSparseBinding;
+                params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+
+                const int pixelSize = tcu::getPixelSize(mapVkFormat(params.src.image.format));
+                for (uint32_t arrayLayerNdx = 0; arrayLayerNdx < arrayLayers; arrayLayerNdx++)
+                {
+                    const VkDeviceSize offset = defaultHalfSize * imageBufferHeight * pixelSize * arrayLayerNdx;
+                    const VkBufferImageCopy bufferImageCopy = {
+                        offset,            // VkDeviceSize bufferOffset;
+                        0u,                // uint32_t bufferRowLength;
+                        imageBufferHeight, // uint32_t bufferImageHeight;
+                        {
+                            VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
+                            0u,                        // uint32_t mipLevel;
+                            arrayLayerNdx,             // uint32_t baseArrayLayer;
+                            1u,                        // uint32_t layerCount;
+                        },                             // VkImageSubresourceLayers imageSubresource;
+                        {0, 0, 0},                     // VkOffset3D imageOffset;
+                        defaultHalfExtent              // VkExtent3D imageExtent;
+                    };
+                    CopyRegion copyRegion;
+                    copyRegion.bufferImageCopy = bufferImageCopy;
+
+                    params.regions.push_back(copyRegion);
+                }
+                group->addChild(new CopyImageToBufferTestCase(testCtx, "array_larger_buffer" + testNameSuffix, params));
+            }
+
+            {
+                TestParams params;
+                uint32_t arrayLayers             = 16u;
+                params.src.image.imageType       = VK_IMAGE_TYPE_2D;
+                params.src.image.format          = format;
+                params.src.image.extent          = defaultHalfExtent;
+                params.src.image.extent.depth    = arrayLayers;
+                params.src.image.tiling          = tiling;
+                params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                params.dst.buffer.size           = defaultHalfSize * defaultHalfSize * arrayLayers;
+                params.allocationKind            = testGroupParams->allocationKind;
+                params.extensionFlags            = testGroupParams->extensionFlags;
+                params.queueSelection            = testGroupParams->queueSelection;
+                params.useSparseBinding          = testGroupParams->useSparseBinding;
+                params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+
+                const int pixelSize = tcu::getPixelSize(mapVkFormat(params.src.image.format));
+                for (uint32_t arrayLayerNdx = 0; arrayLayerNdx < arrayLayers; arrayLayerNdx++)
+                {
+                    const VkDeviceSize offset = defaultHalfSize * defaultHalfSize * pixelSize * arrayLayerNdx;
+                    const VkBufferImageCopy bufferImageCopy = {
+                        offset,          // VkDeviceSize bufferOffset;
+                        defaultHalfSize, // uint32_t bufferRowLength;
+                        defaultHalfSize, // uint32_t bufferImageHeight;
+                        {
+                            VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
+                            0u,                        // uint32_t mipLevel;
+                            arrayLayerNdx,             // uint32_t baseArrayLayer;
+                            1u,                        // uint32_t layerCount;
+                        },                             // VkImageSubresourceLayers imageSubresource;
+                        {0, 0, 0},                     // VkOffset3D imageOffset;
+                        defaultHalfExtent              // VkExtent3D imageExtent;
+                    };
+                    CopyRegion copyRegion;
+                    copyRegion.bufferImageCopy = bufferImageCopy;
+
+                    params.regions.push_back(copyRegion);
+                }
+                group->addChild(
+                    new CopyImageToBufferTestCase(testCtx, "array_tightly_sized_buffer" + testNameSuffix, params));
+            }
+
+            {
+                TestParams params;
+                const uint32_t baseLayer         = 0u;
+                const uint32_t layerCount        = 16u;
+                params.src.image.imageType       = VK_IMAGE_TYPE_2D;
+                params.src.image.format          = format;
+                params.src.image.extent          = defaultHalfExtent;
+                params.src.image.extent.depth    = layerCount;
+                params.src.image.tiling          = tiling;
+                params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                params.src.image.fillMode        = FILL_MODE_RED;
+                params.dst.buffer.size           = defaultHalfSize * defaultHalfSize * layerCount;
+                params.dst.buffer.fillMode       = FILL_MODE_RED;
+                params.allocationKind            = testGroupParams->allocationKind;
+                params.extensionFlags            = testGroupParams->extensionFlags;
+                params.queueSelection            = testGroupParams->queueSelection;
+                params.useSparseBinding          = testGroupParams->useSparseBinding;
+                params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+                params.extensionFlags |= MAINTENANCE_5;
+
+                const VkImageSubresourceLayers defaultLayer = {
                     VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
                     0u,                        // uint32_t mipLevel;
-                    arrayLayerNdx,             // uint32_t baseArrayLayer;
-                    1u,                        // uint32_t layerCount;
-                },                             // VkImageSubresourceLayers imageSubresource;
-                {0, 0, 0},                     // VkOffset3D imageOffset;
-                defaultHalfExtent              // VkExtent3D imageExtent;
-            };
-            CopyRegion copyRegion;
-            copyRegion.bufferImageCopy = bufferImageCopy;
+                    baseLayer,                 // uint32_t baseArrayLayer;
+                    VK_REMAINING_ARRAY_LAYERS  // uint32_t layerCount;
+                };
 
-            params.regions.push_back(copyRegion);
-        }
-        group->addChild(new CopyImageToBufferTestCase(testCtx, "array", params));
-    }
+                const VkBufferImageCopy bufferImageCopy = {
+                    0,                // VkDeviceSize bufferOffset;
+                    0,                // uint32_t bufferRowLength;
+                    0,                // uint32_t bufferImageHeight;
+                    defaultLayer,     // VkImageSubresourceLayers imageSubresource;
+                    {0, 0, 0},        // VkOffset3D imageOffset;
+                    defaultHalfExtent // VkExtent3D imageExtent;
+                };
 
-    {
-        TestParams params;
-        uint32_t arrayLayers             = 16u;
-        uint32_t imageBufferHeight       = defaultHalfSize + 1u;
-        params.src.image.imageType       = VK_IMAGE_TYPE_2D;
-        params.src.image.format          = VK_FORMAT_R8G8B8A8_UNORM;
-        params.src.image.extent          = defaultHalfExtent;
-        params.src.image.extent.depth    = arrayLayers;
-        params.src.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        params.dst.buffer.size           = defaultHalfSize * imageBufferHeight * arrayLayers;
-        params.allocationKind            = testGroupParams->allocationKind;
-        params.extensionFlags            = testGroupParams->extensionFlags;
-        params.queueSelection            = testGroupParams->queueSelection;
-        params.useSparseBinding          = testGroupParams->useSparseBinding;
-        params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+                CopyRegion copyRegion;
+                copyRegion.bufferImageCopy = bufferImageCopy;
 
-        const int pixelSize = tcu::getPixelSize(mapVkFormat(params.src.image.format));
-        for (uint32_t arrayLayerNdx = 0; arrayLayerNdx < arrayLayers; arrayLayerNdx++)
-        {
-            const VkDeviceSize offset               = defaultHalfSize * imageBufferHeight * pixelSize * arrayLayerNdx;
-            const VkBufferImageCopy bufferImageCopy = {
-                offset,            // VkDeviceSize bufferOffset;
-                0u,                // uint32_t bufferRowLength;
-                imageBufferHeight, // uint32_t bufferImageHeight;
-                {
+                params.regions.push_back(copyRegion);
+
+                group->addChild(
+                    new CopyImageToBufferTestCase(testCtx, "array_all_remaining_layers" + testNameSuffix, params));
+            }
+
+            {
+                TestParams params;
+                const uint32_t baseLayer         = 2u;
+                const uint32_t layerCount        = 16u;
+                params.src.image.imageType       = VK_IMAGE_TYPE_2D;
+                params.src.image.format          = format;
+                params.src.image.extent          = defaultHalfExtent;
+                params.src.image.extent.depth    = layerCount;
+                params.src.image.tiling          = tiling;
+                params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                params.src.image.fillMode        = FILL_MODE_RED;
+                params.dst.buffer.size           = defaultHalfSize * defaultHalfSize * layerCount;
+                params.dst.buffer.fillMode       = FILL_MODE_RED;
+                params.allocationKind            = testGroupParams->allocationKind;
+                params.extensionFlags            = testGroupParams->extensionFlags;
+                params.queueSelection            = testGroupParams->queueSelection;
+                params.useSparseBinding          = testGroupParams->useSparseBinding;
+                params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+                params.extensionFlags |= MAINTENANCE_5;
+
+                const VkImageSubresourceLayers defaultLayer = {
                     VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
                     0u,                        // uint32_t mipLevel;
-                    arrayLayerNdx,             // uint32_t baseArrayLayer;
-                    1u,                        // uint32_t layerCount;
-                },                             // VkImageSubresourceLayers imageSubresource;
-                {0, 0, 0},                     // VkOffset3D imageOffset;
-                defaultHalfExtent              // VkExtent3D imageExtent;
-            };
-            CopyRegion copyRegion;
-            copyRegion.bufferImageCopy = bufferImageCopy;
+                    baseLayer,                 // uint32_t baseArrayLayer;
+                    VK_REMAINING_ARRAY_LAYERS  // uint32_t layerCount;
+                };
 
-            params.regions.push_back(copyRegion);
+                const VkBufferImageCopy bufferImageCopy = {
+                    0,                // VkDeviceSize bufferOffset;
+                    0,                // uint32_t bufferRowLength;
+                    0,                // uint32_t bufferImageHeight;
+                    defaultLayer,     // VkImageSubresourceLayers imageSubresource;
+                    {0, 0, 0},        // VkOffset3D imageOffset;
+                    defaultHalfExtent // VkExtent3D imageExtent;
+                };
+
+                CopyRegion copyRegion;
+                copyRegion.bufferImageCopy = bufferImageCopy;
+
+                params.regions.push_back(copyRegion);
+
+                group->addChild(
+                    new CopyImageToBufferTestCase(testCtx, "array_not_all_remaining_layers" + testNameSuffix, params));
+            }
         }
-        group->addChild(new CopyImageToBufferTestCase(testCtx, "array_larger_buffer", params));
-    }
-
-    {
-        TestParams params;
-        uint32_t arrayLayers             = 16u;
-        params.src.image.imageType       = VK_IMAGE_TYPE_2D;
-        params.src.image.format          = VK_FORMAT_R8G8B8A8_UNORM;
-        params.src.image.extent          = defaultHalfExtent;
-        params.src.image.extent.depth    = arrayLayers;
-        params.src.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        params.dst.buffer.size           = defaultHalfSize * defaultHalfSize * arrayLayers;
-        params.allocationKind            = testGroupParams->allocationKind;
-        params.extensionFlags            = testGroupParams->extensionFlags;
-        params.queueSelection            = testGroupParams->queueSelection;
-        params.useSparseBinding          = testGroupParams->useSparseBinding;
-        params.useGeneralLayout          = testGroupParams->useGeneralLayout;
-
-        const int pixelSize = tcu::getPixelSize(mapVkFormat(params.src.image.format));
-        for (uint32_t arrayLayerNdx = 0; arrayLayerNdx < arrayLayers; arrayLayerNdx++)
-        {
-            const VkDeviceSize offset               = defaultHalfSize * defaultHalfSize * pixelSize * arrayLayerNdx;
-            const VkBufferImageCopy bufferImageCopy = {
-                offset,          // VkDeviceSize bufferOffset;
-                defaultHalfSize, // uint32_t bufferRowLength;
-                defaultHalfSize, // uint32_t bufferImageHeight;
-                {
-                    VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
-                    0u,                        // uint32_t mipLevel;
-                    arrayLayerNdx,             // uint32_t baseArrayLayer;
-                    1u,                        // uint32_t layerCount;
-                },                             // VkImageSubresourceLayers imageSubresource;
-                {0, 0, 0},                     // VkOffset3D imageOffset;
-                defaultHalfExtent              // VkExtent3D imageExtent;
-            };
-            CopyRegion copyRegion;
-            copyRegion.bufferImageCopy = bufferImageCopy;
-
-            params.regions.push_back(copyRegion);
-        }
-        group->addChild(new CopyImageToBufferTestCase(testCtx, "array_tightly_sized_buffer", params));
-    }
-
-    {
-        TestParams params;
-        const uint32_t baseLayer         = 0u;
-        const uint32_t layerCount        = 16u;
-        params.src.image.imageType       = VK_IMAGE_TYPE_2D;
-        params.src.image.format          = VK_FORMAT_R8G8B8A8_UNORM;
-        params.src.image.extent          = defaultHalfExtent;
-        params.src.image.extent.depth    = layerCount;
-        params.src.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        params.src.image.fillMode        = FILL_MODE_RED;
-        params.dst.buffer.size           = defaultHalfSize * defaultHalfSize * layerCount;
-        params.dst.buffer.fillMode       = FILL_MODE_RED;
-        params.allocationKind            = testGroupParams->allocationKind;
-        params.extensionFlags            = testGroupParams->extensionFlags;
-        params.queueSelection            = testGroupParams->queueSelection;
-        params.useSparseBinding          = testGroupParams->useSparseBinding;
-        params.useGeneralLayout          = testGroupParams->useGeneralLayout;
-        params.extensionFlags |= MAINTENANCE_5;
-
-        const VkImageSubresourceLayers defaultLayer = {
-            VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
-            0u,                        // uint32_t mipLevel;
-            baseLayer,                 // uint32_t baseArrayLayer;
-            VK_REMAINING_ARRAY_LAYERS  // uint32_t layerCount;
-        };
-
-        const VkBufferImageCopy bufferImageCopy = {
-            0,                // VkDeviceSize bufferOffset;
-            0,                // uint32_t bufferRowLength;
-            0,                // uint32_t bufferImageHeight;
-            defaultLayer,     // VkImageSubresourceLayers imageSubresource;
-            {0, 0, 0},        // VkOffset3D imageOffset;
-            defaultHalfExtent // VkExtent3D imageExtent;
-        };
-
-        CopyRegion copyRegion;
-        copyRegion.bufferImageCopy = bufferImageCopy;
-
-        params.regions.push_back(copyRegion);
-
-        group->addChild(new CopyImageToBufferTestCase(testCtx, "array_all_remaining_layers", params));
-    }
-
-    {
-        TestParams params;
-        const uint32_t baseLayer         = 2u;
-        const uint32_t layerCount        = 16u;
-        params.src.image.imageType       = VK_IMAGE_TYPE_2D;
-        params.src.image.format          = VK_FORMAT_R8G8B8A8_UNORM;
-        params.src.image.extent          = defaultHalfExtent;
-        params.src.image.extent.depth    = layerCount;
-        params.src.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        params.src.image.fillMode        = FILL_MODE_RED;
-        params.dst.buffer.size           = defaultHalfSize * defaultHalfSize * layerCount;
-        params.dst.buffer.fillMode       = FILL_MODE_RED;
-        params.allocationKind            = testGroupParams->allocationKind;
-        params.extensionFlags            = testGroupParams->extensionFlags;
-        params.queueSelection            = testGroupParams->queueSelection;
-        params.useSparseBinding          = testGroupParams->useSparseBinding;
-        params.useGeneralLayout          = testGroupParams->useGeneralLayout;
-        params.extensionFlags |= MAINTENANCE_5;
-
-        const VkImageSubresourceLayers defaultLayer = {
-            VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
-            0u,                        // uint32_t mipLevel;
-            baseLayer,                 // uint32_t baseArrayLayer;
-            VK_REMAINING_ARRAY_LAYERS  // uint32_t layerCount;
-        };
-
-        const VkBufferImageCopy bufferImageCopy = {
-            0,                // VkDeviceSize bufferOffset;
-            0,                // uint32_t bufferRowLength;
-            0,                // uint32_t bufferImageHeight;
-            defaultLayer,     // VkImageSubresourceLayers imageSubresource;
-            {0, 0, 0},        // VkOffset3D imageOffset;
-            defaultHalfExtent // VkExtent3D imageExtent;
-        };
-
-        CopyRegion copyRegion;
-        copyRegion.bufferImageCopy = bufferImageCopy;
-
-        params.regions.push_back(copyRegion);
-
-        group->addChild(new CopyImageToBufferTestCase(testCtx, "array_not_all_remaining_layers", params));
-    }
 
     // those tests are performed for all queues, no need to repeat them
     // when testGroupParams->queueSelection is set to TransferOnly
