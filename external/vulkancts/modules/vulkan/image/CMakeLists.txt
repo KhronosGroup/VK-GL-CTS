@@ -67,6 +67,7 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageHostImageCopyTests.hpp
 	)
 
+PCH(DEQP_VK_IMAGE_UTIL_SRCS ../pch.cpp)
 PCH(DEQP_VK_IMAGE_SRCS ../pch.cpp)
 
 add_library(deqp-vk-image-util STATIC ${DEQP_VK_VKSC_IMAGE_UTIL_SRCS})

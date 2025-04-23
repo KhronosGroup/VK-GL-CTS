@@ -34,6 +34,7 @@ set(DEQP_VK_YCBCR_SRCS
 	vktYCbCrImageOffsetTests.hpp
 	)
 
+PCH(DEQP_VK_YCBCR_UTIL_SRCS ../pch.cpp)
 PCH(DEQP_VK_YCBCR_SRCS ../pch.cpp)
 
 add_library(deqp-vk-ycbcr-util STATIC ${DEQP_VK_YCBCR_UTIL_SRCS})

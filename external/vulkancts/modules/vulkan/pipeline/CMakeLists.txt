@@ -165,6 +165,7 @@ set(DEQP_VK_PIPELINE_SRCS
 #vktPipelineCreationFeedbackTests.cpp			- missing VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT
 #vktPipelineExecutablePropertiesTests.cpp		- missing lots of things like VkPipelineExecutableStatisticKHR VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR
 
+PCH(DEQP_VK_PIPELINE_UTIL_SRCS ../pch.cpp)
 PCH(DEQP_VK_PIPELINE_SRCS ../pch.cpp)
 
 add_library(deqp-vk-pipeline-util STATIC ${DEQP_VK_VKSC_PIPELINE_UTIL_SRCS})

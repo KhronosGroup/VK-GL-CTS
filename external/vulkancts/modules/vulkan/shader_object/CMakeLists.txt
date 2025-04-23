@@ -32,6 +32,7 @@ set(DEQP_VK_SHADER_OBJECT_SRCS
 	vktShaderObjectMiscTests.hpp
 )
 
+PCH(DEQP_VK_SHADER_OBJECT_UTIL_SRCS ../pch.cpp)
 PCH(DEQP_VK_SHADER_OBJECT_SRCS ../pch.cpp)
 
 add_library(deqp-vk-shader-object-util STATIC ${DEQP_VK_SHADER_OBJECT_UTIL_SRCS})
