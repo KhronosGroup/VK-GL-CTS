@@ -765,7 +765,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
         buffers[i] = VkBufferSp(new Unique<VkBuffer>(createBuffer(vk, device, &bufferCreateInfo)));
 
         // query opaque capture address before binding memory
-        if (useKHR)
+        if (useKHR && m_data.bufType == BT_REPLAY)
         {
             bufferDeviceAddressInfo.buffer = **buffers[i];
             opaqueBufferAddrs[i]           = vk.getBufferOpaqueCaptureAddress(device, &bufferDeviceAddressInfo);
@@ -781,7 +781,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
         allocations[i] = AllocationSp(
             allocateExtended(vki, vk, physDevice, device, memReq, MemoryRequirement::HostVisible, &allocFlagsInfo));
 
-        if (useKHR)
+        if (useKHR && m_data.bufType == BT_REPLAY)
         {
             deviceMemoryOpaqueCaptureAddressInfo.memory = allocations[i]->getMemory();
             opaqueMemoryAddrs[i] =
