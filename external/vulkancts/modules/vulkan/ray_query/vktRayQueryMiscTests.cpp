@@ -238,6 +238,9 @@ tcu::TestStatus DynamicIndexingInstance::iterate(void)
     de::SharedPtr<TopLevelAccelerationStructure> topLevelAS(makeTopLevelAccelerationStructure().release());
     de::SharedPtr<BottomLevelAccelerationStructure> bottomLevelAS(makeBottomLevelAccelerationStructure().release());
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     // These need to match the origin and direction in the shader for a hit.
     const std::vector<tcu::Vec3> vertices = {
         tcu::Vec3(-1.0f, -1.0f, 1.0f), tcu::Vec3(-1.0f, 1.0f, 1.0f), tcu::Vec3(1.0f, -1.0f, 1.0f),
@@ -246,10 +249,10 @@ tcu::TestStatus DynamicIndexingInstance::iterate(void)
     };
 
     bottomLevelAS->addGeometry(vertices, /*triangles*/ true, VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
-    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     topLevelAS->addInstance(bottomLevelAS);
-    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     // Descriptor set layout.
     const VkShaderStageFlagBits stageBit = VK_SHADER_STAGE_COMPUTE_BIT;
@@ -489,21 +492,20 @@ public:
 
     HelperInvocationsInstance(Context &context, const HelperInvocationsParams &params);
     virtual TestStatus iterate(void) override;
-    static auto createSurface(const Points points, const uint32_t divX, const uint32_t divY,
-                              const HelperInvocationsParams::func2D_t &f2D, bool clockWise = false)
-        -> std::vector<Vec3>;
+    static std::vector<Vec3> createSurface(const Points points, const uint32_t divX, const uint32_t divY,
+                                           const HelperInvocationsParams::func2D_t &f2D, bool clockWise = false);
     VkImageCreateInfo makeImgInfo(uint32_t queueFamilyIndexCount, const uint32_t *pQueueFamilyIndices) const;
     Move<VkPipeline> makePipeline(const DeviceInterface &vk, const VkDevice device,
                                   const VkPipelineLayout pipelineLayout, const VkShaderModule vertexShader,
                                   const VkShaderModule fragmentShader, const VkRenderPass renderPass) const;
-    auto makeResultBuff(const DeviceInterface &vk, const VkDevice device, Allocator &allocator) const
-        -> de::MovePtr<BufferWithMemory>;
-    auto makeAttribBuff(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
-                        const std::vector<Vec3> &vertices, const std::vector<Vec3> &coords,
-                        const std::vector<Vec3> &centers) const -> de::MovePtr<BufferWithMemory>;
-    auto createAccStructs(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
-                          const VkCommandBuffer cmdBuffer, const std::vector<Vec3> coords) const
-        -> TopLevelAccelerationStructurePtr;
+    de::MovePtr<BufferWithMemory> makeResultBuff(const DeviceInterface &vk, const VkDevice device,
+                                                 Allocator &allocator) const;
+    de::MovePtr<BufferWithMemory> makeAttribBuff(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
+                                                 const std::vector<Vec3> &vertices, const std::vector<Vec3> &coords,
+                                                 const std::vector<Vec3> &centers) const;
+    TopLevelAccelerationStructurePtr createAccStructs(const DeviceInterface &vk, const VkDevice device,
+                                                      Allocator &allocator, const VkCommandBuffer cmdBuffer,
+                                                      const std::vector<Vec3> coords) const;
 
 protected:
     bool verifyResult(const DeviceInterface &vk, const VkDevice device, const BufferWithMemory &buffer) const;
@@ -831,13 +833,16 @@ de::MovePtr<TopLevelAccelerationStructure> HelperInvocationsInstance::createAccS
     de::MovePtr<TopLevelAccelerationStructure> tlas     = makeTopLevelAccelerationStructure();
     de::MovePtr<BottomLevelAccelerationStructure> blas  = makeBottomLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     blas->setBuildType(buildType);
     blas->addGeometry(coords, true, VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
-    blas->createAndBuild(vk, device, cmdBuffer, allocator);
+    blas->createAndBuild(vk, device, cmdBuffer, allocator, bufferProps);
 
     tlas->setBuildType(buildType);
     tlas->addInstance(de::SharedPtr<BottomLevelAccelerationStructure>(blas.release()));
-    tlas->createAndBuild(vk, device, cmdBuffer, allocator);
+    tlas->createAndBuild(vk, device, cmdBuffer, allocator, bufferProps);
 
     return tlas;
 }
@@ -1140,11 +1145,15 @@ tcu::TestStatus reuseScratchBufferInstance(Context &context)
     blasPool.batchBuild(ctx.vkd, ctx.device, cmdBuffer);
 
     const auto tlas = makeTopLevelAccelerationStructure();
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     tlas->setInstanceCount(blasCount);
     for (const auto &blas : blasPool.structures())
         tlas->addInstance(blas, identityMatrix3x4, 0, 0xFFu, 0u,
                           VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR);
-    tlas->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator);
+    tlas->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator, bufferProps);
 
     // Create color buffer.
     const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM; // Must match the shader declaration.

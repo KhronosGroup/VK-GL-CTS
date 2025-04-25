@@ -123,6 +123,7 @@ typedef enum
     TT_NEGATE,
     TT_MATRIXTIMESSCALAR,
     TT_FUNC,
+    TT_FUNC_CONST_IN,
     TT_CLAMPCONSTANT,
     TT_CLAMPTOEDGE,
     TT_CLAMPREPEAT,
@@ -1271,8 +1272,11 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     if (m_data.testType == TT_CONSTANT)
         css << "const " << outputMatType.str() << " matConst = " << outputMatType.str() << "(1.0);\n";
 
-    if (m_data.testType == TT_FUNC)
-        css << matAType.str() << " f(" << matAType.str() << " m) { return -m; }\n";
+    if (m_data.testType == TT_FUNC || m_data.testType == TT_FUNC_CONST_IN)
+    {
+        std::string qual = m_data.testType == TT_FUNC_CONST_IN ? "const in " : "";
+        css << matAType.str() << " f(" << qual << matAType.str() << " m) { return -m; }\n";
+    }
 
     if (m_data.testType == TT_PER_ELEMENT_OP || m_data.testType == TT_PER_ELEMENT_OP_MAT)
     {
@@ -1508,6 +1512,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
                 case TT_CONVERT:
                 case TT_NEGATE:
                 case TT_FUNC:
+                case TT_FUNC_CONST_IN:
                 case TT_MATRIXTIMESSCALAR:
                 case TT_MULTICOMPONENT_LOAD:
                 case TT_MULTICOMPONENT_SAVE:
@@ -1831,6 +1836,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
         css << "   matO = -matA;\n";
         break;
     case TT_FUNC:
+    case TT_FUNC_CONST_IN:
         css << "   matO = f(matA);\n";
         break;
     case TT_CLAMPTOEDGE:
@@ -3056,6 +3062,8 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
         uint32_t strides[4]; // in elements
         uint32_t loadStrides[4];
         uint32_t totalElements[4];
+        size_t sharedMemoryUsage[4];
+        size_t totalSharedMemoryUsage = 0;
 
         for (uint32_t i = 0; i < 5; ++i)
         {
@@ -3072,6 +3080,18 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                 }
                 loadStrides[i]   = strides[i];
                 totalElements[i] = strides[i] * (m_data.colMajor ? dims[i].cols : dims[i].rows) * m_data.workgroupsY;
+                sharedMemoryUsage[i] = dims[i].cols * dims[i].rows * m_data.subgroupsPerWorkgroupX *
+                                       m_data.subgroupsPerWorkgroupY * elementSize[i] *
+                                       ((i < 2) ? m_data.inputComponentCount : m_data.outputComponentCount);
+
+                // Check there is enough shared memory supported
+                if ((m_data.useType != UT_NV) &&
+                    ((m_data.storageClass == SC_WORKGROUP) || (m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)))
+                {
+                    totalSharedMemoryUsage += sharedMemoryUsage[i];
+                    if (totalSharedMemoryUsage > vkproperties.limits.maxComputeSharedMemorySize)
+                        throw tcu::NotSupportedError("Not enough shared memory supported.");
+                }
 
                 if (m_data.testType == TT_MATRIXMULADD_DEQUANT && i < 2)
                 {
@@ -4033,6 +4053,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                     }
                     case TT_NEGATE:
                     case TT_FUNC:
+                    case TT_FUNC_CONST_IN:
                         if (output != -inputA)
                             res = QP_TEST_RESULT_FAIL;
                         break;
@@ -4795,6 +4816,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                     }
                     case TT_NEGATE:
                     case TT_FUNC:
+                    case TT_FUNC_CONST_IN:
                         if ((output & mask) != ((-(int32_t)inputA) & mask))
                             res = QP_TEST_RESULT_FAIL;
                         break;
@@ -5024,8 +5046,10 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
         {TT_NEGATE, "negate"},
         // OpMatrixTimesScalar
         {TT_MATRIXTIMESSCALAR, "matrixtimesscalar"},
-        // OpFunctionParameter
+        // OpFunctionParameter (pass by pointer)
         {TT_FUNC, "func"},
+        // OpFunctionParameter (pass by value)
+        {TT_FUNC_CONST_IN, "func_const_in"},
         // OpCooperativeMatrixMulAdd
         {TT_MATRIXMULADD, "matrixmuladd"},
         // OpCompositeConstruct w/array

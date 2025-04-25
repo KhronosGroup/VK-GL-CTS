@@ -56,6 +56,7 @@ template<> const char*	getTypeName<VkVideoSessionKHR>					(void) { return "VkVid
 template<> const char*	getTypeName<VkVideoSessionParametersKHR>		(void) { return "VkVideoSessionParametersKHR";		}
 template<> const char*	getTypeName<VkCudaModuleNV>						(void) { return "VkCudaModuleNV";					}
 template<> const char*	getTypeName<VkCudaFunctionNV>					(void) { return "VkCudaFunctionNV";					}
+template<> const char*	getTypeName<VkExternalComputeQueueNV>			(void) { return "VkExternalComputeQueueNV";			}
 
 namespace pt
 {
@@ -360,6 +361,7 @@ tcu::Format::Bitfield<32> getBufferUsageFlagsStr (VkBufferUsageFlags value)
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_MICROMAP_STORAGE_BIT_EXT,								"VK_BUFFER_USAGE_MICROMAP_STORAGE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_EXECUTION_GRAPH_SCRATCH_BIT_AMDX,						"VK_BUFFER_USAGE_EXECUTION_GRAPH_SCRATCH_BIT_AMDX"),
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER_BIT_EXT,			"VK_BUFFER_USAGE_PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER_BIT_EXT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_TILE_MEMORY_QCOM,										"VK_BUFFER_USAGE_TILE_MEMORY_QCOM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -952,7 +954,7 @@ tcu::Format::Bitfield<32> getImageCreateFlagsStr (VkImageCreateFlags value)
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT,		"VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV,							"VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT,							"VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT"),
-		tcu::Format::BitDesc(VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_QCOM,			"VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_QCOM"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_EXT,			"VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_EXT"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT,		"VK_IMAGE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT,					"VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT,	"VK_IMAGE_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT"),
@@ -1048,6 +1050,7 @@ tcu::Format::Bitfield<32> getImageUsageFlagsStr (VkImageUsageFlags value)
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_HOST_TRANSFER_BIT,								"VK_IMAGE_USAGE_HOST_TRANSFER_BIT"),
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR,	"VK_IMAGE_USAGE_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR"),
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR,				"VK_IMAGE_USAGE_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_TILE_MEMORY_QCOM,								"VK_IMAGE_USAGE_TILE_MEMORY_QCOM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1151,8 +1154,9 @@ tcu::Format::Bitfield<32> getMemoryHeapFlagsStr (VkMemoryHeapFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_MEMORY_HEAP_DEVICE_LOCAL_BIT,	"VK_MEMORY_HEAP_DEVICE_LOCAL_BIT"),
-		tcu::Format::BitDesc(VK_MEMORY_HEAP_MULTI_INSTANCE_BIT,	"VK_MEMORY_HEAP_MULTI_INSTANCE_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_HEAP_DEVICE_LOCAL_BIT,		"VK_MEMORY_HEAP_DEVICE_LOCAL_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_HEAP_MULTI_INSTANCE_BIT,		"VK_MEMORY_HEAP_MULTI_INSTANCE_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_HEAP_TILE_MEMORY_BIT_QCOM,	"VK_MEMORY_HEAP_TILE_MEMORY_BIT_QCOM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1179,8 +1183,8 @@ tcu::Format::Bitfield<32> getAccessFlagsStr (VkAccessFlags value)
 		tcu::Format::BitDesc(VK_ACCESS_HOST_WRITE_BIT,									"VK_ACCESS_HOST_WRITE_BIT"),
 		tcu::Format::BitDesc(VK_ACCESS_MEMORY_READ_BIT,									"VK_ACCESS_MEMORY_READ_BIT"),
 		tcu::Format::BitDesc(VK_ACCESS_MEMORY_WRITE_BIT,								"VK_ACCESS_MEMORY_WRITE_BIT"),
-		tcu::Format::BitDesc(VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_NV,					"VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_NV"),
-		tcu::Format::BitDesc(VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_NV,					"VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_NV"),
+		tcu::Format::BitDesc(VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_EXT,					"VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_EXT"),
+		tcu::Format::BitDesc(VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_EXT,				"VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT,		"VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_CONDITIONAL_RENDERING_READ_BIT_EXT,				"VK_ACCESS_CONDITIONAL_RENDERING_READ_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR,				"VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR"),
@@ -2113,6 +2117,12 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_CUDA_LAUNCH_INFO_NV:													return "VK_STRUCTURE_TYPE_CUDA_LAUNCH_INFO_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUDA_KERNEL_LAUNCH_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUDA_KERNEL_LAUNCH_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUDA_KERNEL_LAUNCH_PROPERTIES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUDA_KERNEL_LAUNCH_PROPERTIES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_SHADING_FEATURES_QCOM:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_SHADING_FEATURES_QCOM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_SHADING_PROPERTIES_QCOM:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_SHADING_PROPERTIES_QCOM";
+		case VK_STRUCTURE_TYPE_RENDER_PASS_TILE_SHADING_CREATE_INFO_QCOM:							return "VK_STRUCTURE_TYPE_RENDER_PASS_TILE_SHADING_CREATE_INFO_QCOM";
+		case VK_STRUCTURE_TYPE_PER_TILE_BEGIN_INFO_QCOM:											return "VK_STRUCTURE_TYPE_PER_TILE_BEGIN_INFO_QCOM";
+		case VK_STRUCTURE_TYPE_PER_TILE_END_INFO_QCOM:												return "VK_STRUCTURE_TYPE_PER_TILE_END_INFO_QCOM";
+		case VK_STRUCTURE_TYPE_DISPATCH_TILE_INFO_QCOM:												return "VK_STRUCTURE_TYPE_DISPATCH_TILE_INFO_QCOM";
 		case VK_STRUCTURE_TYPE_QUERY_LOW_LATENCY_SUPPORT_NV:										return "VK_STRUCTURE_TYPE_QUERY_LOW_LATENCY_SUPPORT_NV";
 		case VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECT_CREATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECT_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECTS_INFO_EXT:										return "VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECTS_INFO_EXT";
@@ -2293,9 +2303,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_BEGIN_INFO_ARM:									return "VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_BEGIN_INFO_ARM";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_INFO_ARM:											return "VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_INFO_ARM";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_SUBMIT_INFO_ARM:									return "VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_SUBMIT_INFO_ARM";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_QCOM:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_QCOM";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_QCOM:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_QCOM";
-		case VK_STRUCTURE_TYPE_SUBPASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_QCOM:					return "VK_STRUCTURE_TYPE_SUBPASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_QCOM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_EXT:				return "VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_FEATURES_NV";
@@ -2445,6 +2455,11 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_SET_DESCRIPTOR_BUFFER_OFFSETS_INFO_EXT:								return "VK_STRUCTURE_TYPE_SET_DESCRIPTOR_BUFFER_OFFSETS_INFO_EXT";
 		case VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_BUFFER_EMBEDDED_SAMPLERS_INFO_EXT:					return "VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_BUFFER_EMBEDDED_SAMPLERS_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_MEMORY_HEAP_FEATURES_QCOM:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_MEMORY_HEAP_FEATURES_QCOM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_MEMORY_HEAP_PROPERTIES_QCOM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_MEMORY_HEAP_PROPERTIES_QCOM";
+		case VK_STRUCTURE_TYPE_TILE_MEMORY_REQUIREMENTS_QCOM:										return "VK_STRUCTURE_TYPE_TILE_MEMORY_REQUIREMENTS_QCOM";
+		case VK_STRUCTURE_TYPE_TILE_MEMORY_BIND_INFO_QCOM:											return "VK_STRUCTURE_TYPE_TILE_MEMORY_BIND_INFO_QCOM";
+		case VK_STRUCTURE_TYPE_TILE_MEMORY_SIZE_INFO_QCOM:											return "VK_STRUCTURE_TYPE_TILE_MEMORY_SIZE_INFO_QCOM";
 		case VK_STRUCTURE_TYPE_DISPLAY_SURFACE_STEREO_CREATE_INFO_NV:								return "VK_STRUCTURE_TYPE_DISPLAY_SURFACE_STEREO_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_DISPLAY_MODE_STEREO_PROPERTIES_NV:									return "VK_STRUCTURE_TYPE_DISPLAY_MODE_STEREO_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_CAPABILITIES_KHR:						return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_CAPABILITIES_KHR";
@@ -2458,6 +2473,10 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_VIDEO_FORMAT_AV1_QUANTIZATION_MAP_PROPERTIES_KHR:					return "VK_STRUCTURE_TYPE_VIDEO_FORMAT_AV1_QUANTIZATION_MAP_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUANTIZATION_MAP_FEATURES_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUANTIZATION_MAP_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_EXTERNAL_COMPUTE_QUEUE_DEVICE_CREATE_INFO_NV:						return "VK_STRUCTURE_TYPE_EXTERNAL_COMPUTE_QUEUE_DEVICE_CREATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_EXTERNAL_COMPUTE_QUEUE_CREATE_INFO_NV:								return "VK_STRUCTURE_TYPE_EXTERNAL_COMPUTE_QUEUE_CREATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_EXTERNAL_COMPUTE_QUEUE_DATA_PARAMS_NV:								return "VK_STRUCTURE_TYPE_EXTERNAL_COMPUTE_QUEUE_DATA_PARAMS_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_COMPUTE_QUEUE_PROPERTIES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_COMPUTE_QUEUE_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMMAND_BUFFER_INHERITANCE_FEATURES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMMAND_BUFFER_INHERITANCE_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_FEATURES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_FEATURES_KHR";
@@ -2517,6 +2536,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_MEMORY_METAL_HANDLE_PROPERTIES_EXT:									return "VK_STRUCTURE_TYPE_MEMORY_METAL_HANDLE_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_MEMORY_GET_METAL_HANDLE_INFO_EXT:									return "VK_STRUCTURE_TYPE_MEMORY_GET_METAL_HANDLE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_SET_PRESENT_CONFIG_NV:												return "VK_STRUCTURE_TYPE_SET_PRESENT_CONFIG_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_METERING_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_METERING_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_RENDERING_END_INFO_EXT:												return "VK_STRUCTURE_TYPE_RENDERING_END_INFO_EXT";
 		default:																					return nullptr;
 	}
 }
@@ -2609,7 +2631,7 @@ tcu::Format::Bitfield<32> getPipelineStageFlagsStr (VkPipelineStageFlags value)
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_HOST_BIT,									"VK_PIPELINE_STAGE_HOST_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,							"VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,							"VK_PIPELINE_STAGE_ALL_COMMANDS_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV,					"VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_EXT,					"VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT,				"VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT,							"VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT,							"VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT"),
@@ -2785,6 +2807,7 @@ const char* getObjectTypeName (VkObjectType value)
 		case VK_OBJECT_TYPE_OPTICAL_FLOW_SESSION_NV:			return "VK_OBJECT_TYPE_OPTICAL_FLOW_SESSION_NV";
 		case VK_OBJECT_TYPE_SHADER_EXT:							return "VK_OBJECT_TYPE_SHADER_EXT";
 		case VK_OBJECT_TYPE_PIPELINE_BINARY_KHR:				return "VK_OBJECT_TYPE_PIPELINE_BINARY_KHR";
+		case VK_OBJECT_TYPE_EXTERNAL_COMPUTE_QUEUE_NV:			return "VK_OBJECT_TYPE_EXTERNAL_COMPUTE_QUEUE_NV";
 		case VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_EXT:		return "VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_EXT";
 		case VK_OBJECT_TYPE_INDIRECT_EXECUTION_SET_EXT:			return "VK_OBJECT_TYPE_INDIRECT_EXECUTION_SET_EXT";
 		default:												return nullptr;
@@ -2906,6 +2929,7 @@ tcu::Format::Bitfield<32> getSubpassDescriptionFlagsStr (VkSubpassDescriptionFla
 		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_EXT,	"VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_EXT"),
 		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_EXT,	"VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_EXT"),
 		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_ENABLE_LEGACY_DITHERING_BIT_EXT,						"VK_SUBPASS_DESCRIPTION_ENABLE_LEGACY_DITHERING_BIT_EXT"),
+		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_TILE_SHADING_APRON_BIT_QCOM,							"VK_SUBPASS_DESCRIPTION_TILE_SHADING_APRON_BIT_QCOM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3500,8 +3524,8 @@ tcu::Format::Bitfield<64> getAccessFlags2Str (VkAccessFlags2 value)
 		tcu::Format::BitDesc(VK_ACCESS_2_HOST_WRITE_BIT,								"VK_ACCESS_2_HOST_WRITE_BIT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_MEMORY_READ_BIT,								"VK_ACCESS_2_MEMORY_READ_BIT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_MEMORY_WRITE_BIT,								"VK_ACCESS_2_MEMORY_WRITE_BIT"),
-		tcu::Format::BitDesc(VK_ACCESS_2_COMMAND_PREPROCESS_READ_BIT_NV,				"VK_ACCESS_2_COMMAND_PREPROCESS_READ_BIT_NV"),
-		tcu::Format::BitDesc(VK_ACCESS_2_COMMAND_PREPROCESS_WRITE_BIT_NV,				"VK_ACCESS_2_COMMAND_PREPROCESS_WRITE_BIT_NV"),
+		tcu::Format::BitDesc(VK_ACCESS_2_COMMAND_PREPROCESS_READ_BIT_EXT,				"VK_ACCESS_2_COMMAND_PREPROCESS_READ_BIT_EXT"),
+		tcu::Format::BitDesc(VK_ACCESS_2_COMMAND_PREPROCESS_WRITE_BIT_EXT,				"VK_ACCESS_2_COMMAND_PREPROCESS_WRITE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT,		"VK_ACCESS_2_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_CONDITIONAL_RENDERING_READ_BIT_EXT,			"VK_ACCESS_2_CONDITIONAL_RENDERING_READ_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR,			"VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR"),
@@ -3525,6 +3549,8 @@ tcu::Format::Bitfield<64> getAccessFlags2Str (VkAccessFlags2 value)
 		tcu::Format::BitDesc(VK_ACCESS_2_OPTICAL_FLOW_WRITE_BIT_NV,						"VK_ACCESS_2_OPTICAL_FLOW_WRITE_BIT_NV"),
 		tcu::Format::BitDesc(VK_ACCESS_2_MICROMAP_READ_BIT_EXT,							"VK_ACCESS_2_MICROMAP_READ_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_MICROMAP_WRITE_BIT_EXT,						"VK_ACCESS_2_MICROMAP_WRITE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_ACCESS_2_SHADER_TILE_ATTACHMENT_READ_BIT_QCOM,			"VK_ACCESS_2_SHADER_TILE_ATTACHMENT_READ_BIT_QCOM"),
+		tcu::Format::BitDesc(VK_ACCESS_2_SHADER_TILE_ATTACHMENT_WRITE_BIT_QCOM,			"VK_ACCESS_2_SHADER_TILE_ATTACHMENT_WRITE_BIT_QCOM"),
 	};
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3551,7 +3577,7 @@ tcu::Format::Bitfield<64> getPipelineStageFlags2Str (VkPipelineStageFlags2 value
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_HOST_BIT,									"VK_PIPELINE_STAGE_2_HOST_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,							"VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,							"VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_COMMAND_PREPROCESS_BIT_NV,					"VK_PIPELINE_STAGE_2_COMMAND_PREPROCESS_BIT_NV"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_COMMAND_PREPROCESS_BIT_EXT,				"VK_PIPELINE_STAGE_2_COMMAND_PREPROCESS_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_CONDITIONAL_RENDERING_BIT_EXT,				"VK_PIPELINE_STAGE_2_CONDITIONAL_RENDERING_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_EXT,						"VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_EXT,						"VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_EXT"),
@@ -4027,6 +4053,7 @@ tcu::Format::Bitfield<64> getBufferUsageFlags2Str (VkBufferUsageFlags2 value)
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_2_MICROMAP_STORAGE_BIT_EXT,								"VK_BUFFER_USAGE_2_MICROMAP_STORAGE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_2_EXECUTION_GRAPH_SCRATCH_BIT_AMDX,						"VK_BUFFER_USAGE_2_EXECUTION_GRAPH_SCRATCH_BIT_AMDX"),
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_2_PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER_BIT_EXT,				"VK_BUFFER_USAGE_2_PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER_BIT_EXT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_2_TILE_MEMORY_QCOM,										"VK_BUFFER_USAGE_2_TILE_MEMORY_QCOM"),
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_2_PREPROCESS_BUFFER_BIT_EXT,								"VK_BUFFER_USAGE_2_PREPROCESS_BUFFER_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
@@ -4203,6 +4230,16 @@ const char* getDepthClampModeEXTName (VkDepthClampModeEXT value)
 		case VK_DEPTH_CLAMP_MODE_USER_DEFINED_RANGE_EXT:	return "VK_DEPTH_CLAMP_MODE_USER_DEFINED_RANGE_EXT";
 		default:											return nullptr;
 	}
+}
+
+tcu::Format::Bitfield<32> getTileShadingRenderPassFlagsQCOMStr (VkTileShadingRenderPassFlagsQCOM value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_TILE_SHADING_RENDER_PASS_ENABLE_BIT_QCOM,				"VK_TILE_SHADING_RENDER_PASS_ENABLE_BIT_QCOM"),
+		tcu::Format::BitDesc(VK_TILE_SHADING_RENDER_PASS_PER_TILE_EXECUTION_BIT_QCOM,	"VK_TILE_SHADING_RENDER_PASS_PER_TILE_EXECUTION_BIT_QCOM"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
 const char* getCooperativeVectorMatrixLayoutNVName (VkCooperativeVectorMatrixLayoutNV value)
@@ -12730,9 +12767,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensity
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT& value)
 {
-	s << "VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM = {\n";
+	s << "VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tfragmentDensityMapOffset = " << value.fragmentDensityMapOffset << '\n';
@@ -12765,9 +12802,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensity
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT& value)
 {
-	s << "VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM = {\n";
+	s << "VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tfragmentDensityOffsetGranularity = " << value.fragmentDensityOffsetGranularity << '\n';
@@ -12785,9 +12822,9 @@ std::ostream& operator<< (std::ostream& s, const VkRenderPassFragmentDensityMapC
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkSubpassFragmentDensityMapOffsetEndInfoQCOM& value)
+std::ostream& operator<< (std::ostream& s, const VkRenderPassFragmentDensityMapOffsetEndInfoEXT& value)
 {
-	s << "VkSubpassFragmentDensityMapOffsetEndInfoQCOM = {\n";
+	s << "VkRenderPassFragmentDensityMapOffsetEndInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tfragmentDensityOffsetCount = " << value.fragmentDensityOffsetCount << '\n';
@@ -18089,6 +18126,15 @@ std::ostream& operator<< (std::ostream& s, const VkRenderingInfo& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkRenderingEndInfoEXT& value)
+{
+	s << "VkRenderingEndInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkRenderingAttachmentInfo& value)
 {
 	s << "VkRenderingAttachmentInfo = {\n";
@@ -18970,6 +19016,16 @@ std::ostream& operator<< (std::ostream& s, const VkTilePropertiesQCOM& value)
 	s << "\ttileSize = " << value.tileSize << '\n';
 	s << "\tapronSize = " << value.apronSize << '\n';
 	s << "\torigin = " << value.origin << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkTileMemoryBindInfoQCOM& value)
+{
+	s << "VkTileMemoryBindInfoQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemory = " << value.memory << '\n';
 	s << '}';
 	return s;
 }
@@ -19871,6 +19927,48 @@ std::ostream& operator<< (std::ostream& s, const VkBindMemoryStatus& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceTileMemoryHeapFeaturesQCOM& value)
+{
+	s << "VkPhysicalDeviceTileMemoryHeapFeaturesQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttileMemoryHeap = " << value.tileMemoryHeap << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceTileMemoryHeapPropertiesQCOM& value)
+{
+	s << "VkPhysicalDeviceTileMemoryHeapPropertiesQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tqueueSubmitBoundary = " << value.queueSubmitBoundary << '\n';
+	s << "\ttileBufferTransfers = " << value.tileBufferTransfers << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkTileMemorySizeInfoQCOM& value)
+{
+	s << "VkTileMemorySizeInfoQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsize = " << value.size << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkTileMemoryRequirementsQCOM& value)
+{
+	s << "VkTileMemoryRequirementsQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsize = " << value.size << '\n';
+	s << "\talignment = " << value.alignment << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkBindDescriptorSetsInfo& value)
 {
 	s << "VkBindDescriptorSetsInfo = {\n";
@@ -20694,6 +20792,142 @@ std::ostream& operator<< (std::ostream& s, const VkConvertCooperativeVectorMatri
 	s << "\tsrcStride = " << value.srcStride << '\n';
 	s << "\tdstLayout = " << value.dstLayout << '\n';
 	s << "\tdstStride = " << value.dstStride << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceTileShadingFeaturesQCOM& value)
+{
+	s << "VkPhysicalDeviceTileShadingFeaturesQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttileShading = " << value.tileShading << '\n';
+	s << "\ttileShadingFragmentStage = " << value.tileShadingFragmentStage << '\n';
+	s << "\ttileShadingColorAttachments = " << value.tileShadingColorAttachments << '\n';
+	s << "\ttileShadingDepthAttachments = " << value.tileShadingDepthAttachments << '\n';
+	s << "\ttileShadingStencilAttachments = " << value.tileShadingStencilAttachments << '\n';
+	s << "\ttileShadingInputAttachments = " << value.tileShadingInputAttachments << '\n';
+	s << "\ttileShadingSampledAttachments = " << value.tileShadingSampledAttachments << '\n';
+	s << "\ttileShadingPerTileDraw = " << value.tileShadingPerTileDraw << '\n';
+	s << "\ttileShadingPerTileDispatch = " << value.tileShadingPerTileDispatch << '\n';
+	s << "\ttileShadingDispatchTile = " << value.tileShadingDispatchTile << '\n';
+	s << "\ttileShadingApron = " << value.tileShadingApron << '\n';
+	s << "\ttileShadingAnisotropicApron = " << value.tileShadingAnisotropicApron << '\n';
+	s << "\ttileShadingAtomicOps = " << value.tileShadingAtomicOps << '\n';
+	s << "\ttileShadingImageProcessing = " << value.tileShadingImageProcessing << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceTileShadingPropertiesQCOM& value)
+{
+	s << "VkPhysicalDeviceTileShadingPropertiesQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxApronSize = " << value.maxApronSize << '\n';
+	s << "\tpreferNonCoherent = " << value.preferNonCoherent << '\n';
+	s << "\ttileGranularity = " << value.tileGranularity << '\n';
+	s << "\tmaxTileShadingRate = " << value.maxTileShadingRate << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderPassTileShadingCreateInfoQCOM& value)
+{
+	s << "VkRenderPassTileShadingCreateInfoQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getTileShadingRenderPassFlagsQCOMStr(value.flags) << '\n';
+	s << "\ttileApronSize = " << value.tileApronSize << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPerTileBeginInfoQCOM& value)
+{
+	s << "VkPerTileBeginInfoQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPerTileEndInfoQCOM& value)
+{
+	s << "VkPerTileEndInfoQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDispatchTileInfoQCOM& value)
+{
+	s << "VkDispatchTileInfoQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSetPresentConfigNV& value)
+{
+	s << "VkSetPresentConfigNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tnumFramesPerBatch = " << value.numFramesPerBatch << '\n';
+	s << "\tpresentConfigFeedback = " << value.presentConfigFeedback << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePresentMeteringFeaturesNV& value)
+{
+	s << "VkPhysicalDevicePresentMeteringFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpresentMetering = " << value.presentMetering << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExternalComputeQueueDeviceCreateInfoNV& value)
+{
+	s << "VkExternalComputeQueueDeviceCreateInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\treservedExternalQueues = " << value.reservedExternalQueues << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExternalComputeQueueCreateInfoNV& value)
+{
+	s << "VkExternalComputeQueueCreateInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpreferredQueue = " << value.preferredQueue << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExternalComputeQueueDataParamsNV& value)
+{
+	s << "VkExternalComputeQueueDataParamsNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdeviceIndex = " << value.deviceIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalComputeQueuePropertiesNV& value)
+{
+	s << "VkPhysicalDeviceExternalComputeQueuePropertiesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\texternalDataSize = " << value.externalDataSize << '\n';
+	s << "\tmaxExternalQueues = " << value.maxExternalQueues << '\n';
 	s << '}';
 	return s;
 }

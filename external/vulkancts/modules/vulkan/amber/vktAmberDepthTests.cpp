@@ -72,7 +72,12 @@ public:
                 &queuePriority                              // pQueuePriorities
             };
 
-            const char *ext = "VK_EXT_depth_clamp_zero_one";
+            // Unless some version of depth_clamp_zero_one is available then the test is not supported and
+            // this code is never run. Unfortunately we have to pass a supported extenion name to device
+            // creation, so we need to work out which one. Use the KHR if both are supported.
+            std::vector<std::string> devExts = ctx.getDeviceExtensions();
+            bool khrSupported = de::contains(devExts.begin(), devExts.end(), "VK_KHR_depth_clamp_zero_one");
+            const char *ext   = khrSupported ? "VK_KHR_depth_clamp_zero_one" : "VK_EXT_depth_clamp_zero_one";
 
             VkPhysicalDeviceFeatures2 features2 = initVulkanStructure();
 

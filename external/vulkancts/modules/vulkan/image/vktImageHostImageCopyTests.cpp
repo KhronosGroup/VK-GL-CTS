@@ -440,6 +440,9 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
             sampledImageUsage |= vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
         else if (m_parameters.intermediateLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
             sampledImageUsage |= vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        else if (m_parameters.intermediateLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
+                 m_parameters.intermediateLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
+            sampledImageUsage |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
         vk::VkImageCreateInfo createInfo = {
             vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType          sType
@@ -1242,6 +1245,9 @@ void HostImageCopyTestCase::checkSupport(vkt::Context &context) const
         usage |= vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     else if (m_parameters.intermediateLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
         usage |= vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    else if (m_parameters.intermediateLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
+             m_parameters.intermediateLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
+        usage |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
     vk::VkImageCreateFlags flags = 0u;
     if (m_parameters.sparse)
@@ -1445,10 +1451,15 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
 
     if (m_srcLayout == vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+    else if (m_srcLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
-    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+    else if (m_srcLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    else if (m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
+             m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL ||
+             m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
+             m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
+        createInfo.usage |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
     de::MovePtr<ImageWithMemory> image = de::MovePtr<ImageWithMemory>(
         new ImageWithMemory(vk, device, *allocatorWithOffset, createInfo, vk::MemoryRequirement::HostVisible));
@@ -1572,7 +1583,7 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
     vk::beginCommandBuffer(vk, *cmdBuffer);
     {
         auto imageMemoryBarrier =
-            makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, m_srcLayout,
+            makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_READ_BIT, m_srcLayout,
                                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **image, subresourceRange);
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_NONE, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
                               nullptr, 0u, nullptr, 1, &imageMemoryBarrier);
@@ -1773,6 +1784,11 @@ void PreinitializedTestCase::checkSupport(vkt::Context &context) const
         usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
     if (m_srcLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
         usage |= vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
+        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL ||
+        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
+        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
+        usage |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
     vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,                         // VkStructureType sType;
@@ -2309,6 +2325,16 @@ tcu::TestStatus IdenticalMemoryLayoutTestInstance::iterate(void)
                  ((hasDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : 0) | (hasStencil ? VK_IMAGE_ASPECT_STENCIL_BIT : 0)) :
                  VK_IMAGE_ASPECT_COLOR_BIT);
         const auto imageSRR = makeImageSubresourceRange(aspectMask, 0u, 1u, 0u, 1u);
+
+        // As copying depth/stencil requires queue that supports graphics operations we need to throw NotSupported for compute only implementations
+        if (hasDepth || hasStencil)
+        {
+            const bool isComputeOnly = m_context.getTestContext().getCommandLine().isComputeOnly();
+            if (isComputeOnly)
+            {
+                TCU_THROW(NotSupportedError, "Universal queue does not support graphics operations.");
+            }
+        }
 
         beginCommandBuffer(vk, *cmdbuffer);
         vk.cmdFillBuffer(*cmdbuffer, *baseBuffer, 0ull, VK_WHOLE_SIZE, 0u);
@@ -3007,6 +3033,11 @@ tcu::TestStatus DepthStencilHostImageCopyInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+uint32_t getMaxLayers(uint32_t arrayLayers, uint32_t srcLayerOffset, uint32_t dstLayerOffset)
+{
+    return de::max(srcLayerOffset, dstLayerOffset) + arrayLayers;
+}
+
 struct HostImageArrayCopyTestParameters
 {
     vk::VkFormat format;
@@ -3016,6 +3047,8 @@ struct HostImageArrayCopyTestParameters
     uint32_t srcLayerOffset;
     uint32_t dstLayerOffset;
     vk::VkImageTiling tiling;
+    bool remainingLayers;
+    bool cubeCompatible;
 };
 
 class HostImageArrayCopyTestInstance : public vkt::TestInstance
@@ -3040,7 +3073,7 @@ tcu::TestStatus HostImageArrayCopyTestInstance::iterate(void)
     auto &alloc               = m_context.getDefaultAllocator();
     tcu::TestLog &log         = m_context.getTestContext().getLog();
 
-    const uint32_t maxLayers   = de::max(m_params.srcLayerOffset, m_params.dstLayerOffset) + m_params.arrayLayers;
+    const uint32_t maxLayers   = getMaxLayers(m_params.arrayLayers, m_params.srcLayerOffset, m_params.dstLayerOffset);
     const uint32_t imageWidth  = m_params.offset.x + m_params.copyExtent.width;
     const uint32_t imageHeight = m_params.offset.y + m_params.copyExtent.height;
     const uint32_t imageDepth  = m_params.offset.z + m_params.copyExtent.depth;
@@ -3055,10 +3088,18 @@ tcu::TestStatus HostImageArrayCopyTestInstance::iterate(void)
         makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, m_params.srcLayerOffset, m_params.arrayLayers);
     const vk::VkImageSubresourceRange dstSubresourceRange =
         makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, m_params.dstLayerOffset, m_params.arrayLayers);
-    const vk::VkImageSubresourceLayers srcSubresourceLayers =
-        makeImageSubresourceLayers(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, m_params.srcLayerOffset, m_params.arrayLayers);
-    const vk::VkImageSubresourceLayers dstSubresourceLayers =
-        makeImageSubresourceLayers(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, m_params.dstLayerOffset, m_params.arrayLayers);
+
+    const bool srcRemainingLayers =
+        (m_params.remainingLayers && (m_params.srcLayerOffset + m_params.arrayLayers == maxLayers));
+    const bool dstRemainingLayers =
+        (m_params.remainingLayers && (m_params.dstLayerOffset + m_params.arrayLayers == maxLayers));
+    const uint32_t srcSubresourceLayerCount = (srcRemainingLayers ? VK_REMAINING_ARRAY_LAYERS : m_params.arrayLayers);
+    const uint32_t dstSubresourceLayerCount = (dstRemainingLayers ? VK_REMAINING_ARRAY_LAYERS : m_params.arrayLayers);
+
+    const vk::VkImageSubresourceLayers srcSubresourceLayers = makeImageSubresourceLayers(
+        vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, m_params.srcLayerOffset, srcSubresourceLayerCount);
+    const vk::VkImageSubresourceLayers dstSubresourceLayers = makeImageSubresourceLayers(
+        vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, m_params.dstLayerOffset, dstSubresourceLayerCount);
 
     std::vector<uint8_t> testData(bufferSize);
     std::vector<uint8_t> outputData(bufferSize);
@@ -3067,10 +3108,17 @@ tcu::TestStatus HostImageArrayCopyTestInstance::iterate(void)
     const vk::VkImageType imageType =
         (m_params.offset.z > 1 || m_params.copyExtent.depth > 1u) ? vk::VK_IMAGE_TYPE_3D : vk::VK_IMAGE_TYPE_2D;
 
+    VkImageCreateFlags createFlags = 0u;
+    if (m_params.cubeCompatible)
+    {
+        DE_ASSERT(maxLayers == 6u);
+        createFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    }
+
     vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,  // VkStructureType          sType
         nullptr,                                  // const void*              pNext
-        0u,                                       // VkImageCreateFlags       flags
+        createFlags,                              // VkImageCreateFlags       flags
         imageType,                                // VkImageType              imageType
         m_params.format,                          // VkFormat                 format
         {imageWidth, imageHeight, imageDepth},    // VkExtent3D               extent
@@ -3270,7 +3318,7 @@ void HostImageArrayCopyTestCase::checkSupport(vkt::Context &context) const
         vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
         TCU_THROW(NotSupportedError, "Image format not supported.");
 
-    uint32_t maxLayers = de::max(m_params.srcLayerOffset, m_params.dstLayerOffset) + m_params.arrayLayers;
+    const auto maxLayers = getMaxLayers(m_params.arrayLayers, m_params.srcLayerOffset, m_params.dstLayerOffset);
     if (imageFormatProperties.imageFormatProperties.maxArrayLayers < maxLayers)
         TCU_THROW(NotSupportedError, "Required image array layers not supported.");
 
@@ -3645,16 +3693,38 @@ void testGenerator(tcu::TestCaseGroup *group)
 
                     for (const auto &size : sizeArrayTests)
                     {
-                        HostImageArrayCopyTestParameters params;
-                        params.format         = formatTest.format;
-                        params.offset         = size.offset;
-                        params.copyExtent     = size.size;
-                        params.arrayLayers    = arrayLayersTest.arrayLayers;
-                        params.srcLayerOffset = arrayLayersTest.srcLayerOffset;
-                        params.dstLayerOffset = arrayLayersTest.dstLayerOffset;
-                        params.tiling         = tiling.tiling;
+                        for (const auto remainingLayers : {false, true})
+                        {
+                            // VUID-VkCopyMemoryToImageInfoEXT-dstImage-07983.
+                            if (remainingLayers && size.size.depth > 1u)
+                                continue;
 
-                        arrayLayersGroup->addChild(new HostImageArrayCopyTestCase(testCtx, size.name, params));
+                            for (const auto cubeCompatible : {false, true})
+                            {
+                                const auto maxLayers =
+                                    getMaxLayers(arrayLayersTest.arrayLayers, arrayLayersTest.srcLayerOffset,
+                                                 arrayLayersTest.dstLayerOffset);
+                                if (cubeCompatible && (maxLayers != 6u || size.size.width != size.size.height))
+                                    continue;
+
+                                HostImageArrayCopyTestParameters params;
+                                params.format          = formatTest.format;
+                                params.offset          = size.offset;
+                                params.copyExtent      = size.size;
+                                params.arrayLayers     = arrayLayersTest.arrayLayers;
+                                params.srcLayerOffset  = arrayLayersTest.srcLayerOffset;
+                                params.dstLayerOffset  = arrayLayersTest.dstLayerOffset;
+                                params.tiling          = tiling.tiling;
+                                params.remainingLayers = remainingLayers;
+                                params.cubeCompatible  = cubeCompatible;
+
+                                const auto testName = std::string(size.name) + (cubeCompatible ? "_cube" : "") +
+                                                      (remainingLayers ? "_remaining_layers" : "");
+
+                                arrayLayersGroup->addChild(
+                                    new HostImageArrayCopyTestCase(testCtx, testName.c_str(), params));
+                            }
+                        }
                     }
                     tilingGroup->addChild(arrayLayersGroup.release());
                 }

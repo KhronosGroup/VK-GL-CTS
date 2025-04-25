@@ -4836,7 +4836,7 @@ struct VkPhysicalDeviceFragmentDensityMap2FeaturesEXT
 	VkBool32		fragmentDensityMapDeferred;
 };
 
-struct VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM
+struct VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -4862,7 +4862,7 @@ struct VkPhysicalDeviceFragmentDensityMap2PropertiesEXT
 	uint32_t		maxDescriptorSetSubsampledSamplers;
 };
 
-struct VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM
+struct VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -4876,7 +4876,7 @@ struct VkRenderPassFragmentDensityMapCreateInfoEXT
 	VkAttachmentReference	fragmentDensityMapAttachment;
 };
 
-struct VkSubpassFragmentDensityMapOffsetEndInfoQCOM
+struct VkRenderPassFragmentDensityMapOffsetEndInfoEXT
 {
 	VkStructureType		sType;
 	const void*			pNext;
@@ -8665,6 +8665,12 @@ struct VkPipelineRenderingCreateInfo
 	VkFormat		stencilAttachmentFormat;
 };
 
+struct VkRenderingEndInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+};
+
 struct VkRenderingAttachmentInfo
 {
 	VkStructureType			sType;
@@ -9328,6 +9334,13 @@ struct VkTilePropertiesQCOM
 	VkExtent3D		tileSize;
 	VkExtent2D		apronSize;
 	VkOffset2D		origin;
+};
+
+struct VkTileMemoryBindInfoQCOM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkDeviceMemory	memory;
 };
 
 struct VkPhysicalDeviceAmigoProfilingFeaturesSEC
@@ -9999,6 +10012,36 @@ struct VkBindMemoryStatus
 	VkResult*		pResult;
 };
 
+struct VkPhysicalDeviceTileMemoryHeapFeaturesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		tileMemoryHeap;
+};
+
+struct VkPhysicalDeviceTileMemoryHeapPropertiesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		queueSubmitBoundary;
+	VkBool32		tileBufferTransfers;
+};
+
+struct VkTileMemorySizeInfoQCOM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkDeviceSize	size;
+};
+
+struct VkTileMemoryRequirementsQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceSize	size;
+	VkDeviceSize	alignment;
+};
+
 struct VkBindDescriptorSetsInfo
 {
 	VkStructureType			sType;
@@ -10613,6 +10656,106 @@ struct VkConvertCooperativeVectorMatrixInfoNV
 	size_t								srcStride;
 	VkCooperativeVectorMatrixLayoutNV	dstLayout;
 	size_t								dstStride;
+};
+
+struct VkPhysicalDeviceTileShadingFeaturesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		tileShading;
+	VkBool32		tileShadingFragmentStage;
+	VkBool32		tileShadingColorAttachments;
+	VkBool32		tileShadingDepthAttachments;
+	VkBool32		tileShadingStencilAttachments;
+	VkBool32		tileShadingInputAttachments;
+	VkBool32		tileShadingSampledAttachments;
+	VkBool32		tileShadingPerTileDraw;
+	VkBool32		tileShadingPerTileDispatch;
+	VkBool32		tileShadingDispatchTile;
+	VkBool32		tileShadingApron;
+	VkBool32		tileShadingAnisotropicApron;
+	VkBool32		tileShadingAtomicOps;
+	VkBool32		tileShadingImageProcessing;
+};
+
+struct VkPhysicalDeviceTileShadingPropertiesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxApronSize;
+	VkBool32		preferNonCoherent;
+	VkExtent2D		tileGranularity;
+	VkExtent2D		maxTileShadingRate;
+};
+
+struct VkRenderPassTileShadingCreateInfoQCOM
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkTileShadingRenderPassFlagsQCOM	flags;
+	VkExtent2D							tileApronSize;
+};
+
+struct VkPerTileBeginInfoQCOM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+};
+
+struct VkPerTileEndInfoQCOM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+};
+
+struct VkDispatchTileInfoQCOM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+};
+
+struct VkSetPresentConfigNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		numFramesPerBatch;
+	uint32_t		presentConfigFeedback;
+};
+
+struct VkPhysicalDevicePresentMeteringFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		presentMetering;
+};
+
+struct VkExternalComputeQueueDeviceCreateInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		reservedExternalQueues;
+};
+
+struct VkExternalComputeQueueCreateInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkQueue			preferredQueue;
+};
+
+struct VkExternalComputeQueueDataParamsNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		deviceIndex;
+};
+
+struct VkPhysicalDeviceExternalComputeQueuePropertiesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		externalDataSize;
+	uint32_t		maxExternalQueues;
 };
 
 struct StdVideoH264SpsVuiFlags
@@ -12320,6 +12463,12 @@ typedef VkSubpassDescriptionDepthStencilResolve VkSubpassDescriptionDepthStencil
 typedef VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR VkPhysicalDeviceComputeShaderDerivativesFeaturesNV;
 
 typedef VkImageStencilUsageCreateInfo VkImageStencilUsageCreateInfoEXT;
+
+typedef VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM;
+
+typedef VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM;
+
+typedef VkRenderPassFragmentDensityMapOffsetEndInfoEXT VkSubpassFragmentDensityMapOffsetEndInfoQCOM;
 
 typedef VkPhysicalDeviceScalarBlockLayoutFeatures VkPhysicalDeviceScalarBlockLayoutFeaturesEXT;
 

@@ -157,6 +157,7 @@ struct SamplerlessParams
     vk::VkDescriptorType type;
     PointerCase pointer;
     uint32_t descriptorSet;
+    bool useGeneralLayout;
 };
 
 class SamplerlessDescriptorWriteTestCase : public vkt::TestCase
@@ -404,6 +405,9 @@ vk::VkImageLayout SamplerlessDescriptorWriteTestInstance::getMainImageShaderLayo
 {
     vk::VkImageLayout layout = vk::VK_IMAGE_LAYOUT_UNDEFINED;
 
+    if (m_params.useGeneralLayout)
+        return vk::VK_IMAGE_LAYOUT_GENERAL;
+
     switch (m_params.type)
     {
     case vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE: // fallthrough
@@ -547,16 +551,18 @@ tcu::TestStatus SamplerlessDescriptorWriteTestInstance::iterate(void)
     const auto fragModule   = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
 
     // Render pass.
+    const vk::VkImageLayout attachmentLayout =
+        m_params.useGeneralLayout ? vk::VK_IMAGE_LAYOUT_GENERAL : vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     const vk::VkAttachmentDescription fbAttachment = {
-        0u,                                           // VkAttachmentDescriptionFlags flags;
-        kImageFormat,                                 // VkFormat format;
-        vk::VK_SAMPLE_COUNT_1_BIT,                    // VkSampleCountFlagBits samples;
-        vk::VK_ATTACHMENT_LOAD_OP_CLEAR,              // VkAttachmentLoadOp loadOp;
-        vk::VK_ATTACHMENT_STORE_OP_STORE,             // VkAttachmentStoreOp storeOp;
-        vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp stencilLoadOp;
-        vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,         // VkAttachmentStoreOp stencilStoreOp;
-        vk::VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout initialLayout;
-        vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout finalLayout;
+        0u,                                   // VkAttachmentDescriptionFlags flags;
+        kImageFormat,                         // VkFormat format;
+        vk::VK_SAMPLE_COUNT_1_BIT,            // VkSampleCountFlagBits samples;
+        vk::VK_ATTACHMENT_LOAD_OP_CLEAR,      // VkAttachmentLoadOp loadOp;
+        vk::VK_ATTACHMENT_STORE_OP_STORE,     // VkAttachmentStoreOp storeOp;
+        vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp stencilLoadOp;
+        vk::VK_ATTACHMENT_STORE_OP_DONT_CARE, // VkAttachmentStoreOp stencilStoreOp;
+        vk::VK_IMAGE_LAYOUT_UNDEFINED,        // VkImageLayout initialLayout;
+        attachmentLayout,                     // VkImageLayout finalLayout;
     };
 
     std::vector<vk::VkAttachmentDescription> attachmentDescs;
@@ -591,9 +597,12 @@ tcu::TestStatus SamplerlessDescriptorWriteTestInstance::iterate(void)
         inputAttachments.push_back(inputRef);
     }
 
+    const vk::VkImageLayout colorAttachmentLayout =
+        m_params.useGeneralLayout ? vk::VK_IMAGE_LAYOUT_GENERAL : vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
     const vk::VkAttachmentReference colorRef = {
-        0u,                                           // uint32_t attachment;
-        vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout layout;
+        0u,                    // uint32_t attachment;
+        colorAttachmentLayout, // VkImageLayout layout;
     };
     const std::vector<vk::VkAttachmentReference> colorAttachments(1u, colorRef);
 
@@ -660,9 +669,13 @@ tcu::TestStatus SamplerlessDescriptorWriteTestInstance::iterate(void)
     const auto vtxBufferBarrier =
         vk::makeBufferMemoryBarrier(vk::VK_ACCESS_HOST_WRITE_BIT, vk::VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
                                     vertexBuffer.get(), 0ull, vertexBufferSize);
+    const vk::VkImageLayout imageLayout =
+        m_params.useGeneralLayout ? vk::VK_IMAGE_LAYOUT_GENERAL : vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     const auto preClearBarrier =
-        vk::makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
-                                   vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mainImage.get(), colorSubresourceRange);
+        vk::makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED, imageLayout,
+                                   mainImage.get(), colorSubresourceRange);
+    const auto postClearMemoryBarrier = vk::makeMemoryBarrier(
+        vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_SHADER_READ_BIT | vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT);
     const auto postClearBarrier = vk::makeImageMemoryBarrier(
         vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_SHADER_READ_BIT | vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
         vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, getMainImageShaderLayout(), mainImage.get(), colorSubresourceRange);
@@ -674,12 +687,12 @@ tcu::TestStatus SamplerlessDescriptorWriteTestInstance::iterate(void)
                            nullptr, 1u, &vtxBufferBarrier, 0u, nullptr);
     vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
                            nullptr, 0u, nullptr, 1u, &preClearBarrier);
-    vkd.cmdClearColorImage(cmdBuffer, mainImage.get(), vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearDescColor.color,
-                           1u, &colorSubresourceRange);
+    vkd.cmdClearColorImage(cmdBuffer, mainImage.get(), imageLayout, &clearDescColor.color, 1u, &colorSubresourceRange);
     vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
                            vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
                                vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                           0u, 0u, nullptr, 0u, nullptr, 1u, &postClearBarrier);
+                           0u, m_params.useGeneralLayout ? 1u : 0u, &postClearMemoryBarrier, 0u, nullptr,
+                           m_params.useGeneralLayout ? 0u : 1u, &postClearBarrier);
 
     vk::beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), renderArea, clearFbColor);
     vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
@@ -690,7 +703,9 @@ tcu::TestStatus SamplerlessDescriptorWriteTestInstance::iterate(void)
     vk::endRenderPass(vkd, cmdBuffer);
 
     const tcu::IVec2 copySize{static_cast<int>(kFramebufferExtent.width), static_cast<int>(kFramebufferExtent.height)};
-    vk::copyImageToBuffer(vkd, cmdBuffer, fbImage.get(), resultsBuffer.get(), copySize);
+    vk::copyImageToBuffer(
+        vkd, cmdBuffer, fbImage.get(), resultsBuffer.get(), copySize, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        m_params.useGeneralLayout ? vk::VK_IMAGE_LAYOUT_GENERAL : vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
     vk::endCommandBuffer(vkd, cmdBuffer);
     vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
@@ -744,14 +759,20 @@ tcu::TestCaseGroup *createSamplerlessWriteTests(tcu::TestContext &testCtx)
         for (const auto &pointerCase : pointerCases)
             for (uint32_t descriptorSet = 0u; descriptorSet < 2u; descriptorSet++)
             {
-                std::string caseName = typeCase.second + "_" + pointerCase.second;
-                SamplerlessParams params{typeCase.first, pointerCase.first, descriptorSet};
-                if (descriptorSet > 0u)
+                for (uint32_t layoutNdx = 0; layoutNdx < 2u; ++layoutNdx)
                 {
-                    caseName += "_set_" + std::to_string(descriptorSet);
-                }
+                    const bool useGeneralLayout = layoutNdx == 1;
+                    std::string caseName        = typeCase.second + "_" + pointerCase.second;
+                    if (useGeneralLayout)
+                        caseName += "_general_layout";
+                    SamplerlessParams params{typeCase.first, pointerCase.first, descriptorSet, useGeneralLayout};
+                    if (descriptorSet > 0u)
+                    {
+                        caseName += "_set_" + std::to_string(descriptorSet);
+                    }
 
-                group->addChild(new SamplerlessDescriptorWriteTestCase(testCtx, caseName, params));
+                    group->addChild(new SamplerlessDescriptorWriteTestCase(testCtx, caseName, params));
+                }
             }
 
     return group.release();

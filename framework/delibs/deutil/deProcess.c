@@ -553,14 +553,14 @@ static bool deProcess_setErrorFromWin32(deProcess *process, const char *msg)
     if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
                       error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&msgBuf, 0, NULL) > 0)
     {
-        snprintf(errBuf, sizeof(errBuf), "%s, error %d: %s", msg, error, msgBuf);
+        snprintf(errBuf, sizeof(errBuf), "%s, error %lu: %s", msg, error, msgBuf);
         LocalFree(msgBuf);
         return deProcess_setError(process, errBuf);
     }
     else
     {
         /* Failed to get error str. */
-        snprintf(errBuf, sizeof(errBuf), "%s, error %d", msg, error);
+        snprintf(errBuf, sizeof(errBuf), "%s, error %lu", msg, error);
         return deProcess_setError(process, errBuf);
     }
 }

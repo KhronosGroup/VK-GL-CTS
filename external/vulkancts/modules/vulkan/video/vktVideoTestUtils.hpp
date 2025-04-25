@@ -306,7 +306,7 @@ de::MovePtr<VkVideoEncodeQuantizationMapSessionParametersCreateInfoKHR> getVideo
     VkExtent2D quantizationMapTexelSize);
 de::MovePtr<VkVideoEncodeQuantizationMapInfoKHR> getQuantizationMapInfo(VkImageView quantizationMap,
                                                                         VkExtent2D quantizationMapExtent,
-                                                                        const void *pNext = DE_NULL);
+                                                                        const void *pNext = nullptr);
 de::MovePtr<StdVideoDecodeH264PictureInfo> getStdVideoDecodeH264PictureInfo(void);
 
 de::SharedPtr<VkVideoDecodeH264PictureInfoKHR> getVideoDecodeH264PictureInfo(

@@ -130,7 +130,8 @@ Move<VkDescriptorSet> makeDescriptorSet(const DeviceInterface &vk, const VkDevic
                                         const VkDescriptorPool descriptorPool, const VkDescriptorSetLayout setLayout,
                                         const void *pNext = nullptr);
 
-VkBufferCreateInfo makeBufferCreateInfo(const VkDeviceSize size, const VkBufferUsageFlags usage);
+VkBufferCreateInfo makeBufferCreateInfo(const VkDeviceSize size, const VkBufferUsageFlags usage,
+                                        const VkBufferCreateFlags createFlags = 0);
 
 VkBufferCreateInfo makeBufferCreateInfo(const VkDeviceSize size, const VkBufferUsageFlags usage,
                                         const std::vector<uint32_t> &queueFamilyIndices,

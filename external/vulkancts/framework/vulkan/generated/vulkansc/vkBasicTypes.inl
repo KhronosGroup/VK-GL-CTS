@@ -3100,6 +3100,8 @@ typedef uint32_t VkPresentGravityFlagsEXT;
 
 typedef uint32_t VkShaderCreateFlagsEXT;
 
+typedef uint32_t VkTileShadingRenderPassFlagsQCOM;
+
 typedef uint64_t VkPhysicalDeviceSchedulingControlsFlagsARM;
 
 typedef uint32_t VkVideoCodecOperationFlagsKHR;

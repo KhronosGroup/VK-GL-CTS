@@ -447,6 +447,9 @@ public:
         std::unique_ptr<TopLevelAccelerationStructure> resultPtr;
         de::MovePtr<TopLevelAccelerationStructure> tlPtr = makeTopLevelAccelerationStructure();
 
+        AccelerationStructBufferProperties bufferProps;
+        bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
         DE_ASSERT(((asLayout == AccelerationStructureLayout::ONE_TL_MANY_BLS_MANY_GEOMETRIES_WITH_VARYING_PRIM_TYPES) &&
                    (m_geometryType == GeometryType::AABB_AND_TRIANGLES)) ||
                   ((asLayout != AccelerationStructureLayout::ONE_TL_MANY_BLS_MANY_GEOMETRIES_WITH_VARYING_PRIM_TYPES) &&
@@ -472,7 +475,7 @@ public:
                 blPtr->setGeometryCount(1u);
                 blPtr->addGeometry(vertexVec, (m_geometryType == GeometryType::TRIANGLES), bottomLevelGeometryFlags);
 
-                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator);
+                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator, bufferProps);
 
                 tlPtr->addInstance(de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release()), identityMatrix3x4,
                                    instanceCustomIndex, cullMask);
@@ -530,7 +533,7 @@ public:
                                        bottomLevelGeometryFlags);
                 }
 
-                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator);
+                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator, bufferProps);
 
                 tlPtr->addInstance(de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release()), identityMatrix3x4,
                                    instanceCustomIndex, cullMask);
@@ -586,7 +589,7 @@ public:
                 blPtr->addGeometry(currentInstanceVertexVec, (m_geometryType == GeometryType::TRIANGLES),
                                    bottomLevelGeometryFlags);
 
-                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator);
+                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator, bufferProps);
 
                 tlPtr->addInstance(de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release()), identityMatrix3x4,
                                    instanceCustomIndex, cullMask);
@@ -649,7 +652,7 @@ public:
                                        bottomLevelGeometryFlags);
                 }
 
-                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator);
+                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator, bufferProps);
                 tlPtr->addInstance(de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release()), identityMatrix3x4,
                                    instanceCustomIndex, cullMask);
 
@@ -718,7 +721,7 @@ public:
                     blPtr->addGeometry(currentVertexVec, !usesAABB, bottomLevelGeometryFlags);
                 }
 
-                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator);
+                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator, bufferProps);
 
                 tlPtr->addInstance(de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release()), identityMatrix3x4,
                                    instanceCustomIndex, cullMask, instanceSBTOffset);
@@ -748,7 +751,7 @@ public:
         }
         }
 
-        tlPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator);
+        tlPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator, bufferProps);
 
         resultPtr = decltype(resultPtr)(tlPtr.release());
         return resultPtr;
@@ -920,6 +923,9 @@ public:
         std::unique_ptr<TopLevelAccelerationStructure> resultPtr;
         de::MovePtr<TopLevelAccelerationStructure> tlPtr = makeTopLevelAccelerationStructure();
 
+        AccelerationStructBufferProperties bufferProps;
+        bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
         {
 
             const auto cullMask = (optASPropertyProviderPtr != nullptr) ? optASPropertyProviderPtr->getCullMask(0, 0) :
@@ -937,14 +943,14 @@ public:
                 blPtr->addGeometry(vertexVec, true, /* triangles */
                                    bottomLevelGeometryFlags);
 
-                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator);
+                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator, bufferProps);
 
                 tlPtr->addInstance(de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release()), identityMatrix3x4,
                                    instanceCustomIndex, cullMask);
             }
         }
 
-        tlPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator);
+        tlPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator, bufferProps);
 
         resultPtr = decltype(resultPtr)(tlPtr.release());
         return resultPtr;
@@ -3354,8 +3360,8 @@ public:
         Allocator &allocator                   = context.getDefaultAllocator();
         const uint32_t queueFamilyIndex        = context.getUniversalQueueFamilyIndex();
 
-        const Move<VkCommandPool> cmdPoolPtr = createCommandPool(deviceInterface, deviceVk, 0, /* pCreateInfo */
-                                                                 queueFamilyIndex);
+        const Move<VkCommandPool> cmdPoolPtr = createCommandPool(
+            deviceInterface, deviceVk, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
         const Move<VkCommandBuffer> cmdBufferPtr =
             allocateCommandBuffer(deviceInterface, deviceVk, *cmdPoolPtr, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
@@ -8243,24 +8249,24 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
         {
             deviceInterface.cmdFillBuffer(*cmdBufferPtr, **resultBufferPtr, 0, /* dstOffset */
                                           VK_WHOLE_SIZE, 0);                   /* data */
-
-            {
-                const auto postFillBarrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, /* srcAccessMask */
-                                                                     VK_ACCESS_SHADER_WRITE_BIT,   /* dstAccessMask */
-                                                                     **resultBufferPtr, 0,         /* offset */
-                                                                     VK_WHOLE_SIZE);
-
-                cmdPipelineBufferMemoryBarrier(deviceInterface, *cmdBufferPtr,
-                                               VK_PIPELINE_STAGE_TRANSFER_BIT,               /* srcStageMask */
-                                               VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, /* dstStageMask */
-                                               &postFillBarrier);
-            }
         }
         else
         {
             // ... otherwise copy given startdata to the gpubuffer
             const VkBufferCopy bufferCopy{0, 0, resultBufferSize};
             deviceInterface.cmdCopyBuffer(*cmdBufferPtr, **startBufferPtr, **resultBufferPtr, 1, &bufferCopy);
+        }
+
+        {
+            const auto postMemoryBarrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, /* srcAccessMask */
+                                                                   VK_ACCESS_SHADER_WRITE_BIT,   /* dstAccessMask */
+                                                                   **resultBufferPtr, 0,         /* offset */
+                                                                   VK_WHOLE_SIZE);
+
+            cmdPipelineBufferMemoryBarrier(deviceInterface, *cmdBufferPtr,
+                                           VK_PIPELINE_STAGE_TRANSFER_BIT,               /* srcStageMask */
+                                           VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, /* dstStageMask */
+                                           &postMemoryBarrier);
         }
 
         {
@@ -8558,18 +8564,21 @@ tcu::TestStatus nullMissInstance(Context &context)
     auto topLevelAS    = makeTopLevelAccelerationStructure();
     auto bottomLevelAS = makeBottomLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     std::vector<tcu::Vec3> triangle;
     triangle.reserve(3u);
     triangle.emplace_back(0.0f, 1.0f, 10.0f);
     triangle.emplace_back(-1.0f, -1.0f, 10.0f);
     triangle.emplace_back(1.0f, -1.0f, 10.0f);
     bottomLevelAS->addGeometry(triangle, true /*triangles*/);
-    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     de::SharedPtr<BottomLevelAccelerationStructure> blasSharedPtr(bottomLevelAS.release());
     topLevelAS->setInstanceCount(1);
     topLevelAS->addInstance(blasSharedPtr);
-    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     // Create output buffer.
     const auto bufferSize       = static_cast<VkDeviceSize>(sizeof(float));
@@ -8807,14 +8816,23 @@ tcu::TestStatus reuseCreationBufferInstance(Context &context, const bool disturb
 
     beginCommandBuffer(vkd, bottomBuildCmd.get());
 
+    AccelerationStructBufferProperties bufferProps;
     if (disturbBottom)
     {
-        bottomLevelAS->create(vkd, device, alloc, 0u, 0u, nullptr, MemoryRequirement::Any, creationBuffer.get(),
-                              creationBufferSize);
+        bufferProps.useExternalBuffer = true;
+        bufferProps.extBuffer.buffer  = creationBuffer.get();
+        bufferProps.extBuffer.size    = creationBufferSize;
+
+        bottomLevelAS->create(vkd, device, alloc, bufferProps, 0u, 0u, 0u, 0u, nullptr, MemoryRequirement::Any);
         bottomLevelAS->build(vkd, device, bottomBuildCmd.get());
     }
     else
-        bottomLevelAS->createAndBuild(vkd, device, bottomBuildCmd.get(), alloc);
+    {
+        bufferProps.useExternalBuffer = false;
+        bufferProps.props.residency   = ResourceResidency::TRADITIONAL;
+
+        bottomLevelAS->createAndBuild(vkd, device, bottomBuildCmd.get(), alloc, bufferProps);
+    }
 
     // Submit command buffer so the bottom acceleration structure is actually built and stored in the creation buffer.
     endCommandBuffer(vkd, bottomBuildCmd.get());
@@ -8822,8 +8840,11 @@ tcu::TestStatus reuseCreationBufferInstance(Context &context, const bool disturb
 
     if (disturbBottom)
     {
-        bottomLevelOtherAS->create(vkd, device, alloc, 0u, 0u, nullptr, MemoryRequirement::Any, creationBuffer.get(),
-                                   creationBufferSize);
+        bufferProps.useExternalBuffer = true;
+        bufferProps.extBuffer.buffer  = creationBuffer.get();
+        bufferProps.extBuffer.size    = creationBufferSize;
+
+        bottomLevelOtherAS->create(vkd, device, alloc, bufferProps, 0u, 0u, 0u, 0u, nullptr, MemoryRequirement::Any);
         // Note how we have created the second bottom level accel structure reusing the buffer but we haven't built it.
     }
 
@@ -8839,14 +8860,25 @@ tcu::TestStatus reuseCreationBufferInstance(Context &context, const bool disturb
 
     if (disturbTop)
     {
-        topLevelAS->create(vkd, device, alloc, 0u, 0u, nullptr, MemoryRequirement::Any, creationBuffer.get(),
-                           creationBufferSize);
+        bufferProps.useExternalBuffer = true;
+        bufferProps.extBuffer.buffer  = creationBuffer.get();
+        bufferProps.extBuffer.size    = creationBufferSize;
+
+        topLevelAS->create(vkd, device, alloc, bufferProps, 0u, 0u, 0u, 0u, nullptr, MemoryRequirement::Any);
         topLevelAS->build(vkd, device, topBuildCmd.get());
 
-        bottomLevelOtherAS->createAndBuild(vkd, device, topBuildCmd.get(), alloc);
+        bufferProps.useExternalBuffer = false;
+        bufferProps.props.residency   = ResourceResidency::TRADITIONAL;
+
+        bottomLevelOtherAS->createAndBuild(vkd, device, topBuildCmd.get(), alloc, bufferProps);
     }
     else
-        topLevelAS->createAndBuild(vkd, device, topBuildCmd.get(), alloc);
+    {
+        bufferProps.useExternalBuffer = false;
+        bufferProps.props.residency   = ResourceResidency::TRADITIONAL;
+
+        topLevelAS->createAndBuild(vkd, device, topBuildCmd.get(), alloc, bufferProps);
+    }
 
     // Submit command buffer so the top acceleration structure is actually built and stored in the creation buffer.
     endCommandBuffer(vkd, topBuildCmd.get());
@@ -8857,10 +8889,13 @@ tcu::TestStatus reuseCreationBufferInstance(Context &context, const bool disturb
         SharedBottomPtr auxiliar(bottomLevelOtherAS.release());
         blasOtherSharedPtr.swap(auxiliar);
 
+        bufferProps.useExternalBuffer = true;
+        bufferProps.extBuffer.buffer  = creationBuffer.get();
+        bufferProps.extBuffer.size    = creationBufferSize;
+
         topLevelOtherAS->setInstanceCount(1);
         topLevelOtherAS->addInstance(blasOtherSharedPtr);
-        topLevelOtherAS->create(vkd, device, alloc, 0u, 0u, nullptr, MemoryRequirement::Any, creationBuffer.get(),
-                                creationBufferSize);
+        topLevelOtherAS->create(vkd, device, alloc, bufferProps, 0u, 0u, 0u, 0u, nullptr, MemoryRequirement::Any);
         // Note how we have created the second top level accel structure reusing the buffer but we haven't built it.
     }
 
@@ -9042,12 +9077,15 @@ tcu::TestStatus reuseScratchBufferInstance(Context &context)
     blasPool.batchCreateAdjust(ctx.vkd, ctx.device, ctx.allocator, ~0ull, false /* scratch buffer is host visible */);
     blasPool.batchBuild(ctx.vkd, ctx.device, cmdBuffer);
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     const auto tlas = makeTopLevelAccelerationStructure();
     tlas->setInstanceCount(blasCount);
     for (const auto &blas : blasPool.structures())
         tlas->addInstance(blas, identityMatrix3x4, 0, 0xFFu, 0u,
                           VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR);
-    tlas->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator);
+    tlas->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator, bufferProps);
 
     // Create storage image.
     const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM; // Must match the shader declaration.

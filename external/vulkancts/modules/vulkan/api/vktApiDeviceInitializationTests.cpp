@@ -1540,7 +1540,7 @@ void checkFeatures(const PlatformInterface &vkp, const VkInstance &instance, con
         }
         else if (structureType == vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT)
         {
-            DE_ASSERT((std::is_same<VkPhysicalDeviceMultiviewFeaturesKHR, StructType>::value));
+            DE_ASSERT((std::is_same<VkPhysicalDeviceMeshShaderFeaturesEXT, StructType>::value));
             // If multiviewMeshShader is enabled then multiview must also be enabled
             if (features[featureNdx].offset == offsetof(VkPhysicalDeviceMeshShaderFeaturesEXT, multiviewMeshShader))
             {
@@ -2302,7 +2302,7 @@ tcu::TestStatus createDeviceQueue2WithMultipleQueueCombinations(Context &context
         vector<uint32_t> itemIndices(queuesPerFamily.size(), 0u);
 
         // Calculate the max number of combinations.
-        auto multiplyConfigCounts = [](uint32_t &count, const typename QueueFamilyConfigurations::value_type &item)
+        auto multiplyConfigCounts = [](uint32_t count, const typename QueueFamilyConfigurations::value_type &item)
         { return count * (uint32_t)item.second.size(); };
         const uint32_t itemCount = accumulate(queuesPerFamily.begin(), queuesPerFamily.end(), 1u, multiplyConfigCounts);
 

@@ -649,6 +649,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginRenderingFunc)													(VkC
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginRenderingKHRFunc)												(VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRenderingFunc)													(VkCommandBuffer commandBuffer);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRenderingKHRFunc)												(VkCommandBuffer commandBuffer);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRendering2EXTFunc)												(VkCommandBuffer commandBuffer, const VkRenderingEndInfoEXT* pRenderingEndInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetDescriptorSetLayoutHostMappingInfoVALVEFunc)						(VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetDescriptorSetHostMappingVALVEFunc)									(VkDevice device, VkDescriptorSet descriptorSet, void** ppData);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateMicromapEXTFunc)													(VkDevice device, const VkMicromapCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkMicromapEXT* pMicromap);
@@ -672,6 +673,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* GetImageSubresourceLayout2KHRFunc)					
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetImageSubresourceLayout2EXTFunc)										(VkDevice device, VkImage image, const VkImageSubresource2* pSubresource, VkSubresourceLayout2* pLayout);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPipelinePropertiesEXTFunc)											(VkDevice device, const VkPipelineInfoEXT* pPipelineInfo, VkBaseOutStructure* pPipelineProperties);
 typedef VKAPI_ATTR void					(VKAPI_CALL* ExportMetalObjectsEXTFunc)												(VkDevice device, VkExportMetalObjectsInfoEXT* pMetalObjectsInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindTileMemoryQCOMFunc)												(VkCommandBuffer commandBuffer, const VkTileMemoryBindInfoQCOM* pTileMemoryBindInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetFramebufferTilePropertiesQCOMFunc)									(VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDynamicRenderingTilePropertiesQCOMFunc)								(VkDevice device, const VkRenderingInfo* pRenderingInfo, VkTilePropertiesQCOM* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceOpticalFlowImageFormatsNVFunc)						(VkPhysicalDevice physicalDevice, const VkOpticalFlowImageFormatInfoNV* pOpticalFlowImageFormatInfo, uint32_t* pFormatCount, VkOpticalFlowImageFormatPropertiesNV* pImageFormatProperties);
@@ -727,3 +729,9 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryMetalHandlePropertiesEXTFun
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCooperativeVectorPropertiesNVFunc)					(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeVectorPropertiesNV* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ConvertCooperativeVectorMatrixNVFunc)									(VkDevice device, const VkConvertCooperativeVectorMatrixInfoNV* pInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdConvertCooperativeVectorMatrixNVFunc)								(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkConvertCooperativeVectorMatrixInfoNV* pInfos);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDispatchTileQCOMFunc)												(VkCommandBuffer commandBuffer);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginPerTileExecutionQCOMFunc)										(VkCommandBuffer commandBuffer, const VkPerTileBeginInfoQCOM* pPerTileBeginInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndPerTileExecutionQCOMFunc)										(VkCommandBuffer commandBuffer, const VkPerTileEndInfoQCOM* pPerTileEndInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateExternalComputeQueueNVFunc)										(VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkExternalComputeQueueNV* pExternalQueue);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyExternalComputeQueueNVFunc)										(VkDevice device, VkExternalComputeQueueNV externalQueue, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetExternalComputeQueueDataNVFunc)										(VkExternalComputeQueueNV externalQueue, VkExternalComputeQueueDataParamsNV* params, void* pData);

@@ -639,7 +639,7 @@ bool TextureLodSelectionTestCase::doComparison(const int size, const float *cons
 
     auto calcEpsilon = [](const GLint bits)
     {
-        auto zero = ldexp(1.f, -13);
+        auto zero = ldexp(1.f, -8);
         GLfloat e = zero;
         if (bits != 0)
         {

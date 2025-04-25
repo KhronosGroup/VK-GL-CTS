@@ -106,6 +106,7 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
         "VK_NV_raw_access_chains",
         "VK_NV_linear_color_attachment",
         "VK_NV_cooperative_matrix2",
+        "VK_NV_cooperative_vector",
     };
 
     const char *exclusions[] = {"VK_EXT_device_address_binding_report", "VK_EXT_device_memory_report"};
@@ -1557,6 +1558,71 @@ void TestCase::checkSupport(Context &) const
 
 void TestCase::delayedInit(void)
 {
+}
+
+MultiQueueRunnerTestInstance::MultiQueueRunnerTestInstance(Context &context, QueueCapabilities queueCaps)
+    : TestInstance(context)
+    , m_queueCaps(queueCaps)
+{
+    // building vector of unique queues
+    if (m_queueCaps == QueueCapabilities::GRAPHICS_QUEUE)
+    {
+        m_queues.emplace_back(context.getUniversalQueue(), (uint32_t)context.getUniversalQueueFamilyIndex());
+    }
+    else if (m_queueCaps == QueueCapabilities::COMPUTE_QUEUE)
+    {
+        // universal queue supports compute
+        m_queues.emplace_back(context.getUniversalQueue(), (uint32_t)context.getUniversalQueueFamilyIndex());
+        // checking for other queue that supports compute
+        if ((m_context.getComputeQueueFamilyIndex() != -1))
+        {
+            m_queues.emplace_back(context.getComputeQueue(), (uint32_t)context.getComputeQueueFamilyIndex());
+        }
+    }
+    else if (m_queueCaps == QueueCapabilities::TRANSFER_QUEUE)
+    {
+        // all queues support transfer
+        m_queues.emplace_back(context.getUniversalQueue(), (uint32_t)context.getUniversalQueueFamilyIndex());
+        if ((m_context.getComputeQueueFamilyIndex() != -1))
+        {
+            m_queues.emplace_back(context.getComputeQueue(), (uint32_t)context.getComputeQueueFamilyIndex());
+        }
+        if ((m_context.getTransferQueueFamilyIndex() != -1))
+        {
+            m_queues.emplace_back(context.getTransferQueue(), (uint32_t)context.getTransferQueueFamilyIndex());
+        }
+    }
+    else
+    {
+        DE_ASSERT(false);
+    }
+
+    if (m_queues.empty())
+    {
+        throw tcu::NotSupportedError("No queues available for this test");
+    }
+}
+
+tcu::TestStatus MultiQueueRunnerTestInstance::iterate(void)
+{
+    if (m_queues.size() == 1)
+        return queuePass(m_queues[0]);
+
+    bool isFail = false;
+    std::string resultDescription;
+
+    for (const auto &queue : m_queues)
+    {
+        tcu::TestStatus result = queuePass(queue);
+        if (result.isFail())
+        {
+            resultDescription += "Test failed on queue family " + de::toString(queue.familyIndex) +
+                                 " with descriptoin: " + result.getDescription() + "\n";
+            isFail = true;
+        }
+    }
+
+    return isFail ? tcu::TestStatus::fail(resultDescription) : tcu::TestStatus::pass("All queues passed");
 }
 
 #ifndef CTS_USES_VULKANSC

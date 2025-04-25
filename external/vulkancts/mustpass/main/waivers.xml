@@ -505,6 +505,44 @@
 		<t>dEQP-VK.glsl.texture_functions.texturegradoffset.mirrored_repeat.usampler2d_vertex</t>
 		<t>dEQP-VK.glsl.texture_functions.texturegradoffset.mirrored_repeat.usampler3d_fragment</t>
 		<t>dEQP-VK.glsl.texture_functions.texturegradoffset.mirrored_repeat.usampler3d_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.isampler2darray_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.isampler2darray_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.isampler2d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.isampler2d_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.isampler3d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.isampler3d_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler1darray_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler1darray_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler1darrayshadow_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler1d_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler1d_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler1dshadow_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler2darray_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler2darray_fixed_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler2darray_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler2darray_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler2darrayshadow_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler2darrayshadow_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler2d_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler2d_fixed_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler2d_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler2d_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler2dshadow_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler2dshadow_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler3d_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler3d_fixed_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler3d_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.sampler3d_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.usampler1darray_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.usampler1darray_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.usampler1d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.usampler1d_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.usampler2darray_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.usampler2darray_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.usampler2d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.usampler2d_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.usampler3d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturegradoffset_pcoffset.mirrored_repeat.usampler3d_vertex</t>
 		<t>dEQP-VK.glsl.texture_functions.texturelodoffset.mirrored_repeat.isampler2darray_fragment</t>
 		<t>dEQP-VK.glsl.texture_functions.texturelodoffset.mirrored_repeat.isampler2darray_vertex</t>
 		<t>dEQP-VK.glsl.texture_functions.texturelodoffset.mirrored_repeat.isampler2d_fragment</t>
@@ -541,6 +579,42 @@
 		<t>dEQP-VK.glsl.texture_functions.texturelodoffset.mirrored_repeat.usampler2d_vertex</t>
 		<t>dEQP-VK.glsl.texture_functions.texturelodoffset.mirrored_repeat.usampler3d_fragment</t>
 		<t>dEQP-VK.glsl.texture_functions.texturelodoffset.mirrored_repeat.usampler3d_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.isampler2darray_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.isampler2darray_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.isampler2d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.isampler2d_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.isampler3d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.isampler3d_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.sampler1darray_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.sampler1darray_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.sampler1darrayshadow_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.sampler1darrayshadow_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.sampler1d_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.sampler1d_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.sampler2darray_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.sampler2darray_fixed_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.sampler2darray_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.sampler2darray_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.sampler2d_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.sampler2d_fixed_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.sampler2d_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.sampler2d_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.sampler2dshadow_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.sampler2dshadow_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.sampler3d_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.sampler3d_fixed_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.sampler3d_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.sampler3d_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.usampler1darray_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.usampler1darray_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.usampler1d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.usampler1d_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.usampler2darray_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.usampler2darray_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.usampler2d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.usampler2d_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.usampler3d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.texturelodoffset_pcoffset.mirrored_repeat.usampler3d_vertex</t>
 		<t>dEQP-VK.glsl.texture_functions.textureoffset.mirrored_repeat.isampler1darray_fragment</t>
 		<t>dEQP-VK.glsl.texture_functions.textureoffset.mirrored_repeat.isampler1d_fragment</t>
 		<t>dEQP-VK.glsl.texture_functions.textureoffset.mirrored_repeat.isampler2darray_bias_fragment</t>
@@ -596,6 +670,61 @@
 		<t>dEQP-VK.glsl.texture_functions.textureoffset.mirrored_repeat.usampler3d_bias_fragment</t>
 		<t>dEQP-VK.glsl.texture_functions.textureoffset.mirrored_repeat.usampler3d_fragment</t>
 		<t>dEQP-VK.glsl.texture_functions.textureoffset.mirrored_repeat.usampler3d_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.isampler1darray_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.isampler1d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.isampler2darray_bias_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.isampler2darray_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.isampler2darray_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.isampler2d_bias_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.isampler2d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.isampler2d_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.isampler3d_bias_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.isampler3d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.isampler3d_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler1darray_bias_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler1darray_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler1darray_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler1darrayshadow_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler1d_bias_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler1d_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler1d_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler1dshadow_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler2darray_bias_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler2darray_bias_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler2darray_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler2darray_fixed_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler2darray_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler2darray_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler2darrayshadow_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler2darrayshadow_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler2d_bias_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler2d_bias_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler2d_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler2d_fixed_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler2d_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler2d_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler2dshadow_bias_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler2dshadow_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler2dshadow_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler3d_bias_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler3d_bias_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler3d_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler3d_fixed_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler3d_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.sampler3d_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.usampler1darray_bias_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.usampler1darray_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.usampler1d_bias_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.usampler1d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.usampler2darray_bias_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.usampler2darray_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.usampler2darray_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.usampler2d_bias_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.usampler2d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.usampler2d_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.usampler3d_bias_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.usampler3d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureoffset_pcoffset.mirrored_repeat.usampler3d_vertex</t>
 		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset.mirrored_repeat.isampler2d_vec3_fragment</t>
 		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset.mirrored_repeat.isampler2d_vec3_vertex</t>
 		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset.mirrored_repeat.isampler2d_vec4_fragment</t>
@@ -631,6 +760,41 @@
 		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset.mirrored_repeat.usampler2d_vec4_vertex</t>
 		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset.mirrored_repeat.usampler3d_fragment</t>
 		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset.mirrored_repeat.usampler3d_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.isampler2d_vec3_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.isampler2d_vec3_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.isampler2d_vec4_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.isampler2d_vec4_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.isampler3d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.isampler3d_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.sampler1dshadow_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.sampler1d_vec2_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.sampler1d_vec2_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.sampler1d_vec4_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.sampler1d_vec4_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.sampler2dshadow_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.sampler2dshadow_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.sampler2d_vec3_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.sampler2d_vec3_fixed_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.sampler2d_vec3_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.sampler2d_vec3_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.sampler2d_vec4_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.sampler2d_vec4_fixed_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.sampler2d_vec4_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.sampler2d_vec4_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.sampler3d_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.sampler3d_fixed_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.sampler3d_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.sampler3d_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.usampler1d_vec2_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.usampler1d_vec2_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.usampler1d_vec4_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.usampler1d_vec4_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.usampler2d_vec3_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.usampler2d_vec3_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.usampler2d_vec4_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.usampler2d_vec4_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.usampler3d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojgradoffset_pcoffset.mirrored_repeat.usampler3d_vertex</t>
 		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset.mirrored_repeat.isampler2d_vec3_fragment</t>
 		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset.mirrored_repeat.isampler2d_vec3_vertex</t>
 		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset.mirrored_repeat.isampler2d_vec4_fragment</t>
@@ -667,6 +831,42 @@
 		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset.mirrored_repeat.usampler2d_vec4_vertex</t>
 		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset.mirrored_repeat.usampler3d_fragment</t>
 		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset.mirrored_repeat.usampler3d_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.isampler2d_vec3_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.isampler2d_vec3_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.isampler2d_vec4_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.isampler2d_vec4_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.isampler3d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.isampler3d_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.sampler1dshadow_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.sampler1dshadow_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.sampler1d_vec2_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.sampler1d_vec2_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.sampler1d_vec4_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.sampler1d_vec4_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.sampler2dshadow_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.sampler2dshadow_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.sampler2d_vec3_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.sampler2d_vec3_fixed_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.sampler2d_vec3_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.sampler2d_vec3_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.sampler2d_vec4_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.sampler2d_vec4_fixed_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.sampler2d_vec4_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.sampler2d_vec4_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.sampler3d_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.sampler3d_fixed_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.sampler3d_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.sampler3d_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.usampler1d_vec2_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.usampler1d_vec2_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.usampler1d_vec4_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.usampler1d_vec4_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.usampler2d_vec3_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.usampler2d_vec3_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.usampler2d_vec4_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.usampler2d_vec4_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.usampler3d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojlodoffset_pcoffset.mirrored_repeat.usampler3d_vertex</t>
 		<t>dEQP-VK.glsl.texture_functions.textureprojoffset.mirrored_repeat.isampler1d_vec2_fragment</t>
 		<t>dEQP-VK.glsl.texture_functions.textureprojoffset.mirrored_repeat.isampler1d_vec4_fragment</t>
 		<t>dEQP-VK.glsl.texture_functions.textureprojoffset.mirrored_repeat.isampler2d_vec3_bias_fragment</t>
@@ -719,6 +919,90 @@
 		<t>dEQP-VK.glsl.texture_functions.textureprojoffset.mirrored_repeat.usampler3d_bias_fragment</t>
 		<t>dEQP-VK.glsl.texture_functions.textureprojoffset.mirrored_repeat.usampler3d_fragment</t>
 		<t>dEQP-VK.glsl.texture_functions.textureprojoffset.mirrored_repeat.usampler3d_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.isampler1d_vec2_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.isampler1d_vec4_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.isampler2d_vec3_bias_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.isampler2d_vec3_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.isampler2d_vec3_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.isampler2d_vec4_bias_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.isampler2d_vec4_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.isampler2d_vec4_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.isampler3d_bias_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.isampler3d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.isampler3d_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler1dshadow_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler1d_vec2_bias_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler1d_vec2_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler1d_vec2_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler1d_vec4_bias_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler1d_vec4_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler1d_vec4_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler2dshadow_bias_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler2dshadow_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler2dshadow_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler2d_vec3_bias_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler2d_vec3_bias_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler2d_vec3_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler2d_vec3_fixed_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler2d_vec3_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler2d_vec3_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler2d_vec4_bias_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler2d_vec4_bias_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler2d_vec4_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler2d_vec4_fixed_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler2d_vec4_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler2d_vec4_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler3d_bias_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler3d_bias_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler3d_fixed_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler3d_fixed_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler3d_float_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.sampler3d_float_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.usampler1d_vec2_bias_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.usampler1d_vec2_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.usampler1d_vec4_bias_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.usampler1d_vec4_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.usampler2d_vec3_bias_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.usampler2d_vec3_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.usampler2d_vec3_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.usampler2d_vec4_bias_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.usampler2d_vec4_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.usampler2d_vec4_vertex</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.usampler3d_bias_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.usampler3d_fragment</t>
+		<t>dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.usampler3d_vertex</t>
 	</waiver>
-
+	<waiver vendorName="Arm" vendorId="0x13b5" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/5544">
+		<description>The affected devices speculatively execute non-referenced indices in sequential groups of four, which hits an infinite loop due to out-of-bounds vertex attribute lookup in the affected test.</description>
+		<device_list>
+			<d>0x07500001</d>
+			<d>0x08300010</d>
+			<d>0x08301000</d>
+			<d>0x08601000</d>
+			<d>0x08602000</d>
+			<d>0x08801000</d>
+			<d>0x08801008</d>
+			<d>0x08802000</d>
+			<d>0x60a00002</d>
+			<d>0x62210001</d>
+			<d>0x70901010</d>
+			<d>0x70930000</d>
+			<d>0x72110000</d>
+			<d>0x72120000</d>
+			<d>0x90800020</d>
+			<d>0x90910010</d>
+			<d>0x92020010</d>
+			<d>0x92041010</d>
+			<d>0x9e550002</d>
+			<d>0xa8620004</d>
+			<d>0xa8670000</d>
+			<d>0xaa730000</d>
+			<d>0xac740000</d>
+			<d>0xb8a21020</d>
+			<d>0xb8a31020</d>
+			<d>0xc8700008</d>
+			<d>0xc8710008</d>
+		</device_list>
+		<t>dEQP-VK.glsl.loops.special.do_while_dynamic_iterations.dowhile_trap_vertex</t>
+	</waiver>
 </waiver_list>

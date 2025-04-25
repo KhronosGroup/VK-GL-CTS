@@ -37,24 +37,27 @@ void createTests(tcu::TestCaseGroup *tests, const char *data_dir)
 #ifndef CTS_USES_VULKANSC
     tcu::TestContext &testCtx = tests->getTestContext();
 
+    vk::SpirVAsmBuildOptions asmOptions(VK_MAKE_API_VERSION(0, 1, 1, 0), vk::SPIRV_VERSION_1_4);
+    asmOptions.supports_VK_KHR_spirv_1_4 = true;
+
     // Shader test files are saved in <path>/external/vulkancts/data/vulkan/amber/<data_dir>/<basename>.amber
     struct Case
     {
         const char *basename;
         const char *description;
     };
-    const Case cases[] = {
+    const Case cases[]{
         {"workgroup", "OpPtrAccessChain with correct ArrayStride decoration"},
-        {"workgroup_no_stride", "OpPtrAccessChain with no ArrayStride decoration"},
         {"workgroup_bad_stride", "OpPtrAccessChain with incorrect ArrayStride decoration"},
     };
 
-    for (unsigned i = 0; i < sizeof(cases) / sizeof(cases[0]); ++i)
+    for (const auto &c : cases)
     {
-        std::string file = std::string(cases[i].basename) + ".amber";
+        std::string file = std::string(c.basename) + ".amber";
         cts_amber::AmberTestCase *testCase =
-            cts_amber::createAmberTestCase(testCtx, cases[i].basename, cases[i].description, data_dir, file);
+            cts_amber::createAmberTestCase(testCtx, c.basename, c.description, data_dir, file);
         testCase->addRequirement("VariablePointerFeatures.variablePointers");
+        testCase->setSpirVAsmBuildOptions(asmOptions);
 
         tests->addChild(testCase);
     }

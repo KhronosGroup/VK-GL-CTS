@@ -850,6 +850,9 @@ PipelineFlagsInstance::BottomLevelASPtrs PipelineFlagsInstance::createBottomLeve
 
     BottomLevelASPtrs result;
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     if (!m_params.isect() &&
         ((m_params.geomTypes == GeometryTypes::Triangle) || (m_params.geomTypes == GeometryTypes::TriangleAndBox)))
     {
@@ -867,7 +870,7 @@ PipelineFlagsInstance::BottomLevelASPtrs PipelineFlagsInstance::createBottomLeve
                 blas->addGeometry(std::vector<tcu::Vec3>(triangle.begin(), triangle.end()), true, geomFlags);
             }
 
-            blas->createAndBuild(vkd, device, cmdBuffer, allocator);
+            blas->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
             result.emplace_back(de::SharedPtr<BottomLevelAccelerationStructure>(blas.release()));
         }
     }
@@ -890,7 +893,7 @@ PipelineFlagsInstance::BottomLevelASPtrs PipelineFlagsInstance::createBottomLeve
                 blas->addGeometry(std::vector<tcu::Vec3>(box.begin(), box.end()), false, geomFlags);
             }
 
-            blas->createAndBuild(vkd, device, cmdBuffer, allocator);
+            blas->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
             result.emplace_back(de::SharedPtr<BottomLevelAccelerationStructure>(blas.release()));
         }
     }
@@ -908,6 +911,9 @@ PipelineFlagsInstance::TopLevelASPtr PipelineFlagsInstance::createTopLevelAccele
 
     auto tlas = makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     tlas->setBuildType(m_params.onHhost ? VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR :
                                           VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR);
     tlas->setInstanceCount(blasPtrs.size());
@@ -917,7 +923,7 @@ PipelineFlagsInstance::TopLevelASPtr PipelineFlagsInstance::createTopLevelAccele
             static_cast<uint32_t>(std::distance(begin, i) * groupsAndGapsPerInstance);
         tlas->addInstance(*i, identityMatrix3x4, 0, 0xFF, instanceShaderBindingTableRecordOffset);
     }
-    tlas->createAndBuild(vkd, device, cmdBuffer, allocator);
+    tlas->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return TopLevelASPtr(tlas.release());
 }

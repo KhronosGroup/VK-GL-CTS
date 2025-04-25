@@ -2129,6 +2129,9 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate(void)
     using TLASPtr = de::MovePtr<TopLevelAccelerationStructure>;
     using BLASPtr = de::SharedPtr<BottomLevelAccelerationStructure>;
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     TLASPtr tlas;
     BLASPtr blas;
 
@@ -2162,12 +2165,12 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate(void)
 
             blas->addGeometry(geometry, true /*isTriangles*/, VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
         }
-        blas->createAndBuild(vkd, device, cmdBuffer, alloc);
+        blas->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
         tlas->setInstanceCount(1u);
         tlas->addInstance(blas, identityMatrix3x4, 0u, 0xFFu, 0u,
                           VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR);
 
-        tlas->createAndBuild(vkd, device, cmdBuffer, alloc);
+        tlas->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
     }
 
     // Graphics pipeline data if needed.

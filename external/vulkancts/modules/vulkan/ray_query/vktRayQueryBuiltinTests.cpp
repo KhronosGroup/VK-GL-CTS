@@ -1569,16 +1569,19 @@ void RayTracingConfiguration::fillCommandBuffer(const TestEnvironment &env, Test
         makeBottomLevelAccelerationStructure();
     de::MovePtr<TopLevelAccelerationStructure> topLevelAccelerationStructure = makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     m_bottomLevelAccelerationStructure =
         de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release());
     m_bottomLevelAccelerationStructure->setDefaultGeometryData(testParams.stage);
-    m_bottomLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator);
+    m_bottomLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator, bufferProps);
 
     m_topLevelAccelerationStructure =
         de::SharedPtr<TopLevelAccelerationStructure>(topLevelAccelerationStructure.release());
     m_topLevelAccelerationStructure->setInstanceCount(1);
     m_topLevelAccelerationStructure->addInstance(m_bottomLevelAccelerationStructure);
-    m_topLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator);
+    m_topLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator, bufferProps);
 
     const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = m_topLevelAccelerationStructure.get();
     const VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
@@ -1966,6 +1969,9 @@ const VkAccelerationStructureKHR *TestConfigurationFlow::initAccelerationStructu
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     m_topAccelerationStructure =
         de::SharedPtr<TopLevelAccelerationStructure>(rayQueryTopLevelAccelerationStructure.release());
 
@@ -2015,13 +2021,13 @@ const VkAccelerationStructureKHR *TestConfigurationFlow::initAccelerationStructu
             rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, triangles);
         }
 
-        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
         m_bottomAccelerationStructures.push_back(
             de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
         m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back());
     }
 
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return m_topAccelerationStructure.get()->getPtr();
 }
@@ -2134,6 +2140,9 @@ const VkAccelerationStructureKHR *TestConfigurationPrimitiveId::initAcceleration
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     DE_ASSERT(instancesGroupCount * geometriesGroupCount * squaresGroupCount == width * height);
 
     m_topAccelerationStructure =
@@ -2187,14 +2196,14 @@ const VkAccelerationStructureKHR *TestConfigurationPrimitiveId::initAcceleration
             rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, triangles);
         }
 
-        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
         m_bottomAccelerationStructures.push_back(
             de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
         m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back(), identityMatrix3x4,
                                                 instanceNdx + 1);
     }
 
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return m_topAccelerationStructure.get()->getPtr();
 }
@@ -2305,6 +2314,9 @@ const VkAccelerationStructureKHR *TestConfigurationGetRayTMin::initAccelerationS
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     DE_ASSERT(instancesGroupCount == 1);
     DE_ASSERT(geometriesGroupCount == 1);
     DE_ASSERT(squaresGroupCount == width * height);
@@ -2355,14 +2367,14 @@ const VkAccelerationStructureKHR *TestConfigurationGetRayTMin::initAccelerationS
             }
         }
 
-        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
         m_bottomAccelerationStructures.push_back(
             de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
         m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back(), identityMatrix3x4,
                                                 instanceNdx + 1);
     }
 
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     for (uint32_t squareNdx = 0; squareNdx < squaresGroupCount; ++squareNdx)
     {
@@ -2443,6 +2455,9 @@ const VkAccelerationStructureKHR *TestConfigurationGetWorldRayOrigin::initAccele
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     DE_ASSERT(instancesGroupCount == 1);
     DE_ASSERT(geometriesGroupCount == 1);
     DE_ASSERT(squaresGroupCount == width * height);
@@ -2493,14 +2508,14 @@ const VkAccelerationStructureKHR *TestConfigurationGetWorldRayOrigin::initAccele
             }
         }
 
-        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
         m_bottomAccelerationStructures.push_back(
             de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
         m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back(), identityMatrix3x4,
                                                 instanceNdx + 1);
     }
 
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     for (uint32_t squareNdx = 0; squareNdx < squaresGroupCount; ++squareNdx)
     {
@@ -2613,6 +2628,9 @@ const VkAccelerationStructureKHR *TestConfigurationGetWorldRayDirection::initAcc
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     DE_ASSERT(instancesGroupCount == 1);
     DE_ASSERT(geometriesGroupCount == 1);
     DE_ASSERT(squaresGroupCount == width * height);
@@ -2663,14 +2681,14 @@ const VkAccelerationStructureKHR *TestConfigurationGetWorldRayDirection::initAcc
             }
         }
 
-        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
         m_bottomAccelerationStructures.push_back(
             de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
         m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back(), identityMatrix3x4,
                                                 instanceNdx + 1);
     }
 
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     const auto normalize = [](const tcu::Vec3 &in_vec3)
     {
@@ -2792,6 +2810,9 @@ const VkAccelerationStructureKHR *TestConfigurationInstanceId::initAccelerationS
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     DE_ASSERT(instancesGroupCount * geometriesGroupCount * squaresGroupCount == width * height);
 
     m_topAccelerationStructure =
@@ -2845,14 +2866,14 @@ const VkAccelerationStructureKHR *TestConfigurationInstanceId::initAccelerationS
             rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, triangles);
         }
 
-        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
         m_bottomAccelerationStructures.push_back(
             de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
         m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back(), identityMatrix3x4,
                                                 instanceNdx + 1);
     }
 
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return m_topAccelerationStructure.get()->getPtr();
 }
@@ -2965,6 +2986,9 @@ const VkAccelerationStructureKHR *TestConfigurationInstanceCustomIndex::initAcce
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     DE_ASSERT(instancesGroupCount * geometriesGroupCount * squaresGroupCount == width * height);
 
     m_topAccelerationStructure =
@@ -3018,14 +3042,14 @@ const VkAccelerationStructureKHR *TestConfigurationInstanceCustomIndex::initAcce
             rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, triangles);
         }
 
-        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
         m_bottomAccelerationStructures.push_back(
             de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
         m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back(), identityMatrix3x4,
                                                 instanceNdx + 1);
     }
 
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return m_topAccelerationStructure.get()->getPtr();
 }
@@ -3137,6 +3161,9 @@ const VkAccelerationStructureKHR *TestConfigurationIntersectionT::initAccelerati
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     DE_ASSERT(instancesGroupCount * geometriesGroupCount * squaresGroupCount == width * height);
 
     m_topAccelerationStructure =
@@ -3192,13 +3219,13 @@ const VkAccelerationStructureKHR *TestConfigurationIntersectionT::initAccelerati
             rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, triangles);
         }
 
-        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
         m_bottomAccelerationStructures.push_back(
             de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
         m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back(), identityMatrix3x4);
     }
 
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return m_topAccelerationStructure.get()->getPtr();
 }
@@ -3318,6 +3345,9 @@ const VkAccelerationStructureKHR *TestConfigurationObjectRayOrigin::initAccelera
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     DE_ASSERT(instancesGroupCount * geometriesGroupCount * squaresGroupCount == width * height);
 
     m_topAccelerationStructure =
@@ -3367,13 +3397,13 @@ const VkAccelerationStructureKHR *TestConfigurationObjectRayOrigin::initAccelera
             rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, triangles);
         }
 
-        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
         m_bottomAccelerationStructures.push_back(
             de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
         m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back(), identityMatrix3x4);
     }
 
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     m_expected.resize(width * height * depth);
     for (uint32_t y = 0; y < height; ++y)
@@ -3510,6 +3540,9 @@ const VkAccelerationStructureKHR *TestConfigurationObjectRayDirection::initAccel
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     DE_ASSERT(instancesGroupCount * geometriesGroupCount * squaresGroupCount == width * height);
 
     m_topAccelerationStructure =
@@ -3559,13 +3592,13 @@ const VkAccelerationStructureKHR *TestConfigurationObjectRayDirection::initAccel
             rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, triangles);
         }
 
-        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
         m_bottomAccelerationStructures.push_back(
             de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
         m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back(), identityMatrix3x4);
     }
 
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     m_expected.resize(width * height * depth);
     for (uint32_t y = 0; y < height; ++y)
@@ -3700,6 +3733,9 @@ const VkAccelerationStructureKHR *TestConfigurationObjectToWorld::initAccelerati
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     DE_ASSERT(instancesGroupCount * geometriesGroupCount * squaresGroupCount == width * height);
 
     m_topAccelerationStructure =
@@ -3753,13 +3789,13 @@ const VkAccelerationStructureKHR *TestConfigurationObjectToWorld::initAccelerati
             rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, triangles);
         }
 
-        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
         m_bottomAccelerationStructures.push_back(
             de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
         m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back(), transform);
     }
 
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     {
         const uint32_t imageDepth       = 4 * 4;
@@ -3929,6 +3965,9 @@ const VkAccelerationStructureKHR *TestConfigurationWorldToObject::initAccelerati
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     DE_ASSERT(instancesGroupCount * geometriesGroupCount * squaresGroupCount == width * height);
 
     m_topAccelerationStructure =
@@ -3982,13 +4021,13 @@ const VkAccelerationStructureKHR *TestConfigurationWorldToObject::initAccelerati
             rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, triangles);
         }
 
-        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
         m_bottomAccelerationStructures.push_back(
             de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
         m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back(), transform);
     }
 
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     {
         const uint32_t imageDepth       = 4 * 4;
@@ -4363,6 +4402,9 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionCandidateAABBO
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     DE_ASSERT(instancesGroupCount == 1);
     DE_ASSERT(geometriesGroupCount == 1);
     DE_ASSERT(squaresGroupCount == width * height);
@@ -4404,14 +4446,14 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionCandidateAABBO
             }
         }
 
-        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
         m_bottomAccelerationStructures.push_back(
             de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
         m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back(), identityMatrix3x4,
                                                 instanceNdx + 1);
     }
 
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     for (uint32_t squareNdx = 0; squareNdx < squaresGroupCount; ++squareNdx)
     {
@@ -4486,6 +4528,9 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionFrontFace::ini
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     DE_ASSERT(instancesGroupCount == 1);
     DE_ASSERT(geometriesGroupCount == 1);
     DE_ASSERT(squaresGroupCount == width * height);
@@ -4542,14 +4587,14 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionFrontFace::ini
             }
         }
 
-        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
         m_bottomAccelerationStructures.push_back(
             de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
         m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back(), identityMatrix3x4,
                                                 instanceNdx + 1);
     }
 
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     for (uint32_t squareNdx = 0; squareNdx < squaresGroupCount; ++squareNdx)
     {
@@ -4660,6 +4705,9 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionGeometryIndex:
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     DE_ASSERT(instancesGroupCount == 1);
     DE_ASSERT(geometriesGroupCount == 1);
     DE_ASSERT(squaresGroupCount == width * height);
@@ -4723,14 +4771,14 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionGeometryIndex:
             }
         }
 
-        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
         m_bottomAccelerationStructures.push_back(
             de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
         m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back(), identityMatrix3x4,
                                                 instanceNdx + 1);
     }
 
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     for (uint32_t squareNdx = 0; squareNdx < squaresGroupCount; ++squareNdx)
     {
@@ -4856,6 +4904,9 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionBarycentrics::
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     DE_ASSERT(instancesGroupCount == 1);
     DE_ASSERT(geometriesGroupCount == 1);
     DE_ASSERT(squaresGroupCount == width * height);
@@ -4916,14 +4967,14 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionBarycentrics::
             }
         }
 
-        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+        rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
         m_bottomAccelerationStructures.push_back(
             de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
         m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back(), identityMatrix3x4,
                                                 instanceNdx + 1);
     }
 
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return m_topAccelerationStructure.get()->getPtr();
 }
@@ -5075,6 +5126,9 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionInstanceShader
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     DE_ASSERT(instancesGroupCount * geometriesGroupCount * squaresGroupCount == width * height);
 
     m_topAccelerationStructure =
@@ -5135,7 +5189,8 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionInstanceShader
 
                 rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, usesTriangles);
 
-                rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+                rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator,
+                                                                         bufferProps);
                 m_bottomAccelerationStructures.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(
                     rayQueryBottomLevelAccelerationStructure.release()));
 
@@ -5145,7 +5200,7 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionInstanceShader
         }
     }
 
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return m_topAccelerationStructure.get()->getPtr();
 }
@@ -5274,6 +5329,9 @@ const VkAccelerationStructureKHR *TestConfigurationRayQueryTerminate::initAccele
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     DE_ASSERT(instancesGroupCount * geometriesGroupCount * squaresGroupCount == width * height);
 
     m_topAccelerationStructure =
@@ -5338,7 +5396,8 @@ const VkAccelerationStructureKHR *TestConfigurationRayQueryTerminate::initAccele
                 rayQueryBottomLevelAccelerationStructure->addGeometry(
                     geometryData, usesTriangles, VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
 
-                rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+                rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator,
+                                                                         bufferProps);
                 m_bottomAccelerationStructures.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(
                     rayQueryBottomLevelAccelerationStructure.release()));
 
@@ -5348,7 +5407,7 @@ const VkAccelerationStructureKHR *TestConfigurationRayQueryTerminate::initAccele
         }
     }
 
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return m_topAccelerationStructure.get()->getPtr();
 }
@@ -5460,6 +5519,9 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionType::initAcce
     de::MovePtr<TopLevelAccelerationStructure> rayQueryTopLevelAccelerationStructure =
         makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     DE_ASSERT(instancesGroupCount * geometriesGroupCount * squaresGroupCount == width * height);
 
     m_topAccelerationStructure =
@@ -5517,7 +5579,8 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionType::initAcce
 
                     rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, usesTriangles);
 
-                    rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+                    rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator,
+                                                                             bufferProps);
                     m_bottomAccelerationStructures.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(
                         rayQueryBottomLevelAccelerationStructure.release()));
 
@@ -5533,7 +5596,7 @@ const VkAccelerationStructureKHR *TestConfigurationGetIntersectionType::initAcce
         }
     }
 
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return m_topAccelerationStructure.get()->getPtr();
 }
@@ -5662,6 +5725,9 @@ const VkAccelerationStructureKHR *TestConfigurationUsingWrapperFunction::initAcc
     de::MovePtr<BottomLevelAccelerationStructure> rayQueryBottomLevelAccelerationStructure =
         makeBottomLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     for (uint32_t squareNdx = 0; squareNdx < squaresGroupCount; ++squareNdx)
     {
         std::vector<tcu::Vec3> geometryData;
@@ -5693,11 +5759,11 @@ const VkAccelerationStructureKHR *TestConfigurationUsingWrapperFunction::initAcc
         rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, usesTriangles);
     }
 
-    rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
     m_bottomAccelerationStructures.push_back(
         de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
     m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back(), identityMatrix3x4, 1);
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return m_topAccelerationStructure.get()->getPtr();
 }

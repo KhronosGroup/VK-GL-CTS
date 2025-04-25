@@ -200,6 +200,7 @@ struct TestParams
     uint32_t height;
     uint32_t workerThreadsCount;
     EmptyAccelerationStructureCase emptyASCase;
+    ResourceResidency resResidency; // Resource residency for acceleration buffer
 };
 
 uint32_t getShaderGroupHandleSize(const InstanceInterface &vki, const VkPhysicalDevice physicalDevice)
@@ -1042,6 +1043,11 @@ void RayTracingConfiguration::fillCommandBuffer(
     const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
     Allocator &allocator                  = context.getDefaultAllocator();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = testParams.resResidency;
+    bufferProps.props.queue =
+        testParams.resResidency != ResourceResidency::TRADITIONAL ? context.getSparseQueue() : VK_NULL_HANDLE;
+
     {
         de::MovePtr<BottomLevelAccelerationStructure> bottomLevelAccelerationStructure =
             makeBottomLevelAccelerationStructure();
@@ -1082,13 +1088,13 @@ void RayTracingConfiguration::fillCommandBuffer(
             de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
 
         for (auto &blas : bottomLevelAccelerationStructures)
-            blas->createAndBuild(vkd, device, commandBuffer, allocator);
+            blas->createAndBuild(vkd, device, commandBuffer, allocator, bufferProps);
     }
 
     topLevelAccelerationStructure = makeTopLevelAccelerationStructure();
     topLevelAccelerationStructure->setInstanceCount(1);
     topLevelAccelerationStructure->addInstance(bottomLevelAccelerationStructures[0]);
-    topLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator);
+    topLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator, bufferProps);
 
     const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = topLevelAccelerationStructure.get();
     VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
@@ -1642,6 +1648,13 @@ void RayQueryASBasicTestCase::checkSupport(Context &context) const
     // Check supported vertex format.
     checkAccelerationStructureVertexBufferFormat(context.getInstanceInterface(), context.getPhysicalDevice(),
                                                  m_data.vertexFormat);
+
+    // Check support for sparse binding resources
+    if ((m_data.resResidency == ResourceResidency::SPARSE_BINDING) &&
+        (context.getDeviceFeatures().sparseBinding == VK_FALSE))
+    {
+        TCU_THROW(NotSupportedError, "sparseBinding feature is not supported");
+    }
 }
 
 void RayQueryASBasicTestCase::initPrograms(SourceCollections &programCollection) const
@@ -2568,6 +2581,11 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest(TestConfigura
         std::vector<VkDeviceSize> bottomBlasCompactSize;
         std::vector<VkDeviceSize> bottomBlasSerialSize;
 
+        AccelerationStructBufferProperties bufferProps;
+        bufferProps.props.residency = m_data.resResidency;
+        bufferProps.props.queue =
+            m_data.resResidency != ResourceResidency::TRADITIONAL ? m_context.getSparseQueue() : VK_NULL_HANDLE;
+
         for (auto &blas : bottomLevelAccelerationStructures)
         {
             blas->setBuildType(m_data.buildType);
@@ -2577,7 +2595,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest(TestConfigura
             blas->setCreationBufferUnbounded(m_data.bottomUnboundedCreation);
             blas->setBuildWithoutGeometries(buildWithoutGeom);
             blas->setBuildWithoutPrimitives(bottomNoPrimitives);
-            blas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+            blas->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps, 0u);
             accelerationStructureHandles.push_back(*(blas->getPtr()));
         }
 
@@ -2648,7 +2666,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest(TestConfigura
                     asCopy->setCreationBufferUnbounded(m_data.bottomUnboundedCreation);
                     asCopy->setBuildWithoutGeometries(buildWithoutGeom);
                     asCopy->setBuildWithoutPrimitives(bottomNoPrimitives);
-                    asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator,
+                    asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bufferProps,
                                               bottomLevelAccelerationStructures[i].get(), 0u, 0u);
                     bottomLevelAccelerationStructureCopies.push_back(
                         de::SharedPtr<BottomLevelAccelerationStructure>(asCopy.release()));
@@ -2667,7 +2685,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest(TestConfigura
                     asCopy->setCreationBufferUnbounded(m_data.bottomUnboundedCreation);
                     asCopy->setBuildWithoutGeometries(buildWithoutGeom);
                     asCopy->setBuildWithoutPrimitives(bottomNoPrimitives);
-                    asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator,
+                    asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bufferProps,
                                               bottomLevelAccelerationStructures[i].get(), bottomBlasCompactSize[i], 0u);
                     bottomLevelAccelerationStructureCopies.push_back(
                         de::SharedPtr<BottomLevelAccelerationStructure>(asCopy.release()));
@@ -2704,7 +2722,8 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest(TestConfigura
                     asCopy->setBuildWithoutGeometries(buildWithoutGeom);
                     asCopy->setBuildWithoutPrimitives(bottomNoPrimitives);
                     asCopy->setDeferredOperation(htSerialize, workerThreadsCount);
-                    asCopy->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, storage.get(), 0u);
+                    asCopy->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, bufferProps, storage.get(),
+                                                     0u);
                     bottomLevelAccelerationStructureCopies.push_back(
                         de::SharedPtr<BottomLevelAccelerationStructure>(asCopy.release()));
                 }
@@ -2734,7 +2753,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest(TestConfigura
         topLevelAccelerationStructure->setCreateGeneric(m_data.topGeneric);
         topLevelAccelerationStructure->setCreationBufferUnbounded(m_data.topUnboundedCreation);
         topLevelAccelerationStructure->setInactiveInstances(inactiveInstances);
-        topLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator);
+        topLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
         topLevelStructureHandles.push_back(*(topLevelAccelerationStructure->getPtr()));
 
         if (topCompact)
@@ -2784,7 +2803,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest(TestConfigura
                 topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
                 topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
                 topLevelAccelerationStructureCopy->setCreationBufferUnbounded(m_data.topUnboundedCreation);
-                topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator,
+                topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bufferProps,
                                                                      topLevelAccelerationStructure.get(), 0u, 0u);
                 break;
             }
@@ -2798,8 +2817,9 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest(TestConfigura
                 topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
                 topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
                 topLevelAccelerationStructureCopy->setCreationBufferUnbounded(m_data.topUnboundedCreation);
-                topLevelAccelerationStructureCopy->createAndCopyFrom(
-                    vkd, device, *cmdBuffer, allocator, topLevelAccelerationStructure.get(), topBlasCompactSize[0], 0u);
+                topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bufferProps,
+                                                                     topLevelAccelerationStructure.get(),
+                                                                     topBlasCompactSize[0], 0u);
                 break;
             }
             case OP_SERIALIZE:
@@ -2831,13 +2851,13 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest(TestConfigura
                 topLevelAccelerationStructureCopy->setCreationBufferUnbounded(m_data.topUnboundedCreation);
                 topLevelAccelerationStructureCopy->setDeferredOperation(htSerialize, workerThreadsCount);
                 topLevelAccelerationStructureCopy->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator,
-                                                                            storage.get(), 0u);
+                                                                            bufferProps, storage.get(), 0u);
                 break;
             }
             case OP_UPDATE:
             {
                 topLevelAccelerationStructureCopy = makeTopLevelAccelerationStructure();
-                topLevelAccelerationStructureCopy->create(vkd, device, allocator, 0u, 0u);
+                topLevelAccelerationStructureCopy->create(vkd, device, allocator, bufferProps, 0u, 0u);
                 // Update AS based on topLevelAccelerationStructure
                 topLevelAccelerationStructureCopy->build(vkd, device, *cmdBuffer, topLevelAccelerationStructure.get());
                 break;
@@ -2855,7 +2875,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest(TestConfigura
                 topLevelAccelerationStructureCopy->setInactiveInstances(inactiveInstances);
                 topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
                 topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
-                topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator,
+                topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bufferProps,
                                                                      topLevelAccelerationStructure.get(), 0u, 0u);
                 break;
             }
@@ -2951,24 +2971,32 @@ tcu::TestStatus RayQueryASBasicTestInstance::iterate(void)
 class RayQueryASDynamicIndexingTestCase : public TestCase
 {
 public:
-    RayQueryASDynamicIndexingTestCase(tcu::TestContext &context, const char *name);
+    RayQueryASDynamicIndexingTestCase(tcu::TestContext &context, const char *name, ResourceResidency accStructRes);
     ~RayQueryASDynamicIndexingTestCase(void) = default;
 
     void checkSupport(Context &context) const override;
     void initPrograms(SourceCollections &programCollection) const override;
     TestInstance *createInstance(Context &context) const override;
+
+private:
+    const ResourceResidency m_residency;
 };
 
 class RayQueryASDynamicIndexingTestInstance : public TestInstance
 {
 public:
-    RayQueryASDynamicIndexingTestInstance(Context &context);
+    RayQueryASDynamicIndexingTestInstance(Context &context, ResourceResidency accStructRes);
     ~RayQueryASDynamicIndexingTestInstance(void) = default;
     tcu::TestStatus iterate(void) override;
+
+private:
+    const ResourceResidency m_residency;
 };
 
-RayQueryASDynamicIndexingTestCase::RayQueryASDynamicIndexingTestCase(tcu::TestContext &context, const char *name)
+RayQueryASDynamicIndexingTestCase::RayQueryASDynamicIndexingTestCase(tcu::TestContext &context, const char *name,
+                                                                     ResourceResidency accStructRes)
     : TestCase(context, name)
+    , m_residency(accStructRes)
 {
 }
 
@@ -2976,6 +3004,12 @@ void RayQueryASDynamicIndexingTestCase::checkSupport(Context &context) const
 {
     commonASTestsCheckSupport(context);
     context.requireDeviceFunctionality("VK_EXT_descriptor_indexing");
+
+    // Check support for sparse binding resources
+    if ((m_residency == ResourceResidency::SPARSE_BINDING) && (context.getDeviceFeatures().sparseBinding == VK_FALSE))
+    {
+        TCU_THROW(NotSupportedError, "sparseBinding feature is not supported");
+    }
 }
 
 void RayQueryASDynamicIndexingTestCase::initPrograms(SourceCollections &programCollection) const
@@ -3251,11 +3285,13 @@ void RayQueryASDynamicIndexingTestCase::initPrograms(SourceCollections &programC
 
 TestInstance *RayQueryASDynamicIndexingTestCase::createInstance(Context &context) const
 {
-    return new RayQueryASDynamicIndexingTestInstance(context);
+    return new RayQueryASDynamicIndexingTestInstance(context, m_residency);
 }
 
-RayQueryASDynamicIndexingTestInstance::RayQueryASDynamicIndexingTestInstance(Context &context)
+RayQueryASDynamicIndexingTestInstance::RayQueryASDynamicIndexingTestInstance(Context &context,
+                                                                             ResourceResidency accStructRes)
     : vkt::TestInstance(context)
+    , m_residency(accStructRes)
 {
 }
 
@@ -3334,6 +3370,11 @@ tcu::TestStatus RayQueryASDynamicIndexingTestInstance::iterate(void)
     std::vector<VkDeviceAddress> tlasPtrVect(tlasCount);
     std::vector<VkAccelerationStructureKHR> tlasVkVect;
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = m_residency;
+    bufferProps.props.queue =
+        m_residency != ResourceResidency::TRADITIONAL ? m_context.getSparseQueue() : VK_NULL_HANDLE;
+
     // randomly scatter AS indices across the range (number of them should be equal to the max subgroup size)
     deRandom rnd;
     deRandom_init(&rnd, 123);
@@ -3366,7 +3407,7 @@ tcu::TestStatus RayQueryASDynamicIndexingTestInstance::iterate(void)
             },
             true, 0u);
 
-        blas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+        blas->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
 
         // build top level acceleration structures
         for (uint32_t tlasIndex = 0; tlasIndex < tlasCount; ++tlasIndex)
@@ -3381,7 +3422,7 @@ tcu::TestStatus RayQueryASDynamicIndexingTestInstance::iterate(void)
                 // that with current cts utils so we are marking them as inactive instead
                 tlas->setInactiveInstances(true);
             }
-            tlas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+            tlas->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
 
             // get acceleration structure device address
             const VkAccelerationStructureDeviceAddressInfoKHR addressInfo = {
@@ -3477,6 +3518,21 @@ tcu::TestStatus RayQueryASDynamicIndexingTestInstance::iterate(void)
 
 void addBasicBuildingTests(tcu::TestCaseGroup *group)
 {
+    struct AccelerationBufferResidency
+    {
+        ResourceResidency res;
+        const char *name;
+    } accStructBufferResTypes[] = {
+        {
+            ResourceResidency::TRADITIONAL,
+            "traditional_structures",
+        },
+        {
+            ResourceResidency::SPARSE_BINDING,
+            "sparse_binding_structures",
+        },
+    };
+
     struct ShaderSourceTypeData
     {
         ShaderSourceType shaderSourceType;
@@ -3586,106 +3642,136 @@ void addBasicBuildingTests(tcu::TestCaseGroup *group)
     de::ModCounter32 unboundedCreationBottomCounter(3u);
     de::ModCounter32 unboundedCreationTopCounter(7u);
 
-    for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
+    for (size_t structResidencyNdx = 0; structResidencyNdx < DE_LENGTH_OF_ARRAY(accStructBufferResTypes);
+         ++structResidencyNdx)
     {
-        de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(
-            new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name));
+        de::MovePtr<tcu::TestCaseGroup> structResidencyGroup(
+            new tcu::TestCaseGroup(group->getTestContext(), accStructBufferResTypes[structResidencyNdx].name));
 
-        for (size_t buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
+        for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
         {
-            de::MovePtr<tcu::TestCaseGroup> buildGroup(
-                new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name));
+            de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(
+                new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name));
 
-            for (size_t bottomNdx = 0; bottomNdx < DE_LENGTH_OF_ARRAY(bottomTestTypes); ++bottomNdx)
+            for (size_t buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
             {
-                de::MovePtr<tcu::TestCaseGroup> bottomGroup(
-                    new tcu::TestCaseGroup(group->getTestContext(), bottomTestTypes[bottomNdx].name));
+                de::MovePtr<tcu::TestCaseGroup> buildGroup(
+                    new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name));
 
-                for (size_t topNdx = 0; topNdx < DE_LENGTH_OF_ARRAY(topTestTypes); ++topNdx)
+                for (size_t bottomNdx = 0; bottomNdx < DE_LENGTH_OF_ARRAY(bottomTestTypes); ++bottomNdx)
                 {
-                    de::MovePtr<tcu::TestCaseGroup> topGroup(
-                        new tcu::TestCaseGroup(group->getTestContext(), topTestTypes[topNdx].name));
+                    de::MovePtr<tcu::TestCaseGroup> bottomGroup(
+                        new tcu::TestCaseGroup(group->getTestContext(), bottomTestTypes[bottomNdx].name));
 
-                    for (int paddingTypeIdx = 0; paddingTypeIdx < DE_LENGTH_OF_ARRAY(paddingType); ++paddingTypeIdx)
+                    for (size_t topNdx = 0; topNdx < DE_LENGTH_OF_ARRAY(topTestTypes); ++topNdx)
                     {
-                        de::MovePtr<tcu::TestCaseGroup> paddingTypeGroup(
-                            new tcu::TestCaseGroup(group->getTestContext(), paddingType[paddingTypeIdx].name));
+                        de::MovePtr<tcu::TestCaseGroup> topGroup(
+                            new tcu::TestCaseGroup(group->getTestContext(), topTestTypes[topNdx].name));
 
-                        for (size_t optimizationNdx = 0; optimizationNdx < DE_LENGTH_OF_ARRAY(optimizationTypes);
-                             ++optimizationNdx)
+                        for (int paddingTypeIdx = 0; paddingTypeIdx < DE_LENGTH_OF_ARRAY(paddingType); ++paddingTypeIdx)
                         {
-                            for (size_t updateNdx = 0; updateNdx < DE_LENGTH_OF_ARRAY(updateTypes); ++updateNdx)
+                            de::MovePtr<tcu::TestCaseGroup> paddingTypeGroup(
+                                new tcu::TestCaseGroup(group->getTestContext(), paddingType[paddingTypeIdx].name));
+
+                            for (size_t optimizationNdx = 0; optimizationNdx < DE_LENGTH_OF_ARRAY(optimizationTypes);
+                                 ++optimizationNdx)
                             {
-                                for (size_t compactionNdx = 0; compactionNdx < DE_LENGTH_OF_ARRAY(compactionTypes);
-                                     ++compactionNdx)
+                                for (size_t updateNdx = 0; updateNdx < DE_LENGTH_OF_ARRAY(updateTypes); ++updateNdx)
                                 {
-                                    for (size_t lowMemoryNdx = 0; lowMemoryNdx < DE_LENGTH_OF_ARRAY(lowMemoryTypes);
-                                         ++lowMemoryNdx)
+                                    for (size_t compactionNdx = 0; compactionNdx < DE_LENGTH_OF_ARRAY(compactionTypes);
+                                         ++compactionNdx)
                                     {
-                                        for (int createGenericIdx = 0;
-                                             createGenericIdx < DE_LENGTH_OF_ARRAY(createGenericParams);
-                                             ++createGenericIdx)
+                                        for (size_t lowMemoryNdx = 0; lowMemoryNdx < DE_LENGTH_OF_ARRAY(lowMemoryTypes);
+                                             ++lowMemoryNdx)
                                         {
-                                            std::string testName =
-                                                std::string(optimizationTypes[optimizationNdx].name) + "_" +
-                                                std::string(updateTypes[updateNdx].name) + "_" +
-                                                std::string(compactionTypes[compactionNdx].name) + "_" +
-                                                std::string(lowMemoryTypes[lowMemoryNdx].name) +
-                                                std::string(createGenericParams[createGenericIdx].suffix);
+                                            for (int createGenericIdx = 0;
+                                                 createGenericIdx < DE_LENGTH_OF_ARRAY(createGenericParams);
+                                                 ++createGenericIdx)
+                                            {
+                                                if ((buildTypes[buildTypeNdx].buildType ==
+                                                     VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR) &&
+                                                    (accStructBufferResTypes[structResidencyNdx].res ==
+                                                     ResourceResidency::SPARSE_BINDING))
+                                                    continue;
 
-                                            const bool unboundedCreationBottom =
-                                                (static_cast<uint32_t>(unboundedCreationBottomCounter++) == 0u);
-                                            const bool unboundedCreationTop =
-                                                (static_cast<uint32_t>(unboundedCreationTopCounter++) == 0u);
+                                                std::string testName =
+                                                    std::string(optimizationTypes[optimizationNdx].name) + "_" +
+                                                    std::string(updateTypes[updateNdx].name) + "_" +
+                                                    std::string(compactionTypes[compactionNdx].name) + "_" +
+                                                    std::string(lowMemoryTypes[lowMemoryNdx].name) +
+                                                    std::string(createGenericParams[createGenericIdx].suffix);
 
-                                            TestParams testParams{
-                                                shaderSourceTypes[shaderSourceNdx].shaderSourceType,
-                                                shaderSourceTypes[shaderSourceNdx].shaderSourcePipeline,
-                                                buildTypes[buildTypeNdx].buildType,
-                                                VK_FORMAT_R32G32B32_SFLOAT,
-                                                paddingType[paddingTypeIdx].padVertices,
-                                                VK_INDEX_TYPE_NONE_KHR,
-                                                bottomTestTypes[bottomNdx].testType,
-                                                InstanceCullFlags::NONE,
-                                                bottomTestTypes[bottomNdx].usesAOP,
-                                                createGenericParams[createGenericIdx].bottomGeneric,
-                                                unboundedCreationBottom,
-                                                topTestTypes[topNdx].testType,
-                                                topTestTypes[topNdx].usesAOP,
-                                                createGenericParams[createGenericIdx].topGeneric,
-                                                unboundedCreationTop,
-                                                optimizationTypes[optimizationNdx].flags |
-                                                    updateTypes[updateNdx].flags |
-                                                    compactionTypes[compactionNdx].flags |
-                                                    lowMemoryTypes[lowMemoryNdx].flags,
-                                                OT_NONE,
-                                                OP_NONE,
-                                                TEST_WIDTH,
-                                                TEST_HEIGHT,
-                                                0u,
-                                                EmptyAccelerationStructureCase::NOT_EMPTY,
-                                            };
-                                            paddingTypeGroup->addChild(new RayQueryASBasicTestCase(
-                                                group->getTestContext(), testName.c_str(), testParams));
+                                                const bool unboundedCreationBottom =
+                                                    (static_cast<uint32_t>(unboundedCreationBottomCounter++) == 0u);
+                                                const bool unboundedCreationTop =
+                                                    (static_cast<uint32_t>(unboundedCreationTopCounter++) == 0u);
+
+                                                TestParams testParams{
+                                                    shaderSourceTypes[shaderSourceNdx].shaderSourceType,
+                                                    shaderSourceTypes[shaderSourceNdx].shaderSourcePipeline,
+                                                    buildTypes[buildTypeNdx].buildType,
+                                                    VK_FORMAT_R32G32B32_SFLOAT,
+                                                    paddingType[paddingTypeIdx].padVertices,
+                                                    VK_INDEX_TYPE_NONE_KHR,
+                                                    bottomTestTypes[bottomNdx].testType,
+                                                    InstanceCullFlags::NONE,
+                                                    bottomTestTypes[bottomNdx].usesAOP,
+                                                    createGenericParams[createGenericIdx].bottomGeneric,
+                                                    unboundedCreationBottom,
+                                                    topTestTypes[topNdx].testType,
+                                                    topTestTypes[topNdx].usesAOP,
+                                                    createGenericParams[createGenericIdx].topGeneric,
+                                                    unboundedCreationTop,
+                                                    optimizationTypes[optimizationNdx].flags |
+                                                        updateTypes[updateNdx].flags |
+                                                        compactionTypes[compactionNdx].flags |
+                                                        lowMemoryTypes[lowMemoryNdx].flags,
+                                                    OT_NONE,
+                                                    OP_NONE,
+                                                    TEST_WIDTH,
+                                                    TEST_HEIGHT,
+                                                    0u,
+                                                    EmptyAccelerationStructureCase::NOT_EMPTY,
+                                                    accStructBufferResTypes[structResidencyNdx].res,
+                                                };
+                                                paddingTypeGroup->addChild(new RayQueryASBasicTestCase(
+                                                    group->getTestContext(), testName.c_str(), testParams));
+                                            }
                                         }
                                     }
                                 }
                             }
+                            topGroup->addChild(paddingTypeGroup.release());
                         }
-                        topGroup->addChild(paddingTypeGroup.release());
+                        bottomGroup->addChild(topGroup.release());
                     }
-                    bottomGroup->addChild(topGroup.release());
+                    buildGroup->addChild(bottomGroup.release());
                 }
-                buildGroup->addChild(bottomGroup.release());
+                sourceTypeGroup->addChild(buildGroup.release());
             }
-            sourceTypeGroup->addChild(buildGroup.release());
+            structResidencyGroup->addChild(sourceTypeGroup.release());
         }
-        group->addChild(sourceTypeGroup.release());
+        group->addChild(structResidencyGroup.release());
     }
 }
 
 void addVertexIndexFormatsTests(tcu::TestCaseGroup *group)
 {
+    struct AccelerationBufferResidency
+    {
+        ResourceResidency res;
+        const char *name;
+    } accStructBufferResTypes[] = {
+        {
+            ResourceResidency::TRADITIONAL,
+            "traditional_structures",
+        },
+        {
+            ResourceResidency::SPARSE_BINDING,
+            "sparse_binding_structures",
+        },
+    };
+
     struct ShaderSourceTypeData
     {
         ShaderSourceType shaderSourceType;
@@ -3791,70 +3877,99 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup *group)
         {true, "padded"},
     };
 
-    for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
+    for (size_t structResidencyNdx = 0; structResidencyNdx < DE_LENGTH_OF_ARRAY(accStructBufferResTypes);
+         ++structResidencyNdx)
     {
-        de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(
-            new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name));
+        de::MovePtr<tcu::TestCaseGroup> structResidencyGroup(
+            new tcu::TestCaseGroup(group->getTestContext(), accStructBufferResTypes[structResidencyNdx].name));
 
-        for (size_t buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
+        for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
         {
-            de::MovePtr<tcu::TestCaseGroup> buildGroup(
-                new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name));
+            de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(
+                new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name));
 
-            for (size_t vertexFormatNdx = 0; vertexFormatNdx < DE_LENGTH_OF_ARRAY(vertexFormats); ++vertexFormatNdx)
+            for (size_t buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
             {
-                const auto format     = vertexFormats[vertexFormatNdx];
-                const auto formatName = getFormatSimpleName(format);
+                de::MovePtr<tcu::TestCaseGroup> buildGroup(
+                    new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name));
 
-                de::MovePtr<tcu::TestCaseGroup> vertexFormatGroup(
-                    new tcu::TestCaseGroup(group->getTestContext(), formatName.c_str()));
-
-                for (int paddingIdx = 0; paddingIdx < DE_LENGTH_OF_ARRAY(paddingType); ++paddingIdx)
+                for (size_t vertexFormatNdx = 0; vertexFormatNdx < DE_LENGTH_OF_ARRAY(vertexFormats); ++vertexFormatNdx)
                 {
-                    de::MovePtr<tcu::TestCaseGroup> paddingGroup(
-                        new tcu::TestCaseGroup(group->getTestContext(), paddingType[paddingIdx].name));
+                    const auto format     = vertexFormats[vertexFormatNdx];
+                    const auto formatName = getFormatSimpleName(format);
 
-                    for (size_t indexFormatNdx = 0; indexFormatNdx < DE_LENGTH_OF_ARRAY(indexFormats); ++indexFormatNdx)
+                    de::MovePtr<tcu::TestCaseGroup> vertexFormatGroup(
+                        new tcu::TestCaseGroup(group->getTestContext(), formatName.c_str()));
+
+                    for (int paddingIdx = 0; paddingIdx < DE_LENGTH_OF_ARRAY(paddingType); ++paddingIdx)
                     {
-                        TestParams testParams{
-                            shaderSourceTypes[shaderSourceNdx].shaderSourceType,
-                            shaderSourceTypes[shaderSourceNdx].shaderSourcePipeline,
-                            buildTypes[buildTypeNdx].buildType,
-                            format,
-                            paddingType[paddingIdx].padVertices,
-                            indexFormats[indexFormatNdx].indexType,
-                            BottomTestType::TRIANGLES,
-                            InstanceCullFlags::NONE,
-                            false,
-                            false,
-                            false,
-                            TopTestType::IDENTICAL_INSTANCES,
-                            false,
-                            false,
-                            false,
-                            VkBuildAccelerationStructureFlagsKHR(0u),
-                            OT_NONE,
-                            OP_NONE,
-                            TEST_WIDTH,
-                            TEST_HEIGHT,
-                            0u,
-                            EmptyAccelerationStructureCase::NOT_EMPTY,
-                        };
-                        paddingGroup->addChild(new RayQueryASBasicTestCase(
-                            group->getTestContext(), indexFormats[indexFormatNdx].name, testParams));
+                        de::MovePtr<tcu::TestCaseGroup> paddingGroup(
+                            new tcu::TestCaseGroup(group->getTestContext(), paddingType[paddingIdx].name));
+
+                        for (size_t indexFormatNdx = 0; indexFormatNdx < DE_LENGTH_OF_ARRAY(indexFormats);
+                             ++indexFormatNdx)
+                        {
+                            if ((buildTypes[buildTypeNdx].buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR) &&
+                                (accStructBufferResTypes[structResidencyNdx].res == ResourceResidency::SPARSE_BINDING))
+                                continue;
+
+                            TestParams testParams{
+                                shaderSourceTypes[shaderSourceNdx].shaderSourceType,
+                                shaderSourceTypes[shaderSourceNdx].shaderSourcePipeline,
+                                buildTypes[buildTypeNdx].buildType,
+                                format,
+                                paddingType[paddingIdx].padVertices,
+                                indexFormats[indexFormatNdx].indexType,
+                                BottomTestType::TRIANGLES,
+                                InstanceCullFlags::NONE,
+                                false,
+                                false,
+                                false,
+                                TopTestType::IDENTICAL_INSTANCES,
+                                false,
+                                false,
+                                false,
+                                VkBuildAccelerationStructureFlagsKHR(0u),
+                                OT_NONE,
+                                OP_NONE,
+                                TEST_WIDTH,
+                                TEST_HEIGHT,
+                                0u,
+                                EmptyAccelerationStructureCase::NOT_EMPTY,
+                                accStructBufferResTypes[structResidencyNdx].res,
+                            };
+                            paddingGroup->addChild(new RayQueryASBasicTestCase(
+                                group->getTestContext(), indexFormats[indexFormatNdx].name, testParams));
+                        }
+                        vertexFormatGroup->addChild(paddingGroup.release());
                     }
-                    vertexFormatGroup->addChild(paddingGroup.release());
+                    buildGroup->addChild(vertexFormatGroup.release());
                 }
-                buildGroup->addChild(vertexFormatGroup.release());
+                sourceTypeGroup->addChild(buildGroup.release());
             }
-            sourceTypeGroup->addChild(buildGroup.release());
+            structResidencyGroup->addChild(sourceTypeGroup.release());
         }
-        group->addChild(sourceTypeGroup.release());
+        group->addChild(structResidencyGroup.release());
     }
 }
 
 void addOperationTestsImpl(tcu::TestCaseGroup *group, const uint32_t workerThreads)
 {
+    struct AccelerationBufferResidency
+    {
+        ResourceResidency res;
+        const char *name;
+    } accStructBufferResTypes[] = {
+        {
+            ResourceResidency::TRADITIONAL,
+            "traditional_structures",
+        },
+        {
+            ResourceResidency::SPARSE_BINDING,
+            "sparse_binding_structures",
+        },
+    };
+
     struct ShaderSourceTypeData
     {
         ShaderSourceType shaderSourceType;
@@ -3948,77 +4063,90 @@ void addOperationTestsImpl(tcu::TestCaseGroup *group, const uint32_t workerThrea
         {BottomTestType::AABBS, "aabbs"},
     };
 
-    for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
+    for (size_t structResidencyNdx = 0; structResidencyNdx < DE_LENGTH_OF_ARRAY(accStructBufferResTypes);
+         ++structResidencyNdx)
     {
-        de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(
-            new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name));
+        de::MovePtr<tcu::TestCaseGroup> structResidencyGroup(
+            new tcu::TestCaseGroup(group->getTestContext(), accStructBufferResTypes[structResidencyNdx].name));
 
-        for (size_t operationTypeNdx = 0; operationTypeNdx < DE_LENGTH_OF_ARRAY(operationTypes); ++operationTypeNdx)
+        for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
         {
-            if (workerThreads > 0)
-                if (operationTypes[operationTypeNdx].operationType != OP_COPY &&
-                    operationTypes[operationTypeNdx].operationType != OP_SERIALIZE)
-                    continue;
+            de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(
+                new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name));
 
-            de::MovePtr<tcu::TestCaseGroup> operationTypeGroup(
-                new tcu::TestCaseGroup(group->getTestContext(), operationTypes[operationTypeNdx].name));
-
-            for (size_t buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
+            for (size_t operationTypeNdx = 0; operationTypeNdx < DE_LENGTH_OF_ARRAY(operationTypes); ++operationTypeNdx)
             {
-                if (workerThreads > 0 &&
-                    buildTypes[buildTypeNdx].buildType != VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR)
-                    continue;
+                if (workerThreads > 0)
+                    if (operationTypes[operationTypeNdx].operationType != OP_COPY &&
+                        operationTypes[operationTypeNdx].operationType != OP_SERIALIZE)
+                        continue;
 
-                de::MovePtr<tcu::TestCaseGroup> buildGroup(
-                    new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name));
+                de::MovePtr<tcu::TestCaseGroup> operationTypeGroup(
+                    new tcu::TestCaseGroup(group->getTestContext(), operationTypes[operationTypeNdx].name));
 
-                for (size_t operationTargetNdx = 0; operationTargetNdx < DE_LENGTH_OF_ARRAY(operationTargets);
-                     ++operationTargetNdx)
+                for (size_t buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
                 {
-                    de::MovePtr<tcu::TestCaseGroup> operationTargetGroup(
-                        new tcu::TestCaseGroup(group->getTestContext(), operationTargets[operationTargetNdx].name));
+                    if (workerThreads > 0 &&
+                        buildTypes[buildTypeNdx].buildType != VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR)
+                        continue;
 
-                    for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(bottomTestTypes); ++testTypeNdx)
+                    de::MovePtr<tcu::TestCaseGroup> buildGroup(
+                        new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name));
+
+                    for (size_t operationTargetNdx = 0; operationTargetNdx < DE_LENGTH_OF_ARRAY(operationTargets);
+                         ++operationTargetNdx)
                     {
-                        TopTestType topTest =
-                            (operationTargets[operationTargetNdx].operationTarget == OT_TOP_ACCELERATION) ?
-                                TopTestType::DIFFERENT_INSTANCES :
-                                TopTestType::IDENTICAL_INSTANCES;
+                        de::MovePtr<tcu::TestCaseGroup> operationTargetGroup(
+                            new tcu::TestCaseGroup(group->getTestContext(), operationTargets[operationTargetNdx].name));
 
-                        TestParams testParams{
-                            shaderSourceTypes[shaderSourceNdx].shaderSourceType,
-                            shaderSourceTypes[shaderSourceNdx].shaderSourcePipeline,
-                            buildTypes[buildTypeNdx].buildType,
-                            VK_FORMAT_R32G32B32_SFLOAT,
-                            false,
-                            VK_INDEX_TYPE_NONE_KHR,
-                            bottomTestTypes[testTypeNdx].testType,
-                            InstanceCullFlags::NONE,
-                            false,
-                            false,
-                            false,
-                            topTest,
-                            false,
-                            false,
-                            false,
-                            VkBuildAccelerationStructureFlagsKHR(0u),
-                            operationTargets[operationTargetNdx].operationTarget,
-                            operationTypes[operationTypeNdx].operationType,
-                            TEST_WIDTH,
-                            TEST_HEIGHT,
-                            workerThreads,
-                            EmptyAccelerationStructureCase::NOT_EMPTY,
-                        };
-                        operationTargetGroup->addChild(new RayQueryASBasicTestCase(
-                            group->getTestContext(), bottomTestTypes[testTypeNdx].name, testParams));
+                        for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(bottomTestTypes); ++testTypeNdx)
+                        {
+                            if ((buildTypes[buildTypeNdx].buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR) &&
+                                (accStructBufferResTypes[structResidencyNdx].res == ResourceResidency::SPARSE_BINDING))
+                                continue;
+
+                            TopTestType topTest =
+                                (operationTargets[operationTargetNdx].operationTarget == OT_TOP_ACCELERATION) ?
+                                    TopTestType::DIFFERENT_INSTANCES :
+                                    TopTestType::IDENTICAL_INSTANCES;
+
+                            TestParams testParams{
+                                shaderSourceTypes[shaderSourceNdx].shaderSourceType,
+                                shaderSourceTypes[shaderSourceNdx].shaderSourcePipeline,
+                                buildTypes[buildTypeNdx].buildType,
+                                VK_FORMAT_R32G32B32_SFLOAT,
+                                false,
+                                VK_INDEX_TYPE_NONE_KHR,
+                                bottomTestTypes[testTypeNdx].testType,
+                                InstanceCullFlags::NONE,
+                                false,
+                                false,
+                                false,
+                                topTest,
+                                false,
+                                false,
+                                false,
+                                VkBuildAccelerationStructureFlagsKHR(0u),
+                                operationTargets[operationTargetNdx].operationTarget,
+                                operationTypes[operationTypeNdx].operationType,
+                                TEST_WIDTH,
+                                TEST_HEIGHT,
+                                workerThreads,
+                                EmptyAccelerationStructureCase::NOT_EMPTY,
+                                accStructBufferResTypes[structResidencyNdx].res,
+                            };
+                            operationTargetGroup->addChild(new RayQueryASBasicTestCase(
+                                group->getTestContext(), bottomTestTypes[testTypeNdx].name, testParams));
+                        }
+                        buildGroup->addChild(operationTargetGroup.release());
                     }
-                    buildGroup->addChild(operationTargetGroup.release());
+                    operationTypeGroup->addChild(buildGroup.release());
                 }
-                operationTypeGroup->addChild(buildGroup.release());
+                sourceTypeGroup->addChild(operationTypeGroup.release());
             }
-            sourceTypeGroup->addChild(operationTypeGroup.release());
+            structResidencyGroup->addChild(sourceTypeGroup.release());
         }
-        group->addChild(sourceTypeGroup.release());
+        group->addChild(structResidencyGroup.release());
     }
 }
 
@@ -4046,6 +4174,21 @@ void addHostThreadingOperationTests(tcu::TestCaseGroup *group)
 
 void addFuncArgTests(tcu::TestCaseGroup *group)
 {
+    struct AccelerationBufferResidency
+    {
+        ResourceResidency res;
+        const char *name;
+    } accStructBufferResTypes[] = {
+        {
+            ResourceResidency::TRADITIONAL,
+            "traditional_structures",
+        },
+        {
+            ResourceResidency::SPARSE_BINDING,
+            "sparse_binding_structures",
+        },
+    };
+
     const struct
     {
         vk::VkAccelerationStructureBuildTypeKHR buildType;
@@ -4057,39 +4200,67 @@ void addFuncArgTests(tcu::TestCaseGroup *group)
 
     auto &ctx = group->getTestContext();
 
-    for (int buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
+    for (size_t structResidencyNdx = 0; structResidencyNdx < DE_LENGTH_OF_ARRAY(accStructBufferResTypes);
+         ++structResidencyNdx)
     {
-        TestParams testParams{
-            SST_COMPUTE_SHADER,
-            SSP_COMPUTE_PIPELINE,
-            buildTypes[buildTypeNdx].buildType,
-            VK_FORMAT_R32G32B32_SFLOAT,
-            false,
-            VK_INDEX_TYPE_NONE_KHR,
-            BottomTestType::TRIANGLES,
-            InstanceCullFlags::NONE,
-            false,
-            false,
-            false,
-            TopTestType::IDENTICAL_INSTANCES,
-            false,
-            false,
-            false,
-            VkBuildAccelerationStructureFlagsKHR(0u),
-            OT_NONE,
-            OP_NONE,
-            TEST_WIDTH,
-            TEST_HEIGHT,
-            0u,
-            EmptyAccelerationStructureCase::NOT_EMPTY,
-        };
+        de::MovePtr<tcu::TestCaseGroup> structResidencyGroup(
+            new tcu::TestCaseGroup(group->getTestContext(), accStructBufferResTypes[structResidencyNdx].name));
+        for (int buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
+        {
+            if ((buildTypes[buildTypeNdx].buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR) &&
+                (accStructBufferResTypes[structResidencyNdx].res == ResourceResidency::SPARSE_BINDING))
+                continue;
 
-        group->addChild(new RayQueryASFuncArgTestCase(ctx, buildTypes[buildTypeNdx].name, testParams));
+            TestParams testParams{
+                SST_COMPUTE_SHADER,
+                SSP_COMPUTE_PIPELINE,
+                buildTypes[buildTypeNdx].buildType,
+                VK_FORMAT_R32G32B32_SFLOAT,
+                false,
+                VK_INDEX_TYPE_NONE_KHR,
+                BottomTestType::TRIANGLES,
+                InstanceCullFlags::NONE,
+                false,
+                false,
+                false,
+                TopTestType::IDENTICAL_INSTANCES,
+                false,
+                false,
+                false,
+                VkBuildAccelerationStructureFlagsKHR(0u),
+                OT_NONE,
+                OP_NONE,
+                TEST_WIDTH,
+                TEST_HEIGHT,
+                0u,
+                EmptyAccelerationStructureCase::NOT_EMPTY,
+                accStructBufferResTypes[structResidencyNdx].res,
+            };
+
+            structResidencyGroup->addChild(
+                new RayQueryASFuncArgTestCase(ctx, buildTypes[buildTypeNdx].name, testParams));
+        }
+        group->addChild(structResidencyGroup.release());
     }
 }
 
 void addInstanceTriangleCullingTests(tcu::TestCaseGroup *group)
 {
+    struct AccelerationBufferResidency
+    {
+        ResourceResidency res;
+        const char *name;
+    } accStructBufferResTypes[] = {
+        {
+            ResourceResidency::TRADITIONAL,
+            "traditional_structures",
+        },
+        {
+            ResourceResidency::SPARSE_BINDING,
+            "sparse_binding_structures",
+        },
+    };
+
     const struct
     {
         ShaderSourceType shaderSourceType;
@@ -4187,64 +4358,92 @@ void addInstanceTriangleCullingTests(tcu::TestCaseGroup *group)
 
     auto &ctx = group->getTestContext();
 
-    for (int shaderSourceIdx = 0; shaderSourceIdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceIdx)
+    for (size_t structResidencyNdx = 0; structResidencyNdx < DE_LENGTH_OF_ARRAY(accStructBufferResTypes);
+         ++structResidencyNdx)
     {
-        de::MovePtr<tcu::TestCaseGroup> shaderSourceGroup(
-            new tcu::TestCaseGroup(ctx, shaderSourceTypes[shaderSourceIdx].name.c_str()));
+        de::MovePtr<tcu::TestCaseGroup> structResidencyGroup(
+            new tcu::TestCaseGroup(group->getTestContext(), accStructBufferResTypes[structResidencyNdx].name));
 
-        for (int buildTypeIdx = 0; buildTypeIdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeIdx)
+        for (int shaderSourceIdx = 0; shaderSourceIdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceIdx)
         {
-            de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(
-                new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str()));
+            de::MovePtr<tcu::TestCaseGroup> shaderSourceGroup(
+                new tcu::TestCaseGroup(ctx, shaderSourceTypes[shaderSourceIdx].name.c_str()));
 
-            for (int indexFormatIdx = 0; indexFormatIdx < DE_LENGTH_OF_ARRAY(indexFormats); ++indexFormatIdx)
+            for (int buildTypeIdx = 0; buildTypeIdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeIdx)
             {
-                de::MovePtr<tcu::TestCaseGroup> indexTypeGroup(
-                    new tcu::TestCaseGroup(ctx, indexFormats[indexFormatIdx].name.c_str()));
+                de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(
+                    new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str()));
 
-                for (int topTypeIdx = 0; topTypeIdx < DE_LENGTH_OF_ARRAY(topType); ++topTypeIdx)
+                for (int indexFormatIdx = 0; indexFormatIdx < DE_LENGTH_OF_ARRAY(indexFormats); ++indexFormatIdx)
                 {
-                    for (int cullFlagsIdx = 0; cullFlagsIdx < DE_LENGTH_OF_ARRAY(cullFlags); ++cullFlagsIdx)
-                    {
-                        const std::string testName = topType[topTypeIdx].name + "_" + cullFlags[cullFlagsIdx].name;
+                    de::MovePtr<tcu::TestCaseGroup> indexTypeGroup(
+                        new tcu::TestCaseGroup(ctx, indexFormats[indexFormatIdx].name.c_str()));
 
-                        TestParams testParams{
-                            shaderSourceTypes[shaderSourceIdx].shaderSourceType,
-                            shaderSourceTypes[shaderSourceIdx].shaderSourcePipeline,
-                            buildTypes[buildTypeIdx].buildType,
-                            VK_FORMAT_R32G32B32_SFLOAT,
-                            false,
-                            indexFormats[indexFormatIdx].indexType,
-                            BottomTestType::TRIANGLES,
-                            cullFlags[cullFlagsIdx].cullFlags,
-                            false,
-                            false,
-                            false,
-                            topType[topTypeIdx].topType,
-                            false,
-                            false,
-                            false,
-                            VkBuildAccelerationStructureFlagsKHR(0u),
-                            OT_NONE,
-                            OP_NONE,
-                            TEST_WIDTH,
-                            TEST_HEIGHT,
-                            0u,
-                            EmptyAccelerationStructureCase::NOT_EMPTY,
-                        };
-                        indexTypeGroup->addChild(new RayQueryASBasicTestCase(ctx, testName.c_str(), testParams));
+                    for (int topTypeIdx = 0; topTypeIdx < DE_LENGTH_OF_ARRAY(topType); ++topTypeIdx)
+                    {
+                        for (int cullFlagsIdx = 0; cullFlagsIdx < DE_LENGTH_OF_ARRAY(cullFlags); ++cullFlagsIdx)
+                        {
+                            const std::string testName = topType[topTypeIdx].name + "_" + cullFlags[cullFlagsIdx].name;
+
+                            if ((buildTypes[buildTypeIdx].buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR) &&
+                                (accStructBufferResTypes[structResidencyNdx].res == ResourceResidency::SPARSE_BINDING))
+                                continue;
+
+                            TestParams testParams{
+                                shaderSourceTypes[shaderSourceIdx].shaderSourceType,
+                                shaderSourceTypes[shaderSourceIdx].shaderSourcePipeline,
+                                buildTypes[buildTypeIdx].buildType,
+                                VK_FORMAT_R32G32B32_SFLOAT,
+                                false,
+                                indexFormats[indexFormatIdx].indexType,
+                                BottomTestType::TRIANGLES,
+                                cullFlags[cullFlagsIdx].cullFlags,
+                                false,
+                                false,
+                                false,
+                                topType[topTypeIdx].topType,
+                                false,
+                                false,
+                                false,
+                                VkBuildAccelerationStructureFlagsKHR(0u),
+                                OT_NONE,
+                                OP_NONE,
+                                TEST_WIDTH,
+                                TEST_HEIGHT,
+                                0u,
+                                EmptyAccelerationStructureCase::NOT_EMPTY,
+                                accStructBufferResTypes[structResidencyNdx].res,
+                            };
+                            indexTypeGroup->addChild(new RayQueryASBasicTestCase(ctx, testName.c_str(), testParams));
+                        }
                     }
+                    buildTypeGroup->addChild(indexTypeGroup.release());
                 }
-                buildTypeGroup->addChild(indexTypeGroup.release());
+                shaderSourceGroup->addChild(buildTypeGroup.release());
             }
-            shaderSourceGroup->addChild(buildTypeGroup.release());
+            structResidencyGroup->addChild(shaderSourceGroup.release());
         }
-        group->addChild(shaderSourceGroup.release());
+        group->addChild(structResidencyGroup.release());
     }
 }
 
 void addInstanceUpdateTests(tcu::TestCaseGroup *group)
 {
+    struct AccelerationBufferResidency
+    {
+        ResourceResidency res;
+        const char *name;
+    } accStructBufferResTypes[] = {
+        {
+            ResourceResidency::TRADITIONAL,
+            "traditional_structures",
+        },
+        {
+            ResourceResidency::SPARSE_BINDING,
+            "sparse_binding_structures",
+        },
+    };
+
     const struct
     {
         vk::VkAccelerationStructureBuildTypeKHR buildType;
@@ -4265,53 +4464,107 @@ void addInstanceUpdateTests(tcu::TestCaseGroup *group)
 
     auto &ctx = group->getTestContext();
 
-    for (int buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
+    for (size_t structResidencyNdx = 0; structResidencyNdx < DE_LENGTH_OF_ARRAY(accStructBufferResTypes);
+         ++structResidencyNdx)
     {
-        de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(
-            new tcu::TestCaseGroup(ctx, buildTypes[buildTypeNdx].name.c_str()));
+        de::MovePtr<tcu::TestCaseGroup> structResidencyGroup(
+            new tcu::TestCaseGroup(group->getTestContext(), accStructBufferResTypes[structResidencyNdx].name));
 
-        for (int operationTypesIdx = 0; operationTypesIdx < DE_LENGTH_OF_ARRAY(operationTypes); ++operationTypesIdx)
+        for (int buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
         {
-            TestParams testParams{
-                SST_COMPUTE_SHADER,
-                SSP_COMPUTE_PIPELINE,
-                buildTypes[buildTypeNdx].buildType,
-                VK_FORMAT_R32G32B32_SFLOAT,
-                false,
-                VK_INDEX_TYPE_NONE_KHR,
-                BottomTestType::TRIANGLES,
-                InstanceCullFlags::NONE,
-                false,
-                false,
-                false,
-                TopTestType::IDENTICAL_INSTANCES,
-                false,
-                false,
-                false,
-                VkBuildAccelerationStructureFlagsKHR(0u),
-                OT_NONE,
-                OP_NONE,
-                TEST_WIDTH,
-                TEST_HEIGHT,
-                0u,
-                EmptyAccelerationStructureCase::NOT_EMPTY,
-            };
+            de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(
+                new tcu::TestCaseGroup(ctx, buildTypes[buildTypeNdx].name.c_str()));
 
-            buildTypeGroup->addChild(
-                new RayQueryASFuncArgTestCase(ctx, operationTypes[operationTypesIdx].name, testParams));
+            for (int operationTypesIdx = 0; operationTypesIdx < DE_LENGTH_OF_ARRAY(operationTypes); ++operationTypesIdx)
+            {
+                if ((buildTypes[buildTypeNdx].buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR) &&
+                    (accStructBufferResTypes[structResidencyNdx].res == ResourceResidency::SPARSE_BINDING))
+                    continue;
+
+                TestParams testParams{
+                    SST_COMPUTE_SHADER,
+                    SSP_COMPUTE_PIPELINE,
+                    buildTypes[buildTypeNdx].buildType,
+                    VK_FORMAT_R32G32B32_SFLOAT,
+                    false,
+                    VK_INDEX_TYPE_NONE_KHR,
+                    BottomTestType::TRIANGLES,
+                    InstanceCullFlags::NONE,
+                    false,
+                    false,
+                    false,
+                    TopTestType::IDENTICAL_INSTANCES,
+                    false,
+                    false,
+                    false,
+                    VkBuildAccelerationStructureFlagsKHR(0u),
+                    OT_NONE,
+                    OP_NONE,
+                    TEST_WIDTH,
+                    TEST_HEIGHT,
+                    0u,
+                    EmptyAccelerationStructureCase::NOT_EMPTY,
+                    accStructBufferResTypes[structResidencyNdx].res,
+                };
+
+                buildTypeGroup->addChild(
+                    new RayQueryASFuncArgTestCase(ctx, operationTypes[operationTypesIdx].name, testParams));
+            }
+            structResidencyGroup->addChild(buildTypeGroup.release());
         }
-        group->addChild(buildTypeGroup.release());
+        group->addChild(structResidencyGroup.release());
     }
 }
 
 void addDynamicIndexingTests(tcu::TestCaseGroup *group)
 {
+    struct AccelerationBufferResidency
+    {
+        ResourceResidency res;
+        const char *name;
+    } accStructBufferResTypes[] = {
+        {
+            ResourceResidency::TRADITIONAL,
+            "traditional_structures",
+        },
+        {
+            ResourceResidency::SPARSE_BINDING,
+            "sparse_binding_structures",
+        },
+    };
+
     auto &ctx = group->getTestContext();
-    group->addChild(new RayQueryASDynamicIndexingTestCase(ctx, "dynamic_indexing"));
+
+    for (size_t structResidencyNdx = 0; structResidencyNdx < DE_LENGTH_OF_ARRAY(accStructBufferResTypes);
+         ++structResidencyNdx)
+    {
+        de::MovePtr<tcu::TestCaseGroup> structResidencyGroup(
+            new tcu::TestCaseGroup(group->getTestContext(), accStructBufferResTypes[structResidencyNdx].name));
+
+        structResidencyGroup->addChild(new RayQueryASDynamicIndexingTestCase(
+            ctx, "dynamic_indexing", accStructBufferResTypes[structResidencyNdx].res));
+
+        group->addChild(structResidencyGroup.release());
+    }
 }
 
 void addEmptyAccelerationStructureTests(tcu::TestCaseGroup *group)
 {
+    struct AccelerationBufferResidency
+    {
+        ResourceResidency res;
+        const char *name;
+    } accStructBufferResTypes[] = {
+        {
+            ResourceResidency::TRADITIONAL,
+            "traditional_structures",
+        },
+        {
+            ResourceResidency::SPARSE_BINDING,
+            "sparse_binding_structures",
+        },
+    };
+
     const struct
     {
         ShaderSourceType shaderSourceType;
@@ -4401,55 +4654,68 @@ void addEmptyAccelerationStructureTests(tcu::TestCaseGroup *group)
 
     auto &ctx = group->getTestContext();
 
-    for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
+    for (size_t structResidencyNdx = 0; structResidencyNdx < DE_LENGTH_OF_ARRAY(accStructBufferResTypes);
+         ++structResidencyNdx)
     {
-        de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(
-            new tcu::TestCaseGroup(ctx, shaderSourceTypes[shaderSourceNdx].name.c_str()));
+        de::MovePtr<tcu::TestCaseGroup> structResidencyGroup(
+            new tcu::TestCaseGroup(group->getTestContext(), accStructBufferResTypes[structResidencyNdx].name));
 
-        for (int buildTypeIdx = 0; buildTypeIdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeIdx)
+        for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
         {
-            de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(
-                new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str()));
+            de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(
+                new tcu::TestCaseGroup(ctx, shaderSourceTypes[shaderSourceNdx].name.c_str()));
 
-            for (int indexFormatIdx = 0; indexFormatIdx < DE_LENGTH_OF_ARRAY(indexFormats); ++indexFormatIdx)
+            for (int buildTypeIdx = 0; buildTypeIdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeIdx)
             {
-                de::MovePtr<tcu::TestCaseGroup> indexTypeGroup(
-                    new tcu::TestCaseGroup(ctx, indexFormats[indexFormatIdx].name.c_str()));
+                de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(
+                    new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str()));
 
-                for (int emptyCaseIdx = 0; emptyCaseIdx < DE_LENGTH_OF_ARRAY(emptyCases); ++emptyCaseIdx)
+                for (int indexFormatIdx = 0; indexFormatIdx < DE_LENGTH_OF_ARRAY(indexFormats); ++indexFormatIdx)
                 {
-                    TestParams testParams{
-                        shaderSourceTypes[shaderSourceNdx].shaderSourceType,
-                        shaderSourceTypes[shaderSourceNdx].shaderSourcePipeline,
-                        buildTypes[buildTypeIdx].buildType,
-                        VK_FORMAT_R32G32B32_SFLOAT,
-                        false,
-                        indexFormats[indexFormatIdx].indexType,
-                        BottomTestType::TRIANGLES,
-                        InstanceCullFlags::NONE,
-                        false,
-                        false,
-                        false,
-                        TopTestType::IDENTICAL_INSTANCES,
-                        false,
-                        false,
-                        false,
-                        VkBuildAccelerationStructureFlagsKHR(0u),
-                        OT_NONE,
-                        OP_NONE,
-                        TEST_WIDTH,
-                        TEST_HEIGHT,
-                        0u,
-                        emptyCases[emptyCaseIdx].emptyASCase,
-                    };
-                    indexTypeGroup->addChild(
-                        new RayQueryASBasicTestCase(ctx, emptyCases[emptyCaseIdx].name.c_str(), testParams));
+                    de::MovePtr<tcu::TestCaseGroup> indexTypeGroup(
+                        new tcu::TestCaseGroup(ctx, indexFormats[indexFormatIdx].name.c_str()));
+
+                    for (int emptyCaseIdx = 0; emptyCaseIdx < DE_LENGTH_OF_ARRAY(emptyCases); ++emptyCaseIdx)
+                    {
+                        if ((buildTypes[buildTypeIdx].buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR) &&
+                            (accStructBufferResTypes[structResidencyNdx].res == ResourceResidency::SPARSE_BINDING))
+                            continue;
+
+                        TestParams testParams{
+                            shaderSourceTypes[shaderSourceNdx].shaderSourceType,
+                            shaderSourceTypes[shaderSourceNdx].shaderSourcePipeline,
+                            buildTypes[buildTypeIdx].buildType,
+                            VK_FORMAT_R32G32B32_SFLOAT,
+                            false,
+                            indexFormats[indexFormatIdx].indexType,
+                            BottomTestType::TRIANGLES,
+                            InstanceCullFlags::NONE,
+                            false,
+                            false,
+                            false,
+                            TopTestType::IDENTICAL_INSTANCES,
+                            false,
+                            false,
+                            false,
+                            VkBuildAccelerationStructureFlagsKHR(0u),
+                            OT_NONE,
+                            OP_NONE,
+                            TEST_WIDTH,
+                            TEST_HEIGHT,
+                            0u,
+                            emptyCases[emptyCaseIdx].emptyASCase,
+                            accStructBufferResTypes[structResidencyNdx].res,
+                        };
+                        indexTypeGroup->addChild(
+                            new RayQueryASBasicTestCase(ctx, emptyCases[emptyCaseIdx].name.c_str(), testParams));
+                    }
+                    buildTypeGroup->addChild(indexTypeGroup.release());
                 }
-                buildTypeGroup->addChild(indexTypeGroup.release());
+                sourceTypeGroup->addChild(buildTypeGroup.release());
             }
-            sourceTypeGroup->addChild(buildTypeGroup.release());
+            structResidencyGroup->addChild(sourceTypeGroup.release());
         }
-        group->addChild(sourceTypeGroup.release());
+        group->addChild(structResidencyGroup.release());
     }
 }
 

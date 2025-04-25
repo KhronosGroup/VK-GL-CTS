@@ -15,9 +15,11 @@ dEQP-VKSC.compute.pipeline.basic.image_atomic_op_local_size_1
 dEQP-VKSC.compute.pipeline.basic.image_atomic_op_local_size_8
 dEQP-VKSC.compute.pipeline.basic.image_barrier_multiple
 dEQP-VKSC.compute.pipeline.basic.image_barrier_single
+dEQP-VKSC.compute.pipeline.basic.indirect_after_base_dispatch
 dEQP-VKSC.compute.pipeline.basic.max_local_size_x
 dEQP-VKSC.compute.pipeline.basic.max_local_size_y
 dEQP-VKSC.compute.pipeline.basic.max_local_size_z
+dEQP-VKSC.compute.pipeline.basic.read_unbound_ssbo
 dEQP-VKSC.compute.pipeline.basic.secondary_compute_only_queue
 dEQP-VKSC.compute.pipeline.basic.shared_atomic_op_multiple_groups
 dEQP-VKSC.compute.pipeline.basic.shared_atomic_op_multiple_invocations
@@ -40,6 +42,7 @@ dEQP-VKSC.compute.pipeline.basic.ubo_to_ssbo_multiple_groups
 dEQP-VKSC.compute.pipeline.basic.ubo_to_ssbo_multiple_invocations
 dEQP-VKSC.compute.pipeline.basic.ubo_to_ssbo_single_group
 dEQP-VKSC.compute.pipeline.basic.ubo_to_ssbo_single_invocation
+dEQP-VKSC.compute.pipeline.basic.undefined_values
 dEQP-VKSC.compute.pipeline.basic.write_multiple_arr_multiple_groups
 dEQP-VKSC.compute.pipeline.basic.write_multiple_arr_single_invocation
 dEQP-VKSC.compute.pipeline.basic.write_multiple_unsized_arr_multiple_groups

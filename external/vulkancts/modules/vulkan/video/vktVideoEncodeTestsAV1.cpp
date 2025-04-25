@@ -343,7 +343,7 @@ static void buildClipName(tcu::TestContext &testCtx, const TestDefinition &testD
 {
     auto &cmdLine   = testCtx.getCommandLine();
     auto archiveDir = cmdLine.getArchiveDir();
-    clipName        = archiveDir + std::string("/vulkan/video/");
+    clipName        = archiveDir + std::string("/vulkan/video/yuv/");
 
     clipName += testDef.frameSize.baseClipName;
     clipName += std::to_string(testDef.frameSize.width) + "x" + std::to_string(testDef.frameSize.height);
@@ -1081,7 +1081,6 @@ static const std::vector<DpbModeDef> dpbModeTests = {
 tcu::TestCaseGroup *createVideoEncodeTestsAV1(tcu::TestContext &testCtx)
 {
     MovePtr<tcu::TestCaseGroup> av1group(new tcu::TestCaseGroup(testCtx, "av1", "AV1 video codec"));
-    uint32_t added_tests = 0;
     std::ostringstream s;
     std::string groupName;
 
@@ -1096,7 +1095,7 @@ tcu::TestCaseGroup *createVideoEncodeTestsAV1(tcu::TestContext &testCtx)
                 s << "_" << subsamplingTest.subName;
                 groupName = s.str();
                 MovePtr<tcu::TestCaseGroup> resGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
-                added_tests = 0;
+
                 for (const auto &gopTest : gopTests)
                 {
                     s.str("");
@@ -1123,21 +1122,12 @@ tcu::TestCaseGroup *createVideoEncodeTestsAV1(tcu::TestContext &testCtx)
                                                                 cdefTest,         dpbModeTest};
                                                             auto testCase = createVideoEncodeTestAV1(testCtx, testDef);
                                                             if (testCase != nullptr)
-                                                            {
                                                                 gopGroup->addChild(testCase);
-                                                                added_tests++;
-                                                            }
                                                         }
                     }
-                    if (added_tests)
-                        resGroup->addChild(gopGroup.release());
-                    else
-                        gopGroup.release();
+                    resGroup->addChild(gopGroup.release());
                 }
-                if (added_tests)
-                    av1group->addChild(resGroup.release());
-                else
-                    resGroup.release();
+                av1group->addChild(resGroup.release());
             }
     return av1group.release();
 }

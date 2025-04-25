@@ -6236,7 +6236,7 @@ tcu::TestStatus deviceFeaturesVulkan14(Context &context)
 
         deMemset(vulkan14Features[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVulkan14Features));
         vulkan14Features[ndx]->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES;
-        vulkan14Features[ndx]->pNext = DE_NULL;
+        vulkan14Features[ndx]->pNext = nullptr;
 
         vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
     }
@@ -6606,9 +6606,9 @@ tcu::TestStatus devicePropertiesVulkan14(Context &context)
     {
         deMemset(vulkan14Properties[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVulkan14Properties));
         vulkan14Properties[ndx]->sType           = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_PROPERTIES;
-        vulkan14Properties[ndx]->pNext           = DE_NULL;
-        vulkan14Properties[ndx]->pCopySrcLayouts = DE_NULL;
-        vulkan14Properties[ndx]->pCopyDstLayouts = DE_NULL;
+        vulkan14Properties[ndx]->pNext           = nullptr;
+        vulkan14Properties[ndx]->pCopySrcLayouts = nullptr;
+        vulkan14Properties[ndx]->pCopyDstLayouts = nullptr;
 
         extProperties = initVulkanStructure(vulkan14Properties[ndx]);
 

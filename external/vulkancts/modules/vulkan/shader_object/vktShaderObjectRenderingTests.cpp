@@ -980,8 +980,22 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate(void)
     const uint32_t xOffset = 8;
     const uint32_t yOffset = 8;
 
+    uint32_t unusedBegin = 0u;
+    uint32_t outputCount = m_params.colorAttachmentCount + m_params.extraFragmentOutputCount;
+
+    if (m_params.extraAttachments == BEFORE)
+        unusedBegin = 0u;
+    else if (m_params.extraAttachments == AFTER)
+        unusedBegin = outputCount;
+    else if (m_params.extraAttachments == BETWEEN)
+        unusedBegin = outputCount / 2u + 1u;
+    uint32_t unusedEnd = (m_params.extraAttachments == NONE ? 0u : unusedBegin + m_params.extraAttachmentCount);
+
     for (uint32_t k = 0; k < (uint32_t)colorImages.size(); ++k)
     {
+        if (k >= unusedBegin && k < unusedEnd)
+            continue;
+
         tcu::TextureLevel textureLevel(mapVkFormat(m_colorFormats[k]), width, height);
         const tcu::PixelBufferAccess expectedImage = textureLevel.getAccess();
         generateExpectedImage(expectedImage, width, height, k);

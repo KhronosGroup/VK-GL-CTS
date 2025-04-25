@@ -1873,7 +1873,7 @@ tcu::TestStatus PipelineNoRenderingTestInstance::iterate()
     const VkPipelineVertexInputStateCreateInfo vertexInputState     = initVulkanStructure();
     const VkPipelineRasterizationStateCreateInfo rasterizationState = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                          sType;
-        DE_NULL,                                                    // const void*                              pNext;
+        nullptr,                                                    // const void*                              pNext;
         (VkPipelineRasterizationStateCreateFlags)0,                 // VkPipelineRasterizationStateCreateFlags  flags;
         VK_FALSE,                // VkBool32                                 depthClampEnable;
         VK_FALSE,                // VkBool32                                 rasterizerDiscardEnable;

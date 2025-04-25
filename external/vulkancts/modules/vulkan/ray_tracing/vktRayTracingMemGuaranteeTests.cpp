@@ -574,12 +574,15 @@ de::MovePtr<TopLevelAccelerationStructure> RayTracingBuildTestInstance::initTopA
     Allocator &allocator                              = m_context.getDefaultAllocator();
     de::MovePtr<TopLevelAccelerationStructure> result = makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     result->setInstanceCount(bottomLevelAccelerationStructures.size());
 
     for (size_t structNdx = 0; structNdx < bottomLevelAccelerationStructures.size(); ++structNdx)
         result->addInstance(bottomLevelAccelerationStructures[structNdx]);
 
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return result;
 }
@@ -591,6 +594,9 @@ de::MovePtr<BottomLevelAccelerationStructure> RayTracingBuildTestInstance::initB
     const VkDevice device                                = m_context.getDevice();
     Allocator &allocator                                 = m_context.getDefaultAllocator();
     de::MovePtr<BottomLevelAccelerationStructure> result = makeBottomLevelAccelerationStructure();
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
 
     result->setGeometryCount(m_data.geometriesGroupCount);
 
@@ -620,7 +626,7 @@ de::MovePtr<BottomLevelAccelerationStructure> RayTracingBuildTestInstance::initB
         result->addGeometry(geometryData, false);
     }
 
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return result;
 }

@@ -466,6 +466,9 @@ protected:
     void validateExtensionProperties(const VkExtensionProperties &extensionProperties,
                                      const VkExtensionProperties &extensionPropertiesSecond);
     CaseDef m_caseDef;
+
+private:
+    bool videoMaintenance2Support;
 };
 
 VideoCapabilitiesQueryTestInstance::VideoCapabilitiesQueryTestInstance(Context &context, const CaseDef &data)
@@ -473,6 +476,8 @@ VideoCapabilitiesQueryTestInstance::VideoCapabilitiesQueryTestInstance(Context &
     , m_caseDef(data)
 {
     DE_UNREF(m_caseDef);
+
+    videoMaintenance2Support = context.isDeviceFunctionalitySupported("VK_KHR_video_maintenance2");
 }
 
 VideoCapabilitiesQueryTestInstance::~VideoCapabilitiesQueryTestInstance(void)
@@ -574,6 +579,14 @@ void VideoCapabilitiesQueryTestInstance::validateVideoEncodeCapabilities(
 
     if (videoEncodeCapabilitiesKHR.maxQualityLevels == 0)
         TCU_FAIL("videoEncodeCapabilitiesKHR.maxQualityLevels is zero. Implementations must report at least 1.");
+
+    if (videoMaintenance2Support &&
+        (videoEncodeCapabilitiesKHR.rateControlModes & VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR) == 0)
+    {
+        TCU_FAIL("videoEncodeCapabilitiesKHR.rateControlModes doesn't contain "
+                 "VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR "
+                 "but VK_KHR_video_maintenance2 is supported");
+    }
 }
 
 void VideoCapabilitiesQueryTestInstance::validateExtensionProperties(
@@ -1015,7 +1028,7 @@ tcu::TestStatus VideoCapabilitiesQueryAV1EncodeTestInstance::iterate(void)
     const VkVideoCodecOperationFlagBitsKHR videoCodecOperation = VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR;
     const VkVideoEncodeAV1ProfileInfoKHR videoProfileOperation = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_PROFILE_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                             //  const void* pNext;
+        nullptr,                                             //  const void* pNext;
         STD_VIDEO_AV1_PROFILE_MAIN,                          //  StdVideoAV1ProfileIdc stdProfileIdc;
     };
     const VkVideoProfileInfoKHR videoProfile = {
@@ -1043,7 +1056,7 @@ tcu::TestStatus VideoCapabilitiesQueryAV1EncodeTestInstance::iterate(void)
         videoEncodeCapabilities[ndx].sType    = VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR;
         videoEncodeCapabilities[ndx].pNext    = &videoEncodeAV1Capabilities[ndx];
         videoEncodeAV1Capabilities[ndx].sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_CAPABILITIES_KHR;
-        videoEncodeAV1Capabilities[ndx].pNext = DE_NULL;
+        videoEncodeAV1Capabilities[ndx].pNext = nullptr;
 
         VkResult result =
             vk.getPhysicalDeviceVideoCapabilitiesKHR(physicalDevice, &videoProfile, &videoCapabilites[ndx]);
@@ -1279,6 +1292,9 @@ VideoCapabilitiesQueryTestCase::~VideoCapabilitiesQueryTestCase(void)
 void VideoCapabilitiesQueryTestCase::checkSupport(Context &context) const
 {
     context.requireDeviceFunctionality("VK_KHR_video_queue");
+
+    if (context.isDeviceFunctionalitySupported("VK_KHR_video_maintenance2"))
+        context.requireDeviceFunctionality("VK_KHR_video_maintenance2");
 
     switch (m_caseDef.testType)
     {
@@ -1670,6 +1686,32 @@ static std::unordered_map<VkImageUsageFlagBits, VkFormatFeatureFlagBits> kUsageT
     {VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR, VK_FORMAT_FEATURE_VIDEO_ENCODE_DPB_BIT_KHR},
 };
 
+std::vector<uint64_t> getDrmFormatModifier(Context &context, de::SharedPtr<TestParams> params)
+{
+    const InstanceInterface &vki = context.getInstanceInterface();
+    const VkPhysicalDevice phys  = context.getPhysicalDevice();
+    //uint64_t drmModifier = -1;
+    std::vector<uint64_t> drmModifiers;
+
+    VkDrmFormatModifierPropertiesList2EXT drmFormatProperties = initVulkanStructure();
+    VkFormatProperties2 formatProperties2                     = initVulkanStructure(&drmFormatProperties);
+    vki.getPhysicalDeviceFormatProperties2(phys, params->format, &formatProperties2);
+
+    for (uint32_t i = 0; i < drmFormatProperties.drmFormatModifierCount; i++)
+    {
+        std::vector<VkDrmFormatModifierProperties2EXT> drmFormatModifiers;
+        drmFormatModifiers.resize(drmFormatProperties.drmFormatModifierCount);
+        drmFormatProperties.pDrmFormatModifierProperties = drmFormatModifiers.data();
+        vki.getPhysicalDeviceFormatProperties2(phys, params->format, &formatProperties2);
+
+        const VkDrmFormatModifierProperties2EXT drmFormatModifierProperties =
+            drmFormatProperties.pDrmFormatModifierProperties[i];
+        drmModifiers.push_back(drmFormatModifierProperties.drmFormatModifier);
+    }
+
+    return drmModifiers;
+}
+
 tcu::TestStatus test(Context &context, de::SharedPtr<TestParams> params)
 {
     const InstanceInterface &vki          = context.getInstanceInterface();
@@ -1695,23 +1737,52 @@ tcu::TestStatus test(Context &context, de::SharedPtr<TestParams> params)
         {
             foundMatchingFormat = true;
 
-            VkPhysicalDeviceImageFormatInfo2 imageFormatInfo2 = initVulkanStructure(&params->profileList);
-            imageFormatInfo2.format                           = formatProperty.format;
-            imageFormatInfo2.type                             = formatProperty.imageType;
-            imageFormatInfo2.tiling                           = formatProperty.imageTiling;
-            imageFormatInfo2.usage                            = formatProperty.imageUsageFlags;
-            imageFormatInfo2.flags                            = formatProperty.imageCreateFlags;
-            VkImageFormatProperties2 imageFormatProperties2   = initVulkanStructure();
-            VkResult r = vki.getPhysicalDeviceImageFormatProperties2(phys, &imageFormatInfo2, &imageFormatProperties2);
-            if (r != VK_SUCCESS)
-                return tcu::TestStatus::fail("inconsistent return values from getPhysicalDeviceImageFormatProperties2 "
-                                             "and getPhysicalDeviceVideoFormatPropertiesKHR");
-            if (formatProperty.imageTiling == VK_IMAGE_TILING_LINEAR &&
-                (formatProperties2.formatProperties.linearTilingFeatures & features) == 0)
-                return tcu::TestStatus::fail("bad linear features");
-            if (formatProperty.imageTiling == VK_IMAGE_TILING_OPTIMAL &&
-                (formatProperties2.formatProperties.optimalTilingFeatures & features) == 0)
-                return tcu::TestStatus::fail("bad optimal features");
+            uint32_t nCnt = 1;
+            std::vector<uint64_t> drmModifiers;
+
+            if (formatProperty.imageTiling == VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT)
+            {
+                drmModifiers = getDrmFormatModifier(context, params);
+                nCnt         = (uint32_t)drmModifiers.size();
+
+                if (nCnt == 0)
+                    continue;
+            }
+
+            for (uint32_t i = 0; i < nCnt; i++)
+            {
+                VkPhysicalDeviceImageDrmFormatModifierInfoEXT imageFormatModifierInfo = initVulkanStructure();
+                VkImageFormatListCreateInfo imageFormatListInfo                       = initVulkanStructure();
+                imageFormatListInfo.viewFormatCount                                   = 1;
+                imageFormatListInfo.pViewFormats                                      = &formatProperty.format;
+
+                if (drmModifiers.size() > 0)
+                {
+                    imageFormatModifierInfo.drmFormatModifier = drmModifiers[i];
+                    imageFormatListInfo.pNext                 = &imageFormatModifierInfo;
+                    params->profileList.pNext                 = &imageFormatListInfo;
+                }
+
+                VkPhysicalDeviceImageFormatInfo2 imageFormatInfo2 = initVulkanStructure(&params->profileList);
+                imageFormatInfo2.format                           = formatProperty.format;
+                imageFormatInfo2.type                             = formatProperty.imageType;
+                imageFormatInfo2.tiling                           = formatProperty.imageTiling;
+                imageFormatInfo2.usage                            = formatProperty.imageUsageFlags;
+                imageFormatInfo2.flags                            = formatProperty.imageCreateFlags;
+                VkImageFormatProperties2 imageFormatProperties2   = initVulkanStructure();
+                VkResult r =
+                    vki.getPhysicalDeviceImageFormatProperties2(phys, &imageFormatInfo2, &imageFormatProperties2);
+                if (r != VK_SUCCESS)
+                    return tcu::TestStatus::fail(
+                        "inconsistent return values from getPhysicalDeviceImageFormatProperties2 "
+                        "and getPhysicalDeviceVideoFormatPropertiesKHR");
+                if (formatProperty.imageTiling == VK_IMAGE_TILING_LINEAR &&
+                    (formatProperties2.formatProperties.linearTilingFeatures & features) == 0)
+                    return tcu::TestStatus::fail("bad linear features");
+                if (formatProperty.imageTiling == VK_IMAGE_TILING_OPTIMAL &&
+                    (formatProperties2.formatProperties.optimalTilingFeatures & features) == 0)
+                    return tcu::TestStatus::fail("bad optimal features");
+            }
         }
     }
 

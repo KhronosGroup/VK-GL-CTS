@@ -428,6 +428,9 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> RayTracingPipelineL
     tcu::Vec3 v2(1.0, 1.0, 0.0);
     tcu::Vec3 v3(1.0, 0.0, 0.0);
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     for (uint32_t y = 0; y < m_data.height; ++y)
         for (uint32_t x = 0; x < m_data.width; ++x)
         {
@@ -457,7 +460,7 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> RayTracingPipelineL
             }
 
             bottomLevelAccelerationStructure->addGeometry(geometryData, !m_data.useAABBs /*triangles*/);
-            bottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+            bottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
             result.push_back(
                 de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
         }
@@ -472,6 +475,9 @@ de::MovePtr<TopLevelAccelerationStructure> RayTracingPipelineLibraryTestInstance
     const auto &vkd   = m_context.getDeviceInterface();
     const auto device = m_context.getDevice();
     auto &allocator   = m_context.getDefaultAllocator();
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
 
     uint32_t instanceCount = m_data.width * m_data.height / 2;
 
@@ -491,7 +497,7 @@ de::MovePtr<TopLevelAccelerationStructure> RayTracingPipelineLibraryTestInstance
                                 currentInstanceIndex % numShadersUsed, 0U);
             currentInstanceIndex++;
         }
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return result;
 }

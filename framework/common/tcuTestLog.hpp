@@ -207,6 +207,9 @@ public:
     void supressLogging(bool value);
     bool isSupressLogging(void);
 
+    void separateSlices(bool value = true);
+    bool isSeparateSlices(void) const;
+
 private:
     TestLog(const TestLog &other);            // Not allowed!
     TestLog &operator=(const TestLog &other); // Not allowed!

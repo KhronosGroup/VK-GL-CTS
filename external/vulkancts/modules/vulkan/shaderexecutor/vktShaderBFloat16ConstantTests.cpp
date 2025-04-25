@@ -754,7 +754,8 @@ void BFloat16GraphicsInstance::prepareBuffers()
         const VkDeviceSize size   = mapVkFormat(m_params.format).getPixelSize() * m_params.width * m_params.height;
         const VkBufferUsageFlags usage =
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-        const VkBufferCreateInfo bci = makeBufferCreateInfo(size, usage, {queueIndex});
+        const std::vector<uint32_t> queueFamilyIndices{queueIndex};
+        const VkBufferCreateInfo bci = makeBufferCreateInfo(size, usage, queueFamilyIndices);
 
         bf16::makeMovePtr(m_resultBuffer, di, dev, allocator, bci, MemoryRequirement::HostVisible);
     }
@@ -883,9 +884,10 @@ auto BFloat16VertexInstance::prepareVertexBuffer() const -> de::MovePtr<BufferWi
     const VkDevice dev        = m_context.getDevice();
     Allocator &allocator      = m_context.getDefaultAllocator();
 
-    const uint32_t vertexCount   = uint32_t(m_vertices.size() / 2);
-    const VkDeviceSize size      = mapVkFormat(VK_FORMAT_R32G32B32A32_SFLOAT).getPixelSize() * vertexCount;
-    const VkBufferCreateInfo bci = makeBufferCreateInfo(size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, {queueIndex});
+    const uint32_t vertexCount = uint32_t(m_vertices.size() / 2);
+    const VkDeviceSize size    = mapVkFormat(VK_FORMAT_R32G32B32A32_SFLOAT).getPixelSize() * vertexCount;
+    const std::vector<uint32_t> queueFamilyIndices{queueIndex};
+    const VkBufferCreateInfo bci = makeBufferCreateInfo(size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, queueFamilyIndices);
 
     de::MovePtr<BufferWithMemory> vertexBuffer;
     bf16::makeMovePtr(vertexBuffer, di, dev, allocator, bci, MemoryRequirement::HostVisible);
@@ -1011,9 +1013,10 @@ auto BFloat16FragmentInstance::prepareVertexBuffer() const -> de::MovePtr<Buffer
     const VkDevice dev        = m_context.getDevice();
     Allocator &allocator      = m_context.getDefaultAllocator();
 
-    const uint32_t vertexCount   = uint32_t(m_vertices.size() / 2);
-    const VkDeviceSize size      = mapVkFormat(VK_FORMAT_R32G32B32A32_SFLOAT).getPixelSize() * vertexCount;
-    const VkBufferCreateInfo bci = makeBufferCreateInfo(size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, {queueIndex});
+    const uint32_t vertexCount = uint32_t(m_vertices.size() / 2);
+    const VkDeviceSize size    = mapVkFormat(VK_FORMAT_R32G32B32A32_SFLOAT).getPixelSize() * vertexCount;
+    const std::vector<uint32_t> queueFamilyIndices{queueIndex};
+    const VkBufferCreateInfo bci = makeBufferCreateInfo(size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, queueFamilyIndices);
 
     de::MovePtr<BufferWithMemory> vertexBuffer;
     bf16::makeMovePtr(vertexBuffer, di, dev, allocator, bci, MemoryRequirement::HostVisible);

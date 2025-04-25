@@ -91,7 +91,7 @@ std::vector<Vertex> genVertices(void)
 class MultipleSubpassesMultipleCommandBuffersTestInstance : public TestInstance
 {
 public:
-    MultipleSubpassesMultipleCommandBuffersTestInstance(Context &context);
+    MultipleSubpassesMultipleCommandBuffersTestInstance(Context &context, const bool useGeneralLayout);
     virtual ~MultipleSubpassesMultipleCommandBuffersTestInstance(void)
     {
     }
@@ -99,6 +99,8 @@ public:
     void createCommandBuffer(const DeviceInterface &vk, VkDevice vkDevice);
 
 private:
+    const bool m_useGeneralLayout;
+
     static constexpr uint32_t kImageWidth  = 32;
     static constexpr uint32_t kImageHeight = 32;
     const tcu::UVec2 m_renderSize          = {kImageWidth, kImageHeight};
@@ -135,8 +137,10 @@ private:
 class MultipleSubpassesMultipleCommandBuffersTest : public vkt::TestCase
 {
 public:
-    MultipleSubpassesMultipleCommandBuffersTest(tcu::TestContext &testContext, const std::string &name)
+    MultipleSubpassesMultipleCommandBuffersTest(tcu::TestContext &testContext, const std::string &name,
+                                                const bool useGeneralLayout)
         : vkt::TestCase(testContext, name)
+        , m_useGeneralLayout(useGeneralLayout)
     {
     }
     virtual ~MultipleSubpassesMultipleCommandBuffersTest(void)
@@ -144,11 +148,14 @@ public:
     }
     virtual void initPrograms(SourceCollections &sourceCollections) const;
     virtual TestInstance *createInstance(Context &context) const;
+
+private:
+    const bool m_useGeneralLayout;
 };
 
 TestInstance *MultipleSubpassesMultipleCommandBuffersTest::createInstance(Context &context) const
 {
-    return new MultipleSubpassesMultipleCommandBuffersTestInstance(context);
+    return new MultipleSubpassesMultipleCommandBuffersTestInstance(context, m_useGeneralLayout);
 }
 
 void MultipleSubpassesMultipleCommandBuffersTest::initPrograms(SourceCollections &sourceCollections) const
@@ -179,25 +186,28 @@ void MultipleSubpassesMultipleCommandBuffersTest::initPrograms(SourceCollections
 }
 
 // Create a render pass for this use case.
-Move<VkRenderPass> createRenderPass(const DeviceInterface &vk, VkDevice vkDevice)
+Move<VkRenderPass> createRenderPass(const DeviceInterface &vk, VkDevice vkDevice, const bool useGeneralLayout)
 {
+    const VkImageLayout attachmentLayout =
+        useGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
     // Create attachment descriptions.
     const VkAttachmentDescription attachmentDescription = {
-        (VkAttachmentDescriptionFlags)0,          // VkAttachmentDescriptionFlags        flags
-        VK_FORMAT_R32G32B32A32_SFLOAT,            // VkFormat                            format
-        VK_SAMPLE_COUNT_1_BIT,                    // VkSampleCountFlagBits            samples
-        VK_ATTACHMENT_LOAD_OP_LOAD,               // VkAttachmentLoadOp                loadOp
-        VK_ATTACHMENT_STORE_OP_STORE,             // VkAttachmentStoreOp                storeOp
-        VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp                stencilLoadOp
-        VK_ATTACHMENT_STORE_OP_DONT_CARE,         // VkAttachmentStoreOp                stencilStoreOp
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout                    initialLayout
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL  // VkImageLayout                    finalLayout
+        (VkAttachmentDescriptionFlags)0,  // VkAttachmentDescriptionFlags        flags
+        VK_FORMAT_R32G32B32A32_SFLOAT,    // VkFormat                            format
+        VK_SAMPLE_COUNT_1_BIT,            // VkSampleCountFlagBits            samples
+        VK_ATTACHMENT_LOAD_OP_LOAD,       // VkAttachmentLoadOp                loadOp
+        VK_ATTACHMENT_STORE_OP_STORE,     // VkAttachmentStoreOp                storeOp
+        VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp                stencilLoadOp
+        VK_ATTACHMENT_STORE_OP_DONT_CARE, // VkAttachmentStoreOp                stencilStoreOp
+        attachmentLayout,                 // VkImageLayout                    initialLayout
+        attachmentLayout                  // VkImageLayout                    finalLayout
     };
 
     // Mark attachments as used or not depending on the test parameters.
     const VkAttachmentReference attachmentReference{
-        0u,                                       // uint32_t                attachment
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout        layout
+        0u,               // uint32_t                attachment
+        attachmentLayout, // VkImageLayout        layout
     };
 
     // Create subpass description with the previous color attachment references.
@@ -228,8 +238,9 @@ Move<VkRenderPass> createRenderPass(const DeviceInterface &vk, VkDevice vkDevice
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // VkPipelineStageFlags        srcStageMask
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // VkPipelineStageFlags        dstStageMask
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,          // VkAccessFlags            srcAccessMask
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,          // VkAccessFlags            dstAccessMask
-            0u                                             // VkDependencyFlags        dependencyFlags
+            VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // VkAccessFlags            dstAccessMask
+            0u                                        // VkDependencyFlags        dependencyFlags
         };
         subpassDependencies.emplace_back(subpassDependency);
         subpassDependency.srcSubpass = 1u;
@@ -253,8 +264,9 @@ Move<VkRenderPass> createRenderPass(const DeviceInterface &vk, VkDevice vkDevice
 }
 
 MultipleSubpassesMultipleCommandBuffersTestInstance::MultipleSubpassesMultipleCommandBuffersTestInstance(
-    Context &context)
+    Context &context, const bool useGeneralLayout)
     : vkt::TestInstance(context)
+    , m_useGeneralLayout(useGeneralLayout)
 {
     // Initial color for all images.
     m_initialColor.color.float32[0] = 0.0f;
@@ -343,11 +355,15 @@ MultipleSubpassesMultipleCommandBuffersTestInstance::MultipleSubpassesMultipleCo
             Move<VkCommandPool> cmdPool;
             Move<VkCommandBuffer> cmdBuffer;
             std::vector<VkImageMemoryBarrier> preImageBarriers;
+            std::vector<VkMemoryBarrier> postMemoryBarriers;
             std::vector<VkImageMemoryBarrier> postImageBarriers;
 
             // Create command pool and buffer
             cmdPool   = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
             cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+            const VkImageLayout layout =
+                m_useGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
             // From undefined layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL.
             const VkImageMemoryBarrier preImageBarrierA = {
@@ -356,7 +372,7 @@ MultipleSubpassesMultipleCommandBuffersTestInstance::MultipleSubpassesMultipleCo
                 0u,                                     // VkAccessFlags srcAccessMask;
                 VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags dstAccessMask;
                 VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout oldLayout;
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout newLayout;
+                layout,                                 // VkImageLayout newLayout;
                 VK_QUEUE_FAMILY_IGNORED,                // uint32_t srcQueueFamilyIndex;
                 VK_QUEUE_FAMILY_IGNORED,                // uint32_t dstQueueFamilyIndex;
                 *m_colorImageA,                         // VkImage image;
@@ -370,6 +386,13 @@ MultipleSubpassesMultipleCommandBuffersTestInstance::MultipleSubpassesMultipleCo
                 }};
 
             preImageBarriers.emplace_back(preImageBarrierA);
+
+            const VkMemoryBarrier postMemoryBarrierA = {
+                VK_STRUCTURE_TYPE_MEMORY_BARRIER, // VkStructureType sType;
+                nullptr,                          // const void* pNext;
+                VK_ACCESS_TRANSFER_WRITE_BIT,     // VkAccessFlags srcAccessMask;
+                VK_ACCESS_SHADER_READ_BIT         // VkAccessFlags dstAccessMask;
+            };
 
             // From VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL to VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL.
             const VkImageMemoryBarrier postImageBarrierA = {
@@ -391,7 +414,10 @@ MultipleSubpassesMultipleCommandBuffersTestInstance::MultipleSubpassesMultipleCo
                     1u          // uint32_t arraySize;
                 }};
 
-            postImageBarriers.emplace_back(postImageBarrierA);
+            if (m_useGeneralLayout)
+                postMemoryBarriers.push_back(postMemoryBarrierA);
+            else
+                postImageBarriers.emplace_back(postImageBarrierA);
 
             // From undefined layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL.
             const VkImageMemoryBarrier preImageBarrierB = {
@@ -400,7 +426,7 @@ MultipleSubpassesMultipleCommandBuffersTestInstance::MultipleSubpassesMultipleCo
                 0u,                                     // VkAccessFlags srcAccessMask;
                 VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags dstAccessMask;
                 VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout oldLayout;
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout newLayout;
+                layout,                                 // VkImageLayout newLayout;
                 VK_QUEUE_FAMILY_IGNORED,                // uint32_t srcQueueFamilyIndex;
                 VK_QUEUE_FAMILY_IGNORED,                // uint32_t dstQueueFamilyIndex;
                 *m_colorImageB,                         // VkImage image;
@@ -414,6 +440,13 @@ MultipleSubpassesMultipleCommandBuffersTestInstance::MultipleSubpassesMultipleCo
                 }};
 
             preImageBarriers.emplace_back(preImageBarrierB);
+
+            const VkMemoryBarrier postMemoryBarrierB = {
+                VK_STRUCTURE_TYPE_MEMORY_BARRIER, // VkStructureType sType;
+                nullptr,                          // const void* pNext;
+                VK_ACCESS_TRANSFER_WRITE_BIT,     // VkAccessFlags srcAccessMask;
+                VK_ACCESS_SHADER_READ_BIT         // VkAccessFlags dstAccessMask;
+            };
 
             // From VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL to VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL.
             const VkImageMemoryBarrier postImageBarrierB = {
@@ -435,7 +468,10 @@ MultipleSubpassesMultipleCommandBuffersTestInstance::MultipleSubpassesMultipleCo
                     1u          // uint32_t arraySize;
                 }};
 
-            postImageBarriers.emplace_back(postImageBarrierB);
+            if (m_useGeneralLayout)
+                postMemoryBarriers.push_back(postMemoryBarrierB);
+            else
+                postImageBarriers.emplace_back(postImageBarrierB);
 
             const VkImageSubresourceRange clearRange = {
                 aspectMask, // VkImageAspectFlags aspectMask;
@@ -450,10 +486,8 @@ MultipleSubpassesMultipleCommandBuffersTestInstance::MultipleSubpassesMultipleCo
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                   (VkDependencyFlags)0, 0, nullptr, 0, nullptr,
                                   static_cast<uint32_t>(preImageBarriers.size()), preImageBarriers.data());
-            vk.cmdClearColorImage(*cmdBuffer, *m_colorImageA, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                  &m_initialColor.color, 1, &clearRange);
-            vk.cmdClearColorImage(*cmdBuffer, *m_colorImageB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                  &m_initialColor.color, 1, &clearRange);
+            vk.cmdClearColorImage(*cmdBuffer, *m_colorImageA, layout, &m_initialColor.color, 1, &clearRange);
+            vk.cmdClearColorImage(*cmdBuffer, *m_colorImageB, layout, &m_initialColor.color, 1, &clearRange);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
                                   (VkDependencyFlags)0, 0, nullptr, 0, nullptr,
                                   static_cast<uint32_t>(postImageBarriers.size()), postImageBarriers.data());
@@ -464,7 +498,7 @@ MultipleSubpassesMultipleCommandBuffersTestInstance::MultipleSubpassesMultipleCo
     }
 
     // Create render pass.
-    m_renderPass = createRenderPass(vk, vkDevice);
+    m_renderPass = createRenderPass(vk, vkDevice, m_useGeneralLayout);
 
     // Create framebuffer
     {
@@ -816,13 +850,15 @@ tcu::TestStatus MultipleSubpassesMultipleCommandBuffersTestInstance::iterate(voi
         const tcu::Vec4 blue   = {0.0f, 0.0f, 1.0f, 1.0f};
         const tcu::Vec4 yellow = {1.0f, 1.0f, 0.0f, 1.0f};
 
+        const VkImageLayout attachmentLayout =
+            m_useGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         // Read result images.
         de::MovePtr<tcu::TextureLevel> imagePixelsA =
             pipeline::readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_colorImageA,
-                                          VK_FORMAT_R32G32B32A32_SFLOAT, m_renderSize);
+                                          VK_FORMAT_R32G32B32A32_SFLOAT, m_renderSize, attachmentLayout);
         de::MovePtr<tcu::TextureLevel> imagePixelsB =
             pipeline::readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_colorImageB,
-                                          VK_FORMAT_R32G32B32A32_SFLOAT, m_renderSize);
+                                          VK_FORMAT_R32G32B32A32_SFLOAT, m_renderSize, attachmentLayout);
 
         // Verify pixel colors match.
         const tcu::ConstPixelBufferAccess &imageAccessA = imagePixelsA->getAccess();
@@ -867,7 +903,8 @@ tcu::TestCaseGroup *createRenderPassMultipleSubpassesMultipleCommandBuffersTests
     de::MovePtr<tcu::TestCaseGroup> testGroup(
         new tcu::TestCaseGroup(testCtx, "multiple_subpasses_multiple_command_buffers"));
 
-    testGroup->addChild(new MultipleSubpassesMultipleCommandBuffersTest(testCtx, "test"));
+    testGroup->addChild(new MultipleSubpassesMultipleCommandBuffersTest(testCtx, "test", false));
+    testGroup->addChild(new MultipleSubpassesMultipleCommandBuffersTest(testCtx, "test_general_layout", true));
 
     return testGroup.release();
 }

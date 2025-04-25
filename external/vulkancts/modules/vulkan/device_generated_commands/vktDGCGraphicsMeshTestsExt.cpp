@@ -1543,6 +1543,547 @@ tcu::TestStatus DGCMeshDrawInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+class NoFragInstance : public vkt::TestInstance
+{
+public:
+    struct Params
+    {
+        PipelineConstructionType constructionType;
+        bool hasTask;
+        bool useIES;
+        bool preprocess;
+
+        VkShaderStageFlags getShaderStages() const
+        {
+            VkShaderStageFlags stages = VK_SHADER_STAGE_MESH_BIT_EXT;
+            if (hasTask)
+                stages |= VK_SHADER_STAGE_TASK_BIT_EXT;
+            return stages;
+        }
+
+        uint32_t getShadersPerSequence() const
+        {
+            return (1u + (hasTask ? 1u : 0u)); // Mesh and optional task shader.
+        }
+
+        uint32_t getRandomSeed() const
+        {
+            return (((static_cast<int>(constructionType) + 1u) << 8u) | static_cast<int>(hasTask));
+        }
+
+        std::vector<uint32_t> getTaskValues() const
+        {
+            DE_ASSERT(hasTask);
+            std::vector<uint32_t> values{1000000u};
+            if (useIES)
+                values.push_back(2000000u);
+            return values;
+        }
+
+        std::vector<uint32_t> getMeshValues() const
+        {
+            std::vector<uint32_t> values{(hasTask ? 3000000u : 1000000u)};
+            if (useIES)
+                values.push_back(hasTask ? 4000000u : 2000000u);
+            return values;
+        }
+
+        uint32_t getWGFactor() const
+        {
+            return 1000u;
+        }
+
+        uint32_t getWorkGroupSize() const
+        {
+            return 64u;
+        }
+
+        uint32_t getOutputArraySize() const
+        {
+            return 1024u;
+        }
+    };
+
+    NoFragInstance(Context &context, const Params &params) : vkt::TestInstance(context), m_params(params)
+    {
+    }
+    virtual ~NoFragInstance() = default;
+
+    tcu::TestStatus iterate(void) override;
+
+protected:
+    const Params m_params;
+};
+
+class NoFragCase : public vkt::TestCase
+{
+public:
+    NoFragCase(tcu::TestContext &testCtx, const std::string &name, const NoFragInstance::Params &params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~NoFragCase() = default;
+
+    void checkSupport(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new NoFragInstance(context, m_params);
+    }
+
+protected:
+    const NoFragInstance::Params m_params;
+};
+
+void NoFragCase::checkSupport(Context &context) const
+{
+    const auto ctx = context.getContextCommonData();
+
+    checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, m_params.constructionType);
+
+    const auto stages                 = m_params.getShaderStages();
+    const auto bindStages             = (m_params.useIES ? stages : 0u);
+    const bool useShaderObjects       = isConstructionTypeShaderObject(m_params.constructionType);
+    const auto bindStagesPipeline     = (useShaderObjects ? 0u : bindStages);
+    const auto bindStagesShaderObject = (useShaderObjects ? bindStages : 0u);
+
+    checkDGCExtSupport(context, stages, bindStagesPipeline, bindStagesShaderObject);
+}
+
+void NoFragCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    const vk::ShaderBuildOptions shaderBuildOpt(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+    const auto wgSize   = m_params.getWorkGroupSize();
+    const auto outSize  = m_params.getOutputArraySize();
+    const auto wgFactor = std::to_string(m_params.getWGFactor());
+    std::string taskDataDecl;
+
+    if (m_params.hasTask)
+    {
+        std::ostringstream taskDataDeclStream;
+        taskDataDeclStream << "struct TaskData {\n"
+                           << "    uint globalWorkGroupID;\n"
+                           << "};\n"
+                           << "taskPayloadSharedEXT TaskData td;\n";
+        taskDataDecl = taskDataDeclStream.str();
+
+        const auto taskValues = m_params.getTaskValues();
+        for (size_t i = 0u; i < taskValues.size(); ++i)
+        {
+            std::ostringstream task;
+            task << "#version 460\n"
+                 << "#extension GL_EXT_mesh_shader : enable\n"
+                 << "layout (local_size_x=" << wgSize << ", local_size_y=1, local_size_z=1) in;\n"
+                 << "layout (push_constant, std430) uniform PCBlock { uint prevWGCount; } pc;\n"
+                 << "layout (set=0, binding=0, std430) buffer OutputBlock { uint values[" << outSize
+                 << "]; } taskBuffer;\n"
+                 << taskDataDecl << "void main() {\n"
+                 << "    const uint globalWorkGroupID = pc.prevWGCount + gl_WorkGroupID.x;\n"
+                 << "    const uint slotIndex = globalWorkGroupID * gl_WorkGroupSize.x + gl_LocalInvocationIndex;\n"
+                 << "    const uint value = " << taskValues.at(i) << " + globalWorkGroupID * " << wgFactor
+                 << " + gl_LocalInvocationIndex;\n"
+                 << "    taskBuffer.values[slotIndex] = value;\n"
+                 << "    if (gl_LocalInvocationIndex == 0u) {\n"
+                 << "        td.globalWorkGroupID = globalWorkGroupID;\n"
+                 << "    }\n"
+                 << "    EmitMeshTasksEXT(1u, 1u, 1u);\n"
+                 << "}\n";
+            const auto taskName = "task" + std::to_string(i);
+            programCollection.glslSources.add(taskName) << glu::TaskSource(task.str()) << shaderBuildOpt;
+        }
+    }
+
+    {
+        const auto meshValues        = m_params.getMeshValues();
+        const auto meshBufferBinding = (m_params.hasTask ? 1u : 0u);
+
+        for (size_t i = 0u; i < meshValues.size(); ++i)
+        {
+            std::ostringstream mesh;
+            mesh << "#version 460\n"
+                 << "#extension GL_EXT_mesh_shader : enable\n"
+                 << "layout (local_size_x=" << wgSize << ", local_size_y=1, local_size_z=1) in;\n"
+                 << (m_params.hasTask ? taskDataDecl :
+                                        "layout (push_constant, std430) uniform PCBlock { uint prevWGCount; } pc;\n")
+                 << "layout (set=0, binding=" << meshBufferBinding << ", std430) buffer OutputBlock { uint values["
+                 << outSize << "]; } meshBuffer;\n"
+                 << "layout (points) out;\n"
+                 << "layout (max_vertices=1, max_primitives=1) out;\n"
+                 << "void main() {\n"
+                 << "    const uint globalWorkGroupID = "
+                 << (m_params.hasTask ? "td.globalWorkGroupID" : "pc.prevWGCount + gl_WorkGroupID.x") << ";\n"
+                 << "    const uint slotIndex = globalWorkGroupID * gl_WorkGroupSize.x + gl_LocalInvocationIndex;\n"
+                 << "    const uint value = " << meshValues.at(i) << " + globalWorkGroupID * " << wgFactor
+                 << " + gl_LocalInvocationIndex;\n"
+                 << "    meshBuffer.values[slotIndex] = value;\n"
+                 << "    SetMeshOutputsEXT(0u, 0u);\n"
+                 << "}\n";
+            const auto meshName = "mesh" + std::to_string(i);
+            programCollection.glslSources.add(meshName) << glu::MeshSource(mesh.str()) << shaderBuildOpt;
+        }
+    }
+}
+
+tcu::TestStatus NoFragInstance::iterate(void)
+{
+    const auto ctx = m_context.getContextCommonData();
+
+    // Main output buffer. This will be used by the mesh or the task shader, whichever is launched.
+    const auto arraySize = m_params.getOutputArraySize();
+    std::vector<uint32_t> bufferValues(arraySize, 0u);
+    const auto outputBufferInfo = makeBufferCreateInfo(de::dataSize(bufferValues), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+
+    BufferWithMemory mainBuffer(ctx.vkd, ctx.device, ctx.allocator, outputBufferInfo, MemoryRequirement::HostVisible);
+    {
+        auto &alloc = mainBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(bufferValues), de::dataSize(bufferValues));
+    }
+
+    // Used by the mesh shader when the task shader is present.
+    std::unique_ptr<BufferWithMemory> secondaryBuffer;
+    if (m_params.hasTask)
+    {
+        secondaryBuffer.reset(
+            new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, outputBufferInfo, MemoryRequirement::HostVisible));
+        auto &alloc = secondaryBuffer->getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(bufferValues), de::dataSize(bufferValues));
+    }
+
+    // Descriptor pool, set and pipeline layout.
+    const auto descType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    const auto mainStage =
+        static_cast<VkShaderStageFlags>(m_params.hasTask ? VK_SHADER_STAGE_TASK_BIT_EXT : VK_SHADER_STAGE_MESH_BIT_EXT);
+    const auto secondaryStage = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_MESH_BIT_EXT);
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(descType, mainStage);
+    if (m_params.hasTask)
+        setLayoutBuilder.addSingleBinding(descType, secondaryStage);
+    const auto setLayout = setLayoutBuilder.build(ctx.vkd, ctx.device);
+
+    const auto pcStages = mainStage;
+    const auto pcSize   = DE_SIZEOF32(uint32_t);
+    const auto pcRange  = makePushConstantRange(pcStages, 0u, pcSize);
+
+    PipelineLayoutWrapper pipelineLayout(m_params.constructionType, ctx.vkd, ctx.device, *setLayout, &pcRange);
+
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(descType, (m_params.hasTask ? 2u : 1u)); // Main and secondary or just main.
+    const auto descriptorPool =
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+    const auto descriptorSet = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+
+    DescriptorSetUpdateBuilder setUpdateBuilder;
+    using Location = DescriptorSetUpdateBuilder::Location;
+    {
+        const auto descInfo = makeDescriptorBufferInfo(*mainBuffer, 0ull, VK_WHOLE_SIZE);
+        setUpdateBuilder.writeSingle(*descriptorSet, Location::binding(0u), descType, &descInfo);
+    }
+    if (m_params.hasTask)
+    {
+        const auto descInfo = makeDescriptorBufferInfo(secondaryBuffer->get(), 0ull, VK_WHOLE_SIZE);
+        setUpdateBuilder.writeSingle(*descriptorSet, Location::binding(1u), descType, &descInfo);
+    }
+    setUpdateBuilder.update(ctx.vkd, ctx.device);
+
+    // Pipelines.
+    using GraphicsPipelineWrapperPtr = std::unique_ptr<GraphicsPipelineWrapper>;
+    std::vector<GraphicsPipelineWrapperPtr> pipelines;
+    const auto pipelineCount = de::sizeU32(m_params.getMeshValues());
+
+    const auto &binaries = m_context.getBinaryCollection();
+    const tcu::IVec3 extent(1, 1, 1);
+    const auto apiExtent = makeExtent3D(extent);
+    const std::vector<VkViewport> viewports{makeViewport(extent)};
+    const std::vector<VkRect2D> scissors{makeRect2D(extent)};
+
+    RenderPassWrapper renderPass(m_params.constructionType, ctx.vkd, ctx.device);
+    renderPass.createFramebuffer(ctx.vkd, ctx.device, 0u, nullptr, nullptr, apiExtent.width, apiExtent.height);
+
+    const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_FALSE,
+        VK_TRUE, // Discard rasterization results.
+        VK_POLYGON_MODE_FILL,
+        VK_CULL_MODE_NONE,
+        VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        VK_FALSE,
+        0.0f,
+        0.0f,
+        0.0f,
+        1.0f,
+    };
+
+    const auto pipelineCreationFlags = (m_params.useIES ? VK_PIPELINE_CREATE_2_INDIRECT_BINDABLE_BIT_EXT : 0);
+    const auto shaderCreateFlags     = (m_params.useIES ? VK_SHADER_CREATE_INDIRECT_BINDABLE_BIT_EXT : 0);
+    const VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = initVulkanStructure();
+
+    for (uint32_t i = 0u; i < pipelineCount; ++i)
+    {
+        pipelines.emplace_back(new GraphicsPipelineWrapper(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device,
+                                                           m_context.getDeviceExtensions(), m_params.constructionType));
+        auto &pipeline = *pipelines.back();
+
+        const auto iStr     = std::to_string(i);
+        const auto meshName = "mesh" + iStr;
+        const auto taskName = "task" + iStr;
+
+        ShaderWrapper meshShader(ctx.vkd, ctx.device, binaries.get(meshName));
+        ShaderWrapperPtr taskShader;
+        taskShader.reset(m_params.hasTask ? (new ShaderWrapper(ctx.vkd, ctx.device, binaries.get(taskName))) :
+                                            new ShaderWrapper());
+
+        pipeline.setPipelineCreateFlags2(pipelineCreationFlags)
+            .setShaderCreateFlags(shaderCreateFlags)
+            .setDefaultDepthStencilState()
+            .setDefaultMultisampleState()
+            .setupPreRasterizationMeshShaderState(viewports, scissors, pipelineLayout, renderPass.get(), 0u,
+                                                  *taskShader, meshShader, &rasterizationStateCreateInfo)
+            .setupFragmentShaderState(pipelineLayout, renderPass.get(), 0u, ShaderWrapper())
+            .setupFragmentOutputState(renderPass.get(), 0u, &colorBlendStateCreateInfo)
+            .buildPipeline();
+    }
+
+    std::vector<uint32_t> dispatchSizes;
+    const auto groupSize = m_params.getWorkGroupSize();
+    DE_ASSERT(arraySize % groupSize == 0u);
+    const auto totalGroups = arraySize / groupSize;
+
+    const uint32_t seed = m_params.getRandomSeed();
+    de::Random rnd(seed);
+    dispatchSizes.push_back(static_cast<uint32_t>(rnd.getInt(1, static_cast<int>(totalGroups) - 1)));
+    dispatchSizes.push_back(totalGroups - dispatchSizes.front());
+
+    // Push constant values in each iteration.
+    std::vector<uint32_t> pcValues;
+    pcValues.reserve(dispatchSizes.size());
+    uint32_t prevGroupCount = 0u;
+    for (size_t i = 0u; i < dispatchSizes.size(); ++i)
+    {
+        pcValues.push_back(prevGroupCount);
+        prevGroupCount += dispatchSizes.at(i);
+    }
+
+    // DGC pieces.
+    const auto sequenceCount      = de::sizeU32(dispatchSizes);
+    const auto shadersPerSequence = m_params.getShadersPerSequence();
+    const auto shaderStages       = m_params.getShaderStages();
+    const bool useESO             = isConstructionTypeShaderObject(m_params.constructionType);
+
+    const auto cmdsLayoutFlags =
+        (m_params.preprocess ? VK_INDIRECT_COMMANDS_LAYOUT_USAGE_EXPLICIT_PREPROCESS_BIT_EXT : 0);
+    IndirectCommandsLayoutBuilderExt cmdsLayoutBuilder(cmdsLayoutFlags, shaderStages, *pipelineLayout);
+    if (m_params.useIES)
+    {
+        const auto iesType = (useESO ? VK_INDIRECT_EXECUTION_SET_INFO_TYPE_SHADER_OBJECTS_EXT :
+                                       VK_INDIRECT_EXECUTION_SET_INFO_TYPE_PIPELINES_EXT);
+        cmdsLayoutBuilder.addExecutionSetToken(0u, iesType, shaderStages);
+    }
+    cmdsLayoutBuilder.addPushConstantToken(cmdsLayoutBuilder.getStreamRange(), pcRange);
+    cmdsLayoutBuilder.addDrawMeshTasksToken(cmdsLayoutBuilder.getStreamRange());
+    const auto cmdsLayout = cmdsLayoutBuilder.build(ctx.vkd, ctx.device);
+
+    std::vector<uint32_t> dgcData;
+    dgcData.reserve((sequenceCount * cmdsLayoutBuilder.getStreamStride()) / DE_SIZEOF32(uint32_t));
+    for (uint32_t i = 0u; i < de::sizeU32(dispatchSizes); ++i)
+    {
+        if (m_params.useIES)
+        {
+            if (useESO)
+            {
+                dgcData.push_back(i * shadersPerSequence);
+                if (m_params.hasTask)
+                {
+                    DE_ASSERT(shadersPerSequence == 2u);
+                    dgcData.push_back(i * shadersPerSequence + 1u);
+                }
+            }
+            else
+                dgcData.push_back(i);
+        }
+        dgcData.push_back(pcValues.at(i));      // Push constant token value.
+        dgcData.push_back(dispatchSizes.at(i)); // Dispatch X.
+        dgcData.push_back(1u);                  // Dispatch Y.
+        dgcData.push_back(1u);                  // Dispatch Z.
+    }
+
+    DGCBuffer dgcBuffer(ctx.vkd, ctx.device, ctx.allocator, de::dataSize(dgcData));
+    {
+        auto &alloc = dgcBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(dgcData), de::dataSize(dgcData));
+    }
+
+    ExecutionSetManagerPtr iesManager;
+    VkIndirectExecutionSetEXT iesHandle = VK_NULL_HANDLE;
+
+    VkPipeline preprocessPipeline = VK_NULL_HANDLE;
+    std::vector<VkShaderEXT> preprocessShaders;
+
+    if (m_params.useIES)
+    {
+        if (useESO)
+        {
+            const std::vector<VkDescriptorSetLayout> setLayouts{*setLayout};
+            const std::vector<VkPushConstantRange> pcRanges{pcRange};
+
+            std::vector<IESStageInfo> stages;
+            if (m_params.hasTask)
+                stages.push_back(IESStageInfo{pipelines.front()->getShader(VK_SHADER_STAGE_TASK_BIT_EXT), setLayouts});
+            stages.push_back(IESStageInfo{pipelines.front()->getShader(VK_SHADER_STAGE_MESH_BIT_EXT), setLayouts});
+            DE_ASSERT(shadersPerSequence == de::sizeU32(stages));
+
+            const uint32_t maxShaderCount = sequenceCount * shadersPerSequence;
+            iesManager = makeExecutionSetManagerShader(ctx.vkd, ctx.device, stages, pcRanges, maxShaderCount);
+
+            // Task,Mesh,Task,Mesh or Mesh,Mesh
+            for (uint32_t i = 0u; i < sequenceCount; ++i)
+            {
+                const auto &pipeline = *pipelines.at(i);
+                if (m_params.hasTask)
+                    iesManager->addShader(i * shadersPerSequence, pipeline.getShader(VK_SHADER_STAGE_TASK_BIT_EXT));
+                iesManager->addShader(i * shadersPerSequence + (m_params.hasTask ? 1u : 0u),
+                                      pipeline.getShader(VK_SHADER_STAGE_MESH_BIT_EXT));
+            }
+        }
+        else
+        {
+            iesManager =
+                makeExecutionSetManagerPipeline(ctx.vkd, ctx.device, pipelines.front()->getPipeline(), sequenceCount);
+            for (uint32_t i = 0u; i < sequenceCount; ++i)
+                iesManager->addPipeline(i, pipelines.at(i)->getPipeline());
+        }
+
+        iesManager->update();
+        iesHandle = iesManager->get();
+    }
+    else
+    {
+        if (useESO)
+        {
+            if (m_params.hasTask)
+                preprocessShaders.push_back(pipelines.front()->getShader(VK_SHADER_STAGE_TASK_BIT_EXT));
+            preprocessShaders.push_back(pipelines.front()->getShader(VK_SHADER_STAGE_MESH_BIT_EXT));
+        }
+        else
+            preprocessPipeline = pipelines.front()->getPipeline();
+    }
+
+    const auto preprocessShadersPtr = (preprocessShaders.empty() ? nullptr : &preprocessShaders);
+    PreprocessBufferExt preprocessBuffer(ctx.vkd, ctx.device, ctx.allocator, iesHandle, *cmdsLayout, sequenceCount, 0u,
+                                         preprocessPipeline, preprocessShadersPtr);
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    const auto preprocessCmdBuffer = (m_params.preprocess ? allocateCommandBuffer(ctx.vkd, ctx.device, *cmd.cmdPool,
+                                                                                  VK_COMMAND_BUFFER_LEVEL_PRIMARY) :
+                                                            Move<VkCommandBuffer>());
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
+                                  &descriptorSet.get(), 0u, nullptr);
+    renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u));
+#if 1
+    {
+        pipelines.front()->bind(cmdBuffer); // Bind initial state.
+        const DGCGenCmdsInfo cmdsInfo(shaderStages, iesHandle, *cmdsLayout, dgcBuffer.getDeviceAddress(),
+                                      dgcBuffer.getSize(), preprocessBuffer.getDeviceAddress(),
+                                      preprocessBuffer.getSize(), sequenceCount, 0ull, 0u, preprocessPipeline,
+                                      preprocessShadersPtr);
+
+        if (m_params.preprocess)
+        {
+            beginCommandBuffer(ctx.vkd, *preprocessCmdBuffer);
+            ctx.vkd.cmdPreprocessGeneratedCommandsEXT(*preprocessCmdBuffer, &cmdsInfo.get(), cmdBuffer);
+            preprocessToExecuteBarrierExt(ctx.vkd, *preprocessCmdBuffer);
+            endCommandBuffer(ctx.vkd, *preprocessCmdBuffer);
+        }
+        ctx.vkd.cmdExecuteGeneratedCommandsEXT(cmdBuffer, makeVkBool(m_params.preprocess), &cmdsInfo.get());
+    }
+#else
+    for (size_t i = 0u; i < dispatchSizes.size(); ++i)
+    {
+        pipelines.at(i % pipelines.size())->bind(cmdBuffer);
+        ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, pcStages, 0u, pcSize, &pcValues.at(i));
+        ctx.vkd.cmdDrawMeshTasksEXT(cmdBuffer, dispatchSizes.at(i), 1u, 1u);
+    }
+#endif
+    renderPass.end(ctx.vkd, cmdBuffer);
+    {
+        const auto barrier              = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+        VkPipelineStageFlags stageFlags = VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT;
+        if (m_params.hasTask)
+            stageFlags |= VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT;
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, stageFlags, VK_PIPELINE_STAGE_HOST_BIT, &barrier);
+    }
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitAndWaitWithPreprocess(ctx.vkd, ctx.device, ctx.queue, cmdBuffer, *preprocessCmdBuffer);
+
+    const auto mainValues      = (m_params.hasTask ? m_params.getTaskValues() : m_params.getMeshValues());
+    const auto secondaryValues = m_params.getMeshValues();
+    const auto wgFactor        = m_params.getWGFactor();
+
+    // Main buffer verification.
+    auto &log = m_context.getTestContext().getLog();
+    bool fail = false;
+
+    struct BufferVerification
+    {
+        std::string bufferName;
+        const BufferWithMemory *pBuffer;
+        const std::vector<uint32_t> *pBaseValues;
+    };
+
+    std::vector<BufferVerification> verifications;
+    verifications.push_back(BufferVerification{"binding=0", &mainBuffer, &mainValues});
+    if (m_params.hasTask)
+        verifications.push_back(BufferVerification{"binding=1", secondaryBuffer.get(), &secondaryValues});
+
+    for (const auto &verification : verifications)
+    {
+        auto &alloc = verification.pBuffer->getAllocation();
+        invalidateAlloc(ctx.vkd, ctx.device, alloc);
+
+        memcpy(de::dataOrNull(bufferValues), alloc.getHostPtr(), de::dataSize(bufferValues));
+
+        prevGroupCount = 0u;
+        for (size_t i = 0u; i < dispatchSizes.size(); ++i)
+        {
+            const auto wgCount = dispatchSizes.at(i);
+            for (uint32_t j = 0u; j < wgCount; ++j)
+            {
+                const auto wgIndex = prevGroupCount + j;
+                for (uint32_t k = 0u; k < groupSize; ++k)
+                {
+                    const auto expectedValue =
+                        verification.pBaseValues->at(i % verification.pBaseValues->size()) + wgIndex * wgFactor + k;
+                    const auto arrayIndex  = wgIndex * groupSize + k;
+                    const auto resultValue = bufferValues.at(arrayIndex);
+
+                    if (expectedValue != resultValue)
+                    {
+                        log << tcu::TestLog::Message << "Unexpected value in " << verification.bufferName
+                            << " buffer index " << arrayIndex << ": expected " << expectedValue << " but found "
+                            << resultValue << tcu::TestLog::EndMessage;
+                        fail = true;
+                    }
+                }
+            }
+
+            prevGroupCount += wgCount;
+        }
+    }
+
+    if (fail)
+        TCU_FAIL("Unexpected values found in output buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createDGCGraphicsMeshTestsExt(tcu::TestContext &testCtx)
@@ -1552,12 +2093,15 @@ tcu::TestCaseGroup *createDGCGraphicsMeshTestsExt(tcu::TestContext &testCtx)
     GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "mesh"));
     GroupPtr directGroup(new tcu::TestCaseGroup(testCtx, "token_draw"));
     GroupPtr indirectGroup(new tcu::TestCaseGroup(testCtx, "token_draw_count"));
+    GroupPtr miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
 
-    const struct
+    struct PipelineCase
     {
         PipelineType pipelineType;
         const char *name;
-    } pipelineCases[] = {
+    };
+
+    const PipelineCase pipelineCases[] = {
         {PipelineType::MONOLITHIC, "monolithic"},
         {PipelineType::SHADER_OBJECTS, "shader_objects"},
         {PipelineType::GPL_FAST, "gpl_fast"},
@@ -1602,8 +2146,41 @@ tcu::TestCaseGroup *createDGCGraphicsMeshTestsExt(tcu::TestContext &testCtx)
                         }
                 }
 
+    struct PCaseMatch
+    {
+        PCaseMatch(PipelineType pType_) : pType(pType_)
+        {
+        }
+        bool operator()(const PipelineCase &pCase)
+        {
+            return pCase.pipelineType == pType;
+        }
+        PipelineType pType;
+    };
+    const auto first =
+        std::find_if(std::begin(pipelineCases), std::end(pipelineCases), PCaseMatch(PipelineType::MONOLITHIC));
+    const auto last =
+        std::find_if(std::begin(pipelineCases), std::end(pipelineCases), PCaseMatch(PipelineType::GPL_FAST));
+
+    for (auto i = first; i <= last; ++i)
+        for (const bool hasTask : {false, true})
+            for (const bool useIES : {false, true})
+                for (const bool preprocess : {false, true})
+                {
+                    const NoFragInstance::Params params{
+                        getGeneralConstructionType(i->pipelineType),
+                        hasTask,
+                        useIES,
+                        preprocess,
+                    };
+                    const auto testName = std::string("no_frag_shader_") + i->name + (hasTask ? "_with_task" : "") +
+                                          (useIES ? "_with_ies" : "") + (preprocess ? "_preprocess" : "");
+                    miscGroup->addChild(new NoFragCase(testCtx, testName, params));
+                }
+
     mainGroup->addChild(directGroup.release());
     mainGroup->addChild(indirectGroup.release());
+    mainGroup->addChild(miscGroup.release());
     mainGroup->addChild(createDGCGraphicsMeshConditionalTestsExt(testCtx));
 
     return mainGroup.release();

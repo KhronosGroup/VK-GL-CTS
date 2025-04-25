@@ -2255,6 +2255,284 @@ tcu::TestStatus SharedFragLibraryInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+struct DepthOnlyParams
+{
+    enum class Geometry
+    {
+        POINTS = 0,
+        TRIANGLES
+    };
+
+    PipelineConstructionType constructionType;
+    Geometry geometry;
+    bool stepByStepPosition;
+
+    tcu::IVec3 getExtent() const
+    {
+        return tcu::IVec3(64, 32, 1);
+    }
+
+    tcu::Vec2 getXYOffset() const
+    {
+        return tcu::Vec2(1000.0f, 2000.0f);
+    }
+};
+
+void depthOnlySupport(Context &context, DepthOnlyParams params)
+{
+    checkTaskMeshShaderSupportEXT(context, false, true);
+
+    const auto ctx = context.getContextCommonData();
+    checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, params.constructionType);
+}
+
+void depthOnlyPrograms(vk::SourceCollections &dst, DepthOnlyParams params)
+{
+    // Note we must explicitly omit the fragment shader.
+    // Each working group will handle a full row, 1 primitive per invocation, each covering 1 pixel.
+    const bool isTriangles                  = (params.geometry == DepthOnlyParams::Geometry::TRIANGLES);
+    const auto extent                       = params.getExtent().asUint();
+    const auto xyOffset                     = params.getXYOffset();
+    const uint32_t kPrimitiveVertices       = (isTriangles ? 3u : 1u);
+    const uint32_t kMaxVerticesPerWorkGroup = extent.x() * kPrimitiveVertices;
+    const std::string outPrimitive          = (isTriangles ? "triangles" : "points");
+    const std::string indexBuiltIn = (isTriangles ? "gl_PrimitiveTriangleIndicesEXT" : "gl_PrimitivePointIndicesEXT");
+    const std::string indexValues =
+        (isTriangles ? "uvec3(baseOutVertex, baseOutVertex + 1u, baseOutVertex + 2u)" : "baseOutVertex");
+    std::ostringstream mesh;
+    mesh << "#version 460\n"
+         << "#extension GL_EXT_mesh_shader : enable\n"
+         << "layout (" << outPrimitive << ") out;\n"
+         << "layout (max_vertices=" << kMaxVerticesPerWorkGroup << ", max_primitives=" << extent.x() << ") out;\n"
+         << "layout (local_size_x=" << extent.x() << ", local_size_y=1, local_size_z=1) in;\n"
+         << "layout (set=0, binding=0, std430) readonly buffer PositionsArray { vec4 position[]; } vtxData;\n"
+         << "void main (void) {\n"
+         << "    const uint primitiveVertices = " << kPrimitiveVertices << ";\n"
+         << "    const uint row = gl_WorkGroupID.x;\n"
+         << "    const uint col = gl_LocalInvocationIndex;\n"
+         << "    const uint pixelIdx = row * " << extent.x() << " + col;\n"
+         << "    const uint baseInVertex = pixelIdx * primitiveVertices;\n"
+         << "    const uint baseOutVertex = col * primitiveVertices;\n"
+         << "    SetMeshOutputsEXT(" << kMaxVerticesPerWorkGroup << ", " << extent.x() << ");\n"
+         << "    for (uint i = 0u; i < primitiveVertices; ++i) {\n"
+         << "        const uint inIndex = baseInVertex + i;\n"
+         << "        const uint outIndex = baseOutVertex + i;\n"
+         << "        vec4 outPos;\n"
+         << "        outPos.x = vtxData.position[inIndex].x - " << xyOffset.x() << ";\n"
+         << "        outPos.y = vtxData.position[inIndex].y - " << xyOffset.y() << ";\n"
+         << "        outPos.z = vtxData.position[inIndex].z;\n"
+         << "        outPos.w = 1.0;\n";
+
+    if (params.stepByStepPosition) // This caused issues in the past for some drivers.
+    {
+        mesh << "        gl_MeshVerticesEXT[outIndex].gl_Position.x = outPos.x;\n"
+             << "        gl_MeshVerticesEXT[outIndex].gl_Position.y = outPos.y;\n"
+             << "        gl_MeshVerticesEXT[outIndex].gl_Position.z = outPos.z;\n"
+             << "        gl_MeshVerticesEXT[outIndex].gl_Position.w = outPos.w;\n";
+    }
+    else
+        mesh << "        gl_MeshVerticesEXT[outIndex].gl_Position = outPos;\n";
+
+    mesh << "        gl_MeshVerticesEXT[outIndex].gl_PointSize = 1.0;\n"
+         << "    }\n"
+         << "    " << indexBuiltIn << "[col] = " << indexValues << ";\n"
+         << "}\n";
+    const auto buildOptions = getMinMeshEXTBuildOptions(dst.usedVulkanVersion);
+    dst.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << buildOptions;
+}
+
+tcu::TestStatus depthOnlyRun(Context &context, DepthOnlyParams params)
+{
+    const auto ctx                    = context.getContextCommonData();
+    const auto xyOffset               = params.getXYOffset();
+    const auto fbExtent               = params.getExtent();
+    const auto apiExtent              = makeExtent3D(fbExtent);
+    const auto depthFormat            = VK_FORMAT_D16_UNORM;
+    const auto usage                  = (VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const auto depthSRR               = makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u);
+    const uint32_t kPrimitiveVertices = (params.geometry == DepthOnlyParams::Geometry::POINTS ? 1u : 3u);
+    const uint32_t kPixelCount        = apiExtent.width * apiExtent.height;
+    const uint32_t kVertexCount       = kPixelCount * kPrimitiveVertices;
+
+    // Depth buffer.
+    ImageWithBuffer depthBuffer(ctx.vkd, ctx.device, ctx.allocator, apiExtent, depthFormat, usage, VK_IMAGE_TYPE_2D,
+                                depthSRR);
+
+    const auto floatExtent  = fbExtent.asFloat();
+    const float pixelWidth  = 2.0f / floatExtent.x();
+    const float pixelHeight = 2.0f / floatExtent.y();
+    const float horMargin   = pixelWidth * 0.25f;
+    const float vertMargin  = pixelHeight * 0.25f;
+
+    std::vector<tcu::Vec4> positions;
+    positions.reserve(kVertexCount);
+
+    std::vector<float> pixelDepths;
+    pixelDepths.reserve(kPixelCount);
+
+    const std::vector<tcu::Vec2> positionMargins{
+        tcu::Vec2(0.0f, -vertMargin),
+        tcu::Vec2(-horMargin, vertMargin),
+        tcu::Vec2(horMargin, vertMargin),
+    };
+
+    de::Random rnd(1738233594u + static_cast<uint32_t>(params.constructionType));
+    for (uint32_t i = 0u; i < kPixelCount; ++i)
+        pixelDepths.push_back(rnd.getFloat());
+
+    for (uint32_t y = 0u; y < apiExtent.height; ++y)
+        for (uint32_t x = 0u; x < apiExtent.width; ++x)
+        {
+            const uint32_t pixelId = y * apiExtent.width + x;
+            const float &depth     = pixelDepths.at(pixelId);
+
+            const float xCenter = (static_cast<float>(x) + 0.5f) / floatExtent.x() * 2.0f - 1.0f;
+            const float yCenter = (static_cast<float>(y) + 0.5f) / floatExtent.y() * 2.0f - 1.0f;
+
+            for (uint32_t i = 0u; i < kPrimitiveVertices; ++i)
+            {
+                const auto &margin = positionMargins.at(i);
+                positions.emplace_back(xCenter + margin.x() + xyOffset.x(), yCenter + margin.y() + xyOffset.y(), depth,
+                                       1.0f);
+            }
+        }
+
+    // "Vertex" buffer.
+    const auto vertBufferSize = static_cast<VkDeviceSize>(de::dataSize(positions));
+    const auto vertBufferInfo = makeBufferCreateInfo(vertBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    BufferWithMemory vertBuffer(ctx.vkd, ctx.device, ctx.allocator, vertBufferInfo, MemoryRequirement::HostVisible);
+    {
+        auto &alloc = vertBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(positions), de::dataSize(positions));
+    }
+
+    // Descriptor set stuff.
+    const auto descType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    const auto stageFlags = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_MESH_BIT_EXT);
+
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(descType);
+    const auto descriptorPool =
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(descType, stageFlags);
+    const auto setLayout     = setLayoutBuilder.build(ctx.vkd, ctx.device);
+    const auto descriptorSet = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+
+    DescriptorSetUpdateBuilder setUpdateBuilder;
+    const auto bufferDescInfo = makeDescriptorBufferInfo(*vertBuffer, 0ull, VK_WHOLE_SIZE);
+    setUpdateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descType,
+                                 &bufferDescInfo);
+    setUpdateBuilder.update(ctx.vkd, ctx.device);
+
+    // Pipeline.
+    ShaderWrapper meshShader(ctx.vkd, ctx.device, context.getBinaryCollection().get("mesh"));
+
+    PipelineLayoutWrapper pipelineLayout(params.constructionType, ctx.vkd, ctx.device, *setLayout);
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
+
+    RenderPassWrapper renderPass(params.constructionType, ctx.vkd, ctx.device, VK_FORMAT_UNDEFINED, depthFormat);
+
+    const auto depthBufferImage = depthBuffer.getImage();
+    const auto depthBufferView  = depthBuffer.getImageView();
+    renderPass.createFramebuffer(ctx.vkd, ctx.device, 1u, &depthBufferImage, &depthBufferView, apiExtent.width,
+                                 apiExtent.height);
+
+    const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_FALSE,
+        VK_FALSE, // Do not discard rasterization.
+        VK_POLYGON_MODE_FILL,
+        VK_CULL_MODE_NONE,
+        VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        VK_FALSE,
+        0.0f,
+        0.0f,
+        0.0f,
+        1.0f,
+    };
+
+    // Stencil not used so we provide some default values.
+    const auto stencilOpState =
+        makeStencilOpState(VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_NEVER, 0u, 0u, 0u);
+
+    const VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_TRUE,            // Enable depth test.
+        VK_TRUE,            // Enable depth writes.
+        VK_COMPARE_OP_LESS, // We'll clear to 1.0.
+        VK_FALSE,
+        VK_FALSE,
+        stencilOpState,
+        stencilOpState,
+        0.0f,
+        0.0f,
+    };
+
+    // No color attachments.
+    const VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = initVulkanStructure();
+
+    GraphicsPipelineWrapper pipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, context.getDeviceExtensions(),
+                                     params.constructionType);
+    pipeline.setDefaultMultisampleState()
+        .setupPreRasterizationMeshShaderState(viewports, scissors, pipelineLayout, renderPass.get(), 0u,
+                                              ShaderWrapper(), meshShader, &rasterizationStateCreateInfo)
+        .setupFragmentShaderState(pipelineLayout, renderPass.get(), 0u, ShaderWrapper(), &depthStencilStateCreateInfo)
+        .setupFragmentOutputState(renderPass.get(), 0u, &colorBlendStateCreateInfo)
+        .buildPipeline();
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    const auto clearValue = makeClearValueDepthStencil(1.0f, 0u);
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u), clearValue);
+    pipelineLayout.bindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, 1u, &descriptorSet.get(), 0u,
+                                      nullptr);
+    pipeline.bind(cmdBuffer);
+    ctx.vkd.cmdDrawMeshTasksEXT(cmdBuffer, apiExtent.height, 1u, 1u);
+    renderPass.end(ctx.vkd, cmdBuffer);
+    {
+        const auto srcAccess = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        const auto oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        copyImageToBuffer(ctx.vkd, cmdBuffer, depthBufferImage, depthBuffer.getBuffer(), fbExtent.swizzle(0, 1),
+                          srcAccess, oldLayout, 1u, depthSRR.aspectMask, depthSRR.aspectMask);
+    }
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    const auto tcuFormat = mapVkFormat(depthFormat);
+    tcu::TextureLevel refLevel(tcuFormat, fbExtent.x(), fbExtent.y(), fbExtent.z());
+    tcu::PixelBufferAccess refAccess = refLevel.getAccess();
+
+    for (int y = 0; y < fbExtent.y(); ++y)
+        for (int x = 0; x < fbExtent.x(); ++x)
+        {
+            const auto pixelIdx = static_cast<uint32_t>(y * fbExtent.x() + x);
+            refAccess.setPixDepth(pixelDepths.at(pixelIdx), x, y);
+        }
+
+    auto &depthAlloc = depthBuffer.getBufferAllocation();
+    invalidateAlloc(ctx.vkd, ctx.device, depthAlloc);
+
+    tcu::ConstPixelBufferAccess resAccess(tcuFormat, fbExtent, depthAlloc.getHostPtr());
+
+    const float threshold = 0.000025f; // 1/65535 < this value < 2/65535
+    auto &log             = context.getTestContext().getLog();
+    if (!tcu::dsThresholdCompare(log, "Result", "", refAccess, resAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+        TCU_FAIL("Unexpected results found in depth buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // anonymous namespace
 
 tcu::TestCaseGroup *createMeshShaderSmokeTestsEXT(tcu::TestContext &testCtx)
@@ -2321,6 +2599,25 @@ tcu::TestCaseGroup *createMeshShaderSmokeTestsEXT(tcu::TestContext &testCtx)
                                               (extraInput ? "_extra_input" : "");
                         constructionGroup->addChild(new SharedFragLibraryCase(testCtx, testName, params));
                     }
+        }
+
+        {
+            for (const auto geometry : {DepthOnlyParams::Geometry::POINTS, DepthOnlyParams::Geometry::TRIANGLES})
+                for (const auto stepByStepPosition : {false, true})
+                {
+                    const auto testName = std::string("depth_only") +
+                                          ((geometry == DepthOnlyParams::Geometry::POINTS) ? "_points" : "_triangles") +
+                                          (stepByStepPosition ? "_position_components" : "");
+
+                    const DepthOnlyParams params{
+                        constructionCase.constructionType,
+                        geometry,
+                        stepByStepPosition,
+                    };
+
+                    addFunctionCaseWithPrograms(constructionGroup.get(), testName, depthOnlySupport, depthOnlyPrograms,
+                                                depthOnlyRun, params);
+                }
         }
 
         smokeTests->addChild(constructionGroup.release());

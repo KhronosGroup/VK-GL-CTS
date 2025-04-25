@@ -59,4 +59,5 @@ template<> inline VkObjectType	getObjectType<VkVideoSessionKHR>				(void) { retu
 template<> inline VkObjectType	getObjectType<VkVideoSessionParametersKHR>		(void) { return VK_OBJECT_TYPE_VIDEO_SESSION_PARAMETERS_KHR;	}
 template<> inline VkObjectType	getObjectType<VkCudaModuleNV>					(void) { return VK_OBJECT_TYPE_CUDA_MODULE_NV;					}
 template<> inline VkObjectType	getObjectType<VkCudaFunctionNV>					(void) { return VK_OBJECT_TYPE_CUDA_FUNCTION_NV;				}
+template<> inline VkObjectType	getObjectType<VkExternalComputeQueueNV>			(void) { return VK_OBJECT_TYPE_EXTERNAL_COMPUTE_QUEUE_NV;		}
 }
