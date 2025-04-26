@@ -1333,7 +1333,8 @@ void checkRequirements(Context &context, TestParams params)
     {
         uint32_t combinationCount = 0U;
         vki.getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(physicalDevice, &combinationCount, nullptr);
-        nvCombinations.resize(combinationCount);
+        const vk::VkFramebufferMixedSamplesCombinationNV defaultCombination = vk::initVulkanStructure();
+        nvCombinations.resize(combinationCount, defaultCombination);
         vki.getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(physicalDevice, &combinationCount,
                                                                             nvCombinations.data());
     }
@@ -1788,7 +1789,8 @@ void checkRequirements(Context &context, TestParams params)
 
         uint32_t combinationCount = 0U;
         vki.getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(physicalDevice, &combinationCount, nullptr);
-        std::vector<vk::VkFramebufferMixedSamplesCombinationNV> nvCombinations(combinationCount);
+        const vk::VkFramebufferMixedSamplesCombinationNV defaultCombination = vk::initVulkanStructure();
+        std::vector<vk::VkFramebufferMixedSamplesCombinationNV> nvCombinations(combinationCount, defaultCombination);
         vki.getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(physicalDevice, &combinationCount,
                                                                             nvCombinations.data());
 
