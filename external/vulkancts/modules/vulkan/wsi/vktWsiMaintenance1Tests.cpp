@@ -116,7 +116,8 @@ VkPhysicalDeviceFeatures getDeviceFeaturesForWsi(void)
 Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance instance, const InstanceInterface &vki,
                                    VkPhysicalDevice physicalDevice, const Extensions &supportedExtensions,
                                    const uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator,
-                                   bool requireSwapchainMaintenance1, bool requireDeviceGroup, bool validationEnabled)
+                                   bool requireSwapchainMaintenance1, bool requireDeviceGroup,
+                                   bool requireFifoLatestReady, bool validationEnabled)
 {
     const float queuePriorities[]              = {1.0f};
     const VkDeviceQueueCreateInfo queueInfos[] = {{
@@ -139,6 +140,10 @@ Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance 
     {
         extensions.push_back("VK_KHR_device_group");
     }
+    if (requireFifoLatestReady)
+    {
+        extensions.push_back("VK_EXT_present_mode_fifo_latest_ready");
+    }
     if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_KHR_shared_presentable_image")))
     {
         extensions.push_back("VK_KHR_shared_presentable_image");
@@ -146,13 +151,31 @@ Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance 
 
     checkAllSupported(supportedExtensions, extensions);
 
+    void *pNext = nullptr;
     VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainMaintenance1Features{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT, // VkStructureType sType;
         nullptr,                                                                // void* pNext;
         VK_TRUE,                                                                // VkBool32 swapchainMaintenance1;
     };
+    VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT fifoLatestReadyFeatures{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_EXT, // VkStructureType sType;
+        nullptr,                                                                       // void *pNext;
+        VK_TRUE, // VkBool32 presentModeFifoLatestReady;
+    };
 
-    VkPhysicalDeviceFeatures2 features2 = initVulkanStructure(&swapchainMaintenance1Features);
+    if (requireSwapchainMaintenance1)
+    {
+        swapchainMaintenance1Features.pNext = pNext;
+        pNext                               = &swapchainMaintenance1Features;
+    }
+
+    if (requireFifoLatestReady)
+    {
+        fifoLatestReadyFeatures.pNext = pNext;
+        pNext                         = &fifoLatestReadyFeatures;
+    }
+
+    VkPhysicalDeviceFeatures2 features2 = initVulkanStructure(pNext);
     features2.features                  = features;
 
     VkDeviceCreateInfo deviceParams = {
@@ -195,13 +218,14 @@ struct DeviceHelper
     const VkQueue queue;
 
     DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance, VkSurfaceKHR surface,
-                 bool requireSwapchainMaintenance1, bool requireDeviceGroup,
+                 bool requireSwapchainMaintenance1, bool requireDeviceGroup, bool requireFifoLatestReady,
                  const VkAllocationCallbacks *pAllocator = nullptr)
         : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
         , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
         , device(createDeviceWithWsi(context.getPlatformInterface(), instance, vki, physicalDevice,
                                      enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr), queueFamilyIndex,
                                      pAllocator, requireSwapchainMaintenance1, requireDeviceGroup,
+                                     requireFifoLatestReady,
                                      context.getTestContext().getCommandLine().isValidationEnabled()))
         , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
               context.getTestContext().getCommandLine())
@@ -705,7 +729,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
     }
 
     const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surfaces[0], true,
-                                 testParams.bindImageMemory);
+                                 testParams.bindImageMemory, false);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
 
@@ -1134,7 +1158,7 @@ tcu::TestStatus presentModesQueryTest(Context &context, const PresentModesTestCo
     const TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, 1);
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false, false);
 
     const std::vector<VkPresentModeKHR> presentModes =
         getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
@@ -1397,7 +1421,7 @@ tcu::TestStatus scalingQueryTest(Context &context, const ScalingQueryTestConfig 
     const TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, 1);
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false, false);
 
     const std::vector<VkPresentModeKHR> presentModes =
         getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
@@ -1432,7 +1456,7 @@ tcu::TestStatus scalingQueryCompatibleModesTest(Context &context, const ScalingQ
     const TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, 1);
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false, false);
 
     const std::vector<VkPresentModeKHR> presentModes =
         getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
@@ -1500,7 +1524,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
 
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, false, false);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
     SimpleAllocator allocator(vkd, device, getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
@@ -1981,7 +2005,9 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
 
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, false);
+    const bool requireFifoLatestReady = testParams.mode == VK_PRESENT_MODE_FIFO_LATEST_READY_EXT;
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, false,
+                                 requireFifoLatestReady);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
 
@@ -2306,6 +2332,12 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
     return tcu::TestStatus::pass("Tests ran successfully");
 }
 
+void checkPresentModeSupport(Context &context, ReleaseImagesTestConfig config)
+{
+    if (config.mode == VK_PRESENT_MODE_FIFO_LATEST_READY_EXT)
+        context.requireDeviceFunctionality("VK_EXT_present_mode_fifo_latest_ready");
+}
+
 void populateReleaseImagesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
 {
     const struct
@@ -2350,25 +2382,27 @@ void populateReleaseImagesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
             config.releaseBeforeRetire  = false;
 
             // Basic release acquired images test
-            addFunctionCase(&*scalingFlagGroup, "basic", releaseImagesTest, config);
+            addFunctionCase(&*scalingFlagGroup, "basic", checkPresentModeSupport, releaseImagesTest, config);
 
             config.releaseBeforePresent = true;
             // Basic release acquired images test where release happens before presenting an image
-            addFunctionCase(&*scalingFlagGroup, "release_before_present", releaseImagesTest, config);
+            addFunctionCase(&*scalingFlagGroup, "release_before_present", checkPresentModeSupport, releaseImagesTest,
+                            config);
 
             config.releaseBeforePresent = false;
             config.resizeWindow         = ResizeWindow::BeforeAcquire;
             // Release acquired images after a window resize before acquire
-            addFunctionCase(&*scalingFlagGroup, "resize_window", releaseImagesTest, config);
+            addFunctionCase(&*scalingFlagGroup, "resize_window", checkPresentModeSupport, releaseImagesTest, config);
 
             config.resizeWindow = ResizeWindow::BeforePresent;
             // Release acquired images after a window resize after acquire
-            addFunctionCase(&*scalingFlagGroup, "resize_window_after_acquire", releaseImagesTest, config);
+            addFunctionCase(&*scalingFlagGroup, "resize_window_after_acquire", checkPresentModeSupport,
+                            releaseImagesTest, config);
 
             config.releaseBeforeRetire = true;
             // Release acquired images after a window resize after acquire, but release the images before retiring the swapchain
-            addFunctionCase(&*scalingFlagGroup, "resize_window_after_acquire_release_before_retire", releaseImagesTest,
-                            config);
+            addFunctionCase(&*scalingFlagGroup, "resize_window_after_acquire_release_before_retire",
+                            checkPresentModeSupport, releaseImagesTest, config);
 
             presentModeGroup->addChild(scalingFlagGroup.release());
         }
