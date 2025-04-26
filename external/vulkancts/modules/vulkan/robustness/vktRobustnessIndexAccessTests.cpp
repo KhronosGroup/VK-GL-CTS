@@ -420,6 +420,10 @@ void DrawIndexedTestCase::createDeviceAndDriver(Context &context,
 
     void **nextPtr = &features2.pNext;
 
+    VkPhysicalDeviceScalarBlockLayoutFeatures sblFeatures = initVulkanStructure();
+    sblFeatures.scalarBlockLayout                         = true;
+    addToChainVulkanStructure(&nextPtr, sblFeatures);
+
 #ifndef CTS_USES_VULKANSC
     VkPhysicalDeviceMultiDrawFeaturesEXT multiDrawFeatures = initVulkanStructure();
     if (m_testMode == TestMode::TM_DRAW_MULTI_INDEXED)
