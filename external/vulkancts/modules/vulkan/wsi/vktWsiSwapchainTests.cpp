@@ -941,13 +941,20 @@ tcu::TestStatus createSwapchainSimulateOOMTest(Context &context, TestParameters 
     return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
-tcu::TestStatus testImageSwapchainCreateInfo(Context &context, Type wsiType)
+struct ImageSwapchainCreateInfoParams
+{
+    Type wsiType;
+    bool concurrent;
+};
+
+tcu::TestStatus testImageSwapchainCreateInfo(Context &context, ImageSwapchainCreateInfoParams params)
 {
     const tcu::UVec2 desiredSize(256, 256);
-    const InstanceHelper instHelper(context, wsiType, vector<string>(1, string("VK_KHR_device_group_creation")));
-    const NativeObjects native(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
-    const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
-                                                     native.getWindow(), context.getTestContext().getCommandLine()));
+    const InstanceHelper instHelper(context, params.wsiType, vector<string>(1, string("VK_KHR_device_group_creation")));
+    const NativeObjects native(context, instHelper.supportedExtensions, params.wsiType, 1u, tcu::just(desiredSize));
+    const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, params.wsiType,
+                                                     native.getDisplay(), native.getWindow(),
+                                                     context.getTestContext().getCommandLine()));
     const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface,
                                  vector<string>(1u, "VK_KHR_bind_memory2"));
     const Extensions &deviceExtensions =
@@ -957,11 +964,18 @@ tcu::TestStatus testImageSwapchainCreateInfo(Context &context, Type wsiType)
     if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_swapchain", 69)))
         TCU_THROW(NotSupportedError, "Required extension revision is not supported");
 
+    const auto sharing_mode              = params.concurrent ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+    const auto queueFamilyIndexCount     = params.concurrent ? 1u : 0u;
+    const uint32_t queueFamilyIndex1     = devHelper.queueFamilyIndex;
+    const uint32_t queueFamilyIndex2     = devHelper.queueFamilyIndex;
+    const uint32_t *pQueueFamilyIndices1 = params.concurrent ? &queueFamilyIndex1 : nullptr;
+    const uint32_t *pQueueFamilyIndices2 = params.concurrent ? &queueFamilyIndex2 : nullptr;
+
     const VkSurfaceCapabilitiesKHR capabilities =
         getPhysicalDeviceSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surface);
     const vector<VkSurfaceFormatKHR> formats =
         getPhysicalDeviceSurfaceFormats(instHelper.vki, devHelper.physicalDevice, *surface);
-    const PlatformProperties &platformProperties = getPlatformProperties(wsiType);
+    const PlatformProperties &platformProperties = getPlatformProperties(params.wsiType);
     const VkSurfaceTransformFlagBitsKHR transform =
         (capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) ?
             VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR :
@@ -982,9 +996,9 @@ tcu::TestStatus testImageSwapchainCreateInfo(Context &context, Type wsiType)
              vk::makeExtent2D(desiredSize.x(), desiredSize.y())),
         1u,
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-        VK_SHARING_MODE_EXCLUSIVE,
-        0u,
-        nullptr,
+        sharing_mode,
+        queueFamilyIndexCount,
+        pQueueFamilyIndices1,
         transform,
         VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         VK_PRESENT_MODE_FIFO_KHR,
@@ -1018,9 +1032,9 @@ tcu::TestStatus testImageSwapchainCreateInfo(Context &context, Type wsiType)
         VK_SAMPLE_COUNT_1_BIT,               // samples
         VK_IMAGE_TILING_OPTIMAL,             // tiling
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, // usage
-        VK_SHARING_MODE_EXCLUSIVE,           // sharingMode
-        0u,                                  // queueFamilyIndexCount
-        nullptr,                             // pQueueFamilyIndices
+        sharing_mode,                        // sharingMode
+        queueFamilyIndexCount,               // queueFamilyIndexCount
+        pQueueFamilyIndices2,                // pQueueFamilyIndices
         VK_IMAGE_LAYOUT_UNDEFINED            // initialLayout
     };
 
@@ -1080,7 +1094,14 @@ void populateSwapchainGroup(tcu::TestCaseGroup *testGroup, GroupParameters param
                         TestParameters(params.wsiType, testDimension));
     }
 
-    addFunctionCase(testGroup, "image_swapchain_create_info", testImageSwapchainCreateInfo, params.wsiType);
+    ImageSwapchainCreateInfoParams imageSwapchainCreateInfoParams;
+    imageSwapchainCreateInfoParams.wsiType    = params.wsiType;
+    imageSwapchainCreateInfoParams.concurrent = false;
+    addFunctionCase(testGroup, "image_swapchain_create_info", testImageSwapchainCreateInfo,
+                    imageSwapchainCreateInfoParams);
+    imageSwapchainCreateInfoParams.concurrent = true;
+    addFunctionCase(testGroup, "image_swapchain_create_info_concurrent", testImageSwapchainCreateInfo,
+                    imageSwapchainCreateInfoParams);
 }
 
 void populateSwapchainPrivateDataGroup(tcu::TestCaseGroup *testGroup, GroupParameters params)

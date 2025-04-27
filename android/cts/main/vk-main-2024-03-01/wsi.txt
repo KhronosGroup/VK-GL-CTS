@@ -506,7 +506,9 @@ dEQP-VK.wsi.android.maintenance1.scaling.resize_window.fifo_latest_ready.stretch
 dEQP-VK.wsi.android.maintenance1.scaling.resize_window.fifo_latest_ready.stretch.swapchain_smaller_wider_aspect
 dEQP-VK.wsi.android.maintenance1.scaling.resize_window.fifo_latest_ready.stretch.swapchain_taller
 dEQP-VK.wsi.android.maintenance1.scaling.resize_window.fifo_latest_ready.stretch.swapchain_wider
+dEQP-VK.wsi.android.swapchain.create.image_swapchain_create_info_concurrent
 dEQP-VK.wsi.android.swapchain.destroy.old_swapchain_acquired_image
+dEQP-VK.wsi.android.swapchain.simulate_oom.image_swapchain_create_info_concurrent
 dEQP-VK.wsi.direct_drm.display_timing.fifo_latest_ready.display_timing
 dEQP-VK.wsi.direct_drm.display_timing.fifo_latest_ready.reference
 dEQP-VK.wsi.direct_drm.incremental_present.scale_none.fifo_latest_ready.horizontal_mirror.inherit.incremental_present
@@ -1081,7 +1083,9 @@ dEQP-VK.wsi.direct_drm.maintenance1.scaling.resize_window.fifo_latest_ready.stre
 dEQP-VK.wsi.direct_drm.maintenance1.scaling.resize_window.fifo_latest_ready.stretch.swapchain_smaller_wider_aspect
 dEQP-VK.wsi.direct_drm.maintenance1.scaling.resize_window.fifo_latest_ready.stretch.swapchain_taller
 dEQP-VK.wsi.direct_drm.maintenance1.scaling.resize_window.fifo_latest_ready.stretch.swapchain_wider
+dEQP-VK.wsi.direct_drm.swapchain.create.image_swapchain_create_info_concurrent
 dEQP-VK.wsi.direct_drm.swapchain.destroy.old_swapchain_acquired_image
+dEQP-VK.wsi.direct_drm.swapchain.simulate_oom.image_swapchain_create_info_concurrent
 dEQP-VK.wsi.headless.display_timing.fifo_latest_ready.display_timing
 dEQP-VK.wsi.headless.display_timing.fifo_latest_ready.reference
 dEQP-VK.wsi.headless.incremental_present.scale_none.fifo_latest_ready.horizontal_mirror.inherit.incremental_present
@@ -1656,4 +1660,6 @@ dEQP-VK.wsi.headless.maintenance1.scaling.resize_window.fifo_latest_ready.stretc
 dEQP-VK.wsi.headless.maintenance1.scaling.resize_window.fifo_latest_ready.stretch.swapchain_smaller_wider_aspect
 dEQP-VK.wsi.headless.maintenance1.scaling.resize_window.fifo_latest_ready.stretch.swapchain_taller
 dEQP-VK.wsi.headless.maintenance1.scaling.resize_window.fifo_latest_ready.stretch.swapchain_wider
+dEQP-VK.wsi.headless.swapchain.create.image_swapchain_create_info_concurrent
 dEQP-VK.wsi.headless.swapchain.destroy.old_swapchain_acquired_image
+dEQP-VK.wsi.headless.swapchain.simulate_oom.image_swapchain_create_info_concurrent
