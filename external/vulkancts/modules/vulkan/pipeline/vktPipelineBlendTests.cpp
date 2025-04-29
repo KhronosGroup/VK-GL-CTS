@@ -67,6 +67,18 @@ using namespace vk;
 namespace
 {
 
+// VK_FORMAT_E5B9G9R9_UFLOAT_PACK32, with VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT (e.g. when using shader objects), has
+// the following rule (Vulkan spec 1.4.313):
+//
+// If a shader object is bound to any graphics stage or the bound graphics pipeline was created with
+// VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT, and the format of any color attachment is VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
+// the corresponding element of the pColorWriteMasks parameter of vkCmdSetColorWriteMaskEXT must either include all of
+// VK_COLOR_COMPONENT_R_BIT, VK_COLOR_COMPONENT_G_BIT, and VK_COLOR_COMPONENT_B_BIT, or none of them
+bool mustIncludeRGBDynamicMask(VkFormat format)
+{
+    return (format == VK_FORMAT_E5B9G9R9_UFLOAT_PACK32);
+}
+
 bool isSupportedBlendFormat(const InstanceInterface &instanceInterface, VkPhysicalDevice device, VkFormat format)
 {
     VkFormatProperties formatProps;
@@ -134,6 +146,7 @@ public:
     };
 
     const static VkColorComponentFlags s_colorWriteMasks[QUAD_COUNT];
+    const static VkColorComponentFlags s_altColorWriteMasks[QUAD_COUNT];
     const static tcu::Vec4 s_blendConst;
 
     BlendTest(tcu::TestContext &testContext, const std::string &name, PipelineConstructionType pipelineConstructionType,
@@ -158,6 +171,7 @@ public:
     };
 
     const static VkColorComponentFlags s_colorWriteMasks[QUAD_COUNT];
+    const static VkColorComponentFlags s_altColorWriteMasks[QUAD_COUNT];
     const static tcu::Vec4 s_blendConst;
 
     DualSourceBlendTest(tcu::TestContext &testContext, const std::string &name,
@@ -206,6 +220,7 @@ private:
     std::vector<Vertex4RGBA> m_vertices;
     de::MovePtr<Allocation> m_vertexBufferAlloc;
 
+    PipelineConstructionType m_pipelineConstructionType;
     PipelineLayoutWrapper m_pipelineLayout;
     GraphicsPipelineWrapper m_graphicsPipelines[BlendTest::QUAD_COUNT];
 
@@ -245,6 +260,7 @@ private:
     std::vector<Vertex4RGBARGBA> m_vertices;
     de::MovePtr<Allocation> m_vertexBufferAlloc;
 
+    PipelineConstructionType m_pipelineConstructionType;
     PipelineLayoutWrapper m_pipelineLayout;
     GraphicsPipelineWrapper m_graphicsPipelines[DualSourceBlendTest::QUAD_COUNT];
 
@@ -416,6 +432,14 @@ const VkColorComponentFlags BlendTest::s_colorWriteMasks[BlendTest::QUAD_COUNT] 
     VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
         VK_COLOR_COMPONENT_A_BIT}; // All channels
 
+// See mustIncludeRGBDynamicMask
+const VkColorComponentFlags BlendTest::s_altColorWriteMasks[BlendTest::QUAD_COUNT] = {
+    (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT),
+    (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT),
+    (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT),
+    (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT),
+};
+
 const tcu::Vec4 BlendTest::s_blendConst = tcu::Vec4(0.1f, 0.2f, 0.3f, 0.4f);
 
 BlendTest::BlendTest(tcu::TestContext &testContext, const std::string &name,
@@ -501,6 +525,14 @@ const VkColorComponentFlags DualSourceBlendTest::s_colorWriteMasks[BlendTest::QU
     VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, // Pair of channels: B & A
     VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
         VK_COLOR_COMPONENT_A_BIT}; // All channels
+
+// See mustIncludeRGBDynamicMask
+const VkColorComponentFlags DualSourceBlendTest::s_altColorWriteMasks[BlendTest::QUAD_COUNT] = {
+    (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT),
+    (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT),
+    (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT),
+    (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT),
+};
 
 const tcu::Vec4 DualSourceBlendTest::s_blendConst = tcu::Vec4(0.1f, 0.2f, 0.3f, 0.4f);
 
@@ -616,6 +648,7 @@ BlendTestInstance::BlendTestInstance(Context &context, const PipelineConstructio
     : vkt::TestInstance(context)
     , m_renderSize(32, 32)
     , m_colorFormat(colorFormat)
+    , m_pipelineConstructionType(pipelineConstructionType)
     , m_graphicsPipelines{{context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(),
                            context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType},
                           {context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(),
@@ -1092,9 +1125,9 @@ bool isSmallerThan8BitFormat(tcu::TextureFormat::ChannelType channeltype)
 tcu::TestStatus BlendTestInstance::verifyImage(void)
 {
     const tcu::TextureFormat tcuColorFormat   = mapVkFormat(m_colorFormat);
-    const tcu::TextureFormat tcuColorFormat64 = mapVkFormat(VK_FORMAT_R64G64B64A64_SFLOAT);
-    const tcu::TextureFormat tcuColorFormat8  = mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM);
-    const tcu::TextureFormat tcuDepthFormat   = tcu::TextureFormat(); // Undefined depth/stencil format
+    const tcu::TextureFormat tcuColorFormat64 = tcu::TextureFormat(tcuColorFormat.order, tcu::TextureFormat::FLOAT64);
+    const tcu::TextureFormat tcuColorFormat8 = tcu::TextureFormat(tcuColorFormat.order, tcu::TextureFormat::UNORM_INT8);
+    const tcu::TextureFormat tcuDepthFormat  = tcu::TextureFormat(); // Undefined depth/stencil format
     const ColorVertexShader vertexShader;
     const ColorFragmentShader fragmentShader(tcuColorFormat, tcuDepthFormat);
     const rr::Program program(&vertexShader, &fragmentShader);
@@ -1105,6 +1138,11 @@ tcu::TestStatus BlendTestInstance::verifyImage(void)
 
     // Render reference image
     {
+        const bool altMasks =
+            (isConstructionTypeShaderObject(m_pipelineConstructionType) && mustIncludeRGBDynamicMask(m_colorFormat));
+        const VkColorComponentFlags *colorWriteMasks =
+            (altMasks ? BlendTest::s_altColorWriteMasks : BlendTest::s_colorWriteMasks);
+
         for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
         {
             const VkPipelineColorBlendAttachmentState &blendState = m_blendStates[quadNdx];
@@ -1120,7 +1158,7 @@ tcu::TestStatus BlendTestInstance::verifyImage(void)
             renderState.fragOps.blendAState.dstFunc    = mapVkBlendFactor(blendState.dstAlphaBlendFactor);
             renderState.fragOps.blendAState.equation   = mapVkBlendOp(blendState.alphaBlendOp);
             renderState.fragOps.blendColor             = BlendTest::s_blendConst;
-            renderState.fragOps.colorMask = mapVkColorComponentFlags(BlendTest::s_colorWriteMasks[quadNdx]);
+            renderState.fragOps.colorMask              = mapVkColorComponentFlags(colorWriteMasks[quadNdx]);
 
             refRenderer.draw(
                 renderState, rr::PRIMITIVETYPE_TRIANGLES,
@@ -1201,6 +1239,7 @@ DualSourceBlendTestInstance::DualSourceBlendTestInstance(
     : vkt::TestInstance(context)
     , m_renderSize(32, 32)
     , m_colorFormat(colorFormat)
+    , m_pipelineConstructionType(pipelineConstructionType)
     , m_graphicsPipelines{{context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(),
                            context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType},
                           {context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(),
@@ -1484,9 +1523,9 @@ tcu::TestStatus DualSourceBlendTestInstance::iterate(void)
 tcu::TestStatus DualSourceBlendTestInstance::verifyImage(void)
 {
     const tcu::TextureFormat tcuColorFormat   = mapVkFormat(m_colorFormat);
-    const tcu::TextureFormat tcuColorFormat64 = mapVkFormat(VK_FORMAT_R64G64B64A64_SFLOAT);
-    const tcu::TextureFormat tcuColorFormat8  = mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM);
-    const tcu::TextureFormat tcuDepthFormat   = tcu::TextureFormat(); // Undefined depth/stencil format
+    const tcu::TextureFormat tcuColorFormat64 = tcu::TextureFormat(tcuColorFormat.order, tcu::TextureFormat::FLOAT64);
+    const tcu::TextureFormat tcuColorFormat8 = tcu::TextureFormat(tcuColorFormat.order, tcu::TextureFormat::UNORM_INT8);
+    const tcu::TextureFormat tcuDepthFormat  = tcu::TextureFormat(); // Undefined depth/stencil format
     const ColorVertexShaderDualSource vertexShader;
     const ColorFragmentShaderDualSource fragmentShader(tcuColorFormat, tcuDepthFormat);
     const rr::Program program(&vertexShader, &fragmentShader);
@@ -1505,6 +1544,11 @@ tcu::TestStatus DualSourceBlendTestInstance::verifyImage(void)
         tcu::Vec4 discardColor8  = access8.getPixel(0, 0);
         tcu::Vec4 discardColor64 = access64.getPixel(0, 0);
 
+        const bool altMasks =
+            (isConstructionTypeShaderObject(m_pipelineConstructionType) && mustIncludeRGBDynamicMask(m_colorFormat));
+        const VkColorComponentFlags *colorWriteMasks =
+            (altMasks ? DualSourceBlendTest::s_altColorWriteMasks : DualSourceBlendTest::s_colorWriteMasks);
+
         for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
         {
             const VkPipelineColorBlendAttachmentState &blendState = m_blendStates[quadNdx];
@@ -1520,7 +1564,7 @@ tcu::TestStatus DualSourceBlendTestInstance::verifyImage(void)
             renderState.fragOps.blendAState.dstFunc    = mapVkBlendFactor(blendState.dstAlphaBlendFactor);
             renderState.fragOps.blendAState.equation   = mapVkBlendOp(blendState.alphaBlendOp);
             renderState.fragOps.blendColor             = DualSourceBlendTest::s_blendConst;
-            renderState.fragOps.colorMask = mapVkColorComponentFlags(DualSourceBlendTest::s_colorWriteMasks[quadNdx]);
+            renderState.fragOps.colorMask              = mapVkColorComponentFlags(colorWriteMasks[quadNdx]);
 
             refRenderer.draw(
                 renderState, rr::PRIMITIVETYPE_TRIANGLES,
@@ -2063,9 +2107,9 @@ std::string getFormatCaseName(VkFormat format)
 
 tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstructionType pipelineConstructionType)
 {
+    const bool isESO = vk::isConstructionTypeShaderObject(pipelineConstructionType);
     const auto genFormatTests =
-        (!vk::isConstructionTypeShaderObject(pipelineConstructionType) ||
-         pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV);
+        (!isESO || pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV);
 
     const uint32_t blendStatesPerFormat = 100 * BlendTest::QUAD_COUNT;
 
@@ -2138,7 +2182,8 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
     {
         for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(blendFormats); formatNdx++)
         {
-            const VkFormat format = blendFormats[formatNdx];
+            const VkFormat format           = blendFormats[formatNdx];
+            const bool needsAltMasksDynamic = mustIncludeRGBDynamicMask(format);
 
             // Blend tests
             {
@@ -2158,11 +2203,14 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
                 while (blendStateItr.hasNext())
                 {
                     VkPipelineColorBlendAttachmentState quadBlendConfigs[BlendTest::QUAD_COUNT];
+                    const VkColorComponentFlags *colorWriteMasks =
+                        (isESO && needsAltMasksDynamic ? BlendTest::s_altColorWriteMasks :
+                                                         BlendTest::s_colorWriteMasks);
 
                     for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
                     {
                         quadBlendConfigs[quadNdx]                = blendStateItr.next();
-                        quadBlendConfigs[quadNdx].colorWriteMask = BlendTest::s_colorWriteMasks[quadNdx];
+                        quadBlendConfigs[quadNdx].colorWriteMask = colorWriteMasks[quadNdx];
                     }
 
                     blendStateTests->addChild(new BlendTest(testCtx, getBlendStateSetName(quadBlendConfigs),
@@ -2197,10 +2245,14 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
                     {
                         VkPipelineColorBlendAttachmentState quadBlendConfigs[BlendTest::QUAD_COUNT];
                         bool isDualSourceBlendTest = false;
+                        const VkColorComponentFlags *colorWriteMasks =
+                            (isESO && needsAltMasksDynamic ? BlendTest::s_altColorWriteMasks :
+                                                             BlendTest::s_colorWriteMasks);
+
                         for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
                         {
                             quadBlendConfigs[quadNdx]                = dualSourceBlendStateItr.next();
-                            quadBlendConfigs[quadNdx].colorWriteMask = BlendTest::s_colorWriteMasks[quadNdx];
+                            quadBlendConfigs[quadNdx].colorWriteMask = colorWriteMasks[quadNdx];
                             isDualSourceBlendTest                    = isDualSourceBlendTest ||
                                                     isSrc1BlendFactor(quadBlendConfigs[quadNdx].srcColorBlendFactor) ||
                                                     isSrc1BlendFactor(quadBlendConfigs[quadNdx].dstColorBlendFactor) ||
