@@ -29,4 +29,3 @@ const VkPhysicalDeviceFloatControlsProperties&					getFloatControlsProperties			
 const VkPhysicalDeviceDescriptorIndexingProperties&				getDescriptorIndexingProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDescriptorIndexingProperties>();			}
 const VkPhysicalDeviceTimelineSemaphoreProperties&				getTimelineSemaphoreProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceTimelineSemaphoreProperties>();			}
 const VkPhysicalDeviceDepthStencilResolveProperties&			getDepthStencilResolveProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDepthStencilResolveProperties>();			}
-const VkPhysicalDeviceVulkanSC10Properties&						getVulkanSC10Properties						(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceVulkanSC10Properties>();					}

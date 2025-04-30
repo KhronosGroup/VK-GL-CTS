@@ -198,7 +198,7 @@ VkShaderStageFlagBits getShaderStageFlag(const Stage stage)
 }
 #endif
 
-VkShaderStageFlags getAllShaderStagesFor(Stage stage)
+VkShaderStageFlags getAllShaderStagesFor(Stage stage, tcu::TestContext &testCtx)
 {
 #ifndef CTS_USES_VULKANSC
     if (stage == STAGE_RAYGEN_NV)
@@ -213,10 +213,13 @@ VkShaderStageFlags getAllShaderStagesFor(Stage stage)
     DE_UNREF(stage);
 #endif // CTS_USES_VULKANSC
 
+    if (testCtx.getCommandLine().isComputeOnly())
+        return VK_SHADER_STAGE_COMPUTE_BIT;
+
     return (VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 }
 
-VkPipelineStageFlags getAllPipelineStagesFor(Stage stage)
+VkPipelineStageFlags getAllPipelineStagesFor(Stage stage, tcu::TestContext &testCtx)
 {
 #ifndef CTS_USES_VULKANSC
     if (stage == STAGE_RAYGEN_NV)
@@ -231,6 +234,9 @@ VkPipelineStageFlags getAllPipelineStagesFor(Stage stage)
 #else
     DE_UNREF(stage);
 #endif // CTS_USES_VULKANSC
+
+    if (testCtx.getCommandLine().isComputeOnly())
+        return VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 
     return (VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
@@ -2156,13 +2162,16 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
 
     if (usesAccelerationStructure(m_data.stage))
     {
+        AccelerationStructBufferProperties bufferProps;
+        bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
         // Create bottom level acceleration structure
         {
             bottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
 
             bottomLevelAccelerationStructure->setDefaultGeometryData(getShaderStageFlag(m_data.stage));
 
-            bottomLevelAccelerationStructure->createAndBuild(vk, device, *cmdBuffer, allocator);
+            bottomLevelAccelerationStructure->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
         }
 
         // Create top level acceleration structure
@@ -2173,7 +2182,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
             topLevelAccelerationStructure->addInstance(
                 de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
 
-            topLevelAccelerationStructure->createAndBuild(vk, device, *cmdBuffer, allocator);
+            topLevelAccelerationStructure->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
         }
     }
 #endif
@@ -3309,8 +3318,8 @@ tcu::TestCaseGroup *createDescriptorSetRandomTests(tcu::TestContext &testCtx)
                                     for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
                                     {
                                         const Stage currentStage  = static_cast<Stage>(stageCases[stageNdx].count);
-                                        const auto shaderStages   = getAllShaderStagesFor(currentStage);
-                                        const auto pipelineStages = getAllPipelineStagesFor(currentStage);
+                                        const auto shaderStages   = getAllShaderStagesFor(currentStage, testCtx);
+                                        const auto pipelineStages = getAllPipelineStagesFor(currentStage, testCtx);
 
                                         de::MovePtr<tcu::TestCaseGroup> stageGroup(
                                             new tcu::TestCaseGroup(testCtx, stageCases[stageNdx].name));

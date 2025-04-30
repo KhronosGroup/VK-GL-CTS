@@ -40,7 +40,6 @@ class Platform : public tcu::Platform, private eglu::Platform, private glu::Plat
 {
 public:
     Platform(NativeActivity &activity);
-    Platform(void);
     virtual ~Platform(void);
 
     virtual bool processEvents(void);
@@ -71,7 +70,7 @@ public:
     bool hasDisplay(vk::wsi::Type wsiType) const;
 
 private:
-    NativeActivity *m_activity;
+    NativeActivity &m_activity;
     WindowRegistry m_windowRegistry;
     const size_t m_totalSystemMemory;
 };

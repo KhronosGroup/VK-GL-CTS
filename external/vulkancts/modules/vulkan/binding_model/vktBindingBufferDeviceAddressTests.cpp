@@ -593,9 +593,14 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
     Allocator &allocator               = m_context.getDefaultAllocator();
     const bool useKHR                  = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 
-    VkFlags allShaderStages   = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-    VkFlags allPipelineStages = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
-                                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    const bool isComputeOnly = m_context.getTestContext().getCommandLine().isComputeOnly();
+    VkFlags allShaderStages =
+        isComputeOnly ? VK_SHADER_STAGE_COMPUTE_BIT :
+                        VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    VkFlags allPipelineStages = isComputeOnly ?
+                                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT :
+                                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
+                                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 
 #if ENABLE_RAYTRACING
     if (m_data.stage == STAGE_RAYGEN)
@@ -765,7 +770,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
         buffers[i] = VkBufferSp(new Unique<VkBuffer>(createBuffer(vk, device, &bufferCreateInfo)));
 
         // query opaque capture address before binding memory
-        if (useKHR)
+        if (useKHR && m_data.bufType == BT_REPLAY)
         {
             bufferDeviceAddressInfo.buffer = **buffers[i];
             opaqueBufferAddrs[i]           = vk.getBufferOpaqueCaptureAddress(device, &bufferDeviceAddressInfo);

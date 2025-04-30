@@ -1023,6 +1023,9 @@ void RayTracingConfiguration::fillCommandBuffer(
     const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
     Allocator &allocator                  = context.getDefaultAllocator();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     {
         de::MovePtr<BottomLevelAccelerationStructure> bottomLevelAccelerationStructure =
             makeBottomLevelAccelerationStructure();
@@ -1060,13 +1063,13 @@ void RayTracingConfiguration::fillCommandBuffer(
             de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
 
         for (auto &blas : bottomLevelAccelerationStructures)
-            blas->createAndBuild(vkd, device, commandBuffer, allocator);
+            blas->createAndBuild(vkd, device, commandBuffer, allocator, bufferProps);
     }
 
     topLevelAccelerationStructure = makeTopLevelAccelerationStructure();
     topLevelAccelerationStructure->setInstanceCount(1);
     topLevelAccelerationStructure->addInstance(bottomLevelAccelerationStructures[0]);
-    topLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator);
+    topLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator, bufferProps);
 
     const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = topLevelAccelerationStructure.get();
     VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
@@ -1960,6 +1963,9 @@ tcu::TestStatus TraversalControlTestInstance::iterate(void)
         cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                       VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, &postImageBarrier);
 
+        AccelerationStructBufferProperties bufferProps;
+        bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
         // build acceleration structures for ray query
         {
             de::MovePtr<BottomLevelAccelerationStructure> bottomLevelAccelerationStructure =
@@ -1999,12 +2005,12 @@ tcu::TestStatus TraversalControlTestInstance::iterate(void)
         }
 
         for (auto &blas : rayQueryBottomLevelAccelerationStructures)
-            blas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+            blas->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
 
         rayQueryTopLevelAccelerationStructure = makeTopLevelAccelerationStructure();
         rayQueryTopLevelAccelerationStructure->setInstanceCount(1);
         rayQueryTopLevelAccelerationStructure->addInstance(rayQueryBottomLevelAccelerationStructures[0]);
-        rayQueryTopLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator);
+        rayQueryTopLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
 
         const TopLevelAccelerationStructure *rayQueryTopLevelAccelerationStructurePtr =
             rayQueryTopLevelAccelerationStructure.get();

@@ -337,17 +337,26 @@ protected:
 
 VkExtent2D VideoTestCase::codedPictureAlignment = VkExtent2D({0, 0});
 
+static void buildTestName(const TestDefinition &testDef, std::string &testName);
+
 static void buildClipName(tcu::TestContext &testCtx, const TestDefinition &testDef, std::string &clipName, bool output)
 {
     auto &cmdLine   = testCtx.getCommandLine();
     auto archiveDir = cmdLine.getArchiveDir();
-    clipName        = archiveDir + std::string("/vulkan/video/");
+    clipName        = archiveDir + std::string("/vulkan/video/yuv/");
 
     clipName += testDef.frameSize.baseClipName;
     clipName += std::to_string(testDef.frameSize.width) + "x" + std::to_string(testDef.frameSize.height);
 
     clipName += "_" + std::string(testDef.subsampling.subName);
     clipName += "_" + std::string(testDef.bitDepth.subName);
+    clipName += "_" + std::string(testDef.gop.subName);
+    clipName += "_" + std::to_string(testDef.gop.frameCount);
+
+    std::string testName("");
+    buildTestName(testDef, testName);
+    clipName += "_" + testName;
+
     if (output)
         clipName += ".ivf";
     else
@@ -855,14 +864,7 @@ void removeClip(const std::string &clipName)
 {
     try
     {
-        if (std::filesystem::remove(clipName))
-        {
-            std::cout << "File " << clipName << " deleted successfully." << std::endl;
-        }
-        else
-        {
-            std::cout << "File " << clipName << " does not exist." << std::endl;
-        }
+        std::filesystem::remove(clipName);
     }
     catch (const std::filesystem::filesystem_error &e)
     {
@@ -1079,7 +1081,6 @@ static const std::vector<DpbModeDef> dpbModeTests = {
 tcu::TestCaseGroup *createVideoEncodeTestsAV1(tcu::TestContext &testCtx)
 {
     MovePtr<tcu::TestCaseGroup> av1group(new tcu::TestCaseGroup(testCtx, "av1", "AV1 video codec"));
-    uint32_t added_tests = 0;
     std::ostringstream s;
     std::string groupName;
 
@@ -1094,7 +1095,7 @@ tcu::TestCaseGroup *createVideoEncodeTestsAV1(tcu::TestContext &testCtx)
                 s << "_" << subsamplingTest.subName;
                 groupName = s.str();
                 MovePtr<tcu::TestCaseGroup> resGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
-                added_tests = 0;
+
                 for (const auto &gopTest : gopTests)
                 {
                     s.str("");
@@ -1121,21 +1122,12 @@ tcu::TestCaseGroup *createVideoEncodeTestsAV1(tcu::TestContext &testCtx)
                                                                 cdefTest,         dpbModeTest};
                                                             auto testCase = createVideoEncodeTestAV1(testCtx, testDef);
                                                             if (testCase != nullptr)
-                                                            {
                                                                 gopGroup->addChild(testCase);
-                                                                added_tests++;
-                                                            }
                                                         }
                     }
-                    if (added_tests)
-                        resGroup->addChild(gopGroup.release());
-                    else
-                        gopGroup.release();
+                    resGroup->addChild(gopGroup.release());
                 }
-                if (added_tests)
-                    av1group->addChild(resGroup.release());
-                else
-                    resGroup.release();
+                av1group->addChild(resGroup.release());
             }
     return av1group.release();
 }

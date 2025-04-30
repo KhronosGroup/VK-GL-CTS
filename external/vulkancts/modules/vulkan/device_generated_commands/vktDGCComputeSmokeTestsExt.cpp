@@ -140,6 +140,8 @@ protected:
 //
 void SmokeTestCase::initPrograms(vk::SourceCollections &programCollection) const
 {
+    const ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3, 0u);
+
     std::ostringstream comp;
     comp << "#version 460\n"
          << "#extension GL_KHR_memory_scope_semantics : enable\n"
@@ -154,7 +156,7 @@ void SmokeTestCase::initPrograms(vk::SourceCollections &programCollection) const
          << "    atomicAdd(atomicCounters.value[workGroupIndex], 1u, gl_ScopeQueueFamily, gl_StorageSemanticsBuffer, "
             "(gl_SemanticsAcquireRelease | gl_SemanticsMakeAvailable | gl_SemanticsMakeVisible));\n"
          << "}\n";
-    programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str());
+    programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str()) << buildOptions;
 
     if (m_params.preCompute)
     {
@@ -193,7 +195,7 @@ void SmokeTestCase::initPrograms(vk::SourceCollections &programCollection) const
 
 void SmokeTestCase::checkSupport(Context &context) const
 {
-    checkDGCExtComputeSupport(context, false);
+    checkDGCExtComputeSupport(context, DGCComputeSupportType::BASIC);
 
     // This is needed for the scopes and semantics.
     const auto &mmFeatures = context.getVulkanMemoryModelFeatures();

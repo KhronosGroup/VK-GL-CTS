@@ -2387,12 +2387,7 @@ void SeparateChannelsTestInstance::setup(void)
     };
 
     // When testing color formats the same attachment is used as input and output.
-    // This requires general layout to be used for render pass object or local_read for dynamic rendering.
     VkImageLayout colorImageLayout = isDSFormat ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
-#ifndef CTS_USES_VULKANSC
-    if (m_groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING && !isDSFormat)
-        colorImageLayout = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
-#endif
 
     // Create image used for both input and output in case of color test, and as a color output in depth/stencil test.
     {

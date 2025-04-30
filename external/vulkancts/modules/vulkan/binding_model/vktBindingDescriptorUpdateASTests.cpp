@@ -599,6 +599,9 @@ const VkAccelerationStructureKHR *BindingAcceleratioStructureTestInstance::creat
         makeTopLevelAccelerationStructure();
     std::vector<tcu::Vec3> geometryData;
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     // Generate in-plain square starting at (0,0,PLAIN_Z0) and ending at (1,1,PLAIN_Z1).
     // Vertices 1,0 and 0,1 by Z axis are in the middle between PLAIN_Z0 and PLAIN_Z1
     geometryData.push_back(tcu::Vec3(0.0f, 0.0f, PLAIN_Z0));
@@ -610,14 +613,14 @@ const VkAccelerationStructureKHR *BindingAcceleratioStructureTestInstance::creat
 
     rayQueryBottomLevelAccelerationStructure->setGeometryCount(1u);
     rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, true);
-    rayQueryBottomLevelAccelerationStructure->create(vkd, device, allocator, 0);
+    rayQueryBottomLevelAccelerationStructure->create(vkd, device, allocator, bufferProps, 0);
     m_bottomAccelerationStructures.push_back(
         de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
 
     m_topAccelerationStructure =
         de::SharedPtr<TopLevelAccelerationStructure>(rayQueryTopLevelAccelerationStructure.release());
     m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back());
-    m_topAccelerationStructure->create(vkd, device, allocator);
+    m_topAccelerationStructure->create(vkd, device, allocator, bufferProps);
 
     return m_topAccelerationStructure.get()->getPtr();
 }
@@ -1786,16 +1789,19 @@ void BindingAcceleratioStructureRayTracingTestInstance::fillCommandBuffer(VkComm
         makeBottomLevelAccelerationStructure();
     de::MovePtr<TopLevelAccelerationStructure> topLevelAccelerationStructure = makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     m_bottomLevelAccelerationStructure =
         de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release());
     m_bottomLevelAccelerationStructure->setDefaultGeometryData(m_testParams.stage);
-    m_bottomLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator);
+    m_bottomLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator, bufferProps);
 
     m_topLevelAccelerationStructure =
         de::SharedPtr<TopLevelAccelerationStructure>(topLevelAccelerationStructure.release());
     m_topLevelAccelerationStructure->setInstanceCount(1);
     m_topLevelAccelerationStructure->addInstance(m_bottomLevelAccelerationStructure);
-    m_topLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator);
+    m_topLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator, bufferProps);
 
     const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = m_topLevelAccelerationStructure.get();
     const VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet =
@@ -2222,16 +2228,19 @@ void BindingAcceleratioStructureRayTracingRayTracingTestInstance::fillCommandBuf
         makeBottomLevelAccelerationStructure();
     de::MovePtr<TopLevelAccelerationStructure> topLevelAccelerationStructure = makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     m_bottomLevelAccelerationStructure =
         de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release());
     m_bottomLevelAccelerationStructure->setDefaultGeometryData(m_testParams.stage);
-    m_bottomLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator);
+    m_bottomLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator, bufferProps);
 
     m_topLevelAccelerationStructure =
         de::SharedPtr<TopLevelAccelerationStructure>(topLevelAccelerationStructure.release());
     m_topLevelAccelerationStructure->setInstanceCount(1);
     m_topLevelAccelerationStructure->addInstance(m_bottomLevelAccelerationStructure);
-    m_topLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator);
+    m_topLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator, bufferProps);
 
     const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = m_topLevelAccelerationStructure.get();
     const VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet =

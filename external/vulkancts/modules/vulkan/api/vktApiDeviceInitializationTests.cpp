@@ -1500,20 +1500,6 @@ void checkFeatures(const PlatformInterface &vkp, const VkInstance &instance, con
                 physicalDeviceFeaturesCopy.robustBufferAccess = true;
             }
         }
-        else if (structureType == vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_ATOMIC_INT64_FEATURES_EXT)
-        {
-            DE_ASSERT((std::is_same<VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT, StructType>::value));
-            // If sparseImageInt64Atomics is enabled, shaderImageInt64Atomics must be enabled.
-            if (features[featureNdx].offset ==
-                offsetof(VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT, sparseImageInt64Atomics))
-            {
-                auto *memberPtr = reinterpret_cast<VkBool32 *>(
-                    reinterpret_cast<uint8_t *>(&structCopy) +
-                    SAFE_OFFSET(StructType, VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT,
-                                shaderImageInt64Atomics));
-                *memberPtr = VK_TRUE;
-            }
-        }
         else if (structureType == vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT)
         {
             DE_ASSERT((std::is_same<VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, StructType>::value));
@@ -1549,6 +1535,42 @@ void checkFeatures(const PlatformInterface &vkp, const VkInstance &instance, con
                     reinterpret_cast<VkBool32 *>(reinterpret_cast<uint8_t *>(&structCopy) +
                                                  SAFE_OFFSET(StructType, VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT,
                                                              shaderImageFloat32AtomicMinMax));
+                *memberPtr = VK_TRUE;
+            }
+        }
+        else if (structureType == vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT)
+        {
+            DE_ASSERT((std::is_same<VkPhysicalDeviceMeshShaderFeaturesEXT, StructType>::value));
+            // If multiviewMeshShader is enabled then multiview must also be enabled
+            if (features[featureNdx].offset == offsetof(VkPhysicalDeviceMeshShaderFeaturesEXT, multiviewMeshShader))
+            {
+                auto *memberPtr =
+                    reinterpret_cast<VkBool32 *>(reinterpret_cast<uint8_t *>(&structCopy) +
+                                                 SAFE_OFFSET(StructType, VkPhysicalDeviceMultiviewFeatures, multiview));
+                *memberPtr = VK_TRUE;
+            }
+            // If primitiveFragmentShadingRateMeshShader is enabled then primitiveFragmentShadingRate must also be enabled
+            if (features[featureNdx].offset ==
+                offsetof(VkPhysicalDeviceMeshShaderFeaturesEXT, primitiveFragmentShadingRateMeshShader))
+            {
+                auto *memberPtr =
+                    reinterpret_cast<VkBool32 *>(reinterpret_cast<uint8_t *>(&structCopy) +
+                                                 SAFE_OFFSET(StructType, VkPhysicalDeviceFragmentShadingRateFeaturesKHR,
+                                                             primitiveFragmentShadingRate));
+                *memberPtr = VK_TRUE;
+            }
+        }
+        else if (structureType == vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_ATOMIC_INT64_FEATURES_EXT)
+        {
+            DE_ASSERT((std::is_same<VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT, StructType>::value));
+            // If sparseImageInt64Atomics is enabled, shaderImageInt64Atomics must be enabled.
+            if (features[featureNdx].offset ==
+                offsetof(VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT, sparseImageInt64Atomics))
+            {
+                auto *memberPtr = reinterpret_cast<VkBool32 *>(
+                    reinterpret_cast<uint8_t *>(&structCopy) +
+                    SAFE_OFFSET(StructType, VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT,
+                                shaderImageInt64Atomics));
                 *memberPtr = VK_TRUE;
             }
         }
@@ -2280,7 +2302,7 @@ tcu::TestStatus createDeviceQueue2WithMultipleQueueCombinations(Context &context
         vector<uint32_t> itemIndices(queuesPerFamily.size(), 0u);
 
         // Calculate the max number of combinations.
-        auto multiplyConfigCounts = [](uint32_t &count, const typename QueueFamilyConfigurations::value_type &item)
+        auto multiplyConfigCounts = [](uint32_t count, const typename QueueFamilyConfigurations::value_type &item)
         { return count * (uint32_t)item.second.size(); };
         const uint32_t itemCount = accumulate(queuesPerFamily.begin(), queuesPerFamily.end(), 1u, multiplyConfigCounts);
 

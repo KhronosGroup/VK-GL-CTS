@@ -2145,7 +2145,7 @@ void PushDescriptorImageComputeTestInstance::init(void)
                                  (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &preImageBarrier);
         m_vkd.cmdClearColorImage(*cmdBuffer, **m_textureImages[texIdx], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                  &clearValues[texIdx].color, 1, &clearRange);
-        m_vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+        m_vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                  (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &postImageBarrier);
         endCommandBuffer(m_vkd, *cmdBuffer);
 

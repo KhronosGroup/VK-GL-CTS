@@ -468,6 +468,10 @@ tcu::TestNode::IterateResult TextureFilterAnisotropicDrawingTestCase::iterate()
     std::vector<GLfloat> anisoVec;
     anisoVec.push_back(1.0f);
     anisoVec.push_back(2.0f);
+    if (maxAnisoDegree > 2.0f)
+    {
+        anisoVec.push_back(maxAnisoDegree);
+    }
 
     for (uint32_t iTarget = 0; iTarget < m_supportedTargets.size(); ++iTarget)
     {

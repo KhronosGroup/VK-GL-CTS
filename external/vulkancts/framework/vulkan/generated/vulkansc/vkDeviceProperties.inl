@@ -19,8 +19,6 @@ namespace vk
 #define DECL_DESCRIPTOR_INDEXING_EXTENSION_NAME "core_property"
 #define DECL_TIMELINE_SEMAPHORE_EXTENSION_NAME "core_property"
 #define DECL_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME "core_property"
-#define DECL_VULKAN_SC_1_0_EXTENSION_NAME "core_property"
-
 
 template<> void initPropertyFromBlob<VkPhysicalDeviceDriverProperties>(VkPhysicalDeviceDriverProperties& propertyType, const AllPropertiesBlobs& allPropertiesBlobs)
 {
@@ -148,7 +146,6 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceRobustness2PropertiesEXT>(V
 template<> void initPropertyFromBlob<VkPhysicalDeviceFragmentShadingRatePropertiesKHR>(VkPhysicalDeviceFragmentShadingRatePropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceVulkanSC10Properties>(VkPhysicalDeviceVulkanSC10Properties&, const AllPropertiesBlobs&) {}
 
-
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDiscardRectanglePropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DISCARD_RECTANGLE_PROPERTIES_EXT, VK_EXT_DISCARD_RECTANGLES_EXTENSION_NAME, VK_EXT_DISCARD_RECTANGLES_SPEC_VERSION}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceConservativeRasterizationPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT, VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME, VK_EXT_CONSERVATIVE_RASTERIZATION_SPEC_VERSION}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePerformanceQueryPropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_PROPERTIES_KHR, VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME, VK_KHR_PERFORMANCE_QUERY_SPEC_VERSION}; }
@@ -175,7 +172,6 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceFloatControlsProperties
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDescriptorIndexingProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES, DECL_DESCRIPTOR_INDEXING_EXTENSION_NAME, 0}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceTimelineSemaphoreProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES, DECL_TIMELINE_SEMAPHORE_EXTENSION_NAME, 0}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDepthStencilResolveProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES, DECL_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME, 0}; }
-template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceVulkanSC10Properties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_PROPERTIES, DECL_VULKAN_SC_1_0_EXTENSION_NAME, 0}; }
 
 
 static const PropertyStructCreationData propertyStructCreationArray[] =
@@ -206,8 +202,20 @@ static const PropertyStructCreationData propertyStructCreationArray[] =
 	{ createPropertyStructWrapper<VkPhysicalDeviceDescriptorIndexingProperties>, DECL_DESCRIPTOR_INDEXING_EXTENSION_NAME, 0 },
 	{ createPropertyStructWrapper<VkPhysicalDeviceTimelineSemaphoreProperties>, DECL_TIMELINE_SEMAPHORE_EXTENSION_NAME, 0 },
 	{ createPropertyStructWrapper<VkPhysicalDeviceDepthStencilResolveProperties>, DECL_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME, 0 },
-	{ createPropertyStructWrapper<VkPhysicalDeviceVulkanSC10Properties>, DECL_VULKAN_SC_1_0_EXTENSION_NAME, 0 },
 };
+
+const std::string getPreviousPropertyExtName (const std::string &name)
+{
+	const std::map<std::string, std::string> previousExtensionsMap {
+		{ "VK_KHR_vertex_attribute_divisor", "VK_EXT_vertex_attribute_divisor" },
+		{ "VK_KHR_line_rasterization", "VK_EXT_line_rasterization" }
+	};
+
+	auto it = previousExtensionsMap.find(name);
+	if(it == previousExtensionsMap.end())
+		return {};
+	return it->second;
+}
 
 uint32_t getBlobPropertiesVersion (VkStructureType sType)
 {
@@ -236,4 +244,3 @@ uint32_t getBlobPropertiesVersion (VkStructureType sType)
 }
 
 } // vk
-

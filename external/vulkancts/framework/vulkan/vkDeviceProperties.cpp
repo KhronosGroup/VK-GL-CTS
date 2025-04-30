@@ -44,9 +44,8 @@ DeviceProperties::DeviceProperties(const InstanceInterface &vki, const uint32_t 
 
     if (isInstanceExtensionSupported(apiVersion, instanceExtensions, "VK_KHR_get_physical_device_properties2"))
     {
-        const std::vector<VkExtensionProperties> deviceExtensionProperties =
-            enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
-        void **nextPtr = &m_coreProperties2.pNext;
+        const auto deviceExtensionProperties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+        void **nextPtr                       = &m_coreProperties2.pNext;
         std::vector<PropertyStructWrapperBase *> propertiesToFillFromBlob;
         std::vector<PropertyStructWrapperBase *> propertiesAddedWithVK;
         bool vk11Supported = (apiVersion >= VK_MAKE_API_VERSION(0, 1, 1, 0));
@@ -58,6 +57,8 @@ DeviceProperties::DeviceProperties(const InstanceInterface &vki, const uint32_t 
 #ifdef CTS_USES_VULKANSC
         bool vksc10Supported = (apiVersion >= VK_MAKE_API_VERSION(1, 1, 0, 0));
 #endif // CTS_USES_VULKANSC
+
+        m_properties.reserve(std::size(propertyStructCreationArray));
 
         // there are 3 properies structures that were added with vk11 (without being first part of extension)
         if (vk11Supported)
@@ -91,13 +92,13 @@ DeviceProperties::DeviceProperties(const InstanceInterface &vki, const uint32_t 
         }
 
         std::vector<std::string> allDeviceExtensions = deviceExtensions;
-#ifdef CTS_USES_VULKANSC
-        // VulkanSC: add missing core extensions to the list
         std::vector<const char *> coreExtensions;
         getCoreDeviceExtensions(apiVersion, coreExtensions);
         for (const auto &coreExt : coreExtensions)
-            if (!de::contains(allDeviceExtensions.begin(), allDeviceExtensions.end(), std::string(coreExt)))
+            if (!isExtensionStructSupported(allDeviceExtensions, coreExt))
                 allDeviceExtensions.push_back(coreExt);
+
+#ifdef CTS_USES_VULKANSC
         if (vksc10Supported)
             addToChainVulkanStructure(&nextPtr, m_vulkanSC10Properties);
 #endif // CTS_USES_VULKANSC
@@ -105,21 +106,11 @@ DeviceProperties::DeviceProperties(const InstanceInterface &vki, const uint32_t 
         // iterate over data for all property that are defined in specification
         for (const auto &propertyStructCreationData : propertyStructCreationArray)
         {
-            const char *propertyName = propertyStructCreationData.name;
-
-            // check if this property is available on current device.
-            if (de::contains(allDeviceExtensions.begin(), allDeviceExtensions.end(), propertyName) ||
-                std::string(propertyName) == "core_property")
+            if (verifyPropertyAddCriteria(propertyStructCreationData, allDeviceExtensions))
             {
                 PropertyStructWrapperBase *p = (*propertyStructCreationData.creatorFunction)();
                 if (p == nullptr)
                     continue;
-
-#ifdef CTS_USES_VULKANSC
-                // m_vulkanSC10Properties was already added above
-                if (p->getPropertyDesc().sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_PROPERTIES)
-                    continue;
-#endif // CTS_USES_VULKANSC
 
                 // if property struct is part of VkPhysicalDeviceVulkan1{1,2,3,4}Properties
                 // we dont add it to the chain but store and fill later from blob data
@@ -181,6 +172,29 @@ DeviceProperties::DeviceProperties(const InstanceInterface &vki, const uint32_t 
     }
     else
         m_coreProperties2.properties = getPhysicalDeviceProperties(vki, physicalDevice);
+}
+
+bool DeviceProperties::verifyPropertyAddCriteria(const PropertyStructCreationData &item,
+                                                 const std::vector<std::string> &allDeviceExtensions)
+{
+    const auto &propertyName = item.name;
+
+    // check if this is core property
+    bool isPropertyAvailable = (propertyName == "core_property");
+
+    // check if this property is available on current device
+    if (!isPropertyAvailable)
+        isPropertyAvailable = isExtensionStructSupported(allDeviceExtensions, propertyName);
+
+    // if this is promoted property and it is not available then check also older version
+    // e.g. if VK_KHR_line_rasterization is not supported try VK_EXT_line_rasterization
+    if (!isPropertyAvailable)
+    {
+        const auto previousPropertyExtName = getPreviousPropertyExtName(propertyName);
+        isPropertyAvailable                = isExtensionStructSupported(allDeviceExtensions, previousPropertyExtName);
+    }
+
+    return isPropertyAvailable;
 }
 
 void DeviceProperties::addToChainStructWrapper(void ***chainPNextPtr, PropertyStructWrapperBase *structWrapper)

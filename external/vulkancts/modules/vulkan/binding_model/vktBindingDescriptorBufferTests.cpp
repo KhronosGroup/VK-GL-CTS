@@ -355,6 +355,7 @@ struct TestParams
     uint32_t bufferBindingCount; // number of buffer bindings to create
     uint32_t setsPerBuffer;      // how may sets to put in one buffer binding
     bool useMaintenance5;        // should we use VkPipelineCreateFlagBits2KHR
+    bool nonBufferAligned;       // bind descriptor buffer at a non buffer aligned offset
 
     // Basic, null descriptor, capture/replay, or ycbcr sampler test
     VkDescriptorType descriptor; // descriptor type under test
@@ -3355,6 +3356,9 @@ void DescriptorBufferTestInstance::createDescriptorBuffers()
 
     currentBuffer = {};
 
+    if (m_params.nonBufferAligned)
+        currentBuffer.setOffset = m_descriptorBufferProperties.descriptorBufferOffsetAlignment;
+
     for (uint32_t setIndex = 0; setIndex < u32(m_descriptorSetLayouts.size()); ++setIndex)
     {
         auto &dsl = **m_descriptorSetLayouts[setIndex];
@@ -3390,7 +3394,8 @@ void DescriptorBufferTestInstance::createDescriptorBuffers()
             }
             else
             {
-                currentBuffer.usage |= VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT;
+                currentBuffer.usage |=
+                    VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
             }
         }
 
@@ -3652,8 +3657,10 @@ void DescriptorBufferTestInstance::bindDescriptorBuffers(VkCommandBuffer cmdBuf,
     for (const auto &buffer : m_descriptorBuffers)
     {
         VkDescriptorBufferBindingInfoEXT info = initVulkanStructure();
+        const VkDeviceSize bindOffset =
+            m_params.nonBufferAligned ? m_descriptorBufferProperties.descriptorBufferOffsetAlignment : 0;
 
-        info.address = buffer->deviceAddress;
+        info.address = buffer->deviceAddress + bindOffset;
         info.usage   = buffer->usage;
 
         if (!m_descriptorBufferProperties.bufferlessPushDescriptors &&
@@ -3685,11 +3692,13 @@ void DescriptorBufferTestInstance::bindDescriptorBuffers(VkCommandBuffer cmdBuf,
         const auto &dsl       = **m_descriptorSetLayouts[setIndex];
         const bool isBoundSet = (dsl.bufferIndex != INDEX_INVALID);
         const bool isLastSet  = ((setIndex + 1) == u32(m_descriptorSetLayouts.size()));
+        const VkDeviceSize bindOffset =
+            m_params.nonBufferAligned ? m_descriptorBufferProperties.descriptorBufferOffsetAlignment : 0;
 
         if (isBoundSet)
         {
             bufferIndices.emplace_back(dsl.bufferIndex);
-            bufferOffsets.emplace_back(dsl.bufferOffset);
+            bufferOffsets.emplace_back(dsl.bufferOffset - bindOffset);
         }
 
         if ((!isBoundSet || isLastSet) && !bufferIndices.empty())
@@ -4654,6 +4663,9 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
             {
                 DE_ASSERT(resources.rtBlas.get() == nullptr);
 
+                AccelerationStructBufferProperties bufferProps;
+                bufferProps.props.residency = vk::ResourceResidency::TRADITIONAL;
+
                 resources.rtBlas =
                     de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
                 if (binding.isRayTracingAS)
@@ -4661,16 +4673,21 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
                 else
                     resources.rtBlas->setGeometryData(vertices, true);
                 resources.rtBlas->setCreateFlags(createFlags);
-                resources.rtBlas->create(*m_deviceInterface, *m_device, allocator, 0, 0, infoPtrs[0], memoryReqs);
+                resources.rtBlas->create(*m_deviceInterface, *m_device, allocator, bufferProps, 0, 0, 0, 0, infoPtrs[0],
+                                         memoryReqs);
             }
 
             {
                 DE_ASSERT(resources.rtTlas.get() == nullptr);
 
+                AccelerationStructBufferProperties bufferProps;
+                bufferProps.props.residency = vk::ResourceResidency::TRADITIONAL;
+
                 resources.rtTlas = makeTopLevelAccelerationStructure();
                 resources.rtTlas->addInstance(resources.rtBlas);
                 resources.rtTlas->setCreateFlags(createFlags);
-                resources.rtTlas->create(*m_deviceInterface, *m_device, allocator, 0, 0, infoPtrs[1], memoryReqs);
+                resources.rtTlas->create(*m_deviceInterface, *m_device, allocator, bufferProps, 0, 0, 0, 0, infoPtrs[1],
+                                         memoryReqs);
             }
 
             if (isCaptureDescriptor(binding.descriptorType) && replayableBinding)
@@ -6300,6 +6317,11 @@ void populateDescriptorBufferTestGroup(tcu::TestCaseGroup *topGroup, ResourceRes
         params.useMaintenance5 = true;
 
         subGroup->addChild(new DescriptorBufferTestCase(testCtx, "compute_maintenance5", params));
+
+        params.nonBufferAligned = true;
+
+        subGroup->addChild(new DescriptorBufferTestCase(testCtx, "non_buffer_aligned", params));
+
         topGroup->addChild(subGroup.release());
     }
 

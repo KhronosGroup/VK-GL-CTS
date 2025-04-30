@@ -54,11 +54,13 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
     m_vulkanSC10Features = initVulkanStructure();
 #endif // CTS_USES_VULKANSC
 
+    auto assignRawStructPtr = [](auto **featureStruct, void *rawStructPtr)
+    { *featureStruct = reinterpret_cast<decltype(*featureStruct)>(rawStructPtr); };
+
     if (isInstanceExtensionSupported(apiVersion, instanceExtensions, "VK_KHR_get_physical_device_properties2"))
     {
-        const std::vector<VkExtensionProperties> deviceExtensionProperties =
-            enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
-        void **nextPtr = &m_coreFeatures2.pNext;
+        const auto deviceExtensionProperties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+        void **nextPtr                       = &m_coreFeatures2.pNext;
         std::vector<FeatureStructWrapperBase *> featuresToFillFromBlob;
 #ifndef CTS_USES_VULKANSC
         bool vk14Supported = (apiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0));
@@ -68,6 +70,8 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
 #ifdef CTS_USES_VULKANSC
         bool vksc10Supported = (apiVersion >= VK_MAKE_API_VERSION(1, 1, 0, 0));
 #endif // CTS_USES_VULKANSC
+
+        m_features.reserve(std::size(featureStructCreationArray));
 
         // since vk12 we have blob structures combining features of couple previously
         // available feature structures, that now in vk12+ must be removed from chain
@@ -91,34 +95,20 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
 #endif // CTS_USES_VULKANSC
 
         std::vector<std::string> allDeviceExtensions = deviceExtensions;
-#ifdef CTS_USES_VULKANSC
-        // VulkanSC: add missing core extensions to the list
         std::vector<const char *> coreExtensions;
         getCoreDeviceExtensions(apiVersion, coreExtensions);
         for (const auto &coreExt : coreExtensions)
-            if (!de::contains(allDeviceExtensions.begin(), allDeviceExtensions.end(), std::string(coreExt)))
+            if (!isExtensionStructSupported(allDeviceExtensions, coreExt))
                 allDeviceExtensions.push_back(coreExt);
-#endif // CTS_USES_VULKANSC
 
         // iterate over data for all feature that are defined in specification
         for (const auto &featureStructCreationData : featureStructCreationArray)
         {
-            const char *featureName = featureStructCreationData.name;
-
-            // check if this feature is available on current device
-            if ((de::contains(allDeviceExtensions.begin(), allDeviceExtensions.end(), featureName) ||
-                 std::string(featureName) == "core_feature") &&
-                verifyFeatureAddCriteria(featureStructCreationData, deviceExtensionProperties))
+            if (verifyFeatureAddCriteria(featureStructCreationData, allDeviceExtensions, deviceExtensionProperties))
             {
                 FeatureStructWrapperBase *p = (*featureStructCreationData.creatorFunction)();
                 if (p == nullptr)
                     continue;
-
-#ifdef CTS_USES_VULKANSC
-                // m_vulkanSC10Features was already added above
-                if (p->getFeatureDesc().sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES)
-                    continue;
-#endif // CTS_USES_VULKANSC
 
                 // if feature struct is part of VkPhysicalDeviceVulkan1{1,2,3,4}Features
                 // we dont add it to the chain but store and fill later from blob data
@@ -138,31 +128,24 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
                     void *rawStructPtr         = p->getFeatureTypeRaw();
 
                     if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT)
-                        robustness2Features = reinterpret_cast<VkPhysicalDeviceRobustness2FeaturesEXT *>(rawStructPtr);
+                        assignRawStructPtr(&robustness2Features, rawStructPtr);
                     else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES_EXT)
-                        imageRobustnessFeatures =
-                            reinterpret_cast<VkPhysicalDeviceImageRobustnessFeaturesEXT *>(rawStructPtr);
+                        assignRawStructPtr(&imageRobustnessFeatures, rawStructPtr);
 #ifndef CTS_USES_VULKANSC
                     else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR)
-                        fragmentShadingRateFeatures =
-                            reinterpret_cast<VkPhysicalDeviceFragmentShadingRateFeaturesKHR *>(rawStructPtr);
+                        assignRawStructPtr(&fragmentShadingRateFeatures, rawStructPtr);
                     else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADING_RATE_IMAGE_FEATURES_NV)
-                        shadingRateImageFeaturesNV =
-                            reinterpret_cast<VkPhysicalDeviceShadingRateImageFeaturesNV *>(rawStructPtr);
+                        assignRawStructPtr(&shadingRateImageFeaturesNV, rawStructPtr);
                     else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_FEATURES_EXT)
-                        fragmentDensityMapFeatures =
-                            reinterpret_cast<VkPhysicalDeviceFragmentDensityMapFeaturesEXT *>(rawStructPtr);
+                        assignRawStructPtr(&fragmentDensityMapFeatures, rawStructPtr);
                     else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT)
-                        pageableDeviceLocalMemoryFeatures =
-                            reinterpret_cast<VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT *>(rawStructPtr);
+                        assignRawStructPtr(&pageableDeviceLocalMemoryFeatures, rawStructPtr);
                     else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT)
-                        mutableDescriptorTypeFeatures =
-                            reinterpret_cast<VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT *>(rawStructPtr);
+                        assignRawStructPtr(&mutableDescriptorTypeFeatures, rawStructPtr);
                     else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT)
-                        legacyDitheringFeatures =
-                            reinterpret_cast<VkPhysicalDeviceLegacyDitheringFeaturesEXT *>(rawStructPtr);
+                        assignRawStructPtr(&legacyDitheringFeatures, rawStructPtr);
                     else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_EXT)
-                        deviceFaultFeatures = reinterpret_cast<VkPhysicalDeviceFaultFeaturesEXT *>(rawStructPtr);
+                        assignRawStructPtr(&deviceFaultFeatures, rawStructPtr);
 #endif // CTS_USES_VULKANSC
                     // add to chain
                     *nextPtr = rawStructPtr;
@@ -173,8 +156,9 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
             else
             {
 #ifndef CTS_USES_VULKANSC
+                const auto &featureName = featureStructCreationData.name;
                 // Some non-standard promotions may need feature structs filled in anyway.
-                if (!strcmp(featureName, "VK_EXT_extended_dynamic_state") && vk13Supported)
+                if ((featureName == "VK_EXT_extended_dynamic_state") && vk13Supported)
                 {
                     FeatureStructWrapperBase *p = (*featureStructCreationData.creatorFunction)();
                     if (p == nullptr)
@@ -185,7 +169,7 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
                     f->extendedDynamicState = true;
                     m_features.push_back(p);
                 }
-                if (!strcmp(featureName, "VK_EXT_extended_dynamic_state2") && vk13Supported)
+                if ((featureName == "VK_EXT_extended_dynamic_state2") && vk13Supported)
                 {
                     FeatureStructWrapperBase *p = (*featureStructCreationData.creatorFunction)();
                     if (p == nullptr)
@@ -280,19 +264,39 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
 }
 
 bool DeviceFeatures::verifyFeatureAddCriteria(const FeatureStructCreationData &item,
+                                              const std::vector<std::string> &allDeviceExtensions,
                                               const std::vector<VkExtensionProperties> &properties)
 {
+    const auto &featureName = item.name;
+
+    // check if this is core feature
+    bool isFeatureAvailable = (featureName == "core_feature");
+
+    // check if this feature is available on current device
+    if (!isFeatureAvailable)
+        isFeatureAvailable = isExtensionStructSupported(allDeviceExtensions, featureName);
+
+    // if this is promoted feature and it is not available then check also older version
+    // e.g. if VK_KHR_line_rasterization is not supported try VK_EXT_line_rasterization
+    if (!isFeatureAvailable)
+    {
+        const auto previousFeatureExtName = getPreviousFeatureExtName(featureName);
+        isFeatureAvailable                = isExtensionStructSupported(allDeviceExtensions, previousFeatureExtName);
+    }
+
+    if (!isFeatureAvailable)
+        return false;
+
 #ifndef CTS_USES_VULKANSC
-    if (strcmp(item.name, VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME) == 0)
+    if (item.name == VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME)
     {
         for (const auto &property : properties)
         {
-            if (strcmp(property.extensionName, item.name) == 0)
+            if (property.extensionName == item.name)
                 return (property.specVersion == item.specVersion);
         }
     }
 #else  // CTS_USES_VULKANSC
-    DE_UNREF(item);
     DE_UNREF(properties);
 #endif // CTS_USES_VULKANSC
 
@@ -303,7 +307,7 @@ bool DeviceFeatures::contains(const std::string &feature, bool throwIfNotExists)
 {
     for (const auto f : m_features)
     {
-        if (strcmp(f->getFeatureDesc().name, feature.c_str()) == 0)
+        if (f->getFeatureDesc().name == feature)
             return true;
     }
 

@@ -95,11 +95,13 @@ bool hasComplementaryPush(TestType testType)
 
 struct TestParams
 {
-    TestParams(TestType testType_, bool shaderObjects_, bool computeQueue_, bool dynamicPipelineLayout_)
+    TestParams(TestType testType_, bool shaderObjects_, bool computeQueue_, bool dynamicPipelineLayout_,
+               bool destroySetLayout_)
         : testType(testType_)
         , shaderObjects(shaderObjects_)
         , computeQueue(computeQueue_)
         , dynamicPipelineLayout(dynamicPipelineLayout_)
+        , destroySetLayout(destroySetLayout_)
     {
     }
 
@@ -107,6 +109,7 @@ struct TestParams
     bool shaderObjects;         // Use shader objects instead of pipelines.
     bool computeQueue;          // Use the compute queue.
     bool dynamicPipelineLayout; // Use dynamicGeneratedPipelineLayout.
+    bool destroySetLayout;      // Destroy set layout after using it in VkIndirectExecutionSetShaderLayoutInfoEXT.
 };
 
 // See the shader code below. This is the specialization data that will be used in each dispatch. It may be used as specialization
@@ -210,9 +213,15 @@ protected:
 void LayoutTestCase::checkSupport(Context &context) const
 {
     const bool requireBinds = hasExecutionSet(m_params.testType);
-    checkDGCExtComputeSupport(context, requireBinds);
+    const bool requireESO   = m_params.shaderObjects;
 
-    if (m_params.shaderObjects)
+    DGCComputeSupportType supportType = DGCComputeSupportType::BASIC;
+    if (requireBinds)
+        supportType = (requireESO ? DGCComputeSupportType::BIND_SHADER : DGCComputeSupportType::BIND_PIPELINE);
+
+    checkDGCExtComputeSupport(context, supportType);
+
+    if (requireESO)
     {
         context.requireDeviceFunctionality("VK_EXT_shader_object");
         if (requireBinds)
@@ -756,11 +765,23 @@ tcu::TestStatus LayoutTestInstance::iterate(void)
     {
         if (m_params.shaderObjects)
         {
-            const std::vector<VkDescriptorSetLayout> setLayouts{*m_setLayout};
-            // Initialize with the last one, then overwrite.
-            const std::vector<IESStageInfo> stages{IESStageInfo(m_dgcShaders.back()->get(), setLayouts)};
-            executionSet =
-                makeExecutionSetManagerShader(ctx.vkd, ctx.device, stages, m_pcRanges, de::sizeU32(m_dgcShaders));
+            {
+                // If needed, destroy the set layout immediately after IES creation.
+                Move<VkDescriptorSetLayout> setLayoutCopy;
+                std::vector<VkDescriptorSetLayout> setLayouts{*m_setLayout};
+
+                if (m_params.destroySetLayout)
+                {
+                    setLayoutCopy      = setLayoutBuilder.build(ctx.vkd, ctx.device);
+                    setLayouts.front() = *setLayoutCopy;
+                }
+
+                // Initialize with the last one, then overwrite.
+                const std::vector<IESStageInfo> stages{IESStageInfo(m_dgcShaders.back()->get(), setLayouts)};
+                executionSet =
+                    makeExecutionSetManagerShader(ctx.vkd, ctx.device, stages, m_pcRanges, de::sizeU32(m_dgcShaders));
+            }
+
             for (size_t i = 0u; i < m_dgcShaders.size(); ++i)
                 executionSet->addShader(static_cast<uint32_t>(i), m_dgcShaders.at(i)->get());
         }
@@ -773,9 +794,9 @@ tcu::TestStatus LayoutTestInstance::iterate(void)
                 executionSet->addPipeline(static_cast<uint32_t>(i), m_dgcPipelines.at(i)->get());
         }
 
-        // To make things a bit more interesting, we're going to defer updating the execution set until we've allocated the
-        // preprocess buffer. This means the memory requirements will have to be calculated without knowing the specific pipelines
-        // or shader objects.
+        // To make things a bit more interesting, we're going to defer updating the execution set until we've allocated
+        // the preprocess buffer. This means the memory requirements will have to be calculated without knowing the
+        // specific pipelines or shader objects.
         //executionSet->update();
     }
 
@@ -912,7 +933,7 @@ tcu::TestStatus LayoutTestInstance::iterate(void)
         log << tcu::TestLog::Message << "Dispatch sizes:" << tcu::TestLog::EndMessage;
         for (const auto wgCount : wgCounts)
             log << tcu::TestLog::Message << "    " << wgCount << tcu::TestLog::EndMessage;
-        return tcu::TestStatus::fail("Unexpected output values found; check log for details");
+        TCU_FAIL("Unexpected output values found; check log for details");
     }
     return tcu::TestStatus::pass("Pass");
 }
@@ -943,15 +964,28 @@ tcu::TestCaseGroup *createDGCComputeLayoutTestsExt(tcu::TestContext &testCtx)
 
     for (const auto useComputeQueue : {false, true})
         for (const auto useShaderObjects : {false, true})
-            for (const auto dynamicPipelineLayout : {false, true})
-                for (const auto &testCase : testTypesTable)
-                {
-                    TestParams params(testCase.testType, useShaderObjects, useComputeQueue, dynamicPipelineLayout);
-                    const auto testName = std::string(testCase.name) + (useShaderObjects ? "_shader_objects" : "") +
-                                          (useComputeQueue ? "_cq" : "") +
-                                          (dynamicPipelineLayout ? "_dynamic_pipeline_layout" : "");
-                    mainGroup->addChild(new LayoutTestCase(testCtx, testName, params));
-                }
+            for (const auto destroySetLayout : {false, true})
+            {
+                // We want to test destroying the layouts in VkIndirectExecutionSetShaderLayoutInfoEXT, which only
+                // applies to indirect execution sets using shader objects.
+                if (destroySetLayout && !useShaderObjects)
+                    continue;
+
+                for (const auto dynamicPipelineLayout : {false, true})
+                    for (const auto &testCase : testTypesTable)
+                    {
+                        if (destroySetLayout && !hasExecutionSet(testCase.testType))
+                            continue;
+
+                        TestParams params(testCase.testType, useShaderObjects, useComputeQueue, dynamicPipelineLayout,
+                                          destroySetLayout);
+                        const auto testName = std::string(testCase.name) + (useShaderObjects ? "_shader_objects" : "") +
+                                              (useComputeQueue ? "_cq" : "") +
+                                              (dynamicPipelineLayout ? "_dynamic_pipeline_layout" : "") +
+                                              (destroySetLayout ? "_destroy_ies_set_layout" : "");
+                        mainGroup->addChild(new LayoutTestCase(testCtx, testName, params));
+                    }
+            }
 
     return mainGroup.release();
 }

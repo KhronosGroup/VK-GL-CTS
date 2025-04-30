@@ -36,6 +36,7 @@
 #include "vkPlatform.hpp"
 #include "vkPrograms.hpp"
 #include "vkMemUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
@@ -48,6 +49,7 @@
 #include "deSharedPtr.hpp"
 #include "deMath.h"
 
+#include <algorithm>
 #include <string>
 #include <vector>
 #include <map>
@@ -82,6 +84,7 @@ enum TestFlagBits
     TEST_FLAG_RESIDENCY            = 1u << 1, //!< sparseResidencyBuffer
     TEST_FLAG_NON_RESIDENT_STRICT  = 1u << 2, //!< residencyNonResidentStrict
     TEST_FLAG_ENABLE_DEVICE_GROUPS = 1u << 3, //!< device groups are enabled
+    TEST_FLAG_TRANSFORM_FEEDBACK   = 1u << 4, //!< require transform feedback extension
 };
 typedef uint32_t TestFlags;
 
@@ -602,7 +605,7 @@ public:
             requirements.push_back(QueueRequirements(VK_QUEUE_SPARSE_BINDING_BIT, 1u));
             requirements.push_back(QueueRequirements(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT, 1u));
 
-            createDeviceSupportingQueues(requirements);
+            createDeviceSupportingQueues(requirements, false, false, flags & TEST_FLAG_TRANSFORM_FEEDBACK);
         }
 
         const DeviceInterface &vk = getDeviceInterface();
@@ -664,7 +667,7 @@ protected:
                        deviceID);
     }
 
-    bool isResultImageCorrect(void) const
+    virtual bool isResultCorrect(void) const
     {
         invalidateAlloc(getDeviceInterface(), getDevice(), *m_colorBufferAlloc);
 
@@ -1015,7 +1018,7 @@ public:
                      firstDeviceID);
             }
 
-            if (!isResultImageCorrect())
+            if (!isResultCorrect())
                 return tcu::TestStatus::fail("Some buffer values were incorrect");
         }
         return tcu::TestStatus::pass("Pass");
@@ -1144,7 +1147,8 @@ public:
 
         m_perDrawBufferOffset = m_sparseAllocation->resourceSize / m_sparseAllocation->numResourceChunks;
         m_stagingBufferSize   = 2 * m_perDrawBufferOffset;
-        m_stagingBuffer       = makeBuffer(vk, getDevice(), m_stagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+        m_stagingBuffer       = makeBuffer(vk, getDevice(), m_stagingBufferSize,
+                                           VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
         m_stagingBufferAlloc =
             bindBuffer(vk, getDevice(), getAllocator(), *m_stagingBuffer, MemoryRequirement::HostVisible);
     }
@@ -1222,7 +1226,7 @@ public:
             Renderer::SpecializationMap specMap;
             draw(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_NULL_HANDLE, specMap, usingDeviceGroups(), firstDeviceID);
 
-            if (!isResultImageCorrect())
+            if (!isResultCorrect())
                 return tcu::TestStatus::fail("Some buffer values were incorrect");
         }
         return tcu::TestStatus::pass("Pass");
@@ -1421,6 +1425,297 @@ private:
     MovePtr<Allocation> m_vertexBufferAlloc;
 };
 
+//! Use sparse transform feedback buffer
+class TransformFeedbackTestInstance : public DrawGridTestInstance
+{
+public:
+    TransformFeedbackTestInstance(Context &context, const TestFlags flags)
+        : DrawGridTestInstance(context, flags,
+                               VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                               GRID_SIZE * GRID_SIZE * 6 * sizeof(uint32_t))
+    {
+    }
+    ~TransformFeedbackTestInstance() = default;
+
+    void rendererDraw(const VkPipelineLayout, const VkCommandBuffer cmdBuffer) const
+    {
+        const DeviceInterface &vk  = getDeviceInterface();
+        const uint32_t vertexCount = 6 * GRID_SIZE * GRID_SIZE;
+        VkDeviceSize vertexOffset  = 0ull;
+
+        VkDeviceSize secondChunkOffset = m_perDrawBufferOffset;
+        if (m_residency)
+            secondChunkOffset += m_perDrawBufferOffset;
+
+        vk.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &vertexOffset);
+        vk.cmdBindTransformFeedbackBuffersEXT(cmdBuffer, 0, 1, &*m_sparseBuffer, &secondChunkOffset,
+                                              &m_perDrawBufferOffset);
+
+        vk.cmdBeginTransformFeedbackEXT(cmdBuffer, 0, 0, nullptr, nullptr);
+        vk.cmdDraw(cmdBuffer, vertexCount, 1u, 0u, 0u);
+        vk.cmdEndTransformFeedbackEXT(cmdBuffer, 0, 0, nullptr, nullptr);
+    }
+
+    void initializeBuffers(void)
+    {
+        // Create vertex buffer
+        const auto device                   = getDevice();
+        const DeviceInterface &vk           = getDeviceInterface();
+        const VkDeviceSize vertexBufferSize = GRID_SIZE * GRID_SIZE * 6 * sizeof(Vec4);
+        m_vertexBuffer      = makeBuffer(vk, device, vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        m_vertexBufferAlloc = bindBuffer(vk, device, getAllocator(), *m_vertexBuffer, MemoryRequirement::HostVisible);
+
+        const float step = 2.0f / static_cast<float>(GRID_SIZE);
+        generateGrid(m_vertexBufferAlloc->getHostPtr(), step, -1.0f, -1.0f, GRID_SIZE, GRID_SIZE);
+        flushAlloc(vk, getDevice(), *m_vertexBufferAlloc);
+
+        // Sparse buffer that will be used for transform feedback is filled with random data from staging buffer
+    }
+
+    virtual bool isResultCorrect(void) const
+    {
+        const auto device         = getDevice();
+        const DeviceInterface &vk = getDeviceInterface();
+
+        VkDeviceSize secondChunkOffset = m_perDrawBufferOffset;
+        if (m_residency)
+            secondChunkOffset += m_perDrawBufferOffset;
+
+        const VkBufferCopy copyRegion{
+            secondChunkOffset,     // VkDeviceSize    srcOffset;
+            0ull,                  // VkDeviceSize    dstOffset;
+            m_perDrawBufferOffset, // VkDeviceSize    size;
+        };
+
+        const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, m_universalQueue.queueFamilyIndex));
+        const Unique<VkCommandBuffer> cmdBuffer(
+            allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+        beginCommandBuffer(vk, *cmdBuffer);
+        vk.cmdCopyBuffer(*cmdBuffer, *m_sparseBuffer, *m_stagingBuffer, 1u, &copyRegion);
+        endCommandBuffer(vk, *cmdBuffer);
+
+        submitCommandsAndWait(vk, device, m_universalQueue.queueHandle, *cmdBuffer, 0u, nullptr, nullptr, 0, nullptr,
+                              false, 0);
+
+        // verify selected number of items
+        const uint32_t vertexCount = 6 * GRID_SIZE * GRID_SIZE;
+        invalidateAlloc(vk, device, *m_stagingBufferAlloc);
+        uint32_t *const pData = static_cast<uint32_t *>(m_stagingBufferAlloc->getHostPtr());
+        for (uint32_t i = 0; i < vertexCount; i += (i < GRID_SIZE ? 1 : GRID_SIZE))
+        {
+            if (pData[i] != i)
+                return false;
+        }
+
+        return true;
+    }
+
+private:
+    Move<VkBuffer> m_vertexBuffer;
+    MovePtr<Allocation> m_vertexBufferAlloc;
+};
+
+void initTransformFeedbackPrograms(vk::SourceCollections &programCollection, const TestFlags flags)
+{
+    DE_UNREF(flags);
+
+    // Vertex shader
+    std::string vertSrc = "#version 450\n"
+                          "layout(location = 0) in vec4 in_position;\n"
+                          "layout(xfb_buffer = 0, xfb_offset = 0, xfb_stride = 4, location = 0) out uint out_ndx;\n"
+                          "out gl_PerVertex {\n"
+                          "    vec4 gl_Position;\n"
+                          "};\n"
+                          "void main(void)\n"
+                          "{\n"
+                          "    gl_Position = in_position;\n"
+                          "    out_ndx     = gl_VertexIndex;\n"
+                          "}\n";
+    programCollection.glslSources.add("vert") << glu::VertexSource(vertSrc);
+
+    // Fragment shader
+    std::string fragSrc = "#version 450\n"
+                          "layout(location = 0) out vec4 o_color;\n"
+                          "void main(void)\n"
+                          "{\n"
+                          "    o_color = vec4(1.0);\n"
+                          "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(fragSrc);
+}
+
+//! Use sparse buffer for indirectdispatch
+class IndirectDispatchTestInstance : public SparseResourcesBaseInstance
+{
+public:
+    IndirectDispatchTestInstance(Context &context, const TestFlags flags);
+    ~IndirectDispatchTestInstance() = default;
+
+    tcu::TestStatus iterate(void);
+
+protected:
+    const bool m_residency;
+    Queue m_sparseQueue;
+    Queue m_computeQueue;
+};
+
+IndirectDispatchTestInstance::IndirectDispatchTestInstance(Context &context, const TestFlags flags)
+    : SparseResourcesBaseInstance(context)
+    , m_residency(flags & TEST_FLAG_RESIDENCY)
+{
+    QueueRequirementsVec requirements{QueueRequirements(VK_QUEUE_SPARSE_BINDING_BIT, 1u),
+                                      QueueRequirements(VK_QUEUE_COMPUTE_BIT, 1u)};
+    createDeviceSupportingQueues(requirements);
+
+    m_sparseQueue  = getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0u);
+    m_computeQueue = getQueue(VK_QUEUE_COMPUTE_BIT, 0u);
+}
+
+tcu::TestStatus IndirectDispatchTestInstance::iterate(void)
+{
+    const DeviceInterface &vk = getDeviceInterface();
+    const auto device         = getDevice();
+
+    // create buffer that will be used as output for compute shader and as staging buffer for sparse buffer
+    uint32_t outputItemCount     = 15u;
+    VkDeviceSize inoutBufferSize = outputItemCount * sizeof(uint32_t);
+    VkBufferUsageFlags inoutUsage =
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    auto bufferCreateInfo  = makeBufferCreateInfo(inoutBufferSize, inoutUsage);
+    const auto inoutBuffer = createBuffer(vk, device, &bufferCreateInfo);
+    const auto inoutBufferAlloc(bindBuffer(vk, device, getAllocator(), *inoutBuffer, MemoryRequirement::HostVisible));
+
+    // create sparse buffer that will be used for indirect dispatch
+    VkDeviceSize sparseBufferSize  = 1 << 18;
+    VkBufferUsageFlags sparseUsage = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    VkBufferCreateFlags flags      = VK_BUFFER_CREATE_SPARSE_BINDING_BIT;
+    if (m_residency)
+        flags |= VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT;
+    bufferCreateInfo        = makeBufferCreateInfo(sparseBufferSize, sparseUsage, flags);
+    const auto sparseBuffer = createBuffer(vk, device, &bufferCreateInfo);
+
+    VkMemoryRequirements memoryRequirements = getBufferMemoryRequirements(vk, device, *sparseBuffer);
+    auto sparseChunkSize                    = memoryRequirements.alignment;
+
+    // allocate single chunk deliberately leaving hole at the beginning of resource
+    memoryRequirements.size            = sparseChunkSize;
+    de::MovePtr<Allocation> allocation = getAllocator().allocate(memoryRequirements, MemoryRequirement::Any);
+    VkSparseMemoryBind sparseMemoryBind{sparseChunkSize,         // resourceOffset - define hole
+                                        sparseChunkSize,         // size
+                                        allocation->getMemory(), // memory
+                                        0,                       // memoryOffset
+                                        0};                      // flags
+
+    const VkSparseBufferMemoryBindInfo sparseBufferMemoryBindInfo{*sparseBuffer, 1, &sparseMemoryBind};
+    VkBindSparseInfo bindInfo = initVulkanStructure();
+    bindInfo.bufferBindCount  = 1;
+    bindInfo.pBufferBinds     = &sparseBufferMemoryBindInfo;
+
+    // bind memory to sparse buffer
+    const Unique<VkFence> fence(createFence(vk, device));
+    VK_CHECK(vk.queueBindSparse(m_sparseQueue.queueHandle, 1u, &bindInfo, *fence));
+    VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), VK_TRUE, ~0ull));
+
+    // copy data for indirect dispatch to output buffer
+    const VkDispatchIndirectCommand indirectCommand{1u, outputItemCount, 1u};
+    deMemcpy(inoutBufferAlloc->getHostPtr(), &indirectCommand, sizeof(indirectCommand));
+    flushAlloc(vk, device, *inoutBufferAlloc);
+
+    // create descriptor set
+    const Unique<VkDescriptorSetLayout> descriptorSetLayout(
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .build(vk, device));
+    const Unique<VkDescriptorPool> descriptorPool(
+        DescriptorPoolBuilder()
+            .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u)
+            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+    const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+
+    const VkDescriptorBufferInfo inoutBufferInfo = makeDescriptorBufferInfo(*inoutBuffer, 0ull, inoutBufferSize);
+    DescriptorSetUpdateBuilder()
+        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inoutBufferInfo)
+        .update(vk, device);
+
+    // create compute pipeline
+    const auto shaderModule    = createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"));
+    const auto pipelineLayout  = makePipelineLayout(vk, device, *descriptorSetLayout);
+    const auto computePipeline = makeComputePipeline(vk, device, *pipelineLayout, *shaderModule);
+
+    // create command buffer for compute
+    const auto cmdPool(makeCommandPool(vk, device, m_computeQueue.queueFamilyIndex));
+    const auto cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    auto bp = VK_PIPELINE_BIND_POINT_COMPUTE;
+    beginCommandBuffer(vk, *cmdBuffer);
+
+    // wait for inout buffer beeing ready with dispatch values
+    const auto inBufferBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                                                         *inoutBuffer, 0ull, inoutBufferSize);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 1u,
+                          &inBufferBarrier, 0u, nullptr);
+
+    // copy indirect dispatch data to location in sparse buffer that has bound memory (we offset it by additional 4 bytes just for test)
+    VkDeviceSize dispatchDataOffset = sparseChunkSize + 4u;
+    const VkBufferCopy copyRegion{
+        0ull,                 // VkDeviceSize    srcOffset;
+        dispatchDataOffset,   // VkDeviceSize    dstOffset;
+        3 * sizeof(uint32_t), // VkDeviceSize    size;
+    };
+    vk.cmdCopyBuffer(*cmdBuffer, *inoutBuffer, *sparseBuffer, 1u, &copyRegion);
+
+    // wait for sparse buffer beeing ready with dispatch values
+    const auto sparseBufferBarrier =
+        makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_INDIRECT_COMMAND_READ_BIT, *sparseBuffer,
+                                dispatchDataOffset, sparseChunkSize);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 0u, 0u,
+                          nullptr, 1u, &sparseBufferBarrier, 0u, nullptr);
+
+    // dispatch compute shader but read dispatch parameters from sparse buffer
+    vk.cmdBindPipeline(*cmdBuffer, bp, *computePipeline);
+    vk.cmdBindDescriptorSets(*cmdBuffer, bp, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+    vk.cmdDispatchIndirect(*cmdBuffer, *sparseBuffer, dispatchDataOffset);
+
+    // wait for compute shader to finish writing to output buffer
+    const auto outBufferBarrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                                                          *inoutBuffer, 0ull, inoutBufferSize);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
+                          nullptr, 1u, &outBufferBarrier, 0u, nullptr);
+
+    // end recording
+    endCommandBuffer(vk, *cmdBuffer);
+    submitCommandsAndWait(vk, device, m_computeQueue.queueHandle, *cmdBuffer, 0u, nullptr, nullptr, 0, nullptr,
+                          usingDeviceGroups(), 0);
+
+    // verify output buffer
+    invalidateAlloc(vk, device, *inoutBufferAlloc);
+    const uint32_t *outputData = static_cast<const uint32_t *>(inoutBufferAlloc->getHostPtr());
+    for (uint32_t i = 0; i < outputItemCount; ++i)
+    {
+        if (outputData[i] != (135 + i))
+            return tcu::TestStatus::fail("Fail");
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+void initIndirectDispatchProgram(vk::SourceCollections &programCollection, const TestFlags flags)
+{
+    DE_UNREF(flags);
+
+    std::string src = "#version 450\n"
+                      "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+                      "layout(binding = 0, std430) writeonly buffer Output\n"
+                      "{  uint r[]; };\n"
+                      "void main(void)\n"
+                      "{\n"
+                      "    r[gl_GlobalInvocationID.y] = 135 + gl_GlobalInvocationID.y;\n"
+                      "}\n";
+
+    programCollection.glslSources.add("comp") << glu::ComputeSource(src);
+}
+
 //! Similar to the class in vktTestCaseUtil.hpp, but uses Arg0 directly rather than through a InstanceFunction1
 template <typename Arg0>
 class FunctionProgramsSimple1
@@ -1452,6 +1747,9 @@ void checkSupport(Context &context, const TestFlags flags)
     if (flags & TEST_FLAG_NON_RESIDENT_STRICT &&
         !context.getDeviceProperties().sparseProperties.residencyNonResidentStrict)
         TCU_THROW(NotSupportedError, "Missing sparse property: residencyNonResidentStrict");
+
+    if (flags & TEST_FLAG_TRANSFORM_FEEDBACK)
+        context.requireDeviceFunctionality(VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME);
 }
 
 //! Convenience function to create a TestCase based on a freestanding initPrograms and a TestInstance implementation
@@ -1619,6 +1917,24 @@ void populateTestGroup(tcu::TestCaseGroup *parentGroup)
                 groups[groupNdx].flags | TEST_FLAG_ENABLE_DEVICE_GROUPS));
         }
 
+        parentGroup->addChild(group.release());
+    }
+
+    // Transform feedback - only sparse residency variant
+    {
+        MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "transform_feedback"));
+        group->addChild(createTestInstanceWithPrograms<TransformFeedbackTestInstance>(
+            group->getTestContext(), std::string("sparse_residency"), initTransformFeedbackPrograms,
+            TestFlags(TEST_FLAG_RESIDENCY | TEST_FLAG_TRANSFORM_FEEDBACK)));
+        parentGroup->addChild(group.release());
+    }
+
+    // Indirect dispatch - only sparse residency variant
+    {
+        MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "indirect_dispatch"));
+        group->addChild(createTestInstanceWithPrograms<IndirectDispatchTestInstance>(
+            group->getTestContext(), std::string("sparse_residency"), initIndirectDispatchProgram,
+            TestFlags(TEST_FLAG_RESIDENCY)));
         parentGroup->addChild(group.release());
     }
 }

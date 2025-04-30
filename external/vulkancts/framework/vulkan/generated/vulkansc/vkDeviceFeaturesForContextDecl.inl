@@ -55,4 +55,3 @@ const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeatures&		getUniformBuffer
 const vk::VkPhysicalDeviceBufferDeviceAddressFeatures&				getBufferDeviceAddressFeatures				(void) const;
 const vk::VkPhysicalDeviceImagelessFramebufferFeatures&				getImagelessFramebufferFeatures				(void) const;
 const vk::VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures&		getSeparateDepthStencilLayoutsFeatures		(void) const;
-const vk::VkPhysicalDeviceVulkanSC10Features&						getVulkanSC10Features						(void) const;

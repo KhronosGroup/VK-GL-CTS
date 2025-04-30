@@ -10,6 +10,8 @@ dEQP-GLES3.functional.fbo.completeness.renderable.texture.depth.bgra
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.depth.bgra8_ext
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.stencil.bgra
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.stencil.bgra8_ext
+dEQP-GLES3.functional.negative_api.shader.redeclaring_gl_frag_depth
+dEQP-GLES3.functional.negative_api.shader.redeclaring_gl_frag_depth_extension_not_enabled
 dEQP-GLES3.functional.texture.filtering.2d.formats.bgra8_linear
 dEQP-GLES3.functional.texture.filtering.2d.formats.bgra8_linear_mipmap_linear
 dEQP-GLES3.functional.texture.filtering.2d.formats.bgra8_linear_mipmap_nearest

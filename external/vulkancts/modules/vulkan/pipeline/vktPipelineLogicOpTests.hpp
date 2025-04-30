@@ -34,6 +34,8 @@ namespace pipeline
 
 tcu::TestCaseGroup *createLogicOpTests(tcu::TestContext &testCtx,
                                        vk::PipelineConstructionType pipelineConstructionType);
+tcu::TestCaseGroup *createLogicOpInapplicableFormatsTests(tcu::TestContext &testCtx,
+                                                          vk::PipelineConstructionType pipelineConstructionType);
 
 } // namespace pipeline
 } // namespace vkt

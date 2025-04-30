@@ -2,5 +2,20 @@
     "register_extension": {
         "type": "device",
         "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceCooperativeMatrixFeaturesKHR": [
+            {
+                "features": [
+                    "cooperativeMatrix"
+                ],
+                "requirements": [
+                    "VK_KHR_cooperative_matrix"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            }
+        ]
     }
 }

@@ -29,4 +29,3 @@ const vk::VkPhysicalDeviceFloatControlsProperties&					Context::getFloatControls
 const vk::VkPhysicalDeviceDescriptorIndexingProperties&				Context::getDescriptorIndexingProperties			(void) const { return m_device->getDescriptorIndexingProperties();				}
 const vk::VkPhysicalDeviceTimelineSemaphoreProperties&				Context::getTimelineSemaphoreProperties				(void) const { return m_device->getTimelineSemaphoreProperties();				}
 const vk::VkPhysicalDeviceDepthStencilResolveProperties&			Context::getDepthStencilResolveProperties			(void) const { return m_device->getDepthStencilResolveProperties();				}
-const vk::VkPhysicalDeviceVulkanSC10Properties&						Context::getVulkanSC10Properties					(void) const { return m_device->getVulkanSC10Properties();						}

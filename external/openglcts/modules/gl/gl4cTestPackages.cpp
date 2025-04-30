@@ -67,6 +67,8 @@
 #include "gl4cVertexAttrib64BitTest.hpp"
 #include "gl4cVertexAttribBindingTests.hpp"
 #include "glcAggressiveShaderOptimizationsTests.hpp"
+#include "gl4cTextureQueryLodTests.hpp"
+#include "glcBindImageTextureTests.hpp"
 #include "glcBlendEquationAdvancedTests.hpp"
 #include "glcExposedExtensionsTests.hpp"
 #include "glcInfoTests.hpp"
@@ -102,7 +104,6 @@
 
 namespace gl4cts
 {
-
 // GL40TestPackage
 
 GL40TestPackage::GL40TestPackage(tcu::TestContext &testCtx, const char *packageName, const char *description,
@@ -214,6 +215,7 @@ void GL42TestPackage::init(void)
         addChild(new gl4cts::ShaderImageLoadStoreTests(getContext()));
         addChild(new gl4cts::ShadingLanguage420PackTests(getContext()));
         addChild(new gl4cts::TextureViewTests(getContext()));
+        addChild(new glcts::BindImageTextureTests(getContext()));
         addChild(new GL42ShaderTests(getContext()));
     }
     catch (...)
@@ -310,6 +312,7 @@ void GL43TestPackage::init(void)
         addChild(new gl4cts::ShaderBallotTests(getContext()));
         addChild(new glcts::ShaderConstExprTests(getContext()));
         addChild(new glcts::AggressiveShaderOptimizationsTests(getContext()));
+        addChild(new gl4cts::TextureQueryLodTests(getContext()));
     }
     catch (...)
     {
@@ -439,6 +442,7 @@ void GL45TestPackage::init(void)
         addChild(new glcts::LayoutLocationTests(getContext()));
         addChild(new gl4cts::SpirvExtensionsTests(getContext()));
         addChild(new gl4cts::GlSpirvTests(getContext()));
+        addChild(new gl4cts::es31compatibility::Tests(getContext()));
     }
     catch (...)
     {

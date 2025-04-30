@@ -1111,6 +1111,23 @@ void recordImageBarrier(const DeviceInterface &vk, const VkCommandBuffer command
     }
 }
 
+bool isDepthStencilAttachmentLayout(VkImageLayout layout)
+{
+    switch (layout)
+    {
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+    case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL:
+    case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL:
+    case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL:
+    case VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL:
+        return true;
+    default:
+        break;
+    }
+
+    return false;
+}
+
 } // anonymous namespace
 
 void RenderPassWrapper::transitionLayouts(const DeviceInterface &vk, const VkCommandBuffer commandBuffer,
@@ -1153,12 +1170,21 @@ void RenderPassWrapper::transitionLayouts(const DeviceInterface &vk, const VkCom
                     const auto subresourceRange = makeImageSubresourceRange(
                         vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, VK_REMAINING_MIP_LEVELS, 0u, VK_REMAINING_ARRAY_LAYERS);
 
-                    const VkPipelineStageFlags2 srcStageMask =
-                        (vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | externalStageFlags);
-                    const VkAccessFlags2 srcAccessMask       = externalAccessFlags;
+                    VkPipelineStageFlags2 srcStageMask = (vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | externalStageFlags);
+                    VkAccessFlags2 srcAccessMask       = externalAccessFlags;
+                    const VkImageLayout newLayout      = subpass.m_colorAttachments[j].attachmentInfo.imageLayout;
+
+                    if (m_layouts[i] == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && m_layouts[i] != newLayout)
+                    {
+                        // It may have been used as a color attachment already, so we need to synchronize writes before
+                        // transitioning the layout.
+                        srcStageMask |= vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                        srcAccessMask |= vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                    }
+
                     const VkPipelineStageFlags2 dstStageMask = vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                    const VkAccessFlags2 dstAccessMask       = vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-                    const VkImageLayout newLayout            = subpass.m_colorAttachments[j].attachmentInfo.imageLayout;
+                    const VkAccessFlags2 dstAccessMask =
+                        (vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT);
 
                     recordImageBarrier(vk, commandBuffer, sync2, srcStageMask, srcAccessMask, dstStageMask,
                                        dstAccessMask, m_layouts[i], newLayout, m_images[i], subresourceRange);
@@ -1181,13 +1207,22 @@ void RenderPassWrapper::transitionLayouts(const DeviceInterface &vk, const VkCom
                 const auto subresourceRange =
                     makeImageSubresourceRange(aspect, 0u, VK_REMAINING_MIP_LEVELS, 0u, VK_REMAINING_ARRAY_LAYERS);
 
-                const VkPipelineStageFlags2 srcStageMask = (vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | externalStageFlags);
-                const VkAccessFlags2 srcAccessMask       = externalAccessFlags;
+                VkPipelineStageFlags2 srcStageMask = (vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | externalStageFlags);
+                VkAccessFlags2 srcAccessMask       = externalAccessFlags;
+                const VkImageLayout newLayout      = subpass.m_depthStencilAttachment.attachmentInfo.imageLayout;
+
+                if (isDepthStencilAttachmentLayout(m_layouts[i]) && m_layouts[i] != newLayout)
+                {
+                    // It may have been used as a depth/stencil attachment already, so we need to synchronize writes.
+                    srcStageMask |= (vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                                     vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+                    srcAccessMask |= vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                }
+
                 const VkPipelineStageFlags2 dstStageMask =
                     (vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
                 const VkAccessFlags2 dstAccessMask = (vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
                                                       vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
-                const VkImageLayout newLayout      = subpass.m_depthStencilAttachment.attachmentInfo.imageLayout;
 
                 recordImageBarrier(vk, commandBuffer, sync2, srcStageMask, srcAccessMask, dstStageMask, dstAccessMask,
                                    m_layouts[i], newLayout, m_images[i], subresourceRange);
@@ -1707,6 +1742,7 @@ void RenderPassWrapper::createFramebuffer(const DeviceInterface &vk, const VkDev
                 subpass.m_colorAttachments[0].attachmentInfo.imageView = colorAttachment;
             }
         }
+        m_layers = layers;
 #endif
     }
 }
@@ -1758,6 +1794,7 @@ void RenderPassWrapper::createFramebuffer(const DeviceInterface &vk, const VkDev
                         attachmentsArray[subpass.m_resolveAttachments[i].index];
             }
         }
+        m_layers = layers;
 #endif
     }
 }
@@ -1910,6 +1947,7 @@ struct GraphicsPipelineWrapper::InternalData
     VkGraphicsPipelineLibraryCreateInfoEXT pipelinePartLibraryCreateInfo[4];
     VkPipelineLibraryCreateInfoKHR finalPipelineLibraryCreateInfo;
     VkPipelineCreateFlags2CreateInfoKHR pipelinePartFlags2CreateInfo[4];
+    VkPipelineCreateFlags2CreateInfoKHR finalPipelineFlags2CreateInfo;
 #endif
     std::vector<VkDynamicState> pipelinePartDynamicStates[4];
     VkPipelineDynamicStateCreateInfo pipelinePartDynamicStateCreateInfo[4];
@@ -2119,7 +2157,9 @@ struct GraphicsPipelineWrapper::InternalData
 #endif
             pipelinePartDynamicStateCreateInfo[i] = initVulkanStructure();
         }
-
+#ifndef CTS_USES_VULKANSC
+        finalPipelineFlags2CreateInfo = initVulkanStructure();
+#endif
         monolithicPipelineCreateInfo = initVulkanStructure();
     }
 
@@ -3330,9 +3370,9 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentOutputState(
         auto &libraryCreateInfo = m_internalData->pipelinePartLibraryCreateInfo[3];
         libraryCreateInfo =
             makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT);
-        void *firstStructInChain = m_internalData->pFragmentShadingRateState;
+        void *firstStructInChain = reinterpret_cast<void *>(&libraryCreateInfo);
+        addToChain(&firstStructInChain, m_internalData->pFragmentShadingRateState);
         addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
-        addToChain(&firstStructInChain, &libraryCreateInfo);
         addToChain(&firstStructInChain, partCreationFeedback.ptr);
         addToChain(&firstStructInChain, partBinaries.ptr);
         addToChain(&firstStructInChain, m_internalData->pRenderingAttachmentLocation.ptr);
@@ -4128,7 +4168,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
         if (m_internalData->pipelineFlags2)
         {
             void *firstStructInChain = static_cast<void *>(pointerToCreateInfo);
-            auto &flags2CreateInfo   = m_internalData->pipelinePartFlags2CreateInfo[0];
+            auto &flags2CreateInfo   = m_internalData->finalPipelineFlags2CreateInfo;
             flags2CreateInfo.flags   = m_internalData->pipelineFlags2 | translateCreateFlag(pointerToCreateInfo->flags);
             addToChain(&firstStructInChain, &flags2CreateInfo);
             pointerToCreateInfo->flags = 0u;

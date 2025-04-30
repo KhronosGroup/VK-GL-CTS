@@ -36,6 +36,7 @@
 #include "vkRef.hpp"
 
 #include <set>
+#include <algorithm>
 
 namespace vkt
 {
@@ -200,8 +201,8 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
     const vk::Move<vk::VkCommandBuffer> cmdBuffer(
         allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-    const uint32_t width  = 256u;
-    const uint32_t height = 256u;
+    const uint32_t width  = 128u;
+    const uint32_t height = 128u;
     const uint32_t depth  = m_parameters.type == vk::VK_IMAGE_TYPE_3D ? 32u : 1u;
 
     const vk::VkImageLayout imageLayout =
@@ -231,12 +232,12 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
                     if (pixelSize == 1)
                         testData[p] = uint8_t(v % 256);
                     else if (pixelSize == 2)
-                        ((uint16_t *)testData.data())[i] = uint16_t(v);
+                        ((uint16_t *)testData.data())[p] = uint16_t(v);
                     else
                     {
                         for (uint32_t l = 0; l < pixelSize / 4; ++l)
                         {
-                            ((uint32_t *)testData.data())[i * pixelSize / 4 + l] = v + l;
+                            ((uint32_t *)testData.data())[p * pixelSize / 4 + l] = v + l;
                         }
                     }
                 }
@@ -387,24 +388,33 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
         }
         else
         {
-            std::vector<de::SharedPtr<HostCopyThread>> threads;
-            for (uint32_t i = 0; i < (uint32_t)memoryToImageCopies.size(); ++i)
+            const uint32_t batch_size  = 256;
+            const uint32_t num_batches = ((uint32_t)(memoryToImageCopies.size()) / batch_size) + 1;
+
+            for (uint32_t batch = 0; batch < num_batches; ++batch)
             {
-                threads.push_back(de::SharedPtr<HostCopyThread>(new HostCopyThread(
-                    vk, device, **image, imageLayout, memoryToImageCopies[i], m_parameters.read, pixelSize)));
-            }
+                std::vector<de::SharedPtr<HostCopyThread>> threads;
+                const uint32_t from = batch * batch_size;
+                const uint32_t to   = std::min((batch + 1) * batch_size, (uint32_t)memoryToImageCopies.size());
 
-            for (auto &thread : threads)
-                thread->start();
-
-            for (auto &thread : threads)
-                thread->join();
-
-            for (const auto &thread : threads)
-            {
-                if (thread->hasFailed())
+                for (uint32_t i = from; i < to; ++i)
                 {
-                    return tcu::TestStatus::fail("Fail");
+                    threads.push_back(de::SharedPtr<HostCopyThread>(new HostCopyThread(
+                        vk, device, **image, imageLayout, memoryToImageCopies[i], m_parameters.read, pixelSize)));
+                }
+
+                for (auto &thread : threads)
+                    thread->start();
+
+                for (auto &thread : threads)
+                    thread->join();
+
+                for (const auto &thread : threads)
+                {
+                    if (thread->hasFailed())
+                    {
+                        return tcu::TestStatus::fail("Fail");
+                    }
                 }
             }
         }
@@ -451,14 +461,24 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
     auto &dstBufferAlloc = dstBuffer->getAllocation();
     if (memcmp(srcBufferAlloc.getHostPtr(), dstBufferAlloc.getHostPtr(), bufferSize) != 0)
     {
-        uint8_t *srcPtr = (uint8_t *)srcBufferAlloc.getHostPtr();
-        uint8_t *dstPtr = (uint8_t *)dstBufferAlloc.getHostPtr();
+        uint8_t remainingFails = 10;
+        uint8_t *srcPtr        = (uint8_t *)srcBufferAlloc.getHostPtr();
+        uint8_t *dstPtr        = (uint8_t *)dstBufferAlloc.getHostPtr();
         for (uint32_t i = 0; i < bufferSize; ++i)
         {
             if (srcPtr[i] != dstPtr[i])
             {
-                log << tcu::TestLog::Message << "Mismatch at byte " << i << ". Src value: " << srcPtr[i]
-                    << ", dst value: " << dstPtr[i] << "." << tcu::TestLog::EndMessage;
+                if (remainingFails > 0)
+                {
+                    log << tcu::TestLog::Message << "Mismatch at byte " << i << ". Src value: " << srcPtr[i]
+                        << ", dst value: " << dstPtr[i] << "." << tcu::TestLog::EndMessage;
+                    remainingFails--;
+                }
+                else
+                {
+                    log << tcu::TestLog::Message << ".. more mismatches not shown ..." << tcu::TestLog::EndMessage;
+                    break;
+                }
             }
         }
         return tcu::TestStatus::fail("Fail");
@@ -506,8 +526,38 @@ void ConcurrentCopyTestCase::checkSupport(vkt::Context &context) const
         TCU_THROW(NotSupportedError, "Format unsupported");
     }
 
+#ifndef CTS_USES_VULKANSC
     if (m_parameters.hostCopy)
+    {
         context.requireDeviceFunctionality("VK_EXT_host_image_copy");
+
+        const vk::VkImageLayout requiredDstLayout =
+            m_parameters.read ? vk::VK_IMAGE_LAYOUT_GENERAL : vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+        vk::VkPhysicalDeviceHostImageCopyProperties hostImageCopyProperties = vk::initVulkanStructure();
+        vk::VkPhysicalDeviceProperties2 properties2 = vk::initVulkanStructure(&hostImageCopyProperties);
+        vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
+        std::vector<vk::VkImageLayout> srcLayouts(hostImageCopyProperties.copySrcLayoutCount);
+        std::vector<vk::VkImageLayout> dstLayouts(hostImageCopyProperties.copyDstLayoutCount);
+        hostImageCopyProperties.pCopySrcLayouts = srcLayouts.data();
+        hostImageCopyProperties.pCopyDstLayouts = dstLayouts.data();
+        vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
+        bool hasRequiredLayout = false;
+        for (const auto &dstLayout : dstLayouts)
+        {
+            if (dstLayout == requiredDstLayout)
+            {
+                hasRequiredLayout = true;
+                break;
+            }
+        }
+        if (!hasRequiredLayout)
+        {
+            TCU_THROW(NotSupportedError, "Required layout not supported in "
+                                         "VkPhysicalDeviceHostImageCopyPropertiesEXT::pCopyDstLayouts");
+        }
+    }
+#endif
 }
 
 } // namespace

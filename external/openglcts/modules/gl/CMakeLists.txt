@@ -47,9 +47,6 @@ set(GLCTS_GL_SRCS
 	gl4cEnhancedLayoutsTests.hpp
 	gl4cGetTextureSubImageTests.cpp
 	gl4cGetTextureSubImageTests.hpp
-	gl4cES31CompatibilitySampleVariablesTests.cpp
-	gl4cES31CompatibilityShaderImageLoadStoreTests.cpp
-	gl4cES31CompatibilityShaderStorageBufferObjectTests.cpp
 	gl4cES31CompatibilityTests.cpp
 	gl4cES31CompatibilityTests.hpp
 	gl4cMapBufferAlignmentTests.cpp
@@ -126,6 +123,8 @@ set(GLCTS_GL_SRCS
 	gl4cLimitsTests.hpp
 	gl4cGlSpirvTests.cpp
 	gl4cGlSpirvTests.hpp
+	gl4cTextureQueryLodTests.hpp
+	gl4cTextureQueryLodTests.cpp
 	)
 
 set(GLCTS_GL_LIBS
@@ -133,10 +132,6 @@ set(GLCTS_GL_LIBS
 	glutil
 	tcutil
 	)
-
-if (DEQP_GTF_AVAILABLE)
-	list(APPEND GLCTS_GL_LIBS glcts-gtf)
-endif ()
 
 PCH(GLCTS_GL_SRCS ../pch.cpp)
 

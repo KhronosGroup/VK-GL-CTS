@@ -55,4 +55,3 @@ const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeatures&		Context::getUnif
 const vk::VkPhysicalDeviceBufferDeviceAddressFeatures&				Context::getBufferDeviceAddressFeatures				(void) const { return m_device->getBufferDeviceAddressFeatures();				}
 const vk::VkPhysicalDeviceImagelessFramebufferFeatures&				Context::getImagelessFramebufferFeatures			(void) const { return m_device->getImagelessFramebufferFeatures();				}
 const vk::VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures&		Context::getSeparateDepthStencilLayoutsFeatures		(void) const { return m_device->getSeparateDepthStencilLayoutsFeatures();		}
-const vk::VkPhysicalDeviceVulkanSC10Features&						Context::getVulkanSC10Features						(void) const { return m_device->getVulkanSC10Features();						}

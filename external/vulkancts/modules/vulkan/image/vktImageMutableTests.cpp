@@ -104,6 +104,14 @@ std::string getDownloadString(const int download)
     return strs[download];
 }
 
+enum ResolveAttachmentTestType
+{
+    RA_TEST_NONE        = 0, // Not a resolve attachment test
+    RA_TEST_ALL_MUTABLE = 1, // All attachments are mutable
+    RA_TEST_RA_MUTABLE  = 2, // Only resolve attachment is mutable, mutisampled color attachment is non-mutable
+    RA_TEST_CA_MUTABLE  = 3, // Only mutisampled color attachment is mutable, resolve attachment is non-mutable
+};
+
 struct CaseDef
 {
     ImageType imageType;
@@ -115,7 +123,7 @@ struct CaseDef
     enum Download download;
     bool isFormatListTest;
     Type wsiType;
-    bool isResolveAttachmentTest;
+    ResolveAttachmentTestType resolveAttachmentTestType;
     bool isLoadOpClearTest;
 };
 
@@ -296,19 +304,28 @@ std::string getColorFormatStr(const int numComponents, const bool isUint, const 
 }
 
 // Select the highest sample count usable by the platform
-VkSampleCountFlagBits getMaxAvailableSampleCount(const Context &context)
+VkSampleCountFlagBits getMaxAvailableSampleCount(const Context &context, VkFormat format, VkImageType imageType,
+                                                 VkImageUsageFlags usage, VkImageCreateFlags flags)
 {
+    const InstanceInterface &vki      = context.getInstanceInterface();
+    const VkPhysicalDevice physDevice = context.getPhysicalDevice();
+
     VkPhysicalDeviceProperties deviceProperties;
-    context.getInstanceInterface().getPhysicalDeviceProperties(context.getPhysicalDevice(), &deviceProperties);
+    vki.getPhysicalDeviceProperties(physDevice, &deviceProperties);
 
     VkSampleCountFlags supportedSampleCount = std::min(deviceProperties.limits.framebufferColorSampleCounts,
                                                        deviceProperties.limits.framebufferDepthSampleCounts);
     std::vector<VkSampleCountFlagBits> possibleSampleCounts{VK_SAMPLE_COUNT_64_BIT, VK_SAMPLE_COUNT_32_BIT,
                                                             VK_SAMPLE_COUNT_16_BIT, VK_SAMPLE_COUNT_8_BIT,
                                                             VK_SAMPLE_COUNT_4_BIT,  VK_SAMPLE_COUNT_2_BIT};
+
+    VkImageFormatProperties imageFormatProperties;
+    vki.getPhysicalDeviceImageFormatProperties(physDevice, format, imageType, VK_IMAGE_TILING_OPTIMAL, usage, flags,
+                                               &imageFormatProperties);
+
     for (auto &possibleSampleCount : possibleSampleCounts)
     {
-        if (supportedSampleCount & possibleSampleCount)
+        if ((supportedSampleCount & possibleSampleCount) && (imageFormatProperties.sampleCounts & possibleSampleCount))
         {
             return possibleSampleCount;
         }
@@ -587,16 +604,16 @@ Move<VkSampler> makeSampler(const DeviceInterface &vk, const VkDevice device)
     return createSampler(vk, device, &samplerParams);
 }
 
-Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice device,
-                                      const VkPipelineLayout pipelineLayout, const VkRenderPass renderPass,
-                                      const VkShaderModule vertexModule, const VkShaderModule fragmentModule,
-                                      const IVec2 &renderSize, const VkPrimitiveTopology topology,
-                                      const uint32_t subpass,
-                                      const VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT,
-                                      const bool isResolveAttachmentTest      = false)
+Move<VkPipeline> makeGraphicsPipeline(
+    const DeviceInterface &vk, const VkDevice device, const VkPipelineLayout pipelineLayout,
+    const VkRenderPass renderPass, const VkShaderModule vertexModule, const VkShaderModule fragmentModule,
+    const IVec2 &renderSize, const VkPrimitiveTopology topology, const uint32_t subpass,
+    const VkSampleCountFlagBits sampleCount               = VK_SAMPLE_COUNT_1_BIT,
+    const ResolveAttachmentTestType resolveAttachmentTest = ResolveAttachmentTestType::RA_TEST_NONE)
 {
     const std::vector<VkViewport> viewports(1, makeViewport(renderSize));
     const std::vector<VkRect2D> scissors(1, makeRect2D(renderSize));
+    const bool isResolveAttachmentTest = (resolveAttachmentTest != ResolveAttachmentTestType::RA_TEST_NONE);
 
     const VkVertexInputBindingDescription vertexInputBindingDescription = {
         0u,                           // uint32_t binding;
@@ -662,13 +679,16 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
     );
 }
 
-Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice device, const VkFormat colorFormat,
-                                  const uint32_t numLayers, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT,
-                                  const bool isResolveAttachmentTest = false)
+Move<VkRenderPass> makeRenderPass(
+    const DeviceInterface &vk, const VkDevice device, const VkFormat viewFormat, const uint32_t numLayers,
+    VkSampleCountFlagBits sampleCount                     = VK_SAMPLE_COUNT_1_BIT,
+    const ResolveAttachmentTestType resolveAttachmentTest = ResolveAttachmentTestType::RA_TEST_NONE)
 {
+    const bool isResolveAttachmentTest = (resolveAttachmentTest != ResolveAttachmentTestType::RA_TEST_NONE);
+
     const VkAttachmentDescription colorAttachmentDescription = {
         (VkAttachmentDescriptionFlags)0, // VkAttachmentDescriptionFlags flags;
-        colorFormat,                     // VkFormat format;
+        viewFormat,                      // VkFormat format;
         sampleCount,                     // VkSampleCountFlagBits samples;
         VK_ATTACHMENT_LOAD_OP_CLEAR,     // VkAttachmentLoadOp loadOp;
         isResolveAttachmentTest ? VK_ATTACHMENT_STORE_OP_DONT_CARE :
@@ -684,7 +704,7 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
     {
         const VkAttachmentDescription resolveAttachmentDescription = {
             (VkAttachmentDescriptionFlags)0,          // VkAttachmentDescriptionFlags flags;
-            colorFormat,                              // VkFormat format;
+            viewFormat,                               // VkFormat format;
             VK_SAMPLE_COUNT_1_BIT,                    // VkSampleCountFlagBits samples;
             VK_ATTACHMENT_LOAD_OP_CLEAR,              // VkAttachmentLoadOp loadOp;
             VK_ATTACHMENT_STORE_OP_STORE,             // VkAttachmentStoreOp storeOp;
@@ -1068,31 +1088,51 @@ void UploadDownloadExecutor::run(Context &context, VkBuffer buffer)
     const VkImageUsageFlags imageUsage = getImageUsageForTestCase(m_caseDef);
     const VkImageCreateFlags imageFlags =
         VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | (m_haveMaintenance2 ? VK_IMAGE_CREATE_EXTENDED_USAGE_BIT : 0);
-
+    const VkImageCreateFlags imageFlagsNonMutable = (m_haveMaintenance2 ? VK_IMAGE_CREATE_EXTENDED_USAGE_BIT : 0);
     VkImageFormatProperties properties;
-    if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
-             context.getPhysicalDevice(), m_caseDef.imageFormat, getImageType(m_caseDef.imageType),
-             VK_IMAGE_TILING_OPTIMAL, imageUsage, imageFlags, &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
-    {
-        TCU_THROW(NotSupportedError, "Format not supported");
-    }
 
-    if (m_caseDef.isResolveAttachmentTest)
+    if (m_caseDef.resolveAttachmentTestType)
     {
+        const vk::VkImageType imageType = getImageType(m_caseDef.imageType);
+        const VkImageCreateFlags msImgflags =
+            (m_caseDef.resolveAttachmentTestType == ResolveAttachmentTestType::RA_TEST_RA_MUTABLE) ?
+                imageFlagsNonMutable :
+                imageFlags;
+        const VkFormat format = (msImgflags == imageFlagsNonMutable) ? m_caseDef.viewFormat : m_caseDef.imageFormat;
+        const vk::VkSampleCountFlagBits samples =
+            getMaxAvailableSampleCount(context, format, imageType, imageUsage, msImgflags);
+
+        if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
+                 context.getPhysicalDevice(), format, getImageType(m_caseDef.imageType), VK_IMAGE_TILING_OPTIMAL,
+                 imageUsage, msImgflags, &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
+        {
+            TCU_THROW(NotSupportedError, "Format not supported for multisampled image");
+        }
+
         m_multisampledImageHolder =
-            makeImage(m_vk, m_device, imageFlags, getImageType(m_caseDef.imageType), m_caseDef.imageFormat,
-                      m_caseDef.viewFormat, m_caseDef.isFormatListTest, m_caseDef.size, 1u, m_caseDef.numLayers,
-                      VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                      getMaxAvailableSampleCount(context));
+            makeImage(m_vk, m_device, msImgflags, imageType, format, m_caseDef.viewFormat, m_caseDef.isFormatListTest,
+                      m_caseDef.size, 1u, m_caseDef.numLayers, imageUsage, samples);
         m_multisampledImage      = *m_multisampledImageHolder;
         m_multisampledImageAlloc = bindImage(m_vk, m_device, m_allocator, m_multisampledImage, MemoryRequirement::Any);
     }
 
-    m_imageHolder = makeImage(m_vk, m_device, imageFlags, getImageType(m_caseDef.imageType), m_caseDef.imageFormat,
-                              m_caseDef.viewFormat, m_caseDef.isFormatListTest, m_caseDef.size, 1u, m_caseDef.numLayers,
-                              imageUsage);
-    m_image       = *m_imageHolder;
-    m_imageAlloc  = bindImage(m_vk, m_device, m_allocator, m_image, MemoryRequirement::Any);
+    const VkImageCreateFlags imgFlags =
+        (m_caseDef.resolveAttachmentTestType == ResolveAttachmentTestType::RA_TEST_CA_MUTABLE) ? imageFlagsNonMutable :
+                                                                                                 imageFlags;
+    const VkFormat imgFormat = (imgFlags == imageFlagsNonMutable) ? m_caseDef.viewFormat : m_caseDef.imageFormat;
+
+    if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
+             context.getPhysicalDevice(), imgFormat, getImageType(m_caseDef.imageType), VK_IMAGE_TILING_OPTIMAL,
+             imageUsage, imgFlags, &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
+    {
+        TCU_THROW(NotSupportedError, "Format not supported");
+    }
+
+    m_imageHolder =
+        makeImage(m_vk, m_device, imgFlags, getImageType(m_caseDef.imageType), imgFormat, m_caseDef.viewFormat,
+                  m_caseDef.isFormatListTest, m_caseDef.size, 1u, m_caseDef.numLayers, imageUsage);
+    m_image      = *m_imageHolder;
+    m_imageAlloc = bindImage(m_vk, m_device, m_allocator, m_image, MemoryRequirement::Any);
 
     switch (m_caseDef.upload)
     {
@@ -1336,8 +1376,9 @@ void UploadDownloadExecutor::uploadCopy(Context &context)
 
 void UploadDownloadExecutor::uploadDraw(Context &context)
 {
-    VkSampleCountFlagBits sampleCount =
-        m_caseDef.isResolveAttachmentTest ? getMaxAvailableSampleCount(context) : VK_SAMPLE_COUNT_1_BIT;
+    VkSampleCountFlagBits maxSampleCount = getMaxAvailableSampleCount(
+        context, m_caseDef.imageFormat, getImageType(m_caseDef.imageType), getImageUsageForTestCase(m_caseDef), 0u);
+    VkSampleCountFlagBits sampleCount = m_caseDef.resolveAttachmentTestType ? maxSampleCount : VK_SAMPLE_COUNT_1_BIT;
     // Create vertex buffer
     {
         const vector<Vec4> vertices         = genVertexData(m_caseDef);
@@ -1353,7 +1394,7 @@ void UploadDownloadExecutor::uploadDraw(Context &context)
     // Create attachments and pipelines for each image layer
     m_uDraw.pipelineLayout = makePipelineLayout(m_vk, m_device);
     m_uDraw.renderPass     = makeRenderPass(m_vk, m_device, m_caseDef.viewFormat, m_caseDef.numLayers, sampleCount,
-                                            m_caseDef.isResolveAttachmentTest);
+                                            m_caseDef.resolveAttachmentTestType);
     m_uDraw.vertexModule = createShaderModule(m_vk, m_device, context.getBinaryCollection().get("uploadDrawVert"), 0u);
     m_uDraw.fragmentModule =
         createShaderModule(m_vk, m_device, context.getBinaryCollection().get("uploadDrawFrag"), 0u);
@@ -1365,7 +1406,7 @@ void UploadDownloadExecutor::uploadDraw(Context &context)
     };
 
     // Create multisampled attachment view
-    if (m_caseDef.isResolveAttachmentTest)
+    if (m_caseDef.resolveAttachmentTestType)
     {
         for (uint32_t subpassNdx = 0; subpassNdx < m_caseDef.numLayers; ++subpassNdx)
         {
@@ -1390,7 +1431,7 @@ void UploadDownloadExecutor::uploadDraw(Context &context)
         m_uDraw.pipelines.push_back(makeSharedPtr(makeGraphicsPipeline(
             m_vk, m_device, *m_uDraw.pipelineLayout, *m_uDraw.renderPass, *m_uDraw.vertexModule,
             *m_uDraw.fragmentModule, m_caseDef.size.swizzle(0, 1), VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, subpassNdx,
-            sampleCount, m_caseDef.isResolveAttachmentTest)));
+            sampleCount, m_caseDef.resolveAttachmentTestType)));
     }
 
     // Create framebuffer
@@ -1405,7 +1446,7 @@ void UploadDownloadExecutor::uploadDraw(Context &context)
     // Create command buffer
     {
         {
-            vector<VkClearValue> clearValues(m_caseDef.numLayers * (m_caseDef.isResolveAttachmentTest ? 2 : 1),
+            vector<VkClearValue> clearValues(m_caseDef.numLayers * (m_caseDef.resolveAttachmentTestType ? 2 : 1),
                                              m_viewIsIntegerFormat ? getClearValueInt(m_caseDef, 0) :
                                                                      REFERENCE_CLEAR_COLOR_FLOAT[0]);
 
@@ -1802,7 +1843,12 @@ void checkSupport(Context &context, const CaseDef caseDef)
         TCU_THROW(NotSupportedError, "Base image format is not supported");
     }
 
-    if (getMaxAvailableSampleCount(context) == VK_SAMPLE_COUNT_1_BIT)
+    const vk::VkImageUsageFlags usage = getImageUsageForTestCase(caseDef);
+    const VkImageCreateFlags imageFlags =
+        VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | (haveMaintenance2 ? VK_IMAGE_CREATE_EXTENDED_USAGE_BIT : 0);
+
+    if (getMaxAvailableSampleCount(context, caseDef.imageFormat, getImageType(caseDef.imageType), usage, imageFlags) ==
+        VK_SAMPLE_COUNT_1_BIT)
         TCU_THROW(NotSupportedError, "Maximum available sample count is VK_SAMPLE_COUNT_1_BIT");
 }
 
@@ -1840,10 +1886,10 @@ tcu::TestCaseGroup *createImageMutableTests(TestContext &testCtx)
                                 s_formats[viewFormatNdx],
                                 static_cast<enum Upload>(upload),
                                 static_cast<enum Download>(download),
-                                false,              // isFormatListTest;
-                                vk::wsi::TYPE_LAST, // wsiType
-                                false,              // isResolveAttachmentTest
-                                false               // isLoadOpClearTest
+                                false,                                   // isFormatListTest;
+                                vk::wsi::TYPE_LAST,                      // wsiType
+                                ResolveAttachmentTestType::RA_TEST_NONE, // resolveAttachmentTestType
+                                false                                    // isLoadOpClearTest
                             };
 
                             std::string caseName = getFormatShortString(s_formats[imageFormatNdx]) + "_" +
@@ -1861,6 +1907,7 @@ tcu::TestCaseGroup *createImageMutableTests(TestContext &testCtx)
 
                     // Multisampling and resolve attachment tests
                     {
+                        // Both multisampled image and resolve attachment are mutable
                         CaseDef caseDef = {
                             texture.type(),
                             texture.layerSize(),
@@ -1869,18 +1916,36 @@ tcu::TestCaseGroup *createImageMutableTests(TestContext &testCtx)
                             s_formats[viewFormatNdx],
                             UPLOAD_DRAW,
                             DOWNLOAD_COPY,
-                            false,              // isFormatListTest;
-                            vk::wsi::TYPE_LAST, // wsiType
-                            true,               // isResolveAttachmentTest
-                            false               // isLoadOpClearTest
+                            false,                                          // isFormatListTest;
+                            vk::wsi::TYPE_LAST,                             // wsiType
+                            ResolveAttachmentTestType::RA_TEST_ALL_MUTABLE, // resolveAttachmentTestType
+                            false                                           // isLoadOpClearTest
                         };
 
-                        std::string caseName = getFormatShortString(s_formats[imageFormatNdx]) + "_" +
-                                               getFormatShortString(s_formats[viewFormatNdx]) + "_" +
-                                               getUploadString(UPLOAD_DRAW) + "_" + getDownloadString(DOWNLOAD_COPY) +
-                                               "_resolve";
-                        addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, checkSupport, initPrograms,
-                                                    testMutable, caseDef);
+                        std::string baseCaseName = getFormatShortString(s_formats[imageFormatNdx]) + "_" +
+                                                   getFormatShortString(s_formats[viewFormatNdx]) + "_" +
+                                                   getUploadString(UPLOAD_DRAW) + "_" +
+                                                   getDownloadString(DOWNLOAD_COPY) + "_resolve";
+                        addFunctionCaseWithPrograms(groupByImageViewType.get(), baseCaseName, checkSupport,
+                                                    initPrograms, testMutable, caseDef);
+
+                        // Resolve attachment is mutable and color attachment is non-mutable
+                        {
+                            caseDef.resolveAttachmentTestType = ResolveAttachmentTestType::RA_TEST_RA_MUTABLE;
+
+                            std::string case1Name = baseCaseName + "_mutable_resolve_att";
+                            addFunctionCaseWithPrograms(groupByImageViewType.get(), case1Name, checkSupport,
+                                                        initPrograms, testMutable, caseDef);
+                        }
+
+                        // Color attachment is mutable and resolve attachment is non-mutable
+                        {
+                            caseDef.resolveAttachmentTestType = ResolveAttachmentTestType::RA_TEST_CA_MUTABLE;
+
+                            std::string case2Name = baseCaseName + "_mutable_color_att";
+                            addFunctionCaseWithPrograms(groupByImageViewType.get(), case2Name, checkSupport,
+                                                        initPrograms, testMutable, caseDef);
+                        }
                     }
 
                     // VK_ATTACHMENT_LOAD_OP_CLEAR tests
@@ -1896,10 +1961,10 @@ tcu::TestCaseGroup *createImageMutableTests(TestContext &testCtx)
                             s_formats[viewFormatNdx],
                             UPLOAD_DRAW,
                             DOWNLOAD_COPY,
-                            false,              // isFormatListTest;
-                            vk::wsi::TYPE_LAST, // wsiType
-                            false,              // isResolveAttachmentTest
-                            true                // isLoadOpClearTest
+                            false,                                   // isFormatListTest;
+                            vk::wsi::TYPE_LAST,                      // wsiType
+                            ResolveAttachmentTestType::RA_TEST_NONE, // resolveAttachmentTestType
+                            true                                     // isLoadOpClearTest
                         };
 
                         std::string caseName = getFormatShortString(s_formats[imageFormatNdx]) + "_" +
@@ -2333,8 +2398,8 @@ tcu::TestCaseGroup *createSwapchainImageMutableTests(TestContext &testCtx)
                                     static_cast<enum Download>(download),
                                     true, // isFormatListTest;
                                     wsiType,
-                                    false, // isResolveAttachmentTest
-                                    false  // isLoadOpClearTest
+                                    ResolveAttachmentTestType::RA_TEST_NONE, // resolveAttachmentTestType
+                                    false                                    // isLoadOpClearTest
                                 };
 
                                 std::string caseName = getFormatShortString(s_swapchainFormats[imageFormatNdx]) + "_" +

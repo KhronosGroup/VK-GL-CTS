@@ -178,8 +178,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "deDefs_kc_cts.h"
-
 /* Function pointer type. */
 typedef void (*deFunctionPtr)(void);
 

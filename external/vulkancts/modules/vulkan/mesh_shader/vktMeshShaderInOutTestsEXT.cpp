@@ -808,22 +808,6 @@ void InterfaceVariablesCase::initPrograms(vk::SourceCollections &programCollecti
          << "}\n";
     programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str()) << buildOptions;
 
-    std::ostringstream pvdDataDeclStream;
-    pvdDataDeclStream << "    vec4 positions[4];\n"
-                      << "    float pointSizes[4];\n"
-                      << "    float clipDistances[4];\n"
-                      << "    vec4 custom1[4];\n"
-                      << "    float custom2[4];\n"
-                      << "    int custom3[4];\n";
-    const auto pvdDataDecl = pvdDataDeclStream.str();
-
-    std::ostringstream ppdDataDeclStream;
-    ppdDataDeclStream << "    int primitiveIds[2];\n"
-                      << "    int viewportIndices[2];\n"
-                      << "    uvec4 custom4[2];\n"
-                      << "    float custom5[2];\n";
-    const auto ppdDataDecl = ppdDataDeclStream.str();
-
     std::ostringstream taskDataStream;
     taskDataStream << "struct TaskData {\n";
     for (size_t i = 0; i < varVec.size(); ++i)

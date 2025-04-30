@@ -176,6 +176,7 @@ TestInstance *PaddingTest::createInstance(Context &context) const
 
 void PaddingTest::initPrograms(vk::SourceCollections &programCollection) const
 {
+    const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
     const std::string arrayLenghtStr = std::to_string(BufferStructure::kArrayLength);
 
     std::ostringstream shaderSrc;
@@ -218,7 +219,7 @@ void PaddingTest::initPrograms(vk::SourceCollections &programCollection) const
               << "    outBlock.subC[idx] = inBlock.subC[idx];\n"
               << "}\n";
 
-    programCollection.glslSources.add("comp") << glu::ComputeSource(shaderSrc.str());
+    programCollection.glslSources.add("comp") << glu::ComputeSource(shaderSrc.str()) << buildOptions;
 }
 
 void PaddingTest::checkSupport(Context &context) const

@@ -289,11 +289,11 @@ protected:
                                 VkPipelineCreationFeedbackEXT *pipelineCreationFeedback, bool *pipelineCreationIsHeavy,
                                 VkPipelineCreationFeedbackEXT *pipelineStageCreationFeedbacks,
                                 VkPipeline basePipelineHandle, VkBool32 zeroOutFeedbackCount,
-                                VkPipelineBinaryInfoKHR *monolithicBinaryInfo           = DE_NULL,
-                                VkPipelineBinaryInfoKHR *vertexPartBinaryInfo           = DE_NULL,
-                                VkPipelineBinaryInfoKHR *preRasterizationPartBinaryInfo = DE_NULL,
-                                VkPipelineBinaryInfoKHR *fragmentShaderBinaryInfo       = DE_NULL,
-                                VkPipelineBinaryInfoKHR *fragmentOutputBinaryInfo       = DE_NULL);
+                                VkPipelineBinaryInfoKHR *monolithicBinaryInfo           = nullptr,
+                                VkPipelineBinaryInfoKHR *vertexPartBinaryInfo           = nullptr,
+                                VkPipelineBinaryInfoKHR *preRasterizationPartBinaryInfo = nullptr,
+                                VkPipelineBinaryInfoKHR *fragmentShaderBinaryInfo       = nullptr,
+                                VkPipelineBinaryInfoKHR *fragmentOutputBinaryInfo       = nullptr);
     virtual tcu::TestStatus verifyTestResult(void);
     void clearFeedbacks(void);
 
@@ -645,7 +645,7 @@ GraphicsTestInstance::GraphicsTestInstance(Context &context, const TestParam *pa
                                    &m_pipelineCreationFeedback[VK_MAX_PIPELINE_PARTS * 2],
                                    &m_pipelineCreationIsHeavy[VK_MAX_PIPELINE_PARTS * 2],
                                    &m_pipelineStageCreationFeedbacks[VK_MAX_SHADER_STAGES * 2], VK_NULL_HANDLE,
-                                   param->isZeroOutFeedbackCount(), DE_NULL, binaryInfoPtr[0], binaryInfoPtr[1],
+                                   param->isZeroOutFeedbackCount(), nullptr, binaryInfoPtr[0], binaryInfoPtr[1],
                                    binaryInfoPtr[2], binaryInfoPtr[3]);
 
             // Destroy third pipeline as soon as it was created
@@ -810,7 +810,7 @@ void GraphicsTestInstance::preparePipelineWrapper(
         .setDefaultMultisampleState()
         .setMonolithicPipelineLayout(m_pipelineLayout)
         .disableShaderModules(vertexPartBinaryInfo || monolithicBinaryInfo)
-        .setupVertexInputState(&vertexInputStateParams, DE_NULL, *m_cache, pipelineCreationFeedbackWrapper[0],
+        .setupVertexInputState(&vertexInputStateParams, nullptr, *m_cache, pipelineCreationFeedbackWrapper[0],
                                vertexPartBinaryInfo)
         .setupPreRasterizationShaderState3(viewport, scissor, m_pipelineLayout, *m_renderPass, 0u, vertShaderModule, {},
                                            nullptr, tescShaderModule, {}, teseShaderModule, {}, geomShaderModule, {},

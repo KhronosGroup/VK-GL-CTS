@@ -13,6 +13,8 @@ set(GLCTS_COMMON_SRCS
 	glcAggressiveShaderOptimizationsTests.hpp
 	glcApiCoverageTests.cpp
 	glcApiCoverageTests.hpp
+    glcBindImageTextureTests.cpp
+    glcBindImageTextureTests.hpp
 	glcBlendEquationAdvancedTests.cpp
 	glcBlendEquationAdvancedTests.hpp
 	glcBufferObjectsTests.cpp
@@ -149,6 +151,10 @@ set(GLCTS_COMMON_SRCS
 	glcCompressedFormatTests_data.inl
 	glcCompressedFormatTests.cpp
 	glcCompressedFormatTests.hpp
+	glcShaderImageLoadStoreTests.cpp
+	glcShaderImageLoadStoreTests.hpp
+	glcShaderStorageBufferObjectTests.cpp
+	glcShaderStorageBufferObjectTests.hpp
 	)
 
 set(GLCTS_COMMON_LIBS

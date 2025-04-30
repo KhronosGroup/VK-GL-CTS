@@ -729,9 +729,33 @@ tcu::TestStatus testCountLayoutSupport(Context &context, CountLayoutSupportParam
         }
     }
 
+    uint32_t maxInlineUniformBlockSize = 256;
+#ifndef CTS_USES_VULKANSC
+    if (params.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
+    {
+        DevIubProp inlineUniformProps = {
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES, nullptr, 0, 0, 0, 0, 0};
+
+        VkPhysicalDeviceProperties2 props2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, &inlineUniformProps, {}};
+
+        context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &props2);
+        maxInlineUniformBlockSize = inlineUniformProps.maxInlineUniformBlockSize;
+    }
+#endif // CTS_USES_VULKANSC
+
     // VUID-VkDescriptorSetLayoutBinding-descriptorType-02209 mandates descriptorCount to be a multiple of 4 when using inline
     // uniform blocks.
-    const auto descriptorCount = ((params.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK) ? 4u : 1u);
+    // VUID-VkDescriptorSetLayoutBinding-descriptorType-08004 descriptorCount must be less than or equal
+    // to VkPhysicalDeviceInlineUniformBlockProperties::maxInlineUniformBlockSize
+    uint32_t descriptorCount;
+    if (params.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
+    {
+        descriptorCount = std::min(4u, maxInlineUniformBlockSize);
+    }
+    else
+    {
+        descriptorCount = 1u;
+    }
 
     bindings.emplace_back(VkDescriptorSetLayoutBinding{
         de::sizeU32(bindings), // uint32_t binding;

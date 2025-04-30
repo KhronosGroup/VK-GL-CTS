@@ -501,13 +501,13 @@ protected:
     void createCustomDeviceWithTransferOnlyQueue(void);
 
 protected:
+#ifdef CTS_USES_VULKANSC
+    const CustomInstance m_customInstance;
+#endif // CTS_USES_VULKANSC
     Move<VkDevice> m_customDevice;
     de::MovePtr<Allocator> m_customAllocator;
 
     VkDevice m_device;
-#ifdef CTS_USES_VULKANSC
-    const CustomInstance m_customInstance;
-#endif // CTS_USES_VULKANSC
     Allocator *m_allocator;
     uint32_t m_queueFamilyIndex;
 
@@ -571,6 +571,11 @@ TimestampTestInstance::TimestampTestInstance(Context &context, const StageFlagVe
 #ifdef CTS_USES_VULKANSC
     , m_customInstance(createCustomInstanceFromContext(context))
 #endif // CTS_USES_VULKANSC
+    , m_customDevice()
+    , m_customAllocator()
+    , m_device(VK_NULL_HANDLE)
+    , m_allocator(nullptr)
+    , m_queueFamilyIndex(std::numeric_limits<uint32_t>::max())
     , m_stages(stages)
     , m_inRenderPass(inRenderPass)
     , m_hostQueryReset(hostQueryReset)
@@ -3428,6 +3433,797 @@ tcu::TestStatus CheckTimestampComputeAndGraphicsTestInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+class SequentialTimestampTest : public vkt::TestCase
+{
+public:
+    SequentialTimestampTest(tcu::TestContext &testContext, const std::string &name) : vkt::TestCase(testContext, name)
+    {
+    }
+    virtual ~SequentialTimestampTest(void)
+    {
+    }
+    virtual void initPrograms(SourceCollections &programCollection) const;
+    virtual TestInstance *createInstance(Context &context) const;
+};
+
+class SequentialTimestampTestInstance : public vkt::TestInstance
+{
+public:
+    SequentialTimestampTestInstance(Context &context);
+    virtual ~SequentialTimestampTestInstance(void);
+    virtual tcu::TestStatus iterate(void);
+
+protected:
+    // Number of operations to perform, each followed by a timestamp query
+    static constexpr uint32_t OPERATION_COUNT = 5;
+
+    // Available operation types to perform
+    enum OperationType
+    {
+        OPERATION_RENDER_PASS,
+        OPERATION_COMPUTE_DISPATCH,
+        OPERATION_TRANSFER,
+        OPERATION_TYPE_COUNT
+    };
+
+    void createResources(void);
+    void setupRenderPass(void);
+    void setupComputePipeline(void);
+    void performOperationAndTimestamp(VkCommandBuffer cmdBuffer, uint32_t operationIndex);
+
+    Move<VkCommandPool> m_cmdPool;
+    Move<VkCommandBuffer> m_cmdBuffers[OPERATION_COUNT];
+    Move<VkQueryPool> m_queryPool;
+    Move<VkFence> m_fences[OPERATION_COUNT];
+    Move<VkSemaphore> m_semaphores[OPERATION_COUNT];
+
+    // Resources for render pass operations
+    Move<VkRenderPass> m_renderPass;
+    Move<VkFramebuffer> m_framebuffer;
+    Move<VkImage> m_colorImage;
+    Move<VkImageView> m_colorAttachmentView;
+    de::MovePtr<Allocation> m_colorImageAlloc;
+    Move<VkPipelineLayout> m_graphicsPipelineLayout;
+    Move<VkPipeline> m_graphicsPipeline;
+
+    // Resources for compute operations
+    Move<VkBuffer> m_computeBuffer;
+    de::MovePtr<Allocation> m_computeBufferAlloc;
+    Move<VkPipelineLayout> m_computePipelineLayout;
+    Move<VkPipeline> m_computePipeline;
+    Move<VkDescriptorSetLayout> m_computeDescriptorSetLayout;
+    Move<VkDescriptorPool> m_descriptorPool;
+    Move<VkDescriptorSet> m_descriptorSet;
+
+    // Resources for transfer operations
+    Move<VkBuffer> m_srcBuffer;
+    Move<VkBuffer> m_dstBuffer;
+    de::MovePtr<Allocation> m_srcBufferAlloc;
+    de::MovePtr<Allocation> m_dstBufferAlloc;
+
+    uint64_t m_timestampValues[OPERATION_COUNT];
+    uint64_t m_timestampMask;
+    OperationType m_operations[OPERATION_COUNT];
+};
+
+void SequentialTimestampTest::initPrograms(SourceCollections &programCollection) const
+{
+    programCollection.glslSources.add("vert") << glu::VertexSource("#version 310 es\n"
+                                                                   "precision highp float;\n"
+                                                                   "layout(location = 0) out vec4 vtxPos;\n"
+                                                                   "void main (void)\n"
+                                                                   "{\n"
+                                                                   "    // Hard-coded triangle positions\n"
+                                                                   "    vec4 positions[3] = vec4[3](\n"
+                                                                   "        vec4(-0.5, -0.5, 0.0, 1.0),\n"
+                                                                   "        vec4( 0.5, -0.5, 0.0, 1.0),\n"
+                                                                   "        vec4( 0.0,  0.5, 0.0, 1.0)\n"
+                                                                   "    );\n"
+                                                                   "    \n"
+                                                                   "    gl_Position = positions[gl_VertexIndex % 3];\n"
+                                                                   "    vtxPos = positions[gl_VertexIndex % 3];\n"
+                                                                   "}\n");
+
+    programCollection.glslSources.add("frag") << glu::FragmentSource("#version 310 es\n"
+                                                                     "precision highp float;\n"
+                                                                     "layout(location = 0) out vec4 fragColor;\n"
+                                                                     "void main (void)\n"
+                                                                     "{\n"
+                                                                     "  fragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
+                                                                     "}\n");
+
+    programCollection.glslSources.add("comp") << glu::ComputeSource("#version 310 es\n"
+                                                                    "layout(local_size_x = 16) in;\n"
+                                                                    "layout(std430, binding = 0) buffer Buffer\n"
+                                                                    "{\n"
+                                                                    " uint values[];\n"
+                                                                    "};\n"
+                                                                    "void main(void)\n"
+                                                                    "{\n"
+                                                                    " uint gID = gl_GlobalInvocationID.x;\n"
+                                                                    " if (gID < uint(values.length()))\n"
+                                                                    " {\n"
+                                                                    " values[gID] = gID * 2u;\n"
+                                                                    " }\n"
+                                                                    "}\n");
+}
+
+TestInstance *SequentialTimestampTest::createInstance(Context &context) const
+{
+    return new SequentialTimestampTestInstance(context);
+}
+
+SequentialTimestampTestInstance::SequentialTimestampTestInstance(Context &context) : TestInstance(context)
+{
+    const DeviceInterface &vk       = context.getDeviceInterface();
+    const VkDevice device           = context.getDevice();
+    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+
+    m_timestampMask =
+        checkTimestampsSupported(context.getInstanceInterface(), context.getPhysicalDevice(), queueFamilyIndex);
+    m_cmdPool = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
+
+    const VkQueryPoolCreateInfo queryPoolParams = {
+        VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType               sType
+        nullptr,                                  // const void*                   pNext
+        0u,                                       // VkQueryPoolCreateFlags        flags
+        VK_QUERY_TYPE_TIMESTAMP,                  // VkQueryType                   queryType
+        OPERATION_COUNT,                          // uint32_t                      entryCount
+        0u,                                       // VkQueryPipelineStatisticFlags pipelineStatistics
+    };
+
+    m_queryPool = createQueryPool(vk, device, &queryPoolParams);
+
+    for (uint32_t i = 0; i < OPERATION_COUNT; i++)
+    {
+        m_cmdBuffers[i] = allocateCommandBuffer(vk, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+        m_fences[i]     = createFence(vk, device);
+        m_semaphores[i] = createSemaphore(vk, device);
+    }
+
+    // Determine operation sequence - mix of render pass, compute and transfer operations
+    de::Random rng(context.getTestContext().getCommandLine().getBaseSeed());
+    for (uint32_t i = 0; i < OPERATION_COUNT; i++)
+    {
+        m_operations[i] = static_cast<OperationType>(rng.getUint32() % OPERATION_TYPE_COUNT);
+    }
+
+    // Create resources needed for testing
+    createResources();
+
+    // Setup render pass and pipelines
+    setupRenderPass();
+    setupComputePipeline();
+}
+
+SequentialTimestampTestInstance::~SequentialTimestampTestInstance(void)
+{
+}
+
+void SequentialTimestampTestInstance::createResources(void)
+{
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice device           = m_context.getDevice();
+    Allocator &allocator            = m_context.getDefaultAllocator();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+
+    // Create resources for render pass operations
+    {
+        const VkFormat colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+        const tcu::UVec2 renderSize(64, 64);
+
+        const VkImageCreateInfo colorImageParams = {
+            VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,  // VkStructureType          sType
+            nullptr,                              // const void*              pNext
+            0u,                                   // VkImageCreateFlags       flags
+            VK_IMAGE_TYPE_2D,                     // VkImageType              imageType
+            colorFormat,                          // VkFormat                 format
+            {renderSize.x(), renderSize.y(), 1u}, // VkExtent3D               extent
+            1u,                                   // uint32_t                 mipLevels
+            1u,                                   // uint32_t                 arrayLayers
+            VK_SAMPLE_COUNT_1_BIT,                // VkSampleCountFlagBits    samples
+            VK_IMAGE_TILING_OPTIMAL,              // VkImageTiling            tiling
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,  // VkImageUsageFlags        usage
+            VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode            sharingMode
+            1u,                                   // uint32_t                 queueFamilyIndexCount
+            &queueFamilyIndex,                    // const uint32_t*          pQueueFamilyIndices
+            VK_IMAGE_LAYOUT_UNDEFINED,            // VkImageLayout            initialLayout
+        };
+
+        m_colorImage = createImage(vk, device, &colorImageParams);
+        m_colorImageAlloc =
+            allocator.allocate(getImageMemoryRequirements(vk, device, *m_colorImage), MemoryRequirement::Any);
+        VK_CHECK(
+            vk.bindImageMemory(device, *m_colorImage, m_colorImageAlloc->getMemory(), m_colorImageAlloc->getOffset()));
+
+        const VkImageViewCreateInfo colorAttachmentViewParams = {
+            VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType            sType
+            nullptr,                                  // const void*                pNext
+            0u,                                       // VkImageViewCreateFlags     flags
+            *m_colorImage,                            // VkImage                    image
+            VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType            viewType
+            colorFormat,                              // VkFormat                   format
+            {
+                VK_COMPONENT_SWIZZLE_IDENTITY, // VkComponentSwizzle         r
+                VK_COMPONENT_SWIZZLE_IDENTITY, // VkComponentSwizzle         g
+                VK_COMPONENT_SWIZZLE_IDENTITY, // VkComponentSwizzle         b
+                VK_COMPONENT_SWIZZLE_IDENTITY, // VkComponentSwizzle         a
+            },
+            {
+                VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags         aspectMask
+                0u,                        // uint32_t                   baseMipLevel
+                1u,                        // uint32_t                   levelCount
+                0u,                        // uint32_t                   baseArrayLayer
+                1u,                        // uint32_t                   layerCount
+            },
+        };
+
+        m_colorAttachmentView = createImageView(vk, device, &colorAttachmentViewParams);
+    }
+
+    // Create resources for compute operations
+    {
+        const VkDeviceSize bufferSize             = 1024;
+        const VkBufferCreateInfo bufferCreateInfo = {
+            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType
+            nullptr,                              // const void*            pNext
+            0u,                                   // VkBufferCreateFlags    flags
+            bufferSize,                           // VkDeviceSize           size
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,   // VkBufferUsageFlags     usage
+            VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode          sharingMode
+            1u,                                   // uint32_t               queueFamilyIndexCount
+            &queueFamilyIndex,                    // const uint32_t*        pQueueFamilyIndices
+        };
+
+        m_computeBuffer      = createBuffer(vk, device, &bufferCreateInfo);
+        m_computeBufferAlloc = allocator.allocate(getBufferMemoryRequirements(vk, device, *m_computeBuffer),
+                                                  MemoryRequirement::HostVisible);
+        VK_CHECK(vk.bindBufferMemory(device, *m_computeBuffer, m_computeBufferAlloc->getMemory(),
+                                     m_computeBufferAlloc->getOffset()));
+    }
+
+    // Create resources for transfer operations
+    {
+        const VkDeviceSize bufferSize = 1024;
+
+        // Source buffer
+        const VkBufferCreateInfo srcBufferCreateInfo = {
+            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType
+            nullptr,                              // const void*            pNext
+            0u,                                   // VkBufferCreateFlags    flags
+            bufferSize,                           // VkDeviceSize           size
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // VkBufferUsageFlags     usage
+            VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode          sharingMode
+            1u,                                   // uint32_t               queueFamilyIndexCount
+            &queueFamilyIndex,                    // const uint32_t*        pQueueFamilyIndices
+        };
+
+        m_srcBuffer = createBuffer(vk, device, &srcBufferCreateInfo);
+        m_srcBufferAlloc =
+            allocator.allocate(getBufferMemoryRequirements(vk, device, *m_srcBuffer), MemoryRequirement::HostVisible);
+        VK_CHECK(
+            vk.bindBufferMemory(device, *m_srcBuffer, m_srcBufferAlloc->getMemory(), m_srcBufferAlloc->getOffset()));
+
+        // Initialize source buffer
+        uint8_t *srcData = static_cast<uint8_t *>(m_srcBufferAlloc->getHostPtr());
+        for (size_t i = 0; i < static_cast<size_t>(bufferSize); i++)
+        {
+            srcData[i] = static_cast<uint8_t>(i & 0xFF);
+        }
+        flushAlloc(vk, device, *m_srcBufferAlloc);
+
+        // Destination buffer
+        const VkBufferCreateInfo dstBufferCreateInfo = {
+            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType
+            nullptr,                              // const void*            pNext
+            0u,                                   // VkBufferCreateFlags    flags
+            bufferSize,                           // VkDeviceSize           size
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags     usage
+            VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode          sharingMode
+            1u,                                   // uint32_t               queueFamilyIndexCount
+            &queueFamilyIndex,                    // const uint32_t*        pQueueFamilyIndices
+        };
+
+        m_dstBuffer = createBuffer(vk, device, &dstBufferCreateInfo);
+        m_dstBufferAlloc =
+            allocator.allocate(getBufferMemoryRequirements(vk, device, *m_dstBuffer), MemoryRequirement::HostVisible);
+        VK_CHECK(
+            vk.bindBufferMemory(device, *m_dstBuffer, m_dstBufferAlloc->getMemory(), m_dstBufferAlloc->getOffset()));
+    }
+}
+
+void SequentialTimestampTestInstance::setupRenderPass(void)
+{
+    const DeviceInterface &vk  = m_context.getDeviceInterface();
+    const VkDevice device      = m_context.getDevice();
+    const VkFormat colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+
+    const VkAttachmentDescription colorAttachmentDescription = {
+        0u,                                       // VkAttachmentDescriptionFlags flags
+        colorFormat,                              // VkFormat                     format
+        VK_SAMPLE_COUNT_1_BIT,                    // VkSampleCountFlagBits        samples
+        VK_ATTACHMENT_LOAD_OP_CLEAR,              // VkAttachmentLoadOp           loadOp
+        VK_ATTACHMENT_STORE_OP_STORE,             // VkAttachmentStoreOp          storeOp
+        VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp           stencilLoadOp
+        VK_ATTACHMENT_STORE_OP_DONT_CARE,         // VkAttachmentStoreOp          stencilStoreOp
+        VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout                initialLayout
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout                finalLayout
+    };
+
+    const VkAttachmentReference colorAttachmentRef = {
+        0u,                                      // uint32_t                     attachment
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL // VkImageLayout                layout
+    };
+
+    const VkSubpassDescription subpassDescription = {
+        0u,                              // VkSubpassDescriptionFlags    flags
+        VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint          pipelineBindPoint
+        0u,                              // uint32_t                     inputAttachmentCount
+        nullptr,                         // const VkAttachmentReference* pInputAttachments
+        1u,                              // uint32_t                     colorAttachmentCount
+        &colorAttachmentRef,             // const VkAttachmentReference* pColorAttachments
+        nullptr,                         // const VkAttachmentReference* pResolveAttachments
+        nullptr,                         // const VkAttachmentReference* pDepthStencilAttachment
+        0u,                              // uint32_t                     preserveAttachmentCount
+        nullptr                          // const uint32_t*              pPreserveAttachments
+    };
+
+    const VkRenderPassCreateInfo renderPassInfo = {
+        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType              sType
+        nullptr,                                   // const void*                  pNext
+        0u,                                        // VkRenderPassCreateFlags      flags
+        1u,                                        // uint32_t                     attachmentCount
+        &colorAttachmentDescription,               // const VkAttachmentDescription* pAttachments
+        1u,                                        // uint32_t                     subpassCount
+        &subpassDescription,                       // const VkSubpassDescription*  pSubpasses
+        0u,                                        // uint32_t                     dependencyCount
+        nullptr                                    // const VkSubpassDependency*   pDependencies
+    };
+
+    m_renderPass = createRenderPass(vk, device, &renderPassInfo);
+
+    const VkFramebufferCreateInfo framebufferInfo = {
+        VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType              sType
+        nullptr,                                   // const void*                  pNext
+        0u,                                        // VkFramebufferCreateFlags     flags
+        *m_renderPass,                             // VkRenderPass                 renderPass
+        1u,                                        // uint32_t                     attachmentCount
+        &m_colorAttachmentView.get(),              // const VkImageView*           pAttachments
+        64u,                                       // uint32_t                     width
+        64u,                                       // uint32_t                     height
+        1u,                                        // uint32_t                     layers
+    };
+
+    m_framebuffer = createFramebuffer(vk, device, &framebufferInfo);
+
+    const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType              sType
+        nullptr,                                       // const void*                  pNext
+        0u,                                            // VkPipelineLayoutCreateFlags  flags
+        0u,                                            // uint32_t                     setLayoutCount
+        nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts
+        0u,                                            // uint32_t                     pushConstantRangeCount
+        nullptr                                        // const VkPushConstantRange*   pPushConstantRanges
+    };
+
+    m_graphicsPipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
+
+    const Unique<VkShaderModule> vertexShaderModule(
+        createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0));
+    const Unique<VkShaderModule> fragmentShaderModule(
+        createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0));
+
+    const VkPipelineShaderStageCreateInfo shaderStages[] = {
+        {
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                     sType
+            nullptr,                                             // const void*                         pNext
+            0u,                                                  // VkPipelineShaderStageCreateFlags    flags
+            VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits               stage
+            *vertexShaderModule,                                 // VkShaderModule                      module
+            "main",                                              // const char*                         pName
+            nullptr, // const VkSpecializationInfo*         pSpecializationInfo
+        },
+        {
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                     sType
+            nullptr,                                             // const void*                         pNext
+            0u,                                                  // VkPipelineShaderStageCreateFlags    flags
+            VK_SHADER_STAGE_FRAGMENT_BIT,                        // VkShaderStageFlagBits               stage
+            *fragmentShaderModule,                               // VkShaderModule                      module
+            "main",                                              // const char*                         pName
+            nullptr, // const VkSpecializationInfo*         pSpecializationInfo
+        }};
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType
+        nullptr,                                                   // const void*                                 pNext
+        0u,                                                        // VkPipelineVertexInputStateCreateFlags       flags
+        0u,      // uint32_t                                    vertexBindingDescriptionCount
+        nullptr, // const VkVertexInputBindingDescription*      pVertexBindingDescriptions
+        0u,      // uint32_t                                    vertexAttributeDescriptionCount
+        nullptr, // const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
+    };
+
+    const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                            sType
+        nullptr,                                                     // const void*                                pNext
+        0u,                                                          // VkPipelineInputAssemblyStateCreateFlags    flags
+        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, // VkPrimitiveTopology                        topology
+        VK_FALSE,                            // VkBool32                                   primitiveRestartEnable
+    };
+
+    const VkViewport viewport = {
+        0.0f,  // float    x
+        0.0f,  // float    y
+        64.0f, // float    width
+        64.0f, // float    height
+        0.0f,  // float    minDepth
+        1.0f,  // float    maxDepth
+    };
+
+    const VkRect2D scissor = {
+        {0, 0},    // VkOffset2D    offset
+        {64u, 64u} // VkExtent2D    extent
+    };
+
+    const VkPipelineViewportStateCreateInfo viewportStateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                       sType
+        nullptr,                                               // const void*                           pNext
+        0u,                                                    // VkPipelineViewportStateCreateFlags    flags
+        1u,                                                    // uint32_t                              viewportCount
+        &viewport,                                             // const VkViewport*                     pViewports
+        1u,                                                    // uint32_t                              scissorCount
+        &scissor,                                              // const VkRect2D*                       pScissors
+    };
+
+    const VkPipelineRasterizationStateCreateInfo rasterizationStateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                            sType
+        nullptr,                                                    // const void*                                pNext
+        0u,                                                         // VkPipelineRasterizationStateCreateFlags    flags
+        VK_FALSE,                        // VkBool32                                   depthClampEnable
+        VK_FALSE,                        // VkBool32                                   rasterizerDiscardEnable
+        VK_POLYGON_MODE_FILL,            // VkPolygonMode                              polygonMode
+        VK_CULL_MODE_NONE,               // VkCullModeFlags                            cullMode
+        VK_FRONT_FACE_COUNTER_CLOCKWISE, // VkFrontFace                                frontFace
+        VK_FALSE,                        // VkBool32                                   depthBiasEnable
+        0.0f,                            // float                                      depthBiasConstantFactor
+        0.0f,                            // float                                      depthBiasClamp
+        0.0f,                            // float                                      depthBiasSlopeFactor
+        1.0f,                            // float                                      lineWidth
+    };
+
+    const VkPipelineMultisampleStateCreateInfo multisampleStateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType                          sType
+        nullptr,                                                  // const void*                              pNext
+        0u,                                                       // VkPipelineMultisampleStateCreateFlags    flags
+        VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits                    rasterizationSamples
+        VK_FALSE,              // VkBool32                                 sampleShadingEnable
+        0.0f,                  // float                                    minSampleShading
+        nullptr,               // const VkSampleMask*                      pSampleMask
+        VK_FALSE,              // VkBool32                                 alphaToCoverageEnable
+        VK_FALSE               // VkBool32                                 alphaToOneEnable
+    };
+
+    const VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {
+        VK_FALSE,                                             // VkBool32                 blendEnable
+        VK_BLEND_FACTOR_ONE,                                  // VkBlendFactor            srcColorBlendFactor
+        VK_BLEND_FACTOR_ZERO,                                 // VkBlendFactor            dstColorBlendFactor
+        VK_BLEND_OP_ADD,                                      // VkBlendOp                colorBlendOp
+        VK_BLEND_FACTOR_ONE,                                  // VkBlendFactor            srcAlphaBlendFactor
+        VK_BLEND_FACTOR_ZERO,                                 // VkBlendFactor            dstAlphaBlendFactor
+        VK_BLEND_OP_ADD,                                      // VkBlendOp                alphaBlendOp
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | // VkColorComponentFlags    colorWriteMask
+            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT};
+
+    const VkPipelineColorBlendStateCreateInfo colorBlendStateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType                               sType
+        nullptr,                                                  // const void*                                   pNext
+        0u,                                                       // VkPipelineColorBlendStateCreateFlags          flags
+        VK_FALSE,                   // VkBool32                                      logicOpEnable
+        VK_LOGIC_OP_COPY,           // VkLogicOp                                     logicOp
+        1u,                         // uint32_t                                      attachmentCount
+        &colorBlendAttachmentState, // const VkPipelineColorBlendAttachmentState*    pAttachments
+        {0.0f, 0.0f, 0.0f, 0.0f}    // float                                         blendConstants[4]
+    };
+
+    const VkGraphicsPipelineCreateInfo pipelineInfo = {
+        VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType                    sType
+        nullptr,                                         // const void*                        pNext
+        0u,                                              // VkPipelineCreateFlags              flags
+        2u,                                              // uint32_t                           stageCount
+        shaderStages,                                    // const VkPipelineShaderStageCreateInfo* pStages
+        &vertexInputStateInfo,     // const VkPipelineVertexInputStateCreateInfo* pVertexInputState
+        &inputAssemblyStateInfo,   // const VkPipelineInputAssemblyStateCreateInfo* pInputAssemblyState
+        nullptr,                   // const VkPipelineTessellationStateCreateInfo* pTessellationState
+        &viewportStateInfo,        // const VkPipelineViewportStateCreateInfo* pViewportState
+        &rasterizationStateInfo,   // const VkPipelineRasterizationStateCreateInfo* pRasterizationState
+        &multisampleStateInfo,     // const VkPipelineMultisampleStateCreateInfo* pMultisampleState
+        nullptr,                   // const VkPipelineDepthStencilStateCreateInfo* pDepthStencilState
+        &colorBlendStateInfo,      // const VkPipelineColorBlendStateCreateInfo* pColorBlendState
+        nullptr,                   // const VkPipelineDynamicStateCreateInfo* pDynamicState
+        *m_graphicsPipelineLayout, // VkPipelineLayout layout
+        *m_renderPass,             // VkRenderPass renderPass
+        0u,                        // uint32_t subpass
+        VK_NULL_HANDLE,            // VkPipeline basePipelineHandle
+        0                          // int32_t basePipelineIndex
+    };
+
+    m_graphicsPipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineInfo);
+};
+
+void SequentialTimestampTestInstance::setupComputePipeline(void)
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+
+    const VkDescriptorSetLayoutBinding binding = {
+        0u,                                // uint32_t              binding
+        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // VkDescriptorType      descriptorType
+        1u,                                // uint32_t              descriptorCount
+        VK_SHADER_STAGE_COMPUTE_BIT,       // VkShaderStageFlags    stageFlags
+        nullptr                            // const VkSampler*      pImmutableSamplers
+    };
+
+    const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType                        sType
+        nullptr,                                             // const void*                            pNext
+        0u,                                                  // VkDescriptorSetLayoutCreateFlags       flags
+        1u,                                                  // uint32_t                               bindingCount
+        &binding                                             // const VkDescriptorSetLayoutBinding*    pBindings
+    };
+
+    m_computeDescriptorSetLayout = createDescriptorSetLayout(vk, device, &descriptorSetLayoutCreateInfo);
+
+    const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType                  sType
+        nullptr,                                       // const void*                      pNext
+        0u,                                            // VkPipelineLayoutCreateFlags      flags
+        1u,                                            // uint32_t                         setLayoutCount
+        &m_computeDescriptorSetLayout.get(),           // const VkDescriptorSetLayout*     pSetLayouts
+        0u,                                            // uint32_t                         pushConstantRangeCount
+        nullptr                                        // const VkPushConstantRange*       pPushConstantRanges
+    };
+
+    m_computePipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
+
+    const Unique<VkShaderModule> computeShaderModule(
+        createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0));
+
+    const VkPipelineShaderStageCreateInfo shaderStageInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                     sType
+        nullptr,                                             // const void*                         pNext
+        0u,                                                  // VkPipelineShaderStageCreateFlags    flags
+        VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits               stage
+        *computeShaderModule,                                // VkShaderModule                      module
+        "main",                                              // const char*                         pName
+        nullptr                                              // const VkSpecializationInfo*         pSpecializationInfo
+    };
+
+    const VkComputePipelineCreateInfo pipelineCreateInfo = {
+        VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType                 sType
+        nullptr,                                        // const void*                     pNext
+        0u,                                             // VkPipelineCreateFlags           flags
+        shaderStageInfo,                                // VkPipelineShaderStageCreateInfo stage
+        *m_computePipelineLayout,                       // VkPipelineLayout                layout
+        VK_NULL_HANDLE,                                 // VkPipeline                      basePipelineHandle
+        0                                               // int32_t                         basePipelineIndex
+    };
+
+    m_computePipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
+
+    const VkDescriptorPoolSize poolSize = {
+        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // VkDescriptorType    type
+        1u                                 // uint32_t            descriptorCount
+    };
+
+    const VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {
+        VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,     // VkStructureType                sType
+        nullptr,                                           // const void*                    pNext
+        VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, // VkDescriptorPoolCreateFlags    flags
+        1u,                                                // uint32_t                       maxSets
+        1u,                                                // uint32_t                       poolSizeCount
+        &poolSize                                          // const VkDescriptorPoolSize*    pPoolSizes
+    };
+
+    m_descriptorPool = createDescriptorPool(vk, device, &descriptorPoolCreateInfo);
+
+    const VkDescriptorSetAllocateInfo allocInfo = {
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType                 sType
+        nullptr,                                        // const void*                     pNext
+        *m_descriptorPool,                              // VkDescriptorPool                descriptorPool
+        1u,                                             // uint32_t                        descriptorSetCount
+        &m_computeDescriptorSetLayout.get()             // const VkDescriptorSetLayout*    pSetLayouts
+    };
+
+    m_descriptorSet = allocateDescriptorSet(vk, device, &allocInfo);
+
+    const VkDescriptorBufferInfo bufferInfo = {
+        *m_computeBuffer, // VkBuffer        buffer
+        0u,               // VkDeviceSize    offset
+        VK_WHOLE_SIZE     // VkDeviceSize    range
+    };
+
+    const VkWriteDescriptorSet descriptorWrite = {
+        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType                  sType
+        nullptr,                                // const void*                      pNext
+        *m_descriptorSet,                       // VkDescriptorSet                  dstSet
+        0u,                                     // uint32_t                         dstBinding
+        0u,                                     // uint32_t                         dstArrayElement
+        1u,                                     // uint32_t                         descriptorCount
+        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,      // VkDescriptorType                 descriptorType
+        nullptr,                                // const VkDescriptorImageInfo*     pImageInfo
+        &bufferInfo,                            // const VkDescriptorBufferInfo*    pBufferInfo
+        nullptr                                 // const VkBufferView*              pTexelBufferView
+    };
+
+    vk.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, nullptr);
+}
+
+void SequentialTimestampTestInstance::performOperationAndTimestamp(VkCommandBuffer cmdBuffer, uint32_t operationIndex)
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+
+    beginCommandBuffer(vk, cmdBuffer, 0u);
+
+    vk.cmdResetQueryPool(cmdBuffer, *m_queryPool, operationIndex, 1u);
+
+    switch (m_operations[operationIndex])
+    {
+    case OPERATION_RENDER_PASS:
+    {
+        // Transition the image to the correct layout
+        const VkImageMemoryBarrier imageBarrier = {
+            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType            sType
+            nullptr,                                  // const void*                pNext
+            0u,                                       // VkAccessFlags              srcAccessMask
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags              dstAccessMask
+            VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout              oldLayout
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout              newLayout
+            VK_QUEUE_FAMILY_IGNORED,                  // uint32_t                   srcQueueFamilyIndex
+            VK_QUEUE_FAMILY_IGNORED,                  // uint32_t                   dstQueueFamilyIndex
+            *m_colorImage,                            // VkImage                    image
+            {
+                VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags         aspectMask
+                0u,                        // uint32_t                   baseMipLevel
+                1u,                        // uint32_t                   levelCount
+                0u,                        // uint32_t                   baseArrayLayer
+                1u                         // uint32_t                   layerCount
+            }};
+
+        vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
+                              &imageBarrier);
+
+        const VkClearValue clearValue = {
+            {{0.0f, 0.0f, 0.0f, 1.0f}} // VkClearColorValue    color
+        };
+
+        const VkRenderPassBeginInfo renderPassBeginInfo = {
+            VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // VkStructureType        sType
+            nullptr,                                  // const void*            pNext
+            *m_renderPass,                            // VkRenderPass           renderPass
+            *m_framebuffer,                           // VkFramebuffer          framebuffer
+            {
+                // VkRect2D               renderArea
+                {0, 0},    // VkOffset2D             offset
+                {64u, 64u} // VkExtent2D             extent
+            },
+            1u,         // uint32_t               clearValueCount
+            &clearValue // const VkClearValue*    pClearValues
+        };
+
+        vk.cmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipeline);
+        vk.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+
+        vk.cmdEndRenderPass(cmdBuffer);
+        break;
+    }
+
+    case OPERATION_COMPUTE_DISPATCH:
+    {
+        vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipeline);
+        vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipelineLayout, 0u, 1u,
+                                 &m_descriptorSet.get(), 0u, nullptr);
+        vk.cmdDispatch(cmdBuffer, 16u, 1u, 1u);
+
+        const VkMemoryBarrier memoryBarrier = {
+            VK_STRUCTURE_TYPE_MEMORY_BARRIER, // VkStructureType    sType
+            nullptr,                          // const void*        pNext
+            VK_ACCESS_SHADER_WRITE_BIT,       // VkAccessFlags      srcAccessMask
+            VK_ACCESS_SHADER_READ_BIT         // VkAccessFlags      dstAccessMask
+        };
+
+        vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u,
+                              1u, &memoryBarrier, 0u, nullptr, 0u, nullptr);
+        break;
+    }
+
+    case OPERATION_TRANSFER:
+    {
+        const VkBufferCopy copyRegion = {
+            0u,   // VkDeviceSize    srcOffset
+            0u,   // VkDeviceSize    dstOffset
+            1024u // VkDeviceSize    size
+        };
+
+        vk.cmdCopyBuffer(cmdBuffer, *m_srcBuffer, *m_dstBuffer, 1u, &copyRegion);
+
+        const VkBufferMemoryBarrier bufferBarrier = {
+            VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType    sType
+            nullptr,                                 // const void*        pNext
+            VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags      srcAccessMask
+            VK_ACCESS_TRANSFER_READ_BIT,             // VkAccessFlags      dstAccessMask
+            VK_QUEUE_FAMILY_IGNORED,                 // uint32_t           srcQueueFamilyIndex
+            VK_QUEUE_FAMILY_IGNORED,                 // uint32_t           dstQueueFamilyIndex
+            *m_dstBuffer,                            // VkBuffer           buffer
+            0u,                                      // VkDeviceSize       offset
+            VK_WHOLE_SIZE                            // VkDeviceSize       size
+        };
+
+        vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
+                              nullptr, 1u, &bufferBarrier, 0u, nullptr);
+        break;
+    }
+    case OPERATION_TYPE_COUNT:
+        // This should never happen as we only use values from 0 to OPERATION_TYPE_COUNT-1
+        DE_ASSERT(false);
+        break;
+    }
+
+    vk.cmdWriteTimestamp(cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, *m_queryPool, operationIndex);
+
+    endCommandBuffer(vk, cmdBuffer);
+}
+
+tcu::TestStatus SequentialTimestampTestInstance::iterate(void)
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+    const VkQueue queue       = m_context.getUniversalQueue();
+
+    // Execute operations sequentially, with timestamps after each
+    for (uint32_t i = 0; i < OPERATION_COUNT; i++)
+    {
+        performOperationAndTimestamp(m_cmdBuffers[i].get(), i);
+
+        const VkSubmitInfo submitInfo = {
+            VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType              sType
+            nullptr,                       // const void*                  pNext
+            0u,                            // uint32_t                     waitSemaphoreCount
+            nullptr,                       // const VkSemaphore*           pWaitSemaphores
+            nullptr,                       // const VkPipelineStageFlags*  pWaitDstStageMask
+            1u,                            // uint32_t                     commandBufferCount
+            &m_cmdBuffers[i].get(),        // const VkCommandBuffer*       pCommandBuffers
+            0u,                            // uint32_t                     signalSemaphoreCount
+            nullptr                        // const VkSemaphore*           pSignalSemaphores
+        };
+
+        VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *m_fences[i]));
+        VK_CHECK(vk.waitForFences(device, 1u, &m_fences[i].get(), VK_TRUE, ~0ull));
+        VK_CHECK(vk.resetFences(device, 1u, &m_fences[i].get()));
+
+        VK_CHECK(vk.getQueryPoolResults(device, *m_queryPool, i, 1u, sizeof(uint64_t), &m_timestampValues[i],
+                                        sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+
+        m_timestampValues[i] &= m_timestampMask;
+    }
+
+    // Verify timestamps are monotonically increasing
+    for (uint32_t i = 1; i < OPERATION_COUNT; i++)
+    {
+        if (m_timestampValues[i] <= m_timestampValues[i - 1])
+        {
+            std::ostringstream msg;
+            msg << "Timestamp " << i << " (0x" << std::hex << m_timestampValues[i] << ") is not greater than timestamp "
+                << (i - 1) << " (0x" << std::hex << m_timestampValues[i - 1] << ")";
+            return tcu::TestStatus::fail(msg.str());
+        }
+    }
+
+    return tcu::TestStatus::pass("All timestamps are monotonically increasing");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createTimestampTests(tcu::TestContext &testCtx, PipelineConstructionType pipelineConstructionType)
@@ -3692,9 +4488,11 @@ tcu::TestCaseGroup *createTimestampTests(tcu::TestContext &testCtx, PipelineCons
 
         // Check if timestamps are supported by every queue family that supports either graphics or compute operations
         if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+        {
             miscTests->addChild(
                 new CheckTimestampComputeAndGraphicsTest(testCtx, "check_timestamp_compute_and_graphics"));
-
+            miscTests->addChild(new SequentialTimestampTest(testCtx, "sequential_timestamps"));
+        }
         timestampTests->addChild(miscTests.release());
     }
 

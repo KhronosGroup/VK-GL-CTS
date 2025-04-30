@@ -4518,7 +4518,8 @@ bool isRequiredImageParameterCombination(const VkPhysicalDeviceFeatures &deviceF
     return true;
 }
 
-VkSampleCountFlags getRequiredOptimalTilingSampleCounts(const VkPhysicalDeviceLimits &deviceLimits,
+VkSampleCountFlags getRequiredOptimalTilingSampleCounts(const VkPhysicalDeviceLimits &deviceLimits, bool hasVulkan12,
+                                                        const VkPhysicalDeviceVulkan12Properties &vulkan12Properties,
                                                         const VkFormat format, const VkImageUsageFlags usageFlags)
 {
     if (isCompressedFormat(format))
@@ -4569,7 +4570,16 @@ VkSampleCountFlags getRequiredOptimalTilingSampleCounts(const VkPhysicalDeviceLi
     }
 
     if ((usageFlags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) != 0)
-        sampleCounts &= deviceLimits.framebufferColorSampleCounts;
+    {
+        const tcu::TextureFormat tcuFormat      = mapVkFormat(format);
+        const tcu::TextureChannelClass chnClass = tcu::getTextureChannelClass(tcuFormat.type);
+
+        if (hasVulkan12 && (chnClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER ||
+                            chnClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER))
+            sampleCounts &= vulkan12Properties.framebufferIntegerColorSampleCounts;
+        else
+            sampleCounts &= deviceLimits.framebufferColorSampleCounts;
+    }
 
     if ((usageFlags & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0)
     {
@@ -4622,12 +4632,14 @@ tcu::TestStatus imageFormatProperties(Context &context, const VkFormat format, c
         // check if Ycbcr format enums are valid given the version and extensions
         checkYcbcrApiSupport(context);
 
-    TestLog &log                                   = context.getTestContext().getLog();
-    const VkPhysicalDeviceFeatures &deviceFeatures = context.getDeviceFeatures();
-    const VkPhysicalDeviceLimits &deviceLimits     = context.getDeviceProperties().limits;
+    TestLog &log                                                 = context.getTestContext().getLog();
+    const VkPhysicalDeviceFeatures &deviceFeatures               = context.getDeviceFeatures();
+    const VkPhysicalDeviceLimits &deviceLimits                   = context.getDeviceProperties().limits;
+    const VkPhysicalDeviceVulkan12Properties &vulkan12Properties = context.getDeviceVulkan12Properties();
     const VkFormatProperties formatProperties =
         getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
     const bool hasKhrMaintenance1 = context.isDeviceFunctionalitySupported("VK_KHR_maintenance1");
+    const bool hasVulkan12        = context.contextSupports(VK_API_VERSION_1_2);
 
     const VkFormatFeatureFlags supportedFeatures = tiling == VK_IMAGE_TILING_LINEAR ?
                                                        formatProperties.linearTilingFeatures :
@@ -4713,8 +4725,8 @@ tcu::TestStatus imageFormatProperties(Context &context, const VkFormat format, c
                     (supportedFeatures &
                      (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)))
                 {
-                    const VkSampleCountFlags requiredSampleCounts =
-                        getRequiredOptimalTilingSampleCounts(deviceLimits, format, curUsageFlags);
+                    const VkSampleCountFlags requiredSampleCounts = getRequiredOptimalTilingSampleCounts(
+                        deviceLimits, hasVulkan12, vulkan12Properties, format, curUsageFlags);
                     results.check((properties.sampleCounts & requiredSampleCounts) == requiredSampleCounts,
                                   "Required sample counts not supported");
                 }
@@ -6224,7 +6236,7 @@ tcu::TestStatus deviceFeaturesVulkan14(Context &context)
 
         deMemset(vulkan14Features[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVulkan14Features));
         vulkan14Features[ndx]->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES;
-        vulkan14Features[ndx]->pNext = DE_NULL;
+        vulkan14Features[ndx]->pNext = nullptr;
 
         vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
     }
@@ -6594,9 +6606,9 @@ tcu::TestStatus devicePropertiesVulkan14(Context &context)
     {
         deMemset(vulkan14Properties[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVulkan14Properties));
         vulkan14Properties[ndx]->sType           = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_PROPERTIES;
-        vulkan14Properties[ndx]->pNext           = DE_NULL;
-        vulkan14Properties[ndx]->pCopySrcLayouts = DE_NULL;
-        vulkan14Properties[ndx]->pCopyDstLayouts = DE_NULL;
+        vulkan14Properties[ndx]->pNext           = nullptr;
+        vulkan14Properties[ndx]->pCopySrcLayouts = nullptr;
+        vulkan14Properties[ndx]->pCopyDstLayouts = nullptr;
 
         extProperties = initVulkanStructure(vulkan14Properties[ndx]);
 
