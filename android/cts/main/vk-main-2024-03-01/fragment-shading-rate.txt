@@ -1,4 +1,5 @@
 dEQP-VK.fragment_shading_rate.dynamic_rendering.primary_cmd_buff.monolithic.attachment_rate.misc.maintenance5
+dEQP-VK.fragment_shading_rate.dynamic_rendering.primary_cmd_buff.monolithic.misc.explicit_and_implicit_enable
 dEQP-VK.fragment_shading_rate.renderpass2.monolithic.attachment_rate.misc.memory_access
 dEQP-VK.fragment_shading_rate.renderpass2.monolithic.attachment_rate.misc.ro_ds_depth_read_only_optimal
 dEQP-VK.fragment_shading_rate.renderpass2.monolithic.attachment_rate.misc.ro_ds_general
