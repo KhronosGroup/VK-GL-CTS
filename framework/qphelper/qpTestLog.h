@@ -65,6 +65,7 @@ typedef enum qpTestResult_e
     QP_TEST_RESULT_WAIVER,  /*!< Status code reported by waived test.                                                */
     QP_TEST_RESULT_DEVICE_LOST, /*!< Test caused a Device Lost error                                                    */
     QP_TEST_RESULT_ENFORCE_DEFAULT_CONTEXT, /*!< Enforces creation of default Context as a compability with existsing code  */
+    QP_TEST_RESULT_ENFORCE_DEFAULT_INSTANCE, /*!< Enforces creation of default instance as a compability with existsing code  */
 
     QP_TEST_RESULT_LAST
 } qpTestResult;

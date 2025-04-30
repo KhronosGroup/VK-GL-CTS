@@ -168,6 +168,18 @@ public:
     }
 };
 
+//! EnforceDefaultInstance
+class EnforceDefaultInstance : public TestException
+{
+public:
+    EnforceDefaultInstance(const char *message, const char *expr, const char *file, int line);
+    EnforceDefaultInstance(const std::string &message, const char *expr, const char *file, int line);
+    EnforceDefaultInstance(const std::string &message);
+    virtual ~EnforceDefaultInstance(void) throw()
+    {
+    }
+};
+
 } // namespace tcu
 
 #define TCU_THROW_EXPR(ERRCLASS, MSG, EXPR) throw tcu::ERRCLASS(MSG, EXPR, __FILE__, __LINE__)

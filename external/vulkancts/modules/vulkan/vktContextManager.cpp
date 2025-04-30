@@ -585,17 +585,17 @@ void DevCaps::resetQueues(const QueueCreateInfo_ *pInfos, uint32_t infoCount)
 de::SharedPtr<ContextManager> ContextManager::create(const vk::PlatformInterface &vkPlatform,
                                                      const tcu::CommandLine &commandLine,
                                                      de::SharedPtr<vk::ResourceInterface> resourceInterface,
-                                                     int maxCustomDevices)
+                                                     int maxCustomDevices, const InstCaps &icaps)
 {
     DE_ASSERT(maxCustomDevices > 0);
     return de::SharedPtr<ContextManager>(
-        new ContextManager(vkPlatform, commandLine, resourceInterface, maxCustomDevices));
+        new ContextManager(vkPlatform, commandLine, resourceInterface, maxCustomDevices, icaps));
 }
 
 ContextManager::ContextManager(const PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine,
                                [[maybe_unused]] de::SharedPtr<vk::ResourceInterface> resourceInterface,
-                               int maxCustomDevices)
-    : ContextManager(vkPlatform, commandLine, resourceInterface, maxCustomDevices, {})
+                               int maxCustomDevices, const InstCaps &icaps)
+    : ContextManager(vkPlatform, commandLine, resourceInterface, maxCustomDevices, icaps, {})
 {
 }
 
@@ -612,6 +612,60 @@ void ContextManager::keepMaxCustomDeviceCount()
         auto rem = (def != beg) ? beg : std::next(def);
         m_contexts.erase(rem);
     }
+}
+
+InstCaps::InstCaps(const PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine)
+    : InstCaps(vkPlatform, commandLine, InstCaps::DefInstId)
+{
+}
+
+bool InstCaps::addExtension(const std::string &extension)
+{
+    if (isInstanceExtensionSupported(usedApiVersion, coreExtensions, extension))
+    {
+        m_extensions.push_back(extension);
+        return true;
+    }
+    return false;
+}
+
+std::vector<std::string> InstCaps::getExtensions() const
+{
+    std::vector<std::string> exts(coreExtensions);
+    exts.insert(exts.end(), m_extensions.begin(), m_extensions.end());
+    return exts;
+}
+
+de::SharedPtr<ContextManager> ContextManager::findCustomManager(vkt::TestCase *testCase,
+                                                                de::SharedPtr<ContextManager> defaultContextManager)
+{
+    const std::string instCapsId = testCase->getInstanceCapabilitiesId();
+    if (instCapsId != InstCaps::DefInstId)
+    {
+        for (auto mgr : m_customManagers)
+        {
+            if (mgr->id == instCapsId)
+                return mgr;
+        }
+
+        const PlatformInterface &platformInterface         = defaultContextManager->getPlatformInterface();
+        const tcu::CommandLine &commandLine                = defaultContextManager->getCommandLine();
+        de::SharedPtr<ResourceInterface> resourceInterface = defaultContextManager->getResourceInterface();
+        const int maxCustomDevices                         = defaultContextManager->getMaxCustomDevices();
+
+        InstCaps icaps(platformInterface, commandLine, instCapsId);
+        testCase->initInstanceCapabilities(icaps);
+        de::SharedPtr<ContextManager> customContextManager =
+            ContextManager::create(platformInterface, commandLine, resourceInterface, maxCustomDevices, icaps);
+
+        if (m_customManagers.size() > static_cast<decltype(m_customManagers.size())>(maxCustomDevices))
+            m_customManagers.pop_front();
+        m_customManagers.push_back(customContextManager);
+
+        return customContextManager;
+    }
+
+    return defaultContextManager;
 }
 
 de::SharedPtr<Context> ContextManager::findContext(de::SharedPtr<const ContextManager> thiz, TestCase *testCase,

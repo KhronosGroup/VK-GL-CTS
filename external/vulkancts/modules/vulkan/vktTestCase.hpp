@@ -201,6 +201,8 @@ public:
     std::string getDeviceID() const;
     DevCaps::QueueInfo getDeviceQueueInfo(uint32_t queueIndex);
 
+    void collectAndReportDebugMessages();
+
 protected:
     tcu::TestContext &m_testCtx;
     const vk::PlatformInterface &m_platformInterface;
@@ -236,6 +238,16 @@ public:
     // Override this function if test requires new custom device.
     // Requirements for the new device should be recorded to DevCaps.
     virtual void initDeviceCapabilities(DevCaps &caps);
+
+    // Override this function if the test requires a custom instance. The framework
+    // invokes this function to determine whether one of the recently created
+    // instances can be reused or if a new custom instance needs to be created with
+    // the capabilities defined in initInstanceCapabilities.
+    virtual std::string getInstanceCapabilitiesId() const;
+
+    // Override this function if test requires new custom instance.
+    // Requirements for the new instance should be recorded to InstCaps.
+    virtual void initInstanceCapabilities(InstCaps &caps);
 
     virtual void delayedInit(void); // non-const init called after checkSupport but before initPrograms
     virtual void initPrograms(vk::SourceCollections &programCollection) const;

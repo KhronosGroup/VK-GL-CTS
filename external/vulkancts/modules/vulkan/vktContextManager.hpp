@@ -34,6 +34,7 @@
 #include "vkDebugReportUtil.hpp"
 #endif
 
+#include <deque>
 #include <string>
 #include <tuple>
 #include <typeindex>
@@ -406,6 +407,38 @@ public:
     }
 };
 
+struct InstCaps
+{
+    // Creates InstCaps class with id=DefInstId. This default behavior mostly used in existing code.
+    InstCaps(const vk::PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine);
+    // Creates InstCaps class with id=id_ parameter. This allows the ContextManager class to distinguish
+    // whether the test needs a different instance than the default one.
+    InstCaps(const vk::PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine, const std::string &id_);
+
+    // All fields below are initialized in the same way as in the default instance.
+    const uint32_t maximumFrameworkVulkanVersion;
+    const uint32_t availableInstanceVersion;
+    const uint32_t usedInstanceVersion;
+    const std::pair<uint32_t, uint32_t> deviceVersions;
+    const uint32_t usedApiVersion;
+    const std::vector<std::string> coreExtensions;
+
+    // This InstCaps identity.
+    const std::string id;
+    static const inline std::string DefInstId = "DEFAULT";
+
+    // Adds instance extension to internal list.
+    // If the extension is not available in the Core list, the method returns false.
+    bool addExtension(const std::string &extension);
+
+    // Returns a list of extensions required to create a new instance,
+    // concatenated from Core and the internal extension list.
+    std::vector<std::string> getExtensions() const;
+
+private:
+    std::vector<std::string> m_extensions;
+};
+
 typedef vk::DevFeaturesAndPropertiesImpl<void> DevFeaturesAndProperties;
 
 // The ContextManager handles the creation and storage of Context instances needed for tests.
@@ -448,22 +481,27 @@ class ContextManager
     const de::SharedPtr<DevFeaturesAndProperties> m_deviceFeaturesAndProperties;
     using Item = std::pair<de::SharedPtr<Context>, de::SharedPtr<DevCaps>>;
     std::vector<Item> m_contexts;
+    std::deque<de::SharedPtr<ContextManager>> m_customManagers;
 
     typedef std::tuple<int, int, int> Det_;
     ContextManager(const vk::PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine,
-                   de::SharedPtr<vk::ResourceInterface> resourceInterface, int maxCustomDevices, Det_);
+                   de::SharedPtr<vk::ResourceInterface> resourceInterface, int maxCustomDevices, const InstCaps &,
+                   Det_ icapsDet_);
     ContextManager(const vk::PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine,
-                   de::SharedPtr<vk::ResourceInterface> resourceInterface, int maxCustomDevices);
+                   de::SharedPtr<vk::ResourceInterface> resourceInterface, int maxCustomDevices, const InstCaps &icaps);
     void keepMaxCustomDeviceCount();
     void print(tcu::TestLog &log, const vk::VkDeviceCreateInfo &createInfo) const;
 
 public:
+    const std::string id;
+    static const inline std::string DefMgrId = "DEFAULT";
+
     virtual ~ContextManager() = default;
 
     static de::SharedPtr<ContextManager> create(const vk::PlatformInterface &vkPlatform,
                                                 const tcu::CommandLine &commandLine,
                                                 de::SharedPtr<vk::ResourceInterface> resourceInterface,
-                                                int maxCustomDevices);
+                                                int maxCustomDevices, const InstCaps &icaps);
 
     uint32_t getMaximumFrameworkVulkanVersion() const
     {
@@ -548,6 +586,8 @@ public:
     auto createDevice(const DevCaps &caps, DevCaps::RuntimeData &data) const -> vk::Move<vk::VkDevice>;
     auto findContext(de::SharedPtr<const ContextManager> thiz, vkt::TestCase *testCase,
                      de::SharedPtr<Context> &defaultContext, vk::BinaryCollection &programs) -> de::SharedPtr<Context>;
+    auto findCustomManager(vkt::TestCase *testCase, de::SharedPtr<ContextManager> defaultContextManager)
+        -> de::SharedPtr<ContextManager>;
 #ifndef CTS_USES_VULKANSC
     auto getDebugReportRecorder() const -> DebugReportRecorderPtr
     {
@@ -562,6 +602,10 @@ public:
         return m_debugReportCallback;
     }
 #endif
+    auto getMaxCustomDevices() const -> int
+    {
+        return m_maxCustomDevices;
+    }
 };
 
 } // namespace vkt

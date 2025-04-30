@@ -173,4 +173,19 @@ EnforceDefaultContext::EnforceDefaultContext(const std::string &message)
 {
 }
 
+EnforceDefaultInstance::EnforceDefaultInstance(const char *message, const char *expr, const char *file, int line)
+    : TestException(message, expr, file, line, QP_TEST_RESULT_ENFORCE_DEFAULT_INSTANCE)
+{
+}
+
+EnforceDefaultInstance::EnforceDefaultInstance(const std::string &message, const char *expr, const char *file, int line)
+    : TestException(message.c_str(), expr, file, line, QP_TEST_RESULT_ENFORCE_DEFAULT_INSTANCE)
+{
+}
+
+EnforceDefaultInstance::EnforceDefaultInstance(const std::string &message)
+    : TestException(message, QP_TEST_RESULT_ENFORCE_DEFAULT_INSTANCE)
+{
+}
+
 } // namespace tcu

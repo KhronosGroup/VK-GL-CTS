@@ -190,6 +190,7 @@ private:
     vk::BinaryRegistryReader m_prebuiltBinRegistry;
 
     const UniquePtr<vk::Library> m_library;
+    SharedPtr<ContextManager> m_defaultContextManager;
     SharedPtr<ContextManager> m_contextManager;
     SharedPtr<Context> m_context;
 
@@ -263,8 +264,8 @@ static MovePtr<vk::Library> createLibrary(tcu::TestContext &testCtx)
     return properties;
 }
 
-extern vk::VkPhysicalDeviceProperties getPhysicalDeviceProperties(de::SharedPtr<ContextManager> instance);
-extern uint32_t getUsedApiVersion(de::SharedPtr<ContextManager> instance);
+extern vk::VkPhysicalDeviceProperties getPhysicalDeviceProperties(de::SharedPtr<ContextManager> mgr);
+extern uint32_t getUsedApiVersion(de::SharedPtr<ContextManager> mgr);
 
 std::string trim(const std::string &original)
 {
@@ -280,6 +281,7 @@ TestCaseExecutor::TestCaseExecutor(tcu::TestContext &testCtx)
     : m_progCollection()
     , m_prebuiltBinRegistry(testCtx.getArchive(), "vulkan/prebuilt")
     , m_library(createLibrary(testCtx))
+    , m_defaultContextManager()
     , m_contextManager()
     , m_context()
     , m_renderDoc(testCtx.getCommandLine().isRenderDocEnabled() ? MovePtr<vk::RenderDocUtil>(new vk::RenderDocUtil()) :
@@ -370,11 +372,12 @@ TestCaseExecutor::TestCaseExecutor(tcu::TestContext &testCtx)
     }
 #endif // CTS_USES_VULKANSC
 
+    const InstCaps defaultInstCaps(m_library->getPlatformInterface(), testCtx.getCommandLine());
     const int maxCustomDevices =
         std::clamp(testCtx.getCommandLine().getMaxCustomDevices(), 1, std::numeric_limits<int>::max());
-    m_contextManager   = ContextManager::create(m_library->getPlatformInterface(), testCtx.getCommandLine(),
-                                                m_resourceInterface, maxCustomDevices);
-    m_deviceProperties = getPhysicalDeviceProperties(m_contextManager);
+    m_defaultContextManager = ContextManager::create(m_library->getPlatformInterface(), testCtx.getCommandLine(),
+                                                     m_resourceInterface, maxCustomDevices, defaultInstCaps);
+    m_deviceProperties      = getPhysicalDeviceProperties(m_defaultContextManager);
 
     tcu::SessionInfo sessionInfo(m_deviceProperties.vendorID, m_deviceProperties.deviceID,
                                  m_deviceProperties.deviceName, testCtx.getCommandLine().getInitialCmdLine());
@@ -412,7 +415,7 @@ TestCaseExecutor::TestCaseExecutor(tcu::TestContext &testCtx)
     }
 
 #ifdef CTS_USES_VULKANSC
-    m_resourceInterface->initApiVersion(getUsedApiVersion(m_contextManager));
+    m_resourceInterface->initApiVersion(defaultInstCaps.usedApiVersion);
 
     // Real Vulkan SC tests are performed in subprocess.
     // Tests run in main process are only used to collect data required by Vulkan SC.
@@ -443,6 +446,12 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
     TestCase *vktCase = dynamic_cast<TestCase *>(testCase);
     if (!vktCase)
         TCU_THROW(InternalError, "Test node not an instance of vkt::TestCase");
+
+    // findCustomManager() method may throw an exception, the assignment
+    // below ensures that the m_contextManager variable will always have a value.
+    // The m_defaultContextManager was introduced for compatibility with existing code.
+    m_contextManager = m_defaultContextManager;
+    m_contextManager = m_defaultContextManager->findCustomManager(vktCase, m_defaultContextManager);
 
     tcu::TestLog &log                           = testCase->getTestContext().getLog();
     const uint32_t usedVulkanVersion            = getUsedApiVersion(m_contextManager);

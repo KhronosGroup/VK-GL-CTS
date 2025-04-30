@@ -771,26 +771,38 @@ vector<const char *> removeCoreExtensions(const uint32_t apiVersion, const vecto
 
 } // namespace
 
+InstCaps::InstCaps(const PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine, const std::string &id_)
+#ifndef CTS_USES_VULKANSC
+    : maximumFrameworkVulkanVersion(VK_API_MAX_FRAMEWORK_VERSION)
+#else
+    : maximumFrameworkVulkanVersion(VKSC_API_MAX_FRAMEWORK_VERSION)
+#endif // CTS_USES_VULKANSC
+    , availableInstanceVersion(getTargetInstanceVersion(vkPlatform))
+    , usedInstanceVersion(
+          sanitizeApiVersion(minVulkanAPIVersion(availableInstanceVersion, maximumFrameworkVulkanVersion)))
+    , deviceVersions(determineDeviceVersions(vkPlatform, usedInstanceVersion, commandLine))
+    , usedApiVersion(sanitizeApiVersion(minVulkanAPIVersion(usedInstanceVersion, deviceVersions.first)))
+    , coreExtensions(addCoreInstanceExtensions(
+          filterExtensions(enumerateInstanceExtensionProperties(vkPlatform, nullptr)), usedApiVersion))
+    , id(id_)
+    , m_extensions()
+{
+}
+
 // "Define the ContextManager constructor, placed here as a workaround for an older Fedora version
 // where the compiler fails to locate function implementations unless they reside in the same file.
 ContextManager::ContextManager(const PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine,
                                [[maybe_unused]] de::SharedPtr<vk::ResourceInterface> resourceInterface,
-                               int maxCustomDevices, ContextManager::Det_)
-#ifndef CTS_USES_VULKANSC
-    : m_maximumFrameworkVulkanVersion(VK_API_MAX_FRAMEWORK_VERSION)
-#else
-    : m_maximumFrameworkVulkanVersion(VKSC_API_MAX_FRAMEWORK_VERSION)
-#endif // CTS_USES_VULKANSC
+                               int maxCustomDevices, const InstCaps &icaps, ContextManager::Det_)
+    : m_maximumFrameworkVulkanVersion(icaps.maximumFrameworkVulkanVersion)
     , m_platformInterface(vkPlatform)
     , m_commandLine(commandLine)
     , m_resourceInterface(resourceInterface)
-    , m_availableInstanceVersion(getTargetInstanceVersion(vkPlatform))
-    , m_usedInstanceVersion(
-          sanitizeApiVersion(minVulkanAPIVersion(m_availableInstanceVersion, m_maximumFrameworkVulkanVersion)))
-    , m_deviceVersions(determineDeviceVersions(vkPlatform, m_usedInstanceVersion, m_commandLine))
-    , m_usedApiVersion(sanitizeApiVersion(minVulkanAPIVersion(m_usedInstanceVersion, m_deviceVersions.first)))
-    , m_instanceExtensions(addCoreInstanceExtensions(
-          filterExtensions(enumerateInstanceExtensionProperties(vkPlatform, nullptr)), m_usedApiVersion))
+    , m_availableInstanceVersion(icaps.availableInstanceVersion)
+    , m_usedInstanceVersion(icaps.usedInstanceVersion)
+    , m_deviceVersions(icaps.deviceVersions)
+    , m_usedApiVersion(icaps.usedApiVersion)
+    , m_instanceExtensions(icaps.getExtensions())
 #ifndef CTS_USES_VULKANSC
     , m_debugReportRecorder(m_commandLine.isValidationEnabled() ?
                                 createSharedDebugReportRecorder(vkPlatform, m_commandLine.printValidationErrors()) :
@@ -825,6 +837,7 @@ ContextManager::ContextManager(const PlatformInterface &vkPlatform, const tcu::C
                                                  m_instanceExtensions, m_deviceExtensions))
     , m_deviceFeaturesAndProperties(new DevFeaturesAndProperties(*m_deviceFeaturesPtr, *m_devicePropertiesPtr))
     , m_contexts()
+    , id(icaps.id)
 {
     m_contexts.reserve(m_maxCustomDevices + 1);
 }
@@ -834,7 +847,8 @@ DefaultDevice::DefaultDevice(const PlatformInterface &vkPlatform, const tcu::Com
     : DefaultDevice(
           vkPlatform, cmdLine,
           ContextManager::create(vkPlatform, cmdLine, resourceInterface,
-                                 std::clamp(cmdLine.getMaxCustomDevices(), 1, std::numeric_limits<int>::max())),
+                                 std::clamp(cmdLine.getMaxCustomDevices(), 1, std::numeric_limits<int>::max()),
+                                 InstCaps(vkPlatform, cmdLine)),
           Move<VkDevice>(), deviceID, nullptr)
 {
     m_embeddedContextManager = true;
@@ -968,7 +982,8 @@ Context::Context(tcu::TestContext &testCtx, const vk::PlatformInterface &platfor
     , m_platformInterface(platformInterface)
     , m_contextManager(ContextManager::create(
           platformInterface, testCtx.getCommandLine(), resourceInterface,
-          std::clamp(testCtx.getCommandLine().getMaxCustomDevices(), 1, std::numeric_limits<int>::max())))
+          std::clamp(testCtx.getCommandLine().getMaxCustomDevices(), 1, std::numeric_limits<int>::max()),
+          InstCaps(platformInterface, testCtx.getCommandLine())))
     , m_progCollection(progCollection)
     , m_resourceInterface(resourceInterface)
     , m_deviceRuntimeData()
@@ -1721,6 +1736,15 @@ DevCaps::QueueInfo Context::getDeviceQueueInfo(uint32_t queueIndex)
     return m_deviceRuntimeData->getQueue(getDeviceInterface(), getDevice(), queueIndex, isDefaultContext());
 }
 
+void Context::collectAndReportDebugMessages()
+{
+#ifndef CTS_USES_VULKANSC
+    de::SharedPtr<DebugReportRecorder> rec = getContextManager()->getDebugReportRecorder();
+    if (rec)
+        ::vkt::collectAndReportDebugMessages(*rec, *this);
+#endif // CTS_USES_VULKANSC
+}
+
 // TestCase
 
 void TestCase::initPrograms(SourceCollections &) const
@@ -1811,6 +1835,19 @@ void TestCase::initDeviceCapabilities(DevCaps &caps)
     TCU_THROW(EnforceDefaultContext,
               "Default implementation of TestCase::initDeviceCapabilities() throws in order to enforce "
               "creation of DefaultDevice");
+}
+
+std::string TestCase::getInstanceCapabilitiesId() const
+{
+    return InstCaps::DefInstId;
+}
+
+void TestCase::initInstanceCapabilities(InstCaps &caps)
+{
+    DE_UNREF(caps);
+    TCU_THROW(EnforceDefaultInstance,
+              "Default implementation of TestCase::initInstanceCapabilities()."
+              "If the test provides getInstanceCapabilities() then it must provide initInstanceCapabilities() as well");
 }
 
 TestInstance *TestCase::createInstance(Context &) const
