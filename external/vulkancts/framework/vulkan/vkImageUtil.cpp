@@ -5432,7 +5432,7 @@ ImageWithBuffer::ImageWithBuffer(const DeviceInterface &vkd, const VkDevice devi
         makeBufferCreateInfo(verificationBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 
     buffer = std::unique_ptr<BufferWithMemory>(
-        new BufferWithMemory(vkd, device, alloc, verificationBufferCreateInfo, MemoryRequirement::HostVisible));
+        new BufferWithMemory(vkd, device, alloc, verificationBufferCreateInfo, HostIntent::R));
     size = verificationBufferSize;
 }
 
