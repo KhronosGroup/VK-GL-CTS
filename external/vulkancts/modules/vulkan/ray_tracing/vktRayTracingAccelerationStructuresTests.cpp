@@ -3518,6 +3518,7 @@ struct QueryPoolResultsParams
     bool inVkBuffer;
     bool compacted;
     ResourceResidency accStructRes;
+    bool queryAvailablityBit;
 };
 
 typedef de::SharedPtr<const QueryPoolResultsParams> QueryPoolResultsParamsPtr;
@@ -3628,7 +3629,8 @@ public:
     TestStatus iterate(void) override;
     std::vector<ASInterfacePtr> makeCopyOfStructures(const std::vector<ASInterfacePtr> &structs,
                                                      const std::vector<VkDeviceSize> sizes);
-    std::vector<VkDeviceSize> getStructureSizes(const std::vector<VkAccelerationStructureKHR> &handles);
+    std::vector<VkDeviceSize> getStructureSizes(const std::vector<VkAccelerationStructureKHR> &handles,
+                                                bool &allBitsAvailable);
 };
 
 class QueryPoolResultsPointersInstance : public QueryPoolResultsInstance
@@ -3789,7 +3791,7 @@ auto QueryPoolResultsInstance::prepareTopAccStructure(const DeviceInterface &vk,
 }
 
 std::vector<VkDeviceSize> QueryPoolResultsSizeInstance::getStructureSizes(
-    const std::vector<VkAccelerationStructureKHR> &handles)
+    const std::vector<VkAccelerationStructureKHR> &handles, bool &allBitsAvailable)
 {
     const DeviceInterface &vk  = m_context.getDeviceInterface();
     const VkDevice device      = m_context.getDevice();
@@ -3890,17 +3892,83 @@ std::vector<VkDeviceSize> QueryPoolResultsSizeInstance::getStructureSizes(
         }
         else
         {
-            VK_CHECK(vk.getQueryPoolResults(device, *queryPoolSize, 0u, queryCount, queryCount * sizeof(VkDeviceSize),
-                                            sizeSizes.data(), sizeof(VkDeviceSize),
-                                            VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
-            VK_CHECK(vk.getQueryPoolResults(device, *queryPoolSerial, 0u, queryCount, queryCount * sizeof(VkDeviceSize),
-                                            serialSizes.data(), sizeof(VkDeviceSize),
-                                            VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
-            if (m_params->compacted)
+            if (!m_params->queryAvailablityBit)
             {
                 VK_CHECK(vk.getQueryPoolResults(
-                    device, *queryPoolCompact, 0u, queryCount, queryCount * sizeof(VkDeviceSize), compactSizes.data(),
+                    device, *queryPoolSize, 0u, queryCount, queryCount * sizeof(VkDeviceSize), sizeSizes.data(),
                     sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+                VK_CHECK(vk.getQueryPoolResults(
+                    device, *queryPoolSerial, 0u, queryCount, queryCount * sizeof(VkDeviceSize), serialSizes.data(),
+                    sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+                if (m_params->compacted)
+                {
+                    VK_CHECK(vk.getQueryPoolResults(
+                        device, *queryPoolCompact, 0u, queryCount, queryCount * sizeof(VkDeviceSize),
+                        compactSizes.data(), sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+                }
+            }
+            else
+            {
+                const uint32_t countWithAvailability = queryCount * 2u;
+                std::vector<VkDeviceSize> sizeSizesWithAvailability(countWithAvailability, 0);
+                std::vector<VkDeviceSize> serialSizesWithAvailability(countWithAvailability, 0);
+                std::vector<VkDeviceSize> compactSizesWithAvailability(countWithAvailability, 0);
+
+                size_t dataSize = countWithAvailability * sizeof(VkDeviceSize);
+                VkQueryResultFlags queryFlags =
+                    VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
+                VkDeviceSize stride = sizeof(VkDeviceSize) * 2u;
+
+                VkResult res;
+                do
+                {
+                    res = vk.getQueryPoolResults(device, *queryPoolSize, 0u, queryCount, dataSize,
+                                                 sizeSizesWithAvailability.data(), stride, queryFlags);
+                } while (res != VK_SUCCESS);
+                do
+                {
+                    res = vk.getQueryPoolResults(device, *queryPoolSerial, 0u, queryCount, dataSize,
+                                                 serialSizesWithAvailability.data(), stride, queryFlags);
+                } while (res != VK_SUCCESS);
+                if (m_params->compacted)
+                {
+                    do
+                    {
+                        res = vk.getQueryPoolResults(device, *queryPoolCompact, 0u, queryCount, dataSize,
+                                                     compactSizesWithAvailability.data(), stride, queryFlags);
+                    } while (res != VK_SUCCESS);
+                }
+
+                allBitsAvailable = true;
+                for (uint32_t i = 0; i < queryCount; ++i)
+                {
+                    sizeSizes[i]    = sizeSizesWithAvailability[i * 2];
+                    serialSizes[i]  = serialSizesWithAvailability[i * 2];
+                    compactSizes[i] = compactSizesWithAvailability[i * 2];
+
+                    tcu::TestLog &log = m_context.getTestContext().getLog();
+                    if (sizeSizesWithAvailability[i * 2 + 1] == 0)
+                    {
+                        allBitsAvailable = false;
+                        log << tcu::TestLog::Message
+                            << "vkGetQueryPoolResults() returned VK_SUCCESS but availability for query " << i
+                            << " from query pool queryPoolSize is 0" << tcu::TestLog::EndMessage;
+                    }
+                    if (serialSizesWithAvailability[i * 2 + 1] == 0)
+                    {
+                        allBitsAvailable = false;
+                        log << tcu::TestLog::Message
+                            << "vkGetQueryPoolResults() returned VK_SUCCESS but availability for query " << i
+                            << " from query pool queryPoolSerial is 0" << tcu::TestLog::EndMessage;
+                    }
+                    if (m_params->compacted && compactSizesWithAvailability[i * 2 + 1] == 0)
+                    {
+                        allBitsAvailable = false;
+                        log << tcu::TestLog::Message
+                            << "vkGetQueryPoolResults() returned VK_SUCCESS but availability for query " << i
+                            << " from query pool queryPoolCompact is 0" << tcu::TestLog::EndMessage;
+                    }
+                }
             }
         }
     }
@@ -3989,7 +4057,8 @@ TestStatus QueryPoolResultsSizeInstance::iterate(void)
                    [](const BlasPtr &blas) { return *blas->getPtr(); });
 
     // only the first queryCount elements are results from ACCELERATION_STRUCTURE_SIZE queries.
-    const std::vector<VkDeviceSize> sourceSizes = getStructureSizes(handles);
+    bool allBitsAvailable1                      = false;
+    const std::vector<VkDeviceSize> sourceSizes = getStructureSizes(handles, allBitsAvailable1);
 
     std::vector<ASInterfacePtr> sourceStructures;
     sourceStructures.push_back(makeASInterfacePtr(tlas));
@@ -4000,9 +4069,13 @@ TestStatus QueryPoolResultsSizeInstance::iterate(void)
     std::transform(copies.begin(), copies.end(), handles.begin(),
                    [](const ASInterfacePtr &intf) { return intf->getPtr(); });
 
-    const std::vector<VkDeviceSize> copySizes = getStructureSizes(handles);
+    bool allBitsAvailable2                    = false;
+    const std::vector<VkDeviceSize> copySizes = getStructureSizes(handles, allBitsAvailable2);
 
     // verification
+    if (m_params->queryAvailablityBit && (!allBitsAvailable1 || !allBitsAvailable2))
+        return TestStatus::fail("Availability bits are 0");
+
     bool pass = true;
     for (uint32_t i = 0; pass && i < queryCount; ++i)
     {
@@ -4052,6 +4125,8 @@ TestStatus QueryPoolResultsPointersInstance::iterate(void)
                                                MemoryRequirement::Coherent | MemoryRequirement::HostVisible);
     }
 
+    bool availabilityBitsSet = true;
+
     if (m_params->buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
     {
         beginCommandBuffer(vk, *cmdBuffer, 0);
@@ -4075,9 +4150,36 @@ TestStatus QueryPoolResultsPointersInstance::iterate(void)
         }
         else
         {
-            VK_CHECK(vk.getQueryPoolResults(device, *queryPoolCounts, 0u, queryCount, queryCount * sizeof(VkDeviceSize),
-                                            pointerCounts.data(), sizeof(VkDeviceSize),
-                                            VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+            if (!m_params->queryAvailablityBit)
+            {
+                VK_CHECK(vk.getQueryPoolResults(
+                    device, *queryPoolCounts, 0u, queryCount, queryCount * sizeof(VkDeviceSize), pointerCounts.data(),
+                    sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+            }
+            else
+            {
+                std::vector<VkDeviceSize> pointerCountsWithAvailability(queryCount * 2u, 123u);
+                VkResult res;
+                do
+                {
+                    res = vk.getQueryPoolResults(
+                        device, *queryPoolCounts, 0u, queryCount, queryCount * sizeof(VkDeviceSize) * 2u,
+                        pointerCountsWithAvailability.data(), sizeof(VkDeviceSize) * 2u,
+                        VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT);
+                } while (res != VK_SUCCESS);
+                for (uint32_t i = 0; i < queryCount; ++i)
+                {
+                    pointerCounts[i] = pointerCountsWithAvailability[i * 2];
+                    if (pointerCountsWithAvailability[i * 2 + 1] == 0)
+                    {
+                        availabilityBitsSet = false;
+                        tcu::TestLog &log   = m_context.getTestContext().getLog();
+                        log << tcu::TestLog::Message
+                            << "vkGetQueryPoolResults() returned VK_SUCCESS but availability for query " << i
+                            << "  is 0" << tcu::TestLog::EndMessage;
+                    }
+                }
+            }
         }
     }
     else
@@ -4097,6 +4199,9 @@ TestStatus QueryPoolResultsPointersInstance::iterate(void)
     submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
     const SerialStorage::AccelerationStructureHeader *header = storage.getASHeader();
+
+    if (m_params->queryAvailablityBit && !availabilityBitsSet)
+        return TestStatus::fail("Availability bits are 0");
 
     bool pass = (header->handleCount == pointerCounts[0]); // must be the same as bottoms.size()
     for (uint32_t i = 1; pass && i < queryCount; ++i)
@@ -6610,6 +6715,8 @@ void addQueryPoolResultsTests(TestCaseGroup *group)
 
     std::pair<bool, const char *> const buildWithCompacted[]{{false, "no_compacted"}, {true, "enable_compacted"}};
 
+    std::pair<bool, const char *> const availabilityTypes[]{{false, "none"}, {true, "availability_bit"}};
+
     auto &testContext = group->getTestContext();
 
     for (size_t structResidencyNdx = 0; structResidencyNdx < DE_LENGTH_OF_ARRAY(accStructBufferResTypes);
@@ -6633,16 +6740,33 @@ void addQueryPoolResultsTests(TestCaseGroup *group)
                             (accStructBufferResTypes[structResidencyNdx].res == ResourceResidency::SPARSE_BINDING))
                             continue;
 
-                        QueryPoolResultsParams p;
-                        p.buildType    = buildType.first;
-                        p.inVkBuffer   = storeType.first;
-                        p.queryType    = queryType.first;
-                        p.blasCount    = 5;
-                        p.compacted    = compacted.first;
-                        p.accStructRes = accStructBufferResTypes[structResidencyNdx].res;
+                        auto queryTypeGroup = makeMovePtr<TestCaseGroup>(testContext, queryType.second);
+                        for (const auto &availabilityType : availabilityTypes)
+                        {
+                            if (availabilityType.first)
+                            {
+                                if (storeType.first)
+                                    continue;
+                                if (queryType.first == QueryPoolResultsParams::Type::StructureSize &&
+                                    buildType.first == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+                                    continue;
+                                if (buildType.first == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR)
+                                    continue;
+                            }
 
-                        storeTypeGroup->addChild(
-                            new QueryPoolResultsCase(testContext, queryType.second, makeSharedFrom(p)));
+                            QueryPoolResultsParams p;
+                            p.buildType           = buildType.first;
+                            p.inVkBuffer          = storeType.first;
+                            p.queryType           = queryType.first;
+                            p.blasCount           = 5;
+                            p.compacted           = compacted.first;
+                            p.accStructRes        = accStructBufferResTypes[structResidencyNdx].res;
+                            p.queryAvailablityBit = availabilityType.first;
+
+                            queryTypeGroup->addChild(
+                                new QueryPoolResultsCase(testContext, availabilityType.second, makeSharedFrom(p)));
+                        }
+                        storeTypeGroup->addChild(queryTypeGroup.release());
                     }
                     buildCompactedGroup->addChild(storeTypeGroup.release());
                 }
