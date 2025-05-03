@@ -335,6 +335,14 @@ class GitRepo (Source):
         except KeyboardInterrupt:
             # Propagate the exception to stop the process if possible.
             raise
+        except:
+            # Checkout may fail here if a clone of the repository already
+            # exists but git cannot fetch from the current primary URL.
+            # Try the backup URL, if available, before giving up.
+            if backupUrl != None:
+                self.checkout(backupUrl, fullDstPath, force)
+            else:
+                raise
         finally:
             popWorkingDir()
 
