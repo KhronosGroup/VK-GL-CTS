@@ -1455,6 +1455,7 @@ protected:
 
     VkFormat checkImageFormat(VkImageUsageFlags flags, const VkVideoProfileListInfoKHR *videoProfileList,
                               const VkFormat requiredFormat);
+    VkFormat getFirstSupportedImageFormat(VkImageUsageFlags flags, const VkVideoProfileListInfoKHR *videoProfileList);
 
     bool checkQueryResultSupport(void);
 
@@ -1516,6 +1517,19 @@ VkFormat VideoEncodeTestInstance::checkImageFormat(VkImageUsageFlags flags,
             return requiredFormat;
 
     TCU_THROW(NotSupportedError, "Failed to find required picture format");
+}
+
+VkFormat VideoEncodeTestInstance::getFirstSupportedImageFormat(VkImageUsageFlags flags,
+                                                               const VkVideoProfileListInfoKHR *videoProfileList)
+{
+    const InstanceInterface &vki               = m_context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice      = m_context.getPhysicalDevice();
+    MovePtr<vector<VkFormat>> supportedFormats = getSupportedFormats(vki, physicalDevice, flags, videoProfileList);
+
+    if (!supportedFormats || supportedFormats->empty())
+        TCU_THROW(NotSupportedError, "No supported picture formats");
+
+    return supportedFormats->front();
 }
 
 bool VideoEncodeTestInstance::checkQueryResultSupport(void)
@@ -1617,8 +1631,8 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 
     const VkFormat imageFormat = checkImageFormat(VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR, videoEncodeProfileList.get(),
                                                   VK_FORMAT_G8_B8R8_2PLANE_420_UNORM);
-    const VkFormat dpbImageFormat = checkImageFormat(VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR,
-                                                     videoEncodeProfileList.get(), VK_FORMAT_G8_B8R8_2PLANE_420_UNORM);
+    const VkFormat dpbImageFormat =
+        getFirstSupportedImageFormat(VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR, videoEncodeProfileList.get());
 
     const VideoDevice::VideoDeviceFlags videoDeviceFlags = m_testDefinition->requiredDeviceFlags();
 
@@ -2074,7 +2088,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
     const bool separateReferenceImages =
         videoCapabilities.get()->flags & VK_VIDEO_CAPABILITY_SEPARATE_REFERENCE_IMAGES_BIT_KHR;
     const VkImageCreateInfo dpbImageCreateInfo =
-        makeImageCreateInfo(imageFormat, codedExtent, 0, &encodeQueueFamilyIndex, dpbImageUsage,
+        makeImageCreateInfo(dpbImageFormat, codedExtent, 0, &encodeQueueFamilyIndex, dpbImageUsage,
                             videoEncodeProfileList.get(), separateReferenceImages ? 1 : dpbSlots);
     const VkImageViewType dpbImageViewType =
         separateReferenceImages ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY;
@@ -2130,7 +2144,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 
         std::unique_ptr<Move<VkImageView>> dpbImageView(new Move<VkImageView>(
             makeImageView(videoDeviceDriver, videoDevice, dpbImages[separateReferenceImages ? j : 0]->get(),
-                          dpbImageViewType, imageFormat, dpbImageSubresourceRange)));
+                          dpbImageViewType, dpbImageFormat, dpbImageSubresourceRange)));
         std::unique_ptr<VkVideoPictureResourceInfoKHR> dpbPictureResource(
             new VkVideoPictureResourceInfoKHR(makeVideoPictureResource(codedExtent, 0, dpbImageView->get())));
 
