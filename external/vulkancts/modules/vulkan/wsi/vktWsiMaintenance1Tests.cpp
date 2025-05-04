@@ -949,8 +949,18 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
                 else
                     presentFence.push_back(VK_NULL_HANDLE);
 
-                VK_CHECK(vkd.acquireNextImageKHR(device, *swapchains[j], foreverNs, acquireSem[j], VK_NULL_HANDLE,
-                                                 &imageIndex[j]));
+                if (!isSharedPresentMode[j] || i == 0)
+                {
+                    VK_CHECK(vkd.acquireNextImageKHR(device, *swapchains[j], foreverNs, acquireSem.back(),
+                                                     VK_NULL_HANDLE, &imageIndex[j]));
+                }
+                else
+                {
+                    // Shared present mode always has one image, so index is always 0.
+                    imageIndex[j] = 0;
+                    // Since acquire is skipped, there is no acquire semaphore.
+                    acquireSem.pop_back();
+                }
 
                 // If memory allocation is deferred and bind image memory is used, lazily bind image memory now if this is the first time the image is acquired.
                 VkImage &acquiredImage = swapchainImages[j][imageIndex[j]];
@@ -1008,8 +1018,15 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
             // Submit the command buffer
             std::vector<VkPipelineStageFlags> waitStages(surfaceCount, VK_PIPELINE_STAGE_TRANSFER_BIT);
             const VkSubmitInfo submitInfo = {
-                VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, surfaceCount, acquireSem.data(), waitStages.data(), 1u,
-                &**commandBuffers[i],          1u,      presentSem,
+                VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                nullptr,
+                (uint32_t)acquireSem.size(),
+                acquireSem.data(),
+                waitStages.data(),
+                1u,
+                &**commandBuffers[i],
+                1u,
+                presentSem,
             };
             VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, VK_NULL_HANDLE));
 
@@ -1652,6 +1669,9 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
             TCU_THROW(NotSupportedError, "Gravity mode is not supported (y axis)");
     }
 
+    const bool isSharedPresentMode = testParams.mode == VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR ||
+                                     testParams.mode == VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR;
+
     tcu::UVec2 swapchainSize = native.windowSize;
     if (!testParams.resizeWindow)
     {
@@ -1769,10 +1789,21 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
         for (uint32_t i = 0; i < iterations; ++i)
         {
             const VkSemaphore presentSem = **presentSems[i];
-            const VkSemaphore acquireSem = **acquireSems[i];
+            VkSemaphore acquireSem       = **acquireSems[i];
             uint32_t imageIndex          = 0x12345; // initialize to junk value
 
-            VK_CHECK(vkd.acquireNextImageKHR(device, *swapchain, foreverNs, acquireSem, VK_NULL_HANDLE, &imageIndex));
+            if (!isSharedPresentMode || i == 0)
+            {
+                VK_CHECK(
+                    vkd.acquireNextImageKHR(device, *swapchain, foreverNs, acquireSem, VK_NULL_HANDLE, &imageIndex));
+            }
+            else
+            {
+                // Shared present mode always has one image, so index is always 0.
+                imageIndex = 0;
+                // Since acquire is skipped, there is no acquire semaphore.
+                acquireSem = VK_NULL_HANDLE;
+            }
 
             beginCommandBuffer(vkd, **commandBuffers[i], 0u);
 
@@ -1818,8 +1849,15 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
             // Submit the command buffer
             VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             const VkSubmitInfo submitInfo  = {
-                VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 1,           &acquireSem, &waitStage, 1u,
-                &**commandBuffers[i],          1u,      &presentSem,
+                VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                nullptr,
+                acquireSem == VK_NULL_HANDLE ? 0u : 1u,
+                &acquireSem,
+                &waitStage,
+                1u,
+                &**commandBuffers[i],
+                1u,
+                &presentSem,
             };
             VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, VK_NULL_HANDLE));
 
@@ -2203,6 +2241,8 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                                 (uint32_t)testParams.releaseBeforeRetire << 31;
     de::Random rng(0x53A4C8A1u ^ configHash);
 
+    bool needSharedPresentAcquire = true;
+
     try
     {
         for (uint32_t i = 0; i < iterations; ++i)
@@ -2226,18 +2266,23 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
 
             // Acquire N times
             const VkSemaphore presentSem = **presentSems[i];
-            const VkSemaphore acquireSem = **acquireSems[i];
+            VkSemaphore acquireSem       = **acquireSems[i];
             std::vector<uint32_t> acquiredIndices(acquireCount, 0x12345);
             FenceSp acquireFenceSp      = FenceSp(new Unique<VkFence>(createFence(vkd, device)));
             const VkFence &acquireFence = **acquireFenceSp;
 
-            VkResult result =
-                vkd.acquireNextImageKHR(device, *swapchain, foreverNs, presentIndex == 0 ? acquireSem : VK_NULL_HANDLE,
-                                        acquireFence, &acquiredIndices[0]);
-            if (result == VK_SUCCESS)
+            VkResult result = VK_SUCCESS;
+            if (!isSharedPresentMode || needSharedPresentAcquire)
             {
-                VK_CHECK(vkd.waitForFences(device, 1u, &acquireFence, VK_TRUE, kMaxFenceWaitTimeout));
-                VK_CHECK(vkd.resetFences(device, 1u, &acquireFence));
+                result = vkd.acquireNextImageKHR(device, *swapchain, foreverNs,
+                                                 presentIndex == 0 ? acquireSem : VK_NULL_HANDLE, acquireFence,
+                                                 &acquiredIndices[0]);
+
+                if (result == VK_SUCCESS)
+                {
+                    VK_CHECK(vkd.waitForFences(device, 1u, &acquireFence, VK_TRUE, kMaxFenceWaitTimeout));
+                    VK_CHECK(vkd.resetFences(device, 1u, &acquireFence));
+                }
             }
 
             // If out of date, recreate the swapchain and reacquire.
@@ -2270,6 +2315,17 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
 
             VK_CHECK_WSI(result);
 
+            if (isSharedPresentMode && !needSharedPresentAcquire)
+            {
+                // Shared present mode always has one image, so index is always 0.
+                acquiredIndices[0] = 0;
+                // Since acquire is skipped, there is no acquire semaphore.
+                acquireSem = VK_NULL_HANDLE;
+            }
+            needSharedPresentAcquire = false;
+
+            // In shared present mode, no additional acquire is done
+            DE_ASSERT(!isSharedPresentMode || acquireCount == 1);
             for (uint32_t j = 1; j < acquireCount; ++j)
             {
                 VK_CHECK_WSI(vkd.acquireNextImageKHR(device, *swapchain, foreverNs,
@@ -2339,8 +2395,15 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                 // Submit the command buffer
                 VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
                 const VkSubmitInfo submitInfo  = {
-                    VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 1,           &acquireSem, &waitStage, 1u,
-                    &**commandBuffers[i],          1u,      &presentSem,
+                    VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                    nullptr,
+                    acquireSem == VK_NULL_HANDLE ? 0u : 1u,
+                    &acquireSem,
+                    &waitStage,
+                    1u,
+                    &**commandBuffers[i],
+                    1u,
+                    &presentSem,
                 };
                 VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, VK_NULL_HANDLE));
             }
@@ -2359,6 +2422,8 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             {
                 VK_CHECK(vkd.releaseSwapchainImagesKHR(device, &releaseInfo));
                 imagesReleased = true;
+                // Since the image was released, it should be acquired again in shared present mode.
+                needSharedPresentAcquire = true;
             }
 
             // Present the frame
@@ -2420,6 +2485,9 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                         TCU_THROW(
                             InternalError,
                             "Unexpected change in number of swapchain images when recreated during window resize");
+
+                    // The swapchain is recreated, so acquire needs to be done again.
+                    needSharedPresentAcquire = true;
                 }
                 else
                 {
@@ -2432,6 +2500,8 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             if (!imagesReleased && imageReleaseSize > 0)
             {
                 VK_CHECK_WSI(vkd.releaseSwapchainImagesKHR(device, &releaseInfo));
+                // Since the image was released, it should be acquired again in shared present mode.
+                needSharedPresentAcquire = true;
             }
         }
 
