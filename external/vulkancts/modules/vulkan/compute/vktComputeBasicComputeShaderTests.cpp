@@ -5848,6 +5848,8 @@ tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
             cts_amber::createAmberTestCase(testCtx, "write_ssbo_array", "", "compute", "write_ssbo_array.amber"));
         basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "atomic_barrier_sum_small", "", "compute",
                                                                    "atomic_barrier_sum_small.amber"));
+        basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "vec2_nclamp_nan_component", "", "compute",
+                                                                   "vec2_nclamp_nan_component.amber"));
         basicComputeTests->addChild(
             cts_amber::createAmberTestCase(testCtx, "branch_past_barrier", "", "compute", "branch_past_barrier.amber"));
         basicComputeTests->addChild(cts_amber::createAmberTestCase(
