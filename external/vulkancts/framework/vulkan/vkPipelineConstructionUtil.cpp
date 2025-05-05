@@ -4029,13 +4029,13 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
             state->rasterizationSamples = pointerToCreateInfo->pMultisampleState->rasterizationSamples;
             uint32_t count =
                 (pointerToCreateInfo->pMultisampleState->rasterizationSamples > vk::VK_SAMPLE_COUNT_32_BIT) ? 2 : 1;
+            uint32_t allMask = 0xffffffff; // If pSampleMask is NULL, it is treated as if the mask has all bits set to 1
             state->sampleMasks.resize(count, 0);
             for (uint32_t i = 0; i < count; ++i)
                 if (pointerToCreateInfo->pMultisampleState->pSampleMask)
                     state->sampleMasks[i] = pointerToCreateInfo->pMultisampleState->pSampleMask[i];
                 else
-                    state->sampleMasks[i] =
-                        0xFF; // If pSampleMask is NULL, it is treated as if the mask has all bits set to 1
+                    state->sampleMasks[i] = allMask;
         }
         const auto representativeFragment =
             findStructure<VkPipelineRepresentativeFragmentTestStateCreateInfoNV>(pointerToCreateInfo->pNext);
