@@ -32,3 +32,8 @@ VkResult PlatformDriver::enumerateInstanceExtensionProperties (const char* pLaye
 {
     return m_vk.enumerateInstanceExtensionProperties(pLayerName, pPropertyCount, pProperties);
 }
+
+void PlatformDriver::getExternalComputeQueueDataNV (VkExternalComputeQueueNV externalQueue, VkExternalComputeQueueDataParamsNV* params, void* pData) const
+{
+    m_vk.getExternalComputeQueueDataNV(externalQueue, params, pData);
+}

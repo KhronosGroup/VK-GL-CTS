@@ -554,6 +554,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_bfloat16")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_sample_locations")
 	{
 		functions.push_back("vkGetPhysicalDeviceMultisamplePropertiesEXT");
@@ -1083,6 +1087,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_QCOM_tile_shading")
+	{
+		return;
+	}
 	if (extName == "VK_NV_low_latency")
 	{
 		return;
@@ -1513,6 +1521,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_internally_synchronized_queues")
+	{
+		return;
+	}
 	if (extName == "VK_NV_low_latency2")
 	{
 		return;
@@ -1611,6 +1623,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_QCOM_tile_memory_heap")
+	{
+		return;
+	}
 	if (extName == "VK_NV_display_stereo")
 	{
 		return;
@@ -1620,6 +1636,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_NV_raw_access_chains")
+	{
+		return;
+	}
+	if (extName == "VK_NV_external_compute_queue")
 	{
 		return;
 	}
@@ -1697,6 +1717,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_EXT_vertex_attribute_robustness")
+	{
+		return;
+	}
+	if (extName == "VK_NV_present_metering")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_fragment_density_map_offset")
 	{
 		return;
 	}
@@ -2329,6 +2357,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_EXT_shader_stencil_export")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_shader_bfloat16")
 	{
 		return;
 	}
@@ -2997,6 +3029,13 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkDestroyCudaModuleNV");
 		functions.push_back("vkDestroyCudaFunctionNV");
 		functions.push_back("vkCmdCudaLaunchKernelNV");
+		return;
+	}
+	if (extName == "VK_QCOM_tile_shading")
+	{
+		functions.push_back("vkCmdDispatchTileQCOM");
+		functions.push_back("vkCmdBeginPerTileExecutionQCOM");
+		functions.push_back("vkCmdEndPerTileExecutionQCOM");
 		return;
 	}
 	if (extName == "VK_NV_low_latency")
@@ -3716,6 +3755,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_internally_synchronized_queues")
+	{
+		return;
+	}
 	if (extName == "VK_NV_low_latency2")
 	{
 		functions.push_back("vkSetLatencySleepModeNV");
@@ -3833,6 +3876,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_QCOM_tile_memory_heap")
+	{
+		functions.push_back("vkCmdBindTileMemoryQCOM");
+		return;
+	}
 	if (extName == "VK_NV_display_stereo")
 	{
 		return;
@@ -3843,6 +3891,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	}
 	if (extName == "VK_NV_raw_access_chains")
 	{
+		return;
+	}
+	if (extName == "VK_NV_external_compute_queue")
+	{
+		functions.push_back("vkCreateExternalComputeQueueNV");
+		functions.push_back("vkDestroyExternalComputeQueueNV");
 		return;
 	}
 	if (extName == "VK_KHR_shader_relaxed_extended_instruction")
@@ -3935,6 +3989,15 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	}
 	if (extName == "VK_EXT_vertex_attribute_robustness")
 	{
+		return;
+	}
+	if (extName == "VK_NV_present_metering")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_fragment_density_map_offset")
+	{
+		functions.push_back("vkCmdEndRendering2EXT");
 		return;
 	}
 	if (extName == "vulkan_video_codecs_common")
@@ -4114,6 +4177,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_AMD_shader_fragment_mask",
 	"VK_EXT_inline_uniform_block",
 	"VK_EXT_shader_stencil_export",
+	"VK_KHR_shader_bfloat16",
 	"VK_EXT_sample_locations",
 	"VK_KHR_relaxed_block_layout",
 	"VK_KHR_get_memory_requirements2",
@@ -4236,6 +4300,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_device_diagnostics_config",
 	"VK_QCOM_render_pass_store_ops",
 	"VK_NV_cuda_kernel_launch",
+	"VK_QCOM_tile_shading",
 	"VK_NV_low_latency",
 	"VK_EXT_metal_objects",
 	"VK_KHR_synchronization2",
@@ -4337,6 +4402,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_ARM_shader_core_builtins",
 	"VK_EXT_pipeline_library_group_handles",
 	"VK_EXT_dynamic_rendering_unused_attachments",
+	"VK_KHR_internally_synchronized_queues",
 	"VK_NV_low_latency2",
 	"VK_KHR_cooperative_matrix",
 	"VK_QCOM_multiview_per_view_render_areas",
@@ -4361,8 +4427,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_shader_expect_assume",
 	"VK_KHR_maintenance6",
 	"VK_NV_descriptor_pool_overallocation",
+	"VK_QCOM_tile_memory_heap",
 	"VK_KHR_video_encode_quantization_map",
 	"VK_NV_raw_access_chains",
+	"VK_NV_external_compute_queue",
 	"VK_KHR_shader_relaxed_extended_instruction",
 	"VK_NV_command_buffer_inheritance",
 	"VK_KHR_maintenance7",
@@ -4382,4 +4450,6 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_external_memory_metal",
 	"VK_KHR_depth_clamp_zero_one",
 	"VK_EXT_vertex_attribute_robustness",
+	"VK_NV_present_metering",
+	"VK_EXT_fragment_density_map_offset",
 };

@@ -375,6 +375,9 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkDestroyCudaModuleNV",
 		"vkDestroyCudaFunctionNV",
 		"vkCmdCudaLaunchKernelNV",
+		"vkCmdDispatchTileQCOM",
+		"vkCmdBeginPerTileExecutionQCOM",
+		"vkCmdEndPerTileExecutionQCOM",
 		"vkExportMetalObjectsEXT",
 		"vkCmdSetEvent2KHR",
 		"vkCmdResetEvent2KHR",
@@ -586,6 +589,10 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdPushDescriptorSetWithTemplate2KHR",
 		"vkCmdSetDescriptorBufferOffsets2EXT",
 		"vkCmdBindDescriptorBufferEmbeddedSamplers2EXT",
+		"vkCmdBindTileMemoryQCOM",
+		"vkCreateExternalComputeQueueNV",
+		"vkDestroyExternalComputeQueueNV",
+		"vkGetExternalComputeQueueDataNV",
 		"vkGetClusterAccelerationStructureBuildSizesNV",
 		"vkCmdBuildClusterAccelerationStructureIndirectNV",
 		"vkGetPartitionedAccelerationStructuresBuildSizesNV",
@@ -603,6 +610,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV",
 		"vkGetMemoryMetalHandleEXT",
 		"vkGetMemoryMetalHandlePropertiesEXT",
+		"vkCmdEndRendering2EXT",
     };
 
     bool fail = false;
