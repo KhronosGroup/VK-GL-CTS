@@ -1869,8 +1869,8 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
             readStencilAttachment(vk, device, queue, queueFamilyIndex, alloc, **depthImage,
                                   depthStencilAttachmentFormat, tcu::UVec2(width, height), vk::VK_IMAGE_LAYOUT_GENERAL);
         const auto stencilAccess = stencilBuffer->getAccess();
-        const float depthEpsilon = 0.02f;
 
+        const float depthEpsilon = 0.02f;
         for (int32_t j = 0; j < height; ++j)
         {
             for (int32_t i = 0; i < width; ++i)
