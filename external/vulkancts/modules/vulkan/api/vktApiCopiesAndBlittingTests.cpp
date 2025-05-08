@@ -1311,7 +1311,7 @@ CopyImageToImage::CopyImageToImage(Context &context, TestParams params)
             1u,                                                                // uint32_t mipLevels;
             getArraySize(m_params.src.image),                                  // uint32_t arraySize;
             VK_SAMPLE_COUNT_1_BIT,                                             // uint32_t samples;
-            VK_IMAGE_TILING_OPTIMAL,                                           // VkImageTiling tiling;
+            m_params.src.image.tiling,                                         // VkImageTiling tiling;
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
             m_queueFamilyIndices.size() > 1 ? VK_SHARING_MODE_CONCURRENT :
                                               VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode sharingMode;
@@ -1366,7 +1366,7 @@ CopyImageToImage::CopyImageToImage(Context &context, TestParams params)
             1u,                                                                // uint32_t mipLevels;
             getArraySize(m_params.dst.image),                                  // uint32_t arraySize;
             VK_SAMPLE_COUNT_1_BIT,                                             // uint32_t samples;
-            VK_IMAGE_TILING_OPTIMAL,                                           // VkImageTiling tiling;
+            m_params.dst.image.tiling,                                         // VkImageTiling tiling;
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
             m_queueFamilyIndices.size() > 1 ? VK_SHARING_MODE_CONCURRENT :
                                               VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode sharingMode;
@@ -1799,13 +1799,20 @@ public:
         const VkPhysicalDeviceLimits &limits = context.getDeviceProperties().limits;
         VkImageFormatProperties properties;
 
+        VkImageCreateFlags srcCreateFlags = getCreateFlags(m_params.src.image);
+        if (m_params.useSparseBinding)
+            srcCreateFlags |= (VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
+
+        const auto dstCreateFlags = getCreateFlags(m_params.dst.image);
+        // Sparse is not used for the dst image.
+
         if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
                  context.getPhysicalDevice(), m_params.src.image.format, m_params.src.image.imageType,
-                 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0,
+                 m_params.src.image.tiling, VK_IMAGE_USAGE_TRANSFER_SRC_BIT, srcCreateFlags,
                  &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED) ||
             (context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
                  context.getPhysicalDevice(), m_params.dst.image.format, m_params.dst.image.imageType,
-                 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT, 0,
+                 m_params.dst.image.tiling, VK_IMAGE_USAGE_TRANSFER_DST_BIT, dstCreateFlags,
                  &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
         {
             TCU_THROW(NotSupportedError, "Format not supported");
@@ -9580,41 +9587,55 @@ void addImageToImageSimpleTests(tcu::TestCaseGroup *group, TestGroupParamsPtr te
 {
     tcu::TestContext &testCtx = group->getTestContext();
 
-    {
-        TestParams params;
-        params.src.image.imageType       = VK_IMAGE_TYPE_2D;
-        params.src.image.format          = VK_FORMAT_R8G8B8A8_UINT;
-        params.src.image.extent          = defaultExtent;
-        params.src.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        params.dst.image.imageType       = VK_IMAGE_TYPE_2D;
-        params.dst.image.format          = VK_FORMAT_R8G8B8A8_UINT;
-        params.dst.image.extent          = defaultExtent;
-        params.dst.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
-        params.dst.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        params.allocationKind            = testGroupParams->allocationKind;
-        params.extensionFlags            = testGroupParams->extensionFlags;
-        params.queueSelection            = testGroupParams->queueSelection;
-        params.useSecondaryCmdBuffer     = testGroupParams->useSecondaryCmdBuffer;
-        params.useSparseBinding          = testGroupParams->useSparseBinding;
-        params.useGeneralLayout          = testGroupParams->useGeneralLayout;
-
+    for (const auto format : {VK_FORMAT_R8G8B8A8_UINT, VK_FORMAT_R32G32B32_UINT, VK_FORMAT_R32G32B32_SFLOAT})
+        for (const auto tiling : {VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_TILING_LINEAR})
         {
-            const VkImageCopy testCopy = {
-                defaultSourceLayer, // VkImageSubresourceLayers srcSubresource;
-                {0, 0, 0},          // VkOffset3D srcOffset;
-                defaultSourceLayer, // VkImageSubresourceLayers dstSubresource;
-                {0, 0, 0},          // VkOffset3D dstOffset;
-                defaultExtent,      // VkExtent3D extent;
-            };
+            // Linear and sparse residency cannot be used together: VUID-VkImageCreateInfo-tiling-04121
+            if (tiling == VK_IMAGE_TILING_LINEAR && testGroupParams->useSparseBinding)
+                continue;
 
-            CopyRegion imageCopy;
-            imageCopy.imageCopy = testCopy;
-            params.regions.push_back(imageCopy);
+            TestParams params;
+            params.src.image.imageType       = VK_IMAGE_TYPE_2D;
+            params.src.image.format          = format;
+            params.src.image.extent          = defaultExtent;
+            params.src.image.tiling          = tiling;
+            params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            params.dst.image.imageType       = VK_IMAGE_TYPE_2D;
+            params.dst.image.format          = format;
+            params.dst.image.extent          = defaultExtent;
+            params.dst.image.tiling          = tiling;
+            params.dst.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            params.allocationKind            = testGroupParams->allocationKind;
+            params.extensionFlags            = testGroupParams->extensionFlags;
+            params.queueSelection            = testGroupParams->queueSelection;
+            params.useSecondaryCmdBuffer     = testGroupParams->useSecondaryCmdBuffer;
+            params.useSparseBinding          = testGroupParams->useSparseBinding;
+            params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+
+            {
+                const VkImageCopy testCopy = {
+                    defaultSourceLayer, // VkImageSubresourceLayers srcSubresource;
+                    {0, 0, 0},          // VkOffset3D srcOffset;
+                    defaultSourceLayer, // VkImageSubresourceLayers dstSubresource;
+                    {0, 0, 0},          // VkOffset3D dstOffset;
+                    defaultExtent,      // VkExtent3D extent;
+                };
+
+                CopyRegion imageCopy;
+                imageCopy.imageCopy = testCopy;
+                params.regions.push_back(imageCopy);
+            }
+
+            std::string testName("whole_image");
+
+            if (format != VK_FORMAT_R8G8B8A8_UINT)
+                testName += "_" + getFormatCaseName(format);
+
+            if (tiling == VK_IMAGE_TILING_LINEAR)
+                testName += "_linear";
+
+            group->addChild(new CopyImageToImageTestCase(testCtx, testName, params));
         }
-
-        group->addChild(new CopyImageToImageTestCase(testCtx, "whole_image", params));
-    }
 
     {
         TestParams params;
@@ -9652,41 +9673,55 @@ void addImageToImageSimpleTests(tcu::TestCaseGroup *group, TestGroupParamsPtr te
         group->addChild(new CopyImageToImageTestCase(testCtx, "whole_image_diff_format", params));
     }
 
-    {
-        TestParams params;
-        params.src.image.imageType       = VK_IMAGE_TYPE_2D;
-        params.src.image.format          = VK_FORMAT_R8G8B8A8_UINT;
-        params.src.image.extent          = defaultExtent;
-        params.src.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        params.dst.image.imageType       = VK_IMAGE_TYPE_2D;
-        params.dst.image.format          = VK_FORMAT_R8G8B8A8_UINT;
-        params.dst.image.extent          = defaultExtent;
-        params.dst.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
-        params.dst.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        params.allocationKind            = testGroupParams->allocationKind;
-        params.extensionFlags            = testGroupParams->extensionFlags;
-        params.queueSelection            = testGroupParams->queueSelection;
-        params.useSecondaryCmdBuffer     = testGroupParams->useSecondaryCmdBuffer;
-        params.useSparseBinding          = testGroupParams->useSparseBinding;
-        params.useGeneralLayout          = testGroupParams->useGeneralLayout;
-
+    for (const auto format : {VK_FORMAT_R8G8B8A8_UINT, VK_FORMAT_R32G32B32_UINT, VK_FORMAT_R32G32B32_SFLOAT})
+        for (const auto tiling : {VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_TILING_LINEAR})
         {
-            const VkImageCopy testCopy = {
-                defaultSourceLayer,                                  // VkImageSubresourceLayers srcSubresource;
-                {0, 0, 0},                                           // VkOffset3D srcOffset;
-                defaultSourceLayer,                                  // VkImageSubresourceLayers dstSubresource;
-                {defaultQuarterSize, defaultQuarterSize / 2, 0},     // VkOffset3D dstOffset;
-                {defaultQuarterSize / 2, defaultQuarterSize / 2, 1}, // VkExtent3D extent;
-            };
+            // Linear and sparse residency cannot be used together: VUID-VkImageCreateInfo-tiling-04121
+            if (tiling == VK_IMAGE_TILING_LINEAR && testGroupParams->useSparseBinding)
+                continue;
 
-            CopyRegion imageCopy;
-            imageCopy.imageCopy = testCopy;
-            params.regions.push_back(imageCopy);
+            TestParams params;
+            params.src.image.imageType       = VK_IMAGE_TYPE_2D;
+            params.src.image.format          = format;
+            params.src.image.extent          = defaultExtent;
+            params.src.image.tiling          = tiling;
+            params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            params.dst.image.imageType       = VK_IMAGE_TYPE_2D;
+            params.dst.image.format          = format;
+            params.dst.image.extent          = defaultExtent;
+            params.dst.image.tiling          = tiling;
+            params.dst.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            params.allocationKind            = testGroupParams->allocationKind;
+            params.extensionFlags            = testGroupParams->extensionFlags;
+            params.queueSelection            = testGroupParams->queueSelection;
+            params.useSecondaryCmdBuffer     = testGroupParams->useSecondaryCmdBuffer;
+            params.useSparseBinding          = testGroupParams->useSparseBinding;
+            params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+
+            {
+                const VkImageCopy testCopy = {
+                    defaultSourceLayer,                                  // VkImageSubresourceLayers srcSubresource;
+                    {0, 0, 0},                                           // VkOffset3D srcOffset;
+                    defaultSourceLayer,                                  // VkImageSubresourceLayers dstSubresource;
+                    {defaultQuarterSize, defaultQuarterSize / 2, 0},     // VkOffset3D dstOffset;
+                    {defaultQuarterSize / 2, defaultQuarterSize / 2, 1}, // VkExtent3D extent;
+                };
+
+                CopyRegion imageCopy;
+                imageCopy.imageCopy = testCopy;
+                params.regions.push_back(imageCopy);
+            }
+
+            std::string testName("partial_image");
+
+            if (format != VK_FORMAT_R8G8B8A8_UINT)
+                testName += "_" + getFormatCaseName(format);
+
+            if (tiling == VK_IMAGE_TILING_LINEAR)
+                testName += "_linear";
+
+            group->addChild(new CopyImageToImageTestCase(testCtx, testName, params));
         }
-
-        group->addChild(new CopyImageToImageTestCase(testCtx, "partial_image", params));
-    }
 
     static const struct
     {
