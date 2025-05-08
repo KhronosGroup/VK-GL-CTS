@@ -5627,6 +5627,307 @@ void TransformFeedbackTestCase::initPrograms(SourceCollections &programCollectio
     DE_ASSERT(0 && "Unknown test");
 }
 
+struct MultiStreamSingleRasterParams
+{
+    PipelineConstructionType constructionType;
+    bool nonZeroStream;
+};
+
+class MultiStreamSingleRasterTest : public vkt::TestInstance
+{
+public:
+    MultiStreamSingleRasterTest(Context &context, MultiStreamSingleRasterParams params)
+        : vkt::TestInstance(context)
+        , m_params(params)
+    {
+    }
+    virtual ~MultiStreamSingleRasterTest(void) = default;
+
+    tcu::TestStatus iterate(void) override;
+
+protected:
+    const MultiStreamSingleRasterParams m_params;
+};
+
+class MultiStreamSingleRasterCase : public vkt::TestCase
+{
+public:
+    MultiStreamSingleRasterCase(tcu::TestContext &testCtx, const std::string &name,
+                                MultiStreamSingleRasterParams params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~MultiStreamSingleRasterCase(void) = default;
+
+    void checkSupport(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new MultiStreamSingleRasterTest(context, m_params);
+    }
+
+protected:
+    const MultiStreamSingleRasterParams m_params;
+};
+
+void MultiStreamSingleRasterCase::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_EXT_transform_feedback");
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
+    const auto ctx = context.getContextCommonData();
+    checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, m_params.constructionType);
+
+    const auto &xfbProperties = context.getTransformFeedbackPropertiesEXT();
+
+    if (xfbProperties.maxTransformFeedbackStreams < 2)
+        TCU_THROW(NotSupportedError, "maxTransformFeedbackStreams not large enough");
+
+    if (xfbProperties.maxTransformFeedbackBuffers < 2)
+        TCU_THROW(NotSupportedError, "maxTransformFeedbackBuffers not large enough");
+
+    if (m_params.nonZeroStream && !xfbProperties.transformFeedbackRasterizationStreamSelect)
+        TCU_THROW(NotSupportedError, "transformFeedbackRasterizationStreamSelect not supported");
+}
+
+void MultiStreamSingleRasterCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "out gl_PerVertex {\n"
+         << "    vec4 gl_Position;\n"
+         << "    float gl_PointSize;\n"
+         << "};\n"
+         << "layout (location=0) in vec4 inPos;\n"
+         << "void main(void) {\n"
+         << "    gl_Position = inPos;\n"
+         << "}\n";
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream geom;
+    geom << "#version 460\n"
+         << "layout (points) in;\n"
+         << "layout (points, max_vertices=2) out;\n"
+         << "in gl_PerVertex {\n"
+         << "    vec4 gl_Position;\n"
+         << "    float gl_PointSize;\n"
+         << "} gl_in[1];\n"
+         << (m_params.nonZeroStream ? "layout (stream=1) " : "") << "out gl_PerVertex {\n"
+         << "    vec4 gl_Position;\n"
+         << "    float gl_PointSize;\n"
+         << "};\n"
+         << "layout (location=0, stream=0, xfb_buffer=0, xfb_offset=0, xfb_stride=16) out vec4 pos0;\n"
+         << "layout (location=1, stream=1, xfb_buffer=1, xfb_offset=0, xfb_stride=16) out vec4 pos1;\n"
+         << "void main() {\n"
+         << "    vec4 inPos0;\n"
+         << "    vec4 inPos1;\n"
+         << "\n"
+         << "    inPos0 = gl_in[0].gl_Position;\n"
+         << "    inPos1 = vec4(inPos0.x, -inPos0.y, inPos0.z, inPos0.w);\n"
+         << "    gl_Position = inPos0;\n"
+         << "    gl_PointSize = 1.0;\n"
+         << "    pos0 = inPos0;\n"
+         << "    EmitStreamVertex(0);\n"
+         << "\n"
+         << "    inPos0 = gl_in[0].gl_Position;\n"
+         << "    inPos1 = vec4(inPos0.x, -inPos0.y, inPos0.z, inPos0.w);\n"
+         << "    gl_Position = inPos1;\n"
+         << "    gl_PointSize = 1.0;\n"
+         << "    pos1 = inPos1;\n"
+         << "    EmitStreamVertex(1);\n"
+         << "}\n";
+    programCollection.glslSources.add("geom") << glu::GeometrySource(geom.str());
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=" << (m_params.nonZeroStream ? 1u : 0u) << ") in vec4 inPos;\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main(void) {\n"
+         << "    const vec4 offset = vec4(-100.0);\n"
+         << "    const vec4 finalColor = vec4(0.0, 0.0, 1.0, 1.0);\n"
+         << "    outColor = max(inPos + offset, finalColor);\n" // This should result in finalColor.
+         << "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus MultiStreamSingleRasterTest::iterate(void)
+{
+    const auto ctx = m_context.getContextCommonData();
+    const tcu::IVec3 extent(1, 2, 1);
+    const auto extentVk    = makeExtent3D(extent);
+    const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto colorUsage  = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, extentVk, colorFormat, colorUsage,
+                                VK_IMAGE_TYPE_2D);
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(extent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(extent));
+
+    PipelineLayoutWrapper pipelineLayout(m_params.constructionType, ctx.vkd, ctx.device);
+
+    RenderPassWrapper renderPass(m_params.constructionType, ctx.vkd, ctx.device, colorFormat);
+    renderPass.createFramebuffer(ctx.vkd, ctx.device, colorBuffer.getImage(), colorBuffer.getImageView(),
+                                 extentVk.width, extentVk.height);
+
+    const auto &binaries = m_context.getBinaryCollection();
+    ShaderWrapper vertShader(ctx.vkd, ctx.device, binaries.get("vert"));
+    ShaderWrapper geomShader(ctx.vkd, ctx.device, binaries.get("geom"));
+    ShaderWrapper fragShader(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    const VkPipelineRasterizationStateStreamCreateInfoEXT rasterizationStreamInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_STREAM_CREATE_INFO_EXT,
+        nullptr,
+        0u,
+        (m_params.nonZeroStream ? 1u : 0u),
+    };
+
+    const auto rasterizationStatePnext = (m_params.nonZeroStream ? &rasterizationStreamInfo : nullptr);
+
+    const VkPipelineRasterizationStateCreateInfo rasterizationState{
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        rasterizationStatePnext,
+        0u,
+        VK_FALSE,
+        VK_FALSE,
+        VK_POLYGON_MODE_FILL,
+        VK_CULL_MODE_NONE,
+        VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        VK_FALSE,
+        0.0f,
+        0.0f,
+        0.0f,
+        1.0f,
+    };
+
+    GraphicsPipelineWrapper pipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, m_context.getDeviceExtensions(),
+                                     m_params.constructionType);
+    pipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
+        .setDefaultRasterizationState()
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setDefaultColorBlendState()
+        .setupVertexInputState()
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPass.get(), 0u, vertShader,
+                                          &rasterizationState, ShaderWrapper(), ShaderWrapper(), geomShader)
+        .setupFragmentShaderState(pipelineLayout, renderPass.get(), 0u, fragShader)
+        .setupFragmentOutputState(renderPass.get(), 0u)
+        .buildPipeline();
+
+    const std::vector<tcu::Vec4> vertices{
+        tcu::Vec4(0.0f, -0.5f, 0.0f, 1.0f),
+    };
+
+    const auto vertexBufferSize   = static_cast<VkDeviceSize>(de::dataSize(vertices));
+    const auto vertexBufferOffset = static_cast<VkDeviceSize>(0);
+    const auto vertexBufferUsage  = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    const auto vertexBufferInfo   = makeBufferCreateInfo(vertexBufferSize, vertexBufferUsage);
+    BufferWithMemory vertexBuffer(ctx.vkd, ctx.device, ctx.allocator, vertexBufferInfo, MemoryRequirement::HostVisible);
+    {
+        auto &alloc = vertexBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(vertices), de::dataSize(vertices));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Transform feedback buffers.
+    using BufferWithMemoryPtr = std::unique_ptr<BufferWithMemory>;
+    std::vector<BufferWithMemoryPtr> xfbBuffers;
+
+    // Create space for potentially duplicated vertices. Note in reality each buffer would only get one copy, not two.
+    const auto xfbBufferSize  = vertexBufferSize * 2ull;
+    const auto xfbBufferUsage = VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT;
+    const auto xfbBufferInfo  = makeBufferCreateInfo(xfbBufferSize, xfbBufferUsage);
+    const auto xfbBufferCount = 2u; // Must match the geometry shader.
+    xfbBuffers.reserve(xfbBufferCount);
+    for (uint32_t i = 0u; i < xfbBufferCount; ++i)
+        xfbBuffers.emplace_back(
+            new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, xfbBufferInfo, MemoryRequirement::HostVisible));
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    const tcu::Vec4 geomColor(0.0f, 0.0f, 1.0f, 1.0f); // Must match frag shader above.
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u), clearColor);
+    pipeline.bind(cmdBuffer);
+    ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+    {
+        std::vector<VkBuffer> xfbBufferHandles(xfbBuffers.size(), VK_NULL_HANDLE);
+        std::transform(begin(xfbBuffers), end(xfbBuffers), begin(xfbBufferHandles),
+                       [](const BufferWithMemoryPtr &b) { return b->get(); });
+        std::vector<VkDeviceSize> xfbBufferOffsets(xfbBufferHandles.size(), 0);
+        std::vector<VkDeviceSize> xfbBufferSizes(xfbBufferHandles.size(), xfbBufferSize);
+        ctx.vkd.cmdBindTransformFeedbackBuffersEXT(cmdBuffer, 0u, xfbBufferCount, de::dataOrNull(xfbBufferHandles),
+                                                   de::dataOrNull(xfbBufferOffsets), de::dataOrNull(xfbBufferSizes));
+    }
+    ctx.vkd.cmdBeginTransformFeedbackEXT(cmdBuffer, 0u, 0u, nullptr, nullptr);
+    ctx.vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
+    ctx.vkd.cmdEndTransformFeedbackEXT(cmdBuffer, 0u, 0u, nullptr, nullptr);
+    renderPass.end(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), extent.swizzle(0, 1));
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    auto &colorBufferAlloc = colorBuffer.getBufferAllocation();
+    invalidateAlloc(ctx.vkd, ctx.device, colorBufferAlloc);
+
+    const auto tcuFormat = mapVkFormat(colorFormat);
+    tcu::TextureLevel refLevel(tcuFormat, extent.x(), extent.y(), extent.z());
+    tcu::PixelBufferAccess reference = refLevel.getAccess();
+    tcu::clear(reference, clearColor);
+
+    // One of the two pixels is rasterized, depending on the rasterization stream:
+    // Top pixel for stream 0, bottom pixel for stream 1.
+    const int rasterizedRow = (m_params.nonZeroStream ? 1 : 0);
+    reference.setPixel(geomColor, 0, rasterizedRow, 0);
+
+    tcu::ConstPixelBufferAccess result(tcuFormat, extent, colorBufferAlloc.getHostPtr());
+
+    auto &log = m_context.getTestContext().getLog();
+    const tcu::Vec4 threshold(0.0f, 0.0f, 0.0f, 0.0f);
+
+    if (!tcu::floatThresholdCompare(log, "Result", "", reference, result, threshold, tcu::COMPARE_LOG_ON_ERROR))
+        TCU_FAIL("Unexpected results found in color buffer; check log for details --");
+
+    // Verify both streams are saved to the transform feedback buffers.
+    bool xfbFail = false;
+    for (uint32_t i = 0u; i < xfbBufferCount; ++i)
+    {
+        auto &alloc = xfbBuffers.at(i)->getAllocation();
+        invalidateAlloc(ctx.vkd, ctx.device, alloc);
+
+        std::vector<tcu::Vec4> positions(vertices.size(), tcu::Vec4(0.0f));
+        memcpy(&(positions.front()[0]), alloc.getHostPtr(), de::dataSize(positions));
+
+        std::vector<tcu::Vec4> expected = vertices;
+        if (i > 0u)
+            std::for_each(begin(expected), end(expected), [](tcu::Vec4 &pos) { pos[1] = -pos[1]; });
+
+        for (size_t j = 0; j < expected.size(); ++j)
+        {
+            auto &ref = expected.at(j);
+            auto &res = positions.at(j);
+
+            if (res != ref)
+            {
+                xfbFail = true;
+                std::ostringstream msg;
+                msg << "Unexpected result at XFB buffer " << i << " vertex " << j << ": expected " << ref
+                    << " but found " << res;
+                log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+            }
+        }
+    }
+
+    if (xfbFail)
+        TCU_FAIL("Unexpected results in transform feedback buffers; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 // Some tests use point lists, others do not. Sometimes we want to test
 // using the point size either because we know it caused issues in some
 // implementations or because the point size will be stored in the transform
@@ -6407,6 +6708,18 @@ void createTransformFeedbackStreamsSimpleTests(tcu::TestCaseGroup *group, vk::Pi
             // Save a large number of components to the transform feedback buffer
             group->addChild(new TransformFeedbackTestCase(
                 group->getTestContext(), (testName + "_" + std::to_string(compCount)).c_str(), parameters));
+        }
+    }
+
+    {
+        for (const bool nonZeroStream : {false, true})
+        {
+            std::string testName = "multi_stream_single_raster";
+            if (nonZeroStream)
+                testName += "_non_zero";
+
+            const MultiStreamSingleRasterParams params{constructionType, nonZeroStream};
+            group->addChild(new MultiStreamSingleRasterCase(group->getTestContext(), testName, params));
         }
     }
 }
