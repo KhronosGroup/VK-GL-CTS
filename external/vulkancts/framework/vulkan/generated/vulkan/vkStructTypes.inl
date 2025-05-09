@@ -8383,6 +8383,13 @@ struct VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR
 	VkBool32		triStripVertexOrderIndependentOfProvokingVertex;
 };
 
+struct VkPhysicalDeviceShaderFmaFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderFma;
+};
+
 struct VkPhysicalDeviceRayTracingMotionBlurFeaturesNV
 {
 	VkStructureType	sType;

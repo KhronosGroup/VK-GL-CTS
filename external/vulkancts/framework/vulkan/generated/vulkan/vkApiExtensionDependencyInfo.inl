@@ -4579,6 +4579,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_device_generated_commands"),
 	std::make_tuple(1, 1, "VK_KHR_maintenance8"),
 	std::make_tuple(1, 0, "VK_MESA_image_alignment_control"),
+	std::make_tuple(1, 0, "VK_KHR_shader_fma"),
 	std::make_tuple(1, 0, "VK_EXT_depth_clamp_control"),
 	std::make_tuple(1, 0, "VK_KHR_video_maintenance2"),
 	std::make_tuple(1, 0, "VK_HUAWEI_hdr_vivid"),

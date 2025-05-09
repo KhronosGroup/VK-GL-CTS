@@ -1683,6 +1683,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_fma")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_depth_clamp_control")
 	{
 		return;
@@ -3956,6 +3960,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_fma")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_depth_clamp_control")
 	{
 		functions.push_back("vkCmdSetDepthClampRangeEXT");
@@ -4449,6 +4457,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_device_generated_commands",
 	"VK_KHR_maintenance8",
 	"VK_MESA_image_alignment_control",
+	"VK_KHR_shader_fma",
 	"VK_EXT_depth_clamp_control",
 	"VK_KHR_video_maintenance2",
 	"VK_HUAWEI_hdr_vivid",
