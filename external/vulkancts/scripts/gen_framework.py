@@ -45,6 +45,7 @@ DEFAULT_OUTPUT_DIR = { "" : os.path.join(os.path.dirname(__file__), "..", "frame
 
 EXTENSIONS_TO_READ_FROM_XML_NOT_JSON = """
 VK_KHR_cooperative_matrix
+VK_KHR_shader_bfloat16
 VK_KHR_video_encode_av1
 VK_KHR_video_encode_quantization_map
 """.split()
@@ -3827,7 +3828,14 @@ def writeMandatoryFeatures(api, filename):
             for i, feature in enumerate(v[1]):
                 if i != 0:
                     condition = condition + ' && '
-                condition = condition + '( ' + structName + '.' + feature + ' == VK_FALSE )'
+                    # Here we do the "or"
+                features2 = feature.split(',')
+                condition2 = ""
+                for i2, feature2 in enumerate(features2):
+                    if i2 != 0:
+                        condition2 = condition2 + ' || '
+                    condition2 = condition2 + structName + '.' + feature2 + ' == VK_FALSE'
+                condition = condition + '( ' + condition2 + ' )'
             condition = condition + ' )'
             stream.append('\t\t' + condition)
         featureSet = " or ".join(v[1])
