@@ -786,7 +786,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
         allocations[i] = AllocationSp(
             allocateExtended(vki, vk, physDevice, device, memReq, MemoryRequirement::HostVisible, &allocFlagsInfo));
 
-        if (useKHR)
+        if (useKHR && m_data.bufType == BT_REPLAY)
         {
             deviceMemoryOpaqueCaptureAddressInfo.memory = allocations[i]->getMemory();
             opaqueMemoryAddrs[i] =
