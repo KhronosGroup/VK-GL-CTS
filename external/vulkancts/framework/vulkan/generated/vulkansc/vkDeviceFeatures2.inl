@@ -1595,7 +1595,7 @@ tcu::TestStatus testPhysicalDeviceFeatureExtendedDynamicState2FeaturesEXT (Conte
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
-tcu::TestStatus testPhysicalDeviceFeatureRobustness2FeaturesEXT (Context& context)
+tcu::TestStatus testPhysicalDeviceFeatureRobustness2FeaturesKHR (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
     const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
@@ -1605,33 +1605,33 @@ tcu::TestStatus testPhysicalDeviceFeatureRobustness2FeaturesEXT (Context& contex
     VkPhysicalDeviceFeatures2     extFeatures;
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
-    VkPhysicalDeviceRobustness2FeaturesEXT deviceRobustness2FeaturesEXT[count];
-    const bool                             isRobustness2FeaturesEXT = checkExtension(properties, "VK_EXT_robustness2");
+    VkPhysicalDeviceRobustness2FeaturesKHR deviceRobustness2FeaturesKHR[count];
+    const bool                             isRobustness2FeaturesKHR = checkExtension(properties, "VK_EXT_robustness2");
 
-    if (!isRobustness2FeaturesEXT)
+    if (!isRobustness2FeaturesKHR)
         return tcu::TestStatus::pass("Querying not supported");
 
     for (int ndx = 0; ndx < count; ++ndx)
     {
-        deMemset(&deviceRobustness2FeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceRobustness2FeaturesEXT));
-        deviceRobustness2FeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT;
-        deviceRobustness2FeaturesEXT[ndx].pNext = nullptr;
+        deMemset(&deviceRobustness2FeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceRobustness2FeaturesKHR));
+        deviceRobustness2FeaturesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_KHR;
+        deviceRobustness2FeaturesKHR[ndx].pNext = nullptr;
 
         deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
         extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        extFeatures.pNext = &deviceRobustness2FeaturesEXT[ndx];
+        extFeatures.pNext = &deviceRobustness2FeaturesKHR[ndx];
 
         vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
     }
 
-    log << TestLog::Message << deviceRobustness2FeaturesEXT[0] << TestLog::EndMessage;
+    log << TestLog::Message << deviceRobustness2FeaturesKHR[0] << TestLog::EndMessage;
 
     if (
-        deviceRobustness2FeaturesEXT[0].robustBufferAccess2 != deviceRobustness2FeaturesEXT[1].robustBufferAccess2 ||
-        deviceRobustness2FeaturesEXT[0].robustImageAccess2 != deviceRobustness2FeaturesEXT[1].robustImageAccess2 ||
-        deviceRobustness2FeaturesEXT[0].nullDescriptor != deviceRobustness2FeaturesEXT[1].nullDescriptor)
+        deviceRobustness2FeaturesKHR[0].robustBufferAccess2 != deviceRobustness2FeaturesKHR[1].robustBufferAccess2 ||
+        deviceRobustness2FeaturesKHR[0].robustImageAccess2 != deviceRobustness2FeaturesKHR[1].robustImageAccess2 ||
+        deviceRobustness2FeaturesKHR[0].nullDescriptor != deviceRobustness2FeaturesKHR[1].nullDescriptor)
     {
-        TCU_FAIL("Mismatch between VkPhysicalDeviceRobustness2FeaturesEXT");
+        TCU_FAIL("Mismatch between VkPhysicalDeviceRobustness2FeaturesKHR");
     }
     return tcu::TestStatus::pass("Querying succeeded");
 }
@@ -2070,7 +2070,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "custom_border_color_features_ext", testPhysicalDeviceFeatureCustomBorderColorFeaturesEXT);
 	addFunctionCase(testGroup, "extended_dynamic_state_features_ext", testPhysicalDeviceFeatureExtendedDynamicStateFeaturesEXT);
 	addFunctionCase(testGroup, "extended_dynamic_state2_features_ext", testPhysicalDeviceFeatureExtendedDynamicState2FeaturesEXT);
-	addFunctionCase(testGroup, "robustness2_features_ext", testPhysicalDeviceFeatureRobustness2FeaturesEXT);
+	addFunctionCase(testGroup, "robustness2_features_khr", testPhysicalDeviceFeatureRobustness2FeaturesKHR);
 	addFunctionCase(testGroup, "image_robustness_features", testPhysicalDeviceFeatureImageRobustnessFeatures);
 	addFunctionCase(testGroup, "4444_formats_features_ext", testPhysicalDeviceFeature4444FormatsFeaturesEXT);
 	addFunctionCase(testGroup, "shader_image_atomic_int64_features_ext", testPhysicalDeviceFeatureShaderImageAtomicInt64FeaturesEXT);

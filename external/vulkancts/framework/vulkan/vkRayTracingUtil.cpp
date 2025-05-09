@@ -40,7 +40,7 @@
 #include <type_traits>
 #include <map>
 
-#include "SPIRV/spirv.hpp"
+#include "spirv/unified1/spirv.hpp11"
 
 namespace vk
 {
@@ -4543,7 +4543,7 @@ void cmdTraceRaysIndirect2(const DeviceInterface &vk, VkCommandBuffer commandBuf
     return cmdTraceRaysIndirect2KHR(vk, commandBuffer, indirectDeviceAddress);
 }
 
-constexpr uint32_t NO_INT_VALUE = spv::RayQueryCommittedIntersectionTypeMax;
+constexpr uint32_t NO_INT_VALUE = static_cast<uint32_t>(spv::RayQueryCommittedIntersectionType::Max);
 
 void generateRayQueryShaders(SourceCollections &programCollection, RayQueryTestParams params, std::string rayQueryPart,
                              float max_t)

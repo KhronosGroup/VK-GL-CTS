@@ -395,6 +395,7 @@ tcu::Format::Bitfield<32>	getFrameBoundaryFlagsEXTStr									(VkFrameBoundaryFl
 tcu::Format::Bitfield<32>	getPresentScalingFlagsEXTStr								(VkPresentScalingFlagsEXT value);
 tcu::Format::Bitfield<32>	getPresentGravityFlagsEXTStr								(VkPresentGravityFlagsEXT value);
 tcu::Format::Bitfield<32>	getShaderCreateFlagsEXTStr									(VkShaderCreateFlagsEXT value);
+tcu::Format::Bitfield<32>	getTileShadingRenderPassFlagsQCOMStr						(VkTileShadingRenderPassFlagsQCOM value);
 tcu::Format::Bitfield<64>	getPhysicalDeviceSchedulingControlsFlagsARMStr				(VkPhysicalDeviceSchedulingControlsFlagsARM value);
 tcu::Format::Bitfield<32>	getVideoCodecOperationFlagsKHRStr							(VkVideoCodecOperationFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoCapabilityFlagsKHRStr								(VkVideoCapabilityFlagsKHR value);
@@ -810,8 +811,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkRefreshObjectListKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExtendedDynamicStateFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExtendedDynamicState2FeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineOfflineCreateInfo& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRobustness2FeaturesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRobustness2PropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRobustness2FeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRobustness2PropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageRobustnessFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevice4444FormatsFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferCopy2& value);

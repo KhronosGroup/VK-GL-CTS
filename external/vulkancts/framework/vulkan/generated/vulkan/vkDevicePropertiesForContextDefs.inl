@@ -45,9 +45,9 @@ const vk::VkPhysicalDeviceMapMemoryPlacedPropertiesEXT&					Context::getMapMemor
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&			Context::getDeviceGeneratedCommandsProperties				(void) const { return m_device->getDeviceGeneratedCommandsProperties();				}
 const vk::VkPhysicalDeviceShaderIntegerDotProductProperties&			Context::getShaderIntegerDotProductProperties				(void) const { return m_device->getShaderIntegerDotProductProperties();				}
 const vk::VkPhysicalDeviceTexelBufferAlignmentProperties&				Context::getTexelBufferAlignmentProperties					(void) const { return m_device->getTexelBufferAlignmentProperties();				}
-const vk::VkPhysicalDeviceRobustness2PropertiesEXT&						Context::getRobustness2PropertiesEXT						(void) const { return m_device->getRobustness2PropertiesEXT();						}
 const vk::VkPhysicalDeviceCustomBorderColorPropertiesEXT&				Context::getCustomBorderColorPropertiesEXT					(void) const { return m_device->getCustomBorderColorPropertiesEXT();				}
 const vk::VkPhysicalDeviceCudaKernelLaunchPropertiesNV&					Context::getCudaKernelLaunchPropertiesNV					(void) const { return m_device->getCudaKernelLaunchPropertiesNV();					}
+const vk::VkPhysicalDeviceTileShadingPropertiesQCOM&					Context::getTileShadingPropertiesQCOM						(void) const { return m_device->getTileShadingPropertiesQCOM();						}
 const vk::VkPhysicalDeviceDescriptorBufferPropertiesEXT&				Context::getDescriptorBufferPropertiesEXT					(void) const { return m_device->getDescriptorBufferPropertiesEXT();					}
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT&			Context::getGraphicsPipelineLibraryPropertiesEXT			(void) const { return m_device->getGraphicsPipelineLibraryPropertiesEXT();			}
 const vk::VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR&		Context::getFragmentShaderBarycentricProperties				(void) const { return m_device->getFragmentShaderBarycentricProperties();			}
@@ -65,7 +65,6 @@ const vk::VkPhysicalDeviceMaintenance4Properties&						Context::getMaintenance4P
 const vk::VkPhysicalDeviceShaderCorePropertiesARM&						Context::getShaderCorePropertiesARM							(void) const { return m_device->getShaderCorePropertiesARM();						}
 const vk::VkPhysicalDeviceSchedulingControlsPropertiesARM&				Context::getSchedulingControlsPropertiesARM					(void) const { return m_device->getSchedulingControlsPropertiesARM();				}
 const vk::VkPhysicalDeviceRenderPassStripedPropertiesARM&				Context::getRenderPassStripedPropertiesARM					(void) const { return m_device->getRenderPassStripedPropertiesARM();				}
-const vk::VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM&		Context::getFragmentDensityMapOffsetPropertiesQCOM			(void) const { return m_device->getFragmentDensityMapOffsetPropertiesQCOM();		}
 const vk::VkPhysicalDeviceCopyMemoryIndirectPropertiesNV&				Context::getCopyMemoryIndirectProperties					(void) const { return m_device->getCopyMemoryIndirectProperties();					}
 const vk::VkPhysicalDeviceMemoryDecompressionPropertiesNV&				Context::getMemoryDecompressionProperties					(void) const { return m_device->getMemoryDecompressionProperties();					}
 const vk::VkPhysicalDeviceImageProcessingPropertiesQCOM&				Context::getImageProcessingPropertiesQCOM					(void) const { return m_device->getImageProcessingPropertiesQCOM();					}
@@ -89,11 +88,15 @@ const vk::VkPhysicalDeviceVertexAttributeDivisorProperties&				Context::getVerte
 const vk::VkPhysicalDeviceLayeredDriverPropertiesMSFT&					Context::getLayeredDriverPropertiesMSFT						(void) const { return m_device->getLayeredDriverPropertiesMSFT();					}
 const vk::VkPhysicalDeviceLineRasterizationProperties&					Context::getLineRasterizationProperties						(void) const { return m_device->getLineRasterizationProperties();					}
 const vk::VkPhysicalDeviceMaintenance6Properties&						Context::getMaintenance6Properties							(void) const { return m_device->getMaintenance6Properties();						}
+const vk::VkPhysicalDeviceTileMemoryHeapPropertiesQCOM&					Context::getTileMemoryHeapPropertiesQCOM					(void) const { return m_device->getTileMemoryHeapPropertiesQCOM();					}
+const vk::VkPhysicalDeviceExternalComputeQueuePropertiesNV&				Context::getExternalComputeQueuePropertiesNV				(void) const { return m_device->getExternalComputeQueuePropertiesNV();				}
 const vk::VkPhysicalDeviceMaintenance7PropertiesKHR&					Context::getMaintenance7Properties							(void) const { return m_device->getMaintenance7Properties();						}
 const vk::VkPhysicalDeviceClusterAccelerationStructurePropertiesNV&		Context::getClusterAccelerationStructurePropertiesNV		(void) const { return m_device->getClusterAccelerationStructurePropertiesNV();		}
 const vk::VkPhysicalDevicePartitionedAccelerationStructurePropertiesNV&	Context::getPartitionedAccelerationStructurePropertiesNV	(void) const { return m_device->getPartitionedAccelerationStructurePropertiesNV();	}
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT&			Context::getDeviceGeneratedCommandsPropertiesEXT			(void) const { return m_device->getDeviceGeneratedCommandsPropertiesEXT();			}
 const vk::VkPhysicalDeviceImageAlignmentControlPropertiesMESA&			Context::getImageAlignmentControlPropertiesMESA				(void) const { return m_device->getImageAlignmentControlPropertiesMESA();			}
 const vk::VkPhysicalDeviceCooperativeMatrix2PropertiesNV&				Context::getCooperativeMatrix2PropertiesNV					(void) const { return m_device->getCooperativeMatrix2PropertiesNV();				}
+const vk::VkPhysicalDeviceRobustness2PropertiesKHR&						Context::getRobustness2Properties							(void) const { return m_device->getRobustness2Properties();							}
+const vk::VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT&		Context::getFragmentDensityMapOffsetPropertiesEXT			(void) const { return m_device->getFragmentDensityMapOffsetPropertiesEXT();			}
 const vk::VkPhysicalDeviceSubgroupProperties&							Context::getSubgroupProperties								(void) const { return m_device->getSubgroupProperties();							}
 const vk::VkPhysicalDeviceProtectedMemoryProperties&					Context::getProtectedMemoryProperties						(void) const { return m_device->getProtectedMemoryProperties();						}

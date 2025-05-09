@@ -1866,7 +1866,7 @@ tcu::TestStatus validateLimitsRobustness2(Context &context)
 {
     const InstanceInterface &vki                                             = context.getInstanceInterface();
     const VkPhysicalDevice physicalDevice                                    = context.getPhysicalDevice();
-    const VkPhysicalDeviceRobustness2PropertiesEXT &robustness2PropertiesEXT = context.getRobustness2PropertiesEXT();
+    const VkPhysicalDeviceRobustness2PropertiesEXT &robustness2PropertiesEXT = context.getRobustness2Properties();
     VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features               = initVulkanStructure();
     VkPhysicalDeviceFeatures2 features2 = initVulkanStructure(&robustness2Features);
 

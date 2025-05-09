@@ -13,7 +13,7 @@ const vk::VkPhysicalDevicePCIBusInfoPropertiesEXT&					Context::getPCIBusInfoPro
 const vk::VkPhysicalDeviceSubgroupSizeControlProperties&			Context::getSubgroupSizeControlProperties			(void) const { return m_device->getSubgroupSizeControlProperties();				}
 const vk::VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			Context::getFragmentShadingRateProperties			(void) const { return m_device->getFragmentShadingRateProperties();				}
 const vk::VkPhysicalDeviceTexelBufferAlignmentProperties&			Context::getTexelBufferAlignmentProperties			(void) const { return m_device->getTexelBufferAlignmentProperties();			}
-const vk::VkPhysicalDeviceRobustness2PropertiesEXT&					Context::getRobustness2PropertiesEXT				(void) const { return m_device->getRobustness2PropertiesEXT();					}
+const vk::VkPhysicalDeviceRobustness2PropertiesKHR&					Context::getRobustness2Properties					(void) const { return m_device->getRobustness2Properties();						}
 const vk::VkPhysicalDeviceCustomBorderColorPropertiesEXT&			Context::getCustomBorderColorPropertiesEXT			(void) const { return m_device->getCustomBorderColorPropertiesEXT();			}
 const vk::VkPhysicalDeviceVertexAttributeDivisorProperties&			Context::getVertexAttributeDivisorProperties		(void) const { return m_device->getVertexAttributeDivisorProperties();			}
 const vk::VkPhysicalDeviceLineRasterizationProperties&				Context::getLineRasterizationProperties				(void) const { return m_device->getLineRasterizationProperties();				}

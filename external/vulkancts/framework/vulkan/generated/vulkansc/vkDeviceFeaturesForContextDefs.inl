@@ -20,7 +20,7 @@ const vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&				Context::getShaderAto
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&			Context::getExtendedDynamicStateFeaturesEXT			(void) const { return m_device->getExtendedDynamicStateFeaturesEXT();			}
 const vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures&	Context::getShaderDemoteToHelperInvocationFeatures	(void) const { return m_device->getShaderDemoteToHelperInvocationFeatures();	}
 const vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&			Context::getTexelBufferAlignmentFeaturesEXT			(void) const { return m_device->getTexelBufferAlignmentFeaturesEXT();			}
-const vk::VkPhysicalDeviceRobustness2FeaturesEXT&					Context::getRobustness2FeaturesEXT					(void) const { return m_device->getRobustness2FeaturesEXT();					}
+const vk::VkPhysicalDeviceRobustness2FeaturesKHR&					Context::getRobustness2Features						(void) const { return m_device->getRobustness2Features();						}
 const vk::VkPhysicalDeviceCustomBorderColorFeaturesEXT&				Context::getCustomBorderColorFeaturesEXT			(void) const { return m_device->getCustomBorderColorFeaturesEXT();				}
 const vk::VkPhysicalDeviceSynchronization2Features&					Context::getSynchronization2Features				(void) const { return m_device->getSynchronization2Features();					}
 const vk::VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT&			Context::getYcbcr2Plane444FormatsFeaturesEXT		(void) const { return m_device->getYcbcr2Plane444FormatsFeaturesEXT();			}
