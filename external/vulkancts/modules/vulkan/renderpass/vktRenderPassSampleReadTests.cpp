@@ -481,7 +481,7 @@ Move<VkDescriptorSet> createSubpassDescriptorSet(const DeviceInterface &vkd, VkD
 void beginSecondaryCmdBuffer(const DeviceInterface &vk, VkCommandBuffer secCmdBuffer)
 {
     VkCommandBufferUsageFlags usageFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    VkFormat colorAttachmentFormats[]    = {VK_FORMAT_R32_UINT, VK_FORMAT_R32_UINT};
+    VkFormat colorAttachmentFormats[]    = {VK_FORMAT_R32_UINT, VK_FORMAT_R8_UNORM};
     const VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
         DE_NULL,                                                         // const void* pNext;
@@ -570,8 +570,6 @@ private:
     const uint32_t m_sampleCount;
     const uint32_t m_width;
     const uint32_t m_height;
-    const TestMode m_testMode;
-    const uint32_t m_selectedSample;
 
     const Unique<VkImage> m_srcImage;
     const de::UniquePtr<Allocation> m_srcImageMemory;
@@ -612,8 +610,6 @@ SampleReadTestInstance::SampleReadTestInstance(Context &context, TestConfig conf
     , m_sampleCount(config.sampleCount)
     , m_width(32u)
     , m_height(32u)
-    , m_testMode(config.testMode)
-    , m_selectedSample(config.selectedSample)
     , m_srcImage(createImage(context.getInstanceInterface(), context.getPhysicalDevice(), context.getDeviceInterface(),
                              context.getDevice(), VK_FORMAT_R32_UINT, sampleCountBitFromSampleCount(m_sampleCount),
                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, m_width,
@@ -626,28 +622,28 @@ SampleReadTestInstance::SampleReadTestInstance(Context &context, TestConfig conf
                                           VK_FORMAT_R32_UINT, VK_IMAGE_ASPECT_COLOR_BIT))
     , m_srcInputImageReadLayout(chooseSrcInputImageLayout(config.groupParams))
     , m_dstMultisampleImage(createImage(context.getInstanceInterface(), context.getPhysicalDevice(),
-                                        context.getDeviceInterface(), context.getDevice(), VK_FORMAT_R32_UINT,
+                                        context.getDeviceInterface(), context.getDevice(), VK_FORMAT_R8_UNORM,
                                         sampleCountBitFromSampleCount(m_sampleCount),
                                         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, m_width, m_height))
     , m_dstMultisampleImageMemory(createImageMemory(context.getDeviceInterface(), context.getDevice(),
                                                     context.getDefaultAllocator(), *m_dstMultisampleImage))
     , m_dstMultisampleImageView(createImageView(context.getDeviceInterface(), context.getDevice(),
-                                                *m_dstMultisampleImage, VK_FORMAT_R32_UINT, VK_IMAGE_ASPECT_COLOR_BIT))
+                                                *m_dstMultisampleImage, VK_FORMAT_R8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT))
     , m_dstSinglesampleImage(
           createImage(context.getInstanceInterface(), context.getPhysicalDevice(), context.getDeviceInterface(),
-                      context.getDevice(), VK_FORMAT_R32_UINT, VK_SAMPLE_COUNT_1_BIT,
+                      context.getDevice(), VK_FORMAT_R8_UNORM, VK_SAMPLE_COUNT_1_BIT,
                       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, m_width, m_height))
     , m_dstSinglesampleImageMemory(createImageMemory(context.getDeviceInterface(), context.getDevice(),
                                                      context.getDefaultAllocator(), *m_dstSinglesampleImage))
     , m_dstSinglesampleImageView(createImageView(context.getDeviceInterface(), context.getDevice(),
-                                                 *m_dstSinglesampleImage, VK_FORMAT_R32_UINT,
+                                                 *m_dstSinglesampleImage, VK_FORMAT_R8_UNORM,
                                                  VK_IMAGE_ASPECT_COLOR_BIT))
     , m_dstBuffer(
-          createBuffer(context.getDeviceInterface(), context.getDevice(), VK_FORMAT_R32_UINT, m_width, m_height))
+          createBuffer(context.getDeviceInterface(), context.getDevice(), VK_FORMAT_R8_UNORM, m_width, m_height))
     , m_dstBufferMemory(createBufferMemory(context.getDeviceInterface(), context.getDevice(),
                                            context.getDefaultAllocator(), *m_dstBuffer))
     , m_renderPass(createRenderPass(context.getDeviceInterface(), context.getDevice(), VK_FORMAT_R32_UINT,
-                                    VK_FORMAT_R32_UINT, m_sampleCount, m_groupParams->renderingType))
+                                    VK_FORMAT_R8_UNORM, m_sampleCount, m_groupParams->renderingType))
     , m_framebuffer(createFramebuffer(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_srcImageView,
                                       *m_dstMultisampleImageView, *m_dstSinglesampleImageView, m_width, m_height))
     , m_renderPipelineLayout(m_groupParams->pipelineConstructionType, context.getDeviceInterface(), context.getDevice())
@@ -771,7 +767,7 @@ tcu::TestStatus SampleReadTestInstance::iterateInternalDynamicRendering()
         });
 
     colorAttachments[1].imageView        = *m_dstMultisampleImageView;
-    colorAttachments[1].resolveMode      = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+    colorAttachments[1].resolveMode      = VK_RESOLVE_MODE_AVERAGE_BIT;
     colorAttachments[1].resolveImageView = *m_dstSinglesampleImageView;
 
     VkRenderingInfo renderingInfo{
@@ -875,7 +871,7 @@ void SampleReadTestInstance::createRenderPipeline()
     colorBlendStateCreateInfo.pAttachments                        = colorBlendAttachmentStates.data();
 
 #ifndef CTS_USES_VULKANSC
-    VkFormat colorAttachmentFormats[] = {VK_FORMAT_R32_UINT, VK_FORMAT_R32_UINT};
+    VkFormat colorAttachmentFormats[] = {VK_FORMAT_R32_UINT, VK_FORMAT_R8_UNORM};
     VkPipelineRenderingCreateInfo renderingCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
                                                       DE_NULL,
                                                       0u,
@@ -949,7 +945,7 @@ void SampleReadTestInstance::createSubpassPipeline()
     renderingInputAttachmentIndexInfo.colorAttachmentCount                   = 2u;
     renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices           = colorAttachmentInputIndices;
 
-    VkFormat colorAttachmentFormats[]                 = {VK_FORMAT_R32_UINT, VK_FORMAT_R32_UINT};
+    VkFormat colorAttachmentFormats[]                 = {VK_FORMAT_R32_UINT, VK_FORMAT_R8_UNORM};
     VkPipelineRenderingCreateInfo renderingCreateInfo = initVulkanStructure();
     renderingCreateInfo.colorAttachmentCount          = 2u;
     renderingCreateInfo.pColorAttachmentFormats       = colorAttachmentFormats;
@@ -1037,28 +1033,18 @@ void SampleReadTestInstance::verifyResult()
 
     invalidateAlloc(vk, device, *m_dstBufferMemory);
 
-    const tcu::TextureFormat format(mapVkFormat(VK_FORMAT_R32_UINT));
+    const tcu::TextureFormat format(mapVkFormat(VK_FORMAT_R8_UNORM));
     const void *const ptr(m_dstBufferMemory->getHostPtr());
     const tcu::ConstPixelBufferAccess access(format, m_width, m_height, 1, ptr);
     tcu::TextureLevel reference(format, m_width, m_height);
 
+    // Check we got the 1.0f we expected
     for (uint32_t y = 0; y < m_height; y++)
         for (uint32_t x = 0; x < m_width; x++)
-        {
-            uint32_t bits;
+            reference.getAccess().setPixel(tcu::Vec4(1.0f, 0, 0, 1.0f), x, y);
 
-            if (m_testMode == TESTMODE_ADD)
-                bits = m_sampleCount == 32 ? 0xffffffff : (1u << m_sampleCount) - 1;
-            else
-                bits = 1u << m_selectedSample;
-
-            const UVec4 color(bits, 0, 0, 0xffffffff);
-
-            reference.getAccess().setPixel(color, x, y);
-        }
-
-    if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "", "", reference.getAccess(), access, UVec4(0u),
-                                  tcu::COMPARE_LOG_ON_ERROR))
+    if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "", "", reference.getAccess(), access,
+                                    Vec4(0.0f), tcu::COMPARE_LOG_ON_ERROR))
         m_resultCollector.fail("Compare failed.");
 }
 
@@ -1092,20 +1078,42 @@ struct Programs
 
         subpassShader
             << "#version 450\n"
+               "precision mediump int;\n"
+               "precision highp float;\n"
                "layout(input_attachment_index = 0, set = 0, binding = 0) uniform highp usubpassInputMS i_color;\n"
-               "layout(location = 0) out highp uvec4 o_color;\n"
+               "layout(location = 0) out highp vec4 o_color;\n"
                "void main (void)\n"
                "{\n"
-               "    o_color = uvec4(0);\n";
+               "    o_color = vec4(0.0);\n";
 
         if (config.testMode == TESTMODE_ADD)
         {
-            subpassShader << "    for (int i = 0; i < " << config.sampleCount << "; i++)\n"
-                          << "        o_color.r += subpassLoad(i_color, i).r;\n";
+            subpassShader
+                << "    uint load = 0;\n"
+                << "    uint expect = 0;\n"
+                << "    for (int i = 0; i < " << config.sampleCount << "; i++)\n"
+                << "    {\n"
+                << "        expect += (1 << i);\n"
+                << "        if ((gl_SampleMaskIn[0] & (1 << i)) != 0)\n" // Only covered samples are valid to load
+                << "            load += subpassLoad(i_color, i).r;\n"
+                << "        else\n"
+                << "            load += (1 << i);\n" // Non-covered samples must emulate a good result
+                << "    }\n"
+                << "    o_color.r = (load == expect) ? 1.0 : 0.0;\n";
         }
         else
         {
-            subpassShader << "    o_color.r = subpassLoad(i_color, " << de::toString(config.selectedSample) << ").r;\n";
+            subpassShader << "    float result = 1.0;\n" // Non-covered samples must emulate a good result
+                          //      Only covered samples are valid to load
+                          << "    if ((gl_SampleMaskIn[0] & (1 << " << de::toString(config.selectedSample)
+                          << ")) != 0)\n"
+                          << "    {\n"
+                          << "        uint load = subpassLoad(i_color, " << de::toString(config.selectedSample)
+                          << ").r;\n"
+                          << "        result = (load == (1 << " << de::toString(config.selectedSample)
+                          << ")) ? 1.0 : 0.0;\n"
+                          << "    }\n"
+                          << "    o_color.r = result;\n";
         }
 
         subpassShader << "}\n";
