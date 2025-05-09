@@ -44,6 +44,7 @@ DEFAULT_OUTPUT_DIR = { "" : os.path.join(os.path.dirname(__file__), "..", "frame
                        "SC" : os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkansc") }
 
 EXTENSIONS_TO_READ_FROM_XML_NOT_JSON = """
+VK_KHR_cooperative_matrix
 VK_KHR_video_encode_av1
 VK_KHR_video_encode_quantization_map
 """.split()
@@ -368,7 +369,7 @@ class FeatureEnumerator:
 
 class FeatureRequirement:
     def __init__ (self, operation, comment, enumList, typeList, commandList, featureList):
-        self.operation = operation      # "require" or "remove"
+        self.operation = operation      # "require" or "remove"; "deprecate" should be filtered out
         self.comment = comment
         self.enumList = enumList        # list of FeatureEnumerator objects
         self.typeList = typeList        # list of strings, each representing required structure name
@@ -690,6 +691,10 @@ class API:
             typeList = []
             featureList = []
             commandList = []
+            # skip any feature blocks that are tagged deprecate - they are deprecating things from other
+            # features, and if add them here - lots of other handling gets confused
+            if requirementGroup.tag == "deprecate":
+                continue
             for requirement in requirementGroup:
                 requirementName = requirement.get("name")
                 if requirement.tag == "enum":
@@ -4037,7 +4042,10 @@ def writeApiExtensionDependencyInfo(api, filename):
         yield 'static const std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>\treleasedApiVersions[]\t='
         yield '{'
         for f in reversed(api.features):
-            apiVariant = '0' if f.api == 'vulkan' else '1'
+            apis = f.api.split(',')
+            if not api.apiName in apis:
+                continue;
+            apiVariant = '0' if api.apiName == 'vulkan' else '1'
             major, minor = f.number.split('.')
             version = (int(apiVariant) << 29) | (int(major) << 22) | (int(minor) << 12)
             yield '\tstd::make_tuple({}, {}, {}, {}),'.format(version, apiVariant, major, minor)

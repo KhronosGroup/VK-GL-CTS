@@ -14913,6 +14913,9 @@ KHR-GL44.aggressive_optimizations.cos_vec2_vert
 KHR-GL44.aggressive_optimizations.cos_vec2_frag
 KHR-GL44.aggressive_optimizations.cos_vec3_vert
 KHR-GL44.aggressive_optimizations.cos_vec3_frag
+KHR-GL44.texture_query_lod.sampler1D_test
+KHR-GL44.texture_query_lod.sampler2D_test
+KHR-GL44.texture_query_lod.sampler3D_test
 KHR-GL44.shaders44.preprocessor.invalid_redefinitions.invalid_identifier_2_vertex
 KHR-GL44.shaders44.preprocessor.invalid_redefinitions.invalid_identifier_2_fragment
 KHR-GL44.shaders44.preprocessor.line_continuation.comment_vertex

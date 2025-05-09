@@ -103,6 +103,7 @@ struct TestCaseParams
     bool updateAfterBind;            // whether a test will use update after bind feature
     bool calculateInLoop;            // perform calculation in a loop
     bool usesMipMaps;                // this makes a sense and affects in image test cases only
+    bool usesRuntimeArray;           // use runtimeDescriptorArray feature
     bool minNonUniform;              // whether a test will use the minimum nonUniform decorations
     bool lifetimeCheck;              // fill unused descriptors with resource that will be deleted before draw
 };
@@ -118,6 +119,7 @@ struct TestParams
     bool updateAfterBind;
     bool calculateInLoop;
     bool usesMipMaps;
+    bool usesRuntimeArray;
     bool minNonUniform;
     bool lifetimeCheck;
 
@@ -133,6 +135,7 @@ struct TestParams
         , updateAfterBind(caseParams.updateAfterBind)
         , calculateInLoop(caseParams.calculateInLoop)
         , usesMipMaps(caseParams.usesMipMaps)
+        , usesRuntimeArray(caseParams.usesRuntimeArray)
         , minNonUniform(caseParams.minNonUniform)
         , lifetimeCheck(caseParams.lifetimeCheck)
     {
@@ -192,6 +195,22 @@ struct IterateCommonVariables
     Move<VkPipeline> pipeline;
     Move<VkCommandBuffer> commandBuffer;
 };
+
+uint32_t getMinimalRequiredDescriptorCount(VkDescriptorType descriptorType)
+{
+    const std::map<VkDescriptorType, uint32_t> minRequiredCount{{VK_DESCRIPTOR_TYPE_SAMPLER, 16},
+                                                                {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16},
+                                                                {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 16},
+                                                                {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 4},
+                                                                {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 16},
+                                                                {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 4},
+                                                                {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 12},
+                                                                {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4},
+                                                                {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 12},
+                                                                {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 4},
+                                                                {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 4}};
+    return minRequiredCount.at(descriptorType);
+}
 
 class CommonDescriptorInstance : public TestInstance
 {
@@ -488,7 +507,10 @@ uint32_t CommonDescriptorInstance::computeAvailableDescriptorCount(VkDescriptorT
 Move<VkDescriptorSetLayout> CommonDescriptorInstance::createDescriptorSetLayout(bool reserveUniformTexelBuffer,
                                                                                 uint32_t &descriptorCount) const
 {
-    descriptorCount = computeAvailableDescriptorCount(m_testParams.descriptorType, reserveUniformTexelBuffer);
+    if (m_testParams.usesRuntimeArray)
+        descriptorCount = computeAvailableDescriptorCount(m_testParams.descriptorType, reserveUniformTexelBuffer);
+    else
+        descriptorCount = getMinimalRequiredDescriptorCount(m_testParams.descriptorType);
 
     bool optional = (m_testParams.additionalDescriptorType != VK_DESCRIPTOR_TYPE_UNDEFINED);
 
@@ -2814,7 +2836,13 @@ std::string CommonDescriptorInstance::getShaderSource(VkShaderStageFlagBits shad
     // shaders, but the matching vertex shader will still pass here and must not pick up the invalid declaration.
     if (testCaseParams.descriptorType != VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT ||
         shaderType == VK_SHADER_STAGE_FRAGMENT_BIT)
-        s << "layout(" << extraLayout << "set=0, binding = " << BINDING_TestObject << ") " << declType << " data[];\n";
+    {
+        s << "layout(" << extraLayout << "set=0, binding = " << BINDING_TestObject << ") " << declType;
+        if (testCaseParams.usesRuntimeArray)
+            s << " data[];\n";
+        else
+            s << " data[" << getMinimalRequiredDescriptorCount(testCaseParams.descriptorType) << "];\n";
+    }
 
     // Now make any additional declarations needed for specific descriptor types
     switch (testCaseParams.descriptorType)
@@ -4244,7 +4272,7 @@ public:
     {
         const vk::VkPhysicalDeviceDescriptorIndexingFeatures &feats = context.getDescriptorIndexingFeatures();
 
-        if (!feats.runtimeDescriptorArray)
+        if (m_testCaseParams.usesRuntimeArray && !feats.runtimeDescriptorArray)
             TCU_THROW(NotSupportedError, "runtimeDescriptorArray not supported");
 
         switch (m_testCaseParams.descriptorType)
@@ -4565,16 +4593,17 @@ void descriptorIndexingDescriptorSetsCreateTests(tcu::TestCaseGroup *group)
                         caseName += (usesMipMaps ? "_with_lod" : "");
                         caseName += (lifetimeCheck ? "_lifetime" : "");
 
-                        params.descriptorType  = info.descriptorType;
-                        params.stageFlags      = (info.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ?
-                                                     VK_SHADER_STAGE_COMPUTE_BIT :
-                                                     (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-                        params.frameResolution = RESOLUTION;
-                        params.updateAfterBind = updateAfterBind ? true : false;
-                        params.calculateInLoop = calculateInLoop ? true : false;
-                        params.usesMipMaps     = usesMipMaps ? true : false;
-                        params.lifetimeCheck   = lifetimeCheck ? true : false;
-                        params.minNonUniform   = false;
+                        params.descriptorType   = info.descriptorType;
+                        params.stageFlags       = (info.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ?
+                                                      VK_SHADER_STAGE_COMPUTE_BIT :
+                                                      (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+                        params.frameResolution  = RESOLUTION;
+                        params.updateAfterBind  = updateAfterBind ? true : false;
+                        params.calculateInLoop  = calculateInLoop ? true : false;
+                        params.usesMipMaps      = usesMipMaps ? true : false;
+                        params.usesRuntimeArray = true;
+                        params.lifetimeCheck    = lifetimeCheck ? true : false;
+                        params.minNonUniform    = false;
 
                         group->addChild(new DescriptorIndexingTestCase(context, caseName.c_str(), params));
                     }
@@ -4629,19 +4658,40 @@ void descriptorIndexingDescriptorSetsCreateTests(tcu::TestCaseGroup *group)
             caseName += (usesMipMaps ? "_with_lod" : "");
             caseName += "_minNonUniform";
 
-            params.descriptorType  = info.descriptorType;
-            params.stageFlags      = (info.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ?
-                                         VK_SHADER_STAGE_COMPUTE_BIT :
-                                         (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-            params.frameResolution = RESOLUTION;
-            params.updateAfterBind = false;
-            params.calculateInLoop = false;
-            params.usesMipMaps     = usesMipMaps ? true : false;
-            params.minNonUniform   = true;
+            params.descriptorType   = info.descriptorType;
+            params.stageFlags       = (info.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ?
+                                          VK_SHADER_STAGE_COMPUTE_BIT :
+                                          (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+            params.frameResolution  = RESOLUTION;
+            params.updateAfterBind  = false;
+            params.calculateInLoop  = false;
+            params.usesMipMaps      = usesMipMaps ? true : false;
+            params.usesRuntimeArray = true;
+            params.minNonUniform    = true;
 
             TestCase *tc = new DescriptorIndexingTestCase(context, caseName.c_str(), params);
             group->addChild(tc);
         }
+    }
+
+    // test ShaderNonUniform without requiring runtimeDescriptorArray feature
+    TestCaseParams params;
+    params.frameResolution  = RESOLUTION;
+    params.updateAfterBind  = false;
+    params.calculateInLoop  = false;
+    params.usesMipMaps      = false;
+    params.usesRuntimeArray = false;
+    params.minNonUniform    = false;
+    params.lifetimeCheck    = false;
+    for (const auto &info : casesMinNonUniform)
+    {
+        params.descriptorType = info.descriptorType;
+        params.stageFlags     = (info.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ?
+                                    VK_SHADER_STAGE_COMPUTE_BIT :
+                                    (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+
+        std::string caseName(std::string(info.name) + "_no_runtime_array");
+        group->addChild(new DescriptorIndexingTestCase(context, caseName.c_str(), params));
     }
 }
 

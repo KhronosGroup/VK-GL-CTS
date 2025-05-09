@@ -640,6 +640,9 @@ protected:
     bool executeTest(glw::GLenum current_query_target);
     void initObjects();
     bool shouldExecuteForQueryTarget(glw::GLenum query_target);
+    void getExpectedPrimitivesSubmittedQueryResult(
+        PipelineStatisticsQueryUtilities::_primitive_type current_primitive_type, unsigned int *out_results_written,
+        glw::GLuint64 out_results[4]);
 };
 
 /** Performs the following functional test:

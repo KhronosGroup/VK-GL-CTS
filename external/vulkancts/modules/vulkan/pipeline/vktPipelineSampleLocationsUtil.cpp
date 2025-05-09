@@ -57,6 +57,62 @@ static inline uint32_t numSamplesPerPixel(const MultisamplePixelGrid &pixelGrid)
     return static_cast<uint32_t>(pixelGrid.samplesPerPixel());
 }
 
+//! Fill using the standard sample locations.
+void fillSampleLocationsStd(MultisamplePixelGrid &grid)
+{
+    using LocationsVec = std::vector<tcu::Vec2>;
+
+    static const LocationsVec stdLocations1{tcu::Vec2(0.5f, 0.5f)};
+    static const LocationsVec stdLocations2{
+        tcu::Vec2(0.75f, 0.75f),
+        tcu::Vec2(0.25f, 0.25f),
+    };
+    static const LocationsVec stdLocations4{
+        tcu::Vec2(0.375f, 0.125f),
+        tcu::Vec2(0.875f, 0.375f),
+        tcu::Vec2(0.125f, 0.625f),
+        tcu::Vec2(0.625f, 0.875f),
+    };
+    static const LocationsVec stdLocations8{
+        tcu::Vec2(0.5625f, 0.3125f), tcu::Vec2(0.4375f, 0.6875f), tcu::Vec2(0.8125f, 0.5625f),
+        tcu::Vec2(0.3125f, 0.1875f), tcu::Vec2(0.1875f, 0.8125f), tcu::Vec2(0.0625f, 0.4375f),
+        tcu::Vec2(0.6875f, 0.9375f), tcu::Vec2(0.9375f, 0.0625f),
+    };
+    static const LocationsVec stdLocations16{
+        tcu::Vec2(0.5625f, 0.5625f), tcu::Vec2(0.4375f, 0.3125f), tcu::Vec2(0.3125f, 0.625f),
+        tcu::Vec2(0.75f, 0.4375f),   tcu::Vec2(0.1875f, 0.375f),  tcu::Vec2(0.625f, 0.8125f),
+        tcu::Vec2(0.8125f, 0.6875f), tcu::Vec2(0.6875f, 0.1875f), tcu::Vec2(0.375f, 0.875f),
+        tcu::Vec2(0.5f, 0.0625f),    tcu::Vec2(0.25f, 0.125f),    tcu::Vec2(0.125f, 0.75f),
+        tcu::Vec2(0.0f, 0.5f),       tcu::Vec2(0.9375f, 0.25f),   tcu::Vec2(0.875f, 0.9375f),
+        tcu::Vec2(0.0625f, 0.0f),
+    };
+
+    static const std::map<uint32_t, const LocationsVec *> stdLocationsByCount{
+        std::make_pair(1u, &stdLocations1), std::make_pair(2u, &stdLocations2),   std::make_pair(4u, &stdLocations4),
+        std::make_pair(8u, &stdLocations8), std::make_pair(16u, &stdLocations16),
+    };
+
+    for (uint32_t gridY = 0; gridY < grid.size().y(); ++gridY)
+        for (uint32_t gridX = 0; gridX < grid.size().x(); ++gridX)
+        {
+            const auto sampleCount = numSamplesPerPixel(grid);
+            const auto itr         = stdLocationsByCount.find(sampleCount);
+
+            if (itr == stdLocationsByCount.end())
+                TCU_THROW(InternalError, "Unexpected sample count");
+
+            for (uint32_t sampleNdx = 0u; sampleNdx < sampleCount; ++sampleNdx)
+            {
+                const auto &xy                     = itr->second->at(sampleNdx);
+                const VkSampleLocationEXT location = {
+                    xy.x(),
+                    xy.y(),
+                };
+                grid.setSample(gridX, gridY, sampleNdx, location);
+            }
+        }
+}
+
 //! Fill each grid pixel with a distinct samples pattern, rounding locations based on subPixelBits
 void fillSampleLocationsRandom(MultisamplePixelGrid &grid, const uint32_t subPixelBits, const uint32_t seed)
 {

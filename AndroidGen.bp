@@ -84,6 +84,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/api/vktApiCommandBuffersTests.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiComputeInstanceResultBuffer.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiCopiesAndBlittingTests.cpp",
+        "external/vulkancts/modules/vulkan/api/vktApiDSColorBitCopyTests.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiDebugUtilsTests.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiDescriptorPoolTests.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiDescriptorSetTests.cpp",
@@ -266,6 +267,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/image/vktImageMismatchedWriteOpTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageMultisampleLoadStoreTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageMutableTests.cpp",
+        "external/vulkancts/modules/vulkan/image/vktImageNonUniformOffsetSampleTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageQualifiersTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageSampleCompressedTextureTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageSampleDrawnCubeFaceTests.cpp",
@@ -282,6 +284,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/memory/vktMemoryBindingTests.cpp",
         "external/vulkancts/modules/vulkan/memory/vktMemoryConcurrentAccessTests.cpp",
         "external/vulkancts/modules/vulkan/memory/vktMemoryDeviceMemoryReportTests.cpp",
+        "external/vulkancts/modules/vulkan/memory/vktMemoryExternalMemoryAcquireUnmodifiedTests.cpp",
         "external/vulkancts/modules/vulkan/memory/vktMemoryExternalMemoryHostTests.cpp",
         "external/vulkancts/modules/vulkan/memory/vktMemoryMappingTests.cpp",
         "external/vulkancts/modules/vulkan/memory/vktMemoryPipelineBarrierTests.cpp",
@@ -481,6 +484,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassMultisampleResolveTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassMultisampleTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassNestedCommandBuffersTests.cpp",
+        "external/vulkancts/modules/vulkan/renderpass/vktRenderPassRemainingArrayLayersTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassSampleReadTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassSparseRenderTargetTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassSubpassDependencyTests.cpp",
@@ -1506,5 +1510,12 @@ cc_defaults {
         "modules/gles31/stress",
         "modules/glshared",
         "modules/internal",
+    ],
+    cflags: [
+        // Android/Clang defines: _FORTIFY_SOURCE=3.
+        // This code uses malloc_usable_size(),
+        // and thus can't be built with _FORTIFY_SOURCE=3.
+        "-U_FORTIFY_SOURCE",
+        "-D_FORTIFY_SOURCE=2",
     ],
 }

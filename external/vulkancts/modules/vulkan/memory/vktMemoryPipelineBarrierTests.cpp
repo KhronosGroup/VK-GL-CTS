@@ -469,13 +469,13 @@ vk::VkAccessFlags usageToAccessFlags(Usage usage)
     if (usage & USAGE_VERTEX_BUFFER)
         flags |= vk::VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
 
-    if (usage & (USAGE_UNIFORM_BUFFER | USAGE_UNIFORM_TEXEL_BUFFER))
+    if (usage & USAGE_UNIFORM_BUFFER)
         flags |= vk::VK_ACCESS_UNIFORM_READ_BIT;
 
     if (usage & USAGE_SAMPLED_IMAGE)
         flags |= vk::VK_ACCESS_SHADER_READ_BIT;
 
-    if (usage & (USAGE_STORAGE_BUFFER | USAGE_STORAGE_TEXEL_BUFFER | USAGE_STORAGE_IMAGE))
+    if (usage & (USAGE_STORAGE_BUFFER | USAGE_UNIFORM_TEXEL_BUFFER | USAGE_STORAGE_TEXEL_BUFFER | USAGE_STORAGE_IMAGE))
         flags |= vk::VK_ACCESS_SHADER_READ_BIT | vk::VK_ACCESS_SHADER_WRITE_BIT;
 
     if (usage & USAGE_INDIRECT_BUFFER)
@@ -8243,8 +8243,8 @@ void getAvailableOps(const State &state, bool supportsBuffers, bool supportsImag
                (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT) ||
                 state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT))) ||
               ((usage & USAGE_UNIFORM_TEXEL_BUFFER) &&
-               (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT) ||
-                state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT))) ||
+               (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT) ||
+                state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))) ||
               ((usage & USAGE_STORAGE_BUFFER) &&
                (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT) ||
                 state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))) ||
@@ -8361,10 +8361,10 @@ void getAvailableOps(const State &state, bool supportsBuffers, bool supportsImag
 
         if ((usage & USAGE_UNIFORM_TEXEL_BUFFER) != 0 && state.memoryDefined && state.hasBoundBufferMemory)
         {
-            if (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT))
+            if (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))
                 ops.push_back(OP_RENDER_VERTEX_UNIFORM_TEXEL_BUFFER);
 
-            if (state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT))
+            if (state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))
                 ops.push_back(OP_RENDER_FRAGMENT_UNIFORM_TEXEL_BUFFER);
         }
 
@@ -8805,7 +8805,6 @@ void applyOp(State &state, const Memory &memory, Op op, Usage usage)
     }
 
     case OP_RENDER_VERTEX_UNIFORM_BUFFER:
-    case OP_RENDER_VERTEX_UNIFORM_TEXEL_BUFFER:
     {
         DE_ASSERT(state.stage == STAGE_RENDER_PASS);
 
@@ -8815,7 +8814,6 @@ void applyOp(State &state, const Memory &memory, Op op, Usage usage)
     }
 
     case OP_RENDER_FRAGMENT_UNIFORM_BUFFER:
-    case OP_RENDER_FRAGMENT_UNIFORM_TEXEL_BUFFER:
     {
         DE_ASSERT(state.stage == STAGE_RENDER_PASS);
 
@@ -8826,6 +8824,7 @@ void applyOp(State &state, const Memory &memory, Op op, Usage usage)
 
     case OP_RENDER_VERTEX_STORAGE_BUFFER:
     case OP_RENDER_VERTEX_STORAGE_TEXEL_BUFFER:
+    case OP_RENDER_VERTEX_UNIFORM_TEXEL_BUFFER:
     {
         DE_ASSERT(state.stage == STAGE_RENDER_PASS);
 
@@ -8836,6 +8835,7 @@ void applyOp(State &state, const Memory &memory, Op op, Usage usage)
 
     case OP_RENDER_FRAGMENT_STORAGE_BUFFER:
     case OP_RENDER_FRAGMENT_STORAGE_TEXEL_BUFFER:
+    case OP_RENDER_FRAGMENT_UNIFORM_TEXEL_BUFFER:
     {
         DE_ASSERT(state.stage == STAGE_RENDER_PASS);
 

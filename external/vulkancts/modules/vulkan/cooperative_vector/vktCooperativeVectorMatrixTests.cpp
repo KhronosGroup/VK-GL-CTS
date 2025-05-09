@@ -129,7 +129,7 @@ void CooperativeVectorLayoutTestCase::checkSupport(Context &context) const
     uint32_t propertyCount = 0;
     std::vector<VkCooperativeVectorPropertiesNV> properties;
     context.getInstanceInterface().getPhysicalDeviceCooperativeVectorPropertiesNV(context.getPhysicalDevice(),
-                                                                                  &propertyCount, DE_NULL);
+                                                                                  &propertyCount, nullptr);
     if (propertyCount == 0)
         TCU_THROW(NotSupportedError, "cooperative vectors not supported");
 
@@ -139,7 +139,7 @@ void CooperativeVectorLayoutTestCase::checkSupport(Context &context) const
     {
         VkCooperativeVectorPropertiesNV *p = &properties[i];
         p->sType                           = VK_STRUCTURE_TYPE_COOPERATIVE_VECTOR_PROPERTIES_NV;
-        p->pNext                           = DE_NULL;
+        p->pNext                           = nullptr;
     }
 
     context.getInstanceInterface().getPhysicalDeviceCooperativeVectorPropertiesNV(context.getPhysicalDevice(),
@@ -199,7 +199,7 @@ tcu::TestStatus CooperativeVectorLayoutTestInstance::iterate(void)
 
     VkBufferDeviceAddressInfo bdaInfo{
         VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType  sType;
-        DE_NULL,                                      // const void*  pNext;
+        nullptr,                                      // const void*  pNext;
         **buffer,                                     // VkBuffer            buffer
     };
     VkDeviceAddress bufferDeviceAddress;
@@ -277,7 +277,7 @@ tcu::TestStatus CooperativeVectorLayoutTestInstance::iterate(void)
                                                                                                     0;
                 VkConvertCooperativeVectorMatrixInfoNV info = {
                     VK_STRUCTURE_TYPE_CONVERT_COOPERATIVE_VECTOR_MATRIX_INFO_NV, // VkStructureType                       sType;
-                    DE_NULL,                    // void const*                           pNext;
+                    nullptr,                    // void const*                           pNext;
                     matrixSizes[m - 1],         // size_t                                srcSize;
                     {0},                        // VkDeviceOrHostAddressConstKHR         srcData;
                     &matrixSizes[m],            // size_t*                               pDstSize;
@@ -308,7 +308,7 @@ tcu::TestStatus CooperativeVectorLayoutTestInstance::iterate(void)
 
                     VkMemoryBarrier2KHR memoryBarrier = {
                         VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR,                       // sType
-                        DE_NULL,                                                      // pNext
+                        nullptr,                                                      // pNext
                         VK_PIPELINE_STAGE_2_CONVERT_COOPERATIVE_VECTOR_MATRIX_BIT_NV, // srcStageMask
                         VK_ACCESS_2_TRANSFER_WRITE_BIT,                               // srcAccessMask
                         VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,                         // dstStageMask
@@ -317,14 +317,14 @@ tcu::TestStatus CooperativeVectorLayoutTestInstance::iterate(void)
 
                     VkDependencyInfoKHR dependencyInfo{
                         VK_STRUCTURE_TYPE_DEPENDENCY_INFO, // sType
-                        DE_NULL,                           // pNext
+                        nullptr,                           // pNext
                         0,                                 //dependency flags
                         1,                                 //memory barrier count
                         &memoryBarrier,                    //memory barrier
                         0,                                 // bufferMemoryBarrierCount
-                        DE_NULL,                           // pBufferMemoryBarriers
+                        nullptr,                           // pBufferMemoryBarriers
                         0,                                 // imageMemoryBarrierCount
-                        DE_NULL,                           // pImageMemoryBarriers
+                        nullptr,                           // pImageMemoryBarriers
                     };
                     vk.cmdPipelineBarrier2(*cmdBuffer, &dependencyInfo);
                 }
@@ -563,7 +563,7 @@ void CooperativeVectorTypeConversionTestCase::checkSupport(Context &context) con
     uint32_t propertyCount = 0;
     std::vector<VkCooperativeVectorPropertiesNV> properties;
     context.getInstanceInterface().getPhysicalDeviceCooperativeVectorPropertiesNV(context.getPhysicalDevice(),
-                                                                                  &propertyCount, DE_NULL);
+                                                                                  &propertyCount, nullptr);
     if (propertyCount == 0)
         TCU_THROW(NotSupportedError, "cooperative vectors not supported");
 
@@ -573,7 +573,7 @@ void CooperativeVectorTypeConversionTestCase::checkSupport(Context &context) con
     {
         VkCooperativeVectorPropertiesNV *p = &properties[i];
         p->sType                           = VK_STRUCTURE_TYPE_COOPERATIVE_VECTOR_PROPERTIES_NV;
-        p->pNext                           = DE_NULL;
+        p->pNext                           = nullptr;
     }
 
     context.getInstanceInterface().getPhysicalDeviceCooperativeVectorPropertiesNV(context.getPhysicalDevice(),
@@ -638,7 +638,7 @@ tcu::TestStatus CooperativeVectorTypeConversionTestInstance::iterate(void)
     size_t optimalSize                          = 0;
     VkConvertCooperativeVectorMatrixInfoNV info = {
         VK_STRUCTURE_TYPE_CONVERT_COOPERATIVE_VECTOR_MATRIX_INFO_NV, // VkStructureType                       sType;
-        DE_NULL,                                                     // void const*                           pNext;
+        nullptr,                                                     // void const*                           pNext;
         numElements * srcElementSize,                                // size_t                                srcSize;
         {0},                                                         // VkDeviceOrHostAddressConstKHR         srcData;
         &optimalSize,                                                // size_t*                               pDstSize;
@@ -683,7 +683,7 @@ tcu::TestStatus CooperativeVectorTypeConversionTestInstance::iterate(void)
 
     VkBufferDeviceAddressInfo bdinfo{
         VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType  sType;
-        DE_NULL,                                      // const void*  pNext;
+        nullptr,                                      // const void*  pNext;
         **buffer,                                     // VkBuffer            buffer
     };
     VkDeviceAddress bufferDeviceAddress;
@@ -723,7 +723,7 @@ tcu::TestStatus CooperativeVectorTypeConversionTestInstance::iterate(void)
     size_t dstSize = optimalSize;
     info           = {
         VK_STRUCTURE_TYPE_CONVERT_COOPERATIVE_VECTOR_MATRIX_INFO_NV, // VkStructureType                       sType;
-        DE_NULL,                      // void const*                           pNext;
+        nullptr,                      // void const*                           pNext;
         numElements * srcElementSize, // size_t                                srcSize;
         {0},                          // VkDeviceOrHostAddressConstKHR         srcData;
         &dstSize,                     // size_t*                               pDstSize;
@@ -752,7 +752,7 @@ tcu::TestStatus CooperativeVectorTypeConversionTestInstance::iterate(void)
 
         VkMemoryBarrier2KHR memoryBarrier = {
             VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR,                       // sType
-            DE_NULL,                                                      // pNext
+            nullptr,                                                      // pNext
             VK_PIPELINE_STAGE_2_CONVERT_COOPERATIVE_VECTOR_MATRIX_BIT_NV, // srcStageMask
             VK_ACCESS_2_TRANSFER_WRITE_BIT,                               // srcAccessMask
             VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,                         // dstStageMask
@@ -761,14 +761,14 @@ tcu::TestStatus CooperativeVectorTypeConversionTestInstance::iterate(void)
 
         VkDependencyInfoKHR dependencyInfo{
             VK_STRUCTURE_TYPE_DEPENDENCY_INFO, // sType
-            DE_NULL,                           // pNext
+            nullptr,                           // pNext
             0,                                 //dependency flags
             1,                                 //memory barrier count
             &memoryBarrier,                    //memory barrier
             0,                                 // bufferMemoryBarrierCount
-            DE_NULL,                           // pBufferMemoryBarriers
+            nullptr,                           // pBufferMemoryBarriers
             0,                                 // imageMemoryBarrierCount
-            DE_NULL,                           // pImageMemoryBarriers
+            nullptr,                           // pImageMemoryBarriers
         };
         vk.cmdPipelineBarrier2(*cmdBuffer, &dependencyInfo);
     }
@@ -776,7 +776,7 @@ tcu::TestStatus CooperativeVectorTypeConversionTestInstance::iterate(void)
     dstSize = numElements * dstElementSize;
     info    = {
         VK_STRUCTURE_TYPE_CONVERT_COOPERATIVE_VECTOR_MATRIX_INFO_NV, // VkStructureType                       sType;
-        DE_NULL,                                                     // void const*                           pNext;
+        nullptr,                                                     // void const*                           pNext;
         optimalSize,          // size_t                                srcSize;
         {0},                  // VkDeviceOrHostAddressConstKHR         srcData;
         &dstSize,             // size_t*                               pDstSize;

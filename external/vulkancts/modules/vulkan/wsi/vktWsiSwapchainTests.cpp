@@ -467,17 +467,23 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases(const InstanceI
 
     case TEST_DIMENSION_IMAGE_USAGE:
     {
-        for (uint32_t flags = 1u; flags <= capabilities.supportedUsageFlags; ++flags)
+        const VkImageUsageFlags maxPossibleMask =
+            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
+            VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
+            VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT;
+
+        const VkImageUsageFlags validUsageFlags = capabilities.supportedUsageFlags & maxPossibleMask;
+
+        for (uint32_t flags = 1u; flags <= validUsageFlags; ++flags)
         {
             VkImageFormatProperties imageProps;
-
-            if ((flags & ~capabilities.supportedUsageFlags) == 0)
+            if ((flags & ~validUsageFlags) == 0)
             {
                 if (vki.getPhysicalDeviceImageFormatProperties(physicalDevice, baseParameters.imageFormat,
                                                                VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, flags,
                                                                (VkImageCreateFlags)0u, &imageProps) != VK_SUCCESS)
                     continue;
-
                 cases.push_back(baseParameters);
                 cases.back().imageUsage = flags;
             }
@@ -935,13 +941,20 @@ tcu::TestStatus createSwapchainSimulateOOMTest(Context &context, TestParameters 
     return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
-tcu::TestStatus testImageSwapchainCreateInfo(Context &context, Type wsiType)
+struct ImageSwapchainCreateInfoParams
+{
+    Type wsiType;
+    bool concurrent;
+};
+
+tcu::TestStatus testImageSwapchainCreateInfo(Context &context, ImageSwapchainCreateInfoParams params)
 {
     const tcu::UVec2 desiredSize(256, 256);
-    const InstanceHelper instHelper(context, wsiType, vector<string>(1, string("VK_KHR_device_group_creation")));
-    const NativeObjects native(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
-    const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
-                                                     native.getWindow(), context.getTestContext().getCommandLine()));
+    const InstanceHelper instHelper(context, params.wsiType, vector<string>(1, string("VK_KHR_device_group_creation")));
+    const NativeObjects native(context, instHelper.supportedExtensions, params.wsiType, 1u, tcu::just(desiredSize));
+    const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, params.wsiType,
+                                                     native.getDisplay(), native.getWindow(),
+                                                     context.getTestContext().getCommandLine()));
     const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface,
                                  vector<string>(1u, "VK_KHR_bind_memory2"));
     const Extensions &deviceExtensions =
@@ -951,11 +964,18 @@ tcu::TestStatus testImageSwapchainCreateInfo(Context &context, Type wsiType)
     if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_swapchain", 69)))
         TCU_THROW(NotSupportedError, "Required extension revision is not supported");
 
+    const auto sharing_mode              = params.concurrent ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+    const auto queueFamilyIndexCount     = params.concurrent ? 1u : 0u;
+    const uint32_t queueFamilyIndex1     = devHelper.queueFamilyIndex;
+    const uint32_t queueFamilyIndex2     = devHelper.queueFamilyIndex;
+    const uint32_t *pQueueFamilyIndices1 = params.concurrent ? &queueFamilyIndex1 : nullptr;
+    const uint32_t *pQueueFamilyIndices2 = params.concurrent ? &queueFamilyIndex2 : nullptr;
+
     const VkSurfaceCapabilitiesKHR capabilities =
         getPhysicalDeviceSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surface);
     const vector<VkSurfaceFormatKHR> formats =
         getPhysicalDeviceSurfaceFormats(instHelper.vki, devHelper.physicalDevice, *surface);
-    const PlatformProperties &platformProperties = getPlatformProperties(wsiType);
+    const PlatformProperties &platformProperties = getPlatformProperties(params.wsiType);
     const VkSurfaceTransformFlagBitsKHR transform =
         (capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) ?
             VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR :
@@ -976,9 +996,9 @@ tcu::TestStatus testImageSwapchainCreateInfo(Context &context, Type wsiType)
              vk::makeExtent2D(desiredSize.x(), desiredSize.y())),
         1u,
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-        VK_SHARING_MODE_EXCLUSIVE,
-        0u,
-        nullptr,
+        sharing_mode,
+        queueFamilyIndexCount,
+        pQueueFamilyIndices1,
         transform,
         VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         VK_PRESENT_MODE_FIFO_KHR,
@@ -1012,9 +1032,9 @@ tcu::TestStatus testImageSwapchainCreateInfo(Context &context, Type wsiType)
         VK_SAMPLE_COUNT_1_BIT,               // samples
         VK_IMAGE_TILING_OPTIMAL,             // tiling
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, // usage
-        VK_SHARING_MODE_EXCLUSIVE,           // sharingMode
-        0u,                                  // queueFamilyIndexCount
-        nullptr,                             // pQueueFamilyIndices
+        sharing_mode,                        // sharingMode
+        queueFamilyIndexCount,               // queueFamilyIndexCount
+        pQueueFamilyIndices2,                // pQueueFamilyIndices
         VK_IMAGE_LAYOUT_UNDEFINED            // initialLayout
     };
 
@@ -1074,7 +1094,14 @@ void populateSwapchainGroup(tcu::TestCaseGroup *testGroup, GroupParameters param
                         TestParameters(params.wsiType, testDimension));
     }
 
-    addFunctionCase(testGroup, "image_swapchain_create_info", testImageSwapchainCreateInfo, params.wsiType);
+    ImageSwapchainCreateInfoParams imageSwapchainCreateInfoParams;
+    imageSwapchainCreateInfoParams.wsiType    = params.wsiType;
+    imageSwapchainCreateInfoParams.concurrent = false;
+    addFunctionCase(testGroup, "image_swapchain_create_info", testImageSwapchainCreateInfo,
+                    imageSwapchainCreateInfoParams);
+    imageSwapchainCreateInfoParams.concurrent = true;
+    addFunctionCase(testGroup, "image_swapchain_create_info_concurrent", testImageSwapchainCreateInfo,
+                    imageSwapchainCreateInfoParams);
 }
 
 void populateSwapchainPrivateDataGroup(tcu::TestCaseGroup *testGroup, GroupParameters params)
@@ -2428,6 +2455,57 @@ tcu::TestStatus destroyOldSwapchainTest(Context &context, Type wsiType)
     return tcu::TestStatus::pass("Destroying an old swapchain has no effect.");
 }
 
+tcu::TestStatus destroyOldSwapchainWithAcquiredImageTest(Context &context, Type wsiType)
+{
+    const tcu::UVec2 desiredSize(256, 256);
+    const InstanceHelper instHelper(context, wsiType);
+    const NativeObjects native(context, instHelper.supportedExtensions, wsiType);
+    const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
+                                                     native.getWindow(), context.getTestContext().getCommandLine()));
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
+
+    // Create the first swapchain.
+    VkSwapchainCreateInfoKHR swapchainInfo =
+        getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
+    VkSwapchainKHR swapchain = VK_NULL_HANDLE;
+    VK_CHECK(devHelper.vkd.createSwapchainKHR(*devHelper.device, &swapchainInfo, nullptr, &swapchain));
+
+    uint32_t imageCount;
+    devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, swapchain, &imageCount, nullptr);
+    std::vector<VkImage> images(imageCount);
+    devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, swapchain, &imageCount, images.data());
+
+    const auto fences = createFences(devHelper.vkd, *devHelper.device, 2, false);
+    uint32_t imageIndex;
+    devHelper.vkd.acquireNextImageKHR(*devHelper.device, swapchain, std::numeric_limits<uint64_t>::max(),
+                                      VK_NULL_HANDLE, **fences[0], &imageIndex);
+    VK_CHECK(devHelper.vkd.waitForFences(*devHelper.device, 1u, &**fences[0], VK_TRUE,
+                                         std::numeric_limits<uint64_t>::max()));
+
+    // Create a new swapchain replacing the old one.
+    swapchainInfo.oldSwapchain        = swapchain;
+    VkSwapchainKHR recreatedSwapchain = VK_NULL_HANDLE;
+    VK_CHECK(devHelper.vkd.createSwapchainKHR(*devHelper.device, &swapchainInfo, nullptr, &recreatedSwapchain));
+
+    // Destroying the old swapchain should have no effect.
+    devHelper.vkd.destroySwapchainKHR(*devHelper.device, swapchain, nullptr);
+
+    uint32_t imageCount2;
+    devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, recreatedSwapchain, &imageCount2, nullptr);
+    std::vector<VkImage> images2(imageCount2);
+    devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, recreatedSwapchain, &imageCount2, images2.data());
+
+    devHelper.vkd.acquireNextImageKHR(*devHelper.device, recreatedSwapchain, std::numeric_limits<uint64_t>::max(),
+                                      VK_NULL_HANDLE, **fences[1], &imageIndex);
+    VK_CHECK(devHelper.vkd.waitForFences(*devHelper.device, 1u, &**fences[1], VK_TRUE,
+                                         std::numeric_limits<uint64_t>::max()));
+
+    // Destroy the new swapchain for cleanup.
+    devHelper.vkd.destroySwapchainKHR(*devHelper.device, recreatedSwapchain, nullptr);
+
+    return tcu::TestStatus::pass("Destroying an old swapchain has no effect.");
+}
+
 tcu::TestStatus acquireTooManyTest(Context &context, Type wsiType)
 {
     const tcu::UVec2 desiredSize(256, 256);
@@ -2595,6 +2673,8 @@ void populateDestroyGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
     addFunctionCase(testGroup, "null_handle", destroyNullHandleSwapchainTest, wsiType);
     // Destroying an old swapchain
     addFunctionCase(testGroup, "old_swapchain", destroyOldSwapchainTest, wsiType);
+    // Destroying an old swapchain after acquiring image
+    addFunctionCase(testGroup, "old_swapchain_acquired_image", destroyOldSwapchainWithAcquiredImageTest, wsiType);
 }
 
 void populateAcquireGroup(tcu::TestCaseGroup *testGroup, Type wsiType)

@@ -168,6 +168,18 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 #endif // defined(CTS_USES_VULKAN)
 
 #if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceCooperativeMatrixFeaturesKHR physicalDeviceCooperativeMatrixFeaturesKHR;
+	deMemset(&physicalDeviceCooperativeMatrixFeaturesKHR, 0, sizeof(physicalDeviceCooperativeMatrixFeaturesKHR));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_cooperative_matrix"))
+	{
+		physicalDeviceCooperativeMatrixFeaturesKHR.sType = getStructureType<VkPhysicalDeviceCooperativeMatrixFeaturesKHR>();
+		*nextPtr = &physicalDeviceCooperativeMatrixFeaturesKHR;
+		nextPtr  = &physicalDeviceCooperativeMatrixFeaturesKHR.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceCooperativeVectorFeaturesNV physicalDeviceCooperativeVectorFeaturesNV;
 	deMemset(&physicalDeviceCooperativeVectorFeaturesNV, 0, sizeof(physicalDeviceCooperativeVectorFeaturesNV));
 
@@ -553,6 +565,16 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		physicalDeviceMaintenance7FeaturesKHR.sType = getStructureType<VkPhysicalDeviceMaintenance7FeaturesKHR>();
 		*nextPtr = &physicalDeviceMaintenance7FeaturesKHR;
 		nextPtr  = &physicalDeviceMaintenance7FeaturesKHR.pNext;
+	}
+
+	vk::VkPhysicalDeviceMaintenance8FeaturesKHR physicalDeviceMaintenance8FeaturesKHR;
+	deMemset(&physicalDeviceMaintenance8FeaturesKHR, 0, sizeof(physicalDeviceMaintenance8FeaturesKHR));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_maintenance8"))
+	{
+		physicalDeviceMaintenance8FeaturesKHR.sType = getStructureType<VkPhysicalDeviceMaintenance8FeaturesKHR>();
+		*nextPtr = &physicalDeviceMaintenance8FeaturesKHR;
+		nextPtr  = &physicalDeviceMaintenance8FeaturesKHR.pNext;
 	}
 
 	vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT physicalDeviceMemoryPriorityFeaturesEXT;
@@ -2390,6 +2412,17 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_cooperative_matrix")) )
+	{
+		if ( physicalDeviceCooperativeMatrixFeaturesKHR.cooperativeMatrix == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature cooperativeMatrix not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_depth_clamp_zero_one")) )
 	{
 		if ( physicalDeviceDepthClampZeroOneFeaturesKHR.depthClampZeroOne == VK_FALSE )
@@ -2503,6 +2536,15 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceMaintenance7FeaturesKHR.maintenance7 == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature maintenance7 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_maintenance8")) )
+	{
+		if ( physicalDeviceMaintenance8FeaturesKHR.maintenance8 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature maintenance8 not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

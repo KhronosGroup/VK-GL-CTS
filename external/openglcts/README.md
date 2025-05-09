@@ -218,6 +218,14 @@ To download sources, run:
 
 	python external/fetch_sources.py
 
+For OpenGL CTS releases prior to opengl-cts-4.6.6, and OpenGL ES CTS releases prior to opengl-es-cts-3.2.4.0
+you will need to download the Khronos Confidential Conformance Test Suite. Refer to the README file provided
+with those branches for instructions.
+
+For OpenGL CTS releases prior to opengl-cts-4.6.6, and OpenGL ES CTS releases prior to opengl-es-cts-3.2.4.0
+the results for the tests included in this suite must be included in a
+conformance submission.
+
 With CMake out-of-source builds are always recommended. Create a build directory
 of your choosing, and in that directory generate Makefiles or IDE project
 using Cmake.

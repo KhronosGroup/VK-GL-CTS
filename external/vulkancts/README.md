@@ -157,6 +157,47 @@ under `/data/` on the device, such as `/data/local/tmp/` which should be writeab
 for non-rooted devices. It should be noted that anywhere on `/sdcard/` won't work
 since it's mounted as `noexec`.
 
+### Note on Debug Build Link Times
+
+Some CTS binaries like `deqp-vk` and `deqp-vksc` are notably large when built
+with debug information. For example, as of the time this text is being written,
+`deqp-vk` is over 700 MiB big. As a consequence of this and the number of
+symbols, linking these binaries takes a long time on some environments. For
+example, on Linux with the BFD or Gold linkers, which are still the default in
+many distributions, linking these binaries in debug mode may take over 10
+seconds even on a relatively fast CPU, and many more if the CPU is slow.
+
+Typically on Linux, both the LLD linker from the LLVM project and the Mold
+linker are able to link these binaries much faster, in less than a second on the
+same fast CPU, using varying amounts of memory and threads.
+
+On both Ubuntu and Fedora, the LLD linker is provided by the "lld" package and
+the Mold linker is provided by the "mold" package. Once installed, there are
+several ways to use them when building CTS.
+
+#### Using lld or mold as the default system-wide linkers
+
+Under both Ubuntu and Fedora, `update-alternatives` can be used to set the
+default link for the `ld` tool and make it point to `ld.lld` or `ld.mold`
+instead of `ld.bfd` or `ld.gold`. Once set, the linker will be used by default
+when linking any binary.
+
+#### Using lld or mold only when building CTS
+
+Both GCC and Clang can be told to use a different linker with the
+`-fuse-ld=LINKER` command-line option at link time. For example, `-fuse-ld=lld`
+or `-fuse-ld=mold`. CMake will automatically pick up that option and use it when
+set in the `LDFLAGS` environment variable before configuring the project, so the
+following example should work:
+
+```
+LDFLAGS="-fuse-ld=lld ${LDFLAGS}"
+export LDFLAGS
+<cmake configuration command>
+```
+
+Note in this case the linker name is passed without the `ld.` prefix.
+
 Building Mustpass
 -----------------
 

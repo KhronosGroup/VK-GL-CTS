@@ -34,9 +34,7 @@
 #include "tcuImageCompare.hpp"
 #include "tcuTextureUtil.hpp"
 
-namespace vkt
-{
-namespace Draw
+namespace vkt::Draw
 {
 namespace
 {
@@ -48,6 +46,8 @@ enum TestFlagBits
     TEST_FLAG_INDIRECT       = 1u << 2,
     TEST_FLAG_MULTIDRAW      = 1u << 3, //!< multiDrawIndirect
     TEST_FLAG_FIRST_INSTANCE = 1u << 4, //!< drawIndirectFirstInstance
+    TEST_FLAG_BASE_VERT_ONLY = 1u << 5,
+    TEST_FLAG_BASE_INST_ONLY = 1u << 6,
 };
 typedef uint32_t TestFlags;
 
@@ -109,6 +109,14 @@ private:
     {
         return (m_flags & TEST_FLAG_FIRST_INSTANCE) != 0;
     }
+    bool isBaseVertOnly(void) const
+    {
+        return (m_flags & TEST_FLAG_BASE_VERT_ONLY) != 0;
+    }
+    bool isBaseInstOnly(void) const
+    {
+        return (m_flags & TEST_FLAG_BASE_INST_ONLY) != 0;
+    }
     void draw(vk::VkCommandBuffer cmdBuffer);
 
 #ifndef CTS_USES_VULKANSC
@@ -133,31 +141,31 @@ DrawTest::DrawTest(Context &context, TestSpec testSpec)
     {
         int refIndex = NDX_FIRST_VERTEX - OFFSET_FIRST_INDEX;
 
-        m_data.push_back(VertexElementData(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::Vec4(1.0f), -1));
-        m_data.push_back(VertexElementData(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::Vec4(1.0f), -1));
+        m_data.emplace_back(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::Vec4(1.0f), -1);
+        m_data.emplace_back(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::Vec4(1.0f), -1);
 
-        if (!isIndexed())
+        if (!isIndexed() || isBaseInstOnly())
             refIndex = 0;
 
-        m_data.push_back(VertexElementData(tcu::Vec4(-0.3f, -0.3f, 1.0f, 1.0f), tcu::Vec4(1.0f), refIndex++));
-        m_data.push_back(VertexElementData(tcu::Vec4(-0.3f, 0.3f, 1.0f, 1.0f), tcu::Vec4(1.0f), refIndex++));
-        m_data.push_back(VertexElementData(tcu::Vec4(0.3f, -0.3f, 1.0f, 1.0f), tcu::Vec4(1.0f), refIndex++));
-        m_data.push_back(VertexElementData(tcu::Vec4(0.3f, 0.3f, 1.0f, 1.0f), tcu::Vec4(1.0f), refIndex++));
+        m_data.emplace_back(tcu::Vec4(-0.3f, -0.3f, 1.0f, 1.0f), tcu::Vec4(1.0f), refIndex++);
+        m_data.emplace_back(tcu::Vec4(-0.3f, 0.3f, 1.0f, 1.0f), tcu::Vec4(1.0f), refIndex++);
+        m_data.emplace_back(tcu::Vec4(0.3f, -0.3f, 1.0f, 1.0f), tcu::Vec4(1.0f), refIndex++);
+        m_data.emplace_back(tcu::Vec4(0.3f, 0.3f, 1.0f, 1.0f), tcu::Vec4(1.0f), refIndex++);
 
-        m_data.push_back(VertexElementData(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::Vec4(1.0f), -1));
-        m_data.push_back(VertexElementData(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::Vec4(1.0f), -1));
-        m_data.push_back(VertexElementData(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), tcu::Vec4(1.0f), -1));
+        m_data.emplace_back(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::Vec4(1.0f), -1);
+        m_data.emplace_back(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::Vec4(1.0f), -1);
+        m_data.emplace_back(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), tcu::Vec4(1.0f), -1);
 
-        if (!isIndexed())
+        if (!isIndexed() || isBaseInstOnly())
             refIndex = 0;
 
-        m_data.push_back(VertexElementData(tcu::Vec4(-0.3f, -0.3f, 1.0f, 1.0f), tcu::Vec4(1.0f), refIndex++));
-        m_data.push_back(VertexElementData(tcu::Vec4(-0.3f, 0.3f, 1.0f, 1.0f), tcu::Vec4(1.0f), refIndex++));
-        m_data.push_back(VertexElementData(tcu::Vec4(0.3f, -0.3f, 1.0f, 1.0f), tcu::Vec4(1.0f), refIndex++));
-        m_data.push_back(VertexElementData(tcu::Vec4(0.3f, 0.3f, 1.0f, 1.0f), tcu::Vec4(1.0f), refIndex++));
+        m_data.emplace_back(tcu::Vec4(-0.3f, -0.3f, 1.0f, 1.0f), tcu::Vec4(1.0f), refIndex++);
+        m_data.emplace_back(tcu::Vec4(-0.3f, 0.3f, 1.0f, 1.0f), tcu::Vec4(1.0f), refIndex++);
+        m_data.emplace_back(tcu::Vec4(0.3f, -0.3f, 1.0f, 1.0f), tcu::Vec4(1.0f), refIndex++);
+        m_data.emplace_back(tcu::Vec4(0.3f, 0.3f, 1.0f, 1.0f), tcu::Vec4(1.0f), refIndex++);
 
-        m_data.push_back(VertexElementData(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::Vec4(1.0f), -1));
-        m_data.push_back(VertexElementData(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::Vec4(1.0f), -1));
+        m_data.emplace_back(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::Vec4(1.0f), -1);
+        m_data.emplace_back(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::Vec4(1.0f), -1);
 
         // Make sure constants are up to date
         DE_ASSERT(m_data.size() == NDX_SECOND_VERTEX + NUM_VERTICES + 2);
@@ -398,10 +406,7 @@ void DrawTest::draw(vk::VkCommandBuffer cmdBuffer)
             };
             setIndirectCommand(commands);
         }
-    }
 
-    if (isIndirect())
-    {
         const uint32_t numIndirectDraws = isMultiDraw() ? MAX_INDIRECT_DRAW_COUNT : 1;
 
         if (isIndexed())
@@ -413,11 +418,13 @@ void DrawTest::draw(vk::VkCommandBuffer cmdBuffer)
     }
     else
     {
-        const uint32_t firstInstance = 2;
+        const uint32_t firstInstance = isBaseVertOnly() ? 0 : 2;
 
         if (isIndexed())
+        {
             m_vk.cmdDrawIndexed(cmdBuffer, NUM_VERTICES, numInstances, NDX_FIRST_INDEX, OFFSET_FIRST_INDEX,
                                 firstInstance);
+        }
         else
             m_vk.cmdDraw(cmdBuffer, NUM_VERTICES, numInstances, NDX_FIRST_VERTEX, firstInstance);
     }
@@ -431,22 +438,7 @@ void checkSupport(Context &context, DrawTest::TestSpec testSpec)
     if (context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
     {
         // Check if shader draw parameters is supported on the physical device.
-        vk::VkPhysicalDeviceShaderDrawParametersFeatures drawParameters = {
-            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES, // sType
-            nullptr,                                                               // pNext
-            VK_FALSE                                                               // shaderDrawParameters
-        };
-
-        vk::VkPhysicalDeviceFeatures features;
-        deMemset(&features, 0, sizeof(vk::VkPhysicalDeviceFeatures));
-
-        vk::VkPhysicalDeviceFeatures2 featuresExt = {vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, // sType
-                                                     &drawParameters,                                  // pNext
-                                                     features};
-
-        context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &featuresExt);
-
-        if (drawParameters.shaderDrawParameters == VK_FALSE)
+        if (context.getShaderDrawParametersFeatures().shaderDrawParameters == VK_FALSE)
             TCU_THROW(NotSupportedError, "shaderDrawParameters feature not supported by the device");
     }
 
@@ -498,12 +490,25 @@ void ShaderDrawParametersTests::init(void)
         testSpec.topology                          = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
         testSpec.flags                             = 0;
 
-        de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(getTestContext(), "base_vertex"));
-        addDrawCase(group.get(), testSpec, 0);
-        addDrawCase(group.get(), testSpec, TEST_FLAG_INDEXED);
-        addDrawCase(group.get(), testSpec, TEST_FLAG_INDIRECT);
-        addDrawCase(group.get(), testSpec, TEST_FLAG_INDEXED | TEST_FLAG_INDIRECT);
-        addChild(group.release());
+        auto constructTestGroup = [](const char *name, tcu::TestContext &tc, const DrawTest::TestSpec &ts)
+        {
+            de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(tc, name));
+            addDrawCase(group.get(), ts, 0);
+            addDrawCase(group.get(), ts, TEST_FLAG_INDEXED);
+            addDrawCase(group.get(), ts, TEST_FLAG_INDIRECT);
+            addDrawCase(group.get(), ts, TEST_FLAG_INDEXED | TEST_FLAG_INDIRECT);
+            return group;
+        };
+
+        addChild(constructTestGroup("base_vertex", getTestContext(), testSpec).release());
+
+        // limit number of repeated tests just to primary command buffers
+        if (!m_groupParams->useSecondaryCmdBuffer)
+        {
+            testSpec.flags                           = TEST_FLAG_BASE_VERT_ONLY;
+            testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchShaderDrawParametersBaseVert.vert";
+            addChild(constructTestGroup("base_vertex_only", getTestContext(), testSpec).release());
+        }
     }
     {
         DrawTest::TestSpec testSpec(m_groupParams);
@@ -512,14 +517,27 @@ void ShaderDrawParametersTests::init(void)
         testSpec.topology                          = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
         testSpec.flags                             = TEST_FLAG_INSTANCED;
 
-        de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(getTestContext(), "base_instance"));
-        addDrawCase(group.get(), testSpec, 0);
-        addDrawCase(group.get(), testSpec, TEST_FLAG_INDEXED);
-        addDrawCase(group.get(), testSpec, TEST_FLAG_INDIRECT);
-        addDrawCase(group.get(), testSpec, TEST_FLAG_INDIRECT | TEST_FLAG_FIRST_INSTANCE);
-        addDrawCase(group.get(), testSpec, TEST_FLAG_INDEXED | TEST_FLAG_INDIRECT);
-        addDrawCase(group.get(), testSpec, TEST_FLAG_INDEXED | TEST_FLAG_INDIRECT | TEST_FLAG_FIRST_INSTANCE);
-        addChild(group.release());
+        auto constructTestGroup = [](const char *name, tcu::TestContext &tc, const DrawTest::TestSpec &ts)
+        {
+            de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(tc, name));
+            addDrawCase(group.get(), ts, 0);
+            addDrawCase(group.get(), ts, TEST_FLAG_INDEXED);
+            addDrawCase(group.get(), ts, TEST_FLAG_INDIRECT);
+            addDrawCase(group.get(), ts, TEST_FLAG_INDIRECT | TEST_FLAG_FIRST_INSTANCE);
+            addDrawCase(group.get(), ts, TEST_FLAG_INDEXED | TEST_FLAG_INDIRECT);
+            addDrawCase(group.get(), ts, TEST_FLAG_INDEXED | TEST_FLAG_INDIRECT | TEST_FLAG_FIRST_INSTANCE);
+            return group;
+        };
+
+        addChild(constructTestGroup("base_instance", getTestContext(), testSpec).release());
+
+        // limit number of repeated tests just to primary command buffers
+        if (!m_groupParams->useSecondaryCmdBuffer)
+        {
+            testSpec.flags |= TEST_FLAG_BASE_INST_ONLY;
+            testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchShaderDrawParametersBaseInst.vert";
+            addChild(constructTestGroup("base_instance_only", getTestContext(), testSpec).release());
+        }
     }
     {
         DrawTest::TestSpec testSpec(m_groupParams);
@@ -537,5 +555,4 @@ void ShaderDrawParametersTests::init(void)
     }
 }
 
-} // namespace Draw
-} // namespace vkt
+} // namespace vkt::Draw

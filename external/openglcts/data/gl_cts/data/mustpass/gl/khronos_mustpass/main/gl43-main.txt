@@ -14913,3 +14913,6 @@ KHR-GL43.aggressive_optimizations.cos_vec2_vert
 KHR-GL43.aggressive_optimizations.cos_vec2_frag
 KHR-GL43.aggressive_optimizations.cos_vec3_vert
 KHR-GL43.aggressive_optimizations.cos_vec3_frag
+KHR-GL43.texture_query_lod.sampler1D_test
+KHR-GL43.texture_query_lod.sampler2D_test
+KHR-GL43.texture_query_lod.sampler3D_test

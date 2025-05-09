@@ -1777,7 +1777,7 @@ void SpirvGlslToSpirVBuiltInFunctionsTest::initMappings()
     m_mappings["ceil"].push_back("OpExtInst Ceil");
     m_mappings["fract"].push_back("OpExtInst Fract");
     m_mappings["mod"].push_back("OpFMod");
-    m_mappings["modf"].push_back("OpExtInst Modf");
+    m_mappings["modf"].push_back("OpExtInst ModfStruct");
     m_mappings["min"].push_back("OpExtInst FMin");
     m_mappings["max"].push_back("OpExtInst FMax");
     m_mappings["clamp"].push_back("OpExtInst FClamp");

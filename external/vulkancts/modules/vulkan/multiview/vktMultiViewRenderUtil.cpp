@@ -158,13 +158,18 @@ template <typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc,
           typename RenderPassCreateInfo>
 Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice device, const VkFormat colorFormat,
                                   const vector<uint32_t> &viewMasks, const VkSampleCountFlagBits samples,
-                                  const VkAttachmentLoadOp colorLoadOp, const VkFormat dsFormat)
+                                  const VkAttachmentLoadOp colorLoadOp, const VkFormat dsFormat,
+                                  const bool useGeneralLayout)
 {
     const bool dsAttachmentAvailable    = (dsFormat != vk::VK_FORMAT_UNDEFINED);
     const bool colorAttachmentAvailable = (colorFormat != vk::VK_FORMAT_UNDEFINED);
     const uint32_t colorAttachmentCount = (colorAttachmentAvailable ? 1u : 0u);
     const uint32_t dsAttachmentIndex    = colorAttachmentCount;
     const uint32_t subpassCount         = static_cast<uint32_t>(viewMasks.size());
+    const VkImageLayout colorAttachmentLayout =
+        useGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    const VkImageLayout dsAttachmentLayout =
+        useGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     const AttachmentDesc
         colorAttachmentDescription // VkAttachmentDescription                                        ||  VkAttachmentDescription2KHR
@@ -178,18 +183,18 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
             VK_ATTACHMENT_STORE_OP_STORE,    //  VkAttachmentStoreOp storeOp; ||  VkAttachmentStoreOp storeOp;
             VK_ATTACHMENT_LOAD_OP_DONT_CARE, //  VkAttachmentLoadOp stencilLoadOp; ||  VkAttachmentLoadOp stencilLoadOp;
             VK_ATTACHMENT_STORE_OP_DONT_CARE, //  VkAttachmentStoreOp stencilStoreOp; ||  VkAttachmentStoreOp stencilStoreOp;
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, //  VkImageLayout initialLayout; ||  VkImageLayout initialLayout;
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL  //  VkImageLayout finalLayout; ||  VkImageLayout finalLayout;
+            colorAttachmentLayout,            //  VkImageLayout initialLayout; ||  VkImageLayout initialLayout;
+            colorAttachmentLayout             //  VkImageLayout finalLayout; ||  VkImageLayout finalLayout;
         );
 
     const AttachmentRef
         colorAttachmentReference //  VkAttachmentReference                                        ||  VkAttachmentReference2KHR
         (
             //  ||  VkStructureType sType;
-            nullptr,                                  //   ||  const void* pNext;
-            0u,                                       //  uint32_t attachment; ||  uint32_t attachment;
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, //  VkImageLayout layout; ||  VkImageLayout layout;
-            0u                                        // ||  VkImageAspectFlags aspectMask;
+            nullptr,               //   ||  const void* pNext;
+            0u,                    //  uint32_t attachment; ||  uint32_t attachment;
+            colorAttachmentLayout, //  VkImageLayout layout; ||  VkImageLayout layout;
+            0u                     // ||  VkImageAspectFlags aspectMask;
         );
 
     const AttachmentDesc
@@ -204,18 +209,18 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
             VK_ATTACHMENT_STORE_OP_STORE, //  VkAttachmentStoreOp storeOp; ||  VkAttachmentStoreOp storeOp;
             VK_ATTACHMENT_LOAD_OP_LOAD,   //  VkAttachmentLoadOp stencilLoadOp; ||  VkAttachmentLoadOp stencilLoadOp;
             VK_ATTACHMENT_STORE_OP_STORE, //  VkAttachmentStoreOp stencilStoreOp; ||  VkAttachmentStoreOp stencilStoreOp;
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, //  VkImageLayout initialLayout; ||  VkImageLayout initialLayout;
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL //  VkImageLayout finalLayout; ||  VkImageLayout finalLayout;
+            dsAttachmentLayout,           //  VkImageLayout initialLayout; ||  VkImageLayout initialLayout;
+            dsAttachmentLayout            //  VkImageLayout finalLayout; ||  VkImageLayout finalLayout;
         );
 
     const AttachmentRef
         dsAttachmentReference //  VkAttachmentReference                                        ||  VkAttachmentReference2KHR
         (
             //  ||  VkStructureType sType;
-            nullptr,                                          //   ||  const void* pNext;
-            dsAttachmentIndex,                                //  uint32_t attachment; ||  uint32_t attachment;
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, //  VkImageLayout layout; ||  VkImageLayout layout;
-            0u                                                // ||  VkImageAspectFlags aspectMask;
+            nullptr,            //   ||  const void* pNext;
+            dsAttachmentIndex,  //  uint32_t attachment; ||  uint32_t attachment;
+            dsAttachmentLayout, //  VkImageLayout layout; ||  VkImageLayout layout;
+            0u                  // ||  VkImageAspectFlags aspectMask;
         );
 
     std::vector<AttachmentDesc> attachmentDescriptions;
@@ -326,9 +331,8 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
                     dstStageMask,        //  VkPipelineStageFlags dstStageMask; || VkPipelineStageFlags dstStageMask;
                     srcAccessMask,       //  VkAccessFlags srcAccessMask; || VkAccessFlags srcAccessMask;
                     dstAccessMask,       //  VkAccessFlags dstAccessMask; || VkAccessFlags dstAccessMask;
-                    VK_DEPENDENCY_BY_REGION_BIT |
-                        VK_DEPENDENCY_VIEW_LOCAL_BIT, //  VkDependencyFlags dependencyFlags; || VkDependencyFlags dependencyFlags;
-                    0                                 //    || int32_t viewOffset;
+                    VK_DEPENDENCY_BY_REGION_BIT, //  VkDependencyFlags dependencyFlags; || VkDependencyFlags dependencyFlags;
+                    0                            //    || int32_t viewOffset;
                 );
             subpassDependencies.push_back(subpassDependency);
         }
@@ -360,34 +364,38 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
 template Move<VkRenderPass> makeRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1,
                                            SubpassDependency1, RenderPassCreateInfo1>(
     const DeviceInterface &vk, const VkDevice device, const VkFormat colorFormat, const vector<uint32_t> &viewMasks,
-    const VkSampleCountFlagBits samples, const VkAttachmentLoadOp colorLoadOp, const VkFormat dsFormat);
+    const VkSampleCountFlagBits samples, const VkAttachmentLoadOp colorLoadOp, const VkFormat dsFormat,
+    const bool useGeneralLayout);
 
 // Instantiate function for renderpass2 structures
 template Move<VkRenderPass> makeRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2,
                                            SubpassDependency2, RenderPassCreateInfo2>(
     const DeviceInterface &vk, const VkDevice device, const VkFormat colorFormat, const vector<uint32_t> &viewMasks,
-    const VkSampleCountFlagBits samples, const VkAttachmentLoadOp colorLoadOp, const VkFormat dsFormat);
+    const VkSampleCountFlagBits samples, const VkAttachmentLoadOp colorLoadOp, const VkFormat dsFormat,
+    const bool useGeneralLayout);
 
 template <typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep,
           typename RenderPassCreateInfo>
 Move<VkRenderPass> makeRenderPassWithDepth(const DeviceInterface &vk, const VkDevice device, const VkFormat colorFormat,
-                                           const vector<uint32_t> &viewMasks, const VkFormat dsFormat)
+                                           const vector<uint32_t> &viewMasks, const VkFormat dsFormat,
+                                           const bool useGeneralLayout)
 {
     return makeRenderPass<AttachmentDesc, AttachmentRef, SubpassDesc, SubpassDep, RenderPassCreateInfo>(
-        vk, device, colorFormat, viewMasks, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR, dsFormat);
+        vk, device, colorFormat, viewMasks, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR, dsFormat,
+        useGeneralLayout);
 }
 
 // Instantiate function for legacy renderpass structures
 template Move<VkRenderPass> makeRenderPassWithDepth<AttachmentDescription1, AttachmentReference1, SubpassDescription1,
                                                     SubpassDependency1, RenderPassCreateInfo1>(
     const DeviceInterface &vk, const VkDevice device, const VkFormat colorFormat, const vector<uint32_t> &viewMasks,
-    const VkFormat dsFormat);
+    const VkFormat dsFormat, const bool useGeneralLayout);
 
 // Instantiate function for renderpass2 structures
 template Move<VkRenderPass> makeRenderPassWithDepth<AttachmentDescription2, AttachmentReference2, SubpassDescription2,
                                                     SubpassDependency2, RenderPassCreateInfo2>(
     const DeviceInterface &vk, const VkDevice device, const VkFormat colorFormat, const vector<uint32_t> &viewMasks,
-    const VkFormat dsFormat);
+    const VkFormat dsFormat, const bool useGeneralLayout);
 
 template <typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep,
           typename RenderPassCreateInfo>
@@ -553,9 +561,8 @@ Move<VkRenderPass> makeRenderPassWithAttachments(const DeviceInterface &vk, cons
                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, //  VkAccessFlags srcAccessMask; || VkAccessFlags srcAccessMask;
                     VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
                         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, //  VkAccessFlags dstAccessMask; || VkAccessFlags dstAccessMask;
-                    VK_DEPENDENCY_BY_REGION_BIT |
-                        VK_DEPENDENCY_VIEW_LOCAL_BIT, //  VkDependencyFlags dependencyFlags; || VkDependencyFlags dependencyFlags;
-                    0                                 //    || int32_t viewOffset;
+                    VK_DEPENDENCY_BY_REGION_BIT, //  VkDependencyFlags dependencyFlags; || VkDependencyFlags dependencyFlags;
+                    0                            //    || int32_t viewOffset;
                 );
             subpassDependencies.push_back(subpassDependency);
         }
@@ -638,6 +645,20 @@ void imageBarrier(const DeviceInterface &vk, const VkCommandBuffer cmdBuffer, co
 
     vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, 1u,
                           &barrier);
+}
+
+void memoryBarrier(const vk::DeviceInterface &vk, const vk::VkCommandBuffer cmdBuffer,
+                   const vk::VkAccessFlags srcAccessMask, const vk::VkAccessFlags dstAccessMask,
+                   const vk::VkPipelineStageFlags srcStageMask, const vk::VkPipelineStageFlags dstStageMask)
+{
+    VkMemoryBarrier barrier = {
+        VK_STRUCTURE_TYPE_MEMORY_BARRIER, // VkStructureType sType;
+        nullptr,                          // const void* pNext;
+        srcAccessMask,                    // VkAccessFlags srcAccessMask;
+        dstAccessMask,                    // VkAccessFlags dstAccessMask;
+    };
+    vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, (VkDependencyFlags)0, 1u, &barrier, 0u, nullptr, 0u,
+                          nullptr);
 }
 
 } // namespace MultiView

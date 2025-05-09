@@ -312,8 +312,8 @@ PACKAGES = [
         "b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30",
         "zlib"),
     SourcePackage(
-        "https://prdownloads.sourceforge.net/libpng/libpng-1.6.27.tar.gz",
-        "c9d164ec247f426a525a7b89936694aefbc91fb7a50182b198898b8fc91174b4",
+        "https://github.com/pnggroup/libpng/archive/refs/tags/v1.6.33.tar.gz",
+        "0b0681ed912f8f6b0175fc4ebe4b05367dfbfcd4a6f23b8f2498db42eca998d4",
         "libpng",
         postExtract = postExtractLibpng),
     SourceFile(
@@ -324,18 +324,18 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Tools.git",
         "git@github.com:KhronosGroup/SPIRV-Tools.git",
-        "3364b982713a0440d1d342dd5eec65b122a61b71",
+        "3f7cbaf327681af51ba65bc83bd1e42ddb9681b2",
         "spirv-tools"),
     GitRepo(
         "https://github.com/KhronosGroup/glslang.git",
         "git@github.com:KhronosGroup/glslang.git",
-        "1b65bd602b23d401d1c4c86dfa90a36a52c66294",
+        "ba1640446f3826a518721d1f083f3a8cca1120c3",
         "glslang",
         removeTags = ["main-tot", "master-tot"]),
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Headers.git",
         "git@github.com:KhronosGroup/SPIRV-Headers.git",
-        "767e901c986e9755a17e7939b3046fc2911a4bbd",
+        "7c2f5333e9c662620581361dffc327a99800bb52",
         "spirv-headers"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Docs.git",
@@ -350,7 +350,7 @@ PACKAGES = [
     GitRepo(
         "https://github.com/google/amber.git",
         "git@github.com:google/amber.git",
-        "6fa5ac1fb3b01c93eef3caa2aeb8841565e38d90",
+        "7fc1c7eded4c28e4b35ce0d3929dfd768f57663a",
         "amber"),
     GitRepo(
         "https://github.com/open-source-parsers/jsoncpp.git",
@@ -370,7 +370,7 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Video-Samples.git",
         "git@github.com:KhronosGroup/Vulkan-Video-Samples.git",
-        "0e87744edbb84c9c56c3fc8de9ea5150af5ee4ea",
+        "a22e0084e6f38a16dc0dcebb4c19a14651a6665b",
         "vulkan-video-samples"),
     # NOTE: Temporary video generator repo .
     GitRepo(
