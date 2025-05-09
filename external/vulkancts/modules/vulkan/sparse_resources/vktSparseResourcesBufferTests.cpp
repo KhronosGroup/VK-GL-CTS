@@ -88,6 +88,18 @@ enum TestFlagBits
 };
 typedef uint32_t TestFlags;
 
+enum class BufferObjectType
+{
+    BO_TYPE_UNIFORM = 0,
+    BO_TYPE_STORAGE
+};
+
+struct TestParams
+{
+    TestFlags flags;
+    BufferObjectType bufferType;
+};
+
 //! SparseAllocationBuilder output. Owns the allocated memory.
 struct SparseAllocation
 {
@@ -698,7 +710,7 @@ private:
     uint32_t m_sharedQueueFamilyIndices[2];
 };
 
-void initProgramsDrawWithUBO(vk::SourceCollections &programCollection, const TestFlags flags)
+void initProgramsDrawWithBufferObject(vk::SourceCollections &programCollection, const TestParams testParams)
 {
     // Vertex shader
     {
@@ -721,11 +733,16 @@ void initProgramsDrawWithUBO(vk::SourceCollections &programCollection, const Tes
 
     // Fragment shader
     {
+        const TestFlags flags        = testParams.flags;
         const bool aliased           = (flags & TEST_FLAG_ALIASED) != 0;
         const bool residency         = (flags & TEST_FLAG_RESIDENCY) != 0;
         const bool nonResidentStrict = (flags & TEST_FLAG_NON_RESIDENT_STRICT) != 0;
         const std::string valueExpr =
             (aliased ? "ivec4(3*(ndx % nonAliasedSize) ^ 127, 0, 0, 0)" : "ivec4(3*ndx ^ 127, 0, 0, 0)");
+        const bool isReadWriteOp          = (testParams.bufferType == BufferObjectType::BO_TYPE_STORAGE);
+        const std::string bufferTypeStr   = isReadWriteOp ? "buffer" : "uniform";
+        const std::string bufferLayoutStr = isReadWriteOp ? "std430" : "std140";
+        const std::string volatileStr     = isReadWriteOp ? "volatile " : "";
 
         std::ostringstream src;
         src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
@@ -735,9 +752,9 @@ void initProgramsDrawWithUBO(vk::SourceCollections &programCollection, const Tes
             << "layout(constant_id = 1) const int dataSize  = 1;\n"
             << "layout(constant_id = 2) const int chunkSize = 1;\n"
             << "\n"
-            << "layout(set = 0, binding = 0, std140) uniform SparseBuffer {\n"
-            << "    ivec4 data[dataSize];\n"
-            << "} ubo;\n"
+            << "layout(set = 0, binding = 0, " << bufferLayoutStr << ") " << bufferTypeStr << " SparseBuffer {\n"
+            << "    " << volatileStr << "ivec4 data[dataSize];\n"
+            << "} buff;\n"
             << "\n"
             << "void main(void)\n"
             << "{\n"
@@ -753,21 +770,38 @@ void initProgramsDrawWithUBO(vk::SourceCollections &programCollection, const Tes
             << "    for (int ndx = fragNdx; ndx < dataSize; ndx += pageSize)\n"
             << "    {\n";
 
+        src << "        ivec4 readData = buff.data[ndx];\n"
+            << "\n";
+
+        if (isReadWriteOp)
+        {
+            src << "        // Write a new value based on index\n"
+                << "        ivec4 newData = ivec4(ndx * 2 + 1, ndx ^ 0x55, ndx, 1);\n"
+                << "        buff.data[ndx] = newData;\n"
+                << "        ivec4 verifyData = buff.data[ndx];\n"
+                << "\n";
+        }
+
         if (residency && nonResidentStrict)
         {
-            src << "        if (ndx >= chunkSize && ndx < 2*chunkSize)\n"
-                << "            ok = ok && (ubo.data[ndx] == ivec4(0));\n"
+            // Accessing non-resident regions
+            src << "        if (ndx >= chunkSize && ndx < 2 * chunkSize)\n"
+                << "            ok = ok && (readData == ivec4(0))"
+                << (isReadWriteOp ? " && (verifyData == ivec4(0))" : "") << ";\n"
                 << "        else\n"
-                << "            ok = ok && (ubo.data[ndx] == " + valueExpr + ");\n";
+                << "            ok = ok && (readData == " + valueExpr + ")"
+                << (isReadWriteOp ? " && (verifyData == newData)" : "") << ";\n";
         }
         else if (residency)
         {
             src << "        if (ndx >= chunkSize && ndx < 2*chunkSize)\n"
                 << "            continue;\n"
-                << "        ok = ok && (ubo.data[ndx] == " << valueExpr << ");\n";
+                << "        ok = ok && (readData == " << valueExpr << ")"
+                << (isReadWriteOp ? " && (verifyData == newData)" : "") << ";\n";
         }
         else
-            src << "        ok = ok && (ubo.data[ndx] == " << valueExpr << ");\n";
+            src << "        ok = ok && (readData == " << valueExpr << ")"
+                << (isReadWriteOp ? " && (verifyData == newData)" : "") << ";\n";
 
         src << "    }\n"
             << "\n"
@@ -781,11 +815,13 @@ void initProgramsDrawWithUBO(vk::SourceCollections &programCollection, const Tes
     }
 }
 
-//! Sparse buffer backing a UBO
-class UBOTestInstance : public SparseBufferTestInstance
+//! Sparse buffer backing a UBO or SSBO
+class BufferObjectTestInstance : public SparseBufferTestInstance
 {
 public:
-    UBOTestInstance(Context &context, const TestFlags flags) : SparseBufferTestInstance(context, flags)
+    BufferObjectTestInstance(Context &context, const TestParams testParams)
+        : SparseBufferTestInstance(context, testParams.flags)
+        , m_bufferType(testParams.bufferType)
     {
     }
 
@@ -807,7 +843,16 @@ public:
         MovePtr<SparseAllocation> sparseAllocation;
         Move<VkBuffer> sparseBuffer;
         Move<VkBuffer> sparseBufferAliased;
-        bool setupDescriptors = true;
+        bool setupDescriptors                     = true;
+        const VkBufferUsageFlags bufferUsageFlags = (m_bufferType == BufferObjectType::BO_TYPE_UNIFORM) ?
+                                                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT :
+                                                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+        const uint32_t maxBufferTypeRange         = (m_bufferType == BufferObjectType::BO_TYPE_UNIFORM) ?
+                                                        m_context.getDeviceProperties().limits.maxUniformBufferRange :
+                                                        m_context.getDeviceProperties().limits.maxStorageBufferRange;
+        const VkDescriptorType descriptorType     = (m_bufferType == BufferObjectType::BO_TYPE_UNIFORM) ?
+                                                        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER :
+                                                        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
         // Go through all physical devices
         for (uint32_t physDevID = 0; physDevID < m_numPhysicalDevices; physDevID++)
@@ -817,21 +862,18 @@ public:
 
             // Set up the sparse buffer
             {
-                VkBufferCreateInfo referenceBufferCreateInfo =
-                    getSparseBufferCreateInfo(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+                VkBufferCreateInfo referenceBufferCreateInfo = getSparseBufferCreateInfo(bufferUsageFlags);
                 const VkDeviceSize minChunkSize = 512u; // make sure the smallest allocation is at least this big
                 uint32_t numMaxChunks           = 0u;
 
-                // Check how many chunks we can allocate given the alignment and size requirements of UBOs
+                // Check how many chunks we can allocate given the alignment and size requirements of UBOs or SSBOs
                 {
                     const UniquePtr<SparseAllocation> minAllocation(SparseAllocationBuilder().addMemoryBind().build(
                         instance, getPhysicalDevice(secondDeviceID), vk, getDevice(), getAllocator(),
                         referenceBufferCreateInfo, minChunkSize));
 
                     numMaxChunks =
-                        deMaxu32(static_cast<uint32_t>(m_context.getDeviceProperties().limits.maxUniformBufferRange /
-                                                       minAllocation->resourceSize),
-                                 1u);
+                        deMaxu32(static_cast<uint32_t>(maxBufferTypeRange / minAllocation->resourceSize), 1u);
                 }
 
                 if (numMaxChunks < 4)
@@ -856,8 +898,7 @@ public:
 
                     sparseAllocation = builder.build(instance, getPhysicalDevice(secondDeviceID), vk, getDevice(),
                                                      getAllocator(), referenceBufferCreateInfo, minChunkSize);
-                    DE_ASSERT(sparseAllocation->resourceSize <=
-                              m_context.getDeviceProperties().limits.maxUniformBufferRange);
+                    DE_ASSERT(sparseAllocation->resourceSize <= maxBufferTypeRange);
                 }
 
                 if (firstDeviceID != secondDeviceID)
@@ -930,22 +971,21 @@ public:
             }
 
             // Make sure that we don't try to access a larger range than is allowed. This only applies to a single chunk case.
-            const uint32_t maxBufferRange = deMinu32(static_cast<uint32_t>(sparseAllocation->resourceSize),
-                                                     m_context.getDeviceProperties().limits.maxUniformBufferRange);
+            const uint32_t maxBufferRange =
+                deMinu32(static_cast<uint32_t>(sparseAllocation->resourceSize), maxBufferTypeRange);
 
             // Descriptor sets
             {
                 // Setup only once
                 if (setupDescriptors)
                 {
-                    m_descriptorSetLayout =
-                        DescriptorSetLayoutBuilder()
-                            .addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-                            .build(vk, getDevice());
+                    m_descriptorSetLayout = DescriptorSetLayoutBuilder()
+                                                .addSingleBinding(descriptorType, VK_SHADER_STAGE_FRAGMENT_BIT)
+                                                .build(vk, getDevice());
 
                     m_descriptorPool =
                         DescriptorPoolBuilder()
-                            .addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+                            .addType(descriptorType)
                             .build(vk, getDevice(), VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
                     m_descriptorSet  = makeDescriptorSet(vk, getDevice(), *m_descriptorPool, *m_descriptorSetLayout);
@@ -956,8 +996,8 @@ public:
                 const VkDescriptorBufferInfo sparseBufferInfo = makeDescriptorBufferInfo(buffer, 0ull, maxBufferRange);
 
                 DescriptorSetUpdateBuilder()
-                    .writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
-                                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &sparseBufferInfo)
+                    .writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType,
+                                 &sparseBufferInfo)
                     .update(vk, getDevice());
             }
 
@@ -1025,6 +1065,7 @@ public:
     }
 
 private:
+    const BufferObjectType m_bufferType;
     Move<VkBuffer> m_vertexBuffer;
     MovePtr<Allocation> m_vertexBufferAlloc;
 
@@ -1734,7 +1775,7 @@ private:
     const Function m_func;
 };
 
-void checkSupport(Context &context, const TestFlags flags)
+void commonCheckSupport(Context &context, const TestFlags flags)
 {
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
 
@@ -1750,6 +1791,16 @@ void checkSupport(Context &context, const TestFlags flags)
 
     if (flags & TEST_FLAG_TRANSFORM_FEEDBACK)
         context.requireDeviceFunctionality(VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME);
+}
+
+void checkSupport(Context &context, const TestFlags flags)
+{
+    commonCheckSupport(context, flags);
+}
+
+void checkSupport(Context &context, const TestParams testParams)
+{
+    commonCheckSupport(context, testParams.flags);
 }
 
 //! Convenience function to create a TestCase based on a freestanding initPrograms and a TestInstance implementation
@@ -1841,6 +1892,17 @@ void populateTestGroup(tcu::TestCaseGroup *parentGroup)
             addBufferSparseResidencyTests(subGroupDeviceGroups.get(), true);
             group->addChild(subGroupDeviceGroups.release());
         }
+
+        // Read and write sparse storage buffers in shaders
+        {
+            MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(parentGroup->getTestContext(), "read_write"));
+            const TestParams testParams = {TestFlags(TEST_FLAG_RESIDENCY | TEST_FLAG_NON_RESIDENT_STRICT),
+                                           BufferObjectType::BO_TYPE_STORAGE};
+            subGroup->addChild(createTestInstanceWithPrograms<BufferObjectTestInstance>(
+                subGroup->getTestContext(), "sparse_residency_non_resident_strict", initProgramsDrawWithBufferObject,
+                testParams));
+            group->addChild(subGroup.release());
+        }
         parentGroup->addChild(group.release());
     }
 
@@ -1850,15 +1912,17 @@ void populateTestGroup(tcu::TestCaseGroup *parentGroup)
 
         for (int groupNdx = 0u; groupNdx < numGroupsIncludingNonResidentStrict; ++groupNdx)
         {
-            group->addChild(
-                createTestInstanceWithPrograms<UBOTestInstance>(group->getTestContext(), groups[groupNdx].name.c_str(),
-                                                                initProgramsDrawWithUBO, groups[groupNdx].flags));
+            const TestParams testParams = {groups[groupNdx].flags, BufferObjectType::BO_TYPE_UNIFORM};
+            group->addChild(createTestInstanceWithPrograms<BufferObjectTestInstance>(
+                group->getTestContext(), groups[groupNdx].name.c_str(), initProgramsDrawWithBufferObject, testParams));
         }
         for (int groupNdx = 0u; groupNdx < numGroupsIncludingNonResidentStrict; ++groupNdx)
         {
-            group->addChild(createTestInstanceWithPrograms<UBOTestInstance>(
-                group->getTestContext(), (devGroupPrefix + groups[groupNdx].name).c_str(), initProgramsDrawWithUBO,
-                groups[groupNdx].flags | TEST_FLAG_ENABLE_DEVICE_GROUPS));
+            const TestParams testParams = {groups[groupNdx].flags | TEST_FLAG_ENABLE_DEVICE_GROUPS,
+                                           BufferObjectType::BO_TYPE_UNIFORM};
+            group->addChild(createTestInstanceWithPrograms<BufferObjectTestInstance>(
+                group->getTestContext(), (devGroupPrefix + groups[groupNdx].name).c_str(),
+                initProgramsDrawWithBufferObject, testParams));
         }
         parentGroup->addChild(group.release());
     }
