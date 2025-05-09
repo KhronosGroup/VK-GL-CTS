@@ -464,6 +464,7 @@ Move<VkRenderPass> RenderPassWrapper<RenderingTypeValue>::createRenderPassProduc
     uint32_t multisampleAttachmentIndex = 0;
     uint32_t copyAttachmentIndex        = 0;
     uint32_t densityMapAttachmentIndex  = 0;
+    uint32_t depthAttachmentIndex       = 0;
 
     // add color image
     VkAttachmentLoadOp loadOp = resampleSubsampled ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -533,6 +534,18 @@ Move<VkRenderPass> RenderPassWrapper<RenderingTypeValue>::createRenderPassProduc
         VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT  // VkImageLayout                    finalLayout
     );
 
+    // add depth attachment if used for the image-producing variant
+    const bool useDepthAttachment = (m_testParams.depthEnabled && !resampleSubsampled);
+
+    if (useDepthAttachment)
+    {
+        depthAttachmentIndex = de::sizeU32(attachmentDescriptions);
+        attachmentDescriptions.emplace_back(constNullPtr, 0u, m_testParams.depthFormat, m_testParams.colorSamples,
+                                            loadOp, VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                            VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED,
+                                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+    }
+
     std::vector<AttachmentRef> colorAttachmentRefs0{
         {DE_NULL, 0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT}};
 
@@ -544,6 +557,17 @@ Move<VkRenderPass> RenderPassWrapper<RenderingTypeValue>::createRenderPassProduc
     if (m_testParams.colorSamples != VK_SAMPLE_COUNT_1_BIT)
         pResolveAttachments = &resolveAttachmentRef;
 
+    const auto tcuDepthFormat =
+        (m_testParams.depthEnabled ?
+             mapVkFormat(m_testParams.depthFormat) :
+             mapVkFormat(VK_FORMAT_D16_UNORM)); // D16_UNORM makes sure we do not assert and have something valid below.
+    const VkImageAspectFlags dsAspects =
+        ((tcu::hasDepthComponent(tcuDepthFormat.order) ? VK_IMAGE_ASPECT_DEPTH_BIT : 0) |
+         (tcu::hasStencilComponent(tcuDepthFormat.order) ? VK_IMAGE_ASPECT_STENCIL_BIT : 0));
+    AttachmentRef depthAttachmentRef{nullptr, depthAttachmentIndex, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                                     dsAspects};
+    AttachmentRef *pDepthAttachment = (useDepthAttachment ? &depthAttachmentRef : nullptr);
+
     std::vector<SubpassDesc> subpassDescriptions{{
         DE_NULL,
         (VkSubpassDescriptionFlags)0,                       // VkSubpassDescriptionFlags    flags
@@ -554,7 +578,7 @@ Move<VkRenderPass> RenderPassWrapper<RenderingTypeValue>::createRenderPassProduc
         static_cast<uint32_t>(colorAttachmentRefs0.size()), // uint32_t                        colorAttachmentCount
         colorAttachmentRefs0.data(),                        // const VkAttachmentReference*    pColorAttachments
         makeCopySubpass ? DE_NULL : pResolveAttachments,    // const VkAttachmentReference*    pResolveAttachments
-        DE_NULL,                                            // const VkAttachmentReference*    pDepthStencilAttachment
+        pDepthAttachment,                                   // const VkAttachmentReference*    pDepthStencilAttachment
         0u,                                                 // uint32_t                        preserveAttachmentCount
         DE_NULL                                             // const uint32_t*                pPreserveAttachments
     }};
@@ -1458,6 +1482,8 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
     vk::VkImageUsageFlags colorImageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     uint32_t colorImageCreateFlags =
         m_testParams.nonSubsampledImages ? 0u : (uint32_t)VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT;
+    uint32_t depthImageCreateFlags =
+        m_testParams.nonSubsampledImages ? 0u : (uint32_t)VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT;
     const VkImageSubresourceRange colorSubresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, colorImageLayers};
 
     const VkFormat depthImageFormat = m_testParams.depthFormat;
@@ -1512,9 +1538,9 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
     // Create depth image
     if (isDepthEnabled)
     {
-        prepareImageAndImageView(vk, vkDevice, memAlloc, 0u, depthImageFormat, depthImageSize, 1, VK_SAMPLE_COUNT_1_BIT,
-                                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, queueFamilyIndex, 0u,
-                                 VK_IMAGE_VIEW_TYPE_2D, componentMappingRGBA, depthSubresourceRange, m_depthImage,
+        prepareImageAndImageView(vk, vkDevice, memAlloc, depthImageCreateFlags, depthImageFormat, depthImageSize, 1,
+                                 VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, queueFamilyIndex,
+                                 0u, VK_IMAGE_VIEW_TYPE_2D, componentMappingRGBA, depthSubresourceRange, m_depthImage,
                                  m_depthImageAlloc, m_depthImageView);
     }
 
@@ -1652,6 +1678,8 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
             if (testParams.makeCopy)
                 imageViewsProduceSubsampledImage.push_back(*m_colorCopyImageView);
             imageViewsProduceSubsampledImage.push_back(**m_densityMapImageViews[0]);
+            if (testParams.depthEnabled)
+                imageViewsProduceSubsampledImage.push_back(*m_depthImageView);
 
             m_framebufferProduceSubsampledImage = createFrameBuffer(vk, vkDevice, *m_renderPassProduceSubsampledImage,
                                                                     colorImageSize, imageViewsProduceSubsampledImage);
@@ -1695,7 +1723,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
             }
 
             std::vector<VkFramebufferAttachmentImageInfo> attachmentInfoProduceSubsampledImage;
-            attachmentInfoProduceSubsampledImage.reserve(4);
+            attachmentInfoProduceSubsampledImage.reserve(5);
             attachmentInfoProduceSubsampledImage.push_back(
                 createFramebufferAttachmentImageInfo((VkImageCreateFlags)colorImageCreateFlags, colorImageUsage,
                                                      colorImageSize, colorImageLayers, &colorImageFormat));
@@ -1713,9 +1741,15 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, colorImageSize, colorImageLayers,
                     &colorImageFormat));
             }
-            attachmentInfoProduceSubsampledImage.push_back(
-                createFramebufferAttachmentImageInfo((VkImageCreateFlags)colorImageCreateFlags, colorImageUsage,
-                                                     colorImageSize, colorImageLayers, &colorImageFormat));
+            attachmentInfoProduceSubsampledImage.push_back(createFramebufferAttachmentImageInfo(
+                0u, densityMapImageUsage, densityMapImageSize, densityMapImageLayers, &m_testParams.densityMapFormat));
+
+            if (isDepthEnabled)
+            {
+                attachmentInfoProduceSubsampledImage.push_back(createFramebufferAttachmentImageInfo(
+                    colorImageCreateFlags /*shared with depth*/, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                    depthImageSize, colorImageLayers, &depthImageFormat));
+            }
 
             m_framebufferProduceSubsampledImage =
                 createImagelessFrameBuffer(vk, vkDevice, *m_renderPassProduceSubsampledImage, colorImageSize,
@@ -2115,6 +2149,8 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
     const VkDevice vkDevice                 = getDevice(m_context);
     const bool isColorImageMultisampled     = m_testParams.colorSamples != VK_SAMPLE_COUNT_1_BIT;
     const VkClearValue attachmentClearValue = makeClearValueColorF32(0.0f, 0.0f, 0.0f, 1.0f);
+    const VkClearValue depthClearValue      = makeClearValueDepthStencil(1.0f, 0u);
+    const VkClearValue emptyClearValue      = makeClearValueColorU32(0u, 0u, 0u, 0u);
     const uint32_t attachmentCount          = 1 + m_testParams.makeCopy + isColorImageMultisampled;
     const std::vector<VkClearValue> attachmentClearValues(attachmentCount, attachmentClearValue);
 
@@ -2221,6 +2257,8 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
         if (m_testParams.makeCopy)
             imageViewsProduceSubsampledImage.push_back(*m_colorCopyImageView);
         imageViewsProduceSubsampledImage.push_back(**m_densityMapImageViews[0]);
+        if (m_testParams.depthEnabled)
+            imageViewsProduceSubsampledImage.push_back(*m_depthImageView);
 
         const VkRenderPassAttachmentBeginInfo renderPassAttachmentBeginInfo{
             VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO,            // VkStructureType sType;
@@ -2229,14 +2267,24 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
             imageViewsProduceSubsampledImage.data()                         // const VkImageView* pAttachments;
         };
 
+        std::vector<VkClearValue> produceSubsampledImageClearValues = attachmentClearValues;
+        if (m_testParams.depthEnabled)
+        {
+            // Note clear values are accessed by attachment index. The last attachment used before depth is the FDM and
+            // it has a load operation. To correctly set the depth clear value, we need to push an extra one for the FDM
+            // so the depth clear value sits at the  right index.
+            produceSubsampledImageClearValues.push_back(emptyClearValue);
+            produceSubsampledImageClearValues.push_back(depthClearValue);
+        }
+
         const VkRenderPassBeginInfo renderPassBeginInfoProduceSubsampledImage{
             VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,                                     // VkStructureType sType;
             m_testParams.imagelessFramebuffer ? &renderPassAttachmentBeginInfo : DE_NULL, // const void* pNext;
             *m_renderPassProduceSubsampledImage,                                          // VkRenderPass renderPass;
             *m_framebufferProduceSubsampledImage,                                         // VkFramebuffer framebuffer;
             colorImageRenderArea,                                                         // VkRect2D renderArea;
-            static_cast<uint32_t>(attachmentClearValues.size()),                          // uint32_t clearValueCount;
-            attachmentClearValues.data() // const VkClearValue* pClearValues;
+            de::sizeU32(produceSubsampledImageClearValues),                               // uint32_t clearValueCount;
+            de::dataOrNull(produceSubsampledImageClearValues), // const VkClearValue* pClearValues;
         };
         renderPassWrapper->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfoProduceSubsampledImage);
 
