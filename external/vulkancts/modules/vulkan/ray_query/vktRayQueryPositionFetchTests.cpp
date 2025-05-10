@@ -84,9 +84,14 @@ struct TestParams
     vk::VkAccelerationStructureBuildTypeKHR buildType; // are we making AS on CPU or GPU
     VkFormat vertexFormat;
     uint32_t testFlagMask;
+
+    uint32_t getRandomSeed() const
+    {
+        return (((buildType & 0xFF) << 24) | ((vertexFormat & 0xFF) << 16) | (testFlagMask & 0xFF));
+    }
 };
 
-static constexpr uint32_t kNumThreadsAtOnce = 1024;
+static constexpr uint32_t kNumThreadsAtOnce = 128;
 
 class PositionFetchCase : public TestCase
 {
@@ -163,6 +168,15 @@ void PositionFetchCase::checkSupport(Context &context) const
 
         if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == false)
             TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
+    }
+
+    if (m_params.shaderSourceType == SST_RAY_GENERATION_SHADER || m_params.shaderSourceType == SST_COMPUTE_SHADER)
+    {
+        const VkPhysicalDeviceLimits &deviceLimits = context.getDeviceProperties().limits;
+        if (kNumThreadsAtOnce > deviceLimits.maxComputeWorkGroupSize[0])
+        {
+            TCU_THROW(NotSupportedError, "Compute workgroup size exceeds device limit");
+        }
     }
 
     switch (m_params.shaderSourceType)
@@ -247,7 +261,8 @@ void PositionFetchCase::initPrograms(vk::SourceCollections &programCollection) c
     {
         DE_ASSERT(m_params.shaderSourceType == SST_COMPUTE_SHADER);
         std::ostringstream comp;
-        comp << sharedHeader.str() << "layout(local_size_x=1024, local_size_y=1, local_size_z=1) in;\n"
+        comp << sharedHeader.str() << "layout(local_size_x=" << kNumThreadsAtOnce
+             << ", local_size_y=1, local_size_z=1) in;\n"
              << "\n"
              << "void main()\n"
              << "{\n"
@@ -278,26 +293,26 @@ static Move<VkRenderPass> makeEmptyRenderPass(const DeviceInterface &vk, const V
         (VkSubpassDescriptionFlags)0,    //  VkSubpassDescriptionFlags flags;
         VK_PIPELINE_BIND_POINT_GRAPHICS, //  VkPipelineBindPoint pipelineBindPoint;
         0u,                              //  uint32_t inputAttachmentCount;
-        DE_NULL,                         //  const VkAttachmentReference* pInputAttachments;
+        nullptr,                         //  const VkAttachmentReference* pInputAttachments;
         0u,                              //  uint32_t colorAttachmentCount;
-        DE_NULL,                         //  const VkAttachmentReference* pColorAttachments;
-        DE_NULL,                         //  const VkAttachmentReference* pResolveAttachments;
-        DE_NULL,                         //  const VkAttachmentReference* pDepthStencilAttachment;
+        nullptr,                         //  const VkAttachmentReference* pColorAttachments;
+        nullptr,                         //  const VkAttachmentReference* pResolveAttachments;
+        nullptr,                         //  const VkAttachmentReference* pDepthStencilAttachment;
         0,                               //  uint32_t preserveAttachmentCount;
-        DE_NULL                          //  const uint32_t* pPreserveAttachments;
+        nullptr                          //  const uint32_t* pPreserveAttachments;
     };
     subpassDescriptions.push_back(description);
 
     const VkRenderPassCreateInfo renderPassInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,         //  VkStructureType sType;
-        DE_NULL,                                           //  const void* pNext;
+        nullptr,                                           //  const void* pNext;
         static_cast<VkRenderPassCreateFlags>(0u),          //  VkRenderPassCreateFlags flags;
         0u,                                                //  uint32_t attachmentCount;
-        DE_NULL,                                           //  const VkAttachmentDescription* pAttachments;
+        nullptr,                                           //  const VkAttachmentDescription* pAttachments;
         static_cast<uint32_t>(subpassDescriptions.size()), //  uint32_t subpassCount;
         &subpassDescriptions[0],                           //  const VkSubpassDescription* pSubpasses;
         0u,                                                //  uint32_t dependencyCount;
-        DE_NULL                                            //  const VkSubpassDependency* pDependencies;
+        nullptr                                            //  const VkSubpassDependency* pDependencies;
     };
 
     return createRenderPass(vk, device, &renderPassInfo);
@@ -308,11 +323,11 @@ static Move<VkFramebuffer> makeFramebuffer(const DeviceInterface &vk, const VkDe
 {
     const vk::VkFramebufferCreateInfo framebufferParams = {
         vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (vk::VkFramebufferCreateFlags)0,
         renderPass, // renderPass
         0u,         // attachmentCount
-        DE_NULL,    // pAttachments
+        nullptr,    // pAttachments
         width,      // width
         height,     // height
         1u,         // layers
@@ -331,7 +346,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     const VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                             sType
-        DE_NULL,                                               // const void*                                 pNext
+        nullptr,                                               // const void*                                 pNext
         (VkPipelineViewportStateCreateFlags)0,                 // VkPipelineViewportStateCreateFlags          flags
         1u,        // uint32_t                                    viewportCount
         &viewport, // const VkViewport*                           pViewports
@@ -341,7 +356,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                            sType
-        DE_NULL,                                                     // const void*                                pNext
+        nullptr,                                                     // const void*                                pNext
         0u,                                                          // VkPipelineInputAssemblyStateCreateFlags    flags
         VK_PRIMITIVE_TOPOLOGY_POINT_LIST, // VkPrimitiveTopology                        topology
         VK_FALSE                          // VkBool32                                   primitiveRestartEnable
@@ -349,17 +364,17 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, //  VkStructureType                                    sType
-        DE_NULL,                                  //  const void*                                        pNext
+        nullptr,                                  //  const void*                                        pNext
         (VkPipelineVertexInputStateCreateFlags)0, //  VkPipelineVertexInputStateCreateFlags            flags
         0u,      //  uint32_t                                        vertexBindingDescriptionCount
-        DE_NULL, //  const VkVertexInputBindingDescription*            pVertexBindingDescriptions
+        nullptr, //  const VkVertexInputBindingDescription*            pVertexBindingDescriptions
         0u,      //  uint32_t                                        vertexAttributeDescriptionCount
-        DE_NULL, //  const VkVertexInputAttributeDescription*        pVertexAttributeDescriptions
+        nullptr, //  const VkVertexInputAttributeDescription*        pVertexAttributeDescriptions
     };
 
     const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, //  VkStructureType                            sType
-        DE_NULL,                                                    //  const void*                                pNext
+        nullptr,                                                    //  const void*                                pNext
         0u,                                                         //  VkPipelineRasterizationStateCreateFlags    flags
         VK_FALSE,                        //  VkBool32                                depthClampEnable
         VK_TRUE,                         //  VkBool32                                rasterizerDiscardEnable
@@ -378,15 +393,15 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         device,                         // const VkDevice                                    device
         pipelineLayout,                 // const VkPipelineLayout                            pipelineLayout
         vertexModule,                   // const VkShaderModule                                vertexShaderModule
-        DE_NULL,                        // const VkShaderModule                                tessellationControlModule
-        DE_NULL,                        // const VkShaderModule                                tessellationEvalModule
-        DE_NULL,                        // const VkShaderModule                                geometryShaderModule
-        DE_NULL,                        // const VkShaderModule                                fragmentShaderModule
+        VK_NULL_HANDLE,                 // const VkShaderModule                                tessellationControlModule
+        VK_NULL_HANDLE,                 // const VkShaderModule                                tessellationEvalModule
+        VK_NULL_HANDLE,                 // const VkShaderModule                                geometryShaderModule
+        VK_NULL_HANDLE,                 // const VkShaderModule                                fragmentShaderModule
         renderPass,                     // const VkRenderPass                                renderPass
         subpass,                        // const uint32_t                                    subpass
         &vertexInputStateCreateInfo,    // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
         &inputAssemblyStateCreateInfo,  // const VkPipelineInputAssemblyStateCreateInfo*    inputAssemblyStateCreateInfo
-        DE_NULL,                        // const VkPipelineTessellationStateCreateInfo*        tessStateCreateInfo
+        nullptr,                        // const VkPipelineTessellationStateCreateInfo*        tessStateCreateInfo
         &viewportStateCreateInfo,       // const VkPipelineViewportStateCreateInfo*            viewportStateCreateInfo
         &rasterizationStateCreateInfo); // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
 }
@@ -410,6 +425,9 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
     auto topLevelAS    = makeTopLevelAccelerationStructure();
     auto bottomLevelAS = makeBottomLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     const std::vector<tcu::Vec3> triangle = {
         tcu::Vec3(0.0f, 0.0f, 0.0f),
         tcu::Vec3(1.0f, 0.0f, 0.0f),
@@ -419,18 +437,49 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
     const VkTransformMatrixKHR notQuiteIdentityMatrix3x4 = {
         {{0.98f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.97f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.99f, 0.0f}}};
 
-    de::SharedPtr<RaytracedGeometryBase> geometry =
-        makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, m_params.vertexFormat, VK_INDEX_TYPE_NONE_KHR);
+    // The origin is at Z=1 and the direction is Z=-1, so the triangle needs to be at Z=0 to create a hit. To make
+    // things more interesting, when the vertex format has a Z component we will use 4 geometries and 4 triangles per
+    // geometry, but only 1 of them will be at Z=0. The rest will be at Z=10+N, where N is calculated based on the
+    // geometry and triangle index. To be able to store those Z values, the vertex format needs to be sfloat.
+    const auto vertexTcuFormat = mapVkFormat(m_params.vertexFormat);
+    const bool multipleTriangles =
+        ((tcu::getNumUsedChannels(vertexTcuFormat.order) >= 3) && isSfloatFormat(m_params.vertexFormat));
+    const uint32_t zOffset = 10u;
 
-    for (auto &v : triangle)
+    const auto seed = m_params.getRandomSeed();
+    de::Random rnd(seed);
+
+    uint32_t geometryCount = (multipleTriangles ? 4u : 1u);
+    uint32_t triangleCount = (multipleTriangles ? 4u : 1u);
+    uint32_t chosenGeom =
+        (multipleTriangles ? static_cast<uint32_t>(rnd.getInt(1, static_cast<int>(geometryCount) - 1)) : 0u);
+    uint32_t chosenTri =
+        (multipleTriangles ? static_cast<uint32_t>(rnd.getInt(1, static_cast<int>(triangleCount) - 1)) : 0u);
+
+    const auto getLargeZ = [&](uint32_t geomIndex, uint32_t triangleIndex) -> float
+    { return static_cast<float>((triangleCount * geomIndex + triangleIndex) + zOffset); };
+
+    for (uint32_t g = 0u; g < geometryCount; ++g)
     {
-        geometry->addVertex(v);
+        de::SharedPtr<RaytracedGeometryBase> geometry =
+            makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, m_params.vertexFormat, VK_INDEX_TYPE_NONE_KHR);
+
+        for (uint32_t t = 0u; t < triangleCount; ++t)
+        {
+            const auto z = ((g == chosenGeom && t == chosenTri) ? 0.0f : getLargeZ(g, t));
+            for (const auto &v : triangle)
+            {
+                const tcu::Vec3 finalVertex(v.x(), v.y(), z);
+                geometry->addVertex(finalVertex);
+            }
+        }
+
+        bottomLevelAS->addGeometry(geometry);
     }
 
-    bottomLevelAS->addGeometry(geometry);
     bottomLevelAS->setBuildFlags(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_KHR);
     bottomLevelAS->setBuildType(m_params.buildType);
-    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
     de::SharedPtr<BottomLevelAccelerationStructure> blasSharedPtr(bottomLevelAS.release());
 
     topLevelAS->setInstanceCount(1);
@@ -438,7 +487,7 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
     topLevelAS->addInstance(blasSharedPtr, (m_params.testFlagMask & TEST_FLAG_BIT_INSTANCE_TRANSFORM) ?
                                                notQuiteIdentityMatrix3x4 :
                                                identityMatrix3x4);
-    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     // One ray for this test
     // XXX Should it be multiple triangles and one ray per triangle for more coverage?
@@ -545,12 +594,12 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
 
         const VkRenderPassBeginInfo renderPassBeginInfo = {
             VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             *renderPass,                              // VkRenderPass renderPass;
             *framebuffer,                             // VkFramebuffer framebuffer;
             makeRect2D(width, height),                // VkRect2D renderArea;
             0u,                                       // uint32_t clearValueCount;
-            DE_NULL                                   // const VkClearValue* pClearValues;
+            nullptr                                   // const VkClearValue* pClearValues;
         };
 
         vkd.cmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -577,8 +626,8 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
             shaderGroupBaseAlignment           = rayTracingPropertiesKHR->getShaderGroupBaseAlignment();
         }
 
-        auto raygenSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-        auto unusedSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+        auto raygenSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+        auto unusedSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
         {
             const auto rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
@@ -622,10 +671,10 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
             0u,                                             // VkPipelineCreateFlags flags;
             shaderInfo,                                     // VkPipelineShaderStageCreateInfo stage;
             pipelineLayout.get(),                           // VkPipelineLayout layout;
-            DE_NULL,                                        // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0,                                              // int32_t basePipelineIndex;
         };
-        pipeline = createComputePipeline(vkd, device, DE_NULL, &pipelineInfo);
+        pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineInfo);
 
         // Dispatch work with ray queries.
         vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.get());

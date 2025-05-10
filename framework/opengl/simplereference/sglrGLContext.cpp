@@ -50,7 +50,7 @@ GLContext::GLContext(const glu::RenderContext &context, tcu::TestLog &log, uint3
     , m_curScissor(0, 0, m_baseViewport.z(), m_baseViewport.w())
     , m_readFramebufferBinding(0)
     , m_drawFramebufferBinding(0)
-    , m_wrapper(DE_NULL)
+    , m_wrapper(nullptr)
 {
     const glw::Functions &gl = m_context.getFunctions();
 
@@ -847,7 +847,7 @@ uint32_t GLContext::createProgram(ShaderProgram *shader)
 {
     m_programs.reserve(m_programs.size() + 1);
 
-    glu::ShaderProgram *program = DE_NULL;
+    glu::ShaderProgram *program = nullptr;
 
     if (!shader->m_hasGeometryShader)
         program = new glu::ShaderProgram(m_context, glu::makeVtxFragSources(shader->m_vertSrc, shader->m_fragSrc));

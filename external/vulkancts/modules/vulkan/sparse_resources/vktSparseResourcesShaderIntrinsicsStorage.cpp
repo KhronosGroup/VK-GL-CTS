@@ -470,7 +470,7 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands(const VkCommandBuffer
                                    imageResidency, fullImageSubresourceRange);
 
         deviceInterface.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 3u,
+                                           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr, 3u,
                                            imageShaderAccessBarriers);
     }
 
@@ -520,19 +520,19 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands(const VkCommandBuffer
             makeVkSharedPtr(makeImageView(deviceInterface, getDevice(), imageSparse, mapImageViewType(m_imageType),
                                           imageSparseInfo.format, mipLevelRange));
         const VkDescriptorImageInfo imageSparseDescInfo =
-            makeDescriptorImageInfo(DE_NULL, **imageSparseViews[mipLevelNdx], VK_IMAGE_LAYOUT_GENERAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, **imageSparseViews[mipLevelNdx], VK_IMAGE_LAYOUT_GENERAL);
 
         imageTexelsViews[mipLevelNdx] =
             makeVkSharedPtr(makeImageView(deviceInterface, getDevice(), imageTexels, mapImageViewType(m_imageType),
                                           imageSparseInfo.format, mipLevelRange));
         const VkDescriptorImageInfo imageTexelsDescInfo =
-            makeDescriptorImageInfo(DE_NULL, **imageTexelsViews[mipLevelNdx], VK_IMAGE_LAYOUT_GENERAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, **imageTexelsViews[mipLevelNdx], VK_IMAGE_LAYOUT_GENERAL);
 
         imageResidencyViews[mipLevelNdx] =
             makeVkSharedPtr(makeImageView(deviceInterface, getDevice(), imageResidency, mapImageViewType(m_imageType),
                                           mapTextureFormat(m_residencyFormat), mipLevelRange));
         const VkDescriptorImageInfo imageResidencyDescInfo =
-            makeDescriptorImageInfo(DE_NULL, **imageResidencyViews[mipLevelNdx], VK_IMAGE_LAYOUT_GENERAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, **imageResidencyViews[mipLevelNdx], VK_IMAGE_LAYOUT_GENERAL);
 
         DescriptorSetUpdateBuilder descriptorUpdateBuilder;
         descriptorUpdateBuilder.writeSingle(descriptorSet,
@@ -548,7 +548,7 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands(const VkCommandBuffer
         descriptorUpdateBuilder.update(deviceInterface, getDevice());
 
         deviceInterface.cmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                              &descriptorSet, 0u, DE_NULL);
+                                              &descriptorSet, 0u, nullptr);
 
         const uint32_t xWorkGroupCount =
             gridSize.x() / workGroupSize.x() + (gridSize.x() % workGroupSize.x() ? 1u : 0u);
@@ -579,7 +579,7 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands(const VkCommandBuffer
                                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, imageResidency, fullImageSubresourceRange);
 
         deviceInterface.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                           VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 2u,
+                                           VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 2u,
                                            imageOutputTransferSrcBarriers);
     }
 }

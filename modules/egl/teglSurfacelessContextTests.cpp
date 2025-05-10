@@ -89,11 +89,11 @@ void SurfacelessContextCase::executeForConfig(EGLDisplay display, EGLConfig conf
         EGLenum api;
         EGLint apiBit;
         const EGLint *ctxAttrs;
-    } apis[] = {{"OpenGL", EGL_OPENGL_API, EGL_OPENGL_BIT, DE_NULL},
+    } apis[] = {{"OpenGL", EGL_OPENGL_API, EGL_OPENGL_BIT, nullptr},
                 {"OpenGL ES 1", EGL_OPENGL_ES_API, EGL_OPENGL_ES_BIT, es1Attrs},
                 {"OpenGL ES 2", EGL_OPENGL_ES_API, EGL_OPENGL_ES2_BIT, es2Attrs},
                 {"OpenGL ES 3", EGL_OPENGL_ES_API, EGL_OPENGL_ES3_BIT_KHR, es3Attrs},
-                {"OpenVG", EGL_OPENVG_API, EGL_OPENVG_BIT, DE_NULL}};
+                {"OpenVG", EGL_OPENVG_API, EGL_OPENVG_BIT, nullptr}};
 
     if (!eglu::hasExtension(egl, display, "EGL_KHR_surfaceless_context"))
         TCU_THROW(NotSupportedError, "EGL_KHR_surfaceless_context not supported");

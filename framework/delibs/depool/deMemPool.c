@@ -137,7 +137,7 @@ static MemPage *MemPage_create(size_t capacity)
 {
     MemPage *page = (MemPage *)deMalloc(sizeof(MemPage) + capacity);
     if (!page)
-        return DE_NULL;
+        return NULL;
 
     DE_ASSERT(deIsAlignedPtr(page + 1, MEM_PAGE_BASE_ALIGN));
 
@@ -175,14 +175,14 @@ static deMemPool *createPoolInternal(deMemPool *parent)
     if (parent && parent->allowFailing)
     {
         if ((deRandom_getUint32(&parent->failRandom) & 16383) <= 15)
-            return DE_NULL;
+            return NULL;
     }
 #endif
 
     /* Init first page. */
     initialPage = MemPage_create(INITIAL_PAGE_SIZE);
     if (!initialPage)
-        return DE_NULL;
+        return NULL;
 
     /* Alloc pool from initial page. */
     DE_ASSERT((int)sizeof(deMemPool) <= initialPage->capacity);
@@ -204,7 +204,7 @@ static deMemPool *createPoolInternal(deMemPool *parent)
     }
 
     /* Get utils from parent. */
-    pool->util = parent ? parent->util : DE_NULL;
+    pool->util = parent ? parent->util : NULL;
 
 #if defined(DE_SUPPORT_FAILING_POOL_ALLOC)
     pool->allowFailing = parent ? parent->allowFailing : false;
@@ -213,7 +213,7 @@ static deMemPool *createPoolInternal(deMemPool *parent)
 
 #if defined(DE_SUPPORT_DEBUG_POOLS)
     pool->enableDebugAllocs  = parent ? parent->enableDebugAllocs : false;
-    pool->debugAllocListHead = DE_NULL;
+    pool->debugAllocListHead = NULL;
 
     /* Pool allocation index. */
     {
@@ -241,9 +241,9 @@ static deMemPool *createPoolInternal(deMemPool *parent)
  *//*--------------------------------------------------------------------*/
 deMemPool *deMemPool_createRoot(const deMemPoolUtil *util, uint32_t flags)
 {
-    deMemPool *pool = createPoolInternal(DE_NULL);
+    deMemPool *pool = createPoolInternal(NULL);
     if (!pool)
-        return DE_NULL;
+        return NULL;
 #if defined(DE_SUPPORT_FAILING_POOL_ALLOC)
     if (flags & DE_MEMPOOL_ENABLE_FAILING_ALLOCS)
         pool->allowFailing = true;
@@ -252,7 +252,7 @@ deMemPool *deMemPool_createRoot(const deMemPoolUtil *util, uint32_t flags)
     if (flags & DE_MEMPOOL_ENABLE_DEBUG_ALLOCS)
     {
         pool->enableDebugAllocs  = true;
-        pool->debugAllocListHead = DE_NULL;
+        pool->debugAllocListHead = NULL;
     }
 #endif
     DE_UNREF(flags); /* in case no debug features enabled */
@@ -265,7 +265,7 @@ deMemPool *deMemPool_createRoot(const deMemPoolUtil *util, uint32_t flags)
         if (!utilCopy)
         {
             deMemPool_destroy(pool);
-            return DE_NULL;
+            return NULL;
         }
 
         memcpy(utilCopy, util, sizeof(deMemPoolUtil));
@@ -355,7 +355,7 @@ void deMemPool_destroy(deMemPool *pool)
             alloc = next;
         }
 
-        pool->debugAllocListHead = DE_NULL;
+        pool->debugAllocListHead = NULL;
     }
 #endif
 
@@ -426,7 +426,7 @@ int deMemPool_getCapacity(const deMemPool *pool, bool recurse)
     return numCapacityBytes;
 }
 
-DE_INLINE void *deMemPool_allocInternal(deMemPool *pool, size_t numBytes, uint32_t alignBytes)
+void *deMemPool_allocInternal(deMemPool *pool, size_t numBytes, uint32_t alignBytes)
 {
     MemPage *curPage = pool->currentPage;
 
@@ -434,7 +434,7 @@ DE_INLINE void *deMemPool_allocInternal(deMemPool *pool, size_t numBytes, uint32
     if (pool->allowFailing)
     {
         if ((deRandom_getUint32(&pool->failRandom) & 16383) <= 15)
-            return DE_NULL;
+            return NULL;
     }
 #endif
 
@@ -448,7 +448,7 @@ DE_INLINE void *deMemPool_allocInternal(deMemPool *pool, size_t numBytes, uint32
         {
             deFree(header);
             deAlignedFree(ptr);
-            return DE_NULL;
+            return NULL;
         }
 
         header->memPtr           = ptr;
@@ -475,7 +475,7 @@ DE_INLINE void *deMemPool_allocInternal(deMemPool *pool, size_t numBytes, uint32
 
             curPage = MemPage_create((size_t)newPageCapacity);
             if (!curPage)
-                return DE_NULL;
+                return NULL;
 
             curPage->nextPage = pool->currentPage;
             pool->currentPage = curPage;

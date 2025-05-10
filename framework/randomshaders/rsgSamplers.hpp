@@ -34,7 +34,7 @@ namespace rsg
 class Sampler2D
 {
 public:
-    Sampler2D(void) : m_texture(DE_NULL), m_sampler()
+    Sampler2D(void) : m_texture(nullptr), m_sampler()
     {
     }
 
@@ -55,7 +55,7 @@ private:
 class SamplerCube
 {
 public:
-    SamplerCube(void) : m_texture(DE_NULL), m_sampler()
+    SamplerCube(void) : m_texture(nullptr), m_sampler()
     {
     }
 

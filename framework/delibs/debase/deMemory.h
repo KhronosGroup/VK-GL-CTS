@@ -49,13 +49,13 @@ char *deStrdup(const char *str);
  * \param value        Value to fill with.
  * \param numBytes    Number of bytes to write.
  *//*--------------------------------------------------------------------*/
-DE_INLINE void deMemset(void *ptr, int value, size_t numBytes)
+static inline void deMemset(void *ptr, int value, size_t numBytes)
 {
     DE_ASSERT((value & 0xFF) == value);
     memset(ptr, value, numBytes);
 }
 
-DE_INLINE int deMemCmp(const void *a, const void *b, size_t numBytes)
+static inline int deMemCmp(const void *a, const void *b, size_t numBytes)
 {
     return memcmp(a, b, numBytes);
 }
@@ -67,12 +67,12 @@ DE_INLINE int deMemCmp(const void *a, const void *b, size_t numBytes)
  * \param numBytes    Number of bytes to copy
  * \return Destination buffer.
  *//*--------------------------------------------------------------------*/
-DE_INLINE void *deMemcpy(void *dst, const void *src, size_t numBytes)
+static inline void *deMemcpy(void *dst, const void *src, size_t numBytes)
 {
     return memcpy(dst, src, numBytes);
 }
 
-DE_INLINE void *deMemmove(void *dst, const void *src, size_t numBytes)
+static inline void *deMemmove(void *dst, const void *src, size_t numBytes)
 {
     return memmove(dst, src, numBytes);
 }

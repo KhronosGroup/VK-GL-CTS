@@ -110,13 +110,13 @@ void uploadImage(Context &context, const tcu::ConstPixelBufferAccess &access, Vk
     {
         const VkBufferCreateInfo bufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             bufferSize,                           // VkDeviceSize size;
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                   // uint32_t queueFamilyIndexCount;
-            DE_NULL,                              // const uint32_t* pQueueFamilyIndices;
+            nullptr,                              // const uint32_t* pQueueFamilyIndices;
         };
         buffer = createBuffer(vk, device, &bufferParams);
         bufferAlloc =
@@ -149,7 +149,7 @@ void uploadImage(Context &context, const tcu::ConstPixelBufferAccess &access, Vk
     }
 
     // Copy buffer to image
-    copyBufferToImage(vk, device, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, DE_NULL, aspectMask, 1, 1,
+    copyBufferToImage(vk, device, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, nullptr, aspectMask, 1, 1,
                       destImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 }
 
@@ -273,7 +273,7 @@ Move<VkPipelineLayout> VaryingOutputCountTestInstance::createPipelineLayout(cons
         // Create image
         const VkImageCreateInfo imageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                             // const void* pNext;
+            nullptr,                             // const void* pNext;
             0,                                   // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
             format,                              // VkFormat format;
@@ -290,7 +290,7 @@ Move<VkPipelineLayout> VaryingOutputCountTestInstance::createPipelineLayout(cons
             imageUsageFlags,           // VkImageUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode sharingMode;
             0u,                        // uint32_t queueFamilyIndexCount;
-            DE_NULL,                   // const uint32_t* pQueueFamilyIndices;
+            nullptr,                   // const uint32_t* pQueueFamilyIndices;
             VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout initialLayout;
         };
 
@@ -340,7 +340,7 @@ void VaryingOutputCountTestInstance::bindDescriptorSets(const DeviceInterface &v
                              VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufferDescriptorInfo)
                 .update(vk, device);
             vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0u, 1u,
-                                     &*m_descriptorSet, 0u, DE_NULL);
+                                     &*m_descriptorSet, 0u, nullptr);
         }
     }
     else if (m_test == READ_TEXTURE)
@@ -349,7 +349,7 @@ void VaryingOutputCountTestInstance::bindDescriptorSets(const DeviceInterface &v
         const VkFormat format                   = mapTextureFormat(texFormat);
         const VkSamplerCreateInfo samplerParams = {
             VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // VkStructureType sType;
-            DE_NULL,                                 // const void* pNext;
+            nullptr,                                 // const void* pNext;
             0u,                                      // VkSamplerCreateFlags flags;
             VK_FILTER_NEAREST,                       // VkFilter magFilter;
             VK_FILTER_NEAREST,                       // VkFilter minFilter;
@@ -392,7 +392,7 @@ void VaryingOutputCountTestInstance::bindDescriptorSets(const DeviceInterface &v
                          VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &descriptorImageInfo)
             .update(vk, device);
         vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0u, 1u, &*m_descriptorSet,
-                                 0u, DE_NULL);
+                                 0u, nullptr);
     }
 }
 
@@ -522,13 +522,13 @@ void BuiltinVariableRenderTestInstance::createIndicesBuffer(void)
     const VkDeviceSize indexBufferSize         = m_indices.size() * sizeof(uint16_t);
     const VkBufferCreateInfo indexBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         indexBufferSize,                      // VkDeviceSize size;
         VK_BUFFER_USAGE_INDEX_BUFFER_BIT,     // VkBufferUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
         0u,                                   // uint32_t queueFamilyCount;
-        DE_NULL                               // const uint32_t* pQueueFamilyIndices;
+        nullptr                               // const uint32_t* pQueueFamilyIndices;
     };
 
     m_indicesBuffer = createBuffer(vk, device, &indexBufferParams);

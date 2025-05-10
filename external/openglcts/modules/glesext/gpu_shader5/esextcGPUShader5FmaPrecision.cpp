@@ -219,7 +219,7 @@ void GPUShader5FmaPrecision<S>::initTest(void)
     GLU_EXPECT_NO_ERROR(gl.getError(), "glGetAttribLocation() failed");
 
     gl.bindBuffer(GL_ARRAY_BUFFER, m_vbo_a_id);
-    gl.vertexAttribPointer(posAttribA, S, GL_FLOAT, GL_FALSE, 0 /* stride */, DE_NULL);
+    gl.vertexAttribPointer(posAttribA, S, GL_FLOAT, GL_FALSE, 0 /* stride */, nullptr);
     gl.enableVertexAttribArray(posAttribA);
 
     GLU_EXPECT_NO_ERROR(gl.getError(), "Error configuring input vertex data attrib pointer!");
@@ -227,7 +227,7 @@ void GPUShader5FmaPrecision<S>::initTest(void)
     glw::GLint posAttribB = gl.getAttribLocation(m_po_id, "b");
 
     gl.bindBuffer(GL_ARRAY_BUFFER, m_vbo_b_id);
-    gl.vertexAttribPointer(posAttribB, S, GL_FLOAT, GL_FALSE, 0 /* stride */, DE_NULL);
+    gl.vertexAttribPointer(posAttribB, S, GL_FLOAT, GL_FALSE, 0 /* stride */, nullptr);
     gl.enableVertexAttribArray(posAttribB);
 
     GLU_EXPECT_NO_ERROR(gl.getError(), "Error configuring input vertex data attrib pointer!");
@@ -235,7 +235,7 @@ void GPUShader5FmaPrecision<S>::initTest(void)
     glw::GLint posAttribC = gl.getAttribLocation(m_po_id, "c");
 
     gl.bindBuffer(GL_ARRAY_BUFFER, m_vbo_c_id);
-    gl.vertexAttribPointer(posAttribC, S, GL_FLOAT, GL_FALSE, 0 /* stride */, DE_NULL);
+    gl.vertexAttribPointer(posAttribC, S, GL_FLOAT, GL_FALSE, 0 /* stride */, nullptr);
     gl.enableVertexAttribArray(posAttribC);
 
     GLU_EXPECT_NO_ERROR(gl.getError(), "Error configuring input vertex data attrib pointer!");
@@ -243,12 +243,12 @@ void GPUShader5FmaPrecision<S>::initTest(void)
     /* Configure buffer objects for captured results */
     gl.genBuffers(1, &m_vbo_result_fma_id);
     gl.bindBuffer(GL_ARRAY_BUFFER, m_vbo_result_fma_id);
-    gl.bufferData(GL_ARRAY_BUFFER, m_n_elements * S * sizeof(glw::GLfloat), DE_NULL, GL_DYNAMIC_COPY);
+    gl.bufferData(GL_ARRAY_BUFFER, m_n_elements * S * sizeof(glw::GLfloat), nullptr, GL_DYNAMIC_COPY);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Error configuring buffer object!");
 
     gl.genBuffers(1, &m_vbo_result_std_id);
     gl.bindBuffer(GL_ARRAY_BUFFER, m_vbo_result_std_id);
-    gl.bufferData(GL_ARRAY_BUFFER, m_n_elements * S * sizeof(glw::GLfloat), DE_NULL, GL_DYNAMIC_COPY);
+    gl.bufferData(GL_ARRAY_BUFFER, m_n_elements * S * sizeof(glw::GLfloat), nullptr, GL_DYNAMIC_COPY);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Error configuring buffer object!");
 
     gl.bindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0 /* index */, m_vbo_result_fma_id);
@@ -287,7 +287,7 @@ tcu::TestNode::IterateResult GPUShader5FmaPrecision<S>::iterate(void)
     /* Retrieve the result data */
     glw::GLfloat resultFma[m_n_elements * S];
     glw::GLfloat resultStd[m_n_elements * S];
-    const glw::GLfloat *resultTmp = DE_NULL;
+    const glw::GLfloat *resultTmp = nullptr;
 
     gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, m_vbo_result_fma_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() call failed");

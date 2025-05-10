@@ -235,8 +235,14 @@ public:
     //! Enable development-time test case validation checks
     bool isValidationEnabled(void) const;
 
+    //! Enable SPIRV validation checks (--deqp-spirv-validation)
+    bool isSpirvValidationEnabled(void) const;
+
     //! Print validation errors to standard error or keep them in the log only.
     bool printValidationErrors(void) const;
+
+    //! Enable runtime check for duplicate case names in test hierarchy
+    bool checkDuplicateCaseNames(void) const;
 
     //! Log of decompiled SPIR-V shader source (--deqp-log-decompiled-spirv)
     bool isLogDecompiledSpirvEnabled(void) const;

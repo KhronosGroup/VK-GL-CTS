@@ -183,7 +183,7 @@ public:
             bool vertexOk          = program.getShaderInfo(SHADERTYPE_VERTEX).compileOk;
             bool fragmentOk        = program.getShaderInfo(SHADERTYPE_FRAGMENT).compileOk;
             bool linkOk            = program.getProgramInfo().linkOk;
-            const char *failReason = DE_NULL;
+            const char *failReason = nullptr;
 
             if (!vertexOk || !fragmentOk)
             {
@@ -198,7 +198,7 @@ public:
                 failReason = "expected shaders to fail linking, but succeeded.";
             }
 
-            if (failReason != DE_NULL)
+            if (failReason != nullptr)
             {
                 log << TestLog::Message << "ERROR: " << failReason << TestLog::EndMessage;
                 result = QP_TEST_RESULT_FAIL;

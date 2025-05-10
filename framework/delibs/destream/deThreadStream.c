@@ -120,11 +120,11 @@ static deStreamResult threadStream_deinit(deStreamData *stream)
 }
 
 static const deIOStreamVFTable threadInStreamVFTable = {
-    threadInStream_read, DE_NULL, threadInStream_getError, DE_NULL, threadStream_deinit, threadInStream_getStatus};
+    threadInStream_read, NULL, threadInStream_getError, NULL, threadStream_deinit, threadInStream_getStatus};
 
 void deThreadInStream_init(deInStream *stream, deInStream *input, int ringbufferBlockSize, int ringbufferBlockCount)
 {
-    deThreadInStream *threadStream = DE_NULL;
+    deThreadInStream *threadStream = NULL;
 
     threadStream = malloc(sizeof(deThreadInStream));
     DE_ASSERT(threadStream);
@@ -137,7 +137,7 @@ void deThreadInStream_init(deInStream *stream, deInStream *input, int ringbuffer
     deProducerStream_init(&(threadStream->producerStream), threadStream->ringbuffer);
     deConsumerStream_init(&(threadStream->consumerStream), threadStream->ringbuffer);
 
-    threadStream->thread        = deThread_create(inStreamCopy, threadStream, DE_NULL);
+    threadStream->thread        = deThread_create(inStreamCopy, threadStream, NULL);
     stream->ioStream.vfTable    = &threadInStreamVFTable;
     stream->ioStream.streamData = threadStream;
 }
@@ -171,7 +171,7 @@ static deStreamResult threadOutStream_flush(deStreamData *stream)
     return deOutStream_flush(&(threadStream->producerStream));
 }
 
-static const deIOStreamVFTable threadOutStreamVFTable = {DE_NULL,
+static const deIOStreamVFTable threadOutStreamVFTable = {NULL,
                                                          threadOutStream_write,
                                                          threadOutStream_getError,
                                                          threadOutStream_flush,
@@ -180,7 +180,7 @@ static const deIOStreamVFTable threadOutStreamVFTable = {DE_NULL,
 
 void deThreadOutStream_init(deOutStream *stream, deOutStream *output, int ringbufferBlockSize, int ringbufferBlockCount)
 {
-    deThreadOutStream *threadStream = DE_NULL;
+    deThreadOutStream *threadStream = NULL;
 
     threadStream = malloc(sizeof(deThreadOutStream));
     DE_ASSERT(threadStream);

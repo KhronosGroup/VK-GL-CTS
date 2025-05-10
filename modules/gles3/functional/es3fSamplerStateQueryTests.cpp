@@ -47,7 +47,7 @@ static const char *getVerifierSuffix(QueryType type)
         return "_getsamplerparameterf";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 

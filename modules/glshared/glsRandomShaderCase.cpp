@@ -124,8 +124,8 @@ RandomShaderCase::RandomShaderCase(tcu::TestContext &testCtx, glu::RenderContext
     , m_gridHeight(1)
     , m_vertexShader(rsg::Shader::TYPE_VERTEX)
     , m_fragmentShader(rsg::Shader::TYPE_FRAGMENT)
-    , m_tex2D(DE_NULL)
-    , m_texCube(DE_NULL)
+    , m_tex2D(nullptr)
+    , m_texCube(nullptr)
 {
 }
 
@@ -365,8 +365,8 @@ void RandomShaderCase::deinit(void)
     delete m_tex2D;
     delete m_texCube;
 
-    m_tex2D   = DE_NULL;
-    m_texCube = DE_NULL;
+    m_tex2D   = nullptr;
+    m_texCube = nullptr;
 
     // Free up memory
     m_vertexArrays.clear();
@@ -433,8 +433,8 @@ void setUniformValue(int location, rsg::ConstValueAccess value)
 
 tcu::MessageBuilder &operator<<(tcu::MessageBuilder &message, rsg::ConstValueAccess value)
 {
-    const char *scalarType = DE_NULL;
-    const char *vecType    = DE_NULL;
+    const char *scalarType = nullptr;
+    const char *vecType    = nullptr;
 
     switch (value.getType().getBaseType())
     {

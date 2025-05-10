@@ -284,6 +284,9 @@ tcu::TestStatus NonUniformArgsInstance::iterate(void)
     auto topLevelAS    = makeTopLevelAccelerationStructure();
     auto bottomLevelAS = makeBottomLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     // Putting the offscreen triangle first makes sure hits have a geometryIndex=1, meaning sbtRecordStride matters.
     std::vector<const std::vector<tcu::Vec3> *> geometries;
     geometries.push_back(&kOffscreenTriangle);
@@ -292,13 +295,13 @@ tcu::TestStatus NonUniformArgsInstance::iterate(void)
     for (const auto &geometryPtr : geometries)
         bottomLevelAS->addGeometry(*geometryPtr, true /* is triangles */);
 
-    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     de::SharedPtr<BottomLevelAccelerationStructure> blasSharedPtr(bottomLevelAS.release());
     topLevelAS->setInstanceCount(1);
     topLevelAS->addInstance(blasSharedPtr, identityMatrix3x4, 0u, kGoodCullMask, 0u,
                             VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR);
-    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     // Input storage buffer.
     const auto inputBufferSize = static_cast<VkDeviceSize>(sizeof(ArgsBufferData));
@@ -375,10 +378,10 @@ tcu::TestStatus NonUniformArgsInstance::iterate(void)
     de::MovePtr<BufferWithMemory> hitSBT;
     de::MovePtr<BufferWithMemory> callableSBT;
 
-    VkStridedDeviceAddressRegionKHR raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR missSBTRegion     = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR hitSBTRegion      = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR callableSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    VkStridedDeviceAddressRegionKHR raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR missSBTRegion     = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR hitSBTRegion      = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR callableSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     // Generate ids for the closest hit and miss shaders according to the test parameters.
     DE_ASSERT(m_params.hitParams.rayTypeCount > 0u);

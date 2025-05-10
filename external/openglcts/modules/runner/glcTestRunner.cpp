@@ -248,13 +248,21 @@ static const string getCaseListFileOption(const char *mustpassDir, const char *a
 }
 
 static const string getLogFileName(const char *apiName, const char *configName, const int iterId, const int runId,
-                                   const int width, const int height, const int seed)
+                                   const int width, const int height, const int seed, const ConfigType configType)
 {
     string res = string("config-") + apiName + "-" + configName + "-cfg-" + de::toString(iterId) + "-run-" +
                  de::toString(runId) + "-width-" + de::toString(width) + "-height-" + de::toString(height);
     if (seed != -1)
     {
         res += "-seed-" + de::toString(seed);
+    }
+    if (configType == CONFIGTYPE_EGL)
+    {
+        res += "-egl";
+    }
+    else if (configType == CONFIGTYPE_WGL)
+    {
+        res += "-wgl";
     }
     res += ".qpa";
 
@@ -310,7 +318,7 @@ static void getTestRunsForAOSPEGL(vector<TestRunParams> &runs, const ConfigList 
 
         TestRunParams params;
         params.logFilename =
-            getLogFileName(apiName, aosp_mustpass_egl_first_cfg[i].configName, 1, i, width, height, -1);
+            getLogFileName(apiName, aosp_mustpass_egl_first_cfg[i].configName, 1, i, width, height, -1, cfgIter->type);
         getBaseOptions(params.args, mustpassDir, apiName, aosp_mustpass_egl_first_cfg[i].configName,
                        aosp_mustpass_egl_first_cfg[i].screenRotation, width, height);
 
@@ -355,7 +363,8 @@ static void getTestRunsForAOSPES(vector<TestRunParams> &runs, const ConfigList &
         const int height = aosp_mustpass_es_first_cfg[i].surfaceHeight;
 
         TestRunParams params;
-        params.logFilename = getLogFileName(apiName, aosp_mustpass_es_first_cfg[i].configName, 1, i, width, height, -1);
+        params.logFilename =
+            getLogFileName(apiName, aosp_mustpass_es_first_cfg[i].configName, 1, i, width, height, -1, cfgIter->type);
         getBaseOptions(params.args, mustpassDir, apiName, aosp_mustpass_es_first_cfg[i].configName,
                        aosp_mustpass_es_first_cfg[i].screenRotation, width, height);
 
@@ -389,7 +398,7 @@ static void getTestRunsForNoContext(glu::ApiType type, vector<TestRunParams> &ru
         const int seed   = runParams[i].baseSeed;
 
         TestRunParams params;
-        params.logFilename = getLogFileName(apiName, runParams[i].configName, 1, i, width, height, seed);
+        params.logFilename = getLogFileName(apiName, runParams[i].configName, 1, i, width, height, seed, cfgIter->type);
 
         getBaseOptions(params.args, mustpassDir, apiName, runParams[i].configName, runParams[i].screenRotation, width,
                        height);
@@ -426,7 +435,7 @@ static void getTestRunsForSingleConfig(glu::ApiType type, vector<TestRunParams> 
         const int seed   = runParams[i].baseSeed;
 
         TestRunParams params;
-        params.logFilename = getLogFileName(apiName, runParams[i].configName, 1, i, width, height, seed);
+        params.logFilename = getLogFileName(apiName, runParams[i].configName, 1, i, width, height, seed, cfgIter->type);
 
         getBaseOptions(params.args, mustpassDir, apiName, runParams[i].configName, runParams[i].screenRotation, width,
                        height);
@@ -474,8 +483,8 @@ static void getTestRunsForES(glu::ApiType type, const ConfigList &configs, vecto
 
             TestRunParams params;
 
-            params.logFilename =
-                getLogFileName(apiName, runParams[runNdx].configName, cfgIter->id, runNdx, width, height, seed);
+            params.logFilename = getLogFileName(apiName, runParams[runNdx].configName, cfgIter->id, runNdx, width,
+                                                height, seed, cfgIter->type);
 
             getBaseOptions(params.args, mustpassDir, apiName, runParams[runNdx].configName,
                            runParams[runNdx].screenRotation, width, height);
@@ -521,7 +530,7 @@ static void getTestRunsForESForGL(glu::ApiType type, vector<TestRunParams> &runs
         const int seed   = runParams[i].baseSeed;
 
         TestRunParams params;
-        params.logFilename = getLogFileName(apiName, runParams[i].configName, 1, i, width, height, seed);
+        params.logFilename = getLogFileName(apiName, runParams[i].configName, 1, i, width, height, seed, cfgIter->type);
 
         getBaseOptions(params.args, mustpassDir, apiName, runParams[i].configName, runParams[i].screenRotation, width,
                        height);
@@ -561,8 +570,8 @@ static void getTestRunsForGL(glu::ApiType type, const ConfigList &configs, vecto
 
             TestRunParams params;
 
-            params.logFilename =
-                getLogFileName(apiName, runParams[runNdx].configName, cfgIter->id, runNdx, width, height, seed);
+            params.logFilename = getLogFileName(apiName, runParams[runNdx].configName, cfgIter->id, runNdx, width,
+                                                height, seed, cfgIter->type);
 
             getBaseOptions(params.args, mustpassDir, apiName, runParams[runNdx].configName,
                            runParams[runNdx].screenRotation, width, height);
@@ -641,11 +650,11 @@ static const char *getRunTypeName(glu::ApiType type)
     else if (type == glu::ApiType::core(4, 6))
         return "gl46";
     else
-        return DE_NULL;
+        return nullptr;
 }
 
 static void generateTestSessionParams(tcu::Platform &platform, glu::ApiType type,
-                                      std::vector<TestRunParams> &runSessionsParams)
+                                      std::vector<TestRunParams> &runSessionsParams, std::string configLogFilename)
 {
     // Get list of configs to test.
     ConfigList configList;
@@ -656,7 +665,6 @@ static void generateTestSessionParams(tcu::Platform &platform, glu::ApiType type
 
     // Config list run.
     {
-        const char *configLogFilename = "configs.qpa";
         TestRunParams configRun;
 
         configRun.logFilename = configLogFilename;
@@ -781,7 +789,7 @@ TestRunner::TestRunner(tcu::Platform &platform, tcu::Archive &archive, const cha
     , m_type(type)
     , m_flags(flags)
     , m_iterState(ITERATE_INIT)
-    , m_curSession(DE_NULL)
+    , m_curSession(nullptr)
     , m_sessionsExecuted(0)
     , m_sessionsPassed(0)
     , m_sessionsFailed(0)
@@ -839,9 +847,9 @@ void TestRunner::init(void)
 
     tcu::print("Running %s conformance\n", glu::getApiTypeDescription(m_type));
 
-    m_summary.runType = m_type;
-
-    generateTestSessionParams(m_platform, m_type, m_runSessions);
+    m_summary.runType           = m_type;
+    m_summary.configLogFilename = "configs.qpa";
+    generateTestSessionParams(m_platform, m_type, m_runSessions, m_summary.configLogFilename);
 
     // Record run params for summary.
     for (std::vector<TestRunParams>::const_iterator runIter = m_runSessions.begin() + 1; runIter != m_runSessions.end();
@@ -921,7 +929,7 @@ void TestRunner::deinitSession(void)
     m_summary.results.push_back(result);
 
     delete m_curSession;
-    m_curSession = DE_NULL;
+    m_curSession = nullptr;
 }
 
 inline bool TestRunner::iterateSession(void)
@@ -948,7 +956,7 @@ bool TestParamCollectorRunner::iterate(void)
 
     tcu::print("Collecting %s conformance test params\n", glu::getApiTypeDescription(m_type));
 
-    generateTestSessionParams(m_platform, m_type, m_runSessionsParams);
+    generateTestSessionParams(m_platform, m_type, m_runSessionsParams, "configs.qpa");
 
     // export test run params to a file on device
     std::ofstream str(m_testParamsFilePath.c_str(), std::ofstream::binary | std::ofstream::trunc);

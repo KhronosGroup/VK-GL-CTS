@@ -243,7 +243,7 @@ static inline string getShaderInfoLog(const uint32_t shaderGL)
     vector<char> infoLog;
     glGetShaderiv(shaderGL, GL_INFO_LOG_LENGTH, &infoLogLen);
     infoLog.resize(infoLogLen + 1);
-    glGetShaderInfoLog(shaderGL, (int)infoLog.size(), DE_NULL, &infoLog[0]);
+    glGetShaderInfoLog(shaderGL, (int)infoLog.size(), nullptr, &infoLog[0]);
     return &infoLog[0];
 }
 
@@ -253,7 +253,7 @@ static inline string getProgramInfoLog(const uint32_t programGL)
     vector<char> infoLog;
     glGetProgramiv(programGL, GL_INFO_LOG_LENGTH, &infoLogLen);
     infoLog.resize(infoLogLen + 1);
-    glGetProgramInfoLog(programGL, (int)infoLog.size(), DE_NULL, &infoLog[0]);
+    glGetProgramInfoLog(programGL, (int)infoLog.size(), nullptr, &infoLog[0]);
     return &infoLog[0];
 }
 
@@ -316,7 +316,7 @@ void DebugInfoRenderer::drawInfo(const uint64_t secondsElapsed, const int texMem
     render();
 }
 
-DebugInfoRenderer::DebugInfoRenderer(const glu::RenderContext &ctx) : m_ctx(ctx), m_prog(DE_NULL)
+DebugInfoRenderer::DebugInfoRenderer(const glu::RenderContext &ctx) : m_ctx(ctx), m_prog(nullptr)
 {
     DE_ASSERT(!m_prog);
     m_prog = new glu::ShaderProgram(ctx, glu::makeVtxFragSources("attribute highp vec2 a_pos;\n"
@@ -833,8 +833,8 @@ void Program::setSources(const string &vertSource, const string &fragSource)
     m_fragSource = fragSource;
 
     // \note In GLES2 api the source parameter type lacks one const.
-    glShaderSource(m_vertShaderGL, 1, (const char **)&vertSourceCstr, DE_NULL);
-    glShaderSource(m_fragShaderGL, 1, (const char **)&fragSourceCstr, DE_NULL);
+    glShaderSource(m_vertShaderGL, 1, (const char **)&vertSourceCstr, nullptr);
+    glShaderSource(m_fragShaderGL, 1, (const char **)&fragSourceCstr, nullptr);
 
     m_hasSources = true;
 }
@@ -1299,10 +1299,10 @@ LongStressCase::LongStressCase(tcu::TestContext &testCtx, const glu::RenderConte
     , m_lastLogIteration(0)
     , m_currentLogEntryNdx(0)
     , m_rnd(deStringHash(getName()) ^ testCtx.getCommandLine().getBaseSeed())
-    , m_programs(DE_NULL)
-    , m_buffers(DE_NULL)
-    , m_textures(DE_NULL)
-    , m_debugInfoRenderer(DE_NULL)
+    , m_programs(nullptr)
+    , m_buffers(nullptr)
+    , m_textures(nullptr)
+    , m_debugInfoRenderer(nullptr)
 {
     DE_ASSERT(m_numVerticesPerDrawCall <=
               (int)std::numeric_limits<uint16_t>::max() + 1); // \note Vertices are referred to with 16-bit indices.
@@ -1453,16 +1453,16 @@ void LongStressCase::deinit(void)
     m_programResources.clear();
 
     delete m_programs;
-    m_programs = DE_NULL;
+    m_programs = nullptr;
 
     delete m_buffers;
-    m_buffers = DE_NULL;
+    m_buffers = nullptr;
 
     delete m_textures;
-    m_textures = DE_NULL;
+    m_textures = nullptr;
 
     delete m_debugInfoRenderer;
-    m_debugInfoRenderer = DE_NULL;
+    m_debugInfoRenderer = nullptr;
 }
 
 LongStressCase::IterateResult LongStressCase::iterate(void)
@@ -1714,7 +1714,7 @@ LongStressCase::IterateResult LongStressCase::iterate(void)
             else
             {
                 m_buffers->get(indexBufferName).bind(GL_ELEMENT_ARRAY_BUFFER);
-                glDrawElements(GL_TRIANGLE_STRIP, m_numVerticesPerDrawCall, GL_UNSIGNED_SHORT, DE_NULL);
+                glDrawElements(GL_TRIANGLE_STRIP, m_numVerticesPerDrawCall, GL_UNSIGNED_SHORT, nullptr);
             }
         }
     }

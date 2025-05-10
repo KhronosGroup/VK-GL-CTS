@@ -78,7 +78,7 @@ const typename M::mapped_type *tryLookup(const M &map, const typename M::key_typ
 {
     typename M::const_iterator it = map.find(key);
     if (it == map.end())
-        return DE_NULL;
+        return nullptr;
     return &it->second;
 }
 
@@ -88,7 +88,7 @@ const typename M::mapped_type &lookupDefault(const M &map, const typename M::key
                                              const typename M::mapped_type &fallback)
 {
     const typename M::mapped_type *ptr = tryLookup(map, key);
-    return ptr == DE_NULL ? fallback : *ptr;
+    return ptr == nullptr ? fallback : *ptr;
 }
 
 //! Return a reference to the value mapped to `key`, or raise
@@ -97,7 +97,7 @@ template <typename M>
 const typename M::mapped_type &lookup(const M &map, const typename M::key_type &key)
 {
     const typename M::mapped_type *ptr = tryLookup(map, key);
-    if (ptr == DE_NULL)
+    if (ptr == nullptr)
         throw std::out_of_range("key not found in map");
     return *ptr;
 }

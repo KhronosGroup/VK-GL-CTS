@@ -39,6 +39,8 @@
 #include "tcuTestLog.hpp"
 #include "tcuStringTemplate.hpp"
 
+#include <cmath>
+
 using namespace glw;
 using namespace glu;
 
@@ -515,7 +517,7 @@ void TextureLodBiasAllTestCase::setBuffers(const glu::ShaderProgram &program)
 
             GLuint strideSize = sizeof(quad) / 4;
 
-            gl.vertexAttribPointer(locVertices, 4, GL_FLOAT, GL_FALSE, strideSize, DE_NULL);
+            gl.vertexAttribPointer(locVertices, 4, GL_FLOAT, GL_FALSE, strideSize, nullptr);
             GLU_EXPECT_NO_ERROR(gl.getError(), "vertexAttribPointer");
         }
 

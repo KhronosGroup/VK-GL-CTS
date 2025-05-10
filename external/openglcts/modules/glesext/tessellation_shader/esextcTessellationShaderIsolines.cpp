@@ -49,7 +49,7 @@ TessellationShadersIsolines::TessellationShadersIsolines(Context &context, const
                    "Makes sure no line is drawn between (0, 1) and (1, 1) in (u, v) domain.")
     , m_irrelevant_tess_value_1(0.0f)
     , m_irrelevant_tess_value_2(0.0f)
-    , m_utils_ptr(DE_NULL)
+    , m_utils_ptr(nullptr)
     , m_vao_id(0)
 {
     /* Left blank on purpose */
@@ -86,7 +86,7 @@ void TessellationShadersIsolines::checkFirstOuterTessellationLevelEffect(_test_r
 
         TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(
             TESSELLATION_SHADER_VERTEX_SPACING_EQUAL, test_result.parent->outer_tess_levels[0],
-            gl_max_tess_gen_level_value, DE_NULL, /* out_clamped */
+            gl_max_tess_gen_level_value, nullptr, /* out_clamped */
             &outer_zero_tess_level_clamped_rounded);
 
         n_isolines_expected = (unsigned int)outer_zero_tess_level_clamped_rounded;
@@ -145,11 +145,11 @@ void TessellationShadersIsolines::checkIrrelevantTessellationLevelsHaveNoEffect(
 
     TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(
         TESSELLATION_SHADER_VERTEX_SPACING_EQUAL, m_irrelevant_tess_value_1, gl_max_tess_gen_level_value,
-        DE_NULL, /* out_clamped */
+        nullptr, /* out_clamped */
         &irrelevant_tess_level1_rounded_clamped);
     TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(
         TESSELLATION_SHADER_VERTEX_SPACING_EQUAL, m_irrelevant_tess_value_2, gl_max_tess_gen_level_value,
-        DE_NULL, /* out_clamped */
+        nullptr, /* out_clamped */
         &irrelevant_tess_level2_rounded_clamped);
 
     irrelevant_tess_level1 = (int)irrelevant_tess_level1_rounded_clamped;
@@ -251,7 +251,7 @@ void TessellationShadersIsolines::checkSecondOuterTessellationLevelEffect(_test_
 
         TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(
             test_result.parent->vertex_spacing_mode, test_result.parent->outer_tess_levels[1],
-            gl_max_tess_gen_level_value, DE_NULL, /* out_clamped */
+            gl_max_tess_gen_level_value, nullptr, /* out_clamped */
             &outer_tess_levels1_clamped_rounded);
 
         n_line_segments_per_isoline_expected = (unsigned int)outer_tess_levels1_clamped_rounded;
@@ -469,7 +469,7 @@ void TessellationShadersIsolines::deinit()
     {
         delete m_utils_ptr;
 
-        m_utils_ptr = DE_NULL;
+        m_utils_ptr = nullptr;
     }
 
     if (m_vao_id != 0)

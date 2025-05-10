@@ -225,7 +225,7 @@ public:
     const void *getValuesBuffer(void) const
     {
         if (valuesBuffer.size() == 0)
-            return DE_NULL;
+            return nullptr;
         else
             return static_cast<const void *>(&valuesBuffer[0]);
     }
@@ -262,6 +262,7 @@ struct VulkanFeatures
 #ifndef CTS_USES_VULKANSC
     vk::VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR extIntegerDotProduct;
     vk::VkPhysicalDeviceShaderFloatControls2FeaturesKHR extFloatControls2;
+    vk::VkPhysicalDeviceMaintenance8FeaturesKHR extMaintenance8;
 #endif // CTS_USES_VULKANSC
     vk::VkPhysicalDeviceFloatControlsProperties floatControlsProperties;
 
@@ -276,6 +277,7 @@ struct VulkanFeatures
 #ifndef CTS_USES_VULKANSC
         deMemset(&extIntegerDotProduct, 0, sizeof(vk::VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR));
         deMemset(&extFloatControls2, 0, sizeof(vk::VkPhysicalDeviceShaderFloatControls2FeaturesKHR));
+        deMemset(&extMaintenance8, 0, sizeof(vk::VkPhysicalDeviceMaintenance8FeaturesKHR));
 #endif // CTS_USES_VULKANSC
         deMemset(&floatControlsProperties, 0, sizeof(vk::VkPhysicalDeviceFloatControlsProperties));
         floatControlsProperties.denormBehaviorIndependence = vk::VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE;

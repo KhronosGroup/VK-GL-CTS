@@ -275,7 +275,7 @@ static void readDataMapped(const glw::Functions &gl, uint32_t bufferTarget, int 
     GLU_EXPECT_NO_ERROR(gl.getError(), (string() + "glMapBufferRange(" + glu::getBufferTargetName((int)bufferTarget) +
                                         ", 0, " + de::toString(numBytes) + ", GL_MAP_READ_BIT)")
                                            .c_str());
-    TCU_CHECK(mappedData != DE_NULL);
+    TCU_CHECK(mappedData != nullptr);
 
     for (int i = 0; i < numElems; i++)
         dst[i] = mappedData[i];
@@ -345,7 +345,7 @@ TransformFeedbackHandler<AttribType>::TransformFeedbackHandler(const glu::Render
     const int bufferSize = (maxNumVertices + 3) * (int)sizeof(AttribType);
 
     gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, *m_tfBuffer);
-    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bufferSize, DE_NULL, GL_DYNAMIC_READ);
+    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bufferSize, nullptr, GL_DYNAMIC_READ);
 }
 
 template <typename AttribType>
@@ -480,7 +480,7 @@ static inline const char *getTessPrimitiveTypeShaderName(TessPrimitiveType type)
         return "isolines";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -496,7 +496,7 @@ static inline const char *getSpacingModeShaderName(SpacingMode mode)
         return "fractional_even_spacing";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -510,7 +510,7 @@ static inline const char *getWindingShaderName(Winding winding)
         return "cw";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -1608,7 +1608,7 @@ static bool verifyFractionalSpacingMultiple(TestLog &log, SpacingMode spacingMod
 template <typename IsTriangleRelevantT>
 static bool compareTriangleSets(const vector<Vec3> &coordsA, const vector<Vec3> &coordsB, TestLog &log,
                                 const IsTriangleRelevantT &isTriangleRelevant,
-                                const char *ignoredTriangleDescription = DE_NULL)
+                                const char *ignoredTriangleDescription = nullptr)
 {
     typedef tcu::Vector<Vec3, 3> Triangle;
     typedef LexCompare<Triangle, 3, VecLexLessThan<3>> TriangleLexLessThan;
@@ -1652,7 +1652,7 @@ static bool compareTriangleSets(const vector<Vec3> &coordsA, const vector<Vec3> 
             {
                 log << TestLog::Message
                     << "Failure: triangle sets in two cases are not equal (when ignoring triangle and vertex order"
-                    << (ignoredTriangleDescription == DE_NULL ? "" : string() + ", and " + ignoredTriangleDescription)
+                    << (ignoredTriangleDescription == nullptr ? "" : string() + ", and " + ignoredTriangleDescription)
                     << ")" << TestLog::EndMessage;
 
                 if (!aEnd && (bEnd || TriangleLexLessThan()(*aIt, *bIt)))
@@ -1809,7 +1809,7 @@ void CommonEdgeCase::init(void)
         "layout (vertices = " +
         string(m_primitiveType == TESSPRIMITIVETYPE_TRIANGLES ? "3" :
                m_primitiveType == TESSPRIMITIVETYPE_QUADS     ? "4" :
-                                                                DE_NULL) +
+                                                                nullptr) +
         ") out;\n"
         "\n"
         "in highp vec2 in_tc_position[];\n"
@@ -2028,7 +2028,7 @@ CommonEdgeCase::IterateResult CommonEdgeCase::iterate(void)
             << "Note: coloring is done to clarify the positioning and orientation of the "
             << (m_primitiveType == TESSPRIMITIVETYPE_TRIANGLES ? "triangles" :
                 m_primitiveType == TESSPRIMITIVETYPE_QUADS     ? "quads" :
-                                                                 DE_NULL)
+                                                                 nullptr)
             << "; the color of a vertex corresponds to the index of that vertex in the patch" << TestLog::EndMessage;
 
         if (m_caseType == CASETYPE_BASIC)
@@ -2297,7 +2297,7 @@ TessCoordCase::IterateResult TessCoordCase::iterate(void)
 
         {
             const vector<Vec3> &tessCoordsRef = caseReferences[tessLevelCaseNdx];
-            const TFHandler::Result tfResult  = tfHandler.renderAndGetPrimitives(programGL, GL_POINTS, 0, DE_NULL, 1);
+            const TFHandler::Result tfResult  = tfHandler.renderAndGetPrimitives(programGL, GL_POINTS, 0, nullptr, 1);
 
             if (tfResult.numPrimitives != (int)tessCoordsRef.size())
             {
@@ -2489,7 +2489,7 @@ FractionalSpacingModeCase::IterateResult FractionalSpacingModeCase::iterate(void
         GLU_EXPECT_NO_ERROR(gl.getError(), "Setup failed");
 
         {
-            const TFHandler::Result tfResult = tfHandler.renderAndGetPrimitives(programGL, GL_POINTS, 0, DE_NULL, 1);
+            const TFHandler::Result tfResult = tfHandler.renderAndGetPrimitives(programGL, GL_POINTS, 0, nullptr, 1);
             float additionalSegmentLength;
             int additionalSegmentLocation;
 
@@ -2533,7 +2533,7 @@ public:
 
 protected:
     virtual const glu::ProgramSources makeSources(TessPrimitiveType, SpacingMode,
-                                                  const char *vtxOutPosAttrName) const = DE_NULL;
+                                                  const char *vtxOutPosAttrName) const = 0;
 
 private:
     static const int RENDER_SIZE = 256;
@@ -2780,7 +2780,7 @@ protected:
                  "    highp float f = (1.0 - length(fromCenter)) * sqrt(1.7 - d);\n"
                  "    pos += 0.75 * f * fromCenter / (length(fromCenter) + 0.3);\n"
                  "    gl_Position = vec4(pos, 0.0, 1.0);\n" :
-                 DE_NULL) +
+                 nullptr) +
             "}\n");
         std::string fragmentShaderTemplate("${GLSL_VERSION_DECL}\n"
                                            "\n"
@@ -2877,7 +2877,7 @@ protected:
                  "    in_f_color = phase == 0 ? vec4(1.0, 0.0, 0.0, 1.0)\n"
                  "               : phase == 1 ? vec4(0.0, 1.0, 0.0, 1.0)\n"
                  "               :              vec4(0.0, 0.0, 1.0, 1.0);\n" :
-                 DE_NULL) +
+                 nullptr) +
             "}\n");
         std::string fragmentShaderTemplate("${GLSL_VERSION_DECL}\n"
                                            "\n"
@@ -3387,7 +3387,7 @@ public:
         , m_caseType(caseType)
         , m_referenceImagePath(caseTypeUsesRefImageFromFile(caseType) ? referenceImagePath : "")
     {
-        DE_ASSERT(caseTypeUsesRefImageFromFile(caseType) == (referenceImagePath != DE_NULL));
+        DE_ASSERT(caseTypeUsesRefImageFromFile(caseType) == (referenceImagePath != nullptr));
     }
 
     void init(void);
@@ -3438,7 +3438,7 @@ const char *PerPatchDataCase::getCaseTypeName(CaseType type)
         return "tess_level_outer_3_tes";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -3468,7 +3468,7 @@ const char *PerPatchDataCase::getCaseTypeDescription(CaseType type)
         return "Read gl_TessLevelOuter[3] in TES";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -3571,7 +3571,7 @@ void PerPatchDataCase::init(void)
          m_caseType == CASETYPE_TESS_LEVEL_OUTER1_TES ? "\tbool ok = abs(gl_TessLevelOuter[1] - 6.0) < 0.1f;\n" :
          m_caseType == CASETYPE_TESS_LEVEL_OUTER2_TES ? "\tbool ok = abs(gl_TessLevelOuter[2] - 5.0) < 0.1f;\n" :
          m_caseType == CASETYPE_TESS_LEVEL_OUTER3_TES ? "\tbool ok = abs(gl_TessLevelOuter[3] - 4.0) < 0.1f;\n" :
-                                                        DE_NULL) +
+                                                        nullptr) +
         "    in_f_color = ok ? vec4(1.0) : vec4(vec3(0.0), 1.0);\n"
         "}\n");
     std::string fragmentShaderTemplate("${GLSL_VERSION_DECL}\n"
@@ -4763,7 +4763,7 @@ void SymmetricOuterEdgeCase::init(void)
              "    // Mirror one half of each outer edge onto the other half\n"
              "    out_te_tessCoord_isMirrored = (x == 0.0 || x == 1.0) && y > 0.5 ? vec4(x, 1.0-y, 0.0, 1.0)\n"
              "                                : vec4(x, y, 0.0, 0.0f);\n" :
-             DE_NULL) +
+             nullptr) +
         "\n"
         "    gl_Position = vec4(gl_TessCoord.xy, 0.0, 1.0);\n"
         "    in_f_color = vec4(1.0);\n"
@@ -5218,13 +5218,13 @@ OuterEdgeVertexSetIndexIndependenceCase::IterateResult OuterEdgeVertexSetIndexIn
                                     const char *const swizzleDesc = m_primitiveType == TESSPRIMITIVETYPE_TRIANGLES ?
                                                                         (outerEdgeIndex == 1 ? "(y, x, z)" :
                                                                          outerEdgeIndex == 2 ? "(z, y, x)" :
-                                                                                               DE_NULL) :
+                                                                                               nullptr) :
                                                                     m_primitiveType == TESSPRIMITIVETYPE_QUADS ?
                                                                         (outerEdgeIndex == 1 ? "(x, 0)" :
                                                                          outerEdgeIndex == 2 ? "(y, 0)" :
                                                                          outerEdgeIndex == 3 ? "(x, 0)" :
-                                                                                               DE_NULL) :
-                                                                        DE_NULL;
+                                                                                               nullptr) :
+                                                                        nullptr;
 
                                     log << TestLog::Message << "Failure: the set of vertices on the "
                                         << edgeDesc.description() << " edge"
@@ -7009,7 +7009,7 @@ const char *GLPositionCase::getCaseTypeName(CaseType type)
         return "gl_position_vs_to_tcs_to_tes";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -8234,7 +8234,7 @@ void TessellationTests::init(void)
                 new PerPatchDataCase(m_context, caseName, PerPatchDataCase::getCaseTypeDescription(caseType), caseType,
                                      PerPatchDataCase::caseTypeUsesRefImageFromFile(caseType) ?
                                          (string() + "data/tessellation/" + caseName + "_ref.png").c_str() :
-                                         DE_NULL));
+                                         nullptr));
         }
 
         for (int caseTypeI = 0; caseTypeI < GLPositionCase::CASETYPE_LAST; caseTypeI++)
@@ -8327,7 +8327,7 @@ void TessellationTests::init(void)
                                              getSpacingModeShaderName(spacing) +
                                              (caseType == CommonEdgeCase::CASETYPE_BASIC   ? "" :
                                                   caseType == CommonEdgeCase::CASETYPE_PRECISE ? "_precise" :
-                                                                                                 DE_NULL));
+                                                                                                 nullptr));
 
                     commonEdgeGroup->addChild(
                         new CommonEdgeCase(m_context, caseName.c_str(), "", primitiveType, spacing, caseType));
@@ -8509,7 +8509,7 @@ void TessellationTests::init(void)
                         "vertex_io_array_size_shader_builtin" :
                     vertexArraySizeI == UserDefinedIOCase::VERTEX_IO_ARRAY_SIZE_EXPLICIT_QUERY ?
                         "vertex_io_array_size_query" :
-                        DE_NULL,
+                        nullptr,
                     "");
                 ioTypeGroup->addChild(vertexArraySizeGroup);
 

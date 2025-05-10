@@ -148,7 +148,7 @@ void Either<First, Second>::release(void)
         m_second->~Second();
 
     m_isFirst = true;
-    m_first   = DE_NULL;
+    m_first   = nullptr;
 }
 
 template <typename First, typename Second>

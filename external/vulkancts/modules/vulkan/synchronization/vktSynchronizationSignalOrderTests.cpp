@@ -85,7 +85,7 @@ void hostSignal(const DeviceInterface &vk, const VkDevice &device, VkSemaphore s
 {
     VkSemaphoreSignalInfoKHR ssi = {
         VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO, // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         semaphore,                               // VkSemaphore semaphore;
         timelineValue,                           // uint64_t value;
     };
@@ -119,12 +119,12 @@ Move<VkDevice> createTestDevice(const Context &context)
     std::vector<uint32_t> queueFamilyIndices(queueFamilyProperties.size(), 0xFFFFFFFFu);
     std::vector<const char *> extensions;
 
-    VkPhysicalDeviceFeatures2 createPhysicalFeature{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, DE_NULL,
+    VkPhysicalDeviceFeatures2 createPhysicalFeature{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, nullptr,
                                                     context.getDeviceFeatures()};
     VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures{
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES, DE_NULL, true};
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES, nullptr, true};
     VkPhysicalDeviceSynchronization2FeaturesKHR synchronization2Features{
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR, DE_NULL, true};
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR, nullptr, true};
     void **nextPtr = &createPhysicalFeature.pNext;
 
     if (context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
@@ -165,7 +165,7 @@ Move<VkDevice> createTestDevice(const Context &context)
         for (size_t ndx = 0; ndx < queueFamilyProperties.size(); ndx++)
         {
             const VkDeviceQueueCreateInfo createInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                                                        DE_NULL,
+                                                        nullptr,
                                                         0u,
 
                                                         (uint32_t)ndx,
@@ -183,10 +183,10 @@ Move<VkDevice> createTestDevice(const Context &context)
                                                &queues[0],
 
                                                0u,
-                                               DE_NULL,
+                                               nullptr,
 
                                                (uint32_t)extensions.size(),
-                                               extensions.empty() ? DE_NULL : &extensions[0],
+                                               extensions.empty() ? nullptr : &extensions[0],
                                                0u};
 
         const auto validation = context.getTestContext().getCommandLine().isValidationEnabled();
@@ -249,7 +249,7 @@ private:
 };
 
 SimpleAllocation::SimpleAllocation(const DeviceInterface &vkd, VkDevice device, const VkDeviceMemory memory)
-    : Allocation(memory, 0, DE_NULL)
+    : Allocation(memory, 0, nullptr)
     , m_vkd(vkd)
     , m_device(device)
 {
@@ -257,15 +257,15 @@ SimpleAllocation::SimpleAllocation(const DeviceInterface &vkd, VkDevice device, 
 
 SimpleAllocation::~SimpleAllocation(void)
 {
-    m_vkd.freeMemory(m_device, getMemory(), DE_NULL);
+    m_vkd.freeMemory(m_device, getMemory(), nullptr);
 }
 
 vk::VkMemoryRequirements getMemoryRequirements(const DeviceInterface &vkd, VkDevice device, VkBuffer buffer)
 {
     const VkBufferMemoryRequirementsInfo2 requirementInfo = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,
-                                                             DE_NULL, buffer};
+                                                             nullptr, buffer};
     VkMemoryRequirements2 requirements                    = {VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
-                                                             DE_NULL,
+                                                             nullptr,
                                                              {
                                               0u,
                                               0u,
@@ -277,10 +277,10 @@ vk::VkMemoryRequirements getMemoryRequirements(const DeviceInterface &vkd, VkDev
 
 vk::VkMemoryRequirements getMemoryRequirements(const DeviceInterface &vkd, VkDevice device, VkImage image)
 {
-    const VkImageMemoryRequirementsInfo2 requirementInfo = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2, DE_NULL,
+    const VkImageMemoryRequirementsInfo2 requirementInfo = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2, nullptr,
                                                             image};
     VkMemoryRequirements2 requirements                   = {VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
-                                                            DE_NULL,
+                                                            nullptr,
                                                             {
                                               0u,
                                               0u,
@@ -361,7 +361,7 @@ de::MovePtr<Resource> importResource(const DeviceInterface &vkd, VkDevice device
         const VkImageSubresourceRange subresourceRange     = {resourceDesc.imageAspect, 0u, 1u, 0u, 1u};
         const VkImageSubresourceLayers subresourceLayers   = {resourceDesc.imageAspect, 0u, 0u, 1u};
         const VkExternalMemoryImageCreateInfo externalInfo = {VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO,
-                                                              DE_NULL, (VkExternalMemoryHandleTypeFlags)externalType};
+                                                              nullptr, (VkExternalMemoryHandleTypeFlags)externalType};
         const VkImageTiling tiling                         = VK_IMAGE_TILING_OPTIMAL;
         const VkImageCreateInfo createInfo                 = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
                                                               &externalInfo,
@@ -394,7 +394,7 @@ de::MovePtr<Resource> importResource(const DeviceInterface &vkd, VkDevice device
         const VkDeviceSize size        = static_cast<VkDeviceSize>(resourceDesc.size.x());
         const VkBufferUsageFlags usage = readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags();
         const VkExternalMemoryBufferCreateInfo externalInfo = {VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
-                                                               DE_NULL, (VkExternalMemoryHandleTypeFlags)externalType};
+                                                               nullptr, (VkExternalMemoryHandleTypeFlags)externalType};
         const VkBufferCreateInfo createInfo                 = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
                                                                &externalInfo,
                                                                0u,
@@ -461,13 +461,13 @@ public:
         const InstanceInterface &vki                         = context.getInstanceInterface();
         const VkSemaphoreTypeCreateInfoKHR semaphoreTypeInfo = {
             VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR,
-            DE_NULL,
+            nullptr,
             semaphoreType,
             0,
         };
         const VkPhysicalDeviceExternalSemaphoreInfo info = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO,
                                                             &semaphoreTypeInfo, semaphoreHandleType};
-        VkExternalSemaphoreProperties properties = {VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES, DE_NULL, 0u, 0u,
+        VkExternalSemaphoreProperties properties = {VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES, nullptr, 0u, 0u,
                                                     0u};
 
         vki.getPhysicalDeviceExternalSemaphoreProperties(context.getPhysicalDevice(), &info, &properties);
@@ -488,7 +488,7 @@ public:
                               uint32_t queueFamilyIndex, vk::VkImageTiling tiling)
     {
         const VkExternalMemoryImageCreateInfo externalInfo = {VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO,
-                                                              DE_NULL,
+                                                              nullptr,
                                                               (VkExternalMemoryHandleTypeFlags)m_memoryHandleType};
         const VkImageCreateInfo createInfo                 = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
                                                               &externalInfo,
@@ -516,7 +516,7 @@ public:
                                 uint32_t queueFamilyIndex)
     {
         const VkExternalMemoryBufferCreateInfo externalInfo = {VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
-                                                               DE_NULL,
+                                                               nullptr,
                                                                (VkExternalMemoryHandleTypeFlags)m_memoryHandleType};
         const VkBufferCreateInfo createInfo                 = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
                                                                &externalInfo,
@@ -667,7 +667,7 @@ public:
                         resource.getImage().subresourceRange // VkImageSubresourceRange            subresourceRange
                     );
                     VkDependencyInfoKHR dependencyInfo =
-                        makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+                        makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
                     synchronizationWrapper->cmdPipelineBarrier(cmdBuffersA.back(), &dependencyInfo);
                 }
                 else
@@ -681,7 +681,7 @@ public:
                         0,                           // VkDeviceSize                        offset
                         VK_WHOLE_SIZE                // VkDeviceSize                        size
                     );
-                    VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+                    VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
                     synchronizationWrapper->cmdPipelineBarrier(cmdBuffersA.back(), &dependencyInfo);
                 }
 
@@ -731,9 +731,11 @@ public:
             std::vector<VkCommandBufferSubmitInfoKHR> cmdBuffersInfo(iterations.size(),
                                                                      makeCommonCommandBufferSubmitInfo(0u));
             std::vector<VkSemaphoreSubmitInfoKHR> waitSemaphoreSubmitInfos(
-                iterations.size(), makeCommonSemaphoreSubmitInfo(0u, 1u, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR));
+                iterations.size(),
+                makeCommonSemaphoreSubmitInfo(VK_NULL_HANDLE, 1u, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR));
             std::vector<VkSemaphoreSubmitInfoKHR> signalSemaphoreSubmitInfos(
-                iterations.size(), makeCommonSemaphoreSubmitInfo(0u, 0u, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR));
+                iterations.size(),
+                makeCommonSemaphoreSubmitInfo(VK_NULL_HANDLE, 0u, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR));
             SynchronizationWrapperPtr synchronizationWrapper =
                 getSynchronizationWrapper(m_type, vkA, isTimelineSemaphore, static_cast<uint32_t>(iterations.size()));
 
@@ -746,7 +748,7 @@ public:
                 cmdBuffersInfo[iterIdx].commandBuffer         = cmdBuffersA[iterIdx];
 
                 synchronizationWrapper->addSubmitInfo(
-                    isTimelineSemaphore, isTimelineSemaphore ? &waitSemaphoreSubmitInfos[iterIdx] : DE_NULL, 1u,
+                    isTimelineSemaphore, isTimelineSemaphore ? &waitSemaphoreSubmitInfos[iterIdx] : nullptr, 1u,
                     &cmdBuffersInfo[iterIdx], 1u, &signalSemaphoreSubmitInfos[iterIdx], isTimelineSemaphore,
                     isTimelineSemaphore);
             }
@@ -775,7 +777,7 @@ public:
             {
                 const VkSemaphoreWaitInfo waitInfo = {
                     VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO, // VkStructureType sType;
-                    DE_NULL,                               // const void* pNext;
+                    nullptr,                               // const void* pNext;
                     0u,                                    // VkSemaphoreWaitFlagsKHR flags;
                     1u,                                    // uint32_t semaphoreCount;
                     &semaphoreHandlesB.back(),             // const VkSemaphore* pSemaphores;
@@ -854,7 +856,7 @@ private:
         if (m_resourceDesc.type == RESOURCE_TYPE_IMAGE)
         {
             const VkPhysicalDeviceExternalImageFormatInfo externalInfo = {
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO, DE_NULL, m_memoryHandleType};
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO, nullptr, m_memoryHandleType};
             const VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
                 &externalInfo,
@@ -864,7 +866,7 @@ private:
                 m_readOpSupport->getInResourceUsageFlags() | m_writeOpSupport->getOutResourceUsageFlags(),
                 0u};
             VkExternalImageFormatProperties externalProperties = {
-                VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES, DE_NULL, {0u, 0u, 0u}};
+                VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES, nullptr, {0u, 0u, 0u}};
             VkImageFormatProperties2 formatProperties = {VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
                                                          &externalProperties,
                                                          {
@@ -898,12 +900,12 @@ private:
         else
         {
             const VkPhysicalDeviceExternalBufferInfo info = {
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO, DE_NULL,
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO, nullptr,
 
                 0u, m_readOpSupport->getInResourceUsageFlags() | m_writeOpSupport->getOutResourceUsageFlags(),
                 m_memoryHandleType};
             VkExternalBufferProperties properties = {
-                VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES, DE_NULL, {0u, 0u, 0u}};
+                VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES, nullptr, {0u, 0u, 0u}};
             vki.getPhysicalDeviceExternalBufferProperties(physicalDevice, &info, &properties);
 
             if ((properties.externalMemoryProperties.externalMemoryFeatures &
@@ -1174,8 +1176,8 @@ public:
               getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice())))
         , m_operationContext(
               new OperationContext(context, type, m_deviceInterface, *m_device, *m_allocator, pipelineCacheData))
-        , m_queueA(DE_NULL)
-        , m_queueB(DE_NULL)
+        , m_queueA(nullptr)
+        , m_queueB(nullptr)
         , m_rng(1234)
 
     {
@@ -1199,7 +1201,7 @@ public:
                 break;
             }
         }
-        if (m_queueA == DE_NULL)
+        if (m_queueA == nullptr)
             TCU_THROW(NotSupportedError, "No queue supporting write operation");
 
         VkQueueFlags readOpQueueFlags = m_readOpSupport->getQueueFlags(*m_operationContext);
@@ -1222,11 +1224,11 @@ public:
                     break;
                 }
 
-                if (m_queueB != DE_NULL)
+                if (m_queueB != nullptr)
                     break;
             }
         }
-        if (m_queueB == DE_NULL)
+        if (m_queueB == nullptr)
             TCU_THROW(NotSupportedError, "No queue supporting read operation");
     }
 
@@ -1309,7 +1311,7 @@ public:
                         resource.getImage().subresourceRange // VkImageSubresourceRange            subresourceRange
                     );
                     VkDependencyInfoKHR dependencyInfo =
-                        makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+                        makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
                     synchronizationWrapper->cmdPipelineBarrier(cmdBuffersA.back(), &dependencyInfo);
                 }
                 else
@@ -1323,7 +1325,7 @@ public:
                         0,                           // VkDeviceSize                        offset
                         VK_WHOLE_SIZE                // VkDeviceSize                        size
                     );
-                    VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+                    VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
                     synchronizationWrapper->cmdPipelineBarrier(cmdBuffersA.back(), &dependencyInfo);
                 }
 
@@ -1359,7 +1361,8 @@ public:
             VkSemaphoreSubmitInfoKHR waitSemaphoreSubmitInfo =
                 makeCommonSemaphoreSubmitInfo(semaphoreHandlesA.front(), 1u, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR);
             std::vector<VkSemaphoreSubmitInfoKHR> signalSemaphoreSubmitInfo(
-                iterations.size(), makeCommonSemaphoreSubmitInfo(0u, 0u, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR));
+                iterations.size(),
+                makeCommonSemaphoreSubmitInfo(VK_NULL_HANDLE, 0u, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR));
             std::vector<VkCommandBufferSubmitInfoKHR> commandBufferSubmitInfos(iterations.size(),
                                                                                makeCommonCommandBufferSubmitInfo(0));
             SynchronizationWrapperPtr synchronizationWrapper =
@@ -1372,12 +1375,12 @@ public:
                 signalSemaphoreSubmitInfo[iterIdx].value        = timelineValuesA[iterIdx];
 
                 synchronizationWrapper->addSubmitInfo(
-                    isTimelineSemaphore, isTimelineSemaphore ? &waitSemaphoreSubmitInfo : DE_NULL, 1u,
+                    isTimelineSemaphore, isTimelineSemaphore ? &waitSemaphoreSubmitInfo : nullptr, 1u,
                     &commandBufferSubmitInfos[iterIdx], 1u, &signalSemaphoreSubmitInfo[iterIdx], isTimelineSemaphore,
                     isTimelineSemaphore);
             }
 
-            VK_CHECK(synchronizationWrapper->queueSubmit(m_queueA, DE_NULL));
+            VK_CHECK(synchronizationWrapper->queueSubmit(m_queueA, VK_NULL_HANDLE));
         }
 
         // Submit reads, only waiting waiting on the last write
@@ -1407,7 +1410,7 @@ public:
             {
                 const VkSemaphoreWaitInfo waitInfo = {
                     VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO, // VkStructureType sType;
-                    DE_NULL,                               // const void* pNext;
+                    nullptr,                               // const void* pNext;
                     0u,                                    // VkSemaphoreWaitFlagsKHR flags;
                     1u,                                    // uint32_t semaphoreCount;
                     &semaphoreHandlesB.back(),             // const VkSemaphore* pSemaphores;

@@ -5591,12 +5591,12 @@ dEQP-VKSC.spirv_assembly.instruction.compute.physical_pointers.compute.writes_tw
 dEQP-VKSC.spirv_assembly.instruction.compute.physical_storage_buffer.addrs_in_ssbo
 dEQP-VKSC.spirv_assembly.instruction.compute.physical_storage_buffer.push_constants
 dEQP-VKSC.spirv_assembly.instruction.compute.physical_storage_buffer.push_constants_function
-dEQP-VKSC.spirv_assembly.instruction.compute.physical_storage_buffer.vertex_in_out_in
 dEQP-VKSC.spirv_assembly.instruction.compute.pointer_parameter.buffer_memory
 dEQP-VKSC.spirv_assembly.instruction.compute.pointer_parameter.buffer_memory_variable_pointers
 dEQP-VKSC.spirv_assembly.instruction.compute.pointer_parameter.param_to_global
 dEQP-VKSC.spirv_assembly.instruction.compute.pointer_parameter.param_to_param
 dEQP-VKSC.spirv_assembly.instruction.compute.pointer_parameter.workgroup_memory_variable_pointers
+dEQP-VKSC.spirv_assembly.instruction.compute.relaxed_with_forward_reference.static_method_shader
 dEQP-VKSC.spirv_assembly.instruction.compute.sconvert.i16vec2_to_i32vec2
 dEQP-VKSC.spirv_assembly.instruction.compute.sconvert.i32vec2_to_i16vec2
 dEQP-VKSC.spirv_assembly.instruction.compute.sconvert.int16_to_int32

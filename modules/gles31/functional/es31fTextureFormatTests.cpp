@@ -145,7 +145,7 @@ TextureCubeArrayFormatCase::TextureCubeArrayFormatCase(tcu::TestContext &testCtx
     , m_dataType(dataType)
     , m_size(size)
     , m_depth(depth)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::getContextTypeGLSLVersion(renderCtx.getType()), glu::PRECISION_HIGHP)
     , m_curLayerFace(0)
 {
@@ -162,7 +162,7 @@ TextureCubeArrayFormatCase::TextureCubeArrayFormatCase(tcu::TestContext &testCtx
     , m_dataType(GL_NONE)
     , m_size(size)
     , m_depth(depth)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::getContextTypeGLSLVersion(renderCtx.getType()), glu::PRECISION_HIGHP)
     , m_curLayerFace(0)
 {
@@ -213,7 +213,7 @@ void TextureCubeArrayFormatCase::init(void)
 void TextureCubeArrayFormatCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -326,7 +326,7 @@ TextureBufferFormatCase::TextureBufferFormatCase(Context &ctx, glu::RenderContex
     , m_format(internalFormat)
     , m_width(width)
     , m_maxTextureBufferSize(0)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, ctx.getTestContext().getLog(), glu::getContextTypeGLSLVersion(renderCtx.getType()),
                  glu::PRECISION_HIGHP)
 {
@@ -370,7 +370,7 @@ void TextureBufferFormatCase::init(void)
 void TextureBufferFormatCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -453,14 +453,14 @@ vector<string> toStringVector(const char *const *str, int numStr)
 void TextureFormatTests::init(void)
 {
     bool isGL45 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
-    tcu::TestCaseGroup *unsizedGroup     = DE_NULL;
-    tcu::TestCaseGroup *sizedGroup       = DE_NULL;
-    tcu::TestCaseGroup *sizedBufferGroup = DE_NULL;
+    tcu::TestCaseGroup *unsizedGroup     = nullptr;
+    tcu::TestCaseGroup *sizedGroup       = nullptr;
+    tcu::TestCaseGroup *sizedBufferGroup = nullptr;
     addChild((unsizedGroup = new tcu::TestCaseGroup(m_testCtx, "unsized", "Unsized formats")));
     addChild((sizedGroup = new tcu::TestCaseGroup(m_testCtx, "sized", "Sized formats")));
     addChild((sizedBufferGroup = new tcu::TestCaseGroup(m_testCtx, "buffer", "Sized formats (Buffer)")));
 
-    tcu::TestCaseGroup *sizedCubeArrayGroup = DE_NULL;
+    tcu::TestCaseGroup *sizedCubeArrayGroup = nullptr;
     sizedGroup->addChild(
         (sizedCubeArrayGroup = new tcu::TestCaseGroup(m_testCtx, "cube_array", "Sized formats (2D Array)")));
 

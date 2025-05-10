@@ -98,14 +98,14 @@ void registerOptions(de::cmdline::Parser &parser)
            << Option<TestSet>("t", "testset", "Comma-separated list of include filters.", parseCommaSeparatedList)
            << Option<ExcludeSet>("e", "exclude", "Comma-separated list of exclude filters.", parseCommaSeparatedList,
                                  "")
-           << Option<ContinueFile>(DE_NULL, "continue",
+           << Option<ContinueFile>(nullptr, "continue",
                                    "Continue execution by initializing results from existing test log.")
            << Option<TestLogFile>("o", "out", "Output test log filename.", "TestLog.qpa")
            << Option<InfoLogFile>("i", "info", "Output info log filename.", "InfoLog.txt")
-           << Option<Summary>(DE_NULL, "summary", "Print summary after running tests.", s_yesNo, "yes")
+           << Option<Summary>(nullptr, "summary", "Print summary after running tests.", s_yesNo, "yes")
            << Option<BinaryName>("b", "binaryname", "Test binary path. Relative to working directory.", "<Unused>")
            << Option<WorkingDir>("wd", "workdir", "Working directory for the test execution.", ".")
-           << Option<CmdLineArgs>(DE_NULL, "cmdline", "Additional command line arguments for the test binary.", "");
+           << Option<CmdLineArgs>(nullptr, "cmdline", "Additional command line arguments for the test binary.", "");
 }
 
 } // namespace opt
@@ -459,7 +459,7 @@ xe::CommLink *createCommLink(const CommandLine &cmdLine)
         xe::LocalTcpIpLink *link = new xe::LocalTcpIpLink();
         try
         {
-            link->start(cmdLine.serverBinOrAddress.c_str(), DE_NULL, cmdLine.port);
+            link->start(cmdLine.serverBinOrAddress.c_str(), nullptr, cmdLine.port);
             return link;
         }
         catch (...)
@@ -500,13 +500,13 @@ xe::CommLink *createCommLink(const CommandLine &cmdLine)
     else
     {
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
 #if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID)
 
-static xe::BatchExecutor *s_executor = DE_NULL;
+static xe::BatchExecutor *s_executor = nullptr;
 
 void signalHandler(int, siginfo_t *, void *)
 {
@@ -523,7 +523,7 @@ void setupSignalHandler(xe::BatchExecutor *executor)
     sa.sa_flags     = SA_SIGINFO | SA_RESTART;
     sigfillset(&sa.sa_mask);
 
-    sigaction(SIGINT, &sa, DE_NULL);
+    sigaction(SIGINT, &sa, nullptr);
 }
 
 void resetSignalHandler(void)
@@ -534,13 +534,13 @@ void resetSignalHandler(void)
     sa.sa_flags   = SA_RESTART;
     sigfillset(&sa.sa_mask);
 
-    sigaction(SIGINT, &sa, DE_NULL);
-    s_executor = DE_NULL;
+    sigaction(SIGINT, &sa, nullptr);
+    s_executor = nullptr;
 }
 
 #elif (DE_OS == DE_OS_WIN32)
 
-static xe::BatchExecutor *s_executor = DE_NULL;
+static xe::BatchExecutor *s_executor = nullptr;
 
 void signalHandler(int)
 {
@@ -557,7 +557,7 @@ void setupSignalHandler(xe::BatchExecutor *executor)
 void resetSignalHandler(void)
 {
     signal(SIGINT, SIG_DFL);
-    s_executor = DE_NULL;
+    s_executor = nullptr;
 }
 
 #else

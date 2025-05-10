@@ -141,7 +141,7 @@ tcu::TestStatus MemoryCommitmentTestInstance::iterate(void)
 
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                           // VkStructureType sType;
-        DE_NULL,                                                                       // const void* pNext;
+        nullptr,                                                                       // const void* pNext;
         0u,                                                                            // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                                                              // VkImageType imageType;
         VK_FORMAT_R32_UINT,                                                            // VkFormat format;
@@ -165,7 +165,7 @@ tcu::TestStatus MemoryCommitmentTestInstance::iterate(void)
 
     const VkImageViewCreateInfo colorAttachmentViewParams = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,   // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         0u,                                         // VkImageViewCreateFlags flags;
         *image,                                     // VkImage image;
         VK_IMAGE_VIEW_TYPE_2D,                      // VkImageViewType viewType;
@@ -187,7 +187,7 @@ tcu::TestStatus MemoryCommitmentTestInstance::iterate(void)
 
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             (VkFramebufferCreateFlags)0,
             *renderPass,                // VkRenderPass renderPass;
             1u,                         // uint32_t attachmentCount;
@@ -208,13 +208,13 @@ tcu::TestStatus MemoryCommitmentTestInstance::iterate(void)
                 VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, // VkDescriptorType descriptorType;
                 1u,                                      // uint32_t arraySize;
                 VK_SHADER_STAGE_ALL,                     // VkShaderStageFlags stageFlags;
-                DE_NULL                                  // const VkSampler* pImmutableSamplers;
+                nullptr                                  // const VkSampler* pImmutableSamplers;
             },
         };
 
         const VkDescriptorSetLayoutCreateInfo descriptorLayoutParams = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             (VkDescriptorSetLayoutCreateFlags)0,
             DE_LENGTH_OF_ARRAY(layoutBindings), // uint32_t count;
             layoutBindings                      // const VkDescriptorSetLayoutBinding pBinding;
@@ -227,12 +227,12 @@ tcu::TestStatus MemoryCommitmentTestInstance::iterate(void)
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             (VkPipelineLayoutCreateFlags)0,
             1u,                    // uint32_t descriptorSetCount;
             &*descriptorSetLayout, // const VkDescriptorSetLayout* pSetLayouts;
             0u,                    // uint32_t pushConstantRangeCount;
-            DE_NULL                // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                // const VkPushConstantRange* pPushConstantRanges;
         };
 
         pipelineLayout = createPipelineLayout(vkd, device, &pipelineLayoutParams);
@@ -254,9 +254,9 @@ tcu::TestStatus MemoryCommitmentTestInstance::iterate(void)
                                  device,                // const VkDevice                    device
                                  *pipelineLayout,       // const VkPipelineLayout            pipelineLayout
                                  *vertexShaderModule,   // const VkShaderModule              vertexShaderModule
-                                 DE_NULL,               // const VkShaderModule              tessellationControlModule
-                                 DE_NULL,               // const VkShaderModule              tessellationEvalModule
-                                 DE_NULL,               // const VkShaderModule              geometryShaderModule
+                                 VK_NULL_HANDLE,        // const VkShaderModule              tessellationControlModule
+                                 VK_NULL_HANDLE,        // const VkShaderModule              tessellationEvalModule
+                                 VK_NULL_HANDLE,        // const VkShaderModule              geometryShaderModule
                                  *fragmentShaderModule, // const VkShaderModule              fragmentShaderModule
                                  *renderPass,           // const VkRenderPass                renderPass
                                  viewports,             // const std::vector<VkViewport>&    viewports
@@ -291,7 +291,7 @@ tcu::TestStatus MemoryCommitmentTestInstance::iterate(void)
 
     const VkImageMemoryBarrier initialImageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType sType;
-        DE_NULL,                                  // const void* pNext;
+        nullptr,                                  // const void* pNext;
         0,                                        // VkMemoryOutputFlags outputMask;
         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkMemoryInputFlags inputMask;
         VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout oldLayout;
@@ -309,8 +309,7 @@ tcu::TestStatus MemoryCommitmentTestInstance::iterate(void)
         }};
 
     vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                           (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                           (const VkBufferMemoryBarrier *)DE_NULL, 1, &initialImageBarrier);
+                           (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &initialImageBarrier);
     beginRenderPass(vkd, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, 256u, 256u),
                     tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
     vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipelines);
@@ -393,8 +392,7 @@ tcu::TestStatus MemoryCommitmentAllocateOnlyTestInstance::iterate(void)
                 memoryTypeIndex                         //    uint32_t            memoryTypeIndex
             };
 
-            Move<VkDeviceMemory> memory =
-                allocateMemory(vkd, device, &memAllocInfo, (const VkAllocationCallbacks *)DE_NULL);
+            Move<VkDeviceMemory> memory = allocateMemory(vkd, device, &memAllocInfo, nullptr);
 
             vkd.getDeviceMemoryCommitment(device, memory.get(), &pCommittedMemoryInBytes);
             if (pCommittedMemoryInBytes != 0)
@@ -466,10 +464,9 @@ bool MemoryCommitmentTestInstance::isDeviceMemoryCommitmentOk(const VkMemoryRequ
                 pixelDataSize,                          //    VkDeviceSize        allocationSize
                 memTypeNdx                              //    uint32_t            memoryTypeIndex
             };
-            const VkDevice device      = m_context.getDevice();
-            const DeviceInterface &vkd = m_context.getDeviceInterface();
-            Move<VkDeviceMemory> memory =
-                allocateMemory(vkd, device, &memAllocInfo, (const VkAllocationCallbacks *)DE_NULL);
+            const VkDevice device                = m_context.getDevice();
+            const DeviceInterface &vkd           = m_context.getDeviceInterface();
+            Move<VkDeviceMemory> memory          = allocateMemory(vkd, device, &memAllocInfo, nullptr);
             VkDeviceSize pCommittedMemoryInBytes = 0u;
             vkd.getDeviceMemoryCommitment(device, memory.get(), &pCommittedMemoryInBytes);
             if (pCommittedMemoryInBytes <= memoryRequirements.size)

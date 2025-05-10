@@ -131,7 +131,7 @@ public:
     // Deprecated
     virtual Archive *getArchive(void)
     {
-        return DE_NULL;
+        return nullptr;
     }
 
     virtual IterateResult iterate(void);

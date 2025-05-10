@@ -89,9 +89,9 @@ FboTestCase::IterateResult FboTestCase::iterate(void)
         // Check error.
         uint32_t err = glGetError();
         if (err != GL_NO_ERROR)
-            throw glu::Error(err, glu::getErrorStr(err).toString().c_str(), DE_NULL, __FILE__, __LINE__);
+            throw glu::Error(err, glu::getErrorStr(err).toString().c_str(), nullptr, __FILE__, __LINE__);
 
-        setContext(DE_NULL);
+        setContext(nullptr);
     }
     catch (const FboTestUtil::FboIncompleteException &e)
     {
@@ -117,7 +117,7 @@ FboTestCase::IterateResult FboTestCase::iterate(void)
 
         setContext(&context);
         render(reference);
-        setContext(DE_NULL);
+        setContext(nullptr);
     }
 
     bool isOk = compare(reference, result);
@@ -154,7 +154,7 @@ void FboTestCase::checkError(void)
 {
     uint32_t err = glGetError();
     if (err != GL_NO_ERROR)
-        throw glu::Error((int)err, (string("Got ") + glu::getErrorStr(err).toString()).c_str(), DE_NULL, __FILE__,
+        throw glu::Error((int)err, (string("Got ") + glu::getErrorStr(err).toString()).c_str(), nullptr, __FILE__,
                          __LINE__);
 }
 
@@ -219,6 +219,9 @@ static bool isRequiredFormat(uint32_t format, glu::RenderContext &renderContext)
     case GL_RG16F:
     case GL_R16F:
         return supportsES32 || supportsGL45;
+    case GL_R16:
+    case GL_RG16:
+    case GL_RGBA16:
     case GL_RGB16F:
         return supportsGL45;
 
@@ -230,9 +233,12 @@ static bool isRequiredFormat(uint32_t format, glu::RenderContext &renderContext)
 static std::vector<std::string> getEnablingExtensions(uint32_t format, glu::RenderContext &renderContext)
 {
     const bool supportsES32 = glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+    const bool supportsGL45 = glu::contextSupports(renderContext.getType(), glu::ApiType::core(4, 5));
     std::vector<std::string> out;
 
     DE_ASSERT(!isRequiredFormat(format, renderContext));
+    if (supportsGL45)
+        return out;
 
     switch (format)
     {

@@ -820,12 +820,12 @@ tcu::TestStatus DepthStencilDescriptorInstance::iterate()
             const auto inType = (isIA ? VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT : VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
             const auto view =
                 ((desc.aspect == VK_IMAGE_ASPECT_DEPTH_BIT) ? depthOnlyView.get() : stencilOnlyView.get());
-            inputImgInfos.push_back(makeDescriptorImageInfo(DE_NULL, view, m_params.layout));
+            inputImgInfos.push_back(makeDescriptorImageInfo(VK_NULL_HANDLE, view, m_params.layout));
             inputUpdateBuilder.writeSingle(inputSet.get(), location, inType, &inputImgInfos.back());
 
             // Output descriptors.
             outputImgInfos.push_back(
-                makeDescriptorImageInfo(DE_NULL, outputImageViews[descriptorIdx].get(), outputImgLayout));
+                makeDescriptorImageInfo(VK_NULL_HANDLE, outputImageViews[descriptorIdx].get(), outputImgLayout));
             outputUpdateBuilder.writeSingle(outputSet.get(), location, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
                                             &outputImgInfos.back());
         }
@@ -834,11 +834,12 @@ tcu::TestStatus DepthStencilDescriptorInstance::iterate()
         outputUpdateBuilder.update(vkd, device);
 
         // Samplers.
-        samplerImgInfos.push_back(makeDescriptorImageInfo(samplerFloat.get(), DE_NULL, VK_IMAGE_LAYOUT_UNDEFINED));
+        samplerImgInfos.push_back(
+            makeDescriptorImageInfo(samplerFloat.get(), VK_NULL_HANDLE, VK_IMAGE_LAYOUT_UNDEFINED));
         samplerUpdateBuilder.writeSingle(samplerSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u),
                                          VK_DESCRIPTOR_TYPE_SAMPLER, &samplerImgInfos.back());
 
-        samplerImgInfos.push_back(makeDescriptorImageInfo(samplerInt.get(), DE_NULL, VK_IMAGE_LAYOUT_UNDEFINED));
+        samplerImgInfos.push_back(makeDescriptorImageInfo(samplerInt.get(), VK_NULL_HANDLE, VK_IMAGE_LAYOUT_UNDEFINED));
         samplerUpdateBuilder.writeSingle(samplerSet.get(), DescriptorSetUpdateBuilder::Location::binding(1u),
                                          VK_DESCRIPTOR_TYPE_SAMPLER, &samplerImgInfos.back());
 
@@ -1022,11 +1023,11 @@ tcu::TestStatus DepthStencilDescriptorInstance::iterate()
         colorBlendInfo.attachmentCount = 1u;
         colorBlendInfo.pAttachments    = &colorBlendAttState;
 
-        graphicsPipelines.push_back(makeGraphicsPipeline(vkd, device, pipelineLayout.get(), vertModule.get(), DE_NULL,
-                                                         DE_NULL, DE_NULL, fragModule.get(), // Shader modules.
-                                                         renderPass.get(), 0u /*subpass*/, &vertexInputInfo,
-                                                         &inputAssemblyInfo, nullptr, &viewportInfo, &rasterizationInfo,
-                                                         &multisampleInfo, &dsStateInfo, &colorBlendInfo, nullptr));
+        graphicsPipelines.push_back(makeGraphicsPipeline(
+            vkd, device, pipelineLayout.get(), vertModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+            fragModule.get(), // Shader modules.
+            renderPass.get(), 0u /*subpass*/, &vertexInputInfo, &inputAssemblyInfo, nullptr, &viewportInfo,
+            &rasterizationInfo, &multisampleInfo, &dsStateInfo, &colorBlendInfo, nullptr));
 
         // When the stencil test is enabled, we need a second pipeline changing the reference value so the stencil test passes the second time.
         if (m_params.needsStencilTest())
@@ -1035,7 +1036,7 @@ tcu::TestStatus DepthStencilDescriptorInstance::iterate()
             dsStateInfo.back.reference  = stencilPassVal;
 
             graphicsPipelines.push_back(makeGraphicsPipeline(
-                vkd, device, pipelineLayout.get(), vertModule.get(), DE_NULL, DE_NULL, DE_NULL,
+                vkd, device, pipelineLayout.get(), vertModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
                 fragModule.get(), // Shader modules.
                 renderPass.get(), 0u /*subpass*/, &vertexInputInfo, &inputAssemblyInfo, nullptr, &viewportInfo,
                 &rasterizationInfo, &multisampleInfo, &dsStateInfo, &colorBlendInfo, nullptr));

@@ -112,7 +112,7 @@ struct Buffer
 };
 
 de::MovePtr<vk::Allocation> allocateAndBindMemory(Context &context, vk::VkBuffer buffer, vk::MemoryRequirement memReqs,
-                                                  vk::VkDeviceSize *allocationSize = DE_NULL)
+                                                  vk::VkDeviceSize *allocationSize = nullptr)
 {
     const vk::DeviceInterface &vkd         = context.getDeviceInterface();
     const vk::VkMemoryRequirements bufReqs = vk::getBufferMemoryRequirements(vkd, context.getDevice(), buffer);
@@ -135,7 +135,7 @@ vk::Move<vk::VkBuffer> createBuffer(Context &context, vk::VkDeviceSize bufferSiz
 
     const vk::VkBufferCreateInfo bufferInfo = {
         vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                  // const void* pNext;
+        nullptr,                                  // const void* pNext;
         0u,                                       // VkBufferCreateFlags flags;
         bufferSize,                               // VkDeviceSize size;
         usageFlags,                               // VkBufferUsageFlags usage;
@@ -196,7 +196,7 @@ tcu::TestStatus SSBOCornerCaseInstance::iterate(void)
         poolBuilder.build(vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
     const vk::VkDescriptorSetAllocateInfo allocInfo = {
-        vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL, *descriptorPool, 1u, &descriptorSetLayout.get(),
+        vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, *descriptorPool, 1u, &descriptorSetLayout.get(),
     };
 
     const vk::Unique<vk::VkDescriptorSet> descriptorSet(allocateDescriptorSet(vk, device, &allocInfo));
@@ -232,7 +232,7 @@ tcu::TestStatus SSBOCornerCaseInstance::iterate(void)
 
     vk::VkBufferDeviceAddressInfo info{
         vk::VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType sType;
-        DE_NULL,                                          // const void* pNext;
+        nullptr,                                          // const void* pNext;
         descriptor.buffer                                 // VkBuffer            buffer
     };
 
@@ -251,7 +251,7 @@ tcu::TestStatus SSBOCornerCaseInstance::iterate(void)
 
     const vk::VkPipelineLayoutCreateInfo pipelineLayoutParams = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                           // const void* pNext;
+        nullptr,                                           // const void* pNext;
         (vk::VkPipelineLayoutCreateFlags)0,
         1u,                    // uint32_t descriptorSetCount;
         &*descriptorSetLayout, // const VkDescriptorSetLayout* pSetLayouts;
@@ -264,23 +264,23 @@ tcu::TestStatus SSBOCornerCaseInstance::iterate(void)
         createShaderModule(vk, device, m_context.getBinaryCollection().get("compute"), 0));
     const vk::VkPipelineShaderStageCreateInfo pipelineShaderStageParams = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                 // const void* pNext;
+        nullptr,                                                 // const void* pNext;
         (vk::VkPipelineShaderStageCreateFlags)0,
         vk::VK_SHADER_STAGE_COMPUTE_BIT, // VkShaderStage stage;
         *shaderModule,                   // VkShader shader;
         "main",                          //
-        DE_NULL,                         // const VkSpecializationInfo* pSpecializationInfo;
+        nullptr,                         // const VkSpecializationInfo* pSpecializationInfo;
     };
     const vk::VkComputePipelineCreateInfo pipelineCreateInfo = {
         vk::VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                            // const void* pNext;
+        nullptr,                                            // const void* pNext;
         0,                                                  // VkPipelineCreateFlags flags;
         pipelineShaderStageParams,                          // VkPipelineShaderStageCreateInfo stage;
         *pipelineLayout,                                    // VkPipelineLayout layout;
-        DE_NULL,                                            // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                     // VkPipeline basePipelineHandle;
         0,                                                  // int32_t basePipelineIndex;
     };
-    vk::Move<vk::VkPipeline> pipeline(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo));
+    vk::Move<vk::VkPipeline> pipeline(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
 
     vk::Move<vk::VkCommandPool> cmdPool(
         createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
@@ -295,7 +295,7 @@ tcu::TestStatus SSBOCornerCaseInstance::iterate(void)
                         &addr);
 
     vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                             &descriptorSet.get(), 0u, DE_NULL);
+                             &descriptorSet.get(), 0u, nullptr);
 
     vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
 

@@ -357,7 +357,7 @@ BaseRenderingTestInstance::BaseRenderingTestInstance(Context &context, VkSampleC
 
         const VkImageCreateInfo imageCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                             // const void* pNext;
+            nullptr,                             // const void* pNext;
             0u,                                  // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
             m_imageFormat,                       // VkFormat format;
@@ -373,14 +373,14 @@ BaseRenderingTestInstance::BaseRenderingTestInstance(Context &context, VkSampleC
             VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
         };
 
-        m_image = vk::createImage(vkd, vkDevice, &imageCreateInfo, DE_NULL);
+        m_image = vk::createImage(vkd, vkDevice, &imageCreateInfo, nullptr);
 
         m_imageMemory = allocator.allocate(getImageMemoryRequirements(vkd, vkDevice, *m_image), MemoryRequirement::Any);
         VK_CHECK(vkd.bindImageMemory(vkDevice, *m_image, m_imageMemory->getMemory(), m_imageMemory->getOffset()));
 
         const VkImageCreateInfo secondDrawImageCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                             // const void* pNext;
+            nullptr,                             // const void* pNext;
             0u,                                  // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
             m_imageFormat,                       // VkFormat format;
@@ -396,7 +396,7 @@ BaseRenderingTestInstance::BaseRenderingTestInstance(Context &context, VkSampleC
             VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
         };
 
-        m_secondDrawImage = vk::createImage(vkd, vkDevice, &secondDrawImageCreateInfo, DE_NULL);
+        m_secondDrawImage = vk::createImage(vkd, vkDevice, &secondDrawImageCreateInfo, nullptr);
 
         m_secondDrawImageMemory =
             allocator.allocate(getImageMemoryRequirements(vkd, vkDevice, *m_secondDrawImage), MemoryRequirement::Any);
@@ -408,7 +408,7 @@ BaseRenderingTestInstance::BaseRenderingTestInstance(Context &context, VkSampleC
     {
         const VkImageViewCreateInfo imageViewCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkImageViewCreateFlags flags;
             *m_image,                                 // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -423,11 +423,11 @@ BaseRenderingTestInstance::BaseRenderingTestInstance(Context &context, VkSampleC
             },                             // VkImageSubresourceRange subresourceRange;
         };
 
-        m_imageView = vk::createImageView(vkd, vkDevice, &imageViewCreateInfo, DE_NULL);
+        m_imageView = vk::createImageView(vkd, vkDevice, &imageViewCreateInfo, nullptr);
 
         const VkImageViewCreateInfo secondDrawImageViewCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkImageViewCreateFlags flags;
             *m_secondDrawImage,                       // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -442,7 +442,7 @@ BaseRenderingTestInstance::BaseRenderingTestInstance(Context &context, VkSampleC
             },                             // VkImageSubresourceRange subresourceRange;
         };
 
-        m_secondDrawImageView = vk::createImageView(vkd, vkDevice, &secondDrawImageViewCreateInfo, DE_NULL);
+        m_secondDrawImageView = vk::createImageView(vkd, vkDevice, &secondDrawImageViewCreateInfo, nullptr);
     }
 
     if (m_multisampling)
@@ -462,7 +462,7 @@ BaseRenderingTestInstance::BaseRenderingTestInstance(Context &context, VkSampleC
 
             const VkImageCreateInfo imageCreateInfo = {
                 VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                             // const void* pNext;
+                nullptr,                             // const void* pNext;
                 0u,                                  // VkImageCreateFlags flags;
                 VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
                 m_imageFormat,                       // VkFormat format;
@@ -478,13 +478,13 @@ BaseRenderingTestInstance::BaseRenderingTestInstance(Context &context, VkSampleC
                 VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
             };
 
-            m_resolvedImage = vk::createImage(vkd, vkDevice, &imageCreateInfo, DE_NULL);
+            m_resolvedImage = vk::createImage(vkd, vkDevice, &imageCreateInfo, nullptr);
             m_resolvedImageMemory =
                 allocator.allocate(getImageMemoryRequirements(vkd, vkDevice, *m_resolvedImage), MemoryRequirement::Any);
             VK_CHECK(vkd.bindImageMemory(vkDevice, *m_resolvedImage, m_resolvedImageMemory->getMemory(),
                                          m_resolvedImageMemory->getOffset()));
 
-            m_secondDrawResolvedImage       = vk::createImage(vkd, vkDevice, &imageCreateInfo, DE_NULL);
+            m_secondDrawResolvedImage       = vk::createImage(vkd, vkDevice, &imageCreateInfo, nullptr);
             m_secondDrawResolvedImageMemory = allocator.allocate(
                 getImageMemoryRequirements(vkd, vkDevice, *m_secondDrawResolvedImage), MemoryRequirement::Any);
             VK_CHECK(vkd.bindImageMemory(vkDevice, *m_secondDrawResolvedImage,
@@ -496,7 +496,7 @@ BaseRenderingTestInstance::BaseRenderingTestInstance(Context &context, VkSampleC
         {
             const VkImageViewCreateInfo imageViewCreateInfo = {
                 VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                  // const void* pNext;
+                nullptr,                                  // const void* pNext;
                 0u,                                       // VkImageViewCreateFlags flags;
                 *m_resolvedImage,                         // VkImage image;
                 VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -511,9 +511,9 @@ BaseRenderingTestInstance::BaseRenderingTestInstance(Context &context, VkSampleC
                 },                             // VkImageSubresourceRange subresourceRange;
             };
 
-            m_resolvedImageView = vk::createImageView(vkd, vkDevice, &imageViewCreateInfo, DE_NULL);
+            m_resolvedImageView = vk::createImageView(vkd, vkDevice, &imageViewCreateInfo, nullptr);
 
-            m_secondDrawResolvedImageView = vk::createImageView(vkd, vkDevice, &imageViewCreateInfo, DE_NULL);
+            m_secondDrawResolvedImageView = vk::createImageView(vkd, vkDevice, &imageViewCreateInfo, nullptr);
         }
     }
 
@@ -558,28 +558,28 @@ BaseRenderingTestInstance::BaseRenderingTestInstance(Context &context, VkSampleC
             0u,                                                // VkSubpassDescriptionFlags flags;
             VK_PIPELINE_BIND_POINT_GRAPHICS,                   // VkPipelineBindPoint pipelineBindPoint;
             0u,                                                // uint32_t inputAttachmentCount;
-            DE_NULL,                                           // const VkAttachmentReference* pInputAttachments;
+            nullptr,                                           // const VkAttachmentReference* pInputAttachments;
             1u,                                                // uint32_t colorAttachmentCount;
             &attachmentRef,                                    // const VkAttachmentReference* pColorAttachments;
-            m_multisampling ? &resolveAttachmentRef : DE_NULL, // const VkAttachmentReference* pResolveAttachments;
-            DE_NULL,                                           // const VkAttachmentReference* pDepthStencilAttachment;
+            m_multisampling ? &resolveAttachmentRef : nullptr, // const VkAttachmentReference* pResolveAttachments;
+            nullptr,                                           // const VkAttachmentReference* pDepthStencilAttachment;
             0u,                                                // uint32_t preserveAttachmentCount;
-            DE_NULL,                                           // const VkAttachmentReference* pPreserveAttachments;
+            nullptr,                                           // const VkAttachmentReference* pPreserveAttachments;
         };
 
         const VkRenderPassCreateInfo renderPassCreateInfo = {
             VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkRenderPassCreateFlags flags;
             m_multisampling ? 2u : 1u,                 // uint32_t attachmentCount;
             attachmentDesc,                            // const VkAttachmentDescription* pAttachments;
             1u,                                        // uint32_t subpassCount;
             &subpassDesc,                              // const VkSubpassDescription* pSubpasses;
             0u,                                        // uint32_t dependencyCount;
-            DE_NULL,                                   // const VkSubpassDependency* pDependencies;
+            nullptr,                                   // const VkSubpassDependency* pDependencies;
         };
 
-        m_renderPass = createRenderPass(vkd, vkDevice, &renderPassCreateInfo, DE_NULL);
+        m_renderPass = createRenderPass(vkd, vkDevice, &renderPassCreateInfo, nullptr);
     }
 
     // FrameBuffer
@@ -588,7 +588,7 @@ BaseRenderingTestInstance::BaseRenderingTestInstance(Context &context, VkSampleC
 
         const VkFramebufferCreateInfo framebufferCreateInfo = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             m_multisampling ? 2u : 1u,                 // uint32_t attachmentCount;
@@ -598,7 +598,7 @@ BaseRenderingTestInstance::BaseRenderingTestInstance(Context &context, VkSampleC
             1u,                                        // uint32_t layers;
         };
 
-        m_frameBuffer = createFramebuffer(vkd, vkDevice, &framebufferCreateInfo, DE_NULL);
+        m_frameBuffer = createFramebuffer(vkd, vkDevice, &framebufferCreateInfo, nullptr);
 
         const VkImageView secondDrawAttachments[] = {
             *m_secondDrawImageView,
@@ -607,7 +607,7 @@ BaseRenderingTestInstance::BaseRenderingTestInstance(Context &context, VkSampleC
 
         const VkFramebufferCreateInfo secondDrawFramebufferCreateInfo = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             m_multisampling ? 2u : 1u,                 // uint32_t attachmentCount;
@@ -617,14 +617,14 @@ BaseRenderingTestInstance::BaseRenderingTestInstance(Context &context, VkSampleC
             1u,                                        // uint32_t layers;
         };
 
-        m_secondDrawFrameBuffer = createFramebuffer(vkd, vkDevice, &secondDrawFramebufferCreateInfo, DE_NULL);
+        m_secondDrawFrameBuffer = createFramebuffer(vkd, vkDevice, &secondDrawFramebufferCreateInfo, nullptr);
     }
 
     // Uniform Buffer
     {
         const VkBufferCreateInfo bufferCreateInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             m_uniformBufferSize,                  // VkDeviceSize size;
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,   // VkBufferUsageFlags usage;
@@ -652,7 +652,7 @@ BaseRenderingTestInstance::BaseRenderingTestInstance(Context &context, VkSampleC
 
         const VkDescriptorSetAllocateInfo descriptorSetParams = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            DE_NULL,
+            nullptr,
             *m_descriptorPool,
             1u,
             &m_descriptorSetLayout.get(),
@@ -668,30 +668,30 @@ BaseRenderingTestInstance::BaseRenderingTestInstance(Context &context, VkSampleC
 
         const VkWriteDescriptorSet writeDescritporSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
-            DE_NULL,                                // const void* pNext;
+            nullptr,                                // const void* pNext;
             *m_descriptorSet,                       // VkDescriptorSet destSet;
             0,                                      // uint32_t destBinding;
             0,                                      // uint32_t destArrayElement;
             1u,                                     // uint32_t count;
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,      // VkDescriptorType descriptorType;
-            DE_NULL,                                // const VkDescriptorImageInfo* pImageInfo;
+            nullptr,                                // const VkDescriptorImageInfo* pImageInfo;
             &descriptorBufferInfo,                  // const VkDescriptorBufferInfo* pBufferInfo;
-            DE_NULL                                 // const VkBufferView* pTexelBufferView;
+            nullptr                                 // const VkBufferView* pTexelBufferView;
         };
 
-        vkd.updateDescriptorSets(vkDevice, 1u, &writeDescritporSet, 0u, DE_NULL);
+        vkd.updateDescriptorSets(vkDevice, 1u, &writeDescritporSet, 0u, nullptr);
     }
 
     // Pipeline Layout
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             1u,                                            // uint32_t descriptorSetCount;
             &m_descriptorSetLayout.get(),                  // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_pipelineLayout = createPipelineLayout(vkd, vkDevice, &pipelineLayoutCreateInfo);
@@ -709,7 +709,7 @@ BaseRenderingTestInstance::BaseRenderingTestInstance(Context &context, VkSampleC
     {
         const VkBufferCreateInfo bufferCreateInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             m_resultBufferSize,                   // VkDeviceSize size;
             VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
@@ -727,7 +727,7 @@ BaseRenderingTestInstance::BaseRenderingTestInstance(Context &context, VkSampleC
 
         const VkBufferCreateInfo secondDrawBufferCreateInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             m_resultBufferSize,                   // VkDeviceSize size;
             VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
@@ -774,7 +774,7 @@ void BaseRenderingTestInstance::addImageTransitionBarrier(VkCommandBuffer comman
 
     const VkImageMemoryBarrier imageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         srcAccessMask,                          // VkAccessFlags srcAccessMask;
         dstAccessMask,                          // VkAccessFlags dstAccessMask;
         oldLayout,                              // VkImageLayout oldLayout;
@@ -785,7 +785,7 @@ void BaseRenderingTestInstance::addImageTransitionBarrier(VkCommandBuffer comman
         subResourcerange                        // VkImageSubresourceRange subresourceRange;
     };
 
-    vkd.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, 0, 0, DE_NULL, 0, DE_NULL, 1, &imageBarrier);
+    vkd.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
 }
 
 void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::vector<tcu::Vec4> &vertexData,
@@ -816,8 +816,9 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
     const VkQueue queue             = m_context.getUniversalQueue();
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     Allocator &allocator            = m_context.getDefaultAllocator();
-    const size_t attributeBatchSize = de::dataSize(positionData);
     const auto offscreenData        = getOffScreenPoints();
+    const size_t attributeBatchSize = std::max(de::dataSize(positionData), de::dataSize(offscreenData));
+    const size_t totalAttributeSize = attributeBatchSize * 2u; // Position and color.
 
     Move<VkCommandBuffer> commandBuffer;
     Move<VkPipeline> graphicsPipeline;
@@ -844,12 +845,14 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
         };
 
         const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2] = {
+            // Positions.
             {
                 0u,                            // uint32_t location;
                 0u,                            // uint32_t binding;
                 VK_FORMAT_R32G32B32A32_SFLOAT, // VkFormat format;
                 0u                             // uint32_t offsetInBytes;
             },
+            // Colors.
             {
                 1u,                            // uint32_t location;
                 0u,                            // uint32_t binding;
@@ -859,7 +862,7 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             0,                                                         // VkPipelineVertexInputStateCreateFlags flags;
             1u,                                                        // uint32_t bindingCount;
             &vertexInputBindingDescription,  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -872,12 +875,12 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
 
         const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
+            nullptr,                                                  // const void* pNext;
             0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
             m_sampleCount,                                            // VkSampleCountFlagBits rasterizationSamples;
             VK_FALSE,                                                 // VkBool32 sampleShadingEnable;
             0.0f,                                                     // float minSampleShading;
-            DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+            nullptr,                                                  // const VkSampleMask* pSampleMask;
             VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
             VK_FALSE                                                  // VkBool32 alphaToOneEnable;
         };
@@ -887,15 +890,15 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
         const VkPipelineRasterizationLineStateCreateInfoEXT *lineRasterizationStateInfo =
             getLineRasterizationStateCreateInfo();
 
-        if (lineRasterizationStateInfo != DE_NULL && lineRasterizationStateInfo->sType != 0)
+        if (lineRasterizationStateInfo != nullptr && lineRasterizationStateInfo->sType != 0)
             appendStructurePtrToVulkanChain(&rasterizationStateInfo.pNext, lineRasterizationStateInfo);
 
         VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType                      sType
-            DE_NULL,                                              // const void*                          pNext
+            nullptr,                                              // const void*                          pNext
             0u,                                                   // VkPipelineDynamicStateCreateFlags    flags
             0u,     // uint32_t                             dynamicStateCount
-            DE_NULL // const VkDynamicState*                pDynamicStates
+            nullptr // const VkDynamicState*                pDynamicStates
         };
 
         std::vector<VkDynamicState> dynamicStates;
@@ -919,10 +922,10 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
             vkDevice,              // const VkDevice                                device
             *m_pipelineLayout,     // const VkPipelineLayout                        pipelineLayout
             *m_vertexShaderModule, // const VkShaderModule                          vertexShaderModule
-            DE_NULL,               // const VkShaderModule                          tessellationControlShaderModule
-            DE_NULL,               // const VkShaderModule                          tessellationEvalShaderModule
-            DE_NULL,               // const VkShaderModule                          geometryShaderModule
-            rasterizationStateInfo.rasterizerDiscardEnable ? DE_NULL : *m_fragmentShaderModule,
+            VK_NULL_HANDLE,        // const VkShaderModule                          tessellationControlShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                          tessellationEvalShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                          geometryShaderModule
+            rasterizationStateInfo.rasterizerDiscardEnable ? VK_NULL_HANDLE : *m_fragmentShaderModule,
             // const VkShaderModule                          fragmentShaderModule
             *m_renderPass,           // const VkRenderPass                            renderPass
             viewports,               // const std::vector<VkViewport>&                viewports
@@ -933,7 +936,7 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
             &vertexInputStateParams, // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
             &rasterizationStateInfo, // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
             &multisampleStateParams, // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-            DE_NULL,                 // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo,
+            nullptr,                 // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo,
             getColorBlendStateCreateInfo(), // const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo,
             &dynamicStateCreateInfo);       // const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
     }
@@ -942,9 +945,9 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
     {
         const VkBufferCreateInfo vertexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
-            attributeBatchSize * 2,               // VkDeviceSize size;
+            totalAttributeSize,                   // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             1u,                                   // uint32_t queueFamilyCount;
@@ -959,18 +962,29 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
                                       vertexBufferMemory->getOffset()));
 
         // Load vertices into vertex buffer
-        deMemcpy(vertexBufferMemory->getHostPtr(), positionData.data(), attributeBatchSize);
-        deMemcpy(reinterpret_cast<uint8_t *>(vertexBufferMemory->getHostPtr()) + attributeBatchSize, colorData.data(),
-                 attributeBatchSize);
+        deMemcpy(vertexBufferMemory->getHostPtr(), de::dataOrNull(positionData), de::dataSize(positionData));
+        deMemcpy(reinterpret_cast<uint8_t *>(vertexBufferMemory->getHostPtr()) + attributeBatchSize,
+                 de::dataOrNull(colorData), de::dataSize(colorData));
         flushAlloc(vkd, vkDevice, *vertexBufferMemory);
     }
 
-    if (!offscreenData.empty())
+    if (!offscreenData.empty() && isDynamicTopology())
     {
-        // Concatenate positions with vertex colors.
-        const std::vector<tcu::Vec4> colors(offscreenData.size(), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-        std::vector<tcu::Vec4> fullOffscreenData(offscreenData);
-        fullOffscreenData.insert(fullOffscreenData.end(), colors.begin(), colors.end());
+        const std::vector<tcu::Vec4> offscreenColors(offscreenData.size(), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+        // Concatenate positions with vertex colors, respecting the color attribute offset. Positions come first and
+        // color are supposed to start at attributeBatchSize offset. See vertexInputAttributeDescriptions.
+        DE_ASSERT(attributeBatchSize >= de::dataSize(offscreenData));
+        DE_ASSERT(attributeBatchSize % sizeof(tcu::Vec4) == 0u);
+
+        const auto itemsPerAttribute = static_cast<uint32_t>(attributeBatchSize / sizeof(tcu::Vec4));
+        const auto totalItemCount    = itemsPerAttribute * 2u; // positions and colors.
+
+        // Positions at the start, colors at attributeBatchSize offset.
+        std::vector<tcu::Vec4> fullOffscreenData(totalItemCount, tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f));
+        deMemcpy(de::dataOrNull(fullOffscreenData), de::dataOrNull(offscreenData), de::dataSize(offscreenData));
+        deMemcpy(&fullOffscreenData.at(itemsPerAttribute), de::dataOrNull(offscreenColors),
+                 de::dataSize(offscreenColors));
 
         // Copy full data to offscreen data buffer.
         const auto offscreenBufferSizeSz = de::dataSize(fullOffscreenData);
@@ -1020,23 +1034,24 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
 
     vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
     vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1,
-                              &m_descriptorSet.get(), 0u, DE_NULL);
+                              &m_descriptorSet.get(), 0u, nullptr);
     if (getLineStippleDynamic())
     {
-        vkd.cmdSetLineStippleKHR(*commandBuffer, lineStippleFactor, lineStipplePattern);
 #ifndef CTS_USES_VULKANSC
-        if (isDynamicTopology())
+        vkd.cmdSetLineStipple(*commandBuffer, lineStippleFactor, lineStipplePattern);
+        if (isDynamicTopology() && (!!offscreenDataBuffer))
         {
-            // Using a dynamic topology can interact with the dynamic line stipple set above on some implementations, so we try to
-            // check nothing breaks here. We set a wrong topology, draw some offscreen data and go back to the right topology
-            // _without_ re-setting the line stipple again. Side effects should not be visible.
-            DE_ASSERT(!!offscreenDataBuffer);
+            // Using a dynamic topology can interact with the dynamic line stipple set above on some implementations, so
+            // we try to check nothing breaks here. We set a wrong topology, draw some offscreen data and go back to the
+            // right topology _without_ re-setting the line stipple again. Side effects should not be visible.
 
             vkd.cmdSetPrimitiveTopology(*commandBuffer, getWrongTopology());
             vkd.cmdBindVertexBuffers(*commandBuffer, 0, 1, &offscreenDataBuffer->get(), &vertexBufferOffset);
             vkd.cmdDraw(*commandBuffer, static_cast<uint32_t>(offscreenData.size()), 1u, 0u, 0u);
             vkd.cmdSetPrimitiveTopology(*commandBuffer, getRightTopology());
         }
+#else
+        vkd.cmdSetLineStippleEXT(*commandBuffer, lineStippleFactor, lineStipplePattern);
 #endif // CTS_USES_VULKANSC
     }
 
@@ -1078,14 +1093,13 @@ void BaseRenderingTestInstance::drawPrimitives(
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     Allocator &allocator            = m_context.getDefaultAllocator();
     const size_t attributeBatchSize = de::dataSize(positionData);
-    const auto offscreenData        = getOffScreenPoints();
+    const size_t totalAttributeSize = attributeBatchSize * 2u;
 
     Move<VkCommandBuffer> commandBuffer;
     Move<VkPipeline> graphicsPipeline;
     Move<VkPipeline> noStippleGraphicsPipeline;
     Move<VkBuffer> vertexBuffer;
     de::MovePtr<Allocation> vertexBufferMemory;
-    std::unique_ptr<BufferWithMemory> offscreenDataBuffer;
     const VkPhysicalDeviceProperties properties = m_context.getDeviceProperties();
 
     if (attributeBatchSize > properties.limits.maxVertexInputAttributeOffset)
@@ -1120,7 +1134,7 @@ void BaseRenderingTestInstance::drawPrimitives(
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             0,                                                         // VkPipelineVertexInputStateCreateFlags flags;
             1u,                                                        // uint32_t bindingCount;
             &vertexInputBindingDescription,  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -1133,12 +1147,12 @@ void BaseRenderingTestInstance::drawPrimitives(
 
         const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
+            nullptr,                                                  // const void* pNext;
             0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
             m_sampleCount,                                            // VkSampleCountFlagBits rasterizationSamples;
             VK_FALSE,                                                 // VkBool32 sampleShadingEnable;
             0.0f,                                                     // float minSampleShading;
-            DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+            nullptr,                                                  // const VkSampleMask* pSampleMask;
             VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
             VK_FALSE                                                  // VkBool32 alphaToOneEnable;
         };
@@ -1148,15 +1162,15 @@ void BaseRenderingTestInstance::drawPrimitives(
         const VkPipelineRasterizationLineStateCreateInfoEXT *lineRasterizationStateInfo =
             getLineRasterizationStateCreateInfo();
 
-        if (lineRasterizationStateInfo != DE_NULL && lineRasterizationStateInfo->sType != 0)
+        if (lineRasterizationStateInfo != nullptr && lineRasterizationStateInfo->sType != 0)
             appendStructurePtrToVulkanChain(&rasterizationStateInfo.pNext, lineRasterizationStateInfo);
 
         VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType                      sType
-            DE_NULL,                                              // const void*                          pNext
+            nullptr,                                              // const void*                          pNext
             0u,                                                   // VkPipelineDynamicStateCreateFlags    flags
             0u,     // uint32_t                             dynamicStateCount
-            DE_NULL // const VkDynamicState*                pDynamicStates
+            nullptr // const VkDynamicState*                pDynamicStates
         };
 
         std::vector<VkDynamicState> dynamicStates;
@@ -1180,10 +1194,10 @@ void BaseRenderingTestInstance::drawPrimitives(
             vkDevice,              // const VkDevice                                device
             *m_pipelineLayout,     // const VkPipelineLayout                        pipelineLayout
             *m_vertexShaderModule, // const VkShaderModule                          vertexShaderModule
-            DE_NULL,               // const VkShaderModule                          tessellationControlShaderModule
-            DE_NULL,               // const VkShaderModule                          tessellationEvalShaderModule
-            DE_NULL,               // const VkShaderModule                          geometryShaderModule
-            rasterizationStateInfo.rasterizerDiscardEnable ? DE_NULL : *m_fragmentShaderModule,
+            VK_NULL_HANDLE,        // const VkShaderModule                          tessellationControlShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                          tessellationEvalShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                          geometryShaderModule
+            rasterizationStateInfo.rasterizerDiscardEnable ? VK_NULL_HANDLE : *m_fragmentShaderModule,
             // const VkShaderModule                          fragmentShaderModule
             *m_renderPass,           // const VkRenderPass                            renderPass
             viewports,               // const std::vector<VkViewport>&                viewports
@@ -1194,14 +1208,14 @@ void BaseRenderingTestInstance::drawPrimitives(
             &vertexInputStateParams, // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
             &rasterizationStateInfo, // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
             &multisampleStateParams, // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-            DE_NULL,                 // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo,
+            nullptr,                 // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo,
             getColorBlendStateCreateInfo(), // const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo,
             &dynamicStateCreateInfo);       // const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
 
         // No stipple graphics pipeline
         VkPipelineRasterizationLineStateCreateInfoEXT noStippleLineRasterizationStateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                                             // const void* pNext;
+            nullptr,                                                             // const void* pNext;
             m_lineRasterizationStateInfo.lineRasterizationMode, // VkLineRasterizationModeEXT lineRasterizationMode;
             VK_FALSE,                                           // VkBool32 stippledLineEnable;
             1,                                                  // uint32_t lineStippleFactor;
@@ -1214,10 +1228,10 @@ void BaseRenderingTestInstance::drawPrimitives(
             vkDevice,              // const VkDevice                                device
             *m_pipelineLayout,     // const VkPipelineLayout                        pipelineLayout
             *m_vertexShaderModule, // const VkShaderModule                          vertexShaderModule
-            DE_NULL,               // const VkShaderModule                          tessellationControlShaderModule
-            DE_NULL,               // const VkShaderModule                          tessellationEvalShaderModule
-            DE_NULL,               // const VkShaderModule                          geometryShaderModule
-            rasterizationStateInfo.rasterizerDiscardEnable ? DE_NULL : *m_fragmentShaderModule,
+            VK_NULL_HANDLE,        // const VkShaderModule                          tessellationControlShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                          tessellationEvalShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                          geometryShaderModule
+            rasterizationStateInfo.rasterizerDiscardEnable ? VK_NULL_HANDLE : *m_fragmentShaderModule,
             // const VkShaderModule                          fragmentShaderModule
             *m_renderPass,           // const VkRenderPass                            renderPass
             viewports,               // const std::vector<VkViewport>&                viewports
@@ -1228,7 +1242,7 @@ void BaseRenderingTestInstance::drawPrimitives(
             &vertexInputStateParams, // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
             &rasterizationStateInfo, // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
             &multisampleStateParams, // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-            DE_NULL,                 // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo,
+            nullptr,                 // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo,
             getColorBlendStateCreateInfo(), // const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo,
             &dynamicStateCreateInfo);       // const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
     }
@@ -1237,9 +1251,9 @@ void BaseRenderingTestInstance::drawPrimitives(
     {
         const VkBufferCreateInfo vertexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
-            attributeBatchSize * 2,               // VkDeviceSize size;
+            totalAttributeSize,                   // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             1u,                                   // uint32_t queueFamilyCount;
@@ -1254,32 +1268,10 @@ void BaseRenderingTestInstance::drawPrimitives(
                                       vertexBufferMemory->getOffset()));
 
         // Load vertices into vertex buffer
-        deMemcpy(vertexBufferMemory->getHostPtr(), positionData.data(), attributeBatchSize);
-        deMemcpy(reinterpret_cast<uint8_t *>(vertexBufferMemory->getHostPtr()) + attributeBatchSize, colorData.data(),
-                 attributeBatchSize);
+        deMemcpy(vertexBufferMemory->getHostPtr(), de::dataOrNull(positionData), de::dataSize(positionData));
+        deMemcpy(reinterpret_cast<uint8_t *>(vertexBufferMemory->getHostPtr()) + attributeBatchSize,
+                 de::dataOrNull(colorData), de::dataSize(colorData));
         flushAlloc(vkd, vkDevice, *vertexBufferMemory);
-    }
-
-    if (!offscreenData.empty())
-    {
-        // Concatenate positions with vertex colors.
-        const std::vector<tcu::Vec4> colors(offscreenData.size(), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-        std::vector<tcu::Vec4> fullOffscreenData(offscreenData);
-        fullOffscreenData.insert(fullOffscreenData.end(), colors.begin(), colors.end());
-
-        // Copy full data to offscreen data buffer.
-        const auto offscreenBufferSizeSz = de::dataSize(fullOffscreenData);
-        const auto offscreenBufferSize   = static_cast<VkDeviceSize>(offscreenBufferSizeSz);
-        const auto offscreenDataCreateInfo =
-            makeBufferCreateInfo(offscreenBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-
-        offscreenDataBuffer.reset(
-            new BufferWithMemory(vkd, vkDevice, allocator, offscreenDataCreateInfo, MemoryRequirement::HostVisible));
-        auto &bufferAlloc = offscreenDataBuffer->getAllocation();
-        void *dataPtr     = bufferAlloc.getHostPtr();
-
-        deMemcpy(dataPtr, fullOffscreenData.data(), offscreenBufferSizeSz);
-        flushAlloc(vkd, vkDevice, bufferAlloc);
     }
 
     // Create Command Buffer
@@ -1312,7 +1304,7 @@ void BaseRenderingTestInstance::drawPrimitives(
 
     vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
     vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1,
-                              &m_descriptorSet.get(), 0u, DE_NULL);
+                              &m_descriptorSet.get(), 0u, nullptr);
     vkd.cmdBindVertexBuffers(*commandBuffer, 0, 1, &vertexBuffer.get(), &vertexBufferOffset);
     vkd.cmdDraw(*commandBuffer, (uint32_t)positionData.size() / 2, 1, 0, 0);
     endRenderPass(vkd, *commandBuffer);
@@ -1322,7 +1314,7 @@ void BaseRenderingTestInstance::drawPrimitives(
                     vk::makeRect2D(0, 0, renderSize, renderSize), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
     vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *noStippleGraphicsPipeline);
     vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1,
-                              &m_descriptorSet.get(), 0u, DE_NULL);
+                              &m_descriptorSet.get(), 0u, nullptr);
     vkd.cmdBindVertexBuffers(*commandBuffer, 0, 1, &vertexBuffer.get(), &vertexBufferOffset);
     vkd.cmdDraw(*commandBuffer, (uint32_t)positionData.size() / 2, 1, (uint32_t)positionData.size() / 2, 0);
     endRenderPass(vkd, *commandBuffer);
@@ -1359,7 +1351,7 @@ const VkPipelineRasterizationStateCreateInfo *BaseRenderingTestInstance::getRast
 {
     static VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         0,                                                          // VkPipelineRasterizationStateCreateFlags flags;
         false,                                                      // VkBool32 depthClipEnable;
         false,                                                      // VkBool32 rasterizerDiscardEnable;
@@ -1382,7 +1374,7 @@ VkPipelineRasterizationLineStateCreateInfoEXT BaseRenderingTestInstance::initLin
 {
     VkPipelineRasterizationLineStateCreateInfoEXT lineRasterizationStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT, // VkStructureType sType;
-        DE_NULL,                                                             // const void* pNext;
+        nullptr,                                                             // const void* pNext;
         VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, // VkLineRasterizationModeEXT lineRasterizationMode;
         VK_FALSE,                               // VkBool32 stippledLineEnable;
         1,                                      // uint32_t lineStippleFactor;
@@ -1417,7 +1409,7 @@ const VkPipelineColorBlendStateCreateInfo *BaseRenderingTestInstance::getColorBl
 
     static const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         0,                                                        // VkPipelineColorBlendStateCreateFlags flags;
         false,                                                    // VkBool32 logicOpEnable;
         VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -1453,7 +1445,7 @@ protected:
 
 private:
     virtual void generateTriangles(int iteration, std::vector<tcu::Vec4> &outData,
-                                   std::vector<TriangleSceneSpec::SceneTriangle> &outTriangles) = DE_NULL;
+                                   std::vector<TriangleSceneSpec::SceneTriangle> &outTriangles) = 0;
     virtual bool compareAndVerify(std::vector<TriangleSceneSpec::SceneTriangle> &triangles, tcu::Surface &resultImage,
                                   std::vector<tcu::Vec4> &drawBuffer);
 
@@ -1568,7 +1560,7 @@ protected:
 
 private:
     virtual void generateLines(int iteration, std::vector<tcu::Vec4> &outData,
-                               std::vector<LineSceneSpec::SceneLine> &outLines) = DE_NULL;
+                               std::vector<LineSceneSpec::SceneLine> &outLines) = 0;
     virtual bool compareAndVerify(std::vector<LineSceneSpec::SceneLine> &lines, tcu::Surface &resultImage,
                                   tcu::Surface &secondDrawResultImage, std::vector<tcu::Vec4> &drawBuffer);
 
@@ -1620,15 +1612,19 @@ BaseLineTestInstance::BaseLineTestInstance(Context &context, VkPrimitiveTopology
 {
     DE_ASSERT(m_primitiveWideness < PRIMITIVEWIDENESS_LAST);
 
-    if (m_lineRasterizationMode != VK_LINE_RASTERIZATION_MODE_KHR_LAST)
+    if (m_lineRasterizationMode != VK_LINE_RASTERIZATION_MODE_LAST)
     {
         if (context.isDeviceFunctionalitySupported("VK_KHR_line_rasterization") ||
             context.isDeviceFunctionalitySupported("VK_EXT_line_rasterization"))
         {
             VkPhysicalDeviceLineRasterizationPropertiesKHR lineRasterizationProperties = {
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_KHR, // VkStructureType sType;
-                DE_NULL,                                                             // void* pNext;
-                0u, // uint32_t lineSubPixelPrecisionBits;
+#ifndef CTS_USES_VULKANSC
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES, // VkStructureType sType;
+#else
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT, // VkStructureType sType;
+#endif                   // #ifndef CTS_USES_VULKANSC
+                nullptr, // void* pNext;
+                0u,      // uint32_t lineSubPixelPrecisionBits;
             };
 
             VkPhysicalDeviceProperties2 deviceProperties2;
@@ -1694,7 +1690,7 @@ BaseLineTestInstance::BaseLineTestInstance(Context &context, VkPrimitiveTopology
             const VkImageUsageFlags imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
             const VkImageCreateInfo imageCreateInfo = {
                 VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                  // VkStructureType sType;
-                DE_NULL,                                              // const void* pNext;
+                nullptr,                                              // const void* pNext;
                 0u,                                                   // VkImageCreateFlags flags;
                 VK_IMAGE_TYPE_2D,                                     // VkImageType imageType;
                 m_imageFormat,                                        // VkFormat format;
@@ -1710,7 +1706,7 @@ BaseLineTestInstance::BaseLineTestInstance(Context &context, VkPrimitiveTopology
                 VK_IMAGE_LAYOUT_UNDEFINED                             // VkImageLayout initialLayout;
             };
 
-            m_additionalImage = vk::createImage(vkd, vkDevice, &imageCreateInfo, DE_NULL);
+            m_additionalImage = vk::createImage(vkd, vkDevice, &imageCreateInfo, nullptr);
 
             m_additionalImageMemory = allocator.allocate(getImageMemoryRequirements(vkd, vkDevice, *m_additionalImage),
                                                          MemoryRequirement::Any);
@@ -1722,7 +1718,7 @@ BaseLineTestInstance::BaseLineTestInstance(Context &context, VkPrimitiveTopology
         {
             const VkImageViewCreateInfo imageViewCreateInfo = {
                 VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                  // const void* pNext;
+                nullptr,                                  // const void* pNext;
                 0u,                                       // VkImageViewCreateFlags flags;
                 *m_additionalImage,                       // VkImage image;
                 VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -1737,7 +1733,7 @@ BaseLineTestInstance::BaseLineTestInstance(Context &context, VkPrimitiveTopology
                 },                             // VkImageSubresourceRange subresourceRange;
             };
 
-            m_additionalImageView = vk::createImageView(vkd, vkDevice, &imageViewCreateInfo, DE_NULL);
+            m_additionalImageView = vk::createImageView(vkd, vkDevice, &imageViewCreateInfo, nullptr);
         }
 
         if (m_multisampling)
@@ -1747,7 +1743,7 @@ BaseLineTestInstance::BaseLineTestInstance(Context &context, VkPrimitiveTopology
                                                      VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
                 const VkImageCreateInfo imageCreateInfo = {
                     VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                  // VkStructureType sType;
-                    DE_NULL,                                              // const void* pNext;
+                    nullptr,                                              // const void* pNext;
                     0u,                                                   // VkImageCreateFlags flags;
                     VK_IMAGE_TYPE_2D,                                     // VkImageType imageType;
                     m_imageFormat,                                        // VkFormat format;
@@ -1763,7 +1759,7 @@ BaseLineTestInstance::BaseLineTestInstance(Context &context, VkPrimitiveTopology
                     VK_IMAGE_LAYOUT_UNDEFINED                             // VkImageLayout initialLayout;
                 };
 
-                m_additionalResolvedImage       = vk::createImage(vkd, vkDevice, &imageCreateInfo, DE_NULL);
+                m_additionalResolvedImage       = vk::createImage(vkd, vkDevice, &imageCreateInfo, nullptr);
                 m_additionalResolvedImageMemory = allocator.allocate(
                     getImageMemoryRequirements(vkd, vkDevice, *m_additionalResolvedImage), MemoryRequirement::Any);
                 VK_CHECK(vkd.bindImageMemory(vkDevice, *m_additionalResolvedImage,
@@ -1775,7 +1771,7 @@ BaseLineTestInstance::BaseLineTestInstance(Context &context, VkPrimitiveTopology
             {
                 const VkImageViewCreateInfo imageViewCreateInfo = {
                     VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-                    DE_NULL,                                  // const void* pNext;
+                    nullptr,                                  // const void* pNext;
                     0u,                                       // VkImageViewCreateFlags flags;
                     *m_additionalResolvedImage,               // VkImage image;
                     VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -1789,7 +1785,7 @@ BaseLineTestInstance::BaseLineTestInstance(Context &context, VkPrimitiveTopology
                         1u,                        // uint32_t arraySize;
                     },                             // VkImageSubresourceRange subresourceRange;
                 };
-                m_additionalResolvedImageView = vk::createImageView(vkd, vkDevice, &imageViewCreateInfo, DE_NULL);
+                m_additionalResolvedImageView = vk::createImageView(vkd, vkDevice, &imageViewCreateInfo, nullptr);
             }
         }
 
@@ -1798,7 +1794,7 @@ BaseLineTestInstance::BaseLineTestInstance(Context &context, VkPrimitiveTopology
 
             const VkFramebufferCreateInfo framebufferCreateInfo = {
                 VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                   // const void* pNext;
+                nullptr,                                   // const void* pNext;
                 0u,                                        // VkFramebufferCreateFlags flags;
                 *m_renderPass,                             // VkRenderPass renderPass;
                 m_multisampling ? 2u : 1u,                 // uint32_t attachmentCount;
@@ -1807,14 +1803,14 @@ BaseLineTestInstance::BaseLineTestInstance(Context &context, VkPrimitiveTopology
                 m_additionalRenderSize,                    // uint32_t height;
                 1u,                                        // uint32_t layers;
             };
-            m_additionalFrameBuffer = createFramebuffer(vkd, vkDevice, &framebufferCreateInfo, DE_NULL);
+            m_additionalFrameBuffer = createFramebuffer(vkd, vkDevice, &framebufferCreateInfo, nullptr);
         }
 
         // Framebuffer
         {
             const VkBufferCreateInfo bufferCreateInfo = {
                 VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                              // const void* pNext;
+                nullptr,                              // const void* pNext;
                 0u,                                   // VkBufferCreateFlags flags;
                 m_additionalResultBufferSize,         // VkDeviceSize size;
                 VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
@@ -2246,7 +2242,7 @@ VkPipelineRasterizationLineStateCreateInfoEXT BaseLineTestInstance::initLineRast
 {
     VkPipelineRasterizationLineStateCreateInfoEXT lineRasterizationStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT, // VkStructureType sType;
-        DE_NULL,                                                             // const void* pNext;
+        nullptr,                                                             // const void* pNext;
         m_lineRasterizationMode,                     // VkLineRasterizationModeEXT lineRasterizationMode;
         getLineStippleEnable() ? VK_TRUE : VK_FALSE, // VkBool32 stippledLineEnable;
         1,                                           // uint32_t lineStippleFactor;
@@ -2271,8 +2267,8 @@ VkPipelineRasterizationLineStateCreateInfoEXT BaseLineTestInstance::initLineRast
 
 const VkPipelineRasterizationLineStateCreateInfoEXT *BaseLineTestInstance::getLineRasterizationStateCreateInfo(void)
 {
-    if (m_lineRasterizationMode == VK_LINE_RASTERIZATION_MODE_KHR_LAST)
-        return DE_NULL;
+    if (m_lineRasterizationMode == VK_LINE_RASTERIZATION_MODE_LAST)
+        return nullptr;
 
     if (m_lineRasterizationStateInfo.sType != VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT)
         m_lineRasterizationStateInfo = initLineRasterizationStateCreateInfo();
@@ -2554,7 +2550,18 @@ PointSizeTestInstance::PointSizeTestInstance(Context &context, uint32_t renderSi
 
 tcu::TestStatus PointSizeTestInstance::iterate(void)
 {
-    tcu::TextureLevel resultBuffer(mapVkFormat(m_format), m_renderSize, m_renderSize);
+    tcu::TextureLevel resultBuffer(mapVkFormat(m_format));
+
+    try
+    {
+        resultBuffer.setSize(m_renderSize, m_renderSize);
+    }
+    catch (const std::bad_alloc &)
+    {
+        // Don't treat allocation failure as a test failure.
+        return tcu::TestStatus(QP_TEST_RESULT_NOT_SUPPORTED, "Too big system memory allocation");
+    }
+
     tcu::PixelBufferAccess access(resultBuffer.getAccess());
     PointSceneSpec::ScenePoint point;
 
@@ -2640,7 +2647,7 @@ Move<VkPipeline> PointSizeTestInstance::createPipeline(void)
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                   // const void* pNext;
+        nullptr,                                                   // const void* pNext;
         0,                                                         // VkPipelineVertexInputStateCreateFlags flags;
         1u,                                                        // uint32_t bindingCount;
         &vertexInputBindingDescription,  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -2653,9 +2660,9 @@ Move<VkPipeline> PointSizeTestInstance::createPipeline(void)
         vkDevice,                // const VkDevice                                     device
         *m_pipelineLayout,       // const VkPipelineLayout                             pipelineLayout
         *m_vertexShaderModule,   // const VkShaderModule                                 vertexShaderModule
-        DE_NULL,                 // const VkShaderModule                                 tessellationControlShaderModule
-        DE_NULL,                 // const VkShaderModule                                 tessellationEvalShaderModule
-        DE_NULL,                 // const VkShaderModule                                 geometryShaderModule
+        VK_NULL_HANDLE,          // const VkShaderModule                                 tessellationControlShaderModule
+        VK_NULL_HANDLE,          // const VkShaderModule                                 tessellationEvalShaderModule
+        VK_NULL_HANDLE,          // const VkShaderModule                                 geometryShaderModule
         *m_fragmentShaderModule, // const VkShaderModule                                 fragmentShaderModule
         *m_renderPass,           // const VkRenderPass                                 renderPass
         viewports,               // const std::vector<VkViewport>&                     viewports
@@ -2665,8 +2672,8 @@ Move<VkPipeline> PointSizeTestInstance::createPipeline(void)
         0u,                               // const uint32_t                                     patchControlPoints
         &vertexInputStateParams, // const VkPipelineVertexInputStateCreateInfo*         vertexInputStateCreateInfo
         getRasterizationStateCreateInfo(), // const VkPipelineRasterizationStateCreateInfo*     rasterizationStateCreateInfo
-        DE_NULL, // const VkPipelineMultisampleStateCreateInfo*         multisampleStateCreateInfo
-        DE_NULL, // const VkPipelineDepthStencilStateCreateInfo*         depthStencilStateCreateInfo,
+        nullptr, // const VkPipelineMultisampleStateCreateInfo*         multisampleStateCreateInfo
+        nullptr, // const VkPipelineDepthStencilStateCreateInfo*         depthStencilStateCreateInfo,
         getColorBlendStateCreateInfo()); // const VkPipelineColorBlendStateCreateInfo*         colorBlendStateCreateInfo
 }
 
@@ -2679,7 +2686,7 @@ void PointSizeTestInstance::bindDrawData(VkCommandBuffer commandBuffer, VkPipeli
 
     vkd.cmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
     vkd.cmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1,
-                              &m_descriptorSet.get(), 0u, DE_NULL);
+                              &m_descriptorSet.get(), 0u, nullptr);
     vkd.cmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 
     // Set Point Size
@@ -2715,7 +2722,7 @@ void PointSizeTestInstance::drawPoint(tcu::PixelBufferAccess &result, PointScene
     {
         const VkBufferCreateInfo vertexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             attributeBatchSize * 2,               // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
@@ -2907,7 +2914,7 @@ Move<VkPipeline> PointDefaultSizeTestInstance::createPipeline(void)
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                   // const void* pNext;
+        nullptr,                                                   // const void* pNext;
         0,                                                         // VkPipelineVertexInputStateCreateFlags flags;
         1u,                                                        // uint32_t bindingCount;
         &vertexInputBindingDescription,   // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -2932,8 +2939,8 @@ Move<VkPipeline> PointDefaultSizeTestInstance::createPipeline(void)
         patchCount,              // const uint32_t                                     patchControlPoints
         &vertexInputStateParams, // const VkPipelineVertexInputStateCreateInfo*         vertexInputStateCreateInfo
         getRasterizationStateCreateInfo(), // const VkPipelineRasterizationStateCreateInfo*     rasterizationStateCreateInfo
-        DE_NULL, // const VkPipelineMultisampleStateCreateInfo*         multisampleStateCreateInfo
-        DE_NULL, // const VkPipelineDepthStencilStateCreateInfo*         depthStencilStateCreateInfo,
+        nullptr, // const VkPipelineMultisampleStateCreateInfo*         multisampleStateCreateInfo
+        nullptr, // const VkPipelineDepthStencilStateCreateInfo*         depthStencilStateCreateInfo,
         getColorBlendStateCreateInfo()); // const VkPipelineColorBlendStateCreateInfo*         colorBlendStateCreateInfo
 }
 
@@ -3384,8 +3391,7 @@ uint32_t ConservativeTestCase<ConcreteTestInstance>::getSubPixelResolution(Conte
 {
     if (isUseLineSubPixel(context))
     {
-        const VkPhysicalDeviceLineRasterizationPropertiesKHR lineRasterizationProperties =
-            context.getLineRasterizationProperties();
+        const auto &lineRasterizationProperties = context.getLineRasterizationProperties();
 
         return lineRasterizationProperties.lineSubPixelPrecisionBits;
     }
@@ -4248,7 +4254,7 @@ const std::vector<VkPipelineRasterizationConservativeStateCreateInfoEXT> Conserv
     {
         const VkPipelineRasterizationConservativeStateCreateInfoEXT rasterizationConservativeStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT, //  VkStructureType sType;
-            DE_NULL,                                                                     //  const void* pNext;
+            nullptr,                                                                     //  const void* pNext;
             (VkPipelineRasterizationConservativeStateCreateFlagsEXT)0, //  VkPipelineRasterizationConservativeStateCreateFlagsEXT flags;
             m_conservativeTestConfig
                 .conservativeRasterizationMode, //  VkConservativeRasterizationModeEXT conservativeRasterizationMode;
@@ -4306,7 +4312,7 @@ const VkPipelineRasterizationStateCreateInfo *ConservativeTraingleTestInstance::
 const VkPipelineRasterizationLineStateCreateInfoEXT *ConservativeTraingleTestInstance::
     getLineRasterizationStateCreateInfo(void)
 {
-    return DE_NULL;
+    return nullptr;
 }
 
 class ConservativeLineTestInstance : public BaseLineTestInstance
@@ -5001,7 +5007,7 @@ const std::vector<VkPipelineRasterizationConservativeStateCreateInfoEXT> Conserv
     {
         const VkPipelineRasterizationConservativeStateCreateInfoEXT rasterizationConservativeStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT, //  VkStructureType sType;
-            DE_NULL,                                                                     //  const void* pNext;
+            nullptr,                                                                     //  const void* pNext;
             (VkPipelineRasterizationConservativeStateCreateFlagsEXT)0, //  VkPipelineRasterizationConservativeStateCreateFlagsEXT flags;
             m_conservativeTestConfig
                 .conservativeRasterizationMode, //  VkConservativeRasterizationModeEXT conservativeRasterizationMode;
@@ -5053,7 +5059,7 @@ const VkPipelineRasterizationStateCreateInfo *ConservativeLineTestInstance::getR
 const VkPipelineRasterizationLineStateCreateInfoEXT *ConservativeLineTestInstance::getLineRasterizationStateCreateInfo(
     void)
 {
-    return DE_NULL;
+    return nullptr;
 }
 
 class ConservativePointTestInstance : public PointTestInstance
@@ -5433,7 +5439,7 @@ const std::vector<VkPipelineRasterizationConservativeStateCreateInfoEXT> Conserv
     {
         const VkPipelineRasterizationConservativeStateCreateInfoEXT rasterizationConservativeStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT, //  VkStructureType sType;
-            DE_NULL,                                                                     //  const void* pNext;
+            nullptr,                                                                     //  const void* pNext;
             (VkPipelineRasterizationConservativeStateCreateFlagsEXT)0, //  VkPipelineRasterizationConservativeStateCreateFlagsEXT flags;
             m_conservativeTestConfig
                 .conservativeRasterizationMode, //  VkConservativeRasterizationModeEXT conservativeRasterizationMode;
@@ -5485,7 +5491,7 @@ const VkPipelineRasterizationStateCreateInfo *ConservativePointTestInstance::get
 const VkPipelineRasterizationLineStateCreateInfoEXT *ConservativePointTestInstance::getLineRasterizationStateCreateInfo(
     void)
 {
-    return DE_NULL;
+    return nullptr;
 }
 
 template <typename ConcreteTestInstance>
@@ -5530,12 +5536,14 @@ public:
             if (m_wideness == PRIMITIVEWIDENESS_WIDE)
                 context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_WIDE_LINES);
 
+            const auto &lineRasterizationFeatures = context.getLineRasterizationFeatures();
+
             switch (m_lineRasterizationMode)
             {
             default:
                 TCU_THROW(InternalError, "Unknown line rasterization mode");
 
-            case VK_LINE_RASTERIZATION_MODE_KHR_LAST:
+            case VK_LINE_RASTERIZATION_MODE_LAST:
             {
                 if (m_strictness == PRIMITIVESTRICTNESS_STRICT)
                     if (!context.getDeviceProperties().limits.strictLines)
@@ -5553,37 +5561,37 @@ public:
                 if (!context.getDeviceProperties().limits.strictLines)
                     TCU_THROW(NotSupportedError, "Strict rasterization is not supported");
 
-                if (getLineStippleEnable() && !context.getLineRasterizationFeatures().stippledRectangularLines)
+                if (getLineStippleEnable() && !lineRasterizationFeatures.stippledRectangularLines)
                     TCU_THROW(NotSupportedError, "Stippled rectangular lines not supported");
                 break;
             }
 
             case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT:
             {
-                if (!context.getLineRasterizationFeatures().rectangularLines)
+                if (!lineRasterizationFeatures.rectangularLines)
                     TCU_THROW(NotSupportedError, "Rectangular lines not supported");
 
-                if (getLineStippleEnable() && !context.getLineRasterizationFeatures().stippledRectangularLines)
+                if (getLineStippleEnable() && !lineRasterizationFeatures.stippledRectangularLines)
                     TCU_THROW(NotSupportedError, "Stippled rectangular lines not supported");
                 break;
             }
 
             case VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT:
             {
-                if (!context.getLineRasterizationFeatures().bresenhamLines)
+                if (!lineRasterizationFeatures.bresenhamLines)
                     TCU_THROW(NotSupportedError, "Bresenham lines not supported");
 
-                if (getLineStippleEnable() && !context.getLineRasterizationFeatures().stippledBresenhamLines)
+                if (getLineStippleEnable() && !lineRasterizationFeatures.stippledBresenhamLines)
                     TCU_THROW(NotSupportedError, "Stippled Bresenham lines not supported");
                 break;
             }
 
             case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT:
             {
-                if (!context.getLineRasterizationFeatures().smoothLines)
+                if (!lineRasterizationFeatures.smoothLines)
                     TCU_THROW(NotSupportedError, "Smooth lines not supported");
 
-                if (getLineStippleEnable() && !context.getLineRasterizationFeatures().stippledSmoothLines)
+                if (getLineStippleEnable() && !lineRasterizationFeatures.stippledSmoothLines)
                     TCU_THROW(NotSupportedError, "Stippled smooth lines not supported");
                 break;
             }
@@ -6290,7 +6298,7 @@ const VkPipelineColorBlendStateCreateInfo *FillRuleTestInstance::getColorBlendSt
 
     static const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         0,                                                        // VkPipelineColorBlendStateCreateFlags flags;
         false,                                                    // VkBool32 logicOpEnable;
         VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -6593,7 +6601,7 @@ const VkPipelineRasterizationStateCreateInfo *CullingTestInstance::getRasterizat
 {
     static VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         0,                                                          // VkPipelineRasterizationStateCreateFlags flags;
         false,                                                      // VkBool32 depthClipEnable;
         false,                                                      // VkBool32 rasterizerDiscardEnable;
@@ -6723,7 +6731,7 @@ tcu::TestStatus DiscardTestInstance::iterate(void)
 
     const VkQueryPoolCreateInfo queryPoolCreateInfo = {
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,                    // VkStructureType                    sType
-        DE_NULL,                                                     // const void*                        pNext
+        nullptr,                                                     // const void*                        pNext
         (VkQueryPoolCreateFlags)0,                                   // VkQueryPoolCreateFlags            flags
         VK_QUERY_TYPE_PIPELINE_STATISTICS,                           // VkQueryType                        queryType
         1u,                                                          // uint32_t                            entryCount
@@ -6980,7 +6988,7 @@ void DiscardTestInstance::drawPrimitivesDiscard(tcu::Surface &result, const std:
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             0,                                                         // VkPipelineVertexInputStateCreateFlags flags;
             1u,                                                        // uint32_t bindingCount;
             &vertexInputBindingDescription,  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -6993,12 +7001,12 @@ void DiscardTestInstance::drawPrimitivesDiscard(tcu::Surface &result, const std:
 
         const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
+            nullptr,                                                  // const void* pNext;
             0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
             m_sampleCount,                                            // VkSampleCountFlagBits rasterizationSamples;
             VK_FALSE,                                                 // VkBool32 sampleShadingEnable;
             0.0f,                                                     // float minSampleShading;
-            DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+            nullptr,                                                  // const VkSampleMask* pSampleMask;
             VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
             VK_FALSE                                                  // VkBool32 alphaToOneEnable;
         };
@@ -7010,10 +7018,10 @@ void DiscardTestInstance::drawPrimitivesDiscard(tcu::Surface &result, const std:
             vkDevice,              // const VkDevice                                    device
             *m_pipelineLayout,     // const VkPipelineLayout                            pipelineLayout
             *m_vertexShaderModule, // const VkShaderModule                                vertexShaderModule
-            DE_NULL, // const VkShaderModule                                tessellationControlShaderModule
-            DE_NULL, // const VkShaderModule                                tessellationEvalShaderModule
-            DE_NULL, // const VkShaderModule                                geometryShaderModule
-            rasterizationStateInfo->rasterizerDiscardEnable ? DE_NULL : *m_fragmentShaderModule,
+            VK_NULL_HANDLE, // const VkShaderModule                                tessellationControlShaderModule
+            VK_NULL_HANDLE, // const VkShaderModule                                tessellationEvalShaderModule
+            VK_NULL_HANDLE, // const VkShaderModule                                geometryShaderModule
+            rasterizationStateInfo->rasterizerDiscardEnable ? VK_NULL_HANDLE : *m_fragmentShaderModule,
             // const VkShaderModule                                fragmentShaderModule
             *m_renderPass,           // const VkRenderPass                                renderPass
             viewports,               // const std::vector<VkViewport>&                    viewports
@@ -7024,7 +7032,7 @@ void DiscardTestInstance::drawPrimitivesDiscard(tcu::Surface &result, const std:
             &vertexInputStateParams, // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
             rasterizationStateInfo,  // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
             &multisampleStateParams, // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
-            DE_NULL,                 // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo,
+            nullptr,                 // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo,
             getColorBlendStateCreateInfo()); // const VkPipelineColorBlendStateCreateInfo*        colorBlendStateCreateInfo
     }
 
@@ -7032,7 +7040,7 @@ void DiscardTestInstance::drawPrimitivesDiscard(tcu::Surface &result, const std:
     {
         const VkBufferCreateInfo vertexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             attributeBatchSize * 2,               // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
@@ -7093,7 +7101,7 @@ void DiscardTestInstance::drawPrimitivesDiscard(tcu::Surface &result, const std:
     vkd.cmdBeginQuery(*commandBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);
     vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
     vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1,
-                              &m_descriptorSet.get(), 0u, DE_NULL);
+                              &m_descriptorSet.get(), 0u, nullptr);
     vkd.cmdBindVertexBuffers(*commandBuffer, 0, 1, &vertexBuffer.get(), &vertexBufferOffset);
     vkd.cmdDraw(*commandBuffer, (uint32_t)positionData.size(), 1, 0, 0);
     vkd.cmdEndQuery(*commandBuffer, *queryPool, 0u);
@@ -7897,19 +7905,19 @@ tcu::TestStatus StrideZeroInstance::iterate(void)
         &vertexAttribute, // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
     };
 
-    const auto renderArea     = vk::makeRect2D(kImageDim, kImageDim);
-    const auto viewports      = std::vector<vk::VkViewport>(1, vk::makeViewport(kImageDim, kImageDim));
-    const auto scissors       = std::vector<vk::VkRect2D>(1, renderArea);
-    const auto pipelineLayout = vk::makePipelineLayout(vkd, device);
-    const auto vertexShader   = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
-    const auto fragmentShader = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
-    const auto renderPass     = vk::makeRenderPass(vkd, device, StrideZeroCase::kColorFormat);
-    const auto graphicsPipeline =
-        vk::makeGraphicsPipeline(vkd, device, pipelineLayout.get(), vertexShader.get(), DE_NULL, DE_NULL, DE_NULL,
-                                 fragmentShader.get(), // Shaders.
-                                 renderPass.get(), viewports, scissors, vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u,
-                                 0u,            // Render pass, viewports, scissors, topology.
-                                 &vertexInput); // Vertex input state.
+    const auto renderArea       = vk::makeRect2D(kImageDim, kImageDim);
+    const auto viewports        = std::vector<vk::VkViewport>(1, vk::makeViewport(kImageDim, kImageDim));
+    const auto scissors         = std::vector<vk::VkRect2D>(1, renderArea);
+    const auto pipelineLayout   = vk::makePipelineLayout(vkd, device);
+    const auto vertexShader     = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+    const auto fragmentShader   = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+    const auto renderPass       = vk::makeRenderPass(vkd, device, StrideZeroCase::kColorFormat);
+    const auto graphicsPipeline = vk::makeGraphicsPipeline(
+        vkd, device, pipelineLayout.get(), vertexShader.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+        fragmentShader.get(), // Shaders.
+        renderPass.get(), viewports, scissors, vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u,
+        0u,            // Render pass, viewports, scissors, topology.
+        &vertexInput); // Vertex input state.
     const auto framebuffer =
         vk::makeFramebuffer(vkd, device, renderPass.get(), colorAttachmentView.get(), kImageDim, kImageDim);
 
@@ -8158,9 +8166,9 @@ tcu::TestStatus CullAndPrimitiveIdInstance::iterate()
 
     // Pipeline layout and graphics pipeline.
     const auto pipelineLayout = makePipelineLayout(vkd, device);
-    const auto pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(), vertModule.get(), DE_NULL, DE_NULL,
-                                               DE_NULL, fragModule.get(), renderPass.get(), viewports, scissors,
-                                               VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u /*subpass*/,
+    const auto pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(), vertModule.get(), VK_NULL_HANDLE,
+                                               VK_NULL_HANDLE, VK_NULL_HANDLE, fragModule.get(), renderPass.get(),
+                                               viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u /*subpass*/,
                                                0u /*patchControlPoints*/, &inputState, &rasterizationState);
 
     // Command pool and buffer.
@@ -8920,7 +8928,7 @@ class NonStrictLinesMaintenance5TestInstance : public LinesTestInstance
 public:
     NonStrictLinesMaintenance5TestInstance(Context &context, PrimitiveWideness wideness, uint32_t additionalRenderSize)
         : LinesTestInstance(context, wideness, PRIMITIVESTRICTNESS_NONSTRICT, VK_SAMPLE_COUNT_1_BIT,
-                            LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST, LineStippleFactorCase::DEFAULT,
+                            LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST, LineStippleFactorCase::DEFAULT,
                             additionalRenderSize)
         , m_amIWide(PRIMITIVEWIDENESS_WIDE == wideness)
     {
@@ -8946,8 +8954,8 @@ public:
     NonStrictLineStripMaintenance5TestInstance(Context &context, PrimitiveWideness wideness,
                                                uint32_t additionalRenderSize)
         : LineStripTestInstance(context, wideness, PRIMITIVESTRICTNESS_NONSTRICT, VK_SAMPLE_COUNT_1_BIT,
-                                LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
-                                LineStippleFactorCase::DEFAULT, additionalRenderSize)
+                                LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST, LineStippleFactorCase::DEFAULT,
+                                additionalRenderSize)
         , m_amIWide(PRIMITIVEWIDENESS_WIDE == wideness)
     {
     }
@@ -9047,75 +9055,75 @@ void createRasterizationTests(tcu::TestCaseGroup *rasterizationTests)
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
             testCtx, "strict_lines", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT,
-            LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY in strict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>(
             testCtx, "strict_lines_with_adjacency", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_STRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in strict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>(
             testCtx, "strict_line_strip", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_STRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY in strict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>(
             testCtx, "strict_line_strip_with_adjacency", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_STRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
             testCtx, "strict_lines_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_STRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY in strict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>(
             testCtx, "strict_lines_with_adjacency_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_STRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in strict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>(
             testCtx, "strict_line_strip_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_STRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY in strict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>(
             testCtx, "strict_line_strip_with_adjacency_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_STRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
 
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
             testCtx, "non_strict_lines", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_NONSTRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY in nonstrict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>(
             testCtx, "non_strict_lines_with_adjacency", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_NONSTRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in nonstrict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>(
             testCtx, "non_strict_line_strip", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_NONSTRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY in nonstrict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>(
             testCtx, "non_strict_line_strip_with_adjacency", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_NONSTRICT,
-            true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
             testCtx, "non_strict_lines_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_NONSTRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY in nonstrict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>(
             testCtx, "non_strict_lines_with_adjacency_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_NONSTRICT,
-            true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in nonstrict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>(
             testCtx, "non_strict_line_strip_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_NONSTRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY in nonstrict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>(
             testCtx, "non_strict_line_strip_with_adjacency_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_NONSTRICT,
-            true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
 
         for (int i = 0; i < static_cast<int>(LINESTIPPLE_LAST); ++i)
@@ -10076,20 +10084,20 @@ void createRasterizationTests(tcu::TestCaseGroup *rasterizationTests)
             // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode, verify rasterization result
             nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
                 testCtx, "strict_lines", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_STRICT, true,
-                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
             // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode with wide lines, verify rasterization result
             nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
                 testCtx, "strict_lines_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_STRICT, true,
-                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
 
             // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode, verify rasterization result
             nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
                 testCtx, "non_strict_lines", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_NONSTRICT, true,
-                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
             // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode with wide lines, verify rasterization result
             nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
                 testCtx, "non_strict_lines_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_NONSTRICT, true,
-                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
 
             for (int i = 0; i < static_cast<int>(LINESTIPPLE_LAST); ++i)
             {

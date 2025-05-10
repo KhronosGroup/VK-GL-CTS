@@ -72,7 +72,7 @@ static const char *getFaceDesc(const tcu::CubeFace face)
         return "+Z";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -133,7 +133,7 @@ private:
         tcu::Vec2 topRight;
         tcu::Vec2 layerRange;
 
-        FilterCase(void) : texture(DE_NULL)
+        FilterCase(void) : texture(nullptr)
         {
         }
 
@@ -169,8 +169,8 @@ TextureCubeArrayFilteringCase::TextureCubeArrayFilteringCase(Context &context, c
     , m_size(size)
     , m_depth(depth)
     , m_onlySampleFaceInterior(onlySampleFaceInterior)
-    , m_gradientTex(DE_NULL)
-    , m_gridTex(DE_NULL)
+    , m_gradientTex(nullptr)
+    , m_gridTex(nullptr)
     , m_renderer(context.getRenderContext(), context.getTestContext().getLog(), glu::GLSL_VERSION_310_ES,
                  glu::PRECISION_HIGHP)
     , m_caseNdx(0)
@@ -325,8 +325,8 @@ void TextureCubeArrayFilteringCase::deinit(void)
     delete m_gradientTex;
     delete m_gridTex;
 
-    m_gradientTex = DE_NULL;
-    m_gridTex     = DE_NULL;
+    m_gradientTex = nullptr;
+    m_gridTex     = nullptr;
 
     m_renderer.clear();
     m_cases.clear();

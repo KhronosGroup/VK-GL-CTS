@@ -381,7 +381,7 @@ NumberParsingCase::IterateResult NumberParsingCase::iterate(void)
     gl.useProgram(program.getProgram());
     GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram failed");
 
-    if (m_params.setupUniformsFn != DE_NULL)
+    if (m_params.setupUniformsFn != nullptr)
         m_params.setupUniformsFn(program, gl);
 
     gl.clear(GL_COLOR_BUFFER_BIT);

@@ -80,15 +80,15 @@ public:
     /* Public methods */
     VertexArrayIndirectDrawingBaseCase(deqp::Context &context, const char *name, const char *description);
 
-    virtual void init()   = DE_NULL;
-    virtual void deinit() = DE_NULL;
+    virtual void init()   = 0;
+    virtual void deinit() = 0;
     virtual tcu::TestNode::IterateResult iterate();
 
 protected:
     /* Protected methods */
-    virtual bool draw() = DE_NULL;
+    virtual bool draw() = 0;
     virtual bool verify();
-    virtual bool verifyErrors() = DE_NULL;
+    virtual bool verifyErrors() = 0;
 };
 
 /** Test verifies if MultiDrawArraysIndirectCountARB function works properly.

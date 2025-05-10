@@ -198,7 +198,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
     {
         const VkImageCreateInfo colorImageParams{
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-            DE_NULL,                                                               // const void* pNext;
+            nullptr,                                                               // const void* pNext;
             0u,                                                                    // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
             colorFormat,                                                           // VkFormat format;
@@ -227,7 +227,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
     {
         const VkImageViewCreateInfo colorAttachmentViewParams{
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkImageViewCreateFlags flags;
             *m_colorImage,                            // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -246,7 +246,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
     {
         const VkFramebufferCreateInfo framebufferParams{
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             1u,                                        // uint32_t attachmentCount;
@@ -263,12 +263,12 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams{
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             0u,                                            // uint32_t setLayoutCount;
-            DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_pipelineLayout = PipelineLayoutWrapper(m_params->pipelineConstructionType, vk, device, &pipelineLayoutParams);
@@ -309,19 +309,21 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
         .setDefaultColorBlendState()
         .setupVertexInputState()
         .setupPreRasterizationShaderState(viewports, scissors, m_pipelineLayout, *m_renderPass, 0u, m_vertShaderModule,
-                                          DE_NULL, m_tescShaderModule, m_teseShaderModule, m_geomShaderModule)
+                                          nullptr, m_tescShaderModule, m_teseShaderModule, m_geomShaderModule)
         .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, m_fragShaderModule)
         .setupFragmentOutputState(*m_renderPass)
         .setMonolithicPipelineLayout(m_pipelineLayout)
         .buildPipeline();
 
     // create vertex buffer
+    const std::vector<tcu::Vec4> vertices{
+        tcu::Vec4(1.0f, -1.0f, 0.0f, 1.0f),
+        tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f),
+        tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f),
+    };
     {
-        std::vector<float> vertices{
-            1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f, -1.0f, -1.0f, 0.0f, 1.0f,
-        };
         const VkBufferCreateInfo bufferCreateInfo =
-            makeBufferCreateInfo(vertices.size() * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+            makeBufferCreateInfo(de::dataSize(vertices), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
         m_vertexBuffer = createBuffer(vk, device, &bufferCreateInfo);
         m_vertexBufferAlloc =
@@ -329,7 +331,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
         VK_CHECK(vk.bindBufferMemory(device, *m_vertexBuffer, m_vertexBufferAlloc->getMemory(),
                                      m_vertexBufferAlloc->getOffset()));
 
-        deMemcpy(m_vertexBufferAlloc->getHostPtr(), vertices.data(), vertices.size() * sizeof(float));
+        deMemcpy(m_vertexBufferAlloc->getHostPtr(), de::dataOrNull(vertices), de::dataSize(vertices));
         flushAlloc(vk, device, *m_vertexBufferAlloc);
     }
 
@@ -357,7 +359,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
         makeImageMemoryBarrier(VK_ACCESS_NONE_KHR, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *m_colorImage, subresourceRange);
     vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
                           &attachmentLayoutBarrier);
 
     // render single triangle
@@ -365,7 +367,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
 
     m_graphicsPipeline.bind(*m_cmdBuffer);
     vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &*m_vertexBuffer, &vertexBufferOffset);
-    vk.cmdDraw(*m_cmdBuffer, 4, 1, 0, 0);
+    vk.cmdDraw(*m_cmdBuffer, de::sizeU32(vertices), 1u, 0, 0);
 
     m_renderPass.end(vk, *m_cmdBuffer);
 

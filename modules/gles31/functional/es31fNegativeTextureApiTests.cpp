@@ -2380,7 +2380,7 @@ void texparameterfv(NegativeTestContext &ctx)
 void texparameterIiv(NegativeTestContext &ctx)
 {
     if (!supportsES32orGL45(ctx))
-        throw tcu::NotSupportedError("glTexParameterIiv is not supported.", DE_NULL, __FILE__, __LINE__);
+        throw tcu::NotSupportedError("glTexParameterIiv is not supported.", nullptr, __FILE__, __LINE__);
 
     GLint textureMode[] = {GL_DEPTH_COMPONENT, GL_STENCIL_INDEX, GL_INVALID_ENUM, GL_INVALID_ENUM};
     ctx.beginSection("GL_INVALID_ENUM is generated if target is not a valid target.");
@@ -2493,7 +2493,7 @@ void texparameterIiv(NegativeTestContext &ctx)
 void texparameterIuiv(NegativeTestContext &ctx)
 {
     if (!supportsES32orGL45(ctx))
-        throw tcu::NotSupportedError("glTexParameterIuiv is not supported.", DE_NULL, __FILE__, __LINE__);
+        throw tcu::NotSupportedError("glTexParameterIuiv is not supported.", nullptr, __FILE__, __LINE__);
 
     GLuint textureMode[] = {GL_DEPTH_COMPONENT, GL_STENCIL_INDEX, GL_INVALID_ENUM, GL_INVALID_ENUM};
     ctx.beginSection("GL_INVALID_ENUM is generated if target is not a valid target.");

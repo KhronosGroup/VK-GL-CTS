@@ -1182,9 +1182,9 @@ tcu::TestStatus MeshShaderSyncInstance::iterate(void)
         {
             const auto &stage = mandatoryStages.at(pipelineIdx);
 
-            VkShaderModule taskModule = DE_NULL;
-            VkShaderModule meshModule = DE_NULL;
-            VkShaderModule fragModule = DE_NULL;
+            VkShaderModule taskModule = VK_NULL_HANDLE;
+            VkShaderModule meshModule = VK_NULL_HANDLE;
+            VkShaderModule fragModule = VK_NULL_HANDLE;
 
             const bool lastSubpass    = (pipelineIdx == pipelineCount - 1u);
             const auto pipelineStages = subpassStages(stage, lastSubpass);
@@ -1703,8 +1703,9 @@ tcu::TestStatus BarrierAcrossSecondaryInstance::iterate(void)
     const auto meshModule = createShaderModule(vkd, device, binaries.get("mesh"));
 
     const auto computePipeline = makeComputePipeline(vkd, device, pipelineLayout.get(), compModule.get());
-    const auto meshPipeline    = makeGraphicsPipeline(vkd, device, pipelineLayout.get(), taskModule.get(),
-                                                      meshModule.get(), DE_NULL, renderPass.get(), viewports, scissors);
+    const auto meshPipeline =
+        makeGraphicsPipeline(vkd, device, pipelineLayout.get(), taskModule.get(), meshModule.get(), VK_NULL_HANDLE,
+                             renderPass.get(), viewports, scissors);
 
     // Command pool and command buffers.
     const auto cmdPool          = makeCommandPool(vkd, device, queueIndex);

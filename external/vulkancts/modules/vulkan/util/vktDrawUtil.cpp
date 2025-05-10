@@ -95,7 +95,7 @@ Move<VkCommandBuffer> makeCommandBuffer(const DeviceInterface &vk, const VkDevic
 {
     const VkCommandBufferAllocateInfo info = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         commandPool,                                    // VkCommandPool commandPool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel level;
         1u,                                             // uint32_t commandBufferCount;
@@ -205,7 +205,7 @@ VulkanDrawContext::VulkanDrawContext(Context &context, const FrameBufferState &f
             makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
         const VkImageCreateInfo imageCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                             // const void* pNext;
+            nullptr,                             // const void* pNext;
             (VkImageCreateFlags)0,               // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
             m_framebufferState.colorFormat,      // VkFormat format;
@@ -218,7 +218,7 @@ VulkanDrawContext::VulkanDrawContext(Context &context, const FrameBufferState &f
             usage,                                                // VkImageUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,                            // VkSharingMode sharingMode;
             0u,                                                   // uint32_t queueFamilyIndexCount;
-            DE_NULL,                                              // const uint32_t* pQueueFamilyIndices;
+            nullptr,                                              // const uint32_t* pQueueFamilyIndices;
             VK_IMAGE_LAYOUT_UNDEFINED,                            // VkImageLayout initialLayout;
         };
 
@@ -252,7 +252,7 @@ VulkanDrawContext::VulkanDrawContext(Context &context, const FrameBufferState &f
 
         const VkImageCreateInfo depthImageCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-            DE_NULL,                             // const void*                pNext
+            nullptr,                             // const void*                pNext
             (VkImageCreateFlags)0,               // VkImageCreateFlags        flags
             VK_IMAGE_TYPE_2D,                    // VkIMageType                imageType
             m_framebufferState.depthFormat,      // VkFormat                    format
@@ -265,7 +265,7 @@ VulkanDrawContext::VulkanDrawContext(Context &context, const FrameBufferState &f
             usage,                                                // VkImageUsageFlags        usage
             VK_SHARING_MODE_EXCLUSIVE,                            // VkSharingMode            sharingMode
             0u,                                                   // uint32_t                    queueFamilyIndexCount
-            DE_NULL,                                              // const uint32_t            pQueueFamilyIndices
+            nullptr,                                              // const uint32_t            pQueueFamilyIndices
             VK_IMAGE_LAYOUT_UNDEFINED                             // VkImageLayout            initialLayout
         };
 
@@ -319,7 +319,7 @@ VulkanDrawContext::VulkanDrawContext(Context &context, const FrameBufferState &f
 
         attachmentDescriptions.push_back(attachDescriptors[0]);
         uint32_t depthReferenceNdx = 2;
-        if (depthImageView != 0)
+        if (depthImageView != VK_NULL_HANDLE)
         {
             attachmentDescriptions.push_back(attachDescriptors[1]);
             depthReferenceNdx = 1;
@@ -329,25 +329,25 @@ VulkanDrawContext::VulkanDrawContext(Context &context, const FrameBufferState &f
             (VkSubpassDescriptionFlags)0,             // VkSubpassDescriptionFlags flags;
             VK_PIPELINE_BIND_POINT_GRAPHICS,          // VkPipelineBindPoint pipelineBindPoint;
             0u,                                       // uint32_t inputAttachmentCount;
-            DE_NULL,                                  // const VkAttachmentReference* pInputAttachments;
+            nullptr,                                  // const VkAttachmentReference* pInputAttachments;
             1u,                                       // uint32_t colorAttachmentCount;
             &attachmentReferences[0],                 // const VkAttachmentReference* pColorAttachments;
-            DE_NULL,                                  // const VkAttachmentReference* pResolveAttachments;
+            nullptr,                                  // const VkAttachmentReference* pResolveAttachments;
             &attachmentReferences[depthReferenceNdx], // const VkAttachmentReference* pDepthStencilAttachment;
             0u,                                       // uint32_t preserveAttachmentCount;
-            DE_NULL                                   // const uint32_t* pPreserveAttachments;
+            nullptr                                   // const uint32_t* pPreserveAttachments;
         };
 
         const VkRenderPassCreateInfo renderPassInfo = {
             VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags flags;
             (uint32_t)attachmentDescriptions.size(),   // uint32_t attachmentCount;
             attachmentDescriptions.data(),             // const VkAttachmentDescription* pAttachments;
             1u,                                        // uint32_t subpassCount;
             &subpassDescription,                       // const VkSubpassDescription* pSubpasses;
             0u,                                        // uint32_t dependencyCount;
-            DE_NULL                                    // const VkSubpassDependency* pDependencies;
+            nullptr                                    // const VkSubpassDependency* pDependencies;
         };
 
         m_renderPass = createRenderPass(vk, device, &renderPassInfo);
@@ -358,13 +358,13 @@ VulkanDrawContext::VulkanDrawContext(Context &context, const FrameBufferState &f
         std::vector<VkImageView> attachmentBindInfos;
         uint32_t numAttachments;
         attachmentBindInfos.push_back(*m_colorImageView);
-        if (depthImageView != 0)
+        if (depthImageView != VK_NULL_HANDLE)
             attachmentBindInfos.push_back(depthImageView);
 
         numAttachments                                = (uint32_t)(attachmentBindInfos.size());
         const VkFramebufferCreateInfo framebufferInfo = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             (VkFramebufferCreateFlags)0,               // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             numAttachments,                            // uint32_t attachmentCount;
@@ -413,11 +413,11 @@ void VulkanDrawContext::registerDrawObject(const PipelineState &pipelineState, c
 
     // Graphics pipeline
     {
-        VkShaderModule vertShader        = DE_NULL;
-        VkShaderModule tessControlShader = DE_NULL;
-        VkShaderModule tessEvalShader    = DE_NULL;
-        VkShaderModule geomShader        = DE_NULL;
-        VkShaderModule fragShader        = DE_NULL;
+        VkShaderModule vertShader        = VK_NULL_HANDLE;
+        VkShaderModule tessControlShader = VK_NULL_HANDLE;
+        VkShaderModule tessEvalShader    = VK_NULL_HANDLE;
+        VkShaderModule geomShader        = VK_NULL_HANDLE;
+        VkShaderModule fragShader        = VK_NULL_HANDLE;
 
         DE_ASSERT(drawCallData.topology != VK_PRIMITIVE_TOPOLOGY_PATCH_LIST || pipelineState.numPatchControlPoints > 0);
 
@@ -426,7 +426,7 @@ void VulkanDrawContext::registerDrawObject(const PipelineState &pipelineState, c
 
         VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                    // const void* pNext;
+            nullptr,                                                    // const void* pNext;
             (VkPipelineRasterizationStateCreateFlags)0, // VkPipelineRasterizationStateCreateFlags flags;
             pipelineState.depthClampEnable,             // VkBool32 depthClampEnable;
             VK_FALSE,                                   // VkBool32 rasterizerDiscardEnable;
@@ -442,7 +442,7 @@ void VulkanDrawContext::registerDrawObject(const PipelineState &pipelineState, c
 
         VkPipelineRasterizationDepthClipStateCreateInfoEXT pipelineRasterizationDepthCliptateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                                                   // const void* pNext;
+            nullptr,                                                                   // const void* pNext;
             (VkPipelineRasterizationDepthClipStateCreateFlagsEXT)0, // VkPipelineRasterizationDepthClipStateCreateFlagsEXT flags;
             pipelineState.depthClipEnable,                          // VkBool32 depthClipEnable;
         };
@@ -451,13 +451,13 @@ void VulkanDrawContext::registerDrawObject(const PipelineState &pipelineState, c
 
         const VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
+            nullptr,                                                  // const void* pNext;
             (VkPipelineMultisampleStateCreateFlags)0,                 // VkPipelineMultisampleStateCreateFlags flags;
             (VkSampleCountFlagBits)m_framebufferState.numSamples,     // VkSampleCountFlagBits rasterizationSamples;
             pipelineState.sampleShadingEnable ? VK_TRUE : VK_FALSE,   // VkBool32 sampleShadingEnable;
             pipelineState.sampleShadingEnable ? 1.0f : 0.0f,          // float minSampleShading;
             !pipelineState.sampleMasks.empty() ? pipelineState.sampleMasks.data() :
-                                                 DE_NULL, // const VkSampleMask* pSampleMask;
+                                                 nullptr, // const VkSampleMask* pSampleMask;
             VK_FALSE,                                     // VkBool32 alphaToCoverageEnable;
             VK_FALSE                                      // VkBool32 alphaToOneEnable;
         };
@@ -475,7 +475,7 @@ void VulkanDrawContext::registerDrawObject(const PipelineState &pipelineState, c
 
         const VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                    // const void* pNext;
+            nullptr,                                                    // const void* pNext;
             (VkPipelineDepthStencilStateCreateFlags)0,                  // VkPipelineDepthStencilStateCreateFlags flags;
             pipelineState.depthTestEnable,                              // VkBool32 depthTestEnable;
             pipelineState.depthWriteEnable,                             // VkBool32 depthWriteEnable;
@@ -503,7 +503,7 @@ void VulkanDrawContext::registerDrawObject(const PipelineState &pipelineState, c
 
         const VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
+            nullptr,                                                  // const void* pNext;
             (VkPipelineColorBlendStateCreateFlags)0,                  // VkPipelineColorBlendStateCreateFlags flags;
             VK_FALSE,                                                 // VkBool32 logicOpEnable;
             VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -564,7 +564,7 @@ void VulkanDrawContext::registerDrawObject(const PipelineState &pipelineState, c
             drawCallData.topology,     // const VkPrimitiveTopology                     topology
             0u,                        // const uint32_t                                subpass
             pipelineState.numPatchControlPoints, // const uint32_t                                patchControlPoints
-            DE_NULL,                         // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+            nullptr,                         // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
             &pipelineRasterizationStateInfo, // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
             &pipelineMultisampleStateInfo,   // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
             &pipelineDepthStencilStateInfo, // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
@@ -603,7 +603,7 @@ void VulkanDrawContext::draw(void)
         {
             if (!!object->descriptorSet)
                 vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *(object->pipelineLayout), 0u,
-                                         1u, &(object->descriptorSet), 0u, DE_NULL);
+                                         1u, &(object->descriptorSet), 0u, nullptr);
             vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *(object->pipeline));
             vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &(**(object->vertexBuffer)), &zeroOffset);
             vk.cmdDraw(*m_cmdBuffer, static_cast<uint32_t>(object->vertexCount), 1u, 0u, 0u);
@@ -618,7 +618,7 @@ void VulkanDrawContext::draw(void)
                 makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
 
             vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                                  VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, 1u,
                                   &barrier);
         }
 
@@ -635,7 +635,7 @@ void VulkanDrawContext::draw(void)
 
                 const VkImageCreateInfo resolveImageCreateInfo = {
                     VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,            // VkStructureType            sType
-                    DE_NULL,                                        // const void*                pNext
+                    nullptr,                                        // const void*                pNext
                     (VkImageCreateFlags)0,                          // VkImageCreateFlags        flags
                     VK_IMAGE_TYPE_2D,                               // VkImageType                imageType
                     m_framebufferState.colorFormat,                 // VkFormat                    format
@@ -649,7 +649,7 @@ void VulkanDrawContext::draw(void)
                         VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                     VK_SHARING_MODE_EXCLUSIVE, // VkSharingModeExclusive    sharingMode
                     0u,                        // uint32_t                    queueFamilyIndexCount
-                    DE_NULL,                   // const uint32_t*            pQueueFamilyIndices
+                    nullptr,                   // const uint32_t*            pQueueFamilyIndices
                     VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
                 };
 
@@ -661,7 +661,7 @@ void VulkanDrawContext::draw(void)
                     **m_resolveImage, makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
 
                 vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                      VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL,
+                                      VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr,
                                       1u, &resolveBarrier);
 
                 vk.cmdResolveImage(*m_cmdBuffer, **m_colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_resolveImage,
@@ -673,7 +673,7 @@ void VulkanDrawContext::draw(void)
                     makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
 
                 vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                      (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+                                      (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, 1u, &barrier);
             }
             else
                 m_resolveImage = m_colorImage;
@@ -691,7 +691,7 @@ void VulkanDrawContext::draw(void)
                 VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, **m_colorAttachmentBuffer, 0ull, VK_WHOLE_SIZE);
 
             vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                  (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
+                                  (VkDependencyFlags)0, 0u, nullptr, 1u, &barrier, 0u, nullptr);
         }
 
         endCommandBuffer(vk, *m_cmdBuffer);

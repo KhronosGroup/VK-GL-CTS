@@ -83,8 +83,8 @@ typedef struct qpCrashInfo_s
 static void qpCrashInfo_init(qpCrashInfo *info)
 {
     info->type    = QP_CRASHTYPE_LAST;
-    info->message = DE_NULL;
-    info->file    = DE_NULL;
+    info->message = NULL;
+    info->file    = NULL;
     info->line    = 0;
 }
 
@@ -128,7 +128,7 @@ static void defaultWriteInfo(void *userPtr, const char *infoString)
 static void defaultCrashHandler(qpCrashHandler *crashHandler, void *userPtr)
 {
     DE_UNREF(userPtr);
-    qpCrashHandler_writeCrashInfo(crashHandler, defaultWriteInfo, DE_NULL);
+    qpCrashHandler_writeCrashInfo(crashHandler, defaultWriteInfo, NULL);
     qpDief("Test process crashed");
 }
 
@@ -155,12 +155,12 @@ struct qpCrashHandler_s
     LPTOP_LEVEL_EXCEPTION_FILTER oldExceptionFilter;
 };
 
-qpCrashHandler *g_crashHandler = DE_NULL;
+qpCrashHandler *g_crashHandler = NULL;
 
 static LONG WINAPI unhandledExceptionFilter(struct _EXCEPTION_POINTERS *info)
 {
     qpCrashType crashType = QP_CRASHTYPE_LAST;
-    const char *reason    = DE_NULL;
+    const char *reason    = NULL;
 
     /* Skip breakpoints. */
     if (info->ExceptionRecord->ExceptionCode == EXCEPTION_BREAKPOINT)
@@ -170,7 +170,7 @@ static LONG WINAPI unhandledExceptionFilter(struct _EXCEPTION_POINTERS *info)
     }
 
     /* If no handler present (how could that be?), don't handle. */
-    if (g_crashHandler == DE_NULL)
+    if (g_crashHandler == NULL)
     {
         DBGPRINT(("qpCrashHandler::unhandledExceptionFilter(): no crash handler registered\n"));
         return EXCEPTION_CONTINUE_SEARCH;
@@ -224,7 +224,7 @@ static LONG WINAPI unhandledExceptionFilter(struct _EXCEPTION_POINTERS *info)
 
     /* Handle the crash. */
     DBGPRINT(("qpCrashHandler::unhandledExceptionFilter(): handled quietly\n"));
-    if (g_crashHandler->crashHandlerFunc != DE_NULL)
+    if (g_crashHandler->crashHandlerFunc != NULL)
         g_crashHandler->crashHandlerFunc(g_crashHandler, g_crashHandler->handlerUserPointer);
 
     /* Release lock. */
@@ -250,7 +250,7 @@ static void assertFailureCallback(const char *expr, const char *file, int line)
     g_crashHandler->crashAddress = 0;
 
     /* Handle the crash. */
-    if (g_crashHandler->crashHandlerFunc != DE_NULL)
+    if (g_crashHandler->crashHandlerFunc != NULL)
         g_crashHandler->crashHandlerFunc(g_crashHandler, g_crashHandler->handlerUserPointer);
 
     /* Release lock. */
@@ -265,7 +265,7 @@ qpCrashHandler *qpCrashHandler_create(qpCrashHandlerFunc handlerFunc, void *user
     if (!handler)
         return handler;
 
-    DE_ASSERT(g_crashHandler == DE_NULL);
+    DE_ASSERT(g_crashHandler == NULL);
 
     handler->crashHandlerFunc   = handlerFunc ? handlerFunc : defaultCrashHandler;
     handler->handlerUserPointer = userPointer;
@@ -279,7 +279,7 @@ qpCrashHandler *qpCrashHandler_create(qpCrashHandlerFunc handlerFunc, void *user
         if (!handler->crashHandlerLock)
         {
             deFree(handler);
-            return DE_NULL;
+            return NULL;
         }
     }
 
@@ -305,10 +305,10 @@ void qpCrashHandler_destroy(qpCrashHandler *handler)
 
     DE_ASSERT(g_crashHandler == handler);
 
-    deSetAssertFailureCallback(DE_NULL);
+    deSetAssertFailureCallback(NULL);
     SetUnhandledExceptionFilter(handler->oldExceptionFilter);
 
-    g_crashHandler = DE_NULL;
+    g_crashHandler = NULL;
     deFree(handler);
 }
 
@@ -416,7 +416,7 @@ struct qpCrashHandler_s
 #endif
 };
 
-qpCrashHandler *g_crashHandler = DE_NULL;
+qpCrashHandler *g_crashHandler = NULL;
 
 static void assertFailureCallback(const char *expr, const char *file, int line)
 {
@@ -424,7 +424,7 @@ static void assertFailureCallback(const char *expr, const char *file, int line)
     qpCrashInfo_set(&g_crashHandler->crashInfo, QP_CRASHTYPE_ASSERT, expr, file, line);
 
     /* Handle the crash. */
-    if (g_crashHandler->crashHandlerFunc != DE_NULL)
+    if (g_crashHandler->crashHandlerFunc != NULL)
         g_crashHandler->crashHandlerFunc(g_crashHandler, g_crashHandler->handlerUserPointer);
 }
 
@@ -438,7 +438,7 @@ static const SignalInfo *getSignalInfo(int sigNum)
         if (s_signals[ndx].signalNum == sigNum)
             return &s_signals[ndx];
     }
-    return DE_NULL;
+    return NULL;
 }
 
 static void signalHandler(int sigNum)
@@ -447,9 +447,9 @@ static void signalHandler(int sigNum)
     qpCrashType type       = info ? info->type : QP_CRASHTYPE_OTHER;
     const char *name       = info ? info->name : "Unknown signal";
 
-    qpCrashInfo_set(&g_crashHandler->crashInfo, type, name, DE_NULL, 0);
+    qpCrashInfo_set(&g_crashHandler->crashInfo, type, name, NULL, 0);
 
-    if (g_crashHandler->crashHandlerFunc != DE_NULL)
+    if (g_crashHandler->crashHandlerFunc != NULL)
         g_crashHandler->crashHandlerFunc(g_crashHandler, g_crashHandler->handlerUserPointer);
 }
 
@@ -463,7 +463,7 @@ qpCrashHandler *qpCrashHandler_create(qpCrashHandlerFunc handlerFunc, void *user
     if (!handler)
         return handler;
 
-    DE_ASSERT(g_crashHandler == DE_NULL);
+    DE_ASSERT(g_crashHandler == NULL);
 
     handler->crashHandlerFunc   = handlerFunc ? handlerFunc : defaultCrashHandler;
     handler->handlerUserPointer = userPointer;
@@ -499,18 +499,18 @@ void qpCrashHandler_destroy(qpCrashHandler *handler)
 
     DE_ASSERT(g_crashHandler == handler);
 
-    deSetAssertFailureCallback(DE_NULL);
+    deSetAssertFailureCallback(NULL);
 
 #if defined(QP_USE_SIGNAL_HANDLER)
     /* Restore old handlers. */
     {
         int sigNdx;
         for (sigNdx = 0; sigNdx < DE_LENGTH_OF_ARRAY(s_signals); sigNdx++)
-            sigaction(s_signals[sigNdx].signalNum, &handler->oldHandlers[sigNdx], DE_NULL);
+            sigaction(s_signals[sigNdx].signalNum, &handler->oldHandlers[sigNdx], NULL);
     }
 #endif
 
-    g_crashHandler = DE_NULL;
+    g_crashHandler = NULL;
 
     deFree(handler);
 }

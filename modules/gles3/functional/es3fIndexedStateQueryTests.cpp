@@ -78,7 +78,7 @@ public:
     {
     }
 
-    virtual void testTransformFeedback(void) = DE_NULL;
+    virtual void testTransformFeedback(void) = 0;
 
     void test(void)
     {
@@ -99,8 +99,8 @@ public:
         GLuint shaderVert = glCreateShader(GL_VERTEX_SHADER);
         GLuint shaderFrag = glCreateShader(GL_FRAGMENT_SHADER);
 
-        glShaderSource(shaderVert, 1, &transformFeedbackTestVertSource, DE_NULL);
-        glShaderSource(shaderFrag, 1, &transformFeedbackTestFragSource, DE_NULL);
+        glShaderSource(shaderVert, 1, &transformFeedbackTestVertSource, nullptr);
+        glShaderSource(shaderFrag, 1, &transformFeedbackTestFragSource, nullptr);
 
         glCompileShader(shaderVert);
         glCompileShader(shaderFrag);
@@ -328,7 +328,7 @@ public:
     {
     }
 
-    virtual void testUniformBuffers(void) = DE_NULL;
+    virtual void testUniformBuffers(void) = 0;
 
     void test(void)
     {
@@ -349,8 +349,8 @@ public:
         GLuint shaderVert = glCreateShader(GL_VERTEX_SHADER);
         GLuint shaderFrag = glCreateShader(GL_FRAGMENT_SHADER);
 
-        glShaderSource(shaderVert, 1, &testVertSource, DE_NULL);
-        glShaderSource(shaderFrag, 1, &testFragSource, DE_NULL);
+        glShaderSource(shaderVert, 1, &testVertSource, nullptr);
+        glShaderSource(shaderFrag, 1, &testFragSource, nullptr);
 
         glCompileShader(shaderVert);
         glCompileShader(shaderFrag);
@@ -396,7 +396,7 @@ public:
         for (int ndx = 0; ndx < 2; ++ndx)
         {
             glBindBuffer(GL_UNIFORM_BUFFER, buffers[ndx]);
-            glBufferData(GL_UNIFORM_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+            glBufferData(GL_UNIFORM_BUFFER, 32, nullptr, GL_DYNAMIC_DRAW);
             glBindBufferBase(GL_UNIFORM_BUFFER, uniformIndices[ndx], buffers[ndx]);
             expectError(GL_NO_ERROR);
         }
@@ -444,12 +444,12 @@ public:
         glGenBuffers(2, buffers);
 
         glBindBuffer(GL_UNIFORM_BUFFER, buffers[0]);
-        glBufferData(GL_UNIFORM_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+        glBufferData(GL_UNIFORM_BUFFER, 32, nullptr, GL_DYNAMIC_DRAW);
         glBindBufferBase(GL_UNIFORM_BUFFER, uniformIndices[0], buffers[0]);
         expectError(GL_NO_ERROR);
 
         glBindBuffer(GL_UNIFORM_BUFFER, buffers[1]);
-        glBufferData(GL_UNIFORM_BUFFER, rangeBufferTotalSize, DE_NULL, GL_DYNAMIC_DRAW);
+        glBufferData(GL_UNIFORM_BUFFER, rangeBufferTotalSize, nullptr, GL_DYNAMIC_DRAW);
         glBindBufferRange(GL_UNIFORM_BUFFER, uniformIndices[1], buffers[1], rangeBufferOffset, rangeBufferSize);
         expectError(GL_NO_ERROR);
 
@@ -514,7 +514,7 @@ const char *getVerifierSuffix(QueryType type)
         return "isenabledi";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 

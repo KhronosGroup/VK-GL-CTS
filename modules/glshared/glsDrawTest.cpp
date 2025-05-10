@@ -1333,7 +1333,7 @@ AttributeArray::AttributeArray(DrawTestSpec::Storage storage, sglr::Context &con
     , m_ctx(context)
     , m_glBuffer(0)
     , m_size(0)
-    , m_data(DE_NULL)
+    , m_data(nullptr)
     , m_componentCount(1)
     , m_bound(false)
     , m_target(DrawTestSpec::TARGET_ARRAY)
@@ -1457,14 +1457,14 @@ void AttributeArray::bindAttribute(uint32_t loc)
     }
     else
     {
-        const uint8_t *basePtr = DE_NULL;
+        const uint8_t *basePtr = nullptr;
 
         if (m_storage == DrawTestSpec::STORAGE_BUFFER)
         {
             m_ctx.bindBuffer(targetToGL(m_target), m_glBuffer);
             GLU_EXPECT_NO_ERROR(m_ctx.getError(), "glBindBuffer()");
 
-            basePtr = DE_NULL;
+            basePtr = nullptr;
         }
         else if (m_storage == DrawTestSpec::STORAGE_USER)
         {
@@ -1488,14 +1488,14 @@ void AttributeArray::bindAttribute(uint32_t loc)
 
                 // Output type is float type
                 m_ctx.vertexAttribPointer(loc, size, inputTypeToGL(m_inputType), m_normalize, m_stride,
-                                          basePtr + m_offset);
+                                          basePtr ? basePtr + m_offset : reinterpret_cast<uint8_t *>(m_offset));
                 GLU_EXPECT_NO_ERROR(m_ctx.getError(), "glVertexAttribPointer()");
             }
             else
             {
                 // Output type is int type
                 m_ctx.vertexAttribIPointer(loc, m_componentCount, inputTypeToGL(m_inputType), m_stride,
-                                           basePtr + m_offset);
+                                           basePtr ? basePtr + m_offset : reinterpret_cast<uint8_t *>(m_offset));
                 GLU_EXPECT_NO_ERROR(m_ctx.getError(), "glVertexAttribIPointer()");
             }
         }
@@ -1507,7 +1507,7 @@ void AttributeArray::bindAttribute(uint32_t loc)
             DE_ASSERT(outputTypeIsFloatType(m_outputType));
 
             m_ctx.vertexAttribPointer(loc, m_componentCount, inputTypeToGL(m_inputType), m_normalize, m_stride,
-                                      basePtr + m_offset);
+                                      basePtr ? basePtr + m_offset : reinterpret_cast<uint8_t *>(m_offset));
             GLU_EXPECT_NO_ERROR(m_ctx.getError(), "glVertexAttribPointer()");
         }
 
@@ -2005,7 +2005,7 @@ char *RandomArrayGenerator::generateBasicArray(int seed, int elementCount, int c
         DE_ASSERT(false);
         break;
     }
-    return DE_NULL;
+    return nullptr;
 }
 
 #if (DE_COMPILER == DE_COMPILER_GCC) && (__GNUC__ == 4) && (__GNUC_MINOR__ >= 8)
@@ -2104,7 +2104,7 @@ char *RandomArrayGenerator::generatePackedArray(int seed, int elementCount, int 
 char *RandomArrayGenerator::generateIndices(int seed, int elementCount, DrawTestSpec::IndexType type, int offset,
                                             int min, int max, int indexBase)
 {
-    char *data = DE_NULL;
+    char *data = nullptr;
 
     switch (type)
     {
@@ -2249,7 +2249,7 @@ AttributePack::AttributePack(tcu::TestContext &testCtx, glu::RenderContext &rend
     : m_testCtx(testCtx)
     , m_renderCtx(renderCtx)
     , m_ctx(drawContext)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_screen(screenSize.x(), screenSize.y())
     , m_useVao(useVao)
     , m_logEnabled(logEnabled)
@@ -2312,7 +2312,7 @@ void AttributePack::render(DrawTestSpec::Primitive primitive, DrawTestSpec::Draw
                            int rangeEnd, int instanceCount, int indirectOffset, int baseVertex, float coordScale,
                            float colorScale, AttributeArray *indexArray)
 {
-    DE_ASSERT(m_program != DE_NULL);
+    DE_ASSERT(m_program != nullptr);
     DE_ASSERT(m_programID != 0);
 
     m_ctx.viewport(0, 0, m_screen.getWidth(), m_screen.getHeight());
@@ -3506,12 +3506,12 @@ DrawTest::DrawTest(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, con
                    const char *desc)
     : TestCase(testCtx, name, desc)
     , m_renderCtx(renderCtx)
-    , m_contextInfo(DE_NULL)
-    , m_refBuffers(DE_NULL)
-    , m_refContext(DE_NULL)
-    , m_glesContext(DE_NULL)
-    , m_glArrayPack(DE_NULL)
-    , m_rrArrayPack(DE_NULL)
+    , m_contextInfo(nullptr)
+    , m_refBuffers(nullptr)
+    , m_refContext(nullptr)
+    , m_glesContext(nullptr)
+    , m_glArrayPack(nullptr)
+    , m_rrArrayPack(nullptr)
     , m_maxDiffRed(-1)
     , m_maxDiffGreen(-1)
     , m_maxDiffBlue(-1)
@@ -3524,12 +3524,12 @@ DrawTest::DrawTest(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, con
 DrawTest::DrawTest(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, const char *name, const char *desc)
     : TestCase(testCtx, name, desc)
     , m_renderCtx(renderCtx)
-    , m_contextInfo(DE_NULL)
-    , m_refBuffers(DE_NULL)
-    , m_refContext(DE_NULL)
-    , m_glesContext(DE_NULL)
-    , m_glArrayPack(DE_NULL)
-    , m_rrArrayPack(DE_NULL)
+    , m_contextInfo(nullptr)
+    , m_refBuffers(nullptr)
+    , m_refContext(nullptr)
+    , m_glesContext(nullptr)
+    , m_glArrayPack(nullptr)
+    , m_rrArrayPack(nullptr)
     , m_maxDiffRed(-1)
     , m_maxDiffGreen(-1)
     , m_maxDiffBlue(-1)
@@ -3627,12 +3627,12 @@ void DrawTest::deinit(void)
     delete m_glesContext;
     delete m_contextInfo;
 
-    m_glArrayPack = DE_NULL;
-    m_rrArrayPack = DE_NULL;
-    m_refBuffers  = DE_NULL;
-    m_refContext  = DE_NULL;
-    m_glesContext = DE_NULL;
-    m_contextInfo = DE_NULL;
+    m_glArrayPack = nullptr;
+    m_rrArrayPack = nullptr;
+    m_refBuffers  = nullptr;
+    m_refContext  = nullptr;
+    m_glesContext = nullptr;
+    m_contextInfo = nullptr;
 }
 
 DrawTest::IterateResult DrawTest::iterate(void)
@@ -3785,8 +3785,9 @@ DrawTest::IterateResult DrawTest::iterate(void)
                 const char *indexArray        = RandomArrayGenerator::generateIndices(
                     seed, (int)elementCount, spec.indexType, spec.indexPointerOffset, indexMin, indexMax, indexBase);
                 const char *indexPointerBase =
-                    (spec.indexStorage == DrawTestSpec::STORAGE_USER) ? (indexArray) : ((char *)DE_NULL);
-                const char *indexPointer = indexPointerBase + spec.indexPointerOffset;
+                    (spec.indexStorage == DrawTestSpec::STORAGE_USER) ? (indexArray) : (nullptr);
+                const char *indexPointer = indexPointerBase ? indexPointerBase + spec.indexPointerOffset :
+                                                              reinterpret_cast<const char *>(spec.indexPointerOffset);
 
                 de::UniquePtr<AttributeArray> glArray(new AttributeArray(spec.indexStorage, *m_glesContext));
                 de::UniquePtr<AttributeArray> rrArray(new AttributeArray(spec.indexStorage, *m_refContext));
@@ -3819,12 +3820,12 @@ DrawTest::IterateResult DrawTest::iterate(void)
             else
             {
                 m_glArrayPack->render(spec.primitive, spec.drawMethod, spec.first, (int)primitiveElementCount,
-                                      DrawTestSpec::INDEXTYPE_LAST, DE_NULL, 0, 0, spec.instanceCount,
-                                      spec.indirectOffset, 0, coordScale, colorScale, DE_NULL);
+                                      DrawTestSpec::INDEXTYPE_LAST, nullptr, 0, 0, spec.instanceCount,
+                                      spec.indirectOffset, 0, coordScale, colorScale, nullptr);
                 m_testCtx.touchWatchdog();
                 m_rrArrayPack->render(spec.primitive, spec.drawMethod, spec.first, (int)primitiveElementCount,
-                                      DrawTestSpec::INDEXTYPE_LAST, DE_NULL, 0, 0, spec.instanceCount,
-                                      spec.indirectOffset, 0, coordScale, colorScale, DE_NULL);
+                                      DrawTestSpec::INDEXTYPE_LAST, nullptr, 0, 0, spec.instanceCount,
+                                      spec.indirectOffset, 0, coordScale, colorScale, nullptr);
             }
         }
         catch (glu::Error &err)

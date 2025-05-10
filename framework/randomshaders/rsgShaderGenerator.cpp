@@ -58,7 +58,7 @@ const char *getFragColorName(const GeneratorState &state)
         return "dEQP_FragColor";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -83,10 +83,10 @@ const ValueEntry *findByName(VariableManager &varManager, const char *name)
     for (; iter != end; iter++)
     {
         const ValueEntry *entry = *iter;
-        if (deStringEqual(entry->getVariable()->getName(), name))
+        if (strcmp(entry->getVariable()->getName(), name) == 0)
             return entry;
     }
-    return DE_NULL;
+    return nullptr;
 }
 
 void genVertexPassthrough(GeneratorState &state, Shader &shader)

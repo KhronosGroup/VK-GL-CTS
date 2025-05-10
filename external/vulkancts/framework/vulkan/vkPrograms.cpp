@@ -52,12 +52,6 @@ using std::map;
 using std::string;
 using std::vector;
 
-#if defined(DE_DEBUG)
-#define VALIDATE_BINARIES true
-#else
-#define VALIDATE_BINARIES false
-#endif
-
 #define SPIRV_BINARY_ENDIANNESS DE_LITTLE_ENDIAN
 
 // ProgramBinary
@@ -630,7 +624,8 @@ void shadercacheSave(const vk::ProgramBinary *binary, const std::string &shaders
             cacheFileMutex->unlock();
             return;
         }
-        fclose(file);
+        if (file)
+            fclose(file);
     }
 
     if (!de::FilePath(filePath.getDirName()).exists())
@@ -695,7 +690,7 @@ ProgramBinary *buildProgram(const GlslSource &program, glu::ShaderProgramInfo *b
                             const tcu::CommandLine &commandLine)
 {
     const SpirvVersion spirvVersion = program.buildOptions.targetVersion;
-    const bool validateBinary       = VALIDATE_BINARIES;
+    const bool validateBinary       = commandLine.isSpirvValidationEnabled();
     vector<uint32_t> binary;
     std::string cachekey;
     std::string shaderstring;
@@ -785,7 +780,7 @@ ProgramBinary *buildProgram(const HlslSource &program, glu::ShaderProgramInfo *b
                             const tcu::CommandLine &commandLine)
 {
     const SpirvVersion spirvVersion = program.buildOptions.targetVersion;
-    const bool validateBinary       = VALIDATE_BINARIES;
+    const bool validateBinary       = commandLine.isSpirvValidationEnabled();
     vector<uint32_t> binary;
     std::string cachekey;
     std::string shaderstring;
@@ -877,7 +872,7 @@ ProgramBinary *assembleProgram(const SpirVAsmSource &program, SpirVProgramInfo *
                                const tcu::CommandLine &commandLine)
 {
     const SpirvVersion spirvVersion = program.buildOptions.targetVersion;
-    const bool validateBinary       = VALIDATE_BINARIES;
+    const bool validateBinary       = commandLine.isSpirvValidationEnabled();
     vector<uint32_t> binary;
     vk::ProgramBinary *res = 0;
     std::string cachekey;
@@ -981,7 +976,7 @@ Move<VkShaderModule> createShaderModule(const DeviceInterface &deviceInterface, 
     if (binary.getFormat() == PROGRAM_FORMAT_SPIRV)
     {
         const struct VkShaderModuleCreateInfo shaderModuleInfo = {
-            VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, DE_NULL, flags, (uintptr_t)binary.getSize(),
+            VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, nullptr, flags, (uintptr_t)binary.getSize(),
             (const uint32_t *)binary.getBinary(),
         };
 

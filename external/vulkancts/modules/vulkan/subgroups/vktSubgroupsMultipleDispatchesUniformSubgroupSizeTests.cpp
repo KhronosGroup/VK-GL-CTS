@@ -23,8 +23,6 @@
  * command scope.
  *//*--------------------------------------------------------------------*/
 
-#include "deUniquePtr.hpp"
-
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "vkPrograms.hpp"
@@ -77,12 +75,8 @@ tcu::TestStatus MultipleDispatchesUniformSubgroupSizeInstance::iterate(void)
         createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u);
 
     // The maximum number of invocations in a workgroup.
-    const uint32_t maxLocalSize = m_context.getDeviceProperties().limits.maxComputeWorkGroupSize[0];
-#ifndef CTS_USES_VULKANSC
+    const uint32_t maxLocalSize    = m_context.getDeviceProperties().limits.maxComputeWorkGroupSize[0];
     const uint32_t minSubgroupSize = m_context.getSubgroupSizeControlProperties().minSubgroupSize;
-#else
-    const uint32_t minSubgroupSize = m_context.getSubgroupSizeControlPropertiesEXT().minSubgroupSize;
-#endif // CTS_USES_VULKANSC
 
     // Create a storage buffer to hold the sizes of subgroups.
     const VkDeviceSize bufferSize = (maxLocalSize / minSubgroupSize + 1u) * sizeof(uint32_t);
@@ -105,7 +99,7 @@ tcu::TestStatus MultipleDispatchesUniformSubgroupSizeInstance::iterate(void)
 
     const VkDescriptorSetAllocateInfo allocInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // sType
-        DE_NULL,                                        // pNext
+        nullptr,                                        // pNext
         *descriptorPool,                                // descriptorPool
         1u,                                             // descriptorSetCount
         &(*descriptorSetLayout1)                        // pSetLayouts
@@ -121,14 +115,14 @@ tcu::TestStatus MultipleDispatchesUniformSubgroupSizeInstance::iterate(void)
     // Compute pipeline
     const Move<VkPipelineLayout> computePipelineLayout = makePipelineLayout(vk, device, *descriptorSetLayout1);
 
+    std::vector<uint32_t> localSizes;
+    std::vector<Move<VkPipeline>> pipelineVariants;
     for (uint32_t localSize = 1u; localSize <= maxLocalSize; localSize *= 2u)
     {
-        // On each iteration, change the number of invocations which might affect
-        // the subgroup size.
         const VkSpecializationMapEntry entries = {
-            0u,               // uint32_t constantID;
-            0u,               // uint32_t offset;
-            sizeof(localSize) // size_t size;
+            0u,               // constantID
+            0u,               // offset
+            sizeof(localSize) // size
         };
 
         const VkSpecializationInfo specInfo = {
@@ -139,27 +133,32 @@ tcu::TestStatus MultipleDispatchesUniformSubgroupSizeInstance::iterate(void)
         };
 
         const VkPipelineShaderStageCreateInfo shaderStageCreateInfo = {
-            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,                 // sType
-            DE_NULL,                                                             // pNext
-            VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT, // flags
-            VK_SHADER_STAGE_COMPUTE_BIT,                                         // stage
-            *computeShader,                                                      // module
-            "main",                                                              // pName
-            &specInfo,                                                           // pSpecializationInfo
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            nullptr,
+            VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT,
+            VK_SHADER_STAGE_COMPUTE_BIT,
+            *computeShader,
+            "main",
+            &specInfo,
         };
 
         const VkComputePipelineCreateInfo pipelineCreateInfo = {
-            VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // sType
-            DE_NULL,                                        // pNext
-            0u,                                             // flags
-            shaderStageCreateInfo,                          // stage
-            *computePipelineLayout,                         // layout
-            (VkPipeline)0,                                  // basePipelineHandle
-            0u,                                             // basePipelineIndex
+            VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+            nullptr,
+            0u,
+            shaderStageCreateInfo,
+            *computePipelineLayout,
+            VK_NULL_HANDLE,
+            0u,
         };
 
-        Move<VkPipeline> computePipeline = createComputePipeline(vk, device, (VkPipelineCache)0u, &pipelineCreateInfo);
+        Move<VkPipeline> pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
+        localSizes.push_back(localSize);
+        pipelineVariants.push_back(std::move(pipeline));
+    }
 
+    for (uint32_t localSize = 1u; localSize <= maxLocalSize; localSize *= 2u)
+    {
         beginCommandBuffer(vk, *cmdBuffer);
 
         // Clears the values in the buffer.
@@ -173,7 +172,16 @@ tcu::TestStatus MultipleDispatchesUniformSubgroupSizeInstance::iterate(void)
         // Runs pipeline.
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipelineLayout, 0u, 1u,
                                  &descriptorSet.get(), 0u, nullptr);
-        vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
+
+        for (size_t i = 0; i < localSizes.size(); ++i)
+        {
+            if (localSizes[i] == localSize)
+            {
+                vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineVariants[i]);
+                break;
+            }
+        }
+
         vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
 
         const auto computeToHostBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
@@ -253,13 +261,7 @@ MultipleDispatchesUniformSubgroupSize::MultipleDispatchesUniformSubgroupSize(tcu
 
 void MultipleDispatchesUniformSubgroupSize::checkSupport(Context &context) const
 {
-#ifndef CTS_USES_VULKANSC
-    const VkPhysicalDeviceSubgroupSizeControlFeatures &subgroupSizeControlFeatures =
-        context.getSubgroupSizeControlFeatures();
-#else
-    const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT &subgroupSizeControlFeatures =
-        context.getSubgroupSizeControlFeaturesEXT();
-#endif // CTS_USES_VULKANSC
+    const auto &subgroupSizeControlFeatures = context.getSubgroupSizeControlFeatures();
 
     if (subgroupSizeControlFeatures.subgroupSizeControl == false)
         TCU_THROW(NotSupportedError, "Device does not support varying subgroup sizes");

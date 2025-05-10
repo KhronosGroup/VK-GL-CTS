@@ -78,7 +78,7 @@ using tcu::TextureFormat;
 
 static inline tcu::PixelBufferAccess nullAccess(void)
 {
-    return tcu::PixelBufferAccess(TextureFormat(TextureFormat::R, TextureFormat::UNSIGNED_INT8), 0, 0, 0, DE_NULL);
+    return tcu::PixelBufferAccess(TextureFormat(TextureFormat::R, TextureFormat::UNSIGNED_INT8), 0, 0, 0, nullptr);
 }
 
 static inline bool isEmpty(const tcu::ConstPixelBufferAccess &access)
@@ -386,20 +386,20 @@ ReferenceContext::ReferenceContext(const ReferenceContextLimits &limits,
     , m_pixelUnpackAlignment(4)
     , m_pixelPackAlignment(4)
 
-    , m_readFramebufferBinding(DE_NULL)
-    , m_drawFramebufferBinding(DE_NULL)
-    , m_renderbufferBinding(DE_NULL)
-    , m_vertexArrayBinding(DE_NULL)
-    , m_currentProgram(DE_NULL)
+    , m_readFramebufferBinding(nullptr)
+    , m_drawFramebufferBinding(nullptr)
+    , m_renderbufferBinding(nullptr)
+    , m_vertexArrayBinding(nullptr)
+    , m_currentProgram(nullptr)
 
-    , m_arrayBufferBinding(DE_NULL)
-    , m_pixelPackBufferBinding(DE_NULL)
-    , m_pixelUnpackBufferBinding(DE_NULL)
-    , m_transformFeedbackBufferBinding(DE_NULL)
-    , m_uniformBufferBinding(DE_NULL)
-    , m_copyReadBufferBinding(DE_NULL)
-    , m_copyWriteBufferBinding(DE_NULL)
-    , m_drawIndirectBufferBinding(DE_NULL)
+    , m_arrayBufferBinding(nullptr)
+    , m_pixelPackBufferBinding(nullptr)
+    , m_pixelUnpackBufferBinding(nullptr)
+    , m_transformFeedbackBufferBinding(nullptr)
+    , m_uniformBufferBinding(nullptr)
+    , m_copyReadBufferBinding(nullptr)
+    , m_copyWriteBufferBinding(nullptr)
+    , m_drawIndirectBufferBinding(nullptr)
 
     , m_clearColor(0.0f, 0.0f, 0.0f, 0.0f)
     , m_clearDepth(1.0f)
@@ -560,7 +560,7 @@ void ReferenceContext::setTex1DBinding(int unitNdx, Texture1D *texture)
     if (m_textureUnits[unitNdx].tex1DBinding)
     {
         m_textures.releaseReference(m_textureUnits[unitNdx].tex1DBinding);
-        m_textureUnits[unitNdx].tex1DBinding = DE_NULL;
+        m_textureUnits[unitNdx].tex1DBinding = nullptr;
     }
 
     if (texture)
@@ -575,7 +575,7 @@ void ReferenceContext::setTex2DBinding(int unitNdx, Texture2D *texture)
     if (m_textureUnits[unitNdx].tex2DBinding)
     {
         m_textures.releaseReference(m_textureUnits[unitNdx].tex2DBinding);
-        m_textureUnits[unitNdx].tex2DBinding = DE_NULL;
+        m_textureUnits[unitNdx].tex2DBinding = nullptr;
     }
 
     if (texture)
@@ -590,7 +590,7 @@ void ReferenceContext::setTexCubeBinding(int unitNdx, TextureCube *texture)
     if (m_textureUnits[unitNdx].texCubeBinding)
     {
         m_textures.releaseReference(m_textureUnits[unitNdx].texCubeBinding);
-        m_textureUnits[unitNdx].texCubeBinding = DE_NULL;
+        m_textureUnits[unitNdx].texCubeBinding = nullptr;
     }
 
     if (texture)
@@ -605,7 +605,7 @@ void ReferenceContext::setTex2DArrayBinding(int unitNdx, Texture2DArray *texture
     if (m_textureUnits[unitNdx].tex2DArrayBinding)
     {
         m_textures.releaseReference(m_textureUnits[unitNdx].tex2DArrayBinding);
-        m_textureUnits[unitNdx].tex2DArrayBinding = DE_NULL;
+        m_textureUnits[unitNdx].tex2DArrayBinding = nullptr;
     }
 
     if (texture)
@@ -620,7 +620,7 @@ void ReferenceContext::setTex3DBinding(int unitNdx, Texture3D *texture)
     if (m_textureUnits[unitNdx].tex3DBinding)
     {
         m_textures.releaseReference(m_textureUnits[unitNdx].tex3DBinding);
-        m_textureUnits[unitNdx].tex3DBinding = DE_NULL;
+        m_textureUnits[unitNdx].tex3DBinding = nullptr;
     }
 
     if (texture)
@@ -635,7 +635,7 @@ void ReferenceContext::setTexCubeArrayBinding(int unitNdx, TextureCubeArray *tex
     if (m_textureUnits[unitNdx].texCubeArrayBinding)
     {
         m_textures.releaseReference(m_textureUnits[unitNdx].texCubeArrayBinding);
-        m_textureUnits[unitNdx].texCubeArrayBinding = DE_NULL;
+        m_textureUnits[unitNdx].texCubeArrayBinding = nullptr;
     }
 
     if (texture)
@@ -661,22 +661,22 @@ void ReferenceContext::bindTexture(uint32_t target, uint32_t texture)
         switch (target)
         {
         case GL_TEXTURE_1D:
-            setTex1DBinding(unitNdx, DE_NULL);
+            setTex1DBinding(unitNdx, nullptr);
             break;
         case GL_TEXTURE_2D:
-            setTex2DBinding(unitNdx, DE_NULL);
+            setTex2DBinding(unitNdx, nullptr);
             break;
         case GL_TEXTURE_CUBE_MAP:
-            setTexCubeBinding(unitNdx, DE_NULL);
+            setTexCubeBinding(unitNdx, nullptr);
             break;
         case GL_TEXTURE_2D_ARRAY:
-            setTex2DArrayBinding(unitNdx, DE_NULL);
+            setTex2DArrayBinding(unitNdx, nullptr);
             break;
         case GL_TEXTURE_3D:
-            setTex3DBinding(unitNdx, DE_NULL);
+            setTex3DBinding(unitNdx, nullptr);
             break;
         case GL_TEXTURE_CUBE_MAP_ARRAY:
-            setTexCubeArrayBinding(unitNdx, DE_NULL);
+            setTexCubeArrayBinding(unitNdx, nullptr);
             break;
         default:
             DE_ASSERT(false);
@@ -783,7 +783,7 @@ void ReferenceContext::deleteTextures(int numTextures, const uint32_t *textures)
     for (int i = 0; i < numTextures; i++)
     {
         uint32_t name    = textures[i];
-        Texture *texture = name ? m_textures.find(name) : DE_NULL;
+        Texture *texture = name ? m_textures.find(name) : nullptr;
 
         if (texture)
             deleteTexture(texture);
@@ -796,17 +796,17 @@ void ReferenceContext::deleteTexture(Texture *texture)
     for (int unitNdx = 0; unitNdx < (int)m_textureUnits.size(); unitNdx++)
     {
         if (m_textureUnits[unitNdx].tex1DBinding == texture)
-            setTex1DBinding(unitNdx, DE_NULL);
+            setTex1DBinding(unitNdx, nullptr);
         else if (m_textureUnits[unitNdx].tex2DBinding == texture)
-            setTex2DBinding(unitNdx, DE_NULL);
+            setTex2DBinding(unitNdx, nullptr);
         else if (m_textureUnits[unitNdx].texCubeBinding == texture)
-            setTexCubeBinding(unitNdx, DE_NULL);
+            setTexCubeBinding(unitNdx, nullptr);
         else if (m_textureUnits[unitNdx].tex2DArrayBinding == texture)
-            setTex2DArrayBinding(unitNdx, DE_NULL);
+            setTex2DArrayBinding(unitNdx, nullptr);
         else if (m_textureUnits[unitNdx].tex3DBinding == texture)
-            setTex3DBinding(unitNdx, DE_NULL);
+            setTex3DBinding(unitNdx, nullptr);
         else if (m_textureUnits[unitNdx].texCubeArrayBinding == texture)
-            setTexCubeArrayBinding(unitNdx, DE_NULL);
+            setTexCubeArrayBinding(unitNdx, nullptr);
     }
 
     // Unbind from currently bound framebuffers
@@ -838,7 +838,7 @@ void ReferenceContext::deleteTexture(Texture *texture)
 
 void ReferenceContext::bindFramebuffer(uint32_t target, uint32_t name)
 {
-    Framebuffer *fbo = DE_NULL;
+    Framebuffer *fbo = nullptr;
 
     RC_IF_ERROR(target != GL_FRAMEBUFFER && target != GL_DRAW_FRAMEBUFFER && target != GL_READ_FRAMEBUFFER,
                 GL_INVALID_ENUM, RC_RET_VOID);
@@ -908,7 +908,7 @@ void ReferenceContext::deleteFramebuffers(int numFramebuffers, const uint32_t *f
     for (int i = 0; i < numFramebuffers; i++)
     {
         uint32_t name            = framebuffers[i];
-        Framebuffer *framebuffer = name ? m_framebuffers.find(name) : DE_NULL;
+        Framebuffer *framebuffer = name ? m_framebuffers.find(name) : nullptr;
 
         if (framebuffer)
             deleteFramebuffer(framebuffer);
@@ -917,7 +917,7 @@ void ReferenceContext::deleteFramebuffers(int numFramebuffers, const uint32_t *f
 
 void ReferenceContext::bindRenderbuffer(uint32_t target, uint32_t name)
 {
-    Renderbuffer *rbo = DE_NULL;
+    Renderbuffer *rbo = nullptr;
 
     RC_IF_ERROR(target != GL_RENDERBUFFER, GL_INVALID_ENUM, RC_RET_VOID);
 
@@ -985,7 +985,7 @@ void ReferenceContext::deleteRenderbuffers(int numRenderbuffers, const uint32_t 
     for (int i = 0; i < numRenderbuffers; i++)
     {
         uint32_t name              = renderbuffers[i];
-        Renderbuffer *renderbuffer = name ? m_renderbuffers.find(name) : DE_NULL;
+        Renderbuffer *renderbuffer = name ? m_renderbuffers.find(name) : nullptr;
 
         if (renderbuffer)
             deleteRenderbuffer(renderbuffer);
@@ -1942,7 +1942,7 @@ static inline tcu::Sampler::FilterMode mapGLFilterMode(int value)
 void ReferenceContext::texParameteri(uint32_t target, uint32_t pname, int value)
 {
     TextureUnit &unit = m_textureUnits[m_activeTexture];
-    Texture *texture  = DE_NULL;
+    Texture *texture  = nullptr;
 
     switch (target)
     {
@@ -2127,7 +2127,7 @@ void ReferenceContext::framebufferTexture2D(uint32_t target, uint32_t attachment
     else
     {
         Framebuffer::AttachmentPoint point  = mapGLAttachmentPoint(attachment);
-        Texture *texObj                     = DE_NULL;
+        Texture *texObj                     = nullptr;
         Framebuffer::TexTarget fboTexTarget = mapGLFboTexTarget(textarget);
 
         RC_IF_ERROR(target != GL_FRAMEBUFFER && target != GL_DRAW_FRAMEBUFFER && target != GL_READ_FRAMEBUFFER,
@@ -2193,7 +2193,7 @@ void ReferenceContext::framebufferTextureLayer(uint32_t target, uint32_t attachm
     else
     {
         Framebuffer::AttachmentPoint point = mapGLAttachmentPoint(attachment);
-        Texture *texObj                    = DE_NULL;
+        Texture *texObj                    = nullptr;
 
         RC_IF_ERROR(target != GL_FRAMEBUFFER && target != GL_DRAW_FRAMEBUFFER && target != GL_READ_FRAMEBUFFER,
                     GL_INVALID_ENUM, RC_RET_VOID);
@@ -2267,7 +2267,7 @@ void ReferenceContext::framebufferRenderbuffer(uint32_t target, uint32_t attachm
     else
     {
         Framebuffer::AttachmentPoint point = mapGLAttachmentPoint(attachment);
-        Renderbuffer *rbo                  = DE_NULL;
+        Renderbuffer *rbo                  = nullptr;
 
         RC_IF_ERROR(target != GL_FRAMEBUFFER && target != GL_DRAW_FRAMEBUFFER && target != GL_READ_FRAMEBUFFER,
                     GL_INVALID_ENUM, RC_RET_VOID);
@@ -2593,7 +2593,7 @@ static bool isValidBufferTarget(uint32_t target)
 
 void ReferenceContext::setBufferBinding(uint32_t target, DataBuffer *buffer)
 {
-    DataBuffer **bindingPoint      = DE_NULL;
+    DataBuffer **bindingPoint      = nullptr;
     VertexArray *vertexArrayObject = (m_vertexArrayBinding) ? (m_vertexArrayBinding) : (&m_clientVertexArray);
 
     switch (target)
@@ -2633,7 +2633,7 @@ void ReferenceContext::setBufferBinding(uint32_t target, DataBuffer *buffer)
     if (*bindingPoint)
     {
         m_buffers.releaseReference(*bindingPoint);
-        *bindingPoint = DE_NULL;
+        *bindingPoint = nullptr;
     }
 
     if (buffer)
@@ -2668,7 +2668,7 @@ DataBuffer *ReferenceContext::getBufferBinding(uint32_t target) const
         return m_uniformBufferBinding;
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -2676,7 +2676,7 @@ void ReferenceContext::bindBuffer(uint32_t target, uint32_t buffer)
 {
     RC_IF_ERROR(!isValidBufferTarget(target), GL_INVALID_ENUM, RC_RET_VOID);
 
-    rc::DataBuffer *bufObj = DE_NULL;
+    rc::DataBuffer *bufObj = nullptr;
 
     if (buffer != 0)
     {
@@ -2706,7 +2706,7 @@ void ReferenceContext::deleteBuffers(int numBuffers, const uint32_t *buffers)
     for (int ndx = 0; ndx < numBuffers; ndx++)
     {
         uint32_t buffer    = buffers[ndx];
-        DataBuffer *bufObj = DE_NULL;
+        DataBuffer *bufObj = nullptr;
 
         if (buffer == 0)
             continue;
@@ -2728,7 +2728,7 @@ void ReferenceContext::deleteBuffer(DataBuffer *buffer)
     for (int bindingNdx = 0; bindingNdx < DE_LENGTH_OF_ARRAY(bindingPoints); bindingNdx++)
     {
         if (getBufferBinding(bindingPoints[bindingNdx]) == buffer)
-            setBufferBinding(bindingPoints[bindingNdx], DE_NULL);
+            setBufferBinding(bindingPoints[bindingNdx], nullptr);
     }
 
     {
@@ -2741,7 +2741,7 @@ void ReferenceContext::deleteBuffer(DataBuffer *buffer)
             if ((*i)->m_elementArrayBufferBinding == buffer)
             {
                 m_buffers.releaseReference(buffer);
-                (*i)->m_elementArrayBufferBinding = DE_NULL;
+                (*i)->m_elementArrayBufferBinding = nullptr;
             }
 
             for (size_t vertexAttribNdx = 0; vertexAttribNdx < (*i)->m_arrays.size(); ++vertexAttribNdx)
@@ -2750,7 +2750,7 @@ void ReferenceContext::deleteBuffer(DataBuffer *buffer)
                 {
                     m_buffers.releaseReference(buffer);
                     (*i)->m_arrays[vertexAttribNdx].bufferDeleted = true;
-                    (*i)->m_arrays[vertexAttribNdx].bufferBinding = DE_NULL;
+                    (*i)->m_arrays[vertexAttribNdx].bufferBinding = nullptr;
                 }
             }
         }
@@ -3530,7 +3530,7 @@ void ReferenceContext::invalidateSubFramebuffer(uint32_t target, int numAttachme
                                                 int y, int width, int height)
 {
     RC_IF_ERROR(target != GL_FRAMEBUFFER, GL_INVALID_ENUM, RC_RET_VOID);
-    RC_IF_ERROR((numAttachments < 0) || (numAttachments > 1 && attachments == DE_NULL), GL_INVALID_VALUE, RC_RET_VOID);
+    RC_IF_ERROR((numAttachments < 0) || (numAttachments > 1 && attachments == nullptr), GL_INVALID_VALUE, RC_RET_VOID);
     RC_IF_ERROR(width < 0 || height < 0, GL_INVALID_VALUE, RC_RET_VOID);
 
     // \todo [2012-07-17 pyry] Support multiple color attachments.
@@ -3539,7 +3539,7 @@ void ReferenceContext::invalidateSubFramebuffer(uint32_t target, int numAttachme
     const float depthClearValue = 1.0f;
     const int stencilClearValue = 0;
 
-    bool isFboBound        = m_drawFramebufferBinding != DE_NULL;
+    bool isFboBound        = m_drawFramebufferBinding != nullptr;
     bool discardBuffers[3] = {false, false, false}; // Color, depth, stencil
 
     for (int attNdx = 0; attNdx < numAttachments; attNdx++)
@@ -3820,7 +3820,7 @@ void ReferenceContext::clearBufferfi(uint32_t buffer, int drawbuffer, float dept
 
 void ReferenceContext::bindVertexArray(uint32_t array)
 {
-    rc::VertexArray *vertexArrayObject = DE_NULL;
+    rc::VertexArray *vertexArrayObject = nullptr;
 
     if (array != 0)
     {
@@ -3856,7 +3856,7 @@ void ReferenceContext::deleteVertexArrays(int numArrays, const uint32_t *vertexA
     for (int i = 0; i < numArrays; i++)
     {
         uint32_t name            = vertexArrays[i];
-        VertexArray *vertexArray = name ? m_vertexArrays.find(name) : DE_NULL;
+        VertexArray *vertexArray = name ? m_vertexArrays.find(name) : nullptr;
 
         if (vertexArray)
             deleteVertexArray(vertexArray);
@@ -3880,7 +3880,7 @@ void ReferenceContext::vertexAttribPointer(uint32_t index, int rawSize, uint32_t
     RC_IF_ERROR(stride < 0, GL_INVALID_VALUE, RC_RET_VOID);
     RC_IF_ERROR((type == GL_INT_2_10_10_10_REV || type == GL_UNSIGNED_INT_2_10_10_10_REV) && effectiveSize != 4,
                 GL_INVALID_OPERATION, RC_RET_VOID);
-    RC_IF_ERROR(m_vertexArrayBinding != DE_NULL && m_arrayBufferBinding == DE_NULL && pointer != DE_NULL,
+    RC_IF_ERROR(m_vertexArrayBinding != nullptr && m_arrayBufferBinding == nullptr && pointer != nullptr,
                 GL_INVALID_OPERATION, RC_RET_VOID);
     RC_IF_ERROR(allowBGRA && rawSize == GL_BGRA && type != GL_INT_2_10_10_10_REV &&
                     type != GL_UNSIGNED_INT_2_10_10_10_REV && type != GL_UNSIGNED_BYTE,
@@ -3916,7 +3916,7 @@ void ReferenceContext::vertexAttribIPointer(uint32_t index, int size, uint32_t t
                     type != GL_INT && type != GL_UNSIGNED_INT,
                 GL_INVALID_ENUM, RC_RET_VOID);
     RC_IF_ERROR(stride < 0, GL_INVALID_VALUE, RC_RET_VOID);
-    RC_IF_ERROR(m_vertexArrayBinding != DE_NULL && m_arrayBufferBinding == DE_NULL && pointer != DE_NULL,
+    RC_IF_ERROR(m_vertexArrayBinding != nullptr && m_arrayBufferBinding == nullptr && pointer != nullptr,
                 GL_INVALID_OPERATION, RC_RET_VOID);
 
     rc::VertexArray &vao = (m_vertexArrayBinding) ? (*m_vertexArrayBinding) : (m_clientVertexArray);
@@ -4010,7 +4010,7 @@ int32_t ReferenceContext::getAttribLocation(uint32_t program, const char *name)
 {
     ShaderProgramObjectContainer *shaderProg = m_programs.find(program);
 
-    RC_IF_ERROR(shaderProg == DE_NULL, GL_INVALID_OPERATION, -1);
+    RC_IF_ERROR(shaderProg == nullptr, GL_INVALID_OPERATION, -1);
 
     if (name)
     {
@@ -4026,7 +4026,7 @@ int32_t ReferenceContext::getAttribLocation(uint32_t program, const char *name)
 
 void ReferenceContext::uniformv(int32_t location, glu::DataType type, int32_t count, const void *v)
 {
-    RC_IF_ERROR(m_currentProgram == DE_NULL, GL_INVALID_OPERATION, RC_RET_VOID);
+    RC_IF_ERROR(m_currentProgram == nullptr, GL_INVALID_OPERATION, RC_RET_VOID);
 
     std::vector<sglr::UniformSlot> &uniforms = m_currentProgram->m_program->m_uniforms;
 
@@ -4046,7 +4046,7 @@ void ReferenceContext::uniformv(int32_t location, glu::DataType type, int32_t co
 
 void ReferenceContext::uniform1iv(int32_t location, int32_t count, const int32_t *v)
 {
-    RC_IF_ERROR(m_currentProgram == DE_NULL, GL_INVALID_OPERATION, RC_RET_VOID);
+    RC_IF_ERROR(m_currentProgram == nullptr, GL_INVALID_OPERATION, RC_RET_VOID);
 
     std::vector<sglr::UniformSlot> &uniforms = m_currentProgram->m_program->m_uniforms;
 
@@ -4134,7 +4134,7 @@ void ReferenceContext::uniform4iv(int32_t location, int32_t count, const int32_t
 
 void ReferenceContext::uniformMatrix3fv(int32_t location, int32_t count, bool transpose, const float *value)
 {
-    RC_IF_ERROR(m_currentProgram == DE_NULL, GL_INVALID_OPERATION, RC_RET_VOID);
+    RC_IF_ERROR(m_currentProgram == nullptr, GL_INVALID_OPERATION, RC_RET_VOID);
 
     std::vector<sglr::UniformSlot> &uniforms = m_currentProgram->m_program->m_uniforms;
 
@@ -4172,7 +4172,7 @@ void ReferenceContext::uniformMatrix3fv(int32_t location, int32_t count, bool tr
 
 void ReferenceContext::uniformMatrix4fv(int32_t location, int32_t count, bool transpose, const float *value)
 {
-    RC_IF_ERROR(m_currentProgram == DE_NULL, GL_INVALID_OPERATION, RC_RET_VOID);
+    RC_IF_ERROR(m_currentProgram == nullptr, GL_INVALID_OPERATION, RC_RET_VOID);
 
     std::vector<sglr::UniformSlot> &uniforms = m_currentProgram->m_program->m_uniforms;
 
@@ -4211,12 +4211,12 @@ void ReferenceContext::uniformMatrix4fv(int32_t location, int32_t count, bool tr
 int32_t ReferenceContext::getUniformLocation(uint32_t program, const char *name)
 {
     ShaderProgramObjectContainer *shaderProg = m_programs.find(program);
-    RC_IF_ERROR(shaderProg == DE_NULL, GL_INVALID_OPERATION, -1);
+    RC_IF_ERROR(shaderProg == nullptr, GL_INVALID_OPERATION, -1);
 
     std::vector<sglr::UniformSlot> &uniforms = shaderProg->m_program->m_uniforms;
 
     for (size_t i = 0; i < uniforms.size(); ++i)
-        if (name && deStringEqual(uniforms[i].name.c_str(), name))
+        if (name && uniforms[i].name == name)
             return (int)i;
 
     return -1;
@@ -4366,7 +4366,7 @@ void ReferenceContext::drawArraysIndirect(uint32_t mode, const void *indirect)
 
     // Check pointer validity
 
-    RC_IF_ERROR(m_drawIndirectBufferBinding == DE_NULL, GL_INVALID_OPERATION, RC_RET_VOID);
+    RC_IF_ERROR(m_drawIndirectBufferBinding == nullptr, GL_INVALID_OPERATION, RC_RET_VOID);
     RC_IF_ERROR(!deIsAlignedPtr(indirect, 4), GL_INVALID_OPERATION, RC_RET_VOID);
 
     // \note watch for overflows, indirect might be close to 0xFFFFFFFF and indirect+something might overflow
@@ -4411,7 +4411,7 @@ void ReferenceContext::drawElementsIndirect(uint32_t mode, uint32_t type, const 
 
     // Check pointer validity
 
-    RC_IF_ERROR(m_drawIndirectBufferBinding == DE_NULL, GL_INVALID_OPERATION, RC_RET_VOID);
+    RC_IF_ERROR(m_drawIndirectBufferBinding == nullptr, GL_INVALID_OPERATION, RC_RET_VOID);
     RC_IF_ERROR(!deIsAlignedPtr(indirect, 4), GL_INVALID_OPERATION, RC_RET_VOID);
 
     // \note watch for overflows, indirect might be close to 0xFFFFFFFF and indirect+something might overflow
@@ -4574,7 +4574,7 @@ static uint32_t getFixedRestartIndex(rr::IndexType indexType)
 void ReferenceContext::drawWithReference(const rr::PrimitiveList &primitives, int instanceCount)
 {
     // undefined results
-    if (m_currentProgram == DE_NULL)
+    if (m_currentProgram == nullptr)
         return;
 
     rr::MultisamplePixelBufferAccess colorBuf0  = getDrawColorbuffer();
@@ -4587,7 +4587,7 @@ void ReferenceContext::drawWithReference(const rr::PrimitiveList &primitives, in
     const rr::Program program(
         m_currentProgram->m_program->getVertexShader(), m_currentProgram->m_program->getFragmentShader(),
         (m_currentProgram->m_program->m_hasGeometryShader) ? (m_currentProgram->m_program->getGeometryShader()) :
-                                                             (DE_NULL));
+                                                             (nullptr));
     rr::RenderState state((rr::ViewportState)(colorBuf0), m_limits.subpixelBits);
 
     const rr::Renderer referenceRenderer;
@@ -4726,7 +4726,7 @@ void ReferenceContext::drawWithReference(const rr::PrimitiveList &primitives, in
         case glu::TYPE_UINT_SAMPLER_1D:
         case glu::TYPE_INT_SAMPLER_1D:
         {
-            rc::Texture1D *tex = DE_NULL;
+            rc::Texture1D *tex = nullptr;
 
             if (texNdx >= 0 && (size_t)texNdx < m_textureUnits.size())
                 tex = (m_textureUnits[texNdx].tex1DBinding) ? (m_textureUnits[texNdx].tex1DBinding) :
@@ -4746,7 +4746,7 @@ void ReferenceContext::drawWithReference(const rr::PrimitiveList &primitives, in
         case glu::TYPE_UINT_SAMPLER_2D:
         case glu::TYPE_INT_SAMPLER_2D:
         {
-            rc::Texture2D *tex = DE_NULL;
+            rc::Texture2D *tex = nullptr;
 
             if (texNdx >= 0 && (size_t)texNdx < m_textureUnits.size())
                 tex = (m_textureUnits[texNdx].tex2DBinding) ? (m_textureUnits[texNdx].tex2DBinding) :
@@ -4766,7 +4766,7 @@ void ReferenceContext::drawWithReference(const rr::PrimitiveList &primitives, in
         case glu::TYPE_UINT_SAMPLER_CUBE:
         case glu::TYPE_INT_SAMPLER_CUBE:
         {
-            rc::TextureCube *tex = DE_NULL;
+            rc::TextureCube *tex = nullptr;
 
             if (texNdx >= 0 && (size_t)texNdx < m_textureUnits.size())
                 tex = (m_textureUnits[texNdx].texCubeBinding) ? (m_textureUnits[texNdx].texCubeBinding) :
@@ -4786,7 +4786,7 @@ void ReferenceContext::drawWithReference(const rr::PrimitiveList &primitives, in
         case glu::TYPE_UINT_SAMPLER_2D_ARRAY:
         case glu::TYPE_INT_SAMPLER_2D_ARRAY:
         {
-            rc::Texture2DArray *tex = DE_NULL;
+            rc::Texture2DArray *tex = nullptr;
 
             if (texNdx >= 0 && (size_t)texNdx < m_textureUnits.size())
                 tex = (m_textureUnits[texNdx].tex2DArrayBinding) ? (m_textureUnits[texNdx].tex2DArrayBinding) :
@@ -4806,7 +4806,7 @@ void ReferenceContext::drawWithReference(const rr::PrimitiveList &primitives, in
         case glu::TYPE_UINT_SAMPLER_3D:
         case glu::TYPE_INT_SAMPLER_3D:
         {
-            rc::Texture3D *tex = DE_NULL;
+            rc::Texture3D *tex = nullptr;
 
             if (texNdx >= 0 && (size_t)texNdx < m_textureUnits.size())
                 tex = (m_textureUnits[texNdx].tex3DBinding) ? (m_textureUnits[texNdx].tex3DBinding) :
@@ -4826,7 +4826,7 @@ void ReferenceContext::drawWithReference(const rr::PrimitiveList &primitives, in
         case glu::TYPE_UINT_SAMPLER_CUBE_ARRAY:
         case glu::TYPE_INT_SAMPLER_CUBE_ARRAY:
         {
-            rc::TextureCubeArray *tex = DE_NULL;
+            rc::TextureCubeArray *tex = nullptr;
 
             if (texNdx >= 0 && (size_t)texNdx < m_textureUnits.size())
                 tex = (m_textureUnits[texNdx].texCubeArrayBinding) ? (m_textureUnits[texNdx].texCubeArrayBinding) :
@@ -4864,8 +4864,8 @@ uint32_t ReferenceContext::createProgram(ShaderProgram *program)
 
 void ReferenceContext::useProgram(uint32_t program)
 {
-    rc::ShaderProgramObjectContainer *shaderProg         = DE_NULL;
-    rc::ShaderProgramObjectContainer *programToBeDeleted = DE_NULL;
+    rc::ShaderProgramObjectContainer *shaderProg         = nullptr;
+    rc::ShaderProgramObjectContainer *programToBeDeleted = nullptr;
 
     if (program)
     {
@@ -4990,7 +4990,7 @@ const char *ReferenceContext::getString(uint32_t pname)
 
     default:
         setError(GL_INVALID_ENUM);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -5062,7 +5062,7 @@ Texture::Texture(uint32_t name, Type type, bool seamless)
 {
 }
 
-Texture1D::Texture1D(uint32_t name) : Texture(name, TYPE_1D), m_view(0, DE_NULL)
+Texture1D::Texture1D(uint32_t name) : Texture(name, TYPE_1D), m_view(0, nullptr)
 {
 }
 
@@ -5153,10 +5153,10 @@ void Texture1D::updateView(tcu::Sampler::DepthStencilMode mode)
         m_view = tcu::Texture2DView(numLevels, m_levels.getEffectiveLevels() + baseLevel);
     }
     else
-        m_view = tcu::Texture2DView(0, DE_NULL);
+        m_view = tcu::Texture2DView(0, nullptr);
 }
 
-Texture2D::Texture2D(uint32_t name, bool es2) : Texture(name, TYPE_2D), m_view(0, DE_NULL, es2)
+Texture2D::Texture2D(uint32_t name, bool es2) : Texture(name, TYPE_2D), m_view(0, nullptr, es2)
 {
 }
 
@@ -5223,7 +5223,7 @@ void Texture2D::updateView(tcu::Sampler::DepthStencilMode mode)
         m_view = tcu::Texture2DView(numLevels, m_levels.getEffectiveLevels() + baseLevel);
     }
     else
-        m_view = tcu::Texture2DView(0, DE_NULL);
+        m_view = tcu::Texture2DView(0, nullptr);
 }
 
 tcu::Vec4 Texture2D::sample(float s, float t, float lod) const
@@ -5381,7 +5381,7 @@ void TextureCube::sample4(tcu::Vec4 output[4], const tcu::Vec3 packetTexcoords[4
     }
 }
 
-Texture2DArray::Texture2DArray(uint32_t name) : Texture(name, TYPE_2D_ARRAY), m_view(0, DE_NULL)
+Texture2DArray::Texture2DArray(uint32_t name) : Texture(name, TYPE_2D_ARRAY), m_view(0, nullptr)
 {
 }
 
@@ -5449,7 +5449,7 @@ void Texture2DArray::updateView(tcu::Sampler::DepthStencilMode mode)
         m_view = tcu::Texture2DArrayView(numLevels, m_levels.getEffectiveLevels() + baseLevel);
     }
     else
-        m_view = tcu::Texture2DArrayView(0, DE_NULL);
+        m_view = tcu::Texture2DArrayView(0, nullptr);
 }
 
 tcu::Vec4 Texture2DArray::sample(float s, float t, float r, float lod) const
@@ -5483,7 +5483,7 @@ void Texture2DArray::sample4(tcu::Vec4 output[4], const tcu::Vec3 packetTexcoord
     }
 }
 
-TextureCubeArray::TextureCubeArray(uint32_t name) : Texture(name, TYPE_CUBE_MAP_ARRAY), m_view(0, DE_NULL)
+TextureCubeArray::TextureCubeArray(uint32_t name) : Texture(name, TYPE_CUBE_MAP_ARRAY), m_view(0, nullptr)
 {
 }
 
@@ -5552,7 +5552,7 @@ void TextureCubeArray::updateView(tcu::Sampler::DepthStencilMode mode)
         m_view = tcu::TextureCubeArrayView(numLevels, m_levels.getEffectiveLevels() + baseLevel);
     }
     else
-        m_view = tcu::TextureCubeArrayView(0, DE_NULL);
+        m_view = tcu::TextureCubeArrayView(0, nullptr);
 }
 
 tcu::Vec4 TextureCubeArray::sample(float s, float t, float r, float q, float lod) const
@@ -5595,7 +5595,7 @@ void TextureCubeArray::sample4(tcu::Vec4 output[4], const tcu::Vec4 packetTexcoo
     }
 }
 
-Texture3D::Texture3D(uint32_t name) : Texture(name, TYPE_3D), m_view(0, DE_NULL)
+Texture3D::Texture3D(uint32_t name) : Texture(name, TYPE_3D), m_view(0, nullptr)
 {
 }
 
@@ -5699,7 +5699,7 @@ void Texture3D::updateView(tcu::Sampler::DepthStencilMode mode)
         m_view = tcu::Texture3DView(numLevels, m_levels.getEffectiveLevels() + baseLevel);
     }
     else
-        m_view = tcu::Texture3DView(0, DE_NULL);
+        m_view = tcu::Texture3DView(0, nullptr);
 }
 
 Renderbuffer::Renderbuffer(uint32_t name) : NamedObject(name)
@@ -5725,7 +5725,7 @@ Framebuffer::~Framebuffer(void)
 
 VertexArray::VertexArray(uint32_t name, int maxVertexAttribs)
     : NamedObject(name)
-    , m_elementArrayBufferBinding(DE_NULL)
+    , m_elementArrayBufferBinding(nullptr)
     , m_arrays(maxVertexAttribs)
 {
     for (int i = 0; i < maxVertexAttribs; ++i)
@@ -5738,8 +5738,8 @@ VertexArray::VertexArray(uint32_t name, int maxVertexAttribs)
         m_arrays[i].integer       = false;
         m_arrays[i].divisor       = 0;
         m_arrays[i].bufferDeleted = false;
-        m_arrays[i].bufferBinding = DE_NULL;
-        m_arrays[i].pointer       = DE_NULL;
+        m_arrays[i].bufferBinding = nullptr;
+        m_arrays[i].pointer       = nullptr;
     }
 }
 

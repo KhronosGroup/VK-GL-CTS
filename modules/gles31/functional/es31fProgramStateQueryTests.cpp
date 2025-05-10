@@ -58,7 +58,7 @@ static const char *getVerifierSuffix(QueryType type)
 
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -391,8 +391,8 @@ ProgramSeparableCase::IterateResult ProgramSeparableCase::iterate(void)
     const char *const vtxSourcePtr  = vStr.c_str();
     const char *const fragSourcePtr = fStr.c_str();
 
-    vtxShader.setSources(1, &vtxSourcePtr, DE_NULL);
-    frgShader.setSources(1, &fragSourcePtr, DE_NULL);
+    vtxShader.setSources(1, &vtxSourcePtr, nullptr);
+    frgShader.setSources(1, &fragSourcePtr, nullptr);
 
     vtxShader.compile();
     frgShader.compile();

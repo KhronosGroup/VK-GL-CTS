@@ -387,18 +387,20 @@ struct ComputeShaderSpec
     SpirvVersion spirvVersion;
     bool coherentMemory;
     bool usesPhysStorageBuffer;
+    const bool graphicsFeaturesRequired;
 
     ComputeShaderSpec(void)
         : entryPoint("main")
-        , pushConstants(DE_NULL)
+        , pushConstants(nullptr)
         , requestedVulkanFeatures()
         , failResult(QP_TEST_RESULT_FAIL)
         , failMessage("Output doesn't match with expected")
-        , verifyIO(DE_NULL)
-        , verifyBinary(DE_NULL)
+        , verifyIO(nullptr)
+        , verifyBinary(nullptr)
         , spirvVersion(SPIRV_VERSION_1_0)
         , coherentMemory(false)
         , usesPhysStorageBuffer(false)
+        , graphicsFeaturesRequired(false)
     {
     }
 };

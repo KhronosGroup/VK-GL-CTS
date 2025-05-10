@@ -171,7 +171,7 @@ private:
 
 inline Token::Token(void) : m_type(TYPE_LAST)
 {
-    m_arg.identifier = DE_NULL;
+    m_arg.identifier = nullptr;
 }
 
 inline Token::Token(Type type) : m_type(type)

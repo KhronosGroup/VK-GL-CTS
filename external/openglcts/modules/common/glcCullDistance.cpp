@@ -95,7 +95,7 @@ void CullDistance::Utilities::buildProgram(const glw::Functions &gl, tcu::TestCo
 
         for (glw::GLuint n_shader_index = 0; n_shader_index < n_shaders_configuration; n_shader_index++)
         {
-            if (shaders_configuration[n_shader_index].body != DE_NULL)
+            if (shaders_configuration[n_shader_index].body != nullptr)
             {
                 /* Generate shader object */
                 shaders_configuration[n_shader_index].id = gl.createShader(shaders_configuration[n_shader_index].type);
@@ -106,7 +106,7 @@ void CullDistance::Utilities::buildProgram(const glw::Functions &gl, tcu::TestCo
 
                 /* Assign shader source code */
                 gl.shaderSource(shaders_configuration[n_shader_index].id, 1,           /* count */
-                                &shaders_configuration[n_shader_index].body, DE_NULL); /* length */
+                                &shaders_configuration[n_shader_index].body, nullptr); /* length */
                 GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed");
 
                 gl.compileShader(so_id);
@@ -127,7 +127,7 @@ void CullDistance::Utilities::buildProgram(const glw::Functions &gl, tcu::TestCo
 
                     log_array.resize(log_length + 1, 0);
 
-                    gl.getShaderInfoLog(so_id, log_length, DE_NULL, &log_array[0]);
+                    gl.getShaderInfoLog(so_id, log_length, nullptr, &log_array[0]);
                     GLU_EXPECT_NO_ERROR(gl.getError(), "glGetShaderInfoLog() call failed.");
 
                     log_string = std::string(&log_array[0]);
@@ -147,7 +147,7 @@ void CullDistance::Utilities::buildProgram(const glw::Functions &gl, tcu::TestCo
                 gl.attachShader(po_id, so_id);
 
                 GLU_EXPECT_NO_ERROR(gl.getError(), "glAttachShader() call failed");
-            } /* if (shaders_configuration[n_shader_index].body != DE_NULL) */
+            } /* if (shaders_configuration[n_shader_index].body != nullptr) */
         }     /* for (all shader object IDs) */
 
         /* Set transform feedback if requested */
@@ -181,7 +181,7 @@ void CullDistance::Utilities::buildProgram(const glw::Functions &gl, tcu::TestCo
                 log_array.resize(log_length + 1, 0);
 
                 /* Retreive compilation log */
-                gl.getProgramInfoLog(po_id, log_length, DE_NULL, &log_array[0]);
+                gl.getProgramInfoLog(po_id, log_length, nullptr, &log_array[0]);
                 GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramInfoLog() call failed.");
 
                 log_string = std::string(&log_array[0]);
@@ -195,7 +195,7 @@ void CullDistance::Utilities::buildProgram(const glw::Functions &gl, tcu::TestCo
                 /* Log shader source code of shaders involved */
                 for (glw::GLuint n_shader_index = 0; n_shader_index < n_shaders_configuration; n_shader_index++)
                 {
-                    if (shaders_configuration[n_shader_index].body != DE_NULL)
+                    if (shaders_configuration[n_shader_index].body != nullptr)
                     {
                         testCtx.getLog() << tcu::TestLog::Message << "Shader source code of type "
                                          << shaders_configuration[n_shader_index].type << " follows:\n"
@@ -600,7 +600,7 @@ void CullDistance::APICoverageTest::test()
                       m_bo_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() or glBindBufferBase() call(s) failed.");
 
-    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, DE_NULL, GL_STATIC_DRAW);
+    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, nullptr, GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 
     for (glw::GLuint n_to_id = 0; n_to_id < 2; /* CS, FBO */ ++n_to_id)
@@ -1069,10 +1069,10 @@ void CullDistance::APICoverageTest::test()
 
             /* Build the test program */
             CullDistance::Utilities::buildProgram(
-                gl, m_testCtx, current_stage.use_cs ? cs_body.c_str() : DE_NULL,
-                current_stage.use_fs ? fs_body.c_str() : DE_NULL, current_stage.use_gs ? gs_body.c_str() : DE_NULL,
-                current_stage.use_tc ? tc_body.c_str() : DE_NULL, current_stage.use_te ? te_body.c_str() : DE_NULL,
-                current_stage.use_vs ? vs_body.c_str() : DE_NULL, (current_stage.tf_output_name != NULL) ? 1 : 0,
+                gl, m_testCtx, current_stage.use_cs ? cs_body.c_str() : nullptr,
+                current_stage.use_fs ? fs_body.c_str() : nullptr, current_stage.use_gs ? gs_body.c_str() : nullptr,
+                current_stage.use_tc ? tc_body.c_str() : nullptr, current_stage.use_te ? te_body.c_str() : nullptr,
+                current_stage.use_vs ? vs_body.c_str() : nullptr, (current_stage.tf_output_name != NULL) ? 1 : 0,
                 (const glw::GLchar **)&current_stage.tf_output_name, &m_po_id);
 
             /* Bind the test program */
@@ -1108,7 +1108,7 @@ void CullDistance::APICoverageTest::test()
             /* Verify the result values */
             if (!current_stage.use_cs)
             {
-                glw::GLint *result_data_ptr = DE_NULL;
+                glw::GLint *result_data_ptr = nullptr;
 
                 /* Retrieve the data captured by Transform Feedback */
                 result_data_ptr = (glw::GLint *)gl.mapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, /* offset */
@@ -1240,7 +1240,8 @@ void CullDistance::APICoverageTest::test()
  *
  *  @param context Rendering context handle.
  **/
-CullDistance::FunctionalTest::FunctionalTest(deqp::Context &context)
+CullDistance::FunctionalTest::FunctionalTest(deqp::Context &context, _test_item test_item,
+                                             _primitive_mode primitive_mode, glw::GLint iteration)
     : CullDistanceTestBase(context, "functional", "Cull Distance Functional Test")
     , m_bo_data()
     , m_bo_id(0)
@@ -1254,13 +1255,36 @@ CullDistance::FunctionalTest::FunctionalTest(deqp::Context &context)
     , m_to_height(512)
     , m_to_width(512)
     , m_to_pixel_data_cache()
+    , m_test_item(test_item)
+    , m_primitive_mode(primitive_mode)
+    , m_iteration(iteration)
 {
+    std::string name = "functional_test_item_" + std::to_string(m_test_item.test_id) + "_primitive_" +
+                       primitiveModeToString(m_primitive_mode) + "_max_culldist_" + std::to_string(m_iteration);
+    TestCase::m_name = name;
+
     if (!m_isContextES)
     {
         specializationMap["VERSION"]    = "#version 450";
         specializationMap["TS_VERSION"] = specializationMap["VERSION"];
         specializationMap["GS_VERSION"] = specializationMap["VERSION"];
     }
+}
+
+std::string CullDistance::FunctionalTest::primitiveModeToString(_primitive_mode mode)
+{
+    switch (mode)
+    {
+    case PRIMITIVE_MODE_LINES:
+        return "mode_lines";
+    case PRIMITIVE_MODE_POINTS:
+        return "mode_points";
+    case PRIMITIVE_MODE_TRIANGLES:
+        return "mode_triangles";
+    default:
+        return "default";
+    }
+    return "default";
 }
 
 /** @brief Build OpenGL program for functional tests
@@ -1451,11 +1475,11 @@ void CullDistance::FunctionalTest::buildPO(glw::GLuint clipdistances_array_size,
         "    gl_Position = vec4(2.0 * position.x - 1.0, 2.0 * position.y - 1.0, 0.0, 1.0);\n"
         "}\n";
 
-    std::string *shader_body_string_fs = DE_NULL;
-    std::string *shader_body_string_gs = DE_NULL;
-    std::string *shader_body_string_tc = DE_NULL;
-    std::string *shader_body_string_te = DE_NULL;
-    std::string *shader_body_string_vs = DE_NULL;
+    std::string *shader_body_string_fs = nullptr;
+    std::string *shader_body_string_gs = nullptr;
+    std::string *shader_body_string_tc = nullptr;
+    std::string *shader_body_string_te = nullptr;
+    std::string *shader_body_string_vs = nullptr;
 
     if (!m_isContextES)
     {
@@ -1913,19 +1937,19 @@ void CullDistance::FunctionalTest::buildPO(glw::GLuint clipdistances_array_size,
 
     /* Build the geometry shader */
     CullDistance::Utilities::buildProgram(
-        m_context.getRenderContext().getFunctions(), m_testCtx, DE_NULL, /* Compute shader                    */
-        shader_body_string_fs != DE_NULL ? shader_body_string_fs->c_str() :
-                                           DE_NULL, /* Fragment shader                   */
-        shader_body_string_gs != DE_NULL ? shader_body_string_gs->c_str() :
-                                           DE_NULL, /* Geometry shader                   */
-        shader_body_string_tc != DE_NULL ? shader_body_string_tc->c_str() :
-                                           DE_NULL, /* Tesselation control shader        */
-        shader_body_string_te != DE_NULL ? shader_body_string_te->c_str() :
-                                           DE_NULL, /* Tesselation evaluation shader     */
-        shader_body_string_vs != DE_NULL ? shader_body_string_vs->c_str() :
-                                           DE_NULL, /* Vertex shader                     */
+        m_context.getRenderContext().getFunctions(), m_testCtx, nullptr, /* Compute shader                    */
+        shader_body_string_fs != nullptr ? shader_body_string_fs->c_str() :
+                                           nullptr, /* Fragment shader                   */
+        shader_body_string_gs != nullptr ? shader_body_string_gs->c_str() :
+                                           nullptr, /* Geometry shader                   */
+        shader_body_string_tc != nullptr ? shader_body_string_tc->c_str() :
+                                           nullptr, /* Tesselation control shader        */
+        shader_body_string_te != nullptr ? shader_body_string_te->c_str() :
+                                           nullptr, /* Tesselation evaluation shader     */
+        shader_body_string_vs != nullptr ? shader_body_string_vs->c_str() :
+                                           nullptr, /* Vertex shader                     */
         0,                                          /* Transform feedback varyings count */
-        DE_NULL,                                    /* Transform feedback varyings       */
+        nullptr,                                    /* Transform feedback varyings       */
         &m_po_id                                    /* Program object id                 */
     );
 }
@@ -2833,7 +2857,6 @@ void CullDistance::FunctionalTest::test()
 {
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
     bool has_succeeded       = true;
-    bool is_core             = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
 
     /* Retrieve important GL constant values */
     glw::GLint gl_max_clip_distances_value                   = 0;
@@ -2844,6 +2867,12 @@ void CullDistance::FunctionalTest::test()
     gl.getIntegerv(GL_MAX_COMBINED_CLIP_AND_CULL_DISTANCES, &gl_max_combined_clip_and_cull_distances_value);
     gl.getIntegerv(GL_MAX_CULL_DISTANCES, &gl_max_cull_distances_value);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv() call(s) failed.");
+
+    if (m_iteration > gl_max_combined_clip_and_cull_distances_value)
+    {
+        m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not supported");
+        return;
+    }
 
     gl.genTextures(1, &m_to_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glGenTextures() call failed.");
@@ -2873,221 +2902,92 @@ void CullDistance::FunctionalTest::test()
     gl.genVertexArrays(1, &m_vao_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glGenVertexArrays() call failed.");
 
-    /* Iterate over all functional tests */
-    struct _test_item
-    {
-        bool redeclare_clipdistances_array;
-        bool redeclare_culldistances_array;
-        bool dynamic_index_writes;
-        bool use_passthrough_gs;
-        bool use_passthrough_ts;
-        bool use_core_functionality;
-        bool fetch_culldistances;
-    } test_items[]                 = {/* Use the basic outline to test the basic functionality of cull distances. */
-                      {
-                          true,    /* redeclare_clipdistances_array */
-                          true,    /* redeclare_culldistances_array */
-                          false,   /* dynamic_index_writes          */
-                          false,   /* use_passthrough_gs            */
-                          false,   /* use_passthrough_ts            */
-                          is_core, /* use_core_functionality        */
-                          false    /* fetch_culldistances           */
-                      },
-                      /* Use the basic outline but don't redeclare gl_ClipDistance with a size. */
-                      {
-                          false,   /* redeclare_clipdistances_array */
-                          true,    /* redeclare_culldistances_array */
-                          false,   /* dynamic_index_writes          */
-                          false,   /* use_passthrough_gs            */
-                          false,   /* use_passthrough_ts            */
-                          is_core, /* use_core_functionality        */
-                          false    /* fetch_culldistances           */
-                      },
-                      /* Use the basic outline but don't redeclare gl_CullDistance with a size. */
-                      {
-                          true,    /* redeclare_clipdistances_array  */
-                          false,   /* redeclare_culldistances_array  */
-                          false,   /* dynamic_index_writes           */
-                          false,   /* use_passthrough_gs             */
-                          false,   /* use_passthrough_ts             */
-                          is_core, /* use_core_functionality         */
-                          false    /* fetch_culldistances            */
-                      },
-                      /* Use the basic outline but don't redeclare either gl_ClipDistance or
-                       * gl_CullDistance with a size.
-                       */
-                      {
-                          false,   /* redeclare_clipdistances_array */
-                          false,   /* redeclare_culldistances_array */
-                          false,   /* dynamic_index_writes          */
-                          false,   /* use_passthrough_gs            */
-                          false,   /* use_passthrough_ts            */
-                          is_core, /* use_core_functionality        */
-                          false    /* fetch_culldistances           */
-                      },
-                      /* Use the basic outline but use dynamic indexing when writing the elements
-                       * of the gl_ClipDistance and gl_CullDistance arrays.
-                       */
-                      {
-                          true,    /* redeclare_clipdistances_array */
-                          true,    /* redeclare_culldistances_array */
-                          true,    /* dynamic_index_writes          */
-                          false,   /* use_passthrough_gs            */
-                          false,   /* use_passthrough_ts            */
-                          is_core, /* use_core_functionality        */
-                          false    /* fetch_culldistances           */
-                      },
-                      /* Use the basic outline but add a geometry shader to the program that
-                       * simply passes through all written clip and cull distances.
-                       */
-                      {
-                          true,    /* redeclare_clipdistances_array */
-                          true,    /* redeclare_culldistances_array */
-                          false,   /* dynamic_index_writes          */
-                          true,    /* use_passthrough_gs            */
-                          false,   /* use_passthrough_ts            */
-                          is_core, /* use_core_functionality        */
-                          false    /* fetch_culldistances           */
-                      },
-                      /* Use the basic outline but add a tessellation control and tessellation
-                       * evaluation shader to the program which simply pass through all written
-                       * clip and cull distances.
-                       */
-                      {
-                          true,    /* redeclare_clipdistances_array */
-                          true,    /* redeclare_culldistances_array */
-                          false,   /* dynamic_index_writes          */
-                          false,   /* use_passthrough_gs            */
-                          true,    /* use_passthrough_ts            */
-                          is_core, /* use_core_functionality        */
-                          false    /* fetch_culldistances           */
-                      },
-                      /* Test that using #extension with GL_ARB_cull_distance allows using the
-                       * feature even with an earlier version of GLSL. Also test that the
-                       * extension name is available as preprocessor #define.
-                       */
-                      {
-                          true,  /* redeclare_clipdistances_array */
-                          true,  /* redeclare_culldistances_array */
-                          false, /* dynamic_index_writes          */
-                          false, /* use_passthrough_gs            */
-                          false, /* use_passthrough_ts            */
-                          false, /* use_core_functionality        */
-                          false  /* fetch_culldistances           */
-                      },
-                      /* Use a program that has only a vertex shader and a fragment shader.
-                       * The vertex shader should redeclare gl_ClipDistance with a size that
-                       * fits all enabled cull distances. Also redeclare gl_CullDistance with a
-                       * size. The sum of the two sizes should not be more than MAX_COMBINED_-
-                       * CLIP_AND_CULL_DISTANCES. The fragment shader should output the cull
-                       * distances written by the vertex shader by reading them from the built-in
-                       * array gl_CullDistance.
-                       */
-                      {
-                          true,  /* redeclare_clipdistances_array */
-                          true,  /* redeclare_culldistances_array */
-                          false, /* dynamic_index_writes          */
-                          false, /* use_passthrough_gs            */
-                          false, /* use_passthrough_ts            */
-                          false, /* use_core_functionality        */
-                          true   /* fetch_culldistances           */
-                      }};
-    const glw::GLuint n_test_items = sizeof(test_items) / sizeof(test_items[0]);
-
     gl.viewport(0, 0, m_to_width, m_to_height);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glViewport() call failed.");
 
     gl.clearColor(0.0f, 0.0f, 0.0f, 1.0f);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glClearColor() call failed.");
 
-    for (glw::GLuint n_test_item = 0; n_test_item < n_test_items; ++n_test_item)
+    /* Check for OpenGL feature support */
+    if (m_test_item.use_passthrough_ts)
     {
-        const _test_item &current_test_item = test_items[n_test_item];
-
-        /* Check for OpenGL feature support */
-        if (current_test_item.use_passthrough_ts)
+        if (m_isContextES)
         {
-            if (m_isContextES)
+            if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) &&
+                (!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ||
+                 // gl_PerVertex built-in variable
+                 !m_context.getContextInfo().isExtensionSupported("GL_EXT_shader_io_blocks")))
             {
-                if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) &&
-                    (!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ||
-                     // gl_PerVertex built-in variable
-                     !m_context.getContextInfo().isExtensionSupported("GL_EXT_shader_io_blocks")))
-                    continue; // no tessellation shader support
-            }
-            else
-            {
-                if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 0)) &&
-                    !m_context.getContextInfo().isExtensionSupported("GL_ARB_tessellation_shader"))
-                    continue; // no tessellation shader support
+                m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not supported");
+                return;
             }
         }
-
-        if (current_test_item.use_passthrough_gs)
+        else
         {
-            if (m_isContextES)
+            if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 0)) &&
+                !m_context.getContextInfo().isExtensionSupported("GL_ARB_tessellation_shader"))
             {
-                if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) &&
-                    !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
-                    continue; // no geometry shader support
+                m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not supported");
+                return;
             }
         }
+    }
 
-        const _primitive_mode primitive_modes[PRIMITIVE_MODE_COUNT] = {PRIMITIVE_MODE_LINES, PRIMITIVE_MODE_POINTS,
-                                                                       PRIMITIVE_MODE_TRIANGLES};
-        for (glw::GLuint primitive_mode_index = 0; primitive_mode_index < PRIMITIVE_MODE_COUNT; ++primitive_mode_index)
+    if (m_test_item.use_passthrough_gs)
+    {
+        if (m_isContextES)
         {
-            _primitive_mode primitive_mode = primitive_modes[primitive_mode_index];
-
-            /* Iterate over a set of gl_ClipDistances[] and gl_CullDistances[] array sizes */
-            for (glw::GLint n_iteration = 0; n_iteration <= gl_max_combined_clip_and_cull_distances_value;
-                 ++n_iteration)
+            if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) &&
+                !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
             {
-                glw::GLuint clipdistances_array_size = 0;
-                glw::GLuint culldistances_array_size = 0;
+                m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not supported");
+                return;
+            }
+        }
+    }
 
-                if (n_iteration != 0 && n_iteration <= gl_max_clip_distances_value)
-                {
-                    clipdistances_array_size = n_iteration;
-                }
+    glw::GLuint clipdistances_array_size = 0;
+    glw::GLuint culldistances_array_size = 0;
 
-                if ((gl_max_combined_clip_and_cull_distances_value - n_iteration) < gl_max_cull_distances_value)
-                {
-                    culldistances_array_size = gl_max_combined_clip_and_cull_distances_value - n_iteration;
-                }
-                else
-                {
-                    culldistances_array_size = gl_max_cull_distances_value;
-                }
+    if (m_iteration != 0 && m_iteration <= gl_max_clip_distances_value)
+    {
+        clipdistances_array_size = m_iteration;
+    }
 
-                if (clipdistances_array_size == 0 && culldistances_array_size == 0)
-                {
-                    /* Skip the empty iteration */
-                    continue;
-                }
+    if ((gl_max_combined_clip_and_cull_distances_value - m_iteration) < gl_max_cull_distances_value)
+    {
+        culldistances_array_size = gl_max_combined_clip_and_cull_distances_value - m_iteration;
+    }
+    else
+    {
+        culldistances_array_size = gl_max_cull_distances_value;
+    }
 
-                if (current_test_item.fetch_culldistances && (primitive_mode != PRIMITIVE_MODE_POINTS))
-                {
-                    continue;
-                }
+    if (clipdistances_array_size == 0 && culldistances_array_size == 0)
+    {
+        /* Skip the empty iteration */
+        m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not supported");
+        return;
+    }
 
-                /* Create a program to run */
-                buildPO(clipdistances_array_size, culldistances_array_size, current_test_item.dynamic_index_writes,
-                        primitive_mode, current_test_item.redeclare_clipdistances_array,
-                        current_test_item.redeclare_culldistances_array, current_test_item.use_core_functionality,
-                        current_test_item.use_passthrough_gs, current_test_item.use_passthrough_ts,
-                        current_test_item.fetch_culldistances);
+    if (m_test_item.fetch_culldistances && (m_primitive_mode != PRIMITIVE_MODE_POINTS))
+    {
+        m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not supported");
+        return;
+    }
 
-                /* Initialize VAO data */
-                configureVAO(clipdistances_array_size, culldistances_array_size, primitive_mode);
+    /* Create a program to run */
+    buildPO(clipdistances_array_size, culldistances_array_size, m_test_item.dynamic_index_writes, m_primitive_mode,
+            m_test_item.redeclare_clipdistances_array, m_test_item.redeclare_culldistances_array,
+            m_test_item.use_core_functionality, m_test_item.use_passthrough_gs, m_test_item.use_passthrough_ts,
+            m_test_item.fetch_culldistances);
 
-                /* Run GLSL program and check results */
-                executeRenderTest(clipdistances_array_size, culldistances_array_size, primitive_mode,
-                                  current_test_item.use_passthrough_ts, current_test_item.fetch_culldistances);
+    /* Initialize VAO data */
+    configureVAO(clipdistances_array_size, culldistances_array_size, m_primitive_mode);
 
-            } /* for (all iterations) */
-        }     /* for (all test modes) */
-    }         /* for (all test items) */
+    /* Run GLSL program and check results */
+    executeRenderTest(clipdistances_array_size, culldistances_array_size, m_primitive_mode,
+                      m_test_item.use_passthrough_ts, m_test_item.fetch_culldistances);
 
     /* All done */
     if (has_succeeded)
@@ -3144,7 +3044,7 @@ CullDistance::NegativeTest::NegativeTest(deqp::Context &context)
     : CullDistanceTestBase(context, "negative", "Cull Distance Negative Test")
     , m_fs_id(0)
     , m_po_id(0)
-    , m_temp_buffer(DE_NULL)
+    , m_temp_buffer(nullptr)
     , m_vs_id(0)
 {
     /* Left blank on purpose */
@@ -3176,11 +3076,11 @@ void CullDistance::NegativeTest::deinit()
         m_vs_id = 0;
     }
 
-    if (m_temp_buffer != DE_NULL)
+    if (m_temp_buffer != nullptr)
     {
         delete[] m_temp_buffer;
 
-        m_temp_buffer = DE_NULL;
+        m_temp_buffer = nullptr;
     }
 }
 
@@ -3338,7 +3238,7 @@ void CullDistance::NegativeTest::test()
     const char *fs_body_raw_ptr = fs_body_spec.c_str();
 
     gl.shaderSource(m_fs_id, 1,                 /* count */
-                    &fs_body_raw_ptr, DE_NULL); /* length */
+                    &fs_body_raw_ptr, nullptr); /* length */
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
     gl.compileShader(m_fs_id);
@@ -3417,7 +3317,7 @@ void CullDistance::NegativeTest::test()
         const char *vs_body_raw_ptr        = vs_body_string.c_str();
 
         gl.shaderSource(m_vs_id, 1,                 /* count */
-                        &vs_body_raw_ptr, DE_NULL); /* length */
+                        &vs_body_raw_ptr, nullptr); /* length */
         GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
         gl.compileShader(m_vs_id);
@@ -3444,14 +3344,14 @@ void CullDistance::NegativeTest::test()
 
             memset(m_temp_buffer, 0, buffer_size + 1);
 
-            gl.getShaderInfoLog(m_vs_id, buffer_size, DE_NULL, /* length */
+            gl.getShaderInfoLog(m_vs_id, buffer_size, nullptr, /* length */
                                 m_temp_buffer);
             GLU_EXPECT_NO_ERROR(gl.getError(), "glGetShaderInfoLog() call failed.");
 
             m_testCtx.getLog() << tcu::TestLog::Message << m_temp_buffer << tcu::TestLog::EndMessage;
 
             delete[] m_temp_buffer;
-            m_temp_buffer = DE_NULL;
+            m_temp_buffer = nullptr;
 
             /* Move on to the next iteration */
             continue;
@@ -3492,14 +3392,14 @@ void CullDistance::NegativeTest::test()
 
             memset(m_temp_buffer, 0, buffer_size + 1);
 
-            gl.getProgramInfoLog(m_po_id, buffer_size, DE_NULL, /* length */
+            gl.getProgramInfoLog(m_po_id, buffer_size, nullptr, /* length */
                                  m_temp_buffer);
             GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramInfoLog() call failed.");
 
             m_testCtx.getLog() << tcu::TestLog::Message << m_temp_buffer << tcu::TestLog::EndMessage;
 
             delete[] m_temp_buffer;
-            m_temp_buffer = DE_NULL;
+            m_temp_buffer = nullptr;
         }
     } /* for (all test items) */
 
@@ -3521,7 +3421,144 @@ CullDistance::Tests::Tests(deqp::Context &context) : TestCaseGroup(context, "cul
 void CullDistance::Tests::init()
 {
     addChild(new CullDistance::APICoverageTest(m_context));
-    addChild(new CullDistance::FunctionalTest(m_context));
+    addFunctionalTest();
     addChild(new CullDistance::NegativeTest(m_context));
+}
+
+void CullDistance::Tests::addFunctionalTest()
+{
+    bool is_core = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
+    const glw::GLint MAX_COMBINED_CLIP_AND_CULL_DISTANCES = 8;
+
+    CullDistance::FunctionalTest::_test_item test_items[] = {
+        /* Use the basic outline to test the basic functionality of cull distances. */
+        {
+            0, true, /* redeclare_clipdistances_array */
+            true,    /* redeclare_culldistances_array */
+            false,   /* dynamic_index_writes          */
+            false,   /* use_passthrough_gs            */
+            false,   /* use_passthrough_ts            */
+            is_core, /* use_core_functionality        */
+            false    /* fetch_culldistances           */
+        },
+        /* Use the basic outline but don't redeclare gl_ClipDistance with a size. */
+        {
+            1, false, /* redeclare_clipdistances_array */
+            true,     /* redeclare_culldistances_array */
+            false,    /* dynamic_index_writes          */
+            false,    /* use_passthrough_gs            */
+            false,    /* use_passthrough_ts            */
+            is_core,  /* use_core_functionality        */
+            false     /* fetch_culldistances           */
+        },
+        /* Use the basic outline but don't redeclare gl_CullDistance with a size. */
+        {
+            2, true, /* redeclare_clipdistances_array  */
+            false,   /* redeclare_culldistances_array  */
+            false,   /* dynamic_index_writes           */
+            false,   /* use_passthrough_gs             */
+            false,   /* use_passthrough_ts             */
+            is_core, /* use_core_functionality         */
+            false    /* fetch_culldistances            */
+        },
+        /* Use the basic outline but don't redeclare either gl_ClipDistance or
+         * gl_CullDistance with a size.
+         */
+        {
+            3, false, /* redeclare_clipdistances_array */
+            false,    /* redeclare_culldistances_array */
+            false,    /* dynamic_index_writes          */
+            false,    /* use_passthrough_gs            */
+            false,    /* use_passthrough_ts            */
+            is_core,  /* use_core_functionality        */
+            false     /* fetch_culldistances           */
+        },
+        /* Use the basic outline but use dynamic indexing when writing the elements
+         * of the gl_ClipDistance and gl_CullDistance arrays.
+         */
+        {
+            4, true, /* redeclare_clipdistances_array */
+            true,    /* redeclare_culldistances_array */
+            true,    /* dynamic_index_writes          */
+            false,   /* use_passthrough_gs            */
+            false,   /* use_passthrough_ts            */
+            is_core, /* use_core_functionality        */
+            false    /* fetch_culldistances           */
+        },
+        /* Use the basic outline but add a geometry shader to the program that
+         * simply passes through all written clip and cull distances.
+         */
+        {
+            5, true, /* redeclare_clipdistances_array */
+            true,    /* redeclare_culldistances_array */
+            false,   /* dynamic_index_writes          */
+            true,    /* use_passthrough_gs            */
+            false,   /* use_passthrough_ts            */
+            is_core, /* use_core_functionality        */
+            false    /* fetch_culldistances           */
+        },
+        /* Use the basic outline but add a tessellation control and tessellation
+         * evaluation shader to the program which simply pass through all written
+         * clip and cull distances.
+         */
+        {
+            6, true, /* redeclare_clipdistances_array */
+            true,    /* redeclare_culldistances_array */
+            false,   /* dynamic_index_writes          */
+            false,   /* use_passthrough_gs            */
+            true,    /* use_passthrough_ts            */
+            is_core, /* use_core_functionality        */
+            false    /* fetch_culldistances           */
+        },
+        /* Test that using #extension with GL_ARB_cull_distance allows using the
+         * feature even with an earlier version of GLSL. Also test that the
+         * extension name is available as preprocessor #define.
+         */
+        {
+            7, true, /* redeclare_clipdistances_array */
+            true,    /* redeclare_culldistances_array */
+            false,   /* dynamic_index_writes          */
+            false,   /* use_passthrough_gs            */
+            false,   /* use_passthrough_ts            */
+            false,   /* use_core_functionality        */
+            false    /* fetch_culldistances           */
+        },
+        /* Use a program that has only a vertex shader and a fragment shader.
+         * The vertex shader should redeclare gl_ClipDistance with a size that
+         * fits all enabled cull distances. Also redeclare gl_CullDistance with a
+         * size. The sum of the two sizes should not be more than MAX_COMBINED_-
+         * CLIP_AND_CULL_DISTANCES. The fragment shader should output the cull
+         * distances written by the vertex shader by reading them from the built-in
+         * array gl_CullDistance.
+         */
+        {
+            8, true, /* redeclare_clipdistances_array */
+            true,    /* redeclare_culldistances_array */
+            false,   /* dynamic_index_writes          */
+            false,   /* use_passthrough_gs            */
+            false,   /* use_passthrough_ts            */
+            false,   /* use_core_functionality        */
+            true     /* fetch_culldistances           */
+        }};
+
+    const glw::GLuint n_test_items = sizeof(test_items) / sizeof(test_items[0]);
+    for (glw::GLuint n_test_item = 0; n_test_item < n_test_items; ++n_test_item)
+    {
+        const CullDistance::FunctionalTest::_primitive_mode
+            primitive_modes[CullDistance::FunctionalTest::PRIMITIVE_MODE_COUNT] = {
+                CullDistance::FunctionalTest::PRIMITIVE_MODE_LINES, CullDistance::FunctionalTest::PRIMITIVE_MODE_POINTS,
+                CullDistance::FunctionalTest::PRIMITIVE_MODE_TRIANGLES};
+
+        for (glw::GLuint primitive_mode_index = 0;
+             primitive_mode_index < CullDistance::FunctionalTest::PRIMITIVE_MODE_COUNT; ++primitive_mode_index)
+        {
+            /* Iterate over a set of gl_ClipDistances[] and gl_CullDistances[] array sizes */
+            for (glw::GLint n_iteration = 0; n_iteration < MAX_COMBINED_CLIP_AND_CULL_DISTANCES; ++n_iteration)
+            {
+                addChild(new CullDistance::FunctionalTest(m_context, test_items[n_test_item],
+                                                          primitive_modes[primitive_mode_index], n_iteration));
+            }
+        }
+    }
 }
 } // namespace glcts

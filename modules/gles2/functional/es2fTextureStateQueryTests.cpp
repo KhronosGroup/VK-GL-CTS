@@ -53,8 +53,8 @@ public:
 
     const char *getTestNamePostfix(void) const;
 
-    virtual void verifyInteger(tcu::TestContext &testCtx, GLenum target, GLenum name, GLint reference) = DE_NULL;
-    virtual void verifyFloat(tcu::TestContext &testCtx, GLenum target, GLenum name, GLfloat reference) = DE_NULL;
+    virtual void verifyInteger(tcu::TestContext &testCtx, GLenum target, GLenum name, GLint reference) = 0;
+    virtual void verifyFloat(tcu::TestContext &testCtx, GLenum target, GLenum name, GLfloat reference) = 0;
 
 private:
     const char *const m_testNamePostfix;
@@ -213,7 +213,7 @@ public:
     {
     }
 
-    virtual void testTexture(void) = DE_NULL;
+    virtual void testTexture(void) = 0;
 
     void test(void)
     {
@@ -370,8 +370,8 @@ public:
 
 TextureStateQueryTests::TextureStateQueryTests(Context &context)
     : TestCaseGroup(context, "texture", "Texture State Query tests")
-    , m_verifierInt(DE_NULL)
-    , m_verifierFloat(DE_NULL)
+    , m_verifierInt(nullptr)
+    , m_verifierFloat(nullptr)
 {
 }
 
@@ -384,8 +384,8 @@ void TextureStateQueryTests::init(void)
 {
     using namespace TextureParamVerifiers;
 
-    DE_ASSERT(m_verifierInt == DE_NULL);
-    DE_ASSERT(m_verifierFloat == DE_NULL);
+    DE_ASSERT(m_verifierInt == nullptr);
+    DE_ASSERT(m_verifierFloat == nullptr);
 
     m_verifierInt =
         new GetTexParameterIVerifier(m_context.getRenderContext().getFunctions(), m_context.getTestContext().getLog());

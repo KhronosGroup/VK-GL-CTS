@@ -128,16 +128,16 @@ tcu::TestStatus RayQueryProceduralGeometryTestBase::iterate(void)
     const Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vkd, device, descriptorSetLayout.get());
     const VkComputePipelineCreateInfo pipelineCreateInfo{
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType                        sType
-        DE_NULL,                                        // const void*                            pNext
+        nullptr,                                        // const void*                            pNext
         0u,                                             // VkPipelineCreateFlags                flags
         {                                               // VkPipelineShaderStageCreateInfo        stage
-         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, DE_NULL, (VkPipelineShaderStageCreateFlags)0,
-         VK_SHADER_STAGE_COMPUTE_BIT, *shaderModule, "main", DE_NULL},
+         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, (VkPipelineShaderStageCreateFlags)0,
+         VK_SHADER_STAGE_COMPUTE_BIT, *shaderModule, "main", nullptr},
         *pipelineLayout, // VkPipelineLayout                        layout
-        DE_NULL,         // VkPipeline                            basePipelineHandle
+        VK_NULL_HANDLE,  // VkPipeline                            basePipelineHandle
         0,               // int32_t                                basePipelineIndex
     };
-    Move<VkPipeline> pipeline = createComputePipeline(vkd, device, DE_NULL, &pipelineCreateInfo);
+    Move<VkPipeline> pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 
     m_cmdPool   = createCommandPool(vkd, device, 0, queueFamilyIndex);
     m_cmdBuffer = allocateCommandBuffer(vkd, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -190,12 +190,12 @@ tcu::TestStatus RayQueryProceduralGeometryTestBase::iterate(void)
 
         // generate reference
         vkd.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1,
-                                  &referenceDescriptorSet.get(), 0, DE_NULL);
+                                  &referenceDescriptorSet.get(), 0, nullptr);
         vkd.cmdDispatch(*m_cmdBuffer, imageSize, imageSize, 1);
 
         // generate result
         vkd.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1,
-                                  &resultDescriptorSet.get(), 0, DE_NULL);
+                                  &resultDescriptorSet.get(), 0, nullptr);
         vkd.cmdDispatch(*m_cmdBuffer, imageSize, imageSize, 1);
 
         const VkMemoryBarrier postTraceMemoryBarrier =
@@ -231,7 +231,7 @@ VkWriteDescriptorSetAccelerationStructureKHR RayQueryProceduralGeometryTestBase:
 {
     return {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, // VkStructureType                        sType
-        DE_NULL,               // const void*                            pNext
+        nullptr,               // const void*                            pNext
         1u,                    // uint32_t                                accelerationStructureCount
         pAccelerationStructure // const VkAccelerationStructureKHR*    pAccelerationStructures
     };
@@ -266,6 +266,9 @@ void ObjectBehindBoundingBoxInstance::setupAccelerationStructures()
     const VkDevice device      = m_context.getDevice();
     Allocator &allocator       = m_context.getDefaultAllocator();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     // build reference acceleration structure - single aabb big enough to fit whole procedural geometry
     de::SharedPtr<BottomLevelAccelerationStructure> referenceBLAS(makeBottomLevelAccelerationStructure().release());
     referenceBLAS->setGeometryData(
@@ -274,12 +277,12 @@ void ObjectBehindBoundingBoxInstance::setupAccelerationStructures()
             {64.0, 64.0, -16.0},
         },
         false, 0);
-    referenceBLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator);
+    referenceBLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator, bufferProps);
     m_blasVect.push_back(referenceBLAS);
 
     m_referenceTLAS->setInstanceCount(1);
     m_referenceTLAS->addInstance(m_blasVect.back());
-    m_referenceTLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator);
+    m_referenceTLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator, bufferProps);
 
     // build result acceleration structure - wall of 4 aabb's and generated object is actualy behind it (as it is just 1.0 unit thick)
     de::SharedPtr<BottomLevelAccelerationStructure> resultBLAS(makeBottomLevelAccelerationStructure().release());
@@ -295,12 +298,12 @@ void ObjectBehindBoundingBoxInstance::setupAccelerationStructures()
             {64.0, 64.0, 1.0}, //    |  |
         },
         false, 0);
-    resultBLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator);
+    resultBLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator, bufferProps);
     m_blasVect.push_back(resultBLAS);
 
     m_resultTLAS->setInstanceCount(1);
     m_resultTLAS->addInstance(m_blasVect.back());
-    m_resultTLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator);
+    m_resultTLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator, bufferProps);
 }
 
 class TriangleInBeteenInstance : public RayQueryProceduralGeometryTestBase
@@ -320,6 +323,9 @@ void TriangleInBeteenInstance::setupAccelerationStructures()
     const VkDevice device      = m_context.getDevice();
     Allocator &allocator       = m_context.getDefaultAllocator();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     de::SharedPtr<BottomLevelAccelerationStructure> triangleBLAS(makeBottomLevelAccelerationStructure().release());
     triangleBLAS->setGeometryData(
         {
@@ -328,7 +334,7 @@ void TriangleInBeteenInstance::setupAccelerationStructures()
             {32.0, 48.0, -8.0},
         },
         true, VK_GEOMETRY_OPAQUE_BIT_KHR);
-    triangleBLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator);
+    triangleBLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator, bufferProps);
     m_blasVect.push_back(triangleBLAS);
 
     de::SharedPtr<BottomLevelAccelerationStructure> fullElipsoidBLAS(makeBottomLevelAccelerationStructure().release());
@@ -338,14 +344,14 @@ void TriangleInBeteenInstance::setupAccelerationStructures()
             {64.0, 64.0, -16.0},
         },
         false, 0);
-    fullElipsoidBLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator);
+    fullElipsoidBLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator, bufferProps);
     m_blasVect.push_back(fullElipsoidBLAS);
 
     // build reference acceleration structure - triangle and a single aabb big enough to fit whole procedural geometry
     m_referenceTLAS->setInstanceCount(2);
     m_referenceTLAS->addInstance(fullElipsoidBLAS);
     m_referenceTLAS->addInstance(triangleBLAS);
-    m_referenceTLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator);
+    m_referenceTLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator, bufferProps);
 
     de::SharedPtr<BottomLevelAccelerationStructure> elipsoidWallBLAS(makeBottomLevelAccelerationStructure().release());
     elipsoidWallBLAS->setGeometryData(
@@ -358,14 +364,14 @@ void TriangleInBeteenInstance::setupAccelerationStructures()
             {64.0, 64.0, 1.0},
         },
         false, 0);
-    elipsoidWallBLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator);
+    elipsoidWallBLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator, bufferProps);
     m_blasVect.push_back(elipsoidWallBLAS);
 
     // build result acceleration structure - triangle and a three aabb's (they are in front of triangle but generate intersections behind it)
     m_resultTLAS->setInstanceCount(2);
     m_resultTLAS->addInstance(elipsoidWallBLAS);
     m_resultTLAS->addInstance(triangleBLAS);
-    m_resultTLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator);
+    m_resultTLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator, bufferProps);
 }
 
 class RayQueryProceduralGeometryTestCase : public TestCase

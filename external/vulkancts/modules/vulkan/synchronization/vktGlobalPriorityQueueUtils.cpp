@@ -39,7 +39,7 @@ namespace vkt
 namespace synchronization
 {
 
-uint32_t findQueueFamilyIndex(const InstanceInterface &vki, VkPhysicalDevice dev, VkQueueGlobalPriorityKHR priority,
+uint32_t findQueueFamilyIndex(const InstanceInterface &vki, VkPhysicalDevice dev, VkQueueGlobalPriority priority,
                               VkQueueFlags includeFlags, VkQueueFlags excludeFlags, uint32_t excludeIndex)
 {
     uint32_t queueFamilyPropertyCount = 0;
@@ -91,8 +91,8 @@ uint32_t findQueueFamilyIndex(const InstanceInterface &vki, VkPhysicalDevice dev
 #define SAVEEXPR(expr, text, file, line) (text = #expr, file = __FILE__, line = __LINE__, expr)
 
 SpecialDevice::SpecialDevice(Context &ctx, VkQueueFlagBits transitionFrom, VkQueueFlagBits transitionTo,
-                             VkQueueGlobalPriorityKHR priorityFrom, VkQueueGlobalPriorityKHR priorityTo,
-                             bool enableProtected, bool enableSparseBinding)
+                             VkQueueGlobalPriority priorityFrom, VkQueueGlobalPriority priorityTo, bool enableProtected,
+                             bool enableSparseBinding)
     : queueFamilyIndexFrom(m_queueFamilyIndexFrom)
     , queueFamilyIndexTo(m_queueFamilyIndexTo)
     , handle(m_deviceHandle)
@@ -169,7 +169,7 @@ SpecialDevice::SpecialDevice(Context &ctx, VkQueueFlagBits transitionFrom, VkQue
     }
 
     VkPhysicalDeviceProtectedMemoryFeatures memFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES,
-                                                        DE_NULL, VK_TRUE};
+                                                        nullptr, VK_TRUE};
     VkPhysicalDeviceFeatures2 devFeatures = ctx.getDeviceFeatures2();
     if (enableProtected)
         devFeatures.pNext = &memFeatures;
@@ -251,7 +251,7 @@ BufferWithMemory::BufferWithMemory(const vk::InstanceInterface &vki, const Devic
 {
     if (m_amISparse)
     {
-        DE_ASSERT(sparseQueue != VkQueue(0));
+        DE_ASSERT(sparseQueue != VK_NULL_HANDLE);
         const VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(vki, phys);
         const uint32_t memoryTypeIndex =
             selectMatchingMemoryType(memoryProperties, m_requirements.memoryTypeBits, memoryRequirement);

@@ -50,9 +50,9 @@ public:
 
     const char *getTestNamePostfix(void) const;
 
-    virtual void verifyBoolean(tcu::TestContext &testCtx, GLenum name, bool reference) = DE_NULL;
+    virtual void verifyBoolean(tcu::TestContext &testCtx, GLenum name, bool reference) = 0;
     virtual void verifyBoolean4(tcu::TestContext &testCtx, GLenum name, bool reference0, bool reference1,
-                                bool reference2, bool reference3)                      = DE_NULL;
+                                bool reference2, bool reference3)                      = 0;
 
 private:
     const char *const m_testNamePostfix;
@@ -577,7 +577,7 @@ public:
         expectError(GL_NO_ERROR);
 
         GLuint shaderVert = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(shaderVert, 1, &transformFeedbackTestVertSource, DE_NULL);
+        glShaderSource(shaderVert, 1, &transformFeedbackTestVertSource, nullptr);
         glCompileShader(shaderVert);
         expectError(GL_NO_ERROR);
         GLint compileStatus;
@@ -585,7 +585,7 @@ public:
         checkBooleans(compileStatus, GL_TRUE);
 
         GLuint shaderFrag = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(shaderFrag, 1, &transformFeedbackTestFragSource, DE_NULL);
+        glShaderSource(shaderFrag, 1, &transformFeedbackTestFragSource, nullptr);
         glCompileShader(shaderFrag);
         expectError(GL_NO_ERROR);
         glGetShaderiv(shaderFrag, GL_COMPILE_STATUS, &compileStatus);
@@ -626,7 +626,7 @@ public:
         expectError(GL_NO_ERROR);
     }
 
-    virtual void testTransformFeedback(void) = DE_NULL;
+    virtual void testTransformFeedback(void) = 0;
 
 protected:
     StateVerifier *m_verifier;
@@ -722,11 +722,11 @@ public:
 
 BooleanStateQueryTests::BooleanStateQueryTests(Context &context)
     : TestCaseGroup(context, "boolean", "Boolean State Query tests")
-    , m_verifierIsEnabled(DE_NULL)
-    , m_verifierBoolean(DE_NULL)
-    , m_verifierInteger(DE_NULL)
-    , m_verifierInteger64(DE_NULL)
-    , m_verifierFloat(DE_NULL)
+    , m_verifierIsEnabled(nullptr)
+    , m_verifierBoolean(nullptr)
+    , m_verifierInteger(nullptr)
+    , m_verifierInteger64(nullptr)
+    , m_verifierFloat(nullptr)
 {
 }
 
@@ -737,11 +737,11 @@ BooleanStateQueryTests::~BooleanStateQueryTests(void)
 
 void BooleanStateQueryTests::init(void)
 {
-    DE_ASSERT(m_verifierIsEnabled == DE_NULL);
-    DE_ASSERT(m_verifierBoolean == DE_NULL);
-    DE_ASSERT(m_verifierInteger == DE_NULL);
-    DE_ASSERT(m_verifierInteger64 == DE_NULL);
-    DE_ASSERT(m_verifierFloat == DE_NULL);
+    DE_ASSERT(m_verifierIsEnabled == nullptr);
+    DE_ASSERT(m_verifierBoolean == nullptr);
+    DE_ASSERT(m_verifierInteger == nullptr);
+    DE_ASSERT(m_verifierInteger64 == nullptr);
+    DE_ASSERT(m_verifierFloat == nullptr);
 
     m_verifierIsEnabled =
         new IsEnabledVerifier(m_context.getRenderContext().getFunctions(), m_context.getTestContext().getLog());
@@ -830,27 +830,27 @@ void BooleanStateQueryTests::deinit(void)
     if (m_verifierIsEnabled)
     {
         delete m_verifierIsEnabled;
-        m_verifierIsEnabled = DE_NULL;
+        m_verifierIsEnabled = nullptr;
     }
     if (m_verifierBoolean)
     {
         delete m_verifierBoolean;
-        m_verifierBoolean = DE_NULL;
+        m_verifierBoolean = nullptr;
     }
     if (m_verifierInteger)
     {
         delete m_verifierInteger;
-        m_verifierInteger = DE_NULL;
+        m_verifierInteger = nullptr;
     }
     if (m_verifierInteger64)
     {
         delete m_verifierInteger64;
-        m_verifierInteger64 = DE_NULL;
+        m_verifierInteger64 = nullptr;
     }
     if (m_verifierFloat)
     {
         delete m_verifierFloat;
-        m_verifierFloat = DE_NULL;
+        m_verifierFloat = nullptr;
     }
 
     this->TestCaseGroup::deinit();

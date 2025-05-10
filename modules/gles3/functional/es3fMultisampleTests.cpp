@@ -272,7 +272,7 @@ MultisampleCase::MultisampleCase(Context &context, const char *name, const char 
     , m_resolveColorRbo(0)
     , m_msFbo(0)
     , m_resolveFbo(0)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_attrPositionLoc(-1)
     , m_attrColorLoc(-1)
     , m_renderWidth(fboParams.useFbo ? 2 * desiredViewportSize : context.getRenderTarget().getWidth())
@@ -293,7 +293,7 @@ MultisampleCase::~MultisampleCase(void)
 void MultisampleCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 
     GLU_CHECK_CALL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
     GLU_CHECK_CALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
@@ -469,7 +469,7 @@ void MultisampleCase::init(void)
     m_program = new glu::ShaderProgram(m_context.getRenderContext(),
                                        glu::makeVtxFragSources(vertShaderSource, fragShaderSource));
     if (!m_program->isOk())
-        throw tcu::TestError("Failed to compile program", DE_NULL, __FILE__, __LINE__);
+        throw tcu::TestError("Failed to compile program", nullptr, __FILE__, __LINE__);
 
     GLU_CHECK_CALL(m_attrPositionLoc = glGetAttribLocation(m_program->getProgram(), "a_position"));
     GLU_CHECK_CALL(m_attrColorLoc = glGetAttribLocation(m_program->getProgram(), "a_color"));
@@ -477,7 +477,7 @@ void MultisampleCase::init(void)
     if (m_attrPositionLoc < 0 || m_attrColorLoc < 0)
     {
         delete m_program;
-        throw tcu::TestError("Invalid attribute locations", DE_NULL, __FILE__, __LINE__);
+        throw tcu::TestError("Invalid attribute locations", nullptr, __FILE__, __LINE__);
     }
 
     if (m_fboParams.useFbo)
@@ -1689,14 +1689,14 @@ void MultisampleTests::init(void)
             caseType == CASETYPE_FBO_4_SAMPLES       ? "fbo_4_samples" :
             caseType == CASETYPE_FBO_8_SAMPLES       ? "fbo_8_samples" :
             caseType == CASETYPE_FBO_MAX_SAMPLES     ? "fbo_max_samples" :
-                                                       DE_NULL,
+                                                       nullptr,
             caseType == CASETYPE_DEFAULT_FRAMEBUFFER ? "Render into default framebuffer" :
             caseType == CASETYPE_FBO_4_SAMPLES       ? "Render into a framebuffer object with 4 samples" :
             caseType == CASETYPE_FBO_8_SAMPLES       ? "Render into a framebuffer object with 8 samples" :
             caseType == CASETYPE_FBO_MAX_SAMPLES ?
                                                  "Render into a framebuffer object with the maximum number of samples" :
-                                                 DE_NULL);
-        DE_ASSERT(group->getName() != DE_NULL);
+                                                 nullptr);
+        DE_ASSERT(group->getName() != nullptr);
         DE_ASSERT(numFboSamples >= -1);
         addChild(group);
 

@@ -408,7 +408,7 @@ void throwJNIException(JNIEnv *env, const std::exception &e)
 
     exClass = env->FindClass("java/lang/Exception");
 
-    TCU_CHECK_INTERNAL(exClass != DE_NULL);
+    TCU_CHECK_INTERNAL(exClass != nullptr);
 
     TCU_CHECK_INTERNAL(env->ThrowNew(exClass, e.what()) == 0);
 }
@@ -457,7 +457,7 @@ JNIEXPORT void JNICALL Java_com_drawelements_deqp_testercore_TestLogParser_nativ
                                                                                        jobject instrumentation,
                                                                                        jbyteArray buffer, jint size)
 {
-    jbyte *logData = DE_NULL;
+    jbyte *logData = nullptr;
 
     try
     {
@@ -468,7 +468,7 @@ JNIEXPORT void JNICALL Java_com_drawelements_deqp_testercore_TestLogParser_nativ
 
         parser->parse(&listener, (const char *)logData, (size_t)size);
         env->ReleaseByteArrayElements(buffer, logData, JNI_ABORT);
-        logData = DE_NULL;
+        logData = nullptr;
     }
     catch (const std::exception &e)
     {
@@ -521,7 +521,7 @@ JNIEXPORT void JNICALL Java_org_khronos_cts_testercore_KhronosCTSTestLogParser_n
                                                                                            jobject instrumentation,
                                                                                            jbyteArray buffer, jint size)
 {
-    jbyte *logData = DE_NULL;
+    jbyte *logData = nullptr;
 
     try
     {
@@ -532,7 +532,7 @@ JNIEXPORT void JNICALL Java_org_khronos_cts_testercore_KhronosCTSTestLogParser_n
 
         parser->parse(&listener, (const char *)logData, (size_t)size);
         env->ReleaseByteArrayElements(buffer, logData, JNI_ABORT);
-        logData = DE_NULL;
+        logData = nullptr;
     }
     catch (const std::exception &e)
     {

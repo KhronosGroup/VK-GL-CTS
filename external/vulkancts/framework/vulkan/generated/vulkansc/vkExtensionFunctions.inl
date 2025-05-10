@@ -190,10 +190,6 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
-	if (extName == "VK_EXT_global_priority")
-	{
-		return;
-	}
 	if (extName == "VK_EXT_external_memory_host")
 	{
 		return;
@@ -202,12 +198,7 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
-	if (extName == "VK_EXT_calibrated_timestamps")
-	{
-		functions.push_back("vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");
-		return;
-	}
-	if (extName == "VK_EXT_vertex_attribute_divisor")
+	if (extName == "VK_KHR_global_priority")
 	{
 		return;
 	}
@@ -314,6 +305,12 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_NV_acquire_winrt_display")
+	{
+		functions.push_back("vkAcquireWinrtDisplayNV");
+		functions.push_back("vkGetWinrtDisplayNV");
+		return;
+	}
 	if (extName == "VK_EXT_vertex_input_dynamic_state")
 	{
 		return;
@@ -346,8 +343,29 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		functions.push_back("vkGetPhysicalDeviceSciSyncAttributesNV");
 		return;
 	}
+	if (extName == "VK_EXT_layer_settings")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_vertex_attribute_divisor")
+	{
+		return;
+	}
 	if (extName == "VK_QNX_external_memory_screen_buffer")
 	{
+		return;
+	}
+	if (extName == "VK_KHR_index_type_uint8")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_line_rasterization")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_calibrated_timestamps")
+	{
+		functions.push_back("vkGetPhysicalDeviceCalibrateableTimeDomainsKHR");
 		return;
 	}
 	if (extName == "VK_NV_device_diagnostic_checkpoints")
@@ -356,6 +374,19 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	}
 	if (extName == "VK_KHR_format_feature_flags2")
 	{
+		return;
+	}
+	if (extName == "VK_EXT_vertex_attribute_divisor")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_global_priority")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_calibrated_timestamps")
+	{
+		functions.push_back("vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");
 		return;
 	}
 	DE_FATAL("Extension name not found");
@@ -535,10 +566,6 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
-	if (extName == "VK_EXT_global_priority")
-	{
-		return;
-	}
 	if (extName == "VK_EXT_external_memory_host")
 	{
 		functions.push_back("vkGetMemoryHostPointerPropertiesEXT");
@@ -548,12 +575,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
-	if (extName == "VK_EXT_calibrated_timestamps")
-	{
-		functions.push_back("vkGetCalibratedTimestampsEXT");
-		return;
-	}
-	if (extName == "VK_EXT_vertex_attribute_divisor")
+	if (extName == "VK_KHR_global_priority")
 	{
 		return;
 	}
@@ -660,10 +682,6 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdPipelineBarrier2KHR");
 		functions.push_back("vkCmdWriteTimestamp2KHR");
 		functions.push_back("vkQueueSubmit2KHR");
-		// Dependencies: VK_NV_device_diagnostic_checkpoints
-		if (extensionIsSupported(vDEP, "VK_NV_device_diagnostic_checkpoints")) {
-			functions.push_back("vkGetQueueCheckpointData2NV");
-		}
 		return;
 	}
 	if (extName == "VK_EXT_ycbcr_2plane_444_formats")
@@ -685,6 +703,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_EXT_4444_formats")
+	{
+		return;
+	}
+	if (extName == "VK_NV_acquire_winrt_display")
 	{
 		return;
 	}
@@ -735,19 +757,58 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkImportFenceSciSyncObjNV");
 		return;
 	}
+	if (extName == "VK_EXT_layer_settings")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_vertex_attribute_divisor")
+	{
+		return;
+	}
 	if (extName == "VK_QNX_external_memory_screen_buffer")
 	{
 		functions.push_back("vkGetScreenBufferPropertiesQNX");
+		return;
+	}
+	if (extName == "VK_KHR_index_type_uint8")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_line_rasterization")
+	{
+		functions.push_back("vkCmdSetLineStippleKHR");
+		return;
+	}
+	if (extName == "VK_KHR_calibrated_timestamps")
+	{
+		functions.push_back("vkGetCalibratedTimestampsKHR");
 		return;
 	}
 	if (extName == "VK_NV_device_diagnostic_checkpoints")
 	{
 		functions.push_back("vkCmdSetCheckpointNV");
 		functions.push_back("vkGetQueueCheckpointDataNV");
+		// Dependencies: VK_VERSION_1_3,VK_KHR_synchronization2
+		if (checkVersion(1, 3, apiVersion) || (checkVersion(1, 3, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_synchronization2"))) {
+			functions.push_back("vkGetQueueCheckpointData2NV");
+		}
 		return;
 	}
 	if (extName == "VK_KHR_format_feature_flags2")
 	{
+		return;
+	}
+	if (extName == "VK_EXT_vertex_attribute_divisor")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_global_priority")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_calibrated_timestamps")
+	{
+		functions.push_back("vkGetCalibratedTimestampsEXT");
 		return;
 	}
 	DE_FATAL("Extension name not found");
@@ -766,6 +827,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_validation_features",
 	"VK_EXT_headless_surface",
 	"VK_EXT_application_parameters",
+	"VK_EXT_layer_settings",
 };
 
 ::std::string deviceExtensionNames[] =
@@ -795,11 +857,9 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_post_depth_coverage",
 	"VK_EXT_image_drm_format_modifier",
 	"VK_EXT_filter_cubic",
-	"VK_EXT_global_priority",
 	"VK_EXT_external_memory_host",
 	"VK_KHR_shader_clock",
-	"VK_EXT_calibrated_timestamps",
-	"VK_EXT_vertex_attribute_divisor",
+	"VK_KHR_global_priority",
 	"VK_KHR_swapchain_mutable_format",
 	"VK_EXT_pci_bus_info",
 	"VK_KHR_shader_terminate_invocation",
@@ -823,13 +883,21 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_image_robustness",
 	"VK_KHR_copy_commands2",
 	"VK_EXT_4444_formats",
+	"VK_NV_acquire_winrt_display",
 	"VK_EXT_vertex_input_dynamic_state",
 	"VK_NV_external_sci_sync",
 	"VK_NV_external_memory_sci_buf",
 	"VK_EXT_extended_dynamic_state2",
 	"VK_EXT_color_write_enable",
 	"VK_NV_external_sci_sync2",
+	"VK_KHR_vertex_attribute_divisor",
 	"VK_QNX_external_memory_screen_buffer",
+	"VK_KHR_index_type_uint8",
+	"VK_KHR_line_rasterization",
+	"VK_KHR_calibrated_timestamps",
 	"VK_NV_device_diagnostic_checkpoints",
 	"VK_KHR_format_feature_flags2",
+	"VK_EXT_vertex_attribute_divisor",
+	"VK_EXT_global_priority",
+	"VK_EXT_calibrated_timestamps",
 };

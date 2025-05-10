@@ -36,6 +36,8 @@
 #include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuVectorUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
+#include "vkMemUtil.hpp"
 #include <cmath>
 
 namespace vkt
@@ -51,14 +53,21 @@ enum ExtraAttachments
     NONE = 0,
     BEFORE,
     BETWEEN,
-    AFTER,
+    AFTER
 };
 
 enum DummyRenderPass
 {
     DUMMY_NONE = 0,
     DUMMY_DYNAMIC,
-    DUMMY_STATIC,
+    DUMMY_STATIC
+};
+
+enum ColorWriteEnable
+{
+    COLOR_WRITE_DONT_CARE = 0,
+    COLOR_WRITE_REQUIRE,
+    COLOR_WRITE_DISABLE
 };
 
 struct TestParams
@@ -75,6 +84,8 @@ struct TestParams
     DummyRenderPass dummyRenderPass;
     bool writeGlFragDepth;
     bool randomColorFormats;
+    bool outputArray;
+    ColorWriteEnable colorWriteEnable;
 };
 
 const vk::VkFormat colorFormats[] = {
@@ -259,13 +270,13 @@ de::MovePtr<tcu::TextureLevel> readDepthAttachment(const vk::DeviceInterface &vk
     {
         const vk::VkBufferCreateInfo bufferParams = {
             vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkBufferCreateFlags flags;
             pixelDataSize,                            // VkDeviceSize size;
             vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
             vk::VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                       // uint32_t queueFamilyIndexCount;
-            DE_NULL                                   // const uint32_t* pQueueFamilyIndices;
+            nullptr                                   // const uint32_t* pQueueFamilyIndices;
         };
 
         buffer = createBuffer(vk, device, &bufferParams);
@@ -309,6 +320,7 @@ public:
     tcu::TestStatus iterate(void) override;
 
 private:
+    void chooseDevice();
     void beginRendering(vk::VkCommandBuffer cmdBuffer);
     void createDummyImage(void);
     void createDummyRenderPass(void);
@@ -317,6 +329,13 @@ private:
                                uint32_t attachmentIndex);
 
     TestParams m_params;
+
+    de::MovePtr<vk::DeviceDriver> m_customDeviceDriver;
+    vk::Move<vk::VkDevice> m_customDevice;
+    de::MovePtr<vk::Allocator> m_customAllocator;
+    const vk::DeviceInterface *m_deviceInterface;
+    vk::VkDevice m_device;
+    std::vector<std::string> m_deviceExtensions;
 
     const vk::VkRect2D m_renderArea = vk::makeRect2D(0, 0, 32, 32);
     std::vector<vk::VkFormat> m_colorFormats;
@@ -331,9 +350,9 @@ private:
 
 void ShaderObjectRenderingInstance::createDummyImage(void)
 {
-    const vk::DeviceInterface &vk    = m_context.getDeviceInterface();
-    const vk::VkDevice device        = m_context.getDevice();
-    auto &alloc                      = m_context.getDefaultAllocator();
+    const vk::DeviceInterface &vk    = *m_deviceInterface;
+    const vk::VkDevice device        = m_device;
+    auto &alloc                      = *m_customAllocator;
     const auto colorSubresourceRange = makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
 
     vk::VkFormat format = m_params.colorFormat == vk::VK_FORMAT_R8G8B8A8_UNORM ? vk::VK_FORMAT_R32G32B32A32_SFLOAT :
@@ -341,7 +360,7 @@ void ShaderObjectRenderingInstance::createDummyImage(void)
 
     const vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-        DE_NULL,                                 // const void*                pNext
+        nullptr,                                 // const void*                pNext
         0u,                                      // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
         format,                                  // VkFormat                    format
@@ -353,7 +372,7 @@ void ShaderObjectRenderingInstance::createDummyImage(void)
         vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags        usage
         vk::VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode
         0,                             // uint32_t                    queueFamilyIndexCount
-        DE_NULL,                       // const uint32_t*            pQueueFamilyIndices
+        nullptr,                       // const uint32_t*            pQueueFamilyIndices
         vk::VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
     };
 
@@ -365,8 +384,8 @@ void ShaderObjectRenderingInstance::createDummyImage(void)
 
 void ShaderObjectRenderingInstance::createDummyRenderPass(void)
 {
-    const vk::DeviceInterface &vk = m_context.getDeviceInterface();
-    const vk::VkDevice device     = m_context.getDevice();
+    const vk::DeviceInterface &vk = *m_deviceInterface;
+    const vk::VkDevice device     = m_device;
     vk::VkFormat format = m_params.colorFormat == vk::VK_FORMAT_R8G8B8A8_UNORM ? vk::VK_FORMAT_R32G32B32A32_SFLOAT :
                                                                                  vk::VK_FORMAT_R8G8B8A8_UNORM;
     m_dummyRenderPass   = vk::makeRenderPass(vk, device, format);
@@ -393,17 +412,17 @@ vk::VkClearValue getClearValue(const tcu::TextureFormat tcuFormat)
 
 void ShaderObjectRenderingInstance::beginRendering(vk::VkCommandBuffer cmdBuffer)
 {
-    const vk::DeviceInterface &vk          = m_context.getDeviceInterface();
+    const vk::DeviceInterface &vk          = *m_deviceInterface;
     const vk::VkClearValue floatClearValue = vk::makeClearValueColor({0.0f, 0.0f, 0.0f, 1.0f});
     const vk::VkClearValue clearDepthValue = vk::makeClearValueDepthStencil(1.0f, 0u);
 
     vk::VkRenderingAttachmentInfo colorAttachment{
         vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                             // const void* pNext;
+        nullptr,                                             // const void* pNext;
         VK_NULL_HANDLE,                                      // VkImageView imageView;
         vk::VK_IMAGE_LAYOUT_GENERAL,                         // VkImageLayout imageLayout;
         vk::VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                             // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                      // VkImageView resolveImageView;
         vk::VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout resolveImageLayout;
         vk::VK_ATTACHMENT_LOAD_OP_CLEAR,                     // VkAttachmentLoadOp loadOp;
         vk::VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;
@@ -445,11 +464,11 @@ void ShaderObjectRenderingInstance::beginRendering(vk::VkCommandBuffer cmdBuffer
 
     vk::VkRenderingAttachmentInfo depthAttachment{
         vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                             // const void* pNext;
+        nullptr,                                             // const void* pNext;
         *m_depthImageView,                                   // VkImageView imageView;
         vk::VK_IMAGE_LAYOUT_GENERAL,                         // VkImageLayout imageLayout;
         vk::VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                             // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                      // VkImageView resolveImageView;
         vk::VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout resolveImageLayout;
         vk::VK_ATTACHMENT_LOAD_OP_CLEAR,                     // VkAttachmentLoadOp loadOp;
         vk::VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;
@@ -458,7 +477,7 @@ void ShaderObjectRenderingInstance::beginRendering(vk::VkCommandBuffer cmdBuffer
 
     vk::VkRenderingInfoKHR renderingInfo{
         vk::VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-        DE_NULL,
+        nullptr,
         (vk::VkRenderingFlags)0u,          // VkRenderingFlagsKHR flags;
         m_renderArea,                      // VkRect2D renderArea;
         1u,                                // uint32_t layerCount;
@@ -466,8 +485,8 @@ void ShaderObjectRenderingInstance::beginRendering(vk::VkCommandBuffer cmdBuffer
         (uint32_t)colorAttachments.size(), // uint32_t colorAttachmentCount;
         colorAttachments.data(),           // const VkRenderingAttachmentInfoKHR* pColorAttachments;
         m_params.useDepthAttachment ? &depthAttachment :
-                                      DE_NULL, // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
-        DE_NULL,                               // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
+                                      nullptr, // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
+        nullptr,                               // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
     };
 
     vk.cmdBeginRendering(cmdBuffer, &renderingInfo);
@@ -568,22 +587,180 @@ void ShaderObjectRenderingInstance::generateExpectedImage(const tcu::PixelBuffer
     }
 }
 
+bool extensionEnabled(const std::vector<std::string> &deviceExtensions, const std::string &ext)
+{
+    return std::find(deviceExtensions.begin(), deviceExtensions.end(), ext) != deviceExtensions.end();
+}
+
+void ShaderObjectRenderingInstance::chooseDevice()
+{
+    const auto creationExtensions = m_context.getDeviceCreationExtensions();
+
+    std::vector<std::string> creationExtensionsStr;
+    for (const auto &ext : creationExtensions)
+        creationExtensionsStr.push_back(std::string(ext));
+
+    m_deviceExtensions = vk::removeUnsupportedShaderObjectExtensions(
+        m_context.getInstanceInterface(), m_context.getPhysicalDevice(), creationExtensionsStr);
+
+    if (m_params.colorWriteEnable == COLOR_WRITE_DISABLE && m_context.getColorWriteEnableFeaturesEXT().colorWriteEnable)
+    {
+        if (std::find(m_deviceExtensions.begin(), m_deviceExtensions.end(), "VK_EXT_color_write_enable") !=
+            m_deviceExtensions.end())
+        {
+            m_deviceExtensions.erase(
+                std::remove(m_deviceExtensions.begin(), m_deviceExtensions.end(), "VK_EXT_color_write_enable"),
+                m_deviceExtensions.end());
+        }
+
+        vk::VkPhysicalDeviceShaderObjectFeaturesEXT shaderObjectFeatures = vk::initVulkanStructure();
+        shaderObjectFeatures.shaderObject                                = VK_TRUE;
+
+        vk::VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures =
+            vk::initVulkanStructure(&shaderObjectFeatures);
+        dynamicRenderingFeatures.dynamicRendering = VK_TRUE;
+
+        vk::VkPhysicalDeviceFeatures2 physicalDeviceFeatures2 = vk::initVulkanStructure(&dynamicRenderingFeatures);
+        physicalDeviceFeatures2.features.tessellationShader   = m_context.getDeviceFeatures().tessellationShader;
+        physicalDeviceFeatures2.features.geometryShader       = m_context.getDeviceFeatures().geometryShader;
+        physicalDeviceFeatures2.features.depthBiasClamp       = m_context.getDeviceFeatures().depthBiasClamp;
+
+        vk::VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeatures = vk::initVulkanStructure();
+        meshShaderFeatures.taskShader                                = m_context.getMeshShaderFeatures().taskShader;
+        meshShaderFeatures.meshShader                                = m_context.getMeshShaderFeatures().meshShader;
+
+        if (extensionEnabled(m_deviceExtensions, "VK_EXT_mesh_shader"))
+        {
+            meshShaderFeatures.pNext      = physicalDeviceFeatures2.pNext;
+            physicalDeviceFeatures2.pNext = &meshShaderFeatures;
+        }
+
+        vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR fsrFeatures = vk::initVulkanStructure();
+        fsrFeatures.pipelineFragmentShadingRate =
+            m_context.getFragmentShadingRateFeatures().pipelineFragmentShadingRate;
+        fsrFeatures.primitiveFragmentShadingRate =
+            m_context.getFragmentShadingRateFeatures().primitiveFragmentShadingRate;
+        fsrFeatures.attachmentFragmentShadingRate =
+            m_context.getFragmentShadingRateFeatures().attachmentFragmentShadingRate;
+
+        if (extensionEnabled(m_deviceExtensions, "VK_KHR_fragment_shading_rate"))
+        {
+            fsrFeatures.pNext             = physicalDeviceFeatures2.pNext;
+            physicalDeviceFeatures2.pNext = &fsrFeatures;
+        }
+
+        vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT xfbFeatures = vk::initVulkanStructure();
+        xfbFeatures.transformFeedback = m_context.getTransformFeedbackFeaturesEXT().transformFeedback;
+
+        if (extensionEnabled(m_deviceExtensions, "VK_EXT_transform_feedback"))
+        {
+            xfbFeatures.pNext             = physicalDeviceFeatures2.pNext;
+            physicalDeviceFeatures2.pNext = &xfbFeatures;
+        }
+
+        vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT depthClipEnableFeatures = vk::initVulkanStructure();
+        depthClipEnableFeatures.depthClipEnable = m_context.getDepthClipEnableFeaturesEXT().depthClipEnable;
+
+        if (extensionEnabled(m_deviceExtensions, "VK_EXT_depth_clip_enable"))
+        {
+            depthClipEnableFeatures.pNext = physicalDeviceFeatures2.pNext;
+            physicalDeviceFeatures2.pNext = &depthClipEnableFeatures;
+        }
+
+        vk::VkPhysicalDeviceDepthClipControlFeaturesEXT depthClipControlFeatures = vk::initVulkanStructure();
+        depthClipControlFeatures.depthClipControl = m_context.getDepthClipControlFeaturesEXT().depthClipControl;
+
+        if (extensionEnabled(m_deviceExtensions, "VK_EXT_depth_clip_control"))
+        {
+            depthClipControlFeatures.pNext = physicalDeviceFeatures2.pNext;
+            physicalDeviceFeatures2.pNext  = &depthClipControlFeatures;
+        }
+
+        vk::VkPhysicalDeviceExclusiveScissorFeaturesNV exclusiveScissorFeatures = vk::initVulkanStructure();
+        exclusiveScissorFeatures.exclusiveScissor = m_context.getExclusiveScissorFeatures().exclusiveScissor;
+
+        if (extensionEnabled(m_deviceExtensions, "VK_NV_scissor_exclusive"))
+        {
+            exclusiveScissorFeatures.pNext = physicalDeviceFeatures2.pNext;
+            physicalDeviceFeatures2.pNext  = &exclusiveScissorFeatures;
+        }
+
+        vk::VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT afldsFeatures = vk::initVulkanStructure();
+        afldsFeatures.attachmentFeedbackLoopDynamicState =
+            m_context.getAttachmentFeedbackLoopDynamicStateFeaturesEXT().attachmentFeedbackLoopDynamicState;
+
+        if (extensionEnabled(m_deviceExtensions, "VK_EXT_attachment_feedback_loop_dynamic_state"))
+        {
+            afldsFeatures.pNext           = physicalDeviceFeatures2.pNext;
+            physicalDeviceFeatures2.pNext = &afldsFeatures;
+        }
+
+        std::vector<const char *> deviceExtensions;
+        for (const auto &extension : m_deviceExtensions)
+            deviceExtensions.push_back(extension.c_str());
+
+        const float queuePriority             = 1.0f;
+        vk::VkDeviceQueueCreateInfo queueInfo = {
+            vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
+            nullptr,                                        // const void* pNext;
+            (vk::VkDeviceQueueCreateFlags)0u,               // VkDeviceQueueCreateFlags flags;
+            m_context.getUniversalQueueFamilyIndex(),       // uint32_t queueFamilyIndex;
+            1u,                                             // uint32_t queueCount;
+            &queuePriority                                  // const float* pQueuePriorities;
+        };
+
+        const vk::VkDeviceCreateInfo deviceCreateInfo = {
+            vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,       // VkStructureType sType;
+            &physicalDeviceFeatures2,                       // const void* pNext;
+            (vk::VkDeviceCreateFlags)0u,                    // VkDeviceCreateFlags flags;
+            1,                                              // uint32_t queueCreateInfoCount;
+            &queueInfo,                                     // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
+            0u,                                             // uint32_t enabledLayerCount;
+            nullptr,                                        // const char* const* ppEnabledLayerNames;
+            static_cast<uint32_t>(deviceExtensions.size()), // uint32_t enabledExtensionCount;
+            deviceExtensions.data(),                        // const char* const* ppEnabledExtensionNames;
+            nullptr,                                        // const VkPhysicalDeviceFeatures* pEnabledFeatures;
+        };
+
+        m_customDevice =
+            vkt::createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
+                                    m_context.getPlatformInterface(), m_context.getInstance(),
+                                    m_context.getInstanceInterface(), m_context.getPhysicalDevice(), &deviceCreateInfo);
+        m_customDeviceDriver = de::MovePtr<vk::DeviceDriver>(
+            new vk::DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), *m_customDevice,
+                                 m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine()));
+
+        m_deviceInterface = &*m_customDeviceDriver;
+        m_device          = *m_customDevice;
+    }
+    else
+    {
+        m_deviceInterface = &m_context.getDeviceInterface();
+        m_device          = m_context.getDevice();
+    }
+    m_customAllocator = de::MovePtr<vk::Allocator>(new vk::SimpleAllocator(
+        *m_deviceInterface, m_device,
+        vk::getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice())));
+}
+
 tcu::TestStatus ShaderObjectRenderingInstance::iterate(void)
 {
     const vk::VkInstance instance = m_context.getInstance();
     const vk::InstanceDriver instanceDriver(m_context.getPlatformInterface(), instance);
-    const vk::DeviceInterface &vk   = m_context.getDeviceInterface();
-    const vk::VkDevice device       = m_context.getDevice();
-    const vk::VkQueue queue         = m_context.getUniversalQueue();
+
+    chooseDevice();
+
+    const vk::DeviceInterface &vk   = *m_deviceInterface;
+    const vk::VkDevice device       = m_device;
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
-    auto &alloc                     = m_context.getDefaultAllocator();
-    tcu::TestLog &log               = m_context.getTestContext().getLog();
-    const auto deviceExtensions     = vk::removeUnsupportedShaderObjectExtensions(
-        m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
+    vk::VkQueue queue;
+    vk.getDeviceQueue(device, queueFamilyIndex, 0u, &queue);
+    auto &alloc                      = *m_customAllocator;
+    tcu::TestLog &log                = m_context.getTestContext().getLog();
     const bool tessellationSupported = m_context.getDeviceFeatures().tessellationShader;
     const bool geometrySupported     = m_context.getDeviceFeatures().geometryShader;
-    const bool taskSupported         = m_context.getMeshShaderFeatures().taskShader;
-    const bool meshSupported         = m_context.getMeshShaderFeatures().meshShader;
+    const bool taskSupported         = m_context.getMeshShaderFeaturesEXT().taskShader;
+    const bool meshSupported         = m_context.getMeshShaderFeaturesEXT().meshShader;
 
     const auto colorSubresourceRange = vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
     auto depthSubresourceRange       = vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u);
@@ -596,7 +773,7 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate(void)
 
     vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-        DE_NULL,                                 // const void*                pNext
+        nullptr,                                 // const void*                pNext
         0u,                                      // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
         vk::VK_FORMAT_UNDEFINED,                 // VkFormat                    format
@@ -608,13 +785,13 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate(void)
         vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags        usage
         vk::VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode
         0,                             // uint32_t                    queueFamilyIndexCount
-        DE_NULL,                       // const uint32_t*            pQueueFamilyIndices
+        nullptr,                       // const uint32_t*            pQueueFamilyIndices
         vk::VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
     };
 
     const vk::VkImageCreateInfo depthCreateInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-        DE_NULL,                                 // const void*                pNext
+        nullptr,                                 // const void*                pNext
         0u,                                      // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
         m_params.depthFormat,                    // VkFormat                    format
@@ -627,7 +804,7 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate(void)
             vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags        usage
         vk::VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode            sharingMode
         0,                                       // uint32_t                    queueFamilyIndexCount
-        DE_NULL,                                 // const uint32_t*            pQueueFamilyIndices
+        nullptr,                                 // const uint32_t*            pQueueFamilyIndices
         vk::VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout            initialLayout
     };
 
@@ -711,9 +888,8 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate(void)
             vk::VK_ACCESS_NONE, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
             vk::VK_IMAGE_LAYOUT_GENERAL, **colorImage, colorSubresourceRange);
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u,
-                              (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                              &preImageBarrier);
+                              vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr,
+                              0u, nullptr, 1u, &preImageBarrier);
     }
 
     if (m_params.useDepthAttachment)
@@ -722,13 +898,13 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate(void)
             vk::VK_ACCESS_NONE, vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
             vk::VK_IMAGE_LAYOUT_GENERAL, **depthImage, depthSubresourceRange);
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, (vk::VkDependencyFlags)0u, 0u,
-                              (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                              &preDepthImageBarrier);
+                              vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr,
+                              0u, nullptr, 1u, &preDepthImageBarrier);
     }
 
     beginRendering(*cmdBuffer);
-    vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+    vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, m_deviceExtensions,
+                                            vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
     vk::VkBool32 colorBlendEnable                  = VK_FALSE;
     vk::VkColorBlendEquationEXT colorBlendEquation = {
         vk::VK_BLEND_FACTOR_ONE, // VkBlendFactor srcColorBlendFactor;
@@ -750,7 +926,10 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate(void)
     vk.cmdSetColorBlendEquationEXT(*cmdBuffer, 0u, count, colorBlendEquations.data());
     vk.cmdSetColorWriteMaskEXT(*cmdBuffer, 0u, count, colorWriteMasks.data());
     std::vector<vk::VkBool32> colorWriteEnables(count, VK_TRUE);
-    vk.cmdSetColorWriteEnableEXT(*cmdBuffer, count, colorWriteEnables.data());
+    if (m_params.colorWriteEnable != COLOR_WRITE_DISABLE && m_context.getColorWriteEnableFeaturesEXT().colorWriteEnable)
+    {
+        vk.cmdSetColorWriteEnableEXT(*cmdBuffer, count, colorWriteEnables.data());
+    }
     vk.cmdSetDepthWriteEnable(*cmdBuffer, VK_TRUE);
     vk.cmdSetDepthTestEnable(*cmdBuffer, VK_TRUE);
     vk.cmdSetDepthCompareOp(*cmdBuffer, vk::VK_COMPARE_OP_LESS);
@@ -767,9 +946,8 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate(void)
             vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT, vk::VK_IMAGE_LAYOUT_GENERAL,
             vk::VK_IMAGE_LAYOUT_GENERAL, **colorImage, colorSubresourceRange);
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                              vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u,
-                              (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                              &postImageBarrier);
+                              vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr,
+                              1u, &postImageBarrier);
     }
 
     if (m_params.useDepthAttachment)
@@ -778,9 +956,8 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate(void)
             vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT,
             vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_IMAGE_LAYOUT_GENERAL, **depthImage, depthSubresourceRange);
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-                              vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u,
-                              (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                              &postDepthImageBarrier);
+                              vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr,
+                              1u, &postDepthImageBarrier);
     }
 
     const vk::VkBufferImageCopy colorCopyRegion = vk::makeBufferImageCopy(extent, colorSubresourceLayers);
@@ -803,8 +980,22 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate(void)
     const uint32_t xOffset = 8;
     const uint32_t yOffset = 8;
 
+    uint32_t unusedBegin = 0u;
+    uint32_t outputCount = m_params.colorAttachmentCount + m_params.extraFragmentOutputCount;
+
+    if (m_params.extraAttachments == BEFORE)
+        unusedBegin = 0u;
+    else if (m_params.extraAttachments == AFTER)
+        unusedBegin = outputCount;
+    else if (m_params.extraAttachments == BETWEEN)
+        unusedBegin = outputCount / 2u + 1u;
+    uint32_t unusedEnd = (m_params.extraAttachments == NONE ? 0u : unusedBegin + m_params.extraAttachmentCount);
+
     for (uint32_t k = 0; k < (uint32_t)colorImages.size(); ++k)
     {
+        if (k >= unusedBegin && k < unusedEnd)
+            continue;
+
         tcu::TextureLevel textureLevel(mapVkFormat(m_colorFormats[k]), width, height);
         const tcu::PixelBufferAccess expectedImage = textureLevel.getAccess();
         generateExpectedImage(expectedImage, width, height, k);
@@ -914,6 +1105,11 @@ void ShaderObjectRenderingCase::checkSupport(Context &context) const
         if (depthResult != vk::VK_SUCCESS)
             TCU_THROW(NotSupportedError, "Format unsupported for tiling");
     }
+    if (m_params.colorWriteEnable == COLOR_WRITE_REQUIRE &&
+        context.getColorWriteEnableFeaturesEXT().colorWriteEnable == VK_FALSE)
+    {
+        TCU_THROW(NotSupportedError, "colorWriteEnable not supported");
+    }
 }
 
 void ShaderObjectRenderingCase::initPrograms(vk::SourceCollections &programCollection) const
@@ -929,19 +1125,28 @@ void ShaderObjectRenderingCase::initPrograms(vk::SourceCollections &programColle
 
     fragMulti << "#version 450\n";
     uint32_t outputCount = m_params.colorAttachmentCount + m_params.extraFragmentOutputCount;
-    for (uint32_t i = 0; i < outputCount; ++i)
+    if (m_params.outputArray)
     {
-        uint32_t j = i;
-        if (m_params.extraAttachments == BEFORE || (m_params.extraAttachments == BETWEEN && i > outputCount / 2))
-            j += m_params.extraAttachmentCount;
-        bool firstWrittenAttachment =
-            (m_params.extraOutputs == BEFORE) ? (i == m_params.extraFragmentOutputCount) : (i == 0);
-        if (vk::isUintFormat(m_params.colorFormat) && (firstWrittenAttachment || !m_params.randomColorFormats))
-            fragMulti << "layout (location = " << j << ") out uvec4 outColor" << j << ";\n";
-        else if (vk::isIntFormat(m_params.colorFormat) && (firstWrittenAttachment || !m_params.randomColorFormats))
-            fragMulti << "layout (location = " << j << ") out ivec4 outColor" << j << ";\n";
-        else
-            fragMulti << "layout (location = " << j << ") out vec4 outColor" << j << ";\n";
+        uint32_t totalOutputCount =
+            m_params.colorAttachmentCount + m_params.extraFragmentOutputCount + m_params.extraAttachmentCount;
+        fragMulti << "layout(location = 0) out vec4 outColor[" << totalOutputCount << "];\n";
+    }
+    else
+    {
+        for (uint32_t i = 0; i < outputCount; ++i)
+        {
+            uint32_t j = i;
+            if (m_params.extraAttachments == BEFORE || (m_params.extraAttachments == BETWEEN && i > outputCount / 2))
+                j += m_params.extraAttachmentCount;
+            bool firstWrittenAttachment =
+                (m_params.extraOutputs == BEFORE) ? (i == m_params.extraFragmentOutputCount) : (i == 0);
+            if (vk::isUintFormat(m_params.colorFormat) && (firstWrittenAttachment || !m_params.randomColorFormats))
+                fragMulti << "layout (location = " << j << ") out uvec4 outColor" << j << ";\n";
+            else if (vk::isIntFormat(m_params.colorFormat) && (firstWrittenAttachment || !m_params.randomColorFormats))
+                fragMulti << "layout (location = " << j << ") out ivec4 outColor" << j << ";\n";
+            else
+                fragMulti << "layout (location = " << j << ") out vec4 outColor" << j << ";\n";
+        }
     }
     fragMulti << "void main() {\n";
     for (uint32_t i = 0; i < outputCount; ++i)
@@ -951,12 +1156,17 @@ void ShaderObjectRenderingCase::initPrograms(vk::SourceCollections &programColle
             j += m_params.extraAttachmentCount;
         bool firstWrittenAttachment =
             (m_params.extraOutputs == BEFORE) ? (i == m_params.extraFragmentOutputCount) : (i == 0);
-        if (vk::isUintFormat(m_params.colorFormat) && (firstWrittenAttachment || !m_params.randomColorFormats))
-            fragMulti << "    outColor" << j << " = uvec4(255);\n";
-        else if (vk::isIntFormat(m_params.colorFormat) && (firstWrittenAttachment || !m_params.randomColorFormats))
-            fragMulti << "    outColor" << j << " = ivec4(255);\n";
+
+        if (m_params.outputArray)
+            fragMulti << "    outColor[" << j << "]";
         else
-            fragMulti << "    outColor" << j << " = vec4(1.0f);\n";
+            fragMulti << "    outColor" << j;
+        if (vk::isUintFormat(m_params.colorFormat) && (firstWrittenAttachment || !m_params.randomColorFormats))
+            fragMulti << " = uvec4(255);\n";
+        else if (vk::isIntFormat(m_params.colorFormat) && (firstWrittenAttachment || !m_params.randomColorFormats))
+            fragMulti << " = ivec4(255);\n";
+        else
+            fragMulti << " = vec4(1.0f);\n";
     }
     if (m_params.writeGlFragDepth)
         fragMulti << "    gl_FragDepth = 0.5f;\n";
@@ -982,22 +1192,10 @@ tcu::TestCaseGroup *createShaderObjectRenderingTests(tcu::TestContext &testCtx)
         uint32_t colorAttachmentCount;
         const char *name;
     } colorAttachmentCountTests[] = {
-        {
-            0u,
-            "color_attachment_count_0",
-        },
-        {
-            1u,
-            "color_attachment_count_1",
-        },
-        {
-            4u,
-            "color_attachment_count_4",
-        },
-        {
-            8u,
-            "color_attachment_count_8",
-        },
+        {0u, "color_attachment_count_0"},
+        {1u, "color_attachment_count_1"},
+        {4u, "color_attachment_count_4"},
+        {8u, "color_attachment_count_8"},
     };
 
     const struct
@@ -1005,86 +1203,26 @@ tcu::TestCaseGroup *createShaderObjectRenderingTests(tcu::TestContext &testCtx)
         uint32_t extraAttachmentCount;
         ExtraAttachments extraAttachment;
         const char *name;
-    } extraAttachmentTests[] = {
-        {
-            0u,
-            NONE,
-            "none",
-        },
-        {
-            1u,
-            BEFORE,
-            "extra_attachment_before_1",
-        },
-        {
-            1u,
-            BETWEEN,
-            "extra_attachment_between_1",
-        },
-        {
-            1u,
-            AFTER,
-            "extra_attachment_after_1",
-        },
-        {
-            2u,
-            BEFORE,
-            "extra_attachment_before_2",
-        },
-        {
-            2u,
-            BETWEEN,
-            "extra_attachment_between_2",
-        },
-        {
-            2u,
-            AFTER,
-            "extra_attachment_after_2",
-        },
-    };
+    } extraAttachmentTests[] = {{0u, NONE, "none"},
+                                {1u, BEFORE, "extra_attachment_before_1"},
+                                {1u, BETWEEN, "extra_attachment_between_1"},
+                                {1u, AFTER, "extra_attachment_after_1"},
+                                {2u, BEFORE, "extra_attachment_before_2"},
+                                {2u, BETWEEN, "extra_attachment_between_2"},
+                                {2u, AFTER, "extra_attachment_after_2"}};
 
     const struct
     {
         uint32_t extraFragmentOutputCount;
         ExtraAttachments extraAttachment;
         const char *name;
-    } extraOutputTests[] = {
-        {
-            0u,
-            NONE,
-            "none",
-        },
-        {
-            1u,
-            BEFORE,
-            "extra_output_before_1",
-        },
-        {
-            1u,
-            BETWEEN,
-            "extra_output_between_1",
-        },
-        {
-            1u,
-            AFTER,
-            "extra_output_after_1",
-        },
-        {
-            2u,
-            BEFORE,
-            "extra_output_before_2",
-        },
-        {
-            2u,
-            BETWEEN,
-            "extra_output_between_2",
-        },
-        {
-            2u,
-            AFTER,
-            "extra_output_after_2",
-        },
-    };
+    } extraOutputTests[] = {{0u, NONE, "none"},
+                            {1u, BEFORE, "extra_output_before_1"},
+                            {1u, BETWEEN, "extra_output_between_1"},
+                            {1u, AFTER, "extra_output_after_1"},
+                            {2u, BEFORE, "extra_output_before_2"},
+                            {2u, BETWEEN, "extra_output_between_2"},
+                            {2u, AFTER, "extra_output_after_2"}};
 
     const vk::VkFormat depthStencilFormats[] = {
         vk::VK_FORMAT_D16_UNORM,         vk::VK_FORMAT_X8_D24_UNORM_PACK32, vk::VK_FORMAT_D32_SFLOAT,
@@ -1095,20 +1233,7 @@ tcu::TestCaseGroup *createShaderObjectRenderingTests(tcu::TestContext &testCtx)
     {
         DummyRenderPass dummyRenderPass;
         const char *name;
-    } dummyRenderPassTests[] = {
-        {
-            DUMMY_NONE,
-            "none",
-        },
-        {
-            DUMMY_DYNAMIC,
-            "dynamic",
-        },
-        {
-            DUMMY_STATIC,
-            "static",
-        },
-    };
+    } dummyRenderPassTests[] = {{DUMMY_NONE, "none"}, {DUMMY_DYNAMIC, "dynamic"}, {DUMMY_STATIC, "static"}};
 
     for (const auto &colorAttachmentCountTest : colorAttachmentCountTests)
     {
@@ -1174,6 +1299,8 @@ tcu::TestCaseGroup *createShaderObjectRenderingTests(tcu::TestContext &testCtx)
                                     params.dummyRenderPass                 = dummyRenderPass.dummyRenderPass;
                                     params.writeGlFragDepth                = writeGlFragDepth;
                                     params.randomColorFormats              = useRandomColorFormats;
+                                    params.outputArray                     = false;
+                                    params.colorWriteEnable                = COLOR_WRITE_DONT_CARE;
 
                                     std::string name = getFormatCaseName(colorFormat);
                                     fragWriteGroup->addChild(new ShaderObjectRenderingCase(testCtx, name, params));
@@ -1206,6 +1333,46 @@ tcu::TestCaseGroup *createShaderObjectRenderingTests(tcu::TestContext &testCtx)
         }
         renderingGroup->addChild(colorAttachmentGroup.release());
     }
+
+    const struct
+    {
+        bool colorWriteEnable;
+        const char *name;
+    } colorWriteTests[] = {{true, "color_write_enable"}, {false, "color_write_disable"}};
+
+    const vk::VkFormat colorFormats2[] = {
+        vk::VK_FORMAT_R8_UNORM, vk::VK_FORMAT_R8G8B8A8_UNORM, vk::VK_FORMAT_R8G8B8A8_SNORM,      vk::VK_FORMAT_R32_UINT,
+        vk::VK_FORMAT_R32_SINT, vk::VK_FORMAT_R32_SFLOAT,     vk::VK_FORMAT_R32G32B32A32_SFLOAT,
+    };
+
+    de::MovePtr<tcu::TestCaseGroup> outputArrayGroup(new tcu::TestCaseGroup(testCtx, "output_array"));
+
+    for (const auto format : colorFormats2)
+    {
+        de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, getFormatCaseName(format).c_str()));
+        for (const auto &colorWriteTest : colorWriteTests)
+        {
+            TestParams params;
+            params.colorAttachmentCount            = 4;
+            params.extraAttachmentCount            = 2;
+            params.extraAttachments                = BETWEEN;
+            params.extraFragmentOutputCount        = 0u;
+            params.extraOutputs                    = NONE;
+            params.useDepthAttachment              = false;
+            params.colorFormat                     = vk::VK_FORMAT_R8G8B8A8_UNORM;
+            params.depthFormat                     = vk::VK_FORMAT_UNDEFINED;
+            params.bindShadersBeforeBeginRendering = false;
+            params.dummyRenderPass                 = DUMMY_NONE;
+            params.writeGlFragDepth                = false;
+            params.randomColorFormats              = false;
+            params.outputArray                     = true;
+            params.colorWriteEnable = colorWriteTest.colorWriteEnable ? COLOR_WRITE_REQUIRE : COLOR_WRITE_DISABLE;
+
+            formatGroup->addChild(new ShaderObjectRenderingCase(testCtx, colorWriteTest.name, params));
+        }
+        outputArrayGroup->addChild(formatGroup.release());
+    }
+    renderingGroup->addChild(outputArrayGroup.release());
 
     return renderingGroup.release();
 }

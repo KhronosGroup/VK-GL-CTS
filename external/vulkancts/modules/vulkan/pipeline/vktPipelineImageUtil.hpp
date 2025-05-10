@@ -111,7 +111,8 @@ de::MovePtr<tcu::TextureLevel> readStencilAttachment(
  *//*--------------------------------------------------------------------*/
 void uploadTestTexture(const vk::DeviceInterface &vk, vk::VkDevice device, vk::VkQueue queue, uint32_t queueFamilyIndex,
                        vk::Allocator &allocator, const TestTexture &testTexture, vk::VkImage destImage,
-                       vk::VkImageLayout destImageLayout = vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                       vk::VkImageLayout destImageLayout       = vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                       vk::VkPipelineStageFlags destStageFlags = vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
 /*--------------------------------------------------------------------*//*!
  * Uploads data from a test texture to a destination VK image using sparse
@@ -164,6 +165,8 @@ protected:
     void populateLevels(const std::vector<tcu::PixelBufferAccess> &levels);
     void populateCompressedLevels(tcu::CompressedTexFormat format,
                                   const std::vector<tcu::PixelBufferAccess> &decompressedLevels);
+    void populateCompressedLevelsVoidExtent(tcu::CompressedTexFormat format,
+                                            const std::vector<tcu::PixelBufferAccess> &decompressedLevels);
 
     static void fillWithGradient(const tcu::PixelBufferAccess &levelAccess);
 
@@ -236,7 +239,7 @@ private:
 public:
     TestTexture2D(const tcu::TextureFormat &format, int width, int height);
     TestTexture2D(const tcu::TextureFormat &format, int width, int height, int miplevels);
-    TestTexture2D(const tcu::CompressedTexFormat &format, int width, int height);
+    TestTexture2D(const tcu::CompressedTexFormat &format, int width, int height, bool voidExtent = false);
     virtual ~TestTexture2D(void);
 
     virtual int getNumLevels(void) const;

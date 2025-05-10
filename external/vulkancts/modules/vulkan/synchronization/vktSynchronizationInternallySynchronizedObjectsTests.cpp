@@ -172,16 +172,16 @@ public:
         m_mutex.unlock();
     }
 
-    inline void setDevice(Move<VkDevice> device, const Context &context)
+    inline void setDevice(Move<VkDevice> device, const VkInstance &instance, const Context &context)
     {
         m_logicalDevice = device;
 #ifndef CTS_USES_VULKANSC
-        m_deviceDriver = de::MovePtr<DeviceDriver>(
-            new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice,
-                             context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
+        m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instance,
+                                                                    *m_logicalDevice, context.getUsedApiVersion(),
+                                                                    context.getTestContext().getCommandLine()));
 #else
         m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(
-            new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice,
+            new DeviceDriverSC(context.getPlatformInterface(), instance, *m_logicalDevice,
                                context.getTestContext().getCommandLine(), context.getResourceInterface(),
                                context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(),
                                context.getUsedApiVersion()),
@@ -212,13 +212,13 @@ protected:
     Mutex m_mutex;
 };
 
-MovePtr<Allocator> createAllocator(const Context &context, const VkDevice &device)
+MovePtr<Allocator> createAllocator(const InstanceInterface &vki, const VkPhysicalDevice physicalDevice,
+                                   MultiQueues &queues)
 {
-    const DeviceInterface &deviceInterface = context.getDeviceInterface();
-    const InstanceInterface &instance      = context.getInstanceInterface();
-    const VkPhysicalDevice physicalDevice  = context.getPhysicalDevice();
+    const DeviceInterface &deviceInterface = queues.getDeviceInterface();
+    const VkDevice device                  = queues.getDevice();
     const VkPhysicalDeviceMemoryProperties deviceMemoryProperties =
-        getPhysicalDeviceMemoryProperties(instance, physicalDevice);
+        getPhysicalDeviceMemoryProperties(vki, physicalDevice);
 
     // Create memory allocator for device
     return MovePtr<Allocator>(new SimpleAllocator(deviceInterface, device, deviceMemoryProperties));
@@ -288,7 +288,7 @@ MovePtr<MultiQueues> createQueues(Context &context, const VkQueueFlags &queueFla
         deMemset(&queueInfo, 0, sizeof(queueInfo));
 
         queueInfo.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueInfo.pNext            = DE_NULL;
+        queueInfo.pNext            = nullptr;
         queueInfo.flags            = (VkDeviceQueueCreateFlags)0u;
         queueInfo.queueFamilyIndex = queues.getQueueFamilyIndex(queueFamilyIndexNdx);
         queueInfo.queueCount       = queueCount;
@@ -300,7 +300,7 @@ MovePtr<MultiQueues> createQueues(Context &context, const VkQueueFlags &queueFla
     deMemset(&deviceInfo, 0, sizeof(deviceInfo));
     vki.getPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
 
-    void *pNext = DE_NULL;
+    void *pNext = nullptr;
 #ifdef CTS_USES_VULKANSC
     VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ?
                                                                  context.getResourceInterface()->getStatMax() :
@@ -320,7 +320,7 @@ MovePtr<MultiQueues> createQueues(Context &context, const VkQueueFlags &queueFla
         {
             pcCI = {
                 VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                      // const void* pNext;
+                nullptr,                                      // const void* pNext;
                 VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                     VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
                 context.getResourceInterface()->getCacheDataSize(),       // uintptr_t initialDataSize;
@@ -342,16 +342,16 @@ MovePtr<MultiQueues> createQueues(Context &context, const VkQueueFlags &queueFla
     deviceInfo.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     deviceInfo.pNext                   = pNext;
     deviceInfo.enabledExtensionCount   = 0u;
-    deviceInfo.ppEnabledExtensionNames = DE_NULL;
+    deviceInfo.ppEnabledExtensionNames = nullptr;
     deviceInfo.enabledLayerCount       = 0u;
-    deviceInfo.ppEnabledLayerNames     = DE_NULL;
+    deviceInfo.ppEnabledLayerNames     = nullptr;
     deviceInfo.pEnabledFeatures        = &deviceFeatures;
     deviceInfo.queueCreateInfoCount    = static_cast<uint32_t>(queues.countQueueFamilyIndex());
     deviceInfo.pQueueCreateInfos       = &queueInfos[0];
 
     queues.setDevice(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
                                         context.getPlatformInterface(), instance, vki, physicalDevice, &deviceInfo),
-                     context);
+                     instance, context);
     vk::DeviceInterface &vk = queues.getDeviceInterface();
 
     for (uint32_t queueFamilyIndex = 0; queueFamilyIndex < queues.countQueueFamilyIndex(); ++queueFamilyIndex)
@@ -368,7 +368,7 @@ MovePtr<MultiQueues> createQueues(Context &context, const VkQueueFlags &queueFla
         }
     }
 
-    queues.m_allocator = createAllocator(context, queues.getDevice());
+    queues.m_allocator = createAllocator(vki, physicalDevice, queues);
     return moveQueues;
 }
 
@@ -422,14 +422,13 @@ TestStatus executeComputePipeline(const Context &context, const VkPipeline &pipe
             .update(vk, device);
 
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u,
-                                 &descriptorSet.get(), 0u, DE_NULL);
+                                 &descriptorSet.get(), 0u, nullptr);
 
         // Dispatch indirect compute command
         vk.cmdDispatch(*cmdBuffer, shadersExecutions, 1u, 1u);
 
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &bufferBarrier, 0,
-                              (const VkImageMemoryBarrier *)DE_NULL);
+                              (VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier, 0, nullptr);
 
         // End recording commands
         endCommandBuffer(vk, *cmdBuffer);
@@ -518,8 +517,8 @@ TestStatus executeGraphicPipeline(const Context &context, const VkPipeline &pipe
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, **colorAttachmentImage, colorImageSubresourceRange);
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 0u,
-                                  DE_NULL, 1u, &colorAttachmentLayoutBarrier);
+                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0u, nullptr, 0u,
+                                  nullptr, 1u, &colorAttachmentLayoutBarrier);
         }
 
         {
@@ -530,14 +529,13 @@ TestStatus executeGraphicPipeline(const Context &context, const VkPipeline &pipe
 
         vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0u, 1u,
-                                 &descriptorSet.get(), 0u, DE_NULL);
+                                 &descriptorSet.get(), 0u, nullptr);
 
         vk.cmdDraw(*cmdBuffer, shadersExecutions, 1u, 0u, 0u);
         endRenderPass(vk, *cmdBuffer);
 
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &bufferBarrier, 0,
-                              (const VkImageMemoryBarrier *)DE_NULL);
+                              (VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier, 0, nullptr);
 
         // End recording commands
         endCommandBuffer(vk, *cmdBuffer);
@@ -575,7 +573,7 @@ public:
         , m_descriptorSetLayout(descriptorSetLayout)
         , m_queues(queues)
         , m_shadersExecutions(shadersExecutions)
-        , m_barrier(DE_NULL)
+        , m_barrier(nullptr)
     {
     }
 
@@ -703,8 +701,8 @@ public:
         for (int executionNdx = 0; executionNdx < EXECUTION_PER_THREAD; ++executionNdx)
         {
             const int shaderNdx       = executionNdx % (int)m_pipelineInfo.size();
-            const DeviceInterface &vk = m_context.getDeviceInterface();
             const VkDevice device     = m_queues.getDevice();
+            const DeviceInterface &vk = m_queues.getDeviceInterface();
             Move<VkPipeline> pipeline = createComputePipeline(vk, device, m_pipelineCache, &m_pipelineInfo[shaderNdx]);
 
             TestStatus result = executeComputePipeline(m_context, *pipeline, m_pipelineLayout, m_descriptorSetLayout,
@@ -747,8 +745,8 @@ public:
         for (int executionNdx = 0; executionNdx < EXECUTION_PER_THREAD; ++executionNdx)
         {
             const int shaderNdx       = executionNdx % (int)m_pipelineInfo.size();
-            const DeviceInterface &vk = m_context.getDeviceInterface();
             const VkDevice device     = m_queues.getDevice();
+            const DeviceInterface &vk = m_queues.getDeviceInterface();
             Move<VkPipeline> pipeline = createGraphicsPipeline(vk, device, m_pipelineCache, &m_pipelineInfo[shaderNdx]);
 
             TestStatus result = executeGraphicPipeline(m_context, *pipeline, m_pipelineLayout, m_descriptorSetLayout,
@@ -796,7 +794,7 @@ public:
         MovePtr<MultiQueues> queues          = createQueues(m_context, VK_QUEUE_COMPUTE_BIT, instance, instanceDriver);
         const DeviceInterface &vk            = queues->getDeviceInterface();
         const VkDevice device                = queues->getDevice();
-        ShaderModuleVector shaderCompModules = addShaderModules(device);
+        ShaderModuleVector shaderCompModules = addShaderModules(vk, device);
         Buffer resultBuffer(vk, device, *queues->m_allocator,
                             makeBufferCreateInfo(BUFFER_SIZE, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
                             MemoryRequirement::HostVisible);
@@ -809,11 +807,11 @@ public:
         vector<VkComputePipelineCreateInfo> pipelineInfo         = addPipelineInfo(*pipelineLayout, shaderStageInfos);
         const VkPipelineCacheCreateInfo pipelineCacheInfo        = {
             VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType             sType;
-            DE_NULL,                                      // const void*                 pNext;
+            nullptr,                                      // const void*                 pNext;
 #ifndef CTS_USES_VULKANSC
             0u,      // VkPipelineCacheCreateFlags  flags;
             0u,      // uintptr_t                   initialDataSize;
-            DE_NULL, // const void*                 pInitialData;
+            nullptr, // const void*                 pInitialData;
 #else
             VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                 VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
@@ -849,9 +847,8 @@ public:
     }
 
 private:
-    ShaderModuleVector addShaderModules(const VkDevice &device)
+    ShaderModuleVector addShaderModules(const DeviceInterface &vk, const VkDevice &device)
     {
-        const DeviceInterface &vk = m_context.getDeviceInterface();
         ShaderModuleVector shaderCompModules;
         shaderCompModules.resize(m_shadersExecutions.size());
         for (int shaderNdx = 0; shaderNdx < static_cast<int>(m_shadersExecutions.size()); ++shaderNdx)
@@ -870,11 +867,11 @@ private:
         VkPipelineShaderStageCreateInfo shaderStageInfo;
         vector<VkPipelineShaderStageCreateInfo> shaderStageInfos;
         shaderStageInfo.sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStageInfo.pNext               = DE_NULL;
+        shaderStageInfo.pNext               = nullptr;
         shaderStageInfo.flags               = (VkPipelineShaderStageCreateFlags)0;
         shaderStageInfo.stage               = VK_SHADER_STAGE_COMPUTE_BIT;
         shaderStageInfo.pName               = "main";
-        shaderStageInfo.pSpecializationInfo = DE_NULL;
+        shaderStageInfo.pSpecializationInfo = nullptr;
 
         for (int shaderNdx = 0; shaderNdx < static_cast<int>(m_shadersExecutions.size()); ++shaderNdx)
         {
@@ -890,10 +887,10 @@ private:
         vector<VkComputePipelineCreateInfo> pipelineInfos;
         VkComputePipelineCreateInfo computePipelineInfo;
         computePipelineInfo.sType              = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-        computePipelineInfo.pNext              = DE_NULL;
+        computePipelineInfo.pNext              = nullptr;
         computePipelineInfo.flags              = (VkPipelineCreateFlags)0;
         computePipelineInfo.layout             = pipelineLayout;
-        computePipelineInfo.basePipelineHandle = DE_NULL;
+        computePipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         computePipelineInfo.basePipelineIndex  = 0;
 
         for (int shaderNdx = 0; shaderNdx < static_cast<int>(m_shadersExecutions.size()); ++shaderNdx)
@@ -931,26 +928,26 @@ public:
         requireFeatures(instanceDriver, physicalDevice, FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
 
         MovePtr<MultiQueues> queues   = createQueues(m_context, VK_QUEUE_GRAPHICS_BIT, instance, instanceDriver);
-        const DeviceInterface &vk     = m_context.getDeviceInterface();
         const VkDevice device         = queues->getDevice();
+        const DeviceInterface &vk     = queues->getDeviceInterface();
         VkFormat colorFormat          = VK_FORMAT_R8G8B8A8_UNORM;
         Move<VkRenderPass> renderPass = makeRenderPass(vk, device, colorFormat);
         const Move<VkDescriptorSetLayout> descriptorSetLayout(
             DescriptorSetLayoutBuilder()
                 .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
                 .build(vk, device));
-        ShaderModuleVector shaderGraphicModules = addShaderModules(device);
+        ShaderModuleVector shaderGraphicModules = addShaderModules(vk, device);
         const Move<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
         vector<VkPipelineShaderStageCreateInfo> shaderStageInfos = addShaderStageInfo(shaderGraphicModules);
         vector<VkGraphicsPipelineCreateInfo> pipelineInfo =
             addPipelineInfo(*pipelineLayout, shaderStageInfos, *renderPass);
         const VkPipelineCacheCreateInfo pipelineCacheInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType             sType;
-            DE_NULL,                                      // const void*                 pNext;
+            nullptr,                                      // const void*                 pNext;
 #ifndef CTS_USES_VULKANSC
             0u,     // VkPipelineCacheCreateFlags  flags;
             0u,     // uintptr_t                   initialDataSize;
-            DE_NULL // const void*                 pInitialData;
+            nullptr // const void*                 pInitialData;
 #else
             VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                 VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
@@ -986,9 +983,8 @@ public:
     }
 
 private:
-    ShaderModuleVector addShaderModules(const VkDevice &device)
+    ShaderModuleVector addShaderModules(const DeviceInterface &vk, const VkDevice &device)
     {
-        const DeviceInterface &vk = m_context.getDeviceInterface();
         ShaderModuleVector shaderModules;
         shaderModules.resize(m_shadersExecutions.size() + 1);
         for (int shaderNdx = 0; shaderNdx < static_cast<int>(m_shadersExecutions.size()); ++shaderNdx)
@@ -1008,10 +1004,10 @@ private:
         VkPipelineShaderStageCreateInfo shaderStageInfo;
         vector<VkPipelineShaderStageCreateInfo> shaderStageInfos;
         shaderStageInfo.sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStageInfo.pNext               = DE_NULL;
+        shaderStageInfo.pNext               = nullptr;
         shaderStageInfo.flags               = (VkPipelineShaderStageCreateFlags)0;
         shaderStageInfo.pName               = "main";
-        shaderStageInfo.pSpecializationInfo = DE_NULL;
+        shaderStageInfo.pSpecializationInfo = nullptr;
 
         for (int shaderNdx = 0; shaderNdx < static_cast<int>(m_shadersExecutions.size()); ++shaderNdx)
         {
@@ -1034,15 +1030,15 @@ private:
         vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
 
         m_vertexInputStateParams.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        m_vertexInputStateParams.pNext = DE_NULL;
+        m_vertexInputStateParams.pNext = nullptr;
         m_vertexInputStateParams.flags = 0u;
         m_vertexInputStateParams.vertexBindingDescriptionCount   = 0u;
-        m_vertexInputStateParams.pVertexBindingDescriptions      = DE_NULL;
+        m_vertexInputStateParams.pVertexBindingDescriptions      = nullptr;
         m_vertexInputStateParams.vertexAttributeDescriptionCount = 0u;
-        m_vertexInputStateParams.pVertexAttributeDescriptions    = DE_NULL;
+        m_vertexInputStateParams.pVertexAttributeDescriptions    = nullptr;
 
         m_inputAssemblyStateParams.sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        m_inputAssemblyStateParams.pNext                  = DE_NULL;
+        m_inputAssemblyStateParams.pNext                  = nullptr;
         m_inputAssemblyStateParams.flags                  = 0u;
         m_inputAssemblyStateParams.topology               = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
         m_inputAssemblyStateParams.primitiveRestartEnable = VK_FALSE;
@@ -1061,7 +1057,7 @@ private:
         m_scissor.extent.height = colorImageExtent.height;
 
         m_viewportStateParams.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        m_viewportStateParams.pNext         = DE_NULL;
+        m_viewportStateParams.pNext         = nullptr;
         m_viewportStateParams.flags         = 0u;
         m_viewportStateParams.viewportCount = 1u;
         m_viewportStateParams.pViewports    = &m_viewport;
@@ -1069,7 +1065,7 @@ private:
         m_viewportStateParams.pScissors     = &m_scissor;
 
         m_rasterStateParams.sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        m_rasterStateParams.pNext                   = DE_NULL;
+        m_rasterStateParams.pNext                   = nullptr;
         m_rasterStateParams.flags                   = 0u;
         m_rasterStateParams.depthClampEnable        = VK_FALSE;
         m_rasterStateParams.rasterizerDiscardEnable = VK_FALSE;
@@ -1093,7 +1089,7 @@ private:
             VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 
         m_colorBlendStateParams.sType             = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        m_colorBlendStateParams.pNext             = DE_NULL;
+        m_colorBlendStateParams.pNext             = nullptr;
         m_colorBlendStateParams.flags             = 0u;
         m_colorBlendStateParams.logicOpEnable     = VK_FALSE;
         m_colorBlendStateParams.logicOp           = VK_LOGIC_OP_COPY;
@@ -1105,17 +1101,17 @@ private:
         m_colorBlendStateParams.blendConstants[3] = 0.0f;
 
         m_multisampleStateParams.sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-        m_multisampleStateParams.pNext                 = DE_NULL;
+        m_multisampleStateParams.pNext                 = nullptr;
         m_multisampleStateParams.flags                 = 0u;
         m_multisampleStateParams.rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT;
         m_multisampleStateParams.sampleShadingEnable   = VK_FALSE;
         m_multisampleStateParams.minSampleShading      = 0.0f;
-        m_multisampleStateParams.pSampleMask           = DE_NULL;
+        m_multisampleStateParams.pSampleMask           = nullptr;
         m_multisampleStateParams.alphaToCoverageEnable = VK_FALSE;
         m_multisampleStateParams.alphaToOneEnable      = VK_FALSE;
 
         m_depthStencilStateParams.sType                 = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        m_depthStencilStateParams.pNext                 = DE_NULL;
+        m_depthStencilStateParams.pNext                 = nullptr;
         m_depthStencilStateParams.flags                 = 0u;
         m_depthStencilStateParams.depthTestEnable       = VK_TRUE;
         m_depthStencilStateParams.depthWriteEnable      = VK_TRUE;
@@ -1141,24 +1137,24 @@ private:
 
         VkGraphicsPipelineCreateInfo graphicsPipelineParams = {
             VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                         // const void* pNext;
+            nullptr,                                         // const void* pNext;
             0u,                                              // VkPipelineCreateFlags flags;
             2u,                                              // uint32_t stageCount;
-            DE_NULL,                                         // const VkPipelineShaderStageCreateInfo* pStages;
+            nullptr,                                         // const VkPipelineShaderStageCreateInfo* pStages;
             &m_vertexInputStateParams,   // const VkPipelineVertexInputStateCreateInfo* pVertexInputState;
             &m_inputAssemblyStateParams, // const VkPipelineInputAssemblyStateCreateInfo* pInputAssemblyState;
-            DE_NULL,                     // const VkPipelineTessellationStateCreateInfo* pTessellationState;
+            nullptr,                     // const VkPipelineTessellationStateCreateInfo* pTessellationState;
             &m_viewportStateParams,      // const VkPipelineViewportStateCreateInfo* pViewportState;
             &m_rasterStateParams,        // const VkPipelineRasterizationStateCreateInfo* pRasterState;
             &m_multisampleStateParams,   // const VkPipelineMultisampleStateCreateInfo* pMultisampleState;
             &m_depthStencilStateParams,  // const VkPipelineDepthStencilStateCreateInfo* pDepthStencilState;
             &m_colorBlendStateParams,    // const VkPipelineColorBlendStateCreateInfo* pColorBlendState;
-            (const VkPipelineDynamicStateCreateInfo *)DE_NULL, // const VkPipelineDynamicStateCreateInfo* pDynamicState;
-            pipelineLayout,                                    // VkPipelineLayout layout;
-            renderPass,                                        // VkRenderPass renderPass;
-            0u,                                                // uint32_t subpass;
-            DE_NULL,                                           // VkPipeline basePipelineHandle;
-            0,                                                 // int32_t basePipelineIndex;
+            nullptr,                     // const VkPipelineDynamicStateCreateInfo* pDynamicState;
+            pipelineLayout,              // VkPipelineLayout layout;
+            renderPass,                  // VkRenderPass renderPass;
+            0u,                          // uint32_t subpass;
+            VK_NULL_HANDLE,              // VkPipeline basePipelineHandle;
+            0,                           // int32_t basePipelineIndex;
         };
         for (int shaderNdx = 0; shaderNdx < static_cast<int>(m_shadersExecutions.size()) * 2; shaderNdx += 2)
         {

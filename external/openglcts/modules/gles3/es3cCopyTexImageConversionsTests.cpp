@@ -2369,7 +2369,7 @@ void ConversionDatabase::initializeDatabase()
     if (entries.empty())
         TCU_FAIL("Out of memory while pre-allocating space for conversion database entries");
 
-    deMemset(&entries[0], DE_NULL, N_START_CONVERSION_DATABASE_ENTRIES * sizeof(ConversionDatabaseEntry));
+    deMemset(&entries[0], 0, N_START_CONVERSION_DATABASE_ENTRIES * sizeof(ConversionDatabaseEntry));
 
     // Add all predefined entries that the test implementation is aware of
     configureConversionDatabase();
@@ -10295,7 +10295,7 @@ bool RequiredCase::getRawDataFromPixelData(std::vector<char> &result, PixelData 
     unsigned int n_bytes_per_pixel = 0;
     unsigned int n_pixel           = 0;
     const PixelData *pixels[]      = {&bottomleft, &bottomright, &topleft, &topright};
-    char *result_traveller         = DE_NULL;
+    char *result_traveller         = nullptr;
     GLenum type                    = topleft.data_type;
 
     // Quick checks

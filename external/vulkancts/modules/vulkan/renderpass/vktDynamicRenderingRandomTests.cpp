@@ -143,7 +143,7 @@ DynamicRenderingTestInstance::DynamicRenderingTestInstance(Context &context, con
 
         const VkImageCreateInfo imageInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-            DE_NULL,                             // const void*                pNext
+            nullptr,                             // const void*                pNext
             (VkImageCreateFlags)0,               // VkImageCreateFlags        flags
             VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
             m_parameters.imageFormat,            // VkFormat                    format
@@ -156,7 +156,7 @@ DynamicRenderingTestInstance::DynamicRenderingTestInstance(Context &context, con
             imageUsage,                // VkImageUsageFlags        usage
             VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode
             0u,                        // uint32_t                    queueFamilyIndexCount
-            DE_NULL,                   // const uint32_t*            pQueueFamilyIndices
+            nullptr,                   // const uint32_t*            pQueueFamilyIndices
             VK_IMAGE_LAYOUT_UNDEFINED, // VkImageLayout            initialLayout
         };
 
@@ -183,7 +183,7 @@ DynamicRenderingTestInstance::DynamicRenderingTestInstance(Context &context, con
         const auto pcSize   = static_cast<uint32_t>(sizeof(PushConstantData));
         const auto pcRange  = makePushConstantRange(pcStages, 0u, pcSize);
 
-        m_pipelineLayout = makePipelineLayout(vk, device, 0u, DE_NULL, 1u, &pcRange);
+        m_pipelineLayout = makePipelineLayout(vk, device, 0u, nullptr, 1u, &pcRange);
     }
 
     // Shader modules.
@@ -213,7 +213,7 @@ DynamicRenderingTestInstance::DynamicRenderingTestInstance(Context &context, con
 
         VkPipelineRenderingCreateInfoKHR renderingCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR, // VkStructureType    sType
-            DE_NULL,                                              // const void*        pNext
+            nullptr,                                              // const void*        pNext
             0u,                                                   // uint32_t            viewMask
             1u,                                                   // uint32_t            colorAttachmentCount
             &m_parameters.imageFormat,                            // const VkFormat*    pColorAttachmentFormats
@@ -226,22 +226,22 @@ DynamicRenderingTestInstance::DynamicRenderingTestInstance(Context &context, con
             device,            // const VkDevice                                    device
             *m_pipelineLayout, // const VkPipelineLayout                            pipelineLayout
             *m_vertexModule,   // const VkShaderModule                                vertexShaderModule
-            DE_NULL,           // const VkShaderModule                                tessellationControlShaderModule
-            DE_NULL,           // const VkShaderModule                                tessellationEvalShaderModule
-            DE_NULL,           // const VkShaderModule                                geometryShaderModule
+            VK_NULL_HANDLE,    // const VkShaderModule                                tessellationControlShaderModule
+            VK_NULL_HANDLE,    // const VkShaderModule                                tessellationEvalShaderModule
+            VK_NULL_HANDLE,    // const VkShaderModule                                geometryShaderModule
             *m_fragmentModule, // const VkShaderModule                                fragmentShaderModule
-            DE_NULL,           // const VkRenderPass                                renderPass
+            VK_NULL_HANDLE,    // const VkRenderPass                                renderPass
             viewports,         // const std::vector<VkViewport>&                    viewports
             scissors,          // const std::vector<VkRect2D>&                        scissors
             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, // const VkPrimitiveTopology                        topology
             0u,                                   // const uint32_t                                    subpass
             0u,                    // const uint32_t                                    patchControlPoints
-            DE_NULL,               // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
-            DE_NULL,               // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
-            DE_NULL,               // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
-            DE_NULL,               // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo
-            DE_NULL,               // const VkPipelineColorBlendStateCreateInfo*        colorBlendStateCreateInfo
-            DE_NULL,               // const VkPipelineDynamicStateCreateInfo*            dynamicStateCreateInfo
+            nullptr,               // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
+            nullptr,               // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
+            nullptr,               // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
+            nullptr,               // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo
+            nullptr,               // const VkPipelineColorBlendStateCreateInfo*        colorBlendStateCreateInfo
+            nullptr,               // const VkPipelineDynamicStateCreateInfo*            dynamicStateCreateInfo
             &renderingCreateInfo); // const void*                                        pNext
 
         if (m_parameters.enableGeometry)
@@ -251,22 +251,22 @@ DynamicRenderingTestInstance::DynamicRenderingTestInstance(Context &context, con
                 device,                     // const VkDevice                                    device
                 *m_pipelineLayout,          // const VkPipelineLayout                            pipelineLayout
                 *m_vertexPassthroughModule, // const VkShaderModule                                vertexShaderModule
-                DE_NULL, // const VkShaderModule                                tessellationControlShaderModule
-                DE_NULL, // const VkShaderModule                                tessellationEvalShaderModule
+                VK_NULL_HANDLE, // const VkShaderModule                                tessellationControlShaderModule
+                VK_NULL_HANDLE, // const VkShaderModule                                tessellationEvalShaderModule
                 *m_geometryModule, // const VkShaderModule                                geometryShaderModule
                 *m_fragmentModule, // const VkShaderModule                                fragmentShaderModule
-                DE_NULL,           // const VkRenderPass                                renderPass
+                VK_NULL_HANDLE,    // const VkRenderPass                                renderPass
                 viewports,         // const std::vector<VkViewport>&                    viewports
                 scissors,          // const std::vector<VkRect2D>&                        scissors
                 VK_PRIMITIVE_TOPOLOGY_POINT_LIST, // const VkPrimitiveTopology                        topology
                 0u,                               // const uint32_t                                    subpass
                 0u,      // const uint32_t                                    patchControlPoints
-                DE_NULL, // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
-                DE_NULL, // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
-                DE_NULL, // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
-                DE_NULL, // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo
-                DE_NULL, // const VkPipelineColorBlendStateCreateInfo*        colorBlendStateCreateInfo
-                DE_NULL, // const VkPipelineDynamicStateCreateInfo*            dynamicStateCreateInfo
+                nullptr, // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
+                nullptr, // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
+                nullptr, // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
+                nullptr, // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo
+                nullptr, // const VkPipelineColorBlendStateCreateInfo*        colorBlendStateCreateInfo
+                nullptr, // const VkPipelineDynamicStateCreateInfo*            dynamicStateCreateInfo
                 &renderingCreateInfo); // const void*                                        pNext
 
             m_pipelineLayer = makeGraphicsPipeline(
@@ -274,22 +274,22 @@ DynamicRenderingTestInstance::DynamicRenderingTestInstance(Context &context, con
                 device,               // const VkDevice                                    device
                 *m_pipelineLayout,    // const VkPipelineLayout                            pipelineLayout
                 *m_vertexLayerModule, // const VkShaderModule                                vertexShaderModule
-                DE_NULL, // const VkShaderModule                                tessellationControlShaderModule
-                DE_NULL, // const VkShaderModule                                tessellationEvalShaderModule
+                VK_NULL_HANDLE, // const VkShaderModule                                tessellationControlShaderModule
+                VK_NULL_HANDLE, // const VkShaderModule                                tessellationEvalShaderModule
                 *m_geometryLayerModule, // const VkShaderModule                                geometryShaderModule
                 *m_fragmentModule,      // const VkShaderModule                                fragmentShaderModule
-                DE_NULL,                // const VkRenderPass                                renderPass
+                VK_NULL_HANDLE,         // const VkRenderPass                                renderPass
                 viewports,              // const std::vector<VkViewport>&                    viewports
                 scissors,               // const std::vector<VkRect2D>&                        scissors
                 VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, // const VkPrimitiveTopology                        topology
                 0u,                                   // const uint32_t                                    subpass
                 0u,      // const uint32_t                                    patchControlPoints
-                DE_NULL, // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
-                DE_NULL, // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
-                DE_NULL, // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
-                DE_NULL, // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo
-                DE_NULL, // const VkPipelineColorBlendStateCreateInfo*        colorBlendStateCreateInfo
-                DE_NULL, // const VkPipelineDynamicStateCreateInfo*            dynamicStateCreateInfo
+                nullptr, // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
+                nullptr, // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
+                nullptr, // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
+                nullptr, // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo
+                nullptr, // const VkPipelineColorBlendStateCreateInfo*        colorBlendStateCreateInfo
+                nullptr, // const VkPipelineDynamicStateCreateInfo*            dynamicStateCreateInfo
                 &renderingCreateInfo); // const void*                                        pNext
         }
 
@@ -300,22 +300,22 @@ DynamicRenderingTestInstance::DynamicRenderingTestInstance(Context &context, con
                 device,            // const VkDevice                                    device
                 *m_pipelineLayout, // const VkPipelineLayout                            pipelineLayout
                 *m_vertexModule,   // const VkShaderModule                                vertexShaderModule
-                *m_tscModule, // const VkShaderModule                                tessellationControlShaderModule
-                *m_tseModule, // const VkShaderModule                                tessellationEvalShaderModule
-                DE_NULL,      // const VkShaderModule                                geometryShaderModule
+                *m_tscModule,   // const VkShaderModule                                tessellationControlShaderModule
+                *m_tseModule,   // const VkShaderModule                                tessellationEvalShaderModule
+                VK_NULL_HANDLE, // const VkShaderModule                                geometryShaderModule
                 *m_fragmentModule, // const VkShaderModule                                fragmentShaderModule
-                DE_NULL,           // const VkRenderPass                                renderPass
+                VK_NULL_HANDLE,    // const VkRenderPass                                renderPass
                 viewports,         // const std::vector<VkViewport>&                    viewports
                 scissors,          // const std::vector<VkRect2D>&                        scissors
                 vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, // const VkPrimitiveTopology                        topology
                 0u,                                   // const uint32_t                                    subpass
                 4u,      // const uint32_t                                    patchControlPoints
-                DE_NULL, // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
-                DE_NULL, // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
-                DE_NULL, // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
-                DE_NULL, // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo
-                DE_NULL, // const VkPipelineColorBlendStateCreateInfo*        colorBlendStateCreateInfo
-                DE_NULL, // const VkPipelineDynamicStateCreateInfo*            dynamicStateCreateInfo
+                nullptr, // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
+                nullptr, // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
+                nullptr, // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
+                nullptr, // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo
+                nullptr, // const VkPipelineColorBlendStateCreateInfo*        colorBlendStateCreateInfo
+                nullptr, // const VkPipelineDynamicStateCreateInfo*            dynamicStateCreateInfo
                 &renderingCreateInfo); // const void*                                        pNext
         }
 
@@ -325,22 +325,22 @@ DynamicRenderingTestInstance::DynamicRenderingTestInstance(Context &context, con
             device,            // const VkDevice                                    device
             *m_pipelineLayout, // const VkPipelineLayout                            pipelineLayout
             *m_vertexModule,   // const VkShaderModule                                vertexShaderModule
-            DE_NULL, // const VkShaderModule                                tessellationControlShaderModule
-            DE_NULL, // const VkShaderModule                                tessellationEvalShaderModule
-            DE_NULL, // const VkShaderModule                                geometryShaderModule
+            VK_NULL_HANDLE, // const VkShaderModule                                tessellationControlShaderModule
+            VK_NULL_HANDLE, // const VkShaderModule                                tessellationEvalShaderModule
+            VK_NULL_HANDLE, // const VkShaderModule                                geometryShaderModule
             *m_fragmentModule, // const VkShaderModule                                fragmentShaderModule
-            DE_NULL,           // const VkRenderPass                                renderPass
+            VK_NULL_HANDLE,    // const VkRenderPass                                renderPass
             viewports,         // const std::vector<VkViewport>&                    viewports
             scissors,          // const std::vector<VkRect2D>&                        scissors
             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, // const VkPrimitiveTopology                        topology
             0u,                                   // const uint32_t                                    subpass
             0u,      // const uint32_t                                    patchControlPoints
-            DE_NULL, // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
-            DE_NULL, // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
-            DE_NULL, // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
-            DE_NULL, // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo
-            DE_NULL, // const VkPipelineColorBlendStateCreateInfo*        colorBlendStateCreateInfo
-            DE_NULL, // const VkPipelineDynamicStateCreateInfo*            dynamicStateCreateInfo
+            nullptr, // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
+            nullptr, // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
+            nullptr, // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
+            nullptr, // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo
+            nullptr, // const VkPipelineColorBlendStateCreateInfo*        colorBlendStateCreateInfo
+            nullptr, // const VkPipelineDynamicStateCreateInfo*            dynamicStateCreateInfo
             &renderingCreateInfo); // const void*                                        pNext
     }
 
@@ -358,7 +358,7 @@ DynamicRenderingTestInstance::DynamicRenderingTestInstance(Context &context, con
     {
         VkQueryPoolCreateInfo queryPoolInfo = {
             VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType                    sType
-            DE_NULL,                                  // const void*                        pNext
+            nullptr,                                  // const void*                        pNext
             0,                                        // VkQueryPoolCreateFlags            flags
             vk::VK_QUERY_TYPE_OCCLUSION,              // VkQueryType                        queryType
             maxQueries,                               // uint32_t                            queryCount
@@ -542,11 +542,11 @@ tcu::TestStatus DynamicRenderingTestInstance::iterate(void)
         {
             const VkRenderingAttachmentInfoKHR renderingAttachmentInfo = {
                 VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType            sType
-                DE_NULL,                                         // const void*                pNext
+                nullptr,                                         // const void*                pNext
                 *m_colorAttachmentView,                          // VkImageView                imageView
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout            imageLayout
                 VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits    resolveMode
-                DE_NULL,                                         // VkImageView                resolveImageView
+                VK_NULL_HANDLE,                                  // VkImageView                resolveImageView
                 VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout            resolveImageLayout
                 loadOp,                                          // VkAttachmentLoadOp        loadOp
                 VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp        storeOp
@@ -555,15 +555,15 @@ tcu::TestStatus DynamicRenderingTestInstance::iterate(void)
 
             const VkRenderingInfoKHR renderingInfo = {
                 VK_STRUCTURE_TYPE_RENDERING_INFO_KHR, // VkStructureType                        sType
-                DE_NULL,                              // const void*                            pNext
+                nullptr,                              // const void*                            pNext
                 flags,                                // VkRenderingFlagsKHR                    flags
                 renderArea,                           // VkRect2D                                renderArea
                 useLayers ? numLayers : 1u,           // uint32_t                                layerCount
                 viewMask,                             // uint32_t                                viewMask
                 1u,                                   // uint32_t                                colorAttachmentCount
                 &renderingAttachmentInfo,             // const VkRenderingAttachmentInfoKHR*    pColorAttachments
-                DE_NULL,                              // const VkRenderingAttachmentInfoKHR*    pDepthAttachment
-                DE_NULL                               // const VkRenderingAttachmentInfoKHR*    pStencilAttachment
+                nullptr,                              // const VkRenderingAttachmentInfoKHR*    pDepthAttachment
+                nullptr                               // const VkRenderingAttachmentInfoKHR*    pStencilAttachment
             };
 
             vk.cmdBeginRendering(*cmdBuffers.back(), &renderingInfo);
@@ -576,7 +576,7 @@ tcu::TestStatus DynamicRenderingTestInstance::iterate(void)
 
             const VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo = {
                 VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,  // VkStructureType            sType
-                DE_NULL,                                                          // const void*                pNext
+                nullptr,                                                          // const void*                pNext
                 flags & ~VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR, // VkRenderingFlagsKHR        flags
                 viewMask,                  // uint32_t                    viewMask
                 1u,                        // uint32_t                    colorAttachmentCount
@@ -589,9 +589,9 @@ tcu::TestStatus DynamicRenderingTestInstance::iterate(void)
             const VkCommandBufferInheritanceInfo bufferInheritanceInfo = {
                 vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType                    sType
                 &inheritanceRenderingInfo,                             // const void*                        pNext
-                DE_NULL,                                               // VkRenderPass                        renderPass
+                VK_NULL_HANDLE,                                        // VkRenderPass                        renderPass
                 0u,                                                    // uint32_t                            subpass
-                DE_NULL,                                               // VkFramebuffer                    framebuffer
+                VK_NULL_HANDLE,                                        // VkFramebuffer                    framebuffer
                 VK_FALSE,                         // VkBool32                            occlusionQueryEnable
                 (VkQueryControlFlags)0u,          // VkQueryControlFlags                queryFlags
                 (VkQueryPipelineStatisticFlags)0u // VkQueryPipelineStatisticFlags    pipelineStatistics
@@ -599,7 +599,7 @@ tcu::TestStatus DynamicRenderingTestInstance::iterate(void)
 
             const VkCommandBufferBeginInfo commandBufBeginParams = {
                 VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType                sType
-                DE_NULL,                                     // const void*                    pNext
+                nullptr,                                     // const void*                    pNext
                 VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT |
                     VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT, // VkCommandBufferUsageFlags    flags
                 &bufferInheritanceInfo};
@@ -766,14 +766,14 @@ tcu::TestStatus DynamicRenderingTestInstance::iterate(void)
         {
             VkMemoryBarrier barrier = {
                 VK_STRUCTURE_TYPE_MEMORY_BARRIER,     // VkStructureType    sType
-                DE_NULL,                              // const void*        pNext
+                nullptr,                              // const void*        pNext
                 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // VkAccessFlags    srcAccessMask
                 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT  // VkAccessFlags    dstAccessMask
             };
 
             vk.cmdPipelineBarrier(*cmdBuffers.back(), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 1u, &barrier, 0u, DE_NULL, 0u,
-                                  DE_NULL);
+                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 1u, &barrier, 0u, nullptr, 0u,
+                                  nullptr);
         }
 
         prevFlags = flags;
@@ -798,14 +798,14 @@ tcu::TestStatus DynamicRenderingTestInstance::iterate(void)
 
         const VkSubmitInfo submitInfo = {
             VK_STRUCTURE_TYPE_SUBMIT_INFO,                  // VkStructureType                sType
-            DE_NULL,                                        // const void*                    pNext
+            nullptr,                                        // const void*                    pNext
             0u,                                             // uint32_t                        waitSemaphoreCount
-            DE_NULL,                                        // const VkSemaphore*            pWaitSemaphores
-            DE_NULL,                                        // const VkPipelineStageFlags*    pWaitDstStageMask
+            nullptr,                                        // const VkSemaphore*            pWaitSemaphores
+            nullptr,                                        // const VkPipelineStageFlags*    pWaitDstStageMask
             static_cast<uint32_t>(cmdBufferHandles.size()), // uint32_t                        commandBufferCount
             cmdBufferHandles.data(),                        // const VkCommandBuffer*        pCommandBuffers
             0u,                                             // uint32_t                        signalSemaphoreCount
-            DE_NULL,                                        // const VkSemaphore*            pSignalSemaphores
+            nullptr,                                        // const VkSemaphore*            pSignalSemaphores
         };
 
         VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));

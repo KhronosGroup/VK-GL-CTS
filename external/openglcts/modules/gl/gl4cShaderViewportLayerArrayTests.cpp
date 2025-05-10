@@ -252,7 +252,7 @@ void ShaderViewportLayerArrayUtils::renderQuad(const glu::RenderContext &context
                                            glu::pr::TriangleStrip(DE_LENGTH_OF_ARRAY(quadIndices), quadIndices);
 
     glu::draw(context, shaderPipeline.getShaderProgram()->getProgram(), DE_LENGTH_OF_ARRAY(vertexArrays), vertexArrays,
-              primitiveList, (glu::DrawUtilCallback *)DE_NULL);
+              primitiveList, nullptr);
 
     GLU_EXPECT_NO_ERROR(gl.getError(), "glu::draw error");
 }

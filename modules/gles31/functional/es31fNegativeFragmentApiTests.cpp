@@ -175,7 +175,7 @@ void blend_equationi(NegativeTestContext &ctx)
     glw::GLint maxDrawBuffers = -1;
 
     if (!checkSupport(ctx))
-        throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", DE_NULL, __FILE__, __LINE__);
+        throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", nullptr, __FILE__, __LINE__);
 
     ctx.glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
     ctx.beginSection("GL_INVALID_ENUM is generated if mode is not GL_FUNC_ADD, GL_FUNC_SUBTRACT, "
@@ -197,7 +197,7 @@ void blend_equation_separatei(NegativeTestContext &ctx)
     glw::GLint maxDrawBuffers = -1;
 
     if (!checkSupport(ctx))
-        throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", DE_NULL, __FILE__, __LINE__);
+        throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", nullptr, __FILE__, __LINE__);
 
     ctx.glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
     ctx.beginSection("GL_INVALID_ENUM is generated if modeRGB is not GL_FUNC_ADD, GL_FUNC_SUBTRACT, "
@@ -248,7 +248,7 @@ void blend_funci(NegativeTestContext &ctx)
     glw::GLint maxDrawBuffers = -1;
 
     if (!checkSupport(ctx))
-        throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", DE_NULL, __FILE__, __LINE__);
+        throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", nullptr, __FILE__, __LINE__);
 
     ctx.glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
     ctx.beginSection("GL_INVALID_ENUM is generated if either sfactor or dfactor is not an accepted value.");
@@ -271,7 +271,7 @@ void blend_func_separatei(NegativeTestContext &ctx)
     glw::GLint maxDrawBuffers = -1;
 
     if (!checkSupport(ctx))
-        throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", DE_NULL, __FILE__, __LINE__);
+        throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", nullptr, __FILE__, __LINE__);
 
     ctx.glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
     ctx.beginSection("GL_INVALID_ENUM is generated if srcRGB, dstRGB, srcAlpha, or dstAlpha is not an accepted value.");

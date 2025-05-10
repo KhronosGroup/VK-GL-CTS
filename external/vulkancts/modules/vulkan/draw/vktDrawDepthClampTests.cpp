@@ -65,10 +65,18 @@ struct ViewportData
     float expectedValue;
 };
 
+struct DepthClampData
+{
+    bool enabled;
+    float minDepthClamp;
+    float maxDepthClamp;
+};
+
 struct TestParams
 {
     string testNameSuffix;
     std::vector<ViewportData> viewportData;
+    DepthClampData depthClampControl;
     bool enableDepthBias;
     float depthBiasConstantFactor;
     bool skipUNorm;
@@ -94,6 +102,7 @@ const TestParams depthClearValuesToTest[] = {
             0.3f, //   depthValue
             0.3f, //   expectedValue
         }},
+        {},    // depthClampControl
         false, // enableDepthBias
         0.0f,  // depthBiasConstantFactor
         false, // skipUNorm
@@ -109,6 +118,7 @@ const TestParams depthClearValuesToTest[] = {
             -1e6f, //   depthValue
             0.0f,  //   expectedValue
         }},
+        {},    // depthClampControl
         false, // enableDepthBias
         0.0f,  // depthBiasConstantFactor
         false, // skipUNorm
@@ -124,6 +134,7 @@ const TestParams depthClearValuesToTest[] = {
             1.e6f, //   depthValue
             1.0f,  //   expectedValue
         }},
+        {},    // depthClampControl
         false, // enableDepthBias
         0.0f,  // depthBiasConstantFactor
         false, // skipUNorm
@@ -139,6 +150,7 @@ const TestParams depthClearValuesToTest[] = {
             0.3f, //   depthValue
             0.0f, //   expectedValue
         }},
+        {},     // depthClampControl
         true,   // enableDepthBias
         -2e11f, // depthBiasConstantFactor
         false,  // skipUNorm
@@ -154,6 +166,7 @@ const TestParams depthClearValuesToTest[] = {
             0.7f, //   depthValue
             1.0f, //   expectedValue
         }},
+        {},    // depthClampControl
         true,  // enableDepthBias
         2e11f, // depthBiasConstantFactor
         false, // skipUNorm
@@ -169,6 +182,7 @@ const TestParams depthClearValuesToTest[] = {
             -1.5f, //   depthValue
             -1.5f, //   expectedValue
         }},
+        {},    // depthClampControl
         false, // enableDepthBias
         0.0f,  // depthBiasConstantFactor
         true,  // skipUNorm
@@ -186,6 +200,7 @@ const TestParams depthClearValuesToTest[] = {
             1.5f, //   depthValue
             1.5f, //   expectedValue
         }},
+        {},    // depthClampControl
         false, // enableDepthBias
         0.0f,  // depthBiasConstantFactor
         true,  // skipUNorm
@@ -223,12 +238,222 @@ const TestParams depthClearValuesToTest[] = {
                 0.66f, //   expectedValue: 0.4 * 0.9 + (1.0 - 0.4) * 0.5 = 0.66
             },
         },
+        {},    // depthClampControl
         false, // enableDepthBias
         0.0f,  // depthBiasConstantFactor
         true,  // skipUNorm
         true,  // skipSNorm
         {},
-    }};
+    },
+#ifndef CTS_USES_VULKANSC
+    {
+        "_clamp_control_viewport_range", // testNameSuffix
+        {{
+            // viewportData
+            0.0f, //   minDepth
+            1.0f, //   maxDepth
+            0.3f, //   depthValue
+            0.3f, //   expectedValue
+        }},
+        {},    // depthClampControl
+        false, // enableDepthBias
+        0.0f,  // depthBiasConstantFactor
+        false, // skipUNorm
+        false, // skipSNorm
+        {
+            "VK_EXT_depth_clamp_control" // requiredExtensions[0]
+        },
+    },
+    {
+        "_clamp_control_input_negative", // testNameSuffix
+        {{
+            // viewportData
+            0.0f,  //   minDepth
+            1.0f,  //   maxDepth
+            -1e6f, //   depthValue
+            0.1f,  //   expectedValue
+        }},
+        {
+            // depthClampControl
+            true, //   enabled
+            0.1f, //   minDepthClamp
+            0.9f, //   maxDepthClamp
+        },
+        false, // enableDepthBias
+        0.0f,  // depthBiasConstantFactor
+        false, // skipUNorm
+        false, // skipSNorm
+        {
+            "VK_EXT_depth_clamp_control" // requiredExtensions[0]
+        },
+    },
+    {
+        "_clamp_control_input_positive", // testNameSuffix
+        {{
+            // viewportData
+            0.0f,  //   minDepth
+            1.0f,  //   maxDepth
+            1.e6f, //   depthValue
+            0.9f,  //   expectedValue
+        }},
+        {
+            // depthClampControl
+            true, //   enabled
+            0.1f, //   minDepthClamp
+            0.9f, //   maxDepthClamp
+        },
+        false, // enableDepthBias
+        0.0f,  // depthBiasConstantFactor
+        false, // skipUNorm
+        false, // skipSNorm
+        {
+            "VK_EXT_depth_clamp_control" // requiredExtensions[0]
+        },
+    },
+    {
+        "_depth_bias_clamp_control_input_negative", // testNameSuffix
+        {{
+            // viewportData
+            0.3f, //   minDepth
+            1.0f, //   maxDepth
+            0.3f, //   depthValue
+            0.1f, //   expectedValue
+        }},
+        {
+            // depthClampControl
+            true, //   enabled
+            0.1f, //   minDepthClamp
+            0.9f, //   maxDepthClamp
+        },
+        true,   // enableDepthBias
+        -2e11f, // depthBiasConstantFactor
+        false,  // skipUNorm
+        false,  // skipSNorm
+        {
+            "VK_EXT_depth_clamp_control" // requiredExtensions[0]
+        },
+    },
+    {
+        "_depth_bias_clamp_control_input_positive", // testNameSuffix
+        {{
+            // viewportData
+            0.0f, //   minDepth
+            0.7f, //   maxDepth
+            0.7f, //   depthValue
+            0.9f, //   expectedValue
+        }},
+        {
+            // depthClampControl
+            true, //   enabled
+            0.1f, //   minDepthClamp
+            0.9f, //   maxDepthClamp
+        },
+        true,  // enableDepthBias
+        2e11f, // depthBiasConstantFactor
+        false, // skipUNorm
+        false, // skipSNorm
+        {
+            "VK_EXT_depth_clamp_control" // requiredExtensions[0]
+        },
+    },
+    {
+        "_unrestricted_clamp_control_negative", // testNameSuffix
+        {{
+            // viewportData
+            -1.5f, //   minDepth
+            1.0f,  //   maxDepth
+            -1.5f, //   depthValue
+            -1.4f, //   expectedValue
+        }},
+        {
+            // depthClampControl
+            true,  //   enabled
+            -1.4f, //   minDepthClamp
+            0.9f,  //   maxDepthClamp
+        },
+        false, // enableDepthBias
+        0.0f,  // depthBiasConstantFactor
+        true,  // skipUNorm
+        true,  // skipSNorm
+        {
+            "VK_EXT_depth_clamp_control",     // requiredExtensions[0]
+            "VK_EXT_depth_range_unrestricted" // requiredExtensions[1]
+        },
+    },
+    {
+        "_unrestricted_clamp_control_positive", // testNameSuffix
+        {{
+            // viewportData
+            0.0f, //   minDepth
+            1.5f, //   maxDepth
+            1.5f, //   depthValue
+            1.4f, //   expectedValue
+        }},
+        {
+            // depthClampControl
+            true, //   enabled
+            0.1f, //   minDepthClamp
+            1.4f, //   maxDepthClamp
+        },
+        false, // enableDepthBias
+        0.0f,  // depthBiasConstantFactor
+        true,  // skipUNorm
+        true,  // skipSNorm
+        {
+            "VK_EXT_depth_clamp_control",     // requiredExtensions[0]
+            "VK_EXT_depth_range_unrestricted" // requiredExtensions[1]
+        },
+    },
+    {
+        "_unrestricted_bias_clamp_control_negative", // testNameSuffix
+        {{
+            // viewportData
+            0.0f,  //   minDepth
+            1.0f,  //   maxDepth
+            0.3f,  //   depthValue
+            -1.4f, //   expectedValue
+        }},
+        {
+            // depthClampControl
+            true,  //   enabled
+            -1.4f, //   minDepthClamp
+            0.9f,  //   maxDepthClamp
+        },
+        true,   // enableDepthBias
+        -2e11f, // depthBiasConstantFactor
+        true,   // skipUNorm
+        true,   // skipSNorm
+        {
+            "VK_EXT_depth_clamp_control",     // requiredExtensions[0]
+            "VK_EXT_depth_range_unrestricted" // requiredExtensions[1]
+        },
+    },
+    {
+        "_unrestricted_bias_clamp_control_positive", // testNameSuffix
+        {{
+            // viewportData
+            0.0f, //   minDepth
+            1.0f, //   maxDepth
+            0.7f, //   depthValue
+            1.4f, //   expectedValue
+        }},
+        {
+            // depthClampControl
+            true, //   enabled
+            0.1f, //   minDepthClamp
+            1.4f, //   maxDepthClamp
+        },
+        true,  // enableDepthBias
+        2e11f, // depthBiasConstantFactor
+        true,  // skipUNorm
+        true,  // skipSNorm
+        {
+            "VK_EXT_depth_clamp_control",     // requiredExtensions[0]
+            "VK_EXT_depth_range_unrestricted" // requiredExtensions[1]
+        },
+    }
+#endif // CTS_USES_VULKANSC
+};
 
 bool isUnormDepthFormat(VkFormat format)
 {
@@ -249,7 +474,7 @@ class DepthClampTestInstance : public TestInstance
 {
 public:
     DepthClampTestInstance(Context &context, const TestParams &params, const VkFormat format, const float epsilon,
-                           const SharedGroupParams groupParams);
+                           const SharedGroupParams groupParams, const bool dynamic);
     tcu::TestStatus iterate();
 
 private:
@@ -271,6 +496,9 @@ private:
     std::vector<VkViewport> m_viewportVect;
     std::vector<VkRect2D> m_scissorVect;
     const SharedGroupParams m_groupParams;
+#ifndef CTS_USES_VULKANSC
+    const bool m_dynamic;
+#endif
     SharedPtr<Image> m_depthTargetImage;
     Move<VkImageView> m_depthTargetView;
     SharedPtr<Buffer> m_vertexBuffer;
@@ -289,7 +517,8 @@ static const Vec4 vertices[] = {
 static const VkPrimitiveTopology verticesTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 
 DepthClampTestInstance::DepthClampTestInstance(Context &context, const TestParams &params, const VkFormat format,
-                                               const float epsilon, const SharedGroupParams groupParams)
+                                               const float epsilon, const SharedGroupParams groupParams,
+                                               const bool dynamic)
     : TestInstance(context)
     , m_params(params)
     , m_format(format)
@@ -297,7 +526,14 @@ DepthClampTestInstance::DepthClampTestInstance(Context &context, const TestParam
     , m_viewportVect(params.viewportData.size(), VkViewport())
     , m_scissorVect(params.viewportData.size(), VkRect2D())
     , m_groupParams(groupParams)
+#ifndef CTS_USES_VULKANSC
+    , m_dynamic(dynamic)
+#endif
 {
+#ifdef CTS_USES_VULKANSC
+    DE_UNREF(dynamic);
+#endif
+
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
@@ -384,13 +620,13 @@ DepthClampTestInstance::DepthClampTestInstance(Context &context, const TestParam
         renderPassCreateInfo.addSubpass(SubpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS, // pipelineBindPoint
                                                            (VkSubpassDescriptionFlags)0,    // flags
                                                            0u,                              // inputAttachmentCount
-                                                           DE_NULL,                         // inputAttachments
+                                                           nullptr,                         // inputAttachments
                                                            0u,                              // colorAttachmentCount
-                                                           DE_NULL,                         // colorAttachments
-                                                           DE_NULL,                         // resolveAttachments
+                                                           nullptr,                         // colorAttachments
+                                                           nullptr,                         // resolveAttachments
                                                            depthAttachmentReference,        // depthStencilAttachment
                                                            0u,                              // preserveAttachmentCount
-                                                           DE_NULL));                       // preserveAttachments
+                                                           nullptr));                       // preserveAttachments
         m_renderPass = createRenderPass(vk, device, &renderPassCreateInfo);
 
         const std::vector<VkImageView> depthAttachments{*m_depthTargetView};
@@ -415,6 +651,20 @@ DepthClampTestInstance::DepthClampTestInstance(Context &context, const TestParam
     const PipelineCreateInfo::VertexInputState vertexInputState =
         PipelineCreateInfo::VertexInputState(1, &vertexInputBindingDescription, 1, &vertexInputAttributeDescription);
 
+    // Depth clamp control
+    const void *viewportNext = nullptr;
+#ifndef CTS_USES_VULKANSC
+    VkDepthClampRangeEXT depthClampRange = {m_params.depthClampControl.minDepthClamp,
+                                            m_params.depthClampControl.maxDepthClamp};
+    VkPipelineViewportDepthClampControlCreateInfoEXT depthClampControlCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLAMP_CONTROL_CREATE_INFO_EXT, nullptr,
+        m_params.depthClampControl.enabled && !m_dynamic ? VK_DEPTH_CLAMP_MODE_USER_DEFINED_RANGE_EXT :
+                                                           VK_DEPTH_CLAMP_MODE_VIEWPORT_RANGE_EXT,
+        m_params.depthClampControl.enabled && !m_dynamic ? &depthClampRange : nullptr};
+    if (m_params.depthClampControl.enabled)
+        viewportNext = &depthClampControlCreateInfo;
+#endif // CTS_USES_VULKANSC
+
     // Graphics pipeline
     const Unique<VkShaderModule> vertexModule(
         createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0));
@@ -425,21 +675,26 @@ DepthClampTestInstance::DepthClampTestInstance(Context &context, const TestParam
     if (viewportCount > 1)
         geometryModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("geom"), 0);
 
-    const PipelineLayoutCreateInfo pipelineLayoutCreateInfo(0u, DE_NULL, 0u, DE_NULL);
+    const PipelineLayoutCreateInfo pipelineLayoutCreateInfo(0u, nullptr, 0u, nullptr);
     m_pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
     std::vector<VkDynamicState> dynamicStates{VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+#ifndef CTS_USES_VULKANSC
+    if (m_dynamic && m_params.depthClampControl.enabled)
+        dynamicStates.push_back(VK_DYNAMIC_STATE_DEPTH_CLAMP_RANGE_EXT);
+#endif // CTS_USES_VULKANSC
 
     PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, (VkPipelineCreateFlags)0);
     pipelineCreateInfo.addShader(
         PipelineCreateInfo::PipelineShaderStage(*vertexModule, "main", VK_SHADER_STAGE_VERTEX_BIT));
-    if (*geometryModule != 0)
+    if (*geometryModule != VK_NULL_HANDLE)
         pipelineCreateInfo.addShader(
             PipelineCreateInfo::PipelineShaderStage(*geometryModule, "main", VK_SHADER_STAGE_GEOMETRY_BIT));
     pipelineCreateInfo.addShader(
         PipelineCreateInfo::PipelineShaderStage(*fragmentModule, "main", VK_SHADER_STAGE_FRAGMENT_BIT));
     pipelineCreateInfo.addState(PipelineCreateInfo::VertexInputState(vertexInputState));
     pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(verticesTopology));
-    pipelineCreateInfo.addState(PipelineCreateInfo::ViewportState(viewportCount, m_viewportVect, m_scissorVect));
+    pipelineCreateInfo.addState(
+        PipelineCreateInfo::ViewportState(viewportCount, m_viewportVect, m_scissorVect, viewportNext));
     pipelineCreateInfo.addState(
         PipelineCreateInfo::DepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_ALWAYS, VK_FALSE, VK_FALSE));
     pipelineCreateInfo.addState(
@@ -458,13 +713,13 @@ DepthClampTestInstance::DepthClampTestInstance(Context &context, const TestParam
 
 #ifndef CTS_USES_VULKANSC
     VkPipelineRenderingCreateInfoKHR renderingCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR, DE_NULL, 0u, 0u, DE_NULL, m_format, VK_FORMAT_UNDEFINED};
+        VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR, nullptr, 0u, 0u, nullptr, m_format, VK_FORMAT_UNDEFINED};
 
     if (m_groupParams->useDynamicRendering)
         pipelineCreateInfo.pNext = &renderingCreateInfo;
 #endif // CTS_USES_VULKANSC
 
-    m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+    m_pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 tcu::ConstPixelBufferAccess DepthClampTestInstance::draw()
@@ -581,10 +836,10 @@ void DepthClampTestInstance::preRenderCommands(VkCommandBuffer cmdBuffer, const 
                       VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 
     {
-        const VkMemoryBarrier memBarrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER, DE_NULL, VK_ACCESS_TRANSFER_WRITE_BIT,
+        const VkMemoryBarrier memBarrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_TRANSFER_WRITE_BIT,
                                             VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT};
         vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                              0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+                              0, 1, &memBarrier, 0, nullptr, 0, nullptr);
     }
 }
 
@@ -593,6 +848,18 @@ void DepthClampTestInstance::drawCommands(VkCommandBuffer cmdBuffer) const
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDeviceSize offset = 0;
     const VkBuffer buffer     = m_vertexBuffer->object();
+
+#ifndef CTS_USES_VULKANSC
+    if (m_dynamic)
+    {
+        VkDepthClampRangeEXT depthClampRange = {m_params.depthClampControl.minDepthClamp,
+                                                m_params.depthClampControl.maxDepthClamp};
+        vk.cmdSetDepthClampRangeEXT(cmdBuffer,
+                                    m_params.depthClampControl.enabled ? VK_DEPTH_CLAMP_MODE_USER_DEFINED_RANGE_EXT :
+                                                                         VK_DEPTH_CLAMP_MODE_VIEWPORT_RANGE_EXT,
+                                    m_params.depthClampControl.enabled ? &depthClampRange : nullptr);
+    }
+#endif
 
     // if there is more then one viewport we are also checking
     // proper behaviour of cmdSetViewport/Scissor - there was
@@ -616,11 +883,11 @@ void DepthClampTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer,
 {
     VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                         // const void* pNext;
+        nullptr,                                                         // const void* pNext;
         renderingFlags,                                                  // VkRenderingFlagsKHR flags;
         0u,                                                              // uint32_t viewMask;
         0u,                                                              // uint32_t colorAttachmentCount;
-        DE_NULL,                                                         // const VkFormat* pColorAttachmentFormats;
+        nullptr,                                                         // const VkFormat* pColorAttachmentFormats;
         m_format,                                                        // VkFormat depthAttachmentFormat;
         VK_FORMAT_UNDEFINED,                                             // VkFormat stencilAttachmentFormat;
         VK_SAMPLE_COUNT_1_BIT,                                           // VkSampleCountFlagBits rasterizationSamples;
@@ -634,7 +901,7 @@ void DepthClampTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer,
 
     const VkCommandBufferBeginInfo commandBufBeginParams{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         usageFlags,                                  // VkCommandBufferUsageFlags flags;
         &bufferInheritanceInfo};
 
@@ -650,11 +917,11 @@ void DepthClampTestInstance::beginDynamicRender(VkCommandBuffer cmdBuffer, VkCle
 
     VkRenderingAttachmentInfoKHR depthAttachment{
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,  // VkStructureType sType;
-        DE_NULL,                                          // const void* pNext;
+        nullptr,                                          // const void* pNext;
         *m_depthTargetView,                               // VkImageView imageView;
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                             // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                          // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                   // VkImageView resolveImageView;
         VK_IMAGE_LAYOUT_UNDEFINED,                        // VkImageLayout resolveImageLayout;
         VK_ATTACHMENT_LOAD_OP_LOAD,                       // VkAttachmentLoadOp loadOp;
         VK_ATTACHMENT_STORE_OP_STORE,                     // VkAttachmentStoreOp storeOp;
@@ -663,15 +930,15 @@ void DepthClampTestInstance::beginDynamicRender(VkCommandBuffer cmdBuffer, VkCle
 
     VkRenderingInfoKHR renderingInfo{
         VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-        DE_NULL,
+        nullptr,
         renderingFlags,   // VkRenderingFlagsKHR flags;
         renderArea,       // VkRect2D renderArea;
         1u,               // uint32_t layerCount;
         0u,               // uint32_t viewMask;
         0u,               // uint32_t colorAttachmentCount;
-        DE_NULL,          // const VkRenderingAttachmentInfoKHR* pColorAttachments;
+        nullptr,          // const VkRenderingAttachmentInfoKHR* pColorAttachments;
         &depthAttachment, // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
-        DE_NULL,          // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
+        nullptr,          // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
     };
 
     vk.cmdBeginRendering(cmdBuffer, &renderingInfo);
@@ -719,12 +986,13 @@ class DepthClampTest : public TestCase
 {
 public:
     DepthClampTest(tcu::TestContext &testCtx, const string &name, const TestParams &params, const VkFormat format,
-                   const float epsilon, const SharedGroupParams groupParams)
+                   const float epsilon, const SharedGroupParams groupParams, const bool dynamic)
         : TestCase(testCtx, name)
         , m_params(params)
         , m_format(format)
         , m_epsilon(epsilon)
         , m_groupParams(groupParams)
+        , m_dynamic(dynamic)
     {
     }
 
@@ -807,7 +1075,7 @@ public:
 
     virtual TestInstance *createInstance(Context &context) const
     {
-        return new DepthClampTestInstance(context, m_params, m_format, m_epsilon, m_groupParams);
+        return new DepthClampTestInstance(context, m_params, m_format, m_epsilon, m_groupParams, m_dynamic);
     }
 
 private:
@@ -815,6 +1083,7 @@ private:
     const VkFormat m_format;
     const float m_epsilon;
     const SharedGroupParams m_groupParams;
+    const bool m_dynamic;
 };
 
 std::string getFormatCaseName(VkFormat format)
@@ -838,9 +1107,14 @@ void createTests(tcu::TestCaseGroup *testGroup, const SharedGroupParams groupPar
         {
             if ((params.skipSNorm && vk::isSnormFormat(format)) || (params.skipUNorm && isUnormDepthFormat(format)))
                 continue;
-            const auto testCaseName = formatCaseName + params.testNameSuffix;
-            testGroup->addChild(
-                new DepthClampTest(testGroup->getTestContext(), testCaseName, params, format, epsilon, groupParams));
+            auto testCaseName = formatCaseName + params.testNameSuffix;
+            testGroup->addChild(new DepthClampTest(testGroup->getTestContext(), testCaseName, params, format, epsilon,
+                                                   groupParams, false));
+            if (!params.depthClampControl.enabled)
+                continue;
+            testCaseName += "_dynamic";
+            testGroup->addChild(new DepthClampTest(testGroup->getTestContext(), testCaseName, params, format, epsilon,
+                                                   groupParams, true));
         }
     }
 }

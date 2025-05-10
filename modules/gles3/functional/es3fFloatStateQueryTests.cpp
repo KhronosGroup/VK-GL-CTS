@@ -74,18 +74,18 @@ public:
 
     const char *getTestNamePostfix(void) const;
 
-    virtual void verifyFloat(tcu::TestContext &testCtx, GLenum name, GLfloat reference) = DE_NULL;
+    virtual void verifyFloat(tcu::TestContext &testCtx, GLenum name, GLfloat reference) = 0;
 
     // "Expanded" == Float to int conversion converts from [-1.0 to 1.0] -> [MIN_INT MAX_INT]
-    virtual void verifyFloatExpanded(tcu::TestContext &testCtx, GLenum name, GLfloat reference) = DE_NULL;
+    virtual void verifyFloatExpanded(tcu::TestContext &testCtx, GLenum name, GLfloat reference) = 0;
     virtual void verifyFloat2Expanded(tcu::TestContext &testCtx, GLenum name, GLfloat reference0,
-                                      GLfloat reference1)                                       = DE_NULL;
+                                      GLfloat reference1)                                       = 0;
     virtual void verifyFloat4Color(tcu::TestContext &testCtx, GLenum name, GLfloat reference0, GLfloat reference1,
-                                   GLfloat reference2, GLfloat reference3)                      = DE_NULL;
+                                   GLfloat reference2, GLfloat reference3)                      = 0;
 
     // verify that the given range is completely whitin the GL state range
-    virtual void verifyFloatRange(tcu::TestContext &testCtx, GLenum name, GLfloat min, GLfloat max)   = DE_NULL;
-    virtual void verifyFloatGreaterOrEqual(tcu::TestContext &testCtx, GLenum name, GLfloat reference) = DE_NULL;
+    virtual void verifyFloatRange(tcu::TestContext &testCtx, GLenum name, GLfloat min, GLfloat max)   = 0;
+    virtual void verifyFloatGreaterOrEqual(tcu::TestContext &testCtx, GLenum name, GLfloat reference) = 0;
 
 private:
     const char *const m_testNamePostfix;
@@ -1214,10 +1214,10 @@ private:
 
 FloatStateQueryTests::FloatStateQueryTests(Context &context)
     : TestCaseGroup(context, "floats", "Float Values")
-    , m_verifierBoolean(DE_NULL)
-    , m_verifierInteger(DE_NULL)
-    , m_verifierInteger64(DE_NULL)
-    , m_verifierFloat(DE_NULL)
+    , m_verifierBoolean(nullptr)
+    , m_verifierInteger(nullptr)
+    , m_verifierInteger64(nullptr)
+    , m_verifierFloat(nullptr)
 {
 }
 
@@ -1228,10 +1228,10 @@ FloatStateQueryTests::~FloatStateQueryTests(void)
 
 void FloatStateQueryTests::init(void)
 {
-    DE_ASSERT(m_verifierBoolean == DE_NULL);
-    DE_ASSERT(m_verifierInteger == DE_NULL);
-    DE_ASSERT(m_verifierInteger64 == DE_NULL);
-    DE_ASSERT(m_verifierFloat == DE_NULL);
+    DE_ASSERT(m_verifierBoolean == nullptr);
+    DE_ASSERT(m_verifierInteger == nullptr);
+    DE_ASSERT(m_verifierInteger64 == nullptr);
+    DE_ASSERT(m_verifierFloat == nullptr);
 
     m_verifierBoolean =
         new GetBooleanVerifier(m_context.getRenderContext().getFunctions(), m_context.getTestContext().getLog());
@@ -1295,22 +1295,22 @@ void FloatStateQueryTests::deinit(void)
     if (m_verifierBoolean)
     {
         delete m_verifierBoolean;
-        m_verifierBoolean = DE_NULL;
+        m_verifierBoolean = nullptr;
     }
     if (m_verifierInteger)
     {
         delete m_verifierInteger;
-        m_verifierInteger = DE_NULL;
+        m_verifierInteger = nullptr;
     }
     if (m_verifierInteger64)
     {
         delete m_verifierInteger64;
-        m_verifierInteger64 = DE_NULL;
+        m_verifierInteger64 = nullptr;
     }
     if (m_verifierFloat)
     {
         delete m_verifierFloat;
-        m_verifierFloat = DE_NULL;
+        m_verifierFloat = nullptr;
     }
 
     this->TestCaseGroup::deinit();

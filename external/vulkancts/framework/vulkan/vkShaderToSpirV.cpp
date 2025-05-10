@@ -69,7 +69,7 @@ void initGlslang(void *)
 
 void prepareGlslang(void)
 {
-    deInitSingleton(&s_glslangInitState, initGlslang, DE_NULL);
+    deInitSingleton(&s_glslangInitState, initGlslang, nullptr);
 }
 
 // \todo [2015-06-19 pyry] Specialize these per GLSL version

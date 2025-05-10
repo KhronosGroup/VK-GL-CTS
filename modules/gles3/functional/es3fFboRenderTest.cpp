@@ -435,7 +435,7 @@ public:
     }
 
     virtual IterateResult iterate(void);
-    virtual void render(sglr::Context &fboContext, Surface &dst) = DE_NULL;
+    virtual void render(sglr::Context &fboContext, Surface &dst) = 0;
 
     bool compare(const tcu::Surface &reference, const tcu::Surface &result);
 
@@ -455,7 +455,7 @@ TestCase::IterateResult FboRenderCase::iterate(void)
     glu::RenderContext &renderCtx         = m_context.getRenderContext();
     const tcu::RenderTarget &renderTarget = renderCtx.getRenderTarget();
     tcu::TestLog &log                     = m_testCtx.getLog();
-    const char *failReason                = DE_NULL;
+    const char *failReason                = nullptr;
 
     // Position & size for context
     deRandom rnd;

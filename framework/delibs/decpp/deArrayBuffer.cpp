@@ -70,14 +70,14 @@ void ArrayBuffer_selfTest(void)
     {
         de::ArrayBuffer<int> buf;
         DE_TEST_ASSERT(buf.size() == 0);
-        DE_TEST_ASSERT(buf.getPtr() == DE_NULL);
+        DE_TEST_ASSERT(buf.getPtr() == nullptr);
     }
 
     // sized constructor
     {
         de::ArrayBuffer<int> buf(4);
         DE_TEST_ASSERT(buf.size() == 4);
-        DE_TEST_ASSERT(buf.getPtr() != DE_NULL);
+        DE_TEST_ASSERT(buf.getPtr() != nullptr);
     }
 
     // copy constructor
@@ -129,7 +129,7 @@ void ArrayBuffer_selfTest(void)
         de::ArrayBuffer<int> buf(4);
         buf.clear();
         DE_TEST_ASSERT(buf.size() == 0);
-        DE_TEST_ASSERT(buf.getPtr() == DE_NULL);
+        DE_TEST_ASSERT(buf.getPtr() == nullptr);
     }
 
     // setStorage
@@ -137,7 +137,7 @@ void ArrayBuffer_selfTest(void)
         de::ArrayBuffer<int> buf(4);
         buf.setStorage(12);
         DE_TEST_ASSERT(buf.size() == 12);
-        DE_TEST_ASSERT(buf.getPtr() != DE_NULL);
+        DE_TEST_ASSERT(buf.getPtr() != nullptr);
     }
 
     // setStorage, too large

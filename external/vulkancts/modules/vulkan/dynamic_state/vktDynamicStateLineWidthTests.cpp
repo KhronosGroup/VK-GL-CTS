@@ -257,9 +257,10 @@ Move<VkPipeline> LineWidthInstance::buildPipeline(VkPrimitiveTopology lineTopolo
     dynamicCreateInfo.pDynamicStates                   = dynamicStates;
     dynamicCreateInfo.dynamicStateCount                = 1u;
 
-    const auto attribute = makeVertexInputAttributeDescription(0u, subpass, VK_FORMAT_R32G32B32A32_SFLOAT, 0u);
-    const auto binding   = makeVertexInputBindingDescription(subpass, static_cast<uint32_t>(sizeof(tcu::Vec4)),
-                                                             VK_VERTEX_INPUT_RATE_VERTEX);
+    const auto bindingIdx = (dynamic ? 0u : 1u);
+    const auto attribute  = makeVertexInputAttributeDescription(0u, bindingIdx, VK_FORMAT_R32G32B32A32_SFLOAT, 0u);
+    const auto binding    = makeVertexInputBindingDescription(bindingIdx, static_cast<uint32_t>(sizeof(tcu::Vec4)),
+                                                              VK_VERTEX_INPUT_RATE_VERTEX);
     VkPipelineVertexInputStateCreateInfo inputCreateInfo = initVulkanStructure();
     inputCreateInfo.flags                                = VkPipelineVertexInputStateCreateFlags(0);
     inputCreateInfo.vertexAttributeDescriptionCount      = 1u;
@@ -268,8 +269,8 @@ Move<VkPipeline> LineWidthInstance::buildPipeline(VkPrimitiveTopology lineTopolo
     inputCreateInfo.pVertexBindingDescriptions           = &binding;
 
     return makeGraphicsPipeline(m_context.getDeviceInterface(), m_context.getDevice(), layout, vertexModule,
-                                VkShaderModule(0), VkShaderModule(0), VkShaderModule(0), fragmentModule, renderPass,
-                                viewports, scissors, lineTopology, subpass,
+                                VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, fragmentModule, renderPass, viewports,
+                                scissors, lineTopology, subpass,
                                 0u, // patchControlPoints
                                 &inputCreateInfo, &rasterizationCreateInfo,
                                 nullptr, // multisampleStateCreateInfo
@@ -286,22 +287,33 @@ bool LineWidthInstance::verifyResults(const BufferWithMemory &resultBuffer, cons
                                        resultBuffer.getAllocation().getHostPtr());
 
     // count pixels in vertical line
-    uint32_t staticLineWidth = 0u;
+    uint32_t resultStaticWidth = 0u;
     for (int32_t x = 0; x < int32_t(width); ++x)
     {
         if (pixels.getPixel(x, 0) == staticColor)
-            ++staticLineWidth;
+            ++resultStaticWidth;
     }
 
     // count pixels in horizontal line
-    uint32_t dynamicLineWidth = 0u;
+    uint32_t resultDynamicWidth = 0u;
     for (int32_t y = 0; y < int32_t(height); ++y)
     {
         if (pixels.getPixel(0, y) == dynamicColor)
-            ++dynamicLineWidth;
+            ++resultDynamicWidth;
     }
 
-    return ((dynamicWidth == dynamicLineWidth) && (staticWidth == staticLineWidth));
+    const auto pass = ((dynamicWidth == resultDynamicWidth) && (staticWidth == resultStaticWidth));
+
+    if (!pass)
+    {
+        auto &log = m_context.getTestContext().getLog();
+        log << tcu::TestLog::Message << "pass=" << pass << " (dynamicWidth=" << dynamicWidth
+            << " resultDynamicWidth=" << resultDynamicWidth << " staticWidth=" << staticWidth
+            << " resultStaticWidth=" << resultStaticWidth << ")" << tcu::TestLog::EndMessage;
+        log << tcu::TestLog::Image("Result", "", pixels);
+    }
+
+    return pass;
 }
 
 tcu::TestStatus LineWidthInstance::iterate()
@@ -317,11 +329,9 @@ tcu::TestStatus LineWidthInstance::iterate()
     Move<VkShaderModule> vertex   = createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"));
     Move<VkShaderModule> fragment = createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"));
     // note that dynamic lines are always drawn horizontally
-    de::MovePtr<BufferWithMemory> dynamicVertices =
-        buildVertices(m_params.dynamicTopo, (m_params.dynamicFirst == true), &dynamicVertCount);
+    de::MovePtr<BufferWithMemory> dynamicVertices = buildVertices(m_params.dynamicTopo, true, &dynamicVertCount);
     DE_ASSERT(dynamicVertCount);
-    de::MovePtr<BufferWithMemory> staticVertices =
-        buildVertices(m_params.staticTopo, (m_params.dynamicFirst == false), &staticVertCount);
+    de::MovePtr<BufferWithMemory> staticVertices = buildVertices(m_params.staticTopo, false, &staticVertCount);
     DE_ASSERT(staticVertCount);
     const VkBuffer dynamicBuffs[2]{**dynamicVertices, **staticVertices};
     const VkBuffer *vertexBuffers = dynamicBuffs;
@@ -498,23 +508,17 @@ std::string TestLineWidthParams::rep() const
 void DynamicStateLWTests::init(void)
 {
     TestLineWidthParams const params[]{
-        {VK_PRIMITIVE_TOPOLOGY_LINE_LIST, VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, 0u, 0u, true, VK_FORMAT_R32G32B32A32_SFLOAT,
-         128, 128},
-        {VK_PRIMITIVE_TOPOLOGY_LINE_LIST, VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, 0u, 0u, false,
-         VK_FORMAT_R32G32B32A32_SFLOAT, 128, 128},
-        {VK_PRIMITIVE_TOPOLOGY_LINE_LIST, VK_PRIMITIVE_TOPOLOGY_LINE_LIST, 0u, 0u, true, VK_FORMAT_R32G32B32A32_SFLOAT,
-         128, 128},
-        {VK_PRIMITIVE_TOPOLOGY_LINE_LIST, VK_PRIMITIVE_TOPOLOGY_LINE_LIST, 0u, 0u, false, VK_FORMAT_R32G32B32A32_SFLOAT,
-         128, 128},
+        // clang-format off
+        {VK_PRIMITIVE_TOPOLOGY_LINE_LIST, VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,  0u, 0u, true,  VK_FORMAT_R32G32B32A32_SFLOAT, 128, 128},
+        {VK_PRIMITIVE_TOPOLOGY_LINE_LIST, VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,  0u, 0u, false, VK_FORMAT_R32G32B32A32_SFLOAT, 128, 128},
+        {VK_PRIMITIVE_TOPOLOGY_LINE_LIST, VK_PRIMITIVE_TOPOLOGY_LINE_LIST,   0u, 0u, true,  VK_FORMAT_R32G32B32A32_SFLOAT, 128, 128},
+        {VK_PRIMITIVE_TOPOLOGY_LINE_LIST, VK_PRIMITIVE_TOPOLOGY_LINE_LIST,   0u, 0u, false, VK_FORMAT_R32G32B32A32_SFLOAT, 128, 128},
 
-        {VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, VK_PRIMITIVE_TOPOLOGY_LINE_LIST, 0u, 0u, true, VK_FORMAT_R32G32B32A32_SFLOAT,
-         128, 128},
-        {VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, VK_PRIMITIVE_TOPOLOGY_LINE_LIST, 0u, 0u, false,
-         VK_FORMAT_R32G32B32A32_SFLOAT, 128, 128},
-        {VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, 0u, 0u, true,
-         VK_FORMAT_R32G32B32A32_SFLOAT, 128, 128},
-        {VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, 0u, 0u, false,
-         VK_FORMAT_R32G32B32A32_SFLOAT, 128, 128},
+        {VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, VK_PRIMITIVE_TOPOLOGY_LINE_LIST,  0u, 0u, true,  VK_FORMAT_R32G32B32A32_SFLOAT, 128, 128},
+        {VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, VK_PRIMITIVE_TOPOLOGY_LINE_LIST,  0u, 0u, false, VK_FORMAT_R32G32B32A32_SFLOAT, 128, 128},
+        {VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, 0u, 0u, true,  VK_FORMAT_R32G32B32A32_SFLOAT, 128, 128},
+        {VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, 0u, 0u, false, VK_FORMAT_R32G32B32A32_SFLOAT, 128, 128},
+        // clang-format on
     };
     de::MovePtr<tcu::TestCaseGroup> dynaStatic(new tcu::TestCaseGroup(m_testCtx, "dyna_static"));
     de::MovePtr<tcu::TestCaseGroup> staticDyna(new tcu::TestCaseGroup(m_testCtx, "static_dyna"));

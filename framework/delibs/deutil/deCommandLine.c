@@ -38,9 +38,9 @@ enum
 
 deCommandLine *deCommandLine_parse(const char *commandLine)
 {
-    deMemPool *tmpPool = deMemPool_createRoot(DE_NULL, 0);
-    CharPtrArray *args = tmpPool ? CharPtrArray_create(tmpPool) : DE_NULL;
-    char *buf          = DE_NULL;
+    deMemPool *tmpPool = deMemPool_createRoot(NULL, 0);
+    CharPtrArray *args = tmpPool ? CharPtrArray_create(tmpPool) : NULL;
+    char *buf          = NULL;
     char *outPtr;
     int pos;
     int argNdx;
@@ -50,7 +50,7 @@ deCommandLine *deCommandLine_parse(const char *commandLine)
     {
         if (tmpPool)
             deMemPool_destroy(tmpPool);
-        return DE_NULL;
+        return NULL;
     }
 
     DE_ASSERT(commandLine);
@@ -65,7 +65,7 @@ deCommandLine *deCommandLine_parse(const char *commandLine)
     if (!buf || !CharPtrArray_pushBack(args, buf))
     {
         deMemPool_destroy(tmpPool);
-        return DE_NULL;
+        return NULL;
     }
 
     while (commandLine[pos] != 0)
@@ -108,7 +108,7 @@ deCommandLine *deCommandLine_parse(const char *commandLine)
             {
                 deFree(buf);
                 deMemPool_destroy(tmpPool);
-                return DE_NULL;
+                return NULL;
             }
         }
         else
@@ -130,7 +130,7 @@ deCommandLine *deCommandLine_parse(const char *commandLine)
             deFree(cmdLine);
             deFree(buf);
             deMemPool_destroy(tmpPool);
-            return DE_NULL;
+            return NULL;
         }
 
         cmdLine->numArgs = CharPtrArray_getNumElements(args);
@@ -159,7 +159,7 @@ static void testParse(const char *cmdLine, const char *const *refArgs, int numAr
     DE_TEST_ASSERT(parsedCmdLine->numArgs == numArgs);
 
     for (argNdx = 0; argNdx < numArgs; argNdx++)
-        DE_TEST_ASSERT(deStringEqual(parsedCmdLine->args[argNdx], refArgs[argNdx]));
+        DE_TEST_ASSERT(strcmp(parsedCmdLine->args[argNdx], refArgs[argNdx]) == 0);
 
     deCommandLine_destroy(parsedCmdLine);
 }

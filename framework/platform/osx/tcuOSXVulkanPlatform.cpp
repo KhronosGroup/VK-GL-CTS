@@ -85,7 +85,7 @@ class VulkanLibrary : public vk::Library
 {
 public:
     VulkanLibrary(const char *libraryPath)
-        : m_library(libraryPath != DE_NULL ? libraryPath : "libvulkan.dylib")
+        : m_library(libraryPath != nullptr ? libraryPath : "libvulkan.dylib")
         , m_driver(m_library)
     {
     }

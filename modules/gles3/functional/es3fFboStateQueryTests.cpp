@@ -247,7 +247,7 @@ public:
             GLuint textureID = 0;
             glGenTextures(1, &textureID);
             glBindTexture(GL_TEXTURE_2D, textureID);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 128, 128, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 128, 128, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
             expectError(GL_NO_ERROR);
 
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID, 0);
@@ -631,9 +631,9 @@ public:
     }
 
     virtual void testColorAttachment(GLenum internalFormat, GLenum attachment, GLint bitsR, GLint bitsG, GLint bitsB,
-                                     GLint bitsA) = DE_NULL;
+                                     GLint bitsA) = 0;
 
-    virtual void testDepthAttachment(GLenum internalFormat, GLenum attachment, GLint bitsD, GLint bitsS) = DE_NULL;
+    virtual void testDepthAttachment(GLenum internalFormat, GLenum attachment, GLint bitsD, GLint bitsS) = 0;
 
     void test(void)
     {
@@ -876,9 +876,9 @@ public:
     {
     }
 
-    virtual void testColorAttachment(void) = DE_NULL;
+    virtual void testColorAttachment(void) = 0;
 
-    virtual void testDepthAttachment(void) = DE_NULL;
+    virtual void testDepthAttachment(void) = 0;
 
     void test(void)
     {

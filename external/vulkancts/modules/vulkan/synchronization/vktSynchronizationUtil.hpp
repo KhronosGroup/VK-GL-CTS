@@ -381,10 +381,10 @@ bool isIndirectBuffer(const ResourceType type);
 vk::VkCommandBufferSubmitInfoKHR makeCommonCommandBufferSubmitInfo(const vk::VkCommandBuffer cmdBuf);
 vk::VkSemaphoreSubmitInfoKHR makeCommonSemaphoreSubmitInfo(vk::VkSemaphore semaphore, uint64_t value,
                                                            vk::VkPipelineStageFlags2KHR stageMask);
-vk::VkDependencyInfoKHR makeCommonDependencyInfo(const vk::VkMemoryBarrier2KHR *pMemoryBarrier             = DE_NULL,
-                                                 const vk::VkBufferMemoryBarrier2KHR *pBufferMemoryBarrier = DE_NULL,
-                                                 const vk::VkImageMemoryBarrier2KHR *pImageMemoryBarrier   = DE_NULL,
-                                                 bool eventDependency                                      = false);
+vk::VkDependencyInfoKHR makeCommonDependencyInfo(const vk::VkMemoryBarrier2KHR *pMemoryBarrier             = nullptr,
+                                                 const vk::VkBufferMemoryBarrier2KHR *pBufferMemoryBarrier = nullptr,
+                                                 const vk::VkImageMemoryBarrier2KHR *pImageMemoryBarrier   = nullptr,
+                                                 bool eventDependency = false, bool useAllStages = false);
 
 vk::VkDevice getSyncDevice(de::MovePtr<VideoDevice> &device, Context &context);
 const vk::DeviceInterface &getSyncDeviceInterface(de::MovePtr<VideoDevice> &device, Context &context);

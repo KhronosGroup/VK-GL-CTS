@@ -51,6 +51,8 @@ private:
     /* Private methods */
     TessellationShaderTCTETests(const TessellationShaderTCTETests &other);
     TessellationShaderTCTETests &operator=(const TessellationShaderTCTETests &other);
+
+    void addTessellationShaderTCTEgl_MaxPatchVertices_Position_PointSizeTest();
 };
 
 /** Implementation of Test Case 50
@@ -204,7 +206,11 @@ class TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize : public Test
 {
 public:
     /* Public methods */
-    TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize(Context &context, const ExtParameters &extParams);
+    TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize(Context &context, const ExtParameters &extParams,
+                                                                 _tessellation_primitive_mode primitive_mode,
+                                                                 _tessellation_shader_vertex_ordering vertex_ordering,
+                                                                 _tessellation_shader_vertex_spacing vertex_spacing,
+                                                                 bool point_mode);
 
     virtual ~TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize(void)
     {
@@ -241,6 +247,7 @@ private:
         std::vector<_vec4> result_position_data;
         std::vector<_vec2> result_value1_data;
         std::vector<_ivec4> result_value2_data;
+        bool supported;
 
         /* Constructor */
         _run()
@@ -258,6 +265,7 @@ private:
             , primitive_mode(TESSELLATION_SHADER_PRIMITIVE_MODE_UNKNOWN)
             , vertex_ordering(TESSELLATION_SHADER_VERTEX_ORDERING_UNKNOWN)
             , vertex_spacing(TESSELLATION_SHADER_VERTEX_SPACING_UNKNOWN)
+            , supported(true)
         {
             memset(inner, 0, sizeof(inner));
             memset(outer, 0, sizeof(outer));
@@ -291,6 +299,11 @@ private:
     _runs m_runs;
     TessellationShaderUtils *m_utils_ptr;
     glw::GLuint m_vao_id;
+
+    _tessellation_primitive_mode m_primitive_mode;
+    _tessellation_shader_vertex_ordering m_vertex_ordering;
+    _tessellation_shader_vertex_spacing m_vertex_spacing;
+    bool m_point_mode;
 };
 
 /** Implementation of Test Case 36

@@ -24,6 +24,8 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
+#include <cstddef>
+#include <type_traits>
 
 #if (DE_OS == DE_OS_ANDROID) && defined(__ARM_ARCH) && defined(__ARM_32BIT_STATE)
 #define VKAPI_ATTR __attribute__((pcs("aapcs-vfp")))
@@ -38,7 +40,23 @@
 #define VKAPI_CALL
 #endif
 
-#define VK_NULL_HANDLE DE_NULL
+// A helper to make sure VK_NULL_HANDLE is not accidentally used where it doesn't make sense.  When
+// assigned to a handle defined by VK_DEFINE_HANDLE below (a pointer), it is automatically cast to
+// nullptr.  When assigned to a Handle object, a special constructor that accepts this type sets it
+// internal value to 0.
+struct VkNullHandleType
+{
+    template <typename T>
+    operator T *()
+    {
+        return nullptr;
+    }
+};
+
+#define VK_NULL_HANDLE \
+    VkNullHandleType   \
+    {                  \
+    }
 #define VK_DEFINE_HANDLE(NAME, TYPE) typedef struct NAME##_s *NAME
 #define VK_DEFINE_NON_DISPATCHABLE_HANDLE(NAME, TYPE) typedef Handle<TYPE> NAME
 
@@ -49,6 +67,9 @@
     {                                                             \
         COMPATIBLE internal;                                      \
         explicit NAME(COMPATIBLE internal_) : internal(internal_) \
+        {                                                         \
+        }                                                         \
+        NAME(std::nullptr_t) : internal()                         \
         {                                                         \
         }                                                         \
     };                                                            \
@@ -96,13 +117,24 @@ public:
     Handle(void)
     {
     } // \note Left uninitialized on purpose
-    Handle(uint64_t internal) : m_internal(internal)
+    Handle(VkNullHandleType) : m_internal(0)
     {
     }
 
-    Handle &operator=(uint64_t internal)
+    // Helpers for vkNullDriver (an internal implementation of a Vulkan driver).
+    template <typename T>
+    Handle(const T *obj) : m_internal(reinterpret_cast<uintptr_t>(obj))
     {
-        m_internal = internal;
+    }
+    template <typename T>
+    T *as() const
+    {
+        return reinterpret_cast<T *>(m_internal);
+    }
+
+    Handle &operator=(VkNullHandleType)
+    {
+        m_internal = 0;
         return *this;
     }
 
@@ -243,14 +275,16 @@ public:
 
     virtual GetInstanceProcAddrFunc getGetInstanceProcAddr() const = 0;
 
+    virtual ~PlatformInterface()
+    {
+    }
+    PlatformInterface(const PlatformInterface &)            = delete;
+    PlatformInterface &operator=(const PlatformInterface &) = delete;
+
 protected:
     PlatformInterface(void)
     {
     }
-
-private:
-    PlatformInterface(const PlatformInterface &);
-    PlatformInterface &operator=(const PlatformInterface &);
 };
 
 class InstanceInterface
@@ -258,14 +292,16 @@ class InstanceInterface
 public:
 #include "vkVirtualInstanceInterface.inl"
 
+    virtual ~InstanceInterface()
+    {
+    }
+    InstanceInterface(const InstanceInterface &)            = delete;
+    InstanceInterface &operator=(const InstanceInterface &) = delete;
+
 protected:
     InstanceInterface(void)
     {
     }
-
-private:
-    InstanceInterface(const InstanceInterface &);
-    InstanceInterface &operator=(const InstanceInterface &);
 };
 
 class DeviceInterface
@@ -279,14 +315,16 @@ public:
                                         VkShaderModule *pShaderModule) const = 0;
 #endif // CTS_USES_VULKANSC
 
+    virtual ~DeviceInterface()
+    {
+    }
+    DeviceInterface(const DeviceInterface &)            = delete;
+    DeviceInterface &operator=(const DeviceInterface &) = delete;
+
 protected:
     DeviceInterface(void)
     {
     }
-
-private:
-    DeviceInterface(const DeviceInterface &);
-    DeviceInterface &operator=(const DeviceInterface &);
 };
 
 class Error : public tcu::TestError

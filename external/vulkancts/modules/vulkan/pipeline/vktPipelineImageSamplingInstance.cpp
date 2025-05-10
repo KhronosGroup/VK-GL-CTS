@@ -249,12 +249,12 @@ void checkSupportImageSamplingInstance(Context &context, ImageSamplingInstancePa
         context.requireDeviceFunctionality("VK_EXT_separate_stencil_usage");
         context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 
-        const VkImageStencilUsageCreateInfo stencilUsage = {VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO, DE_NULL,
+        const VkImageStencilUsageCreateInfo stencilUsage = {VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO, nullptr,
                                                             VK_IMAGE_USAGE_TRANSFER_DST_BIT};
 
         const VkPhysicalDeviceImageFormatInfo2 formatInfo2 = {
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,        //    VkStructureType            sType
-            params.separateStencilUsage ? &stencilUsage : DE_NULL,        //    const void*                pNext
+            params.separateStencilUsage ? &stencilUsage : nullptr,        //    const void*                pNext
             params.imageFormat,                                           //    VkFormat                format
             getCompatibleImageType(params.imageViewType),                 //    VkImageType                type
             VK_IMAGE_TILING_OPTIMAL,                                      //    VkImageTiling            tiling
@@ -264,7 +264,7 @@ void checkSupportImageSamplingInstance(Context &context, ImageSamplingInstancePa
 
         VkImageFormatProperties2 extProperties = {
             VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
-            DE_NULL,
+            nullptr,
             {
                 {
                     0, // width
@@ -398,7 +398,7 @@ void ImageSamplingInstance::setup()
                                                      VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
 
     void const *pNext = m_samplerParams.pNext;
-    while (pNext != DE_NULL)
+    while (pNext != nullptr)
     {
         const VkStructureType nextType = *reinterpret_cast<const VkStructureType *>(pNext);
         switch (nextType)
@@ -406,7 +406,7 @@ void ImageSamplingInstance::setup()
         case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO:
         {
             VkPhysicalDeviceSamplerFilterMinmaxProperties physicalDeviceSamplerMinMaxProperties = {
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES, DE_NULL, false, false};
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES, nullptr, false, false};
             VkPhysicalDeviceProperties2 physicalDeviceProperties;
             physicalDeviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
             physicalDeviceProperties.pNext = &physicalDeviceSamplerMinMaxProperties;
@@ -441,7 +441,7 @@ void ImageSamplingInstance::setup()
                 *reinterpret_cast<const VkSamplerCustomBorderColorCreateInfoEXT *>(pNext);
 
             VkPhysicalDeviceCustomBorderColorFeaturesEXT physicalDeviceCustomBorderColorFeatures = {
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT, DE_NULL, false, false};
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT, nullptr, false, false};
             VkPhysicalDeviceFeatures2 physicalDeviceFeatures;
             physicalDeviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
             physicalDeviceFeatures.pNext = &physicalDeviceCustomBorderColorFeatures;
@@ -483,7 +483,7 @@ void ImageSamplingInstance::setup()
 
         const VkImageCreateInfo imageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,     // VkStructureType sType;
-            DE_NULL,                                 // const void* pNext;
+            nullptr,                                 // const void* pNext;
             imageFlags,                              // VkImageCreateFlags flags;
             getCompatibleImageType(m_imageViewType), // VkImageType imageType;
             m_imageFormat,                           // VkFormat format;
@@ -519,7 +519,7 @@ void ImageSamplingInstance::setup()
             // Create image view and sampler
             const VkImageViewCreateInfo imageViewParams = {
                 VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                  // const void* pNext;
+                nullptr,                                  // const void* pNext;
                 0u,                                       // VkImageViewCreateFlags flags;
                 **m_images[imgNdx],                       // VkImage image;
                 m_imageViewType,                          // VkImageViewType viewType;
@@ -553,7 +553,7 @@ void ImageSamplingInstance::setup()
 
         const VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             *m_descriptorPool,                              // VkDescriptorPool descriptorPool;
             1u,                                             // uint32_t setLayoutCount;
             &m_descriptorSetLayout.get()                    // const VkDescriptorSetLayout* pSetLayouts;
@@ -561,7 +561,7 @@ void ImageSamplingInstance::setup()
 
         m_descriptorSet = allocateDescriptorSet(vk, vkDevice, &descriptorSetAllocateInfo);
 
-        const VkSampler sampler = m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ? DE_NULL : *m_sampler;
+        const VkSampler sampler = m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ? VK_NULL_HANDLE : *m_sampler;
         std::vector<VkDescriptorImageInfo> descriptorImageInfo(m_imageCount);
         for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
         {
@@ -576,7 +576,7 @@ void ImageSamplingInstance::setup()
         {
             const VkDescriptorImageInfo descriptorSamplerInfo = {
                 *m_sampler,                              // VkSampler sampler;
-                DE_NULL,                                 // VkImageView imageView;
+                VK_NULL_HANDLE,                          // VkImageView imageView;
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL // VkImageLayout imageLayout;
             };
             setUpdateBuilder.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0),
@@ -593,7 +593,7 @@ void ImageSamplingInstance::setup()
     {
         const VkImageCreateInfo colorImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-            DE_NULL,                                                               // const void* pNext;
+            nullptr,                                                               // const void* pNext;
             0u,                                                                    // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
             m_colorFormat,                                                         // VkFormat format;
@@ -624,7 +624,7 @@ void ImageSamplingInstance::setup()
 
             const VkImageViewCreateInfo colorAttachmentViewParams = {
                 VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,   // VkStructureType sType;
-                DE_NULL,                                    // const void* pNext;
+                nullptr,                                    // const void* pNext;
                 0u,                                         // VkImageViewCreateFlags flags;
                 **m_colorImages[imgNdx],                    // VkImage image;
                 VK_IMAGE_VIEW_TYPE_2D,                      // VkImageViewType viewType;
@@ -668,25 +668,25 @@ void ImageSamplingInstance::setup()
             0u,                              // VkSubpassDescriptionFlags flags;
             VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
             0u,                              // uint32_t inputAttachmentCount;
-            DE_NULL,                         // const VkAttachmentReference* pInputAttachments;
+            nullptr,                         // const VkAttachmentReference* pInputAttachments;
             (uint32_t)m_imageCount,          // uint32_t colorAttachmentCount;
             &colorAttachmentReferences[0],   // const VkAttachmentReference* pColorAttachments;
-            DE_NULL,                         // const VkAttachmentReference* pResolveAttachments;
-            DE_NULL,                         // const VkAttachmentReference* pDepthStencilAttachment;
+            nullptr,                         // const VkAttachmentReference* pResolveAttachments;
+            nullptr,                         // const VkAttachmentReference* pDepthStencilAttachment;
             0u,                              // uint32_t preserveAttachmentCount;
-            DE_NULL                          // const VkAttachmentReference* pPreserveAttachments;
+            nullptr                          // const VkAttachmentReference* pPreserveAttachments;
         };
 
         const VkRenderPassCreateInfo renderPassParams = {
             VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkRenderPassCreateFlags flags;
             (uint32_t)m_imageCount,                    // uint32_t attachmentCount;
             &colorAttachmentDescriptions[0],           // const VkAttachmentDescription* pAttachments;
             1u,                                        // uint32_t subpassCount;
             &subpassDescription,                       // const VkSubpassDescription* pSubpasses;
             0u,                                        // uint32_t dependencyCount;
-            DE_NULL                                    // const VkSubpassDependency* pDependencies;
+            nullptr                                    // const VkSubpassDependency* pDependencies;
         };
 
         m_renderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, &renderPassParams);
@@ -704,7 +704,7 @@ void ImageSamplingInstance::setup()
 
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             (uint32_t)m_imageCount,                    // uint32_t attachmentCount;
@@ -729,12 +729,12 @@ void ImageSamplingInstance::setup()
 #endif // CTS_USES_VULKANSC
         VkPipelineLayoutCreateInfo pipelineLayoutParams{
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             pipelineLayoutFlags,                           // VkPipelineLayoutCreateFlags flags;
             0u,                                            // uint32_t setLayoutCount;
-            DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_preRasterizationStatePipelineLayout =
@@ -772,7 +772,7 @@ void ImageSamplingInstance::setup()
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
             1u,                                                        // uint32_t vertexBindingDescriptionCount;
             &vertexInputBindingDescription,  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -805,7 +805,7 @@ void ImageSamplingInstance::setup()
 
         const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
+            nullptr,                                                  // const void* pNext;
             0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
             false,                                                    // VkBool32 logicOpEnable;
             VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -831,7 +831,7 @@ void ImageSamplingInstance::setup()
         const VkDeviceSize vertexBufferSize         = (VkDeviceSize)(m_vertices.size() * sizeof(Vertex4Tex4));
         const VkBufferCreateInfo vertexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             vertexBufferSize,                     // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
@@ -865,7 +865,7 @@ void ImageSamplingInstance::setup()
         for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
         {
             preAttachmentBarriers[imgNdx].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER; // VkStructureType sType;
-            preAttachmentBarriers[imgNdx].pNext = DE_NULL;                                // const void* pNext;
+            preAttachmentBarriers[imgNdx].pNext = nullptr;                                // const void* pNext;
             preAttachmentBarriers[imgNdx].srcAccessMask = 0u; // VkAccessFlags srcAccessMask;
             preAttachmentBarriers[imgNdx].dstAccessMask =
                 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;                            // VkAccessFlags dstAccessMask;
@@ -890,8 +890,8 @@ void ImageSamplingInstance::setup()
         beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
         vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 0u,
-                              DE_NULL, (uint32_t)m_imageCount, &preAttachmentBarriers[0]);
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0u, nullptr, 0u,
+                              nullptr, (uint32_t)m_imageCount, &preAttachmentBarriers[0]);
 
         m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()),
                            (uint32_t)attachmentClearValues.size(), &attachmentClearValues[0]);
@@ -899,7 +899,7 @@ void ImageSamplingInstance::setup()
         m_graphicsPipeline.bind(*m_cmdBuffer);
 
         m_fragmentStatePipelineLayout.bindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 1,
-                                                         &m_descriptorSet.get(), 0, DE_NULL);
+                                                         &m_descriptorSet.get(), 0, nullptr);
 
         const VkDeviceSize vertexBufferOffset = 0;
         vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
@@ -1584,7 +1584,7 @@ tcu::TestStatus ImageSamplingInstance::verifyImage(void)
             lookupPrecision.colorThreshold += tcu::Vec4(4.f / 255.f);
 
         de::MovePtr<TestTexture> textureCopy;
-        TestTexture *texture = DE_NULL;
+        TestTexture *texture = nullptr;
 
         if (isCombinedDepthStencilType(m_texture->getTextureFormat().type))
         {

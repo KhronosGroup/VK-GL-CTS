@@ -139,7 +139,7 @@ public:
     }
     const eglw::EGLAttrib *getPlatformAttributes(void) const
     {
-        return DE_NULL;
+        return nullptr;
     }
 
 private:
@@ -219,7 +219,7 @@ NativeWindow *WindowFactory::createWindow(NativeDisplay *nativeDisplay, const Wi
 {
     Display &display = *dynamic_cast<Display *>(nativeDisplay);
 
-    return new Window(display, params, DE_NULL);
+    return new Window(display, params, nullptr);
 }
 
 NativeWindow *WindowFactory::createWindow(NativeDisplay *nativeDisplay, eglw::EGLDisplay eglDisplay,
@@ -230,7 +230,7 @@ NativeWindow *WindowFactory::createWindow(NativeDisplay *nativeDisplay, eglw::EG
 
     Display &display      = *dynamic_cast<Display *>(nativeDisplay);
     eglw::EGLint visualID = 0;
-    ::Visual *visual      = DE_NULL;
+    ::Visual *visual      = nullptr;
     nativeDisplay->getLibrary().getConfigAttrib(eglDisplay, config, EGL_NATIVE_VISUAL_ID, &visualID);
 
     if (visualID != 0)
@@ -308,7 +308,7 @@ NativeDisplay *DisplayFactory::createDisplay(const eglw::EGLAttrib *attribList) 
     DE_UNREF(attribList);
 
     //! \todo [2014-03-18 lauri] Somehow make the display configurable from command line
-    MovePtr<XlibDisplay> x11Display(new XlibDisplay(m_eventState, DE_NULL));
+    MovePtr<XlibDisplay> x11Display(new XlibDisplay(m_eventState, nullptr));
 
     return new Display(x11Display);
 }

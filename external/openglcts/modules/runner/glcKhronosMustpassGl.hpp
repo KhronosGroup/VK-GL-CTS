@@ -22,279 +22,81 @@
 const char* mustpassDir = "gl_cts/data/mustpass/gl/khronos_mustpass/main/";
 
 static const RunParams khronos_mustpass_gl_first_cfg[] = {
-	{ glu::ApiType::core(4, 6), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(4, 6), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::core(4, 6), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-	{ glu::ApiType::core(4, 6), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-	{ glu::ApiType::core(4, 5), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(4, 5), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::core(4, 5), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-	{ glu::ApiType::core(4, 5), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-	{ glu::ApiType::core(4, 4), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(4, 4), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::core(4, 4), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-	{ glu::ApiType::core(4, 4), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-	{ glu::ApiType::core(4, 3), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(4, 3), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::core(4, 3), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-	{ glu::ApiType::core(4, 3), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-	{ glu::ApiType::core(4, 2), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(4, 2), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::core(4, 2), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-	{ glu::ApiType::core(4, 2), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-	{ glu::ApiType::compatibility(4, 2), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::compatibility(4, 2), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::compatibility(4, 2), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-	{ glu::ApiType::compatibility(4, 2), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-	{ glu::ApiType::core(4, 1), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(4, 1), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::core(4, 1), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-	{ glu::ApiType::core(4, 1), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-	{ glu::ApiType::core(4, 0), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(4, 0), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::core(4, 0), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-	{ glu::ApiType::core(4, 0), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-	{ glu::ApiType::core(3, 3), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(3, 3), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::core(3, 3), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-	{ glu::ApiType::core(3, 3), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-	{ glu::ApiType::core(3, 2), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(3, 2), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::core(3, 2), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-	{ glu::ApiType::core(3, 2), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-	{ glu::ApiType::core(3, 1), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(3, 1), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::core(3, 1), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-	{ glu::ApiType::core(3, 1), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-	{ glu::ApiType::core(3, 0), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(3, 0), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::core(3, 0), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-	{ glu::ApiType::core(3, 0), "main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 6), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 6), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 6), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 6), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 5), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 5), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 5), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 5), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 4), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 4), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 4), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 4), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 3), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 3), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 3), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 3), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 2), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 2), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 2), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 2), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 1), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 1), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 1), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 1), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 0), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 0), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 0), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 0), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 3), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 3), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 3), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 3), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 2), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 2), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 2), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 2), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 1), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 1), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 1), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 1), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 0), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 0), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 0), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 0), "gtf-main", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
+	{ glu::ApiType::core(4, 6), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(4, 6), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::core(4, 6), "main", nullptr, "unspecified", 3, "rgba8888d24s8", 64, -1 },
+	{ glu::ApiType::core(4, 6), "main", nullptr, "unspecified", 3, "rgba8888d24s8", -1, 64 },
+	{ glu::ApiType::core(4, 5), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(4, 5), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::core(4, 5), "main", nullptr, "unspecified", 3, "rgba8888d24s8", 64, -1 },
+	{ glu::ApiType::core(4, 5), "main", nullptr, "unspecified", 3, "rgba8888d24s8", -1, 64 },
+	{ glu::ApiType::core(4, 4), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(4, 4), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::core(4, 4), "main", nullptr, "unspecified", 3, "rgba8888d24s8", 64, -1 },
+	{ glu::ApiType::core(4, 4), "main", nullptr, "unspecified", 3, "rgba8888d24s8", -1, 64 },
+	{ glu::ApiType::core(4, 3), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(4, 3), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::core(4, 3), "main", nullptr, "unspecified", 3, "rgba8888d24s8", 64, -1 },
+	{ glu::ApiType::core(4, 3), "main", nullptr, "unspecified", 3, "rgba8888d24s8", -1, 64 },
+	{ glu::ApiType::core(4, 2), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(4, 2), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::core(4, 2), "main", nullptr, "unspecified", 3, "rgba8888d24s8", 64, -1 },
+	{ glu::ApiType::core(4, 2), "main", nullptr, "unspecified", 3, "rgba8888d24s8", -1, 64 },
+	{ glu::ApiType::compatibility(4, 2), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::compatibility(4, 2), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::compatibility(4, 2), "main", nullptr, "unspecified", 3, "rgba8888d24s8", 64, -1 },
+	{ glu::ApiType::compatibility(4, 2), "main", nullptr, "unspecified", 3, "rgba8888d24s8", -1, 64 },
+	{ glu::ApiType::core(4, 1), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(4, 1), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::core(4, 1), "main", nullptr, "unspecified", 3, "rgba8888d24s8", 64, -1 },
+	{ glu::ApiType::core(4, 1), "main", nullptr, "unspecified", 3, "rgba8888d24s8", -1, 64 },
+	{ glu::ApiType::core(4, 0), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(4, 0), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::core(4, 0), "main", nullptr, "unspecified", 3, "rgba8888d24s8", 64, -1 },
+	{ glu::ApiType::core(4, 0), "main", nullptr, "unspecified", 3, "rgba8888d24s8", -1, 64 },
+	{ glu::ApiType::core(3, 3), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(3, 3), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::core(3, 3), "main", nullptr, "unspecified", 3, "rgba8888d24s8", 64, -1 },
+	{ glu::ApiType::core(3, 3), "main", nullptr, "unspecified", 3, "rgba8888d24s8", -1, 64 },
+	{ glu::ApiType::core(3, 2), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(3, 2), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::core(3, 2), "main", nullptr, "unspecified", 3, "rgba8888d24s8", 64, -1 },
+	{ glu::ApiType::core(3, 2), "main", nullptr, "unspecified", 3, "rgba8888d24s8", -1, 64 },
+	{ glu::ApiType::core(3, 1), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(3, 1), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::core(3, 1), "main", nullptr, "unspecified", 3, "rgba8888d24s8", 64, -1 },
+	{ glu::ApiType::core(3, 1), "main", nullptr, "unspecified", 3, "rgba8888d24s8", -1, 64 },
+	{ glu::ApiType::core(3, 0), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(3, 0), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::core(3, 0), "main", nullptr, "unspecified", 3, "rgba8888d24s8", 64, -1 },
+	{ glu::ApiType::core(3, 0), "main", nullptr, "unspecified", 3, "rgba8888d24s8", -1, 64 },
 };
 
 static const RunParams khronos_mustpass_gl_other_cfg[] = {
-	{ glu::ApiType::core(4, 6), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(4, 6), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::core(4, 5), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(4, 5), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::core(4, 4), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(4, 4), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::core(4, 3), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(4, 3), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::core(4, 2), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(4, 2), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::compatibility(4, 2), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::compatibility(4, 2), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::core(4, 1), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(4, 1), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::core(4, 0), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(4, 0), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::core(3, 3), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(3, 3), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::core(3, 2), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(3, 2), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::core(3, 1), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(3, 1), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-	{ glu::ApiType::core(3, 0), "main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(3, 0), "main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 6), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 6), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 5), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 5), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 4), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 4), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 3), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 3), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 2), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 2), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 1), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 1), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 0), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(4, 0), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 3), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 3), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 2), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 2), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 1), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 1), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 0), "gtf-main", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-#endif // defined(DEQP_GTF_AVAILABLE)
-#if defined(DEQP_GTF_AVAILABLE)
-	{ glu::ApiType::core(3, 0), "gtf-main", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
-#endif // defined(DEQP_GTF_AVAILABLE)
+	{ glu::ApiType::core(4, 6), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(4, 6), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::core(4, 5), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(4, 5), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::core(4, 4), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(4, 4), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::core(4, 3), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(4, 3), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::core(4, 2), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(4, 2), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::compatibility(4, 2), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::compatibility(4, 2), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::core(4, 1), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(4, 1), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::core(4, 0), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(4, 0), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::core(3, 3), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(3, 3), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::core(3, 2), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(3, 2), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::core(3, 1), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(3, 1), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
+	{ glu::ApiType::core(3, 0), "main", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(3, 0), "main", nullptr, "unspecified", 2, nullptr, 113, 47 },
 };
 
 #endif // _GLCKHRONOSMUSTPASSGL_HPP

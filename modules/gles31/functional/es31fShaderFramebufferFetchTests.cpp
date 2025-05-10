@@ -311,7 +311,7 @@ FramebufferFetchTestCase::FramebufferFetchTestCase(Context &context, const char 
     : TestCase(context, name, desc)
     , m_gl(m_context.getRenderContext().getFunctions())
     , m_format(format)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_framebuffer(0)
     , m_texColorBuffer(0)
     , m_texFmt(glu::mapGLInternalFormat(m_format))
@@ -343,7 +343,7 @@ void FramebufferFetchTestCase::init(void)
     if (!m_program->isOk())
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
         TCU_FAIL("Failed to compile shader program");
     }
 
@@ -353,7 +353,7 @@ void FramebufferFetchTestCase::init(void)
 void FramebufferFetchTestCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 
     if (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5)) && m_gl.disable)
     {
@@ -579,12 +579,12 @@ void FramebufferFetchTestCase::render(void)
     m_gl.bindBuffer(GL_ARRAY_BUFFER, *coordinatesBuffer);
     m_gl.bufferData(GL_ARRAY_BUFFER, (GLsizeiptr)sizeof(coords), coords, GL_STATIC_DRAW);
     m_gl.enableVertexAttribArray(coordLocation);
-    m_gl.vertexAttribPointer(coordLocation, 2, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    m_gl.vertexAttribPointer(coordLocation, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 
     m_gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, *elementsBuffer);
     m_gl.bufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)sizeof(indices), &indices[0], GL_STATIC_DRAW);
 
-    m_gl.drawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, DE_NULL);
+    m_gl.drawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, nullptr);
     GLU_EXPECT_NO_ERROR(m_gl.getError(), "render()");
 
     m_gl.deleteVertexArrays(1, &vaoID);
@@ -833,6 +833,188 @@ MultipleRenderTargetsTestCase::IterateResult MultipleRenderTargetsTestCase::iter
         glu::readPixels(m_context.getRenderContext(), 0, 0, result.getAccess());
         verifyRenderbuffer(m_testCtx.getLog(), m_texFmt, reference, result);
     }
+
+    return STOP;
+}
+
+// Test description:
+// - Attach 2 textures containing solid colors to a framebuffer.
+// - Draw a quad OVERDRAW_COUNT times. Each iteration covers a smaller area of the viewport (by using scissors).
+// - Color buffer 0: swizzle buffer 0 color to get output color.
+// - Color buffer 1: swizzle new color from buffer 0 to get output color.
+// - Compare resulting buffers with references.
+
+class MultipleRenderTargetsOverdrawTestCase : public FramebufferFetchTestCase
+{
+public:
+    MultipleRenderTargetsOverdrawTestCase(Context &context, const char *name, const char *desc, uint32_t format);
+    ~MultipleRenderTargetsOverdrawTestCase(void);
+
+    IterateResult iterate(void);
+    void deinit(void);
+
+private:
+    void genFramebufferWithTextures(const vector<tcu::Vec4> &colors);
+    void genAttachmentTextures(const vector<tcu::Vec4> &colors);
+    void clearWithScissors(const tcu::PixelBufferAccess &access, const tcu::Vec4 &color, const tcu::IVec4 &scissorArgs);
+    glu::ProgramSources genShaderSources(void);
+
+    const int OVERDRAW_COUNT = 4;
+
+    enum
+    {
+        MAX_COLOR_BUFFERS = 2
+    };
+
+    GLuint m_texColorBuffers[MAX_COLOR_BUFFERS];
+    GLenum m_colorBuffers[MAX_COLOR_BUFFERS];
+};
+
+MultipleRenderTargetsOverdrawTestCase::MultipleRenderTargetsOverdrawTestCase(Context &context, const char *name,
+                                                                             const char *desc, uint32_t format)
+    : FramebufferFetchTestCase(context, name, desc, format)
+    , m_texColorBuffers()
+{
+    m_colorBuffers[0] = GL_COLOR_ATTACHMENT0;
+    m_colorBuffers[1] = GL_COLOR_ATTACHMENT1;
+}
+
+MultipleRenderTargetsOverdrawTestCase::~MultipleRenderTargetsOverdrawTestCase(void)
+{
+    MultipleRenderTargetsOverdrawTestCase::deinit();
+}
+
+void MultipleRenderTargetsOverdrawTestCase::deinit(void)
+{
+    // Clean up texture data
+    for (int i = 0; i < DE_LENGTH_OF_ARRAY(m_texColorBuffers); ++i)
+    {
+        if (m_texColorBuffers[i])
+            m_context.getRenderContext().getFunctions().deleteTextures(1, &m_texColorBuffers[i]);
+    }
+
+    FramebufferFetchTestCase::deinit();
+}
+
+void MultipleRenderTargetsOverdrawTestCase::genFramebufferWithTextures(const vector<tcu::Vec4> &colors)
+{
+    m_gl.genFramebuffers(1, &m_framebuffer);
+    m_gl.bindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
+
+    genAttachmentTextures(colors);
+
+    for (int i = 0; i < DE_LENGTH_OF_ARRAY(m_texColorBuffers); ++i)
+        m_gl.framebufferTexture2D(GL_FRAMEBUFFER, m_colorBuffers[i], GL_TEXTURE_2D, m_texColorBuffers[i], 0);
+
+    TCU_CHECK(m_gl.checkFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+
+    m_gl.drawBuffers((glw::GLsizei)MAX_COLOR_BUFFERS, &m_colorBuffers[0]);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "genFramebufferWithTextures()");
+}
+
+void MultipleRenderTargetsOverdrawTestCase::genAttachmentTextures(const vector<tcu::Vec4> &colors)
+{
+    tcu::TextureLevel data(glu::mapGLTransferFormat(m_transferFmt.format, m_transferFmt.dataType), VIEWPORT_WIDTH,
+                           VIEWPORT_HEIGHT, 1);
+
+    m_gl.genTextures(MAX_COLOR_BUFFERS, m_texColorBuffers);
+
+    for (int i = 0; i < DE_LENGTH_OF_ARRAY(m_texColorBuffers); ++i)
+    {
+        m_gl.bindTexture(GL_TEXTURE_2D, m_texColorBuffers[i]);
+        m_gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        m_gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        clear(data.getAccess(), colors[i]);
+        m_gl.texImage2D(GL_TEXTURE_2D, 0, m_format, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 0, m_transferFmt.format,
+                        m_transferFmt.dataType, data.getAccess().getDataPtr());
+    }
+
+    m_gl.bindTexture(GL_TEXTURE_2D, 0);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "genAttachmentTextures()");
+}
+
+void MultipleRenderTargetsOverdrawTestCase::clearWithScissors(const tcu::PixelBufferAccess &access,
+                                                              const tcu::Vec4 &color, const tcu::IVec4 &scissorArgs)
+{
+    for (int y = 0; y < access.getHeight(); y++)
+    {
+        for (int x = 0; x < access.getWidth(); x++)
+        {
+            if (y >= scissorArgs.y() && (y < scissorArgs.y() + scissorArgs.w()) && x >= scissorArgs.x() &&
+                (x < scissorArgs.x() + scissorArgs.z()))
+                access.setPixel(color, x, y);
+        }
+    }
+}
+
+glu::ProgramSources MultipleRenderTargetsOverdrawTestCase::genShaderSources(void)
+{
+    const string vecType = getColorOutputType(m_texFmt);
+    std::ostringstream fragShaderSource;
+
+    fragShaderSource << "#version 310 es\n"
+                     << "#extension GL_EXT_shader_framebuffer_fetch : require\n"
+                     << "layout(location = 0) inout highp " << vecType << " o_color0;\n"
+                     << "layout(location = 1) out highp " << vecType << " o_color1;\n"
+                     << "\n"
+                     << "void main (void)\n"
+                     << "{\n"
+                     << "    o_color0 = o_color0.argb;\n"
+                     << "    o_color1 = o_color0.argb;\n"
+                     << "}\n";
+
+    return glu::makeVtxFragSources(genPassThroughVertSource(), fragShaderSource.str());
+}
+
+MultipleRenderTargetsOverdrawTestCase::IterateResult MultipleRenderTargetsOverdrawTestCase::iterate(void)
+{
+    tcu::TextureLevel result(getReadPixelFormat(m_texFmt), VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
+    tcu::TextureLevel referenceForBuffer0(glu::mapGLTransferFormat(m_transferFmt.format, m_transferFmt.dataType),
+                                          VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 1);
+    tcu::TextureLevel referenceForBuffer1(glu::mapGLTransferFormat(m_transferFmt.format, m_transferFmt.dataType),
+                                          VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 1);
+
+    tcu::Vec4 buffer0Color = tcu::Vec4(1.0f, 0.0f, 0.0f, 0.0f);
+
+    vector<tcu::Vec4> colors;
+    colors.push_back(scaleColorValue(m_texFmt, buffer0Color));
+    colors.push_back(scaleColorValue(m_texFmt, tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f)));
+
+    genFramebufferWithTextures(colors);
+
+    m_gl.enable(GL_SCISSOR_TEST);
+
+    // Draw OVERDRAW_COUNT times with decreasing scissors area
+    for (int i = 0; i < OVERDRAW_COUNT; i++)
+    {
+        tcu::IVec4 scissorsArgs(0, 0, VIEWPORT_WIDTH / (1 << i), VIEWPORT_HEIGHT / (1 << i));
+
+        m_gl.scissor(scissorsArgs[0], scissorsArgs[1], scissorsArgs[2], scissorsArgs[3]);
+        render();
+
+        // Update references
+        buffer0Color           = buffer0Color.swizzle(3, 0, 1, 2);
+        tcu::Vec4 buffer1Color = buffer0Color.swizzle(3, 0, 1, 2);
+
+        clearWithScissors(referenceForBuffer0.getAccess(), buffer0Color, scissorsArgs);
+        clearWithScissors(referenceForBuffer1.getAccess(), buffer1Color, scissorsArgs);
+    }
+
+    m_gl.disable(GL_SCISSOR_TEST);
+
+    // Check color buffer 0
+    m_gl.readBuffer(m_colorBuffers[0]);
+    glu::readPixels(m_context.getRenderContext(), 0, 0, result.getAccess());
+    verifyRenderbuffer(m_testCtx.getLog(), m_texFmt, referenceForBuffer0, result);
+
+    if (m_testCtx.getTestResult() != QP_TEST_RESULT_PASS)
+        return STOP;
+
+    // Check color buffer 1
+    m_gl.readBuffer(m_colorBuffers[1]);
+    glu::readPixels(m_context.getRenderContext(), 0, 0, result.getAccess());
+    verifyRenderbuffer(m_testCtx.getLog(), m_texFmt, referenceForBuffer1, result);
 
     return STOP;
 }
@@ -1257,7 +1439,7 @@ void TextureLevelTestCase::create2DTextureArrayMipMaps(const vector<tcu::Vec4> &
     m_gl.bindTexture(GL_TEXTURE_2D_ARRAY, m_texColorBuffer);
 
     m_gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, m_format, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 1, 0, m_transferFmt.format,
-                    m_transferFmt.dataType, DE_NULL);
+                    m_transferFmt.dataType, nullptr);
     m_gl.generateMipmap(GL_TEXTURE_2D_ARRAY);
 
     for (int level = 0; level < numLevels; level++)
@@ -1471,6 +1653,9 @@ void ShaderFramebufferFetchTests::init(void)
         basicTestGroup->addChild(new MultipleRenderTargetsTestCase(
             m_context, "multiple_render_targets",
             "Framebuffer fetches used in combination with multiple render targets", GL_RGBA8));
+        basicTestGroup->addChild(new MultipleRenderTargetsOverdrawTestCase(
+            m_context, "multiple_render_targets_overdraw",
+            "Framebuffer fetches used with multiple render targets and overdraw", GL_RGBA8));
         basicTestGroup->addChild(
             new TextureLevelTestCase(m_context, "framebuffer_texture_level",
                                      "Framebuffer fetches with individual texture render target mipmaps", GL_RGBA8));

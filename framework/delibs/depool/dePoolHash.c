@@ -36,7 +36,7 @@ DE_IMPLEMENT_POOL_HASH_TO_ARRAY(deTestHash, deTestInt16Array, deTestIntArray);
 
 void dePoolHash_selfTest(void)
 {
-    deMemPool *pool  = deMemPool_createRoot(DE_NULL, 0);
+    deMemPool *pool  = deMemPool_createRoot(NULL, 0);
     deTestHash *hash = deTestHash_create(pool);
     int iter;
 
@@ -118,10 +118,10 @@ void dePoolHash_selfTest(void)
             int numElements            = deTestHash_getNumElements(hash);
             int ndx;
 
-            deTestHash_copyToArray(hash, keyArray, DE_NULL);
+            deTestHash_copyToArray(hash, keyArray, NULL);
             DE_TEST_ASSERT(deTestInt16Array_getNumElements(keyArray) == numElements);
 
-            deTestHash_copyToArray(hash, DE_NULL, valueArray);
+            deTestHash_copyToArray(hash, NULL, valueArray);
             DE_TEST_ASSERT(deTestIntArray_getNumElements(valueArray) == numElements);
 
             deTestInt16Array_setSize(keyArray, 0);

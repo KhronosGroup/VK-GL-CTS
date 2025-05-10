@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 6550e9b12e0b4f11182bda30ae2a8dd56d0b02c8.
+ * Generated from Khronos EGL API description (egl.xml) revision 682c662d48fbae076c5ed89a1bd5b2aa7e2e4449.
  */
 dst->bindAPI						= (eglBindAPIFunc)							loader->get("eglBindAPI");
 dst->bindTexImage					= (eglBindTexImageFunc)						loader->get("eglBindTexImage");

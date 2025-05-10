@@ -42,20 +42,20 @@ namespace tcu
 namespace QnxScreen
 {
 
-class Platform : public tcu::Platform,
-                 private eglu::Platform,
-                 private glu::Platform
+class Platform : public tcu::Platform, private eglu::Platform, private glu::Platform
 {
 public:
     Platform(void);
     ~Platform(void);
 
-    virtual const glu::Platform& getGLPlatform(void) const {
-        return static_cast<const glu::Platform&>(*this);
+    virtual const glu::Platform &getGLPlatform(void) const
+    {
+        return static_cast<const glu::Platform &>(*this);
     }
 
-    virtual const eglu::Platform& getEGLPlatform(void) const {
-        return static_cast<const eglu::Platform&>(*this);
+    virtual const eglu::Platform &getEGLPlatform(void) const
+    {
+        return static_cast<const eglu::Platform &>(*this);
     }
 };
 
@@ -78,9 +78,15 @@ public:
     Display(void);
     ~Display(void);
 
-    eglw::EGLNativeDisplayType getLegacyNative(void) { return m_display; }
-    const eglw::Library& getLibrary(void) const { return m_library; }
-    eglw::EGLNativeDisplayType* m_display;
+    eglw::EGLNativeDisplayType getLegacyNative(void)
+    {
+        return m_display;
+    }
+    const eglw::Library &getLibrary(void) const
+    {
+        return m_library;
+    }
+    eglw::EGLNativeDisplayType *m_display;
     Library m_library;
 };
 
@@ -88,44 +94,47 @@ class DisplayFactory : public eglu::NativeDisplayFactory
 {
 public:
     DisplayFactory(void);
-    ~DisplayFactory(void) {}
+    ~DisplayFactory(void)
+    {
+    }
 
-    eglu::NativeDisplay* createDisplay(const eglw::EGLAttrib* attribList) const;
+    eglu::NativeDisplay *createDisplay(const eglw::EGLAttrib *attribList) const;
 };
 
 class Window : public eglu::NativeWindow
 {
 public:
-    Window(eglu::NativeDisplay* display, int width, int height,
-           eglw::EGLDisplay eglDisplay, eglw::EGLConfig config);
+    Window(eglu::NativeDisplay *display, int width, int height, eglw::EGLDisplay eglDisplay, eglw::EGLConfig config);
     ~Window(void);
 
-    eglw::EGLNativeWindowType getLegacyNative(void) { return m_nativeWindow; }
+    eglw::EGLNativeWindowType getLegacyNative(void)
+    {
+        return m_nativeWindow;
+    }
 
 private:
     eglw::EGLNativeWindowType m_nativeWindow;
-    screen_window_t           m_screenWindow { nullptr };
+    screen_window_t m_screenWindow{nullptr};
 };
 
 class WindowFactory : public eglu::NativeWindowFactory
 {
 public:
-    WindowFactory(void) : eglu::NativeWindowFactory("window",
-                                                    "QNX Screen Window",
-                                                    eglu::NativeWindow::CAPABILITY_CREATE_SURFACE_LEGACY) {}
-    ~WindowFactory(void) {}
+    WindowFactory(void)
+        : eglu::NativeWindowFactory("window", "QNX Screen Window", eglu::NativeWindow::CAPABILITY_CREATE_SURFACE_LEGACY)
+    {
+    }
+    ~WindowFactory(void)
+    {
+    }
 
-    eglu::NativeWindow* createWindow(eglu::NativeDisplay* display,
-                                     const eglu::WindowParams& params) const;
+    eglu::NativeWindow *createWindow(eglu::NativeDisplay *display, const eglu::WindowParams &params) const;
 
-    eglu::NativeWindow* createWindow(eglu::NativeDisplay*   display,
-                                     eglw::EGLDisplay       eglDisplay,
-                                     eglw::EGLConfig        config,
-                                     const eglw::EGLAttrib* attribList,
-                                     const eglu::WindowParams& params) const;
+    eglu::NativeWindow *createWindow(eglu::NativeDisplay *display, eglw::EGLDisplay eglDisplay, eglw::EGLConfig config,
+                                     const eglw::EGLAttrib *attribList, const eglu::WindowParams &params) const;
 };
 
-} // QnxScreen
-} // tcu
+} // namespace QnxScreen
+} // namespace tcu
 
 #endif // _TCUQNXSCREENPLATFORM_HPP

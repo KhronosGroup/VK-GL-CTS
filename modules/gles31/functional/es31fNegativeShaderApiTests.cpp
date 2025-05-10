@@ -366,7 +366,7 @@ void link_program(NegativeTestContext &ctx)
     ctx.glLinkProgram(program.getProgram());
     ctx.glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tfID);
     ctx.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-    ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+    ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, nullptr, GL_DYNAMIC_DRAW);
     ctx.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
     ctx.glBeginTransformFeedback(GL_TRIANGLES);
     ctx.expectError(GL_NO_ERROR);
@@ -415,7 +415,7 @@ void use_program(NegativeTestContext &ctx)
     ctx.glLinkProgram(program1.getProgram());
     ctx.glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tfID);
     ctx.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-    ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+    ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, nullptr, GL_DYNAMIC_DRAW);
     ctx.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
     ctx.glBeginTransformFeedback(GL_TRIANGLES);
     ctx.expectError(GL_NO_ERROR);
@@ -687,7 +687,7 @@ void get_sampler_parameterfv(NegativeTestContext &ctx)
 void get_sampler_parameterIiv(NegativeTestContext &ctx)
 {
     if (!supportsES32orGL45(ctx))
-        throw tcu::NotSupportedError("glGetSamplerParameterIiv is not supported.", DE_NULL, __FILE__, __LINE__);
+        throw tcu::NotSupportedError("glGetSamplerParameterIiv is not supported.", nullptr, __FILE__, __LINE__);
 
     GLuint sampler      = 0x1234;
     GLint borderColor[] = {0x1234, 0x4123, 0x3412, 0x2341};
@@ -711,7 +711,7 @@ void get_sampler_parameterIiv(NegativeTestContext &ctx)
 void get_sampler_parameterIuiv(NegativeTestContext &ctx)
 {
     if (!supportsES32orGL45(ctx))
-        throw tcu::NotSupportedError("glGetSamplerParameterIuiv is not supported.", DE_NULL, __FILE__, __LINE__);
+        throw tcu::NotSupportedError("glGetSamplerParameterIuiv is not supported.", nullptr, __FILE__, __LINE__);
 
     GLuint sampler       = 0x1234;
     GLuint borderColor[] = {0x1234, 0x4123, 0x3412, 0x2341};
@@ -839,7 +839,7 @@ void sampler_parameterfv(NegativeTestContext &ctx)
 void sampler_parameterIiv(NegativeTestContext &ctx)
 {
     if (!supportsES32orGL45(ctx))
-        throw tcu::NotSupportedError("glSamplerParameterIiv is not supported.", DE_NULL, __FILE__, __LINE__);
+        throw tcu::NotSupportedError("glSamplerParameterIiv is not supported.", nullptr, __FILE__, __LINE__);
 
     GLuint sampler;
     GLint color[] = {0, 0, 0, 0};
@@ -861,7 +861,7 @@ void sampler_parameterIiv(NegativeTestContext &ctx)
 void sampler_parameterIuiv(NegativeTestContext &ctx)
 {
     if (!supportsES32orGL45(ctx))
-        throw tcu::NotSupportedError("glSamplerParameterIuiv is not supported.", DE_NULL, __FILE__, __LINE__);
+        throw tcu::NotSupportedError("glSamplerParameterIuiv is not supported.", nullptr, __FILE__, __LINE__);
 
     GLuint sampler;
     GLuint color[] = {0, 0, 0, 0};
@@ -2041,7 +2041,7 @@ void bind_transform_feedback(NegativeTestContext &ctx)
     ctx.glLinkProgram(program.getProgram());
     ctx.glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tfID[0]);
     ctx.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-    ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+    ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, nullptr, GL_DYNAMIC_DRAW);
     ctx.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
     ctx.glBeginTransformFeedback(GL_TRIANGLES);
     ctx.expectError(GL_NO_ERROR);
@@ -2095,7 +2095,7 @@ void delete_transform_feedbacks(NegativeTestContext &ctx)
     ctx.glLinkProgram(program.getProgram());
     ctx.glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tfID[0]);
     ctx.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-    ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+    ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, nullptr, GL_DYNAMIC_DRAW);
     ctx.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
     ctx.glBeginTransformFeedback(GL_TRIANGLES);
     ctx.expectError(GL_NO_ERROR);
@@ -2131,7 +2131,7 @@ void begin_transform_feedback(NegativeTestContext &ctx)
     ctx.glLinkProgram(program.getProgram());
     ctx.glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tfID[0]);
     ctx.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-    ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+    ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, nullptr, GL_DYNAMIC_DRAW);
     ctx.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
     ctx.expectError(GL_NO_ERROR);
 
@@ -2195,7 +2195,7 @@ void pause_transform_feedback(NegativeTestContext &ctx)
     ctx.glLinkProgram(program.getProgram());
     ctx.glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tfID[0]);
     ctx.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-    ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+    ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, nullptr, GL_DYNAMIC_DRAW);
     ctx.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
     ctx.expectError(GL_NO_ERROR);
 
@@ -2232,7 +2232,7 @@ void resume_transform_feedback(NegativeTestContext &ctx)
     ctx.glLinkProgram(program.getProgram());
     ctx.glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tfID[0]);
     ctx.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-    ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+    ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, nullptr, GL_DYNAMIC_DRAW);
     ctx.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
     ctx.expectError(GL_NO_ERROR);
 
@@ -2270,7 +2270,7 @@ void end_transform_feedback(NegativeTestContext &ctx)
     ctx.glLinkProgram(program.getProgram());
     ctx.glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tfID);
     ctx.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-    ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+    ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, nullptr, GL_DYNAMIC_DRAW);
     ctx.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
     ctx.expectError(GL_NO_ERROR);
 
@@ -2406,8 +2406,8 @@ void link_compute_shader(NegativeTestContext &ctx)
                                                                                        "layout(max_vertices = 3) out;\n"
                                                                                        "void main(void){}\n\0";
 
-            ctx.glShaderSource(computeShader, 1, &computeShaderSource, DE_NULL);
-            ctx.glShaderSource(otherShader, 1, &otherShaderSource, DE_NULL);
+            ctx.glShaderSource(computeShader, 1, &computeShaderSource, nullptr);
+            ctx.glShaderSource(otherShader, 1, &otherShaderSource, nullptr);
             ctx.glCompileShader(computeShader);
             ctx.glCompileShader(otherShader);
             ctx.glAttachShader(program, computeShader);
@@ -2432,8 +2432,8 @@ void link_compute_shader(NegativeTestContext &ctx)
         GLuint computeShader               = ctx.glCreateShader(GL_COMPUTE_SHADER);
         GLuint computeShader310            = ctx.glCreateShader(GL_FRAGMENT_SHADER);
 
-        ctx.glShaderSource(computeShader, 1, &computeShaderSource, DE_NULL);
-        ctx.glShaderSource(computeShader310, 1, &computeShaderSource310, DE_NULL);
+        ctx.glShaderSource(computeShader, 1, &computeShaderSource, nullptr);
+        ctx.glShaderSource(computeShader310, 1, &computeShaderSource310, nullptr);
         ctx.beginSection("Compute Shader should not be linked with shaders of different version.");
         ctx.glCompileShader(computeShader);
         ctx.glCompileShader(computeShader310);
@@ -2456,7 +2456,7 @@ void compile_compute_shader_helper(NegativeTestContext &ctx, const char *const *
     GLuint shader = ctx.glCreateShader(GL_COMPUTE_SHADER);
 
     *compileStatus = -1;
-    ctx.glShaderSource(shader, 1, computeShaderSource, DE_NULL);
+    ctx.glShaderSource(shader, 1, computeShaderSource, nullptr);
     ctx.glCompileShader(shader);
     ctx.glGetShaderiv(shader, GL_COMPILE_STATUS, compileStatus);
     ctx.glDeleteShader(shader);

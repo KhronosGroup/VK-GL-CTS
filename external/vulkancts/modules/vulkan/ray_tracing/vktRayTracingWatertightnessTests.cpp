@@ -101,12 +101,12 @@ static inline tcu::Vec3 mixVec3(const tcu::Vec3 &a, const tcu::Vec3 &b, const fl
     return result;
 }
 
-static inline double doCrossProduct(tcu::DVec2 a, tcu::DVec2 b)
+static inline double doCrossProduct(const tcu::DVec2 &a, const tcu::DVec2 &b)
 {
     return a.x() * b.y() - a.y() * b.x();
 }
 
-static bool pointInTriangle2D(tcu::Vec3 p, tcu::Vec3 a, tcu::Vec3 b, tcu::Vec3 c)
+static bool pointInTriangle2D(const tcu::Vec3 &p, const tcu::Vec3 &a, const tcu::Vec3 &b, const tcu::Vec3 &c)
 {
     tcu::DVec2 pa = {a.x() - p.x(), a.y() - p.y()};
     tcu::DVec2 pb = {b.x() - p.x(), b.y() - p.y()};
@@ -117,6 +117,46 @@ static bool pointInTriangle2D(tcu::Vec3 p, tcu::Vec3 a, tcu::Vec3 b, tcu::Vec3 c
 
     // The winding of all the triangles in the test on XY plane is the same, so a negative value can be assumed
     return v1 < 0 && v2 < 0 && v3 < 0;
+}
+
+static inline double sqr(double v)
+{
+    return v * v;
+}
+
+static bool pointFits(const tcu::Vec3 &p, const tcu::Vec3 &a, const tcu::Vec3 &b, const tcu::Vec3 &c, float threshold)
+{
+    // Implement two points method described at https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+    const double aa = sqr(b.x() - c.x()) + sqr(b.y() - c.y());
+    const double bb = sqr(a.x() - c.x()) + sqr(a.y() - c.y());
+    const double cc = sqr(a.x() - b.x()) + sqr(a.y() - b.y());
+    tcu::DVec2 p1;
+    tcu::DVec2 p2;
+    double d = 0.0;
+
+    if (aa > bb && aa > cc)
+    {
+        p1 = tcu::DVec2(b.x(), b.y());
+        p2 = tcu::DVec2(c.x(), c.y());
+        d  = sqrt(aa);
+    }
+    else if (bb > aa && bb > cc)
+    {
+        p1 = tcu::DVec2(a.x(), a.y());
+        p2 = tcu::DVec2(c.x(), c.y());
+        d  = sqrt(bb);
+    }
+    else
+    {
+        p1 = tcu::DVec2(a.x(), a.y());
+        p2 = tcu::DVec2(b.x(), b.y());
+        d  = sqrt(cc);
+    }
+
+    if (d > 0.0)
+        d = abs((p2.y() - p1.y()) * p.x() - (p2.x() - p1.x()) * p.y() + p2.x() * p1.y() - p2.y() * p1.x()) / d;
+
+    return float(d) > threshold;
 }
 
 uint32_t getShaderGroupSize(const InstanceInterface &vki, const VkPhysicalDevice physicalDevice)
@@ -161,7 +201,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, uint32_t 
 {
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         0u,                                  // VkImageCreateFlags flags;
         getImageType(depth),
         format,                             // VkFormat format;
@@ -173,7 +213,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, uint32_t 
         getImageUsage(),                    // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,          // VkSharingMode sharingMode;
         0u,                                 // uint32_t queueFamilyIndexCount;
-        DE_NULL,                            // const uint32_t* pQueueFamilyIndices;
+        nullptr,                            // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED           // VkImageLayout initialLayout;
     };
 
@@ -416,12 +456,15 @@ de::MovePtr<TopLevelAccelerationStructure> RayTracingWatertightnessTestInstance:
     Allocator &allocator                              = m_context.getDefaultAllocator();
     de::MovePtr<TopLevelAccelerationStructure> result = makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     result->setInstanceCount(bottomLevelAccelerationStructures.size());
 
     for (size_t structNdx = 0; structNdx < bottomLevelAccelerationStructures.size(); ++structNdx)
         result->addInstance(bottomLevelAccelerationStructures[structNdx]);
 
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return result;
 }
@@ -437,6 +480,9 @@ de::MovePtr<BottomLevelAccelerationStructure> RayTracingWatertightnessTestInstan
     std::vector<tcu::Vec3> vertices;
     std::vector<tcu::UVec3> triangles;
     std::vector<tcu::Vec3> geometryData;
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
 
     result->setGeometryCount(1u);
 
@@ -472,6 +518,10 @@ de::MovePtr<BottomLevelAccelerationStructure> RayTracingWatertightnessTestInstan
         if (!pointInTriangle2D(d, a, b, c))
             continue;
 
+        // A check to avoid vertex too close to longest side to avoid incorrect winding order
+        if (!pointFits(d, a, b, c, 1e-7f))
+            continue;
+
         const uint32_t &p = t.x();
         const uint32_t &q = t.y();
         uint32_t &r       = t.z();
@@ -494,7 +544,7 @@ de::MovePtr<BottomLevelAccelerationStructure> RayTracingWatertightnessTestInstan
     }
 
     result->addGeometry(geometryData, triangle);
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return result;
 }
@@ -545,6 +595,9 @@ vector<de::SharedPtr<BottomLevelAccelerationStructure>> RayTracingWatertightness
             const VkDevice device      = m_context.getDevice();
             const DeviceInterface &vkd = m_context.getDeviceInterface();
 
+            AccelerationStructBufferProperties bufferProps;
+            bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
             if (!m_data.useManyGeometries)
             {
                 de::MovePtr<BottomLevelAccelerationStructure> resultBLAS = makeBottomLevelAccelerationStructure();
@@ -562,7 +615,7 @@ vector<de::SharedPtr<BottomLevelAccelerationStructure>> RayTracingWatertightness
                                             VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
                 }
 
-                resultBLAS->createAndBuild(vkd, device, cmdBuffer, allocator);
+                resultBLAS->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
                 result.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(resultBLAS.release()));
             }
@@ -579,7 +632,7 @@ vector<de::SharedPtr<BottomLevelAccelerationStructure>> RayTracingWatertightness
 
                     resultBLAS->addGeometry(geometryData, true /* triangles */,
                                             VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
-                    resultBLAS->createAndBuild(vkd, device, cmdBuffer, allocator);
+                    resultBLAS->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
                     result.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(resultBLAS.release()));
                 }
@@ -639,8 +692,7 @@ de::MovePtr<BufferWithMemory> RayTracingWatertightnessTestInstance::runTest(void
     const VkStridedDeviceAddressRegionKHR hitShaderBindingTableRegion =
         makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0),
                                           shaderGroupHandleSize, shaderGroupHandleSize * hitGroupCount);
-    const VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion =
-        makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    const VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     const VkImageCreateInfo imageCreateInfo = makeImageCreateInfo(m_data.width, m_data.height, m_data.depth, format);
     const VkImageSubresourceRange imageSubresourceRange =
@@ -661,7 +713,7 @@ de::MovePtr<BufferWithMemory> RayTracingWatertightnessTestInstance::runTest(void
         new BufferWithMemory(vkd, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible));
 
     const VkDescriptorImageInfo descriptorImageInfo =
-        makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 
     const VkImageMemoryBarrier preImageBarrier =
         makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
@@ -695,7 +747,7 @@ de::MovePtr<BufferWithMemory> RayTracingWatertightnessTestInstance::runTest(void
         const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = topLevelAccelerationStructure.get();
         VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-            DE_NULL,                                                           //  const void* pNext;
+            nullptr,                                                           //  const void* pNext;
             1u,                                                                //  uint32_t accelerationStructureCount;
             topLevelAccelerationStructurePtr->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
         };
@@ -708,7 +760,7 @@ de::MovePtr<BufferWithMemory> RayTracingWatertightnessTestInstance::runTest(void
             .update(vkd, device);
 
         vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                                  &descriptorSet.get(), 0, DE_NULL);
+                                  &descriptorSet.get(), 0, nullptr);
 
         vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 
@@ -835,8 +887,9 @@ tcu::TestCaseGroup *createWatertightnessTests(tcu::TestContext &testCtx)
             const uint32_t squaresGroupCount    = sizes[sizesNdx];
             const uint32_t geometriesGroupCount = 1;
             const uint32_t instancesGroupCount  = 1;
-            const uint32_t randomSeed           = (uint32_t)(5 * testNdx + 11 * sizes[sizesNdx]);
-            const CaseDef caseDef               = {
+            const uint32_t randomSeed =
+                (uint32_t)(5 * testNdx + 11 * sizes[sizesNdx]) + (uint32_t)testCtx.getCommandLine().getBaseSeed();
+            const CaseDef caseDef = {
                 256u,       256u, squaresGroupCount, geometriesGroupCount, instancesGroupCount,
                 randomSeed, 1, /* depth - irrelevant */
                 0              /* useManyBottomASes - irrelevant */

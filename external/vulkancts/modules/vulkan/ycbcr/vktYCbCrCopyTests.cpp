@@ -97,7 +97,7 @@ void checkFormatSupport(Context &context, const ImageConfig &config)
     {
         const vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
             vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,            // sType;
-            DE_NULL,                                                              // pNext;
+            nullptr,                                                              // pNext;
             config.format,                                                        // format;
             vk::VK_IMAGE_TYPE_2D,                                                 // type;
             vk::VK_IMAGE_TILING_OPTIMAL,                                          // tiling;
@@ -107,7 +107,7 @@ void checkFormatSupport(Context &context, const ImageConfig &config)
 
         vk::VkSamplerYcbcrConversionImageFormatProperties samplerYcbcrConversionImage = {};
         samplerYcbcrConversionImage.sType = vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
-        samplerYcbcrConversionImage.pNext = DE_NULL;
+        samplerYcbcrConversionImage.pNext = nullptr;
 
         vk::VkImageFormatProperties2 imageFormatProperties = {};
         imageFormatProperties.sType                        = vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
@@ -133,7 +133,7 @@ void checkFormatSupport(Context &context, const ImageConfig &config)
 
                 const vk::VkPhysicalDeviceImageFormatInfo2 planeImageFormatInfo = {
                     vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,            // sType;
-                    DE_NULL,                                                              // pNext;
+                    nullptr,                                                              // pNext;
                     planeCompatibleFormat,                                                // format;
                     vk::VK_IMAGE_TYPE_2D,                                                 // type;
                     vk::VK_IMAGE_TILING_OPTIMAL,                                          // tiling;
@@ -195,7 +195,7 @@ vk::Move<vk::VkImage> createImage(const vk::DeviceInterface &vkd, vk::VkDevice d
 {
     const vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         disjoint ? (vk::VkImageCreateFlags)vk::VK_IMAGE_CREATE_DISJOINT_BIT : (vk::VkImageCreateFlags)0u,
 
         vk::VK_IMAGE_TYPE_2D,
@@ -208,7 +208,7 @@ vk::Move<vk::VkImage> createImage(const vk::DeviceInterface &vkd, vk::VkDevice d
         vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT,
         vk::VK_SHARING_MODE_EXCLUSIVE,
         0u,
-        (const uint32_t *)DE_NULL,
+        nullptr,
         tiling == vk::VK_IMAGE_TILING_LINEAR ? vk::VK_IMAGE_LAYOUT_PREINITIALIZED : vk::VK_IMAGE_LAYOUT_UNDEFINED,
     };
 
@@ -662,14 +662,14 @@ tcu::TestStatus imageCopyTest(Context &context, const TestConfig config)
                     const vk::VkDeviceSize bufferSize = config.src.size.x() * config.src.size.y() * blockSizeBytes;
                     const vk::VkBufferCreateInfo bufferCreateInfo = {
                         vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-                        DE_NULL,                                  // const void* pNext;
+                        nullptr,                                  // const void* pNext;
                         0u,                                       // VkBufferCreateFlags flags;
                         bufferSize,                               // VkDeviceSize size;
                         vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
                             vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT, // VkBufferUsageFlags usage;
                         vk::VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
                         0u,                                       // uint32_t queueFamilyIndexCount;
-                        (const uint32_t *)DE_NULL,                // const uint32_t* pQueueFamilyIndices;
+                        nullptr,                                  // const uint32_t* pQueueFamilyIndices;
                     };
                     buffers[i] = de::MovePtr<vk::BufferWithMemory>(new vk::BufferWithMemory(
                         vkd, device, context.getDefaultAllocator(), bufferCreateInfo, vk::MemoryRequirement::Any));
@@ -689,7 +689,7 @@ tcu::TestStatus imageCopyTest(Context &context, const TestConfig config)
 
                         const vk::VkBufferMemoryBarrier bufferBarrier = {
                             vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-                            DE_NULL,                                     // const void* pNext;
+                            nullptr,                                     // const void* pNext;
                             vk::VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
                             vk::VK_ACCESS_TRANSFER_READ_BIT,             // VkAccessFlags dstAccessMask;
                             VK_QUEUE_FAMILY_IGNORED,                     // uint32_t srcQueueFamilyIndex;
@@ -701,8 +701,7 @@ tcu::TestStatus imageCopyTest(Context &context, const TestConfig config)
 
                         vkd.cmdPipelineBarrier(*cmdBuffer, (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
                                                (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                               (vk::VkDependencyFlags)0u, 0u, (const vk::VkMemoryBarrier *)DE_NULL, 1u,
-                                               &bufferBarrier, 0u, (const vk::VkImageMemoryBarrier *)DE_NULL);
+                                               (vk::VkDependencyFlags)0u, 0u, nullptr, 1u, &bufferBarrier, 0u, nullptr);
 
                         const vk::VkBufferImageCopy bufferToImageCopy = {
                             0u,                       // VkDeviceSize bufferOffset;
@@ -722,7 +721,7 @@ tcu::TestStatus imageCopyTest(Context &context, const TestConfig config)
                     }
 
                     const vk::VkImageMemoryBarrier preCopyBarrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                                     DE_NULL,
+                                                                     nullptr,
                                                                      vk::VK_ACCESS_TRANSFER_WRITE_BIT,
                                                                      vk::VK_ACCESS_TRANSFER_READ_BIT |
                                                                          vk::VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -735,8 +734,7 @@ tcu::TestStatus imageCopyTest(Context &context, const TestConfig config)
 
                     vkd.cmdPipelineBarrier(*cmdBuffer, (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
                                            (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                           (vk::VkDependencyFlags)0u, 0u, (const vk::VkMemoryBarrier *)DE_NULL, 0u,
-                                           (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u, &preCopyBarrier);
+                                           (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u, &preCopyBarrier);
                 }
 
                 endCommandBuffer(vkd, *cmdBuffer);

@@ -1200,17 +1200,8 @@ void supportedCheck(Context &context, CaseDefinition caseDef)
     {
         context.requireDeviceFunctionality("VK_EXT_subgroup_size_control");
 
-#ifndef CTS_USES_VULKANSC
-        const VkPhysicalDeviceSubgroupSizeControlFeatures &subgroupSizeControlFeatures =
-            context.getSubgroupSizeControlFeatures();
-        const VkPhysicalDeviceSubgroupSizeControlProperties &subgroupSizeControlProperties =
-            context.getSubgroupSizeControlProperties();
-#else
-        const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT &subgroupSizeControlFeatures =
-            context.getSubgroupSizeControlFeaturesEXT();
-        const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-            context.getSubgroupSizeControlPropertiesEXT();
-#endif // CTS_USES_VULKANSC
+        const auto &subgroupSizeControlFeatures   = context.getSubgroupSizeControlFeatures();
+        const auto &subgroupSizeControlProperties = context.getSubgroupSizeControlProperties();
 
         if (subgroupSizeControlFeatures.subgroupSizeControl == false)
             TCU_THROW(NotSupportedError, "Device does not support varying subgroup sizes nor required subgroup size");
@@ -1256,15 +1247,15 @@ TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
     switch (caseDef.shaderStage)
     {
     case VK_SHADER_STAGE_VERTEX_BIT:
-        return makeVertexFrameBufferTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL, checkVertexPipelineStages);
+        return makeVertexFrameBufferTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr, checkVertexPipelineStages);
     case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
-        return makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL,
+        return makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
                                                          checkVertexPipelineStages);
     case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
-        return makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL,
+        return makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
                                                          checkVertexPipelineStages);
     case VK_SHADER_STAGE_GEOMETRY_BIT:
-        return makeGeometryFrameBufferTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL, checkVertexPipelineStages);
+        return makeGeometryFrameBufferTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr, checkVertexPipelineStages);
     default:
         TCU_THROW(InternalError, "Unhandled shader stage");
     }
@@ -1276,25 +1267,19 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
 #ifndef CTS_USES_VULKANSC
     const bool isMesh = isAllMeshShadingStages(caseDef.shaderStage);
 #else
-    const bool isMesh = false;
+    const bool isMesh          = false;
 #endif // CTS_USES_VULKANSC
     DE_ASSERT(!(isCompute && isMesh));
 
     if (isCompute || isMesh)
     {
-#ifndef CTS_USES_VULKANSC
-        const VkPhysicalDeviceSubgroupSizeControlProperties &subgroupSizeControlProperties =
-            context.getSubgroupSizeControlProperties();
-#else
-        const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-            context.getSubgroupSizeControlPropertiesEXT();
-#endif // CTS_USES_VULKANSC
-        TestLog &log = context.getTestContext().getLog();
+        const auto &subgroupSizeControlProperties = context.getSubgroupSizeControlProperties();
+        TestLog &log                              = context.getTestContext().getLog();
 
         if (caseDef.requiredSubgroupSize == false)
         {
             if (isCompute)
-                return makeComputeTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL, checkComputeOrMeshStage);
+                return makeComputeTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr, checkComputeOrMeshStage);
             else
                 return makeMeshTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr, checkComputeOrMeshStage);
         }
@@ -1310,7 +1295,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
             TestStatus result(QP_TEST_RESULT_INTERNAL_ERROR, "Internal Error");
 
             if (isCompute)
-                result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL,
+                result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
                                                     checkComputeOrMeshStage, size);
             else
                 result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
@@ -1329,7 +1314,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
     {
         const VkShaderStageFlags stages = subgroups::getPossibleGraphicsSubgroupStages(context, caseDef.shaderStage);
 
-        return subgroups::allStages(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL, checkVertexPipelineStages,
+        return subgroups::allStages(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr, checkVertexPipelineStages,
                                     stages);
     }
 #ifndef CTS_USES_VULKANSC
@@ -1337,7 +1322,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
     {
         const VkShaderStageFlags stages = subgroups::getPossibleRayTracingSubgroupStages(context, caseDef.shaderStage);
 
-        return subgroups::allRayTracingStages(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL,
+        return subgroups::allRayTracingStages(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
                                               checkVertexPipelineStages, stages);
     }
 #endif // CTS_USES_VULKANSC

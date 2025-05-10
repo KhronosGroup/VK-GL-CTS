@@ -52,11 +52,15 @@ using tcu::LibDrm;
 
 #if defined(DEQP_SUPPORT_WAYLAND)
 #include "tcuLnxWayland.hpp"
-#define WAYLAND_DISPLAY DE_NULL
+#define WAYLAND_DISPLAY nullptr
 #endif // DEQP_SUPPORT_WAYLAND
 
 #if !defined(DEQP_VULKAN_LIBRARY_PATH)
+#ifdef CTS_USES_VULKANSC
+#define DEQP_VULKAN_LIBRARY_PATH "libvulkansc.so.1"
+#else
 #define DEQP_VULKAN_LIBRARY_PATH "libvulkan.so.1"
+#endif
 #endif
 
 namespace tcu
@@ -165,7 +169,7 @@ public:
         const uint32_t height     = !initialSize ? (uint32_t)DEFAULT_WINDOW_HEIGHT : initialSize->y();
         const uint32_t width      = !initialSize ? (uint32_t)DEFAULT_WINDOW_WIDTH : initialSize->x();
         return new VulkanWindowXcb(
-            MovePtr<x11::XcbWindow>(new x11::XcbWindow(*instance, (int)width, (int)height, DE_NULL)));
+            MovePtr<x11::XcbWindow>(new x11::XcbWindow(*instance, (int)width, (int)height, nullptr)));
     }
 
 private:
@@ -291,7 +295,7 @@ public:
 
         deMemset(&deviceDrmProperties, 0, sizeof(deviceDrmProperties));
         deviceDrmProperties.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT;
-        deviceDrmProperties.pNext = DE_NULL;
+        deviceDrmProperties.pNext = nullptr;
 
         deMemset(&deviceProperties2, 0, sizeof(deviceProperties2));
         deviceProperties2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
@@ -341,7 +345,7 @@ public:
         vk::VkDisplayKHR *display = const_cast<vk::VkDisplayKHR *>(&m_native);
         VK_CHECK_SUPPORTED(vki.getDrmDisplayEXT(physDevice, fd, connectorId, display));
 
-        if (m_native == DE_NULL)
+        if (m_native == VK_NULL_HANDLE)
             TCU_THROW(NotSupportedError, "vkGetDrmDisplayEXT did not set display.");
 
         VK_CHECK_SUPPORTED(vki.acquireDrmDisplayEXT(physDevice, fd, m_native));
@@ -358,7 +362,7 @@ class VulkanLibrary : public vk::Library
 {
 public:
     VulkanLibrary(const char *libraryPath)
-        : m_library(libraryPath != DE_NULL ? libraryPath : DEQP_VULKAN_LIBRARY_PATH)
+        : m_library(libraryPath != nullptr ? libraryPath : DEQP_VULKAN_LIBRARY_PATH)
         , m_driver(m_library)
     {
     }

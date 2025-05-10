@@ -350,6 +350,7 @@ public:
             context.requireDeviceFunctionality("VK_EXT_vertex_attribute_divisor");
 
             const auto &vertexAttributeDivisorFeatures = context.getVertexAttributeDivisorFeatures();
+
             if (m_params.attribDivisor != 1 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor)
                 TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisor");
 
@@ -361,8 +362,7 @@ public:
         {
             context.requireDeviceFunctionality("VK_KHR_vertex_attribute_divisor");
 
-            const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR &vertexAttributeDivisorFeatures =
-                context.getVertexAttributeDivisorFeatures();
+            const auto &vertexAttributeDivisorFeatures = context.getVertexAttributeDivisorFeatures();
 
             if (m_params.attribDivisor != 1 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor)
                 TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisor");
@@ -439,7 +439,7 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
         (uint32_t)sizeof(float) * 2,    // uint32_t              size;
     };
 
-    const PipelineLayoutCreateInfo pipelineLayoutCreateInfo(0, DE_NULL, 1, &pushConstantRange);
+    const PipelineLayoutCreateInfo pipelineLayoutCreateInfo(0, nullptr, 1, &pushConstantRange);
     m_pipelineLayout = vk::createPipelineLayout(m_vk, device, &pipelineLayoutCreateInfo);
 
     uint32_t arrayLayers                   = m_params.testMultiview ? 2 : 1;
@@ -474,9 +474,9 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
 
         const vk::VkAttachmentReference colorAttachmentReference = {0, vk::VK_IMAGE_LAYOUT_GENERAL};
 
-        renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, DE_NULL, 1,
-                                                           &colorAttachmentReference, DE_NULL, AttachmentReference(), 0,
-                                                           DE_NULL));
+        renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, nullptr, 1,
+                                                           &colorAttachmentReference, nullptr, AttachmentReference(), 0,
+                                                           nullptr));
 
         vk::VkRenderPassMultiviewCreateInfo renderPassMultiviewCreateInfo;
         // Bit mask that specifies which view rendering is broadcast to
@@ -491,12 +491,12 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
             DE_ASSERT(renderPassCreateInfo.subpassCount == 1);
 
             renderPassMultiviewCreateInfo.sType        = vk::VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO;
-            renderPassMultiviewCreateInfo.pNext        = DE_NULL;
+            renderPassMultiviewCreateInfo.pNext        = nullptr;
             renderPassMultiviewCreateInfo.subpassCount = renderPassCreateInfo.subpassCount;
             renderPassMultiviewCreateInfo.pViewMasks   = &viewMask;
             renderPassMultiviewCreateInfo.correlationMaskCount = 1u;
             renderPassMultiviewCreateInfo.pCorrelationMasks    = &correlationMask;
-            renderPassMultiviewCreateInfo.pViewOffsets         = DE_NULL;
+            renderPassMultiviewCreateInfo.pViewOffsets         = nullptr;
             renderPassMultiviewCreateInfo.dependencyCount      = 0u;
 
             renderPassCreateInfo.pNext = &renderPassMultiviewCreateInfo;
@@ -583,7 +583,7 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
         vk::VkDynamicState dynStates[] = {vk::VK_DYNAMIC_STATE_VERTEX_INPUT_EXT};
 
         vk::VkPipelineDynamicStateCreateInfo dynamicState{vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-                                                          DE_NULL, 0, 1, dynStates};
+                                                          nullptr, 0, 1, dynStates};
         pipelineCreateInfo.addState(dynamicState);
     }
     else
@@ -594,7 +594,7 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
 #ifndef CTS_USES_VULKANSC
     vk::VkPipelineRenderingCreateInfoKHR renderingFormatCreateInfo{
         vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
         0u,
         1u,
         &m_colorAttachmentFormat,
@@ -610,7 +610,7 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
     }
 #endif // CTS_USES_VULKANSC
 
-    m_pipeline = vk::createGraphicsPipeline(m_vk, device, DE_NULL, &pipelineCreateInfo);
+    m_pipeline = vk::createGraphicsPipeline(m_vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 tcu::TestStatus InstancedDrawInstance::iterate()
@@ -752,15 +752,6 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 
                 endCommandBuffer(m_vk, *m_cmdBuffer);
             }
-
-            /*
-
-            void InstancedDrawInstance::beginRender(vk::VkCommandBuffer cmdBuffer, const vk::VkClearValue& clearColor, vk::VkRenderingFlagsKHR renderingFlags)
-            {
-
-                if (m_params.groupParams->useDynamicRendering)
-                else
-            */
 
             submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
             m_context.resetCommandPoolForVKSC(device, *m_cmdPool);
@@ -938,7 +929,7 @@ void InstancedDrawInstance::preRenderCommands(const vk::VkClearValue &clearColor
     {
         vk::VkImageMemoryBarrier barrier{
             vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-            DE_NULL,                                    // const void* pNext;
+            nullptr,                                    // const void* pNext;
             0u,                                         // VkAccessFlags srcAccessMask;
             vk::VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags dstAccessMask;
             vk::VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout oldLayout;
@@ -950,8 +941,7 @@ void InstancedDrawInstance::preRenderCommands(const vk::VkClearValue &clearColor
         };
 
         m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                                (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &barrier);
+                                (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &barrier);
     }
     else
     {
@@ -963,12 +953,12 @@ void InstancedDrawInstance::preRenderCommands(const vk::VkClearValue &clearColor
                             1, &subresourceRange);
 
     const vk::VkMemoryBarrier memBarrier{
-        vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER, DE_NULL, vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+        vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, vk::VK_ACCESS_TRANSFER_WRITE_BIT,
         vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT};
 
     m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                            vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 1, &memBarrier, 0, DE_NULL, 0,
-                            DE_NULL);
+                            vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 1, &memBarrier, 0, nullptr, 0,
+                            nullptr);
 }
 
 void InstancedDrawInstance::cmdBindIndexBufferImpl(vk::VkCommandBuffer commandBuffer, vk::VkBuffer indexBuffer,
@@ -977,7 +967,7 @@ void InstancedDrawInstance::cmdBindIndexBufferImpl(vk::VkCommandBuffer commandBu
 {
 #ifndef CTS_USES_VULKANSC
     if (m_params.useMaintenance5Ext)
-        m_vk.cmdBindIndexBuffer2KHR(commandBuffer, indexBuffer, offset, size, indexType);
+        m_vk.cmdBindIndexBuffer2(commandBuffer, indexBuffer, offset, size, indexType);
     else
 #endif
     {
@@ -1065,7 +1055,7 @@ void InstancedDrawInstance::beginSecondaryCmdBuffer(vk::VkRenderingFlagsKHR rend
 {
     const vk::VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                             // const void* pNext;
+        nullptr,                                                             // const void* pNext;
         renderingFlags,                                                      // VkRenderingFlagsKHR flags;
         (m_params.testMultiview) ? 3u : 0u,                                  // uint32_t viewMask;
         1u,                                                                  // uint32_t colorAttachmentCount;
@@ -1078,9 +1068,9 @@ void InstancedDrawInstance::beginSecondaryCmdBuffer(vk::VkRenderingFlagsKHR rend
     const vk::VkCommandBufferInheritanceInfo bufferInheritanceInfo{
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType sType;
         &inheritanceRenderingInfo,                             // const void* pNext;
-        DE_NULL,                                               // VkRenderPass renderPass;
+        VK_NULL_HANDLE,                                        // VkRenderPass renderPass;
         0u,                                                    // uint32_t subpass;
-        DE_NULL,                                               // VkFramebuffer framebuffer;
+        VK_NULL_HANDLE,                                        // VkFramebuffer framebuffer;
         VK_FALSE,                                              // VkBool32 occlusionQueryEnable;
         (vk::VkQueryControlFlags)0u,                           // VkQueryControlFlags queryFlags;
         (vk::VkQueryPipelineStatisticFlags)0u                  // VkQueryPipelineStatisticFlags pipelineStatistics;
@@ -1092,7 +1082,7 @@ void InstancedDrawInstance::beginSecondaryCmdBuffer(vk::VkRenderingFlagsKHR rend
 
     const vk::VkCommandBufferBeginInfo commandBufBeginParams{
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         usageFlags,                                      // VkCommandBufferUsageFlags flags;
         &bufferInheritanceInfo};
 

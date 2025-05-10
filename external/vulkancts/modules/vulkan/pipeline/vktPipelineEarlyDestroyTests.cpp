@@ -108,12 +108,12 @@ tcu::TestStatus testEarlyDestroy(Context &context, const TestParams &params, boo
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                       // const void* pNext;
+        nullptr,                                       // const void* pNext;
         0u,                                            // VkPipelineLayoutCreateFlags flags;
         0u,                                            // uint32_t setLayoutCount;
-        DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+        nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
         0u,                                            // uint32_t pushConstantRangeCount;
-        DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+        nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
     };
 
     // Multiple passes for destroy layout in order to increase the chance of crashing if some resource/state gets carried over from previous iterations.
@@ -121,27 +121,27 @@ tcu::TestStatus testEarlyDestroy(Context &context, const TestParams &params, boo
     for (int i = 0; i < numTests; ++i)
     {
         PipelineLayoutWrapper pipelineLayout(params.pipelineConstructionType, vk, vkDevice, &pipelineLayoutCreateInfo,
-                                             DE_NULL);
+                                             nullptr);
         RenderPassWrapper renderPass(params.pipelineConstructionType, vk, vkDevice, VK_FORMAT_R8G8B8A8_UNORM);
         const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
             0u,                                                        // uint32_t vertexBindingDescriptionCount;
-            DE_NULL, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+            nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
             0u,      // uint32_t vertexAttributeDescriptionCount;
-            DE_NULL  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+            nullptr  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
         };
         const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                     // const void* pNext;
+            nullptr,                                                     // const void* pNext;
             0u,                                   // VkPipelineInputAssemblyStateCreateFlags flags;
             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, // VkPrimitiveTopology topology;
             VK_FALSE                              // VkBool32 primitiveRestartEnable;
         };
         const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                    // const void* pNext;
+            nullptr,                                                    // const void* pNext;
             0u,                      // VkPipelineRasterizationStateCreateFlags flags;
             VK_FALSE,                // VkBool32 depthClampEnable;
             VK_TRUE,                 // VkBool32 rasterizerDiscardEnable;
@@ -166,7 +166,7 @@ tcu::TestStatus testEarlyDestroy(Context &context, const TestParams &params, boo
         };
         const VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
+            nullptr,                                                  // const void* pNext;
             0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
             VK_FALSE,                                                 // VkBool32 logicOpEnable;
             VK_LOGIC_OP_CLEAR,                                        // VkLogicOp logicOp;
@@ -176,11 +176,11 @@ tcu::TestStatus testEarlyDestroy(Context &context, const TestParams &params, boo
         };
         const VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                      // const void* pNext;
+            nullptr,                                      // const void* pNext;
 #ifndef CTS_USES_VULKANSC
             (VkPipelineCacheCreateFlags)0u, // VkPipelineCacheCreateFlags flags;
             0u,                             // size_t initialDataSize;
-            DE_NULL                         // const void* pInitialData;
+            nullptr                         // const void* pInitialData;
 #else
             VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                 VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
@@ -212,7 +212,7 @@ tcu::TestStatus testEarlyDestroy(Context &context, const TestParams &params, boo
             .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, vk::ShaderWrapper())
             .setupFragmentOutputState(*renderPass, 0u, &colorBlendStateCreateInfo)
             .setMonolithicPipelineLayout(pipelineLayout)
-            .buildPipeline(params.usePipelineCache ? *pipelineCache : DE_NULL);
+            .buildPipeline(params.usePipelineCache ? *pipelineCache : VK_NULL_HANDLE);
 
         const uint32_t framebufferWidth  = 32;
         const uint32_t framebufferHeight = 32;
@@ -222,10 +222,10 @@ tcu::TestStatus testEarlyDestroy(Context &context, const TestParams &params, boo
             pipelineLayout.destroy();
         }
         const VkCommandBufferBeginInfo cmdBufferBeginInfo = {
-            VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,    // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
-            0u,                                             // VkCommandBufferUsageFlags flags;
-            (const VkCommandBufferInheritanceInfo *)DE_NULL // const VkCommandBufferInheritanceInfo* pInheritanceInfo;
+            VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
+            nullptr,                                     // const void* pNext;
+            0u,                                          // VkCommandBufferUsageFlags flags;
+            nullptr                                      // const VkCommandBufferInheritanceInfo* pInheritanceInfo;
         };
         if (!destroyLayout)
         {
@@ -241,7 +241,7 @@ tcu::TestStatus testEarlyDestroy(Context &context, const TestParams &params, boo
             const VkDeviceSize imageSize = framebufferWidth * framebufferHeight * textureFormat.getPixelSize();
             const VkImageCreateInfo imageCreateInfo = {
                 VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,       // VkStructureType sType;
-                DE_NULL,                                   // const void* pNext;
+                nullptr,                                   // const void* pNext;
                 (VkImageCreateFlags)0,                     // VkImageCreateFlags flags;
                 VK_IMAGE_TYPE_2D,                          // VkImageType imageType;
                 attachmentFormat,                          // VkFormat format;
@@ -254,7 +254,7 @@ tcu::TestStatus testEarlyDestroy(Context &context, const TestParams &params, boo
                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, // VkImageUsageFlags usage;
                 VK_SHARING_MODE_EXCLUSIVE,               // VkSharingMode sharingMode;
                 0u,                                      // uint32_t queueFamilyIndexCount;
-                DE_NULL,                                 // const uint32_t* pQueueFamilyIndices;
+                nullptr,                                 // const uint32_t* pQueueFamilyIndices;
                 VK_IMAGE_LAYOUT_UNDEFINED                // VkImageLayout initialLayout;
             };
             const ImageWithMemory attachmentImage(vk, vkDevice, context.getDefaultAllocator(), imageCreateInfo,

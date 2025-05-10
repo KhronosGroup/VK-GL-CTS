@@ -59,10 +59,12 @@ namespace vkt
 
 struct ContextCommonData
 {
+    const vk::PlatformInterface &vkp;
     const vk::InstanceInterface &vki;
-    vk::VkDevice device;
     const vk::DeviceInterface &vkd;
+    vk::VkInstance instance;
     vk::VkPhysicalDevice physicalDevice;
+    vk::VkDevice device;
     vk::Allocator &allocator;
     uint32_t qfIndex;
     vk::VkQueue queue;
@@ -105,6 +107,7 @@ public:
     const vk::VkPhysicalDeviceVulkan12Features &getDeviceVulkan12Features(void) const;
 #ifndef CTS_USES_VULKANSC
     const vk::VkPhysicalDeviceVulkan13Features &getDeviceVulkan13Features(void) const;
+    const vk::VkPhysicalDeviceVulkan14Features &getDeviceVulkan14Features(void) const;
 #endif
 #ifdef CTS_USES_VULKANSC
     const vk::VkPhysicalDeviceVulkanSC10Features &getDeviceVulkanSC10Features(void) const;
@@ -122,6 +125,7 @@ public:
     const vk::VkPhysicalDeviceVulkan12Properties &getDeviceVulkan12Properties(void) const;
 #ifndef CTS_USES_VULKANSC
     const vk::VkPhysicalDeviceVulkan13Properties &getDeviceVulkan13Properties(void) const;
+    const vk::VkPhysicalDeviceVulkan14Properties &getDeviceVulkan14Properties(void) const;
 #endif
 #ifdef CTS_USES_VULKANSC
     const vk::VkPhysicalDeviceVulkanSC10Properties &getDeviceVulkanSC10Properties(void) const;
@@ -178,7 +182,7 @@ public:
 
     void checkPipelineConstructionRequirements(const vk::PipelineConstructionType pipelineConstructionType);
     void resetCommandPoolForVKSC(const vk::VkDevice device, const vk::VkCommandPool commandPool);
-    ContextCommonData getContextCommonData();
+    ContextCommonData getContextCommonData() const;
 
 #ifdef CTS_USES_VULKANSC
     static std::vector<VkFaultData> m_faultData;
@@ -243,6 +247,41 @@ protected:
 private:
     TestInstance(const TestInstance &);
     TestInstance &operator=(const TestInstance &);
+};
+
+enum QueueCapabilities
+{
+    GRAPHICS_QUEUE = 0,
+    COMPUTE_QUEUE,
+    TRANSFER_QUEUE,
+};
+
+struct QueueData
+{
+    vk::VkQueue handle;
+    uint32_t familyIndex;
+
+    QueueData(vk::VkQueue queue, uint32_t ndx) : handle(queue), familyIndex(ndx)
+    {
+    }
+};
+
+class MultiQueueRunnerTestInstance : public TestInstance
+{
+public:
+    MultiQueueRunnerTestInstance(Context &context, QueueCapabilities queueCaps);
+    virtual ~MultiQueueRunnerTestInstance(void)
+    {
+    }
+
+    virtual tcu::TestStatus queuePass(const QueueData &queueData) = 0;
+
+private:
+    virtual tcu::TestStatus iterate(void) override;
+
+protected:
+    std::vector<QueueData> m_queues;
+    QueueCapabilities m_queueCaps;
 };
 
 inline TestCase::TestCase(tcu::TestContext &testCtx, const std::string &name) : tcu::TestCase(testCtx, name.c_str(), "")

@@ -51,9 +51,55 @@ void TessellationShaderTCTETests::init(void)
 {
     addChild(new glcts::TessellationShaderTCTEDataPassThrough(m_context, m_extParams));
     addChild(new glcts::TessellationShaderTCTEgl_in(m_context, m_extParams));
-    addChild(new glcts::TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize(m_context, m_extParams));
+    addTessellationShaderTCTEgl_MaxPatchVertices_Position_PointSizeTest();
     addChild(new glcts::TessellationShaderTCTEgl_PatchVerticesIn(m_context, m_extParams));
     addChild(new glcts::TessellationShaderTCTEgl_TessLevel(m_context, m_extParams));
+}
+
+void TessellationShaderTCTETests::addTessellationShaderTCTEgl_MaxPatchVertices_Position_PointSizeTest()
+{
+    bool point_mode_enabled_flags[]                                    = {false, true};
+    const _tessellation_primitive_mode primitive_modes[]               = {TESSELLATION_SHADER_PRIMITIVE_MODE_ISOLINES,
+                                                                          TESSELLATION_SHADER_PRIMITIVE_MODE_QUADS,
+                                                                          TESSELLATION_SHADER_PRIMITIVE_MODE_TRIANGLES};
+    const _tessellation_shader_vertex_ordering vertex_ordering_modes[] = {TESSELLATION_SHADER_VERTEX_ORDERING_CCW,
+                                                                          TESSELLATION_SHADER_VERTEX_ORDERING_CW,
+                                                                          TESSELLATION_SHADER_VERTEX_ORDERING_DEFAULT};
+    const _tessellation_shader_vertex_spacing vertex_spacing_modes[]   = {
+        TESSELLATION_SHADER_VERTEX_SPACING_EQUAL, TESSELLATION_SHADER_VERTEX_SPACING_FRACTIONAL_EVEN,
+        TESSELLATION_SHADER_VERTEX_SPACING_FRACTIONAL_ODD, TESSELLATION_SHADER_VERTEX_SPACING_DEFAULT};
+    const unsigned int n_point_mode_enabled_flags =
+        sizeof(point_mode_enabled_flags) / sizeof(point_mode_enabled_flags[0]);
+    const unsigned int n_primitive_modes       = sizeof(primitive_modes) / sizeof(primitive_modes[0]);
+    const unsigned int n_vertex_ordering_modes = sizeof(vertex_ordering_modes) / sizeof(vertex_ordering_modes[0]);
+    const unsigned int n_vertex_spacing_modes  = sizeof(vertex_spacing_modes) / sizeof(vertex_spacing_modes[0]);
+
+    for (unsigned int n_primitive_mode = 0; n_primitive_mode < n_primitive_modes; n_primitive_mode++)
+    {
+        _tessellation_primitive_mode primitive_mode = primitive_modes[n_primitive_mode];
+
+        for (unsigned int n_vertex_ordering_mode = 0; n_vertex_ordering_mode < n_vertex_ordering_modes;
+             ++n_vertex_ordering_mode)
+        {
+            _tessellation_shader_vertex_ordering vertex_ordering = vertex_ordering_modes[n_vertex_ordering_mode];
+
+            for (unsigned int n_vertex_spacing_mode = 0; n_vertex_spacing_mode < n_vertex_spacing_modes;
+                 ++n_vertex_spacing_mode)
+            {
+                _tessellation_shader_vertex_spacing vertex_spacing = vertex_spacing_modes[n_vertex_spacing_mode];
+                for (unsigned int n_point_mode_enabled_flag = 0; n_point_mode_enabled_flag < n_point_mode_enabled_flags;
+                     ++n_point_mode_enabled_flag)
+                {
+                    bool is_point_mode_enabled = point_mode_enabled_flags[n_point_mode_enabled_flag];
+
+                    addChild(new glcts::TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize(
+                        m_context, m_extParams, primitive_mode, vertex_ordering, vertex_spacing,
+                        is_point_mode_enabled));
+
+                } /* for (all 'point mode' enabled flags) */
+            }     /* for (all vertex spacing modes) */
+        }         /* for (all vertex ordering modes) */
+    }             /* for (all primitive modes) */
 }
 
 /** Constructor
@@ -66,7 +112,7 @@ TessellationShaderTCTEDataPassThrough::TessellationShaderTCTEDataPassThrough(Con
                    "Verifies data is correctly passed down the VS->TC->TS->(GS) pipeline.")
     , m_bo_id(0)
     , m_n_input_vertices_per_run(4)
-    , m_utils_ptr(DE_NULL)
+    , m_utils_ptr(nullptr)
     , m_vao_id(0)
 {
     /* Left blank on purpose */
@@ -120,11 +166,11 @@ void TessellationShaderTCTEDataPassThrough::deinit()
     m_runs.clear();
 
     /* Release Utils instance */
-    if (m_utils_ptr != DE_NULL)
+    if (m_utils_ptr != nullptr)
     {
         delete m_utils_ptr;
 
-        m_utils_ptr = DE_NULL;
+        m_utils_ptr = nullptr;
     }
 }
 
@@ -369,7 +415,7 @@ void TessellationShaderTCTEDataPassThrough::executeTestRun(_run &run, _tessellat
     {
         std::stringstream body_sstream;
         std::string body_string;
-        const char *body_raw_ptr = DE_NULL;
+        const char *body_raw_ptr = nullptr;
 
         body_sstream << "${VERSION}\n"
                         "\n"
@@ -449,7 +495,7 @@ void TessellationShaderTCTEDataPassThrough::executeTestRun(_run &run, _tessellat
     {
         std::stringstream body_sstream;
         std::string body_string;
-        const char *body_raw_ptr = DE_NULL;
+        const char *body_raw_ptr = nullptr;
 
         /* Preamble */
         body_sstream << "${VERSION}\n"
@@ -577,7 +623,7 @@ void TessellationShaderTCTEDataPassThrough::executeTestRun(_run &run, _tessellat
     {
         std::stringstream body_sstream;
         std::string body_string;
-        const char *body_raw_ptr = DE_NULL;
+        const char *body_raw_ptr = nullptr;
 
         body_sstream << "${VERSION}\n"
                         "\n"
@@ -666,7 +712,7 @@ void TessellationShaderTCTEDataPassThrough::executeTestRun(_run &run, _tessellat
     const unsigned int varying_position_size   = sizeof(float) * 4; /*  vec4 */
     const unsigned int varying_value1_size     = sizeof(float) * 4; /*  vec4 */
     const unsigned int varying_value2_size     = sizeof(int) * 4;   /* ivec4 */
-    const char **varyings                      = DE_NULL;
+    const char **varyings                      = nullptr;
     unsigned int varyings_size                 = 0;
 
     const char *gs_non_point_size_varyings[]     = {"gs_tc_position", "gs_tc_value1", "gs_tc_value2", "gs_te_position"};
@@ -807,7 +853,7 @@ void TessellationShaderTCTEDataPassThrough::executeTestRun(_run &run, _tessellat
     bo_size = n_result_tess_coords * varyings_size;
 
     /* Proceed with buffer object storage allocation */
-    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, DE_NULL, /* data */
+    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, nullptr, /* data */
                   GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed");
 
@@ -1785,7 +1831,11 @@ tcu::TestNode::IterateResult TessellationShaderTCTEgl_in::iterate(void)
  * @param context Test context
  **/
 TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize::
-    TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize(Context &context, const ExtParameters &extParams)
+    TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize(Context &context, const ExtParameters &extParams,
+                                                                 _tessellation_primitive_mode primitive_mode,
+                                                                 _tessellation_shader_vertex_ordering vertex_ordering,
+                                                                 _tessellation_shader_vertex_spacing vertex_spacing,
+                                                                 bool point_mode)
     : TestCaseBase(context, extParams, "gl_MaxPatchVertices_Position_PointSize",
                    "Verifies gl_Position and gl_PointSize (if supported) "
                    "are set to correct values in TE stage. Checks if up to "
@@ -1796,10 +1846,20 @@ TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize::
     , m_bo_id(0)
     , m_gl_max_patch_vertices_value(0)
     , m_gl_max_tess_gen_level_value(0)
-    , m_utils_ptr(DE_NULL)
+    , m_utils_ptr(nullptr)
     , m_vao_id(0)
+    , m_primitive_mode(primitive_mode)
+    , m_vertex_ordering(vertex_ordering)
+    , m_vertex_spacing(vertex_spacing)
+    , m_point_mode(point_mode)
 {
-    /* Left blank on purpose */
+    std::string name = "gl_MaxPatchVertices_Position_PointSize_primitive_mode_" +
+                       TessellationShaderUtils::getESTokenForPrimitiveMode(primitive_mode) + "_vertex_ordering_" +
+                       TessellationShaderUtils::getESTokenForVertexOrderingMode(vertex_ordering) + "_vertex_spacing_" +
+                       TessellationShaderUtils::getESTokenForVertexSpacingMode(vertex_spacing) + "_point_mode_" +
+                       std::string(point_mode ? "enabled" : "disabled");
+
+    TestCase::m_name = name;
 }
 
 /** Deinitializes all ES objects created for the test. */
@@ -1842,11 +1902,11 @@ void TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize::deinit()
         m_vao_id = 0;
     }
 
-    if (m_utils_ptr != DE_NULL)
+    if (m_utils_ptr != nullptr)
     {
         delete m_utils_ptr;
 
-        m_utils_ptr = DE_NULL;
+        m_utils_ptr = nullptr;
     }
 
     /* Release all test runs */
@@ -2303,86 +2363,50 @@ void TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize::initTest()
     /* Spawn utilities class instance */
     m_utils_ptr = new TessellationShaderUtils(gl, this);
 
-    /* Initialize all test iterations */
-    bool point_mode_enabled_flags[]                                    = {false, true};
-    const _tessellation_primitive_mode primitive_modes[]               = {TESSELLATION_SHADER_PRIMITIVE_MODE_ISOLINES,
-                                                                          TESSELLATION_SHADER_PRIMITIVE_MODE_QUADS,
-                                                                          TESSELLATION_SHADER_PRIMITIVE_MODE_TRIANGLES};
-    const _tessellation_shader_vertex_ordering vertex_ordering_modes[] = {TESSELLATION_SHADER_VERTEX_ORDERING_CCW,
-                                                                          TESSELLATION_SHADER_VERTEX_ORDERING_CW,
-                                                                          TESSELLATION_SHADER_VERTEX_ORDERING_DEFAULT};
-    const _tessellation_shader_vertex_spacing vertex_spacing_modes[]   = {
-        TESSELLATION_SHADER_VERTEX_SPACING_EQUAL, TESSELLATION_SHADER_VERTEX_SPACING_FRACTIONAL_EVEN,
-        TESSELLATION_SHADER_VERTEX_SPACING_FRACTIONAL_ODD, TESSELLATION_SHADER_VERTEX_SPACING_DEFAULT};
-    const unsigned int n_point_mode_enabled_flags =
-        sizeof(point_mode_enabled_flags) / sizeof(point_mode_enabled_flags[0]);
-    const unsigned int n_primitive_modes       = sizeof(primitive_modes) / sizeof(primitive_modes[0]);
-    const unsigned int n_vertex_ordering_modes = sizeof(vertex_ordering_modes) / sizeof(vertex_ordering_modes[0]);
-    const unsigned int n_vertex_spacing_modes  = sizeof(vertex_spacing_modes) / sizeof(vertex_spacing_modes[0]);
-
     bool deleteResources = false;
 
-    for (unsigned int n_primitive_mode = 0; n_primitive_mode < n_primitive_modes; n_primitive_mode++)
+    _tessellation_levels_set tessellation_levels = TessellationShaderUtils::getTessellationLevelSetForPrimitiveMode(
+        m_primitive_mode, m_gl_max_tess_gen_level_value, TESSELLATION_LEVEL_SET_FILTER_ALL_LEVELS_USE_THE_SAME_VALUE);
+
+    for (_tessellation_levels_set_const_iterator tessellation_levels_iterator = tessellation_levels.begin();
+         tessellation_levels_iterator != tessellation_levels.end(); tessellation_levels_iterator++)
     {
-        _tessellation_primitive_mode primitive_mode  = primitive_modes[n_primitive_mode];
-        _tessellation_levels_set tessellation_levels = TessellationShaderUtils::getTessellationLevelSetForPrimitiveMode(
-            primitive_mode, m_gl_max_tess_gen_level_value, TESSELLATION_LEVEL_SET_FILTER_ALL_LEVELS_USE_THE_SAME_VALUE);
+        const _tessellation_levels &tess_levels = *tessellation_levels_iterator;
 
-        for (_tessellation_levels_set_const_iterator tessellation_levels_iterator = tessellation_levels.begin();
-             tessellation_levels_iterator != tessellation_levels.end(); tessellation_levels_iterator++)
+        _run run;
+        /* Only create gl_PointSize-enabled runs if the implementation supports
+         * GL_EXT_tessellation_point_size extension
+         */
+        if (!m_is_tessellation_shader_point_size_supported && /*is_point_mode_enabled*/ m_point_mode)
         {
-            const _tessellation_levels &tess_levels = *tessellation_levels_iterator;
+            run.supported = false;
+        }
 
-            for (unsigned int n_vertex_ordering_mode = 0; n_vertex_ordering_mode < n_vertex_ordering_modes;
-                 ++n_vertex_ordering_mode)
+        if (run.supported)
+        {
+            /* Execute the test run */
+            memcpy(run.inner, tess_levels.inner, sizeof(run.inner));
+            memcpy(run.outer, tess_levels.outer, sizeof(run.outer));
+
+            run.point_mode      = m_point_mode;
+            run.primitive_mode  = m_primitive_mode;
+            run.vertex_ordering = m_vertex_ordering;
+            run.vertex_spacing  = m_vertex_spacing;
+
+            initTestRun(run);
+
+            if (deleteResources)
             {
-                _tessellation_shader_vertex_ordering vertex_ordering = vertex_ordering_modes[n_vertex_ordering_mode];
+                deinitTestRun(run);
+            }
 
-                for (unsigned int n_vertex_spacing_mode = 0; n_vertex_spacing_mode < n_vertex_spacing_modes;
-                     ++n_vertex_spacing_mode)
-                {
-                    _tessellation_shader_vertex_spacing vertex_spacing = vertex_spacing_modes[n_vertex_spacing_mode];
+            deleteResources = true;
+        }
 
-                    for (unsigned int n_point_mode_enabled_flag = 0;
-                         n_point_mode_enabled_flag < n_point_mode_enabled_flags; ++n_point_mode_enabled_flag)
-                    {
-                        bool is_point_mode_enabled = point_mode_enabled_flags[n_point_mode_enabled_flag];
-
-                        /* Only create gl_PointSize-enabled runs if the implementation supports
-                         * GL_EXT_tessellation_point_size extension
-                         */
-                        if (!m_is_tessellation_shader_point_size_supported && is_point_mode_enabled)
-                        {
-                            continue;
-                        }
-
-                        /* Execute the test run */
-                        _run run;
-
-                        memcpy(run.inner, tess_levels.inner, sizeof(run.inner));
-                        memcpy(run.outer, tess_levels.outer, sizeof(run.outer));
-
-                        run.point_mode      = is_point_mode_enabled;
-                        run.primitive_mode  = primitive_mode;
-                        run.vertex_ordering = vertex_ordering;
-                        run.vertex_spacing  = vertex_spacing;
-
-                        initTestRun(run);
-
-                        if (deleteResources)
-                        {
-                            deinitTestRun(run);
-                        }
-
-                        deleteResources = true;
-
-                        /* Store it for further processing */
-                        m_runs.push_back(run);
-                    } /* for (all 'point mode' enabled flags) */
-                }     /* for (all vertex spacing modes) */
-            }         /* for (all vertex ordering modes) */
-        }             /* for (all tessellation levels for active primitive mode) */
-    }                 /* for (all primitive modes) */
+        /* Store it for further processing*/
+        /*Not supported run is also added to return "Not supported" in iterate()*/
+        m_runs.push_back(run);
+    } /* for (all tessellation levels for active primitive mode) */
 }
 
 /** Initializes all ES objects used by the test, captures the tessellation coordinates
@@ -2519,7 +2543,7 @@ void TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize::initTestRun(_
             sizeof(programs_for_program_iteration) / sizeof(programs_for_program_iteration[0]);
 
         unsigned int n_programs       = 0;
-        const glw::GLuint *programs   = DE_NULL;
+        const glw::GLuint *programs   = nullptr;
         int xfb_pointsize_data_offset = -1;
         int xfb_position_data_offset  = -1;
         int xfb_value1_data_offset    = -1;
@@ -2619,7 +2643,7 @@ void TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize::initTestRun(_
             "te_value1",
             "te_value2",
         };
-        const char **xfb_varyings   = DE_NULL;
+        const char **xfb_varyings   = nullptr;
         unsigned int n_xfb_varyings = 0;
 
         if (run.point_mode)
@@ -2869,7 +2893,7 @@ void TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize::initTestRun(_
         /* Allocate enough space to hold the result XFB data */
         const unsigned int bo_size = xfb_varyings_size * n_vertices_generated;
 
-        gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, DE_NULL /* data */, GL_STATIC_DRAW);
+        gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, nullptr /* data */, GL_STATIC_DRAW);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed");
 
         /* Use the pipeline or program object and render the data */
@@ -3013,6 +3037,11 @@ tcu::TestNode::IterateResult TessellationShaderTCTEgl_MaxPatchVertices_Position_
     for (_runs_const_iterator run_iterator = m_runs.begin(); run_iterator != m_runs.end(); run_iterator++)
     {
         const _run &run = *run_iterator;
+        if (run.supported == false)
+        {
+            m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not supported");
+            return STOP;
+        }
 
         /* For the very first run, make sure that the type of tessellation shader objects
          * is reported correctly for both program and pipeline object cases.

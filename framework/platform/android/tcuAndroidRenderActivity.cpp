@@ -70,9 +70,9 @@ RenderThread::RenderThread(NativeActivity &activity)
     : m_activity(activity)
     , m_msgQueue(MESSAGE_QUEUE_SIZE)
     , m_threadRunning(false)
-    , m_inputQueue(DE_NULL)
+    , m_inputQueue(nullptr)
     , m_windowState(WINDOWSTATE_NOT_CREATED)
-    , m_window(DE_NULL)
+    , m_window(nullptr)
     , m_paused(false)
     , m_finish(false)
     , m_receivedFirstResize(false)
@@ -209,7 +209,7 @@ void RenderThread::processMessage(const Message &message)
             onWindowDestroyed(message.payload.window);
 
         m_windowState = WINDOWSTATE_DESTROYED;
-        m_window      = DE_NULL;
+        m_window      = nullptr;
         break;
 
     case MESSAGE_INPUT_QUEUE_CREATED:
@@ -310,7 +310,7 @@ void RenderThread::run(void)
 
 // RenderActivity
 
-RenderActivity::RenderActivity(ANativeActivity *activity) : NativeActivity(activity), m_thread(DE_NULL)
+RenderActivity::RenderActivity(ANativeActivity *activity) : NativeActivity(activity), m_thread(nullptr)
 {
     DBG_PRINT(("RenderActivity::RenderActivity()"));
 }

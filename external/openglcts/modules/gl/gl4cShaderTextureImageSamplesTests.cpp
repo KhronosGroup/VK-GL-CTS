@@ -50,7 +50,7 @@ ShaderTextureImageSamplesTestBase::ShaderTextureImageSamplesTestBase(deqp::Conte
                                                                      const char *description)
     : deqp::TestCase(context, name, description)
     , m_internalformat_n_samples_count(0)
-    , m_internalformat_n_samples_data(DE_NULL)
+    , m_internalformat_n_samples_data(nullptr)
     , m_bo_id(0)
     , m_cs_id(0)
     , m_po_id(0)
@@ -100,7 +100,7 @@ bool ShaderTextureImageSamplesTestBase::buildComputeProgram(const char *cs_body,
 
     /* Set up the shader object */
     gl.shaderSource(m_cs_id, 1,         /* count */
-                    &cs_body, DE_NULL); /* length */
+                    &cs_body, nullptr); /* length */
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
     /* Compile the shader object */
@@ -174,11 +174,11 @@ void ShaderTextureImageSamplesTestBase::deinit()
         m_bo_id = 0;
     }
 
-    if (m_internalformat_n_samples_data != DE_NULL)
+    if (m_internalformat_n_samples_data != nullptr)
     {
         delete[] m_internalformat_n_samples_data;
 
-        m_internalformat_n_samples_data = DE_NULL;
+        m_internalformat_n_samples_data = nullptr;
     }
 
     if (m_to_id != 0)
@@ -579,7 +579,7 @@ void ShaderTextureImageSamplesTestBase::init()
     gl.bindBuffer(GL_ARRAY_BUFFER, m_bo_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() call failed.");
 
-    gl.bufferData(GL_ARRAY_BUFFER, sizeof(int), DE_NULL, /* data */
+    gl.bufferData(GL_ARRAY_BUFFER, sizeof(int), nullptr, /* data */
                   GL_STATIC_DRAW);                       /* usage */
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 }

@@ -61,7 +61,7 @@ using std::string;
 using std::vector;
 
 #define MEASUREMENT_FAIL() \
-    throw tcu::InternalError("Unable to get sensible measurements for estimation", DE_NULL, __FILE__, __LINE__)
+    throw tcu::InternalError("Unable to get sensible measurements for estimation", nullptr, __FILE__, __LINE__)
 
 // Number of measurements in OperatorPerformanceCase for each workload size, unless specified otherwise by a command line argument.
 static const int DEFAULT_NUM_MEASUREMENTS_PER_WORKLOAD = 3;
@@ -718,7 +718,7 @@ void OperatorPerformanceCase::prepareProgram(int progNdx)
         {
             gl.enableVertexAttribArray(location);
             gl.bindBuffer(GL_ARRAY_BUFFER, m_attribBuffers[attribNdx]);
-            gl.vertexAttribPointer(location, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+            gl.vertexAttribPointer(location, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
         }
     }
     GLU_EXPECT_NO_ERROR(gl.getError(), "Setup vertex input state");
@@ -1375,7 +1375,7 @@ BinaryOpCase::ProgramContext BinaryOpCase::generateSingleProgramData(ProgramID p
 
             description += programID == PROGRAM_WITH_SMALLER_LOOP ? "smaller" :
                            programID == PROGRAM_WITH_BIGGER_LOOP  ? "bigger" :
-                                                                    DE_NULL;
+                                                                    nullptr;
 
             description += " loop.\n"
                            "Note: workload size for this program means the number of loop iterations.";
@@ -1430,8 +1430,8 @@ void BinaryOpCase::logSingleOperationCalculationInfo(void) const
                                                m_op == "-" ? "subtraction" :
                                                m_op == "*" ? "multiplication" :
                                                m_op == "/" ? "division" :
-                                                             DE_NULL;
-    DE_ASSERT(opName != DE_NULL);
+                                                             nullptr;
+    DE_ASSERT(opName != nullptr);
 
     m_testCtx.getLog()
         << TestLog::Message << "Note: the bigger program contains " << opDiff << " more " << opName
@@ -1549,7 +1549,7 @@ FunctionCase::ProgramContext FunctionCase::generateSingleProgramData(ProgramID p
     const char *const precision       = glu::getPrecisionName(m_precision);
     const char *const returnTypeName  = getDataTypeName(m_returnType);
     const string returnPrecisionMaybe = glu::isDataTypeBoolOrBVec(m_returnType) ? "" : string() + precision + " ";
-    const char *inputPrecision        = DE_NULL;
+    const char *inputPrecision        = nullptr;
     const bool isMatrixReturn         = isDataTypeMatrix(m_returnType);
     int numParams                     = 0;
     const char *paramTypeNames[MAX_PARAMS];
@@ -1560,7 +1560,7 @@ FunctionCase::ProgramContext FunctionCase::generateSingleProgramData(ProgramID p
         paramTypeNames[i]       = getDataTypeName(m_paramTypes[i]);
         paramPrecisionsMaybe[i] = glu::isDataTypeBoolOrBVec(m_paramTypes[i]) ? "" : string() + precision + " ";
 
-        if (inputPrecision == DE_NULL && isDataTypeIntOrIVec(m_paramTypes[i]) && m_precision == glu::PRECISION_LOWP)
+        if (inputPrecision == nullptr && isDataTypeIntOrIVec(m_paramTypes[i]) && m_precision == glu::PRECISION_LOWP)
             inputPrecision = "mediump";
 
         if (m_paramTypes[i] != TYPE_INVALID)
@@ -1569,7 +1569,7 @@ FunctionCase::ProgramContext FunctionCase::generateSingleProgramData(ProgramID p
 
     DE_ASSERT(numParams > 0);
 
-    if (inputPrecision == DE_NULL)
+    if (inputPrecision == nullptr)
         inputPrecision = precision;
 
     int numAttributes = FUNCTION_CASE_NUM_INDEPENDENT_CALCULATIONS + numParams - 1;
@@ -1842,7 +1842,7 @@ FunctionCase::ProgramContext FunctionCase::generateSingleProgramData(ProgramID p
 
             description += programID == PROGRAM_WITHOUT_FUNCTION_CALLS ? "without" :
                            programID == PROGRAM_WITH_FUNCTION_CALLS    ? "with" :
-                                                                         DE_NULL;
+                                                                         nullptr;
 
             description += " '" + m_func +
                            "' function calls.\n"
@@ -2316,8 +2316,8 @@ void ShaderOperatorTests::init(void)
 
     // vertexSubGroup and fragmentSubGroup are the groups where the various vertex/fragment cases of a single function are added.
     // \note These are defined here so that different versions (different entries in the functionCaseGroups array) of the same function can be put in the same group.
-    tcu::TestCaseGroup *vertexSubGroup   = DE_NULL;
-    tcu::TestCaseGroup *fragmentSubGroup = DE_NULL;
+    tcu::TestCaseGroup *vertexSubGroup   = nullptr;
+    tcu::TestCaseGroup *fragmentSubGroup = nullptr;
     FunctionCase::InitialCalibrationStorage vertexSubGroupCalibrationStorage;
     FunctionCase::InitialCalibrationStorage fragmentSubGroupCalibrationStorage;
     for (int funcNdx = 0; funcNdx < DE_LENGTH_OF_ARRAY(functionCaseGroups); funcNdx++)
@@ -2351,8 +2351,8 @@ void ShaderOperatorTests::init(void)
                 FunctionCase::InitialCalibrationStorage(new FunctionCase::InitialCalibration);
         }
 
-        DE_ASSERT(vertexSubGroup != DE_NULL);
-        DE_ASSERT(fragmentSubGroup != DE_NULL);
+        DE_ASSERT(vertexSubGroup != nullptr);
+        DE_ASSERT(fragmentSubGroup != nullptr);
 
         // Find the type size range of parameters (e.g. from 2 to 4 in case of vectors).
         int genTypeFirstSize = 1;

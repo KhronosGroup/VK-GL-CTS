@@ -98,7 +98,7 @@ void qpDiev(const char *format, va_list args)
 }
 
 /* print() implementation. */
-#if (DE_OS == DE_OS_ANDROID)
+#if defined(DEQP_IS_ANDROID_APP)
 
 #include <android/log.h>
 
@@ -221,7 +221,7 @@ static void exitProcess(void)
        handler is not safe. */
 
     /* Flush all open FILES */
-    fflush(DE_NULL);
+    fflush(NULL);
 
     /* Kill without calling any _at_exit handlers as those might hang */
     raise(SIGKILL);

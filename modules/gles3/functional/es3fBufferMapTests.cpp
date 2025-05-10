@@ -76,7 +76,7 @@ public:
 
         uint32_t buf = genBuffer();
         glBindBuffer(m_bufferTarget, buf);
-        glBufferData(m_bufferTarget, m_bufferSize, DE_NULL, m_usage);
+        glBufferData(m_bufferTarget, m_bufferSize, nullptr, m_usage);
         writer.write(buf, 0, m_bufferSize, refBuf.getPtr(), m_bufferTarget);
 
         glBindBuffer(m_bufferTarget, buf);
@@ -130,7 +130,7 @@ public:
 
         uint32_t buf = genBuffer();
         glBindBuffer(m_bufferTarget, buf);
-        glBufferData(m_bufferTarget, m_size, DE_NULL, m_usage);
+        glBufferData(m_bufferTarget, m_size, nullptr, m_usage);
 
         void *ptr = glMapBufferRange(m_bufferTarget, 0, m_size, GL_MAP_WRITE_BIT);
         GLU_CHECK_MSG("glMapBufferRange");

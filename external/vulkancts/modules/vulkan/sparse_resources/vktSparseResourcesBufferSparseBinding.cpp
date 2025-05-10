@@ -128,14 +128,14 @@ tcu::TestStatus BufferSparseBindingInstance::iterate(void)
         VkBufferCreateInfo bufferCreateInfo;
 
         bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO; // VkStructureType sType;
-        bufferCreateInfo.pNext = DE_NULL;                              // const void* pNext;
+        bufferCreateInfo.pNext = nullptr;                              // const void* pNext;
         bufferCreateInfo.flags = VK_BUFFER_CREATE_SPARSE_BINDING_BIT;  // VkBufferCreateFlags flags;
         bufferCreateInfo.size  = m_bufferSize;                         // VkDeviceSize size;
         bufferCreateInfo.usage =
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT; // VkBufferUsageFlags usage;
         bufferCreateInfo.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;      // VkSharingMode sharingMode;
         bufferCreateInfo.queueFamilyIndexCount = 0u;                             // uint32_t queueFamilyIndexCount;
-        bufferCreateInfo.pQueueFamilyIndices   = DE_NULL;                        // const uint32_t* pQueueFamilyIndices;
+        bufferCreateInfo.pQueueFamilyIndices   = nullptr;                        // const uint32_t* pQueueFamilyIndices;
 
         const uint32_t queueFamilyIndices[] = {sparseQueue.queueFamilyIndex, computeQueue.queueFamilyIndex};
 
@@ -191,7 +191,7 @@ tcu::TestStatus BufferSparseBindingInstance::iterate(void)
             {
                 const VkMemoryAllocateInfo allocateInfo = {
                     VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, // VkStructureType    sType;
-                    DE_NULL,                                // const void*        pNext;
+                    nullptr,                                // const void*        pNext;
                     bufferMemRequirement.size,              // VkDeviceSize       allocationSize;
                     memoryType,                             // uint32_t           memoryTypeIndex;
                 };
@@ -216,28 +216,28 @@ tcu::TestStatus BufferSparseBindingInstance::iterate(void)
 
             const VkDeviceGroupBindSparseInfo devGroupBindSparseInfo = {
                 VK_STRUCTURE_TYPE_DEVICE_GROUP_BIND_SPARSE_INFO, //VkStructureType sType;
-                DE_NULL,                                         //const void* pNext;
+                nullptr,                                         //const void* pNext;
                 firstDeviceID,                                   //uint32_t resourceDeviceIndex;
                 secondDeviceID,                                  //uint32_t memoryDeviceIndex;
             };
 
             const VkBindSparseInfo bindSparseInfo = {
                 VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,                    //VkStructureType sType;
-                m_useDeviceGroups ? &devGroupBindSparseInfo : DE_NULL, //const void* pNext;
+                m_useDeviceGroups ? &devGroupBindSparseInfo : nullptr, //const void* pNext;
                 0u,                                                    //uint32_t waitSemaphoreCount;
-                DE_NULL,                                               //const VkSemaphore* pWaitSemaphores;
+                nullptr,                                               //const VkSemaphore* pWaitSemaphores;
                 1u,                                                    //uint32_t bufferBindCount;
                 &sparseBufferBindInfo,           //const VkSparseBufferMemoryBindInfo* pBufferBinds;
                 0u,                              //uint32_t imageOpaqueBindCount;
-                DE_NULL,                         //const VkSparseImageOpaqueMemoryBindInfo* pImageOpaqueBinds;
+                nullptr,                         //const VkSparseImageOpaqueMemoryBindInfo* pImageOpaqueBinds;
                 0u,                              //uint32_t imageBindCount;
-                DE_NULL,                         //const VkSparseImageMemoryBindInfo* pImageBinds;
+                nullptr,                         //const VkSparseImageMemoryBindInfo* pImageBinds;
                 1u,                              //uint32_t signalSemaphoreCount;
                 &bufferMemoryBindSemaphore.get() //const VkSemaphore* pSignalSemaphores;
             };
 
             // Submit sparse bind commands for execution
-            VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, DE_NULL));
+            VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, VK_NULL_HANDLE));
         }
 
         // Create command buffer for transfer operations
@@ -272,8 +272,8 @@ tcu::TestStatus BufferSparseBindingInstance::iterate(void)
                 VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, *inputBuffer, 0u, m_bufferSize);
 
             deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_HOST_BIT,
-                                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 1u, &inputBufferBarrier,
-                                               0u, DE_NULL);
+                                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 1u, &inputBufferBarrier,
+                                               0u, nullptr);
         }
 
         {
@@ -287,8 +287,8 @@ tcu::TestStatus BufferSparseBindingInstance::iterate(void)
                 VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, *sparseBuffer, 0u, m_bufferSize);
 
             deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 1u,
-                                               &sparseBufferBarrier, 0u, DE_NULL);
+                                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 1u,
+                                               &sparseBufferBarrier, 0u, nullptr);
         }
 
         const VkBufferCreateInfo outputBufferCreateInfo =
@@ -308,8 +308,8 @@ tcu::TestStatus BufferSparseBindingInstance::iterate(void)
                 VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *outputBuffer, 0u, m_bufferSize);
 
             deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                               VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u, &outputBufferBarrier,
-                                               0u, DE_NULL);
+                                               VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 1u, &outputBufferBarrier,
+                                               0u, nullptr);
         }
 
         // End recording transfer commands
@@ -320,7 +320,7 @@ tcu::TestStatus BufferSparseBindingInstance::iterate(void)
         // Submit transfer commands for execution and wait for completion
         // In case of device groups, submit on the physical device with the resource
         submitCommandsAndWait(deviceInterface, getDevice(), computeQueue.queueHandle, *commandBuffer, 1u,
-                              &bufferMemoryBindSemaphore.get(), waitStageBits, 0, DE_NULL, m_useDeviceGroups,
+                              &bufferMemoryBindSemaphore.get(), waitStageBits, 0, nullptr, m_useDeviceGroups,
                               firstDeviceID);
 
         // Retrieve data from output buffer to host memory

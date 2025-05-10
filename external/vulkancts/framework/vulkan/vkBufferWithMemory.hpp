@@ -38,12 +38,14 @@ class BufferWithMemory
 public:
     BufferWithMemory(const vk::DeviceInterface &vk, const vk::VkDevice device, vk::Allocator &allocator,
                      const vk::VkBufferCreateInfo &bufferCreateInfo, const vk::MemoryRequirement memoryRequirement,
-                     const bool bindOnCreation = true)
+                     const bool bindOnCreation = true, uint64_t memoryOpaqueCaptureAddr = 0u)
 
         : m_vk(vk)
         , m_device(device)
         , m_buffer(createBuffer(vk, device, &bufferCreateInfo))
-        , m_allocation(allocator.allocate(getBufferMemoryRequirements(vk, device, *m_buffer), memoryRequirement))
+        , m_createSize(bufferCreateInfo.size)
+        , m_allocation(allocator.allocate(getBufferMemoryRequirements(vk, device, *m_buffer), memoryRequirement,
+                                          memoryOpaqueCaptureAddr))
         , m_memoryBound(false)
     {
         if (bindOnCreation)
@@ -70,11 +72,16 @@ public:
             m_memoryBound = true;
         }
     }
+    vk::VkDeviceSize getBufferSize(void) const
+    {
+        return m_createSize;
+    }
 
 private:
     const vk::DeviceInterface &m_vk;
     const vk::VkDevice m_device;
     const vk::Unique<vk::VkBuffer> m_buffer;
+    const vk::VkDeviceSize m_createSize;
     const de::UniquePtr<vk::Allocation> m_allocation;
     bool m_memoryBound;
 

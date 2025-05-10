@@ -389,12 +389,19 @@ def genMustpassFromLists (mustpass, moduleCaseLists):
             for filter in config.filters:
                 if filter.type == Filter.TYPE_INCLUDE:
                     patternSet = patternSets[filter.key]
-                    for pattern, usage in patternSet.namedPatternsDict.items():
-                        if usage == 0:
-                            logging.warning("Case %s in file %s for module %s was never used!" % (pattern, filter.key, config.name))
-                    for pattern, usage in patternSet.wildcardPatternsDict.items():
-                        if usage == 0:
-                            logging.warning("Pattern %s in file %s for module %s was never used!" % (pattern, filter.key, config.name))
+
+                    def log_unused(patternsDict, kind):
+                        log_count = 0
+                        for pattern, usage in patternsDict.items():
+                            if usage == 0:
+                                logging.debug("%s %s in file %s for module %s was never used!" % (kind, pattern, filter.key, config.name))
+                                log_count += 1
+                            if log_count > 100:
+                                logging.warning("Too many '%s unused' logs, the rest are not logged!" % kind)
+                                break
+
+                    log_unused(patternSet.namedPatternsDict, 'Case')
+                    log_unused(patternSet.wildcardPatternsDict, 'Pattern')
 
     # Generate XML
     specXML = genSpecXML(mustpass)

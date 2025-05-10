@@ -240,7 +240,7 @@ bool BufferValidator<T>::validateBuffer(ProtectedContext &ctx, const vk::VkBuffe
         {
             const vk::VkBufferViewCreateInfo viewParams = {
                 vk::VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO, // VkStructureType            sType
-                DE_NULL,                                       // const void*                pNext
+                nullptr,                                       // const void*                pNext
                 0u,                                            // VkBufferViewCreateFlags    flags
                 buffer,                                        // VkBuffer                    buffer
                 m_format,                                      // VkFormat                    format
@@ -287,7 +287,7 @@ bool BufferValidator<T>::validateBuffer(ProtectedContext &ctx, const vk::VkBuffe
 
         vk.cmdBindPipeline(*resetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *resetSSBOPipeline);
         vk.cmdBindDescriptorSets(*resetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                 &*descriptorSet, 0u, DE_NULL);
+                                 &*descriptorSet, 0u, nullptr);
         vk.cmdDispatch(*resetCmdBuffer, 1u, 1u, 1u);
 
         endCommandBuffer(vk, *resetCmdBuffer);
@@ -307,7 +307,7 @@ bool BufferValidator<T>::validateBuffer(ProtectedContext &ctx, const vk::VkBuffe
 
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *validationPipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                 &*descriptorSet, 0u, DE_NULL);
+                                 &*descriptorSet, 0u, nullptr);
         vk.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
 
         endCommandBuffer(vk, *cmdBuffer);

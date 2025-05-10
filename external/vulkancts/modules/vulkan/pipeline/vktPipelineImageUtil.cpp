@@ -260,13 +260,13 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment(const vk::DeviceInterface &vk
     {
         const VkBufferCreateInfo bufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             pixelDataSize,                        // VkDeviceSize size;
             VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                   // uint32_t queueFamilyIndexCount;
-            DE_NULL                               // const uint32_t* pQueueFamilyIndices;
+            nullptr                               // const uint32_t* pQueueFamilyIndices;
         };
 
         buffer = createBuffer(vk, device, &bufferParams);
@@ -340,13 +340,13 @@ de::MovePtr<tcu::TextureLevel> readDepthAttachment(const vk::DeviceInterface &vk
     {
         const VkBufferCreateInfo bufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             pixelDataSize,                        // VkDeviceSize size;
             VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                   // uint32_t queueFamilyIndexCount;
-            DE_NULL                               // const uint32_t* pQueueFamilyIndices;
+            nullptr                               // const uint32_t* pQueueFamilyIndices;
         };
 
         buffer = createBuffer(vk, device, &bufferParams);
@@ -398,13 +398,13 @@ de::MovePtr<tcu::TextureLevel> readStencilAttachment(const vk::DeviceInterface &
     {
         const VkBufferCreateInfo bufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             pixelDataSize,                        // VkDeviceSize size;
             VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                   // uint32_t queueFamilyIndexCount;
-            DE_NULL                               // const uint32_t* pQueueFamilyIndices;
+            nullptr                               // const uint32_t* pQueueFamilyIndices;
         };
 
         buffer = createBuffer(vk, device, &bufferParams);
@@ -436,7 +436,7 @@ de::MovePtr<tcu::TextureLevel> readStencilAttachment(const vk::DeviceInterface &
 void uploadTestTextureInternal(const DeviceInterface &vk, VkDevice device, VkQueue queue, uint32_t queueFamilyIndex,
                                Allocator &allocator, const TestTexture &srcTexture,
                                const TestTexture *srcStencilTexture, tcu::TextureFormat format, VkImage destImage,
-                               VkImageLayout destImageLayout)
+                               VkImageLayout destImageLayout, VkPipelineStageFlags destStageFlags)
 {
     Move<VkBuffer> buffer;
     de::MovePtr<Allocation> bufferAlloc;
@@ -449,9 +449,9 @@ void uploadTestTextureInternal(const DeviceInterface &vk, VkDevice device, VkQue
 
     // Stencil-only texture should be provided if (and only if) the image has a combined DS format
     DE_ASSERT((tcu::hasDepthComponent(format.order) && tcu::hasStencilComponent(format.order)) ==
-              (srcStencilTexture != DE_NULL));
+              (srcStencilTexture != nullptr));
 
-    if (srcStencilTexture != DE_NULL)
+    if (srcStencilTexture != nullptr)
     {
         stencilOffset = static_cast<uint32_t>(deAlign32(static_cast<int32_t>(bufferSize), 4));
         bufferSize    = stencilOffset + srcStencilTexture->getSize();
@@ -461,13 +461,13 @@ void uploadTestTextureInternal(const DeviceInterface &vk, VkDevice device, VkQue
     {
         const VkBufferCreateInfo bufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType      sType;
-            DE_NULL,                              // const void*          pNext;
+            nullptr,                              // const void*          pNext;
             0u,                                   // VkBufferCreateFlags  flags;
             bufferSize,                           // VkDeviceSize         size;
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // VkBufferUsageFlags   usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode        sharingMode;
             0u,                                   // uint32_t             queueFamilyIndexCount;
-            DE_NULL,                              // const uint32_t*      pQueueFamilyIndices;
+            nullptr,                              // const uint32_t*      pQueueFamilyIndices;
         };
 
         buffer = createBuffer(vk, device, &bufferParams);
@@ -480,7 +480,7 @@ void uploadTestTextureInternal(const DeviceInterface &vk, VkDevice device, VkQue
     {
         srcTexture.write(reinterpret_cast<uint8_t *>(bufferAlloc->getHostPtr()));
 
-        if (srcStencilTexture != DE_NULL)
+        if (srcStencilTexture != nullptr)
         {
             DE_ASSERT(stencilOffset != 0u);
 
@@ -499,8 +499,8 @@ void uploadTestTextureInternal(const DeviceInterface &vk, VkDevice device, VkQue
         flushAlloc(vk, device, *bufferAlloc);
     }
 
-    copyBufferToImage(vk, device, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, DE_NULL, imageAspectFlags,
-                      srcTexture.getNumLevels(), srcTexture.getArraySize(), destImage, destImageLayout);
+    copyBufferToImage(vk, device, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, nullptr, imageAspectFlags,
+                      srcTexture.getNumLevels(), srcTexture.getArraySize(), destImage, destImageLayout, destStageFlags);
 }
 
 bool checkSparseImageFormatSupport(const VkPhysicalDevice physicalDevice, const InstanceInterface &instance,
@@ -542,9 +542,9 @@ void uploadTestTextureInternalSparse(const DeviceInterface &vk, VkDevice device,
 
     // Stencil-only texture should be provided if (and only if) the image has a combined DS format
     DE_ASSERT((tcu::hasDepthComponent(format.order) && tcu::hasStencilComponent(format.order)) ==
-              (srcStencilTexture != DE_NULL));
+              (srcStencilTexture != nullptr));
 
-    if (srcStencilTexture != DE_NULL)
+    if (srcStencilTexture != nullptr)
     {
         stencilOffset = static_cast<uint32_t>(deAlign32(static_cast<int32_t>(bufferSize), 4));
         bufferSize    = stencilOffset + srcStencilTexture->getSize();
@@ -564,13 +564,13 @@ void uploadTestTextureInternalSparse(const DeviceInterface &vk, VkDevice device,
         // Create source buffer
         const VkBufferCreateInfo bufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             bufferSize,                           // VkDeviceSize size;
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                   // uint32_t queueFamilyIndexCount;
-            DE_NULL,                              // const uint32_t* pQueueFamilyIndices;
+            nullptr,                              // const uint32_t* pQueueFamilyIndices;
         };
 
         buffer = createBuffer(vk, device, &bufferParams);
@@ -584,7 +584,7 @@ void uploadTestTextureInternalSparse(const DeviceInterface &vk, VkDevice device,
         // Write buffer data
         srcTexture.write(reinterpret_cast<uint8_t *>(bufferAlloc->getHostPtr()));
 
-        if (srcStencilTexture != DE_NULL)
+        if (srcStencilTexture != nullptr)
         {
             DE_ASSERT(stencilOffset != 0u);
 
@@ -610,7 +610,7 @@ void uploadTestTextureInternalSparse(const DeviceInterface &vk, VkDevice device,
 
 void uploadTestTexture(const DeviceInterface &vk, VkDevice device, VkQueue queue, uint32_t queueFamilyIndex,
                        Allocator &allocator, const TestTexture &srcTexture, VkImage destImage,
-                       VkImageLayout destImageLayout)
+                       VkImageLayout destImageLayout, VkPipelineStageFlags destStageFlags)
 {
     if (tcu::isCombinedDepthStencilType(srcTexture.getTextureFormat().type))
     {
@@ -643,11 +643,12 @@ void uploadTestTexture(const DeviceInterface &vk, VkDevice device, VkQueue queue
                 tcu::getEffectiveDepthStencilTextureFormat(srcTexture.getTextureFormat(), tcu::Sampler::MODE_STENCIL));
 
         uploadTestTextureInternal(vk, device, queue, queueFamilyIndex, allocator, *srcDepthTexture,
-                                  srcStencilTexture.get(), srcTexture.getTextureFormat(), destImage, destImageLayout);
+                                  srcStencilTexture.get(), srcTexture.getTextureFormat(), destImage, destImageLayout,
+                                  destStageFlags);
     }
     else
-        uploadTestTextureInternal(vk, device, queue, queueFamilyIndex, allocator, srcTexture, DE_NULL,
-                                  srcTexture.getTextureFormat(), destImage, destImageLayout);
+        uploadTestTextureInternal(vk, device, queue, queueFamilyIndex, allocator, srcTexture, nullptr,
+                                  srcTexture.getTextureFormat(), destImage, destImageLayout, destStageFlags);
 }
 
 void uploadTestTextureSparse(const DeviceInterface &vk, VkDevice device, const VkPhysicalDevice physicalDevice,
@@ -695,7 +696,7 @@ void uploadTestTextureSparse(const DeviceInterface &vk, VkDevice device, const V
     {
         uploadTestTextureInternalSparse(vk, device, physicalDevice, instance, imageCreateInfo, universalQueue,
                                         universalQueueFamilyIndex, sparseQueue, allocator, allocations, srcTexture,
-                                        DE_NULL, srcTexture.getTextureFormat(), destImage);
+                                        nullptr, srcTexture.getTextureFormat(), destImage);
     }
 }
 
@@ -999,6 +1000,28 @@ void TestTexture::populateCompressedLevels(tcu::CompressedTexFormat format,
     }
 }
 
+void TestTexture::populateCompressedLevelsVoidExtent(tcu::CompressedTexFormat format,
+                                                     const std::vector<tcu::PixelBufferAccess> &decompressedLevels)
+{
+    DE_ASSERT(tcu::isAstcFormat(format));
+
+    // Generate void extent block test data
+    for (size_t levelNdx = 0; levelNdx < decompressedLevels.size(); levelNdx++)
+    {
+        const tcu::PixelBufferAccess level = decompressedLevels[levelNdx];
+        std::vector<uint8_t> data;
+
+        tcu::astc::generateBlockCaseTestData(data, format, tcu::astc::BLOCK_TEST_TYPE_VOID_EXTENT_LDR);
+        tcu::CompressedTexture *compressedLevel =
+            new tcu::CompressedTexture(format, level.getWidth(), level.getHeight(), level.getDepth(), std::move(data));
+
+        m_compressedLevels.push_back(compressedLevel);
+
+        // Store decompressed data
+        compressedLevel->decompress(level, tcu::TexDecompressionParams(tcu::TexDecompressionParams::ASTCMODE_LDR));
+    }
+}
+
 void TestTexture::fillWithGradient(const tcu::PixelBufferAccess &levelAccess)
 {
     const tcu::TextureFormatInfo formatInfo = tcu::getTextureFormatInfo(levelAccess.getFormat());
@@ -1164,12 +1187,22 @@ TestTexture2D::TestTexture2D(const tcu::TextureFormat &format, int width, int he
     TestTexture::populateLevels(getLevelsVector(m_texture));
 }
 
-TestTexture2D::TestTexture2D(const tcu::CompressedTexFormat &format, int width, int height)
+TestTexture2D::TestTexture2D(const tcu::CompressedTexFormat &format, int width, int height, bool voidExtent)
     : TestTexture(format, width, height, 1)
     , m_texture(tcu::getUncompressedFormat(format), width, height)
 {
     allocateLevels(m_texture);
-    TestTexture::populateCompressedLevels(format, getLevelsVector(m_texture));
+    const auto decompressedLevels = getLevelsVector(m_texture);
+
+    if (!voidExtent)
+    {
+        TestTexture::populateCompressedLevels(format, decompressedLevels);
+    }
+    else
+    {
+        DE_ASSERT(tcu::isAstcFormat(format));
+        TestTexture::populateCompressedLevelsVoidExtent(format, decompressedLevels);
+    }
 }
 
 TestTexture2D::~TestTexture2D(void)

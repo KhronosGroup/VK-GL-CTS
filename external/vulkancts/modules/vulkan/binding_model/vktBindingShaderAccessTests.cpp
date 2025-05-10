@@ -171,11 +171,13 @@ void verifyDriverSupport(const uint32_t apiVersion, const vk::VkPhysicalDeviceFe
     switch (updateMethod)
     {
     case DESCRIPTOR_UPDATE_METHOD_WITH_PUSH:
-        extensionNames.push_back("VK_KHR_push_descriptor");
+        if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_push_descriptor"))
+            extensionNames.push_back("VK_KHR_push_descriptor");
         break;
 
     case DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE:
-        extensionNames.push_back("VK_KHR_push_descriptor");
+        if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_push_descriptor"))
+            extensionNames.push_back("VK_KHR_push_descriptor");
     // Fallthrough
     case DESCRIPTOR_UPDATE_METHOD_WITH_TEMPLATE:
         if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_descriptor_update_template"))
@@ -198,7 +200,7 @@ void verifyDriverSupport(const uint32_t apiVersion, const vk::VkPhysicalDeviceFe
         {
             for (size_t requiredExtNdx = 0; requiredExtNdx < extensionNames.size(); requiredExtNdx++)
             {
-                if (deStringEqual(deviceExtensions[deviceExtNdx].c_str(), extensionNames[requiredExtNdx].c_str()))
+                if (deviceExtensions[deviceExtNdx] == extensionNames[requiredExtNdx])
                 {
                     --numExtensionsNeeded;
                     break;
@@ -396,12 +398,12 @@ de::MovePtr<vk::Allocation> allocateAndBindObjectMemory(const vk::DeviceInterfac
 
 vk::VkDescriptorImageInfo makeDescriptorImageInfo(vk::VkSampler sampler)
 {
-    return vk::makeDescriptorImageInfo(sampler, (vk::VkImageView)0, (vk::VkImageLayout)0);
+    return vk::makeDescriptorImageInfo(sampler, VK_NULL_HANDLE, (vk::VkImageLayout)0);
 }
 
 vk::VkDescriptorImageInfo makeDescriptorImageInfo(vk::VkImageView imageView, vk::VkImageLayout layout)
 {
-    return vk::makeDescriptorImageInfo((vk::VkSampler)0, imageView, layout);
+    return vk::makeDescriptorImageInfo(VK_NULL_HANDLE, imageView, layout);
 }
 
 void drawQuadrantReferenceResult(const tcu::PixelBufferAccess &dst, const tcu::Vec4 &c1, const tcu::Vec4 &c2,
@@ -485,7 +487,7 @@ void bindDescriptorSets(const vk::DeviceInterface &m_vki, vk::VkCommandBuffer cm
 #ifndef CTS_USES_VULKANSC
         vk::VkBindDescriptorSetsInfoKHR bindDescriptorSetsInfo = {
             vk::VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO_KHR, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             existingStages,                                      // VkShaderStageFlags stageFlags;
             layout,                                              // VkPipelineLayout layout;
             first,                                               // uint32_t firstSet;
@@ -494,7 +496,7 @@ void bindDescriptorSets(const vk::DeviceInterface &m_vki, vk::VkCommandBuffer cm
             dynamicOffsetCount,                                  // uint32_t dynamicOffsetCount;
             dynamicOffsets                                       // const uint32_t* pDynamicOffsets;
         };
-        m_vki.cmdBindDescriptorSets2KHR(cmdBuffer, &bindDescriptorSetsInfo);
+        m_vki.cmdBindDescriptorSets2(cmdBuffer, &bindDescriptorSetsInfo);
 #endif
     }
     else
@@ -562,7 +564,7 @@ SingleTargetRenderInstance::SingleTargetRenderInstance(Context &context, const t
     , m_queue(context.getUniversalQueue())
     , m_queueFamilyIndex(context.getUniversalQueueFamilyIndex())
     , m_allocator(context.getDefaultAllocator())
-    , m_colorAttachmentMemory(DE_NULL)
+    , m_colorAttachmentMemory(nullptr)
     , m_colorAttachmentImage(
           createColorAttachment(m_vki, m_device, m_allocator, m_targetFormat, m_targetSize, &m_colorAttachmentMemory))
     , m_colorAttachmentView(createColorAttachmentView(m_vki, m_device, m_targetFormat, *m_colorAttachmentImage))
@@ -581,7 +583,7 @@ vk::Move<vk::VkImage> SingleTargetRenderInstance::createColorAttachment(const vk
 {
     const vk::VkImageCreateInfo imageInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkImageCreateFlags)0,
         vk::VK_IMAGE_TYPE_2D,                                                          // imageType
         vk::mapTextureFormat(format),                                                  // format
@@ -593,7 +595,7 @@ vk::Move<vk::VkImage> SingleTargetRenderInstance::createColorAttachment(const vk
         vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // usage
         vk::VK_SHARING_MODE_EXCLUSIVE,                                                 // sharingMode
         0u,                                                                            // queueFamilyCount
-        DE_NULL,                                                                       // pQueueFamilyIndices
+        nullptr,                                                                       // pQueueFamilyIndices
         vk::VK_IMAGE_LAYOUT_UNDEFINED,                                                 // initialLayout
     };
 
@@ -612,7 +614,7 @@ vk::Move<vk::VkImageView> SingleTargetRenderInstance::createColorAttachmentView(
 {
     const vk::VkImageViewCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkImageViewCreateFlags)0,
         image,                        // image
         vk::VK_IMAGE_VIEW_TYPE_2D,    // viewType
@@ -638,7 +640,7 @@ vk::Move<vk::VkFramebuffer> SingleTargetRenderInstance::createFramebuffer(const 
 {
     const vk::VkFramebufferCreateInfo framebufferCreateInfo = {
         vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkFramebufferCreateFlags)0,
         renderpass,           // renderPass
         1u,                   // attachmentCount
@@ -663,13 +665,13 @@ void SingleTargetRenderInstance::readRenderTarget(tcu::TextureLevel &dst)
     const uint64_t pixelDataSize = (uint64_t)(m_targetSize.x() * m_targetSize.y() * m_targetFormat.getPixelSize());
     const vk::VkBufferCreateInfo bufferCreateInfo = {
         vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0u,                                   // flags
         pixelDataSize,                        // size
         vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT, // usage
         vk::VK_SHARING_MODE_EXCLUSIVE,        // sharingMode
         0u,                                   // queueFamilyCount
-        DE_NULL,                              // pQueueFamilyIndices
+        nullptr,                              // pQueueFamilyIndices
     };
     const vk::Unique<vk::VkBuffer> buffer(vk::createBuffer(m_vki, m_device, &bufferCreateInfo));
 
@@ -716,7 +718,7 @@ tcu::TestStatus SingleTargetRenderInstance::iterate(void)
         };
         const vk::VkImageMemoryBarrier imageBarrier = {
             vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-            DE_NULL,
+            nullptr,
             0u,                                           // srcAccessMask
             vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // dstAccessMask
             vk::VK_IMAGE_LAYOUT_UNDEFINED,                // oldLayout
@@ -733,8 +735,7 @@ tcu::TestStatus SingleTargetRenderInstance::iterate(void)
         beginCommandBuffer(m_vki, *cmd);
         m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                  vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0, 0,
-                                 (const vk::VkMemoryBarrier *)DE_NULL, 0, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1,
-                                 &imageBarrier);
+                                 nullptr, 0, nullptr, 1, &imageBarrier);
         endCommandBuffer(m_vki, *cmd);
 
         submitCommandsAndWait(m_vki, m_device, m_queue, cmd.get());
@@ -761,7 +762,7 @@ public:
 
     inline bool hasTessellationStage(void) const
     {
-        return *m_tessCtrlShaderModule != 0 || *m_tessEvalShaderModule != 0;
+        return *m_tessCtrlShaderModule != VK_NULL_HANDLE || *m_tessEvalShaderModule != VK_NULL_HANDLE;
     }
     inline uint32_t getNumStages(void) const
     {
@@ -836,12 +837,12 @@ vk::VkPipelineShaderStageCreateInfo RenderInstanceShaders::getShaderStageCreateI
 {
     const vk::VkPipelineShaderStageCreateInfo stageCreateInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkPipelineShaderStageCreateFlags)0,
         stage,  // stage
         shader, // shader
         "main",
-        DE_NULL, // pSpecializationInfo
+        nullptr, // pSpecializationInfo
     };
     return stageCreateInfo;
 }
@@ -878,22 +879,22 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline(vk::VkPipelineL
                                                                           vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     const vk::VkPipelineVertexInputStateCreateInfo vertexInputState = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkPipelineVertexInputStateCreateFlags)0,
         0u,      // bindingCount
-        DE_NULL, // pVertexBindingDescriptions
+        nullptr, // pVertexBindingDescriptions
         0u,      // attributeCount
-        DE_NULL, // pVertexAttributeDescriptions
+        nullptr, // pVertexAttributeDescriptions
     };
     const vk::VkPipelineInputAssemblyStateCreateInfo iaState = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkPipelineInputAssemblyStateCreateFlags)0,
         topology, // topology
         VK_FALSE, // primitiveRestartEnable
     };
     const vk::VkPipelineTessellationStateCreateInfo tessState = {
-        vk::VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO, DE_NULL,
+        vk::VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO, nullptr,
         (vk::VkPipelineTessellationStateCreateFlags)0,
         3u, // patchControlPoints
     };
@@ -901,7 +902,7 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline(vk::VkPipelineL
     const vk::VkRect2D renderArea                       = vk::makeRect2D(m_targetSize);
     const vk::VkPipelineViewportStateCreateInfo vpState = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkPipelineViewportStateCreateFlags)0,
         1u, // viewportCount
         &viewport,
@@ -910,7 +911,7 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline(vk::VkPipelineL
     };
     const vk::VkPipelineRasterizationStateCreateInfo rsState = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkPipelineRasterizationStateCreateFlags)0,
         VK_FALSE,                            // depthClipEnable
         VK_FALSE,                            // rasterizerDiscardEnable
@@ -926,7 +927,7 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline(vk::VkPipelineL
     const vk::VkSampleMask sampleMask                      = 0x01u;
     const vk::VkPipelineMultisampleStateCreateInfo msState = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkPipelineMultisampleStateCreateFlags)0,
         vk::VK_SAMPLE_COUNT_1_BIT, // rasterSamples
         VK_FALSE,                  // sampleShadingEnable
@@ -937,7 +938,7 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline(vk::VkPipelineL
     };
     const vk::VkPipelineDepthStencilStateCreateInfo dsState = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkPipelineDepthStencilStateCreateFlags)0,
         VK_FALSE,                 // depthTestEnable
         VK_FALSE,                 // depthWriteEnable
@@ -964,7 +965,7 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline(vk::VkPipelineL
     };
     const vk::VkPipelineColorBlendStateCreateInfo cbState = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkPipelineColorBlendStateCreateFlags)0,
         VK_FALSE,                 // logicOpEnable
         vk::VK_LOGIC_OP_CLEAR,    // logicOp
@@ -974,26 +975,26 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline(vk::VkPipelineL
     };
     const vk::VkGraphicsPipelineCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkPipelineCreateFlags)0,
         shaderStages.getNumStages(),                                  // stageCount
         shaderStages.getStages(),                                     // pStages
         &vertexInputState,                                            // pVertexInputState
         &iaState,                                                     // pInputAssemblyState
-        (shaderStages.hasTessellationStage() ? &tessState : DE_NULL), // pTessellationState
+        (shaderStages.hasTessellationStage() ? &tessState : nullptr), // pTessellationState
         &vpState,                                                     // pViewportState
         &rsState,                                                     // pRasterState
         &msState,                                                     // pMultisampleState
         &dsState,                                                     // pDepthStencilState
         &cbState,                                                     // pColorBlendState
-        (const vk::VkPipelineDynamicStateCreateInfo *)DE_NULL,        // pDynamicState
+        nullptr,                                                      // pDynamicState
         pipelineLayout,                                               // layout
         *m_renderPass,                                                // renderPass
         0u,                                                           // subpass
-        (vk::VkPipeline)0,                                            // basePipelineHandle
+        VK_NULL_HANDLE,                                               // basePipelineHandle
         0u,                                                           // basePipelineIndex
     };
-    return createGraphicsPipeline(m_vki, m_device, (vk::VkPipelineCache)0u, &createInfo);
+    return createGraphicsPipeline(m_vki, m_device, VK_NULL_HANDLE, &createInfo);
 }
 
 void SingleCmdRenderInstance::renderToTarget(void)
@@ -1004,7 +1005,7 @@ void SingleCmdRenderInstance::renderToTarget(void)
     };
     const vk::VkCommandBufferInheritanceInfo passCmdBufInheritInfo = {
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkRenderPass)*m_renderPass,   // renderPass
         0u,                                // subpass
         (vk::VkFramebuffer)*m_framebuffer, // framebuffer
@@ -1014,7 +1015,7 @@ void SingleCmdRenderInstance::renderToTarget(void)
     };
     const vk::VkCommandBufferBeginInfo passCmdBufBeginInfo = {
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        DE_NULL,
+        nullptr,
         vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT | vk::VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT, // flags
         &passCmdBufInheritInfo,
     };
@@ -1226,7 +1227,7 @@ public:
 #ifndef CTS_USES_VULKANSC
         std::vector<UpdateTemplateHandleSp> &updateTemplates, std::vector<RawUpdateRegistry> &updateRegistry,
 #endif
-        vk::VkPipelineLayout pipelineLayout = DE_NULL);
+        vk::VkPipelineLayout pipelineLayout = VK_NULL_HANDLE);
 
     static void writeDescriptorSet(const vk::DeviceInterface &vki, vk::VkDevice device,
                                    vk::VkDescriptorType descriptorType, ShaderInputInterface shaderInterface,
@@ -1245,7 +1246,7 @@ public:
                                                const uint32_t viewOffsetB, vk::VkDescriptorSet descriptorSet,
                                                std::vector<UpdateTemplateHandleSp> &updateTemplates,
                                                std::vector<RawUpdateRegistry> &registry, bool withPush = false,
-                                               vk::VkPipelineLayout pipelineLayout = 0);
+                                               vk::VkPipelineLayout pipelineLayout = VK_NULL_HANDLE);
 #endif
 
     void logTestPlan(void) const;
@@ -1443,13 +1444,13 @@ vk::Move<vk::VkBuffer> BufferRenderInstance::createSourceBuffer(const vk::Device
     const float postGuardValue                    = 0.75f;
     const vk::VkBufferCreateInfo bufferCreateInfo = {
         vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0u,                            // flags
         bufferSize,                    // size
         usageFlags,                    // usage
         vk::VK_SHARING_MODE_EXCLUSIVE, // sharingMode
         0u,                            // queueFamilyCount
-        DE_NULL,                       // pQueueFamilyIndices
+        nullptr,                       // pQueueFamilyIndices
     };
     vk::Move<vk::VkBuffer> buffer(vk::createBuffer(vki, device, &bufferCreateInfo));
     de::MovePtr<vk::Allocation> bufferMemory =
@@ -1565,12 +1566,12 @@ vk::Move<vk::VkPipelineLayout> BufferRenderInstance::createPipelineLayout(
 
     const vk::VkPipelineLayoutCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkPipelineLayoutCreateFlags)0,
         (uint32_t)layoutHandles.size(), // descriptorSetCount
         &layoutHandles.front(),         // pSetLayouts
         0u,                             // pushConstantRangeCount
-        DE_NULL,                        // pPushConstantRanges
+        nullptr,                        // pPushConstantRanges
     };
     return vk::createPipelineLayout(vki, device, &createInfo);
 }
@@ -1594,7 +1595,7 @@ std::vector<DescriptorSetHandleSp> BufferRenderInstance::createDescriptorSets(
     for (uint32_t setNdx = 0; setNdx < getDescriptorSetCount(descriptorSetCount); setNdx++)
     {
         vk::VkDescriptorSetLayout layout = **descriptorSetLayouts[getDescriptorSetNdx(descriptorSetCount, setNdx)];
-        const vk::VkDescriptorSetAllocateInfo allocInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL,
+        const vk::VkDescriptorSetAllocateInfo allocInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr,
                                                            descriptorPool, 1u, &layout};
 
         vk::VkBuffer bufferA = **buffers[(setNdx * getInterfaceNumResources(shaderInterface)) % buffers.size()];
@@ -1727,10 +1728,10 @@ void BufferRenderInstance::writeDescriptorSetWithTemplate(
     std::vector<vk::VkDescriptorUpdateTemplateEntry> updateEntries;
     vk::VkDescriptorUpdateTemplateCreateInfo templateCreateInfo = {
         vk::VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
         0,
         0,       // descriptorUpdateEntryCount
-        DE_NULL, // pDescriptorUpdateEntries
+        nullptr, // pDescriptorUpdateEntries
         withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR :
                    vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
         layout,
@@ -1809,7 +1810,7 @@ void BufferRenderInstance::logTestPlan(void) const
             (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
             (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)     ? "two" :
             (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY)                   ? "an array (size 2) of" :
-                                                                                     (const char *)DE_NULL)
+                                                                                     nullptr)
         << " descriptor(s) of type " << vk::getDescriptorTypeName(m_descriptorType) << "\n"
         << "Buffer view(s) have " << ((m_setViewOffset) ? ("non-") : ("")) << "zero offset.\n";
 
@@ -1864,7 +1865,7 @@ void BufferRenderInstance::writeDrawCmdBuffer(vk::VkCommandBuffer cmd) const
         {
             // \note dynamic offset replaces the view offset, i.e. it is not offset relative to the view offset
             const uint32_t numOffsets              = (!m_setDynamicOffset) ? (0u) : ((uint32_t)m_dynamicOffset.size());
-            const uint32_t *const dynamicOffsetPtr = (!m_setDynamicOffset) ? (DE_NULL) : (&m_dynamicOffset.front());
+            const uint32_t *const dynamicOffsetPtr = (!m_setDynamicOffset) ? (nullptr) : (&m_dynamicOffset.front());
 
             bindDescriptorSets(m_vki, cmd, m_stageFlags, m_existingStages, vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
                                getPipelineLayout(), 0, (int)sets.size(), &sets.front(), numOffsets, dynamicOffsetPtr,
@@ -1881,7 +1882,7 @@ void BufferRenderInstance::writeDrawCmdBuffer(vk::VkCommandBuffer cmd) const
                 const uint32_t numOffsets =
                     (!m_setDynamicOffset) ? (0u) : (getInterfaceNumResources(m_shaderInterface));
                 const uint32_t *const dynamicOffsetPtr =
-                    (!m_setDynamicOffset) ? (DE_NULL) : (&m_dynamicOffset[dynamicOffsetNdx]);
+                    (!m_setDynamicOffset) ? (nullptr) : (&m_dynamicOffset[dynamicOffsetNdx]);
                 const uint32_t descriptorSetNdx = getDescriptorSetNdx(m_descriptorSetCount, setNdx);
 
                 bindDescriptorSets(m_vki, cmd, m_stageFlags, m_existingStages, vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -1900,8 +1901,8 @@ void BufferRenderInstance::writeDrawCmdBuffer(vk::VkCommandBuffer cmd) const
     else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE)
     {
         for (uint32_t setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
-            m_vki.cmdPushDescriptorSetWithTemplateKHR(cmd, **m_updateTemplates[setNdx], getPipelineLayout(), setNdx,
-                                                      (const void *)m_updateRegistry[setNdx].getRawPointer());
+            m_vki.cmdPushDescriptorSetWithTemplate(cmd, **m_updateTemplates[setNdx], getPipelineLayout(), setNdx,
+                                                   (const void *)m_updateRegistry[setNdx].getRawPointer());
     }
     else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
     {
@@ -2005,7 +2006,7 @@ ComputeInstanceResultBuffer::ComputeInstanceResultBuffer(const vk::DeviceInterfa
                                                          vk::Allocator &allocator)
     : m_vki(vki)
     , m_device(device)
-    , m_bufferMem(DE_NULL)
+    , m_bufferMem(nullptr)
     , m_buffer(createResultBuffer(m_vki, m_device, allocator, &m_bufferMem))
     , m_bufferBarrier(createResultBufferBarrier(*m_buffer))
 {
@@ -2023,13 +2024,13 @@ vk::Move<vk::VkBuffer> ComputeInstanceResultBuffer::createResultBuffer(const vk:
 {
     const vk::VkBufferCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0u,                                     // flags
         (vk::VkDeviceSize)DATA_SIZE,            // size
         vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, // usage
         vk::VK_SHARING_MODE_EXCLUSIVE,          // sharingMode
         0u,                                     // queueFamilyCount
-        DE_NULL,                                // pQueueFamilyIndices
+        nullptr,                                // pQueueFamilyIndices
     };
     vk::Move<vk::VkBuffer> buffer(vk::createBuffer(vki, device, &createInfo));
     de::MovePtr<vk::Allocation> allocation(
@@ -2050,7 +2051,7 @@ vk::VkBufferMemoryBarrier ComputeInstanceResultBuffer::createResultBufferBarrier
 {
     const vk::VkBufferMemoryBarrier bufferBarrier = {
         vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-        DE_NULL,
+        nullptr,
         vk::VK_ACCESS_SHADER_WRITE_BIT, // srcAccessMask
         vk::VK_ACCESS_HOST_READ_BIT,    // dstAccessMask
         VK_QUEUE_FAMILY_IGNORED,        // srcQueueFamilyIndex
@@ -2104,12 +2105,12 @@ vk::Move<vk::VkPipelineLayout> ComputePipeline::createPipelineLayout(
 {
     const vk::VkPipelineLayoutCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkPipelineLayoutCreateFlags)0,
         numDescriptorSets,    // descriptorSetCount
         descriptorSetLayouts, // pSetLayouts
         0u,                   // pushConstantRangeCount
-        DE_NULL,              // pPushConstantRanges
+        nullptr,              // pPushConstantRanges
     };
     return vk::createPipelineLayout(vki, device, &createInfo);
 }
@@ -2122,23 +2123,23 @@ vk::Move<vk::VkPipeline> ComputePipeline::createPipeline(const vk::DeviceInterfa
         vk::createShaderModule(vki, device, programCollection.get("compute"), (vk::VkShaderModuleCreateFlags)0u));
     const vk::VkPipelineShaderStageCreateInfo cs = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkPipelineShaderStageCreateFlags)0,
         vk::VK_SHADER_STAGE_COMPUTE_BIT, // stage
         *computeModule,                  // shader
         "main",
-        DE_NULL, // pSpecializationInfo
+        nullptr, // pSpecializationInfo
     };
     const vk::VkComputePipelineCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-        DE_NULL,
-        0u,                // flags
-        cs,                // cs
-        layout,            // layout
-        (vk::VkPipeline)0, // basePipelineHandle
-        0u,                // basePipelineIndex
+        nullptr,
+        0u,             // flags
+        cs,             // cs
+        layout,         // layout
+        VK_NULL_HANDLE, // basePipelineHandle
+        0u,             // basePipelineIndex
     };
-    return createComputePipeline(vki, device, (vk::VkPipelineCache)0u, &createInfo);
+    return createComputePipeline(vki, device, VK_NULL_HANDLE, &createInfo);
 }
 
 class ComputeCommand
@@ -2154,8 +2155,8 @@ public:
     void submitAndWait(uint32_t queueFamilyIndex, vk::VkQueue queue
 #ifndef CTS_USES_VULKANSC
                        ,
-                       std::vector<UpdateTemplateHandleSp> *updateTemplates = DE_NULL,
-                       std::vector<RawUpdateRegistry> *updateRegistry       = DE_NULL
+                       std::vector<UpdateTemplateHandleSp> *updateTemplates = nullptr,
+                       std::vector<RawUpdateRegistry> *updateRegistry       = nullptr
 #endif
     ) const;
 #ifndef CTS_USES_VULKANSC
@@ -2215,7 +2216,7 @@ void ComputeCommand::submitAndWait(uint32_t queueFamilyIndex, vk::VkQueue queue
 ) const
 {
     const vk::VkCommandPoolCreateInfo cmdPoolCreateInfo = {
-        vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, DE_NULL,
+        vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, nullptr,
         vk::VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, // flags
         queueFamilyIndex,                         // queueFamilyIndex
     };
@@ -2223,7 +2224,7 @@ void ComputeCommand::submitAndWait(uint32_t queueFamilyIndex, vk::VkQueue queue
 
     const vk::VkCommandBufferAllocateInfo cmdBufCreateInfo = {
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        DE_NULL,
+        nullptr,
         *cmdPool,                            // cmdPool
         vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY, // level
         1u,                                  // count
@@ -2237,7 +2238,7 @@ void ComputeCommand::submitAndWait(uint32_t queueFamilyIndex, vk::VkQueue queue
 
     // normal update
 #ifndef CTS_USES_VULKANSC
-    if (updateTemplates == DE_NULL)
+    if (updateTemplates == nullptr)
 #endif
     {
         switch (m_descriptorSetCount)
@@ -2261,7 +2262,7 @@ void ComputeCommand::submitAndWait(uint32_t queueFamilyIndex, vk::VkQueue queue
                 const uint32_t numOffsets =
                     (!m_numDynamicOffsets) ? (0u) : (getInterfaceNumResources(m_shaderInterface));
                 const uint32_t *const dynamicOffsetPtr =
-                    (!m_numDynamicOffsets) ? (DE_NULL) : (&m_dynamicOffsets[dynamicOffsetNdx]);
+                    (!m_numDynamicOffsets) ? (nullptr) : (&m_dynamicOffsets[dynamicOffsetNdx]);
                 const uint32_t descriptorSetNdx = getDescriptorSetNdx(m_descriptorSetCount, setNdx);
 
                 bindDescriptorSets(m_vki, *cmd, vk::VK_SHADER_STAGE_COMPUTE_BIT, vk::VK_SHADER_STAGE_COMPUTE_BIT,
@@ -2281,21 +2282,19 @@ void ComputeCommand::submitAndWait(uint32_t queueFamilyIndex, vk::VkQueue queue
     else
     {
         for (uint32_t setNdx = 0; setNdx < (uint32_t)(*updateTemplates).size(); setNdx++)
-            m_vki.cmdPushDescriptorSetWithTemplateKHR(*cmd, **(*updateTemplates)[setNdx], m_pipelineLayout,
-                                                      getDescriptorSetNdx(m_descriptorSetCount, setNdx),
-                                                      (const void *)(*updateRegistry)[setNdx].getRawPointer());
+            m_vki.cmdPushDescriptorSetWithTemplate(*cmd, **(*updateTemplates)[setNdx], m_pipelineLayout,
+                                                   getDescriptorSetNdx(m_descriptorSetCount, setNdx),
+                                                   (const void *)(*updateRegistry)[setNdx].getRawPointer());
     }
 #endif
 
     if (m_numPreBarriers)
         m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                 (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, m_numPreBarriers,
-                                 m_preBarriers, 0, (const vk::VkImageMemoryBarrier *)DE_NULL);
+                                 (vk::VkDependencyFlags)0, 0, nullptr, m_numPreBarriers, m_preBarriers, 0, nullptr);
 
     m_vki.cmdDispatch(*cmd, m_numWorkGroups.x(), m_numWorkGroups.y(), m_numWorkGroups.z());
     m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
-                             (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, m_numPostBarriers,
-                             m_postBarriers, 0, (const vk::VkImageMemoryBarrier *)DE_NULL);
+                             (vk::VkDependencyFlags)0, 0, nullptr, m_numPostBarriers, m_postBarriers, 0, nullptr);
     endCommandBuffer(m_vki, *cmd);
 
     submitCommandsAndWait(m_vki, m_device, queue, cmd.get());
@@ -2308,7 +2307,7 @@ void ComputeCommand::submitAndWait(uint32_t queueFamilyIndex, vk::VkQueue queue,
                                    std::vector<uint32_t> &descriptorsPerSet) const
 {
     const vk::VkCommandPoolCreateInfo cmdPoolCreateInfo = {
-        vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, DE_NULL,
+        vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, nullptr,
         vk::VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, // flags
         queueFamilyIndex,                         // queueFamilyIndex
     };
@@ -2335,13 +2334,11 @@ void ComputeCommand::submitAndWait(uint32_t queueFamilyIndex, vk::VkQueue queue,
 
     if (m_numPreBarriers)
         m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                 (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, m_numPreBarriers,
-                                 m_preBarriers, 0, (const vk::VkImageMemoryBarrier *)DE_NULL);
+                                 (vk::VkDependencyFlags)0, 0, nullptr, m_numPreBarriers, m_preBarriers, 0, nullptr);
 
     m_vki.cmdDispatch(*cmd, m_numWorkGroups.x(), m_numWorkGroups.y(), m_numWorkGroups.z());
     m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
-                             (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, m_numPostBarriers,
-                             m_postBarriers, 0, (const vk::VkImageMemoryBarrier *)DE_NULL);
+                             (vk::VkDependencyFlags)0, 0, nullptr, m_numPostBarriers, m_postBarriers, 0, nullptr);
     endCommandBuffer(m_vki, *cmd);
 
     submitCommandsAndWait(m_vki, m_device, queue, cmd.get());
@@ -2369,7 +2366,7 @@ private:
     void writeDescriptorSetWithTemplate(vk::VkDescriptorSet descriptorSet, vk::VkDescriptorSetLayout layout,
                                         uint32_t setNdx, vk::VkBuffer viewA, uint32_t offsetA, vk::VkBuffer viewB,
                                         uint32_t offsetB, vk::VkBuffer resBuf, bool withPush = false,
-                                        vk::VkPipelineLayout pipelineLayout = DE_NULL);
+                                        vk::VkPipelineLayout pipelineLayout = VK_NULL_HANDLE);
 #endif
 
     tcu::TestStatus iterate(void);
@@ -2454,13 +2451,13 @@ vk::Move<vk::VkBuffer> BufferComputeInstance::createColorDataBuffer(uint32_t off
         (isUniformBuffer) ? (vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) : (vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     const vk::VkBufferCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0u,                            // flags
         (vk::VkDeviceSize)bufferSize,  // size
         usageFlags,                    // usage
         vk::VK_SHARING_MODE_EXCLUSIVE, // sharingMode
         0u,                            // queueFamilyCount
-        DE_NULL,                       // pQueueFamilyIndices
+        nullptr,                       // pQueueFamilyIndices
     };
     vk::Move<vk::VkBuffer> buffer(vk::createBuffer(m_vki, m_device, &createInfo));
     de::MovePtr<vk::Allocation> allocation(
@@ -2546,7 +2543,7 @@ vk::Move<vk::VkDescriptorSet> BufferComputeInstance::createDescriptorSet(vk::VkD
                                                                          uint32_t offsetA, vk::VkBuffer viewB,
                                                                          uint32_t offsetB, vk::VkBuffer resBuf)
 {
-    const vk::VkDescriptorSetAllocateInfo allocInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL,
+    const vk::VkDescriptorSetAllocateInfo allocInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr,
                                                        pool, 1u, &layout};
 
     vk::Move<vk::VkDescriptorSet> descriptorSet;
@@ -2667,10 +2664,10 @@ void BufferComputeInstance::writeDescriptorSetWithTemplate(vk::VkDescriptorSet d
     std::vector<vk::VkDescriptorUpdateTemplateEntry> updateEntries;
     vk::VkDescriptorUpdateTemplateCreateInfo templateCreateInfo = {
         vk::VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
         0,
         0,       // descriptorUpdateEntryCount
-        DE_NULL, // pDescriptorUpdateEntries
+        nullptr, // pDescriptorUpdateEntries
         withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR :
                    vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
         layout,
@@ -2765,7 +2762,7 @@ void BufferComputeInstance::logTestPlan(void) const
             (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
             (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)     ? "two" :
             (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY)                   ? "an array (size 2) of" :
-                                                                                     (const char *)DE_NULL)
+                                                                                     nullptr)
         << " source descriptor(s) of type " << vk::getDescriptorTypeName(m_descriptorType)
         << " and one destination VK_DESCRIPTOR_TYPE_STORAGE_BUFFER to store results to.\n"
         << "Source descriptor buffer view(s) have " << ((m_setViewOffset) ? ("non-") : ("")) << "zero offset.\n";
@@ -2890,7 +2887,7 @@ tcu::TestStatus BufferComputeInstance::testResourceAccess(void)
     {
         const vk::VkBufferMemoryBarrier barrier = {
             vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-            DE_NULL,
+            nullptr,
             vk::VK_ACCESS_HOST_WRITE_BIT,             // srcAccessMask
             inputBit,                                 // dstAccessMask
             VK_QUEUE_FAMILY_IGNORED,                  // srcQueueFamilyIndex
@@ -2903,7 +2900,7 @@ tcu::TestStatus BufferComputeInstance::testResourceAccess(void)
         bufferBarriers.push_back(barrier);
     }
 
-    const uint32_t *const dynamicOffsets                = (m_setDynamicOffset) ? (&bindTimeOffsets.front()) : (DE_NULL);
+    const uint32_t *const dynamicOffsets                = (m_setDynamicOffset) ? (&bindTimeOffsets.front()) : (nullptr);
     const uint32_t numDynamicOffsets                    = (m_setDynamicOffset) ? (numSrcBuffers) : (0);
     const vk::VkBufferMemoryBarrier *const preBarriers  = &bufferBarriers.front();
     const int numPreBarriers                            = numSrcBuffers;
@@ -2946,9 +2943,9 @@ tcu::TestStatus BufferComputeInstance::testResourceAccess(void)
             const uint32_t ndx0 = (setNdx * getInterfaceNumResources(m_shaderInterface)) % numSrcBuffers;
             const uint32_t ndx1 = (setNdx * getInterfaceNumResources(m_shaderInterface) + 1) % numSrcBuffers;
 
-            writeDescriptorSetWithTemplate(DE_NULL, layoutHandles[setNdx], setNdx, **buffers[ndx0], viewOffsets[ndx0],
-                                           **buffers[ndx1], viewOffsets[ndx1], m_result.getBuffer(), true,
-                                           pipeline.getPipelineLayout());
+            writeDescriptorSetWithTemplate(VK_NULL_HANDLE, layoutHandles[setNdx], setNdx, **buffers[ndx0],
+                                           viewOffsets[ndx0], **buffers[ndx1], viewOffsets[ndx1], m_result.getBuffer(),
+                                           true, pipeline.getPipelineLayout());
         }
         compute.submitAndWait(m_queueFamilyIndex, m_queue, &m_updateTemplates, &m_updateRegistry);
     }
@@ -2959,8 +2956,8 @@ tcu::TestStatus BufferComputeInstance::testResourceAccess(void)
             const uint32_t ndx0 = (setNdx * getInterfaceNumResources(m_shaderInterface)) % numSrcBuffers;
             const uint32_t ndx1 = (setNdx * getInterfaceNumResources(m_shaderInterface) + 1) % numSrcBuffers;
 
-            writeDescriptorSet(DE_NULL, setNdx, **buffers[ndx0], viewOffsets[ndx0], **buffers[ndx1], viewOffsets[ndx1],
-                               m_result.getBuffer());
+            writeDescriptorSet(VK_NULL_HANDLE, setNdx, **buffers[ndx0], viewOffsets[ndx0], **buffers[ndx1],
+                               viewOffsets[ndx1], m_result.getBuffer());
         }
 
         compute.submitAndWait(m_queueFamilyIndex, m_queue, m_updateBuilder, m_descriptorsPerSet);
@@ -3042,7 +3039,7 @@ std::string QuadrantRendederCase::genVertexSource(void) const
                                           ("tsc") :
                                       ((m_exitingStages & vk::VK_SHADER_STAGE_GEOMETRY_BIT) != 0u) ? ("geo") :
                                       ((m_exitingStages & vk::VK_SHADER_STAGE_FRAGMENT_BIT) != 0u) ? ("frag") :
-                                                                                                     (DE_NULL);
+                                                                                                     (nullptr);
     const char *const fragColorPrec =
         ((m_exitingStages & vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) != 0) ? "highp" : "mediump";
     const char *const versionDecl = glu::getGLSLVersionDeclaration(m_glslVersion);
@@ -3627,7 +3624,7 @@ public:
     ImageInstanceImages(const vk::DeviceInterface &vki, vk::VkDevice device, uint32_t queueFamilyIndex,
                         vk::VkQueue queue, vk::Allocator &allocator, vk::VkDescriptorType descriptorType,
                         vk::VkImageViewType viewType, int numImages, uint32_t numLevels, uint32_t baseMipLevel,
-                        uint32_t baseArraySlice);
+                        uint32_t baseArraySlice, bool computeOnly = false);
 
 private:
     static std::vector<tcu::TextureLevelPyramid> createSourceImages(int numImages, int numLevels,
@@ -3637,7 +3634,9 @@ private:
     static std::vector<ImageHandleSp> createImages(const vk::DeviceInterface &vki, vk::VkDevice device,
                                                    vk::Allocator &allocator, uint32_t queueFamilyIndex,
                                                    vk::VkQueue queue, vk::VkDescriptorType descriptorType,
-                                                   vk::VkImageViewType viewType, std::vector<AllocationSp> &imageMemory,
+                                                   vk::VkImageViewType viewType,
+                                                   vk::VkPipelineStageFlags pipelineStageFlags,
+                                                   std::vector<AllocationSp> &imageMemory,
                                                    const std::vector<tcu::TextureLevelPyramid> &sourceImages);
 
     static std::vector<ImageViewHandleSp> createImageViews(const vk::DeviceInterface &vki, vk::VkDevice device,
@@ -3660,7 +3659,8 @@ private:
 
     static void uploadImage(const vk::DeviceInterface &vki, vk::VkDevice device, uint32_t queueFamilyIndex,
                             vk::VkQueue queue, vk::Allocator &allocator, vk::VkImage image, vk::VkImageLayout layout,
-                            vk::VkImageViewType viewType, const tcu::TextureLevelPyramid &data);
+                            vk::VkPipelineStageFlags pipelineStageFlags, vk::VkImageViewType viewType,
+                            const tcu::TextureLevelPyramid &data);
 
 protected:
     enum
@@ -3669,6 +3669,7 @@ protected:
         ARRAY_SIZE = 2,
     };
 
+    const bool m_computeOnly;
     const vk::VkImageViewType m_viewType;
     const uint32_t m_baseMipLevel;
     const uint32_t m_baseArraySlice;
@@ -3683,15 +3684,18 @@ ImageInstanceImages::ImageInstanceImages(const vk::DeviceInterface &vki, vk::VkD
                                          vk::VkQueue queue, vk::Allocator &allocator,
                                          vk::VkDescriptorType descriptorType, vk::VkImageViewType viewType,
                                          int numImages, uint32_t numLevels, uint32_t baseMipLevel,
-                                         uint32_t baseArraySlice)
-    : m_viewType(viewType)
+                                         uint32_t baseArraySlice, bool computeOnly)
+    : m_computeOnly(computeOnly)
+    , m_viewType(viewType)
     , m_baseMipLevel(baseMipLevel)
     , m_baseArraySlice(baseArraySlice)
     , m_imageFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8)
     , m_sourceImage(createSourceImages(numImages, numLevels, viewType, m_imageFormat))
     , m_imageMemory()
-    , m_image(createImages(vki, device, allocator, queueFamilyIndex, queue, descriptorType, viewType, m_imageMemory,
-                           m_sourceImage))
+    , m_image(createImages(vki, device, allocator, queueFamilyIndex, queue, descriptorType, viewType,
+                           m_computeOnly ? vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT :
+                                           vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                           m_imageMemory, m_sourceImage))
     , m_imageView(createImageViews(vki, device, viewType, m_sourceImage, m_image, m_baseMipLevel, m_baseArraySlice))
 {
 }
@@ -3712,6 +3716,7 @@ std::vector<ImageHandleSp> ImageInstanceImages::createImages(const vk::DeviceInt
                                                              vk::Allocator &allocator, uint32_t queueFamilyIndex,
                                                              vk::VkQueue queue, vk::VkDescriptorType descriptorType,
                                                              vk::VkImageViewType viewType,
+                                                             vk::VkPipelineStageFlags pipelineStageFlags,
                                                              std::vector<AllocationSp> &imageMemory,
                                                              const std::vector<tcu::TextureLevelPyramid> &sourceImages)
 {
@@ -3724,7 +3729,8 @@ std::vector<ImageHandleSp> ImageInstanceImages::createImages(const vk::DeviceInt
         vk::Move<vk::VkImage> image =
             createImage(vki, device, allocator, descriptorType, viewType, sourceImages[imageNdx], &memory);
 
-        uploadImage(vki, device, queueFamilyIndex, queue, allocator, *image, layout, viewType, sourceImages[imageNdx]);
+        uploadImage(vki, device, queueFamilyIndex, queue, allocator, *image, layout, pipelineStageFlags, viewType,
+                    sourceImages[imageNdx]);
 
         imageMemory.push_back(AllocationSp(memory.release()));
         images.push_back(ImageHandleSp(new ImageHandleUp(image)));
@@ -3781,7 +3787,7 @@ vk::Move<vk::VkImage> ImageInstanceImages::createImage(const vk::DeviceInterface
     };
     const vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         isCube ? (vk::VkImageCreateFlags)vk::VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : (vk::VkImageCreateFlags)0,
         viewTypeToImageType(viewType),                   // imageType
         vk::mapTextureFormat(baseLevel.getFormat()),     // format
@@ -3793,7 +3799,7 @@ vk::Move<vk::VkImage> ImageInstanceImages::createImage(const vk::DeviceInterface
         readUsage | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT, // usage
         vk::VK_SHARING_MODE_EXCLUSIVE,                   // sharingMode
         0u,                                              // queueFamilyCount
-        DE_NULL,                                         // pQueueFamilyIndices
+        nullptr,                                         // pQueueFamilyIndices
         vk::VK_IMAGE_LAYOUT_UNDEFINED,                   // initialLayout
     };
     vk::Move<vk::VkImage> image(vk::createImage(vki, device, &createInfo));
@@ -3836,7 +3842,7 @@ vk::Move<vk::VkImageView> ImageInstanceImages::createImageView(const vk::DeviceI
     };
     const vk::VkImageViewCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkImageViewCreateFlags)0,
         image,                                       // image
         viewType,                                    // viewType
@@ -3905,8 +3911,8 @@ void ImageInstanceImages::populateSourceImage(tcu::TextureLevelPyramid *dst, vk:
 
 void ImageInstanceImages::uploadImage(const vk::DeviceInterface &vki, vk::VkDevice device, uint32_t queueFamilyIndex,
                                       vk::VkQueue queue, vk::Allocator &allocator, vk::VkImage image,
-                                      vk::VkImageLayout layout, vk::VkImageViewType viewType,
-                                      const tcu::TextureLevelPyramid &data)
+                                      vk::VkImageLayout layout, vk::VkPipelineStageFlags pipelineStageFlags,
+                                      vk::VkImageViewType viewType, const tcu::TextureLevelPyramid &data)
 {
     const uint32_t arraySize =
         (viewType == vk::VK_IMAGE_VIEW_TYPE_3D) ? (1) :
@@ -3916,13 +3922,13 @@ void ImageInstanceImages::uploadImage(const vk::DeviceInterface &vki, vk::VkDevi
     const uint32_t dataBufferSize                 = getTextureLevelPyramidDataSize(data);
     const vk::VkBufferCreateInfo bufferCreateInfo = {
         vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0u,                                   // flags
         dataBufferSize,                       // size
         vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT, // usage
         vk::VK_SHARING_MODE_EXCLUSIVE,        // sharingMode
         0u,                                   // queueFamilyCount
-        DE_NULL,                              // pQueueFamilyIndices
+        nullptr,                              // pQueueFamilyIndices
     };
 
     const vk::Unique<vk::VkBuffer> dataBuffer(vk::createBuffer(vki, device, &bufferCreateInfo));
@@ -3934,8 +3940,8 @@ void ImageInstanceImages::uploadImage(const vk::DeviceInterface &vki, vk::VkDevi
     flushAlloc(vki, device, *dataBufferMemory);
 
     // copy buffer to image
-    copyBufferToImage(vki, device, queue, queueFamilyIndex, *dataBuffer, dataBufferSize, copySlices, DE_NULL,
-                      vk::VK_IMAGE_ASPECT_COLOR_BIT, data.getNumLevels(), arraySize, image, layout);
+    copyBufferToImage(vki, device, queue, queueFamilyIndex, *dataBuffer, dataBufferSize, copySlices, nullptr,
+                      vk::VK_IMAGE_ASPECT_COLOR_BIT, data.getNumLevels(), arraySize, image, layout, pipelineStageFlags);
 }
 
 class ImageFetchInstanceImages : private ImageInstanceImages
@@ -4094,7 +4100,7 @@ private:
 #ifndef CTS_USES_VULKANSC
         std::vector<UpdateTemplateHandleSp> &updateTemplates, std::vector<RawUpdateRegistry> &updateRegistry,
 #endif
-        std::vector<uint32_t> &descriptorsPerSet, vk::VkPipelineLayout pipelineLayout = DE_NULL);
+        std::vector<uint32_t> &descriptorsPerSet, vk::VkPipelineLayout pipelineLayout = VK_NULL_HANDLE);
 
     static void writeDescriptorSet(const vk::DeviceInterface &vki, vk::VkDevice device,
                                    vk::VkDescriptorType descriptorType, ShaderInputInterface shaderInterface,
@@ -4112,7 +4118,7 @@ private:
                                                vk::VkDescriptorSet descriptorSet,
                                                std::vector<UpdateTemplateHandleSp> &updateTemplates,
                                                std::vector<RawUpdateRegistry> &registry, bool withPush = false,
-                                               vk::VkPipelineLayout pipelineLayout = 0);
+                                               vk::VkPipelineLayout pipelineLayout = VK_NULL_HANDLE);
 #endif
 
     void logTestPlan(void) const;
@@ -4266,12 +4272,12 @@ vk::Move<vk::VkPipelineLayout> ImageFetchRenderInstance::createPipelineLayout(
 
     const vk::VkPipelineLayoutCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkPipelineLayoutCreateFlags)0,
         (uint32_t)layoutHandles.size(), // descriptorSetCount
         &layoutHandles.front(),         // pSetLayouts
         0u,                             // pushConstantRangeCount
-        DE_NULL,                        // pPushConstantRanges
+        nullptr,                        // pPushConstantRanges
     };
     return vk::createPipelineLayout(vki, device, &createInfo);
 }
@@ -4307,7 +4313,7 @@ std::vector<DescriptorSetHandleSp> ImageFetchRenderInstance::createDescriptorSet
     {
         vk::VkDescriptorSetLayout layout = **descriptorSetLayouts[getDescriptorSetNdx(descriptorSetCount, setNdx)];
 
-        const vk::VkDescriptorSetAllocateInfo allocInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL,
+        const vk::VkDescriptorSetAllocateInfo allocInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr,
                                                            pool, 1u, &layout};
 
         vk::VkImageView viewA = images.getImageView(setNdx * getInterfaceNumResources(shaderInterface));
@@ -4433,10 +4439,10 @@ void ImageFetchRenderInstance::writeDescriptorSetWithTemplate(
     std::vector<vk::VkDescriptorUpdateTemplateEntry> updateEntries;
     vk::VkDescriptorUpdateTemplateCreateInfo templateCreateInfo = {
         vk::VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
         0,
         0,       // updateCount
-        DE_NULL, // pUpdates
+        nullptr, // pUpdates
         withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR :
                    vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
         layout,
@@ -4520,7 +4526,7 @@ void ImageFetchRenderInstance::logTestPlan(void) const
             (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
             (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)     ? "two" :
             (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY)                   ? "an array (size 2) of" :
-                                                                                     (const char *)DE_NULL)
+                                                                                     nullptr)
         << " descriptor(s) of type " << vk::getDescriptorTypeName(m_descriptorType) << "\n"
         << "Image view type is " << vk::getImageViewTypeName(m_viewType) << "\n";
 
@@ -4582,7 +4588,7 @@ void ImageFetchRenderInstance::writeDrawCmdBuffer(vk::VkCommandBuffer cmd) const
         case DESCRIPTOR_SET_COUNT_MULTIPLE:
         {
             bindDescriptorSets(m_vki, cmd, m_stageFlags, m_existingStages, vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
-                               getPipelineLayout(), 0, (int)sets.size(), &sets.front(), 0, DE_NULL, m_bind2);
+                               getPipelineLayout(), 0, (int)sets.size(), &sets.front(), 0, nullptr, m_bind2);
             break;
         }
         case DESCRIPTOR_SET_COUNT_MULTIPLE_DISCONTIGUOUS:
@@ -4591,7 +4597,7 @@ void ImageFetchRenderInstance::writeDrawCmdBuffer(vk::VkCommandBuffer cmd) const
             {
                 const uint32_t descriptorSetNdx = getDescriptorSetNdx(m_descriptorSetCount, setNdx);
                 bindDescriptorSets(m_vki, cmd, m_stageFlags, m_existingStages, vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                   getPipelineLayout(), descriptorSetNdx, 1, &sets[setNdx], 0, DE_NULL, m_bind2);
+                                   getPipelineLayout(), descriptorSetNdx, 1, &sets[setNdx], 0, nullptr, m_bind2);
             }
             break;
         }
@@ -4603,9 +4609,9 @@ void ImageFetchRenderInstance::writeDrawCmdBuffer(vk::VkCommandBuffer cmd) const
     else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE)
     {
         for (uint32_t setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
-            m_vki.cmdPushDescriptorSetWithTemplateKHR(cmd, **m_updateTemplates[setNdx], getPipelineLayout(),
-                                                      getDescriptorSetNdx(m_descriptorSetCount, setNdx),
-                                                      (const void *)m_updateRegistry[setNdx].getRawPointer());
+            m_vki.cmdPushDescriptorSetWithTemplate(cmd, **m_updateTemplates[setNdx], getPipelineLayout(),
+                                                   getDescriptorSetNdx(m_descriptorSetCount, setNdx),
+                                                   (const void *)m_updateRegistry[setNdx].getRawPointer());
     }
     else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
     {
@@ -4680,7 +4686,7 @@ private:
 #ifndef CTS_USES_VULKANSC
     void writeDescriptorSetWithTemplate(vk::VkDescriptorSet descriptorSet, vk::VkDescriptorSetLayout layout,
                                         uint32_t setNdx, bool withPush = false,
-                                        vk::VkPipelineLayout pipelineLayout = DE_NULL);
+                                        vk::VkPipelineLayout pipelineLayout = VK_NULL_HANDLE);
 #endif
 
     tcu::TestStatus iterate(void);
@@ -4811,7 +4817,7 @@ vk::Move<vk::VkDescriptorSet> ImageFetchComputeInstance::createDescriptorSet(vk:
                                                                              vk::VkDescriptorSetLayout layout,
                                                                              uint32_t setNdx)
 {
-    const vk::VkDescriptorSetAllocateInfo allocInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL,
+    const vk::VkDescriptorSetAllocateInfo allocInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr,
                                                        pool, 1u, &layout};
 
     vk::Move<vk::VkDescriptorSet> descriptorSet;
@@ -4934,10 +4940,10 @@ void ImageFetchComputeInstance::writeDescriptorSetWithTemplate(vk::VkDescriptorS
     std::vector<vk::VkDescriptorUpdateTemplateEntry> updateEntries;
     vk::VkDescriptorUpdateTemplateCreateInfo templateCreateInfo = {
         vk::VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
         0,
         0,       // updateCount
-        DE_NULL, // pUpdates
+        nullptr, // pUpdates
         withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR :
                    vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
         layout,
@@ -5033,7 +5039,7 @@ void ImageFetchComputeInstance::logTestPlan(void) const
             (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
             (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)     ? "two" :
             (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY)                   ? "an array (size 2) of" :
-                                                                                     (const char *)DE_NULL)
+                                                                                     nullptr)
         << " descriptor(s) of type " << vk::getDescriptorTypeName(m_descriptorType) << "\n"
         << "Image view type is " << vk::getImageViewTypeName(m_viewType) << "\n";
 
@@ -5092,9 +5098,9 @@ tcu::TestStatus ImageFetchComputeInstance::testResourceAccess(void)
 
     const ComputePipeline pipeline(m_vki, m_device, m_context.getBinaryCollection(), (int)layoutHandles.size(),
                                    &layoutHandles.front());
-    const uint32_t *const dynamicOffsets                = DE_NULL;
+    const uint32_t *const dynamicOffsets                = nullptr;
     const int numDynamicOffsets                         = 0;
-    const vk::VkBufferMemoryBarrier *const preBarriers  = DE_NULL;
+    const vk::VkBufferMemoryBarrier *const preBarriers  = nullptr;
     const int numPreBarriers                            = 0;
     const vk::VkBufferMemoryBarrier *const postBarriers = m_result.getResultReadBarrier();
     const int numPostBarriers                           = 1;
@@ -5112,14 +5118,15 @@ tcu::TestStatus ImageFetchComputeInstance::testResourceAccess(void)
     if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE)
     {
         for (uint32_t setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
-            writeDescriptorSetWithTemplate(DE_NULL, layoutHandles[setNdx], setNdx, true, pipeline.getPipelineLayout());
+            writeDescriptorSetWithTemplate(VK_NULL_HANDLE, layoutHandles[setNdx], setNdx, true,
+                                           pipeline.getPipelineLayout());
 
         compute.submitAndWait(m_queueFamilyIndex, m_queue, &m_updateTemplates, &m_updateRegistry);
     }
     else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
     {
         for (uint32_t setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
-            writeDescriptorSet(DE_NULL, setNdx);
+            writeDescriptorSet(VK_NULL_HANDLE, setNdx);
 
         compute.submitAndWait(m_queueFamilyIndex, m_queue, m_updateBuilder, m_descriptorsPerSet);
     }
@@ -5176,7 +5183,7 @@ public:
                               vk::VkQueue queue, vk::Allocator &allocator, vk::VkDescriptorType descriptorType,
                               DescriptorSetCount descriptorSetCount, ShaderInputInterface shaderInterface,
                               vk::VkImageViewType viewType, uint32_t numLevels, uint32_t baseMipLevel,
-                              uint32_t baseArraySlice, bool immutable);
+                              uint32_t baseArraySlice, bool immutable, bool computeOnly);
 
     static std::vector<tcu::Sampler> getRefSamplers(DescriptorSetCount descriptorSetCount,
                                                     ShaderInputInterface shaderInterface);
@@ -5244,10 +5251,10 @@ ImageSampleInstanceImages::ImageSampleInstanceImages(const vk::DeviceInterface &
                                                      DescriptorSetCount descriptorSetCount,
                                                      ShaderInputInterface shaderInterface, vk::VkImageViewType viewType,
                                                      uint32_t numLevels, uint32_t baseMipLevel, uint32_t baseArraySlice,
-                                                     bool immutable)
+                                                     bool immutable, bool computeOnly)
     : ImageInstanceImages(vki, device, queueFamilyIndex, queue, allocator, descriptorType, viewType,
                           getNumImages(descriptorType, descriptorSetCount, shaderInterface), numLevels, baseMipLevel,
-                          baseArraySlice)
+                          baseArraySlice, computeOnly)
     , m_descriptorType(descriptorType)
     , m_shaderInterface(shaderInterface)
     , m_isImmutable(immutable)
@@ -5586,7 +5593,7 @@ private:
 #ifndef CTS_USES_VULKANSC
         std::vector<UpdateTemplateHandleSp> &updateTemplates, std::vector<RawUpdateRegistry> &updateRegistry,
 #endif
-        std::vector<uint32_t> &descriptorsPerSet, vk::VkPipelineLayout pipelineLayout = DE_NULL);
+        std::vector<uint32_t> &descriptorsPerSet, vk::VkPipelineLayout pipelineLayout = VK_NULL_HANDLE);
 
     static void writeSamplerDescriptorSet(const vk::DeviceInterface &vki, vk::VkDevice device,
                                           ShaderInputInterface shaderInterface, bool isImmutable,
@@ -5610,7 +5617,7 @@ private:
 #ifndef CTS_USES_VULKANSC
         std::vector<UpdateTemplateHandleSp> &updateTemplates, std::vector<RawUpdateRegistry> &registry,
 #endif
-        bool withPush = false, vk::VkPipelineLayout pipelineLayout = 0);
+        bool withPush = false, vk::VkPipelineLayout pipelineLayout = VK_NULL_HANDLE);
 
     static void writeImageSamplerDescriptorSetWithTemplate(
         const vk::DeviceInterface &vki, vk::VkDevice device, DescriptorSetCount descriptorSetCount,
@@ -5619,7 +5626,7 @@ private:
 #ifndef CTS_USES_VULKANSC
         std::vector<UpdateTemplateHandleSp> &updateTemplates, std::vector<RawUpdateRegistry> &registry,
 #endif
-        bool withPush = false, vk::VkPipelineLayout pipelineLayout = 0);
+        bool withPush = false, vk::VkPipelineLayout pipelineLayout = VK_NULL_HANDLE);
 
     void logTestPlan(void) const;
     vk::VkPipelineLayout getPipelineLayout(void) const;
@@ -5677,7 +5684,8 @@ ImageSampleRenderInstance::ImageSampleRenderInstance(
 #endif
     , m_updateBuilder()
     , m_images(m_vki, m_device, m_queueFamilyIndex, m_queue, m_allocator, m_descriptorType, m_descriptorSetCount,
-               m_shaderInterface, m_viewType, m_numLevels, m_baseMipLevel, m_baseArraySlice, isImmutable)
+               m_shaderInterface, m_viewType, m_numLevels, m_baseMipLevel, m_baseArraySlice, isImmutable,
+               context.getTestContext().getCommandLine().isComputeOnly())
     , m_descriptorSetLayouts(createDescriptorSetLayouts(m_vki, m_device, m_descriptorType, m_descriptorSetCount,
                                                         m_shaderInterface, m_stageFlags, m_images, m_updateMethod))
     , m_pipelineLayout(createPipelineLayout(m_vki, m_device, m_descriptorSetLayouts))
@@ -5728,41 +5736,41 @@ std::vector<DescriptorSetLayoutHandleSp> ImageSampleRenderInstance::createDescri
             if (addSeparateImage)
                 builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, stageFlags);
             builder.addSingleSamplerBinding(descriptorType, stageFlags,
-                                            (images.isImmutable()) ? (&samplers[0]) : (DE_NULL));
+                                            (images.isImmutable()) ? (&samplers[0]) : (nullptr));
             break;
 
         case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
             if (addSeparateImage)
                 builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, stageFlags);
             builder.addSingleSamplerBinding(descriptorType, stageFlags,
-                                            (images.isImmutable()) ? (&samplers[0]) : (DE_NULL));
+                                            (images.isImmutable()) ? (&samplers[0]) : (nullptr));
             builder.addSingleSamplerBinding(descriptorType, stageFlags,
-                                            (images.isImmutable()) ? (&samplers[1]) : (DE_NULL));
+                                            (images.isImmutable()) ? (&samplers[1]) : (nullptr));
             break;
 
         case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
             builder.addSingleIndexedSamplerBinding(descriptorType, stageFlags, 0u,
-                                                   (images.isImmutable()) ? (&samplers[0]) : (DE_NULL));
+                                                   (images.isImmutable()) ? (&samplers[0]) : (nullptr));
             if (addSeparateImage)
                 builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, stageFlags, 1u);
             builder.addSingleIndexedSamplerBinding(descriptorType, stageFlags, 2u,
-                                                   (images.isImmutable()) ? (&samplers[1]) : (DE_NULL));
+                                                   (images.isImmutable()) ? (&samplers[1]) : (nullptr));
             break;
 
         case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
             if (addSeparateImage)
                 builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, stageFlags);
             builder.addSingleIndexedSamplerBinding(descriptorType, stageFlags, getArbitraryBindingIndex(0),
-                                                   (images.isImmutable()) ? (&samplers[0]) : (DE_NULL));
+                                                   (images.isImmutable()) ? (&samplers[0]) : (nullptr));
             builder.addSingleIndexedSamplerBinding(descriptorType, stageFlags, getArbitraryBindingIndex(1),
-                                                   (images.isImmutable()) ? (&samplers[1]) : (DE_NULL));
+                                                   (images.isImmutable()) ? (&samplers[1]) : (nullptr));
             break;
 
         case SHADER_INPUT_DESCRIPTOR_ARRAY:
             if (addSeparateImage)
                 builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, stageFlags);
             builder.addArraySamplerBinding(descriptorType, 2u, stageFlags,
-                                           (images.isImmutable()) ? (samplers) : (DE_NULL));
+                                           (images.isImmutable()) ? (samplers) : (nullptr));
             break;
 
         default:
@@ -5795,12 +5803,12 @@ vk::Move<vk::VkPipelineLayout> ImageSampleRenderInstance::createPipelineLayout(
 
     const vk::VkPipelineLayoutCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkPipelineLayoutCreateFlags)0,
         (uint32_t)layoutHandles.size(), // descriptorSetCount
         &layoutHandles.front(),         // pSetLayouts
         0u,                             // pushConstantRangeCount
-        DE_NULL,                        // pPushConstantRanges
+        nullptr,                        // pPushConstantRanges
     };
     return vk::createPipelineLayout(vki, device, &createInfo);
 }
@@ -5854,7 +5862,7 @@ std::vector<DescriptorSetHandleSp> ImageSampleRenderInstance::createDescriptorSe
     {
         vk::VkDescriptorSetLayout layout = **descriptorSetLayouts[getDescriptorSetNdx(descriptorSetCount, setNdx)];
 
-        const vk::VkDescriptorSetAllocateInfo allocInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL,
+        const vk::VkDescriptorSetAllocateInfo allocInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr,
                                                            pool, 1u, &layout};
 
         vk::Move<vk::VkDescriptorSet> descriptorSet;
@@ -5886,11 +5894,11 @@ std::vector<DescriptorSetHandleSp> ImageSampleRenderInstance::createDescriptorSe
         {
             if (descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER)
                 writeSamplerDescriptorSetWithTemplate(vki, device, descriptorSetCount, shaderInterface, isImmutable,
-                                                      images, DE_NULL, setNdx, layout, updateTemplates, updateRegistry,
-                                                      true, pipelineLayout);
+                                                      images, VK_NULL_HANDLE, setNdx, layout, updateTemplates,
+                                                      updateRegistry, true, pipelineLayout);
             else if (descriptorType == vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
                 writeImageSamplerDescriptorSetWithTemplate(vki, device, descriptorSetCount, shaderInterface,
-                                                           isImmutable, images, DE_NULL, setNdx, layout,
+                                                           isImmutable, images, VK_NULL_HANDLE, setNdx, layout,
                                                            updateTemplates, updateRegistry, true, pipelineLayout);
             else
                 DE_FATAL("Impossible");
@@ -6019,10 +6027,10 @@ void ImageSampleRenderInstance::writeImageSamplerDescriptorSet(const vk::DeviceI
 {
     const vk::VkSampler samplers[2] = {
         (isImmutable && updateMethod != DESCRIPTOR_UPDATE_METHOD_WITH_PUSH) ?
-            (0) :
+            VK_NULL_HANDLE :
             (images.getSampler(setNdx * getInterfaceNumResources(shaderInterface))),
         (isImmutable && updateMethod != DESCRIPTOR_UPDATE_METHOD_WITH_PUSH) ?
-            (0) :
+            VK_NULL_HANDLE :
             (images.getSampler(setNdx * getInterfaceNumResources(shaderInterface) + 1)),
     };
     const vk::VkDescriptorImageInfo imageSamplers[2] = {
@@ -6109,10 +6117,10 @@ void ImageSampleRenderInstance::writeSamplerDescriptorSetWithTemplate(
     std::vector<vk::VkDescriptorUpdateTemplateEntry> updateEntries;
     vk::VkDescriptorUpdateTemplateCreateInfo templateCreateInfo = {
         vk::VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
         0,
         0,       // updateCount
-        DE_NULL, // pUpdates
+        nullptr, // pUpdates
         withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR :
                    vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
         layout,
@@ -6197,8 +6205,10 @@ void ImageSampleRenderInstance::writeImageSamplerDescriptorSetWithTemplate(
     vk::VkPipelineLayout pipelineLayout)
 {
     const vk::VkSampler samplers[2] = {
-        (isImmutable && !withPush) ? (0) : (images.getSampler(setNdx * getInterfaceNumResources(shaderInterface))),
-        (isImmutable && !withPush) ? (0) : (images.getSampler(setNdx * getInterfaceNumResources(shaderInterface) + 1)),
+        (isImmutable && !withPush) ? VK_NULL_HANDLE :
+                                     (images.getSampler(setNdx * getInterfaceNumResources(shaderInterface))),
+        (isImmutable && !withPush) ? VK_NULL_HANDLE :
+                                     (images.getSampler(setNdx * getInterfaceNumResources(shaderInterface) + 1)),
     };
     const vk::VkDescriptorImageInfo imageSamplers[2] = {
         vk::makeDescriptorImageInfo(samplers[0],
@@ -6212,10 +6222,10 @@ void ImageSampleRenderInstance::writeImageSamplerDescriptorSetWithTemplate(
     std::vector<vk::VkDescriptorUpdateTemplateEntry> updateEntries;
     vk::VkDescriptorUpdateTemplateCreateInfo templateCreateInfo = {
         vk::VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
         0,
         0,       // updateCount
-        DE_NULL, // pUpdates
+        nullptr, // pUpdates
         withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR :
                    vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
         layout,
@@ -6301,7 +6311,7 @@ void ImageSampleRenderInstance::logTestPlan(void) const
                 (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
                 (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)     ? "two" :
                 (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY)                   ? "an array (size 2) of" :
-                                                                                         (const char *)DE_NULL)
+                                                                                         nullptr)
             << " VK_DESCRIPTOR_TYPE_SAMPLER descriptor(s) and a single texture.\n";
     }
     else if (m_descriptorType == vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
@@ -6314,7 +6324,7 @@ void ImageSampleRenderInstance::logTestPlan(void) const
                 (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
                 (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)     ? "two" :
                 (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY)                   ? "an array (size 2) of" :
-                                                                                         (const char *)DE_NULL)
+                                                                                         nullptr)
             << " VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER descriptor(s).\n";
     }
     else
@@ -6390,7 +6400,7 @@ void ImageSampleRenderInstance::writeDrawCmdBuffer(vk::VkCommandBuffer cmd) cons
         case DESCRIPTOR_SET_COUNT_MULTIPLE:
         {
             bindDescriptorSets(m_vki, cmd, m_stageFlags, m_existingStages, vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
-                               getPipelineLayout(), 0u, (int)setHandles.size(), &setHandles.front(), 0u, DE_NULL,
+                               getPipelineLayout(), 0u, (int)setHandles.size(), &setHandles.front(), 0u, nullptr,
                                m_bind2);
             break;
         }
@@ -6400,7 +6410,7 @@ void ImageSampleRenderInstance::writeDrawCmdBuffer(vk::VkCommandBuffer cmd) cons
             {
                 const uint32_t descriptorSetNdx = getDescriptorSetNdx(m_descriptorSetCount, setNdx);
                 bindDescriptorSets(m_vki, cmd, m_stageFlags, m_existingStages, vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                   getPipelineLayout(), descriptorSetNdx, 1u, &setHandles[setNdx], 0u, DE_NULL,
+                                   getPipelineLayout(), descriptorSetNdx, 1u, &setHandles[setNdx], 0u, nullptr,
                                    m_bind2);
             }
             break;
@@ -6415,9 +6425,9 @@ void ImageSampleRenderInstance::writeDrawCmdBuffer(vk::VkCommandBuffer cmd) cons
         for (uint32_t setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
         {
             const uint32_t descriptorSetNdx = getDescriptorSetNdx(m_descriptorSetCount, setNdx);
-            m_vki.cmdPushDescriptorSetWithTemplateKHR(cmd, **m_updateTemplates[setNdx], getPipelineLayout(),
-                                                      descriptorSetNdx,
-                                                      (const void *)m_updateRegistry[setNdx].getRawPointer());
+            m_vki.cmdPushDescriptorSetWithTemplate(cmd, **m_updateTemplates[setNdx], getPipelineLayout(),
+                                                   descriptorSetNdx,
+                                                   (const void *)m_updateRegistry[setNdx].getRawPointer());
         }
     }
     else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
@@ -6493,18 +6503,18 @@ private:
     vk::Move<vk::VkDescriptorSet> createDescriptorSet(vk::VkDescriptorPool pool, vk::VkDescriptorSetLayout layout,
                                                       uint32_t setNdx);
     void writeDescriptorSet(vk::VkDescriptorSet descriptorSet, vk::VkDescriptorSetLayout layout, uint32_t setNdx,
-                            vk::VkPipelineLayout pipelineLayout = DE_NULL);
+                            vk::VkPipelineLayout pipelineLayout = VK_NULL_HANDLE);
     void writeImageSamplerDescriptorSet(vk::VkDescriptorSet descriptorSet, uint32_t setNdx);
 #ifndef CTS_USES_VULKANSC
     void writeImageSamplerDescriptorSetWithTemplate(vk::VkDescriptorSet descriptorSet, vk::VkDescriptorSetLayout layout,
                                                     uint32_t setNdx, bool withPush = false,
-                                                    vk::VkPipelineLayout pipelineLayout = DE_NULL);
+                                                    vk::VkPipelineLayout pipelineLayout = VK_NULL_HANDLE);
 #endif
     void writeSamplerDescriptorSet(vk::VkDescriptorSet descriptorSet, uint32_t setNdx);
 #ifndef CTS_USES_VULKANSC
     void writeSamplerDescriptorSetWithTemplate(vk::VkDescriptorSet descriptorSet, vk::VkDescriptorSetLayout layout,
                                                uint32_t setNdx, bool withPush = false,
-                                               vk::VkPipelineLayout pipelineLayout = DE_NULL);
+                                               vk::VkPipelineLayout pipelineLayout = VK_NULL_HANDLE);
 #endif
 
     tcu::TestStatus iterate(void);
@@ -6564,7 +6574,8 @@ ImageSampleComputeInstance::ImageSampleComputeInstance(
     , m_allocator(context.getDefaultAllocator())
     , m_result(m_vki, m_device, m_allocator)
     , m_images(m_vki, m_device, m_queueFamilyIndex, m_queue, m_allocator, m_descriptorType, m_descriptorSetCount,
-               m_shaderInterface, m_viewType, m_numLevels, m_baseMipLevel, m_baseArraySlice, isImmutableSampler)
+               m_shaderInterface, m_viewType, m_numLevels, m_baseMipLevel, m_baseArraySlice, isImmutableSampler,
+               context.getTestContext().getCommandLine().isComputeOnly())
 #ifndef CTS_USES_VULKANSC
     , m_updateRegistry()
 #endif
@@ -6605,7 +6616,7 @@ vk::Move<vk::VkDescriptorSetLayout> ImageSampleComputeInstance::createDescriptor
             builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, vk::VK_SHADER_STAGE_COMPUTE_BIT,
                                             binding++);
         builder.addSingleIndexedSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding++,
-                                               (m_images.isImmutable()) ? (&samplers[0]) : (DE_NULL));
+                                               (m_images.isImmutable()) ? (&samplers[0]) : (nullptr));
         break;
 
     case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
@@ -6613,19 +6624,19 @@ vk::Move<vk::VkDescriptorSetLayout> ImageSampleComputeInstance::createDescriptor
             builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, vk::VK_SHADER_STAGE_COMPUTE_BIT,
                                             binding++);
         builder.addSingleIndexedSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding++,
-                                               (m_images.isImmutable()) ? (&samplers[0]) : (DE_NULL));
+                                               (m_images.isImmutable()) ? (&samplers[0]) : (nullptr));
         builder.addSingleIndexedSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding++,
-                                               (m_images.isImmutable()) ? (&samplers[1]) : (DE_NULL));
+                                               (m_images.isImmutable()) ? (&samplers[1]) : (nullptr));
         break;
 
     case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
         builder.addSingleIndexedSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding,
-                                               (m_images.isImmutable()) ? (&samplers[0]) : (DE_NULL));
+                                               (m_images.isImmutable()) ? (&samplers[0]) : (nullptr));
         if (m_descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER)
             builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, vk::VK_SHADER_STAGE_COMPUTE_BIT,
                                             binding + 1u);
         builder.addSingleIndexedSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding + 2u,
-                                               (m_images.isImmutable()) ? (&samplers[1]) : (DE_NULL));
+                                               (m_images.isImmutable()) ? (&samplers[1]) : (nullptr));
         break;
 
     case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
@@ -6634,10 +6645,10 @@ vk::Move<vk::VkDescriptorSetLayout> ImageSampleComputeInstance::createDescriptor
                                             binding++);
         builder.addSingleIndexedSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT,
                                                getArbitraryBindingIndex(0),
-                                               (m_images.isImmutable()) ? (&samplers[0]) : (DE_NULL));
+                                               (m_images.isImmutable()) ? (&samplers[0]) : (nullptr));
         builder.addSingleIndexedSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT,
                                                getArbitraryBindingIndex(1),
-                                               (m_images.isImmutable()) ? (&samplers[1]) : (DE_NULL));
+                                               (m_images.isImmutable()) ? (&samplers[1]) : (nullptr));
         break;
 
     case SHADER_INPUT_DESCRIPTOR_ARRAY:
@@ -6645,7 +6656,7 @@ vk::Move<vk::VkDescriptorSetLayout> ImageSampleComputeInstance::createDescriptor
             builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, vk::VK_SHADER_STAGE_COMPUTE_BIT,
                                             binding++);
         builder.addArraySamplerBinding(m_descriptorType, 2u, vk::VK_SHADER_STAGE_COMPUTE_BIT,
-                                       (m_images.isImmutable()) ? (samplers) : (DE_NULL));
+                                       (m_images.isImmutable()) ? (samplers) : (nullptr));
         break;
 
     default:
@@ -6674,7 +6685,7 @@ vk::Move<vk::VkDescriptorSet> ImageSampleComputeInstance::createDescriptorSet(vk
                                                                               vk::VkDescriptorSetLayout layout,
                                                                               uint32_t setNdx)
 {
-    const vk::VkDescriptorSetAllocateInfo allocInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL,
+    const vk::VkDescriptorSetAllocateInfo allocInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr,
                                                        pool, 1u, &layout};
 
     if (m_updateMethod != DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE &&
@@ -6839,10 +6850,10 @@ void ImageSampleComputeInstance::writeSamplerDescriptorSetWithTemplate(vk::VkDes
     };
     vk::VkDescriptorUpdateTemplateCreateInfo templateCreateInfo = {
         vk::VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
         0,
         0,       // updateCount
-        DE_NULL, // pUpdates
+        nullptr, // pUpdates
         withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR :
                    vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
         layout,
@@ -6939,10 +6950,10 @@ void ImageSampleComputeInstance::writeImageSamplerDescriptorSet(vk::VkDescriptor
         m_result.getBuffer(), 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
     const vk::VkSampler samplers[2] = {
         (m_isImmutableSampler && (m_updateMethod != DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)) ?
-            (0) :
+            VK_NULL_HANDLE :
             (m_images.getSampler(setNdx * getInterfaceNumResources(m_shaderInterface))),
         (m_isImmutableSampler && (m_updateMethod != DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)) ?
-            (0) :
+            VK_NULL_HANDLE :
             (m_images.getSampler(setNdx * getInterfaceNumResources(m_shaderInterface) + 1)),
     };
     const vk::VkDescriptorImageInfo imageSamplers[2] = {
@@ -7029,10 +7040,10 @@ void ImageSampleComputeInstance::writeImageSamplerDescriptorSetWithTemplate(vk::
         m_result.getBuffer(), 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
     const vk::VkSampler samplers[2] = {
         (m_isImmutableSampler && !withPush) ?
-            (0) :
+            VK_NULL_HANDLE :
             (m_images.getSampler(setNdx * getInterfaceNumResources(m_shaderInterface))),
         (m_isImmutableSampler && !withPush) ?
-            (0) :
+            VK_NULL_HANDLE :
             (m_images.getSampler(setNdx * getInterfaceNumResources(m_shaderInterface) + 1)),
     };
     const vk::VkDescriptorImageInfo imageSamplers[2] = {
@@ -7045,10 +7056,10 @@ void ImageSampleComputeInstance::writeImageSamplerDescriptorSetWithTemplate(vk::
     };
     vk::VkDescriptorUpdateTemplateCreateInfo templateCreateInfo = {
         vk::VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
         0,
         0,       // updateCount
-        DE_NULL, // pUpdates
+        nullptr, // pUpdates
         withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR :
                    vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
         layout,
@@ -7150,7 +7161,7 @@ void ImageSampleComputeInstance::logTestPlan(void) const
                 (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
                 (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)     ? "two" :
                 (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY)                   ? "an array (size 2) of" :
-                                                                                         (const char *)DE_NULL)
+                                                                                         nullptr)
             << " VK_DESCRIPTOR_TYPE_SAMPLER descriptor(s) and a single texture.\n";
     }
     else if (m_descriptorType == vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
@@ -7163,7 +7174,7 @@ void ImageSampleComputeInstance::logTestPlan(void) const
                 (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
                 (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)     ? "two" :
                 (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY)                   ? "an array (size 2) of" :
-                                                                                         (const char *)DE_NULL)
+                                                                                         nullptr)
             << " VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER descriptor(s).\n";
     }
     else
@@ -7236,9 +7247,9 @@ tcu::TestStatus ImageSampleComputeInstance::testResourceAccess(void)
 
     const ComputePipeline pipeline(m_vki, m_device, m_context.getBinaryCollection(), (int)layoutHandles.size(),
                                    &layoutHandles.front());
-    const uint32_t *const dynamicOffsets                = DE_NULL;
+    const uint32_t *const dynamicOffsets                = nullptr;
     const int numDynamicOffsets                         = 0;
-    const vk::VkBufferMemoryBarrier *const preBarriers  = DE_NULL;
+    const vk::VkBufferMemoryBarrier *const preBarriers  = nullptr;
     const int numPreBarriers                            = 0;
     const vk::VkBufferMemoryBarrier *const postBarriers = m_result.getResultReadBarrier();
     const int numPostBarriers                           = 1;
@@ -7256,7 +7267,7 @@ tcu::TestStatus ImageSampleComputeInstance::testResourceAccess(void)
     if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE)
     {
         for (uint32_t setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
-            writeDescriptorSet(DE_NULL, layoutHandles[getDescriptorSetNdx(m_descriptorSetCount, setNdx)], setNdx,
+            writeDescriptorSet(VK_NULL_HANDLE, layoutHandles[getDescriptorSetNdx(m_descriptorSetCount, setNdx)], setNdx,
                                pipeline.getPipelineLayout()); // descriptor set not applicable
 
         compute.submitAndWait(m_queueFamilyIndex, m_queue, &m_updateTemplates, &m_updateRegistry);
@@ -7264,7 +7275,7 @@ tcu::TestStatus ImageSampleComputeInstance::testResourceAccess(void)
     else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
     {
         for (uint32_t setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
-            writeDescriptorSet(DE_NULL, layoutHandles[getDescriptorSetNdx(m_descriptorSetCount, setNdx)], setNdx,
+            writeDescriptorSet(VK_NULL_HANDLE, layoutHandles[getDescriptorSetNdx(m_descriptorSetCount, setNdx)], setNdx,
                                pipeline.getPipelineLayout()); // descriptor set not applicable
 
         compute.submitAndWait(m_queueFamilyIndex, m_queue, m_updateBuilder, m_descriptorsPerSet);
@@ -7428,13 +7439,13 @@ std::string ImageDescriptorCase::genResourceDeclarations(vk::VkShaderStageFlagBi
         (m_viewType == vk::VK_IMAGE_VIEW_TYPE_2D || m_viewType == vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY)     ? ("2D") :
         (m_viewType == vk::VK_IMAGE_VIEW_TYPE_3D)                                                      ? ("3D") :
         (m_viewType == vk::VK_IMAGE_VIEW_TYPE_CUBE || m_viewType == vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY) ? ("Cube") :
-                                                                                                         (DE_NULL);
+                                                                                                         (nullptr);
     const std::string dimensionArray =
         (m_viewType == vk::VK_IMAGE_VIEW_TYPE_1D || m_viewType == vk::VK_IMAGE_VIEW_TYPE_1D_ARRAY)     ? ("1DArray") :
         (m_viewType == vk::VK_IMAGE_VIEW_TYPE_2D || m_viewType == vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY)     ? ("2DArray") :
         (m_viewType == vk::VK_IMAGE_VIEW_TYPE_3D)                                                      ? ("3D") :
         (m_viewType == vk::VK_IMAGE_VIEW_TYPE_CUBE || m_viewType == vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY) ? ("CubeArray") :
-                                                                                                         (DE_NULL);
+                                                                                                         (nullptr);
     const std::string dimension = isImageViewTypeArray(m_viewType) ? dimensionArray : dimensionBase;
     const uint32_t numSets      = getDescriptorSetCount(m_descriptorSetCount);
 
@@ -7735,19 +7746,19 @@ std::string ImageDescriptorCase::genResourceAccessSource(vk::VkShaderStageFlagBi
                                        (m_viewType == vk::VK_IMAGE_VIEW_TYPE_3D)         ? ("3D") :
                                        (m_viewType == vk::VK_IMAGE_VIEW_TYPE_CUBE)       ? ("Cube") :
                                        (m_viewType == vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY) ? ("CubeArray") :
-                                                                                           (DE_NULL);
+                                                                                           (nullptr);
     const char *const accessPostfixA = (m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR)                  ? ("") :
                                        (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS)    ? ("A") :
                                        (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? ("A") :
                                        (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)     ? ("A") :
                                        (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? ("[0]") :
-                                                                                              (DE_NULL);
+                                                                                              (nullptr);
     const char *const accessPostfixB = (m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR)                  ? ("") :
                                        (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS)    ? ("B") :
                                        (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? ("B") :
                                        (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)     ? ("B") :
                                        (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? ("[1]") :
-                                                                                              (DE_NULL);
+                                                                                              (nullptr);
     const uint32_t numSets           = getDescriptorSetCount(m_descriptorSetCount);
 
     std::ostringstream buf;
@@ -7888,7 +7899,7 @@ vkt::TestInstance *ImageDescriptorCase::createInstance(vkt::Context &context) co
 
     default:
         DE_FATAL("Impossible");
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -8137,13 +8148,13 @@ vk::Move<vk::VkBuffer> TexelBufferInstanceBuffers::createBuffer(const vk::Device
                                                   (vk::VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT);
     const vk::VkBufferCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0u,                            // flags
         (vk::VkDeviceSize)BUFFER_SIZE, // size
         usage,                         // usage
         vk::VK_SHARING_MODE_EXCLUSIVE, // sharingMode
         0u,                            // queueFamilyCount
-        DE_NULL,                       // pQueueFamilyIndices
+        nullptr,                       // pQueueFamilyIndices
     };
     vk::Move<vk::VkBuffer> buffer(vk::createBuffer(vki, device, &createInfo));
     de::MovePtr<vk::Allocation> allocation(
@@ -8160,7 +8171,7 @@ vk::Move<vk::VkBufferView> TexelBufferInstanceBuffers::createBufferView(const vk
 {
     const vk::VkBufferViewCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkBufferViewCreateFlags)0,
         buffer,                              // buffer
         vk::mapTextureFormat(textureFormat), // format
@@ -8177,7 +8188,7 @@ vk::VkBufferMemoryBarrier TexelBufferInstanceBuffers::createBarrier(vk::VkDescri
         (isUniformDescriptorType(descriptorType)) ? (vk::VK_ACCESS_UNIFORM_READ_BIT) : (vk::VK_ACCESS_SHADER_READ_BIT);
     const vk::VkBufferMemoryBarrier barrier = {
         vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-        DE_NULL,
+        nullptr,
         vk::VK_ACCESS_HOST_WRITE_BIT, // srcAccessMask
         inputBit,                     // dstAccessMask
         VK_QUEUE_FAMILY_IGNORED,      // srcQueueFamilyIndex
@@ -8279,7 +8290,7 @@ private:
 #ifndef CTS_USES_VULKANSC
         std::vector<UpdateTemplateHandleSp> &updateTemplates, std::vector<RawUpdateRegistry> &updateRegistry,
 #endif
-        std::vector<uint32_t> &descriptorsPerSet, vk::VkPipelineLayout pipelineLayout = DE_NULL);
+        std::vector<uint32_t> &descriptorsPerSet, vk::VkPipelineLayout pipelineLayout = VK_NULL_HANDLE);
 
     static void writeDescriptorSet(const vk::DeviceInterface &vki, vk::VkDevice device,
                                    vk::VkDescriptorType descriptorType, ShaderInputInterface shaderInterface,
@@ -8297,7 +8308,7 @@ private:
                                                vk::VkBufferView viewB, vk::VkDescriptorSet descriptorSet,
                                                std::vector<UpdateTemplateHandleSp> &updateTemplates,
                                                std::vector<RawUpdateRegistry> &registry, bool withPush = false,
-                                               vk::VkPipelineLayout pipelineLayout = 0);
+                                               vk::VkPipelineLayout pipelineLayout = VK_NULL_HANDLE);
 #endif
 
     void logTestPlan(void) const;
@@ -8445,12 +8456,12 @@ vk::Move<vk::VkPipelineLayout> TexelBufferRenderInstance::createPipelineLayout(
 
     const vk::VkPipelineLayoutCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkPipelineLayoutCreateFlags)0,
         (uint32_t)layoutHandles.size(), // descriptorSetCount
         &layoutHandles.front(),         // pSetLayouts
         0u,                             // pushConstantRangeCount
-        DE_NULL,                        // pPushConstantRanges
+        nullptr,                        // pPushConstantRanges
     };
     return vk::createPipelineLayout(vki, device, &createInfo);
 }
@@ -8486,7 +8497,7 @@ std::vector<DescriptorSetHandleSp> TexelBufferRenderInstance::createDescriptorSe
     {
         vk::VkDescriptorSetLayout layout = **descriptorSetLayouts[getDescriptorSetNdx(descriptorSetCount, setNdx)];
 
-        const vk::VkDescriptorSetAllocateInfo allocInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL,
+        const vk::VkDescriptorSetAllocateInfo allocInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr,
                                                            pool, 1u, &layout};
 
         vk::VkBufferView viewA = buffers.getBufferView(setNdx * getInterfaceNumResources(shaderInterface));
@@ -8618,10 +8629,10 @@ void TexelBufferRenderInstance::writeDescriptorSetWithTemplate(
     std::vector<vk::VkDescriptorUpdateTemplateEntry> updateEntries;
     vk::VkDescriptorUpdateTemplateCreateInfo templateCreateInfo = {
         vk::VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
         0,
         0,       // updateCount
-        DE_NULL, // pUpdates
+        nullptr, // pUpdates
         withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR :
                    vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
         layout,
@@ -8700,7 +8711,7 @@ void TexelBufferRenderInstance::logTestPlan(void) const
             (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
             (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)     ? "two" :
             (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY)                   ? "an array (size 2) of" :
-                                                                                     (const char *)DE_NULL)
+                                                                                     nullptr)
         << " descriptor(s) of type " << vk::getDescriptorTypeName(m_descriptorType) << "\n"
         << "Buffer view is created with a " << ((m_nonzeroViewOffset) ? ("non-zero") : ("zero")) << " offset.\n"
         << "Buffer format is " << vk::getFormatName(vk::mapTextureFormat(m_texelBuffers.getTextureFormat())) << ".\n";
@@ -8757,7 +8768,7 @@ void TexelBufferRenderInstance::writeDrawCmdBuffer(vk::VkCommandBuffer cmd) cons
         case DESCRIPTOR_SET_COUNT_MULTIPLE:
         {
             bindDescriptorSets(m_vki, cmd, m_stageFlags, m_existingStages, vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
-                               getPipelineLayout(), 0, (uint32_t)sets.size(), &sets.front(), 0, DE_NULL, m_bind2);
+                               getPipelineLayout(), 0, (uint32_t)sets.size(), &sets.front(), 0, nullptr, m_bind2);
             break;
         }
         case DESCRIPTOR_SET_COUNT_MULTIPLE_DISCONTIGUOUS:
@@ -8766,7 +8777,7 @@ void TexelBufferRenderInstance::writeDrawCmdBuffer(vk::VkCommandBuffer cmd) cons
             {
                 const uint32_t descriptorSetNdx = getDescriptorSetNdx(m_descriptorSetCount, setNdx);
                 bindDescriptorSets(m_vki, cmd, m_stageFlags, m_existingStages, vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                   getPipelineLayout(), descriptorSetNdx, 1, &sets[setNdx], 0, DE_NULL, m_bind2);
+                                   getPipelineLayout(), descriptorSetNdx, 1, &sets[setNdx], 0, nullptr, m_bind2);
             }
             break;
         }
@@ -8780,9 +8791,9 @@ void TexelBufferRenderInstance::writeDrawCmdBuffer(vk::VkCommandBuffer cmd) cons
         for (uint32_t setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
         {
             const uint32_t descriptorSetNdx = getDescriptorSetNdx(m_descriptorSetCount, setNdx);
-            m_vki.cmdPushDescriptorSetWithTemplateKHR(cmd, **m_updateTemplates[setNdx], getPipelineLayout(),
-                                                      descriptorSetNdx,
-                                                      (const void *)m_updateRegistry[setNdx].getRawPointer());
+            m_vki.cmdPushDescriptorSetWithTemplate(cmd, **m_updateTemplates[setNdx], getPipelineLayout(),
+                                                   descriptorSetNdx,
+                                                   (const void *)m_updateRegistry[setNdx].getRawPointer());
         }
     }
     else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
@@ -8867,7 +8878,7 @@ private:
 #ifndef CTS_USES_VULKANSC
     void writeDescriptorSetWithTemplate(vk::VkDescriptorSet descriptorSet, vk::VkDescriptorSetLayout layout,
                                         uint32_t setNdx, bool withPush = false,
-                                        vk::VkPipelineLayout pipelineLayout = DE_NULL);
+                                        vk::VkPipelineLayout pipelineLayout = VK_NULL_HANDLE);
 #endif
 
     tcu::TestStatus iterate(void);
@@ -8995,7 +9006,7 @@ vk::Move<vk::VkDescriptorSet> TexelBufferComputeInstance::createDescriptorSet(vk
                                                                               vk::VkDescriptorSetLayout layout,
                                                                               uint32_t setNdx)
 {
-    const vk::VkDescriptorSetAllocateInfo allocInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL,
+    const vk::VkDescriptorSetAllocateInfo allocInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr,
                                                        pool, 1u, &layout};
 
     vk::Move<vk::VkDescriptorSet> descriptorSet;
@@ -9109,10 +9120,10 @@ void TexelBufferComputeInstance::writeDescriptorSetWithTemplate(vk::VkDescriptor
     std::vector<vk::VkDescriptorUpdateTemplateEntry> updateEntries;
     vk::VkDescriptorUpdateTemplateCreateInfo templateCreateInfo = {
         vk::VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
         0,
         0,       // updateCount
-        DE_NULL, // pUpdates
+        nullptr, // pUpdates
         withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR :
                    vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
         layout,
@@ -9208,7 +9219,7 @@ void TexelBufferComputeInstance::logTestPlan(void) const
             (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
             (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)     ? "two" :
             (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY)                   ? "an array (size 2) of" :
-                                                                                     (const char *)DE_NULL)
+                                                                                     nullptr)
         << " descriptor(s) of type " << vk::getDescriptorTypeName(m_descriptorType) << "\n"
         << "Buffer view is created with a " << ((m_nonzeroViewOffset) ? ("non-zero") : ("zero")) << " offset.\n"
         << "Buffer format is " << vk::getFormatName(vk::mapTextureFormat(m_texelBuffers.getTextureFormat())) << ".\n";
@@ -9262,7 +9273,7 @@ tcu::TestStatus TexelBufferComputeInstance::testResourceAccess(void)
 
     const ComputePipeline pipeline(m_vki, m_device, m_context.getBinaryCollection(), (int)layoutHandles.size(),
                                    &layoutHandles.front());
-    const uint32_t *const dynamicOffsets                = DE_NULL;
+    const uint32_t *const dynamicOffsets                = nullptr;
     const int numDynamicOffsets                         = 0;
     const vk::VkBufferMemoryBarrier *const preBarriers  = m_texelBuffers.getBufferInitBarriers();
     const int numPreBarriers                            = m_texelBuffers.getNumTexelBuffers();
@@ -9282,14 +9293,15 @@ tcu::TestStatus TexelBufferComputeInstance::testResourceAccess(void)
     if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE)
     {
         for (uint32_t setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
-            writeDescriptorSetWithTemplate(DE_NULL, layoutHandles[setNdx], setNdx, true, pipeline.getPipelineLayout());
+            writeDescriptorSetWithTemplate(VK_NULL_HANDLE, layoutHandles[setNdx], setNdx, true,
+                                           pipeline.getPipelineLayout());
 
         compute.submitAndWait(m_queueFamilyIndex, m_queue, &m_updateTemplates, &m_updateRegistry);
     }
     else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
     {
         for (uint32_t setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
-            writeDescriptorSet(DE_NULL, setNdx);
+            writeDescriptorSet(VK_NULL_HANDLE, setNdx);
 
         compute.submitAndWait(m_queueFamilyIndex, m_queue, m_updateBuilder, m_descriptorsPerSet);
     }
@@ -9486,13 +9498,13 @@ std::string TexelBufferDescriptorCase::genResourceAccessSource(vk::VkShaderStage
                                        (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? ("A") :
                                        (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)     ? ("A") :
                                        (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? ("[0]") :
-                                                                                              (DE_NULL);
+                                                                                              (nullptr);
     const char *const accessPostfixB = (m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR)                  ? ("") :
                                        (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS)    ? ("B") :
                                        (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? ("B") :
                                        (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)     ? ("B") :
                                        (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? ("[1]") :
-                                                                                              (DE_NULL);
+                                                                                              (nullptr);
     const char *const fetchFunc      = (isUniformDescriptorType(m_descriptorType)) ? ("texelFetch") : ("imageLoad");
     const uint32_t numSets           = getDescriptorSetCount(m_descriptorSetCount);
 
@@ -9908,7 +9920,7 @@ tcu::TestCaseGroup *createShaderAccessTests(tcu::TestContext &testCtx)
                                     break;
 
                                 default:
-                                    createTestsFunc = DE_NULL;
+                                    createTestsFunc = nullptr;
                                     DE_FATAL("Impossible");
                                 }
 

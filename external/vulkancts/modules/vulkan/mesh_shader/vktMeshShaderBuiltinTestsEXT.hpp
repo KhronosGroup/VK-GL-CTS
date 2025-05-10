@@ -32,6 +32,7 @@ namespace vkt
 namespace MeshShader
 {
 tcu::TestCaseGroup *createMeshShaderBuiltinTestsEXT(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createMeshShaderPipelineTestsEXT(tcu::TestContext &testCtx);
 } // namespace MeshShader
 } // namespace vkt
 

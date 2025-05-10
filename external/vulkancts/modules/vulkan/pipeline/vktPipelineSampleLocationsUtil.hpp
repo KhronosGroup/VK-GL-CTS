@@ -103,7 +103,7 @@ inline vk::VkSampleLocationsInfoEXT makeSampleLocationsInfo(const MultisamplePix
 {
     const vk::VkSampleLocationsInfoEXT info = {
         vk::VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT, // VkStructureType               sType;
-        DE_NULL,                                         // const void*                   pNext;
+        nullptr,                                         // const void*                   pNext;
         pixelGrid.samplesPerPixel(),                     // VkSampleCountFlagBits         sampleLocationsPerPixel;
         vk::makeExtent2D(pixelGrid.size().x(),
                          pixelGrid.size().y()), // VkExtent2D                    sampleLocationGridSize;
@@ -115,6 +115,9 @@ inline vk::VkSampleLocationsInfoEXT makeSampleLocationsInfo(const MultisamplePix
 
 //! Fill each grid pixel with a distinct samples pattern, rounding locations based on subPixelBits
 void fillSampleLocationsRandom(MultisamplePixelGrid &grid, const uint32_t subPixelBits, const uint32_t seed = 142u);
+
+//! Fill using the standard sample locations.
+void fillSampleLocationsStd(MultisamplePixelGrid &grid);
 
 } // namespace pipeline
 } // namespace vkt

@@ -179,11 +179,11 @@ TestCase::IterateResult GLES2SharingTest::iterate(void)
     try
     {
         de::UniquePtr<eglu::NativeWindow> window(windowFactory.createWindow(
-            &m_eglTestCtx.getNativeDisplay(), *display, config, DE_NULL,
+            &m_eglTestCtx.getNativeDisplay(), *display, config, nullptr,
             eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
         eglu::UniqueSurface surface(
             egl, *display,
-            eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, *display, config, DE_NULL));
+            eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, *display, config, nullptr));
 
         m_log << tcu::TestLog::Message << "Create context A (share_context = EGL_NO_CONTEXT)"
               << tcu::TestLog::EndMessage;
@@ -217,7 +217,7 @@ TestCase::IterateResult GLES2SharingTest::iterate(void)
                 }
                 else
                 {
-                    renderResource(DE_NULL, DE_NULL);
+                    renderResource(nullptr, nullptr);
                 }
             }
 
@@ -238,7 +238,7 @@ TestCase::IterateResult GLES2SharingTest::iterate(void)
                 }
                 else
                 {
-                    renderResource(DE_NULL, DE_NULL);
+                    renderResource(nullptr, nullptr);
                 }
             }
 
@@ -426,7 +426,7 @@ void GLES2BufferSharingTest::renderResource(tcu::Surface *screen, tcu::Surface *
     GLU_CHECK_GLW_CALL(m_gl, enableVertexAttribArray(gridLocation));
 
     GLU_CHECK_GLW_CALL(m_gl, bindBuffer(GL_ARRAY_BUFFER, m_glBuffer));
-    GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(colorLocation, 1, GL_UNSIGNED_BYTE, GL_TRUE, 0, DE_NULL));
+    GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(colorLocation, 1, GL_UNSIGNED_BYTE, GL_TRUE, 0, nullptr));
     GLU_CHECK_GLW_CALL(m_gl, bindBuffer(GL_ARRAY_BUFFER, 0));
 
     GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(gridLocation, 2, GL_FLOAT, GL_FALSE, 0, &(coords[0])));
@@ -712,7 +712,7 @@ private:
 GLES2ProgramSharingTest::GLES2ProgramSharingTest(EglTestContext &eglTestCtx, const char *name, const char *desc,
                                                  const GLES2SharingTest::TestSpec &spec)
     : GLES2SharingTest(eglTestCtx, name, desc, spec)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
 }
 
@@ -883,11 +883,11 @@ void GLES2ShaderSharingTest::createResource(void)
     switch (m_shaderType)
     {
     case GL_VERTEX_SHADER:
-        GLU_CHECK_GLW_CALL(m_gl, shaderSource(m_shader, 1, &vertexShader, DE_NULL));
+        GLU_CHECK_GLW_CALL(m_gl, shaderSource(m_shader, 1, &vertexShader, nullptr));
         break;
 
     case GL_FRAGMENT_SHADER:
-        GLU_CHECK_GLW_CALL(m_gl, shaderSource(m_shader, 1, &fragmentShader, DE_NULL));
+        GLU_CHECK_GLW_CALL(m_gl, shaderSource(m_shader, 1, &fragmentShader, nullptr));
         break;
 
     default:
@@ -902,7 +902,7 @@ void GLES2ShaderSharingTest::createResource(void)
     if (!status)
     {
         char buffer[256];
-        GLU_CHECK_GLW_CALL(m_gl, getShaderInfoLog(m_shader, 256, DE_NULL, buffer));
+        GLU_CHECK_GLW_CALL(m_gl, getShaderInfoLog(m_shader, 256, nullptr, buffer));
 
         m_log << tcu::TestLog::Message << "Failed to compile shader" << tcu::TestLog::EndMessage;
 
@@ -961,13 +961,13 @@ void GLES2ShaderSharingTest::renderResource(tcu::Surface *screen, tcu::Surface *
     case GL_VERTEX_SHADER:
         otherShader = m_gl.createShader(GL_FRAGMENT_SHADER);
         GLU_CHECK_GLW_MSG(m_gl, "glCreateShader()");
-        GLU_CHECK_GLW_CALL(m_gl, shaderSource(otherShader, 1, &fragmentShader, DE_NULL));
+        GLU_CHECK_GLW_CALL(m_gl, shaderSource(otherShader, 1, &fragmentShader, nullptr));
         break;
 
     case GL_FRAGMENT_SHADER:
         otherShader = m_gl.createShader(GL_VERTEX_SHADER);
         GLU_CHECK_GLW_MSG(m_gl, "glCreateShader()");
-        GLU_CHECK_GLW_CALL(m_gl, shaderSource(otherShader, 1, &vertexShader, DE_NULL));
+        GLU_CHECK_GLW_CALL(m_gl, shaderSource(otherShader, 1, &vertexShader, nullptr));
         break;
 
     default:
@@ -982,7 +982,7 @@ void GLES2ShaderSharingTest::renderResource(tcu::Surface *screen, tcu::Surface *
     if (!status)
     {
         char buffer[256];
-        GLU_CHECK_GLW_CALL(m_gl, getShaderInfoLog(otherShader, 256, DE_NULL, buffer));
+        GLU_CHECK_GLW_CALL(m_gl, getShaderInfoLog(otherShader, 256, nullptr, buffer));
 
         m_log << tcu::TestLog::Message << "Failed to compile shader" << tcu::TestLog::EndMessage;
 
@@ -1019,7 +1019,7 @@ void GLES2ShaderSharingTest::renderResource(tcu::Surface *screen, tcu::Surface *
     if (!status)
     {
         char buffer[256];
-        GLU_CHECK_GLW_CALL(m_gl, getProgramInfoLog(program, 256, DE_NULL, buffer));
+        GLU_CHECK_GLW_CALL(m_gl, getProgramInfoLog(program, 256, nullptr, buffer));
 
         m_log << tcu::TestLog::Message << "Failed to link program" << tcu::TestLog::EndMessage;
 

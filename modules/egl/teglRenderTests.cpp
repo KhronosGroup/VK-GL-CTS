@@ -524,7 +524,7 @@ public:
     {
     }
 
-    virtual void setup(void) const = DE_NULL;
+    virtual void setup(void) const = 0;
 };
 
 typedef de::SharedPtr<Program> ProgramSp;
@@ -944,7 +944,7 @@ typedef de::SharedPtr<de::Semaphore> SemaphoreSp;
 
 struct DrawOpPacket
 {
-    DrawOpPacket(void) : drawOps(DE_NULL), numOps(0)
+    DrawOpPacket(void) : drawOps(nullptr), numOps(0)
     {
     }
 

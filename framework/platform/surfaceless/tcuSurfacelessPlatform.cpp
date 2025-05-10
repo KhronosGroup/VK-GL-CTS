@@ -81,11 +81,17 @@ using std::vector;
 #endif
 
 #if !defined(DEQP_VULKAN_LIBRARY_PATH)
-#if (DE_OS == DE_OS_ANDROID)
-#define DEQP_VULKAN_LIBRARY_PATH "libvulkan.so"
+#ifdef CTS_USES_VULKANSC
+#define DEQP_VULKAN_LIBRARY_BASENAME "libvulkansc"
 #else
-#define DEQP_VULKAN_LIBRARY_PATH "libvulkan.so.1"
+#define DEQP_VULKAN_LIBRARY_BASENAME "libvulkan"
 #endif
+#if (DE_OS == DE_OS_ANDROID)
+#define DEQP_VULKAN_LIBRARY_SUFFIX ".so"
+#else
+#define DEQP_VULKAN_LIBRARY_SUFFIX ".so.1"
+#endif
+#define DEQP_VULKAN_LIBRARY_PATH DEQP_VULKAN_LIBRARY_BASENAME DEQP_VULKAN_LIBRARY_SUFFIX
 #endif
 
 namespace tcu
@@ -97,7 +103,7 @@ class VulkanLibrary : public vk::Library
 {
 public:
     VulkanLibrary(const char *libraryPath)
-        : m_library(libraryPath != DE_NULL ? libraryPath : DEQP_VULKAN_LIBRARY_PATH)
+        : m_library(libraryPath != nullptr ? libraryPath : DEQP_VULKAN_LIBRARY_PATH)
         , m_driver(m_library)
     {
     }

@@ -11,6 +11,8 @@ set(DEQP_VK_VKSC_API_SRCS
 	vktApiVersionCheck.hpp
 	vktApiTests.cpp
 	vktApiTests.hpp
+	vktApiDebugUtilsTests.cpp
+	vktApiDebugUtilsTests.hpp
 	vktApiDeviceInitializationTests.cpp
 	vktApiDeviceInitializationTests.hpp
 	vktApiDriverPropertiesTests.cpp
@@ -62,6 +64,10 @@ set(DEQP_VK_VKSC_API_SRCS
 	vktApiMaintenance6Check.cpp
 	vktApiExtensionDuplicatesTests.cpp
 	vktApiExtensionDuplicatesTests.hpp
+	vktApiMaintenance7Tests.cpp
+	vktApiMaintenance7Tests.hpp
+	vktApiDSColorBitCopyTests.cpp
+	vktApiDSColorBitCopyTests.hpp
 	)
 
 set(DEQP_VK_API_SRCS

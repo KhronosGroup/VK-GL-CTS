@@ -34,6 +34,7 @@
 #include "vkBarrierUtil.hpp"
 
 #include "deUniquePtr.hpp"
+#include "deRandom.hpp"
 
 #include "tcuVectorUtil.hpp"
 
@@ -66,6 +67,11 @@ struct TestParams
     vk::VkAccelerationStructureBuildTypeKHR buildType; // are we making AS on CPU or GPU
     VkFormat vertexFormat;
     uint32_t testFlagMask;
+
+    uint32_t getRandomSeed() const
+    {
+        return (((buildType & 0xFF) << 24) | ((vertexFormat & 0xFF) << 16) | (testFlagMask & 0xFF));
+    }
 };
 
 class PositionFetchCase : public TestCase
@@ -172,7 +178,6 @@ void PositionFetchCase::initPrograms(vk::SourceCollections &programCollection) c
        << "#extension GL_EXT_ray_tracing_position_fetch : require\n"
        << "\n"
        << layoutDeclsStr << "\n"
-       << "layout(location=0) rayPayloadEXT int value;\n"
        << "\n"
        << "void main()\n"
        << "{\n"
@@ -237,8 +242,8 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
     auto &alloc        = m_context.getDefaultAllocator();
     const auto qIndex  = m_context.getUniversalQueueFamilyIndex();
     const auto queue   = m_context.getUniversalQueue();
-    const auto stages  = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR |
-                        VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
+    const auto stages  = (VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR |
+                         VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR);
 
     // Command pool and buffer.
     const auto cmdPool      = makeCommandPool(vkd, device, qIndex);
@@ -254,6 +259,9 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
     auto topLevelAS    = makeTopLevelAccelerationStructure();
     auto bottomLevelAS = makeBottomLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     const std::vector<tcu::Vec3> triangle = {
         tcu::Vec3(0.0f, 0.0f, 0.0f),
         tcu::Vec3(1.0f, 0.0f, 0.0f),
@@ -263,18 +271,49 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
     const VkTransformMatrixKHR notQuiteIdentityMatrix3x4 = {
         {{0.98f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.97f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.99f, 0.0f}}};
 
-    de::SharedPtr<RaytracedGeometryBase> geometry =
-        makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, m_params.vertexFormat, VK_INDEX_TYPE_NONE_KHR);
+    // The origin is at Z=1 and the direction is Z=-1, so the triangle needs to be at Z=0 to create a hit. To make
+    // things more interesting, when the vertex format has a Z component we will use 4 geometries and 4 triangles per
+    // geometry, but only 1 of them will be at Z=0. The rest will be at Z=10+N, where N is calculated based on the
+    // geometry and triangle index. To be able to store those Z values, the vertex format needs to be sfloat.
+    const auto vertexTcuFormat = mapVkFormat(m_params.vertexFormat);
+    const bool multipleTriangles =
+        ((tcu::getNumUsedChannels(vertexTcuFormat.order) >= 3) && isSfloatFormat(m_params.vertexFormat));
+    const uint32_t zOffset = 10u;
 
-    for (auto &v : triangle)
+    const auto seed = m_params.getRandomSeed();
+    de::Random rnd(seed);
+
+    uint32_t geometryCount = (multipleTriangles ? 4u : 1u);
+    uint32_t triangleCount = (multipleTriangles ? 4u : 1u);
+    uint32_t chosenGeom =
+        (multipleTriangles ? static_cast<uint32_t>(rnd.getInt(1, static_cast<int>(geometryCount) - 1)) : 0u);
+    uint32_t chosenTri =
+        (multipleTriangles ? static_cast<uint32_t>(rnd.getInt(1, static_cast<int>(triangleCount) - 1)) : 0u);
+
+    const auto getLargeZ = [&](uint32_t geomIndex, uint32_t triangleIndex) -> float
+    { return static_cast<float>((triangleCount * geomIndex + triangleIndex) + zOffset); };
+
+    for (uint32_t g = 0u; g < geometryCount; ++g)
     {
-        geometry->addVertex(v);
+        de::SharedPtr<RaytracedGeometryBase> geometry =
+            makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, m_params.vertexFormat, VK_INDEX_TYPE_NONE_KHR);
+
+        for (uint32_t t = 0u; t < triangleCount; ++t)
+        {
+            const auto z = ((g == chosenGeom && t == chosenTri) ? 0.0f : getLargeZ(g, t));
+            for (const auto &v : triangle)
+            {
+                const tcu::Vec3 finalVertex(v.x(), v.y(), z);
+                geometry->addVertex(finalVertex);
+            }
+        }
+
+        bottomLevelAS->addGeometry(geometry);
     }
 
-    bottomLevelAS->addGeometry(geometry);
     bottomLevelAS->setBuildFlags(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_KHR);
     bottomLevelAS->setBuildType(m_params.buildType);
-    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
     de::SharedPtr<BottomLevelAccelerationStructure> blasSharedPtr(bottomLevelAS.release());
 
     topLevelAS->setInstanceCount(1);
@@ -282,7 +321,7 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
     topLevelAS->addInstance(blasSharedPtr, (m_params.testFlagMask & TEST_FLAG_BIT_INSTANCE_TRANSFORM) ?
                                                notQuiteIdentityMatrix3x4 :
                                                identityMatrix3x4);
-    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     // One ray for this test
     // XXX Should it be multiple triangles and one ray per triangle for more coverage?
@@ -377,8 +416,8 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
     // Shader modules.
     auto rgenModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("rgen"), 0);
     auto missModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("miss"), 0);
-    auto ahModule   = createShaderModule(vkd, device, m_context.getBinaryCollection().get("ah"), 0);
-    auto chModule   = createShaderModule(vkd, device, m_context.getBinaryCollection().get("ch"), 0);
+    auto ahModule   = makeVkSharedPtr(createShaderModule(vkd, device, m_context.getBinaryCollection().get("ah"), 0));
+    auto chModule   = makeVkSharedPtr(createShaderModule(vkd, device, m_context.getBinaryCollection().get("ch"), 0));
 
     // Get some ray tracing properties.
     uint32_t shaderGroupHandleSize    = 0u;
@@ -396,17 +435,24 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
     de::MovePtr<BufferWithMemory> hitSBT;
     de::MovePtr<BufferWithMemory> callableSBT;
 
-    auto raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    auto missSBTRegion     = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    auto hitSBTRegion      = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    auto callableSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    auto raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    auto missSBTRegion     = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    auto hitSBTRegion      = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    auto callableSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     {
         const auto rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
         rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, rgenModule, 0);
         rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, missModule, 1);
-        rayTracingPipeline->addShader(VK_SHADER_STAGE_ANY_HIT_BIT_KHR, ahModule, 2);
-        rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, chModule, 2);
+
+        // We need one hit group for each of the geomtries.
+        for (uint32_t g = 0u; g < geometryCount; ++g)
+        {
+            const auto hitGroup = 2u + g;
+
+            rayTracingPipeline->addShader(VK_SHADER_STAGE_ANY_HIT_BIT_KHR, ahModule, hitGroup);
+            rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, chModule, hitGroup);
+        }
 
         pipeline = rayTracingPipeline->createPipeline(vkd, device, pipelineLayout.get());
 
@@ -421,9 +467,9 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
                                                           shaderGroupHandleSize, shaderGroupHandleSize);
 
         hitSBT = rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline.get(), alloc, shaderGroupHandleSize,
-                                                              shaderGroupBaseAlignment, 2, 1);
+                                                              shaderGroupBaseAlignment, 2, geometryCount);
         hitSBTRegion = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitSBT->get(), 0),
-                                                         shaderGroupHandleSize, shaderGroupHandleSize);
+                                                         shaderGroupHandleSize, shaderGroupHandleSize * geometryCount);
     }
 
     // Trace rays.

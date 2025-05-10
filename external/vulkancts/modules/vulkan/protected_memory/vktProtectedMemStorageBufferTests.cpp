@@ -126,7 +126,7 @@ void static addBufferCopyCmd(const vk::DeviceInterface &vk, vk::VkCommandBuffer 
 {
     const vk::VkBufferMemoryBarrier dstWriteStartBarrier = {
         vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType        sType
-        DE_NULL,                                     // const void*            pNext
+        nullptr,                                     // const void*            pNext
         vk::VK_ACCESS_HOST_WRITE_BIT,                // VkAccessFlags        srcAccessMask
         vk::VK_ACCESS_SHADER_WRITE_BIT,              // VkAccessFlags        dstAccessMask
         queueFamilyIndex,                            // uint32_t                srcQueueFamilyIndex
@@ -139,8 +139,7 @@ void static addBufferCopyCmd(const vk::DeviceInterface &vk, vk::VkCommandBuffer 
     vk.cmdPipelineBarrier(cmdBuffer,
                           vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, // srcStageMask
                           vk::VK_PIPELINE_STAGE_TRANSFER_BIT,    // dstStageMask
-                          (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 1, &dstWriteStartBarrier,
-                          0, (const vk::VkImageMemoryBarrier *)DE_NULL);
+                          (vk::VkDependencyFlags)0, 0, nullptr, 1, &dstWriteStartBarrier, 0, nullptr);
 
     const vk::VkBufferCopy copyRegion = {
         0,       // VkDeviceSize    srcOffset
@@ -151,7 +150,7 @@ void static addBufferCopyCmd(const vk::DeviceInterface &vk, vk::VkCommandBuffer 
 
     const vk::VkBufferMemoryBarrier dstWriteEndBarrier = {
         vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType        sType
-        DE_NULL,                                     // const void*            pNext
+        nullptr,                                     // const void*            pNext
         vk::VK_ACCESS_SHADER_WRITE_BIT,              // VkAccessFlags        srcAccessMask
         vk::VK_ACCESS_SHADER_READ_BIT,               // VkAccessFlags        dstAccessMask
         queueFamilyIndex,                            // uint32_t                srcQueueFamilyIndex
@@ -165,8 +164,7 @@ void static addBufferCopyCmd(const vk::DeviceInterface &vk, vk::VkCommandBuffer 
                           vk::VK_PIPELINE_STAGE_TRANSFER_BIT, // srcStageMask
                           dstFragment ? vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT :
                                         vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, // dstStageMask
-                          (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 1, &dstWriteEndBarrier, 0,
-                          (const vk::VkImageMemoryBarrier *)DE_NULL);
+                          (vk::VkDependencyFlags)0, 0, nullptr, 1, &dstWriteEndBarrier, 0, nullptr);
 }
 
 ProtectionMode getProtectionMode(const vk::VkPipelineCreateFlags flags)
@@ -488,7 +486,7 @@ tcu::TestStatus StorageBufferTestInstance<T>::executeFragmentTest(void)
     // Start image barrier
     {
         const vk::VkImageMemoryBarrier startImgBarrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // sType
-                                                          DE_NULL,                                      // pNext
+                                                          nullptr,                                      // pNext
                                                           0,                                            // srcAccessMask
                                                           vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // dstAccessMask
                                                           vk::VK_IMAGE_LAYOUT_UNDEFINED,                // oldLayout
@@ -507,22 +505,21 @@ tcu::TestStatus StorageBufferTestInstance<T>::executeFragmentTest(void)
         vk.cmdPipelineBarrier(*cmdBuffer,
                               vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,             // srcStageMask
                               vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // dstStageMask
-                              (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                              (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &startImgBarrier);
+                              (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &startImgBarrier);
     }
 
     beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, vk::makeRect2D(0, 0, RENDER_WIDTH, RENDER_HEIGHT),
                     tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f));
     vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
     vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &*descriptorSet,
-                             0u, DE_NULL);
+                             0u, nullptr);
 
     vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
     endRenderPass(vk, *cmdBuffer);
 
     {
         const vk::VkImageMemoryBarrier endImgBarrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // sType
-                                                        DE_NULL,                                      // pNext
+                                                        nullptr,                                      // pNext
                                                         vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // srcAccessMask
                                                         vk::VK_ACCESS_SHADER_READ_BIT,                // dstAccessMask
                                                         vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // oldLayout
@@ -540,8 +537,7 @@ tcu::TestStatus StorageBufferTestInstance<T>::executeFragmentTest(void)
         vk.cmdPipelineBarrier(*cmdBuffer,
                               vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
                               vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,            // dstStageMask
-                              (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                              (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &endImgBarrier);
+                              (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &endImgBarrier);
     }
 
     endCommandBuffer(vk, *cmdBuffer);
@@ -657,7 +653,7 @@ tcu::TestStatus StorageBufferTestInstance<T>::executeComputeTest(void)
 
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *SSBOPipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                 &*descriptorSet, 0u, DE_NULL);
+                                 &*descriptorSet, 0u, nullptr);
 
         vk.cmdDispatch(*cmdBuffer, dispatchCount, 1u, 1u);
 

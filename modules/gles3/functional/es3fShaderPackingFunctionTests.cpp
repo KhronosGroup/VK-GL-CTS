@@ -91,7 +91,7 @@ ShaderPackingFunctionCase::ShaderPackingFunctionCase(Context &context, const cha
                                                      glu::ShaderType shaderType)
     : TestCase(context, name, description)
     , m_shaderType(shaderType)
-    , m_executor(DE_NULL)
+    , m_executor(nullptr)
 {
     m_spec.version = glu::GLSL_VERSION_300_ES;
 }
@@ -115,7 +115,7 @@ void ShaderPackingFunctionCase::init(void)
 void ShaderPackingFunctionCase::deinit(void)
 {
     delete m_executor;
-    m_executor = DE_NULL;
+    m_executor = nullptr;
 }
 
 // Test cases

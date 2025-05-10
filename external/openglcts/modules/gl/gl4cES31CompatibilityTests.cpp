@@ -45,13 +45,15 @@ gl4cts::es31compatibility::Tests::Tests(deqp::Context &context)
 void gl4cts::es31compatibility::Tests::init()
 {
     /* New tests. */
-    addChild(new gl4cts::es31compatibility::ShaderCompilationCompatibilityTests(m_context));
-    addChild(new gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest(m_context));
+    tcu::TestCaseGroup *newCasesGroup = new tcu::TestCaseGroup(m_testCtx, "new_cases", "");
+    newCasesGroup->addChild(new gl4cts::es31compatibility::ShaderCompilationCompatibilityTests(m_context));
+    newCasesGroup->addChild(new gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest(m_context));
+    addChild(newCasesGroup);
 
     /* Ported tests. */
-    addChild(new gl4cts::es31compatibility::SampleVariablesTests(m_context, glu::GLSL_VERSION_310_ES));
-    addChild(new gl4cts::es31compatibility::ShaderImageLoadStoreTests(m_context));
-    addChild(new gl4cts::es31compatibility::ShaderStorageBufferObjectTests(m_context));
+    addChild(new deqp::SampleVariablesTests(m_context, glu::GLSL_VERSION_310_ES));
+    addChild(new glcts::ShaderImageLoadStoreTests(m_context));
+    addChild(new glcts::ShaderStorageBufferObjectTests(m_context));
 }
 
 /******************************** Shader Compilation Compatibility Tests Implementation   ********************************/
@@ -134,7 +136,7 @@ tcu::TestNode::IterateResult gl4cts::es31compatibility::ShaderCompilationCompati
                         {
                             memset(log, 0, log_size);
 
-                            gl.getShaderInfoLog(shader, log_size, DE_NULL, log);
+                            gl.getShaderInfoLog(shader, log_size, nullptr, log);
 
                             /* Logging. */
                             m_context.getTestContext().getLog()
@@ -383,7 +385,7 @@ bool gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::createProgram
 
         for (glw::GLuint i = 0; i < shader_count; ++i)
         {
-            if (DE_NULL != shader[i].source)
+            if (nullptr != shader[i].source)
             {
                 shader[i].id = gl.createShader(shader[i].type);
 
@@ -422,7 +424,7 @@ bool gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::createProgram
                         {
                             memset(log, 0, log_size);
 
-                            gl.getShaderInfoLog(shader[i].id, log_size, DE_NULL, log);
+                            gl.getShaderInfoLog(shader[i].id, log_size, nullptr, log);
 
                             m_context.getTestContext().getLog()
                                 << tcu::TestLog::Message << "Compilation of shader has failed.\nShader source:\n"
@@ -478,7 +480,7 @@ bool gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::createProgram
                 {
                     memset(log, 0, log_size);
 
-                    gl.getProgramInfoLog(m_po_id, log_size, DE_NULL, log);
+                    gl.getProgramInfoLog(m_po_id, log_size, nullptr, log);
 
                     m_context.getTestContext().getLog()
                         << tcu::TestLog::Message << "Linkage of shader program has failed.\nLinkage log:\n"
@@ -594,12 +596,6 @@ bool gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::test()
     /* Shortcut for GL functionality. */
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-    /* Make sure objects are cleaned. */
-    if (m_fbo_id || m_rbo_id || m_vao_id)
-    {
-        cleanFramebufferAndVertexArrayObject();
-    }
-
     /* Drawing quad which shall output result. */
     gl.clear(GL_COLOR_BUFFER_BIT);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glClear() call failed.");
@@ -704,9 +700,11 @@ const glw::GLchar *gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest:
     "\n"
     "void main()\n"
     "{\n"
-    "    TTYPE a = LEFT;\n"
-    "    TTYPE b = RIGHT;\n"
-    "    BTYPE c = BDATA && BTYPE(vout < 4.0);\n    /* Making sure that expression is not compile time constant. */"
+    "    TTYPE a  = LEFT;\n"
+    "    TTYPE b  = RIGHT;\n"
+    "    BTYPE v1 = BDATA;\n"
+    "    BTYPE v2 = BTYPE(PARAMS);\n"
+    "    BTYPE c  = BTYPE(OPERATION);\n"
     "\n"
     "    TTYPE mixed = mix(a, b, c);\n"
     "\n"
@@ -729,7 +727,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT        -1\n"
           "#define RIGHT       -2\n"
           "#define BDATA        true\n"
-          "#define REFERENCE   -2\n",
+          "#define REFERENCE   -2\n"
+          "#define OPERATION    v1 && v2\n"
+          "#define PARAMS       vout < 4.0\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -738,7 +738,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         1u\n"
           "#define RIGHT        2u\n"
           "#define BDATA        true\n"
-          "#define REFERENCE    2u\n",
+          "#define REFERENCE    2u\n"
+          "#define OPERATION    v1 && v2\n"
+          "#define PARAMS       vout < 4.0\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -747,7 +749,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT        -1\n"
           "#define RIGHT       -2\n"
           "#define BDATA        true\n"
-          "#define REFERENCE   -2\n",
+          "#define REFERENCE   -2\n"
+          "#define OPERATION    v1 && v2\n"
+          "#define PARAMS       vout < 4.0\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -756,7 +760,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         1u\n"
           "#define RIGHT        2u\n"
           "#define BDATA        true\n"
-          "#define REFERENCE    2u\n",
+          "#define REFERENCE    2u\n"
+          "#define OPERATION    v1 && v2\n"
+          "#define PARAMS       vout < 4.0\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -765,7 +771,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT        -1\n"
           "#define RIGHT       -2\n"
           "#define BDATA        true\n"
-          "#define REFERENCE   -2\n",
+          "#define REFERENCE   -2\n"
+          "#define OPERATION    v1 && v2\n"
+          "#define PARAMS       vout < 4.0\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -774,7 +782,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         1u\n"
           "#define RIGHT        2u\n"
           "#define BDATA        true\n"
-          "#define REFERENCE    2u\n",
+          "#define REFERENCE    2u\n"
+          "#define OPERATION    v1 && v2\n"
+          "#define PARAMS       vout < 4.0\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -783,7 +793,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         false\n"
           "#define RIGHT        true\n"
           "#define BDATA        true\n"
-          "#define REFERENCE    true\n",
+          "#define REFERENCE    true\n"
+          "#define OPERATION    v1 && v2\n"
+          "#define PARAMS       vout < 4.0\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -792,7 +804,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         ivec2(-1, -2)\n"
           "#define RIGHT        ivec2(-3, -4)\n"
           "#define BDATA        bvec2(true, false)\n"
-          "#define REFERENCE    ivec2(-3, -2)\n",
+          "#define REFERENCE    ivec2(-3, -2)\n"
+          "#define OPERATION    v1.x && v2.x, v1.y && v2.y\n"
+          "#define PARAMS       vout < 4.0, true\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -801,7 +815,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         uvec2(1, 2)\n"
           "#define RIGHT        uvec2(3, 4)\n"
           "#define BDATA        bvec2(true, false)\n"
-          "#define REFERENCE    uvec2(3, 2)\n",
+          "#define REFERENCE    uvec2(3, 2)\n"
+          "#define OPERATION    v1.x && v2.x, v1.y && v2.y\n"
+          "#define PARAMS       vout < 4.0, true\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -810,7 +826,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         ivec2(-1, -2)\n"
           "#define RIGHT        ivec2(-3, -4)\n"
           "#define BDATA        bvec2(true, false)\n"
-          "#define REFERENCE    ivec2(-3, -2)\n",
+          "#define REFERENCE    ivec2(-3, -2)\n"
+          "#define OPERATION    v1.x && v2.x, v1.y && v2.y\n"
+          "#define PARAMS       vout < 4.0, true\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -819,7 +837,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         uvec2(1, 2)\n"
           "#define RIGHT        uvec2(3, 4)\n"
           "#define BDATA        bvec2(true, false)\n"
-          "#define REFERENCE    uvec2(3, 2)\n",
+          "#define REFERENCE    uvec2(3, 2)\n"
+          "#define OPERATION    v1.x && v2.x, v1.y && v2.y\n"
+          "#define PARAMS       vout < 4.0, true\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -828,7 +848,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         ivec2(-1, -2)\n"
           "#define RIGHT        ivec2(-3, -4)\n"
           "#define BDATA        bvec2(true, false)\n"
-          "#define REFERENCE    ivec2(-3, -2)\n",
+          "#define REFERENCE    ivec2(-3, -2)\n"
+          "#define OPERATION    v1.x && v2.x, v1.y && v2.y\n"
+          "#define PARAMS       vout < 4.0, true\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -837,7 +859,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         uvec2(1, 2)\n"
           "#define RIGHT        uvec2(3, 4)\n"
           "#define BDATA        bvec2(true, false)\n"
-          "#define REFERENCE    uvec2(3, 2)\n",
+          "#define REFERENCE    uvec2(3, 2)\n"
+          "#define OPERATION    v1.x && v2.x, v1.y && v2.y\n"
+          "#define PARAMS       vout < 4.0, true\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -846,7 +870,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         bvec2(true,  true)\n"
           "#define RIGHT        bvec2(false, false)\n"
           "#define BDATA        bvec2(true,  false)\n"
-          "#define REFERENCE    bvec2(false, true)\n",
+          "#define REFERENCE    bvec2(false, true)\n"
+          "#define OPERATION    v1.x && v2.x, v1.y && v2.y\n"
+          "#define PARAMS       vout < 4.0, true\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -855,7 +881,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         ivec3(-1, -2, -3)\n"
           "#define RIGHT        ivec3(-4, -5, -6)\n"
           "#define BDATA        bvec3(true, false, true)\n"
-          "#define REFERENCE    ivec3(-4, -2, -6)\n",
+          "#define REFERENCE    ivec3(-4, -2, -6)\n"
+          "#define OPERATION    v1.x && v2.x, v1.y && v2.y, v1.z && v2.z\n"
+          "#define PARAMS       vout < 4.0, true, true\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -864,7 +892,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         uvec3(1, 2, 3)\n"
           "#define RIGHT        uvec3(4, 5, 6)\n"
           "#define BDATA        bvec3(true, false, true)\n"
-          "#define REFERENCE    uvec3(4, 2, 6)\n",
+          "#define REFERENCE    uvec3(4, 2, 6)\n"
+          "#define OPERATION    v1.x && v2.x, v1.y && v2.y, v1.z && v2.z\n"
+          "#define PARAMS       vout < 4.0, true, true\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -873,7 +903,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         ivec3(-1, -2, -3)\n"
           "#define RIGHT        ivec3(-4, -5, -6)\n"
           "#define BDATA        bvec3(true, false, true)\n"
-          "#define REFERENCE    ivec3(-4, -2, -6)\n",
+          "#define REFERENCE    ivec3(-4, -2, -6)\n"
+          "#define OPERATION    v1.x && v2.x, v1.y && v2.y, v1.z && v2.z\n"
+          "#define PARAMS       vout < 4.0, true, true\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -882,7 +914,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         uvec3(1, 2, 3)\n"
           "#define RIGHT        uvec3(4, 5, 6)\n"
           "#define BDATA        bvec3(true, false, true)\n"
-          "#define REFERENCE    uvec3(4, 2, 6)\n",
+          "#define REFERENCE    uvec3(4, 2, 6)\n"
+          "#define OPERATION    v1.x && v2.x, v1.y && v2.y, v1.z && v2.z\n"
+          "#define PARAMS       vout < 4.0, true, true\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -891,7 +925,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         ivec3(-1, -2, -3)\n"
           "#define RIGHT        ivec3(-4, -5, -6)\n"
           "#define BDATA        bvec3(true, false, true)\n"
-          "#define REFERENCE    ivec3(-4, -2, -6)\n",
+          "#define REFERENCE    ivec3(-4, -2, -6)\n"
+          "#define OPERATION    v1.x && v2.x, v1.y && v2.y, v1.z && v2.z\n"
+          "#define PARAMS       vout < 4.0, true, true\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -900,7 +936,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         uvec3(1, 2, 3)\n"
           "#define RIGHT        uvec3(4, 5, 6)\n"
           "#define BDATA        bvec3(true, false, true)\n"
-          "#define REFERENCE    uvec3(4, 2, 6)\n",
+          "#define REFERENCE    uvec3(4, 2, 6)\n"
+          "#define OPERATION    v1.x && v2.x, v1.y && v2.y, v1.z && v2.z\n"
+          "#define PARAMS       vout < 4.0, true, true\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -909,7 +947,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         bvec3(true,  true, true)\n"
           "#define RIGHT        bvec3(false, false, false)\n"
           "#define BDATA        bvec3(true,  false, true)\n"
-          "#define REFERENCE    bvec3(false, true, false)\n",
+          "#define REFERENCE    bvec3(false, true, false)\n"
+          "#define OPERATION    v1.x && v2.x, v1.y && v2.y, v1.z && v2.z\n"
+          "#define PARAMS       vout < 4.0, true, true\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -918,7 +958,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         ivec4(-1, -2, -3, -4)\n"
           "#define RIGHT        ivec4(-5, -6, -7, -8)\n"
           "#define BDATA        bvec4(true, false, true, false)\n"
-          "#define REFERENCE    ivec4(-5, -2, -7, -4)\n",
+          "#define REFERENCE    ivec4(-5, -2, -7, -4)\n"
+          "#define OPERATION    v1.x && v2.x, v1.y && v2.y, v1.z && v2.z, v1.w && v2.w\n"
+          "#define PARAMS       vout < 4.0, true, true, true\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -927,7 +969,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         uvec4(1, 2, 3, 4)\n"
           "#define RIGHT        uvec4(5, 6, 7, 8)\n"
           "#define BDATA        bvec4(true, false, true, false)\n"
-          "#define REFERENCE    uvec4(5, 2, 7, 4)\n",
+          "#define REFERENCE    uvec4(5, 2, 7, 4)\n"
+          "#define OPERATION    v1.x && v2.x, v1.y && v2.y, v1.z && v2.z, v1.w && v2.w\n"
+          "#define PARAMS       vout < 4.0, true, true, true\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -936,7 +980,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         ivec4(-1, -2, -3, -4)\n"
           "#define RIGHT        ivec4(-5, -6, -7, -8)\n"
           "#define BDATA        bvec4(true, false, true, false)\n"
-          "#define REFERENCE    ivec4(-5, -2, -7, -4)\n",
+          "#define REFERENCE    ivec4(-5, -2, -7, -4)\n"
+          "#define OPERATION    v1.x && v2.x, v1.y && v2.y, v1.z && v2.z, v1.w && v2.w\n"
+          "#define PARAMS       vout < 4.0, true, true, true\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -945,7 +991,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         uvec4(1, 2, 3, 4)\n"
           "#define RIGHT        uvec4(5, 6, 7, 8)\n"
           "#define BDATA        bvec4(true, false, true, false)\n"
-          "#define REFERENCE    uvec4(5, 2, 7, 4)\n",
+          "#define REFERENCE    uvec4(5, 2, 7, 4)\n"
+          "#define OPERATION    v1.x && v2.x, v1.y && v2.y, v1.z && v2.z, v1.w && v2.w\n"
+          "#define PARAMS       vout < 4.0, true, true, true\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -954,7 +1002,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         ivec4(-1, -2, -3, -4)\n"
           "#define RIGHT        ivec4(-5, -6, -7, -8)\n"
           "#define BDATA        bvec4(true, false, true, false)\n"
-          "#define REFERENCE    ivec4(-5, -2, -7, -4)\n",
+          "#define REFERENCE    ivec4(-5, -2, -7, -4)\n"
+          "#define OPERATION    v1.x && v2.x, v1.y && v2.y, v1.z && v2.z, v1.w && v2.w\n"
+          "#define PARAMS       vout < 4.0, true, true, true\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -963,7 +1013,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         uvec4(1, 2, 3, 4)\n"
           "#define RIGHT        uvec4(5, 6, 7, 8)\n"
           "#define BDATA        bvec4(true, false, true, false)\n"
-          "#define REFERENCE    uvec4(5, 2, 7, 4)\n",
+          "#define REFERENCE    uvec4(5, 2, 7, 4)\n"
+          "#define OPERATION    v1.x && v2.x, v1.y && v2.y, v1.z && v2.z, v1.w && v2.w\n"
+          "#define PARAMS       vout < 4.0, true, true, true\n",
           s_fragment_shader_body}},
         {{s_shader_version, "", s_vertex_shader_body},
          {s_shader_version,
@@ -972,7 +1024,9 @@ const struct gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::Shade
           "#define LEFT         bvec4(true,  true,  true,  true)\n"
           "#define RIGHT        bvec4(false, false, false, false)\n"
           "#define BDATA        bvec4(true,  false, true,  false)\n"
-          "#define REFERENCE    bvec4(false, true,  false, true)\n",
+          "#define REFERENCE    bvec4(false, true,  false, true)\n"
+          "#define OPERATION    v1.x && v2.x, v1.y && v2.y, v1.z && v2.z, v1.w && v2.w\n"
+          "#define PARAMS       vout < 4.0, true, true, true\n",
           s_fragment_shader_body}}};
 
 const glw::GLsizei gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::s_shaders_count =

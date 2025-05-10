@@ -382,7 +382,7 @@ inline const uint32_t *shader_cast(const _t *ptr)
 template <typename input_container_t, typename handle_t = typename input_container_t::value_type,
           typename move_t = Move<handle_t>, typename deleter_t = Deleter<handle_t>, typename output_t = vector<move_t>>
 output_t wrapHandles(const DeviceInterface &vk, VkDevice device, const input_container_t &input,
-                     const VkAllocationCallbacks *allocator = DE_NULL)
+                     const VkAllocationCallbacks *allocator = nullptr)
 {
     using ::std::begin;
     using ::std::end;
@@ -419,10 +419,10 @@ Move<VkPipelineCache> createPipelineCache(const DeviceInterface &vk, VkDevice de
 
     static constexpr auto cacheInfo = VkPipelineCacheCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, //sType
-        DE_NULL,                                      //pNext
+        nullptr,                                      //pNext
         VkPipelineCacheCreateFlags{},                 //flags
         uintptr_t{0},                                 //initialDataSize
-        DE_NULL                                       //pInitialData
+        nullptr                                       //pInitialData
     };
 
     return createPipelineCache(vk, device, &cacheInfo);
@@ -436,12 +436,12 @@ Move<VkPipelineLayout> createPipelineLayout(const DeviceInterface &vk, VkDevice 
 {
     const auto layoutCreateInfo = VkPipelineLayoutCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         VkPipelineLayoutCreateFlags{},                 // flags
         static_cast<uint32_t>(setLayouts.size()),      // setLayoutCount
         setLayouts.data(),                             // pSetLayouts
         uint32_t{0u},                                  // pushConstantRangeCount
-        DE_NULL,                                       // pPushConstantRanges
+        nullptr,                                       // pPushConstantRanges
     };
 
     return createPipelineLayout(vk, device, &layoutCreateInfo);
@@ -454,12 +454,12 @@ Move<VkPipelineLayout> createPipelineLayout(const DeviceInterface &vk, VkDevice 
 {
     static constexpr auto layoutCreateInfo = VkPipelineLayoutCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         VkPipelineLayoutCreateFlags{},                 // flags
         uint32_t{0u},                                  // setLayoutCount
-        DE_NULL,                                       // pSetLayouts
+        nullptr,                                       // pSetLayouts
         uint32_t{0u},                                  // pushConstantRangeCount
-        DE_NULL,                                       // pPushConstantRanges
+        nullptr,                                       // pPushConstantRanges
     };
 
     return createPipelineLayout(vk, device, &layoutCreateInfo);
@@ -479,7 +479,7 @@ vector<UniqueShaderModule> createShaderModules(const DeviceInterface &vk, VkDevi
         const auto &binary    = collection.get(name);
         const auto createInfo = VkShaderModuleCreateInfo{
             VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, // sType
-            DE_NULL,                                     // pNext
+            nullptr,                                     // pNext
             VkShaderModuleCreateFlags{},                 // flags
             binary.getSize(),                            // codeSize
             shader_cast(binary.getBinary())              // pCode
@@ -508,12 +508,12 @@ vector<VkPipelineShaderStageCreateInfo> createShaderStages(const vector<Move<VkS
     {
         const auto stageInfo = VkPipelineShaderStageCreateInfo{
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // sType
-            DE_NULL,                                             // pNext
+            nullptr,                                             // pNext
             VkPipelineShaderStageCreateFlags{},                  // flags
             stages[i++],                                         // stage
             *module,                                             // module
             "main",                                              // pName
-            DE_NULL                                              // pSpecializationInfo
+            nullptr                                              // pSpecializationInfo
         };
 
         output.push_back(stageInfo);
@@ -551,7 +551,7 @@ VkGraphicsPipelineCreateInfo getPipelineCreateInfoCommon()
 
     static constexpr auto VERTEX_INPUT_STATE = VkPipelineVertexInputStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // sType
-        DE_NULL,                                                   // pNext
+        nullptr,                                                   // pNext
         VkPipelineVertexInputStateCreateFlags{},                   // flags
         uint32_t{1u},                                              // vertexBindingDescriptionCount
         &VERTEX_BINDING,                                           // pVertexBindingDescriptions
@@ -561,7 +561,7 @@ VkGraphicsPipelineCreateInfo getPipelineCreateInfoCommon()
 
     static constexpr auto IA_STATE = VkPipelineInputAssemblyStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // sType
-        DE_NULL,                                                     // pNext
+        nullptr,                                                     // pNext
         VkPipelineInputAssemblyStateCreateFlags{},                   // flags
         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,                         // topology
         VK_TRUE                                                      // primitiveRestartEnable
@@ -569,7 +569,7 @@ VkGraphicsPipelineCreateInfo getPipelineCreateInfoCommon()
 
     static constexpr auto TESSALATION_STATE = VkPipelineTessellationStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_DOMAIN_ORIGIN_STATE_CREATE_INFO, // sType
-        DE_NULL,                                                                 // pNext
+        nullptr,                                                                 // pNext
         VkPipelineTessellationStateCreateFlags{},                                // flags
         uint32_t{0u}                                                             // patchControlPoints
     };
@@ -590,7 +590,7 @@ VkGraphicsPipelineCreateInfo getPipelineCreateInfoCommon()
 
     static constexpr auto VIEWPORT_STATE = VkPipelineViewportStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // sType
-        DE_NULL,                                               // pNext
+        nullptr,                                               // pNext
         VkPipelineViewportStateCreateFlags{},                  // flags
         uint32_t{1u},                                          // viewportCount
         &VIEWPORT,                                             // pViewports
@@ -600,7 +600,7 @@ VkGraphicsPipelineCreateInfo getPipelineCreateInfoCommon()
 
     static constexpr auto RASTERIZATION_STATE = VkPipelineRasterizationStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // sType
-        DE_NULL,                                                    // pNext
+        nullptr,                                                    // pNext
         VkPipelineRasterizationStateCreateFlags{},                  // flags
         VK_FALSE,                                                   // depthClampEnable
         VK_TRUE,                                                    // rasterizerDiscardEnable
@@ -618,7 +618,7 @@ VkGraphicsPipelineCreateInfo getPipelineCreateInfoCommon()
 
     static constexpr auto MULTISAMPLE_STATE = VkPipelineMultisampleStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // sType
-        DE_NULL,                                                  // pNext
+        nullptr,                                                  // pNext
         VkPipelineMultisampleStateCreateFlags{},                  // flags
         VK_SAMPLE_COUNT_1_BIT,                                    // rasterizationSamples
         VK_FALSE,                                                 // sampleShadingEnable
@@ -640,7 +640,7 @@ VkGraphicsPipelineCreateInfo getPipelineCreateInfoCommon()
 
     static constexpr auto DEPTH_STENCIL_STATE = VkPipelineDepthStencilStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // sType
-        DE_NULL,                                                    // pNext
+        nullptr,                                                    // pNext
         VkPipelineDepthStencilStateCreateFlags{},                   // flags
         VK_FALSE,                                                   // depthTestEnable
         VK_FALSE,                                                   // depthWriteEnable
@@ -669,7 +669,7 @@ VkGraphicsPipelineCreateInfo getPipelineCreateInfoCommon()
 
     static constexpr auto COLOR_BLEND_STATE = VkPipelineColorBlendStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // sType
-        DE_NULL,                                                  // pNext
+        nullptr,                                                  // pNext
         VkPipelineColorBlendStateCreateFlags{},                   // flags
         VK_FALSE,                                                 // logicOpEnable
         VK_LOGIC_OP_SET,                                          // logicOp
@@ -680,18 +680,18 @@ VkGraphicsPipelineCreateInfo getPipelineCreateInfoCommon()
 
     static constexpr auto DYNAMIC_STATE = VkPipelineDynamicStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // sType;
-        DE_NULL,                                              // pNext;
+        nullptr,                                              // pNext;
         VkPipelineDynamicStateCreateFlags{},                  // flags;
         uint32_t{0u},                                         // dynamicStateCount;
-        DE_NULL                                               // pDynamicStates;
+        nullptr                                               // pDynamicStates;
     };
 
     return VkGraphicsPipelineCreateInfo{
         VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // sType
-        DE_NULL,                                         // pNext
+        nullptr,                                         // pNext
         VkPipelineCreateFlags{},                         // flags
         uint32_t{0u},                                    // stageCount
-        DE_NULL,                                         // pStages
+        nullptr,                                         // pStages
         &VERTEX_INPUT_STATE,                             // pVertexInputState
         &IA_STATE,                                       // pInputAssemblyState
         &TESSALATION_STATE,                              // pTessellationState
@@ -773,13 +773,13 @@ Move<VkRenderPass> createRenderPass(const DeviceInterface &vk, VkDevice device, 
         VkSubpassDescriptionFlags{},     // flags
         VK_PIPELINE_BIND_POINT_GRAPHICS, // pipelineBindPoint
         uint32_t{0u},                    // inputAttachmentCount
-        DE_NULL,                         // pInputAttachments
+        nullptr,                         // pInputAttachments
         uint32_t{1u},                    // colorAttachmentCount
         &COLOR_ATTACHMENT_REF,           // pColorAttachments
-        DE_NULL,                         // pResolveAttachments
-        DE_NULL,                         // pDepthStencilAttachment
+        nullptr,                         // pResolveAttachments
+        nullptr,                         // pDepthStencilAttachment
         uint32_t{0u},                    // preserveAttachmentCount
-        DE_NULL                          // pPreserveAttachments
+        nullptr                          // pPreserveAttachments
     };
 
     static constexpr auto COLOR_ATTACHMENT = VkAttachmentDescription{
@@ -796,14 +796,14 @@ Move<VkRenderPass> createRenderPass(const DeviceInterface &vk, VkDevice device, 
 
     static constexpr auto RENDER_PASS_CREATE_INFO = VkRenderPassCreateInfo{
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // sType
-        DE_NULL,                                   // pNext
+        nullptr,                                   // pNext
         VkRenderPassCreateFlags{},                 // flags
         uint32_t{1u},                              // attachmentCount
         &COLOR_ATTACHMENT,                         // pAttachments
         uint32_t{1u},                              // subpassCount
         &SUBPASS,                                  // pSubpasses
         uint32_t{0u},                              // dependencyCount
-        DE_NULL                                    // pDependencies
+        nullptr                                    // pDependencies
     };
 
     return createRenderPass(vk, device, &RENDER_PASS_CREATE_INFO);
@@ -848,7 +848,7 @@ void initPrograms(SourceCollections &dst, const TestParams &)
 template <typename create_infos_t, typename pipelines_t>
 TimedResult timePipelineCreation(const DeviceInterface &vk, const VkDevice device, const VkPipelineCache cache,
                                  const create_infos_t &createInfos, pipelines_t &pipelines,
-                                 const VkAllocationCallbacks *pAllocator = DE_NULL)
+                                 const VkAllocationCallbacks *pAllocator = nullptr)
 {
     DE_ASSERT(createInfos.size() <= pipelines.size());
 
@@ -1008,12 +1008,12 @@ Move<VkDescriptorSetLayout> createDescriptorSetLayout(const DeviceInterface &vk,
         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // descriptorType
         uint32_t{1u},                      // descriptorCount
         VK_SHADER_STAGE_COMPUTE_BIT,       // stageFlags
-        DE_NULL                            // pImmutableSamplers
+        nullptr                            // pImmutableSamplers
     };
 
     static constexpr auto DESCRIPTOR_SET_LAYOUT_CREATE_INFO = VkDescriptorSetLayoutCreateInfo{
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                             // pNext
+        nullptr,                                             // pNext
         VkDescriptorSetLayoutCreateFlags{},                  // flags
         uint32_t{1u},                                        // bindingCount
         &DESCRIPTOR_SET_LAYOUT_BINDING                       // pBindings
@@ -1047,7 +1047,7 @@ void initPrograms(SourceCollections &dst, const TestParams &)
 template <typename create_infos_t, typename pipelines_t>
 TimedResult timePipelineCreation(const DeviceInterface &vk, const VkDevice device, const VkPipelineCache cache,
                                  const create_infos_t &createInfos, pipelines_t &pipelines,
-                                 const VkAllocationCallbacks *pAllocator = DE_NULL)
+                                 const VkAllocationCallbacks *pAllocator = nullptr)
 {
     DE_ASSERT(createInfos.size() <= pipelines.size());
 
@@ -1076,7 +1076,7 @@ TestStatus testInstance(Context &context, const TestParams &testParameter)
 
     const auto baseCreateInfo = VkComputePipelineCreateInfo{
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // sType
-        DE_NULL,                                        // pNext
+        nullptr,                                        // pNext
         VkPipelineCreateFlags{},                        // flags
         shaderStages[0],                                // stage
         pipelineLayout.get(),                           // layout

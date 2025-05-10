@@ -84,7 +84,7 @@ public:
         , m_allocator(allocator)
     {
     }
-    Deleter(void) : m_deviceIface(DE_NULL), m_device(DE_NULL), m_allocator(DE_NULL)
+    Deleter(void) : m_deviceIface(nullptr), m_device(VK_NULL_HANDLE), m_allocator(nullptr)
     {
     }
 
@@ -105,7 +105,7 @@ public:
         , m_allocator(allocator)
     {
     }
-    Deleter(void) : m_destroyInstance((DestroyInstanceFunc)DE_NULL), m_allocator(DE_NULL)
+    Deleter(void) : m_destroyInstance(nullptr), m_allocator(nullptr)
     {
     }
 
@@ -131,7 +131,7 @@ public:
         m_destroyDevice = (DestroyDeviceFunc)getDeviceProcAddr(device, "vkDestroyDevice");
         m_allocator     = allocator;
     }
-    Deleter(void) : m_destroyDevice((DestroyDeviceFunc)DE_NULL), m_allocator(DE_NULL)
+    Deleter(void) : m_destroyDevice(nullptr), m_allocator(nullptr)
     {
     }
 
@@ -155,7 +155,7 @@ public:
         , m_allocator(allocator)
     {
     }
-    Deleter(void) : m_instanceIface(DE_NULL), m_instance((VkInstance)0), m_allocator(DE_NULL)
+    Deleter(void) : m_instanceIface(nullptr), m_instance(VK_NULL_HANDLE), m_allocator(nullptr)
     {
     }
 
@@ -182,7 +182,7 @@ public:
         , m_allocator(allocator)
     {
     }
-    Deleter(void) : m_instanceIface(DE_NULL), m_instance((VkInstance)0), m_allocator(DE_NULL)
+    Deleter(void) : m_instanceIface(nullptr), m_instance(VK_NULL_HANDLE), m_allocator(nullptr)
     {
     }
 
@@ -209,7 +209,7 @@ public:
         , m_allocator(allocator)
     {
     }
-    Deleter(void) : m_instanceIface(DE_NULL), m_instance((VkInstance)0), m_allocator(DE_NULL)
+    Deleter(void) : m_instanceIface(nullptr), m_instance(VK_NULL_HANDLE), m_allocator(nullptr)
     {
     }
 
@@ -234,7 +234,7 @@ public:
         , m_pool(pool)
     {
     }
-    Deleter(void) : m_deviceIface(DE_NULL), m_device(DE_NULL), m_pool(DE_NULL)
+    Deleter(void) : m_deviceIface(nullptr), m_device(VK_NULL_HANDLE), m_pool(VK_NULL_HANDLE)
     {
     }
 
@@ -259,7 +259,7 @@ public:
         , m_pool(pool)
     {
     }
-    Deleter(void) : m_deviceIface(DE_NULL), m_device(DE_NULL), m_pool(DE_NULL)
+    Deleter(void) : m_deviceIface(nullptr), m_device(VK_NULL_HANDLE), m_pool(VK_NULL_HANDLE)
     {
     }
 
@@ -280,7 +280,7 @@ struct RefData
     RefData(T object_, Deleter<T> deleter_) : object(object_), deleter(deleter_)
     {
     }
-    RefData(void) : object(0)
+    RefData(void) : object(VK_NULL_HANDLE)
     {
     }
 

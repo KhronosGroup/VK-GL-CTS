@@ -103,36 +103,36 @@ DE_END_EXTERN_C
         DE_PTR_TYPE(VALUETYPE) * pageTable;                                                                      \
     } TYPENAME; /* NOLINT(TYPENAME) */                                                                           \
                                                                                                                  \
-    DE_INLINE TYPENAME *TYPENAME##_create(deMemPool *pool);                                                      \
-    DE_INLINE int TYPENAME##_getNumElements(const TYPENAME *arr) DE_UNUSED_FUNCTION;                             \
-    DE_INLINE bool TYPENAME##_reserve(DE_PTR_TYPE(TYPENAME) arr, int capacity) DE_UNUSED_FUNCTION;               \
-    DE_INLINE bool TYPENAME##_setSize(DE_PTR_TYPE(TYPENAME) arr, int size) DE_UNUSED_FUNCTION;                   \
-    DE_INLINE void TYPENAME##_reset(DE_PTR_TYPE(TYPENAME) arr) DE_UNUSED_FUNCTION;                               \
-    DE_INLINE VALUETYPE TYPENAME##_get(const TYPENAME *arr, int ndx) DE_UNUSED_FUNCTION;                         \
-    DE_INLINE void TYPENAME##_set(DE_PTR_TYPE(TYPENAME) arr, int ndx, VALUETYPE elem) DE_UNUSED_FUNCTION;        \
-    DE_INLINE bool TYPENAME##_pushBack(DE_PTR_TYPE(TYPENAME) arr, VALUETYPE elem) DE_UNUSED_FUNCTION;            \
-    DE_INLINE VALUETYPE TYPENAME##_popBack(DE_PTR_TYPE(TYPENAME) arr) DE_UNUSED_FUNCTION;                        \
-    DE_INLINE bool TYPENAME##_copy(DE_PTR_TYPE(TYPENAME) dst, const TYPENAME *src) DE_UNUSED_FUNCTION;           \
-    DE_INLINE void TYPENAME##_swap(DE_PTR_TYPE(TYPENAME) arr, int aNdx, int bNdx) DE_UNUSED_FUNCTION;            \
+    static inline TYPENAME *TYPENAME##_create(deMemPool *pool);                                                  \
+    static inline int TYPENAME##_getNumElements(const TYPENAME *arr) DE_UNUSED_FUNCTION;                         \
+    static inline bool TYPENAME##_reserve(DE_PTR_TYPE(TYPENAME) arr, int capacity) DE_UNUSED_FUNCTION;           \
+    static inline bool TYPENAME##_setSize(DE_PTR_TYPE(TYPENAME) arr, int size) DE_UNUSED_FUNCTION;               \
+    static inline void TYPENAME##_reset(DE_PTR_TYPE(TYPENAME) arr) DE_UNUSED_FUNCTION;                           \
+    static inline VALUETYPE TYPENAME##_get(const TYPENAME *arr, int ndx) DE_UNUSED_FUNCTION;                     \
+    static inline void TYPENAME##_set(DE_PTR_TYPE(TYPENAME) arr, int ndx, VALUETYPE elem) DE_UNUSED_FUNCTION;    \
+    static inline bool TYPENAME##_pushBack(DE_PTR_TYPE(TYPENAME) arr, VALUETYPE elem) DE_UNUSED_FUNCTION;        \
+    static inline VALUETYPE TYPENAME##_popBack(DE_PTR_TYPE(TYPENAME) arr) DE_UNUSED_FUNCTION;                    \
+    static inline bool TYPENAME##_copy(DE_PTR_TYPE(TYPENAME) dst, const TYPENAME *src) DE_UNUSED_FUNCTION;       \
+    static inline void TYPENAME##_swap(DE_PTR_TYPE(TYPENAME) arr, int aNdx, int bNdx) DE_UNUSED_FUNCTION;        \
                                                                                                                  \
-    DE_INLINE TYPENAME *TYPENAME##_create(deMemPool *pool)                                                       \
+    static inline TYPENAME *TYPENAME##_create(deMemPool *pool)                                                   \
     {                                                                                                            \
         return (TYPENAME *)dePoolArray_create(pool, sizeof(VALUETYPE));                                          \
     }                                                                                                            \
                                                                                                                  \
-    DE_INLINE int TYPENAME##_getNumElements(const TYPENAME *arr)                                                 \
+    static inline int TYPENAME##_getNumElements(const TYPENAME *arr)                                             \
     {                                                                                                            \
         return arr->numElements;                                                                                 \
     }                                                                                                            \
                                                                                                                  \
-    DE_INLINE bool TYPENAME##_reserve(DE_PTR_TYPE(TYPENAME) arr, int capacity)                                   \
+    static inline bool TYPENAME##_reserve(DE_PTR_TYPE(TYPENAME) arr, int capacity)                               \
     {                                                                                                            \
         if (capacity > arr->capacity)                                                                            \
             return dePoolArray_reserve((dePoolArray *)arr, capacity);                                            \
         return true;                                                                                             \
     }                                                                                                            \
                                                                                                                  \
-    DE_INLINE bool TYPENAME##_setSize(DE_PTR_TYPE(TYPENAME) arr, int size)                                       \
+    static inline bool TYPENAME##_setSize(DE_PTR_TYPE(TYPENAME) arr, int size)                                   \
     {                                                                                                            \
         if (size > arr->capacity)                                                                                \
             return dePoolArray_setSize((dePoolArray *)arr, size);                                                \
@@ -141,12 +141,12 @@ DE_END_EXTERN_C
         return true;                                                                                             \
     }                                                                                                            \
                                                                                                                  \
-    DE_INLINE void TYPENAME##_reset(DE_PTR_TYPE(TYPENAME) arr)                                                   \
+    static inline void TYPENAME##_reset(DE_PTR_TYPE(TYPENAME) arr)                                               \
     {                                                                                                            \
         arr->numElements = 0;                                                                                    \
     }                                                                                                            \
                                                                                                                  \
-    DE_INLINE VALUETYPE TYPENAME##_get(const TYPENAME *arr, int ndx)                                             \
+    static inline VALUETYPE TYPENAME##_get(const TYPENAME *arr, int ndx)                                         \
     {                                                                                                            \
         DE_ASSERT(ndx >= 0 && ndx < arr->numElements);                                                           \
         {                                                                                                        \
@@ -156,7 +156,7 @@ DE_END_EXTERN_C
         }                                                                                                        \
     }                                                                                                            \
                                                                                                                  \
-    DE_INLINE void TYPENAME##_set(DE_PTR_TYPE(TYPENAME) arr, int ndx, VALUETYPE elem)                            \
+    static inline void TYPENAME##_set(DE_PTR_TYPE(TYPENAME) arr, int ndx, VALUETYPE elem)                        \
     {                                                                                                            \
         DE_ASSERT(ndx >= 0 && ndx < arr->numElements);                                                           \
         {                                                                                                        \
@@ -166,7 +166,7 @@ DE_END_EXTERN_C
         }                                                                                                        \
     }                                                                                                            \
                                                                                                                  \
-    DE_INLINE bool TYPENAME##_pushBack(DE_PTR_TYPE(TYPENAME) arr, VALUETYPE elem)                                \
+    static inline bool TYPENAME##_pushBack(DE_PTR_TYPE(TYPENAME) arr, VALUETYPE elem)                            \
     {                                                                                                            \
         if ((arr->numElements + 1 >= arr->capacity) && !TYPENAME##_reserve(arr, arr->numElements + 1))           \
             return false;                                                                                        \
@@ -175,7 +175,7 @@ DE_END_EXTERN_C
         return true;                                                                                             \
     }                                                                                                            \
                                                                                                                  \
-    DE_INLINE VALUETYPE TYPENAME##_popBack(DE_PTR_TYPE(TYPENAME) arr)                                            \
+    static inline VALUETYPE TYPENAME##_popBack(DE_PTR_TYPE(TYPENAME) arr)                                        \
     {                                                                                                            \
         int ndx     = arr->numElements - 1;                                                                      \
         int pageNdx = (ndx >> DE_ARRAY_ELEMENTS_PER_PAGE_LOG2);                                                  \
@@ -186,7 +186,7 @@ DE_END_EXTERN_C
         return ((VALUETYPE *)arr->pageTable[pageNdx])[subNdx];                                                   \
     }                                                                                                            \
                                                                                                                  \
-    DE_INLINE bool TYPENAME##_copy(DE_PTR_TYPE(TYPENAME) dst, const TYPENAME *src)                               \
+    static inline bool TYPENAME##_copy(DE_PTR_TYPE(TYPENAME) dst, const TYPENAME *src)                           \
     {                                                                                                            \
         DE_ASSERT(dst &&src);                                                                                    \
         {                                                                                                        \
@@ -200,7 +200,7 @@ DE_END_EXTERN_C
         return true;                                                                                             \
     }                                                                                                            \
                                                                                                                  \
-    DE_INLINE void TYPENAME##_swap(DE_PTR_TYPE(TYPENAME) arr, int aNdx, int bNdx)                                \
+    static inline void TYPENAME##_swap(DE_PTR_TYPE(TYPENAME) arr, int aNdx, int bNdx)                            \
     {                                                                                                            \
         VALUETYPE tmp = TYPENAME##_get(arr, aNdx);                                                               \
         TYPENAME##_set(arr, aNdx, TYPENAME##_get(arr, bNdx));                                                    \
@@ -239,58 +239,58 @@ DE_END_EXTERN_C
  * void        Array_sortNameShiftDown    (Array* array, int start, int end);
  * \endcode
 *//*--------------------------------------------------------------------*/
-#define DE_DECLARE_POOL_ARRAY_SORT(TYPENAME, VALUETYPE, SORTNAME, CMPFUNC)                               \
-                                                                                                         \
-    DE_INLINE void TYPENAME##_##SORTNAME##ShiftDown(DE_PTR_TYPE(TYPENAME) arr, int startNdx, int endNdx) \
-    {                                                                                                    \
-        int rootNdx = startNdx;                                                                          \
-                                                                                                         \
-        while (rootNdx * 2 + 1 <= endNdx)                                                                \
-        {                                                                                                \
-            int childNdx = rootNdx * 2 + 1;                                                              \
-                                                                                                         \
-            if ((childNdx + 1 <= endNdx) &&                                                              \
-                (CMPFUNC(TYPENAME##_get(arr, childNdx), TYPENAME##_get(arr, childNdx + 1)) < 0))         \
-                childNdx += 1;                                                                           \
-                                                                                                         \
-            if (CMPFUNC(TYPENAME##_get(arr, rootNdx), TYPENAME##_get(arr, childNdx)) < 0)                \
-            {                                                                                            \
-                TYPENAME##_swap(arr, rootNdx, childNdx);                                                 \
-                rootNdx = childNdx;                                                                      \
-            }                                                                                            \
-            else                                                                                         \
-                break;                                                                                   \
-        }                                                                                                \
-    }                                                                                                    \
-                                                                                                         \
-    DE_INLINE void TYPENAME##_##SORTNAME##Heapify(DE_PTR_TYPE(TYPENAME) arr)                             \
-    {                                                                                                    \
-        int startNdx = (TYPENAME##_getNumElements(arr) - 2) / 2;                                         \
-                                                                                                         \
-        while (startNdx >= 0)                                                                            \
-        {                                                                                                \
-            TYPENAME##_##SORTNAME##ShiftDown(arr, startNdx, TYPENAME##_getNumElements(arr) - 1);         \
-            startNdx -= 1;                                                                               \
-        }                                                                                                \
-    }                                                                                                    \
-                                                                                                         \
-    DE_INLINE void TYPENAME##_##SORTNAME(DE_PTR_TYPE(TYPENAME) arr)                                      \
-    {                                                                                                    \
-        int endNdx = TYPENAME##_getNumElements(arr) - 1;                                                 \
-                                                                                                         \
-        TYPENAME##_##SORTNAME##Heapify(arr);                                                             \
-                                                                                                         \
-        while (endNdx > 0)                                                                               \
-        {                                                                                                \
-            TYPENAME##_swap(arr, endNdx, 0);                                                             \
-            endNdx -= 1;                                                                                 \
-            TYPENAME##_##SORTNAME##ShiftDown(arr, 0, endNdx);                                            \
-        }                                                                                                \
-    }                                                                                                    \
-                                                                                                         \
-    struct TYPENAME##SORTNAME##unused_s                                                                  \
-    {                                                                                                    \
-        int unused;                                                                                      \
+#define DE_DECLARE_POOL_ARRAY_SORT(TYPENAME, VALUETYPE, SORTNAME, CMPFUNC)                                   \
+                                                                                                             \
+    static inline void TYPENAME##_##SORTNAME##ShiftDown(DE_PTR_TYPE(TYPENAME) arr, int startNdx, int endNdx) \
+    {                                                                                                        \
+        int rootNdx = startNdx;                                                                              \
+                                                                                                             \
+        while (rootNdx * 2 + 1 <= endNdx)                                                                    \
+        {                                                                                                    \
+            int childNdx = rootNdx * 2 + 1;                                                                  \
+                                                                                                             \
+            if ((childNdx + 1 <= endNdx) &&                                                                  \
+                (CMPFUNC(TYPENAME##_get(arr, childNdx), TYPENAME##_get(arr, childNdx + 1)) < 0))             \
+                childNdx += 1;                                                                               \
+                                                                                                             \
+            if (CMPFUNC(TYPENAME##_get(arr, rootNdx), TYPENAME##_get(arr, childNdx)) < 0)                    \
+            {                                                                                                \
+                TYPENAME##_swap(arr, rootNdx, childNdx);                                                     \
+                rootNdx = childNdx;                                                                          \
+            }                                                                                                \
+            else                                                                                             \
+                break;                                                                                       \
+        }                                                                                                    \
+    }                                                                                                        \
+                                                                                                             \
+    static inline void TYPENAME##_##SORTNAME##Heapify(DE_PTR_TYPE(TYPENAME) arr)                             \
+    {                                                                                                        \
+        int startNdx = (TYPENAME##_getNumElements(arr) - 2) / 2;                                             \
+                                                                                                             \
+        while (startNdx >= 0)                                                                                \
+        {                                                                                                    \
+            TYPENAME##_##SORTNAME##ShiftDown(arr, startNdx, TYPENAME##_getNumElements(arr) - 1);             \
+            startNdx -= 1;                                                                                   \
+        }                                                                                                    \
+    }                                                                                                        \
+                                                                                                             \
+    static inline void TYPENAME##_##SORTNAME(DE_PTR_TYPE(TYPENAME) arr)                                      \
+    {                                                                                                        \
+        int endNdx = TYPENAME##_getNumElements(arr) - 1;                                                     \
+                                                                                                             \
+        TYPENAME##_##SORTNAME##Heapify(arr);                                                                 \
+                                                                                                             \
+        while (endNdx > 0)                                                                                   \
+        {                                                                                                    \
+            TYPENAME##_swap(arr, endNdx, 0);                                                                 \
+            endNdx -= 1;                                                                                     \
+            TYPENAME##_##SORTNAME##ShiftDown(arr, 0, endNdx);                                                \
+        }                                                                                                    \
+    }                                                                                                        \
+                                                                                                             \
+    struct TYPENAME##SORTNAME##unused_s                                                                      \
+    {                                                                                                        \
+        int unused;                                                                                          \
     }
 
 /* Basic array types. */

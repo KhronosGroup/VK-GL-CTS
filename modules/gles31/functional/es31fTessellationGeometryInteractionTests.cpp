@@ -297,7 +297,7 @@ IdentityGeometryShaderCase::IterateResult IdentityGeometryShaderCase::iterate(vo
 
             gl.bindVertexArray(*vao);
             gl.bindBuffer(GL_ARRAY_BUFFER, m_patchBuffer);
-            gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+            gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
             gl.enableVertexAttribArray(posLocation);
             GLU_EXPECT_NO_ERROR(gl.getError(), "setup attribs");
 
@@ -607,7 +607,7 @@ IdentityTessellationShaderCase::IterateResult IdentityTessellationShaderCase::it
 
             gl.bindVertexArray(*vao);
             gl.bindBuffer(GL_ARRAY_BUFFER, m_dataBuffer);
-            gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+            gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
             gl.enableVertexAttribArray(posLocation);
             GLU_EXPECT_NO_ERROR(gl.getError(), "setup attribs");
 
@@ -880,8 +880,8 @@ FeedbackPrimitiveTypeCase::FeedbackPrimitiveTypeCase(Context &context, const cha
     , m_tessellationOutput(tessellationOutput)
     , m_tessellationPointMode(tessellationPointMode)
     , m_geometryOutputType(geometryOutputType)
-    , m_feedbackProgram(DE_NULL)
-    , m_nonFeedbackProgram(DE_NULL)
+    , m_feedbackProgram(nullptr)
+    , m_nonFeedbackProgram(nullptr)
     , m_patchBuffer(0)
     , m_feedbackID(0)
     , m_feedbackBuffer(0)
@@ -998,13 +998,13 @@ void FeedbackPrimitiveTypeCase::deinit(void)
     if (m_feedbackProgram)
     {
         delete m_feedbackProgram;
-        m_feedbackProgram = DE_NULL;
+        m_feedbackProgram = nullptr;
     }
 
     if (m_nonFeedbackProgram)
     {
         delete m_nonFeedbackProgram;
-        m_nonFeedbackProgram = DE_NULL;
+        m_nonFeedbackProgram = nullptr;
     }
 }
 
@@ -1067,7 +1067,7 @@ void FeedbackPrimitiveTypeCase::renderWithFeedback(tcu::Surface &dst)
 
     gl.bindVertexArray(*vao);
     gl.bindBuffer(GL_ARRAY_BUFFER, m_patchBuffer);
-    gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     gl.enableVertexAttribArray(posLocation);
     GLU_EXPECT_NO_ERROR(gl.getError(), "setup attribs");
 
@@ -1168,7 +1168,7 @@ void FeedbackPrimitiveTypeCase::renderWithoutFeedback(tcu::Surface &dst)
 
     gl.bindVertexArray(*vao);
     gl.bindBuffer(GL_ARRAY_BUFFER, m_patchBuffer);
-    gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     gl.enableVertexAttribArray(posLocation);
     GLU_EXPECT_NO_ERROR(gl.getError(), "setup attribs");
 
@@ -1641,7 +1641,7 @@ const char *FeedbackPrimitiveTypeCase::getTessellationOutputDescription(Tessella
         return (pointMode) ? ("points (isolines in point mode)") : ("isolines");
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -1658,7 +1658,7 @@ const char *FeedbackPrimitiveTypeCase::getGeometryInputDescription(TessellationO
         return (pointMode) ? ("points") : ("lines");
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -1674,7 +1674,7 @@ const char *FeedbackPrimitiveTypeCase::getGeometryOutputDescription(GeometryOutp
         return "triangles";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -1729,7 +1729,7 @@ private:
 PointSizeCase::PointSizeCase(Context &context, const char *name, const char *description, int flags)
     : TestCase(context, name, description)
     , m_flags(flags)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
 }
 
@@ -1865,7 +1865,7 @@ void PointSizeCase::deinit(void)
     }
 
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 PointSizeCase::IterateResult PointSizeCase::iterate(void)
@@ -2275,7 +2275,7 @@ GridRenderCase::GridRenderCase(Context &context, const char *name, const char *d
     : TestCase(context, name, description)
     , m_description(description)
     , m_flags(flags)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_texture(0)
     , m_numLayers(1)
 {
@@ -2517,7 +2517,7 @@ void GridRenderCase::init(void)
 void GridRenderCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 
     if (m_texture)
     {
@@ -3016,7 +3016,7 @@ private:
 FeedbackRecordVariableSelectionCase::FeedbackRecordVariableSelectionCase(Context &context, const char *name,
                                                                          const char *description)
     : TestCase(context, name, description)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_xfbBuf(0)
 {
 }
@@ -3080,7 +3080,7 @@ void FeedbackRecordVariableSelectionCase::init(void)
 void FeedbackRecordVariableSelectionCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 
     if (m_xfbBuf)
     {
@@ -3144,7 +3144,7 @@ FeedbackRecordVariableSelectionCase::IterateResult FeedbackRecordVariableSelecti
             gl.mapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, (int)sizeof(feedbackValues), GL_MAP_READ_BIT);
         GLU_EXPECT_NO_ERROR(gl.getError(), "mapBufferRange");
 
-        if (mapPtr == DE_NULL)
+        if (mapPtr == nullptr)
             throw tcu::TestError("mapBufferRange returned null");
 
         deMemcpy(feedbackValues, mapPtr, sizeof(feedbackValues));

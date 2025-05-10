@@ -911,10 +911,10 @@ struct StageData
         , missShaderBindingTable()
         , hitShaderBindingTable()
         , callableShaderBindingTable()
-        , raygenShaderBindingTableRegion(makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0))
-        , missShaderBindingTableRegion(makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0))
-        , hitShaderBindingTableRegion(makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0))
-        , callableShaderBindingTableRegion(makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0))
+        , raygenShaderBindingTableRegion(makeStridedDeviceAddressRegionKHR(0, 0, 0))
+        , missShaderBindingTableRegion(makeStridedDeviceAddressRegionKHR(0, 0, 0))
+        , hitShaderBindingTableRegion(makeStridedDeviceAddressRegionKHR(0, 0, 0))
+        , callableShaderBindingTableRegion(makeStridedDeviceAddressRegionKHR(0, 0, 0))
     {
     }
 
@@ -940,7 +940,7 @@ void updateDescriptorSet(const DeviceInterface &vkd, VkDevice device, VkCommandB
     }
     else if (resourceType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
     {
-        const auto descriptorImageInfo = makeDescriptorImageInfo(DE_NULL, resourceImgView, layout);
+        const auto descriptorImageInfo = makeDescriptorImageInfo(VK_NULL_HANDLE, resourceImgView, layout);
         updateBuilder.writeSingle(stageData.descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u),
                                   resourceType, &descriptorImageInfo);
     }
@@ -952,15 +952,18 @@ void updateDescriptorSet(const DeviceInterface &vkd, VkDevice device, VkCommandB
     // Create top and bottom level acceleration structures if needed.
     if (asNeeded)
     {
+        AccelerationStructBufferProperties bufferProps;
+        bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
         stageData.bottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
         stageData.bottomLevelAccelerationStructure->setDefaultGeometryData(getShaderStageFlagBits(stage));
-        stageData.bottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, alloc);
+        stageData.bottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
         stageData.topLevelAccelerationStructure = makeTopLevelAccelerationStructure();
         stageData.topLevelAccelerationStructure->setInstanceCount(1);
         stageData.topLevelAccelerationStructure->addInstance(
             de::SharedPtr<BottomLevelAccelerationStructure>(stageData.bottomLevelAccelerationStructure.release()));
-        stageData.topLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, alloc);
+        stageData.topLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
         writeASInfo.sType                      = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
         writeASInfo.pNext                      = nullptr;
@@ -1006,12 +1009,12 @@ void createComputePipeline(const DeviceInterface &vkd, VkDevice device, Context 
         0u,                                             // VkPipelineCreateFlags flags;
         stageInfo,                                      // VkPipelineShaderStageCreateInfo stage;
         stageData.pipelineLayout.get(),                 // VkPipelineLayout layout;
-        DE_NULL,                                        // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0,                                              // int32_t basePipelineIndex;
     };
 
     // Compute pipeline.
-    stageData.pipeline = createComputePipeline(vkd, device, DE_NULL, &createInfo);
+    stageData.pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &createInfo);
 }
 
 // Auxiliar function to record commands using the compute pipeline.
@@ -1055,9 +1058,9 @@ void createGraphicsPipelineObjects(const DeviceInterface &vkd, VkDevice device, 
     const std::vector<VkRect2D> scissors(1u, scissor);
 
     // Pipeline.
-    stageData.pipeline =
-        makeGraphicsPipeline(vkd, device, stageData.pipelineLayout.get(), vertShader.get(), DE_NULL, DE_NULL, DE_NULL,
-                             fragShader.get(), stageData.renderPass.get(), viewports, scissors);
+    stageData.pipeline = makeGraphicsPipeline(vkd, device, stageData.pipelineLayout.get(), vertShader.get(),
+                                              VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, fragShader.get(),
+                                              stageData.renderPass.get(), viewports, scissors);
 
     // Framebuffer.
     stageData.framebuffer = makeFramebuffer(vkd, device, stageData.renderPass.get(), 0u, nullptr, kImageDim, kImageDim);

@@ -68,7 +68,7 @@ AbstractFactory *GenericFactoryRegistry::getFactoryByName(const std::string &nam
             return m_factories[index];
     }
 
-    return DE_NULL;
+    return nullptr;
 }
 
 const AbstractFactory *GenericFactoryRegistry::getFactoryByName(const std::string &name) const
@@ -79,7 +79,7 @@ const AbstractFactory *GenericFactoryRegistry::getFactoryByName(const std::strin
             return m_factories[index];
     }
 
-    return DE_NULL;
+    return nullptr;
 }
 
 void GenericFactoryRegistry::registerFactory(AbstractFactory *factory)

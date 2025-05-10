@@ -112,6 +112,7 @@
 #include "vktFragmentShaderInterlockTests.hpp"
 #include "vktShaderClockTests.hpp"
 #include "vktShaderExpectAssumeTests.hpp"
+#include "vktShaderHelperInvocationsTests.hpp"
 #include "vktModifiersTests.hpp"
 #include "vktRayTracingTests.hpp"
 #include "vktRayQueryTests.hpp"
@@ -131,6 +132,7 @@
 #include "vktVideoTests.hpp"
 #include "vktShaderObjectTests.hpp"
 #include "vktDGCTests.hpp"
+#include "vktCooperativeVectorTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -193,11 +195,11 @@ private:
     tcu::WaiverUtil m_waiverMechanism;
 
     TestInstance *m_instance; //!< Current test case instance
-    std::vector<std::string> m_testsForSubprocess;
     tcu::TestRunStatus m_status;
 
 #ifdef CTS_USES_VULKANSC
     int m_subprocessCount;
+    std::vector<std::string> m_testsForSubprocess;
 
     std::unique_ptr<vksc_server::ipc::Parent> m_parentIPC;
     std::vector<DetailedSubprocessTestCount> m_detailedSubprocessTestCount;
@@ -268,16 +270,21 @@ std::string trim(const std::string &original)
 }
 
 TestCaseExecutor::TestCaseExecutor(tcu::TestContext &testCtx)
-    : m_prebuiltBinRegistry(testCtx.getArchive(), "vulkan/prebuilt")
+    : m_progCollection()
+    , m_prebuiltBinRegistry(testCtx.getArchive(), "vulkan/prebuilt")
     , m_library(createLibrary(testCtx))
+    , m_context()
     , m_renderDoc(testCtx.getCommandLine().isRenderDocEnabled() ? MovePtr<vk::RenderDocUtil>(new vk::RenderDocUtil()) :
-                                                                  MovePtr<vk::RenderDocUtil>(DE_NULL))
+                                                                  MovePtr<vk::RenderDocUtil>(nullptr))
 #if defined CTS_USES_VULKANSC
     , m_resourceInterface(new vk::ResourceInterfaceVKSC(testCtx))
 #else
     , m_resourceInterface(new vk::ResourceInterfaceStandard(testCtx))
 #endif // CTS_USES_VULKANSC
-    , m_instance(DE_NULL)
+    , m_deviceProperties()
+    , m_waiverMechanism()
+    , m_instance(nullptr)
+    , m_status()
 #if defined CTS_USES_VULKANSC
     , m_subprocessCount(0)
 #endif // CTS_USES_VULKANSC
@@ -361,7 +368,12 @@ TestCaseExecutor::TestCaseExecutor(tcu::TestContext &testCtx)
 
     tcu::SessionInfo sessionInfo(m_deviceProperties.vendorID, m_deviceProperties.deviceID,
                                  m_deviceProperties.deviceName, testCtx.getCommandLine().getInitialCmdLine());
-    m_waiverMechanism.setup(testCtx.getCommandLine().getWaiverFileName(), "dEQP-VK", m_deviceProperties.vendorID,
+#ifdef CTS_USES_VULKANSC
+    const char *testname_prefix = "dEQP-VKSC";
+#else
+    const char *testname_prefix = "dEQP-VK";
+#endif
+    m_waiverMechanism.setup(testCtx.getCommandLine().getWaiverFileName(), testname_prefix, m_deviceProperties.vendorID,
                             m_deviceProperties.deviceID, sessionInfo);
 
 #ifdef CTS_USES_VULKANSC
@@ -411,7 +423,12 @@ TestCaseExecutor::~TestCaseExecutor(void)
 void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath)
 {
     if (m_waiverMechanism.isOnWaiverList(casePath))
+    {
+#ifdef CTS_USES_VULKANSC
+        m_testsForSubprocess.push_back(casePath);
+#endif
         throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
+    }
 
     TestCase *vktCase                           = dynamic_cast<TestCase *>(testCase);
     tcu::TestLog &log                           = m_context->getTestContext().getLog();
@@ -440,7 +457,7 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
             m_testsForSubprocess.clear();
             const vk::DeviceInterface &vkd = m_context->getDeviceInterface();
             const vk::DeviceDriverSC *dds  = dynamic_cast<const vk::DeviceDriverSC *>(&vkd);
-            if (dds == DE_NULL)
+            if (dds == nullptr)
                 TCU_THROW(InternalError, "Undefined device driver for Vulkan SC");
             dds->reset();
             m_resourceInterface->resetObjects();
@@ -449,14 +466,11 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
             m_context->getTestContext().getLog().supressLogging(true);
         }
         m_subprocessCount = currentSubprocessCount;
-#endif // CTS_USES_VULKANSC
         m_testsForSubprocess.push_back(casePath);
+#endif // CTS_USES_VULKANSC
     }
 
     m_resourceInterface->initTestCase(casePath);
-
-    if (m_waiverMechanism.isOnWaiverList(casePath))
-        throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
 
     vktCase->checkSupport(*m_context);
 
@@ -540,7 +554,7 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
 void TestCaseExecutor::deinit(tcu::TestCase *testCase)
 {
     delete m_instance;
-    m_instance = DE_NULL;
+    m_instance = nullptr;
 
     if (m_renderDoc)
         m_renderDoc->endFrame(m_context->getInstance());
@@ -551,7 +565,7 @@ void TestCaseExecutor::deinit(tcu::TestCase *testCase)
         collectAndReportDebugMessages(m_context->getDebugReportRecorder(), *m_context);
 #endif // CTS_USES_VULKANSC
 
-    if (testCase != DE_NULL)
+    if (testCase != nullptr)
         logUnusedShaders(testCase);
 
 #ifdef CTS_USES_VULKANSC
@@ -568,7 +582,7 @@ void TestCaseExecutor::deinit(tcu::TestCase *testCase)
             m_testsForSubprocess.clear();
             const vk::DeviceInterface &vkd = m_context->getDeviceInterface();
             const vk::DeviceDriverSC *dds  = dynamic_cast<const vk::DeviceDriverSC *>(&vkd);
-            if (dds == DE_NULL)
+            if (dds == nullptr)
                 TCU_THROW(InternalError, "Undefined device driver for Vulkan SC");
             dds->reset();
             m_resourceInterface->resetObjects();
@@ -599,7 +613,7 @@ void TestCaseExecutor::deinit(tcu::TestCase *testCase)
         VkBool32 unrecordedFaults      = VK_FALSE;
         uint32_t faultCount            = 0;
         VkResult result = vkd.getFaultData(m_context->getDevice(), VK_FAULT_QUERY_BEHAVIOR_GET_AND_CLEAR_ALL_FAULTS,
-                                           &unrecordedFaults, &faultCount, DE_NULL);
+                                           &unrecordedFaults, &faultCount, nullptr);
         if (result != VK_SUCCESS)
         {
             m_context->getTestContext().getLog()
@@ -628,7 +642,7 @@ void TestCaseExecutor::deinit(tcu::TestCase *testCase)
             {
                 m_context->getTestContext().getLog()
                     << TestLog::Message << "Fault recorded via vkGetFaultData: " << faultData[i] << TestLog::EndMessage;
-                if (Context::m_faultData[i].faultLevel != VK_FAULT_LEVEL_WARNING)
+                if (faultData[i].faultLevel != VK_FAULT_LEVEL_WARNING)
                     faultFail = true;
             }
         }
@@ -710,7 +724,7 @@ void TestCaseExecutor::deinitTestPackage(tcu::TestContext &testCtx)
             m_testsForSubprocess.clear();
             const vk::DeviceInterface &vkd = m_context->getDeviceInterface();
             const vk::DeviceDriverSC *dds  = dynamic_cast<const vk::DeviceDriverSC *>(&vkd);
-            if (dds == DE_NULL)
+            if (dds == nullptr)
                 TCU_THROW(InternalError, "Undefined device driver for Vulkan SC");
             dds->reset();
             m_resourceInterface->resetObjects();
@@ -951,7 +965,7 @@ void TestCaseExecutor::runTestsInSubprocess(tcu::TestContext &testCtx)
         {
             std::string err = deProcess_getLastError(process);
             deProcess_destroy(process);
-            process = DE_NULL;
+            process = nullptr;
             TCU_THROW(InternalError, "Error while running subprocess : " + err);
         }
         std::string whole;
@@ -1125,6 +1139,7 @@ void createGlslTests(tcu::TestCaseGroup *glslTests)
     glslTests->addChild(sr::createLoopTests(testCtx));
     glslTests->addChild(sr::createMatrixTests(testCtx));
     glslTests->addChild(sr::createOperatorTests(testCtx));
+    glslTests->addChild(sr::createShaderPreciseTests(testCtx));
     glslTests->addChild(sr::createReturnTests(testCtx));
     glslTests->addChild(sr::createStructTests(testCtx));
     glslTests->addChild(sr::createSwitchTests(testCtx));
@@ -1137,6 +1152,7 @@ void createGlslTests(tcu::TestCaseGroup *glslTests)
     glslTests->addChild(shaderexecutor::createOpaqueTypeIndexingTests(testCtx));
     glslTests->addChild(shaderexecutor::createAtomicOperationTests(testCtx));
     glslTests->addChild(shaderexecutor::createShaderClockTests(testCtx));
+    glslTests->addChild(shaderexecutor::createShaderHelperInvocationsTests(testCtx));
 
 #ifndef CTS_USES_VULKANSC
     // Amber GLSL tests.
@@ -1257,6 +1273,7 @@ void TestPackage::init(void)
 #endif
     addRootChild("shader_object", m_caseListFilter, ShaderObject::createTests);
     addRootChild("dgc", m_caseListFilter, DGC::createTests);
+    addRootChild("cooperative_vector", m_caseListFilter, cooperative_vector::createTests);
 }
 
 void ExperimentalTestPackage::init(void)
@@ -1315,6 +1332,7 @@ void TestPackageSC::init(void)
     // addRootChild("ray_query", m_caseListFilter, RayQuery::createTests);
     addRootChild("fragment_shading_rate", m_caseListFilter, FragmentShadingRate::createTests);
     addChild(sc::createTests(m_testCtx));
+    // addChild(cooperative_vector::createTests (m_testCtx));
 }
 
 #endif // CTS_USES_VULKANSC

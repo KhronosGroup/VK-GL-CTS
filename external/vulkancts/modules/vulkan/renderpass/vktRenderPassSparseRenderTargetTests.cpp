@@ -87,7 +87,7 @@ Move<VkImage> createSparseImageAndMemory(const DeviceInterface &vk, VkDevice dev
     const VkExtent3D imageExtent = {width, height, 1u};
 
     const VkImageCreateInfo imageCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                               DE_NULL,
+                                               nullptr,
                                                VK_IMAGE_CREATE_SPARSE_BINDING_BIT |
                                                    VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT,
                                                VK_IMAGE_TYPE_2D,
@@ -118,7 +118,7 @@ Move<VkImageView> createImageView(const DeviceInterface &vk, VkDevice device, Vk
                                   VkComponentMapping components, VkImageSubresourceRange subresourceRange)
 {
     const VkImageViewCreateInfo pCreateInfo = {
-        VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, DE_NULL, flags, image, viewType, format, components, subresourceRange,
+        VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, nullptr, flags, image, viewType, format, components, subresourceRange,
     };
 
     return createImageView(vk, device, &pCreateInfo);
@@ -138,7 +138,7 @@ Move<VkBuffer> createBuffer(const DeviceInterface &vkd, VkDevice device, VkForma
     const VkBufferUsageFlags bufferUsage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
     const VkDeviceSize pixelSize        = mapVkFormat(format).getPixelSize();
     const VkBufferCreateInfo createInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-                                           DE_NULL,
+                                           nullptr,
                                            0u,
 
                                            width * height * pixelSize,
@@ -146,7 +146,7 @@ Move<VkBuffer> createBuffer(const DeviceInterface &vkd, VkDevice device, VkForma
 
                                            VK_SHARING_MODE_EXCLUSIVE,
                                            0u,
-                                           DE_NULL};
+                                           nullptr};
 
     return createBuffer(vkd, device, &createInfo);
 }
@@ -159,7 +159,7 @@ Move<VkRenderPass> createRenderPass(const DeviceInterface &vkd, VkDevice device,
         dstAttachmentRef //  VkAttachmentReference                                        ||  VkAttachmentReference2KHR
         (
             //  ||  VkStructureType sType;
-            DE_NULL,                                  //   ||  const void* pNext;
+            nullptr,                                  //   ||  const void* pNext;
             0u,                                       //  uint32_t attachment; ||  uint32_t attachment;
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, //  VkImageLayout layout; ||  VkImageLayout layout;
             0u                                        // ||  VkImageAspectFlags aspectMask;
@@ -168,7 +168,7 @@ Move<VkRenderPass> createRenderPass(const DeviceInterface &vkd, VkDevice device,
         dstAttachment //  VkAttachmentDescription                                        ||  VkAttachmentDescription2KHR
         (
             //  ||  VkStructureType sType;
-            DE_NULL,               //   ||  const void* pNext;
+            nullptr,               //   ||  const void* pNext;
             0u,                    //  VkAttachmentDescriptionFlags flags; ||  VkAttachmentDescriptionFlags flags;
             dstFormat,             //  VkFormat format; ||  VkFormat format;
             VK_SAMPLE_COUNT_1_BIT, //  VkSampleCountFlagBits samples; ||  VkSampleCountFlagBits samples;
@@ -183,33 +183,33 @@ Move<VkRenderPass> createRenderPass(const DeviceInterface &vkd, VkDevice device,
         subpass //  VkSubpassDescription                                        ||  VkSubpassDescription2KHR
         (
             //  ||  VkStructureType sType;
-            DE_NULL,                      //   ||  const void* pNext;
+            nullptr,                      //   ||  const void* pNext;
             (VkSubpassDescriptionFlags)0, //  VkSubpassDescriptionFlags flags; ||  VkSubpassDescriptionFlags flags;
             VK_PIPELINE_BIND_POINT_GRAPHICS, //  VkPipelineBindPoint pipelineBindPoint; ||  VkPipelineBindPoint pipelineBindPoint;
             0u,                              //   ||  uint32_t viewMask;
             0u,                              //  uint32_t inputAttachmentCount; ||  uint32_t inputAttachmentCount;
-            DE_NULL, //  const VkAttachmentReference* pInputAttachments; ||  const VkAttachmentReference2KHR* pInputAttachments;
+            nullptr, //  const VkAttachmentReference* pInputAttachments; ||  const VkAttachmentReference2KHR* pInputAttachments;
             1u, //  uint32_t colorAttachmentCount; ||  uint32_t colorAttachmentCount;
             &dstAttachmentRef, //  const VkAttachmentReference* pColorAttachments; ||  const VkAttachmentReference2KHR* pColorAttachments;
-            DE_NULL, //  const VkAttachmentReference* pResolveAttachments; ||  const VkAttachmentReference2KHR* pResolveAttachments;
-            DE_NULL, //  const VkAttachmentReference* pDepthStencilAttachment; ||  const VkAttachmentReference2KHR* pDepthStencilAttachment;
+            nullptr, //  const VkAttachmentReference* pResolveAttachments; ||  const VkAttachmentReference2KHR* pResolveAttachments;
+            nullptr, //  const VkAttachmentReference* pDepthStencilAttachment; ||  const VkAttachmentReference2KHR* pDepthStencilAttachment;
             0u,     //  uint32_t preserveAttachmentCount; ||  uint32_t preserveAttachmentCount;
-            DE_NULL //  const uint32_t* pPreserveAttachments; ||  const uint32_t* pPreserveAttachments;
+            nullptr //  const uint32_t* pPreserveAttachments; ||  const uint32_t* pPreserveAttachments;
         );
     const RenderPassCreateInfo
         renderPassCreator //  VkRenderPassCreateInfo                                        ||  VkRenderPassCreateInfo2KHR
         (
             //  VkStructureType sType; ||  VkStructureType sType;
-            DE_NULL,                     //  const void* pNext; ||  const void* pNext;
+            nullptr,                     //  const void* pNext; ||  const void* pNext;
             (VkRenderPassCreateFlags)0u, //  VkRenderPassCreateFlags flags; ||  VkRenderPassCreateFlags flags;
             1u,                          //  uint32_t attachmentCount; ||  uint32_t attachmentCount;
             &dstAttachment, //  const VkAttachmentDescription* pAttachments; ||  const VkAttachmentDescription2KHR* pAttachments;
             1u,             //  uint32_t subpassCount; ||  uint32_t subpassCount;
             &subpass, //  const VkSubpassDescription* pSubpasses; ||  const VkSubpassDescription2KHR* pSubpasses;
             0u,       //  uint32_t dependencyCount; ||  uint32_t dependencyCount;
-            DE_NULL,  //  const VkSubpassDependency* pDependencies; ||  const VkSubpassDependency2KHR* pDependencies;
+            nullptr,  //  const VkSubpassDependency* pDependencies; ||  const VkSubpassDependency2KHR* pDependencies;
             0u,       //   ||  uint32_t correlatedViewMaskCount;
-            DE_NULL   //  ||  const uint32_t* pCorrelatedViewMasks;
+            nullptr   //  ||  const uint32_t* pCorrelatedViewMasks;
         );
 
     return renderPassCreator.createRenderPass(vkd, device);
@@ -242,7 +242,7 @@ Move<VkFramebuffer> createFramebuffer(const DeviceInterface &vkd, VkDevice devic
         return Move<VkFramebuffer>();
 
     const VkFramebufferCreateInfo createInfo = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-                                                DE_NULL,
+                                                nullptr,
                                                 0u,
 
                                                 renderPass,
@@ -259,14 +259,14 @@ Move<VkFramebuffer> createFramebuffer(const DeviceInterface &vkd, VkDevice devic
 Move<VkPipelineLayout> createRenderPipelineLayout(const DeviceInterface &vkd, VkDevice device)
 {
     const VkPipelineLayoutCreateInfo createInfo = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-                                                   DE_NULL,
+                                                   nullptr,
                                                    (vk::VkPipelineLayoutCreateFlags)0,
 
                                                    0u,
-                                                   DE_NULL,
+                                                   nullptr,
 
                                                    0u,
-                                                   DE_NULL};
+                                                   nullptr};
 
     return createPipelineLayout(vkd, device, &createInfo);
 }
@@ -282,27 +282,27 @@ Move<VkPipeline> createRenderPipeline(const DeviceInterface &vkd, VkDevice devic
 
     const VkPipelineVertexInputStateCreateInfo vertexInputState = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkPipelineVertexInputStateCreateFlags)0u,
 
         0u,
-        DE_NULL,
+        nullptr,
 
         0u,
-        DE_NULL};
+        nullptr};
 
     const std::vector<VkViewport> viewports(1, makeViewport(tcu::UVec2(width, height)));
     const std::vector<VkRect2D> scissors(1, makeRect2D(tcu::UVec2(width, height)));
 
-    VkPipelineRenderingCreateInfoKHR *pNext = DE_NULL;
+    VkPipelineRenderingCreateInfoKHR *pNext = nullptr;
     VkPipelineRenderingCreateInfoKHR renderingCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+                                                         nullptr,
                                                          0u,
-                                                         DE_NULL,
                                                          1u,
                                                          &format,
                                                          VK_FORMAT_UNDEFINED,
                                                          VK_FORMAT_UNDEFINED};
-    if (renderPass == DE_NULL)
+    if (renderPass == VK_NULL_HANDLE)
         pNext = &renderingCreateInfo;
 
     return makeGraphicsPipeline(
@@ -310,9 +310,9 @@ Move<VkPipeline> createRenderPipeline(const DeviceInterface &vkd, VkDevice devic
         device,                // const VkDevice                                device
         pipelineLayout,        // const VkPipelineLayout                        pipelineLayout
         *vertexShaderModule,   // const VkShaderModule                          vertexShaderModule
-        DE_NULL,               // const VkShaderModule                          tessellationControlShaderModule
-        DE_NULL,               // const VkShaderModule                          tessellationEvalShaderModule
-        DE_NULL,               // const VkShaderModule                          geometryShaderModule
+        VK_NULL_HANDLE,        // const VkShaderModule                          tessellationControlShaderModule
+        VK_NULL_HANDLE,        // const VkShaderModule                          tessellationEvalShaderModule
+        VK_NULL_HANDLE,        // const VkShaderModule                          geometryShaderModule
         *fragmentShaderModule, // const VkShaderModule                          fragmentShaderModule
         renderPass,            // const VkRenderPass                            renderPass
         viewports,             // const std::vector<VkViewport>&                viewports
@@ -321,11 +321,11 @@ Move<VkPipeline> createRenderPipeline(const DeviceInterface &vkd, VkDevice devic
         0u,                                  // const uint32_t                                subpass
         0u,                                  // const uint32_t                                patchControlPoints
         &vertexInputState,                   // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-        DE_NULL, // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-        DE_NULL, // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-        DE_NULL, // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
-        DE_NULL, // const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
-        DE_NULL, // const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
+        nullptr, // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+        nullptr, // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+        nullptr, // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+        nullptr, // const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
+        nullptr, // const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
         pNext);  // const void*                                   pNext
 }
 
@@ -334,7 +334,7 @@ void beginSecondaryCmdBuffer(const DeviceInterface &vkd, VkCommandBuffer cmdBuff
 {
     VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                         // const void* pNext;
+        nullptr,                                                         // const void* pNext;
         renderingFlags,                                                  // VkRenderingFlagsKHR flags;
         0u,                                                              // uint32_t viewMask;
         1u,                                                              // uint32_t colorAttachmentCount;
@@ -351,7 +351,7 @@ void beginSecondaryCmdBuffer(const DeviceInterface &vkd, VkCommandBuffer cmdBuff
 
     const VkCommandBufferBeginInfo commandBufBeginParams{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         usageFlags,                                  // VkCommandBufferUsageFlags flags;
         &bufferInheritanceInfo};
 
@@ -468,15 +468,15 @@ tcu::TestStatus SparseRenderTargetTestInstance::iterateInternal(void)
 
     beginCommandBuffer(vkd, *commandBuffer);
 
-    const typename RenderpassSubpass::SubpassBeginInfo subpassBeginInfo(DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
+    const typename RenderpassSubpass::SubpassBeginInfo subpassBeginInfo(nullptr, VK_SUBPASS_CONTENTS_INLINE);
     const VkRenderPassBeginInfo beginInfo{
-        VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, DE_NULL, *m_renderPass, *m_framebuffer, renderArea, 0u, DE_NULL};
+        VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, nullptr, *m_renderPass, *m_framebuffer, renderArea, 0u, nullptr};
     RenderpassSubpass::cmdBeginRenderPass(vkd, *commandBuffer, &beginInfo, &subpassBeginInfo);
 
     vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
     vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
 
-    const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(DE_NULL);
+    const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(nullptr);
     RenderpassSubpass::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
 
     copyImageToBuffer(vkd, *commandBuffer, *m_dstImage, *m_dstBuffer, tcu::IVec2(m_width, m_height));
@@ -499,7 +499,7 @@ tcu::TestStatus SparseRenderTargetTestInstance::iterateInternalDynamicRendering(
     const VkRect2D renderArea     = makeRect2D(m_width, m_height);
     const VkClearValue clearValue = makeClearValueColor({0.0f, 0.0f, 0.0f, 1.0f});
     const VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                       DE_NULL,
+                                       nullptr,
 
                                        0,
                                        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -540,7 +540,7 @@ tcu::TestStatus SparseRenderTargetTestInstance::iterateInternalDynamicRendering(
         // record primary command buffer
         beginCommandBuffer(vkd, *cmdBuffer, 0u);
         vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
                                &barrier);
 
         if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
@@ -558,7 +558,7 @@ tcu::TestStatus SparseRenderTargetTestInstance::iterateInternalDynamicRendering(
         beginCommandBuffer(vkd, *cmdBuffer);
 
         vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
                                &barrier);
 
         beginRendering(vkd, *cmdBuffer, *m_dstImageView, renderArea, clearValue,

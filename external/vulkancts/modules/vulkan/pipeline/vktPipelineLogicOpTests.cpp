@@ -25,6 +25,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktPipelineLogicOpTests.hpp"
+#include "tcuTextureUtil.hpp"
 #include "vktPipelineImageUtil.hpp"
 
 #include "vkQueryUtil.hpp"
@@ -72,6 +73,17 @@ struct TestParams
     tcu::UVec4 quadColor;                              // Geometry color.
     VkFormat format;                                   // Framebuffer format.
     std::string name;                                  // Logic operator test name.
+};
+
+struct TestParamsMisc
+{
+    VkLogicOp logicOp;                                 // Operation.
+    PipelineConstructionType pipelineConstructionType; // Use monolithic pipeline or pipeline_library
+    tcu::Vec4 fbColor;                                 // Framebuffer color.
+    tcu::Vec4 quadColor;                               // Geometry color.
+    VkFormat format;                                   // Framebuffer format.
+    std::string name;                                  // Logic operator test name.
+    bool doBlending;                                   // Enable blending
 };
 
 uint32_t calcOpResult(VkLogicOp op, uint32_t src, uint32_t dst)
@@ -276,7 +288,7 @@ LogicOpTestInstance::LogicOpTestInstance(Context &ctx, const TestParams &testPar
     {
         const VkImageCreateInfo colorImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-            DE_NULL,                                                               // const void* pNext;
+            nullptr,                                                               // const void* pNext;
             0u,                                                                    // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
             m_params.format,                                                       // VkFormat format;
@@ -299,7 +311,7 @@ LogicOpTestInstance::LogicOpTestInstance(Context &ctx, const TestParams &testPar
         // create color attachment view
         const VkImageViewCreateInfo colorAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkImageViewCreateFlags flags;
             m_colorImage->get(),                      // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -335,12 +347,12 @@ LogicOpTestInstance::LogicOpTestInstance(Context &ctx, const TestParams &testPar
 
         VkPipelineLayoutCreateInfo pipelineLayoutParams{
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             pipelineLayoutFlags,                           // VkPipelineLayoutCreateFlags flags;
             0u,                                            // uint32_t setLayoutCount;
-            DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL,                                       // const VkPushConstantRange* pPushConstantRanges;
+            nullptr,                                       // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_preRasterizationStatePipelineLayout =
@@ -377,8 +389,8 @@ LogicOpTestInstance::LogicOpTestInstance(Context &ctx, const TestParams &testPar
 
         const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
-            DE_NULL,                                                  // VkPipelineColorBlendStateCreateFlags flags;
+            nullptr,                                                  // const void* pNext;
+            0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
             VK_TRUE,                                                  // VkBool32 logicOpEnable;
             m_params.logicOp,                                         // VkLogicOp logicOp;
             1u,                                                       // uint32_t attachmentCount;
@@ -455,9 +467,8 @@ tcu::TestStatus LogicOpTestInstance::verifyImage(void)
     Allocator &allocator            = m_context.getDefaultAllocator();
     auto &log                       = m_context.getTestContext().getLog();
 
-    const auto result = readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, m_colorImage->get(),
-                                            m_params.format, m_renderSize)
-                            .release();
+    const auto result       = readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, m_colorImage->get(),
+                                                  m_params.format, m_renderSize);
     const auto resultAccess = result->getAccess();
     const int iWidth        = static_cast<int>(m_renderSize.x());
     const int iHeight       = static_cast<int>(m_renderSize.y());
@@ -495,6 +506,379 @@ TestInstance *LogicOpTest::createInstance(Context &context) const
 std::string getSimpleFormatName(VkFormat format)
 {
     return de::toLower(std::string(getFormatName(format)).substr(std::string("VK_FORMAT_").size()));
+}
+
+std::string getColorFormatStr(const int numComponents, const VkFormat format)
+{
+    const bool isUint = isUintFormat(format);
+    const bool isSint = isIntFormat(format);
+    std::ostringstream str;
+
+    if (numComponents == 1)
+        str << (isUint ? "uint" : isSint ? "int" : "float");
+    else
+        str << (isUint ? "u" : isSint ? "i" : "") << "vec" << numComponents;
+
+    return str.str();
+}
+
+class LogicOpInapplicableFormatsTest : public vkt::TestCase
+{
+public:
+    LogicOpInapplicableFormatsTest(tcu::TestContext &testCtx, const std::string &name,
+                                   const TestParamsMisc &testParams);
+    virtual ~LogicOpInapplicableFormatsTest(void);
+    virtual void initPrograms(SourceCollections &sourceCollections) const;
+    virtual void checkSupport(Context &context) const;
+    virtual TestInstance *createInstance(Context &context) const;
+
+private:
+    TestParamsMisc m_params;
+};
+
+LogicOpInapplicableFormatsTest::LogicOpInapplicableFormatsTest(tcu::TestContext &testCtx, const std::string &name,
+                                                               const TestParamsMisc &testParams)
+    : vkt::TestCase(testCtx, name)
+    , m_params(testParams)
+{
+    DE_ASSERT(m_params.format != VK_FORMAT_UNDEFINED);
+}
+
+LogicOpInapplicableFormatsTest::~LogicOpInapplicableFormatsTest(void)
+{
+}
+
+void LogicOpInapplicableFormatsTest::checkSupport(Context &ctx) const
+{
+    const auto &features = ctx.getDeviceFeatures();
+
+    if (!features.logicOp)
+        TCU_THROW(NotSupportedError, "Logic operations not supported");
+
+    checkPipelineConstructionRequirements(ctx.getInstanceInterface(), ctx.getPhysicalDevice(),
+                                          m_params.pipelineConstructionType);
+
+    if (!isSupportedColorAttachmentFormat(ctx.getInstanceInterface(), ctx.getPhysicalDevice(), m_params.format))
+        TCU_THROW(NotSupportedError,
+                  "Unsupported color attachment format: " + std::string(getFormatName(m_params.format)));
+
+    if (m_params.doBlending)
+    {
+        VkFormatProperties formatProps;
+
+        ctx.getInstanceInterface().getPhysicalDeviceFormatProperties(ctx.getPhysicalDevice(), m_params.format,
+                                                                     &formatProps);
+
+        if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT))
+            TCU_THROW(NotSupportedError, "Format does not support blending");
+    }
+}
+
+void LogicOpInapplicableFormatsTest::initPrograms(SourceCollections &sourceCollections) const
+{
+    {
+        sourceCollections.glslSources.add("color_vert")
+            << glu::VertexSource("#version 430\n"
+                                 "vec2 vdata[] = vec2[] (\n"
+                                 "vec2(-1.0, -1.0),\n"
+                                 "vec2(1.0, -1.0),\n"
+                                 "vec2(-1.0, 1.0),\n"
+                                 "vec2(1.0, 1.0));\n"
+                                 "void main (void)\n"
+                                 "{\n"
+                                 "    gl_Position = vec4(vdata[gl_VertexIndex], 0.0, 1.0);\n"
+                                 "}\n");
+    }
+
+    {
+        const int numComponents       = tcu::getNumUsedChannels(mapVkFormat(m_params.format).order);
+        const std::string colorFormat = getColorFormatStr(numComponents, m_params.format);
+
+        std::ostringstream frag;
+        frag << "#version 430\n"
+             << "layout(push_constant) uniform quadColor {\n"
+             << "    vec4 val;\n"
+             << "} QUAD_COLOR;\n"
+             << "layout(location = 0) out " << colorFormat << " fragColor;\n"
+             << "void main (void)\n"
+             << "{\n"
+             << "    fragColor = " << colorFormat << "("
+             << (numComponents == 1 ? "QUAD_COLOR.val.r" :
+                 numComponents == 2 ? "QUAD_COLOR.val.rg" :
+                 numComponents == 3 ? "QUAD_COLOR.val.rgb" :
+                                      "QUAD_COLOR.val")
+             << ");\n"
+             << "}\n";
+        sourceCollections.glslSources.add("color_frag") << glu::FragmentSource(frag.str());
+    }
+}
+
+class LogicOpInapplicableFormatsTestInstance : public vkt::TestInstance
+{
+public:
+    LogicOpInapplicableFormatsTestInstance(Context &context, const TestParamsMisc &params);
+    ~LogicOpInapplicableFormatsTestInstance(void);
+    virtual tcu::TestStatus iterate(void);
+
+private:
+    tcu::TestStatus verifyImage(void);
+
+    TestParamsMisc m_params;
+
+    const tcu::TextureFormat m_tcuFormat;
+    const tcu::UVec2 m_renderSize;
+
+    VkImageCreateInfo m_colorImageCreateInfo;
+    de::MovePtr<ImageWithMemory> m_colorImage;
+    Move<VkImageView> m_colorAttachmentView;
+
+    RenderPassWrapper m_renderPass;
+    Move<VkFramebuffer> m_framebuffer;
+
+    ShaderWrapper m_vertexShaderModule;
+    ShaderWrapper m_fragmentShaderModule;
+
+    PipelineLayoutWrapper m_preRasterizationStatePipelineLayout;
+    PipelineLayoutWrapper m_fragmentStatePipelineLayout;
+    GraphicsPipelineWrapper m_graphicsPipeline;
+
+    Move<VkCommandPool> m_cmdPool;
+    Move<VkCommandBuffer> m_cmdBuffer;
+};
+
+LogicOpInapplicableFormatsTestInstance::LogicOpInapplicableFormatsTestInstance(Context &ctx,
+                                                                               const TestParamsMisc &testParams)
+    : vkt::TestInstance(ctx)
+    , m_params(testParams)
+    , m_tcuFormat(mapVkFormat(m_params.format))
+    , m_renderSize(32u, 32u)
+    , m_graphicsPipeline(m_context.getInstanceInterface(), m_context.getDeviceInterface(),
+                         m_context.getPhysicalDevice(), m_context.getDevice(), m_context.getDeviceExtensions(),
+                         testParams.pipelineConstructionType)
+{
+    const DeviceInterface &vk        = m_context.getDeviceInterface();
+    const VkDevice vkDevice          = m_context.getDevice();
+    const uint32_t queueFamilyIndex  = m_context.getUniversalQueueFamilyIndex();
+    Allocator &memAlloc              = m_context.getDefaultAllocator();
+    constexpr auto kPushConstantSize = static_cast<uint32_t>(sizeof(m_params.quadColor));
+
+    // create color image
+    {
+        const VkImageCreateInfo colorImageParams = {
+            VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
+            nullptr,                                                               // const void* pNext;
+            0u,                                                                    // VkImageCreateFlags flags;
+            VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
+            m_params.format,                                                       // VkFormat format;
+            {m_renderSize.x(), m_renderSize.y(), 1u},                              // VkExtent3D extent;
+            1u,                                                                    // uint32_t mipLevels;
+            1u,                                                                    // uint32_t arrayLayers;
+            VK_SAMPLE_COUNT_1_BIT,                                                 // VkSampleCountFlagBits samples;
+            VK_IMAGE_TILING_OPTIMAL,                                               // VkImageTiling tiling;
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags usage;
+            VK_SHARING_MODE_EXCLUSIVE,                                             // VkSharingMode sharingMode;
+            1u,                                                                    // uint32_t queueFamilyIndexCount;
+            &queueFamilyIndex,        // const uint32_t* pQueueFamilyIndices;
+            VK_IMAGE_LAYOUT_UNDEFINED // VkImageLayout initialLayout;
+        };
+
+        m_colorImageCreateInfo = colorImageParams;
+        m_colorImage           = de::MovePtr<ImageWithMemory>(
+            new ImageWithMemory(vk, vkDevice, memAlloc, m_colorImageCreateInfo, MemoryRequirement::Any));
+
+        // create color attachment view
+        const VkImageViewCreateInfo colorAttachmentViewParams = {
+            VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
+            nullptr,                                  // const void* pNext;
+            0u,                                       // VkImageViewCreateFlags flags;
+            m_colorImage->get(),                      // VkImage image;
+            VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
+            m_params.format,                          // VkFormat format;
+            {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
+             VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u} // VkImageSubresourceRange subresourceRange;
+        };
+
+        m_colorAttachmentView = createImageView(vk, vkDevice, &colorAttachmentViewParams);
+    }
+
+    m_renderPass = RenderPassWrapper(m_params.pipelineConstructionType, vk, vkDevice, m_params.format);
+    m_renderPass.createFramebuffer(vk, vkDevice, **m_colorImage, *m_colorAttachmentView, m_renderSize.x(),
+                                   m_renderSize.y());
+
+    // create pipeline layout
+    {
+        const VkPushConstantRange pcRange = {
+            VK_SHADER_STAGE_FRAGMENT_BIT, // VkShaderStageFlags stageFlags;
+            0u,                           // uint32_t offset;
+            kPushConstantSize,            // uint32_t size;
+        };
+
+#ifndef CTS_USES_VULKANSC
+        VkPipelineLayoutCreateFlags pipelineLayoutFlags =
+            (m_params.pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC) ?
+                0u :
+                uint32_t(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
+#else
+        VkPipelineLayoutCreateFlags pipelineLayoutFlags = 0u;
+#endif // CTS_USES_VULKANSC
+
+        VkPipelineLayoutCreateInfo pipelineLayoutParams{
+            VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
+            nullptr,                                       // const void* pNext;
+            pipelineLayoutFlags,                           // VkPipelineLayoutCreateFlags flags;
+            0u,                                            // uint32_t setLayoutCount;
+            nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            0u,                                            // uint32_t pushConstantRangeCount;
+            nullptr,                                       // const VkPushConstantRange* pPushConstantRanges;
+        };
+
+        m_preRasterizationStatePipelineLayout =
+            PipelineLayoutWrapper(m_params.pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
+        pipelineLayoutParams.pushConstantRangeCount = 1u;
+        pipelineLayoutParams.pPushConstantRanges    = &pcRange;
+        m_fragmentStatePipelineLayout =
+            PipelineLayoutWrapper(m_params.pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
+    }
+
+    m_vertexShaderModule   = ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
+    m_fragmentShaderModule = ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
+
+    // create pipeline
+    {
+        const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = initVulkanStructure();
+
+        const std::vector<VkViewport> viewports{makeViewport(m_renderSize)};
+        const std::vector<VkRect2D> scissors{makeRect2D(m_renderSize)};
+
+        VkColorComponentFlags colorWriteMask =
+            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+        VkPipelineColorBlendAttachmentState blendAttachmentState = {
+            VK_FALSE,         // VkBool32 blendEnable;
+            (VkBlendFactor)0, // VkBlendFactor srcColorBlendFactor;
+            (VkBlendFactor)0, // VkBlendFactor dstColorBlendFactor;
+            (VkBlendOp)0,     // VkBlendOp colorBlendOp;
+            (VkBlendFactor)0, // VkBlendFactor srcAlphaBlendFactor;
+            (VkBlendFactor)0, // VkBlendFactor dstAlphaBlendFactor;
+            (VkBlendOp)0,     // VkBlendOp alphaBlendOp;
+            colorWriteMask,   // VkColorComponentFlags colorWriteMask;
+        };
+
+        // With logicOp enabled, blendEnable is ignored
+        if (m_params.doBlending)
+        {
+            blendAttachmentState.blendEnable         = VK_TRUE;
+            blendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+            blendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+            blendAttachmentState.colorBlendOp        = VK_BLEND_OP_ADD;
+            blendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+            blendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+            blendAttachmentState.alphaBlendOp        = VK_BLEND_OP_ADD;
+        }
+
+        const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
+            VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
+            nullptr,                                                  // const void* pNext;
+            0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
+            VK_TRUE,                                                  // VkBool32 logicOpEnable;
+            m_params.logicOp,                                         // VkLogicOp logicOp;
+            1u,                                                       // uint32_t attachmentCount;
+            &blendAttachmentState,    // const VkPipelineColorBlendAttachmentState* pAttachments;
+            {0.0f, 0.0f, 0.0f, 0.0f}, // float blendConstants[4];
+        };
+
+        m_graphicsPipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+            .setDefaultDepthStencilState()
+            .setDefaultRasterizationState()
+            .setDefaultMultisampleState()
+            .setMonolithicPipelineLayout(m_fragmentStatePipelineLayout)
+            .setupVertexInputState(&vertexInputStateParams)
+            .setupPreRasterizationShaderState(viewports, scissors, m_preRasterizationStatePipelineLayout, *m_renderPass,
+                                              0u, m_vertexShaderModule)
+            .setupFragmentShaderState(m_fragmentStatePipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule)
+            .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
+            .buildPipeline();
+    }
+
+    // create command pool
+    m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+
+    // allocate and record command buffer
+    {
+        // Prepare clear color value and quad color taking into account the channel mask.
+        VkClearValue attachmentClearValue;
+
+        attachmentClearValue = makeClearValueColorF32(m_params.fbColor.x(), m_params.fbColor.y(), m_params.fbColor.z(),
+                                                      m_params.fbColor.w());
+
+        m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+        beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+        m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()),
+                           attachmentClearValue);
+
+        // Update push constant values
+        vk.cmdPushConstants(*m_cmdBuffer, *m_fragmentStatePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u,
+                            kPushConstantSize, &(m_params.quadColor));
+
+        m_graphicsPipeline.bind(*m_cmdBuffer);
+        vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 0u, 0u);
+        m_renderPass.end(vk, *m_cmdBuffer);
+        endCommandBuffer(vk, *m_cmdBuffer);
+    }
+}
+
+LogicOpInapplicableFormatsTestInstance::~LogicOpInapplicableFormatsTestInstance(void)
+{
+}
+
+tcu::TestStatus LogicOpInapplicableFormatsTestInstance::iterate(void)
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice vkDevice   = m_context.getDevice();
+    const VkQueue queue       = m_context.getUniversalQueue();
+
+    submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+    return verifyImage();
+}
+
+tcu::TestStatus LogicOpInapplicableFormatsTestInstance::verifyImage(void)
+{
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice vkDevice         = m_context.getDevice();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    Allocator &allocator            = m_context.getDefaultAllocator();
+    auto &log                       = m_context.getTestContext().getLog();
+
+    const auto result       = readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, m_colorImage->get(),
+                                                  m_params.format, m_renderSize);
+    const auto resultAccess = result->getAccess();
+    const int iWidth        = static_cast<int>(m_renderSize.x());
+    const int iHeight       = static_cast<int>(m_renderSize.y());
+    const tcu::Vec4 expectedColor =
+        tcu::isSRGB(m_tcuFormat) ? tcu::linearToSRGB(m_params.quadColor) : m_params.quadColor;
+    tcu::TextureLevel referenceTexture(m_tcuFormat, iWidth, iHeight);
+    auto referenceAccess = referenceTexture.getAccess();
+    tcu::Vec4 threshold(0.01f);
+
+    for (int y = 0; y < iHeight; ++y)
+        for (int x = 0; x < iWidth; ++x)
+            referenceAccess.setPixel(expectedColor, x, y);
+
+    bool resultOk = tcu::floatThresholdCompare(log, "TestResults", "Test Result Images", referenceAccess, resultAccess,
+                                               threshold, tcu::COMPARE_LOG_ON_ERROR);
+
+    if (!resultOk)
+        TCU_FAIL("Result does not match expected values; check log for details");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+TestInstance *LogicOpInapplicableFormatsTest::createInstance(Context &context) const
+{
+    return new LogicOpInapplicableFormatsTestInstance(context, m_params);
 }
 
 } // anonymous namespace
@@ -560,6 +944,84 @@ tcu::TestCaseGroup *createLogicOpTests(tcu::TestContext &testCtx, PipelineConstr
         {
             params.format = format;
             formatGroup->addChild(new LogicOpTest(testCtx, params.name, params));
+        }
+
+        logicOpTests->addChild(formatGroup.release());
+    }
+
+    return logicOpTests.release();
+}
+
+tcu::TestCaseGroup *createLogicOpInapplicableFormatsTests(tcu::TestContext &testCtx,
+                                                          PipelineConstructionType pipelineType)
+{
+    de::MovePtr<tcu::TestCaseGroup> logicOpTests(new tcu::TestCaseGroup(testCtx, "logic_op_na_formats"));
+
+    const tcu::Vec4 kQuadColor = tcu::Vec4(0.00f, 0.40f, 0.80f, 0.10f);
+    const tcu::Vec4 kFbColor   = tcu::Vec4(0.50f, 0.10f, 0.90f, 0.20f);
+
+    // Note: the format will be chosen and changed later.
+    std::vector<TestParamsMisc> logicOpTestParams{
+        {VK_LOGIC_OP_CLEAR, pipelineType, kFbColor, kQuadColor, VK_FORMAT_UNDEFINED, "clear", false},
+        {VK_LOGIC_OP_AND, pipelineType, kFbColor, kQuadColor, VK_FORMAT_UNDEFINED, "and", false},
+        {VK_LOGIC_OP_AND_REVERSE, pipelineType, kFbColor, kQuadColor, VK_FORMAT_UNDEFINED, "and_reverse", false},
+        {VK_LOGIC_OP_COPY, pipelineType, kFbColor, kQuadColor, VK_FORMAT_UNDEFINED, "copy", false},
+        {VK_LOGIC_OP_AND_INVERTED, pipelineType, kFbColor, kQuadColor, VK_FORMAT_UNDEFINED, "and_inverted", false},
+        {VK_LOGIC_OP_NO_OP, pipelineType, kFbColor, kQuadColor, VK_FORMAT_UNDEFINED, "no_op", false},
+        {VK_LOGIC_OP_XOR, pipelineType, kFbColor, kQuadColor, VK_FORMAT_UNDEFINED, "xor", false},
+        {VK_LOGIC_OP_OR, pipelineType, kFbColor, kQuadColor, VK_FORMAT_UNDEFINED, "or", false},
+        {VK_LOGIC_OP_NOR, pipelineType, kFbColor, kQuadColor, VK_FORMAT_UNDEFINED, "nor", false},
+        {VK_LOGIC_OP_EQUIVALENT, pipelineType, kFbColor, kQuadColor, VK_FORMAT_UNDEFINED, "equivalent", false},
+        {VK_LOGIC_OP_INVERT, pipelineType, kFbColor, kQuadColor, VK_FORMAT_UNDEFINED, "invert", false},
+        {VK_LOGIC_OP_OR_REVERSE, pipelineType, kFbColor, kQuadColor, VK_FORMAT_UNDEFINED, "or_reverse", false},
+        {VK_LOGIC_OP_COPY_INVERTED, pipelineType, kFbColor, kQuadColor, VK_FORMAT_UNDEFINED, "copy_inverted", false},
+        {VK_LOGIC_OP_OR_INVERTED, pipelineType, kFbColor, kQuadColor, VK_FORMAT_UNDEFINED, "or_inverted", false},
+        {VK_LOGIC_OP_NAND, pipelineType, kFbColor, kQuadColor, VK_FORMAT_UNDEFINED, "nand", false},
+        {VK_LOGIC_OP_SET, pipelineType, kFbColor, kQuadColor, VK_FORMAT_UNDEFINED, "set", false},
+    };
+
+    const VkFormat formatList[] = {
+        // Float
+        VK_FORMAT_R16_SFLOAT,
+        VK_FORMAT_R16G16_SFLOAT,
+        VK_FORMAT_R16G16B16_SFLOAT,
+        VK_FORMAT_R16G16B16A16_SFLOAT,
+        VK_FORMAT_R32_SFLOAT,
+        VK_FORMAT_R32G32_SFLOAT,
+        VK_FORMAT_R32G32B32_SFLOAT,
+        VK_FORMAT_R32G32B32A32_SFLOAT,
+        VK_FORMAT_R64_SFLOAT,
+        VK_FORMAT_R64G64_SFLOAT,
+        VK_FORMAT_R64G64B64_SFLOAT,
+        VK_FORMAT_R64G64B64A64_SFLOAT,
+
+        // sRGB
+        VK_FORMAT_R8_SRGB,
+        VK_FORMAT_R8G8_SRGB,
+        VK_FORMAT_R8G8B8_SRGB,
+        VK_FORMAT_B8G8R8_SRGB,
+        VK_FORMAT_R8G8B8A8_SRGB,
+        VK_FORMAT_B8G8R8A8_SRGB,
+    };
+
+    for (int formatIdx = 0; formatIdx < DE_LENGTH_OF_ARRAY(formatList); ++formatIdx)
+    {
+        const auto &format    = formatList[formatIdx];
+        const auto formatName = getSimpleFormatName(format);
+
+        de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, formatName.c_str()));
+
+        for (auto &params : logicOpTestParams)
+        {
+            params.format = format;
+
+            for (const auto &doBlending : {false, true})
+            {
+                params.doBlending = doBlending;
+
+                const std::string testName = params.name + (params.doBlending ? "_blend" : "_noblend");
+                formatGroup->addChild(new LogicOpInapplicableFormatsTest(testCtx, testName, params));
+            }
         }
 
         logicOpTests->addChild(formatGroup.release());

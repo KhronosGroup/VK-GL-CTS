@@ -47,7 +47,7 @@ namespace vk
 struct RenderDocPrivate
 {
 #if defined(DEQP_HAVE_RENDERDOC_HEADER)
-    RenderDocPrivate(void) : m_api(DE_NULL), m_valid(false)
+    RenderDocPrivate(void) : m_api(nullptr), m_valid(false)
     {
     }
 
@@ -99,7 +99,7 @@ RenderDocUtil::~RenderDocUtil(void)
 bool RenderDocUtil::isValid(void)
 {
 #if defined(DEQP_HAVE_RENDERDOC_HEADER)
-    return m_priv != DE_NULL && m_priv->m_valid;
+    return m_priv != nullptr && m_priv->m_valid;
 #else
     return false;
 #endif
@@ -110,7 +110,7 @@ void RenderDocUtil::startFrame(vk::VkInstance instance)
     if (!isValid())
         return;
 #if defined(DEQP_HAVE_RENDERDOC_HEADER)
-    m_priv->m_api->StartFrameCapture(RENDERDOC_DEVICEPOINTER_FROM_VKINSTANCE(instance), DE_NULL);
+    m_priv->m_api->StartFrameCapture(RENDERDOC_DEVICEPOINTER_FROM_VKINSTANCE(instance), nullptr);
 #else
     (void)instance;
 #endif
@@ -121,7 +121,7 @@ void RenderDocUtil::endFrame(vk::VkInstance instance)
     if (!isValid())
         return;
 #if defined(DEQP_HAVE_RENDERDOC_HEADER)
-    m_priv->m_api->EndFrameCapture(RENDERDOC_DEVICEPOINTER_FROM_VKINSTANCE(instance), DE_NULL);
+    m_priv->m_api->EndFrameCapture(RENDERDOC_DEVICEPOINTER_FROM_VKINSTANCE(instance), nullptr);
 #else
     (void)instance;
 #endif

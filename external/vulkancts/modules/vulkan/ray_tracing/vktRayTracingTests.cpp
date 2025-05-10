@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktRayTracingTests.hpp"
+#include "vktRayTracingAmberTests.hpp"
 #include "vktRayTracingBuiltinTests.hpp"
 #include "vktRayTracingBuildLargeTests.hpp"
 #include "vktRayTracingBuildTests.hpp"
@@ -61,6 +62,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
 {
     de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
+    group->addChild(createAmberTests(testCtx));
     group->addChild(createBuiltinTests(testCtx));
     group->addChild(createSpecConstantTests(testCtx));
     group->addChild(createBuildLargeShaderSetTests(testCtx));

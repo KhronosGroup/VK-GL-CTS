@@ -145,9 +145,9 @@ bool GetProgramivActiveUniformBlockMaxNameLengthTest::initTest()
     GLU_EXPECT_NO_ERROR(gl.getError(), "glAttachShader() call(s) failed.");
 
     gl.shaderSource(m_fs_id, 1,         /* count */
-                    &fs_body, DE_NULL); /* length */
+                    &fs_body, nullptr); /* length */
     gl.shaderSource(m_vs_id, 1,         /* count */
-                    &vs_body, DE_NULL); /* length */
+                    &vs_body, nullptr); /* length */
 
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call(s) failed.");
 
@@ -946,7 +946,7 @@ tcu::TestNode::IterateResult InputVariablesCannotBeModifiedTest::iterate()
 
         /* Assign the source code to the SO */
         gl.shaderSource(so_id, 1,                                  /* count */
-                        &current_iteration_body_raw_ptr, DE_NULL); /* length */
+                        &current_iteration_body_raw_ptr, nullptr); /* length */
         GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
         /* Try to compile the shader object. */
@@ -1192,7 +1192,7 @@ tcu::TestNode::IterateResult InvalidUseCasesForAllNotFuncsAndExclMarkOpTest::ite
 
         /* Assign the source code to the SO */
         gl.shaderSource(m_vs_id, 1,              /* count */
-                        &body_raw_ptr, DE_NULL); /* length */
+                        &body_raw_ptr, nullptr); /* length */
         GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
         /* Try to compile the shader object. */
@@ -1417,7 +1417,7 @@ tcu::TestNode::IterateResult InvalidVSInputsTest::iterate()
 
         /* Assign the source code to the SO */
         gl.shaderSource(m_vs_id, 1,              /* count */
-                        &body_raw_ptr, DE_NULL); /* length */
+                        &body_raw_ptr, nullptr); /* length */
         GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
         /* Try to compile the shader object. */
@@ -1534,7 +1534,7 @@ tcu::TestNode::IterateResult ParenthesisInLayoutQualifierIntegerValuesTest::iter
 
     GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateProgram() call failed.");
 
-    gl.shaderSource(m_cs_id, n_cs_body_parts, cs_body_parts, DE_NULL); /* length */
+    gl.shaderSource(m_cs_id, n_cs_body_parts, cs_body_parts, nullptr); /* length */
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
     /* Try to compile the shader object.
@@ -2631,7 +2631,7 @@ bool PerVertexValidationTest::runPipelineObjectValidationTestMode(_test_iteratio
 
                 if (!isShaderProgramLinkingFailureExpected(iteration))
                 {
-                    gl.getProgramInfoLog(*current_shader_program.po_id_ptr, sizeof(info_log), DE_NULL, /* length */
+                    gl.getProgramInfoLog(*current_shader_program.po_id_ptr, sizeof(info_log), nullptr, /* length */
                                          info_log);
 
                     m_testCtx.getLog() << tcu::TestLog::Message << "The separate "
@@ -2799,7 +2799,7 @@ bool PerVertexValidationTest::runSeparateShaderTestMode(_test_iteration iteratio
 
     for (unsigned int n_shader = 0; n_shader < n_shaders; ++n_shader)
     {
-        const char *body_raw_ptr                  = DE_NULL;
+        const char *body_raw_ptr                  = nullptr;
         const std::string &current_body           = *shaders[n_shader].body_ptr;
         const _shader_stage &current_shader_stage = shaders[n_shader].shader_stage;
         glw::GLuint &current_so_id                = *shaders[n_shader].so_id_ptr;
@@ -2813,7 +2813,7 @@ bool PerVertexValidationTest::runSeparateShaderTestMode(_test_iteration iteratio
             GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateShader() call failed.");
 
             gl.shaderSource(current_so_id, 1,        /* count */
-                            &body_raw_ptr, DE_NULL); /* length */
+                            &body_raw_ptr, nullptr); /* length */
             GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
             /* Ensure the shader compiled successfully. */
@@ -5724,7 +5724,7 @@ SparseBuffersWithCopyOpsTest::SparseBuffersWithCopyOpsTest(deqp::Context &contex
                " memory transfers are involved.")
     , m_bo_id(0)
     , m_bo_read_id(0)
-    , m_clear_buffer(DE_NULL)
+    , m_clear_buffer(nullptr)
     , m_page_size(0)
     , m_result_data_storage_size(0)
     , m_n_iterations_to_run(16)
@@ -5758,11 +5758,11 @@ void SparseBuffersWithCopyOpsTest::deinit()
         m_bo_read_id = 0;
     }
 
-    if (m_clear_buffer != DE_NULL)
+    if (m_clear_buffer != nullptr)
     {
         delete[] m_clear_buffer;
 
-        m_clear_buffer = DE_NULL;
+        m_clear_buffer = nullptr;
     }
 }
 
@@ -5801,7 +5801,7 @@ bool SparseBuffersWithCopyOpsTest::initTest()
     gl.bindBuffer(GL_ARRAY_BUFFER, m_bo_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() call failed.");
 
-    gl.bufferStorage(GL_ARRAY_BUFFER, m_virtual_bo_size, DE_NULL, /* data */
+    gl.bufferStorage(GL_ARRAY_BUFFER, m_virtual_bo_size, nullptr, /* data */
                      GL_DYNAMIC_STORAGE_BIT | GL_SPARSE_STORAGE_BIT_ARB);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferStorage() call failed.");
 

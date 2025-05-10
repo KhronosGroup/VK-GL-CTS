@@ -2600,6 +2600,17 @@ CompressedTexture::CompressedTexture(CompressedTexFormat format, int width, int 
     setStorage(format, width, height, depth);
 }
 
+CompressedTexture::CompressedTexture(CompressedTexFormat format, int width, int height, int depth,
+                                     std::vector<uint8_t> &&data)
+    : m_format(COMPRESSEDTEXFORMAT_LAST)
+    , m_width(0)
+    , m_height(0)
+    , m_depth(0)
+    , m_data(data)
+{
+    setStorage(format, width, height, depth);
+}
+
 CompressedTexture::~CompressedTexture(void)
 {
 }
@@ -2616,8 +2627,17 @@ void CompressedTexture::setStorage(CompressedTexFormat format, int width, int he
         const IVec3 blockPixelSize = getBlockPixelSize(m_format);
         const int blockSize        = getBlockSize(m_format);
 
-        m_data.resize(deDivRoundUp32(m_width, blockPixelSize.x()) * deDivRoundUp32(m_height, blockPixelSize.y()) *
-                      deDivRoundUp32(m_depth, blockPixelSize.z()) * blockSize);
+        if (m_data.size() > 0)
+        {
+            DE_ASSERT(static_cast<int>(m_data.size()) >=
+                      (deDivRoundUp32(m_width, blockPixelSize.x()) * deDivRoundUp32(m_height, blockPixelSize.y()) *
+                       deDivRoundUp32(m_depth, blockPixelSize.z()) * blockSize));
+        }
+        else
+        {
+            m_data.resize(deDivRoundUp32(m_width, blockPixelSize.x()) * deDivRoundUp32(m_height, blockPixelSize.y()) *
+                          deDivRoundUp32(m_depth, blockPixelSize.z()) * blockSize);
+        }
     }
     else
     {

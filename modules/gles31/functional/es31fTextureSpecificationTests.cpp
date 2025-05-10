@@ -121,8 +121,8 @@ protected:
         return true;
     }
 
-    virtual void createTexture(void)                                                              = DE_NULL;
-    virtual void verifyTexture(sglr::GLContext &gles3Context, sglr::ReferenceContext &refContext) = DE_NULL;
+    virtual void createTexture(void)                                                              = 0;
+    virtual void verifyTexture(sglr::GLContext &gles3Context, sglr::ReferenceContext &refContext) = 0;
 
     // Utilities.
     void renderTex(tcu::Surface &dst, uint32_t program, int width, int height);
@@ -763,7 +763,7 @@ public:
         glGenTextures(1, &tex);
         glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, tex);
         glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, m_internalFormat, m_size, m_size, m_depth, 0, transferFmt.format,
-                     transferFmt.dataType, DE_NULL);
+                     transferFmt.dataType, nullptr);
         glDeleteBuffers(1, &buf);
     }
 

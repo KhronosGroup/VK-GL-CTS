@@ -215,7 +215,7 @@ void TestLog::writeMessage(const char *msgStr)
         return;
     if (m_skipAdditionalDataInLog)
         return;
-    if (qpTestLog_writeText(m_log, DE_NULL, DE_NULL, QP_KEY_TAG_NONE, msgStr) == false)
+    if (qpTestLog_writeText(m_log, nullptr, nullptr, QP_KEY_TAG_NONE, msgStr) == false)
         throw LogWriteFailedError();
 }
 
@@ -294,7 +294,7 @@ void TestLog::writeImage(const char *name, const char *description, const ConstP
         writeImage(name, description, compressionMode, isRGBA ? QP_IMAGE_FORMAT_RGBA8888 : QP_IMAGE_FORMAT_RGB888,
                    width, height, access.getRowPitch(), access.getDataPtr());
     }
-    else if (depth == 1)
+    else if (depth == 1 || isSeparateSlices())
     {
         Sampler sampler(Sampler::CLAMP_TO_EDGE, Sampler::CLAMP_TO_EDGE, Sampler::CLAMP_TO_EDGE, Sampler::LINEAR,
                         Sampler::NEAREST);
@@ -306,20 +306,26 @@ void TestLog::writeImage(const char *name, const char *description, const ConstP
 
         longDesc << description << " (p' = p * " << pixelScale << " + " << pixelBias << ")";
 
-        for (int y = 0; y < logImage.getHeight(); y++)
+        for (int z = 0; z < depth; ++z)
         {
-            for (int x = 0; x < logImage.getWidth(); x++)
+            for (int y = 0; y < logImage.getHeight(); y++)
             {
-                float yf = ((float)y + 0.5f) / (float)logImage.getHeight();
-                float xf = ((float)x + 0.5f) / (float)logImage.getWidth();
-                Vec4 s   = access.sample2D(sampler, sampler.minFilter, xf, yf, 0) * pixelScale + pixelBias;
+                for (int x = 0; x < logImage.getWidth(); x++)
+                {
+                    float yf = ((float)y + 0.5f) / (float)logImage.getHeight();
+                    float xf = ((float)x + 0.5f) / (float)logImage.getWidth();
+                    Vec4 s   = access.sample2D(sampler, sampler.minFilter, xf, yf, z) * pixelScale + pixelBias;
 
-                logImageAccess.setPixel(s, x, y);
+                    logImageAccess.setPixel(s, x, y);
+                }
             }
-        }
 
-        writeImage(name, longDesc.str().c_str(), compressionMode, QP_IMAGE_FORMAT_RGBA8888, logImageAccess.getWidth(),
-                   logImageAccess.getHeight(), logImageAccess.getRowPitch(), logImageAccess.getDataPtr());
+            const auto loggedName = (depth == 1 ? name : name + std::string("-Slice") + std::to_string(z));
+            const auto loggedDesc = longDesc.str() + (depth == 1 ? " [Slice " + std::to_string(z) + "]" : "");
+            writeImage(loggedName.c_str(), loggedDesc.c_str(), compressionMode, QP_IMAGE_FORMAT_RGBA8888,
+                       logImageAccess.getWidth(), logImageAccess.getHeight(), logImageAccess.getRowPitch(),
+                       logImageAccess.getDataPtr());
+        }
     }
     else
     {
@@ -602,7 +608,7 @@ void TestLog::writeValueInfo(const std::string &name, const std::string &descrip
 {
     if (m_logSupressed)
         return;
-    if (qpTestLog_writeValueInfo(m_log, name.c_str(), description.c_str(), unit.empty() ? DE_NULL : unit.c_str(),
+    if (qpTestLog_writeValueInfo(m_log, name.c_str(), description.c_str(), unit.empty() ? nullptr : unit.c_str(),
                                  tag) == false)
         throw LogWriteFailedError();
 }
@@ -675,6 +681,16 @@ void TestLog::supressLogging(bool value)
 bool TestLog::isSupressLogging(void)
 {
     return m_logSupressed;
+}
+
+void TestLog::separateSlices(bool value)
+{
+    qpTestLog_setSplitSlices(m_log, value);
+}
+
+bool TestLog::isSeparateSlices(void) const
+{
+    return ((qpTestLog_getLogFlags(m_log) & QP_TEST_LOG_SPLIT_SLICES) != 0u);
 }
 
 const TestLog::BeginMessageToken TestLog::Message              = TestLog::BeginMessageToken();

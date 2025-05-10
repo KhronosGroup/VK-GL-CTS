@@ -246,15 +246,19 @@ tcu::TestStatus AhbExternalFormatResolveTestInstance::iterate(void)
         tcu::TextureLevel reference(textureFormat, m_width, m_height, m_layers);
         const bool alphaMismatch =
             !AndroidHardwareBufferInstance::hasFormatAlpha(m_format) && hasAlphaChannel(textureFormat.order);
-        const bool isYuvFormat = AndroidHardwareBufferInstance::isFormatYuv(m_format);
-        buildReferenceImage(reference, isYuvFormat, alphaMismatch);
+        // In test cases where input attachment usage is being tested with an implementation that does not support
+        // nullColorAttachment the color image is read directly for comparison without any YUV sub/up sampling.
+        const bool performDownsample =
+            AndroidHardwareBufferInstance::isFormatYuv(m_format) && (!m_isInputAttachment || m_nullColorAttachment);
+        buildReferenceImage(reference, performDownsample, alphaMismatch);
         const tcu::ConstPixelBufferAccess referenceAccess = reference.getAccess();
         const char *name                                  = "Render validation";
         const char *description = "Validate output image was rendered according to expectation (if YUV and input test, "
                                   "a follow up test is done for no downsample)";
         // Some implementations of format YCbCr_P010 will have reduced range, which requires allowing for some threshold since we are rendering with 1.0f
-        const tcu::UVec4 threshold =
-            (m_format == AndroidHardwareBufferInstance::Format::YCbCr_P010) ? tcu::UVec4(4u) : tcu::UVec4(0u);
+        const tcu::UVec4 threshold = (m_format == AndroidHardwareBufferInstance::Format::YCbCr_P010) ?
+                                         tcu::UVec4(4u) :
+                                         tcu::UVec4(1u, 0u, 1u, 0u);
 
         if (!tcu::intThresholdCompare(log, name, description, referenceAccess, resultAccess, threshold,
                                       tcu::COMPARE_LOG_ON_ERROR))
@@ -415,7 +419,7 @@ void AhbExternalFormatResolveTestInstance::doRenderPass(const vk::DeviceInterfac
                 static_cast<vk::VkCommandBufferUsageFlags>(vk::VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT);
         const vk::VkCommandBufferBeginInfo commandBufBeginParams = {
             vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType                    sType
-            DE_NULL,                                         // const void*                        pNext
+            nullptr,                                         // const void*                        pNext
             commandBufferBeginFlags,                         // VkCommandBufferUsageFlags        flags
             &inheritanceInfo                                 // VkCommandBufferInheritanceInfo    pInheritanceInfo
         };
@@ -477,7 +481,7 @@ void AhbExternalFormatResolveTestInstance::copyImageToBuffer(const vk::DeviceInt
                                           0u, VK_REMAINING_MIP_LEVELS, 0u, VK_REMAINING_ARRAY_LAYERS)};
 
         vk.cmdPipelineBarrier(commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                              0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+                              0u, 0u, nullptr, 0u, nullptr, 1u, &imageBarrier);
 
         const vk::VkImageSubresourceLayers subresource = {
             vk::VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags    aspectMask
@@ -551,7 +555,7 @@ void AhbExternalFormatResolveTestInstance::initialAttachmentTransition(const vk:
     barrierCount += m_isInputAttachment ? 1u : 0u;
 
     vk.cmdPipelineBarrier(commandBuffer, vk::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                          vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, barrierCount,
+                          vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, barrierCount,
                           imageBarriers);
 }
 
@@ -573,7 +577,7 @@ void AhbExternalFormatResolveTestInstance::transitionInputAttachmentToOutput(con
         subresourceRange                              // VkImageSubresourceRange    subresourceRange
     };
     vk.cmdPipelineBarrier(commandBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                          vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+                          vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &imageBarrier);
 }
 
 bool AhbExternalFormatResolveTestInstance::checkExternalFormatTestingRequired(
@@ -668,7 +672,8 @@ bool AhbExternalFormatResolveTestInstance::checkExternalFormatTestingRequired(
 
     // Need to fetch correct max clear value since it'll depend on each format
     const tcu::Vec4 formatMaxValue = tcu::getTextureFormatInfo(mapVkFormat(m_colorAttachmentFormat)).valueMax;
-    m_clearColor[0]                = formatMaxValue[0];
+    m_clearColor[0]                = formatMaxValue[0] * 0.5f;
+    m_clearColor[1]                = formatMaxValue[0];
     m_clearColor[3]                = formatMaxValue[3];
 
     return true;
@@ -683,8 +688,8 @@ void AhbExternalFormatResolveTestInstance::buildReferenceImage(tcu::TextureLevel
         // Modify alpha value to match output if original AHB format does not contain alpha
         tcu::Vec4(0.0f, 0.0f, 0.0f, (ahbFormatVulkanFormatAlphaMismatch ? formatMaxValue.w() : 0.0f)), // black
         tcu::Vec4(formatMaxValue.x(), 0.0f, 0.0f, formatMaxValue.w()),                                 // red
-        tcu::Vec4(0.0f, formatMaxValue.y(), 0.0f, formatMaxValue.w()), // green
-        tcu::Vec4(0.0f, 0.0f, formatMaxValue.z(), formatMaxValue.w()), // blue
+        tcu::Vec4(0.0f, formatMaxValue.y(), 0.0f, formatMaxValue.w()),        // green
+        tcu::Vec4(0.0f, 0.0f, formatMaxValue.z() * 0.5f, formatMaxValue.w()), // blue
     };
 
     tcu::IVec2 renderAreaStart(m_renderArea.offset.x, m_renderArea.offset.y);
@@ -797,7 +802,7 @@ void AhbExternalFormatResolveTestInstance::createImagesAndViews(AndroidHardwareB
         {
             vk::VkAndroidHardwareBufferPropertiesANDROID ahbProperties = {
                 vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID, // VkStructureType    sType
-                DE_NULL,                                                          // void*            pNext
+                nullptr,                                                          // void*            pNext
                 0u,                                                               // VkDeviceSize        allocationSize
                 0u                                                                // uint32_t            memoryTypeBits
             };
@@ -806,7 +811,7 @@ void AhbExternalFormatResolveTestInstance::createImagesAndViews(AndroidHardwareB
 
             const vk::VkImportAndroidHardwareBufferInfoANDROID importInfo = {
                 vk::VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID, // VkStructureType            sType
-                DE_NULL,                                                           // const void*                pNext
+                nullptr,                                                           // const void*                pNext
                 androidBuffer.getHandle()                                          // struct AHardwareBuffer*    buffer
             };
 
@@ -814,7 +819,7 @@ void AhbExternalFormatResolveTestInstance::createImagesAndViews(AndroidHardwareB
                 vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR, // VkStructureType    sType
                 &importInfo,                                              // const void*        pNext
                 m_resources.m_androidExternalImage.get(),                 // VkImage            image
-                DE_NULL,                                                  // VkBuffer            buffer
+                VK_NULL_HANDLE,                                           // VkBuffer            buffer
             };
 
             const vk::VkMemoryAllocateInfo allocateInfo = {
@@ -1417,15 +1422,15 @@ void AhbExternalFormatResolveTestInstance::beginRender(vk::VkCommandBuffer cmd, 
 
         vk::VkRenderingInfoKHR renderingInfo{
             vk::VK_STRUCTURE_TYPE_RENDERING_INFO_KHR, // VkStructureType                        sType
-            DE_NULL,                                  // const void*                            pNext
+            nullptr,                                  // const void*                            pNext
             renderingFlags,                           // VkRenderingFlagsKHR                    flags
             renderArea,                               // VkRect2D                                renderArea
             m_layers,                                 // uint32_t                                layerCount
             0u,                                       // uint32_t                                viewMask
             1u,                                       // uint32_t                                colorAttachmentCount
             &colorAttachment,                         // const VkRenderingAttachmentInfoKHR*    pColorAttachments
-            DE_NULL,                                  // const VkRenderingAttachmentInfoKHR*    pDepthAttachment
-            DE_NULL,                                  // const VkRenderingAttachmentInfoKHR*    pStencilAttachment
+            nullptr,                                  // const VkRenderingAttachmentInfoKHR*    pDepthAttachment
+            nullptr,                                  // const VkRenderingAttachmentInfoKHR*    pStencilAttachment
         };
         vk.cmdBeginRendering(cmd, &renderingInfo);
     }
@@ -1441,7 +1446,7 @@ void AhbExternalFormatResolveTestInstance::beginRender(vk::VkCommandBuffer cmd, 
 
         const vk::VkRenderPassBeginInfo renderPassBeginInfo = {
             vk::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // VkStructureType        sType
-            DE_NULL,                                      // const void*            pNext
+            nullptr,                                      // const void*            pNext
             clearPass ? m_resources.m_renderPassClear.get() :
                         m_resources.m_renderPass.get(), // VkRenderPass            renderPass
             clearPass ? m_resources.m_framebufferClear.get() :
@@ -1551,7 +1556,8 @@ void AhbExternalFormatResolveTestCase::initPrograms(SourceCollections &programCo
         {"u", uintMax.c_str()}, // uint
         {"", "1.0f"},           // float
     };
-    const uint32_t typeCount = sizeof(possibleTypes) / sizeof(possibleTypes[0]);
+    const uint32_t typeCount  = sizeof(possibleTypes) / sizeof(possibleTypes[0]);
+    const bool formatHasAlpha = AndroidHardwareBufferInstance::hasFormatAlpha(m_params.m_format);
 
     for (uint32_t i = 0; i < typeCount; ++i)
     {
@@ -1562,12 +1568,13 @@ void AhbExternalFormatResolveTestCase::initPrograms(SourceCollections &programCo
 
                << "const " << possibleTypes[i].first << "vec4 reference_colors[] =\n"
                << "{\n"
-               << "    " << possibleTypes[i].first << "vec4(0.0f, 0.0f, 0.0f, 0.0f),\n"
+               << "    " << possibleTypes[i].first << "vec4(0.0f, 0.0f, 0.0f, "
+               << (formatHasAlpha ? "0.0f" : possibleTypes[i].second) << "),\n"
                << "    " << possibleTypes[i].first << "vec4(" << possibleTypes[i].second << ", 0.0f, 0.0f, "
                << possibleTypes[i].second << "),\n"
                << "    " << possibleTypes[i].first << "vec4(0.0f, " << possibleTypes[i].second << ", 0.0f, "
                << possibleTypes[i].second << "),\n"
-               << "    " << possibleTypes[i].first << "vec4(0.0f, 0.0f, " << possibleTypes[i].second << ", "
+               << "    " << possibleTypes[i].first << "vec4(0.0f, 0.0f, " << possibleTypes[i].second << " * 0.5, "
                << possibleTypes[i].second << "),\n"
                << "};\n"
                << "void main()\n"

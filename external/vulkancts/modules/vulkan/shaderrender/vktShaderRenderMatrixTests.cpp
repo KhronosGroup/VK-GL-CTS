@@ -1575,7 +1575,7 @@ MatrixShaderEvalFunc getEvalFunc(const ShaderInput &in0, const ShaderInput &in1,
 
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 
 #undef PACK_EVAL_CASE
@@ -1700,7 +1700,7 @@ private:
 
 ShaderMatrixInstance::ShaderMatrixInstance(Context &context, bool isVertex, const ShaderEvaluator &evaluator,
                                            const ShaderInput in0, const ShaderInput in1, const MatrixOp op)
-    : ShaderRenderCaseInstance(context, isVertex, evaluator, DE_NULL, DE_NULL, IMAGE_BACKING_MODE_REGULAR,
+    : ShaderRenderCaseInstance(context, isVertex, evaluator, nullptr, nullptr, IMAGE_BACKING_MODE_REGULAR,
                                isVertex && op == OP_INVERSE ? 64 : GRID_SIZE_DEFAULTS)
     , m_in0(in0)
     , m_in1(in1)
@@ -1954,7 +1954,7 @@ ShaderMatrixCase::ShaderMatrixCase(tcu::TestContext &testCtx, const std::string 
                                    const ShaderInput &in1, MatrixOp op, bool isVertexCase)
     : ShaderRenderCase(testCtx, name, isVertexCase,
                        new MatrixShaderEvaluator(getEvalFunc(in0, in1, op), in0.inputType, in1.inputType),
-                       DE_NULL /* uniform setup */, DE_NULL /* attribute setup */)
+                       nullptr /* uniform setup */, nullptr /* attribute setup */)
     , m_in0(in0)
     , m_in1(in1)
     , m_op(op)

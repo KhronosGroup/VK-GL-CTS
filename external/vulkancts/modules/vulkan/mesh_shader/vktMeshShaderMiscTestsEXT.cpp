@@ -4110,8 +4110,8 @@ tcu::TestStatus MixedPipelinesInstance::iterate()
     // Pipeline layouts for the mesh and classic pipelines.
     const auto pcSize                = static_cast<uint32_t>(sizeof(tcu::Vec4));
     const auto pcRange               = makePushConstantRange(VK_SHADER_STAGE_FRAGMENT_BIT, 0u, pcSize);
-    const auto classicPipelineLayout = makePipelineLayout(vkd, device, DE_NULL, &pcRange);
-    const auto meshPipelineLayout    = makePipelineLayout(vkd, device, DE_NULL, &pcRange);
+    const auto classicPipelineLayout = makePipelineLayout(vkd, device, VK_NULL_HANDLE, &pcRange);
+    const auto meshPipelineLayout    = makePipelineLayout(vkd, device, VK_NULL_HANDLE, &pcRange);
 
     // Shader modules.
     const auto &binaries  = m_context.getBinaryCollection();
@@ -4176,16 +4176,16 @@ tcu::TestStatus MixedPipelinesInstance::iterate()
     };
 
     const auto meshPipeline = makeGraphicsPipeline(
-        vkd, device, meshPipelineLayout.get(), DE_NULL, meshShader.get(), fragShader.get(), renderPass.get(), viewports,
-        scissors, 0u /*subpass*/, nullptr, nullptr, nullptr, &colorBlendInfo, &meshDynamicStateInfo);
+        vkd, device, meshPipelineLayout.get(), VK_NULL_HANDLE, meshShader.get(), fragShader.get(), renderPass.get(),
+        viewports, scissors, 0u /*subpass*/, nullptr, nullptr, nullptr, &colorBlendInfo, &meshDynamicStateInfo);
 
     const VkPipelineVertexInputStateCreateInfo vertexInputInfo = initVulkanStructure();
 
     const auto staticTopo      = (dynTopo ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
     const auto classicPipeline = makeGraphicsPipeline(
-        vkd, device, classicPipelineLayout.get(), vertShader.get(), DE_NULL, DE_NULL, DE_NULL, fragShader.get(),
-        renderPass.get(), viewports, scissors, staticTopo, 0u /*subpass*/, 0u /*patchControlPoints*/, &vertexInputInfo,
-        nullptr, nullptr, nullptr, nullptr, &classicDynamicStateInfo);
+        vkd, device, classicPipelineLayout.get(), vertShader.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+        fragShader.get(), renderPass.get(), viewports, scissors, staticTopo, 0u /*subpass*/, 0u /*patchControlPoints*/,
+        &vertexInputInfo, nullptr, nullptr, nullptr, nullptr, &classicDynamicStateInfo);
 
     // Command pool and buffer.
     const auto cmdPool      = makeCommandPool(vkd, device, queueIndex);
@@ -4784,7 +4784,7 @@ tcu::TestStatus LocalSizeIdInstance::iterate()
     const std::vector<VkRect2D> scissors(1u, makeRect2D(imageExtent));
 
     // Pipeline with specialization constants.
-    const auto pipeline = makeGraphicsPipeline(vkd, device, DE_NULL, pipelineLayout.get(), 0u, shaderStages,
+    const auto pipeline = makeGraphicsPipeline(vkd, device, VK_NULL_HANDLE, pipelineLayout.get(), 0u, shaderStages,
                                                renderPass.get(), viewports, scissors);
 
     // Command pool and buffer.
@@ -5094,7 +5094,7 @@ tcu::TestStatus MultipleTaskPayloadsInstance::iterate()
     // Pipeline layout.
     const auto pcSize         = static_cast<uint32_t>(sizeof(uint32_t));
     const auto pcRange        = makePushConstantRange(VK_SHADER_STAGE_TASK_BIT_EXT, 0u, pcSize);
-    const auto pipelineLayout = makePipelineLayout(vkd, device, DE_NULL, &pcRange);
+    const auto pipelineLayout = makePipelineLayout(vkd, device, VK_NULL_HANDLE, &pcRange);
 
     // Shader modules.
     const auto &binaries = m_context.getBinaryCollection();
@@ -5832,7 +5832,9 @@ tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
             if (extraWrites)
                 continue;
 
-            for (const auto primType : types)
+            // Workaround. See VK-GL-CTS issue: https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/5589
+            // and GCC issue https://gcc.gnu.org/bugzilla/show_bug.cgi?id=118924
+            for (const auto &primType : types)
             {
                 std::unique_ptr<NoPrimitivesParams> params(new NoPrimitivesParams(
                     /*taskCount*/ (extraWrites ? tcu::just(tcu::UVec3(1u, 1u, 1u)) : tcu::Nothing),

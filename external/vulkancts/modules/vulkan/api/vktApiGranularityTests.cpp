@@ -172,7 +172,7 @@ void GranularityInstance::initImages(void)
 
         const VkImageCreateInfo imageInfo{
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                             // const void* pNext;
+            nullptr,                             // const void* pNext;
             0u,                                  // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
             it->format,                          // VkFormat format;
@@ -196,7 +196,7 @@ void GranularityInstance::initImages(void)
 
         const VkImageViewCreateInfo createInfo = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0,                                        // VkImageViewCreateFlags flags;
             *image,                                   // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -231,25 +231,25 @@ void GranularityInstance::initObjects(void)
             (VkSubpassDescriptionFlags)0u,   // VkSubpassDescriptionFlags flags;
             VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
             0u,                              // uint32_t inputCount;
-            DE_NULL,                         // const VkAttachmentReference* pInputAttachments;
+            nullptr,                         // const VkAttachmentReference* pInputAttachments;
             0u,                              // uint32_t colorCount;
-            DE_NULL,                         // const VkAttachmentReference* pColorAttachments;
-            DE_NULL,                         // const VkAttachmentReference* pResolveAttachments;
-            DE_NULL,                         // VkAttachmentReference depthStencilAttachment;
+            nullptr,                         // const VkAttachmentReference* pColorAttachments;
+            nullptr,                         // const VkAttachmentReference* pResolveAttachments;
+            nullptr,                         // VkAttachmentReference depthStencilAttachment;
             0u,                              // uint32_t preserveCount;
-            DE_NULL                          // const VkAttachmentReference* pPreserveAttachments;
+            nullptr                          // const VkAttachmentReference* pPreserveAttachments;
         };
 
         const VkRenderPassCreateInfo renderPassParams{
             VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags flags;
             (uint32_t)m_attachmentDescriptions.size(), // uint32_t attachmentCount;
             &m_attachmentDescriptions[0],              // const VkAttachmentDescription* pAttachments;
             1u,                                        // uint32_t subpassCount;
             &subpassDesc,                              // const VkSubpassDescription* pSubpasses;
             0u,                                        // uint32_t dependencyCount;
-            DE_NULL                                    // const VkSubpassDependency* pDependencies;
+            nullptr                                    // const VkSubpassDependency* pDependencies;
         };
 
         m_renderPass = createRenderPass(vk, device, &renderPassParams);
@@ -260,7 +260,7 @@ void GranularityInstance::initObjects(void)
 
         const VkFramebufferCreateInfo framebufferParams{
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             (VkFramebufferCreateFlags)0,               // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             (uint32_t)imageViews.size(),               // uint32_t attachmentCount;
@@ -344,7 +344,7 @@ tcu::TestStatus GranularityInstance::iterate(void)
                 makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
                                        VK_IMAGE_LAYOUT_GENERAL, **m_images[i], subresourceRange));
             vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                                  (VkDependencyFlags)0, 0, DE_NULL, 0, DE_NULL, 1, &layoutBarrier);
+                                  (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &layoutBarrier);
         }
 
         VkRenderingAreaInfoKHR renderingAreaInfo{
@@ -357,12 +357,12 @@ tcu::TestStatus GranularityInstance::iterate(void)
             stencilAttachmentFormat                    // VkFormat stencilAttachmentFormat;
         };
 
-        vk.getRenderingAreaGranularityKHR(device, &renderingAreaInfo, &prePassGranularity);
+        vk.getRenderingAreaGranularity(device, &renderingAreaInfo, &prePassGranularity);
 
         // start dynamic render pass
         VkRenderingInfoKHR renderingInfo{
             VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-            DE_NULL,
+            nullptr,
             0u,                                   // VkRenderingFlagsKHR flags;
             renderArea,                           // VkRect2D renderArea;
             1u,                                   // uint32_t layerCount;
@@ -370,13 +370,13 @@ tcu::TestStatus GranularityInstance::iterate(void)
             (uint32_t)colorAttachmentInfo.size(), // uint32_t colorAttachmentCount;
             colorAttachmentInfo.data(),           // const VkRenderingAttachmentInfoKHR* pColorAttachments;
             depthAttachmentFormat ? &depthAttachmentInfo :
-                                    DE_NULL, // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
+                                    nullptr, // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
             stencilAttachmentFormat ? &stencilAttachmentInfo :
-                                      DE_NULL, // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
+                                      nullptr, // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
         };
         vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
 
-        vk.getRenderingAreaGranularityKHR(device, &renderingAreaInfo, &granularity);
+        vk.getRenderingAreaGranularity(device, &renderingAreaInfo, &granularity);
     }
 #endif
 

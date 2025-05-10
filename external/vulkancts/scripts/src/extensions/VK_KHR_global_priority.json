@@ -1,29 +1,26 @@
 {
-    "register_extension":
-        {
-            "type": "device",
-            "core": ""
-        },
-    "mandatory_features":
-        {
-            "VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR":
-                [
-                    {
-                        "features": [
-                            "globalPriorityQuery"
-                        ],
-                        "requirements": [
-                            "VK_EXT_global_priority_query"
-                        ]
-                    },
-                    {
-                        "features": [
-                            "globalPriorityQuery"
-                        ],
-                        "requirements": [
-                            "VK_KHR_global_priority"
-                        ]
-                    }
+    "register_extension": {
+        "type": "device",
+        "core": "0.1.4.0"
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR": [
+            {
+                "features": [
+                    "globalPriorityQuery"
+                ],
+                "requirements": [
+                    "VK_EXT_global_priority_query"
                 ]
-        }
+            },
+            {
+                "features": [
+                    "globalPriorityQuery"
+                ],
+                "requirements": [
+                    "VK_KHR_global_priority"
+                ]
+            }
+        ]
+    }
 }

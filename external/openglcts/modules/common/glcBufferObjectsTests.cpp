@@ -39,6 +39,7 @@
 #include "tcuRenderTarget.hpp"
 #include "tcuStringTemplate.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuMatrixUtil.hpp"
 #include <cstring>
 
 using namespace glw;
@@ -123,28 +124,6 @@ const GLubyte gChecker2TextureData[] = {
 };
 // clang-format on
 
-template <typename T>
-void makeOrtho2DMatrix(T &mat, GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f)
-{
-    if ((r - l) == 0.f || (t - b) == 0.f || (f - n) == 0.f)
-        return;
-
-    GLfloat inv_width  = 1.0f / (r - l);
-    GLfloat inv_height = 1.0f / (t - b);
-    GLfloat inv_depth  = 1.0f / (f - n);
-
-    mat.assign(mat.size(), 0);
-
-    mat[0]  = 2.0f * inv_width;
-    mat[5]  = 2.0f * inv_height;
-    mat[10] = 2.0f * inv_depth;
-
-    mat[12] = -(r + l) * inv_width;
-    mat[13] = -(t + b) * inv_height;
-    mat[14] = -(f + n) * inv_depth;
-    mat[15] = 1.0f;
-}
-
 void ReadScreen(const glw::Functions &gl, GLint x, GLint y, GLsizei w, GLsizei h, GLenum type, GLubyte *buf)
 {
     long repeat = 1;
@@ -205,7 +184,6 @@ BufferObjectsTestBase::BufferObjectsTestBase(deqp::Context &context, const char 
     , m_isContextES(false)
     , m_isExtensionSupported(false)
     , m_buildBuffers(true)
-    , m_matProjection(16)
     , m_window_size{0, 0}
     , m_buffers(BUFFER_LAST_ENUM)
     , m_textures(BUFOBJ_TEXTURES)
@@ -360,7 +338,10 @@ bool BufferObjectsTestBase::build_buffers()
     gl.clearColor(0.0f, 0.0f, 0.0f, 1.0f);
     GLU_EXPECT_NO_ERROR(gl.getError(), "clearColor");
 
-    makeOrtho2DMatrix(m_matProjection, 0.0f, (GLfloat)m_window_size[0], 0.0f, (GLfloat)m_window_size[1], 1.0f, -1.0f);
+    auto mat = tcu::ortho2DMatrix<decltype(m_triVertexArray)::value_type, 4, 4>(0.0f, (GLfloat)m_window_size[0], 0.0f,
+                                                                                (GLfloat)m_window_size[1], 1.0f, -1.0f);
+    std::memcpy(m_matProjection.data(), mat.getRowMajorData().getPtr(),
+                sizeof(decltype(m_triVertexArray)::value_type) * 16);
 
     gl.genVertexArrays(1, &m_vao);
     GLU_EXPECT_NO_ERROR(gl.getError(), "genVertexArrays");

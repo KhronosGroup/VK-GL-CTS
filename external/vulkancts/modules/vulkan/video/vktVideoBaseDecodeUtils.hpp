@@ -294,14 +294,14 @@ class VulkanVideoSession : public VkVideoRefCountBase
 {
     enum
     {
-        MAX_BOUND_MEMORY = 9
+        MAX_BOUND_MEMORY = 40
     };
 
 public:
     static VkResult Create(DeviceContext &devCtx, uint32_t videoQueueFamily, VkVideoCoreProfile *pVideoProfile,
                            VkFormat pictureFormat, const VkExtent2D &maxCodedExtent, VkFormat referencePicturesFormat,
                            uint32_t maxDpbSlots, uint32_t maxActiveReferencePictures, bool useInlineVideoQueries,
-                           VkSharedBaseObj<VulkanVideoSession> &videoSession);
+                           bool useInlineParameters, VkSharedBaseObj<VulkanVideoSession> &videoSession);
 
     bool IsCompatible(VkDevice device, uint32_t videoQueueFamily, VkVideoCoreProfile *pVideoProfile,
                       VkFormat pictureFormat, const VkExtent2D &maxCodedExtent, VkFormat referencePicturesFormat,
@@ -381,7 +381,7 @@ private:
         : m_refCount(0)
         , m_profile(*pVideoProfile)
         , m_devCtx(devCtx)
-        , m_videoSession(VkVideoSessionKHR(0))
+        , m_videoSession(VK_NULL_HANDLE)
     {
         deMemset(&m_createInfo, 0, sizeof(VkVideoSessionCreateInfoKHR));
         m_createInfo.sType = VK_STRUCTURE_TYPE_VIDEO_SESSION_CREATE_INFO_KHR;
@@ -426,6 +426,18 @@ public:
     static const uint32_t MAX_VPS_IDS = 16;
     static const uint32_t MAX_SPS_IDS = 32;
     static const uint32_t MAX_PPS_IDS = 256;
+
+    struct CurrentStdPictureParameters
+    {
+        const StdVideoH264SequenceParameterSet *h264Sps;
+        const StdVideoH264PictureParameterSet *h264Pps;
+
+        const StdVideoH265VideoParameterSet *h265Vps;
+        const StdVideoH265SequenceParameterSet *h265Sps;
+        const StdVideoH265PictureParameterSet *h265Pps;
+
+        const StdVideoAV1SequenceHeader *av1SequenceHeader;
+    } currentStdPictureParameters;
 
     //! Increment the reference count by 1.
     virtual int32_t AddRef();
@@ -809,6 +821,13 @@ public:
         }
     };
 
+    union InlineSessionParameters
+    {
+        VkVideoDecodeH264InlineSessionParametersInfoKHR h264;
+        VkVideoDecodeH265InlineSessionParametersInfoKHR h265;
+        VkVideoDecodeAV1InlineSessionParametersInfoKHR av1;
+    };
+
     struct Parameters
     {
         DeviceContext *context{};
@@ -817,10 +836,12 @@ public:
         bool layeredDpb{};
         bool queryDecodeStatus{};
         bool useInlineQueries{};
+        bool useInlineSessionParams{};
+        bool resetCodecNoSessionParams{};
         bool resourcesWithoutProfiles{};
         bool outOfOrderDecoding{};
         bool alwaysRecreateDPB{};
-        bool intraOnlyDecoding{};
+        bool intraOnlyDecodingNoSetupRef{};
         size_t pictureParameterUpdateTriggerHack{0};
         bool forceDisableFilmGrain{false};
         VkSharedBaseObj<VulkanVideoFrameBuffer> framebuffer;
@@ -902,6 +923,8 @@ public:
 
     void ApplyPictureParameters(de::MovePtr<CachedDecodeParameters> &cachedParameters);
     void WaitForFrameFences(de::MovePtr<CachedDecodeParameters> &cachedParameters);
+    void AddInlineSessionParameters(de::MovePtr<CachedDecodeParameters> &cachedParameters,
+                                    union InlineSessionParameters &inlineSessionParams, const void *currentNext);
     void RecordCommandBuffer(de::MovePtr<CachedDecodeParameters> &cachedParameters);
     void SubmitQueue(de::MovePtr<CachedDecodeParameters> &cachedParameters);
     void QueryDecodeResults(de::MovePtr<CachedDecodeParameters> &cachedParameters);
@@ -910,7 +933,7 @@ public:
 
     DeviceContext *m_deviceContext{};
     VkVideoCoreProfile m_profile{};
-    uint32_t m_framesToCheck{};
+    size_t m_framesToCheck{};
     // Parser fields
     int32_t m_nCurrentPictureID{};
     uint32_t m_dpbSlotsMask{};
@@ -949,7 +972,7 @@ public:
     // becomes equal to m_pictureParameterUpdateCount, it will forcibly reset the current picture parameters.
     // This could be more general by taking a modulo formula, or a list of trigger numbers. But it is currently
     // only required for the h264_resolution_change_dpb test plan, so no need for complication.
-    int m_resetPictureParametersFrameTriggerHack{};
+    size_t m_resetPictureParametersFrameTriggerHack{};
     void triggerPictureParameterSequenceCount()
     {
         ++m_pictureParameterUpdateCount;
@@ -963,10 +986,12 @@ public:
     bool m_forceDisableFilmGrain{false};
     bool m_queryResultWithStatus{false};
     bool m_useInlineQueries{false};
+    bool m_useInlineSessionParams{false};
+    bool m_resetCodecNoSessionParams{false};
     bool m_resourcesWithoutProfiles{false};
     bool m_outOfOrderDecoding{false};
     bool m_alwaysRecreateDPB{false};
-    bool m_intraOnlyDecoding{false};
+    bool m_intraOnlyDecodingNoSetupRef{false};
     vector<VkParserPerFrameDecodeParameters *> m_pPerFrameDecodeParameters;
     vector<VkParserDecodePictureInfo *> m_pVulkanParserDecodePictureInfo;
     vector<NvVkDecodeFrameData *> m_pFrameDatas;
@@ -1011,7 +1036,7 @@ public:
     void parseNextChunk();
     int getNextFrame(DecodedFrame *pFrame);
     void bufferFrames(int framesToDecode);
-    int getBufferedDisplayCount() const
+    size_t getBufferedDisplayCount() const
     {
         return m_decoder->GetVideoFrameBuffer()->GetDisplayedFrameCount();
     }
@@ -1025,6 +1050,12 @@ public:
     std::shared_ptr<Demuxer> m_demuxer{};
     bool m_eos{false};
 };
+
+shared_ptr<VideoBaseDecoder> createBasicDecoder(DeviceContext *deviceContext, const VkVideoCoreProfile *profile,
+                                                size_t framesToCheck, bool resolutionChange);
+de::MovePtr<vkt::ycbcr::MultiPlaneImageData> getDecodedImageFromContext(DeviceContext &deviceContext,
+                                                                        VkImageLayout layout,
+                                                                        const DecodedFrame *frame);
 
 } // namespace video
 } // namespace vkt

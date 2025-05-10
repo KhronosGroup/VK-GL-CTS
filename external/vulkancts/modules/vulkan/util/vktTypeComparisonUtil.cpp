@@ -142,7 +142,7 @@ const char *getCompareFuncForType(glu::DataType type)
         return "bool compare_u16vec4  (highp uvec4 a, highp uvec4 b)  { return a == b; }\n";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 

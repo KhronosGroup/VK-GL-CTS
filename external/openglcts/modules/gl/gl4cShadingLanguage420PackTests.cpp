@@ -536,10 +536,10 @@ const GLchar *Utils::getTextureTypeName(Utils::TEXTURE_TYPES type)
         result = "2D";
         break;
     case TEX_2D_RECT:
-        result = "2D rectangle";
+        result = "2D_rectangle";
         break;
     case TEX_2D_ARRAY:
-        result = "2D array";
+        result = "2D_array";
         break;
     case TEX_3D:
         result = "3D";
@@ -551,7 +551,7 @@ const GLchar *Utils::getTextureTypeName(Utils::TEXTURE_TYPES type)
         result = "1D";
         break;
     case TEX_1D_ARRAY:
-        result = "1D array";
+        result = "1D_array";
         break;
     default:
         TCU_FAIL("Invalid enum");
@@ -606,13 +606,13 @@ const glw::GLchar *Utils::getShaderStageName(Utils::SHADER_STAGES stage)
         result = "vertex";
         break;
     case TESS_CTRL_SHADER:
-        result = "tesselation control";
+        result = "tesselation_control";
         break;
     case TESS_EVAL_SHADER:
-        result = "tesselation evaluation";
+        result = "tesselation_evaluation";
         break;
     case GEOMETRY_SHADER:
-        result = "geomtery";
+        result = "geometry";
         break;
     case FRAGMENT_SHADER:
         result = "fragment";
@@ -2461,9 +2461,16 @@ const GLchar *LineContinuationTest::m_texture_coordinates_name = "texture_coordi
  *
  * @param context Test context
  **/
-LineContinuationTest::LineContinuationTest(deqp::Context &context) : GLSLTestBase(context, "line_continuation", "desc")
+LineContinuationTest::LineContinuationTest(deqp::Context &context, testCase test_case)
+    : GLSLTestBase(context, "line_continuation", "desc")
+    , m_test_case(test_case)
 {
-    /* Nothing to be done here */
+    std::string name = "line_continuation_case_" + std::string(casesToStr(static_cast<CASES>(m_test_case.m_case))) +
+                       "_repetition_" +
+                       std::string(repetitionsToStr(static_cast<REPETITIONS>(m_test_case.m_repetitions))) + "_ending_" +
+                       std::string(lineEndingsToStr(static_cast<LINE_ENDINGS>(m_test_case.m_line_endings)));
+
+    TestCase::m_name = name;
 }
 
 /** Overwrite getShaderSourceConfig method
@@ -2485,80 +2492,13 @@ void LineContinuationTest::getShaderSourceConfig(GLuint &out_n_parts, bool &out_
  **/
 bool LineContinuationTest::prepareNextTestCase(glw::GLuint test_case_index)
 {
-    static const testCase test_cases[] = {{ASSIGNMENT_BEFORE_OPERATOR, ONCE, UNIX},
-                                          {ASSIGNMENT_BEFORE_OPERATOR, ONCE, DOS},
-                                          {ASSIGNMENT_BEFORE_OPERATOR, MULTIPLE_TIMES, UNIX},
-                                          {ASSIGNMENT_BEFORE_OPERATOR, MULTIPLE_TIMES, DOS},
-                                          {ASSIGNMENT_AFTER_OPERATOR, ONCE, UNIX},
-                                          {ASSIGNMENT_AFTER_OPERATOR, ONCE, DOS},
-                                          {ASSIGNMENT_AFTER_OPERATOR, MULTIPLE_TIMES, UNIX},
-                                          {ASSIGNMENT_AFTER_OPERATOR, MULTIPLE_TIMES, DOS},
-                                          {VECTOR_VARIABLE_INITIALIZER, ONCE, UNIX},
-                                          {VECTOR_VARIABLE_INITIALIZER, ONCE, DOS},
-                                          {VECTOR_VARIABLE_INITIALIZER, MULTIPLE_TIMES, UNIX},
-                                          {VECTOR_VARIABLE_INITIALIZER, MULTIPLE_TIMES, DOS},
-                                          {TOKEN_INSIDE_FUNCTION_NAME, ONCE, UNIX},
-                                          {TOKEN_INSIDE_FUNCTION_NAME, ONCE, DOS},
-                                          {TOKEN_INSIDE_FUNCTION_NAME, MULTIPLE_TIMES, UNIX},
-                                          {TOKEN_INSIDE_FUNCTION_NAME, MULTIPLE_TIMES, DOS},
-                                          {TOKEN_INSIDE_TYPE_NAME, ONCE, UNIX},
-                                          {TOKEN_INSIDE_TYPE_NAME, ONCE, DOS},
-                                          {TOKEN_INSIDE_TYPE_NAME, MULTIPLE_TIMES, UNIX},
-                                          {TOKEN_INSIDE_TYPE_NAME, MULTIPLE_TIMES, DOS},
-                                          {TOKEN_INSIDE_VARIABLE_NAME, ONCE, UNIX},
-                                          {TOKEN_INSIDE_VARIABLE_NAME, ONCE, DOS},
-                                          {TOKEN_INSIDE_VARIABLE_NAME, MULTIPLE_TIMES, UNIX},
-                                          {TOKEN_INSIDE_VARIABLE_NAME, MULTIPLE_TIMES, DOS},
-                                          {PREPROCESSOR_TOKEN_INSIDE, ONCE, UNIX},
-                                          {PREPROCESSOR_TOKEN_INSIDE, ONCE, DOS},
-                                          {PREPROCESSOR_TOKEN_INSIDE, MULTIPLE_TIMES, UNIX},
-                                          {PREPROCESSOR_TOKEN_INSIDE, MULTIPLE_TIMES, DOS},
-                                          {PREPROCESSOR_TOKEN_BETWEEN, ONCE, UNIX},
-                                          {PREPROCESSOR_TOKEN_BETWEEN, ONCE, DOS},
-                                          {PREPROCESSOR_TOKEN_BETWEEN, MULTIPLE_TIMES, UNIX},
-                                          {PREPROCESSOR_TOKEN_BETWEEN, MULTIPLE_TIMES, DOS},
-                                          {COMMENT, ONCE, UNIX},
-                                          {COMMENT, ONCE, DOS},
-                                          {COMMENT, MULTIPLE_TIMES, UNIX},
-                                          {COMMENT, MULTIPLE_TIMES, DOS},
-                                          {SOURCE_TERMINATION_NULL, ONCE, UNIX},
-                                          {SOURCE_TERMINATION_NULL, ONCE, DOS},
-                                          {SOURCE_TERMINATION_NULL, MULTIPLE_TIMES, UNIX},
-                                          {SOURCE_TERMINATION_NULL, MULTIPLE_TIMES, DOS},
-                                          {SOURCE_TERMINATION_NON_NULL, ONCE, UNIX},
-                                          {SOURCE_TERMINATION_NON_NULL, ONCE, DOS},
-                                          {SOURCE_TERMINATION_NON_NULL, MULTIPLE_TIMES, UNIX},
-                                          {SOURCE_TERMINATION_NON_NULL, MULTIPLE_TIMES, DOS},
-                                          {PART_TERMINATION_NULL, ONCE, UNIX},
-                                          {PART_TERMINATION_NULL, ONCE, DOS},
-                                          {PART_TERMINATION_NULL, MULTIPLE_TIMES, UNIX},
-                                          {PART_TERMINATION_NULL, MULTIPLE_TIMES, DOS},
-                                          {PART_NEXT_TO_TERMINATION_NULL, ONCE, UNIX},
-                                          {PART_NEXT_TO_TERMINATION_NULL, ONCE, DOS},
-                                          {PART_NEXT_TO_TERMINATION_NULL, MULTIPLE_TIMES, UNIX},
-                                          {PART_NEXT_TO_TERMINATION_NULL, MULTIPLE_TIMES, DOS},
-                                          {PART_TERMINATION_NON_NULL, ONCE, UNIX},
-                                          {PART_TERMINATION_NON_NULL, ONCE, DOS},
-                                          {PART_TERMINATION_NON_NULL, MULTIPLE_TIMES, UNIX},
-                                          {PART_TERMINATION_NON_NULL, MULTIPLE_TIMES, DOS},
-                                          {PART_NEXT_TO_TERMINATION_NON_NULL, ONCE, UNIX},
-                                          {PART_NEXT_TO_TERMINATION_NON_NULL, ONCE, DOS},
-                                          {PART_NEXT_TO_TERMINATION_NON_NULL, MULTIPLE_TIMES, UNIX},
-                                          {PART_NEXT_TO_TERMINATION_NON_NULL, MULTIPLE_TIMES, DOS}};
-
-    static const GLuint max_test_cases = sizeof(test_cases) / sizeof(testCase);
-
     if ((GLuint)-1 == test_case_index)
     {
         m_test_case.m_case = DEBUG_CASE;
     }
-    else if (max_test_cases <= test_case_index)
+    if (test_case_index > 0)
     {
         return false;
-    }
-    else
-    {
-        m_test_case = test_cases[test_case_index];
     }
 
     m_context.getTestContext().getLog() << tcu::TestLog::Message
@@ -3006,53 +2946,53 @@ const GLchar *LineContinuationTest::casesToStr(CASES cases) const
     switch (cases)
     {
     case ASSIGNMENT_BEFORE_OPERATOR:
-        result = "just before assignment operator";
+        result = "just_before_assignment_operator";
         break;
     case ASSIGNMENT_AFTER_OPERATOR:
-        result = "just after assignment operator";
+        result = "just_after_assignment_operator";
         break;
     case VECTOR_VARIABLE_INITIALIZER:
-        result = "inside vector variable initializer";
+        result = "inside_vector_variable_initializer";
         break;
     case TOKEN_INSIDE_FUNCTION_NAME:
-        result = "inside function name";
+        result = "inside_function_name";
         break;
     case TOKEN_INSIDE_TYPE_NAME:
-        result = "inside type name";
+        result = "inside_type_name";
         break;
     case TOKEN_INSIDE_VARIABLE_NAME:
-        result = "inside variable name";
+        result = "inside_variable_name";
         break;
     case PREPROCESSOR_TOKEN_INSIDE:
-        result = "inside preprocessor token";
+        result = "inside_preprocessor_token";
         break;
     case PREPROCESSOR_TOKEN_BETWEEN:
-        result = "between preprocessor token";
+        result = "between_preprocessor_token";
         break;
     case COMMENT:
-        result = "inside comment";
+        result = "inside_comment";
         break;
     case SOURCE_TERMINATION_NULL:
-        result = "just before null terminating source";
+        result = "just_before_null_terminating_source";
         break;
     case SOURCE_TERMINATION_NON_NULL:
-        result = "as last character in source string, without null termination";
+        result = "as_last_character_in_source_string_without_null_termination";
         break;
     case PART_TERMINATION_NULL:
-        result = "just before null terminating part of source";
+        result = "just_before_null_terminating_part_of_source";
         break;
     case PART_NEXT_TO_TERMINATION_NULL:
-        result = "just before last character in part of source";
+        result = "just_before_last_character_in_part_of_source";
         break;
     case PART_TERMINATION_NON_NULL:
-        result = "as last character in part string, without null termination";
+        result = "as_last_character_in_part_string_without_null_termination";
         break;
     case PART_NEXT_TO_TERMINATION_NON_NULL:
-        result = "just before last character in part string, without null termination";
+        result = "just_before_last_character_in_part_string_without_null_termination";
         break;
     case DEBUG_CASE: /* intended fall through */
     default:
-        result = "nowhere at all. This is debug!";
+        result = "nowhere_at_all_This_is_debug";
         break;
     }
 
@@ -3562,10 +3502,14 @@ void LineNumberingTest::prepareShaderSource(Utils::SHADER_STAGES in_stage, bool 
  *
  * @param context Test context
  **/
-UTF8CharactersTest::UTF8CharactersTest(deqp::Context &context)
+UTF8CharactersTest::UTF8CharactersTest(deqp::Context &context, testCase test_case)
     : GLSLTestBase(context, "utf8_characters", "UTF8 character used in comment or preprocessor")
+    , m_test_case(test_case)
 {
-    /* Nothing to be done here */
+    std::string name =
+        "utf8_characters_case_" + std::string(casesToStr()) + "_character_" + std::string(characterToStr());
+
+    TestCase::m_name = name;
 }
 
 /** Overwrite getShaderSourceConfig method
@@ -3587,47 +3531,14 @@ void UTF8CharactersTest::getShaderSourceConfig(GLuint &out_n_parts, bool &out_us
  **/
 bool UTF8CharactersTest::prepareNextTestCase(glw::GLuint test_case_index)
 {
-    static const testCase test_cases[] = {
-        {IN_COMMENT, Utils::TWO_BYTES},
-        {IN_COMMENT, Utils::THREE_BYTES},
-        {IN_COMMENT, Utils::FOUR_BYTES},
-        {IN_COMMENT, Utils::FIVE_BYTES},
-        {IN_COMMENT, Utils::SIX_BYTES},
-        {IN_COMMENT, Utils::REDUNDANT_ASCII},
-        {IN_PREPROCESSOR, Utils::TWO_BYTES},
-        {IN_PREPROCESSOR, Utils::THREE_BYTES},
-        {IN_PREPROCESSOR, Utils::FOUR_BYTES},
-        {IN_PREPROCESSOR, Utils::FIVE_BYTES},
-        {IN_PREPROCESSOR, Utils::SIX_BYTES},
-        {IN_PREPROCESSOR, Utils::REDUNDANT_ASCII},
-        {AS_LAST_CHARACTER_NULL_TERMINATED, Utils::TWO_BYTES},
-        {AS_LAST_CHARACTER_NULL_TERMINATED, Utils::THREE_BYTES},
-        {AS_LAST_CHARACTER_NULL_TERMINATED, Utils::FOUR_BYTES},
-        {AS_LAST_CHARACTER_NULL_TERMINATED, Utils::FIVE_BYTES},
-        {AS_LAST_CHARACTER_NULL_TERMINATED, Utils::SIX_BYTES},
-        {AS_LAST_CHARACTER_NULL_TERMINATED, Utils::REDUNDANT_ASCII},
-        {AS_LAST_CHARACTER_NON_NULL_TERMINATED, Utils::TWO_BYTES},
-        {AS_LAST_CHARACTER_NON_NULL_TERMINATED, Utils::THREE_BYTES},
-        {AS_LAST_CHARACTER_NON_NULL_TERMINATED, Utils::FOUR_BYTES},
-        {AS_LAST_CHARACTER_NON_NULL_TERMINATED, Utils::FIVE_BYTES},
-        {AS_LAST_CHARACTER_NON_NULL_TERMINATED, Utils::SIX_BYTES},
-        {AS_LAST_CHARACTER_NON_NULL_TERMINATED, Utils::REDUNDANT_ASCII},
-    };
-
-    static const GLuint max_test_cases = sizeof(test_cases) / sizeof(testCase);
-
     if ((GLuint)-1 == test_case_index)
     {
         m_test_case.m_case      = DEBUG_CASE;
         m_test_case.m_character = Utils::EMPTY;
     }
-    else if (max_test_cases <= test_case_index)
+    if (test_case_index > 0)
     {
         return false;
-    }
-    else
-    {
-        m_test_case = test_cases[test_case_index];
     }
 
     m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: utf8 character: "
@@ -3977,16 +3888,16 @@ const GLchar *UTF8CharactersTest::casesToStr() const
     switch (m_test_case.m_case)
     {
     case IN_COMMENT:
-        result = "in comment";
+        result = "in_comment";
         break;
     case IN_PREPROCESSOR:
-        result = "in preprocessor";
+        result = "in_preprocessor";
         break;
     case AS_LAST_CHARACTER_NULL_TERMINATED:
-        result = "just before null";
+        result = "just_before_null";
         break;
     case AS_LAST_CHARACTER_NON_NULL_TERMINATED:
-        result = "as last character";
+        result = "as_last_character";
         break;
     case DEBUG_CASE:
         result = "nowhere. This is debug!";
@@ -3998,14 +3909,79 @@ const GLchar *UTF8CharactersTest::casesToStr() const
     return result;
 }
 
+const GLchar *UTF8CharactersTest::characterToStr() const
+{
+    const GLchar *result = 0;
+
+    switch (m_test_case.m_character)
+    {
+    case Utils::TWO_BYTES:
+        result = "two_bytes";
+        break;
+    case Utils::THREE_BYTES:
+        result = "three_bytes";
+        break;
+    case Utils::FOUR_BYTES:
+        result = "four_bytes";
+        break;
+    case Utils::FIVE_BYTES:
+        result = "five_bytes";
+        break;
+    case Utils::SIX_BYTES:
+        result = "six_bytes";
+        break;
+    case Utils::REDUNDANT_ASCII:
+        result = "redundant_bytes";
+        break;
+    case Utils::EMPTY:
+        result = "empty";
+    }
+
+    return result;
+}
+
 /** Constructor
  *
  * @param context Test context
  **/
-UTF8InSourceTest::UTF8InSourceTest(deqp::Context &context)
+UTF8InSourceTest::UTF8InSourceTest(deqp::Context &context, Utils::UTF8_CHARACTERS character)
     : NegativeTestBase(context, "utf8_in_source", "UTF8 characters used in shader source")
+    , m_character(character)
 {
-    /* Nothing to be done here */
+    std::string name = "utf8_in_source_character_" + std::string(characterToStr());
+
+    TestCase::m_name = name;
+}
+
+const GLchar *UTF8InSourceTest::characterToStr() const
+{
+    const GLchar *result = 0;
+
+    switch (m_character)
+    {
+    case Utils::TWO_BYTES:
+        result = "two_bytes";
+        break;
+    case Utils::THREE_BYTES:
+        result = "three_bytes";
+        break;
+    case Utils::FOUR_BYTES:
+        result = "four_bytes";
+        break;
+    case Utils::FIVE_BYTES:
+        result = "five_bytes";
+        break;
+    case Utils::SIX_BYTES:
+        result = "six_bytes";
+        break;
+    case Utils::REDUNDANT_ASCII:
+        result = "redundant_bytes";
+        break;
+    case Utils::EMPTY:
+        result = "empty";
+    }
+
+    return result;
 }
 
 /** Set up next test case
@@ -4016,22 +3992,13 @@ UTF8InSourceTest::UTF8InSourceTest(deqp::Context &context)
  **/
 bool UTF8InSourceTest::prepareNextTestCase(glw::GLuint test_case_index)
 {
-    static const Utils::UTF8_CHARACTERS test_cases[] = {Utils::TWO_BYTES,  Utils::THREE_BYTES, Utils::FOUR_BYTES,
-                                                        Utils::FIVE_BYTES, Utils::SIX_BYTES,   Utils::REDUNDANT_ASCII};
-
-    static const GLuint max_test_cases = sizeof(test_cases) / sizeof(Utils::UTF8_CHARACTERS);
-
     if ((GLuint)-1 == test_case_index)
     {
         m_character = Utils::EMPTY;
     }
-    else if (max_test_cases <= test_case_index)
+    else if (test_case_index > 0)
     {
         return false;
-    }
-    else
-    {
-        m_character = test_cases[test_case_index];
     }
 
     m_context.getTestContext().getLog() << tcu::TestLog::Message
@@ -4257,10 +4224,22 @@ void UTF8InSourceTest::prepareShaderSource(Utils::SHADER_STAGES in_stage, bool i
  *
  * @param context Test context
  **/
-ImplicitConversionsValidTest::ImplicitConversionsValidTest(deqp::Context &context)
+ImplicitConversionsValidTest::ImplicitConversionsValidTest(deqp::Context &context, testCase test_case)
     : GLSLTestBase(context, "implicit_conversions", "Verifies that implicit conversions are allowed")
 {
-    /* Nothing to be done */
+    m_debug_test_case.m_types.m_t1 = Utils::FLOAT;
+    m_debug_test_case.m_types.m_t2 = Utils::FLOAT;
+    m_debug_test_case.m_n_cols     = 4;
+    m_debug_test_case.m_n_rows     = 4;
+
+    m_test_cases.push_back(test_case);
+
+    std::string name = "implicit_conversions_case_t1_" +
+                       std::string(Utils::getTypeName(test_case.m_types.m_t1, test_case.m_n_cols, test_case.m_n_rows)) +
+                       "_t2_" +
+                       std::string(Utils::getTypeName(test_case.m_types.m_t2, test_case.m_n_cols, test_case.m_n_rows));
+
+    TestCase::m_name = name;
 }
 
 /** Set up next test case
@@ -4567,54 +4546,6 @@ void ImplicitConversionsValidTest::prepareUniforms(Utils::program &program)
     default:
         TCU_FAIL("Invalid enum");
     }
-}
-
-/** Prepare test cases
- *
- * @return true
- **/
-bool ImplicitConversionsValidTest::testInit()
-{
-    static const typesPair allowed_conversions[] = {
-        {Utils::UINT, Utils::INT},   {Utils::FLOAT, Utils::INT},   {Utils::DOUBLE, Utils::INT},
-        {Utils::FLOAT, Utils::UINT}, {Utils::DOUBLE, Utils::UINT}, {Utils::FLOAT, Utils::FLOAT},
-    };
-
-    static GLuint n_allowed_conversions = sizeof(allowed_conversions) / sizeof(typesPair);
-
-    m_debug_test_case.m_types.m_t1 = Utils::FLOAT;
-    m_debug_test_case.m_types.m_t2 = Utils::FLOAT;
-    m_debug_test_case.m_n_cols     = 4;
-    m_debug_test_case.m_n_rows     = 4;
-
-    for (GLuint i = 0; i < n_allowed_conversions; ++i)
-    {
-        const typesPair &types = allowed_conversions[i];
-
-        GLuint allowed_columns = 1;
-        if ((true == Utils::doesTypeSupportMatrix(types.m_t1)) && (true == Utils::doesTypeSupportMatrix(types.m_t2)))
-        {
-            allowed_columns = 4;
-        }
-
-        {
-            testCase test_case = {types, 1, 1};
-
-            m_test_cases.push_back(test_case);
-        }
-
-        for (GLuint row = 2; row <= 4; ++row)
-        {
-            for (GLuint col = 1; col <= allowed_columns; ++col)
-            {
-                testCase test_case = {types, col, row};
-
-                m_test_cases.push_back(test_case);
-            }
-        }
-    }
-
-    return true;
 }
 
 /** Returns reference to current test case
@@ -5712,12 +5643,16 @@ void ConstDynamicValueAsConstExprTest::prepareShaderSource(Utils::SHADER_STAGES 
  *
  * @param context Test context
  **/
-QualifierOrderTest::QualifierOrderTest(deqp::Context &context)
+QualifierOrderTest::QualifierOrderTest(deqp::Context &context, Utils::qualifierSet &test_case, glw::GLuint test_id)
     : GLSLTestBase(context, "qualifier_order",
                    "Test verifies that valid permutation of input and output qalifiers are accepted")
     , m_current_test_case_index(0)
 {
-    /* Nothing to be done */
+    m_test_cases.push_back(test_case);
+
+    std::string name = "qualifier_order_test_id_" + std::to_string(test_id);
+
+    TestCase::m_name = name;
 }
 
 /** Set up next test case
@@ -6014,51 +5949,6 @@ void QualifierOrderTest::prepareVertexBuffer(const Utils::program &program, Util
     GLU_EXPECT_NO_ERROR(gl.getError(), "EnableVertexAttribArray");
 }
 
-/** Prepare test cases
- *
- * @return true
- **/
-bool QualifierOrderTest::testInit()
-{
-    m_test_cases.resize(5);
-
-    m_test_cases[0].push_back(Utils::QUAL_HIGHP);
-    m_test_cases[0].push_back(Utils::QUAL_IN);
-    m_test_cases[0].push_back(Utils::QUAL_LOCATION);
-    m_test_cases[0].push_back(Utils::QUAL_SMOOTH);
-    m_test_cases[0].push_back(Utils::QUAL_INVARIANT);
-
-    m_test_cases[1].push_back(Utils::QUAL_LOWP);
-    m_test_cases[1].push_back(Utils::QUAL_IN);
-    m_test_cases[1].push_back(Utils::QUAL_SAMPLE);
-    m_test_cases[1].push_back(Utils::QUAL_LOCATION);
-    m_test_cases[1].push_back(Utils::QUAL_NOPERSPECTIVE);
-    m_test_cases[1].push_back(Utils::QUAL_INVARIANT);
-
-    m_test_cases[2].push_back(Utils::QUAL_HIGHP);
-    m_test_cases[2].push_back(Utils::QUAL_IN);
-    m_test_cases[2].push_back(Utils::QUAL_LOCATION);
-    m_test_cases[2].push_back(Utils::QUAL_SMOOTH);
-    m_test_cases[2].push_back(Utils::QUAL_INVARIANT);
-    m_test_cases[2].push_back(Utils::QUAL_LOCATION);
-
-    m_test_cases[3].push_back(Utils::QUAL_LOWP);
-    m_test_cases[3].push_back(Utils::QUAL_IN);
-    m_test_cases[3].push_back(Utils::QUAL_LOCATION);
-    m_test_cases[3].push_back(Utils::QUAL_SAMPLE);
-    m_test_cases[3].push_back(Utils::QUAL_LOCATION);
-    m_test_cases[3].push_back(Utils::QUAL_NOPERSPECTIVE);
-    m_test_cases[3].push_back(Utils::QUAL_INVARIANT);
-
-    m_test_cases[4].push_back(Utils::QUAL_HIGHP);
-    m_test_cases[4].push_back(Utils::QUAL_IN);
-    m_test_cases[4].push_back(Utils::QUAL_PATCH);
-    m_test_cases[4].push_back(Utils::QUAL_LOCATION);
-    m_test_cases[4].push_back(Utils::QUAL_INVARIANT);
-
-    return true;
-}
-
 /** Returns reference to current test case
  *
  * @return Reference to testCase
@@ -6079,12 +5969,17 @@ const Utils::qualifierSet &QualifierOrderTest::getCurrentTestCase()
  *
  * @param context Test context
  **/
-QualifierOrderBlockTest::QualifierOrderBlockTest(deqp::Context &context)
+QualifierOrderBlockTest::QualifierOrderBlockTest(deqp::Context &context, Utils::qualifierSet &test_case,
+                                                 glw::GLuint test_id)
     : GLSLTestBase(context, "qualifier_order_block",
                    "Verifies that qualifiers of members of input block can be arranged in any order")
     , m_current_test_case_index(0)
 {
-    /* Nothing to be done here */
+    m_test_cases.push_back(test_case);
+
+    std::string name = "qualifier_order_block_test_id_" + std::to_string(test_id);
+
+    TestCase::m_name = name;
 }
 
 /** Set up next test case
@@ -6415,35 +6310,6 @@ void QualifierOrderBlockTest::prepareVertexBuffer(const Utils::program &program,
     GLU_EXPECT_NO_ERROR(gl.getError(), "EnableVertexAttribArray");
 }
 
-/** Prepare test cases
- *
- * @return true
- **/
-bool QualifierOrderBlockTest::testInit()
-{
-    m_test_cases.resize(4);
-
-    m_test_cases[0].push_back(Utils::QUAL_HIGHP);
-    m_test_cases[0].push_back(Utils::QUAL_FLAT);
-    m_test_cases[0].push_back(Utils::QUAL_INVARIANT);
-
-    m_test_cases[1].push_back(Utils::QUAL_LOWP);
-    m_test_cases[1].push_back(Utils::QUAL_SAMPLE);
-    m_test_cases[1].push_back(Utils::QUAL_NOPERSPECTIVE);
-    m_test_cases[1].push_back(Utils::QUAL_INVARIANT);
-
-    m_test_cases[2].push_back(Utils::QUAL_HIGHP);
-    m_test_cases[2].push_back(Utils::QUAL_SMOOTH);
-    m_test_cases[2].push_back(Utils::QUAL_INVARIANT);
-
-    m_test_cases[3].push_back(Utils::QUAL_LOWP);
-    m_test_cases[3].push_back(Utils::QUAL_SAMPLE);
-    m_test_cases[3].push_back(Utils::QUAL_NOPERSPECTIVE);
-    m_test_cases[3].push_back(Utils::QUAL_INVARIANT);
-
-    return true;
-}
-
 /** Returns reference to current test case
  *
  * @return Reference to testCase
@@ -6464,12 +6330,17 @@ const Utils::qualifierSet &QualifierOrderBlockTest::getCurrentTestCase()
  *
  * @param context Test context
  **/
-QualifierOrderUniformTest::QualifierOrderUniformTest(deqp::Context &context)
+QualifierOrderUniformTest::QualifierOrderUniformTest(deqp::Context &context, Utils::qualifierSet test_case,
+                                                     glw::GLuint test_id)
     : GLSLTestBase(context, "qualifier_order_uniform",
                    "Test verifies that all valid permutation of input qalifiers are accepted")
     , m_current_test_case_index(0)
 {
-    /* Nothing to be done here */
+    m_test_cases.push_back(test_case);
+
+    std::string name = "qualifier_order_uniform_test_id_" + std::to_string(test_id);
+
+    TestCase::m_name = name;
 }
 
 /** Set up next test case
@@ -6735,26 +6606,6 @@ bool QualifierOrderUniformTest::testInit()
         return false;
     }
 
-    m_test_cases.resize(4);
-
-    m_test_cases[0].push_back(Utils::QUAL_HIGHP);
-    m_test_cases[0].push_back(Utils::QUAL_UNIFORM);
-    m_test_cases[0].push_back(Utils::QUAL_LOCATION);
-
-    m_test_cases[1].push_back(Utils::QUAL_LOWP);
-    m_test_cases[1].push_back(Utils::QUAL_UNIFORM);
-    m_test_cases[1].push_back(Utils::QUAL_LOCATION);
-
-    m_test_cases[2].push_back(Utils::QUAL_HIGHP);
-    m_test_cases[2].push_back(Utils::QUAL_LOCATION);
-    m_test_cases[2].push_back(Utils::QUAL_UNIFORM);
-    m_test_cases[2].push_back(Utils::QUAL_LOCATION);
-
-    m_test_cases[3].push_back(Utils::QUAL_LOCATION);
-    m_test_cases[3].push_back(Utils::QUAL_LOWP);
-    m_test_cases[3].push_back(Utils::QUAL_UNIFORM);
-    m_test_cases[3].push_back(Utils::QUAL_LOCATION);
-
     return true;
 }
 
@@ -6778,11 +6629,16 @@ const Utils::qualifierSet &QualifierOrderUniformTest::getCurrentTestCase()
  *
  * @param context Test context
  **/
-QualifierOrderFunctionInoutTest::QualifierOrderFunctionInoutTest(deqp::Context &context)
+QualifierOrderFunctionInoutTest::QualifierOrderFunctionInoutTest(deqp::Context &context, Utils::qualifierSet test_case,
+                                                                 glw::GLuint test_id)
     : GLSLTestBase(context, "qualifier_order_function_inout", "Verify order of qualifiers of inout function parameters")
     , m_current_test_case_index(0)
 {
-    /* Nothing to be done here */
+    m_test_cases.push_back(test_case);
+
+    std::string name = "qualifier_order_function_inout_test_id_" + std::to_string(test_id);
+
+    TestCase::m_name = name;
 }
 
 /** Set up next test case
@@ -7040,41 +6896,6 @@ void QualifierOrderFunctionInoutTest::prepareUniforms(Utils::program &program)
     program.uniform("uni_vs_test", Utils::FLOAT, 1 /* n_cols */, 4 /* n_rows */, float_data);
 }
 
-/** Prepare test cases
- *
- * @return false if ARB_explicit_uniform_location is not supported, true otherwise
- **/
-bool QualifierOrderFunctionInoutTest::testInit()
-{
-    m_test_cases.resize(6);
-
-    m_test_cases[0].push_back(Utils::QUAL_HIGHP);
-    m_test_cases[0].push_back(Utils::QUAL_PRECISE);
-    m_test_cases[0].push_back(Utils::QUAL_INOUT);
-
-    m_test_cases[1].push_back(Utils::QUAL_INOUT);
-    m_test_cases[1].push_back(Utils::QUAL_PRECISE);
-    m_test_cases[1].push_back(Utils::QUAL_HIGHP);
-
-    m_test_cases[2].push_back(Utils::QUAL_MEDIUMP);
-    m_test_cases[2].push_back(Utils::QUAL_PRECISE);
-    m_test_cases[2].push_back(Utils::QUAL_INOUT);
-
-    m_test_cases[3].push_back(Utils::QUAL_INOUT);
-    m_test_cases[3].push_back(Utils::QUAL_PRECISE);
-    m_test_cases[3].push_back(Utils::QUAL_MEDIUMP);
-
-    m_test_cases[4].push_back(Utils::QUAL_LOWP);
-    m_test_cases[4].push_back(Utils::QUAL_PRECISE);
-    m_test_cases[4].push_back(Utils::QUAL_INOUT);
-
-    m_test_cases[5].push_back(Utils::QUAL_INOUT);
-    m_test_cases[5].push_back(Utils::QUAL_PRECISE);
-    m_test_cases[5].push_back(Utils::QUAL_LOWP);
-
-    return true;
-}
-
 /** Returns reference to current test case
  *
  * @return Reference to testCase
@@ -7095,11 +6916,16 @@ const Utils::qualifierSet &QualifierOrderFunctionInoutTest::getCurrentTestCase()
  *
  * @param context Test context
  **/
-QualifierOrderFunctionInputTest::QualifierOrderFunctionInputTest(deqp::Context &context)
+QualifierOrderFunctionInputTest::QualifierOrderFunctionInputTest(deqp::Context &context, Utils::qualifierSet test_case,
+                                                                 glw::GLuint test_id)
     : GLSLTestBase(context, "qualifier_order_function_input", "Verify order of qualifiers of function input parameters")
     , m_current_test_case_index(0)
 {
-    /* Nothing to be done here */
+    m_test_cases.push_back(test_case);
+
+    std::string name = "qualifier_order_function_input_test_id_" + std::to_string(test_id);
+
+    TestCase::m_name = name;
 }
 
 /** Set up next test case
@@ -7355,47 +7181,6 @@ void QualifierOrderFunctionInputTest::prepareUniforms(Utils::program &program)
     program.uniform("uni_vs_test", Utils::FLOAT, 1 /* n_cols */, 4 /* n_rows */, float_data);
 }
 
-/** Prepare test cases
- *
- * @return false if ARB_explicit_uniform_location is not supported, true otherwise
- **/
-bool QualifierOrderFunctionInputTest::testInit()
-{
-    m_test_cases.resize(6);
-
-    m_test_cases[0].push_back(Utils::QUAL_CONST);
-    m_test_cases[0].push_back(Utils::QUAL_HIGHP);
-    m_test_cases[0].push_back(Utils::QUAL_PRECISE);
-    m_test_cases[0].push_back(Utils::QUAL_IN);
-
-    m_test_cases[1].push_back(Utils::QUAL_IN);
-    m_test_cases[1].push_back(Utils::QUAL_CONST);
-    m_test_cases[1].push_back(Utils::QUAL_PRECISE);
-    m_test_cases[1].push_back(Utils::QUAL_HIGHP);
-
-    m_test_cases[2].push_back(Utils::QUAL_PRECISE);
-    m_test_cases[2].push_back(Utils::QUAL_MEDIUMP);
-    m_test_cases[2].push_back(Utils::QUAL_CONST);
-    m_test_cases[2].push_back(Utils::QUAL_IN);
-
-    m_test_cases[3].push_back(Utils::QUAL_IN);
-    m_test_cases[3].push_back(Utils::QUAL_PRECISE);
-    m_test_cases[3].push_back(Utils::QUAL_MEDIUMP);
-    m_test_cases[3].push_back(Utils::QUAL_CONST);
-
-    m_test_cases[4].push_back(Utils::QUAL_LOWP);
-    m_test_cases[4].push_back(Utils::QUAL_CONST);
-    m_test_cases[4].push_back(Utils::QUAL_IN);
-    m_test_cases[4].push_back(Utils::QUAL_PRECISE);
-
-    m_test_cases[5].push_back(Utils::QUAL_IN);
-    m_test_cases[5].push_back(Utils::QUAL_PRECISE);
-    m_test_cases[5].push_back(Utils::QUAL_CONST);
-    m_test_cases[5].push_back(Utils::QUAL_LOWP);
-
-    return true;
-}
-
 /** Returns reference to current test case
  *
  * @return Reference to testCase
@@ -7416,12 +7201,17 @@ const Utils::qualifierSet &QualifierOrderFunctionInputTest::getCurrentTestCase()
  *
  * @param context Test context
  **/
-QualifierOrderFunctionOutputTest::QualifierOrderFunctionOutputTest(deqp::Context &context)
+QualifierOrderFunctionOutputTest::QualifierOrderFunctionOutputTest(deqp::Context &context,
+                                                                   Utils::qualifierSet test_case, glw::GLuint test_id)
     : GLSLTestBase(context, "qualifier_order_function_output",
                    "Verify order of qualifiers of output function parameters")
     , m_current_test_case_index(0)
 {
-    /* Nothing to be done here */
+    m_test_cases.push_back(test_case);
+
+    std::string name = "qualifier_order_function_output_test_id_" + std::to_string(test_id);
+
+    TestCase::m_name = name;
 }
 
 /** Set up next test case
@@ -7677,41 +7467,6 @@ void QualifierOrderFunctionOutputTest::prepareUniforms(Utils::program &program)
     program.uniform("uni_tcs_test", Utils::FLOAT, 1 /* n_cols */, 4 /* n_rows */, float_data);
     program.uniform("uni_tes_test", Utils::FLOAT, 1 /* n_cols */, 4 /* n_rows */, float_data);
     program.uniform("uni_vs_test", Utils::FLOAT, 1 /* n_cols */, 4 /* n_rows */, float_data);
-}
-
-/** Prepare test cases
- *
- * @return false if ARB_explicit_uniform_location is not supported, true otherwise
- **/
-bool QualifierOrderFunctionOutputTest::testInit()
-{
-    m_test_cases.resize(6);
-
-    m_test_cases[0].push_back(Utils::QUAL_HIGHP);
-    m_test_cases[0].push_back(Utils::QUAL_PRECISE);
-    m_test_cases[0].push_back(Utils::QUAL_OUT);
-
-    m_test_cases[1].push_back(Utils::QUAL_OUT);
-    m_test_cases[1].push_back(Utils::QUAL_PRECISE);
-    m_test_cases[1].push_back(Utils::QUAL_HIGHP);
-
-    m_test_cases[2].push_back(Utils::QUAL_PRECISE);
-    m_test_cases[2].push_back(Utils::QUAL_MEDIUMP);
-    m_test_cases[2].push_back(Utils::QUAL_OUT);
-
-    m_test_cases[3].push_back(Utils::QUAL_OUT);
-    m_test_cases[3].push_back(Utils::QUAL_PRECISE);
-    m_test_cases[3].push_back(Utils::QUAL_MEDIUMP);
-
-    m_test_cases[4].push_back(Utils::QUAL_LOWP);
-    m_test_cases[4].push_back(Utils::QUAL_OUT);
-    m_test_cases[4].push_back(Utils::QUAL_PRECISE);
-
-    m_test_cases[5].push_back(Utils::QUAL_OUT);
-    m_test_cases[5].push_back(Utils::QUAL_PRECISE);
-    m_test_cases[5].push_back(Utils::QUAL_LOWP);
-
-    return true;
 }
 
 /** Returns reference to current test case
@@ -8220,12 +7975,14 @@ void BindingUniformBlocksTest::releaseResource()
  *
  * @param context Test context
  **/
-BindingUniformSingleBlockTest::BindingUniformSingleBlockTest(deqp::Context &context)
+BindingUniformSingleBlockTest::BindingUniformSingleBlockTest(deqp::Context &context, Utils::SHADER_STAGES test_stage)
     : GLSLTestBase(context, "binding_uniform_single_block", "Test verifies uniform block binding")
     , m_goku_buffer(context)
-    , m_test_stage(Utils::SHADER_STAGES_MAX)
+    , m_test_stage(test_stage)
 {
-    /* Nothing to be done here */
+    std::string name = "binding_uniform_single_block_stage_" + std::string(Utils::getShaderStageName(m_test_stage));
+
+    TestCase::m_name = name;
 }
 
 /** Set up next test case
@@ -8236,25 +7993,8 @@ BindingUniformSingleBlockTest::BindingUniformSingleBlockTest(deqp::Context &cont
  **/
 bool BindingUniformSingleBlockTest::prepareNextTestCase(glw::GLuint test_case_index)
 {
-    switch (test_case_index)
+    if (test_case_index > 0)
     {
-    case (glw::GLuint)-1:
-    case 0:
-        m_test_stage = Utils::VERTEX_SHADER;
-        break;
-    case 1:
-        m_test_stage = Utils::TESS_CTRL_SHADER;
-        break;
-    case 2:
-        m_test_stage = Utils::TESS_EVAL_SHADER;
-        break;
-    case 3:
-        m_test_stage = Utils::GEOMETRY_SHADER;
-        break;
-    case 4:
-        m_test_stage = Utils::FRAGMENT_SHADER;
-        break;
-    default:
         return false;
     }
 
@@ -9553,11 +9293,42 @@ void BindingUniformGlobalBlockTest::prepareShaderSource(Utils::SHADER_STAGES in_
  *
  * @param context Test context
  **/
-BindingUniformInvalidTest::BindingUniformInvalidTest(deqp::Context &context)
+BindingUniformInvalidTest::BindingUniformInvalidTest(deqp::Context &context, TESTCASES case_index)
     : NegativeTestBase(context, "binding_uniform_invalid", "Test verifies invalid binding values")
     , m_case(TEST_CASES_MAX)
+    , m_test_case_idx(case_index)
 {
-    /* Nothing to be done here */
+    std::string name = "binding_uniform_invalid_case_" + std::string(getTestCaseString(m_test_case_idx));
+
+    TestCase::m_name = name;
+}
+
+const GLchar *BindingUniformInvalidTest::getTestCaseString(TESTCASES test_case)
+{
+    const GLchar *name = 0;
+
+    switch (test_case)
+    {
+    case NEGATIVE_VALUE:
+        name = "-1";
+        break;
+    case VARIABLE_NAME:
+        name = "goku";
+        break;
+    case STD140:
+        name = "std140";
+        break;
+    case MISSING:
+        name = "";
+        break;
+    case TEST_CASES_MAX:
+        name = "0";
+        break;
+    default:
+        TCU_FAIL("Invalid enum");
+    }
+
+    return name;
 }
 
 /** Set up next test case
@@ -9568,16 +9339,20 @@ BindingUniformInvalidTest::BindingUniformInvalidTest(deqp::Context &context)
  **/
 bool BindingUniformInvalidTest::prepareNextTestCase(glw::GLuint test_case_index)
 {
-    switch (test_case_index)
+    if (test_case_index > 0)
     {
-    case (glw::GLuint)-1:
-        m_case = TEST_CASES_MAX;
-        break;
+        return false;
+    }
+    switch (m_test_case_idx)
+    {
+        //    case (glw::GLuint)-1:
+        //        m_case = TEST_CASES_MAX;
+        //        break;
     case NEGATIVE_VALUE:
     case VARIABLE_NAME:
     case STD140:
     case MISSING:
-        m_case = (TESTCASES)test_case_index;
+        m_case = (TESTCASES)m_test_case_idx;
         break;
     default:
         return false;
@@ -9797,19 +9572,19 @@ const GLchar *BindingUniformInvalidTest::getCaseString(TESTCASES test_case)
     switch (m_case)
     {
     case NEGATIVE_VALUE:
-        binding = "= -1";
+        binding = "-1";
         break;
     case VARIABLE_NAME:
-        binding = "= goku";
+        binding = "goku";
         break;
     case STD140:
-        binding = "= std140";
+        binding = "std140";
         break;
     case MISSING:
-        binding = "";
+        binding = "missing";
         break;
     case TEST_CASES_MAX:
-        binding = "= 0";
+        binding = "0";
         break;
     default:
         TCU_FAIL("Invalid enum");
@@ -9822,15 +9597,17 @@ const GLchar *BindingUniformInvalidTest::getCaseString(TESTCASES test_case)
  *
  * @param context Test context
  **/
-BindingSamplersTest::BindingSamplersTest(deqp::Context &context)
+BindingSamplersTest::BindingSamplersTest(deqp::Context &context, Utils::TEXTURE_TYPES test_case)
     : GLSLTestBase(context, "binding_samplers", "Test verifies smaplers binding")
     , m_goku_texture(context)
     , m_vegeta_texture(context)
     , m_trunks_texture(context)
     , m_buffer(context)
-    , m_test_case(Utils::TEXTURE_TYPES_MAX)
+    , m_test_case(test_case)
 {
-    /* Nothing to be done here */
+    std::string name = "binding_samplers_texture_type_" + std::string(Utils::getTextureTypeName(test_case));
+
+    TestCase::m_name = name;
 }
 
 /** Set up next test case
@@ -9841,34 +9618,8 @@ BindingSamplersTest::BindingSamplersTest(deqp::Context &context)
  **/
 bool BindingSamplersTest::prepareNextTestCase(glw::GLuint test_case_index)
 {
-    switch (test_case_index)
+    if (test_case_index > 0)
     {
-    case (glw::GLuint)-1:
-    case 0:
-        m_test_case = Utils::TEX_2D;
-        break;
-    case 1:
-        m_test_case = Utils::TEX_BUFFER;
-        break;
-    case 2:
-        m_test_case = Utils::TEX_2D_RECT;
-        break;
-    case 3:
-        m_test_case = Utils::TEX_2D_ARRAY;
-        break;
-    case 4:
-        m_test_case = Utils::TEX_3D;
-        break;
-    case 5:
-        m_test_case = Utils::TEX_CUBE;
-        break;
-    case 6:
-        m_test_case = Utils::TEX_1D;
-        break;
-    case 7:
-        m_test_case = Utils::TEX_1D_ARRAY;
-        break;
-    default:
         return false;
     }
 
@@ -10222,11 +9973,14 @@ void BindingSamplersTest::prepareTexture(Utils::texture &texture, Utils::TEXTURE
  *
  * @param context Test context
  **/
-BindingSamplerSingleTest::BindingSamplerSingleTest(deqp::Context &context)
+BindingSamplerSingleTest::BindingSamplerSingleTest(deqp::Context &context, Utils::SHADER_STAGES test_stage)
     : GLSLTestBase(context, "binding_sampler_single", "Test verifies sampler binding")
     , m_goku_texture(context)
+    , m_test_stage(test_stage)
 {
-    /* Nothing to be done here */
+    std::string name = "binding_sampler_single_stage_" + std::string(Utils::getShaderStageName(m_test_stage));
+
+    TestCase::m_name = name;
 }
 
 /** Set up next test case
@@ -10237,25 +9991,8 @@ BindingSamplerSingleTest::BindingSamplerSingleTest(deqp::Context &context)
  **/
 bool BindingSamplerSingleTest::prepareNextTestCase(glw::GLuint test_case_index)
 {
-    switch (test_case_index)
+    if (test_case_index > 0)
     {
-    case (glw::GLuint)-1:
-    case 0:
-        m_test_stage = Utils::VERTEX_SHADER;
-        break;
-    case 1:
-        m_test_stage = Utils::TESS_CTRL_SHADER;
-        break;
-    case 2:
-        m_test_stage = Utils::TESS_EVAL_SHADER;
-        break;
-    case 3:
-        m_test_stage = Utils::GEOMETRY_SHADER;
-        break;
-    case 4:
-        m_test_stage = Utils::FRAGMENT_SHADER;
-        break;
-    default:
         return false;
     }
 
@@ -11307,10 +11044,41 @@ void BindingSamplerAPIOverrideTest::releaseResource()
  *
  * @param context Test context
  **/
-BindingSamplerInvalidTest::BindingSamplerInvalidTest(deqp::Context &context)
+BindingSamplerInvalidTest::BindingSamplerInvalidTest(deqp::Context &context, TESTCASES case_index)
     : NegativeTestBase(context, "binding_sampler_invalid", "Test verifies invalid binding values")
+    , m_test_case_idx(case_index)
 {
-    /* Nothing to be done here */
+    std::string name = "binding_sampler_invalid_case_" + std::string(getTestCaseString(m_test_case_idx));
+
+    TestCase::m_name = name;
+}
+
+const GLchar *BindingSamplerInvalidTest::getTestCaseString(TESTCASES test_case)
+{
+    const GLchar *name = 0;
+
+    switch (test_case)
+    {
+    case NEGATIVE_VALUE:
+        name = "-1";
+        break;
+    case VARIABLE_NAME:
+        name = "goku";
+        break;
+    case STD140:
+        name = "std140";
+        break;
+    case MISSING:
+        name = "";
+        break;
+    case TEST_CASES_MAX:
+        name = "0";
+        break;
+    default:
+        TCU_FAIL("Invalid enum");
+    }
+
+    return name;
 }
 
 /** Set up next test case
@@ -11321,16 +11089,20 @@ BindingSamplerInvalidTest::BindingSamplerInvalidTest(deqp::Context &context)
  **/
 bool BindingSamplerInvalidTest::prepareNextTestCase(glw::GLuint test_case_index)
 {
-    switch (test_case_index)
+    if (test_case_index > 0)
     {
-    case (glw::GLuint)-1:
-        m_case = TEST_CASES_MAX;
-        break;
+        return false;
+    }
+    switch (m_test_case_idx)
+    {
+        //    case (glw::GLuint)-1:
+        //        m_case = TEST_CASES_MAX;
+        //        break;
     case NEGATIVE_VALUE:
     case VARIABLE_NAME:
     case STD140:
     case MISSING:
-        m_case = (TESTCASES)test_case_index;
+        m_case = (TESTCASES)m_test_case_idx;
         break;
     default:
         return false;
@@ -11579,7 +11351,7 @@ const GLuint BindingImagesTest::m_trunks_data = 0x00ff0000;
  *
  * @param context Test context
  **/
-BindingImagesTest::BindingImagesTest(deqp::Context &context)
+BindingImagesTest::BindingImagesTest(deqp::Context &context, Utils::TEXTURE_TYPES test_case)
     : BindingImageTest(context, "binding_images", "Test verifies binding of images")
     , m_goku_texture(context)
     , m_vegeta_texture(context)
@@ -11587,8 +11359,11 @@ BindingImagesTest::BindingImagesTest(deqp::Context &context)
     , m_goku_buffer(context)
     , m_vegeta_buffer(context)
     , m_trunks_buffer(context)
+    , m_test_case(test_case)
 {
-    /* Nothing to be done here */
+    std::string name = "binding_images_texture_type_" + std::string(Utils::getTextureTypeName(m_test_case));
+
+    TestCase::m_name = name;
 }
 
 /** Set up next test case
@@ -11599,34 +11374,8 @@ BindingImagesTest::BindingImagesTest(deqp::Context &context)
  **/
 bool BindingImagesTest::prepareNextTestCase(glw::GLuint test_case_index)
 {
-    switch (test_case_index)
+    if (test_case_index > 0)
     {
-    case (glw::GLuint)-1:
-    case 0:
-        m_test_case = Utils::TEX_2D;
-        break;
-    case 1:
-        m_test_case = Utils::TEX_BUFFER;
-        break;
-    case 2:
-        m_test_case = Utils::TEX_2D_RECT;
-        break;
-    case 3:
-        m_test_case = Utils::TEX_2D_ARRAY;
-        break;
-    case 4:
-        m_test_case = Utils::TEX_3D;
-        break;
-    case 5:
-        m_test_case = Utils::TEX_CUBE;
-        break;
-    case 6:
-        m_test_case = Utils::TEX_1D;
-        break;
-    case 7:
-        m_test_case = Utils::TEX_1D_ARRAY;
-        break;
-    default:
         return false;
     }
 
@@ -11982,11 +11731,14 @@ bool BindingImagesTest::verifyAdditionalResults() const
  *
  * @param context Test context
  **/
-BindingImageSingleTest::BindingImageSingleTest(deqp::Context &context)
+BindingImageSingleTest::BindingImageSingleTest(deqp::Context &context, Utils::SHADER_STAGES test_stage)
     : BindingImageTest(context, "binding_image_single", "Test verifies single binding of image used in multiple stages")
     , m_goku_texture(context)
+    , m_test_stage(test_stage)
 {
-    /* Nothing to be done here */
+    std::string name = "binding_image_single_stage_" + std::string(Utils::getShaderStageName(m_test_stage));
+
+    TestCase::m_name = name;
 }
 
 /** Set up next test case
@@ -11997,25 +11749,8 @@ BindingImageSingleTest::BindingImageSingleTest(deqp::Context &context)
  **/
 bool BindingImageSingleTest::prepareNextTestCase(glw::GLuint test_case_index)
 {
-    switch (test_case_index)
+    if (test_case_index > 0)
     {
-    case (glw::GLuint)-1:
-    case 0:
-        m_test_stage = Utils::VERTEX_SHADER;
-        break;
-    case 1:
-        m_test_stage = Utils::TESS_CTRL_SHADER;
-        break;
-    case 2:
-        m_test_stage = Utils::TESS_EVAL_SHADER;
-        break;
-    case 3:
-        m_test_stage = Utils::GEOMETRY_SHADER;
-        break;
-    case 4:
-        m_test_stage = Utils::FRAGMENT_SHADER;
-        break;
-    default:
         return false;
     }
 
@@ -13128,10 +12863,41 @@ void BindingImageAPIOverrideTest::releaseResource()
  *
  * @param context Test context
  **/
-BindingImageInvalidTest::BindingImageInvalidTest(deqp::Context &context)
+BindingImageInvalidTest::BindingImageInvalidTest(deqp::Context &context, TESTCASES test_case_idx)
     : NegativeTestBase(context, "binding_image_invalid", "Test verifies invalid binding values")
+    , m_test_case_idx(test_case_idx)
 {
-    /* Nothing to be done here */
+    std::string name = "binding_image_invalid_case_" + std::string(getTestCaseString(m_test_case_idx));
+
+    TestCase::m_name = name;
+}
+
+const GLchar *BindingImageInvalidTest::getTestCaseString(TESTCASES test_case)
+{
+    const GLchar *name = 0;
+
+    switch (test_case)
+    {
+    case NEGATIVE_VALUE:
+        name = "-1";
+        break;
+    case VARIABLE_NAME:
+        name = "goku";
+        break;
+    case STD140:
+        name = "std140";
+        break;
+    case MISSING:
+        name = "";
+        break;
+    case TEST_CASES_MAX:
+        name = "0";
+        break;
+    default:
+        TCU_FAIL("Invalid enum");
+    }
+
+    return name;
 }
 
 /** Set up next test case
@@ -13142,16 +12908,20 @@ BindingImageInvalidTest::BindingImageInvalidTest(deqp::Context &context)
  **/
 bool BindingImageInvalidTest::prepareNextTestCase(glw::GLuint test_case_index)
 {
-    switch (test_case_index)
+    if (test_case_index > 0)
     {
-    case (glw::GLuint)-1:
-        m_case = TEST_CASES_MAX;
-        break;
+        return false;
+    }
+    switch (m_test_case_idx)
+    {
+        //    case (glw::GLuint)-1:
+        //        m_case = TEST_CASES_MAX;
+        //        break;
     case NEGATIVE_VALUE:
     case VARIABLE_NAME:
     case STD140:
     case MISSING:
-        m_case = (TESTCASES)test_case_index;
+        m_case = (TESTCASES)m_test_case_idx;
         break;
     default:
         return false;
@@ -13405,11 +13175,69 @@ const GLfloat InitializerListTest::m_value = 0.0625f;
  *
  * @param context Test context
  **/
-InitializerListTest::InitializerListTest(deqp::Context &context)
+InitializerListTest::InitializerListTest(deqp::Context &context, testCase test_case)
     : GLSLTestBase(context, "initializer_list", "Test verifies initializer lists")
     , m_current_test_case_index(0)
 {
-    /* Nothing to be done here */
+    m_test_cases.push_back(test_case);
+
+    std::string name = "initializer_list_initializer_" + getInitializerName(test_case.m_initializer) + "_cols_" +
+                       std::to_string(test_case.m_n_cols) + "_rows_" + std::to_string(test_case.m_n_rows);
+
+    TestCase::m_name = name;
+}
+
+std::string InitializerListTest::getInitializerName(TESTED_INITIALIZERS initializer)
+{
+    switch (initializer)
+    {
+    case VECTOR:
+        return std::string("vector");
+    case MATRIX:
+        return std::string("matrix");
+    case MATRIX_ROWS:
+        return std::string("matrix_rows");
+    case STRUCT:
+        return std::string("struct");
+    case ARRAY_SCALAR:
+        return std::string("array_scalar");
+    case ARRAY_VECTOR_CTR:
+        return std::string("array_vector_ctr");
+    case ARRAY_VECTOR_LIST:
+        return std::string("array_vector_list");
+    case ARRAY_MATRIX_CTR:
+        return std::string("array_matrix_ctr");
+    case ARRAY_MATRIX_LIST:
+        return std::string("array_matrix_list");
+    case ARRAY_STRUCT:
+        return std::string("array_struct");
+    case NESTED_STRUCT_CTR:
+        return std::string("nested_struct_ctr");
+    case NESTED_STRUCT_LIST:
+        return std::string("nested_struct_list");
+    case NESTED_STURCT_ARRAYS_STRUCT_LIST:
+        return std::string("nested_struct_arrays_struct_list");
+    case NESTED_STURCT_ARRAYS_STRUCT_MIX:
+        return std::string("nested_struct_arrays_struct_mix");
+    case NESTED_ARRAY_STRUCT_STRUCT_LIST:
+        return std::string("nested_array_struct_struct_list");
+    case NESTED_ARRAY_STRUCT_STRUCT_MIX:
+        return std::string("nested_array_struct_struct_mix");
+    case NESTED_STRUCT_STRUCT_ARRAY_LIST:
+        return std::string("nested_struct_struct_array_list");
+    case NESTED_STRUCT_STRUCT_ARRAY_MIX:
+        return std::string("nested_struct_struct_array_mix");
+    case UNSIZED_ARRAY_SCALAR:
+        return std::string("unsized_array_scalar");
+    case UNSIZED_ARRAY_VECTOR:
+        return std::string("unsized_array_vector");
+    case UNSIZED_ARRAY_MATRIX:
+        return std::string("unsized_array_matrix");
+    case UNSIZED_ARRAY_STRUCT:
+        return std::string("unsized_array_struct");
+    default:
+        return std::string("default");
+    }
 }
 
 /** Set up next test case
@@ -13676,81 +13504,6 @@ void InitializerListTest::prepareShaderSource(Utils::SHADER_STAGES in_stage, boo
     Utils::replaceToken("SUM", position, sum.c_str(), out_source.m_parts[0].m_code);
 
     Utils::replaceToken("EXPECTED_VALUE", position, expected_value.c_str(), out_source.m_parts[0].m_code);
-}
-
-/** Prepare test cases
- *
- * @return true
- **/
-bool InitializerListTest::testInit()
-{
-    for (GLuint i = 0; i < TESTED_INITIALIZERS_MAX; ++i)
-    {
-        const TESTED_INITIALIZERS l_init = (TESTED_INITIALIZERS)i;
-
-        testCase test_case = {l_init, 1, 1};
-
-        switch (l_init)
-        {
-        case VECTOR:
-        case ARRAY_VECTOR_CTR:
-        case ARRAY_VECTOR_LIST:
-        case UNSIZED_ARRAY_VECTOR:
-            for (GLuint row = 2; row <= 4; ++row)
-            {
-                test_case.m_n_rows = row;
-
-                m_test_cases.push_back(test_case);
-            }
-
-            break;
-
-        case MATRIX:
-        case MATRIX_ROWS:
-        case ARRAY_MATRIX_CTR:
-        case ARRAY_MATRIX_LIST:
-        case UNSIZED_ARRAY_MATRIX:
-            for (GLuint col = 2; col <= 4; ++col)
-            {
-                for (GLuint row = 2; row <= 4; ++row)
-                {
-                    test_case.m_n_cols = col;
-                    test_case.m_n_rows = row;
-
-                    m_test_cases.push_back(test_case);
-                }
-            }
-
-            break;
-
-        case ARRAY_SCALAR:
-        case UNSIZED_ARRAY_SCALAR:
-            m_test_cases.push_back(test_case);
-
-            break;
-
-        case STRUCT:
-        case ARRAY_STRUCT:
-        case NESTED_STRUCT_CTR:
-        case NESTED_STRUCT_LIST:
-        case NESTED_STURCT_ARRAYS_STRUCT_LIST:
-        case NESTED_STURCT_ARRAYS_STRUCT_MIX:
-        case NESTED_ARRAY_STRUCT_STRUCT_LIST:
-        case NESTED_ARRAY_STRUCT_STRUCT_MIX:
-        case NESTED_STRUCT_STRUCT_ARRAY_LIST:
-        case NESTED_STRUCT_STRUCT_ARRAY_MIX:
-        case UNSIZED_ARRAY_STRUCT:
-            test_case.m_n_rows = 4;
-            m_test_cases.push_back(test_case);
-
-            break;
-        default:
-            DE_ASSERT(0);
-            break;
-        }
-    }
-
-    return true;
 }
 
 /** Get string representing "[SIZE]" for current test case
@@ -14720,11 +14473,54 @@ std::string InitializerListTest::getVectorValues(GLuint column, GLuint size)
  *
  * @param context Test context
  **/
-InitializerListNegativeTest::InitializerListNegativeTest(deqp::Context &context)
+InitializerListNegativeTest::InitializerListNegativeTest(deqp::Context &context, TESTED_ERRORS test_case)
     : NegativeTestBase(context, "initializer_list_negative", "Verifies invalid initializers")
     , m_current_test_case_index(0)
 {
-    /* Nothing to be done here */
+    m_test_cases.push_back(test_case);
+
+    std::string name = "initializer_list_negative_error_" + getTestedErrorName(test_case);
+
+    TestCase::m_name = name;
+}
+
+std::string InitializerListNegativeTest::getTestedErrorName(TESTED_ERRORS error)
+{
+    switch (error)
+    {
+    case TYPE_UIVEC_BOOL:
+        return std::string("type_uivec_bool");
+    case TYPE_IVEC_BOOL:
+        return std::string("type_ivec_bool");
+    case TYPE_VEC_BOOL:
+        return std::string("type_vec_bool");
+    case TYPE_MAT_BOOL:
+        return std::string("type_mat_bool");
+    case COMPONENTS_VEC_LESS:
+        return std::string("components_vec_less");
+    case COMPONENTS_VEC_MORE:
+        return std::string("components_vec_more");
+    case COMPONENTS_MAT_LESS_ROWS:
+        return std::string("components_mat_less_rows");
+    case COMPONENTS_MAT_LESS_COLUMNS:
+        return std::string("components_mat_less_columns");
+    case COMPONENTS_MAT_MORE_ROWS:
+        return std::string("components_mat_more_rows");
+    case COMPONENTS_MAT_MORE_COLUMNS:
+        return std::string("components_mat_more_columns");
+    case LIST_IN_CONSTRUCTOR:
+        return std::string("list_in_constructor");
+    case STRUCT_LAYOUT_MEMBER_TYPE:
+        return std::string("struct_layout_member_type");
+    case STRUCT_LAYOUT_MEMBER_COUNT_MORE:
+        return std::string("struct_layout_member_count_more");
+    case STRUCT_LAYOUT_MEMBER_COUNT_LESS:
+        return std::string("struct_layout_member_count_less");
+    case STRUCT_LAYOUT_MEMBER_ORDER:
+        return std::string("struct_layout_member_order");
+    default:
+        return std::string("default");
+    }
 }
 
 /** Set up next test case
@@ -14962,22 +14758,6 @@ void InitializerListNegativeTest::prepareShaderSource(Utils::SHADER_STAGES in_st
     Utils::replaceToken("INITIALIZATION", position, initialization.c_str(), out_source.m_parts[0].m_code);
 
     Utils::replaceToken("SUM", position, sum.c_str(), out_source.m_parts[0].m_code);
-}
-
-/** Prepare test cases
- *
- * @return true
- **/
-bool InitializerListNegativeTest::testInit()
-{
-    for (GLuint i = 0; i < TESTED_ERRORS_MAX; ++i)
-    {
-        const TESTED_ERRORS error = (TESTED_ERRORS)i;
-
-        m_test_cases.push_back(error);
-    }
-
-    return true;
 }
 
 /** Get string representing initialization list for current test case
@@ -15287,10 +15067,32 @@ std::string InitializerListNegativeTest::getTypeName()
  *
  * @param context Test context
  **/
-LengthOfVectorAndMatrixTest::LengthOfVectorAndMatrixTest(deqp::Context &context)
+LengthOfVectorAndMatrixTest::LengthOfVectorAndMatrixTest(deqp::Context &context, testCase test_case)
     : GLSLTestBase(context, "length_of_vector_and_matrix", "Test verifies .length() for vectors and matrices")
 {
-    /* Nothing to be done here */
+    m_test_cases.push_back(test_case);
+
+    std::string name = "length_of_vector_and_matrix_type_" + getTypeName(test_case.m_type) + "_cols_" +
+                       std::to_string(test_case.m_n_cols) + "_rows_" + std::to_string(test_case.m_n_rows);
+
+    TestCase::m_name = name;
+}
+
+std::string LengthOfVectorAndMatrixTest::getTypeName(Utils::TYPES type)
+{
+    switch (type)
+    {
+    case Utils::TYPES::FLOAT:
+        return std::string("float");
+    case Utils::TYPES::DOUBLE:
+        return std::string("double");
+    case Utils::TYPES::INT:
+        return std::string("int");
+    case Utils::TYPES::UINT:
+        return std::string("uint");
+    default:
+        return std::string("default");
+    }
 }
 
 /** Set up next test case
@@ -15483,48 +15285,6 @@ void LengthOfVectorAndMatrixTest::prepareVertexBuffer(const Utils::program &prog
         gl.enableVertexAttribArray(variable_loc + col);
         GLU_EXPECT_NO_ERROR(gl.getError(), "EnableVertexAttribArray");
     }
-}
-
-/** Prepare test cases
- *
- * @return true
- **/
-bool LengthOfVectorAndMatrixTest::testInit()
-{
-    /* Vectors */
-    for (GLuint row = 2; row <= 4; ++row)
-    {
-        testCase test_case = {Utils::UINT, 1 /* n_cols */, row};
-
-        m_test_cases.push_back(test_case);
-    }
-
-    for (GLuint row = 2; row <= 4; ++row)
-    {
-        testCase test_case = {Utils::INT, 1 /* n_cols */, row};
-
-        m_test_cases.push_back(test_case);
-    }
-
-    for (GLuint row = 2; row <= 4; ++row)
-    {
-        testCase test_case = {Utils::FLOAT, 1 /* n_cols */, row};
-
-        m_test_cases.push_back(test_case);
-    }
-
-    /* Matrices */
-    for (GLuint col = 2; col <= 4; ++col)
-    {
-        for (GLuint row = 2; row <= 4; ++row)
-        {
-            testCase test_case = {Utils::FLOAT, col, row};
-
-            m_test_cases.push_back(test_case);
-        }
-    }
-
-    return true;
 }
 
 /** Get string representing value that should be placed at token EXPECTED_VALUE
@@ -16816,11 +16576,48 @@ void ScalarSwizzlersTest::prepareUniforms(Utils::program &program)
  *
  * @param context Test context
  **/
-ScalarSwizzlersInvalidTest::ScalarSwizzlersInvalidTest(deqp::Context &context)
+ScalarSwizzlersInvalidTest::ScalarSwizzlersInvalidTest(deqp::Context &context, TESTED_CASES test_case)
     : NegativeTestBase(context, "scalar_swizzlers_invalid",
                        "Verifies if invalid use of swizzlers on scalars is reported as error")
+    , m_test_case_idx(test_case)
 {
-    /* Nothing to be done here */
+    std::string name = "scalar_swizzlers_invalid_case_" + std::string(getTestCaseString(m_test_case_idx));
+
+    TestCase::m_name = name;
+}
+
+const GLchar *ScalarSwizzlersInvalidTest::getTestCaseString(TESTED_CASES test_case)
+{
+    const GLchar *name = 0;
+
+    switch (test_case)
+    {
+    case INVALID_Y:
+        name = "invalid_y";
+        break;
+    case INVALID_B:
+        name = "invalid_b";
+        break;
+    case INVALID_Q:
+        name = "invalid_q";
+        break;
+    case INVALID_XY:
+        name = "invalid_xy";
+        break;
+    case INVALID_XRS:
+        name = "invalid_xrs";
+        break;
+    case WRONG:
+        name = "wrong";
+        break;
+    case MISSING_PARENTHESIS:
+        name = "missing_parenthesis";
+        break;
+    default:
+        TCU_FAIL("Invalid enum");
+    }
+
+    return name;
 }
 
 /** Set up next test case
@@ -16831,9 +16628,13 @@ ScalarSwizzlersInvalidTest::ScalarSwizzlersInvalidTest(deqp::Context &context)
  **/
 bool ScalarSwizzlersInvalidTest::prepareNextTestCase(glw::GLuint test_case_index)
 {
-    switch (test_case_index)
+    if (test_case_index > 0)
     {
-    case (glw::GLuint)-1:
+        return false;
+    }
+    switch (m_test_case_idx)
+    {
+        //    case (glw::GLuint)-1:
     case INVALID_Y:
     case INVALID_B:
     case INVALID_Q:
@@ -16841,7 +16642,7 @@ bool ScalarSwizzlersInvalidTest::prepareNextTestCase(glw::GLuint test_case_index
     case INVALID_XRS:
     case WRONG:
     case MISSING_PARENTHESIS:
-        m_case = (TESTED_CASES)test_case_index;
+        m_case = (TESTED_CASES)m_test_case_idx;
         break;
     default:
         return false;
@@ -17367,11 +17168,15 @@ bool BuiltInValuesTest::testInit()
  *
  * @param context Test context
  **/
-BuiltInAssignmentTest::BuiltInAssignmentTest(deqp::Context &context)
+BuiltInAssignmentTest::BuiltInAssignmentTest(deqp::Context &context, GLuint test_case)
     : NegativeTestBase(context, "built_in_assignment",
                        "Test verifies that built in gl_Min/MaxProgramTexelOffset cannot be assigned")
+    , m_case(test_case)
 {
-    /* Nothing to be done here */
+    std::string name = "built_in_assignment_testing_" +
+                       std::string(test_case == 0 ? "gl_MinProgramTexelOffset" : "gl_MaxProgramTexelOffset");
+
+    TestCase::m_name = name;
 }
 
 /** Set up next test case
@@ -17382,9 +17187,14 @@ BuiltInAssignmentTest::BuiltInAssignmentTest(deqp::Context &context)
  **/
 bool BuiltInAssignmentTest::prepareNextTestCase(glw::GLuint test_case_index)
 {
+    if (test_case_index > 0)
+    {
+        return false;
+    }
+
     const GLchar *description = 0;
 
-    switch (test_case_index)
+    switch (m_case)
     {
     case (glw::GLuint)-1:
     case 0:
@@ -17396,8 +17206,6 @@ bool BuiltInAssignmentTest::prepareNextTestCase(glw::GLuint test_case_index)
     default:
         return false;
     }
-
-    m_case = test_case_index;
 
     m_context.getTestContext().getLog() << tcu::TestLog::Message << description << tcu::TestLog::EndMessage;
 
@@ -18790,49 +18598,728 @@ ShadingLanguage420PackTests::ShadingLanguage420PackTests(deqp::Context &context)
  **/
 void ShadingLanguage420PackTests::init(void)
 {
-    addChild(new GLSL420Pack::BindingSamplerSingleTest(m_context));
-    addChild(new GLSL420Pack::BindingImageSingleTest(m_context));
-    addChild(new GLSL420Pack::UTF8CharactersTest(m_context));
-    addChild(new GLSL420Pack::UTF8InSourceTest(m_context));
-    addChild(new GLSL420Pack::QualifierOrderTest(m_context));
-    addChild(new GLSL420Pack::QualifierOrderBlockTest(m_context));
-    addChild(new GLSL420Pack::LineContinuationTest(m_context));
+    addBindingSamplerSingleTest();
+    addBindingImageSingleTest();
+    addUTF8CharactersTest();
+    addUTF8InSourceTest();
+    addQualifierOrderTest();
+    addQualifierOrderBlockTest();
+    addLineContinuationTest();
     addChild(new GLSL420Pack::LineNumberingTest(m_context));
-    addChild(new GLSL420Pack::ImplicitConversionsValidTest(m_context));
+    addImplicitConversionsValidTest();
     addChild(new GLSL420Pack::ImplicitConversionsInvalidTest(m_context));
     addChild(new GLSL420Pack::ConstDynamicValueTest(m_context));
     addChild(new GLSL420Pack::ConstAssignmentTest(m_context));
     addChild(new GLSL420Pack::ConstDynamicValueAsConstExprTest(m_context));
-    addChild(new GLSL420Pack::QualifierOrderUniformTest(m_context));
-    addChild(new GLSL420Pack::QualifierOrderFunctionInoutTest(m_context));
-    addChild(new GLSL420Pack::QualifierOrderFunctionInputTest(m_context));
-    addChild(new GLSL420Pack::QualifierOrderFunctionOutputTest(m_context));
+    addQualifierOrderUniformTest();
+    addQualifierOrderFunctionInoutTest();
+    addQualifierOrderFunctionInputTest();
+    addQualifierOrderFunctionOutputTest();
     addChild(new GLSL420Pack::QualifierOverrideLayoutTest(m_context));
     addChild(new GLSL420Pack::BindingUniformBlocksTest(m_context));
-    addChild(new GLSL420Pack::BindingUniformSingleBlockTest(m_context));
+    addBindingUniformSingleBlockTest();
     addChild(new GLSL420Pack::BindingUniformBlockArrayTest(m_context));
     addChild(new GLSL420Pack::BindingUniformDefaultTest(m_context));
     addChild(new GLSL420Pack::BindingUniformAPIOverirdeTest(m_context));
     addChild(new GLSL420Pack::BindingUniformGlobalBlockTest(m_context));
-    addChild(new GLSL420Pack::BindingUniformInvalidTest(m_context));
-    addChild(new GLSL420Pack::BindingSamplersTest(m_context));
+    addBindingUniformInvalidTest();
+    addBindingSamplersTest();
     addChild(new GLSL420Pack::BindingSamplerArrayTest(m_context));
     addChild(new GLSL420Pack::BindingSamplerDefaultTest(m_context));
     addChild(new GLSL420Pack::BindingSamplerAPIOverrideTest(m_context));
-    addChild(new GLSL420Pack::BindingSamplerInvalidTest(m_context));
-    addChild(new GLSL420Pack::BindingImagesTest(m_context));
+    addBindingSamplerInvalidTest();
+    addBindingImagesTest();
     addChild(new GLSL420Pack::BindingImageArrayTest(m_context));
     addChild(new GLSL420Pack::BindingImageDefaultTest(m_context));
     addChild(new GLSL420Pack::BindingImageAPIOverrideTest(m_context));
-    addChild(new GLSL420Pack::BindingImageInvalidTest(m_context));
-    addChild(new GLSL420Pack::InitializerListTest(m_context));
-    addChild(new GLSL420Pack::InitializerListNegativeTest(m_context));
-    addChild(new GLSL420Pack::LengthOfVectorAndMatrixTest(m_context));
+    addBindingImageInvalidTest();
+    addInitializerListTest();
+    addInitializerListNegativeTest();
+    addLengthOfVectorAndMatrixTest();
     addChild(new GLSL420Pack::LengthOfComputeResultTest(m_context));
     addChild(new GLSL420Pack::ScalarSwizzlersTest(m_context));
-    addChild(new GLSL420Pack::ScalarSwizzlersInvalidTest(m_context));
+    addScalarSwizzlersInvalidTest();
     addChild(new GLSL420Pack::BuiltInValuesTest(m_context));
-    addChild(new GLSL420Pack::BuiltInAssignmentTest(m_context));
+    addBuiltInAssignmentTest();
+}
+
+void ShadingLanguage420PackTests::addBindingSamplerSingleTest()
+{
+    std::vector<GLSL420Pack::Utils::SHADER_STAGES> stages{
+        GLSL420Pack::Utils::VERTEX_SHADER, GLSL420Pack::Utils::TESS_CTRL_SHADER, GLSL420Pack::Utils::TESS_EVAL_SHADER,
+        GLSL420Pack::Utils::GEOMETRY_SHADER, GLSL420Pack::Utils::FRAGMENT_SHADER};
+
+    for (GLSL420Pack::Utils::SHADER_STAGES &stage : stages)
+    {
+        addChild(new GLSL420Pack::BindingSamplerSingleTest(m_context, stage));
+    }
+}
+
+void ShadingLanguage420PackTests::addBindingImageSingleTest()
+{
+    std::vector<GLSL420Pack::Utils::SHADER_STAGES> stages{
+        GLSL420Pack::Utils::VERTEX_SHADER, GLSL420Pack::Utils::TESS_CTRL_SHADER, GLSL420Pack::Utils::TESS_EVAL_SHADER,
+        GLSL420Pack::Utils::GEOMETRY_SHADER, GLSL420Pack::Utils::FRAGMENT_SHADER};
+
+    for (GLSL420Pack::Utils::SHADER_STAGES &stage : stages)
+    {
+        addChild(new GLSL420Pack::BindingImageSingleTest(m_context, stage));
+    }
+}
+
+void ShadingLanguage420PackTests::addUTF8CharactersTest()
+{
+    std::vector<GLSL420Pack::UTF8CharactersTest::testCase> test_cases = {
+        {GLSL420Pack::UTF8CharactersTest::IN_COMMENT, GLSL420Pack::Utils::TWO_BYTES},
+        {GLSL420Pack::UTF8CharactersTest::IN_COMMENT, GLSL420Pack::Utils::THREE_BYTES},
+        {GLSL420Pack::UTF8CharactersTest::IN_COMMENT, GLSL420Pack::Utils::FOUR_BYTES},
+        {GLSL420Pack::UTF8CharactersTest::IN_COMMENT, GLSL420Pack::Utils::FIVE_BYTES},
+        {GLSL420Pack::UTF8CharactersTest::IN_COMMENT, GLSL420Pack::Utils::SIX_BYTES},
+        {GLSL420Pack::UTF8CharactersTest::IN_COMMENT, GLSL420Pack::Utils::REDUNDANT_ASCII},
+        {GLSL420Pack::UTF8CharactersTest::IN_PREPROCESSOR, GLSL420Pack::Utils::TWO_BYTES},
+        {GLSL420Pack::UTF8CharactersTest::IN_PREPROCESSOR, GLSL420Pack::Utils::THREE_BYTES},
+        {GLSL420Pack::UTF8CharactersTest::IN_PREPROCESSOR, GLSL420Pack::Utils::FOUR_BYTES},
+        {GLSL420Pack::UTF8CharactersTest::IN_PREPROCESSOR, GLSL420Pack::Utils::FIVE_BYTES},
+        {GLSL420Pack::UTF8CharactersTest::IN_PREPROCESSOR, GLSL420Pack::Utils::SIX_BYTES},
+        {GLSL420Pack::UTF8CharactersTest::IN_PREPROCESSOR, GLSL420Pack::Utils::REDUNDANT_ASCII},
+        {GLSL420Pack::UTF8CharactersTest::AS_LAST_CHARACTER_NULL_TERMINATED, GLSL420Pack::Utils::TWO_BYTES},
+        {GLSL420Pack::UTF8CharactersTest::AS_LAST_CHARACTER_NULL_TERMINATED, GLSL420Pack::Utils::THREE_BYTES},
+        {GLSL420Pack::UTF8CharactersTest::AS_LAST_CHARACTER_NULL_TERMINATED, GLSL420Pack::Utils::FOUR_BYTES},
+        {GLSL420Pack::UTF8CharactersTest::AS_LAST_CHARACTER_NULL_TERMINATED, GLSL420Pack::Utils::FIVE_BYTES},
+        {GLSL420Pack::UTF8CharactersTest::AS_LAST_CHARACTER_NULL_TERMINATED, GLSL420Pack::Utils::SIX_BYTES},
+        {GLSL420Pack::UTF8CharactersTest::AS_LAST_CHARACTER_NULL_TERMINATED, GLSL420Pack::Utils::REDUNDANT_ASCII},
+        {GLSL420Pack::UTF8CharactersTest::AS_LAST_CHARACTER_NON_NULL_TERMINATED, GLSL420Pack::Utils::TWO_BYTES},
+        {GLSL420Pack::UTF8CharactersTest::AS_LAST_CHARACTER_NON_NULL_TERMINATED, GLSL420Pack::Utils::THREE_BYTES},
+        {GLSL420Pack::UTF8CharactersTest::AS_LAST_CHARACTER_NON_NULL_TERMINATED, GLSL420Pack::Utils::FOUR_BYTES},
+        {GLSL420Pack::UTF8CharactersTest::AS_LAST_CHARACTER_NON_NULL_TERMINATED, GLSL420Pack::Utils::FIVE_BYTES},
+        {GLSL420Pack::UTF8CharactersTest::AS_LAST_CHARACTER_NON_NULL_TERMINATED, GLSL420Pack::Utils::SIX_BYTES},
+        {GLSL420Pack::UTF8CharactersTest::AS_LAST_CHARACTER_NON_NULL_TERMINATED, GLSL420Pack::Utils::REDUNDANT_ASCII},
+    };
+
+    for (size_t test_case = 0; test_case < test_cases.size(); ++test_case)
+    {
+        addChild(new GLSL420Pack::UTF8CharactersTest(m_context, test_cases[test_case]));
+    }
+}
+
+void ShadingLanguage420PackTests::addUTF8InSourceTest()
+{
+    std::vector<GLSL420Pack::Utils::UTF8_CHARACTERS> test_cases = {
+        GLSL420Pack::Utils::TWO_BYTES,  GLSL420Pack::Utils::THREE_BYTES, GLSL420Pack::Utils::FOUR_BYTES,
+        GLSL420Pack::Utils::FIVE_BYTES, GLSL420Pack::Utils::SIX_BYTES,   GLSL420Pack::Utils::REDUNDANT_ASCII};
+
+    for (GLSL420Pack::Utils::UTF8_CHARACTERS &character : test_cases)
+    {
+        addChild(new GLSL420Pack::UTF8InSourceTest(m_context, character));
+    }
+}
+
+void ShadingLanguage420PackTests::addQualifierOrderTest()
+{
+    std::vector<GLSL420Pack::Utils::qualifierSet> test_cases(5);
+    test_cases[0].push_back(GLSL420Pack::Utils::QUAL_HIGHP);
+    test_cases[0].push_back(GLSL420Pack::Utils::QUAL_IN);
+    test_cases[0].push_back(GLSL420Pack::Utils::QUAL_LOCATION);
+    test_cases[0].push_back(GLSL420Pack::Utils::QUAL_SMOOTH);
+    test_cases[0].push_back(GLSL420Pack::Utils::QUAL_INVARIANT);
+
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_LOWP);
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_IN);
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_SAMPLE);
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_LOCATION);
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_NOPERSPECTIVE);
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_INVARIANT);
+
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_HIGHP);
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_IN);
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_LOCATION);
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_SMOOTH);
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_INVARIANT);
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_LOCATION);
+
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_LOWP);
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_IN);
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_LOCATION);
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_SAMPLE);
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_LOCATION);
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_NOPERSPECTIVE);
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_INVARIANT);
+
+    test_cases[4].push_back(GLSL420Pack::Utils::QUAL_HIGHP);
+    test_cases[4].push_back(GLSL420Pack::Utils::QUAL_IN);
+    test_cases[4].push_back(GLSL420Pack::Utils::QUAL_PATCH);
+    test_cases[4].push_back(GLSL420Pack::Utils::QUAL_LOCATION);
+    test_cases[4].push_back(GLSL420Pack::Utils::QUAL_INVARIANT);
+
+    for (size_t i = 0; i < test_cases.size(); ++i)
+    {
+        addChild(new GLSL420Pack::QualifierOrderTest(m_context, test_cases[i], i));
+    }
+}
+
+void ShadingLanguage420PackTests::addQualifierOrderBlockTest()
+{
+    std::vector<GLSL420Pack::Utils::qualifierSet> test_cases(4);
+
+    test_cases[0].push_back(GLSL420Pack::Utils::QUAL_HIGHP);
+    test_cases[0].push_back(GLSL420Pack::Utils::QUAL_FLAT);
+    test_cases[0].push_back(GLSL420Pack::Utils::QUAL_INVARIANT);
+
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_LOWP);
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_SAMPLE);
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_NOPERSPECTIVE);
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_INVARIANT);
+
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_HIGHP);
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_SMOOTH);
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_INVARIANT);
+
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_LOWP);
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_SAMPLE);
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_NOPERSPECTIVE);
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_INVARIANT);
+
+    for (size_t i = 0; i < test_cases.size(); ++i)
+    {
+        addChild(new GLSL420Pack::QualifierOrderBlockTest(m_context, test_cases[i], i));
+    }
+}
+
+void ShadingLanguage420PackTests::addLineContinuationTest()
+{
+    std::vector<GLSL420Pack::LineContinuationTest::testCase> test_cases = {
+        {{GLSL420Pack::LineContinuationTest::ASSIGNMENT_BEFORE_OPERATOR, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::ASSIGNMENT_BEFORE_OPERATOR, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::ASSIGNMENT_BEFORE_OPERATOR,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::ASSIGNMENT_BEFORE_OPERATOR,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::ASSIGNMENT_AFTER_OPERATOR, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::ASSIGNMENT_AFTER_OPERATOR, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::ASSIGNMENT_AFTER_OPERATOR,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::ASSIGNMENT_AFTER_OPERATOR,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::VECTOR_VARIABLE_INITIALIZER, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::VECTOR_VARIABLE_INITIALIZER, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::VECTOR_VARIABLE_INITIALIZER,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::VECTOR_VARIABLE_INITIALIZER,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::TOKEN_INSIDE_FUNCTION_NAME, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::TOKEN_INSIDE_FUNCTION_NAME, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::TOKEN_INSIDE_FUNCTION_NAME,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::TOKEN_INSIDE_FUNCTION_NAME,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::TOKEN_INSIDE_TYPE_NAME, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::TOKEN_INSIDE_TYPE_NAME, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::TOKEN_INSIDE_TYPE_NAME, GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES,
+          GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::TOKEN_INSIDE_TYPE_NAME, GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES,
+          GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::TOKEN_INSIDE_VARIABLE_NAME, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::TOKEN_INSIDE_VARIABLE_NAME, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::TOKEN_INSIDE_VARIABLE_NAME,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::TOKEN_INSIDE_VARIABLE_NAME,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::PREPROCESSOR_TOKEN_INSIDE, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::PREPROCESSOR_TOKEN_INSIDE, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::PREPROCESSOR_TOKEN_INSIDE,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::PREPROCESSOR_TOKEN_INSIDE,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::PREPROCESSOR_TOKEN_BETWEEN, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::PREPROCESSOR_TOKEN_BETWEEN, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::PREPROCESSOR_TOKEN_BETWEEN,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::PREPROCESSOR_TOKEN_BETWEEN,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::COMMENT, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::COMMENT, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::COMMENT, GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES,
+          GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::COMMENT, GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES,
+          GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::SOURCE_TERMINATION_NULL, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::SOURCE_TERMINATION_NULL, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::SOURCE_TERMINATION_NULL, GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES,
+          GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::SOURCE_TERMINATION_NULL, GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES,
+          GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::SOURCE_TERMINATION_NON_NULL, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::SOURCE_TERMINATION_NON_NULL, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::SOURCE_TERMINATION_NON_NULL,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::SOURCE_TERMINATION_NON_NULL,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::PART_TERMINATION_NULL, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::PART_TERMINATION_NULL, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::PART_TERMINATION_NULL, GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES,
+          GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::PART_TERMINATION_NULL, GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES,
+          GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::PART_NEXT_TO_TERMINATION_NULL, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::PART_NEXT_TO_TERMINATION_NULL, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::PART_NEXT_TO_TERMINATION_NULL,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::PART_NEXT_TO_TERMINATION_NULL,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::PART_TERMINATION_NON_NULL, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::PART_TERMINATION_NON_NULL, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::PART_TERMINATION_NON_NULL,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::PART_TERMINATION_NON_NULL,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::PART_NEXT_TO_TERMINATION_NON_NULL, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::PART_NEXT_TO_TERMINATION_NON_NULL, GLSL420Pack::LineContinuationTest::ONCE,
+          GLSL420Pack::LineContinuationTest::DOS},
+         {GLSL420Pack::LineContinuationTest::PART_NEXT_TO_TERMINATION_NON_NULL,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::UNIX},
+         {GLSL420Pack::LineContinuationTest::PART_NEXT_TO_TERMINATION_NON_NULL,
+          GLSL420Pack::LineContinuationTest::MULTIPLE_TIMES, GLSL420Pack::LineContinuationTest::DOS}}};
+
+    for (size_t test_case = 0; test_case < test_cases.size(); ++test_case)
+    {
+        addChild(new GLSL420Pack::LineContinuationTest(m_context, test_cases[test_case]));
+    }
+}
+
+void ShadingLanguage420PackTests::addImplicitConversionsValidTest()
+{
+    static const GLSL420Pack::ImplicitConversionsValidTest::typesPair allowed_conversions[] = {
+        {GLSL420Pack::Utils::UINT, GLSL420Pack::Utils::INT},    {GLSL420Pack::Utils::FLOAT, GLSL420Pack::Utils::INT},
+        {GLSL420Pack::Utils::DOUBLE, GLSL420Pack::Utils::INT},  {GLSL420Pack::Utils::FLOAT, GLSL420Pack::Utils::UINT},
+        {GLSL420Pack::Utils::DOUBLE, GLSL420Pack::Utils::UINT}, {GLSL420Pack::Utils::FLOAT, GLSL420Pack::Utils::FLOAT},
+    };
+
+    static GLuint n_allowed_conversions =
+        sizeof(allowed_conversions) / sizeof(GLSL420Pack::ImplicitConversionsValidTest::typesPair);
+
+    for (GLuint i = 0; i < n_allowed_conversions; ++i)
+    {
+        const GLSL420Pack::ImplicitConversionsValidTest::typesPair &types = allowed_conversions[i];
+
+        GLuint allowed_columns = 1;
+        if ((true == GLSL420Pack::Utils::doesTypeSupportMatrix(types.m_t1)) &&
+            (true == GLSL420Pack::Utils::doesTypeSupportMatrix(types.m_t2)))
+        {
+            allowed_columns = 4;
+        }
+
+        {
+            GLSL420Pack::ImplicitConversionsValidTest::testCase test_case = {types, 1, 1};
+
+            addChild(new GLSL420Pack::ImplicitConversionsValidTest(m_context, test_case));
+        }
+
+        for (GLuint row = 2; row <= 4; ++row)
+        {
+            for (GLuint col = 1; col <= allowed_columns; ++col)
+            {
+                GLSL420Pack::ImplicitConversionsValidTest::testCase test_case = {types, col, row};
+
+                addChild(new GLSL420Pack::ImplicitConversionsValidTest(m_context, test_case));
+            }
+        }
+    }
+}
+
+void ShadingLanguage420PackTests::addQualifierOrderUniformTest()
+{
+    std::vector<GLSL420Pack::Utils::qualifierSet> test_cases(4);
+
+    test_cases[0].push_back(GLSL420Pack::Utils::QUAL_HIGHP);
+    test_cases[0].push_back(GLSL420Pack::Utils::QUAL_UNIFORM);
+    test_cases[0].push_back(GLSL420Pack::Utils::QUAL_LOCATION);
+
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_LOWP);
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_UNIFORM);
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_LOCATION);
+
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_HIGHP);
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_LOCATION);
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_UNIFORM);
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_LOCATION);
+
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_LOCATION);
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_LOWP);
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_UNIFORM);
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_LOCATION);
+
+    for (size_t i = 0; i < test_cases.size(); ++i)
+    {
+        addChild(new GLSL420Pack::QualifierOrderUniformTest(m_context, test_cases[i], i));
+    }
+}
+
+void ShadingLanguage420PackTests::addQualifierOrderFunctionInoutTest()
+{
+    std::vector<GLSL420Pack::Utils::qualifierSet> test_cases(6);
+
+    test_cases[0].push_back(GLSL420Pack::Utils::QUAL_HIGHP);
+    test_cases[0].push_back(GLSL420Pack::Utils::QUAL_PRECISE);
+    test_cases[0].push_back(GLSL420Pack::Utils::QUAL_INOUT);
+
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_INOUT);
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_PRECISE);
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_HIGHP);
+
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_MEDIUMP);
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_PRECISE);
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_INOUT);
+
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_INOUT);
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_PRECISE);
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_MEDIUMP);
+
+    test_cases[4].push_back(GLSL420Pack::Utils::QUAL_LOWP);
+    test_cases[4].push_back(GLSL420Pack::Utils::QUAL_PRECISE);
+    test_cases[4].push_back(GLSL420Pack::Utils::QUAL_INOUT);
+
+    test_cases[5].push_back(GLSL420Pack::Utils::QUAL_INOUT);
+    test_cases[5].push_back(GLSL420Pack::Utils::QUAL_PRECISE);
+    test_cases[5].push_back(GLSL420Pack::Utils::QUAL_LOWP);
+
+    for (size_t i = 0; i < test_cases.size(); ++i)
+    {
+        addChild(new GLSL420Pack::QualifierOrderFunctionInoutTest(m_context, test_cases[i], i));
+    }
+}
+
+void ShadingLanguage420PackTests::addQualifierOrderFunctionInputTest()
+{
+    std::vector<GLSL420Pack::Utils::qualifierSet> test_cases(6);
+
+    test_cases[0].push_back(GLSL420Pack::Utils::QUAL_CONST);
+    test_cases[0].push_back(GLSL420Pack::Utils::QUAL_HIGHP);
+    test_cases[0].push_back(GLSL420Pack::Utils::QUAL_PRECISE);
+    test_cases[0].push_back(GLSL420Pack::Utils::QUAL_IN);
+
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_IN);
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_CONST);
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_PRECISE);
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_HIGHP);
+
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_PRECISE);
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_MEDIUMP);
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_CONST);
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_IN);
+
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_IN);
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_PRECISE);
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_MEDIUMP);
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_CONST);
+
+    test_cases[4].push_back(GLSL420Pack::Utils::QUAL_LOWP);
+    test_cases[4].push_back(GLSL420Pack::Utils::QUAL_CONST);
+    test_cases[4].push_back(GLSL420Pack::Utils::QUAL_IN);
+    test_cases[4].push_back(GLSL420Pack::Utils::QUAL_PRECISE);
+
+    test_cases[5].push_back(GLSL420Pack::Utils::QUAL_IN);
+    test_cases[5].push_back(GLSL420Pack::Utils::QUAL_PRECISE);
+    test_cases[5].push_back(GLSL420Pack::Utils::QUAL_CONST);
+    test_cases[5].push_back(GLSL420Pack::Utils::QUAL_LOWP);
+
+    for (size_t i = 0; i < test_cases.size(); ++i)
+    {
+        addChild(new GLSL420Pack::QualifierOrderFunctionInputTest(m_context, test_cases[i], i));
+    }
+}
+
+void ShadingLanguage420PackTests::addQualifierOrderFunctionOutputTest()
+{
+    std::vector<GLSL420Pack::Utils::qualifierSet> test_cases(6);
+
+    test_cases[0].push_back(GLSL420Pack::Utils::QUAL_HIGHP);
+    test_cases[0].push_back(GLSL420Pack::Utils::QUAL_PRECISE);
+    test_cases[0].push_back(GLSL420Pack::Utils::QUAL_OUT);
+
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_OUT);
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_PRECISE);
+    test_cases[1].push_back(GLSL420Pack::Utils::QUAL_HIGHP);
+
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_PRECISE);
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_MEDIUMP);
+    test_cases[2].push_back(GLSL420Pack::Utils::QUAL_OUT);
+
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_OUT);
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_PRECISE);
+    test_cases[3].push_back(GLSL420Pack::Utils::QUAL_MEDIUMP);
+
+    test_cases[4].push_back(GLSL420Pack::Utils::QUAL_LOWP);
+    test_cases[4].push_back(GLSL420Pack::Utils::QUAL_OUT);
+    test_cases[4].push_back(GLSL420Pack::Utils::QUAL_PRECISE);
+
+    test_cases[5].push_back(GLSL420Pack::Utils::QUAL_OUT);
+    test_cases[5].push_back(GLSL420Pack::Utils::QUAL_PRECISE);
+    test_cases[5].push_back(GLSL420Pack::Utils::QUAL_LOWP);
+
+    for (size_t i = 0; i < test_cases.size(); ++i)
+    {
+        addChild(new GLSL420Pack::QualifierOrderFunctionOutputTest(m_context, test_cases[i], i));
+    }
+}
+
+void ShadingLanguage420PackTests::addBindingUniformSingleBlockTest()
+{
+    std::vector<GLSL420Pack::Utils::SHADER_STAGES> stages{
+        GLSL420Pack::Utils::VERTEX_SHADER, GLSL420Pack::Utils::TESS_CTRL_SHADER, GLSL420Pack::Utils::TESS_EVAL_SHADER,
+        GLSL420Pack::Utils::GEOMETRY_SHADER, GLSL420Pack::Utils::FRAGMENT_SHADER};
+
+    for (GLSL420Pack::Utils::SHADER_STAGES &stage : stages)
+    {
+        addChild(new GLSL420Pack::BindingUniformSingleBlockTest(m_context, stage));
+    }
+}
+
+void ShadingLanguage420PackTests::addBindingUniformInvalidTest()
+{
+    std::vector<GLSL420Pack::BindingUniformInvalidTest::TESTCASES> cases{
+        GLSL420Pack::BindingUniformInvalidTest::NEGATIVE_VALUE,
+        GLSL420Pack::BindingUniformInvalidTest::VARIABLE_NAME,
+        GLSL420Pack::BindingUniformInvalidTest::STD140,
+        GLSL420Pack::BindingUniformInvalidTest::MISSING,
+    };
+
+    for (GLuint test_case_idx = 0; test_case_idx < cases.size(); ++test_case_idx)
+    {
+        addChild(new GLSL420Pack::BindingUniformInvalidTest(m_context, cases[test_case_idx]));
+    }
+}
+
+void ShadingLanguage420PackTests::addBindingSamplersTest()
+{
+    std::vector<GLSL420Pack::Utils::TEXTURE_TYPES> tex_types{
+        GLSL420Pack::Utils::TEX_2D,       GLSL420Pack::Utils::TEX_BUFFER,  GLSL420Pack::Utils::TEX_2D_RECT,
+        GLSL420Pack::Utils::TEX_2D_ARRAY, GLSL420Pack::Utils::TEX_3D,      GLSL420Pack::Utils::TEX_CUBE,
+        GLSL420Pack::Utils::TEX_1D,       GLSL420Pack::Utils::TEX_1D_ARRAY};
+
+    for (GLSL420Pack::Utils::TEXTURE_TYPES &tex_type : tex_types)
+    {
+        addChild(new GLSL420Pack::BindingSamplersTest(m_context, tex_type));
+    }
+}
+
+void ShadingLanguage420PackTests::addBindingSamplerInvalidTest()
+{
+    std::vector<GLSL420Pack::BindingSamplerInvalidTest::TESTCASES> cases{
+        GLSL420Pack::BindingSamplerInvalidTest::NEGATIVE_VALUE,
+        GLSL420Pack::BindingSamplerInvalidTest::VARIABLE_NAME,
+        GLSL420Pack::BindingSamplerInvalidTest::STD140,
+        GLSL420Pack::BindingSamplerInvalidTest::MISSING,
+    };
+
+    for (GLuint test_case_idx = 0; test_case_idx < cases.size(); ++test_case_idx)
+    {
+        addChild(new GLSL420Pack::BindingSamplerInvalidTest(m_context, cases[test_case_idx]));
+    }
+}
+
+void ShadingLanguage420PackTests::addBindingImagesTest()
+{
+    std::vector<GLSL420Pack::Utils::TEXTURE_TYPES> tex_types{
+        GLSL420Pack::Utils::TEX_2D,       GLSL420Pack::Utils::TEX_BUFFER,  GLSL420Pack::Utils::TEX_2D_RECT,
+        GLSL420Pack::Utils::TEX_2D_ARRAY, GLSL420Pack::Utils::TEX_3D,      GLSL420Pack::Utils::TEX_CUBE,
+        GLSL420Pack::Utils::TEX_1D,       GLSL420Pack::Utils::TEX_1D_ARRAY};
+
+    for (GLSL420Pack::Utils::TEXTURE_TYPES &tex_type : tex_types)
+    {
+        addChild(new GLSL420Pack::BindingImagesTest(m_context, tex_type));
+    }
+}
+
+void ShadingLanguage420PackTests::addBindingImageInvalidTest()
+{
+    std::vector<GLSL420Pack::BindingImageInvalidTest::TESTCASES> cases{
+        GLSL420Pack::BindingImageInvalidTest::NEGATIVE_VALUE,
+        GLSL420Pack::BindingImageInvalidTest::VARIABLE_NAME,
+        GLSL420Pack::BindingImageInvalidTest::STD140,
+        GLSL420Pack::BindingImageInvalidTest::MISSING,
+    };
+
+    for (GLuint test_case_idx = 0; test_case_idx < cases.size(); ++test_case_idx)
+    {
+        addChild(new GLSL420Pack::BindingImageInvalidTest(m_context, cases[test_case_idx]));
+    }
+}
+
+void ShadingLanguage420PackTests::addInitializerListTest()
+{
+    for (GLuint i = 0; i < GLSL420Pack::InitializerListTest::TESTED_INITIALIZERS_MAX; ++i)
+    {
+        const GLSL420Pack::InitializerListTest::TESTED_INITIALIZERS l_init =
+            (GLSL420Pack::InitializerListTest::TESTED_INITIALIZERS)i;
+
+        GLSL420Pack::InitializerListTest::testCase test_case = {l_init, 1, 1};
+
+        switch (l_init)
+        {
+        case GLSL420Pack::InitializerListTest::VECTOR:
+        case GLSL420Pack::InitializerListTest::ARRAY_VECTOR_CTR:
+        case GLSL420Pack::InitializerListTest::ARRAY_VECTOR_LIST:
+        case GLSL420Pack::InitializerListTest::UNSIZED_ARRAY_VECTOR:
+        {
+            for (GLuint row = 2; row <= 4; ++row)
+            {
+                test_case.m_n_rows = row;
+
+                addChild(new GLSL420Pack::InitializerListTest(m_context, test_case));
+            }
+
+            break;
+        }
+        case GLSL420Pack::InitializerListTest::MATRIX:
+        case GLSL420Pack::InitializerListTest::MATRIX_ROWS:
+        case GLSL420Pack::InitializerListTest::ARRAY_MATRIX_CTR:
+        case GLSL420Pack::InitializerListTest::ARRAY_MATRIX_LIST:
+        case GLSL420Pack::InitializerListTest::UNSIZED_ARRAY_MATRIX:
+        {
+            for (GLuint col = 2; col <= 4; ++col)
+            {
+                for (GLuint row = 2; row <= 4; ++row)
+                {
+                    test_case.m_n_cols = col;
+                    test_case.m_n_rows = row;
+
+                    addChild(new GLSL420Pack::InitializerListTest(m_context, test_case));
+                }
+            }
+
+            break;
+        }
+        case GLSL420Pack::InitializerListTest::ARRAY_SCALAR:
+        case GLSL420Pack::InitializerListTest::UNSIZED_ARRAY_SCALAR:
+        {
+            addChild(new GLSL420Pack::InitializerListTest(m_context, test_case));
+
+            break;
+        }
+        case GLSL420Pack::InitializerListTest::STRUCT:
+        case GLSL420Pack::InitializerListTest::ARRAY_STRUCT:
+        case GLSL420Pack::InitializerListTest::NESTED_STRUCT_CTR:
+        case GLSL420Pack::InitializerListTest::NESTED_STRUCT_LIST:
+        case GLSL420Pack::InitializerListTest::NESTED_STURCT_ARRAYS_STRUCT_LIST:
+        case GLSL420Pack::InitializerListTest::NESTED_STURCT_ARRAYS_STRUCT_MIX:
+        case GLSL420Pack::InitializerListTest::NESTED_ARRAY_STRUCT_STRUCT_LIST:
+        case GLSL420Pack::InitializerListTest::NESTED_ARRAY_STRUCT_STRUCT_MIX:
+        case GLSL420Pack::InitializerListTest::NESTED_STRUCT_STRUCT_ARRAY_LIST:
+        case GLSL420Pack::InitializerListTest::NESTED_STRUCT_STRUCT_ARRAY_MIX:
+        case GLSL420Pack::InitializerListTest::UNSIZED_ARRAY_STRUCT:
+        {
+            test_case.m_n_rows = 4;
+            addChild(new GLSL420Pack::InitializerListTest(m_context, test_case));
+
+            break;
+        }
+        default:
+            DE_ASSERT(0);
+            break;
+        }
+    }
+}
+
+void ShadingLanguage420PackTests::addInitializerListNegativeTest()
+{
+    for (GLuint i = 0; i < GLSL420Pack::InitializerListNegativeTest::TESTED_ERRORS_MAX; ++i)
+    {
+        const GLSL420Pack::InitializerListNegativeTest::TESTED_ERRORS error =
+            (GLSL420Pack::InitializerListNegativeTest::TESTED_ERRORS)i;
+
+        addChild(new GLSL420Pack::InitializerListNegativeTest(m_context, error));
+    }
+}
+
+void ShadingLanguage420PackTests::addLengthOfVectorAndMatrixTest()
+{
+    /* Vectors */
+    for (GLuint row = 2; row <= 4; ++row)
+    {
+        GLSL420Pack::LengthOfVectorAndMatrixTest::testCase test_case = {GLSL420Pack::Utils::UINT, 1 /* n_cols */, row};
+
+        addChild(new GLSL420Pack::LengthOfVectorAndMatrixTest(m_context, test_case));
+    }
+
+    for (GLuint row = 2; row <= 4; ++row)
+    {
+        GLSL420Pack::LengthOfVectorAndMatrixTest::testCase test_case = {GLSL420Pack::Utils::INT, 1 /* n_cols */, row};
+
+        addChild(new GLSL420Pack::LengthOfVectorAndMatrixTest(m_context, test_case));
+    }
+
+    for (GLuint row = 2; row <= 4; ++row)
+    {
+        GLSL420Pack::LengthOfVectorAndMatrixTest::testCase test_case = {GLSL420Pack::Utils::FLOAT, 1 /* n_cols */, row};
+
+        addChild(new GLSL420Pack::LengthOfVectorAndMatrixTest(m_context, test_case));
+    }
+
+    /* Matrices */
+    for (GLuint col = 2; col <= 4; ++col)
+    {
+        for (GLuint row = 2; row <= 4; ++row)
+        {
+            GLSL420Pack::LengthOfVectorAndMatrixTest::testCase test_case = {GLSL420Pack::Utils::FLOAT, col, row};
+
+            addChild(new GLSL420Pack::LengthOfVectorAndMatrixTest(m_context, test_case));
+        }
+    }
+}
+
+void ShadingLanguage420PackTests::addScalarSwizzlersInvalidTest()
+{
+    std::vector<GLSL420Pack::ScalarSwizzlersInvalidTest::TESTED_CASES> cases{
+        GLSL420Pack::ScalarSwizzlersInvalidTest::INVALID_Y,
+        GLSL420Pack::ScalarSwizzlersInvalidTest::INVALID_B,
+        GLSL420Pack::ScalarSwizzlersInvalidTest::INVALID_Q,
+        GLSL420Pack::ScalarSwizzlersInvalidTest::INVALID_XY,
+        GLSL420Pack::ScalarSwizzlersInvalidTest::INVALID_XRS,
+        GLSL420Pack::ScalarSwizzlersInvalidTest::WRONG,
+        GLSL420Pack::ScalarSwizzlersInvalidTest::MISSING_PARENTHESIS,
+    };
+
+    for (GLuint test_case_idx = 0; test_case_idx < cases.size(); ++test_case_idx)
+    {
+        addChild(new GLSL420Pack::ScalarSwizzlersInvalidTest(m_context, cases[test_case_idx]));
+    }
+}
+
+void ShadingLanguage420PackTests::addBuiltInAssignmentTest()
+{
+    for (GLuint test_case_idx = 0; test_case_idx < 2; ++test_case_idx)
+    {
+        addChild(new GLSL420Pack::BuiltInAssignmentTest(m_context, test_case_idx));
+    }
 }
 
 } // namespace gl4cts

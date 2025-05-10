@@ -1108,9 +1108,9 @@ MovePtr<ProgramWrapper> SeparateShaderTest::createShaderProgram(const string *vt
 {
     ProgramSources sources;
 
-    if (vtxSource != DE_NULL)
+    if (vtxSource != nullptr)
         sources << VertexSource(*vtxSource);
-    if (frgSource != DE_NULL)
+    if (frgSource != nullptr)
         sources << FragmentSource(*frgSource);
     sources << ProgramSeparable(separable);
 
@@ -1163,9 +1163,9 @@ MovePtr<ProgramWrapper> SeparateShaderTest::createSingleShaderProgram(ShaderType
         switch (shaderType)
         {
         case glu::SHADERTYPE_VERTEX:
-            return createShaderProgram(&src, DE_NULL, true);
+            return createShaderProgram(&src, nullptr, true);
         case glu::SHADERTYPE_FRAGMENT:
-            return createShaderProgram(DE_NULL, &src, true);
+            return createShaderProgram(nullptr, &src, true);
         default:
             DE_FATAL("Impossible case");
         }

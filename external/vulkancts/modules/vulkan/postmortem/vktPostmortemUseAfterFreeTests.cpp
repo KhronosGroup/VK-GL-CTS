@@ -341,15 +341,13 @@ tcu::TestStatus UseAfterFreeTestInstance::iterate(void)
 
     vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(),
-                             0u, DE_NULL);
+                             0u, nullptr);
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &hostWriteBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &hostWriteBarrier, 0, nullptr);
     vk.cmdDispatch(*cmdBuffer, m_workSize.x(), m_workSize.y(), m_workSize.z());
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &shaderWriteBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &shaderWriteBarrier, 0, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
 

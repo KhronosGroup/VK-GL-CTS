@@ -47,7 +47,7 @@ bool readApplicationParameters(std::vector<VkApplicationParametersEXT> &appParam
 {
     const char *appParamsInputFilePath = cmdLine.getAppParamsInputFilePath();
 
-    if (appParamsInputFilePath == DE_NULL)
+    if (appParamsInputFilePath == nullptr)
         return false;
 
     std::ifstream file(appParamsInputFilePath);
@@ -93,7 +93,7 @@ bool readApplicationParameters(std::vector<VkApplicationParametersEXT> &appParam
             {
                 const VkApplicationParametersEXT appParam = {
                     VK_STRUCTURE_TYPE_APPLICATION_PARAMETERS_EXT,              // sType
-                    DE_NULL,                                                   // pNext
+                    nullptr,                                                   // pNext
                     static_cast<uint32_t>(std::stoul(tokens[1], nullptr, 16)), // vendorID
                     static_cast<uint32_t>(std::stoul(tokens[2], nullptr, 16)), // deviceID
                     static_cast<uint32_t>(std::stoul(tokens[3], nullptr, 16)), // key

@@ -52,7 +52,7 @@ protected:
     virtual void preCheck(void)
     {
     }
-    virtual void render(tcu::Surface &dst) = DE_NULL;
+    virtual void render(tcu::Surface &dst) = 0;
     virtual bool compare(const tcu::Surface &reference, const tcu::Surface &result);
 
     // Utilities.

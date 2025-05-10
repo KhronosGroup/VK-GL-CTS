@@ -672,7 +672,7 @@ VkPipelineMultisampleStateCreateInfo MSInstanceSampleMaskPattern::getMSStateCrea
 {
     const VkPipelineMultisampleStateCreateInfo multisampleStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (VkPipelineMultisampleStateCreateFlags)0u,                // VkPipelineMultisampleStateCreateFlags flags;
         imageMSParams.numSamples,                                 // VkSampleCountFlagBits rasterizationSamples;
         VK_FALSE,                                                 // VkBool32 sampleShadingEnable;
@@ -1044,12 +1044,12 @@ VkPipelineMultisampleStateCreateInfo MSInstance<MSInstanceSampleMaskWrite>::getM
 {
     const VkPipelineMultisampleStateCreateInfo multisampleStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (VkPipelineMultisampleStateCreateFlags)0u,                // VkPipelineMultisampleStateCreateFlags flags;
         imageMSParams.numSamples,                                 // VkSampleCountFlagBits rasterizationSamples;
         VK_FALSE,                                                 // VkBool32 sampleShadingEnable;
         imageMSParams.shadingRate,                                // float minSampleShading;
-        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
         VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
         VK_FALSE,                                                 // VkBool32 alphaToOneEnable;
     };
@@ -1436,9 +1436,9 @@ tcu::TestStatus WriteSampleTestInstance::iterate(void)
 
     // Update descriptor set using the images.
     const auto storageImgDescriptorInfo =
-        vk::makeDescriptorImageInfo(DE_NULL, storageImgViewPtr.get(), vk::VK_IMAGE_LAYOUT_GENERAL);
+        vk::makeDescriptorImageInfo(VK_NULL_HANDLE, storageImgViewPtr.get(), vk::VK_IMAGE_LAYOUT_GENERAL);
     const auto verificationImgDescriptorInfo =
-        vk::makeDescriptorImageInfo(DE_NULL, verificationImgViewPtr.get(), vk::VK_IMAGE_LAYOUT_GENERAL);
+        vk::makeDescriptorImageInfo(VK_NULL_HANDLE, verificationImgViewPtr.get(), vk::VK_IMAGE_LAYOUT_GENERAL);
 
     vk::DescriptorSetUpdateBuilder updateBuilder;
     updateBuilder.writeSingle(descriptorSet.get(), vk::DescriptorSetUpdateBuilder::Location::binding(0u),
@@ -1467,15 +1467,15 @@ tcu::TestStatus WriteSampleTestInstance::iterate(void)
             nullptr,                                                 // const VkSpecializationInfo* pSpecializationInfo;
         },
         pipelineLayout.get(), // layout
-        DE_NULL,              // basePipelineHandle
+        VK_NULL_HANDLE,       // basePipelineHandle
         0,                    // basePipelineIndex
     };
 
     auto verificationPipelineCreateInfo         = writePipelineCreateInfo;
     verificationPipelineCreateInfo.stage.module = shaderVerifyModule.getModule();
 
-    auto writePipeline        = vk::createComputePipeline(vkd, device, DE_NULL, &writePipelineCreateInfo);
-    auto verificationPipeline = vk::createComputePipeline(vkd, device, DE_NULL, &verificationPipelineCreateInfo);
+    auto writePipeline        = vk::createComputePipeline(vkd, device, VK_NULL_HANDLE, &writePipelineCreateInfo);
+    auto verificationPipeline = vk::createComputePipeline(vkd, device, VK_NULL_HANDLE, &verificationPipelineCreateInfo);
 
     // Transition images to the correct layout and buffers at different stages.
     auto storageImgPreClearBarrier =
@@ -2105,7 +2105,7 @@ tcu::TestStatus WriteSampleMaskTestInstance::iterate(void)
     // Update descriptor set.
     vk::DescriptorSetUpdateBuilder updateBuilder;
     const auto imageInfo =
-        vk::makeDescriptorImageInfo(DE_NULL, colorImageView.get(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        vk::makeDescriptorImageInfo(VK_NULL_HANDLE, colorImageView.get(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     const auto bufferInfo = vk::makeDescriptorBufferInfo(storageBuffer.get(), 0u, VK_WHOLE_SIZE);
     updateBuilder.writeSingle(descriptorSet.get(), vk::DescriptorSetUpdateBuilder::Location::binding(0u),
                               vk::VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &imageInfo);

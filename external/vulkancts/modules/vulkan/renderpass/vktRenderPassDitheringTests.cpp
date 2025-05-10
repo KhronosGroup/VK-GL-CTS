@@ -64,6 +64,7 @@ struct TestParams
     VkCompareOp depthCompareOp;
     float depthClearValue;
     bool blending;
+    bool revision2;
 };
 
 struct Vertex4RGBA
@@ -83,7 +84,7 @@ VkDevice getDevice(Context &context)
     const float queuePriority = 1.0f;
     const VkDeviceQueueCreateInfo queueParams{
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         0u,                                         // VkDeviceQueueCreateFlags flags;
         context.getUniversalQueueFamilyIndex(),     // uint32_t queueFamilyIndex;
         1u,                                         // uint32_t queueCount;
@@ -284,6 +285,31 @@ void DitheringTest::checkSupport(Context &ctx) const
         ctx.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
     ctx.requireDeviceFunctionality("VK_EXT_legacy_dithering");
+
+    uint32_t specVersion = 0;
+    const auto extensionProperties =
+        vk::enumerateDeviceExtensionProperties(ctx.getInstanceInterface(), ctx.getPhysicalDevice(), nullptr);
+    for (const auto &extProp : extensionProperties)
+    {
+        if (strcmp(extProp.extensionName, "VK_EXT_legacy_dithering") == 0)
+        {
+            specVersion = extProp.specVersion;
+            break;
+        }
+    }
+
+    if (m_testParams.revision2)
+    {
+        ctx.requireDeviceFunctionality("VK_KHR_maintenance5");
+
+        if (specVersion < 2)
+            TCU_THROW(NotSupportedError, "VK_EXT_legacy_dithering specVersion at least 2 is required");
+    }
+    else
+    {
+        if (specVersion > 1)
+            TCU_THROW(NotSupportedError, "VK_EXT_legacy_dithering specVersion at 1 is required");
+    }
 
     // Check color format support.
     for (const VkFormat format : m_testParams.colorFormats)
@@ -510,8 +536,8 @@ void DitheringTestInstance::render(const VkViewport &vp, bool useDithering)
         Move<VkCommandBuffer> cmdBuffer =
             allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-        const typename RenderpassSubpass::SubpassBeginInfo subpassBeginInfo(DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
-        const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(DE_NULL);
+        const typename RenderpassSubpass::SubpassBeginInfo subpassBeginInfo(nullptr, VK_SUBPASS_CONTENTS_INLINE);
+        const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(nullptr);
         const VkDeviceSize vertexBufferOffset = 0;
         const uint32_t drawCount = (m_testParams.blending && m_testParams.dstFactor == VK_BLEND_FACTOR_ONE) ? 4u : 1u;
 
@@ -525,11 +551,11 @@ void DitheringTestInstance::render(const VkViewport &vp, bool useDithering)
             {
                 VkRenderingAttachmentInfoKHR attachment = {
                     VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,       // VkStructureType sType;
-                    DE_NULL,                                               // const void* pNext;
+                    nullptr,                                               // const void* pNext;
                     *imageView,                                            // VkImageView imageView;
                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,              // VkImageLayout imageLayout;
                     VK_RESOLVE_MODE_NONE,                                  // VkResolveModeFlagBits resolveMode;
-                    DE_NULL,                                               // VkImageView resolveImageView;
+                    VK_NULL_HANDLE,                                        // VkImageView resolveImageView;
                     VK_IMAGE_LAYOUT_UNDEFINED,                             // VkImageLayout resolveImageLayout;
                     VK_ATTACHMENT_LOAD_OP_LOAD,                            // VkAttachmentLoadOp loadOp;
                     VK_ATTACHMENT_STORE_OP_STORE,                          // VkAttachmentStoreOp storeOp;
@@ -541,11 +567,11 @@ void DitheringTestInstance::render(const VkViewport &vp, bool useDithering)
 
             VkRenderingAttachmentInfoKHR dsAttachment = {
                 VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,     // VkStructureType sType;
-                DE_NULL,                                             // const void* pNext;
+                nullptr,                                             // const void* pNext;
                 *m_drawResources[resourceNdx].depthStencilImageView, // VkImageView imageView;
                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,    // VkImageLayout imageLayout;
                 VK_RESOLVE_MODE_NONE,                                // VkResolveModeFlagBits resolveMode;
-                DE_NULL,                                             // VkImageView resolveImageView;
+                VK_NULL_HANDLE,                                      // VkImageView resolveImageView;
                 VK_IMAGE_LAYOUT_UNDEFINED,                           // VkImageLayout resolveImageLayout;
                 VK_ATTACHMENT_LOAD_OP_LOAD,                          // VkAttachmentLoadOp loadOp;
                 VK_ATTACHMENT_STORE_OP_STORE,                        // VkAttachmentStoreOp storeOp;
@@ -558,15 +584,15 @@ void DitheringTestInstance::render(const VkViewport &vp, bool useDithering)
                 renderingInfoFlags = VK_RENDERING_ENABLE_LEGACY_DITHERING_BIT_EXT;
             VkRenderingInfoKHR renderingInfo = {
                 VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,      // VkStructureType sType;
-                DE_NULL,                                   // const void* pNext;
+                nullptr,                                   // const void* pNext;
                 renderingInfoFlags,                        // VkRenderingFlagsKHR flags;
                 makeRect2D(imageSize),                     // VkRect2D renderArea;
                 1u,                                        // uint32_t layerCount;
                 0u,                                        // uint32_t viewMask;
                 (uint32_t)colorAttachments.size(),         // uint32_t colorAttachmentCount;
                 colorAttachments.data(),                   // const VkRenderingAttachmentInfoKHR* pColorAttachments;
-                useDepthStencil ? &dsAttachment : DE_NULL, // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
-                useDepthStencil ? &dsAttachment : DE_NULL  // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
+                useDepthStencil ? &dsAttachment : nullptr, // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
+                useDepthStencil ? &dsAttachment : nullptr  // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
             };
 
             vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
@@ -575,12 +601,12 @@ void DitheringTestInstance::render(const VkViewport &vp, bool useDithering)
         {
             const VkRenderPassBeginInfo renderPassBeginInfo = {
                 VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,  // VkStructureType        sType
-                DE_NULL,                                   // const void*            pNext
+                nullptr,                                   // const void*            pNext
                 *m_drawResources[resourceNdx].renderPass,  // VkRenderPass            renderPass
                 *m_drawResources[resourceNdx].framebuffer, // VkFramebuffer        framebuffer
                 makeRect2D(imageSize),                     // VkRect2D                renderArea
                 0u,                                        // uint32_t                clearValueCount
-                DE_NULL                                    // const VkClearValue*    pClearValues
+                nullptr                                    // const VkClearValue*    pClearValues
             };
             RenderpassSubpass::cmdBeginRenderPass(vk, *cmdBuffer, &renderPassBeginInfo, &subpassBeginInfo);
         }
@@ -618,7 +644,7 @@ void DitheringTestInstance::createCommonResources(void)
             m_testParams.blending ? createQuad(m_testParams.overrideColor) : createQuad();
         const VkBufferCreateInfo vertexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                  // VkStructureType        sType
-            DE_NULL,                                               // const void*            pNext
+            nullptr,                                               // const void*            pNext
             0u,                                                    // VkBufferCreateFlags    flags
             (VkDeviceSize)(sizeof(Vertex4RGBA) * vertices.size()), // VkDeviceSize            size
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,                     // VkBufferUsageFlags    usage
@@ -643,12 +669,12 @@ void DitheringTestInstance::createCommonResources(void)
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType                sType
-            DE_NULL,                                       // const void*                    pNext
+            nullptr,                                       // const void*                    pNext
             0u,                                            // VkPipelineLayoutCreateFlags    flags
             0u,                                            // uint32_t                        setLayoutCount
-            DE_NULL,                                       // const VkDescriptorSetLayout*    pSetLayouts
+            nullptr,                                       // const VkDescriptorSetLayout*    pSetLayouts
             0u,                                            // uint32_t                        pushConstantRangeCount
-            DE_NULL                                        // const VkPushConstantRange*    pPushConstantRanges
+            nullptr                                        // const VkPushConstantRange*    pPushConstantRanges
         };
 
         m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
@@ -677,7 +703,7 @@ void DitheringTestInstance::createDrawResources(bool useDithering)
         const VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT;
         const VkImageCreateInfo imageParams     = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-            DE_NULL,                             // const void*                pNext
+            nullptr,                             // const void*                pNext
             0u,                                  // VkImageCreateFlags        flags
             VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
             format,                              // VkFormat                    format
@@ -700,7 +726,7 @@ void DitheringTestInstance::createDrawResources(bool useDithering)
         // Create image view.
         const VkImageViewCreateInfo imageViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType            sType
-            DE_NULL,                                  // const void*                pNext
+            nullptr,                                  // const void*                pNext
             0u,                                       // VkImageViewCreateFlags    flags
             *image,                                   // VkImage                    image
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType            viewType
@@ -738,7 +764,7 @@ void DitheringTestInstance::createDrawResources(bool useDithering)
         const VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT;
         const VkImageCreateInfo imageParams     = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-            DE_NULL,                             // const void*                pNext
+            nullptr,                             // const void*                pNext
             0u,                                  // VkImageCreateFlags        flags
             VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
             m_testParams.depthStencilFormat,     // VkFormat                    format
@@ -764,7 +790,7 @@ void DitheringTestInstance::createDrawResources(bool useDithering)
         // Create image view.
         const VkImageViewCreateInfo imageViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,        // VkStructureType            sType
-            DE_NULL,                                         // const void*                pNext
+            nullptr,                                         // const void*                pNext
             0u,                                              // VkImageViewCreateFlags    flags
             *m_drawResources[resourceNdx].depthStencilImage, // VkImage                    image
             VK_IMAGE_VIEW_TYPE_2D,                           // VkImageViewType            viewType
@@ -820,7 +846,7 @@ void DitheringTestInstance::createDrawResources(bool useDithering)
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                            sType
-            DE_NULL,                        // const void*                                pNext
+            nullptr,                        // const void*                                pNext
             0u,                             // VkPipelineVertexInputStateCreateFlags    flags
             1u,                             // uint32_t                                    vertexBindingDescriptionCount
             &vertexInputBindingDescription, // const VkVertexInputBindingDescription*    pVertexBindingDescriptions
@@ -850,7 +876,7 @@ void DitheringTestInstance::createDrawResources(bool useDithering)
 
         const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType                                sType
-            DE_NULL,           // const void*                                    pNext
+            nullptr,           // const void*                                    pNext
             0u,                // VkPipelineColorBlendStateCreateFlags            flags
             VK_FALSE,          // VkBool32                                        logicOpEnable
             VK_LOGIC_OP_CLEAR, // VkLogicOp                                    logicOp
@@ -872,7 +898,7 @@ void DitheringTestInstance::createDrawResources(bool useDithering)
         };
         const VkPipelineDepthStencilStateCreateInfo depthStencilStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType                            sType
-            DE_NULL,                              // const void*                                pNext
+            nullptr,                              // const void*                                pNext
             0u,                                   // VkPipelineDepthStencilStateCreateFlags    flags
             useDepthStencil ? VK_TRUE : VK_FALSE, // VkBool32                                    depthTestEnable
             useDepthStencil ? VK_TRUE : VK_FALSE, // VkBool32                                    depthWriteEnable
@@ -887,12 +913,12 @@ void DitheringTestInstance::createDrawResources(bool useDithering)
 
         const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType                            sType
-            DE_NULL,               // const void*                                pNext
+            nullptr,               // const void*                                pNext
             0u,                    // VkPipelineMultisampleStateCreateFlags    flags
             VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits                    rasterizationSamples
             VK_FALSE,              // VkBool32                                    sampleShadingEnable
             1.0f,                  // float                                    minSampleShading
-            DE_NULL,               // const VkSampleMask*                        pSampleMask
+            nullptr,               // const VkSampleMask*                        pSampleMask
             VK_FALSE,              // VkBool32                                    alphaToCoverageEnable
             VK_FALSE               // VkBool32                                    alphaToOneEnable
         };
@@ -901,21 +927,25 @@ void DitheringTestInstance::createDrawResources(bool useDithering)
 
         const VkPipelineDynamicStateCreateInfo dynamicStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                              // const void* pNext;
+            nullptr,                                              // const void* pNext;
             0u,                                                   // VkPipelineDynamicStateCreateFlags flags;
             1u,                                                   // uint32_t dynamicStateCount;
             &dynamicState                                         // const VkDynamicState* pDynamicStates;
         };
 
         VkPipelineRenderingCreateInfoKHR renderingCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-                                                                DE_NULL,
+                                                                nullptr,
                                                                 0u,
                                                                 0u,
-                                                                DE_NULL,
+                                                                nullptr,
                                                                 VK_FORMAT_UNDEFINED,
                                                                 VK_FORMAT_UNDEFINED};
 
-        VkPipelineRenderingCreateInfoKHR *nextPtr = DE_NULL;
+        VkPipelineCreateFlags2CreateInfoKHR pipelineCreateFlags2Info = {
+            VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO_KHR, nullptr,
+            VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT};
+
+        void *nextPtr = nullptr;
         if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
         {
             renderingCreateInfo.colorAttachmentCount    = (uint32_t)(colorFormats.size());
@@ -928,6 +958,12 @@ void DitheringTestInstance::createDrawResources(bool useDithering)
             }
 
             nextPtr = &renderingCreateInfo;
+
+            if (m_testParams.revision2)
+            {
+                pipelineCreateFlags2Info.pNext = nextPtr;
+                nextPtr                        = &pipelineCreateFlags2Info;
+            }
         }
 
         const std::vector<VkViewport> viewports(1u, makeViewport(imageSize));
@@ -938,9 +974,9 @@ void DitheringTestInstance::createDrawResources(bool useDithering)
             vkDevice,                // const VkDevice                                    device
             *m_pipelineLayout,       // const VkPipelineLayout                            pipelineLayout
             *m_vertexShaderModule,   // const VkShaderModule                                vertexShaderModule
-            DE_NULL,                 // const VkShaderModule                                tessellationControlModule
-            DE_NULL,                 // const VkShaderModule                                tessellationEvalModule
-            DE_NULL,                 // const VkShaderModule                                geometryShaderModule
+            VK_NULL_HANDLE,          // const VkShaderModule                                tessellationControlModule
+            VK_NULL_HANDLE,          // const VkShaderModule                                tessellationEvalModule
+            VK_NULL_HANDLE,          // const VkShaderModule                                geometryShaderModule
             *m_fragmentShaderModule, // const VkShaderModule                                fragmentShaderModule
             *m_drawResources[resourceNdx].renderPass, // const VkRenderPass                                renderPass
             viewports,                                // const std::vector<VkViewport>&                    viewports
@@ -949,7 +985,7 @@ void DitheringTestInstance::createDrawResources(bool useDithering)
             0u,                                       // const uint32_t                                    subpass
             0u,                       // const uint32_t                                    patchControlPoints
             &vertexInputStateParams,  // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
-            DE_NULL,                  // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
+            nullptr,                  // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
             &multisampleStateParams,  // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
             &depthStencilStateParams, // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo
             &colorBlendStateParams,   // const VkPipelineColorBlendStateCreateInfo*        colorBlendStateCreateInfo
@@ -975,7 +1011,7 @@ void DitheringTestInstance::createRenderPassFramebuffer(bool useDithering)
     for (uint32_t i = 0u; i < colorFormats.size(); ++i)
     {
         const AttachmentDescription attachmentDesc = {
-            DE_NULL,                                  // const void*                        pNext
+            nullptr,                                  // const void*                        pNext
             (VkAttachmentDescriptionFlags)0,          // VkAttachmentDescriptionFlags        flags
             colorFormats[i],                          // VkFormat                            format
             VK_SAMPLE_COUNT_1_BIT,                    // VkSampleCountFlagBits            samples
@@ -988,7 +1024,7 @@ void DitheringTestInstance::createRenderPassFramebuffer(bool useDithering)
         };
 
         const AttachmentReference attachmentReference = {
-            DE_NULL,                                  // const void*            pNext
+            nullptr,                                  // const void*            pNext
             i,                                        // uint32_t                attachment
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout        layout
             VK_IMAGE_ASPECT_COLOR_BIT                 // VkImageAspectFlags    aspectMask
@@ -1000,7 +1036,7 @@ void DitheringTestInstance::createRenderPassFramebuffer(bool useDithering)
 
     bool useDepthStencil                      = (m_testParams.depthStencilFormat != VK_FORMAT_UNDEFINED);
     const AttachmentDescription dsDescription = {
-        DE_NULL,                                          // const void*                        pNext
+        nullptr,                                          // const void*                        pNext
         (VkAttachmentDescriptionFlags)0,                  // VkAttachmentDescriptionFlags        flags
         m_testParams.depthStencilFormat,                  // VkFormat                            format
         VK_SAMPLE_COUNT_1_BIT,                            // VkSampleCountFlagBits            samples
@@ -1012,7 +1048,7 @@ void DitheringTestInstance::createRenderPassFramebuffer(bool useDithering)
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL              // VkImageLayout                    finalLayout
     };
     const AttachmentReference dsReference = {
-        DE_NULL,                                                // const void*            pNext
+        nullptr,                                                // const void*            pNext
         (uint32_t)attachmentReferences.size(),                  // uint32_t                attachment
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,       // VkImageLayout        layout
         VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT // VkImageAspectFlags    aspectMask
@@ -1025,32 +1061,32 @@ void DitheringTestInstance::createRenderPassFramebuffer(bool useDithering)
     if (useDithering)
         subpassDescriptionFlags = VK_SUBPASS_DESCRIPTION_ENABLE_LEGACY_DITHERING_BIT_EXT;
     const SubpassDescription subpassDescription = {
-        DE_NULL,
+        nullptr,
         subpassDescriptionFlags,                  // VkSubpassDescriptionFlags        flags
         VK_PIPELINE_BIND_POINT_GRAPHICS,          // VkPipelineBindPoint                pipelineBindPoint
         0u,                                       // uint32_t                            viewMask
         0u,                                       // uint32_t                            inputAttachmentCount
-        DE_NULL,                                  // const VkAttachmentReference*        pInputAttachments
+        nullptr,                                  // const VkAttachmentReference*        pInputAttachments
         (uint32_t)attachmentReferences.size(),    // uint32_t                            colorAttachmentCount
         attachmentReferences.data(),              // const VkAttachmentReference*        pColorAttachments
-        DE_NULL,                                  // const VkAttachmentReference*        pResolveAttachments
-        useDepthStencil ? &dsReference : DE_NULL, // const VkAttachmentReference*        pDepthStencilAttachment
+        nullptr,                                  // const VkAttachmentReference*        pResolveAttachments
+        useDepthStencil ? &dsReference : nullptr, // const VkAttachmentReference*        pDepthStencilAttachment
         0u,                                       // uint32_t                            preserveAttachmentCount
-        DE_NULL                                   // const uint32_t*                    pPreserveAttachments
+        nullptr                                   // const uint32_t*                    pPreserveAttachments
     };
 
     // Create render pass.
     const RenderPassCreateInfo renderPassInfo = {
-        DE_NULL,                                 // const void*                        pNext
+        nullptr,                                 // const void*                        pNext
         (VkRenderPassCreateFlags)0,              // VkRenderPassCreateFlags            flags
         (uint32_t)attachmentDescriptions.size(), // uint32_t                            attachmentCount
         attachmentDescriptions.data(),           // const VkAttachmentDescription*    pAttachments
         1,                                       // uint32_t                            subpassCount
         &subpassDescription,                     // const VkSubpassDescription*        pSubpasses
         0u,                                      // uint32_t                            dependencyCount
-        DE_NULL,                                 // const VkSubpassDependency*        pDependencies
+        nullptr,                                 // const VkSubpassDependency*        pDependencies
         0u,                                      // uint32_t                            correlatedViewMaskCount
-        DE_NULL                                  // const uint32_t*                    pCorrelatedViewMasks
+        nullptr                                  // const uint32_t*                    pCorrelatedViewMasks
     };
 
     m_drawResources[resourceNdx].renderPass = renderPassInfo.createRenderPass(vk, vkDevice);
@@ -1065,7 +1101,7 @@ void DitheringTestInstance::createRenderPassFramebuffer(bool useDithering)
     // Create framebuffer.
     const VkFramebufferCreateInfo framebufferParams = {
         VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType            sType
-        DE_NULL,                                   // const void*                pNext
+        nullptr,                                   // const void*                pNext
         0u,                                        // VkFramebufferCreateFlags    flags
         *m_drawResources[resourceNdx].renderPass,  // VkRenderPass                renderPass
         (uint32_t)views.size(),                    // uint32_t                    attachmentCount
@@ -1080,7 +1116,7 @@ void DitheringTestInstance::createRenderPassFramebuffer(bool useDithering)
 
 } // namespace
 
-static void createChildren(tcu::TestCaseGroup *ditheringTests, const SharedGroupParams groupParams)
+static void createChildren(tcu::TestCaseGroup *ditheringTests, const SharedGroupParams groupParams, bool revision2)
 {
     tcu::TestContext &testCtx           = ditheringTests->getTestContext();
     uint32_t imageDimensions            = 256u;
@@ -1102,6 +1138,7 @@ static void createChildren(tcu::TestCaseGroup *ditheringTests, const SharedGroup
     testParams.stencilClearValue  = 0x81;
     testParams.depthCompareOp     = VK_COMPARE_OP_LESS;
     testParams.blending           = false;
+    testParams.revision2          = revision2;
 
     // Complete render pass.
     testParams.renderAreas.emplace_back(makeViewport(testParams.imageSize));
@@ -1135,7 +1172,7 @@ static void createChildren(tcu::TestCaseGroup *ditheringTests, const SharedGroup
                                                          (float)smallRenderAreaDimensions, 0.0f, 1.0f));
 
         // Some random offsets.
-        srand(uint32_t(time(DE_NULL)));
+        srand(uint32_t(time(nullptr)));
         for (uint32_t i = 0; i < extraRandomAreaRenderCount; ++i)
         {
             uint32_t x_offset = ((uint32_t)rand()) % (maxRenderOffset - 1);
@@ -1263,17 +1300,35 @@ static void createChildren(tcu::TestCaseGroup *ditheringTests, const SharedGroup
     }
 }
 
-static void cleanupGroup(tcu::TestCaseGroup *group, const SharedGroupParams)
+static void cleanupGroup(tcu::TestCaseGroup *group, const SharedGroupParams, bool revision2)
 {
     DE_UNREF(group);
+    DE_UNREF(revision2);
     // Destroy singleton objects.
     g_singletonDevice.clear();
+}
+
+static tcu::TestCaseGroup *createDitheringRevision1GroupTests(tcu::TestContext &testCtx,
+                                                              const SharedGroupParams groupParams)
+{
+    return createTestGroup(testCtx, "v1", createChildren, groupParams, false, cleanupGroup);
+}
+
+static tcu::TestCaseGroup *createDitheringRevision2GroupTests(tcu::TestContext &testCtx,
+                                                              const SharedGroupParams groupParams)
+{
+    return createTestGroup(testCtx, "v2", createChildren, groupParams, true, cleanupGroup);
 }
 
 tcu::TestCaseGroup *createRenderPassDitheringTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams)
 {
     // Tests for VK_EXT_legacy_dithering
-    return createTestGroup(testCtx, "dithering", createChildren, groupParams, cleanupGroup);
+    de::MovePtr<tcu::TestCaseGroup> ditheringTests(new tcu::TestCaseGroup(testCtx, "dithering"));
+    ditheringTests->addChild(createDitheringRevision1GroupTests(testCtx, groupParams));
+    if (groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+        ditheringTests->addChild(createDitheringRevision2GroupTests(testCtx, groupParams));
+
+    return ditheringTests.release();
 }
 
 } // namespace renderpass

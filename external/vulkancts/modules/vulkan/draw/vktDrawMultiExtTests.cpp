@@ -129,15 +129,14 @@ VkFormat chooseDepthStencilFormat(const InstanceInterface &vki, VkPhysicalDevice
     // The spec mandates support for one of these two formats.
     const VkFormat candidates[] = {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT};
 
-    for (const auto &format : candidates)
-    {
-        const auto properties = getPhysicalDeviceFormatProperties(vki, physDev, format);
-        if ((properties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0u)
-            return format;
-    }
+    const auto requiredFeatures = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    const auto chosenFormat     = findFirstSupportedFormat(vki, physDev, requiredFeatures, ImageFeatureType::OPTIMAL,
+                                                           std::begin(candidates), std::end(candidates));
 
-    TCU_FAIL("No suitable depth/stencil format found");
-    return VK_FORMAT_UNDEFINED; // Unreachable.
+    if (chosenFormat == VK_FORMAT_UNDEFINED)
+        TCU_FAIL("No suitable depth/stencil format found");
+
+    return chosenFormat;
 }
 
 // Format used when verifying the stencil aspect.
@@ -254,11 +253,18 @@ private:
     de::Random m_random;   // Used to generate random offsets.
     uint32_t m_infoCount;  // How many infos have we appended so far?
     std::vector<uint8_t> m_dataVec; // Data vector in generic form.
+    bool m_finalized;               // Finished appending data.
 
     // Are draws indexed and using the offset member of VkMultiDrawIndexedInfoEXT?
     static bool indexedWithOffset(DrawType drawType, const tcu::Maybe<VertexOffsetType> &offsetType)
     {
         return (drawType == DrawType::INDEXED && *offsetType != VertexOffsetType::CONSTANT_PACK);
+    }
+
+    // Are draws indexed and packed?
+    static bool indexedPacked(DrawType drawType, const tcu::Maybe<VertexOffsetType> &offsetType)
+    {
+        return (drawType == DrawType::INDEXED && *offsetType == VertexOffsetType::CONSTANT_PACK);
     }
 
     // Size in bytes for the base structure used with the given draw type.
@@ -296,14 +302,16 @@ public:
         , m_random(seed)
         , m_infoCount(0u)
         , m_dataVec()
+        , m_finalized(false)
     {
         // estimatedInfoCount is used to avoid excessive reallocation.
-        if (estimatedInfoCount > 0u)
-            m_dataVec.reserve(estimatedInfoCount * entrySize());
+        m_dataVec.reserve((estimatedInfoCount + 1u) * entrySize());
     }
 
     void addDrawInfo(uint32_t first, uint32_t count, int32_t offset)
     {
+        DE_ASSERT(!m_finalized);
+
         std::vector<uint8_t> entry(entrySize(), 0);
 
         if (indexedWithOffset(m_drawType, m_offsetType))
@@ -323,14 +331,35 @@ public:
         ++m_infoCount;
     }
 
+    void finalize()
+    {
+        if (indexedPacked(m_drawType, m_offsetType) && m_infoCount > 0u)
+        {
+            // VUID-vkCmdDrawMultiIndexedEXT-drawCount-04940 says:
+            // If drawCount is greater than zero, pIndexInfo must be a valid pointer to memory containing one or more
+            // valid instances of VkMultiDrawIndexedInfoEXT structures
+            //
+            // This means if infoCount is greater than zero, we need to have enough bytes in the buffer so that reading
+            // a VkMultiDrawIndexedInfoEXT structure (12 bytes) at the last offset does not produce an OOB read. As
+            // we've been packing data in the buffer using smaller VkMultiDrawInfoEXT structures, we need 4 extra bytes
+            // at the end to make these tests legal.
+            std::vector<uint8_t> extraData(sizeof(int32_t), 0);
+            std::copy(begin(extraData), end(extraData), std::back_inserter(m_dataVec));
+        }
+
+        m_finalized = true;
+    }
+
     uint32_t drawInfoCount() const
     {
+        DE_ASSERT(m_finalized);
         return m_infoCount;
     }
 
     const void *drawInfoData() const
     {
-        return m_dataVec.data();
+        DE_ASSERT(m_finalized);
+        return de::dataOrNull(m_dataVec);
     }
 
     uint32_t stride() const
@@ -720,7 +749,7 @@ void MultiDrawInstance::beginSecondaryCmdBuffer(const DeviceInterface &vk, VkCom
 {
     VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                         // const void* pNext;
+        nullptr,                                                         // const void* pNext;
         renderingFlags,                                                  // VkRenderingFlagsKHR flags;
         viewMask,                                                        // uint32_t viewMask;
         1u,                                                              // uint32_t colorAttachmentCount;
@@ -738,7 +767,7 @@ void MultiDrawInstance::beginSecondaryCmdBuffer(const DeviceInterface &vk, VkCom
 
     const VkCommandBufferBeginInfo commandBufBeginParams{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         usageFlags,                                  // VkCommandBufferUsageFlags flags;
         &bufferInheritanceInfo};
 
@@ -978,7 +1007,7 @@ tcu::TestStatus MultiDrawInstance::iterate(void)
     };
 
     vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo{
-        vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR, DE_NULL, 0u, 1u, &colorFormat, dsFormat, dsFormat};
+        vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR, nullptr, 0u, 1u, &colorFormat, dsFormat, dsFormat};
 
     vk::VkPipelineRenderingCreateInfoKHR *nextPtr = nullptr;
     if (m_params.groupParams->useDynamicRendering)
@@ -1064,7 +1093,7 @@ tcu::TestStatus MultiDrawInstance::iterate(void)
     // Index buffer if needed.
     de::MovePtr<BufferWithMemory> indexBuffer;
     VkDeviceSize indexBufferOffset = 0ull;
-    VkBuffer indexBufferHandle     = DE_NULL;
+    VkBuffer indexBufferHandle     = VK_NULL_HANDLE;
 
     if (isIndexed)
     {
@@ -1098,11 +1127,12 @@ tcu::TestStatus MultiDrawInstance::iterate(void)
         uint32_t vertexIndex = 0u;
         for (uint32_t drawIdx = 0u; drawIdx < m_params.drawCount; ++drawIdx)
         {
-            // For indexed draws in mixed offset mode, taking into account vertex indices have been stored in reversed order and
-            // there may be a padding in the vertex buffer after the first verticesPerDraw vertices, we need to use offset 0 in the
-            // last draw call. That draw will contain the indices for the first verticesPerDraw vertices, which are stored without
-            // any offset, while other draw calls will use indices which are off by extraVertices vertices. This will make sure not
-            // every draw call will use the same offset and the implementation handles that.
+            // For indexed draws in mixed offset mode, taking into account vertex indices have been stored in reverse
+            // order and there may be a padding in the vertex buffer after the first verticesPerDraw vertices, we need
+            // to use offset 0 in the last draw call. That draw will contain the indices for the first verticesPerDraw
+            // vertices, which are stored without any offset, while other draw calls will use indices which are off by
+            // extraVertices vertices. This will make sure not every draw call will use the same offset and the
+            // implementation handles that.
             const auto drawOffset =
                 ((isIndexed && (!isMixedMode || (moreThanOneDraw && drawIdx < m_params.drawCount - 1u))) ?
                      vertexOffset :
@@ -1111,6 +1141,7 @@ tcu::TestStatus MultiDrawInstance::iterate(void)
             vertexIndex += verticesPerDraw;
         }
     }
+    drawInfos.finalize();
 
     std::vector<VkClearValue> clearValues;
     clearValues.reserve(2u);

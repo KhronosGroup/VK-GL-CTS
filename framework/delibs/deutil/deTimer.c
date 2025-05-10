@@ -52,7 +52,7 @@ deTimer *deTimer_create(deTimerCallback callback, void *arg)
     deTimer *timer = (deTimer *)deCalloc(sizeof(deTimer));
 
     if (!timer)
-        return DE_NULL;
+        return NULL;
 
     timer->callback    = callback;
     timer->callbackArg = arg;
@@ -180,7 +180,7 @@ deTimer *deTimer_create(deTimerCallback callback, void *arg)
     struct sigevent sevp;
 
     if (!timer)
-        return DE_NULL;
+        return NULL;
 
     deMemset(&sevp, 0, sizeof(sevp));
     sevp.sigev_notify          = SIGEV_THREAD;
@@ -190,7 +190,7 @@ deTimer *deTimer_create(deTimerCallback callback, void *arg)
     if (timer_create(CLOCK_REALTIME, &sevp, &timer->timer) != 0)
     {
         deFree(timer);
-        return DE_NULL;
+        return NULL;
     }
 
     timer->callback    = callback;
@@ -227,7 +227,7 @@ bool deTimer_scheduleSingle(deTimer *timer, int milliseconds)
     tspec.it_interval.tv_sec  = 0;
     tspec.it_interval.tv_nsec = 0;
 
-    if (timer_settime(timer->timer, 0, &tspec, DE_NULL) != 0)
+    if (timer_settime(timer->timer, 0, &tspec, NULL) != 0)
         return false;
 
     timer->isActive = true;
@@ -248,7 +248,7 @@ bool deTimer_scheduleInterval(deTimer *timer, int milliseconds)
     tspec.it_interval.tv_sec  = tspec.it_value.tv_sec;
     tspec.it_interval.tv_nsec = tspec.it_value.tv_nsec;
 
-    if (timer_settime(timer->timer, 0, &tspec, DE_NULL) != 0)
+    if (timer_settime(timer->timer, 0, &tspec, NULL) != 0)
         return false;
 
     timer->isActive = true;
@@ -266,7 +266,7 @@ void deTimer_disable(deTimer *timer)
     tspec.it_interval.tv_sec  = 0;
     tspec.it_interval.tv_nsec = 0;
 
-    timer_settime(timer->timer, 0, &tspec, DE_NULL);
+    timer_settime(timer->timer, 0, &tspec, NULL);
 
     /* \todo [2012-07-10 pyry] How to wait until all pending callbacks have finished? */
 
@@ -360,20 +360,20 @@ static deTimerThread *deTimerThread_create(deTimerCallback callback, void *arg, 
     DE_ASSERT(state == TIMERSTATE_INTERVAL || state == TIMERSTATE_SINGLE);
 
     if (!thread)
-        return DE_NULL;
+        return NULL;
 
     thread->callback    = callback;
     thread->callbackArg = arg;
     thread->interval    = interval;
-    thread->lock        = deMutex_create(DE_NULL);
+    thread->lock        = deMutex_create(NULL);
     thread->state       = state;
 
-    thread->thread = deThread_create(timerThread, thread, DE_NULL);
+    thread->thread = deThread_create(timerThread, thread, NULL);
     if (!thread->thread)
     {
         deMutex_destroy(thread->lock);
         deFree(thread);
-        return DE_NULL;
+        return NULL;
     }
 
     return thread;
@@ -384,7 +384,7 @@ deTimer *deTimer_create(deTimerCallback callback, void *arg)
     deTimer *timer = (deTimer *)deCalloc(sizeof(deTimer));
 
     if (!timer)
-        return DE_NULL;
+        return NULL;
 
     timer->callback    = callback;
     timer->callbackArg = arg;
@@ -423,7 +423,7 @@ bool deTimer_scheduleSingle(deTimer *timer, int milliseconds)
     DE_ASSERT(!timer->curThread);
     timer->curThread = deTimerThread_create(timer->callback, timer->callbackArg, milliseconds, TIMERSTATE_SINGLE);
 
-    return timer->curThread != DE_NULL;
+    return timer->curThread != NULL;
 }
 
 bool deTimer_scheduleInterval(deTimer *timer, int milliseconds)
@@ -434,7 +434,7 @@ bool deTimer_scheduleInterval(deTimer *timer, int milliseconds)
     DE_ASSERT(!timer->curThread);
     timer->curThread = deTimerThread_create(timer->callback, timer->callbackArg, milliseconds, TIMERSTATE_INTERVAL);
 
-    return timer->curThread != DE_NULL;
+    return timer->curThread != NULL;
 }
 
 void deTimer_disable(deTimer *timer)
@@ -466,7 +466,7 @@ void deTimer_disable(deTimer *timer)
         deFree(timer->curThread);
     }
 
-    timer->curThread = DE_NULL;
+    timer->curThread = NULL;
 }
 
 #endif

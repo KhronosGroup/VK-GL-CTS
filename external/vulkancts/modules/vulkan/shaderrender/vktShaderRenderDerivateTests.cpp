@@ -131,7 +131,7 @@ static const char *getDerivateFuncName(DerivateFunc func)
         return "fwidthCoarse";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -163,7 +163,7 @@ static const char *getDerivateFuncCaseName(DerivateFunc func)
         return "fwidthcoarse";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -205,13 +205,6 @@ static inline tcu::BVec4 getDerivateMask(glu::DataType type)
         DE_ASSERT(false);
         return tcu::BVec4(true);
     }
-}
-
-static inline bool isSkippedPixel(const tcu::ConstPixelBufferAccess &surface, int x, int y)
-{
-    const tcu::Vec4 skipValue(0.7843f, 0.2039f, 0.4706f, 0.0f);
-    const tcu::Vec4 value = surface.getPixel(x, y);
-    return tcu::allEqual(tcu::lessThanEqual(tcu::abs(value - skipValue), tcu::Vec4(0.01f)), tcu::BVec4(true));
 }
 
 static inline tcu::Vec4 readDerivate(const tcu::ConstPixelBufferAccess &surface, const tcu::Vec4 &derivScale,
@@ -412,9 +405,6 @@ static bool verifyConstantDerivate(tcu::TestLog &log, const tcu::ConstPixelBuffe
     {
         for (int x = 0; x < result.getWidth(); x++)
         {
-            if (isSkippedPixel(result, x, y))
-                continue;
-
             if (demoteToHelperInvocation && deMod(y, 2) == 1)
                 continue;
 
@@ -490,9 +480,6 @@ static bool reverifyConstantDerivateWithFlushRelaxations(tcu::TestLog &log, cons
     for (int y = 0; y < result.getHeight(); ++y)
         for (int x = 0; x < result.getWidth(); ++x)
         {
-            if (isSkippedPixel(result, x, y))
-                continue;
-
             //                 flushToZero?(f2z?(functionValueCurrent) - f2z?(functionValueBefore))
             // flushToZero? ( ------------------------------------------------------------------------ +- 2.5 ULP )
             //                                                  dx
@@ -717,7 +704,7 @@ static VkSampleCountFlagBits getVkSampleCount(int numSamples)
 TriangleDerivateCaseInstance::TriangleDerivateCaseInstance(Context &context, const UniformSetup &uniformSetup,
                                                            const DerivateCaseDefinition &definitions,
                                                            const DerivateCaseValues &values)
-    : ShaderRenderCaseInstance(context, true, DE_NULL, uniformSetup, DE_NULL)
+    : ShaderRenderCaseInstance(context, true, nullptr, uniformSetup, nullptr)
     , m_definitions(definitions)
     , m_values(values)
 {
@@ -858,7 +845,7 @@ protected:
 
 TriangleDerivateCase::TriangleDerivateCase(tcu::TestContext &testCtx, const std::string &name,
                                            const UniformSetup *uniformSetup)
-    : ShaderRenderCase(testCtx, name, false, (ShaderEvaluator *)DE_NULL, uniformSetup, DE_NULL)
+    : ShaderRenderCase(testCtx, name, false, (ShaderEvaluator *)nullptr, uniformSetup, nullptr)
     , m_definitions()
 {
 }
@@ -982,7 +969,7 @@ ConstantDerivateCase::~ConstantDerivateCase(void)
 
 TestInstance *ConstantDerivateCase::createInstance(Context &context) const
 {
-    DE_ASSERT(m_uniformSetup != DE_NULL);
+    DE_ASSERT(m_uniformSetup);
     return new ConstantDerivateCaseInstance(context, *m_uniformSetup, m_definitions, m_values);
 }
 
@@ -1269,7 +1256,7 @@ LinearDerivateCase::~LinearDerivateCase(void)
 
 TestInstance *LinearDerivateCase::createInstance(Context &context) const
 {
-    DE_ASSERT(m_uniformSetup != DE_NULL);
+    DE_ASSERT(m_uniformSetup);
     if (m_fragmentTmpl.find("gl_SubgroupInvocationID") != std::string::npos)
     {
         if (!subgroups::areQuadOperationsSupportedForStages(context, VK_SHADER_STAGE_FRAGMENT_BIT))
@@ -1577,7 +1564,7 @@ TextureDerivateCase::~TextureDerivateCase(void)
 
 TestInstance *TextureDerivateCase::createInstance(Context &context) const
 {
-    DE_ASSERT(m_uniformSetup != DE_NULL);
+    DE_ASSERT(m_uniformSetup);
     return new TextureDerivateCaseInstance(context, *m_uniformSetup, m_definitions, m_values, m_textureValues);
 }
 

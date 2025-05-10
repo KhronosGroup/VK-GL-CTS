@@ -255,7 +255,7 @@ tcu::TestStatus outOfPoolMemoryTest(Context &context)
 
             const VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {
                 VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO, // VkStructureType                sType;
-                DE_NULL,                                       // const void*                    pNext;
+                nullptr,                                       // const void*                    pNext;
                 (VkDescriptorPoolCreateFlags)0,                // VkDescriptorPoolCreateFlags    flags;
                 params.poolMaxSets,                            // uint32_t                       maxSets;
                 1u,                                            // uint32_t                       poolSizeCount;
@@ -272,7 +272,7 @@ tcu::TestStatus outOfPoolMemoryTest(Context &context)
                 descriptorType,                // VkDescriptorType      descriptorType;
                 params.bindingDescriptorCount, // uint32_t              descriptorCount;
                 stageFlags,                    // VkShaderStageFlags    stageFlags;
-                DE_NULL,                       // const VkSampler*      pImmutableSamplers;
+                nullptr,                       // const VkSampler*      pImmutableSamplers;
             };
 
             vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings(params.bindingCount,
@@ -285,7 +285,7 @@ tcu::TestStatus outOfPoolMemoryTest(Context &context)
 
             const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = {
                 VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType                        sType;
-                DE_NULL,                                             // const void*                            pNext;
+                nullptr,                                             // const void*                            pNext;
                 (VkDescriptorSetLayoutCreateFlags)0,                 // VkDescriptorSetLayoutCreateFlags       flags;
                 static_cast<uint32_t>(
                     descriptorSetLayoutBindings.size()), // uint32_t                               bindingCount;
@@ -295,11 +295,11 @@ tcu::TestStatus outOfPoolMemoryTest(Context &context)
             const Unique<VkDescriptorSetLayout> descriptorSetLayout(
                 createDescriptorSetLayout(vkd, device, &descriptorSetLayoutInfo));
             const vector<VkDescriptorSetLayout> rawSetLayouts(params.descriptorSetCount, *descriptorSetLayout);
-            vector<VkDescriptorSet> rawDescriptorSets(params.descriptorSetCount, DE_NULL);
+            vector<VkDescriptorSet> rawDescriptorSets(params.descriptorSetCount, VK_NULL_HANDLE);
 
             const VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
                 VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType                 sType;
-                DE_NULL,                                        // const void*                     pNext;
+                nullptr,                                        // const void*                     pNext;
                 *descriptorPool,                                // VkDescriptorPool                descriptorPool;
                 static_cast<uint32_t>(rawSetLayouts.size()),    // uint32_t                        descriptorSetCount;
                 &rawSetLayouts[0],                              // const VkDescriptorSetLayout*    pSetLayouts;
@@ -335,11 +335,11 @@ tcu::TestStatus zeroPoolSizeCount(Context &context)
 
     const VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,     // VkStructureType                sType;
-        DE_NULL,                                           // const void*                    pNext;
+        nullptr,                                           // const void*                    pNext;
         VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, // VkDescriptorPoolCreateFlags    flags;
         1u,                                                // uint32_t                       maxSets;
         0u,                                                // uint32_t                       poolSizeCount;
-        DE_NULL,                                           // const VkDescriptorPoolSize*    pPoolSizes;
+        nullptr,                                           // const VkDescriptorPoolSize*    pPoolSizes;
     };
 
     // Test a pool can be created for empty descriptor sets.
@@ -347,10 +347,10 @@ tcu::TestStatus zeroPoolSizeCount(Context &context)
 
     const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType                        sType;
-        DE_NULL,                                             // const void*                            pNext;
+        nullptr,                                             // const void*                            pNext;
         (VkDescriptorSetLayoutCreateFlags)0,                 // VkDescriptorSetLayoutCreateFlags       flags;
         0u,                                                  // uint32_t                               bindingCount;
-        DE_NULL,                                             // const VkDescriptorSetLayoutBinding*    pBindings;
+        nullptr,                                             // const VkDescriptorSetLayoutBinding*    pBindings;
     };
 
     const Unique<VkDescriptorSetLayout> descriptorSetLayout(
@@ -358,7 +358,7 @@ tcu::TestStatus zeroPoolSizeCount(Context &context)
 
     const VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType                 sType;
-        DE_NULL,                                        // const void*                     pNext;
+        nullptr,                                        // const void*                     pNext;
         *descriptorPool,                                // VkDescriptorPool                descriptorPool;
         1u,                                             // uint32_t                        descriptorSetCount;
         &descriptorSetLayout.get(),                     // const VkDescriptorSetLayout*    pSetLayouts;
@@ -390,7 +390,7 @@ tcu::TestStatus noResetDescriptorPoolTest(Context &context, const ResetDescripto
 
     const VkDeviceQueueCreateInfo deviceQueueCI = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // sType
-        DE_NULL,                                    // pNext
+        nullptr,                                    // pNext
         (VkDeviceQueueCreateFlags)0u,               // flags
         0,                                          //queueFamilyIndex;
         1,                                          //queueCount;
@@ -399,15 +399,15 @@ tcu::TestStatus noResetDescriptorPoolTest(Context &context, const ResetDescripto
 
     VkDeviceCreateInfo deviceCreateInfo = {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, // sType;
-        DE_NULL,                              // pNext;
+        nullptr,                              // pNext;
         (VkDeviceCreateFlags)0u,              // flags
         1,                                    // queueCount;
         &deviceQueueCI,                       // pQueues;
         0,                                    // layerCount;
-        DE_NULL,                              // ppEnabledLayerNames;
+        nullptr,                              // ppEnabledLayerNames;
         0,                                    // extensionCount;
-        DE_NULL,                              // ppEnabledExtensionNames;
-        DE_NULL,                              // pEnabledFeatures;
+        nullptr,                              // ppEnabledExtensionNames;
+        nullptr,                              // pEnabledFeatures;
     };
 
     VkDeviceObjectReservationCreateInfo objectInfo    = resetDeviceObjectReservationCreateInfo();
@@ -416,7 +416,7 @@ tcu::TestStatus noResetDescriptorPoolTest(Context &context, const ResetDescripto
     objectInfo.descriptorSetLayoutRequestCount        = numDescriptorSetsPerIter;
     objectInfo.descriptorSetLayoutBindingRequestCount = numDescriptorSetsPerIter;
     objectInfo.descriptorSetLayoutBindingLimit        = 1u;
-    objectInfo.pNext                                  = DE_NULL;
+    objectInfo.pNext                                  = nullptr;
 
     VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
     sc10Features.pNext                              = &objectInfo;
@@ -446,8 +446,8 @@ tcu::TestStatus noResetDescriptorPoolTest(Context &context, const ResetDescripto
                                                    context.getPlatformInterface(), instance, instance.getDriver(),
                                                    physicalDevice, &deviceCreateInfo);
 
-        VkDescriptorPool descriptorPool = 0;
-        VK_CHECK(vkd.createDescriptorPool(*device, &descriptorPoolInfo, DE_NULL, &descriptorPool));
+        VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+        VK_CHECK(vkd.createDescriptorPool(*device, &descriptorPoolInfo, nullptr, &descriptorPool));
         if (!descriptorPool)
             TCU_THROW(TestError, "create descriptor pool failed");
 

@@ -66,7 +66,7 @@ typedef enum ContainerType_e
     CONTAINERTYPE_LAST
 } ContainerType;
 
-DE_INLINE bool childContainersOk(ContainerType type)
+bool childContainersOk(ContainerType type)
 {
     return type == CONTAINERTYPE_SECTION || type == CONTAINERTYPE_SAMPLELIST;
 }
@@ -82,17 +82,17 @@ typedef struct ContainerStack_s
     ContainerType elements[MAX_CONTAINER_STACK_DEPTH];
 } ContainerStack;
 
-DE_INLINE void ContainerStack_reset(ContainerStack *stack)
+void ContainerStack_reset(ContainerStack *stack)
 {
     deMemset(stack, 0, sizeof(ContainerStack));
 }
 
-DE_INLINE bool ContainerStack_isEmpty(const ContainerStack *stack)
+bool ContainerStack_isEmpty(const ContainerStack *stack)
 {
     return stack->numElements == 0;
 }
 
-DE_INLINE bool ContainerStack_push(ContainerStack *stack, ContainerType type)
+bool ContainerStack_push(ContainerStack *stack, ContainerType type)
 {
     if (stack->numElements == MAX_CONTAINER_STACK_DEPTH)
         return false;
@@ -106,14 +106,14 @@ DE_INLINE bool ContainerStack_push(ContainerStack *stack, ContainerType type)
     return true;
 }
 
-DE_INLINE ContainerType ContainerStack_pop(ContainerStack *stack)
+ContainerType ContainerStack_pop(ContainerStack *stack)
 {
     DE_ASSERT(stack->numElements > 0);
     stack->numElements -= 1;
     return stack->elements[stack->numElements];
 }
 
-DE_INLINE ContainerType ContainerStack_getTop(const ContainerStack *stack)
+ContainerType ContainerStack_getTop(const ContainerStack *stack)
 {
     if (stack->numElements > 0)
         return stack->elements[stack->numElements - 1];
@@ -156,7 +156,7 @@ static const qpKeyStringMap s_qpTestTypeMap[] = {{QP_TEST_CASE_TYPE_SELF_VALIDAT
                                                  {QP_TEST_CASE_TYPE_CAPABILITY, "Capability"},
                                                  {QP_TEST_CASE_TYPE_ACCURACY, "Accuracy"},
 
-                                                 {QP_TEST_CASE_TYPE_LAST, DE_NULL}};
+                                                 {QP_TEST_CASE_TYPE_LAST, NULL}};
 
 DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_qpTestTypeMap) == QP_TEST_CASE_TYPE_LAST + 1);
 
@@ -176,17 +176,17 @@ static const qpKeyStringMap s_qpTestResultMap[] = {
 
     /* Add new values here if needed, remember to update qpTestResult enumeration. */
 
-    {QP_TEST_RESULT_LAST, DE_NULL}};
+    {QP_TEST_RESULT_LAST, NULL}};
 
 DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_qpTestResultMap) == QP_TEST_RESULT_LAST + 1);
 
 /* Key tag to string mapping. */
 
-static const qpKeyStringMap s_qpTagMap[] = {{QP_KEY_TAG_NONE, DE_NULL},      {QP_KEY_TAG_PERFORMANCE, "Performance"},
+static const qpKeyStringMap s_qpTagMap[] = {{QP_KEY_TAG_NONE, NULL},         {QP_KEY_TAG_PERFORMANCE, "Performance"},
                                             {QP_KEY_TAG_QUALITY, "Quality"}, {QP_KEY_TAG_PRECISION, "Precision"},
                                             {QP_KEY_TAG_TIME, "Time"},
 
-                                            {QP_KEY_TAG_LAST, DE_NULL}};
+                                            {QP_KEY_TAG_LAST, NULL}};
 
 DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_qpTagMap) == QP_KEY_TAG_LAST + 1);
 
@@ -195,7 +195,7 @@ DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_qpTagMap) == QP_KEY_TAG_LAST + 1);
 static const qpKeyStringMap s_qpSampleValueTagMap[] = {{QP_SAMPLE_VALUE_TAG_PREDICTOR, "Predictor"},
                                                        {QP_SAMPLE_VALUE_TAG_RESPONSE, "Response"},
 
-                                                       {QP_SAMPLE_VALUE_TAG_LAST, DE_NULL}};
+                                                       {QP_SAMPLE_VALUE_TAG_LAST, NULL}};
 
 DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_qpSampleValueTagMap) == QP_SAMPLE_VALUE_TAG_LAST + 1);
 
@@ -205,9 +205,9 @@ static const qpKeyStringMap s_qpImageCompressionModeMap[] = {
     {QP_IMAGE_COMPRESSION_MODE_NONE, "None"},
     {QP_IMAGE_COMPRESSION_MODE_PNG, "PNG"},
 
-    {QP_IMAGE_COMPRESSION_MODE_BEST, DE_NULL}, /* not allowed to be written! */
+    {QP_IMAGE_COMPRESSION_MODE_BEST, NULL}, /* not allowed to be written! */
 
-    {QP_IMAGE_COMPRESSION_MODE_LAST, DE_NULL}};
+    {QP_IMAGE_COMPRESSION_MODE_LAST, NULL}};
 
 DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_qpImageCompressionModeMap) == QP_IMAGE_COMPRESSION_MODE_LAST + 1);
 
@@ -216,7 +216,7 @@ DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_qpImageCompressionModeMap) == QP_IMAGE_COM
 static const qpKeyStringMap s_qpImageFormatMap[] = {{QP_IMAGE_FORMAT_RGB888, "RGB888"},
                                                     {QP_IMAGE_FORMAT_RGBA8888, "RGBA8888"},
 
-                                                    {QP_IMAGE_FORMAT_LAST, DE_NULL}};
+                                                    {QP_IMAGE_FORMAT_LAST, NULL}};
 
 DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_qpImageFormatMap) == QP_IMAGE_FORMAT_LAST + 1);
 
@@ -237,7 +237,7 @@ static const qpKeyStringMap s_qpShaderTypeMap[] = {{QP_SHADER_TYPE_VERTEX, "Vert
                                                    {QP_SHADER_TYPE_TASK, "TaskShader"},
                                                    {QP_SHADER_TYPE_MESH, "MeshShader"},
 
-                                                   {QP_SHADER_TYPE_LAST, DE_NULL}};
+                                                   {QP_SHADER_TYPE_LAST, NULL}};
 
 DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_qpShaderTypeMap) == QP_SHADER_TYPE_LAST + 1);
 
@@ -258,30 +258,30 @@ static const char *qpLookupString(const qpKeyStringMap *keyMap, int keyMapSize, 
     DE_ASSERT(keyMap);
     DE_ASSERT(deInBounds32(key, 0, keyMapSize - 1)); /* Last element in map is assumed to be terminator */
     DE_ASSERT(keyMap[keyMapSize - 1].string ==
-              DE_NULL); /* Ensure map is properly completed, *_LAST element is not missing */
+              NULL); /* Ensure map is properly completed, *_LAST element is not missing */
     DE_ASSERT(keyMap[key].key == key);
     DE_UNREF(keyMapSize); /* for asserting only */
     return keyMap[key].string;
 }
 
-DE_INLINE void int32ToString(int val, char buf[32])
+void int32ToString(int val, char buf[32])
 {
-    deSprintf(&buf[0], 32, "%d", val);
+    snprintf(&buf[0], 32, "%d", val);
 }
 
-DE_INLINE void int64ToString(int64_t val, char buf[32])
+void int64ToString(int64_t val, char buf[32])
 {
-    deSprintf(&buf[0], 32, "%lld", (long long int)val);
+    snprintf(&buf[0], 32, "%lld", (long long int)val);
 }
 
-DE_INLINE void floatToString(float value, char *buf, size_t bufSize)
+void floatToString(float value, char *buf, size_t bufSize)
 {
-    deSprintf(buf, bufSize, "%f", value);
+    snprintf(buf, bufSize, "%f", value);
 }
 
-DE_INLINE void doubleToString(double value, char *buf, size_t bufSize)
+void doubleToString(double value, char *buf, size_t bufSize)
 {
-    deSprintf(buf, bufSize, "%f", value);
+    snprintf(buf, bufSize, "%f", value);
 }
 
 static bool endSession(qpTestLog *log)
@@ -307,13 +307,13 @@ static bool endSession(qpTestLog *log)
 /*--------------------------------------------------------------------*//*!
  * \brief Create a file based logger instance
  * \param fileName Name of the file where to put logs
- * \return qpTestLog instance, or DE_NULL if cannot create file
+ * \return qpTestLog instance, or NULL if cannot create file
  *//*--------------------------------------------------------------------*/
 qpTestLog *qpTestLog_createFileLog(const char *fileName, uint32_t flags)
 {
     qpTestLog *log = (qpTestLog *)deCalloc(sizeof(qpTestLog));
     if (!log)
-        return DE_NULL;
+        return NULL;
 
     DE_ASSERT(fileName && fileName[0]); /* must have filename. */
 
@@ -330,12 +330,12 @@ qpTestLog *qpTestLog_createFileLog(const char *fileName, uint32_t flags)
     {
         qpPrintf("ERROR: Unable to open test log output file '%s'.\n", fileName);
         qpTestLog_destroy(log);
-        return DE_NULL;
+        return NULL;
     }
 
     log->flags         = flags;
     log->writer        = qpXmlWriter_createFileWriter(log->outputFile, 0, !(flags & QP_TEST_LOG_NO_FLUSH));
-    log->lock          = deMutex_create(DE_NULL);
+    log->lock          = deMutex_create(NULL);
     log->isSessionOpen = false;
     log->isCaseOpen    = false;
 
@@ -343,14 +343,14 @@ qpTestLog *qpTestLog_createFileLog(const char *fileName, uint32_t flags)
     {
         qpPrintf("ERROR: Unable to create output XML writer to file '%s'.\n", fileName);
         qpTestLog_destroy(log);
-        return DE_NULL;
+        return NULL;
     }
 
     if (!log->lock)
     {
         qpPrintf("ERROR: Unable to create mutex.\n");
         qpTestLog_destroy(log);
-        return DE_NULL;
+        return NULL;
     }
 
     return log;
@@ -523,7 +523,7 @@ bool qpTestLog_startTestsCasesTime(qpTestLog *log)
     log->isCaseOpen = true;
 
     if (!qpXmlWriter_startDocument(log->writer, !qpTestLog_isCompact(log)) ||
-        !qpXmlWriter_startElement(log->writer, "TestsCasesTime", 0, (const qpXmlAttribute *)DE_NULL))
+        !qpXmlWriter_startElement(log->writer, "TestsCasesTime", 0, (const qpXmlAttribute *)NULL))
     {
         qpPrintf("qpTestLog_startTestsCasesTime(): Writing XML failed\n");
         deMutex_unlock(log->lock);
@@ -638,7 +638,7 @@ static bool qpTestLog_writeKeyValuePair(qpTestLog *log, const char *elementName,
 bool qpTestLog_writeText(qpTestLog *log, const char *name, const char *description, qpKeyValueTag tag, const char *text)
 {
     /* <Text Name="name" Description="description" Tag="tag">text</Text> */
-    return qpTestLog_writeKeyValuePair(log, "Text", name, description, DE_NULL, tag, text);
+    return qpTestLog_writeKeyValuePair(log, "Text", name, description, NULL, tag, text);
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -690,7 +690,7 @@ void Buffer_init(Buffer *buffer)
 {
     buffer->capacity = 0;
     buffer->size     = 0;
-    buffer->data     = DE_NULL;
+    buffer->data     = NULL;
 }
 
 void Buffer_deinit(Buffer *buffer)
@@ -769,9 +769,9 @@ static bool compressImagePNG(Buffer *buffer, qpImageFormat imageFormat, int widt
                              const void *data)
 {
     bool compressOk        = false;
-    png_structp png        = DE_NULL;
-    png_infop info         = DE_NULL;
-    png_byte **rowPointers = DE_NULL;
+    png_structp png        = NULL;
+    png_infop info         = NULL;
+    png_byte **rowPointers = NULL;
     bool hasAlpha          = imageFormat == QP_IMAGE_FORMAT_RGBA8888;
     int ndx;
 
@@ -788,7 +788,7 @@ static bool compressImagePNG(Buffer *buffer, qpImageFormat imageFormat, int widt
 
     /* Initialize PNG compressor. */
     png  = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-    info = png ? png_create_info_struct(png) : DE_NULL;
+    info = png ? png_create_info_struct(png) : NULL;
     if (png && info)
     {
         /* Set our own write function. */
@@ -802,7 +802,7 @@ static bool compressImagePNG(Buffer *buffer, qpImageFormat imageFormat, int widt
     if (png && info)
     {
         png_destroy_info_struct(png, &info);
-        png_destroy_write_struct(&png, DE_NULL);
+        png_destroy_write_struct(&png, NULL);
     }
     else if (png)
         png_destroy_write_struct(&png, &info);
@@ -891,7 +891,7 @@ bool qpTestLog_writeImage(qpTestLog *log, const char *name, const char *descript
     qpXmlAttribute attribs[8];
     int numAttribs = 0;
     Buffer compressedBuffer;
-    const void *writeDataPtr = DE_NULL;
+    const void *writeDataPtr = NULL;
     size_t writeDataBytes    = ~(size_t)0;
 
     DE_ASSERT(log && name);
@@ -1020,7 +1020,7 @@ bool qpTestLog_writeImage(qpTestLog *log, const char *name, const char *descript
  *//*--------------------------------------------------------------------*/
 bool qpTestLog_writeInfoLog(qpTestLog *log, const char *infoLog)
 {
-    if (infoLog == DE_NULL)
+    if (infoLog == NULL)
         return false;
 
     if (infoLog[0] == '\0' && (log->flags & QP_TEST_LOG_EXCLUDE_EMPTY_LOGINFO) != 0)
@@ -1380,7 +1380,7 @@ bool qpTestLog_startSampleInfo(qpTestLog *log)
     DE_ASSERT(log);
     deMutex_lock(log->lock);
 
-    if (!qpXmlWriter_startElement(log->writer, "SampleInfo", 0, DE_NULL))
+    if (!qpXmlWriter_startElement(log->writer, "SampleInfo", 0, NULL))
     {
         qpPrintf("qpTestLog_startSampleInfo(): Writing XML failed\n");
         deMutex_unlock(log->lock);
@@ -1449,7 +1449,7 @@ bool qpTestLog_startSample(qpTestLog *log)
 
     DE_ASSERT(ContainerStack_getTop(&log->containerStack) == CONTAINERTYPE_SAMPLELIST);
 
-    if (!qpXmlWriter_startElement(log->writer, "Sample", 0, DE_NULL))
+    if (!qpXmlWriter_startElement(log->writer, "Sample", 0, NULL))
     {
         qpPrintf("qpTestLog_startSample(): Writing XML failed\n");
         deMutex_unlock(log->lock);
@@ -1548,6 +1548,14 @@ bool qpTestLog_writeRaw(qpTestLog *log, const char *rawContents)
         qpTestLog_flushFile(log);
 
     return true;
+}
+
+void qpTestLog_setSplitSlices(qpTestLog *log, bool value)
+{
+    if (value)
+        log->flags |= QP_TEST_LOG_SPLIT_SLICES;
+    else
+        log->flags &= (~QP_TEST_LOG_SPLIT_SLICES);
 }
 
 uint32_t qpTestLog_getLogFlags(const qpTestLog *log)

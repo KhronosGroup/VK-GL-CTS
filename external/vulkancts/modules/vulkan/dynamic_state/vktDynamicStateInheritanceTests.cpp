@@ -875,6 +875,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry &geometry)
         break;
     }
 
+    m_renderPass.resetLayouts();
     m_renderPass.begin(m_vk, m_primaryCmdBuffer.get(), renderPassBeginInfo.renderArea,
                        renderPassBeginInfo.clearValueCount, renderPassBeginInfo.pClearValues,
                        VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
@@ -931,7 +932,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry &geometry)
     VK_CHECK(m_vk.endCommandBuffer(m_primaryCmdBuffer.get()));
     VkCommandBuffer primaryCmd = m_primaryCmdBuffer.get();
     VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO, NULL, 0, NULL, NULL, 1, &primaryCmd, 0, NULL};
-    m_vk.queueSubmit(m_context.getUniversalQueue(), 1, &submitInfo, 0);
+    m_vk.queueSubmit(m_context.getUniversalQueue(), 1, &submitInfo, VK_NULL_HANDLE);
 }
 
 void InheritanceTestInstance::rasterizeExpectedResults(const TestGeometry &geometry, Texel (&output)[kHeight][kWidth])
@@ -1168,8 +1169,7 @@ public:
         {
             context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
 #ifndef CTS_USES_VULKANSC
-            const auto &features =
-                *findStructure<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+            const auto &features = context.getNestedCommandBufferFeaturesEXT();
             if (!features.nestedCommandBuffer)
 #endif // CTS_USES_VULKANSC
                 TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");

@@ -71,6 +71,7 @@ struct BufferViewCaseParams
     uint32_t elementOffset;
     AllocationKind bufferAllocationKind;
     AllocationKind imageAllocationKind;
+    bool useComputePipeline;
 
     VkFormat format;
     VkBufferUsageFlags createUsage;
@@ -79,7 +80,7 @@ struct BufferViewCaseParams
     VkDescriptorType descType;
 
     BufferViewCaseParams(uint32_t bufferSize_, uint32_t bufferViewSize_, uint32_t elementOffset_,
-                         AllocationKind bufferAllocKind_, AllocationKind imageAllocKind_,
+                         AllocationKind bufferAllocKind_, AllocationKind imageAllocKind_, bool useComputePipeline_,
                          VkFormat format_                   = VK_FORMAT_R32_UINT,
                          VkBufferUsageFlags createUsage_    = VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,
                          VkBufferUsageFlags bindUsage_      = VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM,
@@ -90,6 +91,7 @@ struct BufferViewCaseParams
         , elementOffset(elementOffset_)
         , bufferAllocationKind(bufferAllocKind_)
         , imageAllocationKind(imageAllocKind_)
+        , useComputePipeline(useComputePipeline_)
         , format(format_)
         , createUsage(createUsage_)
         , bindUsage(bindUsage_)
@@ -99,16 +101,18 @@ struct BufferViewCaseParams
     }
 };
 
-class BufferViewTestInstance : public vkt::TestInstance
+class BufferViewTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     BufferViewTestInstance(Context &context, BufferViewCaseParams testCase);
     virtual ~BufferViewTestInstance(void);
-    virtual tcu::TestStatus iterate(void);
+    virtual tcu::TestStatus queuePass(const QueueData &queueData) override;
 
 private:
     void createQuad(void);
     tcu::TestStatus checkResult(int8_t factor);
+
+    void recordCommandBuffer(VkCommandBuffer cmdBuffer);
 
 private:
     BufferViewCaseParams m_testCase;
@@ -134,16 +138,14 @@ private:
 
     Move<VkShaderModule> m_vertexShaderModule;
     Move<VkShaderModule> m_fragmentShaderModule;
+    Move<VkShaderModule> m_computeShaderModule;
 
     Move<VkBuffer> m_vertexBuffer;
     std::vector<tcu::Vec4> m_vertices;
     de::MovePtr<Allocation> m_vertexBufferAlloc;
 
     Move<VkPipelineLayout> m_pipelineLayout;
-    Move<VkPipeline> m_graphicsPipelines;
-
-    Move<VkCommandPool> m_cmdPool;
-    Move<VkCommandBuffer> m_cmdBuffer;
+    Move<VkPipeline> m_pipelines;
 
     Move<VkBuffer> m_resultBuffer;
     de::MovePtr<Allocation> m_resultBufferAlloc;
@@ -178,273 +180,410 @@ BufferViewTestInstance::~BufferViewTestInstance(void)
 }
 
 BufferViewTestInstance::BufferViewTestInstance(Context &context, BufferViewCaseParams testCase)
-    : vkt::TestInstance(context)
+    : vkt::MultiQueueRunnerTestInstance(context, testCase.useComputePipeline ? vkt::COMPUTE_QUEUE : vkt::GRAPHICS_QUEUE)
     , m_testCase(testCase)
     , m_renderSize(testCase.bufferViewSize, testCase.bufferViewSize)
     , m_colorFormat(VK_FORMAT_R32_UINT)
     , m_pixelDataSize(m_renderSize.x() * m_renderSize.y() * mapVkFormat(m_colorFormat).getPixelSize())
 {
-    const DeviceInterface &vk       = context.getDeviceInterface();
-    const VkDevice vkDevice         = context.getDevice();
-    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+    const DeviceInterface &vk = context.getDeviceInterface();
+    const VkDevice vkDevice   = context.getDevice();
     SimpleAllocator memAlloc(
         vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
     const VkComponentMapping channelMappingRGBA = {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G,
                                                    VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
 
-    // Create color image
-    if (m_testCase.imageAllocationKind == ALLOCATION_KIND_DEDICATED)
+    if (!testCase.useComputePipeline) // Graphics pipeline
     {
-        ImageDedicatedAllocation().createTestImage(m_renderSize, m_colorFormat, context, memAlloc, m_colorImage,
-                                                   MemoryRequirement::Any, m_colorImageAlloc);
-    }
-    else
-    {
-        ImageSuballocation().createTestImage(m_renderSize, m_colorFormat, context, memAlloc, m_colorImage,
-                                             MemoryRequirement::Any, m_colorImageAlloc);
-    }
+        // Create color image
+        if (m_testCase.imageAllocationKind == ALLOCATION_KIND_DEDICATED)
+        {
+            ImageDedicatedAllocation().createTestImage(m_renderSize, m_colorFormat, context, memAlloc, m_colorImage,
+                                                       MemoryRequirement::Any, m_colorImageAlloc);
+        }
+        else
+        {
+            ImageSuballocation().createTestImage(m_renderSize, m_colorFormat, context, memAlloc, m_colorImage,
+                                                 MemoryRequirement::Any, m_colorImageAlloc);
+        }
 
-    // Create destination buffer
-    if (m_testCase.bufferAllocationKind == ALLOCATION_KIND_DEDICATED)
-    {
-        BufferDedicatedAllocation().createTestBuffer(
-            vk, vkDevice, queueFamilyIndex, m_pixelDataSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, m_context, memAlloc,
-            m_resultBuffer, MemoryRequirement::HostVisible, m_resultBufferAlloc);
-    }
-    else
-    {
-        BufferSuballocation().createTestBuffer(vk, vkDevice, queueFamilyIndex, m_pixelDataSize,
-                                               VK_BUFFER_USAGE_TRANSFER_DST_BIT, m_context, memAlloc, m_resultBuffer,
-                                               MemoryRequirement::HostVisible, m_resultBufferAlloc);
-    }
+        // Create destination buffer
+        if (m_testCase.bufferAllocationKind == ALLOCATION_KIND_DEDICATED)
+        {
+            BufferDedicatedAllocation().createTestBuffer(
+                vk, vkDevice, m_pixelDataSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, m_context, memAlloc, m_resultBuffer,
+                MemoryRequirement::HostVisible, m_resultBufferAlloc);
+        }
+        else
+        {
+            BufferSuballocation().createTestBuffer(vk, vkDevice, m_pixelDataSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                                   m_context, memAlloc, m_resultBuffer, MemoryRequirement::HostVisible,
+                                                   m_resultBufferAlloc);
+        }
 
-    // Create color attachment view
-    {
-        const VkImageViewCreateInfo colorAttachmentViewParams = {
-            VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,    // VkStructureType sType;
-            DE_NULL,                                     // const void* pNext;
-            0u,                                          // VkImageViewCreateFlags flags;
-            *m_colorImage,                               // VkImage image;
-            VK_IMAGE_VIEW_TYPE_2D,                       // VkImageViewType viewType;
-            m_colorFormat,                               // VkFormat format;
-            channelMappingRGBA,                          // VkChannelMapping channels;
-            {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}, // VkImageSubresourceRange subresourceRange;
-        };
+        // Create color attachment view
+        {
+            const VkImageViewCreateInfo colorAttachmentViewParams = {
+                VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,    // VkStructureType sType;
+                nullptr,                                     // const void* pNext;
+                0u,                                          // VkImageViewCreateFlags flags;
+                *m_colorImage,                               // VkImage image;
+                VK_IMAGE_VIEW_TYPE_2D,                       // VkImageViewType viewType;
+                m_colorFormat,                               // VkFormat format;
+                channelMappingRGBA,                          // VkChannelMapping channels;
+                {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}, // VkImageSubresourceRange subresourceRange;
+            };
 
-        m_colorAttachmentView = createImageView(vk, vkDevice, &colorAttachmentViewParams);
-    }
+            m_colorAttachmentView = createImageView(vk, vkDevice, &colorAttachmentViewParams);
+        }
 
-    // Create render pass
-    m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat);
+        // Create render pass
+        m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat);
 
-    // Create framebuffer
-    {
-        const VkImageView attachmentBindInfos[1] = {
-            *m_colorAttachmentView,
-        };
+        // Create framebuffer
+        {
+            const VkImageView attachmentBindInfos[1] = {
+                *m_colorAttachmentView,
+            };
 
-        const VkFramebufferCreateInfo framebufferParams = {
-            VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
-            (VkFramebufferCreateFlags)0,
-            *m_renderPass,              // VkRenderPass renderPass;
-            1u,                         // uint32_t attachmentCount;
-            attachmentBindInfos,        // const VkImageView* pAttachments;
-            (uint32_t)m_renderSize.x(), // uint32_t width;
-            (uint32_t)m_renderSize.y(), // uint32_t height;
-            1u                          // uint32_t layers;
-        };
+            const VkFramebufferCreateInfo framebufferParams = {
+                VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
+                nullptr,                                   // const void* pNext;
+                (VkFramebufferCreateFlags)0,
+                *m_renderPass,              // VkRenderPass renderPass;
+                1u,                         // uint32_t attachmentCount;
+                attachmentBindInfos,        // const VkImageView* pAttachments;
+                (uint32_t)m_renderSize.x(), // uint32_t width;
+                (uint32_t)m_renderSize.y(), // uint32_t height;
+                1u                          // uint32_t layers;
+            };
 
-        m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
-    }
+            m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
+        }
 
-    // Create descriptors
-    {
-        const VkDescriptorSetLayoutBinding layoutBindings[1] = {
-            {
-                0u,                                      // uint32_t binding;
-                VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, // VkDescriptorType descriptorType;
-                1u,                                      // uint32_t arraySize;
-                VK_SHADER_STAGE_ALL,                     // VkShaderStageFlags stageFlags;
-                DE_NULL                                  // const VkSampler* pImmutableSamplers;
-            },
-        };
+        // Create descriptors
+        {
+            const VkDescriptorSetLayoutBinding layoutBindings[1] = {
+                {
+                    0u,                                      // uint32_t binding;
+                    VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, // VkDescriptorType descriptorType;
+                    1u,                                      // uint32_t arraySize;
+                    VK_SHADER_STAGE_ALL,                     // VkShaderStageFlags stageFlags;
+                    nullptr                                  // const VkSampler* pImmutableSamplers;
+                },
+            };
 
-        const VkDescriptorSetLayoutCreateInfo descriptorLayoutParams = {
-            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
-            (VkDescriptorSetLayoutCreateFlags)0,
-            DE_LENGTH_OF_ARRAY(layoutBindings), // uint32_t count;
-            layoutBindings                      // const VkDescriptorSetLayoutBinding pBinding;
-        };
+            const VkDescriptorSetLayoutCreateInfo descriptorLayoutParams = {
+                VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType sType;
+                nullptr,                                             // const void* pNext;
+                (VkDescriptorSetLayoutCreateFlags)0,
+                DE_LENGTH_OF_ARRAY(layoutBindings), // uint32_t count;
+                layoutBindings                      // const VkDescriptorSetLayoutBinding pBinding;
+            };
 
-        m_descriptorSetLayout = createDescriptorSetLayout(vk, vkDevice, &descriptorLayoutParams);
+            m_descriptorSetLayout = createDescriptorSetLayout(vk, vkDevice, &descriptorLayoutParams);
 
-        // Generate buffer
-        std::vector<uint32_t> uniformData;
-        generateBuffer(uniformData, testCase.bufferSize, 1);
+            // Create uniform buffer
+            const VkDeviceSize uniformSize = testCase.bufferSize * sizeof(uint32_t);
 
-        const VkDeviceSize uniformSize = testCase.bufferSize * sizeof(uint32_t);
+            BufferSuballocation().createTestBuffer(vk, vkDevice, uniformSize, testCase.createUsage, m_context, memAlloc,
+                                                   m_uniformBuffer, MemoryRequirement::HostVisible,
+                                                   m_uniformBufferAlloc);
 
-        BufferSuballocation().createTestBuffer(vk, vkDevice, queueFamilyIndex, uniformSize, testCase.createUsage,
-                                               m_context, memAlloc, m_uniformBuffer, MemoryRequirement::HostVisible,
-                                               m_uniformBufferAlloc);
-        deMemcpy(m_uniformBufferAlloc->getHostPtr(), uniformData.data(), (size_t)uniformSize);
-        flushAlloc(vk, vkDevice, *m_uniformBufferAlloc);
+            const VkBufferViewCreateInfo viewInfo = {
+                VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO, // VkStructureType sType;
+                nullptr,                                   // void* pNext;
+                (VkBufferViewCreateFlags)0,
+                *m_uniformBuffer,                            // VkBuffer buffer;
+                m_colorFormat,                               // VkFormat format;
+                m_testCase.elementOffset * sizeof(uint32_t), // VkDeviceSize offset;
+                m_testCase.bufferViewSize * sizeof(uint32_t) // VkDeviceSize range;
+            };
 
-        const VkBufferViewCreateInfo viewInfo = {
-            VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // void* pNext;
-            (VkBufferViewCreateFlags)0,
-            *m_uniformBuffer,                            // VkBuffer buffer;
-            m_colorFormat,                               // VkFormat format;
-            m_testCase.elementOffset * sizeof(uint32_t), // VkDeviceSize offset;
-            m_testCase.bufferViewSize * sizeof(uint32_t) // VkDeviceSize range;
-        };
+            m_uniformBufferView = createBufferView(vk, vkDevice, &viewInfo);
 
-        m_uniformBufferView = createBufferView(vk, vkDevice, &viewInfo);
-
-        const VkDescriptorPoolSize descriptorTypes[1] = {{
-            VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, // VkDescriptorType type;
-            1                                        // uint32_t count;
-        }};
-
-        const VkDescriptorPoolCreateInfo descriptorPoolParams = {
-            VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,     // VkStructureType sType;
-            DE_NULL,                                           // void* pNext;
-            VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, // VkDescriptorPoolCreateFlags flags;
-            1u,                                                // uint32_t maxSets;
-            DE_LENGTH_OF_ARRAY(descriptorTypes),               // uint32_t count;
-            descriptorTypes                                    // const VkDescriptorTypeCount* pTypeCount
-        };
-
-        m_descriptorPool = createDescriptorPool(vk, vkDevice, &descriptorPoolParams);
-
-        const VkDescriptorSetAllocateInfo descriptorSetParams = {
-            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            DE_NULL,
-            *m_descriptorPool,
-            1u,
-            &m_descriptorSetLayout.get(),
-        };
-        m_descriptorSet = allocateDescriptorSet(vk, vkDevice, &descriptorSetParams);
-
-        const VkWriteDescriptorSet writeDescritporSets[] = {{
-            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // VkStructureType sType;
-            DE_NULL,                                 // const void* pNext;
-            *m_descriptorSet,                        // VkDescriptorSet destSet;
-            0,                                       // uint32_t destBinding;
-            0,                                       // uint32_t destArrayElement;
-            1u,                                      // uint32_t count;
-            VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, // VkDescriptorType descriptorType;
-            (const VkDescriptorImageInfo *)DE_NULL,
-            (const VkDescriptorBufferInfo *)DE_NULL,
-            &m_uniformBufferView.get(),
-        }};
-
-        vk.updateDescriptorSets(vkDevice, DE_LENGTH_OF_ARRAY(writeDescritporSets), writeDescritporSets, 0u, DE_NULL);
-    }
-
-    // Create pipeline layout
-    {
-        const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
-            VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
-            (VkPipelineLayoutCreateFlags)0,
-            1u,                      // uint32_t descriptorSetCount;
-            &*m_descriptorSetLayout, // const VkDescriptorSetLayout* pSetLayouts;
-            0u,                      // uint32_t pushConstantRangeCount;
-            DE_NULL                  // const VkPushConstantRange* pPushConstantRanges;
-        };
-
-        m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
-    }
-
-    // Create shaders
-    {
-        m_vertexShaderModule   = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("vert"), 0);
-        m_fragmentShaderModule = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("frag"), 0);
-    }
-
-    // Create pipeline
-    {
-        const std::vector<VkViewport> viewports(1, makeViewport(m_renderSize));
-        const std::vector<VkRect2D> scissors(1, makeRect2D(m_renderSize));
-
-        m_graphicsPipelines =
-            makeGraphicsPipeline(vk,                      // const DeviceInterface&            vk
-                                 vkDevice,                // const VkDevice                    device
-                                 *m_pipelineLayout,       // const VkPipelineLayout            pipelineLayout
-                                 *m_vertexShaderModule,   // const VkShaderModule              vertexShaderModule
-                                 DE_NULL,                 // const VkShaderModule              tessellationControlModule
-                                 DE_NULL,                 // const VkShaderModule              tessellationEvalModule
-                                 DE_NULL,                 // const VkShaderModule              geometryShaderModule
-                                 *m_fragmentShaderModule, // const VkShaderModule              fragmentShaderModule
-                                 *m_renderPass,           // const VkRenderPass                renderPass
-                                 viewports,               // const std::vector<VkViewport>&    viewports
-                                 scissors);               // const std::vector<VkRect2D>&      scissors
-    }
-
-    // Create vertex buffer
-    {
-        createQuad();
-        const VkDeviceSize vertexDataSize = m_vertices.size() * sizeof(tcu::Vec4);
-
-        BufferSuballocation().createTestBuffer(vk, vkDevice, queueFamilyIndex, vertexDataSize,
-                                               VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, m_context, memAlloc, m_vertexBuffer,
-                                               MemoryRequirement::HostVisible, m_vertexBufferAlloc);
-
-        // Load vertices into vertex buffer
-        deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), (size_t)vertexDataSize);
-        flushAlloc(vk, vkDevice, *m_vertexBufferAlloc);
-    }
-
-    // Create command pool
-    m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
-
-    // Create command buffer
-    {
-        m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-        beginCommandBuffer(vk, *m_cmdBuffer, 0u);
-
-        const VkImageMemoryBarrier initialImageBarrier = {
-            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
-            0,                                        // VkAccessFlags srcAccessMask;
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags dstAccessMask;
-            VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout oldLayout;
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout newLayout;
-            VK_QUEUE_FAMILY_IGNORED,                  // uint32_t srcQueueFamilyIndex;
-            VK_QUEUE_FAMILY_IGNORED,                  // uint32_t destQueueFamilyIndex;
-            *m_colorImage,                            // VkImage image;
-            {
-                // VkImageSubresourceRange subresourceRange;
-                VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
-                0u,                        // uint32_t baseMipLevel;
-                1u,                        // uint32_t mipLevels;
-                0u,                        // uint32_t baseArraySlice;
-                1u                         // uint32_t arraySize;
+            const VkDescriptorPoolSize descriptorTypes[1] = {{
+                VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, // VkDescriptorType type;
+                1                                        // uint32_t count;
             }};
 
-        vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0,
-                              (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1,
-                              &initialImageBarrier);
+            const VkDescriptorPoolCreateInfo descriptorPoolParams = {
+                VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,     // VkStructureType sType;
+                nullptr,                                           // void* pNext;
+                VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, // VkDescriptorPoolCreateFlags flags;
+                1u,                                                // uint32_t maxSets;
+                DE_LENGTH_OF_ARRAY(descriptorTypes),               // uint32_t count;
+                descriptorTypes                                    // const VkDescriptorTypeCount* pTypeCount
+            };
 
-        beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer,
-                        makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), tcu::Vec4(0.0f));
+            m_descriptorPool = createDescriptorPool(vk, vkDevice, &descriptorPoolParams);
 
-        const VkDeviceSize vertexBufferOffset[1] = {0};
+            const VkDescriptorSetAllocateInfo descriptorSetParams = {
+                VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+                nullptr,
+                *m_descriptorPool,
+                1u,
+                &m_descriptorSetLayout.get(),
+            };
+            m_descriptorSet = allocateDescriptorSet(vk, vkDevice, &descriptorSetParams);
 
-        vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelines);
-        vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1,
-                                 &*m_descriptorSet, 0u, DE_NULL);
-        vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), vertexBufferOffset);
-        vk.cmdDraw(*m_cmdBuffer, (uint32_t)m_vertices.size(), 1, 0, 0);
-        endRenderPass(vk, *m_cmdBuffer);
-        copyImageToBuffer(vk, *m_cmdBuffer, *m_colorImage, *m_resultBuffer, m_renderSize);
-        endCommandBuffer(vk, *m_cmdBuffer);
+            const VkWriteDescriptorSet writeDescritporSets[] = {{
+                VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // VkStructureType sType;
+                nullptr,                                 // const void* pNext;
+                *m_descriptorSet,                        // VkDescriptorSet destSet;
+                0,                                       // uint32_t destBinding;
+                0,                                       // uint32_t destArrayElement;
+                1u,                                      // uint32_t count;
+                VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, // VkDescriptorType descriptorType;
+                nullptr,
+                nullptr,
+                &m_uniformBufferView.get(),
+            }};
+
+            vk.updateDescriptorSets(vkDevice, DE_LENGTH_OF_ARRAY(writeDescritporSets), writeDescritporSets, 0u,
+                                    nullptr);
+        }
+
+        // Create pipeline layout
+        {
+            const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
+                VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
+                nullptr,                                       // const void* pNext;
+                (VkPipelineLayoutCreateFlags)0,
+                1u,                      // uint32_t descriptorSetCount;
+                &*m_descriptorSetLayout, // const VkDescriptorSetLayout* pSetLayouts;
+                0u,                      // uint32_t pushConstantRangeCount;
+                nullptr                  // const VkPushConstantRange* pPushConstantRanges;
+            };
+
+            m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+        }
+
+        // Create shaders
+        {
+            m_vertexShaderModule   = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("vert"), 0);
+            m_fragmentShaderModule = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("frag"), 0);
+        }
+
+        // Create pipeline
+        {
+            const std::vector<VkViewport> viewports(1, makeViewport(m_renderSize));
+            const std::vector<VkRect2D> scissors(1, makeRect2D(m_renderSize));
+
+            m_pipelines =
+                makeGraphicsPipeline(vk,                    // const DeviceInterface&            vk
+                                     vkDevice,              // const VkDevice                    device
+                                     *m_pipelineLayout,     // const VkPipelineLayout            pipelineLayout
+                                     *m_vertexShaderModule, // const VkShaderModule              vertexShaderModule
+                                     VK_NULL_HANDLE, // const VkShaderModule              tessellationControlModule
+                                     VK_NULL_HANDLE, // const VkShaderModule              tessellationEvalModule
+                                     VK_NULL_HANDLE, // const VkShaderModule              geometryShaderModule
+                                     *m_fragmentShaderModule, // const VkShaderModule              fragmentShaderModule
+                                     *m_renderPass,           // const VkRenderPass                renderPass
+                                     viewports,               // const std::vector<VkViewport>&    viewports
+                                     scissors);               // const std::vector<VkRect2D>&      scissors
+        }
+
+        // Create vertex buffer
+        {
+            createQuad();
+            const VkDeviceSize vertexDataSize = m_vertices.size() * sizeof(tcu::Vec4);
+
+            BufferSuballocation().createTestBuffer(vk, vkDevice, vertexDataSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                                                   m_context, memAlloc, m_vertexBuffer, MemoryRequirement::HostVisible,
+                                                   m_vertexBufferAlloc);
+
+            // Load vertices into vertex buffer
+            deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), (size_t)vertexDataSize);
+            flushAlloc(vk, vkDevice, *m_vertexBufferAlloc);
+        }
+    }
+    else // Compute pipeline
+    {
+        // Create storage color image
+        if (m_testCase.imageAllocationKind == ALLOCATION_KIND_DEDICATED)
+        {
+            ImageDedicatedAllocation().createTestImage(
+                m_renderSize, m_colorFormat, context, memAlloc, m_colorImage, MemoryRequirement::Any, m_colorImageAlloc,
+                vk::VK_IMAGE_TILING_OPTIMAL, vk::VK_IMAGE_USAGE_STORAGE_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+        }
+        else
+        {
+            ImageSuballocation().createTestImage(m_renderSize, m_colorFormat, context, memAlloc, m_colorImage,
+                                                 MemoryRequirement::Any, m_colorImageAlloc, vk::VK_IMAGE_TILING_OPTIMAL,
+                                                 vk::VK_IMAGE_USAGE_STORAGE_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+        }
+
+        // Create destination buffer
+        if (m_testCase.bufferAllocationKind == ALLOCATION_KIND_DEDICATED)
+        {
+            BufferDedicatedAllocation().createTestBuffer(
+                vk, vkDevice, m_pixelDataSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, m_context, memAlloc, m_resultBuffer,
+                MemoryRequirement::HostVisible, m_resultBufferAlloc);
+        }
+        else
+        {
+            BufferSuballocation().createTestBuffer(vk, vkDevice, m_pixelDataSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                                   m_context, memAlloc, m_resultBuffer, MemoryRequirement::HostVisible,
+                                                   m_resultBufferAlloc);
+        }
+
+        // Create color attachment view - storage image
+        {
+            const VkImageViewCreateInfo colorAttachmentViewParams = {
+                VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,    // VkStructureType sType;
+                nullptr,                                     // const void* pNext;
+                0u,                                          // VkImageViewCreateFlags flags;
+                *m_colorImage,                               // VkImage image;
+                VK_IMAGE_VIEW_TYPE_2D,                       // VkImageViewType viewType;
+                m_colorFormat,                               // VkFormat format;
+                channelMappingRGBA,                          // VkChannelMapping channels;
+                {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}, // VkImageSubresourceRange subresourceRange;
+            };
+
+            m_colorAttachmentView = createImageView(vk, vkDevice, &colorAttachmentViewParams);
+        }
+
+        // Render pass and frame buffer are not needed
+
+        // Create descriptors
+        {
+            const VkDescriptorSetLayoutBinding layoutBindings[2] = {
+                {
+                    0u,                                      // uint32_t binding;
+                    VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, // VkDescriptorType descriptorType;
+                    1u,                                      // uint32_t arraySize;
+                    VK_SHADER_STAGE_ALL,                     // VkShaderStageFlags stageFlags;
+                    nullptr                                  // const VkSampler* pImmutableSamplers;
+                },
+                {
+                    1u,                               // uint32_t binding;
+                    VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, // VkDescriptorType descriptorType;
+                    1u,                               // uint32_t arraySize;
+                    VK_SHADER_STAGE_ALL,              // VkShaderStageFlags stageFlags;
+                    nullptr                           // const VkSampler* pImmutableSamplers;
+                },
+            };
+
+            const VkDescriptorSetLayoutCreateInfo descriptorLayoutParams = {
+                VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType sType;
+                nullptr,                                             // const void* pNext;
+                (VkDescriptorSetLayoutCreateFlags)0,
+                DE_LENGTH_OF_ARRAY(layoutBindings), // uint32_t count;
+                layoutBindings                      // const VkDescriptorSetLayoutBinding pBinding;
+            };
+
+            m_descriptorSetLayout = createDescriptorSetLayout(vk, vkDevice, &descriptorLayoutParams);
+
+            // Create uniform buffer
+            const VkDeviceSize uniformSize = testCase.bufferSize * sizeof(uint32_t);
+
+            BufferSuballocation().createTestBuffer(vk, vkDevice, uniformSize, testCase.createUsage, m_context, memAlloc,
+                                                   m_uniformBuffer, MemoryRequirement::HostVisible,
+                                                   m_uniformBufferAlloc);
+
+            const VkBufferViewCreateInfo viewInfo = {
+                VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO, // VkStructureType sType;
+                nullptr,                                   // void* pNext;
+                (VkBufferViewCreateFlags)0,
+                *m_uniformBuffer,                            // VkBuffer buffer;
+                m_colorFormat,                               // VkFormat format;
+                m_testCase.elementOffset * sizeof(uint32_t), // VkDeviceSize offset;
+                m_testCase.bufferViewSize * sizeof(uint32_t) // VkDeviceSize range;
+            };
+
+            m_uniformBufferView = createBufferView(vk, vkDevice, &viewInfo);
+
+            const VkDescriptorPoolSize descriptorTypes[2] = {
+                {
+                    VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, // VkDescriptorType type;
+                    1                                        // uint32_t count;
+                },
+                {
+                    VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, // VkDescriptorType type;
+                    1                                 // uint32_t count;
+                }};
+
+            const VkDescriptorPoolCreateInfo descriptorPoolParams = {
+                VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,     // VkStructureType sType;
+                nullptr,                                           // void* pNext;
+                VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, // VkDescriptorPoolCreateFlags flags;
+                1u,                                                // uint32_t maxSets;
+                DE_LENGTH_OF_ARRAY(descriptorTypes),               // uint32_t count;
+                descriptorTypes                                    // const VkDescriptorTypeCount* pTypeCount
+            };
+
+            m_descriptorPool = createDescriptorPool(vk, vkDevice, &descriptorPoolParams);
+
+            const VkDescriptorSetAllocateInfo descriptorSetParams = {
+                VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+                nullptr,
+                *m_descriptorPool,
+                1u,
+                &m_descriptorSetLayout.get(),
+            };
+            m_descriptorSet = allocateDescriptorSet(vk, vkDevice, &descriptorSetParams);
+
+            const VkDescriptorImageInfo storageImageInfo = {
+                VK_NULL_HANDLE,              // VkSampler sampler;
+                m_colorAttachmentView.get(), // VkImageView imageView;
+                VK_IMAGE_LAYOUT_GENERAL,     // VkImageLayout imageLayout;
+            };
+
+            const VkWriteDescriptorSet writeDescritporSets[] = {
+                {
+                    VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // VkStructureType sType;
+                    nullptr,                                 // const void* pNext;
+                    *m_descriptorSet,                        // VkDescriptorSet destSet;
+                    0,                                       // uint32_t destBinding;
+                    0,                                       // uint32_t destArrayElement;
+                    1u,                                      // uint32_t count;
+                    VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, // VkDescriptorType descriptorType;
+                    nullptr,
+                    nullptr,
+                    &m_uniformBufferView.get(),
+                },
+                {
+                    VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
+                    nullptr,                                // const void* pNext;
+                    *m_descriptorSet,                       // VkDescriptorSet destSet;
+                    1,                                      // uint32_t destBinding;
+                    0,                                      // uint32_t destArrayElement;
+                    1u,                                     // uint32_t count;
+                    VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,       // VkDescriptorType descriptorType;
+                    &storageImageInfo,
+                    nullptr,
+                    nullptr,
+                }};
+
+            vk.updateDescriptorSets(vkDevice, DE_LENGTH_OF_ARRAY(writeDescritporSets), writeDescritporSets, 0u,
+                                    nullptr);
+        }
+
+        // Create pipeline layout
+        {
+            const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
+                VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
+                nullptr,                                       // const void* pNext;
+                (VkPipelineLayoutCreateFlags)0,
+                1u,                      // uint32_t descriptorSetCount;
+                &*m_descriptorSetLayout, // const VkDescriptorSetLayout* pSetLayouts;
+                0u,                      // uint32_t pushConstantRangeCount;
+                nullptr                  // const VkPushConstantRange* pPushConstantRanges;
+            };
+
+            m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+        }
+
+        // Create shaders
+        {
+            m_computeShaderModule = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("comp"), 0);
+        }
+
+        // Create pipeline
+        {
+            m_pipelines = makeComputePipeline(vk, vkDevice, *m_pipelineLayout, *m_computeShaderModule);
+        }
     }
 }
 
@@ -460,6 +599,13 @@ tcu::TestStatus BufferViewTestInstance::checkResult(int8_t factor)
                                                         m_resultBufferAlloc->getHostPtr()));
 
     tcu::ConstPixelBufferAccess pixelBuffer = resultLevel->getAccess();
+    tcu::ConstPixelBufferAccess uniformBuffer =
+        tcu::ConstPixelBufferAccess(tcuFormat, m_testCase.bufferSize, 1, 1, m_uniformBufferAlloc->getHostPtr());
+
+    tcu::TestLog &log = m_context.getTestContext().getLog();
+    log << tcu::TestLog::Image("Result", "", pixelBuffer);
+    log << tcu::TestLog::Image("Reference", "", uniformBuffer);
+
     for (int32_t i = 0; i < (int32_t)m_renderSize.x(); ++i)
     {
         tcu::IVec4 pixel = pixelBuffer.getPixelInt(i, i);
@@ -476,28 +622,163 @@ tcu::TestStatus BufferViewTestInstance::checkResult(int8_t factor)
     return tcu::TestStatus::pass("BufferView test");
 }
 
-tcu::TestStatus BufferViewTestInstance::iterate(void)
+void BufferViewTestInstance::recordCommandBuffer(VkCommandBuffer cmdBuffer)
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+
+    if (!m_testCase.useComputePipeline) // Graphics pipeline
+    {
+        beginCommandBuffer(vk, cmdBuffer, 0u);
+
+        const VkImageMemoryBarrier initialImageBarrier = {
+            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType sType;
+            nullptr,                                  // const void* pNext;
+            0,                                        // VkAccessFlags srcAccessMask;
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags dstAccessMask;
+            VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout oldLayout;
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout newLayout;
+            VK_QUEUE_FAMILY_IGNORED,                  // uint32_t srcQueueFamilyIndex;
+            VK_QUEUE_FAMILY_IGNORED,                  // uint32_t destQueueFamilyIndex;
+            *m_colorImage,                            // VkImage image;
+            {
+                // VkImageSubresourceRange subresourceRange;
+                VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
+                0u,                        // uint32_t baseMipLevel;
+                1u,                        // uint32_t mipLevels;
+                0u,                        // uint32_t baseArraySlice;
+                1u                         // uint32_t arraySize;
+            }};
+
+        vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, nullptr, 0,
+                              nullptr, 1, &initialImageBarrier);
+
+        beginRenderPass(vk, cmdBuffer, *m_renderPass, *m_framebuffer,
+                        makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), tcu::Vec4(0.0f));
+
+        const VkDeviceSize vertexBufferOffset[1] = {0};
+
+        vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelines);
+        vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1,
+                                 &*m_descriptorSet, 0u, nullptr);
+        vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &m_vertexBuffer.get(), vertexBufferOffset);
+        vk.cmdDraw(cmdBuffer, (uint32_t)m_vertices.size(), 1, 0, 0);
+        endRenderPass(vk, cmdBuffer);
+        copyImageToBuffer(vk, cmdBuffer, *m_colorImage, *m_resultBuffer, m_renderSize);
+        endCommandBuffer(vk, cmdBuffer);
+    }
+    else // Compute pipeline
+    {
+        beginCommandBuffer(vk, cmdBuffer, 0u);
+
+        const VkImageMemoryBarrier initialImageBarrier = {
+            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
+            nullptr,                                // const void* pNext;
+            0,                                      // VkAccessFlags srcAccessMask;
+            VK_ACCESS_SHADER_WRITE_BIT,             // VkAccessFlags dstAccessMask;
+            VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout oldLayout;
+            VK_IMAGE_LAYOUT_GENERAL,                // VkImageLayout newLayout;
+            VK_QUEUE_FAMILY_IGNORED,                // uint32_t srcQueueFamilyIndex;
+            VK_QUEUE_FAMILY_IGNORED,                // uint32_t destQueueFamilyIndex;
+            *m_colorImage,                          // VkImage image;
+            {
+                // VkImageSubresourceRange subresourceRange;
+                VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
+                0u,                        // uint32_t baseMipLevel;
+                1u,                        // uint32_t mipLevels;
+                0u,                        // uint32_t baseArraySlice;
+                1u                         // uint32_t arraySize;
+            }};
+
+        vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                              (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &initialImageBarrier);
+
+        vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelines);
+        vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1, &*m_descriptorSet,
+                                 0u, nullptr);
+
+        VkClearColorValue clrColor;
+        clrColor.uint32[0]                       = 0;
+        clrColor.uint32[1]                       = 0;
+        clrColor.uint32[2]                       = 0;
+        clrColor.uint32[3]                       = 0;
+        VkImageSubresourceRange subresourceRange = {
+            VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
+            0u,                        // uint32_t baseMipLevel;
+            1u,                        // uint32_t mipLevels;
+            0u,                        // uint32_t baseArraySlice;
+            1u                         // uint32_t arraySize;
+        };
+        vk.cmdClearColorImage(cmdBuffer, *m_colorImage, VK_IMAGE_LAYOUT_GENERAL, &clrColor, 1, &subresourceRange);
+
+        vk.cmdDispatch(cmdBuffer, m_renderSize.x(), m_renderSize.y(), 1);
+
+        const VkImageMemoryBarrier storeTransferImageBarrier = {
+            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
+            nullptr,                                // const void* pNext;
+            VK_ACCESS_SHADER_WRITE_BIT,             // VkAccessFlags srcAccessMask;
+            VK_ACCESS_TRANSFER_READ_BIT,            // VkAccessFlags dstAccessMask;
+            VK_IMAGE_LAYOUT_GENERAL,                // VkImageLayout oldLayout;
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,   // VkImageLayout newLayout;
+            VK_QUEUE_FAMILY_IGNORED,                // uint32_t srcQueueFamilyIndex;
+            VK_QUEUE_FAMILY_IGNORED,                // uint32_t destQueueFamilyIndex;
+            *m_colorImage,                          // VkImage image;
+            {
+                // VkImageSubresourceRange subresourceRange;
+                VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
+                0u,                        // uint32_t baseMipLevel;
+                1u,                        // uint32_t mipLevels;
+                0u,                        // uint32_t baseArraySlice;
+                1u                         // uint32_t arraySize;
+            }};
+
+        vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                              (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &storeTransferImageBarrier);
+
+        copyImageToBuffer(vk, cmdBuffer, *m_colorImage, *m_resultBuffer, m_renderSize, VkAccessFlags(256u),
+                          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        endCommandBuffer(vk, cmdBuffer);
+    }
+}
+
+tcu::TestStatus BufferViewTestInstance::queuePass(const QueueData &queueData)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice vkDevice   = m_context.getDevice();
-    const VkQueue queue       = m_context.getUniversalQueue();
 
-    submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+    // Create command pool
+    Move<VkCommandPool> cmdPool =
+        createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueData.familyIndex);
 
-    tcu::TestStatus testStatus = checkResult(1);
-    if (testStatus.getCode() != QP_TEST_RESULT_PASS)
-        return testStatus;
+    // Create command buffer
+    Move<VkCommandBuffer> cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-    // Generate and bind another buffer
+    recordCommandBuffer(*cmdBuffer);
+
+    // Generate and binf uniform buffer
     std::vector<uint32_t> uniformData;
     const VkDeviceSize uniformSize = m_testCase.bufferSize * sizeof(uint32_t);
-    const int8_t factor            = 2;
+    int8_t factor                  = 1;
 
     generateBuffer(uniformData, m_testCase.bufferSize, factor);
     deMemcpy(m_uniformBufferAlloc->getHostPtr(), uniformData.data(), (size_t)uniformSize);
     flushAlloc(vk, vkDevice, *m_uniformBufferAlloc);
 
-    submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+    submitCommandsAndWait(vk, vkDevice, queueData.handle, *cmdBuffer);
+
+    tcu::TestStatus testStatus = checkResult(factor);
+    if (testStatus.getCode() != QP_TEST_RESULT_PASS)
+        return testStatus;
+
+    // Generate and bind another buffer
+    uniformData.clear();
+    factor = 2;
+
+    generateBuffer(uniformData, m_testCase.bufferSize, factor);
+    deMemcpy(m_uniformBufferAlloc->getHostPtr(), uniformData.data(), (size_t)uniformSize);
+    flushAlloc(vk, vkDevice, *m_uniformBufferAlloc);
+
+    submitCommandsAndWait(vk, vkDevice, queueData.handle, *cmdBuffer);
 
     return checkResult(factor);
 }
@@ -543,6 +824,19 @@ void BufferViewTestCase::initPrograms(SourceCollections &programCollection) cons
                                "{\n"
                                "    o_color = texelFetch(u_buffer, int(gl_FragCoord.x)).x;\n"
                                "}\n");
+
+    programCollection.glslSources.add("comp")
+        << glu::ComputeSource("#version 450\n"
+                              "#extension GL_EXT_texture_buffer : enable\n"
+                              "#extension GL_EXT_shader_image_load_store : enable\n"
+                              "layout (set=0, binding=0) uniform highp utextureBuffer u_buffer;\n"
+                              "layout (set=0, binding=1, r32ui) uniform writeonly uimage2D o_color;\n"
+                              "void main()\n"
+                              "{\n"
+                              "    uint index = gl_GlobalInvocationID.x;\n"
+                              "    uint value = texelFetch(u_buffer, int(index)).x;\n"
+                              "    imageStore(o_color, ivec2(index, index), uvec4(value, 0, 0, 0));"
+                              "}\n");
 }
 
 class BufferViewAllFormatsTestInstance : public vkt::TestInstance
@@ -657,9 +951,9 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance(Context &cont
     checkTexelBufferSupport(context, m_bufferFormat, testCase);
 
     // Create a result buffer
-    BufferSuballocation().createTestBuffer(vk, vkDevice, queueFamilyIndex, sizeof(tcu::Vec4[4]),
-                                           VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, m_context, memAlloc, m_resultBuffer,
-                                           MemoryRequirement::HostVisible, m_resultBufferAlloc);
+    BufferSuballocation().createTestBuffer(vk, vkDevice, sizeof(tcu::Vec4[4]), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                                           m_context, memAlloc, m_resultBuffer, MemoryRequirement::HostVisible,
+                                           m_resultBufferAlloc);
 
     // Create descriptors
     {
@@ -669,20 +963,20 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance(Context &cont
                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // VkDescriptorType descriptorType;
                 1u,                                // uint32_t arraySize;
                 VK_SHADER_STAGE_COMPUTE_BIT,       // VkShaderStageFlags stageFlags;
-                DE_NULL                            // const VkSampler* pImmutableSamplers;
+                nullptr                            // const VkSampler* pImmutableSamplers;
             },
             {
                 1u,                          // uint32_t binding;
                 testCase.descType,           // VkDescriptorType descriptorType;
                 1u,                          // uint32_t arraySize;
                 VK_SHADER_STAGE_COMPUTE_BIT, // VkShaderStageFlags stageFlags;
-                DE_NULL                      // const VkSampler* pImmutableSamplers;
+                nullptr                      // const VkSampler* pImmutableSamplers;
             },
         };
 
         const VkDescriptorSetLayoutCreateInfo descriptorLayoutParams = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             (VkDescriptorSetLayoutCreateFlags)0,
             DE_LENGTH_OF_ARRAY(layoutBindings), // uint32_t count;
             layoutBindings                      // const VkDescriptorSetLayoutBinding pBinding;
@@ -700,15 +994,15 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance(Context &cont
         m_sourceBuffer = sourceBuffer;
         m_sourceView   = tcu::ConstPixelBufferAccess(tcuFormat, tcu::IVec3(64, 1, 1), m_sourceBuffer.getPtr());
 
-        BufferSuballocation().createTestBuffer(vk, vkDevice, queueFamilyIndex, sourceBuffer.size(),
-                                               testCase.createUsage, m_context, memAlloc, m_uniformBuffer,
-                                               MemoryRequirement::HostVisible, m_uniformBufferAlloc);
+        BufferSuballocation().createTestBuffer(vk, vkDevice, sourceBuffer.size(), testCase.createUsage, m_context,
+                                               memAlloc, m_uniformBuffer, MemoryRequirement::HostVisible,
+                                               m_uniformBufferAlloc);
         deMemcpy(m_uniformBufferAlloc->getHostPtr(), sourceBuffer.getPtr(), sourceBuffer.size());
         flushAlloc(vk, vkDevice, *m_uniformBufferAlloc);
 
         VkBufferViewCreateInfo viewInfo = {
             VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // void* pNext;
+            nullptr,                                   // void* pNext;
             (VkBufferViewCreateFlags)0,
             *m_uniformBuffer,         // VkBuffer buffer;
             m_bufferFormat,           // VkFormat format;
@@ -721,7 +1015,7 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance(Context &cont
         if (testCase.bindUsage != VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM)
         {
             bindUsageInfo.sType = VK_STRUCTURE_TYPE_BUFFER_USAGE_FLAGS_2_CREATE_INFO_KHR; // VkStructureType sType;
-            bindUsageInfo.pNext = DE_NULL;                                                // const void* pNext;
+            bindUsageInfo.pNext = nullptr;                                                // const void* pNext;
             bindUsageInfo.usage = testCase.bindUsage; // VkBufferUsageFlags2KHR usage;
 
             viewInfo.pNext = &bindUsageInfo;
@@ -742,7 +1036,7 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance(Context &cont
 
         const VkDescriptorPoolCreateInfo descriptorPoolParams = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,     // VkStructureType sType;
-            DE_NULL,                                           // void* pNext;
+            nullptr,                                           // void* pNext;
             VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, // VkDescriptorPoolCreateFlags flags;
             1u,                                                // uint32_t maxSets;
             DE_LENGTH_OF_ARRAY(descriptorTypes),               // uint32_t count;
@@ -753,7 +1047,7 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance(Context &cont
 
         const VkDescriptorSetAllocateInfo descriptorSetParams = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            DE_NULL,
+            nullptr,
             *m_descriptorPool,
             1u,
             &m_descriptorSetLayout.get(),
@@ -765,42 +1059,42 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance(Context &cont
         const VkWriteDescriptorSet writeDescritporSets[] = {
             {
                 VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
-                DE_NULL,                                // const void* pNext;
+                nullptr,                                // const void* pNext;
                 *m_descriptorSet,                       // VkDescriptorSet destSet;
                 0,                                      // uint32_t destBinding;
                 0,                                      // uint32_t destArrayElement;
                 1u,                                     // uint32_t count;
                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,      // VkDescriptorType descriptorType;
-                (const VkDescriptorImageInfo *)DE_NULL,
+                nullptr,
                 &outBufferInfo,
-                (const VkBufferView *)DE_NULL,
+                nullptr,
             },
             {
                 VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
-                DE_NULL,                                // const void* pNext;
+                nullptr,                                // const void* pNext;
                 *m_descriptorSet,                       // VkDescriptorSet destSet;
                 1,                                      // uint32_t destBinding;
                 0,                                      // uint32_t destArrayElement;
                 1u,                                     // uint32_t count;
                 testCase.descType,                      // VkDescriptorType descriptorType;
-                (const VkDescriptorImageInfo *)DE_NULL,
-                (const VkDescriptorBufferInfo *)DE_NULL,
+                nullptr,
+                nullptr,
                 &m_uniformBufferView.get(),
             }};
 
-        vk.updateDescriptorSets(vkDevice, DE_LENGTH_OF_ARRAY(writeDescritporSets), writeDescritporSets, 0u, DE_NULL);
+        vk.updateDescriptorSets(vkDevice, DE_LENGTH_OF_ARRAY(writeDescritporSets), writeDescritporSets, 0u, nullptr);
     }
 
     // Create pipeline layout
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             (VkPipelineLayoutCreateFlags)0,
             1u,                      // uint32_t descriptorSetCount;
             &*m_descriptorSetLayout, // const VkDescriptorSetLayout* pSetLayouts;
             0u,                      // uint32_t pushConstantRangeCount;
-            DE_NULL                  // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                  // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
@@ -831,7 +1125,7 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance(Context &cont
 
         const vk::VkBufferMemoryBarrier barrier = {
             vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-            DE_NULL,
+            nullptr,
             vk::VK_ACCESS_HOST_WRITE_BIT,   // srcAccessMask
             vk::VK_ACCESS_UNIFORM_READ_BIT, // dstAccessMask
             VK_QUEUE_FAMILY_IGNORED,        // srcQueueFamilyIndex
@@ -842,7 +1136,7 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance(Context &cont
         };
         const vk::VkBufferMemoryBarrier bufferBarrier = {
             vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-            DE_NULL,
+            nullptr,
             vk::VK_ACCESS_SHADER_WRITE_BIT, // srcAccessMask
             vk::VK_ACCESS_HOST_READ_BIT,    // dstAccessMask
             VK_QUEUE_FAMILY_IGNORED,        // srcQueueFamilyIndex
@@ -857,7 +1151,7 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance(Context &cont
         //vk.cmdDispatch(*m_cmdBuffer, 1u, 1u, 1u);
         vk.cmdDispatch(*m_cmdBuffer, 4u, 1u, 1u);
         vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                              nullptr, 0u, &bufferBarrier, 0u, nullptr);
+                              nullptr, 1u, &bufferBarrier, 0u, nullptr);
         endCommandBuffer(vk, *m_cmdBuffer);
     }
 }
@@ -1122,6 +1416,8 @@ tcu::TestCaseGroup *createBufferViewAccessTests(tcu::TestContext &testCtx)
 
     const char *const imageTexts[ALLOCATION_KIND_LAST] = {"image_suballocated", "image_dedicated_alloc"};
 
+    const char *const queueTexts[2] = {"graphics", "compute"};
+
     de::MovePtr<tcu::TestCaseGroup> bufferViewTests(new tcu::TestCaseGroup(testCtx, "access"));
     de::MovePtr<tcu::TestCaseGroup> bufferViewAllocationGroupTests[] = {
         // BufferView Access Tests for Suballocated Objects
@@ -1131,48 +1427,55 @@ tcu::TestCaseGroup *createBufferViewAccessTests(tcu::TestContext &testCtx)
 
     for (uint32_t buffersAllocationNdx = 0u; buffersAllocationNdx < ALLOCATION_KIND_LAST; ++buffersAllocationNdx)
         for (uint32_t imageAllocationNdx = 0u; imageAllocationNdx < ALLOCATION_KIND_LAST; ++imageAllocationNdx)
-        {
-            const uint32_t testCaseGroupNdx = (buffersAllocationNdx == 0u && imageAllocationNdx == 0u) ? 0u : 1u;
-            de::MovePtr<tcu::TestCaseGroup> &currentTestsGroup = bufferViewAllocationGroupTests[testCaseGroupNdx];
+            for (uint32_t queueTypeNdx = 0u; queueTypeNdx < 2; ++queueTypeNdx)
             {
-                const BufferViewCaseParams info = {512, // uint32_t                    bufferSize
-                                                   512, // uint32_t                    bufferViewSize
-                                                   0,   // uint32_t                    elementOffset
-                                                   static_cast<AllocationKind>(buffersAllocationNdx),
-                                                   static_cast<AllocationKind>(imageAllocationNdx)};
-                std::ostringstream name;
-                name << "buffer_view_memory_test_complete";
-                if (testCaseGroupNdx != 0)
-                    name << "_with_" << bufferTexts[buffersAllocationNdx] << "_" << imageTexts[imageAllocationNdx];
-                currentTestsGroup->addChild(new BufferViewTestCase(testCtx, name.str(), info));
-            }
+                const uint32_t testCaseGroupNdx = (buffersAllocationNdx == 0u && imageAllocationNdx == 0u) ? 0u : 1u;
+                de::MovePtr<tcu::TestCaseGroup> &currentTestsGroup = bufferViewAllocationGroupTests[testCaseGroupNdx];
+                {
+                    const BufferViewCaseParams info = {512, // uint32_t                    bufferSize
+                                                       512, // uint32_t                    bufferViewSize
+                                                       0,   // uint32_t                    elementOffset
+                                                       static_cast<AllocationKind>(buffersAllocationNdx),
+                                                       static_cast<AllocationKind>(imageAllocationNdx),
+                                                       static_cast<bool>(queueTypeNdx)};
+                    std::ostringstream name;
+                    name << "buffer_view_memory_test_complete";
+                    if (testCaseGroupNdx != 0)
+                        name << "_with_" << bufferTexts[buffersAllocationNdx] << "_" << imageTexts[imageAllocationNdx];
+                    name << "_" << queueTexts[queueTypeNdx];
+                    currentTestsGroup->addChild(new BufferViewTestCase(testCtx, name.str(), info));
+                }
 
-            {
-                const BufferViewCaseParams info = {4096, // uint32_t                    bufferSize
-                                                   512,  // uint32_t                    bufferViewSize
-                                                   0,    // uint32_t                    elementOffset
-                                                   static_cast<AllocationKind>(buffersAllocationNdx),
-                                                   static_cast<AllocationKind>(imageAllocationNdx)};
-                std::ostringstream name;
-                name << "buffer_view_memory_test_partial_offset0";
-                if (testCaseGroupNdx != 0)
-                    name << "_with_" << bufferTexts[buffersAllocationNdx] << "_" << imageTexts[imageAllocationNdx];
-                currentTestsGroup->addChild(new BufferViewTestCase(testCtx, name.str(), info));
-            }
+                {
+                    const BufferViewCaseParams info = {4096, // uint32_t                    bufferSize
+                                                       512,  // uint32_t                    bufferViewSize
+                                                       0,    // uint32_t                    elementOffset
+                                                       static_cast<AllocationKind>(buffersAllocationNdx),
+                                                       static_cast<AllocationKind>(imageAllocationNdx),
+                                                       static_cast<bool>(queueTypeNdx)};
+                    std::ostringstream name;
+                    name << "buffer_view_memory_test_partial_offset0";
+                    if (testCaseGroupNdx != 0)
+                        name << "_with_" << bufferTexts[buffersAllocationNdx] << "_" << imageTexts[imageAllocationNdx];
+                    name << "_" << queueTexts[queueTypeNdx];
+                    currentTestsGroup->addChild(new BufferViewTestCase(testCtx, name.str(), info));
+                }
 
-            {
-                const BufferViewCaseParams info = {4096, // uint32_t                    bufferSize
-                                                   512,  // uint32_t                    bufferViewSize
-                                                   128,  // uint32_t                    elementOffset
-                                                   static_cast<AllocationKind>(buffersAllocationNdx),
-                                                   static_cast<AllocationKind>(imageAllocationNdx)};
-                std::ostringstream name;
-                name << "buffer_view_memory_test_partial_offset1";
-                if (testCaseGroupNdx != 0)
-                    name << "_with_" << bufferTexts[buffersAllocationNdx] << "_" << imageTexts[imageAllocationNdx];
-                currentTestsGroup->addChild(new BufferViewTestCase(testCtx, name.str(), info));
+                {
+                    const BufferViewCaseParams info = {4096, // uint32_t                    bufferSize
+                                                       512,  // uint32_t                    bufferViewSize
+                                                       128,  // uint32_t                    elementOffset
+                                                       static_cast<AllocationKind>(buffersAllocationNdx),
+                                                       static_cast<AllocationKind>(imageAllocationNdx),
+                                                       static_cast<bool>(queueTypeNdx)};
+                    std::ostringstream name;
+                    name << "buffer_view_memory_test_partial_offset1";
+                    if (testCaseGroupNdx != 0)
+                        name << "_with_" << bufferTexts[buffersAllocationNdx] << "_" << imageTexts[imageAllocationNdx];
+                    name << "_" << queueTexts[queueTypeNdx];
+                    currentTestsGroup->addChild(new BufferViewTestCase(testCtx, name.str(), info));
+                }
             }
-        }
 
     for (uint32_t subgroupNdx = 0u; subgroupNdx < DE_LENGTH_OF_ARRAY(bufferViewAllocationGroupTests); ++subgroupNdx)
     {
@@ -1317,7 +1620,7 @@ tcu::TestCaseGroup *createBufferViewAccessTests(tcu::TestContext &testCtx)
                     0,                             // uint32_t                    elementOffset
                     ALLOCATION_KIND_SUBALLOCATION, // AllocationKind            bufferAllocationKind
                     ALLOCATION_KIND_SUBALLOCATION, // AllocationKind            imageAllocationKind
-
+                    false,
                     testFormats[formatIdx], // VkFormat                    format
                     createUsage[usageNdx],  // VkBufferUsageFlags        createUsage
                     bindUsage[usageNdx],    // VkBufferUsageFlags        bindUsage
@@ -1369,7 +1672,7 @@ tcu::TestCaseGroup *createBufferViewAccessTests(tcu::TestContext &testCtx)
                     0,                             // uint32_t                    elementOffset
                     ALLOCATION_KIND_SUBALLOCATION, // AllocationKind            bufferAllocationKind
                     ALLOCATION_KIND_SUBALLOCATION, // AllocationKind            imageAllocationKind
-
+                    false,
                     testFormats[formatIdx], // VkFormat                    format
                     createUsage,            // VkBufferUsageFlags        createUsage
                     bindUsage[usageNdx],    // VkBufferUsageFlags        bindUsage

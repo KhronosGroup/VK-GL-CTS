@@ -157,7 +157,7 @@ TextureWrapCase::TextureWrapCase(tcu::TestContext &testCtx, glu::RenderContext &
     , m_width(width)
     , m_height(height)
     , m_caseNdx(0)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_MEDIUMP)
     , m_enableRelaxedRef(enableRelaxedRef)
 {
@@ -181,7 +181,7 @@ TextureWrapCase::TextureWrapCase(tcu::TestContext &testCtx, glu::RenderContext &
     , m_height(0)
     , m_filenames(filenames)
     , m_caseNdx(0)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_MEDIUMP)
     , m_enableRelaxedRef(enableRelaxedRef)
 {
@@ -204,7 +204,7 @@ TextureWrapCase::TextureWrapCase(tcu::TestContext &testCtx, glu::RenderContext &
     , m_width(width)
     , m_height(height)
     , m_caseNdx(0)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_MEDIUMP)
     , m_enableRelaxedRef(enableRelaxedRef)
 {
@@ -338,7 +338,7 @@ void TextureWrapCase::init(void)
 void TextureWrapCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }

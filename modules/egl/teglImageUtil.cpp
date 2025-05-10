@@ -117,8 +117,8 @@ MovePtr<ManagedSurface> createSurface(EglTestContext &eglTestCtx, EGLDisplay dpy
             selectNativeWindowFactory(displayFactory, eglTestCtx.getTestContext().getCommandLine());
 
         MovePtr<NativeWindow> window(windowFactory.createWindow(
-            &nativeDisplay, dpy, config, DE_NULL, WindowParams(width, height, WindowParams::VISIBILITY_DONT_CARE)));
-        const EGLSurface surface = eglu::createWindowSurface(nativeDisplay, *window, dpy, config, DE_NULL);
+            &nativeDisplay, dpy, config, nullptr, WindowParams(width, height, WindowParams::VISIBILITY_DONT_CARE)));
+        const EGLSurface surface = eglu::createWindowSurface(nativeDisplay, *window, dpy, config, nullptr);
 
         return MovePtr<ManagedSurface>(
             new NativeWindowSurface(MovePtr<UniqueSurface>(new UniqueSurface(egl, dpy, surface)), window));
@@ -128,9 +128,9 @@ MovePtr<ManagedSurface> createSurface(EglTestContext &eglTestCtx, EGLDisplay dpy
         const NativePixmapFactory &pixmapFactory =
             selectNativePixmapFactory(displayFactory, eglTestCtx.getTestContext().getCommandLine());
 
-        MovePtr<NativePixmap> pixmap(pixmapFactory.createPixmap(&nativeDisplay, dpy, config, DE_NULL, width, height));
+        MovePtr<NativePixmap> pixmap(pixmapFactory.createPixmap(&nativeDisplay, dpy, config, nullptr, width, height));
         const EGLSurface surface =
-            eglu::createPixmapSurface(eglTestCtx.getNativeDisplay(), *pixmap, dpy, config, DE_NULL);
+            eglu::createPixmapSurface(eglTestCtx.getNativeDisplay(), *pixmap, dpy, config, nullptr);
 
         return MovePtr<ManagedSurface>(
             new NativePixmapSurface(MovePtr<UniqueSurface>(new UniqueSurface(egl, dpy, surface)), pixmap));
@@ -271,7 +271,7 @@ MovePtr<ClientBuffer> TextureImageSource::createBuffer(const eglw::Library &egl,
         GLU_CHECK_GLW_CALL(gl, texParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
     }
 
-    if (ref != DE_NULL)
+    if (ref != nullptr)
     {
         GLenum imgTarget = eglu::getImageGLTarget(getSource());
 
@@ -320,7 +320,7 @@ void Texture2DImageSource::initTexture(const glw::Functions &gl) const
 {
     // Specify mipmap level 0
     GLU_CHECK_CALL_ERROR(
-        gl.texImage2D(GL_TEXTURE_2D, 0, m_internalFormat, IMAGE_WIDTH, IMAGE_HEIGHT, 0, m_format, m_type, DE_NULL),
+        gl.texImage2D(GL_TEXTURE_2D, 0, m_internalFormat, IMAGE_WIDTH, IMAGE_HEIGHT, 0, m_format, m_type, nullptr),
         gl.getError());
 }
 
@@ -360,7 +360,7 @@ void TextureCubeMapImageSource::initTexture(const glw::Functions &gl) const
 
     for (int faceNdx = 0; faceNdx < DE_LENGTH_OF_ARRAY(faces); faceNdx++)
         GLU_CHECK_GLW_CALL(gl, texImage2D(faces[faceNdx], 0, m_internalFormat, IMAGE_WIDTH, IMAGE_HEIGHT, 0, m_format,
-                                          m_type, DE_NULL));
+                                          m_type, nullptr));
 }
 
 class RenderbufferClientBuffer : public GLClientBuffer
@@ -534,7 +534,7 @@ MovePtr<ClientBuffer> RenderbufferImageSource::createBuffer(const eglw::Library 
     // Specify storage.
     GLU_CHECK_CALL_ERROR(gl.renderbufferStorage(GL_RENDERBUFFER, m_format, 64, 64), gl.getError());
 
-    if (ref != DE_NULL)
+    if (ref != nullptr)
     {
         Framebuffer fbo(gl);
         const TextureFormat texFormat = glu::mapGLInternalFormat(m_format);

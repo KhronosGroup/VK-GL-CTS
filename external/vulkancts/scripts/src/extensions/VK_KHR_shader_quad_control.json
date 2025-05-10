@@ -1,21 +1,18 @@
 {
-    "register_extension":
-        {
-            "type": "device",
-            "core": ""
-        },
-    "mandatory_features":
-        {
-            "VkPhysicalDeviceShaderQuadControlFeaturesKHR":
-                [
-                    {
-                        "features": [
-                            "shaderQuadControl"
-                        ],
-                        "requirements": [
-                            "VK_KHR_shader_quad_control"
-                        ]
-                    }
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceShaderQuadControlFeaturesKHR": [
+            {
+                "features": [
+                    "shaderQuadControl"
+                ],
+                "requirements": [
+                    "VK_KHR_shader_quad_control"
                 ]
-        }
+            }
+        ]
+    }
 }

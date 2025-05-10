@@ -132,7 +132,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, VkFormat 
 {
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0u,              // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         format,                              // VkFormat format;
@@ -145,7 +145,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, VkFormat 
             VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
     };
 
@@ -795,7 +795,7 @@ de::MovePtr<BufferWithMemory> CallableShaderTestInstance::runTest()
         new BufferWithMemory(vkd, device, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
 
     const VkDescriptorImageInfo descriptorImageInfo =
-        makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 
     const Move<VkCommandPool> cmdPool = createCommandPool(vkd, device, 0, queueFamilyIndex);
     const Move<VkCommandBuffer> cmdBuffer =
@@ -823,18 +823,21 @@ de::MovePtr<BufferWithMemory> CallableShaderTestInstance::runTest()
         cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                       VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, &postImageBarrier);
 
+        AccelerationStructBufferProperties bufferProps;
+        bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
         bottomLevelAccelerationStructures =
             m_data.testConfiguration->initBottomAccelerationStructures(m_context, m_data);
         for (auto &blas : bottomLevelAccelerationStructures)
-            blas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+            blas->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
         topLevelAccelerationStructure = m_data.testConfiguration->initTopAccelerationStructure(
             m_context, m_data, bottomLevelAccelerationStructures);
-        topLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator);
+        topLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
 
         const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = topLevelAccelerationStructure.get();
         VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-            DE_NULL,                                                           //  const void* pNext;
+            nullptr,                                                           //  const void* pNext;
             1u,                                                                //  uint32_t accelerationStructureCount;
             topLevelAccelerationStructurePtr->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
         };
@@ -847,7 +850,7 @@ de::MovePtr<BufferWithMemory> CallableShaderTestInstance::runTest()
             .update(vkd, device);
 
         vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                                  &descriptorSet.get(), 0, DE_NULL);
+                                  &descriptorSet.get(), 0, nullptr);
 
         vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 
@@ -1061,7 +1064,7 @@ bool verifyResultData(const tcu::Vec4 *resultData, uint32_t index, bool hit, con
             }
         }
 
-        if (resultData->w() != 2.0f)
+        if (!compareFloat(resultData->w(), 2.0f))
         {
             success = false;
         }
@@ -1107,7 +1110,7 @@ bool verifyResultData(const tcu::Vec4 *resultData, uint32_t index, bool hit, con
             }
         }
 
-        if (resultData->w() != MAX_T_VALUE)
+        if (!compareFloat(resultData->w(), MAX_T_VALUE))
         {
             success = false;
         }
@@ -1601,7 +1604,7 @@ tcu::TestStatus InvokeCallableShaderTestInstance::iterate()
 
     const VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *descriptorPool,                                // VkDescriptorPool descriptorPool;
         1u,                                             // uint32_t setLayoutCount;
         &descriptorSetLayout.get()                      // const VkDescriptorSetLayout* pSetLayouts;
@@ -1611,7 +1614,7 @@ tcu::TestStatus InvokeCallableShaderTestInstance::iterate()
 
     const VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                       // const void* pNext;
+        nullptr,                                       // const void* pNext;
         (VkPipelineLayoutCreateFlags)0,                // VkPipelineLayoutCreateFlags flags;
         1u,                                            // uint32_t setLayoutCount;
         &descriptorSetLayout.get(),                    // const VkDescriptorSetLayout* pSetLayouts;
@@ -1732,8 +1735,9 @@ tcu::TestStatus InvokeCallableShaderTestInstance::iterate()
     VkStridedDeviceAddressRegionKHR hitShaderBindingTableRegion =
         makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, hitShaderBindingTable->get(), 0),
                                           shaderGroupHandleSize, shaderGroupHandleSize);
-    VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(
-        getBufferDeviceAddress(vk, device, callableShaderBindingTable->get(), 0), shaderStride, shaderGroupHandleSize);
+    VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion =
+        makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, callableShaderBindingTable->get(), 0),
+                                          shaderStride, shaderStride * callableIds.size());
 
     size_t callableCount = 0;
 
@@ -1850,37 +1854,40 @@ tcu::TestStatus InvokeCallableShaderTestInstance::iterate()
 
     beginCommandBuffer(vk, *cmdBuffer);
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     de::SharedPtr<BottomLevelAccelerationStructure> blas0 =
         de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
     blas0->setGeometryCount(2);
     blas0->addGeometry(blas0VertsOpaque, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
     blas0->addGeometry(blas0VertsNoOpaque, true, 0U);
-    blas0->createAndBuild(vk, device, *cmdBuffer, allocator);
+    blas0->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
 
     de::SharedPtr<BottomLevelAccelerationStructure> blas1 =
         de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
     blas1->setGeometryCount(2);
     blas1->addGeometry(blas1VertsOpaque, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
     blas1->addGeometry(blas1VertsNoOpaque, true, 0U);
-    blas1->createAndBuild(vk, device, *cmdBuffer, allocator);
+    blas1->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
 
     de::SharedPtr<BottomLevelAccelerationStructure> blas2 =
         de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
     blas2->setGeometryCount(2);
     blas2->addGeometry(blas2VertsOpaque, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
     blas2->addGeometry(blas2VertsNoOpaque, true, 0U);
-    blas2->createAndBuild(vk, device, *cmdBuffer, allocator);
+    blas2->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
 
     de::MovePtr<TopLevelAccelerationStructure> tlas = makeTopLevelAccelerationStructure();
     tlas->setInstanceCount(3);
     tlas->addInstance(blas0);
     tlas->addInstance(blas1);
     tlas->addInstance(blas2);
-    tlas->createAndBuild(vk, device, *cmdBuffer, allocator);
+    tlas->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
 
     VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-        DE_NULL,                                                           //  const void* pNext;
+        nullptr,                                                           //  const void* pNext;
         1u,                                                                //  uint32_t accelerationStructureCount;
         tlas->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
     };
@@ -1896,7 +1903,7 @@ tcu::TestStatus InvokeCallableShaderTestInstance::iterate()
 
     vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                             &descriptorSet[0].get(), 0, DE_NULL);
+                             &descriptorSet[0].get(), 0, nullptr);
 
     cmdTraceRays(vk, *cmdBuffer, &raygenShaderBindingTableRegion, &missShaderBindingTableRegion,
                  &hitShaderBindingTableRegion, &callableShaderBindingTableRegion, static_cast<uint32_t>(rays.size()), 1,

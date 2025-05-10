@@ -5,6 +5,7 @@
 cmake_minimum_required(VERSION 3.20.0)
 
 option(GLES_ALLOW_DIRECT_LINK "Allow direct linking to GLES libraries" OFF)
+option(DEQP_ANDROID_EXE "Build dEQP modules as executables rather than a library on Android" OFF)
 
 # Target selection:
 # SELECTED_BUILD_TARGETS is a CMake option that can be set to a list of targets
@@ -149,6 +150,10 @@ include_directories(external/renderdoc/src)
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
    # Some of the parsing / codec code is used from here.
    add_subdirectory(external/nvidia-video-samples EXCLUDE_FROM_ALL)
+   # Video encoder library
+   add_subdirectory(external/vulkan-video-samples EXCLUDE_FROM_ALL)
+   # YUV Video generator library
+   add_subdirectory(external/video_generator EXCLUDE_FROM_ALL)
 endif()
 
 include_directories(${PNG_INCLUDE_PATH})
@@ -202,6 +207,22 @@ endif ()
 
 if (DEFINED DEQP_EGL_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_EGL_DIRECT_LINK=1)
+endif ()
+
+# Android build variants
+if (DE_OS_IS_ANDROID)
+	if (DEQP_ANDROID_EXE)
+		message(STATUS "DEQP_ANDROID_BUILD      = EXE")
+		set(DEQP_ANDROID_APP OFF)
+	else ()
+		message(STATUS "DEQP_ANDROID_BUILD      = APP")
+		set(DEQP_ANDROID_APP ON)
+
+		add_definitions(-DDEQP_IS_ANDROID_APP=1)
+	endif ()
+else ()
+	set(DEQP_ANDROID_EXE OFF)
+	set(DEQP_ANDROID_APP OFF)
 endif ()
 
 # Legacy APIs that don't support run-time loading
@@ -275,7 +296,7 @@ include_directories(
 	external/vulkancts/framework/vulkan
 	)
 
-if (DE_OS_IS_ANDROID OR DE_OS_IS_IOS)
+if (DEQP_ANDROID_APP OR DE_OS_IS_IOS)
 	# On Android deqp modules are compiled as libraries and linked into final .so
 	set(DEQP_MODULE_LIBRARIES )
 	set(DEQP_MODULE_ENTRY_POINTS )
@@ -319,7 +340,7 @@ macro (add_deqp_module MODULE_NAME SRCS LIBS EXECLIBS ENTRY)
 	set(DEQP_MODULE_LIBRARIES		${DEQP_MODULE_LIBRARIES} PARENT_SCOPE)
 	set(DEQP_MODULE_ENTRY_POINTS	${DEQP_MODULE_ENTRY_POINTS} PARENT_SCOPE)
 
-	if (NOT DE_OS_IS_ANDROID AND NOT DE_OS_IS_IOS)
+	if (NOT DEQP_ANDROID_APP AND NOT DE_OS_IS_IOS)
 		# Executable target
 		add_executable(${MODULE_NAME} ${PROJECT_SOURCE_DIR}/framework/platform/tcuMain.cpp ${ENTRY})
 		target_link_libraries(${MODULE_NAME} PUBLIC "${EXECLIBS}" "${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}")
@@ -341,7 +362,7 @@ macro (add_deqp_module_skip_android MODULE_NAME SRCS LIBS EXECLIBS ENTRY)
 	add_library("${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}" STATIC ${SRCS})
 	target_link_libraries("${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}" ${LIBS})
 
-	if (NOT DE_OS_IS_ANDROID AND NOT DE_OS_IS_IOS)
+	if (NOT DEQP_ANDROID_APP AND NOT DE_OS_IS_IOS)
 		# Executable target
 		add_executable(${MODULE_NAME} ${PROJECT_SOURCE_DIR}/framework/platform/tcuMain.cpp ${ENTRY})
 		target_link_libraries(${MODULE_NAME} PUBLIC "${EXECLIBS}" "${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}")
@@ -355,10 +376,10 @@ endmacro (add_deqp_module_skip_android)
 
 # Macro for adding data dirs to module
 macro (add_data_dir MODULE_NAME SRC_DIR DST_DIR)
-	if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX OR DE_OS_IS_QNX)
+	if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX OR DE_OS_IS_QNX OR DEQP_ANDROID_EXE)
 		add_custom_command(TARGET "${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}" POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/${DST_DIR})
 
-	elseif (DE_OS_IS_ANDROID)
+	elseif (DEQP_ANDROID_APP)
 		add_custom_command(TARGET "${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}" POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR} ${CMAKE_BINARY_DIR}/assets/${DST_DIR})
 
 	elseif (DE_OS_IS_IOS)
@@ -368,10 +389,10 @@ endmacro (add_data_dir)
 
 # Macro for adding individual data files to module
 macro (add_data_file MODULE_NAME SRC_FILE DST_FILE)
-	if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX OR DE_OS_IS_QNX)
+	if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX OR DE_OS_IS_QNX OR DEQP_ANDROID_EXE)
 		add_custom_command(TARGET "${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}" POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${DST_FILE})
 
-	elseif (DE_OS_IS_ANDROID)
+	elseif (DEQP_ANDROID_APP)
 		add_custom_command(TARGET "${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}" POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE} ${CMAKE_BINARY_DIR}/assets/${DST_FILE})
 
 	elseif (DE_OS_IS_IOS)
@@ -386,6 +407,11 @@ if (DE_COMPILER_IS_MSC)
 	add_compile_options(/bigobj) # Required by glsBuiltinPrecisionTests.cpp
 endif ()
 
+if (DE_COMPILER_IS_GCC)
+	# Should reduce memory usage by the GCC linker, which sometimes gets killed with -9
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-keep-memory")
+endif ()
+
 add_subdirectory(modules ${MAYBE_EXCLUDE_FROM_ALL})
 add_subdirectory(external/vulkancts/modules/vulkan ${MAYBE_EXCLUDE_FROM_ALL})
 add_subdirectory(external/vulkancts/vkscserver ${MAYBE_EXCLUDE_FROM_ALL})
@@ -393,7 +419,7 @@ add_subdirectory(external/vulkancts/vkscpc ${MAYBE_EXCLUDE_FROM_ALL})
 add_subdirectory(external/openglcts ${MAYBE_EXCLUDE_FROM_ALL})
 
 # Single-binary targets
-if (DE_OS_IS_ANDROID)
+if (DEQP_ANDROID_APP)
 	include_directories(executor)
 	include_directories(${PROJECT_BINARY_DIR}/external/vulkancts/framework/vulkan)
 

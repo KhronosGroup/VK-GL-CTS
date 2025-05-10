@@ -2547,7 +2547,7 @@ void ClearTest::PrepareFramebuffer(glw::GLenum buffer, glw::GLenum internalforma
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
     /* Check that ther is no other fbo. */
-    if ((0 != m_fbo) || (DE_NULL != m_renderbuffers))
+    if ((0 != m_fbo) || (nullptr != m_renderbuffers))
     {
         throw 0;
     }
@@ -2643,7 +2643,7 @@ void ClearTest::Clean()
         m_fbo = 0;
     }
 
-    if (DE_NULL != m_renderbuffers)
+    if (nullptr != m_renderbuffers)
     {
         if (m_renderbuffers_count)
         {
@@ -2652,7 +2652,7 @@ void ClearTest::Clean()
 
         delete[] m_renderbuffers;
 
-        m_renderbuffers       = DE_NULL;
+        m_renderbuffers       = nullptr;
         m_renderbuffers_count = 0;
     }
 
@@ -5432,7 +5432,7 @@ DrawReadBuffersErrorsTest::DrawReadBuffersErrorsTest(deqp::Context &context)
 
     m_attachments_too_many_count = 0;
 
-    m_attachments_too_many = DE_NULL;
+    m_attachments_too_many = nullptr;
 }
 
 /** @brief Iterate Draw Read Buffers Errors Test cases.
@@ -5789,7 +5789,7 @@ void DrawReadBuffersErrorsTest::Clean()
 
     delete[] m_attachments_too_many;
 
-    m_attachments_too_many = DE_NULL;
+    m_attachments_too_many = nullptr;
 
     m_attachments_too_many_count = 0;
 
@@ -7380,7 +7380,7 @@ void FunctionalTest::PrepareProgram()
         /* Shader compilation. */
         for (glw::GLuint i = 0; i < shader_count; ++i)
         {
-            if (DE_NULL != shader[i].source)
+            if (nullptr != shader[i].source)
             {
                 shader[i].id = gl.createShader(shader[i].type);
 

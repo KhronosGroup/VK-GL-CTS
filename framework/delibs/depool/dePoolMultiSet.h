@@ -73,12 +73,12 @@ DE_END_EXTERN_C
     void TYPENAME##_reset(DE_PTR_TYPE(TYPENAME) set);                                  \
     bool TYPENAME##_setKeyCount(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key, int newCount); \
                                                                                        \
-    DE_INLINE int TYPENAME##_getNumElements(const TYPENAME *set)                       \
+    static inline int TYPENAME##_getNumElements(const TYPENAME *set)                   \
     {                                                                                  \
         return set->numElements;                                                       \
     }                                                                                  \
                                                                                        \
-    DE_INLINE int TYPENAME##_getKeyCount(const TYPENAME *set, KEYTYPE key)             \
+    static inline int TYPENAME##_getKeyCount(const TYPENAME *set, KEYTYPE key)         \
     {                                                                                  \
         int *countPtr = TYPENAME##Hash_find(set->hash, key);                           \
         int count     = countPtr ? *countPtr : 0;                                      \
@@ -86,18 +86,18 @@ DE_END_EXTERN_C
         return count;                                                                  \
     }                                                                                  \
                                                                                        \
-    DE_INLINE bool TYPENAME##_exists(const TYPENAME *set, KEYTYPE key)                 \
+    static inline bool TYPENAME##_exists(const TYPENAME *set, KEYTYPE key)             \
     {                                                                                  \
         return (TYPENAME##_getKeyCount(set, key) > 0);                                 \
     }                                                                                  \
                                                                                        \
-    DE_INLINE bool TYPENAME##_insert(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key)           \
+    static inline bool TYPENAME##_insert(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key)       \
     {                                                                                  \
         int oldCount = TYPENAME##_getKeyCount(set, key);                               \
         return TYPENAME##_setKeyCount(set, key, oldCount + 1);                         \
     }                                                                                  \
                                                                                        \
-    DE_INLINE void TYPENAME##_delete(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key)           \
+    static inline void TYPENAME##_delete(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key)       \
     {                                                                                  \
         int oldCount = TYPENAME##_getKeyCount(set, key);                               \
         DE_ASSERT(oldCount > 0);                                                       \
@@ -130,7 +130,7 @@ DE_END_EXTERN_C
         /* Alloc struct. */                                                           \
         DE_PTR_TYPE(TYPENAME) set = DE_POOL_NEW(pool, TYPENAME);                      \
         if (!set)                                                                     \
-            return DE_NULL;                                                           \
+            return NULL;                                                              \
                                                                                       \
         /* Init. */                                                                   \
         memset(set, 0, sizeof(TYPENAME));                                             \

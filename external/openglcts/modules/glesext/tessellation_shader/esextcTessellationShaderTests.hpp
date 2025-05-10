@@ -46,6 +46,8 @@ private:
     /* Private methods */
     TessellationShaderTests(const TessellationShaderTests &other);
     TessellationShaderTests &operator=(const TessellationShaderTests &other);
+
+    void addTessellationShaderVertexSpacingTest(TestCaseGroupBase *vertexGroup);
 };
 
 } // namespace glcts

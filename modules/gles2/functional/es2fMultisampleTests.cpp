@@ -227,7 +227,7 @@ MultisampleCase::MultisampleCase(Context &context, const char *name, const char 
     : TestCase(context, name, desc)
     , m_numSamples(0)
     , m_viewportSize(0)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_attrPositionLoc(-1)
     , m_attrColorLoc(-1)
     , m_viewportX(0)
@@ -341,7 +341,7 @@ void MultisampleCase::init(void)
     m_program = new glu::ShaderProgram(m_context.getRenderContext(),
                                        glu::makeVtxFragSources(vertShaderSource, fragShaderSource));
     if (!m_program->isOk())
-        throw tcu::TestError("Failed to compile program", DE_NULL, __FILE__, __LINE__);
+        throw tcu::TestError("Failed to compile program", nullptr, __FILE__, __LINE__);
 
     GLU_CHECK_CALL(m_attrPositionLoc = glGetAttribLocation(m_program->getProgram(), "a_position"));
     GLU_CHECK_CALL(m_attrColorLoc = glGetAttribLocation(m_program->getProgram(), "a_color"));
@@ -349,7 +349,7 @@ void MultisampleCase::init(void)
     if (m_attrPositionLoc < 0 || m_attrColorLoc < 0)
     {
         delete m_program;
-        throw tcu::TestError("Invalid attribute locations", DE_NULL, __FILE__, __LINE__);
+        throw tcu::TestError("Invalid attribute locations", nullptr, __FILE__, __LINE__);
     }
 
     // Get suitable viewport size.
@@ -373,7 +373,7 @@ void MultisampleCase::deinit(void)
 {
     delete m_program;
 
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 /*--------------------------------------------------------------------*//*!

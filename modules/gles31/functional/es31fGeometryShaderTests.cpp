@@ -1930,11 +1930,11 @@ void InstancedExpansionShader::shadePrimitives(rr::GeometryEmitter &output, int 
         const tcu::Vec4 centerPosition =
             basePosition + tcu::Vec4(deFloatCos(phase), deFloatSin(phase), 0.0f, 0.0f) * 0.1f;
 
-        output.EmitVertex(centerPosition + tcu::Vec4(0.0f, -0.1f, 0.0f, 0.0f), 0.0f, DE_NULL,
+        output.EmitVertex(centerPosition + tcu::Vec4(0.0f, -0.1f, 0.0f, 0.0f), 0.0f, nullptr,
                           packets[packetNdx].primitiveIDIn);
-        output.EmitVertex(centerPosition + tcu::Vec4(-0.05f, 0.0f, 0.0f, 0.0f), 0.0f, DE_NULL,
+        output.EmitVertex(centerPosition + tcu::Vec4(-0.05f, 0.0f, 0.0f, 0.0f), 0.0f, nullptr,
                           packets[packetNdx].primitiveIDIn);
-        output.EmitVertex(centerPosition + tcu::Vec4(0.05f, 0.0f, 0.0f, 0.0f), 0.0f, DE_NULL,
+        output.EmitVertex(centerPosition + tcu::Vec4(0.05f, 0.0f, 0.0f, 0.0f), 0.0f, nullptr,
                           packets[packetNdx].primitiveIDIn);
         output.EndPrimitive();
     }
@@ -2064,11 +2064,11 @@ GeometryShaderRenderTest::GeometryShaderRenderTest(Context &context, const char 
     , m_flags(flags)
     , m_viewportSize(TEST_CANVAS_SIZE, TEST_CANVAS_SIZE)
     , m_interationCount(0)
-    , m_glResult(DE_NULL)
-    , m_refResult(DE_NULL)
-    , m_refBuffers(DE_NULL)
-    , m_refContext(DE_NULL)
-    , m_glContext(DE_NULL)
+    , m_glResult(nullptr)
+    , m_refResult(nullptr)
+    , m_refBuffers(nullptr)
+    , m_refContext(nullptr)
+    , m_glContext(nullptr)
 {
     // Disallow instanced drawElements
     DE_ASSERT(((m_flags & FLAG_DRAW_INSTANCED) == 0) || ((m_flags & FLAG_USE_INDICES) == 0));
@@ -2110,16 +2110,16 @@ void GeometryShaderRenderTest::deinit(void)
     delete m_glResult;
     delete m_refResult;
 
-    m_glResult  = DE_NULL;
-    m_refResult = DE_NULL;
+    m_glResult  = nullptr;
+    m_refResult = nullptr;
 
     delete m_refContext;
     delete m_glContext;
     delete m_refBuffers;
 
-    m_refBuffers = DE_NULL;
-    m_refContext = DE_NULL;
-    m_glContext  = DE_NULL;
+    m_refBuffers = nullptr;
+    m_refContext = nullptr;
+    m_glContext  = nullptr;
 }
 
 tcu::TestCase::IterateResult GeometryShaderRenderTest::iterate(void)
@@ -2267,7 +2267,7 @@ void GeometryShaderRenderTest::genVertexAttribData(void)
 void GeometryShaderRenderTest::renderWithContext(sglr::Context &ctx, sglr::ShaderProgram &program,
                                                  tcu::Surface &dstSurface)
 {
-#define CHECK_GL_CTX_ERRORS() glu::checkError(ctx.getError(), DE_NULL, __FILE__, __LINE__)
+#define CHECK_GL_CTX_ERRORS() glu::checkError(ctx.getError(), nullptr, __FILE__, __LINE__)
 
     const GLuint programId = ctx.createProgram(&program);
     const GLint attrPosLoc = ctx.getAttribLocation(programId, "a_position");
@@ -2286,7 +2286,7 @@ void GeometryShaderRenderTest::renderWithContext(sglr::Context &ctx, sglr::Shade
         ctx.bindBuffer(GL_ARRAY_BUFFER, vertexPosBuf);
         ctx.bufferData(GL_ARRAY_BUFFER, m_vertexPosData.size() * sizeof(tcu::Vec4), &m_vertexPosData[0],
                        GL_STATIC_DRAW);
-        ctx.vertexAttribPointer(attrPosLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+        ctx.vertexAttribPointer(attrPosLoc, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
         ctx.enableVertexAttribArray(attrPosLoc);
     }
 
@@ -2296,7 +2296,7 @@ void GeometryShaderRenderTest::renderWithContext(sglr::Context &ctx, sglr::Shade
         ctx.bindBuffer(GL_ARRAY_BUFFER, vertexAttrBuf);
         ctx.bufferData(GL_ARRAY_BUFFER, m_vertexAttrData.size() * sizeof(tcu::Vec4), &m_vertexAttrData[0],
                        GL_STATIC_DRAW);
-        ctx.vertexAttribPointer(attrColLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+        ctx.vertexAttribPointer(attrColLoc, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
         ctx.enableVertexAttribArray(attrColLoc);
 
         if (m_vertexAttrDivisor)
@@ -2329,7 +2329,7 @@ void GeometryShaderRenderTest::renderWithContext(sglr::Context &ctx, sglr::Shade
     }
 
     if (m_flags & FLAG_USE_INDICES)
-        ctx.drawElements(m_inputPrimitives, m_numDrawVertices, GL_UNSIGNED_SHORT, DE_NULL);
+        ctx.drawElements(m_inputPrimitives, m_numDrawVertices, GL_UNSIGNED_SHORT, nullptr);
     else if (m_flags & FLAG_DRAW_INSTANCED)
         ctx.drawArraysInstanced(m_inputPrimitives, 0, m_numDrawVertices, m_numDrawInstances);
     else
@@ -2400,7 +2400,7 @@ private:
 GeometryExpanderRenderTest::GeometryExpanderRenderTest(Context &context, const char *name, const char *desc,
                                                        GLenum inputPrimitives, GLenum outputPrimitives)
     : GeometryShaderRenderTest(context, name, desc, inputPrimitives, outputPrimitives, "a_color")
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
 }
 
@@ -2422,7 +2422,7 @@ void GeometryExpanderRenderTest::deinit(void)
     if (m_program)
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
     }
 
     GeometryShaderRenderTest::deinit();
@@ -2457,7 +2457,7 @@ private:
 EmitTest::EmitTest(Context &context, const char *name, const char *desc, int emitCountA, int endCountA, int emitCountB,
                    int endCountB, GLenum outputType)
     : GeometryShaderRenderTest(context, name, desc, GL_POINTS, outputType, "a_color")
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_emitCountA(emitCountA)
     , m_endCountA(endCountA)
     , m_emitCountB(emitCountB)
@@ -2479,7 +2479,7 @@ void EmitTest::deinit(void)
     if (m_program)
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
     }
 
     GeometryShaderRenderTest::deinit();
@@ -2520,7 +2520,7 @@ private:
 
 VaryingTest::VaryingTest(Context &context, const char *name, const char *desc, int vertexOut, int geometryOut)
     : GeometryShaderRenderTest(context, name, desc, GL_TRIANGLES, GL_TRIANGLE_STRIP, "a_color")
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_vertexOut(vertexOut)
     , m_geometryOut(geometryOut)
 {
@@ -2538,7 +2538,7 @@ void VaryingTest::deinit(void)
     if (m_program)
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
     }
 
     GeometryShaderRenderTest::deinit();
@@ -2609,8 +2609,8 @@ private:
 NegativeDrawCase::NegativeDrawCase(Context &context, const char *name, const char *desc, GLenum inputType,
                                    GLenum inputPrimitives)
     : TestCase(context, name, desc)
-    , m_ctx(DE_NULL)
-    , m_program(DE_NULL)
+    , m_ctx(nullptr)
+    , m_program(nullptr)
     , m_inputType(inputType)
     , m_inputPrimitives(inputPrimitives)
 {
@@ -2639,7 +2639,7 @@ void NegativeDrawCase::deinit(void)
     delete m_program;
 
     m_ctx     = NULL;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 NegativeDrawCase::IterateResult NegativeDrawCase::iterate(void)
@@ -2658,7 +2658,7 @@ NegativeDrawCase::IterateResult NegativeDrawCase::iterate(void)
     m_ctx->genBuffers(1, &vertexPosBuf);
     m_ctx->bindBuffer(GL_ARRAY_BUFFER, vertexPosBuf);
     m_ctx->bufferData(GL_ARRAY_BUFFER, sizeof(tcu::Vec4), vertexPosData.m_data, GL_STATIC_DRAW);
-    m_ctx->vertexAttribPointer(attrPosLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    m_ctx->vertexAttribPointer(attrPosLoc, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     m_ctx->enableVertexAttribArray(attrPosLoc);
 
     m_ctx->clearColor(0, 0, 0, 1);
@@ -2716,7 +2716,7 @@ OutputCountCase::OutputCountCase(Context &context, const char *name, const char 
                                  const OutputCountPatternSpec &spec)
     : GeometryShaderRenderTest(context, name, desc, GL_POINTS, GL_TRIANGLE_STRIP, "a_color")
     , m_primitiveCount((int)spec.pattern.size())
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_spec(spec)
 {
 }
@@ -2790,7 +2790,7 @@ void OutputCountCase::deinit(void)
     if (m_program)
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
     }
 
     GeometryShaderRenderTest::deinit();
@@ -2836,7 +2836,7 @@ BuiltinVariableRenderTest::BuiltinVariableRenderTest(Context &context, const cha
                                                      BuiltinVariableShader::VariableTest test, int flags)
     : GeometryShaderRenderTest(context, name, desc, GL_POINTS, GL_POINTS,
                                BuiltinVariableShader::getTestAttributeName(test), flags)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_test(test)
 {
 }
@@ -2881,7 +2881,7 @@ void BuiltinVariableRenderTest::deinit(void)
     if (m_program)
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
     }
 
     GeometryShaderRenderTest::deinit();
@@ -3005,8 +3005,8 @@ LayeredRenderCase::LayeredRenderCase(Context &context, const char *name, const c
     , m_allLayersOk(true)
     , m_texture(0)
     , m_fbo(0)
-    , m_renderShader(DE_NULL)
-    , m_samplerShader(DE_NULL)
+    , m_renderShader(nullptr)
+    , m_samplerShader(nullptr)
     , m_samplerSamplerLoc(-1)
     , m_samplerLayerLoc(-1)
     , m_provokingVertex(0)
@@ -3088,8 +3088,8 @@ void LayeredRenderCase::deinit(void)
     delete m_renderShader;
     delete m_samplerShader;
 
-    m_renderShader  = DE_NULL;
-    m_samplerShader = DE_NULL;
+    m_renderShader  = nullptr;
+    m_samplerShader = nullptr;
 }
 
 LayeredRenderCase::IterateResult LayeredRenderCase::iterate(void)
@@ -3231,17 +3231,17 @@ void LayeredRenderCase::initTexture(void)
                            << texSize.y() << tcu::TestLog::EndMessage;
         gl.bindTexture(GL_TEXTURE_CUBE_MAP, m_texture);
         gl.texImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGBA8, texSize.x(), texSize.y(), 0, transferFormat.format,
-                      transferFormat.dataType, DE_NULL);
+                      transferFormat.dataType, nullptr);
         gl.texImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGBA8, texSize.x(), texSize.y(), 0, transferFormat.format,
-                      transferFormat.dataType, DE_NULL);
+                      transferFormat.dataType, nullptr);
         gl.texImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_RGBA8, texSize.x(), texSize.y(), 0, transferFormat.format,
-                      transferFormat.dataType, DE_NULL);
+                      transferFormat.dataType, nullptr);
         gl.texImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGBA8, texSize.x(), texSize.y(), 0, transferFormat.format,
-                      transferFormat.dataType, DE_NULL);
+                      transferFormat.dataType, nullptr);
         gl.texImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGBA8, texSize.x(), texSize.y(), 0, transferFormat.format,
-                      transferFormat.dataType, DE_NULL);
+                      transferFormat.dataType, nullptr);
         gl.texImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_RGBA8, texSize.x(), texSize.y(), 0, transferFormat.format,
-                      transferFormat.dataType, DE_NULL);
+                      transferFormat.dataType, nullptr);
         break;
 
     case TARGET_3D:
@@ -3249,7 +3249,7 @@ void LayeredRenderCase::initTexture(void)
                            << texSize.y() << "x" << texSize.z() << tcu::TestLog::EndMessage;
         gl.bindTexture(GL_TEXTURE_3D, m_texture);
         gl.texImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, texSize.x(), texSize.y(), texSize.z(), 0, transferFormat.format,
-                      transferFormat.dataType, DE_NULL);
+                      transferFormat.dataType, nullptr);
         break;
 
     case TARGET_1D_ARRAY:
@@ -3257,7 +3257,7 @@ void LayeredRenderCase::initTexture(void)
                            << ", layers = " << texSize.y() << tcu::TestLog::EndMessage;
         gl.bindTexture(GL_TEXTURE_1D_ARRAY, m_texture);
         gl.texImage2D(GL_TEXTURE_1D_ARRAY, 0, GL_RGBA8, texSize.x(), texSize.y(), 0, transferFormat.format,
-                      transferFormat.dataType, DE_NULL);
+                      transferFormat.dataType, nullptr);
         break;
 
     case TARGET_2D_ARRAY:
@@ -3265,7 +3265,7 @@ void LayeredRenderCase::initTexture(void)
                            << texSize.y() << ", layers = " << texSize.z() << tcu::TestLog::EndMessage;
         gl.bindTexture(GL_TEXTURE_2D_ARRAY, m_texture);
         gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, texSize.x(), texSize.y(), texSize.z(), 0, transferFormat.format,
-                      transferFormat.dataType, DE_NULL);
+                      transferFormat.dataType, nullptr);
         break;
 
     case TARGET_2D_MS_ARRAY:
@@ -3764,7 +3764,7 @@ void LayeredRenderCase::sampleTextureLayer(tcu::Surface &dst, int layer)
     GLU_EXPECT_NO_ERROR(gl.getError(), "buf");
 
     gl.bindVertexArray(*vao);
-    gl.vertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     gl.enableVertexAttribArray(positionLoc);
     GLU_EXPECT_NO_ERROR(gl.getError(), "setup attribs");
 
@@ -4101,7 +4101,7 @@ VaryingOutputCountCase::VaryingOutputCountCase(Context &context, const char *nam
                                                VaryingOutputCountShader::VaryingSource test, ShaderInstancingMode mode)
     : GeometryShaderRenderTest(context, name, desc, GL_POINTS, GL_TRIANGLE_STRIP,
                                VaryingOutputCountShader::getAttributeName(test))
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_test(test)
     , m_mode(mode)
     , m_maxEmitCount(0)
@@ -4197,7 +4197,7 @@ void VaryingOutputCountCase::deinit(void)
     if (m_program)
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
     }
 
     GeometryShaderRenderTest::deinit();
@@ -4434,9 +4434,9 @@ GeometryProgramQueryCase::IterateResult GeometryProgramQueryCase::iterate(void)
         glu::Shader geometryShader(m_context.getRenderContext(), glu::SHADERTYPE_GEOMETRY);
         glu::Program program(m_context.getRenderContext());
 
-        vertexShader.setSources(1, &vtxSourcePtr, DE_NULL);
-        fragmentShader.setSources(1, &fragSourcePtr, DE_NULL);
-        geometryShader.setSources(1, &geomSourcePtr, DE_NULL);
+        vertexShader.setSources(1, &vtxSourcePtr, nullptr);
+        fragmentShader.setSources(1, &fragSourcePtr, nullptr);
+        geometryShader.setSources(1, &geomSourcePtr, nullptr);
 
         vertexShader.compile();
         fragmentShader.compile();
@@ -4760,7 +4760,7 @@ GeometryInvocationCase::GeometryInvocationCase(Context &context, const char *nam
     : GeometryShaderRenderTest(context, name, description, GL_POINTS, GL_TRIANGLE_STRIP, "a_color")
     , m_testCase(testCase)
     , m_numInvocations(numInvocations)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
     DE_ASSERT(m_testCase < CASE_LAST);
 }
@@ -4840,7 +4840,7 @@ void GeometryInvocationCase::deinit(void)
     if (m_program)
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
     }
 
     GeometryShaderRenderTest::deinit();
@@ -4902,7 +4902,7 @@ DrawInstancedGeometryInstancedCase::DrawInstancedGeometryInstancedCase(Context &
                                FLAG_DRAW_INSTANCED)
     , m_numInstances(numInstances)
     , m_numInvocations(numInvocations)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
 }
 
@@ -4926,7 +4926,7 @@ void DrawInstancedGeometryInstancedCase::deinit(void)
     if (m_program)
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
     }
 
     GeometryShaderRenderTest::deinit();
@@ -5121,7 +5121,7 @@ PrimitivesGeneratedQueryCase::PrimitivesGeneratedQueryCase(Context &context, con
                                                            QueryTest test)
     : TestCase(context, name, description)
     , m_test(test)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
     DE_ASSERT(m_test < TEST_LAST);
 }
@@ -5176,7 +5176,7 @@ void PrimitivesGeneratedQueryCase::init(void)
 void PrimitivesGeneratedQueryCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 PrimitivesGeneratedQueryCase::IterateResult PrimitivesGeneratedQueryCase::iterate(void)
@@ -5209,7 +5209,7 @@ PrimitivesGeneratedQueryCase::IterateResult PrimitivesGeneratedQueryCase::iterat
         gl.bindBuffer(GL_ARRAY_BUFFER, *buffer);
         gl.bufferData(GL_ARRAY_BUFFER, (int)sizeof(vertexData), vertexData, GL_STATIC_DRAW);
 
-        gl.vertexAttribPointer(positionLocation, 4, GL_FLOAT, GL_FALSE, 2 * (int)sizeof(tcu::Vec4), DE_NULL);
+        gl.vertexAttribPointer(positionLocation, 4, GL_FLOAT, GL_FALSE, 2 * (int)sizeof(tcu::Vec4), nullptr);
         gl.enableVertexAttribArray(positionLocation);
 
         if (oneLocation != -1)
@@ -5550,7 +5550,7 @@ FramebufferAttachmentLayeredCase::IterateResult FramebufferAttachmentLayeredCase
         if (textureTypes[ndx].type == TEXTURE_3D || textureTypes[ndx].type == TEXTURE_3D_LAYER)
         {
             gl.glBindTexture(GL_TEXTURE_3D, *texture);
-            gl.glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, 32, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+            gl.glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, 32, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
             gl.glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             gl.glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -5562,7 +5562,7 @@ FramebufferAttachmentLayeredCase::IterateResult FramebufferAttachmentLayeredCase
         else if (textureTypes[ndx].type == TEXTURE_2D_ARRAY || textureTypes[ndx].type == TEXTURE_2D_ARRAY_LAYER)
         {
             gl.glBindTexture(GL_TEXTURE_2D_ARRAY, *texture);
-            gl.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 32, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+            gl.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 32, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
             gl.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             gl.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -5576,7 +5576,7 @@ FramebufferAttachmentLayeredCase::IterateResult FramebufferAttachmentLayeredCase
             gl.glBindTexture(GL_TEXTURE_CUBE_MAP, *texture);
             for (int face = 0; face < 6; ++face)
                 gl.glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, GL_RGBA8, 32, 32, 0, GL_RGBA,
-                                GL_UNSIGNED_BYTE, DE_NULL);
+                                GL_UNSIGNED_BYTE, nullptr);
             gl.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             gl.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             gl.glFramebufferTexture(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, *texture, 0);
@@ -5661,12 +5661,12 @@ FramebufferIncompleteLayereTargetsCase::IterateResult FramebufferIncompleteLayer
         glw::GLint fboStatus;
 
         gl.glBindTexture(GL_TEXTURE_2D_ARRAY, *texture0);
-        gl.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 32, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+        gl.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 32, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         gl.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         gl.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
         gl.glBindTexture(GL_TEXTURE_2D_ARRAY, *texture1);
-        gl.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 32, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+        gl.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 32, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         gl.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         gl.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -5698,12 +5698,12 @@ FramebufferIncompleteLayereTargetsCase::IterateResult FramebufferIncompleteLayer
         glw::GLint fboStatus;
 
         gl.glBindTexture(GL_TEXTURE_2D_ARRAY, *texture0);
-        gl.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 32, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+        gl.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 32, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         gl.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         gl.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
         gl.glBindTexture(GL_TEXTURE_3D, *texture1);
-        gl.glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, 32, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+        gl.glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, 32, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         gl.glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         gl.glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -5928,8 +5928,8 @@ VertexFeedbackCase::VertexFeedbackCase(Context &context, const char *name, const
     , m_offsetBuf(0)
     , m_feedbackBuf(0)
     , m_indirectBuffer(0)
-    , m_program(DE_NULL)
-    , m_vao(DE_NULL)
+    , m_program(nullptr)
+    , m_vao(nullptr)
 {
     DE_ASSERT(method < METHOD_LAST);
     DE_ASSERT(output < PRIMITIVE_LAST);
@@ -6043,7 +6043,7 @@ void VertexFeedbackCase::init(void)
 
         gl.genBuffers(1, &m_feedbackBuf);
         gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, m_feedbackBuf);
-        gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, feedbackSize, DE_NULL, GL_DYNAMIC_COPY);
+        gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, feedbackSize, nullptr, GL_DYNAMIC_COPY);
         GLU_EXPECT_NO_ERROR(gl.getError(), "gen buf");
 
         m_program = genProgram();
@@ -6089,10 +6089,10 @@ void VertexFeedbackCase::deinit(void)
     }
 
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 
     delete m_vao;
-    m_vao = DE_NULL;
+    m_vao = nullptr;
 }
 
 VertexFeedbackCase::IterateResult VertexFeedbackCase::iterate(void)
@@ -6112,11 +6112,11 @@ VertexFeedbackCase::IterateResult VertexFeedbackCase::iterate(void)
     gl.useProgram(m_program->getProgram());
 
     gl.bindBuffer(GL_ARRAY_BUFFER, m_arrayBuf);
-    gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     gl.enableVertexAttribArray(posLocation);
 
     gl.bindBuffer(GL_ARRAY_BUFFER, m_offsetBuf);
-    gl.vertexAttribPointer(offsetLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(offsetLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     gl.enableVertexAttribArray(offsetLocation);
 
     gl.bindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, m_feedbackBuf);
@@ -6150,7 +6150,7 @@ VertexFeedbackCase::IterateResult VertexFeedbackCase::iterate(void)
     {
         m_testCtx.getLog() << tcu::TestLog::Message << "Calling DrawElements("
                            << glu::getPrimitiveTypeStr(outputPrimitive) << ", ...)" << tcu::TestLog::EndMessage;
-        gl.drawElements(outputPrimitive, 4, GL_UNSIGNED_SHORT, DE_NULL);
+        gl.drawElements(outputPrimitive, 4, GL_UNSIGNED_SHORT, nullptr);
         break;
     }
 
@@ -6158,7 +6158,7 @@ VertexFeedbackCase::IterateResult VertexFeedbackCase::iterate(void)
     {
         m_testCtx.getLog() << tcu::TestLog::Message << "Calling DrawElementsInstanced("
                            << glu::getPrimitiveTypeStr(outputPrimitive) << ", ...)" << tcu::TestLog::EndMessage;
-        gl.drawElementsInstanced(outputPrimitive, 3, GL_UNSIGNED_SHORT, DE_NULL, 2);
+        gl.drawElementsInstanced(outputPrimitive, 3, GL_UNSIGNED_SHORT, nullptr, 2);
         break;
     }
 
@@ -6185,7 +6185,7 @@ VertexFeedbackCase::IterateResult VertexFeedbackCase::iterate(void)
 
         m_testCtx.getLog() << tcu::TestLog::Message << "Calling DrawElementsIndirect("
                            << glu::getPrimitiveTypeStr(outputPrimitive) << ", ...)" << tcu::TestLog::EndMessage;
-        gl.drawArraysIndirect(outputPrimitive, DE_NULL);
+        gl.drawArraysIndirect(outputPrimitive, nullptr);
         break;
     }
 
@@ -6214,7 +6214,7 @@ VertexFeedbackCase::IterateResult VertexFeedbackCase::iterate(void)
 
         m_testCtx.getLog() << tcu::TestLog::Message << "Calling DrawElementsIndirect("
                            << glu::getPrimitiveTypeStr(outputPrimitive) << ", ...)" << tcu::TestLog::EndMessage;
-        gl.drawElementsIndirect(outputPrimitive, GL_UNSIGNED_SHORT, DE_NULL);
+        gl.drawElementsIndirect(outputPrimitive, GL_UNSIGNED_SHORT, nullptr);
         break;
     }
 
@@ -6333,8 +6333,8 @@ VertexFeedbackOverflowCase::VertexFeedbackOverflowCase(Context &context, const c
     , m_elementBuf(0)
     , m_arrayBuf(0)
     , m_feedbackBuf(0)
-    , m_program(DE_NULL)
-    , m_vao(DE_NULL)
+    , m_program(nullptr)
+    , m_vao(nullptr)
 {
 }
 
@@ -6434,10 +6434,10 @@ void VertexFeedbackOverflowCase::deinit(void)
     }
 
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 
     delete m_vao;
-    m_vao = DE_NULL;
+    m_vao = nullptr;
 }
 
 VertexFeedbackOverflowCase::IterateResult VertexFeedbackOverflowCase::iterate(void)
@@ -6451,7 +6451,7 @@ VertexFeedbackOverflowCase::IterateResult VertexFeedbackOverflowCase::iterate(vo
     gl.useProgram(m_program->getProgram());
 
     gl.bindBuffer(GL_ARRAY_BUFFER, m_arrayBuf);
-    gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     gl.enableVertexAttribArray(posLocation);
 
     if (m_method == METHOD_DRAW_ELEMENTS)
@@ -6468,7 +6468,7 @@ VertexFeedbackOverflowCase::IterateResult VertexFeedbackOverflowCase::iterate(vo
     gl.beginTransformFeedback(GL_TRIANGLES);
 
     if (m_method == METHOD_DRAW_ELEMENTS)
-        gl.drawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, DE_NULL);
+        gl.drawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, nullptr);
     else if (m_method == METHOD_DRAW_ARRAYS)
         gl.drawArrays(GL_TRIANGLE_STRIP, 0, 4);
     else

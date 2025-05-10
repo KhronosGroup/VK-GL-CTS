@@ -469,7 +469,7 @@ tcu::TestStatus PayloadShMemSizeInstance::iterate(void)
         nullptr,                                             // const void* pNext;
         0u,                                                  // VkPipelineShaderStageCreateFlags flags;
         VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM,                  // VkShaderStageFlagBits stage;
-        DE_NULL,                                             // VkShaderModule module;
+        VK_NULL_HANDLE,                                      // VkShaderModule module;
         "main",                                              // const char* pName;
         &specInfo,                                           // const VkSpecializationInfo* pSpecializationInfo;
     };
@@ -487,7 +487,7 @@ tcu::TestStatus PayloadShMemSizeInstance::iterate(void)
         shaderStages.push_back(stageInfo);
     }
 
-    const auto pipeline = makeGraphicsPipeline(vkd, device, DE_NULL, pipelineLayout.get(), 0u, shaderStages,
+    const auto pipeline = makeGraphicsPipeline(vkd, device, VK_NULL_HANDLE, pipelineLayout.get(), 0u, shaderStages,
                                                renderPass.get(), viewports, scissors);
 
     const auto cmdPool      = makeCommandPool(vkd, device, queueIndex);
@@ -739,7 +739,7 @@ tcu::TestStatus MaxViewIndexInstance::iterate(void)
     const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
     const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
 
-    const auto pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(), DE_NULL, meshModule.get(),
+    const auto pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(), VK_NULL_HANDLE, meshModule.get(),
                                                fragModule.get(), renderPass.get(), viewports, scissors);
 
     const auto cmdPool      = makeCommandPool(vkd, device, queueIndex);
@@ -961,7 +961,7 @@ tcu::TestStatus MaxOutputLayersInstance::iterate(void)
     const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
     const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
 
-    const auto pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(), DE_NULL, meshModule.get(),
+    const auto pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(), VK_NULL_HANDLE, meshModule.get(),
                                                fragModule.get(), renderPass.get(), viewports, scissors);
 
     const auto cmdPool      = makeCommandPool(vkd, device, queueIndex);
@@ -1247,7 +1247,7 @@ tcu::TestStatus MaxMeshOutputPrimVertInstance::iterate(void)
     const auto &binaries  = m_context.getBinaryCollection();
     const auto meshShader = createShaderModule(vkd, device, binaries.get("mesh"));
     const auto fragShader = createShaderModule(vkd, device, binaries.get("frag"));
-    const auto pipeline   = makeGraphicsPipeline(vkd, device, pipelineLayout.get(), DE_NULL, meshShader.get(),
+    const auto pipeline   = makeGraphicsPipeline(vkd, device, pipelineLayout.get(), VK_NULL_HANDLE, meshShader.get(),
                                                  fragShader.get(), renderPass.get(), viewports, scissors);
 
     // Command pool and buffer.
@@ -1495,7 +1495,7 @@ tcu::TestStatus MaxMeshOutputComponentsInstance::iterate(void)
         nullptr,                                             // const void* pNext;
         0u,                                                  // VkPipelineShaderStageCreateFlags flags;
         VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM,                  // VkShaderStageFlagBits stage;
-        DE_NULL,                                             // VkShaderModule module;
+        VK_NULL_HANDLE,                                      // VkShaderModule module;
         "main",                                              // const char* pName;
         &specInfo,                                           // const VkSpecializationInfo* pSpecializationInfo;
     };
@@ -1512,7 +1512,7 @@ tcu::TestStatus MaxMeshOutputComponentsInstance::iterate(void)
         shaderStages.push_back(stageInfo);
     }
 
-    const auto pipeline = makeGraphicsPipeline(vkd, device, DE_NULL, pipelineLayout.get(), 0u, shaderStages,
+    const auto pipeline = makeGraphicsPipeline(vkd, device, VK_NULL_HANDLE, pipelineLayout.get(), 0u, shaderStages,
                                                renderPass.get(), viewports, scissors);
 
     const auto cmdPool      = makeCommandPool(vkd, device, queueIndex);
@@ -2266,7 +2266,7 @@ tcu::TestStatus MaxMeshOutputSizeInstance::iterate(void)
         nullptr,                                             // const void* pNext;
         0u,                                                  // VkPipelineShaderStageCreateFlags flags;
         VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM,                  // VkShaderStageFlagBits stage;
-        DE_NULL,                                             // VkShaderModule module;
+        VK_NULL_HANDLE,                                      // VkShaderModule module;
         "main",                                              // const char* pName;
         &specInfo,                                           // const VkSpecializationInfo* pSpecializationInfo;
     };
@@ -2290,7 +2290,7 @@ tcu::TestStatus MaxMeshOutputSizeInstance::iterate(void)
         shaderStages.push_back(stageInfo);
     }
 
-    const auto pipeline = makeGraphicsPipeline(vkd, device, DE_NULL, pipelineLayout.get(), 0u, shaderStages,
+    const auto pipeline = makeGraphicsPipeline(vkd, device, VK_NULL_HANDLE, pipelineLayout.get(), 0u, shaderStages,
                                                renderPass.get(), viewports, scissors);
 
     const auto cmdPool      = makeCommandPool(vkd, device, queueIndex);

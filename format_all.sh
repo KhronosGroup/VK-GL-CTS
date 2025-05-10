@@ -10,12 +10,10 @@ fi
 # The following files are excluded:
 #
 # - CMakeLists.txt, AndroidGen.*: Build files which include deInt32.c
-# - deDefs_kc_cts.h: Includes deprecated defines for the sake of kc-cts
 # - format_all.sh: This script!
 #
 echo "Replacing standard types in all files, this will take a minute..."
 git ls-files | grep -v -e framework/delibs/debase/CMakeLists.txt \
-                       -e framework/delibs/debase/deDefs_kc_cts.h \
                        -e AndroidGen.bp \
                        -e AndroidGen.mk \
                        -e format_all.sh \

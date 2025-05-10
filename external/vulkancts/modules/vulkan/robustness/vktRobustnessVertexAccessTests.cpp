@@ -588,7 +588,7 @@ VertexAccessInstance::VertexAccessInstance(Context &context, Move<VkDevice> devi
 
         const VkBufferCreateInfo vertexRateBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             m_vertexRateBufferSize,               // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
@@ -619,7 +619,7 @@ VertexAccessInstance::VertexAccessInstance(Context &context, Move<VkDevice> devi
 
         const VkBufferCreateInfo instanceRateBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             m_instanceRateBufferSize,             // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
@@ -647,7 +647,7 @@ VertexAccessInstance::VertexAccessInstance(Context &context, Move<VkDevice> devi
 
         const VkBufferCreateInfo vertexNumBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             m_vertexNumBufferSize,                // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
@@ -671,7 +671,7 @@ VertexAccessInstance::VertexAccessInstance(Context &context, Move<VkDevice> devi
 
         const VkBufferCreateInfo indexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             m_indexBufferSize,                    // VkDeviceSize size;
             VK_BUFFER_USAGE_INDEX_BUFFER_BIT,     // VkBufferUsageFlags usage;
@@ -699,7 +699,7 @@ VertexAccessInstance::VertexAccessInstance(Context &context, Move<VkDevice> devi
 
         const VkBufferCreateInfo outBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             m_outBufferSize,                      // VkDeviceSize size;
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,   // VkBufferUsageFlags usage;
@@ -733,7 +733,7 @@ VertexAccessInstance::VertexAccessInstance(Context &context, Move<VkDevice> devi
 
         const VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             *m_descriptorPool,                              // VkDescriptorPool desciptorPool;
             1u,                                             // uint32_t setLayoutCount;
             &m_descriptorSetLayout.get()                    // const VkDescriptorSetLayout* pSetLayouts;
@@ -754,7 +754,7 @@ VertexAccessInstance::VertexAccessInstance(Context &context, Move<VkDevice> devi
     {
         const VkFenceCreateInfo fenceParams = {
             VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                             // const void* pNext;
+            nullptr,                             // const void* pNext;
             0u                                   // VkFenceCreateFlags flags;
         };
 
@@ -809,14 +809,14 @@ tcu::TestStatus VertexAccessInstance::iterate(void)
     {
         const VkSubmitInfo submitInfo = {
             VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
-            DE_NULL,                       // const void* pNext;
+            nullptr,                       // const void* pNext;
             0u,                            // uint32_t waitSemaphoreCount;
-            DE_NULL,                       // const VkSemaphore* pWaitSemaphores;
-            DE_NULL,                       // const VkPIpelineStageFlags* pWaitDstStageMask;
+            nullptr,                       // const VkSemaphore* pWaitSemaphores;
+            nullptr,                       // const VkPIpelineStageFlags* pWaitDstStageMask;
             1u,                            // uint32_t commandBufferCount;
             &cmdBuffer,                    // const VkCommandBuffer* pCommandBuffers;
             0u,                            // uint32_t signalSemaphoreCount;
-            DE_NULL                        // const VkSemaphore* pSignalSemaphores;
+            nullptr                        // const VkSemaphore* pSignalSemaphores;
         };
 
         VK_CHECK(vk.resetFences(*m_device, 1, &m_fence.get()));
@@ -828,7 +828,7 @@ tcu::TestStatus VertexAccessInstance::iterate(void)
     {
         const VkMappedMemoryRange outBufferRange = {
             VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, //  VkStructureType sType;
-            DE_NULL,                               //  const void* pNext;
+            nullptr,                               //  const void* pNext;
             m_outBufferAlloc->getMemory(),         //  VkDeviceMemory mem;
             0ull,                                  //  VkDeviceSize offset;
             m_outBufferAllocSize,                  //  VkDeviceSize size;
@@ -858,7 +858,7 @@ bool VertexAccessInstance::verifyResult(void)
 
     const VkMappedMemoryRange outBufferRange = {
         VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, // VkStructureType sType;
-        DE_NULL,                               // const void* pNext;
+        nullptr,                               // const void* pNext;
         m_outBufferAlloc->getMemory(),         // VkDeviceMemory mem;
         m_outBufferAlloc->getOffset(),         // VkDeviceSize offset;
         m_outBufferAllocSize,                  // VkDeviceSize size;

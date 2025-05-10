@@ -470,9 +470,9 @@ TestStatus ScissorTestInstance::iterate(void)
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
 
         const VkAttachmentReference colorAttachmentRef = {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
-        renderPassCreateInfo.addSubpass(SubpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, DE_NULL, 1,
-                                                           &colorAttachmentRef, DE_NULL, AttachmentReference(), 0,
-                                                           DE_NULL));
+        renderPassCreateInfo.addSubpass(SubpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, nullptr, 1,
+                                                           &colorAttachmentRef, nullptr, AttachmentReference(), 0,
+                                                           nullptr));
 
         renderPass = createRenderPass(vk, device, &renderPassCreateInfo);
 
@@ -560,7 +560,7 @@ TestStatus ScissorTestInstance::iterate(void)
 
 #ifndef CTS_USES_VULKANSC
         VkPipelineRenderingCreateInfoKHR renderingCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-                                                             DE_NULL,
+                                                             nullptr,
                                                              0u,
                                                              1u,
                                                              &colorImageFormat,
@@ -571,7 +571,7 @@ TestStatus ScissorTestInstance::iterate(void)
             pipelineCreateInfo.pNext = &renderingCreateInfo;
 #endif // CTS_USES_VULKANSC
 
-        pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+        pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
     }
 
     // Queue commands and read results.
@@ -580,7 +580,7 @@ TestStatus ScissorTestInstance::iterate(void)
         const VkOffset3D zeroOffset   = {0, 0, 0};
         const tcu::Vec4 clearColor    = {0.0f, 0.0f, 0.0f, 1.0f};
         const VkClearValue clearValue = makeClearValueColor(clearColor);
-        const VkBuffer vBuffer        = (vertexBufferSize > 0) ? vertexBuffer->object() : DE_NULL;
+        const VkBuffer vBuffer        = (vertexBufferSize > 0) ? vertexBuffer->object() : VK_NULL_HANDLE;
         const VkRect2D renderArea     = makeRect2D(m_params.framebufferSize);
 
         // Unreference value for Vulkan SC
@@ -709,7 +709,7 @@ void ScissorTestInstance::drawCommands(VkCommandBuffer cmdBuffer, VkPipeline pip
     const DeviceInterface &vk             = m_context.getDeviceInterface();
     const VkDeviceSize vertexBufferOffset = 0;
 
-    if (vertexBuffer != DE_NULL)
+    if (vertexBuffer != VK_NULL_HANDLE)
         vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
     vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
@@ -732,7 +732,7 @@ void ScissorTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkF
 {
     VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                         // const void* pNext;
+        nullptr,                                                         // const void* pNext;
         renderingFlags,                                                  // VkRenderingFlagsKHR flags;
         0u,                                                              // uint32_t viewMask;
         1u,                                                              // uint32_t colorAttachmentCount;
@@ -749,7 +749,7 @@ void ScissorTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkF
 
     const VkCommandBufferBeginInfo commandBufBeginParams{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         usageFlags,                                  // VkCommandBufferUsageFlags flags;
         &bufferInheritanceInfo};
 

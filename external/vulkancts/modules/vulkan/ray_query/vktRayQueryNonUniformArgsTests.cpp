@@ -223,6 +223,9 @@ tcu::TestStatus NonUniformArgsInstance::iterate(void)
     auto topLevelAS    = makeTopLevelAccelerationStructure();
     auto bottomLevelAS = makeBottomLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     // Putting the offscreen triangle first makes sure hits have a geometryIndex=1, meaning sbtRecordStride matters.
     std::vector<const std::vector<tcu::Vec3> *> geometries;
     geometries.push_back(&kOffscreenTriangle);
@@ -231,13 +234,13 @@ tcu::TestStatus NonUniformArgsInstance::iterate(void)
     for (const auto &geometryPtr : geometries)
         bottomLevelAS->addGeometry(*geometryPtr, true /* is triangles */);
 
-    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     de::SharedPtr<BottomLevelAccelerationStructure> blasSharedPtr(bottomLevelAS.release());
     topLevelAS->setInstanceCount(1);
     topLevelAS->addInstance(blasSharedPtr, identityMatrix3x4, 0u, kGoodCullMask, 0u,
                             VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR);
-    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     // Input storage buffer.
     const auto inputBufferSize = static_cast<VkDeviceSize>(sizeof(ArgsBufferData));
@@ -314,11 +317,11 @@ tcu::TestStatus NonUniformArgsInstance::iterate(void)
         0u,                                             // VkPipelineCreateFlags flags;
         stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
         pipelineLayout.get(),                           // VkPipelineLayout layout;
-        DE_NULL,                                        // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0,                                              // int32_t basePipelineIndex;
     };
 
-    const auto pipeline = createComputePipeline(vkd, device, DE_NULL, &pipelineCreateInfo);
+    const auto pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 
     // Fill input buffer values.
     {

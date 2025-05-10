@@ -707,13 +707,13 @@ void BufferDescriptor::init(Context &context, PipelineType pipelineType)
     {
         const VkBufferCreateInfo bufferCreateInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType
-            DE_NULL,                              // const void*            pNext
+            nullptr,                              // const void*            pNext
             0u,                                   // VkBufferCreateFlags    flags
             m_bufferSize,                         // VkDeviceSize            size
             getBufferUsageFlags(),                // VkBufferUsageFlags    usage
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode        sharingMode
             0u,                                   // uint32_t                queueFamilyIndexCount
-            DE_NULL                               // const uint32_t*        pQueueFamilyIndices
+            nullptr                               // const uint32_t*        pQueueFamilyIndices
         };
 
         m_buffer = de::MovePtr<BufferWithMemory>(
@@ -741,7 +741,7 @@ void BufferDescriptor::init(Context &context, PipelineType pipelineType)
         {
             const VkBufferViewCreateInfo bufferViewCreateInfo = {
                 VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO, // VkStructureType            sType
-                DE_NULL,                                   // const void*                pNext
+                nullptr,                                   // const void*                pNext
                 0u,                                        // VkBufferViewCreateFlags    flags
                 m_buffer->get(),                           // VkBuffer                    buffer
                 VK_FORMAT_R32_SFLOAT,                      // VkFormat                    format
@@ -789,17 +789,17 @@ VkWriteDescriptorSet BufferDescriptor::getDescriptorWrite(void)
     // Set and binding will be overwritten later
     const VkWriteDescriptorSet descriptorWrite = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType                    sType
-        DE_NULL,                                // const void*                        pNext
-        (VkDescriptorSet)0u,                    // VkDescriptorSet                    dstSet
+        nullptr,                                // const void*                        pNext
+        VK_NULL_HANDLE,                         // VkDescriptorSet                    dstSet
         0u,                                     // uint32_t                            dstBinding
         firstElement,                           // uint32_t                            dstArrayElement
         getNumWrittenElements(),                // uint32_t                            descriptorCount
         getType(),                              // VkDescriptorType                    descriptorType
-        DE_NULL,                                // const VkDescriptorImageInfo        pImageInfo
-        usesBufferView() ? DE_NULL :
+        nullptr,                                // const VkDescriptorImageInfo        pImageInfo
+        usesBufferView() ? nullptr :
                            &m_descriptorBufferInfos[firstElement], // const VkDescriptorBufferInfo*    pBufferInfo
         usesBufferView() ? &m_bufferViewHandles[firstElement] :
-                           DE_NULL // const VkBufferView*                pTexelBufferView
+                           nullptr // const VkBufferView*                pTexelBufferView
     };
 
     return descriptorWrite;
@@ -856,7 +856,7 @@ void InlineUniformBlockDescriptor::init(Context &context, PipelineType pipelineT
 
     // Initialize descriptor write extension structure.
     m_inlineWrite.sType    = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT;
-    m_inlineWrite.pNext    = DE_NULL;
+    m_inlineWrite.pNext    = nullptr;
     m_inlineWrite.dataSize = m_bytesToWrite;
     m_inlineWrite.pData    = &m_blockData[m_writeStart];
 }
@@ -867,14 +867,14 @@ VkWriteDescriptorSet InlineUniformBlockDescriptor::getDescriptorWrite(void)
     const VkWriteDescriptorSet descriptorWrite = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType                    sType
         &m_inlineWrite,                         // const void*                        pNext
-        (VkDescriptorSet)0u,                    // VkDescriptorSet                    dstSet
+        VK_NULL_HANDLE,                         // VkDescriptorSet                    dstSet
         0u,                                     // uint32_t                            dstBinding
         m_writeStartByteOffset,                 // uint32_t                            dstArrayElement
         m_bytesToWrite,                         // uint32_t                            descriptorCount
         getType(),                              // VkDescriptorType                    descriptorType
-        DE_NULL,                                // const VkDescriptorImageInfo        pImageInfo
-        DE_NULL,                                // const VkDescriptorBufferInfo*    pBufferInfo
-        DE_NULL                                 // const VkBufferView*                pTexelBufferView
+        nullptr,                                // const VkDescriptorImageInfo        pImageInfo
+        nullptr,                                // const VkDescriptorBufferInfo*    pBufferInfo
+        nullptr                                 // const VkBufferView*                pTexelBufferView
     };
 
     return descriptorWrite;
@@ -1159,7 +1159,7 @@ void ImageDescriptor::init(Context &context, PipelineType pipelineType)
     {
         const VkImageCreateInfo imageCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                     // VkStructureType            stype
-            DE_NULL,                                                 // const void*                pNext
+            nullptr,                                                 // const void*                pNext
             0u,                                                      // VkImageCreateFlags        flags
             VK_IMAGE_TYPE_2D,                                        // VkImageType                imageType
             format,                                                  // VkFormat                    format
@@ -1184,7 +1184,7 @@ void ImageDescriptor::init(Context &context, PipelineType pipelineType)
     {
         const VkImageViewCreateInfo imageViewCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType            sType
-            DE_NULL,                                  // const void*                pNext
+            nullptr,                                  // const void*                pNext
             0u,                                       // VkImageViewCreateFlags    flags
             **m_images[imageIdx],                     // VkImage                    image
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType            viewType
@@ -1224,7 +1224,7 @@ void ImageDescriptor::init(Context &context, PipelineType pipelineType)
 
         const VkImageMemoryBarrier preImageBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType            sType
-            DE_NULL,                                // const void*                pNext
+            nullptr,                                // const void*                pNext
             0u,                                     // VkAccessFlags            srcAccessMask
             VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags            dstAccessMask
             VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout            oldLayout
@@ -1237,7 +1237,7 @@ void ImageDescriptor::init(Context &context, PipelineType pipelineType)
 
         const VkImageMemoryBarrier postImageBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType            sType
-            DE_NULL,                                // const void*                pNext
+            nullptr,                                // const void*                pNext
             VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags            srcAccessMask
             getAccessFlags(),                       // VkAccessFlags            dstAccessMask
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout            oldLayout
@@ -1250,15 +1250,13 @@ void ImageDescriptor::init(Context &context, PipelineType pipelineType)
 
         beginCommandBuffer(vk, *cmdBuffer);
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                              (VkDependencyFlags)0u, 0u, (const VkMemoryBarrier *)DE_NULL, 0u,
-                              (const VkBufferMemoryBarrier *)DE_NULL, 1u, &preImageBarrier);
+                              (VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u, &preImageBarrier);
         vk.cmdClearColorImage(*cmdBuffer, **m_images[imageIdx], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor.color,
                               1, &subresourceRange);
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
                               pipelineType == PIPELINE_TYPE_COMPUTE ? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT :
                                                                       VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                              (VkDependencyFlags)0u, 0u, (const VkMemoryBarrier *)DE_NULL, 0u,
-                              (const VkBufferMemoryBarrier *)DE_NULL, 1u, &postImageBarrier);
+                              (VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u, &postImageBarrier);
         endCommandBuffer(vk, *cmdBuffer);
         submitCommandsAndWait(vk, device, queue, *cmdBuffer);
     }
@@ -1271,15 +1269,15 @@ VkWriteDescriptorSet ImageDescriptor::getDescriptorWrite(void)
     // Set and binding will be overwritten later
     const VkWriteDescriptorSet descriptorWrite = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType                    sType
-        DE_NULL,                                // const void*                        pNext
-        (VkDescriptorSet)0u,                    // VkDescriptorSet                    dstSet
+        nullptr,                                // const void*                        pNext
+        VK_NULL_HANDLE,                         // VkDescriptorSet                    dstSet
         0u,                                     // uint32_t                            dstBinding
         firstElement,                           // uint32_t                            dstArrayElement
         getNumWrittenElements(),                // uint32_t                            descriptorCount
         getType(),                              // VkDescriptorType                    descriptorType
         &m_descriptorImageInfos[firstElement],  // const VkDescriptorImageInfo        pImageInfo
-        DE_NULL,                                // const VkDescriptorBufferInfo*    pBufferInfo
-        DE_NULL                                 // const VkBufferView*                pTexelBufferView
+        nullptr,                                // const VkDescriptorBufferInfo*    pBufferInfo
+        nullptr                                 // const VkBufferView*                pTexelBufferView
     };
 
     return descriptorWrite;
@@ -1480,7 +1478,7 @@ void SamplerDescriptor::init(Context &context, PipelineType pipelineType)
     {
         const VkDescriptorImageInfo imageInfo = {
             **m_samplers[i],          // VkSampler        sampler
-            DE_NULL,                  // VkImageView        imageView
+            VK_NULL_HANDLE,           // VkImageView        imageView
             VK_IMAGE_LAYOUT_UNDEFINED // VkImageLayout    imageLayout
         };
 
@@ -1495,15 +1493,15 @@ VkWriteDescriptorSet SamplerDescriptor::getDescriptorWrite(void)
     // Set and binding will be overwritten later
     const VkWriteDescriptorSet descriptorWrite = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType                    sType
-        DE_NULL,                                // const void*                        pNext
-        (VkDescriptorSet)0u,                    // VkDescriptorSet                    dstSet
+        nullptr,                                // const void*                        pNext
+        VK_NULL_HANDLE,                         // VkDescriptorSet                    dstSet
         0u,                                     // uint32_t                            dstBinding
         firstElement,                           // uint32_t                            dstArrayElement
         getNumWrittenElements(),                // uint32_t                            descriptorCount
         getType(),                              // VkDescriptorType                    descriptorType
         &m_descriptorImageInfos[firstElement],  // const VkDescriptorImageInfo        pImageInfo
-        DE_NULL,                                // const VkDescriptorBufferInfo*    pBufferInfo
-        DE_NULL                                 // const VkBufferView*                pTexelBufferView
+        nullptr,                                // const VkDescriptorBufferInfo*    pBufferInfo
+        nullptr                                 // const VkBufferView*                pTexelBufferView
     };
 
     return descriptorWrite;
@@ -1708,9 +1706,9 @@ void DescriptorCommands::checkSupport(Context &context) const
 
     // Check if inline uniform blocks are supported.
     VkPhysicalDeviceInlineUniformBlockFeaturesEXT iubFeatures{
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT, DE_NULL, VK_FALSE, VK_FALSE};
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT, nullptr, VK_FALSE, VK_FALSE};
     VkPhysicalDeviceInlineUniformBlockPropertiesEXT iubProperties{
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES_EXT, DE_NULL, 0u, 0u, 0u, 0u, 0u};
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES_EXT, nullptr, 0u, 0u, 0u, 0u, 0u};
 
     if (context.isDeviceFunctionalitySupported("VK_EXT_inline_uniform_block"))
     {
@@ -2031,7 +2029,7 @@ tcu::TestStatus DescriptorCommands::run(Context &context)
 
         VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO, // VkStructureType                sType
-            DE_NULL,                                       // const void*                    pNext
+            nullptr,                                       // const void*                    pNext
             poolCreateFlags,                               // VkDescriptorPoolCreateFlags    flags
             (uint32_t)m_descriptorSets.size(),             // uint32_t                        maxSets
             (uint32_t)poolSizes.size(),                    // uint32_t                        poolSizeCount
@@ -2041,7 +2039,7 @@ tcu::TestStatus DescriptorCommands::run(Context &context)
         // Include information about inline uniform blocks if needed.
 #ifndef CTS_USES_VULKANSC
         VkDescriptorPoolInlineUniformBlockCreateInfoEXT iubPoolCreateInfo = {
-            VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_INLINE_UNIFORM_BLOCK_CREATE_INFO_EXT, DE_NULL, numTotalIUBs};
+            VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_INLINE_UNIFORM_BLOCK_CREATE_INFO_EXT, nullptr, numTotalIUBs};
         if (numTotalIUBs > 0)
             descriptorPoolCreateInfo.pNext = &iubPoolCreateInfo;
 #endif
@@ -2064,7 +2062,7 @@ tcu::TestStatus DescriptorCommands::run(Context &context)
                     bindings[bindingIdx]->getType(),      // VkDescriptorType        descriptorType
                     bindings[bindingIdx]->getArraySize(), // uint32_t                descriptorCount
                     shaderStage,                          // VkShaderStageFlags    stageFlags
-                    DE_NULL                               // const VkSampler*        pImmutableSamplers
+                    nullptr                               // const VkSampler*        pImmutableSamplers
                 };
 
 #ifndef CTS_USES_VULKANSC
@@ -2081,22 +2079,22 @@ tcu::TestStatus DescriptorCommands::run(Context &context)
 
             const VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo{
                 VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                                           // const void* pNext;
+                nullptr,                                                           // const void* pNext;
                 (uint32_t)layoutBindings.size(),                                   // uint32_t bindingCount;
-                layoutBindings.empty() ? DE_NULL :
+                layoutBindings.empty() ? nullptr :
                                          bindingsFlags.data(), // const VkDescriptorBindingFlags* pBindingFlags;
             };
 
             const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{
                 VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType                        sType
-                m_useUpdateAfterBind ? &bindingFlagsInfo : DE_NULL,  // const void*                            pNext
+                m_useUpdateAfterBind ? &bindingFlagsInfo : nullptr,  // const void*                            pNext
                 descriptorSetLayoutCreateFlags,                      // VkDescriptorSetLayoutCreateFlags        flags
                 (uint32_t)layoutBindings.size(), // uint32_t                                bindingCount
                 layoutBindings.data()            // const VkDescriptorSetLayoutBinding*    pBindings
             };
 
             descriptorSetLayouts.push_back(VkDescriptorSetLayoutSp(new Unique<VkDescriptorSetLayout>(
-                createDescriptorSetLayout(vk, device, &descriptorSetLayoutCreateInfo, DE_NULL))));
+                createDescriptorSetLayout(vk, device, &descriptorSetLayoutCreateInfo, nullptr))));
         }
     }
 
@@ -2106,13 +2104,13 @@ tcu::TestStatus DescriptorCommands::run(Context &context)
         {
             const VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
                 VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,  // VkStructureType                sType
-                DE_NULL,                                         // const void*                    pNext
+                nullptr,                                         // const void*                    pNext
                 *descriptorPool,                                 // VkDescriptorPool                descriptorPool
                 1u,                                              // uint32_t                        descriptorSetCount
                 &(descriptorSetLayouts[descriptorSetIdx]->get()) // const VkDescriptorSetLayout*    pSetLayouts
             };
 
-            VkDescriptorSet descriptorSet = 0;
+            VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
             VK_CHECK(vk.allocateDescriptorSets(device, &descriptorSetAllocateInfo, &descriptorSet));
             descriptorSets.push_back(descriptorSet);
         }
@@ -2131,12 +2129,12 @@ tcu::TestStatus DescriptorCommands::run(Context &context)
 
         const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType                sType
-            DE_NULL,                                       // const void*                    pNext
+            nullptr,                                       // const void*                    pNext
             0u,                                            // VkPipelineLayoutCreateFlags    flags
             (uint32_t)descriptorSetLayoutHandles.size(),   // uint32_t                        setLayoutCount
             descriptorSetLayoutHandles.data(),             // const VkDescriptorSetLayout*    pSetLayouts
             0u,                                            // uint32_t                        pushConstantRangeCount
-            DE_NULL                                        // const VkPushConstantRange*    pPushConstantRanges
+            nullptr                                        // const VkPushConstantRange*    pPushConstantRanges
         };
 
         pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
@@ -2150,25 +2148,25 @@ tcu::TestStatus DescriptorCommands::run(Context &context)
                 createShaderModule(vk, device, context.getBinaryCollection().get("compute"), 0u));
             const VkPipelineShaderStageCreateInfo shaderStageInfo = {
                 VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                    sType
-                DE_NULL,                                             // const void*                        pNext
+                nullptr,                                             // const void*                        pNext
                 (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags    flags
                 VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits            stage
                 *shaderModule,                                       // VkShaderModule                    module
                 "main",                                              // const char*                        pName
-                DE_NULL // const VkSpecializationInfo*        pSpecializationInfo
+                nullptr // const VkSpecializationInfo*        pSpecializationInfo
             };
 
             const VkComputePipelineCreateInfo pipelineInfo = {
                 VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType                    sType
-                DE_NULL,                                        // const void*                        pNext
+                nullptr,                                        // const void*                        pNext
                 (VkPipelineCreateFlags)0,                       // VkPipelineCreateFlags            flags
                 shaderStageInfo,                                // VkPipelineShaderStageCreateInfo    stage
                 *pipelineLayout,                                // VkPipelineLayout                    layout
-                DE_NULL,                                        // VkPipeline                        basePipelineHandle
+                VK_NULL_HANDLE,                                 // VkPipeline                        basePipelineHandle
                 0                                               // int32_t                            basePipelineIndex
             };
 
-            pipeline = createComputePipeline(vk, device, DE_NULL, &pipelineInfo);
+            pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineInfo);
         }
     }
     else
@@ -2177,7 +2175,7 @@ tcu::TestStatus DescriptorCommands::run(Context &context)
         {
             const VkImageCreateInfo imageCreateInfo = {
                 VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                     // VkStructureType            stype
-                DE_NULL,                                                 // const void*                pNext
+                nullptr,                                                 // const void*                pNext
                 0u,                                                      // VkImageCreateFlags        flags
                 VK_IMAGE_TYPE_2D,                                        // VkImageType                imageType
                 resultFormat,                                            // VkFormat                    format
@@ -2211,7 +2209,7 @@ tcu::TestStatus DescriptorCommands::run(Context &context)
 
             const VkImageViewCreateInfo imageViewCreateInfo = {
                 VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType            sType
-                DE_NULL,                                  // const void*                pNext
+                nullptr,                                  // const void*                pNext
                 0u,                                       // VkImageViewCreateFlags    flags
                 **resultImage,                            // VkImage                    image
                 VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType            viewType
@@ -2229,13 +2227,13 @@ tcu::TestStatus DescriptorCommands::run(Context &context)
                 renderSize.x() * renderSize.y() * tcu::getPixelSize(mapVkFormat(resultFormat));
             const VkBufferCreateInfo bufferCreateInfo = {
                 VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType
-                DE_NULL,                              // const void*            pNext
+                nullptr,                              // const void*            pNext
                 0u,                                   // VkBufferCreateFlags    flags
                 bufferSize,                           // VkDeviceSize            size
                 VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags    usage
                 VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode        sharingMode
                 0u,                                   // uint32_t                queueFamilyIndexCount
-                DE_NULL                               // const uint32_t*        pQueueFamilyIndices
+                nullptr                               // const uint32_t*        pQueueFamilyIndices
             };
 
             resultImageBuffer = de::MovePtr<BufferWithMemory>(
@@ -2288,26 +2286,26 @@ tcu::TestStatus DescriptorCommands::run(Context &context)
                 0u,                                // VkSubpassDescriptionFlags    flags
                 VK_PIPELINE_BIND_POINT_GRAPHICS,   // VkPipelineBindPoint            pipelineBindPoint
                 (uint32_t)inputAttachments.size(), // uint32_t                        inputAttachmentCount
-                inputAttachments.empty() ? DE_NULL :
+                inputAttachments.empty() ? nullptr :
                                            inputAttachments.data(), // const VkAttachmentReference*    pInputAttachments
                 1u,                  // uint32_t                        colorAttachmentCount
                 &colorAttachmentRef, // const VkAttachmentReference*    pColorAttachments
-                DE_NULL,             // const VkAttachmentReference*    pResolveAttachments
-                DE_NULL,             // const VkAttachmentReference*    pDepthStencilAttachment
+                nullptr,             // const VkAttachmentReference*    pResolveAttachments
+                nullptr,             // const VkAttachmentReference*    pDepthStencilAttachment
                 0u,                  // uint32_t                        preserveAttachmentCount
-                DE_NULL              // const uint32_t*                pPreserveAttachments
+                nullptr              // const uint32_t*                pPreserveAttachments
             };
 
             const VkRenderPassCreateInfo renderPassCreateInfo = {
                 VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType                    sType
-                DE_NULL,                                   // const void*                        pNext
+                nullptr,                                   // const void*                        pNext
                 0u,                                        // VkRenderPassCreateFlags            flags
                 (uint32_t)attachmentDescriptions.size(),   // uint32_t                            attachmentCount
                 attachmentDescriptions.data(),             // const VkAttachmentDescription*    pAttachments
                 1u,                                        // uint32_t                            subpassCount
                 &subpassDescription,                       // const VkSubpassDescription*        pSubpasses
                 0u,                                        // uint32_t                            dependencyCount
-                DE_NULL                                    // const VkSubpassDependency*        pDependencies
+                nullptr                                    // const VkSubpassDependency*        pDependencies
             };
 
             renderPass = createRenderPass(vk, device, &renderPassCreateInfo);
@@ -2328,7 +2326,7 @@ tcu::TestStatus DescriptorCommands::run(Context &context)
 
             const VkFramebufferCreateInfo framebufferCreateInfo = {
                 VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType             sType
-                DE_NULL,                                   // const void*                 pNext
+                nullptr,                                   // const void*                 pNext
                 0u,                                        // VkFramebufferCreateFlags    flags
                 *renderPass,                               // VkRenderPass                renderPass
                 (uint32_t)imageViews.size(),               // uint32_t                    attachmentCount
@@ -2350,12 +2348,12 @@ tcu::TestStatus DescriptorCommands::run(Context &context)
 
             const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
                 VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                            sType
-                DE_NULL,                                  // const void*                                pNext
+                nullptr,                                  // const void*                                pNext
                 (VkPipelineVertexInputStateCreateFlags)0, // VkPipelineVertexInputStateCreateFlags    flags
                 0u,                                       // uint32_t                                    bindingCount
-                DE_NULL, // const VkVertexInputBindingDescription*    pVertexBindingDescriptions
+                nullptr, // const VkVertexInputBindingDescription*    pVertexBindingDescriptions
                 0u,      // uint32_t                                    attributeCount
-                DE_NULL, // const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
+                nullptr, // const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
             };
 
             const std::vector<VkViewport> viewports(1, makeViewport(renderSize));
@@ -2366,9 +2364,9 @@ tcu::TestStatus DescriptorCommands::run(Context &context)
                 device,                // const VkDevice                                device
                 *pipelineLayout,       // const VkPipelineLayout                        pipelineLayout
                 *vertexShaderModule,   // const VkShaderModule                          vertexShaderModule
-                DE_NULL,               // const VkShaderModule                          tessellationControlShaderModule
-                DE_NULL,               // const VkShaderModule                          tessellationEvalShaderModule
-                DE_NULL,               // const VkShaderModule                          geometryShaderModule
+                VK_NULL_HANDLE,        // const VkShaderModule                          tessellationControlShaderModule
+                VK_NULL_HANDLE,        // const VkShaderModule                          tessellationEvalShaderModule
+                VK_NULL_HANDLE,        // const VkShaderModule                          geometryShaderModule
                 *fragmentShaderModule, // const VkShaderModule                          fragmentShaderModule
                 *renderPass,           // const VkRenderPass                            renderPass
                 viewports,             // const std::vector<VkViewport>&                viewports
@@ -2405,7 +2403,7 @@ tcu::TestStatus DescriptorCommands::run(Context &context)
         vk.cmdBindPipeline(*commandBuffer, pipelineBindPoint, *pipeline);
         vk.cmdBindDescriptorSets(*commandBuffer, pipelineBindPoint, *pipelineLayout, 0u,
                                  (uint32_t)descriptorSets.size(), descriptorSets.data(), (uint32_t)offsets.size(),
-                                 offsets.empty() ? DE_NULL : offsets.data());
+                                 offsets.empty() ? nullptr : offsets.data());
 
         // Update descriptor sets when this should be done after bind
         if (m_useUpdateAfterBind)
@@ -2494,7 +2492,7 @@ void DescriptorCommands::updateDescriptorSets(Context &context, const vector<VkD
         const DescriptorCopy indices   = m_descriptorCopies[copyIdx];
         const VkCopyDescriptorSet copy = {
             VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET, // VkStructureType    sType
-            DE_NULL,                               // const void*        pNext
+            nullptr,                               // const void*        pNext
             descriptorSets[indices.srcSet],        // VkDescriptorSet    srcSet
             indices.srcBinding,                    // uint32_t            srcBinding
             indices.srcArrayElement,               // uint32_t            srcArrayElement

@@ -322,18 +322,18 @@ void submitCommands(const DeviceInterface &vk, const VkQueue queue, const VkComm
     std::vector<uint32_t> deviceIndices(waitSemaphoreCount, physicalDeviceID);
     VkDeviceGroupSubmitInfo deviceGroupSubmitInfo = {
         VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO,         //VkStructureType        sType
-        DE_NULL,                                            // const void*            pNext
+        nullptr,                                            // const void*            pNext
         waitSemaphoreCount,                                 // uint32_t                waitSemaphoreCount
-        deviceIndices.size() ? &deviceIndices[0] : DE_NULL, // const uint32_t*        pWaitSemaphoreDeviceIndices
+        deviceIndices.size() ? &deviceIndices[0] : nullptr, // const uint32_t*        pWaitSemaphoreDeviceIndices
         1u,                                                 // uint32_t                commandBufferCount
         &deviceMask,                                        // const uint32_t*        pCommandBufferDeviceMasks
         0u,                                                 // uint32_t                signalSemaphoreCount
-        DE_NULL,                                            // const uint32_t*        pSignalSemaphoreDeviceIndices
+        nullptr,                                            // const uint32_t*        pSignalSemaphoreDeviceIndices
     };
 
     const VkSubmitInfo submitInfo = {
         VK_STRUCTURE_TYPE_SUBMIT_INFO,                      // VkStructureType sType;
-        useDeviceGroups ? &deviceGroupSubmitInfo : DE_NULL, // const void* pNext;
+        useDeviceGroups ? &deviceGroupSubmitInfo : nullptr, // const void* pNext;
         waitSemaphoreCount,                                 // uint32_t waitSemaphoreCount;
         pWaitSemaphores,                                    // const VkSemaphore* pWaitSemaphores;
         pWaitDstStageMask,                                  // const VkPipelineStageFlags* pWaitDstStageMask;
@@ -343,7 +343,7 @@ void submitCommands(const DeviceInterface &vk, const VkQueue queue, const VkComm
         pSignalSemaphores,                                  // const VkSemaphore* pSignalSemaphores;
     };
 
-    VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, DE_NULL));
+    VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, VK_NULL_HANDLE));
 }
 
 void submitCommandsAndWait(const DeviceInterface &vk, const VkDevice device, const VkQueue queue,
@@ -354,7 +354,7 @@ void submitCommandsAndWait(const DeviceInterface &vk, const VkDevice device, con
 {
     const VkFenceCreateInfo fenceParams = {
         VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         0u,                                  // VkFenceCreateFlags flags;
     };
     const Unique<VkFence> fence(createFence(vk, device, &fenceParams));
@@ -363,17 +363,17 @@ void submitCommandsAndWait(const DeviceInterface &vk, const VkDevice device, con
     std::vector<uint32_t> deviceIndices(waitSemaphoreCount, physicalDeviceID);
     VkDeviceGroupSubmitInfo deviceGroupSubmitInfo = {
         VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO,         //VkStructureType        sType
-        DE_NULL,                                            // const void*            pNext
+        nullptr,                                            // const void*            pNext
         waitSemaphoreCount,                                 // uint32_t                waitSemaphoreCount
-        deviceIndices.size() ? &deviceIndices[0] : DE_NULL, // const uint32_t*        pWaitSemaphoreDeviceIndices
+        deviceIndices.size() ? &deviceIndices[0] : nullptr, // const uint32_t*        pWaitSemaphoreDeviceIndices
         1u,                                                 // uint32_t                commandBufferCount
         &deviceMask,                                        // const uint32_t*        pCommandBufferDeviceMasks
         0u,                                                 // uint32_t                signalSemaphoreCount
-        DE_NULL,                                            // const uint32_t*        pSignalSemaphoreDeviceIndices
+        nullptr,                                            // const uint32_t*        pSignalSemaphoreDeviceIndices
     };
     const VkSubmitInfo submitInfo = {
         VK_STRUCTURE_TYPE_SUBMIT_INFO,                      // VkStructureType sType;
-        useDeviceGroups ? &deviceGroupSubmitInfo : DE_NULL, // const void* pNext;
+        useDeviceGroups ? &deviceGroupSubmitInfo : nullptr, // const void* pNext;
         waitSemaphoreCount,                                 // uint32_t waitSemaphoreCount;
         pWaitSemaphores,                                    // const VkSemaphore* pWaitSemaphores;
         pWaitDstStageMask,                                  // const VkPipelineStageFlags* pWaitDstStageMask;
@@ -623,7 +623,7 @@ std::string getShaderImageFormatQualifier(const tcu::TextureFormat &format)
 
     default:
         DE_FATAL("Unexpected channel order");
-        orderPart = DE_NULL;
+        orderPart = nullptr;
     }
 
     switch (format.type)
@@ -671,7 +671,7 @@ std::string getShaderImageFormatQualifier(const tcu::TextureFormat &format)
 
     default:
         DE_FATAL("Unexpected channel type");
-        typePart = DE_NULL;
+        typePart = nullptr;
     }
 
     return std::string() + orderPart + typePart;
@@ -859,6 +859,8 @@ std::string getImageFormatID(VkFormat format)
         return "r8";
     case VK_FORMAT_R16_UNORM:
         return "r16";
+    case VK_FORMAT_R32_SFLOAT:
+        return "r32f";
 
     case VK_FORMAT_R8G8_SINT:
         return "rg8i";
@@ -901,6 +903,10 @@ std::string getImageFormatID(VkFormat format)
         return "rgba8";
     case VK_FORMAT_R16G16B16A16_UNORM:
         return "rgba16";
+    case VK_FORMAT_R16G16B16A16_SFLOAT:
+        return "rgba16f";
+    case VK_FORMAT_R32G32B32A32_SFLOAT:
+        return "rgba32f";
 
     case VK_FORMAT_G8B8G8R8_422_UNORM:
     case VK_FORMAT_B8G8R8G8_422_UNORM:
@@ -1026,13 +1032,13 @@ VkSparseImageMemoryBind makeSparseImageMemoryBind(const DeviceInterface &vk, con
 {
     const VkMemoryAllocateInfo allocInfo = {
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         allocationSize,                         // VkDeviceSize allocationSize;
         memoryType,                             // uint32_t memoryTypeIndex;
     };
 
-    VkDeviceMemory deviceMemory = 0;
-    VK_CHECK(vk.allocateMemory(device, &allocInfo, DE_NULL, &deviceMemory));
+    VkDeviceMemory deviceMemory = VK_NULL_HANDLE;
+    VK_CHECK(vk.allocateMemory(device, &allocInfo, nullptr, &deviceMemory));
 
     VkSparseImageMemoryBind imageMemoryBind;
 
@@ -1052,13 +1058,13 @@ VkSparseMemoryBind makeSparseMemoryBind(const DeviceInterface &vk, const VkDevic
 {
     const VkMemoryAllocateInfo allocInfo = {
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         allocationSize,                         // VkDeviceSize allocationSize;
         memoryType,                             // uint32_t memoryTypeIndex;
     };
 
-    VkDeviceMemory deviceMemory = 0;
-    VK_CHECK(vk.allocateMemory(device, &allocInfo, DE_NULL, &deviceMemory));
+    VkDeviceMemory deviceMemory = VK_NULL_HANDLE;
+    VK_CHECK(vk.allocateMemory(device, &allocInfo, nullptr, &deviceMemory));
 
     VkSparseMemoryBind memoryBind;
 

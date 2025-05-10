@@ -144,7 +144,7 @@ static VkImageCreateInfo makeImageCreateInfo(const VkFormat format, const uint32
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         0u,                                  // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         format,                              // VkFormat format;
@@ -156,7 +156,7 @@ static VkImageCreateInfo makeImageCreateInfo(const VkFormat format, const uint32
         usage,                               // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
 
@@ -205,34 +205,34 @@ static Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevi
     const bool useMultisampling = (samples > VK_SAMPLE_COUNT_1_BIT);
     const VkAttachmentReference *colorAttachment =
         useMultisampling ? &attachmentMultiSampleRef : &attachmentSingleSampleRef;
-    const VkAttachmentReference *resolveAttachment = useMultisampling ? &attachmentSingleSampleRef : DE_NULL;
+    const VkAttachmentReference *resolveAttachment = useMultisampling ? &attachmentSingleSampleRef : nullptr;
 
     const VkSubpassDescription subpassDescription{
         (VkSubpassDescriptionFlags)0u,   // VkSubpassDescriptionFlags flags;
         VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
         0u,                              // uint32_t inputAttachmentCount;
-        DE_NULL,                         // const VkAttachmentReference* pInputAttachments;
+        nullptr,                         // const VkAttachmentReference* pInputAttachments;
         1u,                              // uint32_t colorAttachmentCount;
         colorAttachment,                 // const VkAttachmentReference* pColorAttachments;
         resolveAttachment,               // const VkAttachmentReference* pResolveAttachments;
-        DE_NULL,                         // const VkAttachmentReference* pDepthStencilAttachment;
+        nullptr,                         // const VkAttachmentReference* pDepthStencilAttachment;
         0u,                              // uint32_t preserveAttachmentCount;
-        DE_NULL                          // const uint32_t* pPreserveAttachments;
+        nullptr                          // const uint32_t* pPreserveAttachments;
     };
 
     const VkRenderPassCreateInfo renderPassInfo{
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                   // const void* pNext;
+        nullptr,                                   // const void* pNext;
         (VkRenderPassCreateFlags)0u,               // VkRenderPassCreateFlags flags;
         1u + useMultisampling,                     // uint32_t attachmentCount;
         attachments,                               // const VkAttachmentDescription* pAttachments;
         1u,                                        // uint32_t subpassCount;
         &subpassDescription,                       // const VkSubpassDescription* pSubpasses;
         0u,                                        // uint32_t dependencyCount;
-        DE_NULL                                    // const VkSubpassDependency* pDependencies;
+        nullptr                                    // const VkSubpassDependency* pDependencies;
     };
 
-    return createRenderPass(vk, device, &renderPassInfo, DE_NULL);
+    return createRenderPass(vk, device, &renderPassInfo, nullptr);
 }
 
 using GraphicsPipelinePtr = std::unique_ptr<GraphicsPipelineWrapper>;
@@ -271,7 +271,7 @@ static GraphicsPipelinePtr makeGraphicsVertexShaderPipeline(
     };
     const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                   // const void* pNext;
+        nullptr,                                                   // const void* pNext;
         (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags flags;
         1u,                                                        // uint32_t vertexBindingDescriptionCount;
         &vertexInputBindingDescription, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -280,12 +280,12 @@ static GraphicsPipelinePtr makeGraphicsVertexShaderPipeline(
     };
     const VkPipelineRasterizationProvokingVertexStateCreateInfoEXT provokingVertexStateCreateInfoEXT = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_PROVOKING_VERTEX_STATE_CREATE_INFO_EXT, //  VkStructureType sType;
-        DE_NULL,                                                                         //  const void* pNext;
+        nullptr,                                                                         //  const void* pNext;
         VK_PROVOKING_VERTEX_MODE_LAST_VERTEX_EXT, //  VkProvokingVertexModeEXT provokingVertexMode;
     };
     const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,         //  VkStructureType sType;
-        provokingVertexLast ? &provokingVertexStateCreateInfoEXT : DE_NULL, //  const void* pNext;
+        provokingVertexLast ? &provokingVertexStateCreateInfoEXT : nullptr, //  const void* pNext;
         0u,                              //  VkPipelineRasterizationStateCreateFlags flags;
         VK_FALSE,                        //  VkBool32 depthClampEnable;
         false,                           //  VkBool32 rasterizerDiscardEnable;
@@ -306,7 +306,7 @@ static GraphicsPipelinePtr makeGraphicsVertexShaderPipeline(
         rasterizationSamples,                                     // VkSampleCountFlagBits rasterizationSamples;
         (isMultiSample ? VK_TRUE : VK_FALSE),                     // VkBool32 sampleShadingEnable;
         1.0f,                                                     // float minSampleShading;
-        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
         VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
         VK_FALSE,                                                 // VkBool32 alphaToOneEnable;
     };
@@ -315,13 +315,13 @@ static GraphicsPipelinePtr makeGraphicsVertexShaderPipeline(
     };
     const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, //  VkStructureType sType;
-        DE_NULL,                                              //  const void* pNext;
+        nullptr,                                              //  const void* pNext;
         0u,                                                   //  VkPipelineDynamicStateCreateFlags flags;
         DE_LENGTH_OF_ARRAY(dynamicStates),                    //  uint32_t dynamicStateCount;
         dynamicStates,                                        //  const VkDynamicState* pDynamicStates;
     };
     const VkPipelineDynamicStateCreateInfo *pDynamicStateCreateInfo =
-        dynamicTopology ? &dynamicStateCreateInfo : DE_NULL;
+        dynamicTopology ? &dynamicStateCreateInfo : nullptr;
     const auto pVertexInputStateCreateInfo = (withColor ? &vertexInputStateInfo : nullptr);
 
     GraphicsPipelinePtr pipelineWrapperPtr(
@@ -358,12 +358,12 @@ static GraphicsPipelinePtr makeGraphicsMeshShaderPipeline(
 
     const VkPipelineRasterizationProvokingVertexStateCreateInfoEXT provokingVertexStateCreateInfoEXT = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_PROVOKING_VERTEX_STATE_CREATE_INFO_EXT, //  VkStructureType sType;
-        DE_NULL,                                                                         //  const void* pNext;
+        nullptr,                                                                         //  const void* pNext;
         VK_PROVOKING_VERTEX_MODE_LAST_VERTEX_EXT, //  VkProvokingVertexModeEXT provokingVertexMode;
     };
     const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,         //  VkStructureType sType;
-        provokingVertexLast ? &provokingVertexStateCreateInfoEXT : DE_NULL, //  const void* pNext;
+        provokingVertexLast ? &provokingVertexStateCreateInfoEXT : nullptr, //  const void* pNext;
         0u,                              //  VkPipelineRasterizationStateCreateFlags flags;
         VK_FALSE,                        //  VkBool32 depthClampEnable;
         false,                           //  VkBool32 rasterizerDiscardEnable;
@@ -384,7 +384,7 @@ static GraphicsPipelinePtr makeGraphicsMeshShaderPipeline(
         rasterizationSamples,                                     // VkSampleCountFlagBits rasterizationSamples;
         (isMultiSample ? VK_TRUE : VK_FALSE),                     // VkBool32 sampleShadingEnable;
         1.0f,                                                     // float minSampleShading;
-        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
         VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
         VK_FALSE,                                                 // VkBool32 alphaToOneEnable;
     };
@@ -393,13 +393,13 @@ static GraphicsPipelinePtr makeGraphicsMeshShaderPipeline(
     };
     const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, //  VkStructureType sType;
-        DE_NULL,                                              //  const void* pNext;
+        nullptr,                                              //  const void* pNext;
         0u,                                                   //  VkPipelineDynamicStateCreateFlags flags;
         DE_LENGTH_OF_ARRAY(dynamicStates),                    //  uint32_t dynamicStateCount;
         dynamicStates,                                        //  const VkDynamicState* pDynamicStates;
     };
     const VkPipelineDynamicStateCreateInfo *pDynamicStateCreateInfo =
-        dynamicTopology ? &dynamicStateCreateInfo : DE_NULL;
+        dynamicTopology ? &dynamicStateCreateInfo : nullptr;
 
     GraphicsPipelinePtr pipelineWrapperPtr(
         new GraphicsPipelineWrapper(vki, vkd, physicalDevice, device, deviceExtensions, pipelineConstructionType));
@@ -877,7 +877,7 @@ tcu::TestStatus FragmentShadingBarycentricDataTestInstance::iterate(void)
     const uint32_t pushConstants[] = {0, 1, 2};
     const VkPushConstantRange pushConstantRange =
         makePushConstantRange(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstants));
-    const VkPushConstantRange *pushConstantRangePtr = m_testParams.dynamicIndexing ? &pushConstantRange : DE_NULL;
+    const VkPushConstantRange *pushConstantRangePtr = m_testParams.dynamicIndexing ? &pushConstantRange : nullptr;
     const uint32_t pushConstantRangeCount           = m_testParams.dynamicIndexing ? 1 : 0;
     const Move<VkCommandPool> commandPool           = createCommandPool(vkd, device, 0, queueFamilyIndex);
     const Move<VkCommandBuffer> commandBuffer =
@@ -901,7 +901,7 @@ tcu::TestStatus FragmentShadingBarycentricDataTestInstance::iterate(void)
 
     // Pipeline layout
     const PipelineLayoutWrapper pipelineLayout(m_testParams.pipelineConstructionType, vkd, device,
-                                               useMeshShader ? 1 : 0, useMeshShader ? &*descriptorSetLayout : DE_NULL,
+                                               useMeshShader ? 1 : 0, useMeshShader ? &*descriptorSetLayout : nullptr,
                                                pushConstantRangeCount, pushConstantRangePtr);
     const auto pipelineWrapper =
         makeGraphicsPipeline(m_testParams.useMeshShader, m_testParams.pipelineConstructionType, vki, vkd,
@@ -1362,9 +1362,9 @@ tcu::TestStatus FragmentShadingBarycentricWeightTestInstance::iterate(void)
     }
 
     std::vector<VkImageMemoryBarrier> initialImageBarriers(
-        2, makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT,
-                                  VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                                  VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, DE_NULL, imageSubresourceRange));
+        2, makeImageMemoryBarrier(
+               VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+               VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE, imageSubresourceRange));
 
     for (size_t ndx = 0; ndx < 2; ndx++)
     {
@@ -1475,8 +1475,8 @@ private:
     string generateDataMeshShader(void) const;
     string generateWeightMeshShader(void) const;
     string getDataPrimitiveFormula(void) const;
-    string getDataVertexFormula(const uint32_t vertex, const bool *provokingVertexLastPtr = DE_NULL) const;
-    string getDataProvokingVertexFormula(const bool *provokingVertexLastPtr = DE_NULL) const;
+    string getDataVertexFormula(const uint32_t vertex, const bool *provokingVertexLastPtr = nullptr) const;
+    string getDataProvokingVertexFormula(const bool *provokingVertexLastPtr = nullptr) const;
     TestParams m_testParams;
 };
 
@@ -1561,6 +1561,10 @@ void FragmentShadingBarycentricTestCase::checkSupport(Context &context) const
     if ((m_testParams.testSubtype == TEST_SUBTYPE_GEOMETRY_SHADER) ||
         (m_testParams.testSubtype == TEST_SUBTYPE_TESSGEOM_SHADER))
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
+    if ((m_testParams.testSubtype == TEST_SUBTYPE_MSAA_INTERPOLATE_AT_SAMPLE) ||
+        (m_testParams.testSubtype == TEST_SUBTYPE_MSAA_INTERPOLATE_AT_OFFSET))
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 TestInstance *FragmentShadingBarycentricTestCase::createInstance(Context &context) const
@@ -1982,7 +1986,7 @@ void FragmentShadingBarycentricTestCase::initDataPrograms(SourceCollections &pro
                    "layout(location = 0) pervertexEXT in InDataStruct inParam[];\n"
                    "void getData(uint i, out ${typePrefix} ds${typeSuffix})\n"
                    "{\n"
-                   "    for(uint k = 0; k < ${componentCount}; k++)\n"
+                   "    for(uint k = 0; k < 3; k++)\n"
                    "    {\n"
                    "        if (inParam[k].idx == i)\n"
                    "            ds = " +
@@ -2410,10 +2414,10 @@ string FragmentShadingBarycentricTestCase::generateWeightMeshShader(void) const
             "{\n"
             "    uint maxVertex = 256;\n"
             "    uint maxPrimitive = 128;\n"
+            "    SetMeshOutputsEXT(maxVertex, maxPrimitive);\n"
             "    uint iterations = max(maxVertex, maxPrimitive) / (8 * 4 * 1);\n"
             "    for (int  iteration = 0; iteration < iterations; ++iteration)\n"
             "    {\n"
-            "        SetMeshOutputsEXT(maxVertex, maxPrimitive);\n"
             "        const uint vertex = gl_LocalInvocationIndex * iterations + iteration;\n"
             "        const uint primitive = gl_LocalInvocationIndex * iterations + iteration;\n"
             "        if (vertex < maxVertex)\n"

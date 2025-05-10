@@ -1,4 +1,3 @@
-dEQP-VK.protected_memory.stack.stacksize_1024
 dEQP-VK.protected_memory.stack.stacksize_128
 dEQP-VK.protected_memory.stack.stacksize_256
 dEQP-VK.protected_memory.stack.stacksize_32

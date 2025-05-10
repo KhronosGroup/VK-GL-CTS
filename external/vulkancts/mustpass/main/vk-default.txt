@@ -3,6 +3,7 @@ vk-default/binding-model.txt
 vk-default/clipping.txt
 vk-default/compute.txt
 vk-default/conditional-rendering.txt
+vk-default/cooperative-vector.txt
 vk-default/depth.txt
 vk-default/descriptor-indexing.txt
 vk-default/device-group.txt
@@ -20,7 +21,10 @@ vk-default/glsl.txt
 vk-default/graphicsfuzz.txt
 vk-default/image/astc-decode-mode.txt
 vk-default/image/atomic-operations.txt
+vk-default/image/concurrent-copy.txt
 vk-default/image/depth-stencil-descriptor.txt
+vk-default/image/depth-stencil-separate-access.txt
+vk-default/image/device-scope-access.txt
 vk-default/image/extend-operands-spirv1p4.txt
 vk-default/image/extended-usage-bit.txt
 vk-default/image/extended-usage-bit-compatibility.txt
@@ -34,6 +38,7 @@ vk-default/image/misaligned-cube.txt
 vk-default/image/mismatched-formats.txt
 vk-default/image/mismatched-write-op.txt
 vk-default/image/mutable.txt
+vk-default/image/non-uniform-offset-sample.txt
 vk-default/image/nontemporal-operand.txt
 vk-default/image/qualifiers.txt
 vk-default/image/queue-transfer.txt

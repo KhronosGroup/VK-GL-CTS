@@ -138,7 +138,7 @@ static const char *getTextureTypeName(TextureType type)
         return "2d_array";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -209,7 +209,7 @@ static inline string getShaderImageFormatQualifier(const TextureFormat &format)
         break;
     default:
         DE_ASSERT(false);
-        orderPart = DE_NULL;
+        orderPart = nullptr;
     }
 
     switch (format.type)
@@ -257,7 +257,7 @@ static inline string getShaderImageFormatQualifier(const TextureFormat &format)
 
     default:
         DE_ASSERT(false);
-        typePart = DE_NULL;
+        typePart = nullptr;
     }
 
     return string() + orderPart + typePart;
@@ -275,7 +275,7 @@ static inline string getShaderSamplerOrImageType(TextureFormat::ChannelType form
                                       textureType == TEXTURETYPE_3D       ? "3D" :
                                       textureType == TEXTURETYPE_CUBE     ? "Cube" :
                                       textureType == TEXTURETYPE_2D_ARRAY ? "2DArray" :
-                                                                            DE_NULL;
+                                                                            nullptr;
 
     return string() + formatPart + (isSampler ? "sampler" : "image") + imageTypePart;
 }
@@ -536,7 +536,7 @@ static const char *getAtomicOperationCaseName(AtomicOperation op)
         return "comp_swap";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -562,7 +562,7 @@ static const char *getAtomicOperationShaderFuncName(AtomicOperation op)
         return "imageAtomicCompSwap";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -584,7 +584,7 @@ public:
     BufferMemMap(const glw::Functions &gl, uint32_t target, int offset, int size, uint32_t access)
         : m_gl(gl)
         , m_target(target)
-        , m_ptr(DE_NULL)
+        , m_ptr(nullptr)
     {
         m_ptr = gl.mapBufferRange(target, offset, size, access);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glMapBufferRange()");
@@ -765,8 +765,7 @@ LayeredImage::LayeredImage(TextureType type, const TextureFormat &format, int w,
 
     DE_ASSERT(w == h || type != TEXTURETYPE_CUBE);
 
-    DE_ASSERT(m_texBuffer != DE_NULL || m_tex2D != DE_NULL || m_texCube != DE_NULL || m_tex3D != DE_NULL ||
-              m_tex2DArray != DE_NULL);
+    DE_ASSERT(m_texBuffer || m_tex2D || m_texCube || m_tex3D || m_tex2DArray);
 }
 
 template <typename ColorT>
@@ -835,7 +834,7 @@ static void setTextureStorage(glu::CallLogWrapper &glLog, TextureType imageType,
         const int numBytes         = format.getPixelSize() * imageSize.x();
         DE_ASSERT(isFormatSupportedForTextureBuffer(format));
         glLog.glBindBuffer(GL_TEXTURE_BUFFER, textureBufGL);
-        glLog.glBufferData(GL_TEXTURE_BUFFER, numBytes, DE_NULL, GL_STATIC_DRAW);
+        glLog.glBufferData(GL_TEXTURE_BUFFER, numBytes, nullptr, GL_STATIC_DRAW);
         glLog.glTexBuffer(GL_TEXTURE_BUFFER, internalFormat, textureBufGL);
         DE_ASSERT(imageSize.y() == 1 && imageSize.z() == 1);
         break;
@@ -1108,7 +1107,7 @@ static bool readFloatOrNormTextureWithLookupsAndVerify(const RenderContext &rend
             TCU_CHECK(blockSize > 0);
 
             glLog.glBindBuffer(GL_SHADER_STORAGE_BUFFER, *outputBuffer);
-            glLog.glBufferData(GL_SHADER_STORAGE_BUFFER, blockSize, DE_NULL, GL_STREAM_READ);
+            glLog.glBufferData(GL_SHADER_STORAGE_BUFFER, blockSize, nullptr, GL_STREAM_READ);
             glLog.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, *outputBuffer);
             GLU_EXPECT_NO_ERROR(renderCtx.getFunctions().getError(), "SSB setup failed");
         }
@@ -2388,7 +2387,7 @@ BinaryAtomicOperationCase::IterateResult BinaryAtomicOperationCase::iterate(void
                 new EndResultVerifier(m_operation, m_imageType, m_numInvocationsPerPixel) :
             m_caseType == ATOMIC_OPERATION_CASE_TYPE_RETURN_VALUES ?
                 new ReturnValueVerifier(m_operation, m_imageType, imageSize.swizzle(0, 1), m_numInvocationsPerPixel) :
-                (ImageLayerVerifier *)DE_NULL);
+                (const ImageLayerVerifier *)nullptr);
 
         if (readTextureAndVerify(renderCtx, glLog, textureToCheckGL, textureToCheckBufGL, m_imageType, m_format,
                                  textureToCheckSize, *verifier))
@@ -2765,8 +2764,8 @@ AtomicCompSwapCase::IterateResult AtomicCompSwapCase::iterate(void)
     {
         // Generate compute shader.
 
-        const string colorScalarTypeName = isUintFormat ? "uint" : isIntFormat ? "int" : DE_NULL;
-        const string colorVecTypeName    = string(isUintFormat ? "u" : isIntFormat ? "i" : DE_NULL) + "vec4";
+        const string colorScalarTypeName = isUintFormat ? "uint" : isIntFormat ? "int" : nullptr;
+        const string colorVecTypeName    = string(isUintFormat ? "u" : isIntFormat ? "i" : nullptr) + "vec4";
         const string atomicCoord =
             m_imageType == TEXTURETYPE_BUFFER ? "gx % " + toString(imageSize.x()) :
             m_imageType == TEXTURETYPE_2D     ? "ivec2(gx % " + toString(imageSize.x()) + ", gy)" :
@@ -2879,7 +2878,7 @@ AtomicCompSwapCase::IterateResult AtomicCompSwapCase::iterate(void)
                 new EndResultVerifier(m_imageType, imageSize.x(), m_numInvocationsPerPixel) :
             m_caseType == ATOMIC_OPERATION_CASE_TYPE_RETURN_VALUES ?
                 new ReturnValueVerifier(m_imageType, imageSize.x(), m_numInvocationsPerPixel) :
-                (ImageLayerVerifier *)DE_NULL);
+                (const ImageLayerVerifier *)nullptr);
 
         if (readTextureAndVerify(renderCtx, glLog, textureToCheckGL, textureToCheckBufGL, m_imageType, m_format,
                                  relevantRegion, *verifier))
@@ -2961,7 +2960,7 @@ CoherenceCase::IterateResult CoherenceCase::iterate(void)
     const bool isIntFormat          = isFormatTypeSignedInteger(m_format.type);
     const char *const qualifierName = m_qualifier == QUALIFIER_COHERENT ? "coherent" :
                                       m_qualifier == QUALIFIER_VOLATILE ? "volatile" :
-                                                                          DE_NULL;
+                                                                          nullptr;
     const glu::Buffer textureBuf(renderCtx);
     const glu::Texture texture(renderCtx);
     const IVec3 numGroups               = IVec3(16, de::min(16, imageSize.y()), de::min(2, numSlicesOrFaces));
@@ -3262,7 +3261,7 @@ ImageSizeCase::IterateResult ImageSizeCase::iterate(void)
                                                  m_imageAccess == IMAGEACCESS_WRITE_ONLY ? "writeonly" :
                                                  m_imageAccess == IMAGEACCESS_READ_ONLY_WRITE_ONLY ?
                                                                                            "readonly writeonly" :
-                                                                                           DE_NULL;
+                                                                                           nullptr;
         const string shaderImageFormatStr      = getShaderImageFormatQualifier(m_format);
         const string shaderImageTypeStr        = getShaderImageType(m_format.type, m_imageType);
         const string glslVersionDeclaration =
@@ -3292,7 +3291,7 @@ ImageSizeCase::IterateResult ImageSizeCase::iterate(void)
                  m_imageType == TEXTURETYPE_3D || m_imageType == TEXTURETYPE_2D_ARRAY ?
                                                      "    ivec3 size = imageSize(u_image);\n"
                                                      "    int result = size.z*1000000 + size.y*1000 + size.x;\n" :
-                                                     DE_NULL) +
+                                                     nullptr) +
                 "    imageStore(u_result, ivec2(0, 0), uvec4(result));\n"
                 "}\n"));
 
@@ -3703,7 +3702,7 @@ void ShaderImageLoadStoreTests::init(void)
                             const string caseTypeName =
                                 caseType == ATOMIC_OPERATION_CASE_TYPE_END_RESULT    ? "result" :
                                 caseType == ATOMIC_OPERATION_CASE_TYPE_RETURN_VALUES ? "return_value" :
-                                                                                       DE_NULL;
+                                                                                       nullptr;
                             const string caseName = string() + getAtomicOperationCaseName(operation) + "_" +
                                                     formatName + "_" + caseTypeName;
 
@@ -3726,7 +3725,7 @@ void ShaderImageLoadStoreTests::init(void)
                         const char *const coherenceQualifierName =
                             coherenceQualifier == CoherenceCase::QUALIFIER_COHERENT ? "coherent" :
                             coherenceQualifier == CoherenceCase::QUALIFIER_VOLATILE ? "volatile" :
-                                                                                      DE_NULL;
+                                                                                      nullptr;
                         const string caseName = string() + coherenceQualifierName + "_" + formatName;
 
                         qualifierGroup->addChild(
@@ -3825,7 +3824,7 @@ void ShaderImageLoadStoreTests::init(void)
 
                     const string testTypeName = testType == EarlyFragmentTestsCase::TESTTYPE_DEPTH   ? "depth" :
                                                 testType == EarlyFragmentTestsCase::TESTTYPE_STENCIL ? "stencil" :
-                                                                                                       DE_NULL;
+                                                                                                       nullptr;
 
                     const string targetName =
                         targetType == EarlyFragmentTestsCase::RENDERTARGET_FBO ?

@@ -68,20 +68,19 @@ public:
 
     const char *getTestNamePostfix(void) const;
 
-    virtual void verifyInteger(tcu::TestContext &testCtx, GLenum name, GLint reference)               = DE_NULL;
+    virtual void verifyInteger(tcu::TestContext &testCtx, GLenum name, GLint reference)                        = 0;
     virtual void verifyInteger4(tcu::TestContext &testCtx, GLenum name, GLint reference0, GLint reference1,
-                                GLint reference2, GLint reference3)                                   = DE_NULL;
+                                GLint reference2, GLint reference3)                                            = 0;
     virtual void verifyInteger4Mask(tcu::TestContext &testCtx, GLenum name, GLint reference0, bool enableRef0,
                                     GLint reference1, bool enableRef1, GLint reference2, bool enableRef2,
-                                    GLint reference3, bool enableRef3)                                = DE_NULL;
-    virtual void verifyIntegerGreaterOrEqual(tcu::TestContext &testCtx, GLenum name, GLint reference) = DE_NULL;
-    virtual void verifyUnsignedIntegerGreaterOrEqual(tcu::TestContext &testCtx, GLenum name,
-                                                     GLuint reference)                                = DE_NULL;
+                                    GLint reference3, bool enableRef3)                                         = 0;
+    virtual void verifyIntegerGreaterOrEqual(tcu::TestContext &testCtx, GLenum name, GLint reference)          = 0;
+    virtual void verifyUnsignedIntegerGreaterOrEqual(tcu::TestContext &testCtx, GLenum name, GLuint reference) = 0;
     virtual void verifyIntegerGreaterOrEqual2(tcu::TestContext &testCtx, GLenum name, GLint reference0,
-                                              GLint reference1)                                       = DE_NULL;
+                                              GLint reference1)                                                = 0;
     virtual void verifyIntegerAnyOf(tcu::TestContext &testCtx, GLenum name, const GLint references[],
-                                    size_t referencesLength)                                          = DE_NULL;
-    virtual void verifyStencilMaskInitial(tcu::TestContext &testCtx, GLenum name, int stencilBits)    = DE_NULL;
+                                    size_t referencesLength)                                                   = 0;
+    virtual void verifyStencilMaskInitial(tcu::TestContext &testCtx, GLenum name, int stencilBits)             = 0;
 
 private:
     const char *const m_testNamePostfix;
@@ -1731,7 +1730,7 @@ public:
             const tcu::ScopedLogSection section(gl.getLog(), "VertexShader", "Vertex Shader");
 
             shaderVert = gl.glCreateShader(GL_VERTEX_SHADER);
-            gl.glShaderSource(shaderVert, 1, &testVertSource, DE_NULL);
+            gl.glShaderSource(shaderVert, 1, &testVertSource, nullptr);
             gl.glCompileShader(shaderVert);
             GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glCompileShader");
 
@@ -1743,7 +1742,7 @@ public:
             const tcu::ScopedLogSection section(gl.getLog(), "FragmentShader", "Fragment Shader");
 
             shaderFrag = gl.glCreateShader(GL_FRAGMENT_SHADER);
-            gl.glShaderSource(shaderFrag, 1, &testFragSource, DE_NULL);
+            gl.glShaderSource(shaderFrag, 1, &testFragSource, nullptr);
             gl.glCompileShader(shaderFrag);
             GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glCompileShader");
 
@@ -2099,7 +2098,7 @@ static const char *getQueryTypeSuffix(QueryType type)
         return "_getfloat";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -2127,9 +2126,9 @@ static const char *getQueryTypeSuffix(QueryType type)
 
 IntegerStateQueryTests::IntegerStateQueryTests(Context &context)
     : TestCaseGroup(context, "integers", "Integer Values")
-    , m_verifierBoolean(DE_NULL)
-    , m_verifierInteger(DE_NULL)
-    , m_verifierFloat(DE_NULL)
+    , m_verifierBoolean(nullptr)
+    , m_verifierInteger(nullptr)
+    , m_verifierFloat(nullptr)
 {
 }
 
@@ -2146,9 +2145,9 @@ void IntegerStateQueryTests::init(void)
         QUERY_FLOAT,
     };
 
-    DE_ASSERT(m_verifierBoolean == DE_NULL);
-    DE_ASSERT(m_verifierInteger == DE_NULL);
-    DE_ASSERT(m_verifierFloat == DE_NULL);
+    DE_ASSERT(m_verifierBoolean == nullptr);
+    DE_ASSERT(m_verifierInteger == nullptr);
+    DE_ASSERT(m_verifierFloat == nullptr);
 
     m_verifierBoolean =
         new GetBooleanVerifier(m_context.getRenderContext().getFunctions(), m_context.getTestContext().getLog());
@@ -2546,17 +2545,17 @@ void IntegerStateQueryTests::deinit(void)
     if (m_verifierBoolean)
     {
         delete m_verifierBoolean;
-        m_verifierBoolean = DE_NULL;
+        m_verifierBoolean = nullptr;
     }
     if (m_verifierInteger)
     {
         delete m_verifierInteger;
-        m_verifierInteger = DE_NULL;
+        m_verifierInteger = nullptr;
     }
     if (m_verifierFloat)
     {
         delete m_verifierFloat;
-        m_verifierFloat = DE_NULL;
+        m_verifierFloat = nullptr;
     }
 
     this->TestCaseGroup::deinit();

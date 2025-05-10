@@ -47,12 +47,12 @@ enum TestType
     TEST_TYPE_VERSION,
 };
 
-DE_INLINE bool isNullTerminated(const char *str, const uint32_t maxSize)
+inline bool isNullTerminated(const char *str, const uint32_t maxSize)
 {
-    return deStrnlen(str, maxSize) < maxSize;
+    return memchr(str, '\0', maxSize) != nullptr;
 }
 
-DE_INLINE bool operator==(const VkConformanceVersion &a, const VkConformanceVersion &b)
+inline bool operator==(const VkConformanceVersion &a, const VkConformanceVersion &b)
 {
     return ((a.major == b.major) && (a.minor == b.minor) && (a.subminor == b.subminor) && (a.patch == b.patch));
 }
@@ -127,7 +127,7 @@ tcu::TestStatus testQueryProperties(Context &context, const TestType testType)
 
     deMemset(&deviceDriverProperties, memsetPattern, sizeof(deviceDriverProperties));
     deviceDriverProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
-    deviceDriverProperties.pNext = DE_NULL;
+    deviceDriverProperties.pNext = nullptr;
 
     deMemset(&deviceProperties2, memsetPattern, sizeof(deviceProperties2));
     deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;

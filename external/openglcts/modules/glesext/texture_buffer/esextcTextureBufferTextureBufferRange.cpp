@@ -895,7 +895,7 @@ tcu::TestNode::IterateResult TextureBufferTextureBufferRange::iterate(void)
         GLU_EXPECT_NO_ERROR(gl.getError(), "Error generating buffer object!");
         gl.bindBuffer(GL_ARRAY_BUFFER, m_tf_size_buffer_id);
         GLU_EXPECT_NO_ERROR(gl.getError(), "Error binding buffer object!");
-        gl.bufferData(GL_ARRAY_BUFFER, sizeof(glw::GLint), DE_NULL, GL_DYNAMIC_COPY);
+        gl.bufferData(GL_ARRAY_BUFFER, sizeof(glw::GLint), nullptr, GL_DYNAMIC_COPY);
         GLU_EXPECT_NO_ERROR(gl.getError(), "Error allocating buffer object's data store!");
 
         std::vector<glw::GLubyte> buffer(info.get_ssbo_value_size());

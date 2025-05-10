@@ -85,7 +85,7 @@ tcu::TestNode::IterateResult SpirvExtensionsQueriesTestCase::iterate()
                        << tcu::TestLog::EndMessage;
     for (GLint i = 0; i < numSpirvExtensions; ++i)
     {
-        const GLubyte *spirvExtension = DE_NULL;
+        const GLubyte *spirvExtension = nullptr;
 
         spirvExtension = gl.getStringi(GL_SPIR_V_EXTENSIONS, i);
         GLU_EXPECT_NO_ERROR(gl.getError(), "getStringi");

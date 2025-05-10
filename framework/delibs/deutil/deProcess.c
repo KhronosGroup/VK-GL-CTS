@@ -74,11 +74,11 @@ static void dieLastError(int statusPipe, const char *message)
 {
     char msgBuf[256];
     int lastErr = errno;
-    deSprintf(msgBuf, sizeof(msgBuf), "%s, error %d: %s", message, lastErr, strerror(lastErr));
+    snprintf(msgBuf, sizeof(msgBuf), "%s, error %d: %s", message, lastErr, strerror(lastErr));
     die(statusPipe, msgBuf);
 }
 
-DE_INLINE bool beginsWithPath(const char *fileName, const char *pathPrefix)
+bool beginsWithPath(const char *fileName, const char *pathPrefix)
 {
     size_t pathLen = strlen(pathPrefix);
 
@@ -86,7 +86,7 @@ DE_INLINE bool beginsWithPath(const char *fileName, const char *pathPrefix)
     while (pathLen > 0 && pathPrefix[pathLen - 1] == '/')
         pathLen -= 1;
 
-    return pathLen > 0 && deMemoryEqual(fileName, pathPrefix, pathLen) && fileName[pathLen] == '/';
+    return pathLen > 0 && memcmp(fileName, pathPrefix, pathLen) == 0 && fileName[pathLen] == '/';
 }
 
 static void stripLeadingPath(char *fileName, const char *pathPrefix)
@@ -110,7 +110,7 @@ static void stripLeadingPath(char *fileName, const char *pathPrefix)
 static void execProcess(const char *commandLine, const char *workingDirectory, int statusPipe)
 {
     deCommandLine *cmdLine = deCommandLine_parse(commandLine);
-    char **argList         = cmdLine ? (char **)deCalloc(sizeof(char *) * ((size_t)cmdLine->numArgs + 1)) : DE_NULL;
+    char **argList         = cmdLine ? (char **)deCalloc(sizeof(char *) * ((size_t)cmdLine->numArgs + 1)) : NULL;
 
     if (!cmdLine || !argList)
         die(statusPipe, "Command line parsing failed (out of memory)");
@@ -122,7 +122,7 @@ static void execProcess(const char *commandLine, const char *workingDirectory, i
         int argNdx;
         for (argNdx = 0; argNdx < cmdLine->numArgs; argNdx++)
             argList[argNdx] = cmdLine->args[argNdx];
-        argList[argNdx] = DE_NULL; /* Terminate with 0. */
+        argList[argNdx] = NULL; /* Terminate with 0. */
     }
 
     if (workingDirectory && beginsWithPath(argList[0], workingDirectory))
@@ -157,9 +157,9 @@ static void deProcess_cleanupHandles(deProcess *process)
         deFile_destroy(process->standardErr);
 
     process->pid         = 0;
-    process->standardIn  = DE_NULL;
-    process->standardOut = DE_NULL;
-    process->standardErr = DE_NULL;
+    process->standardIn  = NULL;
+    process->standardOut = NULL;
+    process->standardErr = NULL;
 }
 
 void deProcess_destroy(deProcess *process)
@@ -191,18 +191,18 @@ static bool deProcess_setError(deProcess *process, const char *error)
     if (process->lastError)
     {
         deFree(process->lastError);
-        process->lastError = DE_NULL;
+        process->lastError = NULL;
     }
 
     process->lastError = deStrdup(error);
-    return process->lastError != DE_NULL;
+    return process->lastError != NULL;
 }
 
 static bool deProcess_setErrorFromErrno(deProcess *process, const char *message)
 {
     char msgBuf[256];
     int lastErr = errno;
-    deSprintf(msgBuf, sizeof(msgBuf), "%s, error %d: %s", message, lastErr, strerror(lastErr));
+    snprintf(msgBuf, sizeof(msgBuf), "%s, error %d: %s", message, lastErr, strerror(lastErr));
     return deProcess_setError(process, message);
 }
 
@@ -469,7 +469,7 @@ bool deProcess_closeStdIn(deProcess *process)
     if (process->standardIn)
     {
         deFile_destroy(process->standardIn);
-        process->standardIn = DE_NULL;
+        process->standardIn = NULL;
         return true;
     }
     else
@@ -481,7 +481,7 @@ bool deProcess_closeStdOut(deProcess *process)
     if (process->standardOut)
     {
         deFile_destroy(process->standardOut);
-        process->standardOut = DE_NULL;
+        process->standardOut = NULL;
         return true;
     }
     else
@@ -493,7 +493,7 @@ bool deProcess_closeStdErr(deProcess *process)
     if (process->standardErr)
     {
         deFile_destroy(process->standardErr);
-        process->standardErr = DE_NULL;
+        process->standardErr = NULL;
         return true;
     }
     else
@@ -533,11 +533,11 @@ static bool deProcess_setError(deProcess *process, const char *error)
     if (process->lastError)
     {
         deFree(process->lastError);
-        process->lastError = DE_NULL;
+        process->lastError = NULL;
     }
 
     process->lastError = deStrdup(error);
-    return process->lastError != DE_NULL;
+    return process->lastError != NULL;
 }
 
 static bool deProcess_setErrorFromWin32(deProcess *process, const char *msg)
@@ -551,16 +551,16 @@ static bool deProcess_setErrorFromWin32(deProcess *process, const char *msg)
 #endif
 
     if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
-                      error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&msgBuf, 0, DE_NULL) > 0)
+                      error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&msgBuf, 0, NULL) > 0)
     {
-        deSprintf(errBuf, sizeof(errBuf), "%s, error %d: %s", msg, error, msgBuf);
+        snprintf(errBuf, sizeof(errBuf), "%s, error %lu: %s", msg, error, msgBuf);
         LocalFree(msgBuf);
         return deProcess_setError(process, errBuf);
     }
     else
     {
         /* Failed to get error str. */
-        deSprintf(errBuf, sizeof(errBuf), "%s, error %d", msg, error);
+        snprintf(errBuf, sizeof(errBuf), "%s, error %lu", msg, error);
         return deProcess_setError(process, errBuf);
     }
 }
@@ -569,7 +569,7 @@ deProcess *deProcess_create(void)
 {
     deProcess *process = (deProcess *)deCalloc(sizeof(deProcess));
     if (!process)
-        return DE_NULL;
+        return NULL;
 
     process->state = PROCESSSTATE_NOT_STARTED;
 
@@ -595,11 +595,11 @@ void deProcess_cleanupHandles(deProcess *process)
     if (process->procInfo.hThread)
         CloseHandle(process->procInfo.hThread);
 
-    process->standardErr       = DE_NULL;
-    process->standardOut       = DE_NULL;
-    process->standardIn        = DE_NULL;
-    process->procInfo.hProcess = DE_NULL;
-    process->procInfo.hThread  = DE_NULL;
+    process->standardErr       = NULL;
+    process->standardOut       = NULL;
+    process->standardIn        = NULL;
+    process->procInfo.hProcess = NULL;
+    process->procInfo.hThread  = NULL;
 }
 
 void deProcess_destroy(deProcess *process)
@@ -631,12 +631,12 @@ bool deProcess_start(deProcess *process, const char *commandLine, const char *wo
     STARTUPINFO startInfo;
 
     /* Pipes. */
-    HANDLE stdInRead   = DE_NULL;
-    HANDLE stdInWrite  = DE_NULL;
-    HANDLE stdOutRead  = DE_NULL;
-    HANDLE stdOutWrite = DE_NULL;
-    HANDLE stdErrRead  = DE_NULL;
-    HANDLE stdErrWrite = DE_NULL;
+    HANDLE stdInRead   = NULL;
+    HANDLE stdInWrite  = NULL;
+    HANDLE stdOutRead  = NULL;
+    HANDLE stdOutWrite = NULL;
+    HANDLE stdErrRead  = NULL;
+    HANDLE stdErrWrite = NULL;
 
     if (process->state == PROCESSSTATE_RUNNING)
     {
@@ -656,7 +656,7 @@ bool deProcess_start(deProcess *process, const char *commandLine, const char *wo
     /* Security attributes for inheriting handle. */
     securityAttr.nLength              = sizeof(SECURITY_ATTRIBUTES);
     securityAttr.bInheritHandle       = TRUE;
-    securityAttr.lpSecurityDescriptor = DE_NULL;
+    securityAttr.lpSecurityDescriptor = NULL;
 
     /* Create pipes. \todo [2011-10-03 pyry] Clean up handles on error! */
     if (!CreatePipe(&stdInRead, &stdInWrite, &securityAttr, 0) ||
@@ -699,8 +699,8 @@ bool deProcess_start(deProcess *process, const char *commandLine, const char *wo
     startInfo.hStdInput  = stdInRead;
     startInfo.dwFlags |= STARTF_USESTDHANDLES;
 
-    if (!CreateProcess(DE_NULL, (LPTSTR)commandLine, DE_NULL, DE_NULL, TRUE /* inherit handles */, 0, DE_NULL,
-                       workingDirectory, &startInfo, &process->procInfo))
+    if (!CreateProcess(NULL, (LPTSTR)commandLine, NULL, NULL, TRUE /* inherit handles */, 0, NULL, workingDirectory,
+                       &startInfo, &process->procInfo))
     {
         /* Store error info. */
         deProcess_setErrorFromWin32(process, "CreateProcess() failed");
@@ -825,7 +825,7 @@ bool deProcess_closeStdIn(deProcess *process)
     if (process->standardIn)
     {
         deFile_destroy(process->standardIn);
-        process->standardIn = DE_NULL;
+        process->standardIn = NULL;
         return true;
     }
     else
@@ -837,7 +837,7 @@ bool deProcess_closeStdOut(deProcess *process)
     if (process->standardOut)
     {
         deFile_destroy(process->standardOut);
-        process->standardOut = DE_NULL;
+        process->standardOut = NULL;
         return true;
     }
     else
@@ -849,7 +849,7 @@ bool deProcess_closeStdErr(deProcess *process)
     if (process->standardErr)
     {
         deFile_destroy(process->standardErr);
-        process->standardErr = DE_NULL;
+        process->standardErr = NULL;
         return true;
     }
     else

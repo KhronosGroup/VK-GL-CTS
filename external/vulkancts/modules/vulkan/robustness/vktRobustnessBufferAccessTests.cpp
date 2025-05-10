@@ -950,13 +950,13 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
 
         const VkBufferCreateInfo inBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             m_inBufferAccessRange,                // VkDeviceSize size;
             inBufferUsageFlags,                   // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             VK_QUEUE_FAMILY_IGNORED,              // uint32_t queueFamilyIndexCount;
-            DE_NULL                               // const uint32_t* pQueueFamilyIndices;
+            nullptr                               // const uint32_t* pQueueFamilyIndices;
         };
 
         m_inBuffer = createBuffer(vk, *m_device, &inBufferParams);
@@ -988,13 +988,13 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
 
         const VkBufferCreateInfo outBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             m_outBufferAccessRange,               // VkDeviceSize size;
             outBufferUsageFlags,                  // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             VK_QUEUE_FAMILY_IGNORED,              // uint32_t queueFamilyIndexCount;
-            DE_NULL                               // const uint32_t* pQueueFamilyIndices;
+            nullptr                               // const uint32_t* pQueueFamilyIndices;
         };
 
         m_outBuffer = createBuffer(vk, *m_device, &outBufferParams);
@@ -1043,13 +1043,13 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
 
         const VkBufferCreateInfo indicesBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             sizeof(IndicesBuffer),                // VkDeviceSize size;
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,   // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             VK_QUEUE_FAMILY_IGNORED,              // uint32_t queueFamilyIndexCount;
-            DE_NULL,                              // const uint32_t* pQueueFamilyIndices;
+            nullptr,                              // const uint32_t* pQueueFamilyIndices;
         };
 
         m_indicesBuffer      = createBuffer(vk, *m_device, &indicesBufferParams);
@@ -1127,7 +1127,7 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
 
         const VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             *m_descriptorPool,                              // VkDescriptorPool descriptorPool;
             1u,                                             // uint32_t setLayoutCount;
             &m_descriptorSetLayout.get()                    // const VkDescriptorSetLayout* pSetLayouts;
@@ -1141,25 +1141,25 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
         {
             const VkBufferViewCreateInfo inBufferViewCreateInfo = {
                 VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                   // const void* pNext;
+                nullptr,                                   // const void* pNext;
                 0u,                                        // VkBufferViewCreateFlags flags;
                 *m_inBuffer,                               // VkBuffer buffer;
                 m_bufferFormat,                            // VkFormat format;
                 0ull,                                      // VkDeviceSize offset;
                 m_inBufferAccessRange                      // VkDeviceSize range;
             };
-            m_inTexelBufferView = createBufferView(vk, *m_device, &inBufferViewCreateInfo, DE_NULL);
+            m_inTexelBufferView = createBufferView(vk, *m_device, &inBufferViewCreateInfo, nullptr);
 
             const VkBufferViewCreateInfo outBufferViewCreateInfo = {
                 VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                   // const void* pNext;
+                nullptr,                                   // const void* pNext;
                 0u,                                        // VkBufferViewCreateFlags flags;
                 *m_outBuffer,                              // VkBuffer buffer;
                 m_bufferFormat,                            // VkFormat format;
                 0ull,                                      // VkDeviceSize offset;
                 m_outBufferAccessRange,                    // VkDeviceSize range;
             };
-            m_outTexelBufferView = createBufferView(vk, *m_device, &outBufferViewCreateInfo, DE_NULL);
+            m_outTexelBufferView = createBufferView(vk, *m_device, &outBufferViewCreateInfo, nullptr);
 
             setUpdateBuilder.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0),
                                          inBufferDescriptorType, &m_inTexelBufferView.get());
@@ -1191,7 +1191,7 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
     {
         const VkFenceCreateInfo fenceParams = {
             VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                             // const void* pNext;
+            nullptr,                             // const void* pNext;
             0u                                   // VkFenceCreateFlags flags;
         };
 
@@ -1234,13 +1234,13 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
             const VkDeviceSize vertexBufferSize         = (VkDeviceSize)(4u * sizeof(tcu::Vec4));
             const VkBufferCreateInfo vertexBufferParams = {
                 VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                              // const void* pNext;
+                nullptr,                              // const void* pNext;
                 0u,                                   // VkBufferCreateFlags flags;
                 vertexBufferSize,                     // VkDeviceSize size;
                 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
                 VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
                 VK_QUEUE_FAMILY_IGNORED,              // uint32_t queueFamilyIndexCount;
-                DE_NULL                               // const uint32_t* pQueueFamilyIndices;
+                nullptr                               // const uint32_t* pQueueFamilyIndices;
             };
 
             DE_ASSERT(vertexBufferSize > 0);
@@ -1262,7 +1262,7 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
             std::vector<VkBuffer>(1, *m_vertexBuffer), // std::vector<VkBuffer> vertexBuffers;
             DE_LENGTH_OF_ARRAY(vertices),              // uint32_t vertexCount;
             1,                                         // uint32_t instanceCount;
-            DE_NULL,                                   // VkBuffer indexBuffer;
+            VK_NULL_HANDLE,                            // VkBuffer indexBuffer;
             0u,                                        // uint32_t indexCount;
         };
 
@@ -1335,14 +1335,14 @@ tcu::TestStatus BufferAccessInstance::iterate(void)
     {
         const VkSubmitInfo submitInfo = {
             VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
-            DE_NULL,                       // const void* pNext;
+            nullptr,                       // const void* pNext;
             0u,                            // uint32_t waitSemaphoreCount;
-            DE_NULL,                       // const VkSemaphore* pWaitSemaphores;
-            DE_NULL,                       // const VkPIpelineStageFlags* pWaitDstStageMask;
+            nullptr,                       // const VkSemaphore* pWaitSemaphores;
+            nullptr,                       // const VkPIpelineStageFlags* pWaitDstStageMask;
             1u,                            // uint32_t commandBufferCount;
             &cmdBuffer,                    // const VkCommandBuffer* pCommandBuffers;
             0u,                            // uint32_t signalSemaphoreCount;
-            DE_NULL                        // const VkSemaphore* pSignalSemaphores;
+            nullptr                        // const VkSemaphore* pSignalSemaphores;
         };
 
         VK_CHECK(vk.resetFences(*m_device, 1, &m_fence.get()));
@@ -1354,7 +1354,7 @@ tcu::TestStatus BufferAccessInstance::iterate(void)
     {
         const VkMappedMemoryRange outBufferRange = {
             VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, //  VkStructureType sType;
-            DE_NULL,                               //  const void* pNext;
+            nullptr,                               //  const void* pNext;
             m_outBufferAlloc->getMemory(),         //  VkDeviceMemory mem;
             0ull,                                  //  VkDeviceSize offset;
             m_outBufferAllocSize,                  //  VkDeviceSize size;
@@ -1660,7 +1660,7 @@ static const char *getShaderStageName(VkShaderStageFlagBits shaderStage)
         DE_ASSERT(false);
     }
 
-    return DE_NULL;
+    return nullptr;
 }
 
 static void addBufferAccessTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentNode, bool testPipelineRobustness)

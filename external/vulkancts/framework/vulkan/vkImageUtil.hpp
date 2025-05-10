@@ -58,6 +58,49 @@ bool isSupportedByFramework(VkFormat format);
 void checkImageSupport(const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
                        const VkImageCreateInfo &imageCreateInfo);
 
+enum class ImageFeatureType
+{
+    OPTIMAL = 0,
+    LINEAR  = 1,
+    BUFFER  = 2
+};
+
+// Returns the first format that supports the required format features in the chosen type.
+// Returns VK_FORMAT_UNDEFINED if none does.
+template <class Iterator>
+VkFormat findFirstSupportedFormat(const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
+                                  VkFormatFeatureFlags features, ImageFeatureType imgFeatureType, Iterator first,
+                                  Iterator last)
+{
+    VkFormat format = VK_FORMAT_UNDEFINED;
+
+    while (first != last)
+    {
+        const auto properties = getPhysicalDeviceFormatProperties(vki, physicalDevice, *first);
+
+        const VkFormatFeatureFlags *flagsPtr = nullptr;
+
+        if (imgFeatureType == ImageFeatureType::OPTIMAL)
+            flagsPtr = &properties.optimalTilingFeatures;
+        else if (imgFeatureType == ImageFeatureType::LINEAR)
+            flagsPtr = &properties.linearTilingFeatures;
+        else if (imgFeatureType == ImageFeatureType::BUFFER)
+            flagsPtr = &properties.bufferFeatures;
+        else
+            DE_ASSERT(false);
+
+        if (((*flagsPtr) & features) == features)
+        {
+            format = *first;
+            break;
+        }
+
+        ++first;
+    }
+
+    return format;
+}
+
 tcu::TextureFormat mapVkFormat(VkFormat format);
 tcu::CompressedTexFormat mapVkCompressedFormat(VkFormat format);
 tcu::TextureFormat getDepthCopyFormat(VkFormat combinedFormat);
@@ -159,12 +202,12 @@ public:
                     vk::VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL, uint32_t mipLevels = 1,
                     vk::VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE);
 
-    VkImage getImage();
-    VkImageView getImageView();
-    VkBuffer getBuffer();
-    VkDeviceSize getBufferSize();
-    Allocation &getImageAllocation();
-    Allocation &getBufferAllocation();
+    VkImage getImage() const;
+    VkImageView getImageView() const;
+    VkBuffer getBuffer() const;
+    VkDeviceSize getBufferSize() const;
+    Allocation &getImageAllocation() const;
+    Allocation &getBufferAllocation() const;
 };
 
 bool isYCbCrFormat(VkFormat format);
@@ -222,7 +265,7 @@ void copyBufferToImage(const DeviceInterface &vk, vk::VkDevice device, vk::VkQue
                        vk::VkImage destImage, VkImageLayout destImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                        VkPipelineStageFlags destImageDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                        VkAccessFlags destImageDstAccessMask        = VK_ACCESS_SHADER_READ_BIT,
-                       const VkCommandPool *externalCommandPool = DE_NULL, uint32_t baseMipLevel = 0);
+                       const VkCommandPool *externalCommandPool = nullptr, uint32_t baseMipLevel = 0);
 
 void copyBufferToImage(const DeviceInterface &vk, const VkCommandBuffer &cmdBuffer, const VkBuffer &buffer,
                        vk::VkDeviceSize bufferSize, const std::vector<VkBufferImageCopy> &copyRegions,

@@ -1,19 +1,17 @@
 {
-    "mandatory_features":
-        {
-            "VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT":
-                [
-                    {
-                        "features": [
-                            "primitiveTopologyListRestart"
-                        ],
-                        "requirements": [
-                            "VK_EXT_primitive_topology_list_restart"
-                        ],
-                        "mandatory_variant": [
-                            "vulkan"
-                        ]
-                    }
+    "mandatory_features": {
+        "VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT": [
+            {
+                "features": [
+                    "primitiveTopologyListRestart"
+                ],
+                "requirements": [
+                    "VK_EXT_primitive_topology_list_restart"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
                 ]
-        }
+            }
+        ]
+    }
 }

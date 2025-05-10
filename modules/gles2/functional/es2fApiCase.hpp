@@ -44,7 +44,7 @@ public:
     IterateResult iterate(void);
 
 protected:
-    virtual void test(void) = DE_NULL;
+    virtual void test(void) = 0;
 
     void expectError(uint32_t error);
     void expectError(uint32_t error0, uint32_t error1);

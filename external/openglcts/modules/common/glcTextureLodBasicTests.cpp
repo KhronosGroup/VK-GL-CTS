@@ -62,17 +62,19 @@ GLubyte colorarray[][4] = {
 /* returned to parameter r. */
 void colorTexturing(const glw::Functions &gl, float lodBase, float lodBiasSum, float lodMin, float lodMax,
                     int levelBase, int levelMax, int levelBaseMaxSize, GLenum magFilter, GLenum minFilter, bool mipmap,
-                    GLubyte *colors, GLubyte *r)
+                    GLubyte *colors, float *r)
 {
+    const float maxColor = 255.0f;
+
     float lodConstant = 0.f, lod = 0.f;
     int d1 = 0, d2 = 0;
 
-    auto copy_pixel = [](GLubyte *dst, GLubyte *src)
+    auto copy_pixel = [maxColor](float *dst, GLubyte *src)
     {
-        dst[0] = src[0];
-        dst[1] = src[1];
-        dst[2] = src[2];
-        dst[3] = src[3];
+        dst[0] = static_cast<float>(src[0]) / maxColor;
+        dst[1] = static_cast<float>(src[1]) / maxColor;
+        dst[2] = static_cast<float>(src[2]) / maxColor;
+        dst[3] = static_cast<float>(src[3]) / maxColor;
     };
 
     if (!mipmap)
@@ -191,7 +193,9 @@ void colorTexturing(const glw::Functions &gl, float lodBase, float lodBiasSum, f
 
             for (i = 0; i < 4; ++i)
             {
-                r[i] = (GLubyte)((1.0f - fracLod) * (float)colors[d1 * 4 + i] + fracLod * (float)colors[d2 * 4 + i]);
+                const float d1norm = static_cast<float>(colors[d1 * 4 + i]) / maxColor;
+                const float d2norm = static_cast<float>(colors[d2 * 4 + i]) / maxColor;
+                r[i]               = (1.0f - fracLod) * d1norm + fracLod * d2norm;
             }
 
             return;
@@ -470,7 +474,7 @@ void TextureLodSelectionTestCase::setBuffers(const glu::ShaderProgram &program)
 
             GLuint strideSize = sizeof(fs_quad) / 4;
 
-            gl.vertexAttribPointer(locVertices, 4, GL_FLOAT, GL_FALSE, strideSize, DE_NULL);
+            gl.vertexAttribPointer(locVertices, 4, GL_FLOAT, GL_FALSE, strideSize, nullptr);
             GLU_EXPECT_NO_ERROR(gl.getError(), "vertexAttribPointer");
         }
 
@@ -590,7 +594,7 @@ bool TextureLodSelectionTestCase::drawAndVerify(const GLint locScale, const floa
     /* is this selection ok? */
     float scale = 8.0f * (float)pow(2.0f, lodLevel) / 8.0f;
 
-    GLubyte result[4] = {0, 0, 0, 0};
+    float result[4] = {0, 0, 0, 0};
 
     gl.uniform1f(locScale, scale);
     GLU_EXPECT_NO_ERROR(gl.getError(), "uniform1f");
@@ -613,25 +617,29 @@ bool TextureLodSelectionTestCase::drawAndVerify(const GLint locScale, const floa
 }
 
 /* Compares given expected result and framebuffer output. Pixel epsilon is one. */
-bool TextureLodSelectionTestCase::doComparison(const int size, const GLubyte *const expectedcolor)
+bool TextureLodSelectionTestCase::doComparison(const int size, const float *const expectedcolor)
 {
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
     bool ret                 = true;
-    size_t fail_ind          = 0;
 
-    std::vector<GLubyte> data(4 * size * size);
-    data.assign(data.size(), 0);
+    std::vector<GLuint> data(size * size);
+    data.assign(data.size(), 0u);
+
     /* one pixel is read */
-    gl.readPixels(0, 0, size, size, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
+    const tcu::PixelFormat &pixelFormat = m_context.getRenderTarget().getPixelFormat();
+    const bool use10Bits                = ((pixelFormat.redBits == 10) && (pixelFormat.greenBits == 10) &&
+                            (pixelFormat.blueBits == 10) && (pixelFormat.alphaBits == 2 || pixelFormat.alphaBits == 0));
+    GLenum type                         = (use10Bits ? GL_UNSIGNED_INT_2_10_10_10_REV : GL_UNSIGNED_BYTE);
+    const auto numChannels              = (pixelFormat.alphaBits == 0 ? 3 : 4);
+
+    gl.readPixels(0, 0, size, size, GL_RGBA, type, data.data());
     GLU_EXPECT_NO_ERROR(gl.getError(), "readPixels");
 
-    GLint col_bits[] = {
-        m_context.getRenderTarget().getPixelFormat().redBits, m_context.getRenderTarget().getPixelFormat().greenBits,
-        m_context.getRenderTarget().getPixelFormat().blueBits, m_context.getRenderTarget().getPixelFormat().alphaBits};
+    GLint col_bits[] = {pixelFormat.redBits, pixelFormat.greenBits, pixelFormat.blueBits, pixelFormat.alphaBits};
 
     auto calcEpsilon = [](const GLint bits)
     {
-        auto zero = (float)ldexp(1.f, -13);
+        auto zero = ldexp(1.f, -8);
         GLfloat e = zero;
         if (bits != 0)
         {
@@ -642,29 +650,47 @@ bool TextureLodSelectionTestCase::doComparison(const int size, const GLubyte *co
         return e;
     };
 
+    float epsilon[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+    for (int i = 0; i < numChannels; ++i)
+        epsilon[i] = calcEpsilon(col_bits[i]);
+
     for (int i = 0; i < size * size; ++i)
     {
-        for (int j = 0; j < 4; ++j)
-        {
-            /* convert the global epsilon for this color channel to UNORM8 */
-            GLint epsilon = (GLint)(calcEpsilon(col_bits[j]) * 255);
+        const GLuint &pixel    = data.at(i);
+        const GLubyte *pxBytes = reinterpret_cast<const GLubyte *>(&pixel);
+        float resultColor[4]   = {0.0f, 0.0f, 0.0f, 0.0f};
 
-            if (std::abs((GLint)data[i * 4 + j] - ((GLint)expectedcolor[j])) > epsilon)
+        if (use10Bits)
+        {
+            // Note this is a strange way to store RGB10A2 but it matches what implementations do.
+            resultColor[0] = static_cast<float>(pixel & 0x3FF) / 1023.0f;
+            resultColor[1] = static_cast<float>((pixel >> 10) & 0x3FF) / 1023.0f;
+            resultColor[2] = static_cast<float>((pixel >> 20) & 0x3FF) / 1023.0f;
+            resultColor[3] = static_cast<float>((pixel >> 30) & 0x3) / 3.0f;
+        }
+        else
+        {
+            // If not 10-bit then we already converted to 8-bit (UNSIGNED_BYTE) in the ReadPixels call, above.
+            resultColor[0] = static_cast<float>(pxBytes[0]) / 255.0f;
+            resultColor[1] = static_cast<float>(pxBytes[1]) / 255.0f;
+            resultColor[2] = static_cast<float>(pxBytes[2]) / 255.0f;
+            resultColor[3] = static_cast<float>(pxBytes[3]) / 255.0f;
+        }
+
+        for (int j = 0; j < numChannels; ++j)
+        {
+            if (std::abs(resultColor[j] - expectedcolor[j]) > epsilon[j])
             {
-                fail_ind = i * 4;
-                ret      = false;
+                m_testCtx.getLog() << tcu::TestLog::Message
+                                   << "TextureLodSelectionTestCase: Unexpected result of color comparison at pixel "
+                                   << i << ": " << expectedcolor[0] << " " << expectedcolor[1] << " "
+                                   << expectedcolor[2] << " " << expectedcolor[3] << " != " << resultColor[0] << " "
+                                   << resultColor[1] << " " << resultColor[2] << " " << resultColor[3]
+                                   << tcu::TestLog::EndMessage;
+                ret = false;
                 break;
             }
         }
-    }
-
-    if (ret == false)
-    {
-        m_testCtx.getLog() << tcu::TestLog::Message
-                           << "TextureLodSelectionTestCase: Unexpected result of color comparison " << std::hex
-                           << expectedcolor[0] << " " << expectedcolor[1] << " " << expectedcolor[2] << " "
-                           << expectedcolor[3] << " != " << std::hex << data[fail_ind + 0] << " " << data[fail_ind + 1]
-                           << " " << data[fail_ind + 2] << " " << data[fail_ind + 3] << tcu::TestLog::EndMessage;
     }
 
     return ret;

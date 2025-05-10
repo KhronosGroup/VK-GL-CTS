@@ -66,39 +66,39 @@ struct Option
     const NamedValue<ValueType> *namedValuesEnd; //!< Named value list end.
 
     //! Construct generic option (string, int, boolean).
-    Option(const char *shortName_, const char *longName_, const char *description_, const char *defaultValue_ = DE_NULL)
+    Option(const char *shortName_, const char *longName_, const char *description_, const char *defaultValue_ = nullptr)
         : shortName(shortName_)
         , longName(longName_)
         , description(description_)
         , defaultValue(defaultValue_)
         , parse(parseType<ValueType>)
-        , namedValues(DE_NULL)
+        , namedValues(nullptr)
         , namedValuesEnd(0)
     {
     }
 
     //! Option with custom parsing function.
     Option(const char *shortName_, const char *longName_, const char *description_, ParseFunc parse_,
-           const char *defaultValue_ = DE_NULL)
+           const char *defaultValue_ = nullptr)
         : shortName(shortName_)
         , longName(longName_)
         , description(description_)
         , defaultValue(defaultValue_)
         , parse(parse_)
-        , namedValues(DE_NULL)
-        , namedValuesEnd(DE_NULL)
+        , namedValues(nullptr)
+        , namedValuesEnd(nullptr)
     {
     }
 
     //! Option that uses named values.
     Option(const char *shortName_, const char *longName_, const char *description_,
            const NamedValue<ValueType> *namedValues_, const NamedValue<ValueType> *namedValuesEnd_,
-           const char *defaultValue_ = DE_NULL)
+           const char *defaultValue_ = nullptr)
         : shortName(shortName_)
         , longName(longName_)
         , description(description_)
         , defaultValue(defaultValue_)
-        , parse((ParseFunc)DE_NULL)
+        , parse(nullptr)
         , namedValues(namedValues_)
         , namedValuesEnd(namedValuesEnd_)
     {
@@ -107,12 +107,12 @@ struct Option
     //! Option that uses named values.
     template <size_t NumNamedValues>
     Option(const char *shortName_, const char *longName_, const char *description_,
-           const NamedValue<ValueType> (&namedValues_)[NumNamedValues], const char *defaultValue_ = DE_NULL)
+           const NamedValue<ValueType> (&namedValues_)[NumNamedValues], const char *defaultValue_ = nullptr)
         : shortName(shortName_)
         , longName(longName_)
         , description(description_)
         , defaultValue(defaultValue_)
-        , parse((ParseFunc)DE_NULL)
+        , parse(nullptr)
         , namedValues(DE_ARRAY_BEGIN(namedValues_))
         , namedValuesEnd(DE_ARRAY_END(namedValues_))
     {
@@ -213,7 +213,7 @@ private:
         void *value;
         DestroyFunc destructor;
 
-        Entry(void) : value(DE_NULL), destructor(0)
+        Entry(void) : value(nullptr), destructor(0)
         {
         }
         Entry(void *value_, DestroyFunc destructor_) : value(value_), destructor(destructor_)
@@ -308,17 +308,17 @@ private:
         SetDefaultFunc setDefault;
 
         OptInfo(void)
-            : shortName(DE_NULL)
-            , longName(DE_NULL)
-            , description(DE_NULL)
-            , defaultValue(DE_NULL)
+            : shortName(nullptr)
+            , longName(nullptr)
+            , description(nullptr)
+            , defaultValue(nullptr)
             , isFlag(false)
-            , parse(DE_NULL)
-            , namedValues(DE_NULL)
-            , namedValuesEnd(DE_NULL)
+            , parse(nullptr)
+            , namedValues(nullptr)
+            , namedValuesEnd(nullptr)
             , namedValueStride(0)
-            , dispatchParse(DE_NULL)
-            , setDefault(DE_NULL)
+            , dispatchParse(nullptr)
+            , setDefault(nullptr)
         {
         }
     };

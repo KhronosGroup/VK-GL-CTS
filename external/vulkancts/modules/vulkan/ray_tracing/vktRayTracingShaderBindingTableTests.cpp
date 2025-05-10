@@ -151,7 +151,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, VkFormat 
 {
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0u,              // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         format,                              // VkFormat format;
@@ -164,7 +164,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, VkFormat 
             VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
     };
 
@@ -507,7 +507,7 @@ void CheckerboardConfiguration::initShaderBindingTables(
         missShaderBindingTableRegion =
             makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), 0),
                                               shaderGroupHandleSize, shaderGroupHandleSize);
-        callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+        callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
         // fill ShaderRecordKHR data
         if (testParams.shaderRecordPresent)
@@ -557,7 +557,7 @@ void CheckerboardConfiguration::initShaderBindingTables(
             missShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(
                 getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), shaderBindingTableOffset),
                 shaderGroupHandleSize, shaderCount[STT_MISS] * shaderGroupHandleSize);
-        callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+        callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
         if (testParams.shaderRecordPresent)
         {
@@ -1021,7 +1021,7 @@ de::MovePtr<BufferWithMemory> ShaderBindingTableIndexingTestInstance::runTest()
         new BufferWithMemory(vkd, device, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
 
     const VkDescriptorImageInfo descriptorImageInfo =
-        makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 
     const Move<VkCommandPool> cmdPool = createCommandPool(vkd, device, 0, queueFamilyIndex);
     const Move<VkCommandBuffer> cmdBuffer =
@@ -1050,13 +1050,16 @@ de::MovePtr<BufferWithMemory> ShaderBindingTableIndexingTestInstance::runTest()
         cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                       VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, &postImageBarrier);
 
+        AccelerationStructBufferProperties bufferProps;
+        bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
         bottomLevelAccelerationStructures =
             m_data.testConfiguration->initBottomAccelerationStructures(m_context, m_data);
         for (auto &blas : bottomLevelAccelerationStructures)
-            blas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+            blas->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
         topLevelAccelerationStructure = m_data.testConfiguration->initTopAccelerationStructure(
             m_context, m_data, bottomLevelAccelerationStructures);
-        topLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator);
+        topLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
 
         uniformBuffer = m_data.testConfiguration->initUniformBuffer(m_context, m_data);
         VkDescriptorBufferInfo uniformBufferInfo =
@@ -1065,7 +1068,7 @@ de::MovePtr<BufferWithMemory> ShaderBindingTableIndexingTestInstance::runTest()
         const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = topLevelAccelerationStructure.get();
         VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-            DE_NULL,                                                           //  const void* pNext;
+            nullptr,                                                           //  const void* pNext;
             1u,                                                                //  uint32_t accelerationStructureCount;
             topLevelAccelerationStructurePtr->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
         };
@@ -1080,7 +1083,7 @@ de::MovePtr<BufferWithMemory> ShaderBindingTableIndexingTestInstance::runTest()
             .update(vkd, device);
 
         vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                                  &descriptorSet.get(), 0, DE_NULL);
+                                  &descriptorSet.get(), 0, nullptr);
 
         vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 
@@ -1408,6 +1411,9 @@ tcu::TestStatus ShaderGroupHandleAlignmentInstance::iterate(void)
     auto topLevelAS    = makeTopLevelAccelerationStructure();
     auto bottomLevelAS = makeBottomLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     // Create the needed amount of geometries (triangles) with the right coordinates.
     const tcu::Vec3 baseLocation(0.5f, 0.5f, triangleZ);
     const float vertexOffset = 0.25f; // From base location, to build a triangle around it.
@@ -1427,13 +1433,13 @@ tcu::TestStatus ShaderGroupHandleAlignmentInstance::iterate(void)
         bottomLevelAS->addGeometry(triangle, true /*triangles*/);
     }
 
-    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     de::SharedPtr<BottomLevelAccelerationStructure> blasSharedPtr(bottomLevelAS.release());
     topLevelAS->setInstanceCount(1);
     topLevelAS->addInstance(blasSharedPtr, identityMatrix3x4, 0u, 0xFF, 0u,
                             VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR);
-    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     // Get some ray tracing properties.
     uint32_t shaderGroupHandleSize    = 0u;
@@ -1501,10 +1507,10 @@ tcu::TestStatus ShaderGroupHandleAlignmentInstance::iterate(void)
     de::MovePtr<BufferWithMemory> hitSBT;
     de::MovePtr<BufferWithMemory> callableSBT;
 
-    VkStridedDeviceAddressRegionKHR raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR missSBTRegion     = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR hitSBTRegion      = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR callableSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    VkStridedDeviceAddressRegionKHR raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR missSBTRegion     = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR hitSBTRegion      = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR callableSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     // Create shader record buffer data.
     using DataVec = std::vector<uint8_t>;

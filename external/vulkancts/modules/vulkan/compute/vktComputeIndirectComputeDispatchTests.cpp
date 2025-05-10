@@ -123,7 +123,7 @@ vk::Move<vk::VkDevice> createCustomDevice(Context &context,
     const vk::VkDeviceQueueCreateInfo deviceQueueCreateInfos[] = {
         {
             vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             (vk::VkDeviceQueueCreateFlags)0u,               // VkDeviceQueueCreateFlags flags;
             context.getUniversalQueueFamilyIndex(),         // uint32_t queueFamilyIndex;
             1u,                                             // uint32_t queueCount;
@@ -131,7 +131,7 @@ vk::Move<vk::VkDevice> createCustomDevice(Context &context,
         },
         {
             vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             (vk::VkDeviceQueueCreateFlags)0u,               // VkDeviceQueueCreateFlags flags;
             queueFamilyIndex,                               // uint32_t queueFamilyIndex;
             1u,                                             // uint32_t queueCount;
@@ -167,7 +167,7 @@ vk::Move<vk::VkDevice> createCustomDevice(Context &context,
         {
             pcCI = {
                 VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                      // const void* pNext;
+                nullptr,                                      // const void* pNext;
                 VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                     VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
                 context.getResourceInterface()->getCacheDataSize(),       // uintptr_t initialDataSize;
@@ -192,10 +192,10 @@ vk::Move<vk::VkDevice> createCustomDevice(Context &context,
         DE_LENGTH_OF_ARRAY(deviceQueueCreateInfos),   // uint32_t queueCreateInfoCount;
         deviceQueueCreateInfos,                       // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u,                                           // uint32_t enabledLayerCount;
-        DE_NULL,                                      // const char* const* ppEnabledLayerNames;
+        nullptr,                                      // const char* const* ppEnabledLayerNames;
         static_cast<uint32_t>(extensionNames.size()), // uint32_t enabledExtensionCount;
         extensionNames.data(),                        // const char* const* ppEnabledExtensionNames;
-        DE_NULL,                                      // const VkPhysicalDeviceFeatures* pEnabledFeatures;
+        nullptr,                                      // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
     return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
@@ -412,7 +412,7 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate(void)
     const vk::DeviceInterface &vkdi = m_context.getDeviceInterface();
 #else
     const vk::DeviceInterface &vkdi =
-        (m_computeQueueOnly && (DE_NULL != m_deviceDriver)) ? *m_deviceDriver : m_context.getDeviceInterface();
+        (m_computeQueueOnly && m_deviceDriver) ? *m_deviceDriver : m_context.getDeviceInterface();
 #endif // CTS_USES_VULKANSC
     if (m_computeQueueOnly)
     {
@@ -512,7 +512,7 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate(void)
 
         // Bind descriptor set
         vkdi.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline.getPipelineLayout(),
-                                   0u, 1u, &(**descriptorSets[cmdNdx]), 0u, DE_NULL);
+                                   0u, 1u, &(**descriptorSets[cmdNdx]), 0u, nullptr);
 
         // Dispatch indirect compute command
         vkdi.cmdDispatchIndirect(*cmdBuffer, *indirectBuffer, m_dispatchCommands[cmdNdx].m_offset);
@@ -522,8 +522,7 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate(void)
 
     // Insert memory barrier
     vkdi.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
-                            (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 1, &ssboPostBarrier, 0,
-                            (const vk::VkImageMemoryBarrier *)DE_NULL);
+                            (vk::VkDependencyFlags)0, 0, nullptr, 1, &ssboPostBarrier, 0, nullptr);
 
     // End recording commands
     endCommandBuffer(vkdi, *cmdBuffer);
@@ -751,16 +750,15 @@ void IndirectDispatchInstanceBufferGenerate::fillIndirectBufferData(const vk::Vk
 
     // Bind descriptor set
     vkdi.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u,
-                               &m_descriptorSet.get(), 0u, DE_NULL);
+                               &m_descriptorSet.get(), 0u, nullptr);
 
     // Dispatch compute command
     vkdi.cmdDispatch(commandBuffer, 1u, 1u, 1u);
 
     // Insert memory barrier
     vkdi.cmdPipelineBarrier(commandBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                            vk::VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, (vk::VkDependencyFlags)0, 0,
-                            (const vk::VkMemoryBarrier *)DE_NULL, 1, &bufferBarrier, 0,
-                            (const vk::VkImageMemoryBarrier *)DE_NULL);
+                            vk::VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, (vk::VkDependencyFlags)0, 0, nullptr, 1,
+                            &bufferBarrier, 0, nullptr);
 }
 
 class IndirectDispatchCaseBufferGenerate : public IndirectDispatchCaseBufferUpload

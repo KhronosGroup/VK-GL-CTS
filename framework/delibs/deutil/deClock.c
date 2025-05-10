@@ -79,5 +79,5 @@ uint64_t deGetMicroseconds(void)
 
 uint64_t deGetTime(void)
 {
-    return (uint64_t)time(DE_NULL);
+    return (uint64_t)time(NULL);
 }

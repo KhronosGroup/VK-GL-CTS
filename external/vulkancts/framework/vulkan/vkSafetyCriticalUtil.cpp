@@ -65,11 +65,11 @@ VkDeviceObjectReservationCreateInfo resetDeviceObjectReservationCreateInfo()
 {
     VkDeviceObjectReservationCreateInfo result = {
         VK_STRUCTURE_TYPE_DEVICE_OBJECT_RESERVATION_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                 // const void* pNext;
+        nullptr,                                                 // const void* pNext;
         0u,                                                      // uint32_t pipelineCacheCreateInfoCount;
-        DE_NULL, // const VkPipelineCacheCreateInfo* pPipelineCacheCreateInfos;
+        nullptr, // const VkPipelineCacheCreateInfo* pPipelineCacheCreateInfos;
         0u,      // uint32_t pipelinePoolSizeCount;
-        DE_NULL, // const VkPipelinePoolSize* pPipelinePoolSizes;
+        nullptr, // const VkPipelinePoolSize* pPipelinePoolSizes;
         0u,      // uint32_t semaphoreRequestCount;
         0u,      // uint32_t commandBufferRequestCount;
         0u,      // uint32_t fenceRequestCount;
@@ -115,7 +115,7 @@ VkPipelineOfflineCreateInfo resetPipelineOfflineCreateInfo()
 {
     VkPipelineOfflineCreateInfo pipelineID = {
         VK_STRUCTURE_TYPE_PIPELINE_OFFLINE_CREATE_INFO,         // VkStructureType sType;
-        DE_NULL,                                                // const void* pNext;
+        nullptr,                                                // const void* pNext;
         {0},                                                    // uint8_t pipelineIdentifier[VK_UUID_SIZE];
         VK_PIPELINE_MATCH_CONTROL_APPLICATION_UUID_EXACT_MATCH, // VkPipelineMatchControl matchControl;
         0u                                                      // VkDeviceSize poolEntrySize;
@@ -137,7 +137,7 @@ VkPhysicalDeviceVulkanSC10Features createDefaultSC10Features()
 {
     VkPhysicalDeviceVulkanSC10Features result = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES, // VkStructureType sType;
-        DE_NULL,                                                  // void* pNext;
+        nullptr,                                                  // void* pNext;
         VK_FALSE                                                  // VkBool32 shaderAtomicInstructions;
     };
     return result;
@@ -146,7 +146,7 @@ VkPhysicalDeviceVulkanSC10Features createDefaultSC10Features()
 void hashPNextChain(std::size_t &seed, const void *pNext, const std::map<uint64_t, std::size_t> &objectHashes)
 {
     VkBaseInStructure *pBase = (VkBaseInStructure *)pNext;
-    if (pNext != DE_NULL)
+    if (pNext != nullptr)
     {
         switch (pBase->sType)
         {
@@ -159,7 +159,7 @@ void hashPNextChain(std::size_t &seed, const void *pNext, const std::map<uint64_
         case VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO:
         {
             VkDescriptorSetLayoutBindingFlagsCreateInfo *ptr = (VkDescriptorSetLayoutBindingFlagsCreateInfo *)pNext;
-            if (ptr->pBindingFlags != DE_NULL)
+            if (ptr->pBindingFlags != nullptr)
                 for (uint32_t i = 0; i < ptr->bindingCount; ++i)
                     hash_combine(seed, ptr->pBindingFlags[i]);
             break;
@@ -174,7 +174,7 @@ void hashPNextChain(std::size_t &seed, const void *pNext, const std::map<uint64_
         case VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT:
         {
             VkPipelineColorWriteCreateInfoEXT *ptr = (VkPipelineColorWriteCreateInfoEXT *)pNext;
-            if (ptr->pColorWriteEnables != DE_NULL)
+            if (ptr->pColorWriteEnables != nullptr)
                 for (uint32_t i = 0; i < ptr->attachmentCount; ++i)
                     hash_combine(seed, ptr->pColorWriteEnables[i]);
             break;
@@ -183,7 +183,7 @@ void hashPNextChain(std::size_t &seed, const void *pNext, const std::map<uint64_
         {
             VkPipelineDiscardRectangleStateCreateInfoEXT *ptr = (VkPipelineDiscardRectangleStateCreateInfoEXT *)pNext;
             hash_combine(seed, ptr->flags, uint32_t(ptr->discardRectangleMode));
-            if (ptr->pDiscardRectangles != DE_NULL)
+            if (ptr->pDiscardRectangles != nullptr)
                 for (uint32_t i = 0; i < ptr->discardRectangleCount; ++i)
                     hash_combine(seed, ptr->pDiscardRectangles[i].offset.x, ptr->pDiscardRectangles[i].offset.y,
                                  ptr->pDiscardRectangles[i].extent.width, ptr->pDiscardRectangles[i].extent.height);
@@ -225,7 +225,7 @@ void hashPNextChain(std::size_t &seed, const void *pNext, const std::map<uint64_
             hash_combine(seed, ptr->sampleLocationsEnable, uint32_t(ptr->sampleLocationsInfo.sampleLocationsPerPixel),
                          ptr->sampleLocationsInfo.sampleLocationGridSize.width,
                          ptr->sampleLocationsInfo.sampleLocationGridSize.height);
-            if (ptr->sampleLocationsInfo.pSampleLocations != DE_NULL)
+            if (ptr->sampleLocationsInfo.pSampleLocations != nullptr)
                 for (uint32_t i = 0; i < ptr->sampleLocationsInfo.sampleLocationsCount; ++i)
                     hash_combine(seed, ptr->sampleLocationsInfo.pSampleLocations[i].x,
                                  ptr->sampleLocationsInfo.pSampleLocations[i].y);
@@ -245,11 +245,11 @@ void hashPNextChain(std::size_t &seed, const void *pNext, const std::map<uint64_
             hash_combine(seed, uint32_t(ptr->domainOrigin));
             break;
         }
-        case VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT:
+        case VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_KHR:
         {
             VkPipelineVertexInputDivisorStateCreateInfoEXT *ptr =
                 (VkPipelineVertexInputDivisorStateCreateInfoEXT *)pNext;
-            if (ptr->pVertexBindingDivisors != DE_NULL)
+            if (ptr->pVertexBindingDivisors != nullptr)
                 for (uint32_t i = 0; i < ptr->vertexBindingDivisorCount; ++i)
                     hash_combine(seed, ptr->pVertexBindingDivisors[i].binding, ptr->pVertexBindingDivisors[i].divisor);
             break;
@@ -257,7 +257,7 @@ void hashPNextChain(std::size_t &seed, const void *pNext, const std::map<uint64_
         case VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO:
         {
             VkRenderPassInputAttachmentAspectCreateInfo *ptr = (VkRenderPassInputAttachmentAspectCreateInfo *)pNext;
-            if (ptr->pAspectReferences != DE_NULL)
+            if (ptr->pAspectReferences != nullptr)
                 for (uint32_t i = 0; i < ptr->aspectReferenceCount; ++i)
                     hash_combine(seed, ptr->pAspectReferences[i].subpass,
                                  ptr->pAspectReferences[i].inputAttachmentIndex, ptr->pAspectReferences[i].aspectMask);
@@ -266,13 +266,13 @@ void hashPNextChain(std::size_t &seed, const void *pNext, const std::map<uint64_
         case VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO:
         {
             VkRenderPassMultiviewCreateInfo *ptr = (VkRenderPassMultiviewCreateInfo *)pNext;
-            if (ptr->pViewMasks != DE_NULL)
+            if (ptr->pViewMasks != nullptr)
                 for (uint32_t i = 0; i < ptr->subpassCount; ++i)
                     hash_combine(seed, ptr->pViewMasks[i]);
-            if (ptr->pViewOffsets != DE_NULL)
+            if (ptr->pViewOffsets != nullptr)
                 for (uint32_t i = 0; i < ptr->dependencyCount; ++i)
                     hash_combine(seed, ptr->pViewOffsets[i]);
-            if (ptr->pCorrelationMasks != DE_NULL)
+            if (ptr->pCorrelationMasks != nullptr)
                 for (uint32_t i = 0; i < ptr->correlationMaskCount; ++i)
                     hash_combine(seed, ptr->pCorrelationMasks[i]);
             break;
@@ -310,10 +310,10 @@ void hashPNextChain(std::size_t &seed, const void *pNext, const std::map<uint64_
 
 bool graphicsPipelineHasDynamicState(const VkGraphicsPipelineCreateInfo &gpCI, VkDynamicState state)
 {
-    if (gpCI.pDynamicState == DE_NULL)
+    if (gpCI.pDynamicState == nullptr)
         return false;
 
-    if (gpCI.pDynamicState->pDynamicStates == DE_NULL)
+    if (gpCI.pDynamicState->pDynamicStates == nullptr)
         return false;
 
     for (uint32_t i = 0; i < gpCI.pDynamicState->dynamicStateCount; ++i)
@@ -342,7 +342,7 @@ std::size_t calculateGraphicsPipelineHash(const VkGraphicsPipelineCreateInfo &gp
     bool depthStencilStateRequired      = false;
     bool colorBlendStateRequired        = false;
 
-    if (gpCI.pStages != DE_NULL)
+    if (gpCI.pStages != nullptr)
     {
         for (uint32_t i = 0; i < gpCI.stageCount; ++i)
         {
@@ -355,9 +355,9 @@ std::size_t calculateGraphicsPipelineHash(const VkGraphicsPipelineCreateInfo &gp
 
             hash_combine(seed, std::string(gpCI.pStages[i].pName));
 
-            if (gpCI.pStages[i].pSpecializationInfo != DE_NULL)
+            if (gpCI.pStages[i].pSpecializationInfo != nullptr)
             {
-                if (gpCI.pStages[i].pSpecializationInfo->pMapEntries != DE_NULL)
+                if (gpCI.pStages[i].pSpecializationInfo->pMapEntries != nullptr)
                 {
                     for (uint32_t j = 0; j < gpCI.pStages[i].pSpecializationInfo->mapEntryCount; ++j)
                         hash_combine(seed, gpCI.pStages[i].pSpecializationInfo->pMapEntries[j].constantID,
@@ -379,9 +379,9 @@ std::size_t calculateGraphicsPipelineHash(const VkGraphicsPipelineCreateInfo &gp
             }
         }
     }
-    if (gpCI.pDynamicState != DE_NULL)
+    if (gpCI.pDynamicState != nullptr)
     {
-        if (gpCI.pDynamicState->pDynamicStates != DE_NULL)
+        if (gpCI.pDynamicState->pDynamicStates != nullptr)
             for (uint32_t i = 0; i < gpCI.pDynamicState->dynamicStateCount; ++i)
             {
                 if (gpCI.pDynamicState->pDynamicStates[i] == VK_DYNAMIC_STATE_VIEWPORT ||
@@ -400,7 +400,7 @@ std::size_t calculateGraphicsPipelineHash(const VkGraphicsPipelineCreateInfo &gp
                     viewportStateRequired = true;
             }
     }
-    if (gpCI.pRasterizationState != DE_NULL)
+    if (gpCI.pRasterizationState != nullptr)
     {
         if (gpCI.pRasterizationState->rasterizerDiscardEnable == VK_FALSE)
         {
@@ -413,16 +413,16 @@ std::size_t calculateGraphicsPipelineHash(const VkGraphicsPipelineCreateInfo &gp
         }
     }
 
-    if (vertexInputStateRequired && gpCI.pVertexInputState != DE_NULL)
+    if (vertexInputStateRequired && gpCI.pVertexInputState != nullptr)
     {
         hashPNextChain(seed, gpCI.pVertexInputState->pNext, objectHashes);
         hash_combine(seed, gpCI.pVertexInputState->flags);
-        if (gpCI.pVertexInputState->pVertexBindingDescriptions != DE_NULL)
+        if (gpCI.pVertexInputState->pVertexBindingDescriptions != nullptr)
             for (uint32_t i = 0; i < gpCI.pVertexInputState->vertexBindingDescriptionCount; ++i)
                 hash_combine(seed, gpCI.pVertexInputState->pVertexBindingDescriptions[i].binding,
                              gpCI.pVertexInputState->pVertexBindingDescriptions[i].stride,
                              uint32_t(gpCI.pVertexInputState->pVertexBindingDescriptions[i].inputRate));
-        if (gpCI.pVertexInputState->pVertexAttributeDescriptions != DE_NULL)
+        if (gpCI.pVertexInputState->pVertexAttributeDescriptions != nullptr)
             for (uint32_t i = 0; i < gpCI.pVertexInputState->vertexAttributeDescriptionCount; ++i)
                 hash_combine(seed, gpCI.pVertexInputState->pVertexAttributeDescriptions[i].location,
                              gpCI.pVertexInputState->pVertexAttributeDescriptions[i].binding,
@@ -430,35 +430,35 @@ std::size_t calculateGraphicsPipelineHash(const VkGraphicsPipelineCreateInfo &gp
                              gpCI.pVertexInputState->pVertexAttributeDescriptions[i].offset);
     }
 
-    if (inputAssemblyStateRequired && gpCI.pInputAssemblyState != DE_NULL)
+    if (inputAssemblyStateRequired && gpCI.pInputAssemblyState != nullptr)
     {
         hashPNextChain(seed, gpCI.pInputAssemblyState->pNext, objectHashes);
         hash_combine(seed, uint32_t(gpCI.pInputAssemblyState->flags), uint32_t(gpCI.pInputAssemblyState->topology),
                      gpCI.pInputAssemblyState->primitiveRestartEnable);
     }
-    if (tessellationStateRequired && gpCI.pTessellationState != DE_NULL)
+    if (tessellationStateRequired && gpCI.pTessellationState != nullptr)
     {
         hashPNextChain(seed, gpCI.pTessellationState->pNext, objectHashes);
         hash_combine(seed, gpCI.pTessellationState->flags, gpCI.pTessellationState->patchControlPoints);
     }
-    if (viewportStateRequired && gpCI.pViewportState != DE_NULL)
+    if (viewportStateRequired && gpCI.pViewportState != nullptr)
     {
         hashPNextChain(seed, gpCI.pViewportState->pNext, objectHashes);
         hash_combine(seed, gpCI.pViewportState->flags);
 
-        if (viewportStateViewportsRequired && gpCI.pViewportState->pViewports != DE_NULL)
+        if (viewportStateViewportsRequired && gpCI.pViewportState->pViewports != nullptr)
             for (uint32_t i = 0; i < gpCI.pViewportState->viewportCount; ++i)
                 hash_combine(seed, gpCI.pViewportState->pViewports[i].x, gpCI.pViewportState->pViewports[i].y,
                              gpCI.pViewportState->pViewports[i].width, gpCI.pViewportState->pViewports[i].height,
                              gpCI.pViewportState->pViewports[i].minDepth, gpCI.pViewportState->pViewports[i].maxDepth);
 
-        if (viewportStateScissorsRequired && gpCI.pViewportState->pScissors != DE_NULL)
+        if (viewportStateScissorsRequired && gpCI.pViewportState->pScissors != nullptr)
             for (uint32_t i = 0; i < gpCI.pViewportState->scissorCount; ++i)
                 hash_combine(seed, gpCI.pViewportState->pScissors[i].offset.x,
                              gpCI.pViewportState->pScissors[i].offset.y, gpCI.pViewportState->pScissors[i].extent.width,
                              gpCI.pViewportState->pScissors[i].extent.height);
     }
-    if (gpCI.pRasterizationState != DE_NULL)
+    if (gpCI.pRasterizationState != nullptr)
     {
         hashPNextChain(seed, gpCI.pRasterizationState->pNext, objectHashes);
         hash_combine(seed, uint32_t(gpCI.pRasterizationState->flags), gpCI.pRasterizationState->depthClampEnable,
@@ -468,18 +468,18 @@ std::size_t calculateGraphicsPipelineHash(const VkGraphicsPipelineCreateInfo &gp
                      gpCI.pRasterizationState->depthBiasClamp, gpCI.pRasterizationState->depthBiasSlopeFactor,
                      gpCI.pRasterizationState->lineWidth);
     }
-    if (multiSampleStateRequired && gpCI.pMultisampleState != DE_NULL)
+    if (multiSampleStateRequired && gpCI.pMultisampleState != nullptr)
     {
         hashPNextChain(seed, gpCI.pMultisampleState->pNext, objectHashes);
         hash_combine(seed, uint32_t(gpCI.pMultisampleState->flags),
                      uint32_t(gpCI.pMultisampleState->rasterizationSamples),
                      gpCI.pMultisampleState->sampleShadingEnable, gpCI.pMultisampleState->minSampleShading);
-        if (gpCI.pMultisampleState->pSampleMask != DE_NULL)
+        if (gpCI.pMultisampleState->pSampleMask != nullptr)
             for (int i = 0; i < ((gpCI.pMultisampleState->rasterizationSamples + 31) / 32); i++)
                 hash_combine(seed, gpCI.pMultisampleState->pSampleMask[i]);
         hash_combine(seed, gpCI.pMultisampleState->alphaToCoverageEnable, gpCI.pMultisampleState->alphaToOneEnable);
     }
-    if (depthStencilStateRequired && gpCI.pDepthStencilState != DE_NULL)
+    if (depthStencilStateRequired && gpCI.pDepthStencilState != nullptr)
     {
         hashPNextChain(seed, gpCI.pDepthStencilState->pNext, objectHashes);
         hash_combine(seed, uint32_t(gpCI.pDepthStencilState->flags), gpCI.pDepthStencilState->depthTestEnable,
@@ -500,7 +500,7 @@ std::size_t calculateGraphicsPipelineHash(const VkGraphicsPipelineCreateInfo &gp
         }
         hash_combine(seed, gpCI.pDepthStencilState->minDepthBounds, gpCI.pDepthStencilState->maxDepthBounds);
     }
-    if (colorBlendStateRequired && gpCI.pColorBlendState != DE_NULL)
+    if (colorBlendStateRequired && gpCI.pColorBlendState != nullptr)
     {
         hashPNextChain(seed, gpCI.pColorBlendState->pNext, objectHashes);
         hash_combine(seed, uint32_t(gpCI.pColorBlendState->flags), gpCI.pColorBlendState->logicOpEnable,
@@ -510,7 +510,7 @@ std::size_t calculateGraphicsPipelineHash(const VkGraphicsPipelineCreateInfo &gp
         std::set<VkBlendFactor> constFactors = {
             VK_BLEND_FACTOR_CONSTANT_COLOR, VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR, VK_BLEND_FACTOR_CONSTANT_ALPHA,
             VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA};
-        if (gpCI.pColorBlendState->pAttachments != DE_NULL)
+        if (gpCI.pColorBlendState->pAttachments != nullptr)
         {
             for (uint32_t i = 0; i < gpCI.pColorBlendState->attachmentCount; ++i)
             {
@@ -537,11 +537,11 @@ std::size_t calculateGraphicsPipelineHash(const VkGraphicsPipelineCreateInfo &gp
             for (uint32_t i = 0; i < 4; ++i)
                 hash_combine(seed, gpCI.pColorBlendState->blendConstants[i]);
     }
-    if (gpCI.pDynamicState != DE_NULL)
+    if (gpCI.pDynamicState != nullptr)
     {
         hashPNextChain(seed, gpCI.pDynamicState->pNext, objectHashes);
         hash_combine(seed, gpCI.pDynamicState->flags);
-        if (gpCI.pDynamicState->pDynamicStates != DE_NULL)
+        if (gpCI.pDynamicState->pDynamicStates != nullptr)
             for (uint32_t i = 0; i < gpCI.pDynamicState->dynamicStateCount; ++i)
                 hash_combine(seed, uint32_t(gpCI.pDynamicState->pDynamicStates[i]));
     }
@@ -587,9 +587,9 @@ std::size_t calculateComputePipelineHash(const VkComputePipelineCreateInfo &cpCI
 
         hash_combine(seed, std::string(cpCI.stage.pName));
 
-        if (cpCI.stage.pSpecializationInfo != DE_NULL)
+        if (cpCI.stage.pSpecializationInfo != nullptr)
         {
-            if (cpCI.stage.pSpecializationInfo->pMapEntries != DE_NULL)
+            if (cpCI.stage.pSpecializationInfo->pMapEntries != nullptr)
             {
                 for (uint32_t j = 0; j < cpCI.stage.pSpecializationInfo->mapEntryCount; ++j)
                     hash_combine(seed, cpCI.stage.pSpecializationInfo->pMapEntries[j].constantID,
@@ -650,13 +650,13 @@ std::size_t calculateDescriptorSetLayoutHash(const VkDescriptorSetLayoutCreateIn
     hashPNextChain(seed, sCI.pNext, objectHashes);
 
     hash_combine(seed, uint32_t(sCI.flags));
-    if (sCI.pBindings != DE_NULL)
+    if (sCI.pBindings != nullptr)
     {
         for (uint32_t i = 0; i < sCI.bindingCount; ++i)
         {
             hash_combine(seed, sCI.pBindings[i].binding, uint32_t(sCI.pBindings[i].descriptorType),
                          sCI.pBindings[i].descriptorCount, uint32_t(sCI.pBindings[i].stageFlags));
-            if (sCI.pBindings[i].pImmutableSamplers != DE_NULL)
+            if (sCI.pBindings[i].pImmutableSamplers != nullptr)
             {
                 for (uint32_t j = 0; j < sCI.pBindings[i].descriptorCount; ++j)
                 {
@@ -679,7 +679,7 @@ std::size_t calculatePipelineLayoutHash(const VkPipelineLayoutCreateInfo &pCI,
 
     hash_combine(seed, uint32_t(pCI.flags));
 
-    if (pCI.pSetLayouts != DE_NULL)
+    if (pCI.pSetLayouts != nullptr)
     {
         for (uint32_t i = 0; i < pCI.setLayoutCount; ++i)
         {
@@ -688,7 +688,7 @@ std::size_t calculatePipelineLayoutHash(const VkPipelineLayoutCreateInfo &pCI,
                 hash_combine(seed, it->second);
         }
     }
-    if (pCI.pPushConstantRanges != DE_NULL)
+    if (pCI.pPushConstantRanges != nullptr)
     {
         for (uint32_t i = 0; i < pCI.pushConstantRangeCount; ++i)
         {
@@ -723,7 +723,7 @@ std::size_t calculateRenderPassHash(const VkRenderPassCreateInfo &rCI,
 
     hash_combine(seed, uint32_t(rCI.flags));
 
-    if (rCI.pAttachments != DE_NULL)
+    if (rCI.pAttachments != nullptr)
         for (uint32_t i = 0; i < rCI.attachmentCount; ++i)
             hash_combine(seed, uint32_t(rCI.pAttachments[i].flags), uint32_t(rCI.pAttachments[i].format),
                          uint32_t(rCI.pAttachments[i].samples), uint32_t(rCI.pAttachments[i].loadOp),
@@ -731,32 +731,32 @@ std::size_t calculateRenderPassHash(const VkRenderPassCreateInfo &rCI,
                          uint32_t(rCI.pAttachments[i].stencilStoreOp), uint32_t(rCI.pAttachments[i].initialLayout),
                          uint32_t(rCI.pAttachments[i].finalLayout));
 
-    if (rCI.pSubpasses != DE_NULL)
+    if (rCI.pSubpasses != nullptr)
     {
         for (uint32_t i = 0; i < rCI.subpassCount; ++i)
         {
             hash_combine(seed, uint32_t(rCI.pSubpasses[i].flags), uint32_t(rCI.pSubpasses[i].pipelineBindPoint));
-            if (rCI.pSubpasses[i].pInputAttachments != DE_NULL)
+            if (rCI.pSubpasses[i].pInputAttachments != nullptr)
                 for (uint32_t j = 0; j < rCI.pSubpasses[i].inputAttachmentCount; ++j)
                     hash_combine(seed, rCI.pSubpasses[i].pInputAttachments[j].attachment,
                                  uint32_t(rCI.pSubpasses[i].pInputAttachments[j].layout));
-            if (rCI.pSubpasses[i].pColorAttachments != DE_NULL)
+            if (rCI.pSubpasses[i].pColorAttachments != nullptr)
                 for (uint32_t j = 0; j < rCI.pSubpasses[i].colorAttachmentCount; ++j)
                     hash_combine(seed, rCI.pSubpasses[i].pColorAttachments[j].attachment,
                                  uint32_t(rCI.pSubpasses[i].pColorAttachments[j].layout));
-            if (rCI.pSubpasses[i].pResolveAttachments != DE_NULL)
+            if (rCI.pSubpasses[i].pResolveAttachments != nullptr)
                 for (uint32_t j = 0; j < rCI.pSubpasses[i].colorAttachmentCount; ++j)
                     hash_combine(seed, rCI.pSubpasses[i].pResolveAttachments[j].attachment,
                                  uint32_t(rCI.pSubpasses[i].pResolveAttachments[j].layout));
-            if (rCI.pSubpasses[i].pDepthStencilAttachment != DE_NULL)
+            if (rCI.pSubpasses[i].pDepthStencilAttachment != nullptr)
                 hash_combine(seed, rCI.pSubpasses[i].pDepthStencilAttachment->attachment,
                              uint32_t(rCI.pSubpasses[i].pDepthStencilAttachment->layout));
-            if (rCI.pSubpasses[i].pPreserveAttachments != DE_NULL)
+            if (rCI.pSubpasses[i].pPreserveAttachments != nullptr)
                 for (uint32_t j = 0; j < rCI.pSubpasses[i].preserveAttachmentCount; ++j)
                     hash_combine(seed, rCI.pSubpasses[i].pPreserveAttachments[j]);
         }
     }
-    if (rCI.pDependencies != DE_NULL)
+    if (rCI.pDependencies != nullptr)
         for (uint32_t i = 0; i < rCI.dependencyCount; ++i)
             hash_combine(seed, rCI.pDependencies[i].srcSubpass, rCI.pDependencies[i].dstSubpass,
                          uint32_t(rCI.pDependencies[i].srcStageMask), uint32_t(rCI.pDependencies[i].dstStageMask),
@@ -775,7 +775,7 @@ std::size_t calculateRenderPass2Hash(const VkRenderPassCreateInfo2 &rCI,
 
     hash_combine(seed, rCI.flags);
 
-    if (rCI.pAttachments != DE_NULL)
+    if (rCI.pAttachments != nullptr)
         for (uint32_t i = 0; i < rCI.attachmentCount; ++i)
             hash_combine(seed, uint32_t(rCI.pAttachments[i].flags), uint32_t(rCI.pAttachments[i].format),
                          uint32_t(rCI.pAttachments[i].samples), uint32_t(rCI.pAttachments[i].loadOp),
@@ -783,39 +783,39 @@ std::size_t calculateRenderPass2Hash(const VkRenderPassCreateInfo2 &rCI,
                          uint32_t(rCI.pAttachments[i].stencilStoreOp), uint32_t(rCI.pAttachments[i].initialLayout),
                          uint32_t(rCI.pAttachments[i].finalLayout));
 
-    if (rCI.pSubpasses != DE_NULL)
+    if (rCI.pSubpasses != nullptr)
     {
         for (uint32_t i = 0; i < rCI.subpassCount; ++i)
         {
             hash_combine(seed, uint32_t(rCI.pSubpasses[i].flags), uint32_t(rCI.pSubpasses[i].pipelineBindPoint));
-            if (rCI.pSubpasses[i].pInputAttachments != DE_NULL)
+            if (rCI.pSubpasses[i].pInputAttachments != nullptr)
                 for (uint32_t j = 0; j < rCI.pSubpasses[i].inputAttachmentCount; ++j)
                     hash_combine(seed, rCI.pSubpasses[i].pInputAttachments[j].attachment,
                                  uint32_t(rCI.pSubpasses[i].pInputAttachments[j].layout));
-            if (rCI.pSubpasses[i].pColorAttachments != DE_NULL)
+            if (rCI.pSubpasses[i].pColorAttachments != nullptr)
                 for (uint32_t j = 0; j < rCI.pSubpasses[i].colorAttachmentCount; ++j)
                     hash_combine(seed, rCI.pSubpasses[i].pColorAttachments[j].attachment,
                                  uint32_t(rCI.pSubpasses[i].pColorAttachments[j].layout));
-            if (rCI.pSubpasses[i].pResolveAttachments != DE_NULL)
+            if (rCI.pSubpasses[i].pResolveAttachments != nullptr)
                 for (uint32_t j = 0; j < rCI.pSubpasses[i].colorAttachmentCount; ++j)
                     hash_combine(seed, rCI.pSubpasses[i].pResolveAttachments[j].attachment,
                                  uint32_t(rCI.pSubpasses[i].pResolveAttachments[j].layout));
-            if (rCI.pSubpasses[i].pDepthStencilAttachment != DE_NULL)
+            if (rCI.pSubpasses[i].pDepthStencilAttachment != nullptr)
                 hash_combine(seed, rCI.pSubpasses[i].pDepthStencilAttachment->attachment,
                              uint32_t(rCI.pSubpasses[i].pDepthStencilAttachment->layout));
-            if (rCI.pSubpasses[i].pPreserveAttachments != DE_NULL)
+            if (rCI.pSubpasses[i].pPreserveAttachments != nullptr)
                 for (uint32_t j = 0; j < rCI.pSubpasses[i].preserveAttachmentCount; ++j)
                     hash_combine(seed, rCI.pSubpasses[i].pPreserveAttachments[j]);
         }
     }
-    if (rCI.pDependencies != DE_NULL)
+    if (rCI.pDependencies != nullptr)
         for (uint32_t i = 0; i < rCI.dependencyCount; ++i)
             hash_combine(seed, rCI.pDependencies[i].srcSubpass, rCI.pDependencies[i].dstSubpass,
                          uint32_t(rCI.pDependencies[i].srcStageMask), uint32_t(rCI.pDependencies[i].dstStageMask),
                          uint64_t(rCI.pDependencies[i].srcAccessMask), uint64_t(rCI.pDependencies[i].dstAccessMask),
                          uint32_t(rCI.pDependencies[i].dependencyFlags));
 
-    if (rCI.pCorrelatedViewMasks != DE_NULL)
+    if (rCI.pCorrelatedViewMasks != nullptr)
         for (uint32_t i = 0; i < rCI.correlatedViewMaskCount; ++i)
             hash_combine(seed, rCI.pCorrelatedViewMasks[i]);
 
@@ -836,17 +836,17 @@ VkGraphicsPipelineCreateInfo prepareSimpleGraphicsPipelineCI(
 {
     vertexInputStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                                   // const void*                                 pNext;
+        nullptr,                                                   // const void*                                 pNext;
         (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags       flags;
         0u,      // uint32_t                                    vertexBindingDescriptionCount;
-        DE_NULL, // const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
+        nullptr, // const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
         0u,      // uint32_t                                    vertexAttributeDescriptionCount;
-        DE_NULL  // const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
+        nullptr  // const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
     };
 
     inputAssemblyStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                            sType;
-        DE_NULL,                                    // const void*                                pNext;
+        nullptr,                                    // const void*                                pNext;
         (VkPipelineInputAssemblyStateCreateFlags)0, // VkPipelineInputAssemblyStateCreateFlags    flags;
         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,       // VkPrimitiveTopology                        topology;
         VK_FALSE // VkBool32                                   primitiveRestartEnable;
@@ -854,17 +854,17 @@ VkGraphicsPipelineCreateInfo prepareSimpleGraphicsPipelineCI(
 
     viewPortStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                       sType;
-        DE_NULL,                                               // const void*                           pNext;
+        nullptr,                                               // const void*                           pNext;
         (VkPipelineViewportStateCreateFlags)0,                 // VkPipelineViewportStateCreateFlags    flags;
         1,                                                     // uint32_t                              viewportCount;
-        DE_NULL,                                               // const VkViewport*                     pViewports;
+        nullptr,                                               // const VkViewport*                     pViewports;
         1,                                                     // uint32_t                              scissorCount;
-        DE_NULL                                                // const VkRect2D*                       pScissors;
+        nullptr                                                // const VkRect2D*                       pScissors;
     };
 
     rasterizationStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                            sType;
-        DE_NULL,                                                    // const void*                                pNext;
+        nullptr,                                                    // const void*                                pNext;
         (VkPipelineRasterizationStateCreateFlags)0,                 // VkPipelineRasterizationStateCreateFlags    flags;
         VK_FALSE,                // VkBool32                                   depthClampEnable;
         VK_FALSE,                // VkBool32                                   rasterizerDiscardEnable;
@@ -880,12 +880,12 @@ VkGraphicsPipelineCreateInfo prepareSimpleGraphicsPipelineCI(
 
     multisampleStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType                          sType;
-        DE_NULL,                                                  // const void*                              pNext;
+        nullptr,                                                  // const void*                              pNext;
         (VkPipelineMultisampleStateCreateFlags)0,                 // VkPipelineMultisampleStateCreateFlags    flags;
         VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits                    rasterizationSamples;
         VK_FALSE,              // VkBool32                                 sampleShadingEnable;
         0.0f,                  // float                                    minSampleShading;
-        DE_NULL,               // const VkSampleMask*                      pSampleMask;
+        nullptr,               // const VkSampleMask*                      pSampleMask;
         VK_FALSE,              // VkBool32                                 alphaToCoverageEnable;
         VK_FALSE               // VkBool32                                 alphaToOneEnable;
     };
@@ -903,7 +903,7 @@ VkGraphicsPipelineCreateInfo prepareSimpleGraphicsPipelineCI(
 
     colorBlendStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType                               sType;
-        DE_NULL,                                 // const void*                                   pNext;
+        nullptr,                                 // const void*                                   pNext;
         (VkPipelineColorBlendStateCreateFlags)0, // VkPipelineColorBlendStateCreateFlags          flags;
         false,                                   // VkBool32                                      logicOpEnable;
         VK_LOGIC_OP_CLEAR,                       // VkLogicOp                                     logicOp;
@@ -914,7 +914,7 @@ VkGraphicsPipelineCreateInfo prepareSimpleGraphicsPipelineCI(
 
     dynamicStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType                      sType;
-        DE_NULL,                                              // const void*                          pNext;
+        nullptr,                                              // const void*                          pNext;
         (VkPipelineDynamicStateCreateFlags)0u,                // VkPipelineDynamicStateCreateFlags    flags;
         uint32_t(dynamicStates.size()),                       // uint32_t                             dynamicStateCount;
         dynamicStates.data()                                  // const VkDynamicState*                pDynamicStates;
@@ -922,23 +922,23 @@ VkGraphicsPipelineCreateInfo prepareSimpleGraphicsPipelineCI(
 
     VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {
         VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType                                  sType;
-        DE_NULL,                                         // const void*                                      pNext;
+        nullptr,                                         // const void*                                      pNext;
         (VkPipelineCreateFlags)0,                        // VkPipelineCreateFlags                            flags;
         uint32_t(shaderStageCreateInfos.size()),         // uint32_t                                         stageCount;
         shaderStageCreateInfos.data(),                   // const VkPipelineShaderStageCreateInfo*           pStages;
         &vertexInputStateCreateInfo,   // const VkPipelineVertexInputStateCreateInfo*      pVertexInputState;
         &inputAssemblyStateCreateInfo, // const VkPipelineInputAssemblyStateCreateInfo*    pInputAssemblyState;
-        DE_NULL,                       // const VkPipelineTessellationStateCreateInfo*     pTessellationState;
+        nullptr,                       // const VkPipelineTessellationStateCreateInfo*     pTessellationState;
         &viewPortStateCreateInfo,      // const VkPipelineViewportStateCreateInfo*         pViewportState;
         &rasterizationStateCreateInfo, // const VkPipelineRasterizationStateCreateInfo*    pRasterizationState;
         &multisampleStateCreateInfo,   // const VkPipelineMultisampleStateCreateInfo*      pMultisampleState;
-        DE_NULL,                       // const VkPipelineDepthStencilStateCreateInfo*     pDepthStencilState;
+        nullptr,                       // const VkPipelineDepthStencilStateCreateInfo*     pDepthStencilState;
         &colorBlendStateCreateInfo,    // const VkPipelineColorBlendStateCreateInfo*       pColorBlendState;
         &dynamicStateCreateInfo,       // const VkPipelineDynamicStateCreateInfo*          pDynamicState;
         pipelineLayout,                // VkPipelineLayout                                 layout;
         renderPass,                    // VkRenderPass                                     renderPass;
         0u,                            // uint32_t                                         subpass;
-        DE_NULL,                       // VkPipeline                                       basePipelineHandle;
+        VK_NULL_HANDLE,                // VkPipeline                                       basePipelineHandle;
         0                              // int                                              basePipelineIndex;
     };
 
@@ -950,11 +950,11 @@ VkComputePipelineCreateInfo prepareSimpleComputePipelineCI(const VkPipelineShade
 {
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType                    sType
-        DE_NULL,                                        // const void*                        pNext
+        nullptr,                                        // const void*                        pNext
         0u,                                             // VkPipelineCreateFlags            flags
         shaderStageCreateInfo,                          // VkPipelineShaderStageCreateInfo    stage
         pipelineLayout,                                 // VkPipelineLayout                    layout
-        (vk::VkPipeline)0,                              // VkPipeline                        basePipelineHandle
+        VK_NULL_HANDLE,                                 // VkPipeline                        basePipelineHandle
         0u,                                             // int32_t                            basePipelineIndex
     };
     return pipelineCreateInfo;
@@ -985,25 +985,25 @@ VkRenderPassCreateInfo prepareSimpleRenderPassCI(VkFormat format, VkAttachmentDe
         (VkSubpassDescriptionFlags)0u,   // VkSubpassDescriptionFlags       flags;
         VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint             pipelineBindPoint
         0u,                              // uint32_t                        inputAttachmentCount
-        DE_NULL,                         // const VkAttachmentReference*    pInputAttachments
+        nullptr,                         // const VkAttachmentReference*    pInputAttachments
         1u,                              // uint32_t                        colorAttachmentCount
         &attachmentReference,            // const VkAttachmentReference*    pColorAttachments
-        DE_NULL,                         // const VkAttachmentReference*    pResolveAttachments
-        DE_NULL,                         // const VkAttachmentReference*    pDepthStencilAttachment
+        nullptr,                         // const VkAttachmentReference*    pResolveAttachments
+        nullptr,                         // const VkAttachmentReference*    pDepthStencilAttachment
         0u,                              // uint32_t                        preserveAttachmentCount
-        DE_NULL                          // const uint32_t*                 pPreserveAttachments
+        nullptr                          // const uint32_t*                 pPreserveAttachments
     };
 
     const VkRenderPassCreateInfo renderPassCreateInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType                   sType;
-        DE_NULL,                                   // const void*                       pNext;
+        nullptr,                                   // const void*                       pNext;
         (VkRenderPassCreateFlags)0u,               // VkRenderPassCreateFlags           flags;
         1u,                                        // uint32_t                          attachmentCount
         &attachmentDescription,                    // const VkAttachmentDescription*    pAttachments
         1u,                                        // uint32_t                          subpassCount
         &subpassDescription,                       // const VkSubpassDescription*       pSubpasses
         0u,                                        // uint32_t                          dependencyCount
-        DE_NULL                                    // const VkSubpassDependency*        pDependencies
+        nullptr                                    // const VkSubpassDependency*        pDependencies
     };
 
     return renderPassCreateInfo;

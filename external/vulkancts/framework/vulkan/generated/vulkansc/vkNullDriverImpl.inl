@@ -1147,6 +1147,21 @@ VKAPI_ATTR VkResult VKAPI_CALL releaseDisplayEXT (VkPhysicalDevice physicalDevic
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL acquireWinrtDisplayNV (VkPhysicalDevice physicalDevice, VkDisplayKHR display)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(display);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getWinrtDisplayNV (VkPhysicalDevice physicalDevice, uint32_t deviceRelativeId, VkDisplayKHR* pDisplay)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(deviceRelativeId);
+	DE_UNREF(pDisplay);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL displayPowerControlEXT (VkDevice device, VkDisplayKHR display, const VkDisplayPowerInfoEXT* pDisplayPowerInfo)
 {
 	DE_UNREF(device);
@@ -1618,7 +1633,7 @@ VKAPI_ATTR uint64_t VKAPI_CALL getDeviceMemoryOpaqueCaptureAddress (VkDevice dev
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetLineStippleKHR (VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern)
+VKAPI_ATTR void VKAPI_CALL cmdSetLineStippleEXT (VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(lineStippleFactor);
@@ -1748,37 +1763,37 @@ VKAPI_ATTR void VKAPI_CALL cmdSetPrimitiveRestartEnableEXT (VkCommandBuffer comm
 	DE_UNREF(primitiveRestartEnable);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdCopyBuffer2KHR (VkCommandBuffer commandBuffer, const VkCopyBufferInfo2KHR* pCopyBufferInfo)
+VKAPI_ATTR void VKAPI_CALL cmdCopyBuffer2KHR (VkCommandBuffer commandBuffer, const VkCopyBufferInfo2* pCopyBufferInfo)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pCopyBufferInfo);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdCopyImage2KHR (VkCommandBuffer commandBuffer, const VkCopyImageInfo2KHR* pCopyImageInfo)
+VKAPI_ATTR void VKAPI_CALL cmdCopyImage2KHR (VkCommandBuffer commandBuffer, const VkCopyImageInfo2* pCopyImageInfo)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pCopyImageInfo);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdBlitImage2KHR (VkCommandBuffer commandBuffer, const VkBlitImageInfo2KHR* pBlitImageInfo)
+VKAPI_ATTR void VKAPI_CALL cmdBlitImage2KHR (VkCommandBuffer commandBuffer, const VkBlitImageInfo2* pBlitImageInfo)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pBlitImageInfo);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdCopyBufferToImage2KHR (VkCommandBuffer commandBuffer, const VkCopyBufferToImageInfo2KHR* pCopyBufferToImageInfo)
+VKAPI_ATTR void VKAPI_CALL cmdCopyBufferToImage2KHR (VkCommandBuffer commandBuffer, const VkCopyBufferToImageInfo2* pCopyBufferToImageInfo)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pCopyBufferToImageInfo);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdCopyImageToBuffer2KHR (VkCommandBuffer commandBuffer, const VkCopyImageToBufferInfo2KHR* pCopyImageToBufferInfo)
+VKAPI_ATTR void VKAPI_CALL cmdCopyImageToBuffer2KHR (VkCommandBuffer commandBuffer, const VkCopyImageToBufferInfo2* pCopyImageToBufferInfo)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pCopyImageToBufferInfo);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdResolveImage2KHR (VkCommandBuffer commandBuffer, const VkResolveImageInfo2KHR* pResolveImageInfo)
+VKAPI_ATTR void VKAPI_CALL cmdResolveImage2KHR (VkCommandBuffer commandBuffer, const VkResolveImageInfo2* pResolveImageInfo)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pResolveImageInfo);
@@ -1829,7 +1844,7 @@ VKAPI_ATTR void VKAPI_CALL cmdSetColorWriteEnableEXT (VkCommandBuffer commandBuf
 	DE_UNREF(pColorWriteEnables);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetEvent2KHR (VkCommandBuffer commandBuffer, VkEvent event, const VkDependencyInfoKHR* pDependencyInfo)
+VKAPI_ATTR void VKAPI_CALL cmdSetEvent2KHR (VkCommandBuffer commandBuffer, VkEvent event, const VkDependencyInfo* pDependencyInfo)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(event);
@@ -1843,7 +1858,7 @@ VKAPI_ATTR void VKAPI_CALL cmdResetEvent2KHR (VkCommandBuffer commandBuffer, VkE
 	DE_UNREF(stageMask);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdWaitEvents2KHR (VkCommandBuffer commandBuffer, uint32_t eventCount, const VkEvent* pEvents, const VkDependencyInfoKHR* pDependencyInfos)
+VKAPI_ATTR void VKAPI_CALL cmdWaitEvents2KHR (VkCommandBuffer commandBuffer, uint32_t eventCount, const VkEvent* pEvents, const VkDependencyInfo* pDependencyInfos)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(eventCount);
@@ -1851,13 +1866,13 @@ VKAPI_ATTR void VKAPI_CALL cmdWaitEvents2KHR (VkCommandBuffer commandBuffer, uin
 	DE_UNREF(pDependencyInfos);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdPipelineBarrier2KHR (VkCommandBuffer commandBuffer, const VkDependencyInfoKHR* pDependencyInfo)
+VKAPI_ATTR void VKAPI_CALL cmdPipelineBarrier2KHR (VkCommandBuffer commandBuffer, const VkDependencyInfo* pDependencyInfo)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pDependencyInfo);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL queueSubmit2KHR (VkQueue queue, uint32_t submitCount, const VkSubmitInfo2KHR* pSubmits, VkFence fence)
+VKAPI_ATTR VkResult VKAPI_CALL queueSubmit2KHR (VkQueue queue, uint32_t submitCount, const VkSubmitInfo2* pSubmits, VkFence fence)
 {
 	DE_UNREF(queue);
 	DE_UNREF(submitCount);
@@ -1944,6 +1959,8 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalFenceProperties,						getPhysicalDeviceExternalFenceProperties),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSciSyncAttributesNV,							getPhysicalDeviceSciSyncAttributesNV),
 	VK_NULL_FUNC_ENTRY(vkReleaseDisplayEXT,												releaseDisplayEXT),
+	VK_NULL_FUNC_ENTRY(vkAcquireWinrtDisplayNV,											acquireWinrtDisplayNV),
+	VK_NULL_FUNC_ENTRY(vkGetWinrtDisplayNV,												getWinrtDisplayNV),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilities2EXT,						getPhysicalDeviceSurfaceCapabilities2EXT),
 	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceGroups,									enumeratePhysicalDeviceGroups),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDevicePresentRectanglesKHR,							getPhysicalDevicePresentRectanglesKHR),
@@ -2149,7 +2166,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetBufferOpaqueCaptureAddress,				getBufferOpaqueCaptureAddress),
 	VK_NULL_FUNC_ENTRY(vkGetBufferDeviceAddress,					getBufferDeviceAddress),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceMemoryOpaqueCaptureAddress,		getDeviceMemoryOpaqueCaptureAddress),
-	VK_NULL_FUNC_ENTRY(vkCmdSetLineStippleKHR,						cmdSetLineStippleKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdSetLineStippleEXT,						cmdSetLineStippleEXT),
 	VK_NULL_FUNC_ENTRY(vkGetFaultData,								getFaultData),
 	VK_NULL_FUNC_ENTRY(vkCmdSetCullModeEXT,							cmdSetCullModeEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetFrontFaceEXT,						cmdSetFrontFaceEXT),

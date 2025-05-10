@@ -33,7 +33,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
     const VkDeviceQueueCreateInfo            deviceQueueCreateInfo =
     {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, //  VkStructureType sType;
-        DE_NULL, //  const void* pNext;
+        nullptr, //  const void* pNext;
         (VkDeviceQueueCreateFlags)0u, //  VkDeviceQueueCreateFlags flags;
         queueFamilyIndex, //  uint32_t queueFamilyIndex;
         queueCount, //  uint32_t queueCount;
@@ -43,15 +43,15 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
     const VkDeviceCreateInfo                deviceCreateInfo =
     {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, //  VkStructureType sType;
-        DE_NULL, //  const void* pNext;
+        nullptr, //  const void* pNext;
         (VkDeviceCreateFlags)0u, //  VkDeviceCreateFlags flags;
         1u, //  uint32_t queueCreateInfoCount;
         &deviceQueueCreateInfo, //  const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u, //  uint32_t enabledLayerCount;
-        DE_NULL, //  const char* const* ppEnabledLayerNames;
+        nullptr, //  const char* const* ppEnabledLayerNames;
         0u, //  uint32_t enabledExtensionCount;
-        DE_NULL, //  const char* const* ppEnabledExtensionNames;
-        DE_NULL, //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
+        nullptr, //  const char* const* ppEnabledExtensionNames;
+        nullptr, //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
     const Unique<VkDevice>                    device            (createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
     const DeviceDriver                        deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
@@ -121,6 +121,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkDestroyCuFunctionNVX",
 		"vkCmdCuLaunchKernelNVX",
 		"vkGetImageViewHandleNVX",
+		"vkGetImageViewHandle64NVX",
 		"vkGetImageViewAddressNVX",
 		"vkCmdDrawIndirectCountAMD",
 		"vkCmdDrawIndexedIndirectCountAMD",
@@ -158,7 +159,6 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkImportSemaphoreFdKHR",
 		"vkGetSemaphoreFdKHR",
 		"vkCmdPushDescriptorSetKHR",
-		"vkCmdPushDescriptorSetWithTemplateKHR",
 		"vkCmdPushDescriptorSetWithTemplateKHR",
 		"vkCmdBeginConditionalRenderingEXT",
 		"vkCmdEndConditionalRenderingEXT",
@@ -280,6 +280,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdDrawIndexedIndirectCountKHR",
 		"vkGetMemoryHostPointerPropertiesEXT",
 		"vkCmdWriteBufferMarkerAMD",
+		"vkCmdWriteBufferMarker2AMD",
 		"vkGetPhysicalDeviceCalibrateableTimeDomainsEXT",
 		"vkGetCalibratedTimestampsEXT",
 		"vkCmdDrawMeshTasksNV",
@@ -289,6 +290,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdSetExclusiveScissorNV",
 		"vkCmdSetCheckpointNV",
 		"vkGetQueueCheckpointDataNV",
+		"vkGetQueueCheckpointData2NV",
 		"vkGetSemaphoreCounterValueKHR",
 		"vkWaitSemaphoresKHR",
 		"vkSignalSemaphoreKHR",
@@ -316,7 +318,6 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetPhysicalDeviceSurfacePresentModes2EXT",
 		"vkAcquireFullScreenExclusiveModeEXT",
 		"vkReleaseFullScreenExclusiveModeEXT",
-		"vkGetDeviceGroupSurfacePresentModes2EXT",
 		"vkGetDeviceGroupSurfacePresentModes2EXT",
 		"vkCreateHeadlessSurfaceEXT",
 		"vkGetBufferDeviceAddressKHR",
@@ -381,8 +382,6 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdPipelineBarrier2KHR",
 		"vkCmdWriteTimestamp2KHR",
 		"vkQueueSubmit2KHR",
-		"vkCmdWriteBufferMarker2AMD",
-		"vkGetQueueCheckpointData2NV",
 		"vkGetDescriptorSetLayoutSizeEXT",
 		"vkGetDescriptorSetLayoutBindingOffsetEXT",
 		"vkGetDescriptorEXT",
@@ -505,6 +504,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetRenderingAreaGranularityKHR",
 		"vkGetDeviceImageSubresourceLayoutKHR",
 		"vkGetImageSubresourceLayout2KHR",
+		"vkAntiLagUpdateAMD",
 		"vkCreateShadersEXT",
 		"vkDestroyShaderEXT",
 		"vkGetShaderBinaryDataEXT",
@@ -558,8 +558,17 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdSetShadingRateImageEnableNV",
 		"vkCmdSetRepresentativeFragmentTestEnableNV",
 		"vkCmdSetCoverageReductionModeNV",
+		"vkCmdSetDepthClampRangeEXT",
+		"vkCreatePipelineBinariesKHR",
+		"vkDestroyPipelineBinaryKHR",
+		"vkGetPipelineKeyKHR",
+		"vkGetPipelineBinaryDataKHR",
+		"vkReleaseCapturedPipelineDataKHR",
 		"vkGetFramebufferTilePropertiesQCOM",
 		"vkGetDynamicRenderingTilePropertiesQCOM",
+		"vkGetPhysicalDeviceCooperativeVectorPropertiesNV",
+		"vkConvertCooperativeVectorMatrixNV",
+		"vkCmdConvertCooperativeVectorMatrixNV",
 		"vkSetLatencySleepModeNV",
 		"vkLatencySleepNV",
 		"vkSetLatencyMarkerNV",
@@ -577,12 +586,29 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdPushDescriptorSetWithTemplate2KHR",
 		"vkCmdSetDescriptorBufferOffsets2EXT",
 		"vkCmdBindDescriptorBufferEmbeddedSamplers2EXT",
+		"vkGetClusterAccelerationStructureBuildSizesNV",
+		"vkCmdBuildClusterAccelerationStructureIndirectNV",
+		"vkGetPartitionedAccelerationStructuresBuildSizesNV",
+		"vkCmdBuildPartitionedAccelerationStructuresNV",
+		"vkGetGeneratedCommandsMemoryRequirementsEXT",
+		"vkCmdPreprocessGeneratedCommandsEXT",
+		"vkCmdExecuteGeneratedCommandsEXT",
+		"vkCreateIndirectCommandsLayoutEXT",
+		"vkDestroyIndirectCommandsLayoutEXT",
+		"vkCreateIndirectExecutionSetEXT",
+		"vkDestroyIndirectExecutionSetEXT",
+		"vkUpdateIndirectExecutionSetPipelineEXT",
+		"vkUpdateIndirectExecutionSetShaderEXT",
+		"vkCmdSetDepthClampRangeEXT",
+		"vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV",
+		"vkGetMemoryMetalHandleEXT",
+		"vkGetMemoryMetalHandlePropertiesEXT",
     };
 
     bool fail = false;
     for (const auto& function : functions)
     {
-        if (deviceDriver.getDeviceProcAddr(device.get(), function.c_str()) != DE_NULL)
+        if (deviceDriver.getDeviceProcAddr(device.get(), function.c_str()) != nullptr)
         {
             fail = true;
             log << tcu::TestLog::Message << "Function " << function << " is not NULL" << tcu::TestLog::EndMessage;

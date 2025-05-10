@@ -61,8 +61,8 @@ deRingbuffer *deRingbuffer_create(int32_t blockSize, int32_t blockCount)
     ringbuffer->blockCount = blockCount;
     ringbuffer->buffer     = (uint8_t *)deMalloc(sizeof(uint8_t) * (size_t)blockSize * (size_t)blockCount);
     ringbuffer->blockUsage = (int32_t *)deMalloc(sizeof(uint32_t) * (size_t)blockCount);
-    ringbuffer->emptyCount = deSemaphore_create(ringbuffer->blockCount, DE_NULL);
-    ringbuffer->fullCount  = deSemaphore_create(0, DE_NULL);
+    ringbuffer->emptyCount = deSemaphore_create(ringbuffer->blockCount, NULL);
+    ringbuffer->fullCount  = deSemaphore_create(0, NULL);
 
     if (!ringbuffer->buffer || !ringbuffer->blockUsage || !ringbuffer->emptyCount || !ringbuffer->fullCount)
     {
@@ -73,7 +73,7 @@ deRingbuffer *deRingbuffer_create(int32_t blockSize, int32_t blockCount)
         deFree(ringbuffer->buffer);
         deFree(ringbuffer->blockUsage);
         deFree(ringbuffer);
-        return DE_NULL;
+        return NULL;
     }
 
     memset(ringbuffer->blockUsage, 0, sizeof(int32_t) * (size_t)blockCount);
@@ -125,8 +125,8 @@ static deStreamResult producerStream_write(deStreamData *stream, const void *buf
     while (*written < bufSize)
     {
         int32_t writeSize = 0;
-        uint8_t *src      = DE_NULL;
-        uint8_t *dst      = DE_NULL;
+        uint8_t *src      = NULL;
+        uint8_t *dst      = NULL;
 
         /* If between blocks accuire new block */
         if (ringbuffer->inPos == 0)
@@ -201,8 +201,8 @@ static deStreamResult consumerStream_read(deStreamData *stream, void *buf, int32
     while (*read < bufSize)
     {
         int32_t writeSize = 0;
-        uint8_t *src      = DE_NULL;
-        uint8_t *dst      = DE_NULL;
+        uint8_t *src      = NULL;
+        uint8_t *dst      = NULL;
 
         /* If between blocks accuire new block */
         if (ringbuffer->outPos == 0)
@@ -277,13 +277,13 @@ static const char *empty_getError(deStreamData *stream)
 {
     DE_ASSERT(stream);
     DE_UNREF(stream);
-    return DE_NULL;
+    return NULL;
 }
 
 static const deIOStreamVFTable producerStreamVFTable = {
-    DE_NULL, producerStream_write, empty_getError, producerStream_flush, producerStream_deinit, empty_getStatus};
+    NULL, producerStream_write, empty_getError, producerStream_flush, producerStream_deinit, empty_getStatus};
 
-static const deIOStreamVFTable consumerStreamVFTable = {consumerStream_read,   DE_NULL,        empty_getError, DE_NULL,
+static const deIOStreamVFTable consumerStreamVFTable = {consumerStream_read,   NULL,           empty_getError, NULL,
                                                         consumerStream_deinit, empty_getStatus};
 
 void deProducerStream_init(deOutStream *stream, deRingbuffer *buffer)

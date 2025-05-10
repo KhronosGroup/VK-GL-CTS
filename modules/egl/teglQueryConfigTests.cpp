@@ -134,7 +134,7 @@ public:
             buffer[ndx] = magicConfigs[ndx];
 
         eglGetConfigs(m_display, &buffer[0], numConfigRequested, &numConfigReturned);
-        eglu::checkError(eglGetError(), DE_NULL, __FILE__, __LINE__);
+        eglu::checkError(eglGetError(), nullptr, __FILE__, __LINE__);
 
         log << TestLog::Message << numConfigReturned << " configs returned" << TestLog::EndMessage;
 
@@ -271,7 +271,7 @@ tcu::TestNode::IterateResult GetConfigAttribCase::iterate(void)
         EGLint id;
 
         eglGetConfigAttrib(m_display, config, EGL_CONFIG_ID, &id);
-        eglu::checkError(eglGetError(), DE_NULL, __FILE__, __LINE__);
+        eglu::checkError(eglGetError(), nullptr, __FILE__, __LINE__);
         log << TestLog::Message << "Config ID " << id << TestLog::EndMessage;
 
         executeTest(config);
@@ -293,7 +293,7 @@ EGLint GetConfigAttribCase::getValue(EGLConfig config, EGLenum attrib, bool logV
     EGLint value;
 
     eglGetConfigAttrib(m_display, config, attrib, &value);
-    eglu::checkError(eglGetError(), DE_NULL, __FILE__, __LINE__);
+    eglu::checkError(eglGetError(), nullptr, __FILE__, __LINE__);
 
     if (logValue)
         logConfigAttribute(log, attrib, value);
@@ -442,7 +442,7 @@ public:
             enableLogging(true);
 
             eglGetConfigAttrib(m_display, config, m_attrib, &value);
-            eglu::checkError(eglGetError(), DE_NULL, __FILE__, __LINE__);
+            eglu::checkError(eglGetError(), nullptr, __FILE__, __LINE__);
 
             logConfigAttribute(log, m_attrib, value);
             checkAttribute(m_attrib, value);

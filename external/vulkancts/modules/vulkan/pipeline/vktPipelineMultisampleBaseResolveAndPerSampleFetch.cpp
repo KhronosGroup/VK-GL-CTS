@@ -95,12 +95,12 @@ VkPipelineMultisampleStateCreateInfo MSInstanceBaseResolveAndPerSampleFetch::get
 {
     const VkPipelineMultisampleStateCreateInfo multisampleStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (VkPipelineMultisampleStateCreateFlags)0u,                // VkPipelineMultisampleStateCreateFlags flags;
         imageMSParams.numSamples,                                 // VkSampleCountFlagBits rasterizationSamples;
         VK_TRUE,                                                  // VkBool32 sampleShadingEnable;
         imageMSParams.shadingRate,                                // float minSampleShading;
-        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
         VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
         VK_FALSE,                                                 // VkBool32 alphaToOneEnable;
     };
@@ -113,7 +113,7 @@ const VkDescriptorSetLayout *MSInstanceBaseResolveAndPerSampleFetch::createMSPas
 {
     DE_UNREF(imageMSParams);
 
-    return DE_NULL;
+    return nullptr;
 }
 
 const VkDescriptorSet *MSInstanceBaseResolveAndPerSampleFetch::createMSPassDescSet(
@@ -122,7 +122,7 @@ const VkDescriptorSet *MSInstanceBaseResolveAndPerSampleFetch::createMSPassDescS
     DE_UNREF(imageMSParams);
     DE_UNREF(descSetLayout);
 
-    return DE_NULL;
+    return nullptr;
 }
 
 tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate(void)
@@ -147,7 +147,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate(void)
                               VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT);
 
     imageMSInfo.sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageMSInfo.pNext                 = DE_NULL;
+    imageMSInfo.pNext                 = nullptr;
     imageMSInfo.flags                 = 0u;
     imageMSInfo.imageType             = mapImageType(m_imageType);
     imageMSInfo.format                = mapTextureFormat(m_imageFormat);
@@ -160,7 +160,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate(void)
     imageMSInfo.usage                 = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
     imageMSInfo.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
     imageMSInfo.queueFamilyIndexCount = 0u;
-    imageMSInfo.pQueueFamilyIndices   = DE_NULL;
+    imageMSInfo.pQueueFamilyIndices   = nullptr;
 
     if (m_imageType == IMAGE_TYPE_CUBE || m_imageType == IMAGE_TYPE_CUBE_ARRAY)
     {
@@ -270,13 +270,13 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate(void)
         (VkSubpassDescriptionFlags)0u,   // VkSubpassDescriptionFlags flags;
         VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
         0u,                              // uint32_t inputAttachmentCount;
-        DE_NULL,                         // const VkAttachmentReference* pInputAttachments;
+        nullptr,                         // const VkAttachmentReference* pInputAttachments;
         1u,                              // uint32_t colorAttachmentCount;
         &attachmentMSColorRef,           // const VkAttachmentReference* pColorAttachments;
         &attachmentRSColorRef,           // const VkAttachmentReference* pResolveAttachments;
-        DE_NULL,                         // const VkAttachmentReference* pDepthStencilAttachment;
+        nullptr,                         // const VkAttachmentReference* pDepthStencilAttachment;
         0u,                              // uint32_t preserveAttachmentCount;
-        DE_NULL                          // const uint32_t* pPreserveAttachments;
+        nullptr                          // const uint32_t* pPreserveAttachments;
     };
 
     subpasses[0] = firstSubpassDesc;
@@ -290,8 +290,8 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate(void)
             &attachmentMSInputRef,              // const VkAttachmentReference* pInputAttachments;
             1u,                                 // uint32_t colorAttachmentCount;
             &perSampleAttachmentRef[sampleNdx], // const VkAttachmentReference* pColorAttachments;
-            DE_NULL,                            // const VkAttachmentReference* pResolveAttachments;
-            DE_NULL,                            // const VkAttachmentReference* pDepthStencilAttachment;
+            nullptr,                            // const VkAttachmentReference* pResolveAttachments;
+            nullptr,                            // const VkAttachmentReference* pDepthStencilAttachment;
             1u + sampleNdx,                     // uint32_t preserveAttachmentCount;
             dataPointer(preserveAttachments)    // const uint32_t* pPreserveAttachments;
         };
@@ -335,7 +335,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate(void)
 
     const VkRenderPassCreateInfo renderPassInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,         // VkStructureType sType;
-        DE_NULL,                                           // const void* pNext;
+        nullptr,                                           // const void* pNext;
         (VkRenderPassCreateFlags)0u,                       // VkRenderPassCreateFlags flags;
         static_cast<uint32_t>(attachments.size()),         // uint32_t attachmentCount;
         dataPointer(attachments),                          // const VkAttachmentDescription* pAttachments;
@@ -380,7 +380,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate(void)
     // Create framebuffer
     const VkFramebufferCreateInfo framebufferInfo = {
         VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType    sType;
-        DE_NULL,                                   // const void*                                 pNext;
+        nullptr,                                   // const void*                                 pNext;
         (VkFramebufferCreateFlags)0u,              // VkFramebufferCreateFlags                    flags;
         *renderPass,                               // VkRenderPass                                renderPass;
         static_cast<uint32_t>(imageViews.size()),  // uint32_t                                    attachmentCount;
@@ -397,12 +397,12 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate(void)
     // Create pipeline layout
     const VkPipelineLayoutCreateInfo pipelineLayoutMSPassParams = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                       // const void* pNext;
+        nullptr,                                       // const void* pNext;
         (VkPipelineLayoutCreateFlags)0u,               // VkPipelineLayoutCreateFlags flags;
         descriptorSetLayoutMSPass ? 1u : 0u,           // uint32_t setLayoutCount;
         descriptorSetLayoutMSPass,                     // const VkDescriptorSetLayout* pSetLayouts;
         0u,                                            // uint32_t pushConstantRangeCount;
-        DE_NULL,                                       // const VkPushConstantRange* pPushConstantRanges;
+        nullptr,                                       // const VkPushConstantRange* pPushConstantRanges;
     };
 
     const PipelineLayoutWrapper pipelineLayoutMSPass(m_imageMSParams.pipelineConstructionType, deviceInterface, device,
@@ -429,7 +429,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate(void)
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                                   // const void*                                 pNext;
+        nullptr,                                                   // const void*                                 pNext;
         (VkPipelineVertexInputStateCreateFlags)0u,                 // VkPipelineVertexInputStateCreateFlags       flags;
         1u,             // uint32_t                                    vertexBindingDescriptionCount;
         &vertexBinding, // const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
@@ -462,8 +462,8 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate(void)
         .setDefaultTopology(vertexDataDesc.primitiveTopology)
         .setupVertexInputState(&vertexInputStateInfo)
         .setupPreRasterizationShaderState(viewports, scissors, pipelineLayoutMSPass, *renderPass, 0u, vsMSPassModule)
-        .setupFragmentShaderState(pipelineLayoutMSPass, *renderPass, 0u, fsMSPassModule, DE_NULL, &multisampleStateInfo)
-        .setupFragmentOutputState(*renderPass, 0u, DE_NULL, &multisampleStateInfo)
+        .setupFragmentShaderState(pipelineLayoutMSPass, *renderPass, 0u, fsMSPassModule, nullptr, &multisampleStateInfo)
+        .setupFragmentOutputState(*renderPass, 0u, nullptr, &multisampleStateInfo)
         .setMonolithicPipelineLayout(pipelineLayoutMSPass)
         .buildPipeline();
 
@@ -582,7 +582,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate(void)
 
     {
         const VkDescriptorImageInfo descImageInfo =
-            makeDescriptorImageInfo(DE_NULL, imageViews[0], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, imageViews[0], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         const VkDescriptorBufferInfo descBufferInfo = makeDescriptorBufferInfo(**bufferSampleID, 0u, sizeof(int32_t));
 
         DescriptorSetUpdateBuilder()
@@ -620,7 +620,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate(void)
         }
 
         deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL,
+                                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr,
                                            static_cast<uint32_t>(imageOutputAttachmentBarriers.size()),
                                            dataPointer(imageOutputAttachmentBarriers));
     }
@@ -647,7 +647,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate(void)
         {
             // Bind descriptor set
             deviceInterface.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                                  *pipelineLayoutMSPass, 0u, 1u, descriptorSetMSPass, 0u, DE_NULL);
+                                                  *pipelineLayoutMSPass, 0u, 1u, descriptorSetMSPass, 0u, nullptr);
         }
 
         // Bind vertex buffer
@@ -686,7 +686,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate(void)
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **imageRS, fullImageRange);
 
         deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                           VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                                           VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
                                            &imageRSTransferBarrier);
     }
 
@@ -718,7 +718,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate(void)
             VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, bufferRS->get(), 0u, imageRSSizeInBytes);
 
         deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                           0u, 0u, DE_NULL, 1u, &bufferRSHostReadBarrier, 0u, DE_NULL);
+                                           0u, 0u, nullptr, 1u, &bufferRSHostReadBarrier, 0u, nullptr);
     }
 
     // Copy data from per sample images to buffers
@@ -732,7 +732,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate(void)
     }
 
     deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                       VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL,
+                                       VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr,
                                        static_cast<uint32_t>(imagesPerSampleTransferBarriers.size()),
                                        dataPointer(imagesPerSampleTransferBarriers));
 
@@ -768,8 +768,8 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate(void)
     }
 
     deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u,
-                                       0u, DE_NULL, static_cast<uint32_t>(buffersPerSampleHostReadBarriers.size()),
-                                       dataPointer(buffersPerSampleHostReadBarriers), 0u, DE_NULL);
+                                       0u, nullptr, static_cast<uint32_t>(buffersPerSampleHostReadBarriers.size()),
+                                       dataPointer(buffersPerSampleHostReadBarriers), 0u, nullptr);
 
     // End recording commands
     endCommandBuffer(deviceInterface, *commandBuffer);

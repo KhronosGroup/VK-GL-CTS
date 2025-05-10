@@ -183,7 +183,7 @@ public:
     }
     virtual Binder *binder(void) const
     {
-        return DE_NULL;
+        return nullptr;
     }
     virtual const char *getName(void) const = 0;
     virtual bool nameLingers(void) const
@@ -205,7 +205,7 @@ class SimpleType : public Type
 {
 public:
     SimpleType(const Context &ctx, const char *name, GenFunc genFunc, DeleteFunc deleteFunc, ExistsFunc existsFunc,
-               Binder *binder_ = DE_NULL, bool genCreates_ = false)
+               Binder *binder_ = nullptr, bool genCreates_ = false)
         : Type(ctx)
         , m_getName(name)
         , m_genFunc(genFunc)

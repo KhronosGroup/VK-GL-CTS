@@ -236,7 +236,7 @@ void addShaderClockTests(tcu::TestCaseGroup *testGroup)
         const char *stageName = (stages[i] == glu::SHADERTYPE_VERTEX)   ? ("vertex") :
                                 (stages[i] == glu::SHADERTYPE_FRAGMENT) ? ("fragment") :
                                 (stages[i] == glu::SHADERTYPE_COMPUTE)  ? ("compute") :
-                                                                          (DE_NULL);
+                                                                          (nullptr);
 
         const std::string setName = std::string() + stageName;
         de::MovePtr<tcu::TestCaseGroup> stageGroupTest(new tcu::TestCaseGroup(testCtx, setName.c_str()));

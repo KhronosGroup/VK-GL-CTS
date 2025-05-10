@@ -41,6 +41,9 @@
 #include "vktImageSampleCompressedTextureTests.hpp"
 #include "vktImageExtendedUsageBitTests.hpp"
 #include "vktImageTransfer.hpp"
+#include "vktImageDepthStencilSeparateTests.hpp"
+#include "vktImageNonUniformOffsetSampleTests.hpp"
+#include "vktImageConcurrentCopyTests.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktImageHostImageCopyTests.hpp"
 #endif
@@ -83,9 +86,13 @@ void createChildren(tcu::TestCaseGroup *imageTests)
     imageTests->addChild(createImageSampleDrawnTextureTests(testCtx));
     imageTests->addChild(createImageExtendedUsageBitTests(testCtx));
     imageTests->addChild(createTransferQueueImageTests(testCtx));
+    imageTests->addChild(createImageConcurrentCopyTests(testCtx));
 #ifndef CTS_USES_VULKANSC
     imageTests->addChild(createImageHostImageCopyTests(testCtx));
 #endif // CTS_USES_VULKANSC
+    imageTests->addChild(createImageDepthStencilSeparateTests(testCtx));
+    imageTests->addChild(createImageNonUniformOffsetSampleTests(testCtx));
+    imageTests->addChild(createImageDeviceScopeAccessTests(testCtx));
 }
 
 } // namespace

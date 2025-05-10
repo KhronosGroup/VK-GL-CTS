@@ -859,7 +859,7 @@ TextureBuffer::TextureBuffer(const RenderContext &context, uint32_t internalForm
     , m_glTexture(0)
     , m_glBuffer(0)
 {
-    init(internalFormat, bufferSize, 0, 0, DE_NULL);
+    init(internalFormat, bufferSize, 0, 0, nullptr);
 }
 
 TextureBuffer::TextureBuffer(const RenderContext &context, uint32_t internalFormat, size_t bufferSize, size_t offset,

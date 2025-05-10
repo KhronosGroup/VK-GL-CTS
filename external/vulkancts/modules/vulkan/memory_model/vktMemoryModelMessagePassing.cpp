@@ -104,10 +104,6 @@ typedef enum
     DATA_TYPE_FLOAT64,
 } DataType;
 
-const VkFlags allShaderStages = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-const VkFlags allPipelineStages =
-    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-
 struct CaseDef
 {
     bool payloadMemLocal;
@@ -125,6 +121,21 @@ struct CaseDef
     bool transitive;
     bool transitiveVis;
 };
+
+VkFlags getAllShaderStages(tcu::TestContext &testCtx)
+{
+    return testCtx.getCommandLine().isComputeOnly() ?
+               VK_SHADER_STAGE_COMPUTE_BIT :
+               VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+}
+
+VkFlags getAllPipelineStages(tcu::TestContext &testCtx)
+{
+    return testCtx.getCommandLine().isComputeOnly() ?
+               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT :
+               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
+                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+}
 
 class MemoryModelTestInstance : public TestInstance
 {
@@ -202,7 +213,7 @@ void MemoryModelTestCase::checkSupport(Context &context) const
         // Check for subgroup support for scope_subgroup tests.
         VkPhysicalDeviceSubgroupProperties subgroupProperties;
         subgroupProperties.sType               = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
-        subgroupProperties.pNext               = DE_NULL;
+        subgroupProperties.pNext               = nullptr;
         subgroupProperties.supportedOperations = 0;
 
         VkPhysicalDeviceProperties2 properties;
@@ -1321,6 +1332,9 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
     const VkDevice device     = m_context.getDevice();
     Allocator &allocator      = m_context.getDefaultAllocator();
 
+    const VkFlags allShaderStages   = getAllShaderStages(m_context.getTestContext());
+    const VkFlags allPipelineStages = getAllPipelineStages(m_context.getTestContext());
+
     VkPhysicalDeviceProperties2 properties;
     properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
     properties.pNext = NULL;
@@ -1437,7 +1451,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
 
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0u,              // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         imageFormat,                         // VkFormat format;
@@ -1454,14 +1468,14 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
             VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t  queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t*   pQueueFamilyIndices;
+        nullptr,                             // const uint32_t*   pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
     };
     VkImageViewCreateInfo imageViewCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                  // const void* pNext;
+        nullptr,                                  // const void* pNext;
         (VkImageViewCreateFlags)0u,               // VkImageViewCreateFlags  flags;
-        DE_NULL,                                  // VkImage image;
+        VK_NULL_HANDLE,                           // VkImage image;
         VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
         imageFormat,                              // VkFormat format;
         {
@@ -1520,7 +1534,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
         imageViewCreateInfo.image = **images[i];
         imageViews[i]             = createImageView(vk, device, &imageViewCreateInfo, NULL);
 
-        imageDescriptors[i] = makeDescriptorImageInfo(DE_NULL, *imageViews[i], VK_IMAGE_LAYOUT_GENERAL);
+        imageDescriptors[i] = makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViews[i], VK_IMAGE_LAYOUT_GENERAL);
     }
 
     vk::DescriptorSetLayoutBuilder layoutBuilder;
@@ -1602,7 +1616,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,
         1,                          // setLayoutCount
         &descriptorSetLayout.get(), // pSetLayouts
@@ -1640,7 +1654,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
 
         const VkPipelineShaderStageCreateInfo shaderCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             (VkPipelineShaderStageCreateFlags)0,
             VK_SHADER_STAGE_COMPUTE_BIT, // stage
             *shader,                     // shader
@@ -1650,14 +1664,14 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
 
         const VkComputePipelineCreateInfo pipelineCreateInfo = {
             VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-            DE_NULL,
-            0u,                // flags
-            shaderCreateInfo,  // cs
-            *pipelineLayout,   // layout
-            (vk::VkPipeline)0, // basePipelineHandle
-            0u,                // basePipelineIndex
+            nullptr,
+            0u,               // flags
+            shaderCreateInfo, // cs
+            *pipelineLayout,  // layout
+            VK_NULL_HANDLE,   // basePipelineHandle
+            0u,               // basePipelineIndex
         };
-        pipeline = createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo, NULL);
+        pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo, NULL);
     }
     else
     {
@@ -1666,36 +1680,36 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
             (vk::VkSubpassDescriptionFlags)0,
             vk::VK_PIPELINE_BIND_POINT_GRAPHICS, // pipelineBindPoint
             0u,                                  // inputCount
-            DE_NULL,                             // pInputAttachments
+            nullptr,                             // pInputAttachments
             0u,                                  // colorCount
-            DE_NULL,                             // pColorAttachments
-            DE_NULL,                             // pResolveAttachments
-            DE_NULL,                             // depthStencilAttachment
+            nullptr,                             // pColorAttachments
+            nullptr,                             // pResolveAttachments
+            nullptr,                             // depthStencilAttachment
             0u,                                  // preserveCount
-            DE_NULL,                             // pPreserveAttachments
+            nullptr,                             // pPreserveAttachments
 
         };
         const vk::VkRenderPassCreateInfo renderPassParams = {
             vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // sType
-            DE_NULL,                                       // pNext
+            nullptr,                                       // pNext
             (vk::VkRenderPassCreateFlags)0,
             0u,           // attachmentCount
-            DE_NULL,      // pAttachments
+            nullptr,      // pAttachments
             1u,           // subpassCount
             &subpassDesc, // pSubpasses
             0u,           // dependencyCount
-            DE_NULL,      // pDependencies
+            nullptr,      // pDependencies
         };
 
         renderPass = createRenderPass(vk, device, &renderPassParams);
 
         const vk::VkFramebufferCreateInfo framebufferParams = {
             vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // sType
-            DE_NULL,                                       // pNext
+            nullptr,                                       // pNext
             (vk::VkFramebufferCreateFlags)0,
             *renderPass,                  // renderPass
             0u,                           // attachmentCount
-            DE_NULL,                      // pAttachments
+            nullptr,                      // pAttachments
             DIM * NUM_WORKGROUP_EACH_DIM, // width
             DIM * NUM_WORKGROUP_EACH_DIM, // height
             1u,                           // layers
@@ -1705,17 +1719,17 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags flags;
             0u,                                                        // uint32_t vertexBindingDescriptionCount;
-            DE_NULL, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+            nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
             0u,      // uint32_t vertexAttributeDescriptionCount;
-            DE_NULL  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+            nullptr  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
         };
 
         const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                     // const void* pNext;
+            nullptr,                                                     // const void* pNext;
             (VkPipelineInputAssemblyStateCreateFlags)0, // VkPipelineInputAssemblyStateCreateFlags flags;
             (m_data.stage == STAGE_VERTEX) ? VK_PRIMITIVE_TOPOLOGY_POINT_LIST :
                                              VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, // VkPrimitiveTopology topology;
@@ -1724,7 +1738,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
 
         const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                    // const void* pNext;
+            nullptr,                                                    // const void* pNext;
             (VkPipelineRasterizationStateCreateFlags)0,          // VkPipelineRasterizationStateCreateFlags flags;
             VK_FALSE,                                            // VkBool32 depthClampEnable;
             (m_data.stage == STAGE_VERTEX) ? VK_TRUE : VK_FALSE, // VkBool32 rasterizerDiscardEnable;
@@ -1740,12 +1754,12 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
 
         const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType                          sType
-            DE_NULL,                                                  // const void*                              pNext
+            nullptr,                                                  // const void*                              pNext
             0u,                                                       // VkPipelineMultisampleStateCreateFlags    flags
             VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits                    rasterizationSamples
             VK_FALSE,              // VkBool32                                 sampleShadingEnable
             1.0f,                  // float                                    minSampleShading
-            DE_NULL,               // const VkSampleMask*                      pSampleMask
+            nullptr,               // const VkSampleMask*                      pSampleMask
             VK_FALSE,              // VkBool32                                 alphaToCoverageEnable
             VK_FALSE               // VkBool32                                 alphaToOneEnable
         };
@@ -1755,7 +1769,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
 
         const VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                             sType
-            DE_NULL,                                               // const void*                                 pNext
+            nullptr,                                               // const void*                                 pNext
             (VkPipelineViewportStateCreateFlags)0,                 // VkPipelineViewportStateCreateFlags          flags
             1u,        // uint32_t                                    viewportCount
             &viewport, // const VkViewport*                           pViewports
@@ -1782,14 +1796,14 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
 
         const VkPipelineShaderStageCreateInfo shaderCreateInfo[2] = {
             {
-                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, DE_NULL, (VkPipelineShaderStageCreateFlags)0,
+                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, (VkPipelineShaderStageCreateFlags)0,
                 VK_SHADER_STAGE_VERTEX_BIT, // stage
                 *vs,                        // shader
                 "main",
                 &specInfo, // pSpecializationInfo
             },
             {
-                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, DE_NULL, (VkPipelineShaderStageCreateFlags)0,
+                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, (VkPipelineShaderStageCreateFlags)0,
                 VK_SHADER_STAGE_FRAGMENT_BIT, // stage
                 *fs,                          // shader
                 "main",
@@ -1798,27 +1812,27 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
 
         const VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {
             VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                         // const void* pNext;
+            nullptr,                                         // const void* pNext;
             (VkPipelineCreateFlags)0,                        // VkPipelineCreateFlags flags;
             numStages,                                       // uint32_t stageCount;
             &shaderCreateInfo[0],                            // const VkPipelineShaderStageCreateInfo* pStages;
             &vertexInputStateCreateInfo,   // const VkPipelineVertexInputStateCreateInfo* pVertexInputState;
             &inputAssemblyStateCreateInfo, // const VkPipelineInputAssemblyStateCreateInfo* pInputAssemblyState;
-            DE_NULL,                       // const VkPipelineTessellationStateCreateInfo* pTessellationState;
+            nullptr,                       // const VkPipelineTessellationStateCreateInfo* pTessellationState;
             &viewportStateCreateInfo,      // const VkPipelineViewportStateCreateInfo* pViewportState;
             &rasterizationStateCreateInfo, // const VkPipelineRasterizationStateCreateInfo* pRasterizationState;
             &multisampleStateCreateInfo,   // const VkPipelineMultisampleStateCreateInfo* pMultisampleState;
-            DE_NULL,                       // const VkPipelineDepthStencilStateCreateInfo* pDepthStencilState;
-            DE_NULL,                       // const VkPipelineColorBlendStateCreateInfo* pColorBlendState;
-            DE_NULL,                       // const VkPipelineDynamicStateCreateInfo* pDynamicState;
+            nullptr,                       // const VkPipelineDepthStencilStateCreateInfo* pDepthStencilState;
+            nullptr,                       // const VkPipelineColorBlendStateCreateInfo* pColorBlendState;
+            nullptr,                       // const VkPipelineDynamicStateCreateInfo* pDynamicState;
             pipelineLayout.get(),          // VkPipelineLayout layout;
             renderPass.get(),              // VkRenderPass renderPass;
             0u,                            // uint32_t subpass;
-            DE_NULL,                       // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                // VkPipeline basePipelineHandle;
             0                              // int basePipelineIndex;
         };
 
-        pipeline = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
+        pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo);
     }
 
     const VkQueue queue             = m_context.getUniversalQueue();
@@ -1828,8 +1842,8 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
 
     VkBufferDeviceAddressInfo addrInfo = {
         VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType sType;
-        DE_NULL,                                      // const void*  pNext;
-        0,                                            // VkBuffer            buffer
+        nullptr,                                      // const void*  pNext;
+        VK_NULL_HANDLE,                               // VkBuffer            buffer
     };
 
     VkImageSubresourceRange range = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -1837,7 +1851,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
 
     VkMemoryBarrier memBarrier = {
         VK_STRUCTURE_TYPE_MEMORY_BARRIER, // sType
-        DE_NULL,                          // pNext
+        nullptr,                          // pNext
         0u,                               // srcAccessMask
         0u,                               // dstAccessMask
     };
@@ -1864,7 +1878,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
 
             const VkImageMemoryBarrier imageBarrier = {
                 VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType        sType
-                DE_NULL,                                // const void*            pNext
+                nullptr,                                // const void*            pNext
                 0u,                                     // VkAccessFlags        srcAccessMask
                 VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags        dstAccessMask
                 VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout        oldLayout
@@ -1881,11 +1895,10 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
                 }};
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                                  (const VkBufferMemoryBarrier *)DE_NULL, 1, &imageBarrier);
+                                  (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
         }
 
-        vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, DE_NULL);
+        vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, nullptr);
         vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
 
         if (m_data.payloadSC == SC_PHYSBUFFER)
@@ -1915,7 +1928,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
             memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
             memBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, allPipelineStages, 0, 1, &memBarrier, 0,
-                                  DE_NULL, 0, DE_NULL);
+                                  nullptr, 0, nullptr);
 
             if (m_data.stage == STAGE_COMPUTE)
             {
@@ -1924,7 +1937,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
             else
             {
                 beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer,
-                                makeRect2D(DIM * NUM_WORKGROUP_EACH_DIM, DIM * NUM_WORKGROUP_EACH_DIM), 0, DE_NULL,
+                                makeRect2D(DIM * NUM_WORKGROUP_EACH_DIM, DIM * NUM_WORKGROUP_EACH_DIM), 0, nullptr,
                                 VK_SUBPASS_CONTENTS_INLINE);
                 // Draw a point cloud for vertex shader testing, and a single quad for fragment shader testing
                 if (m_data.stage == STAGE_VERTEX)
@@ -1941,7 +1954,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
             memBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
             memBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
             vk.cmdPipelineBarrier(*cmdBuffer, allPipelineStages, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &memBarrier, 0,
-                                  DE_NULL, 0, DE_NULL);
+                                  nullptr, 0, nullptr);
         }
 
         if (x == NUM_SUBMITS - 1)
@@ -1950,7 +1963,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
             memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
             memBarrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 1,
-                                  &memBarrier, 0, DE_NULL, 0, DE_NULL);
+                                  &memBarrier, 0, nullptr, 0, nullptr);
         }
 
         endCommandBuffer(vk, *cmdBuffer);

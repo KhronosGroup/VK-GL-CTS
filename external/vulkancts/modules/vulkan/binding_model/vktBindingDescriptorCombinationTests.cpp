@@ -208,8 +208,8 @@ tcu::TestStatus DescriptorCombinationTestInstance::iterate()
     vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineInitForPushDesc);
     vk.cmdPushConstants(*cmdBuffer, *pipelineLayoutForPushDesc, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(int),
                         &pushConstValue);
-    vk.cmdPushDescriptorSetKHR(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayoutForPushDesc, 0, 1,
-                               &descriptorWrites);
+    vk.cmdPushDescriptorSet(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayoutForPushDesc, 0, 1,
+                            &descriptorWrites);
     vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
 
     // use legacy descriptor
@@ -239,8 +239,8 @@ tcu::TestStatus DescriptorCombinationTestInstance::iterate()
     vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineAddForPushDesc);
     vk.cmdPushConstants(*cmdBuffer, *pipelineLayoutForPushDesc, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(int),
                         &pushConstValue);
-    vk.cmdPushDescriptorSetKHR(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayoutForPushDesc, 0, 1,
-                               &descriptorWrites);
+    vk.cmdPushDescriptorSet(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayoutForPushDesc, 0, 1,
+                            &descriptorWrites);
     vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
 
     // use legacy descriptor
@@ -260,8 +260,8 @@ tcu::TestStatus DescriptorCombinationTestInstance::iterate()
     vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineAddForPushDesc);
     vk.cmdPushConstants(*cmdBuffer, *pipelineLayoutForPushDesc, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(int),
                         &pushConstValue);
-    vk.cmdPushDescriptorSetKHR(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayoutForPushDesc, 0, 1,
-                               &descriptorWrites);
+    vk.cmdPushDescriptorSet(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayoutForPushDesc, 0, 1,
+                            &descriptorWrites);
     vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
 
     // use descriptor buffer
@@ -282,8 +282,8 @@ tcu::TestStatus DescriptorCombinationTestInstance::iterate()
     vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineAddForPushDesc);
     vk.cmdPushConstants(*cmdBuffer, *pipelineLayoutForPushDesc, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(int),
                         &pushConstValue);
-    vk.cmdPushDescriptorSetKHR(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayoutForPushDesc, 0, 1,
-                               &descriptorWrites);
+    vk.cmdPushDescriptorSet(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayoutForPushDesc, 0, 1,
+                            &descriptorWrites);
     vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
 
     endCommandBuffer(vk, *cmdBuffer);
@@ -330,12 +330,12 @@ Move<VkPipeline> DescriptorCombinationTestInstance::createBasicPipeline(VkPipeli
             "main",                                              //        const char*                            pName
             nullptr, //        const VkSpecializationInfo*            pSpecializationInfo
         },
-        layout,  // VkPipelineLayout                        layout
-        DE_NULL, // VkPipeline                            basePipelineHandle
-        0,       // int32_t                                basePipelineIndex
+        layout,         // VkPipelineLayout                        layout
+        VK_NULL_HANDLE, // VkPipeline                            basePipelineHandle
+        0,              // int32_t                                basePipelineIndex
     };
 
-    return createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+    return createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 class DescriptorCombinationTestCase : public TestCase

@@ -159,7 +159,7 @@ BaseRenderingCase::BaseRenderingCase(Context &context, const char *name, const c
     , m_fboInternalFormat(GL_RGBA8)
     , m_pixelFormat((m_renderTarget == RENDERTARGET_DEFAULT) ? (m_context.getRenderTarget().getPixelFormat()) :
                                                                (getInternalFormatPixelFormat(m_fboInternalFormat)))
-    , m_shader(DE_NULL)
+    , m_shader(nullptr)
     , m_fbo(0)
     , m_texture(0)
     , m_rbo(0)
@@ -323,7 +323,7 @@ void BaseRenderingCase::deinit(void)
     if (m_shader)
     {
         delete m_shader;
-        m_shader = DE_NULL;
+        m_shader = nullptr;
     }
 
     if (m_fbo)
@@ -442,7 +442,7 @@ public:
 
 private:
     virtual void generateTriangles(int iteration, std::vector<tcu::Vec4> &outData,
-                                   std::vector<TriangleSceneSpec::SceneTriangle> &outTriangles) = DE_NULL;
+                                   std::vector<TriangleSceneSpec::SceneTriangle> &outTriangles) = 0;
 
     int m_iteration;
     const int m_iterationCount;
@@ -525,7 +525,7 @@ public:
 
 private:
     virtual void generateLines(int iteration, std::vector<tcu::Vec4> &outData,
-                               std::vector<LineSceneSpec::SceneLine> &outLines) = DE_NULL;
+                               std::vector<LineSceneSpec::SceneLine> &outLines) = 0;
 
     int m_iteration;
     const int m_iterationCount;

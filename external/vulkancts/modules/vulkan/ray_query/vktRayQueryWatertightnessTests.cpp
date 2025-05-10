@@ -156,7 +156,7 @@ uint32_t getShaderGroupBaseAlignment(const InstanceInterface &vki, const VkPhysi
 
 VkBuffer getVkBuffer(const de::MovePtr<BufferWithMemory> &buffer)
 {
-    VkBuffer result = (buffer.get() == DE_NULL) ? DE_NULL : buffer->get();
+    VkBuffer result = (buffer.get() == nullptr) ? VK_NULL_HANDLE : buffer->get();
 
     return result;
 }
@@ -164,7 +164,7 @@ VkBuffer getVkBuffer(const de::MovePtr<BufferWithMemory> &buffer)
 VkStridedDeviceAddressRegionKHR makeStridedDeviceAddressRegion(const DeviceInterface &vkd, const VkDevice device,
                                                                VkBuffer buffer, VkDeviceSize size)
 {
-    const VkDeviceSize sizeFixed = ((buffer == DE_NULL) ? 0ull : size);
+    const VkDeviceSize sizeFixed = ((buffer == VK_NULL_HANDLE) ? 0ull : size);
 
     return makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, buffer, 0), sizeFixed, sizeFixed);
 }
@@ -177,7 +177,7 @@ VkImageCreateInfo makeImageCreateInfo(VkFormat format, uint32_t width, uint32_t 
 {
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0u,              // VkImageCreateFlags flags;
         imageType,                           // VkImageType imageType;
         format,                              // VkFormat format;
@@ -189,7 +189,7 @@ VkImageCreateInfo makeImageCreateInfo(VkFormat format, uint32_t width, uint32_t 
         usageFlags,                          // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
     };
 
@@ -873,7 +873,7 @@ void GraphicsConfiguration::fillCommandBuffer(Context &context, TestParams &test
     const VkDeviceSize vertexBufferOffset = 0;
     const VkWriteDescriptorSetAccelerationStructureKHR rayQueryAccelerationStructureWriteDescriptorSet = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-        DE_NULL,                                                           //  const void* pNext;
+        nullptr,                                                           //  const void* pNext;
         1u,                                                                //  uint32_t accelerationStructureCount;
         rayQueryTopAccelerationStructurePtr, //  const VkAccelerationStructureKHR* pAccelerationStructures;
     };
@@ -886,7 +886,7 @@ void GraphicsConfiguration::fillCommandBuffer(Context &context, TestParams &test
         .update(vkd, device);
 
     vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0, 1,
-                              &m_descriptorSet.get(), 0, DE_NULL);
+                              &m_descriptorSet.get(), 0, nullptr);
     vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
     vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &vertexBufferOffset);
 
@@ -1008,7 +1008,7 @@ void ComputeConfiguration::fillCommandBuffer(Context &context, TestParams &testP
     const VkDevice device      = context.getDevice();
     const VkWriteDescriptorSetAccelerationStructureKHR rayQueryAccelerationStructureWriteDescriptorSet = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-        DE_NULL,                                                           //  const void* pNext;
+        nullptr,                                                           //  const void* pNext;
         1u,                                                                //  uint32_t accelerationStructureCount;
         rayQueryTopAccelerationStructurePtr, //  const VkAccelerationStructureKHR* pAccelerationStructures;
     };
@@ -1021,7 +1021,7 @@ void ComputeConfiguration::fillCommandBuffer(Context &context, TestParams &testP
         .update(vkd, device);
 
     vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0, 1,
-                              &m_descriptorSet.get(), 0, DE_NULL);
+                              &m_descriptorSet.get(), 0, nullptr);
 
     vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline.get());
 
@@ -1470,27 +1470,30 @@ void RayTracingConfiguration::fillCommandBuffer(Context &context, TestParams &te
         makeBottomLevelAccelerationStructure();
     de::MovePtr<TopLevelAccelerationStructure> topLevelAccelerationStructure = makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     m_bottomLevelAccelerationStructure =
         de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release());
     m_bottomLevelAccelerationStructure->setDefaultGeometryData(testParams.stage);
-    m_bottomLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator);
+    m_bottomLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator, bufferProps);
 
     m_topLevelAccelerationStructure =
         de::SharedPtr<TopLevelAccelerationStructure>(topLevelAccelerationStructure.release());
     m_topLevelAccelerationStructure->setInstanceCount(1);
     m_topLevelAccelerationStructure->addInstance(m_bottomLevelAccelerationStructure);
-    m_topLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator);
+    m_topLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator, bufferProps);
 
     const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = m_topLevelAccelerationStructure.get();
     const VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-        DE_NULL,                                                           //  const void* pNext;
+        nullptr,                                                           //  const void* pNext;
         1u,                                                                //  uint32_t accelerationStructureCount;
         topLevelAccelerationStructurePtr->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
     };
     const VkWriteDescriptorSetAccelerationStructureKHR rayQueryAccelerationStructureWriteDescriptorSet = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-        DE_NULL,                                                           //  const void* pNext;
+        nullptr,                                                           //  const void* pNext;
         1u,                                                                //  uint32_t accelerationStructureCount;
         rayQueryTopAccelerationStructurePtr, //  const VkAccelerationStructureKHR* pAccelerationStructures;
     };
@@ -1505,7 +1508,7 @@ void RayTracingConfiguration::fillCommandBuffer(Context &context, TestParams &te
         .update(vkd, device);
 
     vkd.cmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *m_pipelineLayout, 0, 1,
-                              &m_descriptorSet.get(), 0, DE_NULL);
+                              &m_descriptorSet.get(), 0, nullptr);
 
     vkd.cmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_pipeline.get());
 
@@ -1648,6 +1651,9 @@ const VkAccelerationStructureKHR *TestConfigurationNoMiss::initAccelerationStruc
         makeTopLevelAccelerationStructure();
     de::Random rng(testParams.randomSeed);
     std::vector<tcu::Vec3> geometryData;
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
 
     if (testParams.geomType == GEOM_TYPE_AABBS)
     {
@@ -1856,13 +1862,13 @@ const VkAccelerationStructureKHR *TestConfigurationNoMiss::initAccelerationStruc
 
     rayQueryBottomLevelAccelerationStructure->setGeometryCount(1u);
     rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, testParams.geomType == GEOM_TYPE_TRIANGLES);
-    rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
     m_bottomAccelerationStructures.push_back(
         de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
     m_topAccelerationStructure =
         de::SharedPtr<TopLevelAccelerationStructure>(rayQueryTopLevelAccelerationStructure.release());
     m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back());
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return m_topAccelerationStructure.get()->getPtr();
 }
@@ -2062,12 +2068,13 @@ tcu::TestStatus RayQueryBuiltinTestInstance::iterate(void)
     de::MovePtr<BufferWithMemory> resultBuffer = de::MovePtr<BufferWithMemory>(
         new BufferWithMemory(vkd, device, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
 
-    const VkDescriptorImageInfo resultImageInfo = makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+    const VkDescriptorImageInfo resultImageInfo =
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 
     const Move<VkCommandPool> cmdPool = createCommandPool(vkd, device, 0, queueFamilyIndex);
     const Move<VkCommandBuffer> cmdBuffer =
         allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-    const VkAccelerationStructureKHR *topAccelerationStructurePtr = DE_NULL;
+    const VkAccelerationStructureKHR *topAccelerationStructurePtr = nullptr;
 
     m_pipelineConfig->initConfiguration(m_context, m_data);
 

@@ -251,27 +251,28 @@ class GitRepo (Source):
         self.patch = patch
 
     def checkout(self, url, fullDstPath, force):
-        if not os.path.exists(os.path.join(fullDstPath, '.git')):
-            execute(["git", "clone", "--no-checkout", url, fullDstPath])
-
-        pushWorkingDir(fullDstPath)
         print("Directory: " + fullDstPath)
-        try:
-            for tag in self.removeTags:
-                proc = subprocess.Popen(['git', 'tag', '-l', tag], stdout=subprocess.PIPE)
-                (stdout, stderr) = proc.communicate()
-                if len(stdout) > 0:
-                    execute(["git", "tag", "-d",tag])
-            force_arg = ['--force'] if force else []
-            execute(["git", "fetch"] + force_arg + ["--tags", url, "+refs/heads/*:refs/remotes/origin/*"])
-            execute(["git", "checkout"] + force_arg + [self.revision])
+        for tag in self.removeTags:
+            proc = subprocess.Popen(['git', 'tag', '-l', tag], stdout=subprocess.PIPE)
+            (stdout, stderr) = proc.communicate()
+            if len(stdout) > 0:
+                run(["git", "tag", "-d",tag])
 
-            if(self.patch != ""):
-                patchFile = os.path.join(EXTERNAL_DIR, self.patch)
-                execute(["git", "reset", "--hard", "HEAD"])
-                execute(["git", "apply", patchFile])
-        finally:
-            popWorkingDir()
+        force_arg = ['--force'] if force else []
+        try:
+            run(["git", "checkout"] + force_arg + [self.revision])
+        except KeyboardInterrupt:
+            # Propagate the exception to stop the process if possible.
+            raise
+        except:
+            logging.debug("couldn't find revision " + self.revision + " locally; fetching")
+            run(["git", "fetch"] + force_arg + ["--tags", url, "+refs/heads/*:refs/remotes/origin/*"])
+            run(["git", "checkout"] + force_arg + [self.revision])
+
+        if(self.patch != ""):
+            patchFile = os.path.join(EXTERNAL_DIR, self.patch)
+            run(["git", "reset", "--hard", "HEAD"])
+            run(["git", "apply", patchFile])
 
     def update (self, cmdProtocol, force = False):
         fullDstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
@@ -283,11 +284,23 @@ class GitRepo (Source):
             url       = self.sshUrl
             backupUrl = self.httpsUrl
 
+        if not os.path.exists(os.path.join(fullDstPath, '.git')):
+            logging.debug("git repository does not exist; performing full clone")
+            try:
+                run(["git", "clone", "--no-checkout", url, fullDstPath])
+            except:
+                if backupUrl != None:
+                    execute(["git", "clone", "--no-checkout", backupUrl, fullDstPath])
+
+        pushWorkingDir(fullDstPath)
+
         try:
             self.checkout(url, fullDstPath, force)
-        except:
-            if backupUrl != None:
-                self.checkout(backupUrl, fullDstPath, force)
+        except KeyboardInterrupt:
+            # Propagate the exception to stop the process if possible.
+            raise
+        finally:
+            popWorkingDir()
 
 def postExtractLibpng (path):
     shutil.copy(os.path.join(path, "scripts", "pnglibconf.h.prebuilt"),
@@ -299,8 +312,8 @@ PACKAGES = [
         "b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30",
         "zlib"),
     SourcePackage(
-        "http://prdownloads.sourceforge.net/libpng/libpng-1.6.27.tar.gz",
-        "c9d164ec247f426a525a7b89936694aefbc91fb7a50182b198898b8fc91174b4",
+        "https://github.com/pnggroup/libpng/archive/refs/tags/v1.6.33.tar.gz",
+        "0b0681ed912f8f6b0175fc4ebe4b05367dfbfcd4a6f23b8f2498db42eca998d4",
         "libpng",
         postExtract = postExtractLibpng),
     SourceFile(
@@ -311,33 +324,33 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Tools.git",
         "git@github.com:KhronosGroup/SPIRV-Tools.git",
-        "dd4b663e13c07fea4fbb3f70c1c91c86731099f7",
+        "3f7cbaf327681af51ba65bc83bd1e42ddb9681b2",
         "spirv-tools"),
     GitRepo(
         "https://github.com/KhronosGroup/glslang.git",
         "git@github.com:KhronosGroup/glslang.git",
-        "b9b8fd917b195f680a1ce3f3f663c03e1c82579d",
+        "ba1640446f3826a518721d1f083f3a8cca1120c3",
         "glslang",
-        removeTags = ["main-tot"]),
+        removeTags = ["main-tot", "master-tot"]),
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Headers.git",
         "git@github.com:KhronosGroup/SPIRV-Headers.git",
-        "4f7b471f1a66b6d06462cd4ba57628cc0cd087d7",
+        "7c2f5333e9c662620581361dffc327a99800bb52",
         "spirv-headers"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Docs.git",
         "git@github.com:KhronosGroup/Vulkan-Docs.git",
-        "dedb71a7edc6d5af3f9bfd5e2ef53814de999ef7",
+        "645c59c70e826d9738b6bb103316c03d887dfed3",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
         "git@github.com:KhronosGroup/Vulkan-ValidationLayers.git",
-        "f589bc456545fbab97caf49380b102b8aafe1f40",
+        "6cf616f131e9870c499a50441bca2d07ccda9733",
         "vulkan-validationlayers"),
     GitRepo(
         "https://github.com/google/amber.git",
         "git@github.com:google/amber.git",
-        "0f003c2785489f59cd01bb2440fcf303149100f2",
+        "7fc1c7eded4c28e4b35ce0d3929dfd768f57663a",
         "amber"),
     GitRepo(
         "https://github.com/open-source-parsers/jsoncpp.git",
@@ -350,8 +363,21 @@ PACKAGES = [
     GitRepo(
         "https://github.com/Igalia/vk_video_samples.git",
         "git@github.com:Igalia/vk_video_samples.git",
-        "6821adf11eb4f84a2168264b954c170d03237699",
+        "45fe88b456c683120138f052ea81f0a958ff3ec4",
         "nvidia-video-samples"),
+    # NOTE: Temporary vk_video_samples repo and branch where AV1
+    # encoder library is being developed by NVidia.
+    GitRepo(
+        "https://github.com/KhronosGroup/Vulkan-Video-Samples.git",
+        "git@github.com:KhronosGroup/Vulkan-Video-Samples.git",
+        "a22e0084e6f38a16dc0dcebb4c19a14651a6665b",
+        "vulkan-video-samples"),
+    # NOTE: Temporary video generator repo .
+    GitRepo(
+        "https://github.com/Igalia/video_generator.git",
+        "git@github.com:Igalia/video_generator.git",
+        "426300e12a5cc5d4676807039a1be237a2b68187",
+        "video_generator"),
 ]
 
 def parseArgs ():
@@ -389,24 +415,31 @@ def run(*popenargs, **kwargs):
 
     try:
         stdout, stderr = process.communicate(None)
+    except KeyboardInterrupt:
+        # Terminate the process, wait and propagate.
+        process.terminate()
+        process.wait()
+        raise
     except:
+        # With any other exception, we _kill_ the process and propagate.
         process.kill()
         process.wait()
         raise
-
-    retcode = process.poll()
-
-    if retcode:
-        raise subprocess.CalledProcessError(retcode, process.args, output=stdout, stderr=stderr)
-
-    return retcode, stdout, stderr
+    else:
+        # Everything good, fetch the retcode and raise exception if needed.
+        retcode = process.poll()
+        if retcode:
+            raise subprocess.CalledProcessError(retcode, process.args, output=stdout, stderr=stderr)
 
 if __name__ == "__main__":
     args = parseArgs()
     initializeLogger(args.verbose)
 
-    for pkg in PACKAGES:
-        if args.clean:
-            pkg.clean()
-        else:
-            pkg.update(args.protocol, args.force)
+    try:
+        for pkg in PACKAGES:
+            if args.clean:
+                pkg.clean()
+            else:
+                pkg.update(args.protocol, args.force)
+    except KeyboardInterrupt:
+        sys.exit("") # Returns 1.

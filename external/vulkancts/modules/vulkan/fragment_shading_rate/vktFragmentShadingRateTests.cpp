@@ -310,7 +310,7 @@ tcu::TestStatus testShadingRates(Context &context)
     uint32_t supportedFragmentShadingRateCount = 0;
 
     vk::VkResult result =
-        vki.getPhysicalDeviceFragmentShadingRatesKHR(physicalDevice, &supportedFragmentShadingRateCount, DE_NULL);
+        vki.getPhysicalDeviceFragmentShadingRatesKHR(physicalDevice, &supportedFragmentShadingRateCount, nullptr);
     if ((result != vk::VK_SUCCESS) && (result != vk::VK_ERROR_OUT_OF_HOST_MEMORY))
     {
         someChecksFailed = true;
@@ -322,7 +322,7 @@ tcu::TestStatus testShadingRates(Context &context)
     for (auto &fragmentShadingRate : fragmentShadingRateVect)
     {
         fragmentShadingRate.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_KHR;
-        fragmentShadingRate.pNext = DE_NULL;
+        fragmentShadingRate.pNext = nullptr;
     }
 
     // Pass a value of 1 into pFragmentShadingRateCount, and an array of at least length one into pFragmentShadingRates.
@@ -511,14 +511,22 @@ void checkSupport(Context &context)
     context.requireDeviceFunctionality("VK_KHR_fragment_shading_rate");
 }
 
-void createMiscTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup)
+void createMiscTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup, SharedGroupParams groupParams)
 {
     de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "misc"));
 
-    addFunctionCase(group.get(), "limits", checkSupport, testLimits);
-    addFunctionCase(group.get(), "shading_rates", checkSupport, testShadingRates);
+    if (!groupParams->useDynamicRendering && !groupParams->useSecondaryCmdBuffer &&
+        (groupParams->pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC))
+    {
+        addFunctionCase(group.get(), "limits", checkSupport, testLimits);
+        addFunctionCase(group.get(), "shading_rates", checkSupport, testShadingRates);
+    }
 
-    createFragmentShadingRateMiscTests(group.get());
+    if (!groupParams->useSecondaryCmdBuffer &&
+        groupParams->pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+    {
+        createFragmentShadingRateMiscTests(group.get(), groupParams);
+    }
 
     parentGroup->addChild(group.release());
 }
@@ -536,13 +544,13 @@ void createTests(tcu::TestCaseGroup *group, SharedGroupParams groupParams)
         (groupParams->pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC))
         createAttachmentRateTests(testCtx, group, groupParams);
 
+    // Some of these tests use dynamic rendering and others do not.
+    createMiscTests(testCtx, group, groupParams);
+
     // run pixel consistency tests and misc tests only with renderpass2 and monolithic pipeline
     if (!groupParams->useDynamicRendering && !groupParams->useSecondaryCmdBuffer &&
         (groupParams->pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC))
     {
-        // there is no point in duplicating those tests for dynamic rendering
-        createMiscTests(testCtx, group);
-
         // subpasses can't be translated to dynamic rendering
         createPixelConsistencyTests(testCtx, group);
     }

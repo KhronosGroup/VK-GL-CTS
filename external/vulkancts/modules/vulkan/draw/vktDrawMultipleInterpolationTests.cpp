@@ -404,9 +404,9 @@ void DrawTestInstance::render(de::SharedPtr<Image> &colorTargetImage, tcu::Const
         }
 
         renderPassCreateInfo.addSubpass(SubpassDescription(
-            vk::VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, DE_NULL, (uint32_t)colorAttachmentRefs.size(),
+            vk::VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, nullptr, (uint32_t)colorAttachmentRefs.size(),
             useMultisampling ? &multisampleAttachmentRefs[0] : &colorAttachmentRefs[0],
-            useMultisampling ? &colorAttachmentRefs[0] : DE_NULL, AttachmentReference(), 0, DE_NULL));
+            useMultisampling ? &colorAttachmentRefs[0] : nullptr, AttachmentReference(), 0, nullptr));
 
         m_renderPass = createRenderPass(vk, device, &renderPassCreateInfo);
 
@@ -419,7 +419,7 @@ void DrawTestInstance::render(de::SharedPtr<Image> &colorTargetImage, tcu::Const
         }
 
         const vk::VkFramebufferCreateInfo framebufferCreateInfo = {vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-                                                                   DE_NULL,
+                                                                   nullptr,
                                                                    0u,
                                                                    *m_renderPass,
                                                                    (uint32_t)attachments.size(),
@@ -497,7 +497,7 @@ void DrawTestInstance::render(de::SharedPtr<Image> &colorTargetImage, tcu::Const
         std::vector<vk::VkFormat> colorAttachmentFormats(m_colorTargetViews.size(), m_params.format);
         vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo{
             vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-            DE_NULL,
+            nullptr,
             0u,
             static_cast<uint32_t>(colorAttachmentFormats.size()),
             colorAttachmentFormats.data(),
@@ -508,7 +508,7 @@ void DrawTestInstance::render(de::SharedPtr<Image> &colorTargetImage, tcu::Const
             pipelineCreateInfo.pNext = &renderingCreateInfo;
 #endif // CTS_USES_VULKANSC
 
-        m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+        m_pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
     }
 
     // Queue draw and read results.
@@ -652,7 +652,7 @@ void DrawTestInstance::beginSecondaryCmdBuffer(vk::VkCommandBuffer cmdBuffer,
     std::vector<vk::VkFormat> colorAttachmentFormats(m_colorTargetViews.size(), m_params.format);
     vk::VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                             // const void* pNext;
+        nullptr,                                                             // const void* pNext;
         renderingFlags,                                                      // VkRenderingFlagsKHR flags;
         0u,                                                                  // uint32_t viewMask;
         (uint32_t)colorAttachmentFormats.size(),                             // uint32_t colorAttachmentCount;
@@ -669,7 +669,7 @@ void DrawTestInstance::beginSecondaryCmdBuffer(vk::VkCommandBuffer cmdBuffer,
 
     const vk::VkCommandBufferBeginInfo commandBufBeginParams{
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         usageFlags,                                      // VkCommandBufferUsageFlags flags;
         &bufferInheritanceInfo};
 
@@ -687,11 +687,11 @@ void DrawTestInstance::beginDynamicRender(vk::VkCommandBuffer cmdBuffer, vk::VkR
         imagesCount,
         {
             vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
-            DE_NULL,                                             // VkImageView imageView;
+            nullptr,                                             // const void* pNext;
+            VK_NULL_HANDLE,                                      // VkImageView imageView;
             vk::VK_IMAGE_LAYOUT_GENERAL,                         // VkImageLayout imageLayout;
             vk::VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-            DE_NULL,                                             // VkImageView resolveImageView;
+            VK_NULL_HANDLE,                                      // VkImageView resolveImageView;
             vk::VK_IMAGE_LAYOUT_GENERAL,                         // VkImageLayout resolveImageLayout;
             vk::VK_ATTACHMENT_LOAD_OP_CLEAR,                     // VkAttachmentLoadOp loadOp;
             vk::VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;
@@ -712,15 +712,15 @@ void DrawTestInstance::beginDynamicRender(vk::VkCommandBuffer cmdBuffer, vk::VkR
 
     vk::VkRenderingInfoKHR renderingInfo{
         vk::VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-        DE_NULL,
+        nullptr,
         renderingFlags,          // VkRenderingFlagsKHR flags;
         renderArea,              // VkRect2D renderArea;
         1u,                      // uint32_t layerCount;
         0u,                      // uint32_t viewMask;
         imagesCount,             // uint32_t colorAttachmentCount;
         colorAttachments.data(), // const VkRenderingAttachmentInfoKHR* pColorAttachments;
-        DE_NULL,                 // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
-        DE_NULL,                 // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
+        nullptr,                 // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
+        nullptr,                 // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
     };
 
     vk.cmdBeginRendering(cmdBuffer, &renderingInfo);

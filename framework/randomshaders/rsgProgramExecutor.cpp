@@ -269,7 +269,7 @@ void ProgramExecutor::execute(const Shader &vertexShader, const Shader &fragment
             {
                 const Variable *output = *i;
 
-                if (deStringEqual(output->getName(), "gl_Position"))
+                if (strcmp(output->getName(), "gl_Position") == 0)
                     continue; // Do not store position
 
                 ExecConstValueAccess access = execCtx.getValue(output);
@@ -293,7 +293,7 @@ void ProgramExecutor::execute(const Shader &vertexShader, const Shader &fragment
             execCtx.getValue(i->getVariable()) = i->getValue().value();
 
         const vector<ShaderInput *> &inputs = fragmentShader.getInputs();
-        const Variable *fragColorVar        = DE_NULL;
+        const Variable *fragColorVar        = nullptr;
         vector<const Variable *> outputs;
 
         // Find fragment shader output assigned to location 0. This is fragment color.

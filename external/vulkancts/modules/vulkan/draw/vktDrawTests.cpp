@@ -56,6 +56,7 @@
 #include "vktDrawMultiExtTests.hpp"
 #endif // CTS_USES_VULKANSC
 #include "vktDrawPointClampTests.hpp"
+#include "vktDrawNonLineTests.hpp"
 
 namespace vkt
 {
@@ -109,6 +110,8 @@ void createChildren(tcu::TestContext &testCtx, tcu::TestCaseGroup *group, const 
 
             // subpasses can't be translated to dynamic rendering
             group->addChild(createAhbTests(testCtx));
+
+            group->addChild(createDrawNonLineTests(testCtx));
         }
 
         group->addChild(createAhbExternalFormatResolveTests(testCtx, groupParams));

@@ -41,6 +41,7 @@
 #include "vkDefs.hpp"
 #include "vkStrUtil.hpp"
 #include "vkBarrierUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include <unordered_set>
 #include <algorithm>
@@ -403,10 +404,12 @@ VideoBaseDecoder::VideoBaseDecoder(Parameters &&params)
     , m_forceDisableFilmGrain(params.forceDisableFilmGrain)
     , m_queryResultWithStatus(params.queryDecodeStatus)
     , m_useInlineQueries(params.useInlineQueries)
+    , m_useInlineSessionParams(params.useInlineSessionParams)
+    , m_resetCodecNoSessionParams(params.resetCodecNoSessionParams)
     , m_resourcesWithoutProfiles(params.resourcesWithoutProfiles)
     , m_outOfOrderDecoding(params.outOfOrderDecoding)
     , m_alwaysRecreateDPB(params.alwaysRecreateDPB)
-    , m_intraOnlyDecoding(params.intraOnlyDecoding)
+    , m_intraOnlyDecodingNoSetupRef(params.intraOnlyDecodingNoSetupRef)
 {
     std::fill(m_pictureToDpbSlotMap.begin(), m_pictureToDpbSlotMap.end(), -1);
     reinitializeFormatsForProfile(params.profile);
@@ -441,6 +444,11 @@ void VideoBaseDecoder::Deinitialize()
     VkDevice device            = m_deviceContext->device;
     VkQueue queueDecode        = m_deviceContext->decodeQueue;
     VkQueue queueTransfer      = m_deviceContext->transferQueue;
+
+    // Sometimes(eg. scaling lists decoding tesets) decoding finishes before the current
+    // picture params are flushed, which leads to a memory leak and validation errors.
+    if (m_currentPictureParameters)
+        m_currentPictureParameters->FlushPictureParametersQueue(m_videoSession);
 
     if (queueDecode)
         vkd.queueWaitIdle(queueDecode);
@@ -545,7 +553,7 @@ void VideoBaseDecoder::StartVideoSequence(const VkParserDetectedVideoFormat *pVi
         VK_CHECK(VulkanVideoSession::Create(*m_deviceContext, m_deviceContext->decodeQueueFamilyIdx(), &videoProfile,
                                             m_outImageFormat, imageExtent, m_dpbImageFormat, maxDpbSlotCount,
                                             std::min<uint32_t>(maxDpbSlotCount, m_videoCaps.maxActiveReferencePictures),
-                                            m_useInlineQueries, m_videoSession));
+                                            m_useInlineQueries, m_useInlineSessionParams, m_videoSession));
         // after creating a new video session, we need codec reset.
         m_resetDecoder = true;
     }
@@ -559,7 +567,8 @@ void VideoBaseDecoder::StartVideoSequence(const VkParserDetectedVideoFormat *pVi
         (VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
     VkImageUsageFlags dpbImageUsage = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR;
 
-    if (dpbAndOutputCoincide() && (!pVideoFormat->filmGrainEnabled || m_forceDisableFilmGrain))
+    if (dpbAndOutputCoincide() && (!pVideoFormat->filmGrainEnabled || m_forceDisableFilmGrain) &&
+        !m_intraOnlyDecodingNoSetupRef)
     {
         dpbImageUsage = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR | VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR |
                         VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
@@ -622,7 +631,7 @@ int32_t VideoBaseDecoder::BeginSequence(const VkParserSequenceInfo *pnvsi)
     uint32_t configDpbSlots = (pnvsi->nMinNumDpbSlots > 0) ? pnvsi->nMinNumDpbSlots : maxDpbSlots;
     configDpbSlots          = std::min<uint32_t>(configDpbSlots, maxDpbSlots);
 
-    if (m_intraOnlyDecoding)
+    if (m_intraOnlyDecodingNoSetupRef)
     {
         maxDpbSlots    = 0;
         configDpbSlots = 0;
@@ -785,7 +794,7 @@ bool VideoBaseDecoder::AllocPictureBuffer(VkPicIf **ppNvidiaVulkanPicture, uint3
 
     if (!result)
     {
-        *ppNvidiaVulkanPicture = (VkPicIf *)nullptr;
+        *ppNvidiaVulkanPicture = nullptr;
     }
 
     return result;
@@ -1241,7 +1250,7 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase * /*
         p->setupSlot.pStdReferenceInfo             = &p->setupSlotInfo;
         setupReferenceSlot.pNext                   = &p->setupSlot;
 
-        if (!m_intraOnlyDecoding)
+        if (!m_intraOnlyDecodingNoSetupRef)
         {
             DE_ASSERT(m_maxNumDpbSlots <= STD_VIDEO_AV1_NUM_REF_FRAMES + 1); // + 1 for scratch slot
             uint32_t refDpbUsedAndValidMask = 0;
@@ -1424,12 +1433,13 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase * /*
                        p->tileSizes[i], p->tileInfo.pWidthInSbsMinus1[i] + 1, p->tileInfo.pHeightInSbsMinus1[i] + 1,
                        p->tileInfo.pMiColStarts[i], p->tileInfo.pMiRowStarts[i]);
 
-                VkDeviceSize maxSize        = 0;
-                uint32_t adjustedTileOffset = p->tileOffsets[i] + pCurrFrameDecParams->bitstreamDataOffset;
+                VkDeviceSize maxSize = 0;
+                uint32_t adjustedTileOffset =
+                    p->tileOffsets[i] + static_cast<uint32_t>(pCurrFrameDecParams->bitstreamDataOffset);
                 const uint8_t *bitstreamBytes =
                     pCurrFrameDecParams->bitstreamData->GetReadOnlyDataPtr(adjustedTileOffset, maxSize);
 
-                for (int j = 0; j < std::min(p->tileSizes[i], 16u); j++)
+                for (uint32_t j = 0; j < std::min(p->tileSizes[i], 16u); j++)
                 {
                     printf("%02x ", bitstreamBytes[j]);
                 }
@@ -1527,7 +1537,7 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
     }
     else
     {
-        if (!pPicParams->filmGrainEnabled)
+        if (!pPicParams->filmGrainEnabled && !m_intraOnlyDecodingNoSetupRef)
         {
             pOutputPictureResource = &cachedParameters->currentOutputPictureResource;
         }
@@ -1562,7 +1572,7 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
                                                (uint32_t)cachedParameters->decodedPictureInfo.displayHeight};
     }
 
-    if (dpbAndOutputCoincide() && !pPicParams->filmGrainEnabled)
+    if (dpbAndOutputCoincide() && !pPicParams->filmGrainEnabled && !m_intraOnlyDecodingNoSetupRef)
     {
         // For the Output Coincide, the DPB and destination output resources are the same.
         pPicParams->decodeFrameInfo.dstPictureResource = pPicParams->dpbSetupPictureResource;
@@ -1571,7 +1581,7 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
         // This is if a multi-layered image is used for the DPB and the output (since they coincide).
         cachedParameters->decodedPictureInfo.imageLayerIndex = pPicParams->dpbSetupPictureResource.baseArrayLayer;
     }
-    else if (pOutputPictureResourceInfo)
+    else if (pOutputPictureResourceInfo || m_intraOnlyDecodingNoSetupRef)
     {
         // For Output Distinct transition the image to DECODE_DST
         if (pOutputPictureResourceInfo->currentImageLayout == VK_IMAGE_LAYOUT_UNDEFINED)
@@ -1585,7 +1595,8 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
         }
     }
 
-    if (cachedParameters->currentDpbPictureResourceInfo.currentImageLayout == VK_IMAGE_LAYOUT_UNDEFINED)
+    if (!m_intraOnlyDecodingNoSetupRef &&
+        cachedParameters->currentDpbPictureResourceInfo.currentImageLayout == VK_IMAGE_LAYOUT_UNDEFINED)
     {
         VkImageMemoryBarrier2KHR dpbBarrier = makeImageMemoryBarrier2(
             VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR, VK_ACCESS_2_VIDEO_DECODE_READ_BIT_KHR,
@@ -1751,6 +1762,39 @@ void VideoBaseDecoder::WaitForFrameFences(de::MovePtr<CachedDecodeParameters> &c
     TCU_CHECK_MSG(result == VK_SUCCESS || result == VK_NOT_READY, "Bad fence status");
 }
 
+void VideoBaseDecoder::AddInlineSessionParameters(de::MovePtr<CachedDecodeParameters> &cachedParameters,
+                                                  union InlineSessionParameters &inlineSessionParams,
+                                                  const void *currentNext)
+{
+    if ((m_profile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR))
+    {
+        inlineSessionParams.h264.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_INLINE_SESSION_PARAMETERS_INFO_KHR;
+        inlineSessionParams.h264.pNext = currentNext;
+        inlineSessionParams.h264.pStdSPS =
+            cachedParameters->currentPictureParameterObject->currentStdPictureParameters.h264Sps;
+        inlineSessionParams.h264.pStdPPS =
+            cachedParameters->currentPictureParameterObject->currentStdPictureParameters.h264Pps;
+    }
+    else if ((m_profile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR))
+    {
+        inlineSessionParams.h265.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_INLINE_SESSION_PARAMETERS_INFO_KHR;
+        inlineSessionParams.h265.pNext = currentNext;
+        inlineSessionParams.h265.pStdVPS =
+            cachedParameters->currentPictureParameterObject->currentStdPictureParameters.h265Vps;
+        inlineSessionParams.h265.pStdSPS =
+            cachedParameters->currentPictureParameterObject->currentStdPictureParameters.h265Sps;
+        inlineSessionParams.h265.pStdPPS =
+            cachedParameters->currentPictureParameterObject->currentStdPictureParameters.h265Pps;
+    }
+    else if ((m_profile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR))
+    {
+        inlineSessionParams.av1.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_INLINE_SESSION_PARAMETERS_INFO_KHR;
+        inlineSessionParams.av1.pNext = cachedParameters->pictureParams.decodeFrameInfo.pNext;
+        inlineSessionParams.av1.pStdSequenceHeader =
+            cachedParameters->currentPictureParameterObject->currentStdPictureParameters.av1SequenceHeader;
+    }
+}
+
 void VideoBaseDecoder::RecordCommandBuffer(de::MovePtr<CachedDecodeParameters> &cachedParameters)
 {
     auto &vk = m_deviceContext->getDeviceDriver();
@@ -1774,13 +1818,35 @@ void VideoBaseDecoder::RecordCommandBuffer(de::MovePtr<CachedDecodeParameters> &
                              cachedParameters->frameSynchronizationInfo.numQueries);
     }
 
+    auto videoSessionParameters = cachedParameters->decodeBeginInfo.videoSessionParameters;
+    DE_UNREF(videoSessionParameters);
+    if (m_useInlineSessionParams || m_resetCodecNoSessionParams)
+        cachedParameters->decodeBeginInfo.videoSessionParameters = VK_NULL_HANDLE;
+
     vk.cmdBeginVideoCodingKHR(commandBuffer, &cachedParameters->decodeBeginInfo);
 
-    if (cachedParameters->performCodecReset)
+    if (cachedParameters->performCodecReset || m_resetCodecNoSessionParams)
     {
         VkVideoCodingControlInfoKHR codingControlInfo = {VK_STRUCTURE_TYPE_VIDEO_CODING_CONTROL_INFO_KHR, nullptr,
                                                          VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR};
         vk.cmdControlVideoCodingKHR(commandBuffer, &codingControlInfo);
+    }
+
+    // If we just want to test codec reset without session parameters
+    // specified (relaxed session params requirement of VK_KHR_video_maintenance2),
+    // we need to restart video coding with valid session params for
+    // the decode to continue, unless we are also testing inline
+    // session params.
+    if (m_resetCodecNoSessionParams && !m_useInlineSessionParams)
+    {
+        // End video coding first
+        VkVideoEndCodingInfoKHR decodeEndInfo{};
+        decodeEndInfo.sType = VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR;
+        vk.cmdEndVideoCodingKHR(commandBuffer, &decodeEndInfo);
+
+        // Restart video coding with a valid session params
+        cachedParameters->decodeBeginInfo.videoSessionParameters = videoSessionParameters;
+        vk.cmdBeginVideoCodingKHR(commandBuffer, &cachedParameters->decodeBeginInfo);
     }
 
     const VkDependencyInfoKHR dependencyInfo = {
@@ -1810,6 +1876,17 @@ void VideoBaseDecoder::RecordCommandBuffer(de::MovePtr<CachedDecodeParameters> &
     {
         vk.cmdBeginQuery(commandBuffer, cachedParameters->frameSynchronizationInfo.queryPool,
                          cachedParameters->frameSynchronizationInfo.startQueryId, VkQueryControlFlags());
+    }
+
+    union InlineSessionParameters inlineSessionParams
+    {
+    };
+
+    if (m_useInlineSessionParams)
+    {
+        AddInlineSessionParameters(cachedParameters, inlineSessionParams,
+                                   cachedParameters->pictureParams.decodeFrameInfo.pNext);
+        cachedParameters->pictureParams.decodeFrameInfo.pNext = &inlineSessionParams;
     }
 
     vk.cmdDecodeVideoKHR(commandBuffer, &cachedParameters->pictureParams.decodeFrameInfo);
@@ -1950,7 +2027,7 @@ bool VideoBaseDecoder::DisplayPicture(VkPicIf *pNvidiaVulkanPicture, int64_t /*l
 {
     vkPicBuffBase *pVkPicBuff = GetPic(pNvidiaVulkanPicture);
 
-    DE_ASSERT(pVkPicBuff != DE_NULL);
+    DE_ASSERT(pVkPicBuff != nullptr);
     int32_t picIdx = pVkPicBuff ? pVkPicBuff->m_picIdx : -1;
     DE_ASSERT(picIdx != -1);
     DE_ASSERT(m_videoFrameBuffer != nullptr);
@@ -2617,7 +2694,8 @@ VkResult VulkanVideoSession::Create(DeviceContext &vkDevCtx, uint32_t videoQueue
                                     VkVideoCoreProfile *pVideoProfile, VkFormat pictureFormat,
                                     const VkExtent2D &maxCodedExtent, VkFormat referencePicturesFormat,
                                     uint32_t maxDpbSlots, uint32_t maxActiveReferencePictures,
-                                    bool useInlineVideoQueries, VkSharedBaseObj<VulkanVideoSession> &videoSession)
+                                    bool useInlineVideoQueries, bool useInlineParameters,
+                                    VkSharedBaseObj<VulkanVideoSession> &videoSession)
 {
     auto &vk    = vkDevCtx.getDeviceDriver();
     auto device = vkDevCtx.device;
@@ -2635,15 +2713,17 @@ VkResult VulkanVideoSession::Create(DeviceContext &vkDevCtx, uint32_t videoQueue
     static const VkExtensionProperties h265EncodeStdExtensionVersion = {
         VK_STD_VULKAN_VIDEO_CODEC_H265_ENCODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_H265_ENCODE_SPEC_VERSION};
 
+    const auto flags = (useInlineVideoQueries ? VK_VIDEO_SESSION_CREATE_INLINE_QUERIES_BIT_KHR : 0) |
+                       (useInlineParameters ? VK_VIDEO_SESSION_CREATE_INLINE_SESSION_PARAMETERS_BIT_KHR : 0);
     VkVideoSessionCreateInfoKHR &createInfo = pNewVideoSession->m_createInfo;
-    createInfo.flags                      = useInlineVideoQueries ? VK_VIDEO_SESSION_CREATE_INLINE_QUERIES_BIT_KHR : 0;
-    createInfo.pVideoProfile              = pVideoProfile->GetProfile();
-    createInfo.queueFamilyIndex           = videoQueueFamily;
-    createInfo.pictureFormat              = pictureFormat;
-    createInfo.maxCodedExtent             = maxCodedExtent;
-    createInfo.maxDpbSlots                = maxDpbSlots;
-    createInfo.maxActiveReferencePictures = maxActiveReferencePictures;
-    createInfo.referencePictureFormat     = referencePicturesFormat;
+    createInfo.flags                        = flags;
+    createInfo.pVideoProfile                = pVideoProfile->GetProfile();
+    createInfo.queueFamilyIndex             = videoQueueFamily;
+    createInfo.pictureFormat                = pictureFormat;
+    createInfo.maxCodedExtent               = maxCodedExtent;
+    createInfo.maxDpbSlots                  = maxDpbSlots;
+    createInfo.maxActiveReferencePictures   = maxActiveReferencePictures;
+    createInfo.referencePictureFormat       = referencePicturesFormat;
 
     switch ((int32_t)pVideoProfile->GetCodecType())
     {
@@ -2943,6 +3023,9 @@ VkResult VkParserVideoPictureParameters::CreateParametersObject(
         h264SessionParametersCreateInfo.pParametersAddInfo = &h264SessionParametersAddInfo;
 
         currentId = PopulateH264UpdateFields(pStdVideoPictureParametersSet, h264SessionParametersAddInfo);
+
+        currentStdPictureParameters.h264Sps = h264SessionParametersAddInfo.pStdSPSs;
+        currentStdPictureParameters.h264Pps = h264SessionParametersAddInfo.pStdPPSs;
     }
     break;
     case StdVideoPictureParametersSet::TYPE_H265_VPS:
@@ -2956,6 +3039,10 @@ VkResult VkParserVideoPictureParameters::CreateParametersObject(
         h265SessionParametersCreateInfo.pParametersAddInfo = &h265SessionParametersAddInfo;
 
         currentId = PopulateH265UpdateFields(pStdVideoPictureParametersSet, h265SessionParametersAddInfo);
+
+        currentStdPictureParameters.h265Vps = h265SessionParametersAddInfo.pStdVPSs;
+        currentStdPictureParameters.h265Sps = h265SessionParametersAddInfo.pStdSPSs;
+        currentStdPictureParameters.h265Pps = h265SessionParametersAddInfo.pStdPPSs;
     }
     break;
     case StdVideoPictureParametersSet::TYPE_AV1_SPS:
@@ -2975,6 +3062,8 @@ VkResult VkParserVideoPictureParameters::CreateParametersObject(
             bool isAv1Sps = false;
             currentId     = pStdVideoPictureParametersSet->GetAv1SpsId(isAv1Sps);
             DE_ASSERT(isAv1Sps);
+
+            currentStdPictureParameters.av1SequenceHeader = av1SessionParametersCreateInfo.pStdSequenceHeader;
         }
         createInfo.videoSessionParametersTemplate =
             VK_NULL_HANDLE; // TODO: The parameter set code is legacy from the sample app, it could be radically simplified.
@@ -3049,6 +3138,17 @@ VkResult VkParserVideoPictureParameters::UpdateParametersObject(
     {
         updateInfo.pNext = &h264SessionParametersAddInfo;
         currentId        = PopulateH264UpdateFields(pStdVideoPictureParametersSet, h264SessionParametersAddInfo);
+
+        if (h264SessionParametersAddInfo.stdSPSCount == 1)
+        {
+            DE_ASSERT(h264SessionParametersAddInfo.stdSPSCount == 1);
+            currentStdPictureParameters.h264Sps = h264SessionParametersAddInfo.pStdSPSs;
+        }
+        if (h264SessionParametersAddInfo.stdPPSCount == 1)
+        {
+            DE_ASSERT(h264SessionParametersAddInfo.stdPPSCount == 1);
+            currentStdPictureParameters.h264Pps = h264SessionParametersAddInfo.pStdPPSs;
+        }
     }
     break;
     case StdVideoPictureParametersSet::TYPE_H265_VPS:
@@ -3057,6 +3157,22 @@ VkResult VkParserVideoPictureParameters::UpdateParametersObject(
     {
         updateInfo.pNext = &h265SessionParametersAddInfo;
         currentId        = PopulateH265UpdateFields(pStdVideoPictureParametersSet, h265SessionParametersAddInfo);
+
+        if (h265SessionParametersAddInfo.stdVPSCount > 0)
+        {
+            DE_ASSERT(h265SessionParametersAddInfo.stdVPSCount == 1);
+            currentStdPictureParameters.h265Vps = h265SessionParametersAddInfo.pStdVPSs;
+        }
+        if (h265SessionParametersAddInfo.stdSPSCount > 0)
+        {
+            DE_ASSERT(h265SessionParametersAddInfo.stdSPSCount == 1);
+            currentStdPictureParameters.h265Sps = h265SessionParametersAddInfo.pStdSPSs;
+        }
+        if (h265SessionParametersAddInfo.stdPPSCount > 0)
+        {
+            DE_ASSERT(h265SessionParametersAddInfo.stdPPSCount == 1);
+            currentStdPictureParameters.h265Pps = h265SessionParametersAddInfo.pStdPPSs;
+        }
     }
     break;
     case StdVideoPictureParametersSet::TYPE_AV1_SPS:
@@ -3323,6 +3439,158 @@ int32_t VkParserVideoPictureParameters::Release()
         delete this;
     }
     return ret;
+}
+
+shared_ptr<VideoBaseDecoder> createBasicDecoder(DeviceContext *deviceContext, const VkVideoCoreProfile *profile,
+                                                size_t framesToCheck, bool resolutionChange)
+{
+    VkSharedBaseObj<VulkanVideoFrameBuffer> vkVideoFrameBuffer;
+
+    VK_CHECK(VulkanVideoFrameBuffer::Create(deviceContext,
+                                            false, // UseResultStatusQueries
+                                            false, // ResourcesWithoutProfiles
+                                            vkVideoFrameBuffer));
+
+    VideoBaseDecoder::Parameters params;
+
+    params.profile            = profile;
+    params.context            = deviceContext;
+    params.framebuffer        = vkVideoFrameBuffer;
+    params.framesToCheck      = framesToCheck;
+    params.queryDecodeStatus  = false;
+    params.outOfOrderDecoding = false;
+    params.alwaysRecreateDPB  = resolutionChange;
+    params.layeredDpb         = true;
+
+    return std::make_shared<VideoBaseDecoder>(std::move(params));
+}
+
+de::MovePtr<vkt::ycbcr::MultiPlaneImageData> getDecodedImageFromContext(DeviceContext &deviceContext,
+                                                                        VkImageLayout layout, const DecodedFrame *frame)
+{
+    auto &videoDeviceDriver       = deviceContext.getDeviceDriver();
+    auto device                   = deviceContext.device;
+    auto queueFamilyIndexDecode   = deviceContext.decodeQueueFamilyIdx();
+    auto queueFamilyIndexTransfer = deviceContext.transferQueueFamilyIdx();
+    const VkExtent2D imageExtent{(uint32_t)frame->displayWidth, (uint32_t)frame->displayHeight};
+    const VkImage image      = frame->outputImageView->GetImageResource()->GetImage();
+    const VkFormat format    = frame->outputImageView->GetImageResource()->GetImageCreateInfo().format;
+    uint32_t imageLayerIndex = frame->imageLayerIndex;
+
+    MovePtr<vkt::ycbcr::MultiPlaneImageData> multiPlaneImageData(
+        new vkt::ycbcr::MultiPlaneImageData(format, tcu::UVec2(imageExtent.width, imageExtent.height)));
+    const VkQueue queueDecode   = getDeviceQueue(videoDeviceDriver, device, queueFamilyIndexDecode, 0u);
+    const VkQueue queueTransfer = getDeviceQueue(videoDeviceDriver, device, queueFamilyIndexTransfer, 0u);
+    const VkImageSubresourceRange imageSubresourceRange =
+        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, imageLayerIndex, 1);
+
+    const VkImageMemoryBarrier2KHR imageBarrierDecode =
+        makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR, VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR,
+                                VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR, VK_ACCESS_NONE_KHR, layout,
+                                VK_IMAGE_LAYOUT_GENERAL, image, imageSubresourceRange);
+
+    const VkImageMemoryBarrier2KHR imageBarrierOwnershipDecode = makeImageMemoryBarrier2(
+        VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR, VK_ACCESS_NONE_KHR, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR,
+        VK_ACCESS_NONE_KHR, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, image, imageSubresourceRange,
+        queueFamilyIndexDecode, queueFamilyIndexTransfer);
+
+    const VkImageMemoryBarrier2KHR imageBarrierOwnershipTransfer = makeImageMemoryBarrier2(
+        VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR, VK_ACCESS_NONE_KHR, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_ACCESS_NONE_KHR, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, image, imageSubresourceRange,
+        queueFamilyIndexDecode, queueFamilyIndexTransfer);
+
+    const VkImageMemoryBarrier2KHR imageBarrierTransfer = makeImageMemoryBarrier2(
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_ACCESS_MEMORY_WRITE_BIT, VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,
+        VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image,
+        imageSubresourceRange);
+
+    const Move<VkCommandPool> cmdDecodePool(makeCommandPool(videoDeviceDriver, device, queueFamilyIndexDecode));
+    const Move<VkCommandBuffer> cmdDecodeBuffer(
+        allocateCommandBuffer(videoDeviceDriver, device, *cmdDecodePool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+    const Move<VkCommandPool> cmdTransferPool(makeCommandPool(videoDeviceDriver, device, queueFamilyIndexTransfer));
+    const Move<VkCommandBuffer> cmdTransferBuffer(
+        allocateCommandBuffer(videoDeviceDriver, device, *cmdTransferPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    Move<VkSemaphore> semaphore                 = createSemaphore(videoDeviceDriver, device);
+    Move<VkFence> decodeFence                   = createFence(videoDeviceDriver, device);
+    Move<VkFence> transferFence                 = createFence(videoDeviceDriver, device);
+    VkFence fences[]                            = {*decodeFence, *transferFence};
+    const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+
+    VkSubmitInfo decodeSubmitInfo = {
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, //  VkStructureType sType;
+        nullptr,                       //  const void* pNext;
+        0u,                            //  uint32_t waitSemaphoreCount;
+        nullptr,                       //  const VkSemaphore* pWaitSemaphores;
+        nullptr,                       //  const VkPipelineStageFlags* pWaitDstStageMask;
+        1u,                            //  uint32_t commandBufferCount;
+        &*cmdDecodeBuffer,             //  const VkCommandBuffer* pCommandBuffers;
+        1u,                            //  uint32_t signalSemaphoreCount;
+        &*semaphore,                   //  const VkSemaphore* pSignalSemaphores;
+    };
+    if (frame->frameCompleteSemaphore != VK_NULL_HANDLE)
+    {
+        decodeSubmitInfo.waitSemaphoreCount = 1;
+        decodeSubmitInfo.pWaitSemaphores    = &frame->frameCompleteSemaphore;
+        decodeSubmitInfo.pWaitDstStageMask  = &waitDstStageMask;
+    }
+    const VkSubmitInfo transferSubmitInfo = {
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, //  VkStructureType sType;
+        nullptr,                       //  const void* pNext;
+        1u,                            //  uint32_t waitSemaphoreCount;
+        &*semaphore,                   //  const VkSemaphore* pWaitSemaphores;
+        &waitDstStageMask,             //  const VkPipelineStageFlags* pWaitDstStageMask;
+        1u,                            //  uint32_t commandBufferCount;
+        &*cmdTransferBuffer,           //  const VkCommandBuffer* pCommandBuffers;
+        0u,                            //  uint32_t signalSemaphoreCount;
+        nullptr,                       //  const VkSemaphore* pSignalSemaphores;
+    };
+
+    beginCommandBuffer(videoDeviceDriver, *cmdDecodeBuffer, 0u);
+    cmdPipelineImageMemoryBarrier2(videoDeviceDriver, *cmdDecodeBuffer, &imageBarrierDecode);
+    cmdPipelineImageMemoryBarrier2(videoDeviceDriver, *cmdDecodeBuffer, &imageBarrierOwnershipDecode);
+    endCommandBuffer(videoDeviceDriver, *cmdDecodeBuffer);
+
+    beginCommandBuffer(videoDeviceDriver, *cmdTransferBuffer, 0u);
+    cmdPipelineImageMemoryBarrier2(videoDeviceDriver, *cmdTransferBuffer, &imageBarrierOwnershipTransfer);
+    cmdPipelineImageMemoryBarrier2(videoDeviceDriver, *cmdTransferBuffer, &imageBarrierTransfer);
+    endCommandBuffer(videoDeviceDriver, *cmdTransferBuffer);
+
+    VK_CHECK(videoDeviceDriver.queueSubmit(queueDecode, 1u, &decodeSubmitInfo, *decodeFence));
+    VK_CHECK(videoDeviceDriver.queueSubmit(queueTransfer, 1u, &transferSubmitInfo, *transferFence));
+
+    VK_CHECK(videoDeviceDriver.waitForFences(device, DE_LENGTH_OF_ARRAY(fences), fences, true, ~0ull));
+
+    vkt::ycbcr::downloadImage(videoDeviceDriver, device, queueFamilyIndexTransfer, deviceContext.allocator(), image,
+                              multiPlaneImageData.get(), 0, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, imageLayerIndex);
+
+    const VkImageMemoryBarrier2KHR imageBarrierTransfer2 =
+        makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR, VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,
+                                VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR, VK_ACCESS_NONE_KHR,
+                                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, layout, image, imageSubresourceRange);
+
+    videoDeviceDriver.resetCommandBuffer(*cmdTransferBuffer, 0u);
+    videoDeviceDriver.resetFences(device, 1, &*transferFence);
+    beginCommandBuffer(videoDeviceDriver, *cmdTransferBuffer, 0u);
+    cmdPipelineImageMemoryBarrier2(videoDeviceDriver, *cmdTransferBuffer, &imageBarrierTransfer2);
+    endCommandBuffer(videoDeviceDriver, *cmdTransferBuffer);
+
+    const VkSubmitInfo transferSubmitInfo2 = {
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
+        nullptr,                       //  const void* pNext;
+        0u,                            //  uint32_t waitSemaphoreCount;
+        nullptr,                       //  const VkSemaphore* pWaitSemaphores;
+        nullptr,                       //  const VkPipelineStageFlags* pWaitDstStageMask;
+        1u,                            //  uint32_t commandBufferCount;
+        &*cmdTransferBuffer,           //  const VkCommandBuffer* pCommandBuffers;
+        0u,                            //  uint32_t signalSemaphoreCount;
+        nullptr,                       // const VkSemaphore* pSignalSemaphores;
+    };
+
+    VK_CHECK(videoDeviceDriver.queueSubmit(queueTransfer, 1u, &transferSubmitInfo2, *transferFence));
+    VK_CHECK(videoDeviceDriver.waitForFences(device, 1, &*transferFence, true, ~0ull));
+
+    return multiPlaneImageData;
 }
 
 } // namespace video

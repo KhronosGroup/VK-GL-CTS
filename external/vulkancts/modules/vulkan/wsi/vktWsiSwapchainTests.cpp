@@ -101,7 +101,7 @@ void checkAllSupported(const Extensions &supportedExtensions, const vector<strin
 
 CustomInstance createInstanceWithWsi(Context &context, const Extensions &supportedExtensions, Type wsiType,
                                      const vector<string> extraExtensions,
-                                     const VkAllocationCallbacks *pAllocator = DE_NULL)
+                                     const VkAllocationCallbacks *pAllocator = nullptr)
 {
     vector<string> extensions = extraExtensions;
 
@@ -139,7 +139,7 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVer
                                    const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
                                    const Extensions &supportedExtensions, const vector<string> &additionalExtensions,
                                    const vector<uint32_t> &queueFamilyIndices, bool validationEnabled,
-                                   const VkAllocationCallbacks *pAllocator = DE_NULL)
+                                   const VkAllocationCallbacks *pAllocator = nullptr)
 {
     const float queuePriorities[] = {1.0f};
     vector<VkDeviceQueueCreateInfo> queueInfos;
@@ -167,6 +167,12 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVer
         if (!isCoreDeviceExtension(apiVersion, extName) &&
             !isExtensionStructSupported(supportedExtensions, RequiredExtension(extName)))
             TCU_THROW(NotSupportedError, extName + " is not supported");
+    }
+
+    for (const auto &ext : supportedExtensions)
+    {
+        if (strcmp(ext.extensionName, "VK_EXT_present_mode_fifo_latest_ready") == 0)
+            extensions.push_back("VK_EXT_present_mode_fifo_latest_ready");
     }
 
     const void *pNext                       = nullptr;
@@ -207,7 +213,7 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVer
                                    const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
                                    const Extensions &supportedExtensions, const vector<string> &additionalExtensions,
                                    const uint32_t queueFamilyIndex, bool validationEnabled,
-                                   const VkAllocationCallbacks *pAllocator = DE_NULL)
+                                   const VkAllocationCallbacks *pAllocator = nullptr)
 {
     return createDeviceWithWsi(vkp, apiVersion, instance, vki, physicalDevice, supportedExtensions,
                                additionalExtensions, vector<uint32_t>(1u, queueFamilyIndex), validationEnabled,
@@ -220,16 +226,16 @@ struct InstanceHelper
     const CustomInstance instance;
     const InstanceDriver &vki;
 
-    InstanceHelper(Context &context, Type wsiType, const VkAllocationCallbacks *pAllocator = DE_NULL)
-        : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), DE_NULL))
+    InstanceHelper(Context &context, Type wsiType, const VkAllocationCallbacks *pAllocator = nullptr)
+        : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr))
         , instance(createInstanceWithWsi(context, supportedExtensions, wsiType, vector<string>(), pAllocator))
         , vki(instance.getDriver())
     {
     }
 
     InstanceHelper(Context &context, Type wsiType, const vector<string> &extensions,
-                   const VkAllocationCallbacks *pAllocator = DE_NULL)
-        : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), DE_NULL))
+                   const VkAllocationCallbacks *pAllocator = nullptr)
+        : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr))
         , instance(createInstanceWithWsi(context, supportedExtensions, wsiType, extensions, pAllocator))
         , vki(instance.getDriver())
     {
@@ -246,11 +252,11 @@ struct DeviceHelper
 
     DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance,
                  const vector<VkSurfaceKHR> &surface, const vector<string> &additionalExtensions = vector<string>(),
-                 const VkAllocationCallbacks *pAllocator = DE_NULL)
+                 const VkAllocationCallbacks *pAllocator = nullptr)
         : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
         , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
         , device(createDeviceWithWsi(context.getPlatformInterface(), context.getUsedApiVersion(), instance, vki,
-                                     physicalDevice, enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL),
+                                     physicalDevice, enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr),
                                      additionalExtensions, queueFamilyIndex,
                                      context.getTestContext().getCommandLine().isValidationEnabled(), pAllocator))
         , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
@@ -262,7 +268,7 @@ struct DeviceHelper
     // Single-surface shortcut.
     DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance, VkSurfaceKHR surface,
                  const vector<string> &additionalExtensions = vector<string>(),
-                 const VkAllocationCallbacks *pAllocator    = DE_NULL)
+                 const VkAllocationCallbacks *pAllocator    = nullptr)
         : DeviceHelper(context, vki, instance, vector<VkSurfaceKHR>(1u, surface), additionalExtensions, pAllocator)
     {
     }
@@ -279,11 +285,11 @@ struct MultiQueueDeviceHelper
     MultiQueueDeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance,
                            const vector<VkSurfaceKHR> &surface,
                            const vector<string> &additionalExtensions = vector<string>(),
-                           const VkAllocationCallbacks *pAllocator    = DE_NULL)
+                           const VkAllocationCallbacks *pAllocator    = nullptr)
         : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
         , queueFamilyIndices(getCompatibleQueueFamilyIndices(vki, physicalDevice, surface))
         , device(createDeviceWithWsi(context.getPlatformInterface(), context.getUsedApiVersion(), instance, vki,
-                                     physicalDevice, enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL),
+                                     physicalDevice, enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr),
                                      additionalExtensions, queueFamilyIndices,
                                      context.getTestContext().getCommandLine().isValidationEnabled(), pAllocator))
         , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
@@ -294,7 +300,7 @@ struct MultiQueueDeviceHelper
     // Single-surface shortcut.
     MultiQueueDeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance, VkSurfaceKHR surface,
                            const vector<string> additionalExtensions = vector<string>(),
-                           const VkAllocationCallbacks *pAllocator   = DE_NULL)
+                           const VkAllocationCallbacks *pAllocator   = nullptr)
         : MultiQueueDeviceHelper(context, vki, instance, vector<VkSurfaceKHR>(1u, surface), additionalExtensions,
                                  pAllocator)
     {
@@ -359,9 +365,9 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases(const InstanceI
             capabilities.currentTransform;
     const VkSwapchainCreateInfoKHR baseParameters = {
         VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
         (VkSwapchainCreateFlagsKHR)0,
-        (VkSurfaceKHR)0,
+        VK_NULL_HANDLE,
         capabilities.minImageCount,
         formats[0].format,
         formats[0].colorSpace,
@@ -376,8 +382,8 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases(const InstanceI
         defaultTransform,
         VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         VK_PRESENT_MODE_FIFO_KHR,
-        VK_FALSE,         // clipped
-        (VkSwapchainKHR)0 // oldSwapchain
+        VK_FALSE,      // clipped
+        VK_NULL_HANDLE // oldSwapchain
     };
 
     switch (dimension)
@@ -461,17 +467,23 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases(const InstanceI
 
     case TEST_DIMENSION_IMAGE_USAGE:
     {
-        for (uint32_t flags = 1u; flags <= capabilities.supportedUsageFlags; ++flags)
+        const VkImageUsageFlags maxPossibleMask =
+            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
+            VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
+            VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT;
+
+        const VkImageUsageFlags validUsageFlags = capabilities.supportedUsageFlags & maxPossibleMask;
+
+        for (uint32_t flags = 1u; flags <= validUsageFlags; ++flags)
         {
             VkImageFormatProperties imageProps;
-
-            if (vki.getPhysicalDeviceImageFormatProperties(physicalDevice, baseParameters.imageFormat, VK_IMAGE_TYPE_2D,
-                                                           VK_IMAGE_TILING_OPTIMAL, flags, (VkImageCreateFlags)0u,
-                                                           &imageProps) != VK_SUCCESS)
-                continue;
-
-            if ((flags & ~capabilities.supportedUsageFlags) == 0)
+            if ((flags & ~validUsageFlags) == 0)
             {
+                if (vki.getPhysicalDeviceImageFormatProperties(physicalDevice, baseParameters.imageFormat,
+                                                               VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, flags,
+                                                               (VkImageCreateFlags)0u, &imageProps) != VK_SUCCESS)
+                    continue;
                 cases.push_back(baseParameters);
                 cases.back().imageUsage = flags;
             }
@@ -749,14 +761,14 @@ tcu::TestStatus createSwapchainPrivateDataTest(Context &context, TestParameters 
 
             const VkPrivateDataSlotCreateInfoEXT createInfo = {
                 VK_STRUCTURE_TYPE_PRIVATE_DATA_SLOT_CREATE_INFO_EXT, // VkStructureType                    sType;
-                DE_NULL,                                             // const void*                        pNext;
+                nullptr,                                             // const void*                        pNext;
                 0u,                                                  // VkPrivateDataSlotCreateFlagsEXT    flags;
             };
 
             for (int i = 0; i < numSlots; ++i)
             {
                 Move<VkPrivateDataSlotEXT> s =
-                    createPrivateDataSlot(devHelper.vkd, *devHelper.device, &createInfo, DE_NULL);
+                    createPrivateDataSlot(devHelper.vkd, *devHelper.device, &createInfo, nullptr);
                 slots.push_back(PrivateDataSlotSp(new PrivateDataSlotUp(s)));
             }
 
@@ -796,7 +808,7 @@ tcu::TestStatus createSwapchainPrivateDataTest(Context &context, TestParameters 
                 for (int i = 0; i < numSlots; ++i)
                 {
                     Move<VkPrivateDataSlotEXT> s =
-                        createPrivateDataSlot(devHelper.vkd, *devHelper.device, &createInfo, DE_NULL);
+                        createPrivateDataSlot(devHelper.vkd, *devHelper.device, &createInfo, nullptr);
                     slots.push_back(PrivateDataSlotSp(new PrivateDataSlotUp(s)));
                 }
             }
@@ -835,7 +847,13 @@ tcu::TestStatus createSwapchainSimulateOOMTest(Context &context, TestParameters 
         const Unique<VkSurfaceKHR> surface(
             createSurface(instHelper.vki, instHelper.instance, params.wsiType, native.getDisplay(), native.getWindow(),
                           context.getTestContext().getCommandLine(), failingAllocator.getCallbacks()));
-        const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, vector<string>(),
+        std::vector<std::string> additionalExtensions;
+        // If driver supports VK_PRESENT_MODE_FIFO_LATEST_READY_EXT and it will used, VK_EXT_present_mode_fifo_latest_ready must be enabled
+        if (context.isDeviceFunctionalitySupported("VK_EXT_present_mode_fifo_latest_ready"))
+        {
+            additionalExtensions.push_back("VK_EXT_present_mode_fifo_latest_ready");
+        }
+        const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, additionalExtensions,
                                      failingAllocator.getCallbacks());
         const vector<VkSwapchainCreateInfoKHR> allCases(generateSwapchainParameterCases(
             params.wsiType, params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
@@ -923,27 +941,41 @@ tcu::TestStatus createSwapchainSimulateOOMTest(Context &context, TestParameters 
     return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
-tcu::TestStatus testImageSwapchainCreateInfo(Context &context, Type wsiType)
+struct ImageSwapchainCreateInfoParams
+{
+    Type wsiType;
+    bool concurrent;
+};
+
+tcu::TestStatus testImageSwapchainCreateInfo(Context &context, ImageSwapchainCreateInfoParams params)
 {
     const tcu::UVec2 desiredSize(256, 256);
-    const InstanceHelper instHelper(context, wsiType, vector<string>(1, string("VK_KHR_device_group_creation")));
-    const NativeObjects native(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
-    const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
-                                                     native.getWindow(), context.getTestContext().getCommandLine()));
+    const InstanceHelper instHelper(context, params.wsiType, vector<string>(1, string("VK_KHR_device_group_creation")));
+    const NativeObjects native(context, instHelper.supportedExtensions, params.wsiType, 1u, tcu::just(desiredSize));
+    const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, params.wsiType,
+                                                     native.getDisplay(), native.getWindow(),
+                                                     context.getTestContext().getCommandLine()));
     const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface,
                                  vector<string>(1u, "VK_KHR_bind_memory2"));
     const Extensions &deviceExtensions =
-        enumerateDeviceExtensionProperties(instHelper.vki, devHelper.physicalDevice, DE_NULL);
+        enumerateDeviceExtensionProperties(instHelper.vki, devHelper.physicalDevice, nullptr);
 
     // structures this tests checks were added in revision 69
     if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_swapchain", 69)))
         TCU_THROW(NotSupportedError, "Required extension revision is not supported");
 
+    const auto sharing_mode              = params.concurrent ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+    const auto queueFamilyIndexCount     = params.concurrent ? 1u : 0u;
+    const uint32_t queueFamilyIndex1     = devHelper.queueFamilyIndex;
+    const uint32_t queueFamilyIndex2     = devHelper.queueFamilyIndex;
+    const uint32_t *pQueueFamilyIndices1 = params.concurrent ? &queueFamilyIndex1 : nullptr;
+    const uint32_t *pQueueFamilyIndices2 = params.concurrent ? &queueFamilyIndex2 : nullptr;
+
     const VkSurfaceCapabilitiesKHR capabilities =
         getPhysicalDeviceSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surface);
     const vector<VkSurfaceFormatKHR> formats =
         getPhysicalDeviceSurfaceFormats(instHelper.vki, devHelper.physicalDevice, *surface);
-    const PlatformProperties &platformProperties = getPlatformProperties(wsiType);
+    const PlatformProperties &platformProperties = getPlatformProperties(params.wsiType);
     const VkSurfaceTransformFlagBitsKHR transform =
         (capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) ?
             VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR :
@@ -951,7 +983,7 @@ tcu::TestStatus testImageSwapchainCreateInfo(Context &context, Type wsiType)
     const uint32_t desiredImageCount             = 2;
     const VkSwapchainCreateInfoKHR swapchainInfo = {
         VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
         (VkSwapchainCreateFlagsKHR)0,
         *surface,
         de::clamp(desiredImageCount, capabilities.minImageCount,
@@ -964,24 +996,24 @@ tcu::TestStatus testImageSwapchainCreateInfo(Context &context, Type wsiType)
              vk::makeExtent2D(desiredSize.x(), desiredSize.y())),
         1u,
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-        VK_SHARING_MODE_EXCLUSIVE,
-        0u,
-        (const uint32_t *)DE_NULL,
+        sharing_mode,
+        queueFamilyIndexCount,
+        pQueueFamilyIndices1,
         transform,
         VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         VK_PRESENT_MODE_FIFO_KHR,
-        VK_FALSE,         // clipped
-        (VkSwapchainKHR)0 // oldSwapchain
+        VK_FALSE,      // clipped
+        VK_NULL_HANDLE // oldSwapchain
     };
 
     const Unique<VkSwapchainKHR> swapchain(createSwapchainKHR(devHelper.vkd, *devHelper.device, &swapchainInfo));
     uint32_t numImages = 0;
-    VK_CHECK(devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, *swapchain, &numImages, DE_NULL));
+    VK_CHECK(devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, *swapchain, &numImages, nullptr));
     if (numImages == 0)
         return tcu::TestStatus::pass("Pass");
 
     VkImageSwapchainCreateInfoKHR imageSwapchainCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_SWAPCHAIN_CREATE_INFO_KHR,
-                                                              DE_NULL, *swapchain};
+                                                              nullptr, *swapchain};
 
     VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -1000,9 +1032,9 @@ tcu::TestStatus testImageSwapchainCreateInfo(Context &context, Type wsiType)
         VK_SAMPLE_COUNT_1_BIT,               // samples
         VK_IMAGE_TILING_OPTIMAL,             // tiling
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, // usage
-        VK_SHARING_MODE_EXCLUSIVE,           // sharingMode
-        0u,                                  // queueFamilyIndexCount
-        DE_NULL,                             // pQueueFamilyIndices
+        sharing_mode,                        // sharingMode
+        queueFamilyIndexCount,               // queueFamilyIndexCount
+        pQueueFamilyIndices2,                // pQueueFamilyIndices
         VK_IMAGE_LAYOUT_UNDEFINED            // initialLayout
     };
 
@@ -1018,13 +1050,13 @@ tcu::TestStatus testImageSwapchainCreateInfo(Context &context, Type wsiType)
         // Create image
         images[idx] = ImageSp(new UniqueImage(createImage(devHelper.vkd, *devHelper.device, &imageCreateInfo)));
 
-        VkBindImageMemorySwapchainInfoKHR bimsInfo = {VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_SWAPCHAIN_INFO_KHR, DE_NULL,
+        VkBindImageMemorySwapchainInfoKHR bimsInfo = {VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_SWAPCHAIN_INFO_KHR, nullptr,
                                                       *swapchain, idx};
         bindImageMemorySwapchainInfo[idx]          = bimsInfo;
 
         VkBindImageMemoryInfo bimInfo = {
             VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO, &bindImageMemorySwapchainInfo[idx], **images[idx],
-            DE_NULL, // If the pNext chain includes an instance of VkBindImageMemorySwapchainInfoKHR, memory must be VK_NULL_HANDLE
+            VK_NULL_HANDLE, // If the pNext chain includes an instance of VkBindImageMemorySwapchainInfoKHR, memory must be VK_NULL_HANDLE
             0u // If swapchain <in VkBindImageMemorySwapchainInfoKHR> is not NULL, the swapchain and imageIndex are used to determine the memory that the image is bound to, instead of memory and memoryOffset.
         };
 
@@ -1047,7 +1079,7 @@ struct GroupParameters
     {
     }
 
-    GroupParameters(void) : wsiType(TYPE_LAST), function((Function)DE_NULL)
+    GroupParameters(void) : wsiType(TYPE_LAST), function(nullptr)
     {
     }
 };
@@ -1062,7 +1094,14 @@ void populateSwapchainGroup(tcu::TestCaseGroup *testGroup, GroupParameters param
                         TestParameters(params.wsiType, testDimension));
     }
 
-    addFunctionCase(testGroup, "image_swapchain_create_info", testImageSwapchainCreateInfo, params.wsiType);
+    ImageSwapchainCreateInfoParams imageSwapchainCreateInfoParams;
+    imageSwapchainCreateInfoParams.wsiType    = params.wsiType;
+    imageSwapchainCreateInfoParams.concurrent = false;
+    addFunctionCase(testGroup, "image_swapchain_create_info", testImageSwapchainCreateInfo,
+                    imageSwapchainCreateInfoParams);
+    imageSwapchainCreateInfoParams.concurrent = true;
+    addFunctionCase(testGroup, "image_swapchain_create_info_concurrent", testImageSwapchainCreateInfo,
+                    imageSwapchainCreateInfoParams);
 }
 
 void populateSwapchainPrivateDataGroup(tcu::TestCaseGroup *testGroup, GroupParameters params)
@@ -1091,7 +1130,7 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters(Type wsiType, const Instanc
             capabilities.currentTransform;
     const VkSwapchainCreateInfoKHR parameters = {
         VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
         (VkSwapchainCreateFlagsKHR)0,
         surface,
         de::clamp(desiredImageCount, capabilities.minImageCount,
@@ -1106,12 +1145,12 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters(Type wsiType, const Instanc
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
         VK_SHARING_MODE_EXCLUSIVE,
         0u,
-        (const uint32_t *)DE_NULL,
+        nullptr,
         transform,
         VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         VK_PRESENT_MODE_FIFO_KHR,
-        VK_FALSE,         // clipped
-        (VkSwapchainKHR)0 // oldSwapchain
+        VK_FALSE,      // clipped
+        VK_NULL_HANDLE // oldSwapchain
     };
 
     return parameters;
@@ -1195,11 +1234,11 @@ public:
         , m_device(device)
     {
         m_info.sType      = VK_STRUCTURE_TYPE_ACQUIRE_NEXT_IMAGE_INFO_KHR;
-        m_info.pNext      = DE_NULL;
+        m_info.pNext      = nullptr;
         m_info.swapchain  = swapchain;
         m_info.timeout    = timeout;
-        m_info.semaphore  = DE_NULL;
-        m_info.fence      = DE_NULL;
+        m_info.semaphore  = VK_NULL_HANDLE;
+        m_info.fence      = VK_NULL_HANDLE;
         m_info.deviceMask = deviceMask;
     }
 
@@ -1280,7 +1319,7 @@ tcu::TestStatus basicRenderTest(Context &context, Type wsiType)
             VK_CHECK(vkd.resetFences(device, 1, &imageReadyFence));
 
             {
-                const VkResult acquireResult = acquireImageWrapper.call(imageReadySemaphore, (VkFence)0, &imageNdx);
+                const VkResult acquireResult = acquireImageWrapper.call(imageReadySemaphore, VK_NULL_HANDLE, &imageNdx);
 
                 if (acquireResult == VK_SUBOPTIMAL_KHR)
                     context.getTestContext().getLog() << TestLog::Message << "Got " << acquireResult << " at frame "
@@ -1297,7 +1336,7 @@ tcu::TestStatus basicRenderTest(Context &context, Type wsiType)
                 const VkCommandBuffer commandBuffer     = **commandBuffers[frameNdx % commandBuffers.size()];
                 const VkPipelineStageFlags waitDstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
                 const VkSubmitInfo submitInfo           = {VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                                                           DE_NULL,
+                                                           nullptr,
                                                            1u,
                                                            &imageReadySemaphore,
                                                            &waitDstStage,
@@ -1306,13 +1345,13 @@ tcu::TestStatus basicRenderTest(Context &context, Type wsiType)
                                                            1u,
                                                            &renderingCompleteSemaphore};
                 const VkPresentInfoKHR presentInfo      = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-                                                           DE_NULL,
+                                                           nullptr,
                                                            1u,
                                                            &renderingCompleteSemaphore,
                                                            1u,
                                                            &*swapchain,
                                                            &imageNdx,
-                                                           (VkResult *)DE_NULL};
+                                                           nullptr};
 
                 renderer.recordFrame(commandBuffer, imageNdx, frameNdx);
                 VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, imageReadyFence));
@@ -1520,7 +1559,7 @@ tcu::TestStatus multiSwapchainRenderTest(Context &context, MultiSwapchainParams 
 
             {
                 const VkResult acquireResult = acquireImageWrapper[swapchainIndex].call(
-                    frameObjects.imageAvailableSemaphore, (VkFence)DE_NULL, &imageNdx);
+                    frameObjects.imageAvailableSemaphore, VK_NULL_HANDLE, &imageNdx);
                 if (acquireResult == VK_SUBOPTIMAL_KHR)
                     context.getTestContext().getLog() << TestLog::Message << "Got " << acquireResult << " at frame "
                                                       << frameNdx << TestLog::EndMessage;
@@ -1534,7 +1573,7 @@ tcu::TestStatus multiSwapchainRenderTest(Context &context, MultiSwapchainParams 
                 const VkPipelineStageFlags waitDstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
                 const VkSubmitInfo submitInfo           = {
                     VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                    DE_NULL,
+                    nullptr,
                     1u,
                     &frameObjects.imageAvailableSemaphore,
                     &waitDstStage,
@@ -1562,7 +1601,7 @@ tcu::TestStatus multiSwapchainRenderTest(Context &context, MultiSwapchainParams 
 
                     const VkPresentInfoKHR presentInfo = {
                         VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-                        DE_NULL,
+                        nullptr,
                         static_cast<uint32_t>(accumulatedPresentInfo.semaphores.size()),
                         accumulatedPresentInfo.semaphores.data(),
                         static_cast<uint32_t>(accumulatedPresentInfo.swapchains.size()),
@@ -1598,7 +1637,7 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
     const InstanceHelper instHelper(context, wsiType, vector<string>(1, string("VK_KHR_device_group_creation")));
     const tcu::CommandLine &cmdLine       = context.getTestContext().getCommandLine();
     VkPhysicalDevice physicalDevice       = chooseDevice(instHelper.vki, instHelper.instance, cmdLine);
-    const Extensions &supportedExtensions = enumerateDeviceExtensionProperties(instHelper.vki, physicalDevice, DE_NULL);
+    const Extensions &supportedExtensions = enumerateDeviceExtensionProperties(instHelper.vki, physicalDevice, nullptr);
 
     std::vector<const char *> deviceExtensions;
     deviceExtensions.push_back("VK_KHR_swapchain");
@@ -1632,13 +1671,13 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
     // create a device group
     const VkDeviceGroupDeviceCreateInfo groupDeviceInfo = {
         VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR, // stype
-        DE_NULL,                                               // pNext
+        nullptr,                                               // pNext
         physicalDevicesInGroupCount,                           // physicalDeviceCount
         physicalDevicesInGroup                                 // physicalDevices
     };
     const VkDeviceQueueCreateInfo deviceQueueCreateInfo = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // type
-        DE_NULL,                                    // pNext
+        nullptr,                                    // pNext
         (VkDeviceQueueCreateFlags)0u,               // flags
         queueFamilyIndex,                           // queueFamilyIndex
         1u,                                         // queueCount
@@ -1652,10 +1691,10 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
         1,                                    // queueRecordCount
         &deviceQueueCreateInfo,               // pRequestedQueues
         0,                                    // layerCount
-        DE_NULL,                              // ppEnabledLayerNames
+        nullptr,                              // ppEnabledLayerNames
         uint32_t(deviceExtensions.size()),    // enabledExtensionCount
         &deviceExtensions[0],                 // ppEnabledExtensionNames
-        DE_NULL,                              // pEnabledFeatures
+        nullptr,                              // pEnabledFeatures
     };
 
     Move<VkDevice> groupDevice = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
@@ -1717,11 +1756,11 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
 
             {
                 VkAcquireNextImageInfoKHR acquireNextImageInfo = {VK_STRUCTURE_TYPE_ACQUIRE_NEXT_IMAGE_INFO_KHR,
-                                                                  DE_NULL,
+                                                                  nullptr,
                                                                   *swapchain,
                                                                   std::numeric_limits<uint64_t>::max(),
                                                                   imageReadySemaphore,
-                                                                  (VkFence)0,
+                                                                  VK_NULL_HANDLE,
                                                                   (1 << firstDeviceID)};
 
                 const VkResult acquireResult = vkd.acquireNextImage2KHR(*groupDevice, &acquireNextImageInfo, &imageNdx);
@@ -1755,7 +1794,7 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
                 }
                 const VkDeviceGroupSubmitInfo deviceGroupSubmitInfo = {
                     VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO_KHR, // sType
-                    DE_NULL,                                        // pNext
+                    nullptr,                                        // pNext
                     uint32_t(deviceIndices.size()),                 // waitSemaphoreCount
                     &deviceIndices[0],                              // pWaitSemaphoreDeviceIndices
                     1u,                                             // commandBufferCount
@@ -1779,7 +1818,7 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
                 // present swapchain image
                 deviceMask                                               = (1 << firstDeviceID);
                 const VkDeviceGroupPresentInfoKHR deviceGroupPresentInfo = {
-                    VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_INFO_KHR, DE_NULL, 1u, &deviceMask,
+                    VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_INFO_KHR, nullptr, 1u, &deviceMask,
                     VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHR,
                 };
                 const VkPresentInfoKHR presentInfo = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -1789,7 +1828,7 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
                                                       1u,
                                                       &*swapchain,
                                                       &imageNdx,
-                                                      (VkResult *)DE_NULL};
+                                                      nullptr};
                 VK_CHECK_WSI(vkd.queuePresentKHR(queue, &presentInfo));
             }
         }
@@ -1811,7 +1850,7 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
     const InstanceHelper instHelper(context, wsiType, vector<string>(1, string("VK_KHR_device_group_creation")));
     const tcu::CommandLine &cmdLine    = context.getTestContext().getCommandLine();
     VkPhysicalDevice physicalDevice    = chooseDevice(instHelper.vki, instHelper.instance, cmdLine);
-    const Extensions &deviceExtensions = enumerateDeviceExtensionProperties(instHelper.vki, physicalDevice, DE_NULL);
+    const Extensions &deviceExtensions = enumerateDeviceExtensionProperties(instHelper.vki, physicalDevice, nullptr);
 
     // structures this tests checks were added in revision 69
     if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_swapchain", 69)))
@@ -1851,13 +1890,13 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
     // create a device group
     const VkDeviceGroupDeviceCreateInfo groupDeviceInfo = {
         VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR, // stype
-        DE_NULL,                                               // pNext
+        nullptr,                                               // pNext
         physicalDevicesInGroupCount,                           // physicalDeviceCount
         physicalDevicesInGroup                                 // physicalDevices
     };
     const VkDeviceQueueCreateInfo deviceQueueCreateInfo = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // type
-        DE_NULL,                                    // pNext
+        nullptr,                                    // pNext
         (VkDeviceQueueCreateFlags)0u,               // flags
         queueFamilyIndex,                           // queueFamilyIndex
         1u,                                         // queueCount
@@ -1871,10 +1910,10 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
         1,                                    // queueRecordCount
         &deviceQueueCreateInfo,               // pRequestedQueues
         0,                                    // layerCount
-        DE_NULL,                              // ppEnabledLayerNames
+        nullptr,                              // ppEnabledLayerNames
         uint32_t(requiredExtensions.size()),  // enabledExtensionCount
         &requiredExtensions[0],               // ppEnabledExtensionNames
-        DE_NULL,                              // pEnabledFeatures
+        nullptr,                              // pEnabledFeatures
     };
 
     Move<VkDevice> groupDevice = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
@@ -1899,7 +1938,7 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
     const uint32_t desiredImageCount = 2;
 
     struct VkDeviceGroupSwapchainCreateInfoKHR deviceGroupSwapchainInfo = {
-        VK_STRUCTURE_TYPE_IMAGE_SWAPCHAIN_CREATE_INFO_KHR, DE_NULL, VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHR};
+        VK_STRUCTURE_TYPE_IMAGE_SWAPCHAIN_CREATE_INFO_KHR, nullptr, VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHR};
     const VkSwapchainCreateInfoKHR swapchainInfo = {
         VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
         &deviceGroupSwapchainInfo,
@@ -1917,21 +1956,21 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
         VK_SHARING_MODE_EXCLUSIVE,
         0u,
-        (const uint32_t *)DE_NULL,
+        nullptr,
         transform,
         VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         VK_PRESENT_MODE_FIFO_KHR,
         VK_FALSE,
-        (VkSwapchainKHR)0};
+        VK_NULL_HANDLE};
 
     const Unique<VkSwapchainKHR> swapchain(createSwapchainKHR(vkd, *groupDevice, &swapchainInfo));
     uint32_t numImages = 0;
-    VK_CHECK(vkd.getSwapchainImagesKHR(*groupDevice, *swapchain, &numImages, DE_NULL));
+    VK_CHECK(vkd.getSwapchainImagesKHR(*groupDevice, *swapchain, &numImages, nullptr));
     if (numImages == 0)
         return tcu::TestStatus::pass("Pass");
 
     VkImageSwapchainCreateInfoKHR imageSwapchainCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_SWAPCHAIN_CREATE_INFO_KHR,
-                                                              DE_NULL, *swapchain};
+                                                              nullptr, *swapchain};
 
     VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -1952,7 +1991,7 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, // usage
         VK_SHARING_MODE_EXCLUSIVE,           // sharingMode
         0u,                                  // queueFamilyIndexCount
-        DE_NULL,                             // pQueueFamilyIndices
+        nullptr,                             // pQueueFamilyIndices
         VK_IMAGE_LAYOUT_UNDEFINED            // initialLayout
     };
 
@@ -1975,12 +2014,12 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
             images[idx] = ImageSp(new UniqueImage(createImage(vkd, *groupDevice, &imageCreateInfo)));
 
             VkBindImageMemorySwapchainInfoKHR bimsInfo = {VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_SWAPCHAIN_INFO_KHR,
-                                                          DE_NULL, *swapchain, idx};
+                                                          nullptr, *swapchain, idx};
             bindImageMemorySwapchainInfo[idx]          = bimsInfo;
 
             VkBindImageMemoryInfo bimInfo = {
                 VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO, &bindImageMemorySwapchainInfo[idx], **images[idx],
-                DE_NULL, // If the pNext chain includes an instance of VkBindImageMemorySwapchainInfoKHR, memory must be VK_NULL_HANDLE
+                VK_NULL_HANDLE, // If the pNext chain includes an instance of VkBindImageMemorySwapchainInfoKHR, memory must be VK_NULL_HANDLE
                 0u // If swapchain <in VkBindImageMemorySwapchainInfoKHR> is not NULL, the swapchain and imageIndex are used to determine the memory that the image is bound to, instead of memory and memoryOffset.
             };
             bindImageMemoryInfos[idx] = bimInfo;
@@ -2020,7 +2059,7 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
 
             VkBindImageMemoryInfo bimInfo = {
                 VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO, &bindImageMemoryDeviceGroupInfo[idx], **imagesSfr[idx],
-                DE_NULL, // If the pNext chain includes an instance of VkBindImageMemorySwapchainInfoKHR, memory must be VK_NULL_HANDLE
+                VK_NULL_HANDLE, // If the pNext chain includes an instance of VkBindImageMemorySwapchainInfoKHR, memory must be VK_NULL_HANDLE
                 0u // If swapchain <in VkBindImageMemorySwapchainInfoKHR> is not NULL, the swapchain and imageIndex are used to determine the memory that the image is bound to, instead of memory and memoryOffset.
             };
             bindImageMemoryInfos[idx] = bimInfo;
@@ -2074,11 +2113,11 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
 
             {
                 VkAcquireNextImageInfoKHR acquireNextImageInfo = {VK_STRUCTURE_TYPE_ACQUIRE_NEXT_IMAGE_INFO_KHR,
-                                                                  DE_NULL,
+                                                                  nullptr,
                                                                   *swapchain,
                                                                   std::numeric_limits<uint64_t>::max(),
                                                                   imageReadySemaphore,
-                                                                  (VkFence)0,
+                                                                  VK_NULL_HANDLE,
                                                                   (1 << firstDeviceID)};
 
                 const VkResult acquireResult = vkd.acquireNextImage2KHR(*groupDevice, &acquireNextImageInfo, &imageNdx);
@@ -2106,7 +2145,7 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
                 uint32_t deviceMask                                 = (1 << firstDeviceID) | (1 << secondDeviceID);
                 const VkDeviceGroupSubmitInfo deviceGroupSubmitInfo = {
                     VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO_KHR, // sType
-                    DE_NULL,                                        // pNext
+                    nullptr,                                        // pNext
                     DE_LENGTH_OF_ARRAY(deviceIndices),              // waitSemaphoreCount
                     deviceIndices,                                  // pWaitSemaphoreDeviceIndices
                     1u,                                             // commandBufferCount
@@ -2130,7 +2169,7 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
                 // present swapchain image -  asume that first device has a presentation engine
                 deviceMask                                               = (1 << firstDeviceID);
                 const VkDeviceGroupPresentInfoKHR deviceGroupPresentInfo = {
-                    VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_INFO_KHR, DE_NULL, 1u, &deviceMask,
+                    VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_INFO_KHR, nullptr, 1u, &deviceMask,
                     VK_DEVICE_GROUP_PRESENT_MODE_REMOTE_BIT_KHR,
                 };
                 const VkPresentInfoKHR presentInfo = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -2140,7 +2179,7 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
                                                       1u,
                                                       &*swapchain,
                                                       &imageNdx,
-                                                      (VkResult *)DE_NULL};
+                                                      nullptr};
                 VK_CHECK(vkd.queuePresentKHR(queue, &presentInfo));
             }
         }
@@ -2247,7 +2286,7 @@ tcu::TestStatus resizeSwapchainTest(Context &context, Type wsiType)
                 {
                     const VkResult acquireResult =
                         vkd.acquireNextImageKHR(device, *swapchain, std::numeric_limits<uint64_t>::max(),
-                                                imageReadySemaphore, DE_NULL, &imageNdx);
+                                                imageReadySemaphore, VK_NULL_HANDLE, &imageNdx);
 
                     if (acquireResult == VK_SUBOPTIMAL_KHR)
                         context.getTestContext().getLog() << TestLog::Message << "Got " << acquireResult << " at frame "
@@ -2264,7 +2303,7 @@ tcu::TestStatus resizeSwapchainTest(Context &context, Type wsiType)
                     const VkCommandBuffer commandBuffer     = **commandBuffers[frameNdx % commandBuffers.size()];
                     const VkPipelineStageFlags waitDstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
                     const VkSubmitInfo submitInfo           = {VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                                                               DE_NULL,
+                                                               nullptr,
                                                                1u,
                                                                &imageReadySemaphore,
                                                                &waitDstStage,
@@ -2273,13 +2312,13 @@ tcu::TestStatus resizeSwapchainTest(Context &context, Type wsiType)
                                                                1u,
                                                                &renderingCompleteSemaphore};
                     const VkPresentInfoKHR presentInfo      = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-                                                               DE_NULL,
+                                                               nullptr,
                                                                1u,
                                                                &renderingCompleteSemaphore,
                                                                1u,
                                                                &*swapchain,
                                                                &imageNdx,
-                                                               (VkResult *)DE_NULL};
+                                                               nullptr};
 
                     renderer.recordFrame(commandBuffer, imageNdx, frameNdx);
                     VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, imageReadyFence));
@@ -2344,7 +2383,7 @@ tcu::TestStatus getImagesResultsCountTest(Context &context, Type wsiType)
 
     uint32_t numImages = 0;
 
-    VK_CHECK(devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, *swapchain, &numImages, DE_NULL));
+    VK_CHECK(devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, *swapchain, &numImages, nullptr));
 
     if (numImages > 0)
     {
@@ -2369,10 +2408,10 @@ tcu::TestStatus destroyNullHandleSwapchainTest(Context &context, Type wsiType)
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                      native.getWindow(), context.getTestContext().getCommandLine()));
     const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
-    const VkSwapchainKHR nullHandle = DE_NULL;
+    const VkSwapchainKHR nullHandle = VK_NULL_HANDLE;
 
     // Default allocator
-    devHelper.vkd.destroySwapchainKHR(*devHelper.device, nullHandle, DE_NULL);
+    devHelper.vkd.destroySwapchainKHR(*devHelper.device, nullHandle, nullptr);
 
     // Custom allocator
     {
@@ -2399,19 +2438,70 @@ tcu::TestStatus destroyOldSwapchainTest(Context &context, Type wsiType)
     // Create the first swapchain.
     VkSwapchainCreateInfoKHR swapchainInfo =
         getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
-    VkSwapchainKHR swapchain = 0;
-    VK_CHECK(devHelper.vkd.createSwapchainKHR(*devHelper.device, &swapchainInfo, DE_NULL, &swapchain));
+    VkSwapchainKHR swapchain = VK_NULL_HANDLE;
+    VK_CHECK(devHelper.vkd.createSwapchainKHR(*devHelper.device, &swapchainInfo, nullptr, &swapchain));
 
     // Create a new swapchain replacing the old one.
     swapchainInfo.oldSwapchain        = swapchain;
-    VkSwapchainKHR recreatedSwapchain = 0;
-    VK_CHECK(devHelper.vkd.createSwapchainKHR(*devHelper.device, &swapchainInfo, DE_NULL, &recreatedSwapchain));
+    VkSwapchainKHR recreatedSwapchain = VK_NULL_HANDLE;
+    VK_CHECK(devHelper.vkd.createSwapchainKHR(*devHelper.device, &swapchainInfo, nullptr, &recreatedSwapchain));
 
     // Destroying the old swapchain should have no effect.
-    devHelper.vkd.destroySwapchainKHR(*devHelper.device, swapchain, DE_NULL);
+    devHelper.vkd.destroySwapchainKHR(*devHelper.device, swapchain, nullptr);
 
     // Destroy the new swapchain for cleanup.
-    devHelper.vkd.destroySwapchainKHR(*devHelper.device, recreatedSwapchain, DE_NULL);
+    devHelper.vkd.destroySwapchainKHR(*devHelper.device, recreatedSwapchain, nullptr);
+
+    return tcu::TestStatus::pass("Destroying an old swapchain has no effect.");
+}
+
+tcu::TestStatus destroyOldSwapchainWithAcquiredImageTest(Context &context, Type wsiType)
+{
+    const tcu::UVec2 desiredSize(256, 256);
+    const InstanceHelper instHelper(context, wsiType);
+    const NativeObjects native(context, instHelper.supportedExtensions, wsiType);
+    const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
+                                                     native.getWindow(), context.getTestContext().getCommandLine()));
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
+
+    // Create the first swapchain.
+    VkSwapchainCreateInfoKHR swapchainInfo =
+        getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
+    VkSwapchainKHR swapchain = VK_NULL_HANDLE;
+    VK_CHECK(devHelper.vkd.createSwapchainKHR(*devHelper.device, &swapchainInfo, nullptr, &swapchain));
+
+    uint32_t imageCount;
+    devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, swapchain, &imageCount, nullptr);
+    std::vector<VkImage> images(imageCount);
+    devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, swapchain, &imageCount, images.data());
+
+    const auto fences = createFences(devHelper.vkd, *devHelper.device, 2, false);
+    uint32_t imageIndex;
+    devHelper.vkd.acquireNextImageKHR(*devHelper.device, swapchain, std::numeric_limits<uint64_t>::max(),
+                                      VK_NULL_HANDLE, **fences[0], &imageIndex);
+    VK_CHECK(devHelper.vkd.waitForFences(*devHelper.device, 1u, &**fences[0], VK_TRUE,
+                                         std::numeric_limits<uint64_t>::max()));
+
+    // Create a new swapchain replacing the old one.
+    swapchainInfo.oldSwapchain        = swapchain;
+    VkSwapchainKHR recreatedSwapchain = VK_NULL_HANDLE;
+    VK_CHECK(devHelper.vkd.createSwapchainKHR(*devHelper.device, &swapchainInfo, nullptr, &recreatedSwapchain));
+
+    // Destroying the old swapchain should have no effect.
+    devHelper.vkd.destroySwapchainKHR(*devHelper.device, swapchain, nullptr);
+
+    uint32_t imageCount2;
+    devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, recreatedSwapchain, &imageCount2, nullptr);
+    std::vector<VkImage> images2(imageCount2);
+    devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, recreatedSwapchain, &imageCount2, images2.data());
+
+    devHelper.vkd.acquireNextImageKHR(*devHelper.device, recreatedSwapchain, std::numeric_limits<uint64_t>::max(),
+                                      VK_NULL_HANDLE, **fences[1], &imageIndex);
+    VK_CHECK(devHelper.vkd.waitForFences(*devHelper.device, 1u, &**fences[1], VK_TRUE,
+                                         std::numeric_limits<uint64_t>::max()));
+
+    // Destroy the new swapchain for cleanup.
+    devHelper.vkd.destroySwapchainKHR(*devHelper.device, recreatedSwapchain, nullptr);
 
     return tcu::TestStatus::pass("Destroying an old swapchain has no effect.");
 }
@@ -2429,7 +2519,7 @@ tcu::TestStatus acquireTooManyTest(Context &context, Type wsiType)
     const Unique<VkSwapchainKHR> swapchain(createSwapchainKHR(devHelper.vkd, *devHelper.device, &swapchainInfo));
 
     uint32_t numImages;
-    VK_CHECK(devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, *swapchain, &numImages, DE_NULL));
+    VK_CHECK(devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, *swapchain, &numImages, nullptr));
     const uint32_t minImageCount =
         getPhysicalDeviceSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surface).minImageCount;
     if (numImages < minImageCount)
@@ -2442,10 +2532,10 @@ tcu::TestStatus acquireTooManyTest(Context &context, Type wsiType)
     for (uint32_t i = 0; i < numAcquirableImages; ++i)
     {
         VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(
-            *devHelper.device, *swapchain, std::numeric_limits<uint64_t>::max(), (VkSemaphore)0, **fences[i], &unused));
+            *devHelper.device, *swapchain, std::numeric_limits<uint64_t>::max(), VK_NULL_HANDLE, **fences[i], &unused));
     }
 
-    const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, 0, (VkSemaphore)0,
+    const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, 0, VK_NULL_HANDLE,
                                                           **fences[numAcquirableImages], &unused);
 
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR && result != VK_NOT_READY)
@@ -2478,7 +2568,7 @@ tcu::TestStatus acquireTooManyTimeoutTest(Context &context, Type wsiType)
     const Unique<VkSwapchainKHR> swapchain(createSwapchainKHR(devHelper.vkd, *devHelper.device, &swapchainInfo));
 
     uint32_t numImages;
-    VK_CHECK(devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, *swapchain, &numImages, DE_NULL));
+    VK_CHECK(devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, *swapchain, &numImages, nullptr));
     const uint32_t minImageCount =
         getPhysicalDeviceSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surface).minImageCount;
     if (numImages < minImageCount)
@@ -2491,12 +2581,12 @@ tcu::TestStatus acquireTooManyTimeoutTest(Context &context, Type wsiType)
     for (uint32_t i = 0; i < numAcquirableImages; ++i)
     {
         VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(
-            *devHelper.device, *swapchain, std::numeric_limits<uint64_t>::max(), (VkSemaphore)0, **fences[i], &unused));
+            *devHelper.device, *swapchain, std::numeric_limits<uint64_t>::max(), VK_NULL_HANDLE, **fences[i], &unused));
     }
 
     const uint64_t millisecond = 1000000;
     const uint64_t timeout     = 50 * millisecond; // arbitrary realistic non-0 non-infinite timeout
-    const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, timeout, (VkSemaphore)0,
+    const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, timeout, VK_NULL_HANDLE,
                                                           **fences[numAcquirableImages], &unused);
 
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR && result != VK_TIMEOUT)
@@ -2583,6 +2673,8 @@ void populateDestroyGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
     addFunctionCase(testGroup, "null_handle", destroyNullHandleSwapchainTest, wsiType);
     // Destroying an old swapchain
     addFunctionCase(testGroup, "old_swapchain", destroyOldSwapchainTest, wsiType);
+    // Destroying an old swapchain after acquiring image
+    addFunctionCase(testGroup, "old_swapchain_acquired_image", destroyOldSwapchainWithAcquiredImageTest, wsiType);
 }
 
 void populateAcquireGroup(tcu::TestCaseGroup *testGroup, Type wsiType)

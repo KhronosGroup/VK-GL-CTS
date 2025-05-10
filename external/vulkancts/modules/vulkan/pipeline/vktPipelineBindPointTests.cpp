@@ -360,7 +360,7 @@ void pushBufferDescriptor(const DeviceInterface &vkd, VkCommandBuffer cmdBuffer,
     const VkWriteDescriptorSet write = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
         nullptr,                                // const void* pNext;
-        DE_NULL,                                // VkDescriptorSet dstSet;
+        VK_NULL_HANDLE,                         // VkDescriptorSet dstSet;
         0u,                                     // uint32_t dstBinding;
         0u,                                     // uint32_t dstArrayElement;
         1u,                                     // uint32_t descriptorCount;
@@ -369,7 +369,7 @@ void pushBufferDescriptor(const DeviceInterface &vkd, VkCommandBuffer cmdBuffer,
         &bufferInfo,                            // const VkDescriptorBufferInfo* pBufferInfo;
         nullptr,                                // const VkBufferView* pTexelBufferView;
     };
-    vkd.cmdPushDescriptorSetKHR(cmdBuffer, bindPoint, layout, 0u, 1u, &write);
+    vkd.cmdPushDescriptorSet(cmdBuffer, bindPoint, layout, 0u, 1u, &write);
 }
 
 void verifyBufferContents(const DeviceInterface &vkd, VkDevice device, const BufferWithMemory &buffer,
@@ -589,11 +589,11 @@ tcu::TestStatus BindPointInstance::iterate(void)
             0u,                                             // VkPipelineCreateFlags flags;
             computeShaderStageInfo,                         // VkPipelineShaderStageCreateInfo stage;
             computePipelineLayout.get(),                    // VkPipelineLayout layout;
-            DE_NULL,                                        // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0u,                                             // int32_t basePipelineIndex;
         };
 
-        computePipeline = createComputePipeline(vkd, device, DE_NULL, &computePipelineCreateInfo);
+        computePipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &computePipelineCreateInfo);
     }
 
     // Ray tracing pipeline and shader binding tables.
@@ -603,10 +603,10 @@ tcu::TestStatus BindPointInstance::iterate(void)
     Move<VkPipeline> rayTracingPipeline;
     BufferWithMemoryPtr raygenSBT;
 
-    VkStridedDeviceAddressRegionKHR raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR missSBTRegion     = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR hitSBTRegion      = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR callableSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    VkStridedDeviceAddressRegionKHR raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR missSBTRegion     = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR hitSBTRegion      = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR callableSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     if (hasRayTracing)
     {
@@ -709,8 +709,8 @@ tcu::TestStatus BindPointInstance::iterate(void)
             else if (m_params.graphicsSetUpdateType == SetUpdateType::PUSH_WITH_TEMPLATE)
             {
                 const auto bufferInfo = makeDescriptorBufferInfo(graphicsBuffer->get(), 0ull, bufferSize);
-                vkd.cmdPushDescriptorSetWithTemplateKHR(cmdBuffer, graphicsUpdateTemplate.get(),
-                                                        graphicsPipelineLayout.get(), 0u, &bufferInfo);
+                vkd.cmdPushDescriptorSetWithTemplate(cmdBuffer, graphicsUpdateTemplate.get(),
+                                                     graphicsPipelineLayout.get(), 0u, &bufferInfo);
             }
             else
                 DE_ASSERT(false);
@@ -727,8 +727,8 @@ tcu::TestStatus BindPointInstance::iterate(void)
             else if (m_params.computeSetUpdateType == SetUpdateType::PUSH_WITH_TEMPLATE)
             {
                 const auto bufferInfo = makeDescriptorBufferInfo(computeBuffer->get(), 0ull, bufferSize);
-                vkd.cmdPushDescriptorSetWithTemplateKHR(cmdBuffer, computeUpdateTemplate.get(),
-                                                        computePipelineLayout.get(), 0u, &bufferInfo);
+                vkd.cmdPushDescriptorSetWithTemplate(cmdBuffer, computeUpdateTemplate.get(),
+                                                     computePipelineLayout.get(), 0u, &bufferInfo);
             }
             else
                 DE_ASSERT(false);
@@ -746,8 +746,8 @@ tcu::TestStatus BindPointInstance::iterate(void)
             else if (m_params.rayTracingSetUpdateType == SetUpdateType::PUSH_WITH_TEMPLATE)
             {
                 const auto bufferInfo = makeDescriptorBufferInfo(rayTracingBuffer->get(), 0ull, bufferSize);
-                vkd.cmdPushDescriptorSetWithTemplateKHR(cmdBuffer, rayTracingUpdateTemplate.get(),
-                                                        rayTracingPipelineLayout.get(), 0u, &bufferInfo);
+                vkd.cmdPushDescriptorSetWithTemplate(cmdBuffer, rayTracingUpdateTemplate.get(),
+                                                     rayTracingPipelineLayout.get(), 0u, &bufferInfo);
             }
             else
                 DE_ASSERT(false);

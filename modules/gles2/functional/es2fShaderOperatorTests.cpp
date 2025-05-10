@@ -594,7 +594,7 @@ ShaderOperatorCase::ShaderOperatorCase(Context &context, const char *caseName, c
                        description, isVertexCase, m_evaluator)
     , m_evaluator(evalFunc, spec.resultScale, spec.resultBias)
 {
-    const char *precision = spec.precision != PRECISION_LAST ? getPrecisionName(spec.precision) : DE_NULL;
+    const char *precision = spec.precision != PRECISION_LAST ? getPrecisionName(spec.precision) : nullptr;
     const char *inputPrecision[MAX_INPUTS];
 
     ostringstream vtx;
@@ -1498,11 +1498,11 @@ void ShaderOperatorTests::init(void)
     // Built-in functions
     // - precision, data types
 
-#define BOOL_FUNCS(FUNC_NAME) eval_##FUNC_NAME##_bool, DE_NULL, DE_NULL, DE_NULL
+#define BOOL_FUNCS(FUNC_NAME) eval_##FUNC_NAME##_bool, nullptr, nullptr, nullptr
 
-#define FLOAT_VEC_FUNCS(FUNC_NAME) DE_NULL, eval_##FUNC_NAME##_vec2, eval_##FUNC_NAME##_vec3, eval_##FUNC_NAME##_vec4
-#define INT_VEC_FUNCS(FUNC_NAME) DE_NULL, eval_##FUNC_NAME##_ivec2, eval_##FUNC_NAME##_ivec3, eval_##FUNC_NAME##_ivec4
-#define BOOL_VEC_FUNCS(FUNC_NAME) DE_NULL, eval_##FUNC_NAME##_bvec2, eval_##FUNC_NAME##_bvec3, eval_##FUNC_NAME##_bvec4
+#define FLOAT_VEC_FUNCS(FUNC_NAME) nullptr, eval_##FUNC_NAME##_vec2, eval_##FUNC_NAME##_vec3, eval_##FUNC_NAME##_vec4
+#define INT_VEC_FUNCS(FUNC_NAME) nullptr, eval_##FUNC_NAME##_ivec2, eval_##FUNC_NAME##_ivec3, eval_##FUNC_NAME##_ivec4
+#define BOOL_VEC_FUNCS(FUNC_NAME) nullptr, eval_##FUNC_NAME##_bvec2, eval_##FUNC_NAME##_bvec3, eval_##FUNC_NAME##_bvec4
 
 #define FLOAT_GENTYPE_FUNCS(FUNC_NAME) \
     eval_##FUNC_NAME##_float, eval_##FUNC_NAME##_vec2, eval_##FUNC_NAME##_vec3, eval_##FUNC_NAME##_vec4
@@ -1527,7 +1527,7 @@ void ShaderOperatorTests::init(void)
         << BuiltinOperInfo("minus", "-", IGT, Value(IGT, -5.0f, 5.0f), notUsed, notUsed, 0.1f, 0.5f, PRECMASK_ALL,
                            INT_GENTYPE_FUNCS(negate))
         << BuiltinOperInfo("not", "!", B, Value(B, -1.0f, 1.0f), notUsed, notUsed, 1.0f, 0.0f, PRECMASK_NA,
-                           eval_boolNot_bool, DE_NULL, DE_NULL, DE_NULL)
+                           eval_boolNot_bool, nullptr, nullptr, nullptr)
 
         // Pre/post incr/decr side effect cases.
         << BuiltinSideEffOperInfo("pre_increment_effect", "++", GT, Value(GT, -1.0f, 1.0f), notUsed, notUsed, 0.5f,
@@ -1688,21 +1688,21 @@ void ShaderOperatorTests::init(void)
 
         // Scalar relational operators.
         << BuiltinOperInfo("less", "<", B, Value(F, -1.0f, 1.0f), Value(F, -1.0f, 1.0f), notUsed, 1.0f, 0.0f,
-                           PRECMASK_ALL, eval_lessThan_float, DE_NULL, DE_NULL, DE_NULL)
+                           PRECMASK_ALL, eval_lessThan_float, nullptr, nullptr, nullptr)
         << BuiltinOperInfo("less", "<", B, Value(I, -5.0f, 5.0f), Value(I, -5.0f, 5.0f), notUsed, 1.0f, 0.0f,
-                           PRECMASK_ALL, eval_lessThan_int, DE_NULL, DE_NULL, DE_NULL)
+                           PRECMASK_ALL, eval_lessThan_int, nullptr, nullptr, nullptr)
         << BuiltinOperInfo("less_or_equal", "<=", B, Value(F, -1.0f, 1.0f), Value(F, -1.0f, 1.0f), notUsed, 1.0f, 0.0f,
-                           PRECMASK_ALL, eval_lessThanEqual_float, DE_NULL, DE_NULL, DE_NULL)
+                           PRECMASK_ALL, eval_lessThanEqual_float, nullptr, nullptr, nullptr)
         << BuiltinOperInfo("less_or_equal", "<=", B, Value(I, -5.0f, 5.0f), Value(I, -5.0f, 5.0f), notUsed, 1.0f, 0.0f,
-                           PRECMASK_ALL, eval_lessThanEqual_int, DE_NULL, DE_NULL, DE_NULL)
+                           PRECMASK_ALL, eval_lessThanEqual_int, nullptr, nullptr, nullptr)
         << BuiltinOperInfo("greater", ">", B, Value(F, -1.0f, 1.0f), Value(F, -1.0f, 1.0f), notUsed, 1.0f, 0.0f,
-                           PRECMASK_ALL, eval_greaterThan_float, DE_NULL, DE_NULL, DE_NULL)
+                           PRECMASK_ALL, eval_greaterThan_float, nullptr, nullptr, nullptr)
         << BuiltinOperInfo("greater", ">", B, Value(I, -5.0f, 5.0f), Value(I, -5.0f, 5.0f), notUsed, 1.0f, 0.0f,
-                           PRECMASK_ALL, eval_greaterThan_int, DE_NULL, DE_NULL, DE_NULL)
+                           PRECMASK_ALL, eval_greaterThan_int, nullptr, nullptr, nullptr)
         << BuiltinOperInfo("greater_or_equal", ">=", B, Value(F, -1.0f, 1.0f), Value(F, -1.0f, 1.0f), notUsed, 1.0f,
-                           0.0f, PRECMASK_ALL, eval_greaterThanEqual_float, DE_NULL, DE_NULL, DE_NULL)
+                           0.0f, PRECMASK_ALL, eval_greaterThanEqual_float, nullptr, nullptr, nullptr)
         << BuiltinOperInfo("greater_or_equal", ">=", B, Value(I, -5.0f, 5.0f), Value(I, -5.0f, 5.0f), notUsed, 1.0f,
-                           0.0f, PRECMASK_ALL, eval_greaterThanEqual_int, DE_NULL, DE_NULL, DE_NULL)
+                           0.0f, PRECMASK_ALL, eval_greaterThanEqual_int, nullptr, nullptr, nullptr)
 
         // Equality comparison operators.
         << BuiltinOperInfo("equal", "==", B, Value(GT, -1.0f, 1.0f), Value(GT, -1.0f, 1.0f), notUsed, 1.0f, 0.0f,
@@ -1824,7 +1824,7 @@ void ShaderOperatorTests::init(void)
         << BuiltinFuncInfo("dot", "dot", F, Value(GT, -5.0f, 5.0f), Value(GT, -5.0f, 5.0f), notUsed, 0.1f, 0.5f,
                            PRECMASK_MEDIUMP_HIGHP, FLOAT_GENTYPE_FUNCS(dot))
         << BuiltinFuncInfo("cross", "cross", V3, Value(GT, -5.0f, 5.0f), Value(GT, -5.0f, 5.0f), notUsed, 0.1f, 0.5f,
-                           PRECMASK_MEDIUMP_HIGHP, DE_NULL, DE_NULL, eval_cross_vec3, DE_NULL)
+                           PRECMASK_MEDIUMP_HIGHP, nullptr, nullptr, eval_cross_vec3, nullptr)
         << BuiltinFuncInfo("normalize", "normalize", GT, Value(GT, 0.1f, 4.0f), notUsed, notUsed, 0.5f, 0.5f,
                            PRECMASK_MEDIUMP_HIGHP, FLOAT_GENTYPE_FUNCS(normalize))
         << BuiltinFuncInfo("faceforward", "faceforward", GT, Value(GT, -5.0f, 5.0f), Value(GT, -5.0f, 5.0f),
@@ -1915,7 +1915,7 @@ void ShaderOperatorTests::init(void)
         addChild(outerGroup);
 
         // Only create new group if name differs from previous one.
-        TestCaseGroup *innerGroup = DE_NULL;
+        TestCaseGroup *innerGroup = nullptr;
 
         for (int funcInfoNdx = 0; funcInfoNdx < (int)outerGroupInfo.funcInfos.size(); funcInfoNdx++)
         {
@@ -1945,7 +1945,7 @@ void ShaderOperatorTests::init(void)
                                        isBoolOut  ? s_boolTypes[outScalarSize - 1] :
                                                     TYPE_LAST;
 
-                ShaderEvalFunc evalFunc = DE_NULL;
+                ShaderEvalFunc evalFunc = nullptr;
                 if (inScalarSize == 1)
                     evalFunc = funcInfo.evalFuncScalar;
                 else if (inScalarSize == 2)
@@ -1959,7 +1959,7 @@ void ShaderOperatorTests::init(void)
 
                 // Skip if no valid eval func.
                 // \todo [petri] Better check for V3 only etc. cases?
-                if (evalFunc == DE_NULL)
+                if (evalFunc == nullptr)
                     continue;
 
                 for (int precision = 0; precision < PRECISION_LAST; precision++)

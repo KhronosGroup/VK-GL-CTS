@@ -100,11 +100,6 @@ VkMemoryRequirements getGeneratedCommandsMemoryRequirementsNV(
     return memReqs.memoryRequirements;
 }
 
-bool equalMemoryRequirements(const VkMemoryRequirements &a, const VkMemoryRequirements &b)
-{
-    return (a.memoryTypeBits == b.memoryTypeBits && a.alignment == b.alignment && a.size == b.size);
-}
-
 void preprocessToExecuteBarrier(const vk::DeviceInterface &vkd, vk::VkCommandBuffer cmdBuffer)
 {
     const auto preExecutionBarrier =
@@ -459,11 +454,15 @@ PreprocessBuffer::PreprocessBuffer(const DeviceInterface &vkd, VkDevice device, 
 {
     const auto genCmdMemReqsInfo =
         makeGeneratedCommandsMemoryRequirementsInfoNV(bindPoint, pipeline, cmdLayout, maxSequences);
-    m_memReqs = getGeneratedCommandsMemoryRequirementsNV(vkd, device, &genCmdMemReqsInfo);
+    const auto dgcMemReqs = getGeneratedCommandsMemoryRequirementsNV(vkd, device, &genCmdMemReqsInfo);
 
-    const auto preprocessBufferCreateInfo = makeBufferCreateInfo(m_memReqs.size, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+    const auto preprocessBufferCreateInfo = makeBufferCreateInfo(dgcMemReqs.size, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
     m_buffer                              = createBuffer(vkd, device, &preprocessBufferCreateInfo);
-    m_bufferAllocation                    = allocator.allocate(m_memReqs, MemoryRequirement::Any);
+
+    vkd.getBufferMemoryRequirements(device, *m_buffer, &m_memReqs);
+    m_memReqs.alignment = de::lcm(m_memReqs.alignment, dgcMemReqs.alignment);
+    m_memReqs.memoryTypeBits &= dgcMemReqs.memoryTypeBits;
+    m_bufferAllocation = allocator.allocate(m_memReqs, MemoryRequirement::Any);
     VK_CHECK(vkd.bindBufferMemory(device, *m_buffer, m_bufferAllocation->getMemory(), m_bufferAllocation->getOffset()));
 }
 

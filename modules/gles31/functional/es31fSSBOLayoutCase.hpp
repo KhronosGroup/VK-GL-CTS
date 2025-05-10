@@ -102,7 +102,7 @@ public:
     }
     const char *getInstanceName(void) const
     {
-        return m_instanceName.empty() ? DE_NULL : m_instanceName.c_str();
+        return m_instanceName.empty() ? nullptr : m_instanceName.c_str();
     }
     bool isArray(void) const
     {

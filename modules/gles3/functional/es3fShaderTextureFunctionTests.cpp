@@ -790,10 +790,10 @@ ShaderTextureFunctionCase::ShaderTextureFunctionCase(Context &context, const cha
     , m_lookupSpec(lookup)
     , m_textureSpec(texture)
     , m_evaluator(evalFunc, m_lookupParams)
-    , m_texture2D(DE_NULL)
-    , m_textureCube(DE_NULL)
-    , m_texture2DArray(DE_NULL)
-    , m_texture3D(DE_NULL)
+    , m_texture2D(nullptr)
+    , m_textureCube(nullptr)
+    , m_texture2DArray(nullptr)
+    , m_texture3D(nullptr)
 {
 }
 
@@ -1084,7 +1084,7 @@ void ShaderTextureFunctionCase::initShaderSources(void)
                                     glu::TYPE_FLOAT_VEC3 :
                                     glu::TYPE_FLOAT_VEC2;
     const char *gradTypeName  = glu::getDataTypeName(gradType);
-    const char *baseFuncName  = DE_NULL;
+    const char *baseFuncName  = nullptr;
 
     DE_ASSERT(!isGrad || !hasLodBias);
 
@@ -1290,10 +1290,10 @@ void ShaderTextureFunctionCase::deinit(void)
     delete m_texture2DArray;
     delete m_texture3D;
 
-    m_texture2D      = DE_NULL;
-    m_textureCube    = DE_NULL;
-    m_texture2DArray = DE_NULL;
-    m_texture3D      = DE_NULL;
+    m_texture2D      = nullptr;
+    m_textureCube    = nullptr;
+    m_texture2DArray = nullptr;
+    m_texture3D      = nullptr;
 }
 
 void ShaderTextureFunctionCase::setupUniforms(int programID, const tcu::Vec4 &)
@@ -1345,7 +1345,7 @@ TextureSizeCase::TextureSizeCase(Context &context, const char *name, const char 
     , m_textureSpec(texture)
     , m_isVertexCase(isVertexCase)
     , m_has3DSize(texture.type == TEXTURETYPE_3D || texture.type == TEXTURETYPE_2D_ARRAY)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_iterationCounter(0)
 {
 }
@@ -1437,7 +1437,7 @@ bool TextureSizeCase::initShader(void)
     const std::string vertSrc = genVertexShader();
     const std::string fragSrc = genFragmentShader();
 
-    DE_ASSERT(m_program == DE_NULL);
+    DE_ASSERT(m_program == nullptr);
     m_program = new glu::ShaderProgram(m_context.getRenderContext(), glu::makeVtxFragSources(vertSrc, fragSrc));
     m_context.getTestContext().getLog() << *m_program;
 
@@ -1453,7 +1453,7 @@ bool TextureSizeCase::initShader(void)
 void TextureSizeCase::freeShader(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 bool TextureSizeCase::testTextureSize(const TestSize &testSize)
@@ -1509,6 +1509,14 @@ bool TextureSizeCase::testTextureSize(const TestSize &testSize)
         gl.texParameteri(textureTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         gl.texParameteri(textureTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         gl.texParameteri(textureTarget, GL_TEXTURE_BASE_LEVEL, testSize.lodBase);
+
+        if (m_textureSpec.format == GL_DEPTH_COMPONENT16 &&
+            std::string(m_samplerTypeStr).find("Shadow") != std::string::npos)
+        {
+            gl.texParameteri(textureTarget, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+            gl.texParameteri(textureTarget, GL_TEXTURE_COMPARE_FUNC,
+                             glu::getGLCompareFunc(m_textureSpec.sampler.compare));
+        }
 
         // set up texture
 

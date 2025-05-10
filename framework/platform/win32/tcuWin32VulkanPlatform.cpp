@@ -33,6 +33,14 @@
 #include "deUniquePtr.hpp"
 #include "deMemory.h"
 
+#if !defined(DEQP_VULKAN_LIBRARY_PATH)
+#ifdef CTS_USES_VULKANSC
+#define DEQP_VULKAN_LIBRARY_PATH "vulkansc-1.dll"
+#else
+#define DEQP_VULKAN_LIBRARY_PATH "vulkan-1.dll"
+#endif
+#endif
+
 namespace tcu
 {
 namespace win32
@@ -58,9 +66,9 @@ public:
         m_window->setVisible(visible);
     }
 
-    void setForeground(void)
+    bool setForeground(void)
     {
-        m_window->setForeground();
+        return m_window->setForeground();
     }
 
     void resize(const UVec2 &newSize)
@@ -98,7 +106,7 @@ class VulkanLibrary : public vk::Library
 {
 public:
     VulkanLibrary(const char *libraryPath)
-        : m_library(libraryPath != DE_NULL ? libraryPath : "vulkan-1.dll")
+        : m_library(libraryPath != nullptr ? libraryPath : DEQP_VULKAN_LIBRARY_PATH)
         , m_driver(m_library)
     {
     }
@@ -146,7 +154,7 @@ ULONG getStringRegKey(const std::string &regKey, const std::string &strValueName
     nError = RegOpenKeyExA(HKEY_LOCAL_MACHINE, regKey.c_str(), 0, KEY_READ, &hKey);
 
     if (ERROR_SUCCESS == nError)
-        nError = RegQueryValueExA(hKey, strValueName.c_str(), 0, DE_NULL, (LPBYTE)szBuffer, &dwBufferSize);
+        nError = RegQueryValueExA(hKey, strValueName.c_str(), 0, nullptr, (LPBYTE)szBuffer, &dwBufferSize);
 
     if (ERROR_SUCCESS == nError)
         strValue = szBuffer;
@@ -204,7 +212,7 @@ void getOSNameFromRegistry(std::ostream &dst)
 
 void getOSVersionFromDLL(std::ostream &dst)
 {
-    DWORD buffer_size = GetFileVersionInfoSize(("kernel32.dll"), DE_NULL);
+    DWORD buffer_size = GetFileVersionInfoSize(("kernel32.dll"), nullptr);
     char *buffer      = 0;
 
     if (buffer_size != 0)
@@ -214,7 +222,7 @@ void getOSVersionFromDLL(std::ostream &dst)
         {
             if (GetFileVersionInfo("kernel32.dll", 0, buffer_size, buffer))
             {
-                VS_FIXEDFILEINFO *version = DE_NULL;
+                VS_FIXEDFILEINFO *version = nullptr;
                 UINT version_len          = 0;
 
                 if (VerQueryValue(buffer, "\\", (LPVOID *)&version, &version_len))
@@ -264,7 +272,7 @@ const char *getProcessorArchitectureName(WORD arch)
     case PROCESSOR_ARCHITECTURE_UNKNOWN:
         return "UNKNOWN";
     default:
-        return DE_NULL;
+        return nullptr;
     }
 }
 

@@ -352,10 +352,10 @@ void DefaultsTest::clean()
  */
 ErrorsTest::ErrorsTest(deqp::Context &context)
     : deqp::TestCase(context, "queries_errors", "Queries Errors Test")
-    , m_pGetQueryBufferObjectiv(DE_NULL)
-    , m_pGetQueryBufferObjectuiv(DE_NULL)
-    , m_pGetQueryBufferObjecti64v(DE_NULL)
-    , m_pGetQueryBufferObjectui64v(DE_NULL)
+    , m_pGetQueryBufferObjectiv(nullptr)
+    , m_pGetQueryBufferObjectuiv(nullptr)
+    , m_pGetQueryBufferObjecti64v(nullptr)
+    , m_pGetQueryBufferObjectui64v(nullptr)
 {
     /* Intentionally left blank. */
 }
@@ -392,8 +392,8 @@ tcu::TestNode::IterateResult ErrorsTest::iterate()
 
     try
     {
-        if ((DE_NULL == m_pGetQueryBufferObjectiv) || (DE_NULL == m_pGetQueryBufferObjectuiv) ||
-            (DE_NULL == m_pGetQueryBufferObjecti64v) || (DE_NULL == m_pGetQueryBufferObjectui64v))
+        if ((nullptr == m_pGetQueryBufferObjectiv) || (nullptr == m_pGetQueryBufferObjectuiv) ||
+            (nullptr == m_pGetQueryBufferObjecti64v) || (nullptr == m_pGetQueryBufferObjectui64v))
         {
             m_context.getTestContext().getLog()
                 << tcu::TestLog::Message << "Test could not get the pointers for glGetQueryBufferObject* functions."
@@ -572,7 +572,7 @@ bool ErrorsTest::testInvalidQueryName()
         gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buffer);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffers have failed");
 
-        gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, sizeof(glw::GLint64), DE_NULL, GL_DYNAMIC_COPY);
+        gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, sizeof(glw::GLint64), nullptr, GL_DYNAMIC_COPY);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffers have failed");
 
         /* Test invalid query object name (integer version). */
@@ -893,7 +893,7 @@ bool ErrorsTest::testInvalidParameterName()
         gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buffer);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffers have failed");
 
-        gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, sizeof(glw::GLint64), DE_NULL, GL_DYNAMIC_COPY);
+        gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, sizeof(glw::GLint64), nullptr, GL_DYNAMIC_COPY);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffers have failed");
 
         /* Create query object for the test. */
@@ -1018,7 +1018,7 @@ bool ErrorsTest::testBufferOverflow()
         gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buffer);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffers have failed");
 
-        gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, sizeof(glw::GLint64), DE_NULL, GL_DYNAMIC_COPY);
+        gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, sizeof(glw::GLint64), nullptr, GL_DYNAMIC_COPY);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffers have failed");
 
         /* Create query object for the test. */
@@ -1145,7 +1145,7 @@ bool ErrorsTest::testBufferNegativeOffset()
         gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buffer);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffers have failed");
 
-        gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, sizeof(glw::GLint64), DE_NULL, GL_DYNAMIC_COPY);
+        gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, sizeof(glw::GLint64), nullptr, GL_DYNAMIC_COPY);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffers have failed");
 
         /* Create query object for the test. */
@@ -1306,16 +1306,16 @@ const glw::GLuint ErrorsTest::s_targets_count = sizeof(s_targets) / sizeof(s_tar
  */
 FunctionalTest::FunctionalTest(deqp::Context &context)
     : deqp::TestCase(context, "queries_functional", "Queries Functional Test")
-    , m_pGetQueryBufferObjectiv(DE_NULL)
-    , m_pGetQueryBufferObjectuiv(DE_NULL)
-    , m_pGetQueryBufferObjecti64v(DE_NULL)
-    , m_pGetQueryBufferObjectui64v(DE_NULL)
+    , m_pGetQueryBufferObjectiv(nullptr)
+    , m_pGetQueryBufferObjectuiv(nullptr)
+    , m_pGetQueryBufferObjecti64v(nullptr)
+    , m_pGetQueryBufferObjectui64v(nullptr)
     , m_fbo(0)
     , m_rbo(0)
     , m_vao(0)
     , m_bo_query(0)
     , m_bo_xfb(0)
-    , m_qo(DE_NULL)
+    , m_qo(nullptr)
     , m_po(0)
 {
     /* Intentionally left blank. */
@@ -1492,8 +1492,8 @@ tcu::TestNode::IterateResult FunctionalTest::iterate()
 
     try
     {
-        if ((DE_NULL == m_pGetQueryBufferObjectiv) || (DE_NULL == m_pGetQueryBufferObjectuiv) ||
-            (DE_NULL == m_pGetQueryBufferObjecti64v) || (DE_NULL == m_pGetQueryBufferObjectui64v))
+        if ((nullptr == m_pGetQueryBufferObjectiv) || (nullptr == m_pGetQueryBufferObjectuiv) ||
+            (nullptr == m_pGetQueryBufferObjecti64v) || (nullptr == m_pGetQueryBufferObjectui64v))
         {
             m_context.getTestContext().getLog()
                 << tcu::TestLog::Message << "Test could not get the pointers for glGetQueryBufferObject* functions."
@@ -1694,7 +1694,7 @@ void FunctionalTest::prepareBuffers()
     gl.bindBuffer(GL_QUERY_BUFFER, m_bo_query);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer have failed");
 
-    gl.bufferData(GL_QUERY_BUFFER, sizeof(glw::GLint64), DE_NULL, GL_DYNAMIC_COPY);
+    gl.bufferData(GL_QUERY_BUFFER, sizeof(glw::GLint64), nullptr, GL_DYNAMIC_COPY);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData have failed");
 
     /* Buffer for storing transform feedback results. */
@@ -1705,7 +1705,7 @@ void FunctionalTest::prepareBuffers()
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer have failed");
 
     gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER,
-                  3 /* number of vertices per triangle */ * 2 /* number of triangles */ * sizeof(glw::GLint), DE_NULL,
+                  3 /* number of vertices per triangle */ * 2 /* number of triangles */ * sizeof(glw::GLint), nullptr,
                   GL_DYNAMIC_COPY);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData have failed");
 
@@ -1725,7 +1725,7 @@ void FunctionalTest::prepareQueries()
     /* Allocating memory for queries array. */
     m_qo = new glw::GLuint[s_targets_count];
 
-    if (DE_NULL == m_qo)
+    if (nullptr == m_qo)
     {
         throw 0;
     }
@@ -1747,7 +1747,7 @@ void FunctionalTest::prepareQueries()
             /* Deallocate storage. */
             delete[] m_qo;
 
-            m_qo = DE_NULL;
+            m_qo = nullptr;
 
             /* Signalise test failure. */
             throw 0;
@@ -1784,7 +1784,7 @@ void FunctionalTest::prepareProgram()
 
         for (glw::GLuint i = 0; i < shader_count; ++i)
         {
-            if (DE_NULL != shader[i].source)
+            if (nullptr != shader[i].source)
             {
                 shader[i].id = gl.createShader(shader[i].type);
 
@@ -2016,13 +2016,13 @@ void FunctionalTest::clean()
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
     /* Releasing queries. */
-    if (DE_NULL != m_qo)
+    if (nullptr != m_qo)
     {
         gl.deleteQueries(s_targets_count, m_qo);
 
         delete[] m_qo;
 
-        m_qo = DE_NULL;
+        m_qo = nullptr;
     }
 
     /* Release framebuffer. */

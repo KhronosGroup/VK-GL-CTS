@@ -268,7 +268,7 @@ CommonFunctionCase::CommonFunctionCase(Context &context, const char *name, const
     : TestCase(context, name, description)
     , m_shaderType(shaderType)
     , m_numValues(100)
-    , m_executor(DE_NULL)
+    , m_executor(nullptr)
 {
 }
 
@@ -294,7 +294,7 @@ void CommonFunctionCase::init(void)
 void CommonFunctionCase::deinit(void)
 {
     delete m_executor;
-    m_executor = DE_NULL;
+    m_executor = nullptr;
 }
 
 static vector<int> getScalarSizes(const vector<Symbol> &symbols)

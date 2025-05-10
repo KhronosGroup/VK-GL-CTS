@@ -41,7 +41,7 @@ public:
     }
 
     virtual void setVisible(bool visible);
-    virtual void setForeground(void);
+    virtual bool setForeground(void);
     virtual void resize(const tcu::UVec2 &newSize);
     virtual void setMinimized(bool minized);
 
@@ -168,7 +168,7 @@ struct TypeTraits<TYPE_DIRECT_DRM>
 struct DirectDrmDisplayInterface : public DisplayInterface<TYPE_DIRECT_DRM>
 {
 public:
-    DirectDrmDisplayInterface(void) : DisplayInterface(DE_NULL)
+    DirectDrmDisplayInterface(void) : DisplayInterface(VK_NULL_HANDLE)
     {
     }
     virtual void initializeDisplay(const InstanceInterface &vki, VkInstance instance, const tcu::CommandLine &cmdLine)

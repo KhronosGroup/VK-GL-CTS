@@ -134,7 +134,7 @@ inline VkImageCreateInfo makeImageCreateInfo(const tcu::IVec2 &size, const VkFor
 {
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0,               // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         format,                              // VkFormat format;
@@ -146,7 +146,7 @@ inline VkImageCreateInfo makeImageCreateInfo(const tcu::IVec2 &size, const VkFor
         usage,                               // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
 
@@ -245,7 +245,7 @@ void DynamicOffsetGraphicsTestInstance::init(void)
 
         const VkImageCreateInfo colorImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-            DE_NULL,                                                               // const void* pNext;
+            nullptr,                                                               // const void* pNext;
             0u,                                                                    // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
             m_colorFormat,                                                         // VkFormat format;
@@ -275,7 +275,7 @@ void DynamicOffsetGraphicsTestInstance::init(void)
     {
         const VkImageViewCreateInfo colorAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,    // VkStructureType sType;
-            DE_NULL,                                     // const void* pNext;
+            nullptr,                                     // const void* pNext;
             0u,                                          // VkImageViewCreateFlags flags;
             *m_colorImage,                               // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                       // VkImageViewType viewType;
@@ -316,25 +316,25 @@ void DynamicOffsetGraphicsTestInstance::init(void)
             (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags    flags
             VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint            pipelineBindPoint
             0u,                              // uint32_t                        inputAttachmentCount
-            DE_NULL,                         // const VkAttachmentReference*    pInputAttachments
+            nullptr,                         // const VkAttachmentReference*    pInputAttachments
             1u,                              // uint32_t                        colorAttachmentCount
             &attachmentRef,                  // const VkAttachmentReference*    pColorAttachments
-            DE_NULL,                         // const VkAttachmentReference*    pResolveAttachments
-            DE_NULL,                         // const VkAttachmentReference*    pDepthStencilAttachment
+            nullptr,                         // const VkAttachmentReference*    pResolveAttachments
+            nullptr,                         // const VkAttachmentReference*    pDepthStencilAttachment
             0u,                              // uint32_t                        preserveAttachmentCount
-            DE_NULL                          // const uint32_t*                pPreserveAttachments
+            nullptr                          // const uint32_t*                pPreserveAttachments
         };
 
         const VkRenderPassCreateInfo renderPassInfo = {
             VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureTypei                    sType
-            DE_NULL,                                   // const void*                        pNext
+            nullptr,                                   // const void*                        pNext
             (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags            flags
             1u,                                        // uint32_t                            attachmentCount
             &attachmentDescription,                    // const VkAttachmentDescription*    pAttachments
             1u,                                        // uint32_t                            subpassCount
             &subpassDescription,                       // const VkSubpassDescription*        pSubpasses
             0u,                                        // uint32_t                            dependencyCount
-            DE_NULL                                    // const VkSubpassDependency*        pDependencies
+            nullptr                                    // const VkSubpassDependency*        pDependencies
         };
 
         m_renderPasses.push_back(
@@ -344,7 +344,7 @@ void DynamicOffsetGraphicsTestInstance::init(void)
 
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             **m_renderPasses[renderPassIdx],           // VkRenderPass renderPass;
             1u,                                        // uint32_t attachmentCount;
@@ -376,7 +376,7 @@ void DynamicOffsetGraphicsTestInstance::init(void)
                 descriptorType,             // VkDescriptorType descriptorType;
                 descriptorCount,            // uint32_t descriptorCount;
                 VK_SHADER_STAGE_VERTEX_BIT, // VkShaderStageFlags stageFlags;
-                DE_NULL                     // const VkSampler* pImmutableSamplers;
+                nullptr                     // const VkSampler* pImmutableSamplers;
             };
 
             // Skip used descriptors in array mode.
@@ -392,7 +392,7 @@ void DynamicOffsetGraphicsTestInstance::init(void)
         {
             const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
                 VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                             // const void* pNext;
+                nullptr,                                             // const void* pNext;
                 0u,                                                  // VkDescriptorSetLayoutCreateFlags flags;
                 numBindings,                                         // uint32_t bindingCount;
                 descriptorSetLayoutBindings.data()                   // const VkDescriptorSetLayoutBinding* pBindings;
@@ -406,7 +406,7 @@ void DynamicOffsetGraphicsTestInstance::init(void)
             {
                 const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
                     VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType sType;
-                    DE_NULL,                                             // const void* pNext;
+                    nullptr,                                             // const void* pNext;
                     0u,                                                  // VkDescriptorSetLayoutCreateFlags flags;
                     1u,                                                  // uint32_t bindingCount;
                     &descriptorSetLayoutBindings[i] // const VkDescriptorSetLayoutBinding* pBindings;
@@ -424,12 +424,12 @@ void DynamicOffsetGraphicsTestInstance::init(void)
 
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,           // VkStructureType sType;
-            DE_NULL,                                                 // const void* pNext;
+            nullptr,                                                 // const void* pNext;
             0u,                                                      // VkPipelineLayoutCreateFlags flags;
             static_cast<uint32_t>(descriptorSetLayoutsPlain.size()), // uint32_t descriptorSetCount;
             descriptorSetLayoutsPlain.data(),                        // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                                      // uint32_t pushConstantRangeCount;
-            DE_NULL // const VkPushDescriptorRange* pPushDescriptorRanges;
+            nullptr // const VkPushDescriptorRange* pPushDescriptorRanges;
         };
 
         m_pipelineLayout =
@@ -448,7 +448,7 @@ void DynamicOffsetGraphicsTestInstance::init(void)
 
         const VkBufferCreateInfo bufferCreateInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags    flags
             bufferSize,                           // VkDeviceSize size;
             usageFlags,                           // VkBufferUsageFlags usage;
@@ -481,7 +481,7 @@ void DynamicOffsetGraphicsTestInstance::init(void)
         {
             const VkDescriptorSetAllocateInfo allocInfo = {
                 VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType sType;
-                DE_NULL,                                        // const void* pNext;
+                nullptr,                                        // const void* pNext;
                 *m_descriptorPool,                              // VkDescriptorPool descriptorPool;
                 1u,                                             // uint32_t setLayoutCount;
                 &(m_descriptorSetLayouts[i].get()),             // const VkDescriptorSetLayout* pSetLayouts;
@@ -530,18 +530,18 @@ void DynamicOffsetGraphicsTestInstance::init(void)
 
         const VkWriteDescriptorSet writeDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
-            DE_NULL,                                // const void* pNext;
+            nullptr,                                // const void* pNext;
             bindingSet,                             // VkDescriptorSet dstSet;
             bindingNumber,                          // uint32_t dstBinding;
             dstArrayElement,                        // uint32_t dstArrayElement;
             1u,                                     // uint32_t descriptorCount;
             descriptorType,                         // VkDescriptorType descriptorType;
-            DE_NULL,                                // const VkDescriptorImageInfo* pImageInfo;
+            nullptr,                                // const VkDescriptorImageInfo* pImageInfo;
             &descriptorBufferInfo,                  // const VkDescriptorBufferInfo* pBufferInfo;
-            DE_NULL                                 // const VkBufferView* pTexelBufferView;
+            nullptr                                 // const VkBufferView* pTexelBufferView;
         };
 
-        vk.updateDescriptorSets(vkDevice, 1u, &writeDescriptorSet, 0u, DE_NULL);
+        vk.updateDescriptorSets(vkDevice, 1u, &writeDescriptorSet, 0u, nullptr);
     }
 
     // Create shaders
@@ -576,7 +576,7 @@ void DynamicOffsetGraphicsTestInstance::init(void)
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams{
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             0u,                                                        // vkPipelineVertexInputStateCreateFlags flags;
             1u,                                                        // uint32_t bindingCount;
             &vertexInputBindingDescription,  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -607,7 +607,7 @@ void DynamicOffsetGraphicsTestInstance::init(void)
     {
         const VkBufferCreateInfo vertexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                    // VkStructureType sType;
-            DE_NULL,                                                 // const void* pNext;
+            nullptr,                                                 // const void* pNext;
             0u,                                                      // VkBufferCreateFlags flags;
             (VkDeviceSize)(sizeof(Vertex4RGBA) * m_vertices.size()), // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,                       // VkBufferUsageFlags usage;
@@ -935,7 +935,7 @@ void DynamicOffsetComputeTestInstance::init(void)
                 descriptorType,              // VkDescriptorType descriptorType;
                 descriptorCount,             // uint32_t descriptorCount;
                 VK_SHADER_STAGE_COMPUTE_BIT, // VkShaderStageFlags stageFlags;
-                DE_NULL                      // const VkSampler* pImmutableSamplers;
+                nullptr                      // const VkSampler* pImmutableSamplers;
             };
 
             // Skip used descriptors in array mode.
@@ -952,7 +952,7 @@ void DynamicOffsetComputeTestInstance::init(void)
             VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, // VkDescriptorType descriptorType;
             1u,                                        // uint32_t descriptorCount;
             VK_SHADER_STAGE_COMPUTE_BIT,               // VkShaderStageFlags stageFlags;
-            DE_NULL                                    // const VkSampler* pImmutableSamplers;
+            nullptr                                    // const VkSampler* pImmutableSamplers;
         };
 
         descriptorSetLayoutBindings.push_back(descriptorSetLayoutBindingOutput);
@@ -961,14 +961,14 @@ void DynamicOffsetComputeTestInstance::init(void)
         {
             const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
                 VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                             // const void* pNext;
+                nullptr,                                             // const void* pNext;
                 0u,                                                  // VkDescriptorSetLayoutCreateFlags flags;
                 m_numBindings + 1,                                   // uint32_t bindingCount;
                 descriptorSetLayoutBindings.data()                   // const VkDescriptorSetLayoutBinding* pBindings;
             };
 
             m_descriptorSetLayouts.push_back(
-                createDescriptorSetLayout(vk, vkDevice, &descriptorSetLayoutCreateInfo, DE_NULL));
+                createDescriptorSetLayout(vk, vkDevice, &descriptorSetLayoutCreateInfo, nullptr));
         }
         else
         {
@@ -976,14 +976,14 @@ void DynamicOffsetComputeTestInstance::init(void)
             {
                 const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
                     VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType sType;
-                    DE_NULL,                                             // const void* pNext;
+                    nullptr,                                             // const void* pNext;
                     0u,                                                  // VkDescriptorSetLayoutCreateFlags flags;
                     1u,                                                  // uint32_t bindingCount;
                     &descriptorSetLayoutBindings[i] // const VkDescriptorSetLayoutBinding* pBindings;
                 };
 
                 m_descriptorSetLayouts.push_back(
-                    createDescriptorSetLayout(vk, vkDevice, &descriptorSetLayoutCreateInfo, DE_NULL));
+                    createDescriptorSetLayout(vk, vkDevice, &descriptorSetLayoutCreateInfo, nullptr));
             }
         }
 
@@ -994,12 +994,12 @@ void DynamicOffsetComputeTestInstance::init(void)
 
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,           // VkStructureType sType;
-            DE_NULL,                                                 // const void* pNext;
+            nullptr,                                                 // const void* pNext;
             0u,                                                      // VkPipelineLayoutCreateFlags flags;
             static_cast<uint32_t>(descriptorSetLayoutsPlain.size()), // uint32_t descriptorSetCount;
             descriptorSetLayoutsPlain.data(),                        // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                                      // uint32_t pushConstantRangeCount;
-            DE_NULL // const VkPushDescriptorRange* pPushDescriptorRanges;
+            nullptr // const VkPushDescriptorRange* pPushDescriptorRanges;
         };
 
         m_pipelineLayout =
@@ -1018,7 +1018,7 @@ void DynamicOffsetComputeTestInstance::init(void)
 
         const VkBufferCreateInfo bufferCreateInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags    flags
             bufferSize,                           // VkDeviceSize size;
             usageFlags,                           // VkBufferUsageFlags usage;
@@ -1040,7 +1040,7 @@ void DynamicOffsetComputeTestInstance::init(void)
     {
         const VkBufferCreateInfo bufferCreateInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags    flags
             outputBufferSize,                     // VkDeviceSize size;
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,   // VkBufferUsageFlags usage;
@@ -1072,7 +1072,7 @@ void DynamicOffsetComputeTestInstance::init(void)
         {
             const VkDescriptorSetAllocateInfo allocInfo = {
                 VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType sType;
-                DE_NULL,                                        // const void* pNext;
+                nullptr,                                        // const void* pNext;
                 *m_descriptorPool,                              // VkDescriptorPool descriptorPool;
                 1u,                                             // uint32_t setLayoutCount;
                 &(m_descriptorSetLayouts[i].get()),             // const VkDescriptorSetLayout* pSetLayouts;
@@ -1121,18 +1121,18 @@ void DynamicOffsetComputeTestInstance::init(void)
 
         const VkWriteDescriptorSet writeDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
-            DE_NULL,                                // const void* pNext;
+            nullptr,                                // const void* pNext;
             bindingSet,                             // VkDescriptorSet dstSet;
             bindingNumber,                          // uint32_t dstBinding;
             dstArrayElement,                        // uint32_t dstArrayElement;
             1u,                                     // uint32_t descriptorCount;
             descriptorType,                         // VkDescriptorType descriptorType;
-            DE_NULL,                                // const VkDescriptorImageInfo* pImageInfo;
+            nullptr,                                // const VkDescriptorImageInfo* pImageInfo;
             &descriptorBufferInfo,                  // const VkDescriptorBufferInfo* pBufferInfo;
-            DE_NULL                                 // const VkBufferView* pTexelBufferView;
+            nullptr                                 // const VkBufferView* pTexelBufferView;
         };
 
-        vk.updateDescriptorSets(vkDevice, 1u, &writeDescriptorSet, 0u, DE_NULL);
+        vk.updateDescriptorSets(vkDevice, 1u, &writeDescriptorSet, 0u, nullptr);
     }
 
     // Update output buffer descriptor
@@ -1164,18 +1164,18 @@ void DynamicOffsetComputeTestInstance::init(void)
 
         const VkWriteDescriptorSet writeDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,    // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             bindingSet,                                // VkDescriptorSet dstSet;
             bindingNumber,                             // uint32_t dstBinding;
             0u,                                        // uint32_t dstArrayElement;
             1u,                                        // uint32_t descriptorCount;
             VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, // VkDescriptorType descriptorType;
-            DE_NULL,                                   // const VkDescriptorImageInfo* pImageInfo;
+            nullptr,                                   // const VkDescriptorImageInfo* pImageInfo;
             &descriptorBufferInfo,                     // const VkDescriptorBufferInfo* pBufferInfo;
-            DE_NULL                                    // const VkBufferView* pTexelBufferView;
+            nullptr                                    // const VkBufferView* pTexelBufferView;
         };
 
-        vk.updateDescriptorSets(vkDevice, 1u, &writeDescriptorSet, 0u, DE_NULL);
+        vk.updateDescriptorSets(vkDevice, 1u, &writeDescriptorSet, 0u, nullptr);
     }
 
     // Create pipeline
@@ -1212,7 +1212,7 @@ void DynamicOffsetComputeTestInstance::init(void)
             // Create pipeline barrier
             const vk::VkBufferMemoryBarrier bufferBarrier = {
                 vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,                  // VkStructureType sType;
-                DE_NULL,                                                      // const void* pNext;
+                nullptr,                                                      // const void* pNext;
                 vk::VK_ACCESS_SHADER_WRITE_BIT,                               // VkAccessFlags srcAccessMask;
                 vk::VK_ACCESS_SHADER_WRITE_BIT | vk::VK_ACCESS_HOST_READ_BIT, // VkAccessFlags dstAccessMask;
                 VK_QUEUE_FAMILY_IGNORED,                                      // uint32_t srcQueueFamilyIndex;
@@ -1242,7 +1242,7 @@ void DynamicOffsetComputeTestInstance::init(void)
 
             vk.cmdPipelineBarrier(**m_cmdBuffers[idx], vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                   vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                  DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
+                                  nullptr, 1u, &bufferBarrier, 0u, nullptr);
         }
 
         endCommandBuffer(vk, **m_cmdBuffers[idx]);
@@ -1524,7 +1524,7 @@ tcu::TestStatus DynamicOffsetMixedTestInstance::iterate(void)
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                   // const void* pNext;
+        nullptr,                                                   // const void* pNext;
         0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
         1u,                                                        // uint32_t vertexBindingDescriptionCount;
         &bindingDescription, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -1610,25 +1610,25 @@ tcu::TestStatus DynamicOffsetMixedTestInstance::iterate(void)
         (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags    flags
         VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint            pipelineBindPoint
         0u,                              // uint32_t                        inputAttachmentCount
-        DE_NULL,                         // const VkAttachmentReference*    pInputAttachments
+        nullptr,                         // const VkAttachmentReference*    pInputAttachments
         1u,                              // uint32_t                        colorAttachmentCount
         &attachmentReference,            // const VkAttachmentReference*    pColorAttachments
-        DE_NULL,                         // const VkAttachmentReference*    pResolveAttachments
-        DE_NULL,                         // const VkAttachmentReference*    pDepthStencilAttachment
+        nullptr,                         // const VkAttachmentReference*    pResolveAttachments
+        nullptr,                         // const VkAttachmentReference*    pDepthStencilAttachment
         0u,                              // uint32_t                        preserveAttachmentCount
-        DE_NULL                          // const uint32_t*                pPreserveAttachments
+        nullptr                          // const uint32_t*                pPreserveAttachments
     };
 
     const VkRenderPassCreateInfo renderPassInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureTypei                    sType
-        DE_NULL,                                   // const void*                        pNext
+        nullptr,                                   // const void*                        pNext
         (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags            flags
         1u,                                        // uint32_t                            attachmentCount
         &attachmentDescription,                    // const VkAttachmentDescription*    pAttachments
         1u,                                        // uint32_t                            subpassCount
         &subpassDescription,                       // const VkSubpassDescription*        pSubpasses
         0u,                                        // uint32_t                            dependencyCount
-        DE_NULL                                    // const VkSubpassDependency*        pDependencies
+        nullptr                                    // const VkSubpassDependency*        pDependencies
     };
 
     RenderPassWrapper renderPass(m_pipelineConstructionType, vk, device, &renderPassInfo);
@@ -1638,7 +1638,7 @@ tcu::TestStatus DynamicOffsetMixedTestInstance::iterate(void)
 
     const VkFramebufferCreateInfo framebufferCreateInfo = {
         VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                   // const void* pNext;
+        nullptr,                                   // const void* pNext;
         VkFramebufferCreateFlags(0),               // VkFramebufferCreateFlags flags;
         *renderPass,                               // VkRenderPass renderPass;
         1u,                                        // uint32_t attachmentCount;
@@ -1653,12 +1653,12 @@ tcu::TestStatus DynamicOffsetMixedTestInstance::iterate(void)
     // Create pipeline layout
     const VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                       // const void* pNext;
+        nullptr,                                       // const void* pNext;
         0u,                                            // VkPipelineLayoutCreateFlags flags;
         1u,                                            // uint32_t descriptorSetCount;
         &descriptorSetLayout.get(),                    // const VkDescriptorSetLayout* pSetLayouts;
         0u,                                            // uint32_t pushConstantRangeCount;
-        DE_NULL                                        // const VkPushDescriptorRange* pPushDescriptorRanges;
+        nullptr                                        // const VkPushDescriptorRange* pPushDescriptorRanges;
     };
 
     PipelineLayoutWrapper pipelineLayout(m_pipelineConstructionType, vk, device, &pipelineLayoutInfo);
@@ -1669,7 +1669,7 @@ tcu::TestStatus DynamicOffsetMixedTestInstance::iterate(void)
 
     const VkPipelineRasterizationStateCreateInfo rasterizationState = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                            sType
-        DE_NULL,                                                    // const void*                                pNext
+        nullptr,                                                    // const void*                                pNext
         0u,                                                         // VkPipelineRasterizationStateCreateFlags    flags
         VK_FALSE,                        // VkBool32                                   depthClampEnable
         VK_FALSE,                        // VkBool32                                   rasterizerDiscardEnable

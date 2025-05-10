@@ -1,29 +1,26 @@
 {
-    "register_extension":
-        {
-            "type": "device",
-            "core": ""
-        },
-    "mandatory_features":
-        {
-            "VkPhysicalDeviceIndexTypeUint8FeaturesKHR":
-                [
-                    {
-                        "features": [
-                            "indexTypeUint8"
-                        ],
-                        "requirements": [
-                            "VK_EXT_index_type_uint8"
-                        ]
-                    },
-                    {
-                        "features": [
-                            "indexTypeUint8"
-                        ],
-                        "requirements": [
-                            "VK_KHR_index_type_uint8"
-                        ]
-                    }
+    "register_extension": {
+        "type": "device",
+        "core": "0.1.4.0"
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceIndexTypeUint8FeaturesKHR": [
+            {
+                "features": [
+                    "indexTypeUint8"
+                ],
+                "requirements": [
+                    "VK_EXT_index_type_uint8"
                 ]
-        }
+            },
+            {
+                "features": [
+                    "indexTypeUint8"
+                ],
+                "requirements": [
+                    "VK_KHR_index_type_uint8"
+                ]
+            }
+        ]
+    }
 }

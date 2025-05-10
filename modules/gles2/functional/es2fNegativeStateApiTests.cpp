@@ -449,7 +449,7 @@ void NegativeStateApiTests::init(void)
         m_log << TestLog::EndSection;
     });
     ES2F_ADD_API_CASE(get_vertex_attrib_pointerv, "Invalid glGetVertexAttribPointerv() usage", {
-        GLvoid *ptr[1] = {DE_NULL};
+        GLvoid *ptr[1] = {nullptr};
 
         m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if pname is not an accepted value.");
         glGetVertexAttribPointerv(0, -1, &ptr[0]);

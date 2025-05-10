@@ -162,7 +162,6 @@ public:
 
 protected:
     virtual tcu::TestStatus iterate(void);
-    void prepareBufferForHostAccess(VkDeviceSize size);
     void copyResultBuffertoBuffer(VkDeviceSize size);
     void submitCommands(VkCommandBuffer commandBuffer, VkFence fence);
     Move<VkBuffer> createDataBuffer(VkDeviceSize size, VkBufferUsageFlags usage);
@@ -206,7 +205,7 @@ VkDeviceSize ExternalMemoryHostBaseTestInstance::getMinImportedHostPointerAlignm
 {
     VkPhysicalDeviceExternalMemoryHostPropertiesEXT externalMemoryHostProperties = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT, //VkStructureType        sType
-        DE_NULL,                                                               //void*                    pNext
+        nullptr,                                                               //void*                    pNext
         0 //VkDeviceSize            minImportedHostPointerAlignment
     };
 
@@ -236,7 +235,7 @@ uint32_t ExternalMemoryHostBaseTestInstance::getHostPointerMemoryTypeBits(void *
 
     VkMemoryHostPointerPropertiesEXT memoryHostPointerProperties;
     memoryHostPointerProperties.sType = VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT;
-    memoryHostPointerProperties.pNext = DE_NULL;
+    memoryHostPointerProperties.pNext = nullptr;
 
     VK_CHECK(m_vkd.getMemoryHostPointerPropertiesEXT(m_device, externalMemoryHandleTypeFlagBits, hostPointer,
                                                      &memoryHostPointerProperties));
@@ -251,7 +250,7 @@ Move<VkDeviceMemory> ExternalMemoryHostBaseTestInstance::allocateMemoryFromHostP
 {
     VkImportMemoryHostPointerInfoEXT importMemoryHostPointerInfo;
     importMemoryHostPointerInfo.sType        = VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT;
-    importMemoryHostPointerInfo.pNext        = DE_NULL;
+    importMemoryHostPointerInfo.pNext        = nullptr;
     importMemoryHostPointerInfo.handleType   = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT;
     importMemoryHostPointerInfo.pHostPointer = m_hostMemoryAlloc;
 
@@ -261,7 +260,7 @@ Move<VkDeviceMemory> ExternalMemoryHostBaseTestInstance::allocateMemoryFromHostP
     memoryAllocateInfo.allocationSize  = m_allocationSize;
     memoryAllocateInfo.memoryTypeIndex = memoryTypeIndex;
 
-    return allocateMemory(m_vkd, m_device, &memoryAllocateInfo, DE_NULL);
+    return allocateMemory(m_vkd, m_device, &memoryAllocateInfo, nullptr);
 }
 
 void ExternalMemoryHostBaseTestInstance::logMemoryTypeIndexPropertyFlags(uint32_t index)
@@ -446,7 +445,7 @@ Move<VkImage> ExternalMemoryHostRenderImageTestInstance::createImage(VkFormat fo
                                                                      VkImageUsageFlags usage)
 {
     const vk::VkExternalMemoryImageCreateInfo externalInfo = {
-        vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO, DE_NULL,
+        vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO, nullptr,
         (vk::VkExternalMemoryHandleTypeFlags)VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT};
 
     const VkImageCreateInfo imageCreateInfo = {
@@ -463,18 +462,18 @@ Move<VkImage> ExternalMemoryHostRenderImageTestInstance::createImage(VkFormat fo
         usage,                               // VkImageUsageFlags        usage
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode            sharingMode
         0,                                   // uint32_t                    queueFamilyIndexCount
-        DE_NULL,                             // const uint32_t*            pQueueFamilyIndices
+        nullptr,                             // const uint32_t*            pQueueFamilyIndices
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout            initialLayout
     };
 
-    return vk::createImage(m_vkd, m_device, &imageCreateInfo, DE_NULL);
+    return vk::createImage(m_vkd, m_device, &imageCreateInfo, nullptr);
 }
 
 Move<VkFramebuffer> ExternalMemoryHostRenderImageTestInstance::createFramebuffer()
 {
     const VkFramebufferCreateInfo framebufferCreateInfo = {
         VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType                sType
-        DE_NULL,                                   // const void*                    pNext
+        nullptr,                                   // const void*                    pNext
         (VkFramebufferCreateFlags)0,
         *m_renderPass,      // VkRenderPass                    renderPass
         1,                  // uint32_t                        attachmentCount
@@ -490,7 +489,7 @@ Move<VkImageView> ExternalMemoryHostRenderImageTestInstance::createImageView()
 {
     const VkImageViewCreateInfo imageViewCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType            sType
-        DE_NULL,                                  // const void*                pNext
+        nullptr,                                  // const void*                pNext
         0,                                        // VkImageViewCreateFlags    flags
         *m_image,                                 // VkImage                    image
         VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType            viewType
@@ -509,15 +508,15 @@ Move<VkBuffer> ExternalMemoryHostRenderImageTestInstance::createBindMemoryInitia
                                                        0.0f,  1.0f,  0.0f, 1.0f, 0.0f,  -1.0f, 0.0f, 1.0f};
     const VkBufferCreateInfo vertexBufferCreateInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType
-        DE_NULL,                              // const void*            pNext
+        nullptr,                              // const void*            pNext
         0,                                    // VkBufferCreateFlags    flag
         sizeof(triangleData),                 // VkDeviceSize            size
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,   // VkBufferUsageFlags    usage
         VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode        sharingMode
         0,                                    // uint32_t                queueFamilyCount
-        DE_NULL                               // const uint32_t*        pQueueFamilyIndices
+        nullptr                               // const uint32_t*        pQueueFamilyIndices
     };
-    buffer = vk::createBuffer(m_vkd, m_device, &vertexBufferCreateInfo, DE_NULL);
+    buffer = vk::createBuffer(m_vkd, m_device, &vertexBufferCreateInfo, nullptr);
     const VkMemoryRequirements bufferMemoryRequirements = getBufferMemoryRequirements(m_vkd, m_device, *buffer);
     m_vertexBufferAllocation = m_allocator.allocate(bufferMemoryRequirements, MemoryRequirement::HostVisible);
 
@@ -539,15 +538,15 @@ Move<VkBuffer> ExternalMemoryHostRenderImageTestInstance::createBindMemoryResult
 
     const VkBufferCreateInfo resultBufferCreateInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                                // VkStructureType        sType
-        DE_NULL,                                                             // const void*            pNext
+        nullptr,                                                             // const void*            pNext
         0,                                                                   // VkBufferCreateFlags    flags
         size,                                                                // VkDeviceSize            size
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, // VkBufferUsageFlags    usage
         VK_SHARING_MODE_EXCLUSIVE,                                           // VkSharingMode        sharingMode
         0,                                                                   // uint32_t                queueFamilyCount
-        DE_NULL // const uint32_t*        pQueueFamilyIndices
+        nullptr // const uint32_t*        pQueueFamilyIndices
     };
-    buffer = vk::createBuffer(m_vkd, m_device, &resultBufferCreateInfo, DE_NULL);
+    buffer = vk::createBuffer(m_vkd, m_device, &resultBufferCreateInfo, nullptr);
 
     const VkMemoryRequirements bufferMemoryRequirements = getBufferMemoryRequirements(m_vkd, m_device, *buffer);
     m_resultBufferAllocation = m_allocator.allocate(bufferMemoryRequirements, MemoryRequirement::HostVisible);
@@ -565,7 +564,7 @@ Move<VkDescriptorSet> ExternalMemoryHostRenderImageTestInstance::createAndUpdate
 
     const VkDescriptorSetAllocateInfo allocInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType                             sType
-        DE_NULL,                                        // const void*                                 pNext
+        nullptr,                                        // const void*                                 pNext
         *m_descriptorPool,                              // VkDescriptorPool                            descriptorPool
         1u,                                             // uint32_t                                    setLayoutCount
         &(m_descriptorSetLayout.get())                  // const VkDescriptorSetLayout*                pSetLayouts
@@ -586,12 +585,12 @@ Move<VkPipelineLayout> ExternalMemoryHostRenderImageTestInstance::createPipeline
 {
     const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType                sType
-        DE_NULL,                                       // const void*                    pNext
+        nullptr,                                       // const void*                    pNext
         (VkPipelineLayoutCreateFlags)0,                // VkPipelineLayoutCreateFlags    flags
         1u,                                            // uint32_t                        descriptorSetCount
         &(m_descriptorSetLayout.get()),                // const VkDescriptorSetLayout*    pSetLayouts
         0u,                                            // uint32_t                        pushConstantRangeCount
-        DE_NULL                                        // const VkPushConstantRange*    pPushConstantRanges
+        nullptr                                        // const VkPushConstantRange*    pPushConstantRanges
     };
 
     return vk::createPipelineLayout(m_vkd, m_device, &pipelineLayoutParams);
@@ -605,12 +604,12 @@ Move<VkPipeline> ExternalMemoryHostRenderImageTestInstance::createPipeline()
     const VkPrimitiveTopology topology                                = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
     const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                                sType
-        DE_NULL, // const void*                                    pNext
+        nullptr, // const void*                                    pNext
         0u,      // vkPipelineVertexInputStateCreateFlags        flags
         0u,      // uint32_t                                        bindingCount
-        DE_NULL, // const VkVertexInputBindingDescription*        pVertexBindingDescriptions
+        nullptr, // const VkVertexInputBindingDescription*        pVertexBindingDescriptions
         0u,      // uint32_t                                        attributeCount
-        DE_NULL, // const VkVertexInputAttributeDescription*        pVertexAttributeDescriptions
+        nullptr, // const VkVertexInputAttributeDescription*        pVertexAttributeDescriptions
     };
 
     return makeGraphicsPipeline(
@@ -618,9 +617,9 @@ Move<VkPipeline> ExternalMemoryHostRenderImageTestInstance::createPipeline()
         m_device,                 // const VkDevice                               device
         *m_pipelineLayout,        // const VkPipelineLayout                       pipelineLayout
         *m_vertexShaderModule,    // const VkShaderModule                         vertexShaderModule
-        DE_NULL,                  // const VkShaderModule                         tessellationControlShaderModule
-        DE_NULL,                  // const VkShaderModule                         tessellationEvalShaderModule
-        DE_NULL,                  // const VkShaderModule                         geometryShaderModule
+        VK_NULL_HANDLE,           // const VkShaderModule                         tessellationControlShaderModule
+        VK_NULL_HANDLE,           // const VkShaderModule                         tessellationEvalShaderModule
+        VK_NULL_HANDLE,           // const VkShaderModule                         geometryShaderModule
         *m_fragmentShaderModule,  // const VkShaderModule                         fragmentShaderModule
         *m_renderPass,            // const VkRenderPass                           renderPass
         viewports,                // const std::vector<VkViewport>&               viewports
@@ -642,7 +641,7 @@ void ExternalMemoryHostRenderImageTestInstance::clear(VkClearColorValue color)
     };
     const VkImageMemoryBarrier imageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType            sType
-        DE_NULL,                                // const void*                pNext
+        nullptr,                                // const void*                pNext
         0u,                                     // VkAccessFlags            srcAccessMask
         VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags            dstAccessMask
         VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout            oldLayout
@@ -654,7 +653,7 @@ void ExternalMemoryHostRenderImageTestInstance::clear(VkClearColorValue color)
     };
 
     m_vkd.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, false, 0u,
-                             DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+                             nullptr, 0u, nullptr, 1u, &imageBarrier);
     m_vkd.cmdClearColorImage(*m_cmdBuffer, *m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &color, 1, &subRangeColor);
 }
 
@@ -669,7 +668,7 @@ void ExternalMemoryHostRenderImageTestInstance::draw()
     };
     const VkImageMemoryBarrier imageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType            sType
-        DE_NULL,                                  // const void*                pNext
+        nullptr,                                  // const void*                pNext
         VK_ACCESS_TRANSFER_WRITE_BIT,             // VkAccessFlags            srcAccessMask
         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags            dstAccessMask
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,     // VkImageLayout            oldLayout
@@ -680,14 +679,14 @@ void ExternalMemoryHostRenderImageTestInstance::draw()
         subRangeColor                             // VkImageSubresourceRange    subresourceRange
     };
     m_vkd.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, false, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, false, 0u, nullptr, 0u, nullptr, 1u,
                              &imageBarrier);
 
     beginRenderPass(m_vkd, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, 75, 100),
                     tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
     m_vkd.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
     m_vkd.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0, 1,
-                                &(*m_descriptorSet), 0, DE_NULL);
+                                &(*m_descriptorSet), 0, nullptr);
     m_vkd.cmdDraw(*m_cmdBuffer, 4, 1, 0, 0);
     endRenderPass(m_vkd, *m_cmdBuffer);
 }
@@ -737,25 +736,25 @@ Move<VkRenderPass> ExternalMemoryHostRenderImageTestInstance::createRenderPass()
         (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags       flags
         VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint             pipelineBindPoint
         0u,                              // uint32_t                        inputAttachmentCount
-        DE_NULL,                         // const VkAttachmentReference*    pInputAttachments
+        nullptr,                         // const VkAttachmentReference*    pInputAttachments
         1u,                              // uint32_t                        colorAttachmentCount
         &colorAttachmentRef,             // const VkAttachmentReference*    pColorAttachments
-        DE_NULL,                         // const VkAttachmentReference*    pResolveAttachments
-        DE_NULL,                         // const VkAttachmentReference*    pDepthStencilAttachment
+        nullptr,                         // const VkAttachmentReference*    pResolveAttachments
+        nullptr,                         // const VkAttachmentReference*    pDepthStencilAttachment
         0u,                              // uint32_t                        preserveAttachmentCount
-        DE_NULL                          // const uint32_t*                 pPreserveAttachments
+        nullptr                          // const uint32_t*                 pPreserveAttachments
     };
 
     const VkRenderPassCreateInfo renderPassInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType                   sType
-        DE_NULL,                                   // const void*                       pNext
+        nullptr,                                   // const void*                       pNext
         (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags           flags
         (uint32_t)attachmentDescriptions.size(),   // uint32_t                          attachmentCount
         &attachmentDescriptions[0],                // const VkAttachmentDescription*    pAttachments
         1u,                                        // uint32_t                          subpassCount
         &subpassDescription,                       // const VkSubpassDescription*       pSubpasses
         0u,                                        // uint32_t                          dependencyCount
-        DE_NULL                                    // const VkSubpassDependency*        pDependencies
+        nullptr                                    // const VkSubpassDependency*        pDependencies
     };
 
     return vk::createRenderPass(m_vkd, m_device, &renderPassInfo);
@@ -765,7 +764,7 @@ void ExternalMemoryHostRenderImageTestInstance::verifyFormatProperties(VkFormat 
                                                                        VkImageUsageFlags usage)
 {
     const VkPhysicalDeviceExternalImageFormatInfo externalInfo = {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO, DE_NULL,
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO, nullptr,
         VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT};
 
     const VkPhysicalDeviceImageFormatInfo2 formatInfo = {
@@ -779,7 +778,7 @@ void ExternalMemoryHostRenderImageTestInstance::verifyFormatProperties(VkFormat 
     };
 
     vk::VkExternalImageFormatProperties externalProperties = {VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES,
-                                                              DE_NULL, vk::VkExternalMemoryProperties()};
+                                                              nullptr, vk::VkExternalMemoryProperties()};
 
     vk::VkImageFormatProperties2 formatProperties = {VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2, &externalProperties,
                                                      vk::VkImageFormatProperties()};
@@ -862,7 +861,6 @@ tcu::TestStatus ExternalMemoryHostSynchronizationTestInstance::iterate()
     //record first command buffer
     beginCommandBuffer(m_vkd, *m_cmdBuffer);
     fillBuffer(dataBufferSize);
-    prepareBufferForHostAccess(dataBufferSize);
     endCommandBuffer(m_vkd, *m_cmdBuffer);
 
     //record second command buffer
@@ -943,13 +941,13 @@ tcu::TestStatus ExternalMemoryHostSynchronizationTestInstance::iterate()
     return tcu::TestStatus::pass("Pass");
 }
 
-void ExternalMemoryHostSynchronizationTestInstance::prepareBufferForHostAccess(VkDeviceSize size)
+void ExternalMemoryHostSynchronizationTestInstance::copyResultBuffertoBuffer(VkDeviceSize size)
 {
-    const VkBufferMemoryBarrier bufferBarrier = {
+    VkBufferMemoryBarrier bufferBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
-        VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
-        VK_ACCESS_HOST_WRITE_BIT,                // VkAccessFlags dstAccessMask;
+        nullptr,                                 // const void* pNext;
+        VK_ACCESS_HOST_WRITE_BIT,                // VkAccessFlags srcAccessMask;
+        VK_ACCESS_TRANSFER_READ_BIT,             // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
         VK_QUEUE_FAMILY_IGNORED,                 // uint32_t dstQueueFamilyIndex;
         *m_dataBuffer,                           // VkBuffer buffer;
@@ -957,12 +955,9 @@ void ExternalMemoryHostSynchronizationTestInstance::prepareBufferForHostAccess(V
         size                                     // VkDeviceSize size;
     };
 
-    m_vkd.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, false, 0u,
-                             DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
-}
+    m_vkd.cmdPipelineBarrier(*m_cmdBufferCopy, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, false, 0u,
+                             nullptr, 1u, &bufferBarrier, 0u, nullptr);
 
-void ExternalMemoryHostSynchronizationTestInstance::copyResultBuffertoBuffer(VkDeviceSize size)
-{
     const VkBufferCopy region_all = {
         0,   //VkDeviceSize srcOffset;
         0,   //VkDeviceSize dstOffset;
@@ -970,20 +965,27 @@ void ExternalMemoryHostSynchronizationTestInstance::copyResultBuffertoBuffer(VkD
     };
 
     m_vkd.cmdCopyBuffer(*m_cmdBufferCopy, *m_dataBuffer, *m_resultBuffer, 1, &region_all);
+
+    bufferBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    bufferBarrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+    bufferBarrier.buffer        = *m_resultBuffer;
+
+    m_vkd.cmdPipelineBarrier(*m_cmdBufferCopy, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, false, 0u,
+                             nullptr, 1u, &bufferBarrier, 0u, nullptr);
 }
 
 void ExternalMemoryHostSynchronizationTestInstance::submitCommands(VkCommandBuffer commandBuffer, VkFence fence)
 {
     const VkSubmitInfo submitInfo = {
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,         // VkStructureType                sType
-        DE_NULL,                               // const void*                    pNext
-        0u,                                    // uint32_t                        waitSemaphoreCount
-        DE_NULL,                               // const VkSemaphore*            pWaitSemaphores
-        (const VkPipelineStageFlags *)DE_NULL, // const VkPipelineStageFlags*    pWaitDstStageMask
-        1u,                                    // uint32_t                        commandBufferCount
-        &commandBuffer,                        // const VkCommandBuffer*        pCommandBuffers
-        0u,                                    // uint32_t                        signalSemaphoreCount
-        DE_NULL,                               // const VkSemaphore*            pSignalSemaphores
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType                sType
+        nullptr,                       // const void*                    pNext
+        0u,                            // uint32_t                        waitSemaphoreCount
+        nullptr,                       // const VkSemaphore*            pWaitSemaphores
+        nullptr,                       // const VkPipelineStageFlags*    pWaitDstStageMask
+        1u,                            // uint32_t                        commandBufferCount
+        &commandBuffer,                // const VkCommandBuffer*        pCommandBuffers
+        0u,                            // uint32_t                        signalSemaphoreCount
+        nullptr,                       // const VkSemaphore*            pSignalSemaphores
     };
 
     VK_CHECK(m_vkd.queueSubmit(m_queue, 1u, &submitInfo, fence));
@@ -993,7 +995,7 @@ Move<VkBuffer> ExternalMemoryHostSynchronizationTestInstance::createDataBuffer(V
                                                                                VkBufferUsageFlags usage)
 {
     const vk::VkExternalMemoryBufferCreateInfo externalInfo = {
-        vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO, DE_NULL,
+        vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO, nullptr,
         (vk::VkExternalMemoryHandleTypeFlags)VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT};
 
     const VkBufferCreateInfo dataBufferCreateInfo = {
@@ -1004,16 +1006,16 @@ Move<VkBuffer> ExternalMemoryHostSynchronizationTestInstance::createDataBuffer(V
         usage,                                // VkBufferUsageFlags    usage
         VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode        sharingMode
         0,                                    // uint32_t                queueFamilyCount
-        DE_NULL                               // const uint32_t*        pQueueFamilyIndices
+        nullptr                               // const uint32_t*        pQueueFamilyIndices
     };
-    return vk::createBuffer(m_vkd, m_device, &dataBufferCreateInfo, DE_NULL);
+    return vk::createBuffer(m_vkd, m_device, &dataBufferCreateInfo, nullptr);
 }
 
 void ExternalMemoryHostSynchronizationTestInstance::fillBuffer(VkDeviceSize size)
 {
-    const VkBufferMemoryBarrier bufferBarrier = {
+    VkBufferMemoryBarrier bufferBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         0u,                                      // VkAccessFlags srcAccessMask;
         VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
@@ -1024,15 +1026,22 @@ void ExternalMemoryHostSynchronizationTestInstance::fillBuffer(VkDeviceSize size
     };
 
     m_vkd.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, false, 0u,
-                             DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
+                             nullptr, 1u, &bufferBarrier, 0u, nullptr);
+
     m_vkd.cmdFillBuffer(*m_cmdBuffer, *m_dataBuffer, 0, size, 0xFFFFFFFF);
+
+    bufferBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    bufferBarrier.dstAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+
+    m_vkd.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, false, 0u,
+                             nullptr, 1u, &bufferBarrier, 0u, nullptr);
 }
 
 void ExternalMemoryHostSynchronizationTestInstance::verifyBufferProperties(VkBufferUsageFlags usage)
 {
     const VkPhysicalDeviceExternalBufferInfo bufferInfo = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO, // VkStructureType                       sType;
-        DE_NULL,                                                // const void*                           pNext;
+        nullptr,                                                // const void*                           pNext;
         0,                                                      // VkBufferCreateFlags                   flags;
         usage,                                                  // VkBufferUsageFlags                    usage;
         VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT  // VkExternalMemoryHandleTypeFlagBits    handleType;
@@ -1040,7 +1049,7 @@ void ExternalMemoryHostSynchronizationTestInstance::verifyBufferProperties(VkBuf
 
     VkExternalBufferProperties props = {
         VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES, // VkStructureType               sType;
-        DE_NULL,                                      // void*                         pNext;
+        nullptr,                                      // void*                         pNext;
         VkExternalMemoryProperties()                  // VkExternalMemoryProperties    externalMemoryProperties;
     };
 

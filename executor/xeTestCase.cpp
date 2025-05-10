@@ -42,7 +42,7 @@ const char *getTestCaseTypeName(TestCaseType caseType)
         return "Performance";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -166,10 +166,10 @@ const TestNode *TestNode::find(const char *path) const
             else if (getNodeType() == TESTNODETYPE_GROUP)
                 return static_cast<const TestGroup *>(this)->findChildNode(path + compLen + 1);
             else
-                return DE_NULL;
+                return nullptr;
         }
         else
-            return DE_NULL;
+            return nullptr;
     }
 }
 
@@ -208,7 +208,7 @@ const TestNode *TestGroup::findChildNode(const char *path) const
     XE_CHECK(compLen > 0);
 
     // Try to find matching children.
-    const TestNode *matchingNode = DE_NULL;
+    const TestNode *matchingNode = nullptr;
     for (vector<TestNode *>::const_iterator iter = m_children.begin(); iter != m_children.end(); iter++)
     {
         if (compareNameToPathComponent((*iter)->getName(), path, compLen))
@@ -225,15 +225,15 @@ const TestNode *TestGroup::findChildNode(const char *path) const
         else if (matchingNode->getNodeType() == TESTNODETYPE_GROUP)
             return static_cast<const TestGroup *>(matchingNode)->findChildNode(path + compLen + 1);
         else
-            return DE_NULL;
+            return nullptr;
     }
     else
-        return DE_NULL;
+        return nullptr;
 }
 
 // TestRoot
 
-TestRoot::TestRoot(void) : TestGroup(DE_NULL, TESTNODETYPE_ROOT, "")
+TestRoot::TestRoot(void) : TestGroup(nullptr, TESTNODETYPE_ROOT, "")
 {
 }
 
@@ -318,7 +318,7 @@ TestCase *TestHierarchyBuilder::createCase(const char *path, TestCaseType caseTy
 
 static void addNodeAndParents(std::set<const TestNode *> &nodeSet, const TestNode *node)
 {
-    while (node != DE_NULL)
+    while (node != nullptr)
     {
         nodeSet.insert(node);
         node = node->getParent();
@@ -364,7 +364,7 @@ static void removeEmptyGroups(std::set<const TestNode *> &nodeSet, const TestGro
     if (!hasChildrenInSet(nodeSet, group))
     {
         nodeSet.erase(group);
-        if (group->getParent() != DE_NULL)
+        if (group->getParent() != nullptr)
             removeEmptyGroups(nodeSet, group->getParent());
     }
 }
@@ -419,7 +419,7 @@ void TestSet::removeGroup(const TestGroup *testGroup)
     {
         m_set.erase(testGroup);
         removeChildren(m_set, testGroup);
-        if (testGroup->getParent() != DE_NULL)
+        if (testGroup->getParent() != nullptr)
             removeEmptyGroups(m_set, testGroup->getParent());
     }
 }
@@ -433,7 +433,7 @@ ConstTestNodeIterator::ConstTestNodeIterator(const TestNode *root) : m_root(root
 ConstTestNodeIterator ConstTestNodeIterator::begin(const TestNode *root)
 {
     ConstTestNodeIterator iter(root);
-    iter.m_iterStack.push_back(GroupState(DE_NULL));
+    iter.m_iterStack.push_back(GroupState(nullptr));
     return iter;
 }
 
@@ -490,7 +490,7 @@ const TestNode *ConstTestNodeIterator::operator*(void) const
     DE_ASSERT(!m_iterStack.empty());
     if (m_iterStack.size() == 1)
     {
-        DE_ASSERT(m_iterStack[0].group == DE_NULL && m_iterStack[0].childNdx == 0);
+        DE_ASSERT(m_iterStack[0].group == nullptr && m_iterStack[0].childNdx == 0);
         return m_root;
     }
     else

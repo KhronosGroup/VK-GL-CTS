@@ -721,6 +721,11 @@ class LongRunningComputeFenceTest : public ComputeShaderBase
         glDeleteProgram(m_program2);
         glDeleteBuffers(2, &m_buffer);
 
+        // Delete shared context and keep default context set
+        delete m_sharedContext;
+        m_sharedContext = NULL;
+        m_context.getRenderContext().makeCurrent();
+
         return NO_ERROR;
     }
 };
@@ -905,6 +910,12 @@ class LongRunningPersistentSSBOComputeTest : public ComputeShaderBase
     {
         glDeleteBuffers(2, &m_buffer);
         m_dataLoadStore = NULL;
+
+        // Delete shared context and keep default context set
+        delete m_sharedContext;
+        m_sharedContext = NULL;
+        m_context.getRenderContext().makeCurrent();
+
         return NO_ERROR;
     }
 };

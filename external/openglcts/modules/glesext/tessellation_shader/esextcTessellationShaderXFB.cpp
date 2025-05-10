@@ -300,7 +300,7 @@ void TessellationShaderXFB::initTest()
 
     m_fs_program_id = createSeparableProgram(GL_FRAGMENT_SHADER, 1, /* n_strings */
                                              &fs_body, 0,           /* n_varyings */
-                                             DE_NULL,               /* varyings */
+                                             nullptr,               /* varyings */
                                              true);                 /* should_succeed */
 
     gl.getProgramiv(m_fs_program_id, GL_LINK_STATUS, &link_status);
@@ -411,7 +411,7 @@ void TessellationShaderXFB::initTest()
         /* Create a valid tessellation control shader program for ES */
         m_tc_program_id = createSeparableProgram(m_glExtTokens.TESS_CONTROL_SHADER, 1, /* n_strings */
                                                  &tc_body, 0,                          /* n_varyings */
-                                                 DE_NULL,                              /* varyings */
+                                                 nullptr,                              /* varyings */
                                                  true);                                /* should_succeed */
     }
 

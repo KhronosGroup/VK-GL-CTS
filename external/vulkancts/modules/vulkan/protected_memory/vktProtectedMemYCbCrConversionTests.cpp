@@ -227,7 +227,7 @@ vk::Move<vk::VkSampler> createSampler(const vk::DeviceInterface &vkd, const vk::
                                       const vk::VkSamplerYcbcrConversion conversion)
 {
     const vk::VkSamplerYcbcrConversionInfo samplerConversionInfo = {vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
-                                                                    DE_NULL, conversion};
+                                                                    nullptr, conversion};
 
     const vk::VkSamplerCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
@@ -258,7 +258,7 @@ vk::Move<vk::VkImageView> createImageView(const vk::DeviceInterface &vkd, const 
                                           const vk::VkSamplerYcbcrConversion conversion)
 {
     const vk::VkSamplerYcbcrConversionInfo conversionInfo = {vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
-                                                             DE_NULL, conversion};
+                                                             nullptr, conversion};
 
     const vk::VkImageViewCreateInfo viewInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -287,7 +287,7 @@ vk::Move<vk::VkSamplerYcbcrConversion> createConversion(
 {
     const vk::VkSamplerYcbcrConversionCreateInfo conversionInfo = {
         vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
-        DE_NULL,
+        nullptr,
 
         format,
         colorModel,
@@ -326,7 +326,7 @@ void uploadYCbCrImage(ProtectedContext &ctx, const vk::VkImage image, const ycbc
                        vk::MemoryRequirement::HostVisible));
 
         const vk::VkBufferMemoryBarrier bufferBarrier = {vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                                         DE_NULL,
+                                                         nullptr,
                                                          (vk::VkAccessFlags)0,
                                                          vk::VK_ACCESS_TRANSFER_READ_BIT,
                                                          queueFamilyIndex,
@@ -351,7 +351,7 @@ void uploadYCbCrImage(ProtectedContext &ctx, const vk::VkImage image, const ycbc
             formatDesc.numPlanes > 1 ? vk::getPlaneAspect(planeNdx) : vk::VK_IMAGE_ASPECT_COLOR_BIT;
 
         const vk::VkImageMemoryBarrier preCopyBarrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                         DE_NULL,
+                                                         nullptr,
                                                          (vk::VkAccessFlags)0,
                                                          vk::VK_ACCESS_TRANSFER_WRITE_BIT,
                                                          vk::VK_IMAGE_LAYOUT_UNDEFINED,
@@ -363,8 +363,7 @@ void uploadYCbCrImage(ProtectedContext &ctx, const vk::VkImage image, const ycbc
 
         vk.cmdPipelineBarrier(*cmdBuffer, (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_HOST_BIT,
                               (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u,
-                              0u, (const vk::VkMemoryBarrier *)DE_NULL, (uint32_t)bufferBarriers.size(),
-                              &bufferBarriers[0], 1u, &preCopyBarrier);
+                              0u, nullptr, (uint32_t)bufferBarriers.size(), &bufferBarriers[0], 1u, &preCopyBarrier);
     }
 
     for (uint32_t planeNdx = 0; planeNdx < imageData.getDescription().numPlanes; ++planeNdx)
@@ -396,7 +395,7 @@ void uploadYCbCrImage(ProtectedContext &ctx, const vk::VkImage image, const ycbc
             formatDesc.numPlanes > 1 ? vk::getPlaneAspect(planeNdx) : vk::VK_IMAGE_ASPECT_COLOR_BIT;
 
         const vk::VkImageMemoryBarrier postCopyBarrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                          DE_NULL,
+                                                          nullptr,
                                                           vk::VK_ACCESS_TRANSFER_WRITE_BIT,
                                                           nextAccess,
                                                           vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -408,8 +407,7 @@ void uploadYCbCrImage(ProtectedContext &ctx, const vk::VkImage image, const ycbc
 
         vk.cmdPipelineBarrier(*cmdBuffer, (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
                               (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-                              (vk::VkDependencyFlags)0u, 0u, (const vk::VkMemoryBarrier *)DE_NULL, 0u,
-                              (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u, &postCopyBarrier);
+                              (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u, &postCopyBarrier);
     }
 
     endCommandBuffer(vk, *cmdBuffer);
@@ -552,7 +550,7 @@ bool validateImage(ProtectedContext &ctx, const std::vector<YCbCrValidationData>
 
         vk.cmdBindPipeline(*resetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *resetSSBOPipeline);
         vk.cmdBindDescriptorSets(*resetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                 &*descriptorSet, 0u, DE_NULL);
+                                 &*descriptorSet, 0u, nullptr);
         vk.cmdDispatch(*resetCmdBuffer, 1u, 1u, 1u);
 
         endCommandBuffer(vk, *resetCmdBuffer);
@@ -572,7 +570,7 @@ bool validateImage(ProtectedContext &ctx, const std::vector<YCbCrValidationData>
 
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *validationPipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                 &*descriptorSet, 0u, DE_NULL);
+                                 &*descriptorSet, 0u, nullptr);
         vk.cmdDispatch(*cmdBuffer, CHECK_SIZE, 1u, 1u);
 
         endCommandBuffer(vk, *cmdBuffer);
@@ -766,7 +764,7 @@ de::MovePtr<vk::YCbCrImageWithMemory> createYcbcrImage2D(ProtectedContext &conte
 
     const vk::VkImageCreateInfo params = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,       // VkStructureType            stype
-        DE_NULL,                                       // const void*                pNext
+        nullptr,                                       // const void*                pNext
         (vk::VkImageCreateFlags)(flags | createFlags), // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                          // VkImageType                imageType
         format,                                        // VkFormat                    format
@@ -880,7 +878,7 @@ void renderYCbCrToColor(ProtectedContext &ctx, const tcu::UVec2 size, const vk::
     beginCommandBuffer(vk, *cmdBuffer);
     {
         const vk::VkImageMemoryBarrier attachmentStartBarrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                                 DE_NULL,
+                                                                 nullptr,
                                                                  0u,
                                                                  vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                                                                  vk::VK_IMAGE_LAYOUT_UNDEFINED,
@@ -892,8 +890,7 @@ void renderYCbCrToColor(ProtectedContext &ctx, const tcu::UVec2 size, const vk::
 
         vk.cmdPipelineBarrier(*cmdBuffer, (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                               (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-                              (vk::VkDependencyFlags)0u, 0u, (const vk::VkMemoryBarrier *)DE_NULL, 0u,
-                              (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u, &attachmentStartBarrier);
+                              (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u, &attachmentStartBarrier);
     }
 
     beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, vk::makeRect2D(0, 0, size.x(), size.y()),
@@ -901,7 +898,7 @@ void renderYCbCrToColor(ProtectedContext &ctx, const tcu::UVec2 size, const vk::
 
     vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
     vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &*descriptorSet,
-                             0u, DE_NULL);
+                             0u, nullptr);
 
     {
         const vk::VkDeviceSize vertexBufferOffset = 0;
@@ -915,7 +912,7 @@ void renderYCbCrToColor(ProtectedContext &ctx, const tcu::UVec2 size, const vk::
     // color attachment render end barrier
     {
         const vk::VkImageMemoryBarrier attachmentEndBarrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                               DE_NULL,
+                                                               nullptr,
                                                                vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                                                                vk::VK_ACCESS_SHADER_READ_BIT,
                                                                vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -927,8 +924,7 @@ void renderYCbCrToColor(ProtectedContext &ctx, const tcu::UVec2 size, const vk::
 
         vk.cmdPipelineBarrier(*cmdBuffer, (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
                               (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-                              (vk::VkDependencyFlags)0u, 0u, (const vk::VkMemoryBarrier *)DE_NULL, 0u,
-                              (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u, &attachmentEndBarrier);
+                              (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u, &attachmentEndBarrier);
     }
 
     endCommandBuffer(vk, *cmdBuffer);
@@ -1138,7 +1134,7 @@ tcu::TestStatus conversionTest(Context &context, TestConfig config)
     {
         const vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
             vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,            // sType
-            DE_NULL,                                                              // pNext
+            nullptr,                                                              // pNext
             config.format,                                                        // format
             vk::VK_IMAGE_TYPE_2D,                                                 // type
             vk::VK_IMAGE_TILING_OPTIMAL,                                          // tiling
@@ -1148,7 +1144,7 @@ tcu::TestStatus conversionTest(Context &context, TestConfig config)
 
         vk::VkSamplerYcbcrConversionImageFormatProperties samplerYcbcrConversionImage = {};
         samplerYcbcrConversionImage.sType = vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
-        samplerYcbcrConversionImage.pNext = DE_NULL;
+        samplerYcbcrConversionImage.pNext = nullptr;
 
         vk::VkImageFormatProperties2 imageFormatProperties = {};
         imageFormatProperties.sType                        = vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;

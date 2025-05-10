@@ -63,136 +63,136 @@ DE_END_EXTERN_C
  * void     Set_delete            (Set* array, Key key);
  * \endcode
 *//*--------------------------------------------------------------------*/
-#define DE_DECLARE_POOL_SET(TYPENAME, KEYTYPE)                                                         \
-                                                                                                       \
-    typedef struct TYPENAME##Slot_s TYPENAME##Slot;                                                    \
-                                                                                                       \
-    struct TYPENAME##Slot_s                                                                            \
-    {                                                                                                  \
-        int numUsed;                                                                                   \
-        TYPENAME##Slot *nextSlot;                                                                      \
-        KEYTYPE keys[DE_SET_ELEMENTS_PER_SLOT];                                                        \
-    };                                                                                                 \
-                                                                                                       \
-    typedef struct TYPENAME##_s                                                                        \
-    {                                                                                                  \
-        deMemPool *pool;                                                                               \
-        int numElements;                                                                               \
-                                                                                                       \
-        int slotTableSize;                                                                             \
-        TYPENAME##Slot **slotTable;                                                                    \
-        TYPENAME##Slot *slotFreeList;                                                                  \
-    } TYPENAME; /* NOLINT(TYPENAME) */                                                                 \
-                                                                                                       \
-    typedef struct TYPENAME##Iter_s                                                                    \
-    {                                                                                                  \
-        const TYPENAME *hash;                                                                          \
-        int curSlotIndex;                                                                              \
-        const TYPENAME##Slot *curSlot;                                                                 \
-        int curElemIndex;                                                                              \
-    } TYPENAME##Iter;                                                                                  \
-                                                                                                       \
-    TYPENAME *TYPENAME##_create(deMemPool *pool);                                                      \
-    void TYPENAME##_reset(DE_PTR_TYPE(TYPENAME) set);                                                  \
-    bool TYPENAME##_reserve(DE_PTR_TYPE(TYPENAME) set, int capacity);                                  \
-    bool TYPENAME##_exists(const TYPENAME *set, KEYTYPE key);                                          \
-    bool TYPENAME##_insert(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key);                                    \
-    void TYPENAME##_delete(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key);                                    \
-                                                                                                       \
-    DE_INLINE int TYPENAME##_getNumElements(const TYPENAME *set) DE_UNUSED_FUNCTION;                   \
-    DE_INLINE void TYPENAME##Iter_init(const TYPENAME *hash, TYPENAME##Iter *iter) DE_UNUSED_FUNCTION; \
-    DE_INLINE bool TYPENAME##Iter_hasItem(const TYPENAME##Iter *iter) DE_UNUSED_FUNCTION;              \
-    DE_INLINE void TYPENAME##Iter_next(TYPENAME##Iter *iter) DE_UNUSED_FUNCTION;                       \
-    DE_INLINE KEYTYPE TYPENAME##Iter_getKey(const TYPENAME##Iter *iter) DE_UNUSED_FUNCTION;            \
-    DE_INLINE bool TYPENAME##_safeInsert(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key) DE_UNUSED_FUNCTION;   \
-    DE_INLINE void TYPENAME##_safeDelete(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key) DE_UNUSED_FUNCTION;   \
-                                                                                                       \
-    DE_INLINE int TYPENAME##_getNumElements(const TYPENAME *set)                                       \
-    {                                                                                                  \
-        return set->numElements;                                                                       \
-    }                                                                                                  \
-                                                                                                       \
-    DE_INLINE void TYPENAME##Iter_init(const TYPENAME *hash, TYPENAME##Iter *iter)                     \
-    {                                                                                                  \
-        iter->hash         = hash;                                                                     \
-        iter->curSlotIndex = 0;                                                                        \
-        iter->curSlot      = DE_NULL;                                                                  \
-        iter->curElemIndex = 0;                                                                        \
-        if (TYPENAME##_getNumElements(hash) > 0)                                                       \
-        {                                                                                              \
-            int slotTableSize = hash->slotTableSize;                                                   \
-            int slotNdx       = 0;                                                                     \
-            while (slotNdx < slotTableSize)                                                            \
-            {                                                                                          \
-                if (hash->slotTable[slotNdx])                                                          \
-                    break;                                                                             \
-                slotNdx++;                                                                             \
-            }                                                                                          \
-            DE_ASSERT(slotNdx < slotTableSize);                                                        \
-            iter->curSlotIndex = slotNdx;                                                              \
-            iter->curSlot      = hash->slotTable[slotNdx];                                             \
-            DE_ASSERT(iter->curSlot);                                                                  \
-        }                                                                                              \
-    }                                                                                                  \
-                                                                                                       \
-    DE_INLINE bool TYPENAME##Iter_hasItem(const TYPENAME##Iter *iter)                                  \
-    {                                                                                                  \
-        return (iter->curSlot != DE_NULL);                                                             \
-    }                                                                                                  \
-                                                                                                       \
-    DE_INLINE void TYPENAME##Iter_next(TYPENAME##Iter *iter)                                           \
-    {                                                                                                  \
-        DE_ASSERT(TYPENAME##Iter_hasItem(iter));                                                       \
-        if (++iter->curElemIndex == iter->curSlot->numUsed)                                            \
-        {                                                                                              \
-            iter->curElemIndex = 0;                                                                    \
-            if (iter->curSlot->nextSlot)                                                               \
-            {                                                                                          \
-                iter->curSlot = iter->curSlot->nextSlot;                                               \
-            }                                                                                          \
-            else                                                                                       \
-            {                                                                                          \
-                const TYPENAME *hash = iter->hash;                                                     \
-                int curSlotIndex     = iter->curSlotIndex;                                             \
-                int slotTableSize    = hash->slotTableSize;                                            \
-                while (++curSlotIndex < slotTableSize)                                                 \
-                {                                                                                      \
-                    if (hash->slotTable[curSlotIndex])                                                 \
-                        break;                                                                         \
-                }                                                                                      \
-                iter->curSlotIndex = curSlotIndex;                                                     \
-                if (curSlotIndex < slotTableSize)                                                      \
-                    iter->curSlot = hash->slotTable[curSlotIndex];                                     \
-                else                                                                                   \
-                    iter->curSlot = DE_NULL;                                                           \
-            }                                                                                          \
-        }                                                                                              \
-    }                                                                                                  \
-                                                                                                       \
-    DE_INLINE KEYTYPE TYPENAME##Iter_getKey(const TYPENAME##Iter *iter)                                \
-    {                                                                                                  \
-        DE_ASSERT(TYPENAME##Iter_hasItem(iter));                                                       \
-        return iter->curSlot->keys[iter->curElemIndex];                                                \
-    }                                                                                                  \
-                                                                                                       \
-    DE_INLINE bool TYPENAME##_safeInsert(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key)                       \
-    {                                                                                                  \
-        DE_ASSERT(set);                                                                                \
-        if (TYPENAME##_exists(set, key))                                                               \
-            return true;                                                                               \
-        return TYPENAME##_insert(set, key);                                                            \
-    }                                                                                                  \
-                                                                                                       \
-    DE_INLINE void TYPENAME##_safeDelete(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key)                       \
-    {                                                                                                  \
-        DE_ASSERT(set);                                                                                \
-        if (TYPENAME##_exists(set, key))                                                               \
-            TYPENAME##_delete(set, key);                                                               \
-    }                                                                                                  \
-                                                                                                       \
-    struct TYPENAME##Unused_s                                                                          \
-    {                                                                                                  \
-        int unused;                                                                                    \
+#define DE_DECLARE_POOL_SET(TYPENAME, KEYTYPE)                                                             \
+                                                                                                           \
+    typedef struct TYPENAME##Slot_s TYPENAME##Slot;                                                        \
+                                                                                                           \
+    struct TYPENAME##Slot_s                                                                                \
+    {                                                                                                      \
+        int numUsed;                                                                                       \
+        TYPENAME##Slot *nextSlot;                                                                          \
+        KEYTYPE keys[DE_SET_ELEMENTS_PER_SLOT];                                                            \
+    };                                                                                                     \
+                                                                                                           \
+    typedef struct TYPENAME##_s                                                                            \
+    {                                                                                                      \
+        deMemPool *pool;                                                                                   \
+        int numElements;                                                                                   \
+                                                                                                           \
+        int slotTableSize;                                                                                 \
+        TYPENAME##Slot **slotTable;                                                                        \
+        TYPENAME##Slot *slotFreeList;                                                                      \
+    } TYPENAME; /* NOLINT(TYPENAME) */                                                                     \
+                                                                                                           \
+    typedef struct TYPENAME##Iter_s                                                                        \
+    {                                                                                                      \
+        const TYPENAME *hash;                                                                              \
+        int curSlotIndex;                                                                                  \
+        const TYPENAME##Slot *curSlot;                                                                     \
+        int curElemIndex;                                                                                  \
+    } TYPENAME##Iter;                                                                                      \
+                                                                                                           \
+    TYPENAME *TYPENAME##_create(deMemPool *pool);                                                          \
+    void TYPENAME##_reset(DE_PTR_TYPE(TYPENAME) set);                                                      \
+    bool TYPENAME##_reserve(DE_PTR_TYPE(TYPENAME) set, int capacity);                                      \
+    bool TYPENAME##_exists(const TYPENAME *set, KEYTYPE key);                                              \
+    bool TYPENAME##_insert(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key);                                        \
+    void TYPENAME##_delete(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key);                                        \
+                                                                                                           \
+    static inline int TYPENAME##_getNumElements(const TYPENAME *set) DE_UNUSED_FUNCTION;                   \
+    static inline void TYPENAME##Iter_init(const TYPENAME *hash, TYPENAME##Iter *iter) DE_UNUSED_FUNCTION; \
+    static inline bool TYPENAME##Iter_hasItem(const TYPENAME##Iter *iter) DE_UNUSED_FUNCTION;              \
+    static inline void TYPENAME##Iter_next(TYPENAME##Iter *iter) DE_UNUSED_FUNCTION;                       \
+    static inline KEYTYPE TYPENAME##Iter_getKey(const TYPENAME##Iter *iter) DE_UNUSED_FUNCTION;            \
+    static inline bool TYPENAME##_safeInsert(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key) DE_UNUSED_FUNCTION;   \
+    static inline void TYPENAME##_safeDelete(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key) DE_UNUSED_FUNCTION;   \
+                                                                                                           \
+    static inline int TYPENAME##_getNumElements(const TYPENAME *set)                                       \
+    {                                                                                                      \
+        return set->numElements;                                                                           \
+    }                                                                                                      \
+                                                                                                           \
+    static inline void TYPENAME##Iter_init(const TYPENAME *hash, TYPENAME##Iter *iter)                     \
+    {                                                                                                      \
+        iter->hash         = hash;                                                                         \
+        iter->curSlotIndex = 0;                                                                            \
+        iter->curSlot      = NULL;                                                                         \
+        iter->curElemIndex = 0;                                                                            \
+        if (TYPENAME##_getNumElements(hash) > 0)                                                           \
+        {                                                                                                  \
+            int slotTableSize = hash->slotTableSize;                                                       \
+            int slotNdx       = 0;                                                                         \
+            while (slotNdx < slotTableSize)                                                                \
+            {                                                                                              \
+                if (hash->slotTable[slotNdx])                                                              \
+                    break;                                                                                 \
+                slotNdx++;                                                                                 \
+            }                                                                                              \
+            DE_ASSERT(slotNdx < slotTableSize);                                                            \
+            iter->curSlotIndex = slotNdx;                                                                  \
+            iter->curSlot      = hash->slotTable[slotNdx];                                                 \
+            DE_ASSERT(iter->curSlot);                                                                      \
+        }                                                                                                  \
+    }                                                                                                      \
+                                                                                                           \
+    static inline bool TYPENAME##Iter_hasItem(const TYPENAME##Iter *iter)                                  \
+    {                                                                                                      \
+        return (iter->curSlot != NULL);                                                                    \
+    }                                                                                                      \
+                                                                                                           \
+    static inline void TYPENAME##Iter_next(TYPENAME##Iter *iter)                                           \
+    {                                                                                                      \
+        DE_ASSERT(TYPENAME##Iter_hasItem(iter));                                                           \
+        if (++iter->curElemIndex == iter->curSlot->numUsed)                                                \
+        {                                                                                                  \
+            iter->curElemIndex = 0;                                                                        \
+            if (iter->curSlot->nextSlot)                                                                   \
+            {                                                                                              \
+                iter->curSlot = iter->curSlot->nextSlot;                                                   \
+            }                                                                                              \
+            else                                                                                           \
+            {                                                                                              \
+                const TYPENAME *hash = iter->hash;                                                         \
+                int curSlotIndex     = iter->curSlotIndex;                                                 \
+                int slotTableSize    = hash->slotTableSize;                                                \
+                while (++curSlotIndex < slotTableSize)                                                     \
+                {                                                                                          \
+                    if (hash->slotTable[curSlotIndex])                                                     \
+                        break;                                                                             \
+                }                                                                                          \
+                iter->curSlotIndex = curSlotIndex;                                                         \
+                if (curSlotIndex < slotTableSize)                                                          \
+                    iter->curSlot = hash->slotTable[curSlotIndex];                                         \
+                else                                                                                       \
+                    iter->curSlot = NULL;                                                                  \
+            }                                                                                              \
+        }                                                                                                  \
+    }                                                                                                      \
+                                                                                                           \
+    static inline KEYTYPE TYPENAME##Iter_getKey(const TYPENAME##Iter *iter)                                \
+    {                                                                                                      \
+        DE_ASSERT(TYPENAME##Iter_hasItem(iter));                                                           \
+        return iter->curSlot->keys[iter->curElemIndex];                                                    \
+    }                                                                                                      \
+                                                                                                           \
+    static inline bool TYPENAME##_safeInsert(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key)                       \
+    {                                                                                                      \
+        DE_ASSERT(set);                                                                                    \
+        if (TYPENAME##_exists(set, key))                                                                   \
+            return true;                                                                                   \
+        return TYPENAME##_insert(set, key);                                                                \
+    }                                                                                                      \
+                                                                                                           \
+    static inline void TYPENAME##_safeDelete(DE_PTR_TYPE(TYPENAME) set, KEYTYPE key)                       \
+    {                                                                                                      \
+        DE_ASSERT(set);                                                                                    \
+        if (TYPENAME##_exists(set, key))                                                                   \
+            TYPENAME##_delete(set, key);                                                                   \
+    }                                                                                                      \
+                                                                                                           \
+    struct TYPENAME##Unused_s                                                                              \
+    {                                                                                                      \
+        int unused;                                                                                        \
     }
 
 /*--------------------------------------------------------------------*//*!
@@ -214,7 +214,7 @@ DE_END_EXTERN_C
         /* Alloc struct. */                                                                                         \
         DE_PTR_TYPE(TYPENAME) set = DE_POOL_NEW(pool, TYPENAME);                                                    \
         if (!set)                                                                                                   \
-            return DE_NULL;                                                                                         \
+            return NULL;                                                                                            \
                                                                                                                     \
         /* Init array. */                                                                                           \
         memset(set, 0, sizeof(TYPENAME));                                                                           \
@@ -237,7 +237,7 @@ DE_END_EXTERN_C
                 slot->numUsed            = 0;                                                                       \
                 slot                     = nextSlot;                                                                \
             }                                                                                                       \
-            set->slotTable[slotNdx] = DE_NULL;                                                                      \
+            set->slotTable[slotNdx] = NULL;                                                                         \
         }                                                                                                           \
         set->numElements = 0;                                                                                       \
     }                                                                                                               \
@@ -255,7 +255,7 @@ DE_END_EXTERN_C
                                                                                                                     \
         if (slot)                                                                                                   \
         {                                                                                                           \
-            slot->nextSlot = DE_NULL;                                                                               \
+            slot->nextSlot = NULL;                                                                                  \
             slot->numUsed  = 0;                                                                                     \
         }                                                                                                           \
                                                                                                                     \
@@ -280,7 +280,7 @@ DE_END_EXTERN_C
                 newSlotTable[slotNdx] = oldSlotTable[slotNdx];                                                      \
                                                                                                                     \
             for (slotNdx = oldSlotTableSize; slotNdx < newSlotTableSize; slotNdx++)                                 \
-                newSlotTable[slotNdx] = DE_NULL;                                                                    \
+                newSlotTable[slotNdx] = NULL;                                                                       \
                                                                                                                     \
             set->slotTableSize = newSlotTableSize;                                                                  \
             set->slotTable     = newSlotTable;                                                                      \
@@ -288,7 +288,7 @@ DE_END_EXTERN_C
             for (slotNdx = 0; slotNdx < oldSlotTableSize; slotNdx++)                                                \
             {                                                                                                       \
                 TYPENAME##Slot *slot  = oldSlotTable[slotNdx];                                                      \
-                newSlotTable[slotNdx] = DE_NULL;                                                                    \
+                newSlotTable[slotNdx] = NULL;                                                                       \
                 while (slot)                                                                                        \
                 {                                                                                                   \
                     int elemNdx;                                                                                    \
@@ -382,7 +382,7 @@ DE_END_EXTERN_C
     {                                                                                                               \
         int slotNdx;                                                                                                \
         TYPENAME##Slot *slot;                                                                                       \
-        TYPENAME##Slot *prevSlot = DE_NULL;                                                                         \
+        TYPENAME##Slot *prevSlot = NULL;                                                                            \
                                                                                                                     \
         DE_ASSERT(set->numElements > 0);                                                                            \
         slotNdx = (int)(HASHFUNC(key) & (uint32_t)(set->slotTableSize - 1));                                        \
@@ -411,9 +411,9 @@ DE_END_EXTERN_C
                     if (lastSlot->numUsed == 0)                                                                     \
                     {                                                                                               \
                         if (prevSlot)                                                                               \
-                            prevSlot->nextSlot = DE_NULL;                                                           \
+                            prevSlot->nextSlot = NULL;                                                              \
                         else                                                                                        \
-                            set->slotTable[slotNdx] = DE_NULL;                                                      \
+                            set->slotTable[slotNdx] = NULL;                                                         \
                                                                                                                     \
                         lastSlot->nextSlot = set->slotFreeList;                                                     \
                         set->slotFreeList  = lastSlot;                                                              \

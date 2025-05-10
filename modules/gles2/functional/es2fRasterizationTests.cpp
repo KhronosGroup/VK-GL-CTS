@@ -112,7 +112,7 @@ BaseRenderingCase::BaseRenderingCase(Context &context, const char *name, const c
     , m_subpixelBits(-1)
     , m_pointSize(1.0f)
     , m_lineWidth(1.0f)
-    , m_shader(DE_NULL)
+    , m_shader(nullptr)
 {
 }
 
@@ -187,7 +187,7 @@ void BaseRenderingCase::deinit(void)
     if (m_shader)
     {
         delete m_shader;
-        m_shader = DE_NULL;
+        m_shader = nullptr;
     }
 }
 
@@ -237,7 +237,7 @@ public:
 
 private:
     virtual void generateTriangles(int iteration, std::vector<tcu::Vec4> &outData,
-                                   std::vector<TriangleSceneSpec::SceneTriangle> &outTriangles) = DE_NULL;
+                                   std::vector<TriangleSceneSpec::SceneTriangle> &outTriangles) = 0;
 
     int m_iteration;
     const int m_iterationCount;
@@ -316,7 +316,7 @@ public:
 
 private:
     virtual void generateLines(int iteration, std::vector<tcu::Vec4> &outData,
-                               std::vector<LineSceneSpec::SceneLine> &outLines) = DE_NULL;
+                               std::vector<LineSceneSpec::SceneLine> &outLines) = 0;
 
     int m_iteration;
     const int m_iterationCount;

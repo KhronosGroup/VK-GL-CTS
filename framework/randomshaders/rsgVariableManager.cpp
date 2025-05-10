@@ -196,7 +196,7 @@ ValueEntry *ValueScope::findEntry(const Variable *variable) const
 {
     vector<ValueEntry *>::const_iterator pos =
         std::find(m_entries.begin(), m_entries.end(), CompareEntryVariable(variable));
-    return pos != m_entries.end() ? *pos : DE_NULL;
+    return pos != m_entries.end() ? *pos : nullptr;
 }
 
 void ValueScope::setValue(const Variable *variable, ConstValueRangeAccess value)
@@ -324,7 +324,7 @@ const ValueEntry *VariableManager::getValue(const Variable *variable) const
 {
     vector<const ValueEntry *>::const_iterator pos =
         std::find(m_entryCache.begin(), m_entryCache.end(), CompareEntryVariable(variable));
-    return pos != m_entryCache.end() ? *pos : DE_NULL;
+    return pos != m_entryCache.end() ? *pos : nullptr;
 }
 
 void VariableManager::removeValueFromCurrentScope(const Variable *variable)
@@ -342,7 +342,7 @@ void VariableManager::removeValueFromCurrentScope(const Variable *variable)
 const ValueEntry *VariableManager::getParentValue(const Variable *variable) const
 {
     if (m_valueScopeStack.size() < 2)
-        return DE_NULL; // Only single value scope
+        return nullptr; // Only single value scope
 
     for (vector<ValueScope *>::const_reverse_iterator i = m_valueScopeStack.rbegin() + 1; i != m_valueScopeStack.rend();
          i++)
@@ -354,7 +354,7 @@ const ValueEntry *VariableManager::getParentValue(const Variable *variable) cons
             return entry;
     }
 
-    return DE_NULL; // Not found in stack
+    return nullptr; // Not found in stack
 }
 
 void VariableManager::setValue(const Variable *variable, ConstValueRangeAccess value)

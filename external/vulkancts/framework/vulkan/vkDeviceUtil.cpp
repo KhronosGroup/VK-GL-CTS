@@ -54,7 +54,7 @@ Move<VkInstance> createDefaultInstance(const PlatformInterface &vkPlatform, uint
     vector<string> actualExtensions = enabledExtensions;
 
     // Enumerate once, pass it in to the various functions that require the list of available extensions
-    vector<vk::VkExtensionProperties> availableExtensions = enumerateInstanceExtensionProperties(vkPlatform, DE_NULL);
+    vector<vk::VkExtensionProperties> availableExtensions = enumerateInstanceExtensionProperties(vkPlatform, nullptr);
 
 #ifndef CTS_USES_VULKANSC
     if (validationEnabled)
@@ -98,9 +98,9 @@ Move<VkInstance> createDefaultInstance(const PlatformInterface &vkPlatform, uint
     const struct VkApplicationInfo appInfo = {
         VK_STRUCTURE_TYPE_APPLICATION_INFO,
 #ifdef CTS_USES_VULKANSC
-        hasAppParams ? &appParams[0] : DE_NULL,
+        hasAppParams ? &appParams[0] : nullptr,
 #else
-        DE_NULL,
+        nullptr,
 #endif                    // CTS_USES_VULKANSC
         "deqp",           // pAppName
         qpGetReleaseId(), // appVersion

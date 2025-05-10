@@ -9,14 +9,14 @@ const VkPhysicalDevicePerformanceQueryPropertiesKHR&			getPerformanceQueryProper
 const VkPhysicalDeviceSampleLocationsPropertiesEXT&				getSampleLocationsPropertiesEXT				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceSampleLocationsPropertiesEXT>();			}
 const VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT&		getBlendOperationAdvancedPropertiesEXT		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT>();	}
 const VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			getExternalMemoryHostPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceExternalMemoryHostPropertiesEXT>();		}
-const VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT&		getVertexAttributeDivisorPropertiesEXT		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT>();	}
 const VkPhysicalDevicePCIBusInfoPropertiesEXT&					getPCIBusInfoPropertiesEXT					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDevicePCIBusInfoPropertiesEXT>();				}
-const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&			getSubgroupSizeControlPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceSubgroupSizeControlPropertiesEXT>();		}
+const VkPhysicalDeviceSubgroupSizeControlProperties&			getSubgroupSizeControlProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceSubgroupSizeControlProperties>();			}
 const VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			getFragmentShadingRateProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFragmentShadingRatePropertiesKHR>();		}
-const VkPhysicalDeviceLineRasterizationPropertiesKHR&			getLineRasterizationProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceLineRasterizationPropertiesKHR>();			}
-const VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT&		getTexelBufferAlignmentPropertiesEXT		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT>();		}
+const VkPhysicalDeviceTexelBufferAlignmentProperties&			getTexelBufferAlignmentProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceTexelBufferAlignmentProperties>();			}
 const VkPhysicalDeviceRobustness2PropertiesEXT&					getRobustness2PropertiesEXT					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceRobustness2PropertiesEXT>();				}
 const VkPhysicalDeviceCustomBorderColorPropertiesEXT&			getCustomBorderColorPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceCustomBorderColorPropertiesEXT>();			}
+const VkPhysicalDeviceVertexAttributeDivisorProperties&			getVertexAttributeDivisorProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceVertexAttributeDivisorProperties>();		}
+const VkPhysicalDeviceLineRasterizationProperties&				getLineRasterizationProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceLineRasterizationProperties>();			}
 const VkPhysicalDeviceDriverProperties&							getDriverProperties							(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDriverProperties>();						}
 const VkPhysicalDeviceIDProperties&								getIDProperties								(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceIDProperties>();							}
 const VkPhysicalDeviceMultiviewProperties&						getMultiviewProperties						(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMultiviewProperties>();					}
@@ -29,4 +29,3 @@ const VkPhysicalDeviceFloatControlsProperties&					getFloatControlsProperties			
 const VkPhysicalDeviceDescriptorIndexingProperties&				getDescriptorIndexingProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDescriptorIndexingProperties>();			}
 const VkPhysicalDeviceTimelineSemaphoreProperties&				getTimelineSemaphoreProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceTimelineSemaphoreProperties>();			}
 const VkPhysicalDeviceDepthStencilResolveProperties&			getDepthStencilResolveProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDepthStencilResolveProperties>();			}
-const VkPhysicalDeviceVulkanSC10Properties&						getVulkanSC10Properties						(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceVulkanSC10Properties>();					}

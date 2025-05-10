@@ -123,7 +123,7 @@ bool XlibDisplay::getVisualInfo(VisualID visualID, XVisualInfo &dst)
     XVisualInfo *response = XGetVisualInfo(m_display, VisualIDMask, &query, &numVisuals);
     bool succ             = false;
 
-    if (response != DE_NULL)
+    if (response != nullptr)
     {
         if (numVisuals > 0) // should be 1, but you never know...
         {
@@ -143,7 +143,7 @@ bool XlibDisplay::getVisualInfo(VisualID visualID, XVisualInfo &dst)
     if (getVisualInfo(visualID, info))
         return info.visual;
 
-    return DE_NULL;
+    return nullptr;
 }
 
 XlibWindow::XlibWindow(XlibDisplay &display, int width, int height, ::Visual *visual)
@@ -157,11 +157,7 @@ XlibWindow::XlibWindow(XlibDisplay &display, int width, int height, ::Visual *vi
     ::Window root        = DefaultRootWindow(dpy);
     unsigned long mask   = CWBorderPixel | CWEventMask;
 
-    // If redirect is enabled, window size can't be guaranteed and it is up to
-    // the window manager to decide whether to honor sizing requests. However,
-    // overriding that causes window to appear as an overlay, which causes
-    // other issues, so this is disabled by default.
-    const bool overrideRedirect = false;
+    const bool overrideRedirect = true;
 
     int depth = CopyFromParent;
 
@@ -171,7 +167,7 @@ XlibWindow::XlibWindow(XlibDisplay &display, int width, int height, ::Visual *vi
         swa.override_redirect = true;
     }
 
-    if (visual == DE_NULL)
+    if (visual == nullptr)
         visual = CopyFromParent;
     else
     {
@@ -251,31 +247,20 @@ void XlibWindow::getDimensions(int *width, int *height) const
     unsigned width_, height_, borderWidth, depth;
 
     XGetGeometry(m_display.getXDisplay(), m_window, &root, &x, &y, &width_, &height_, &borderWidth, &depth);
-    if (width != DE_NULL)
+    if (width != nullptr)
         *width = static_cast<int>(width_);
-    if (height != DE_NULL)
+    if (height != nullptr)
         *height = static_cast<int>(height_);
 }
 
 void XlibWindow::setDimensions(int width, int height)
 {
     ::Display *dpy = m_display.getXDisplay();
-    XEvent myevent;
-    XResizeWindow(dpy, m_window, width, height);
-    XSync(dpy, false);
+    int width_, height_ = 0;
 
-    while (XPending(dpy))
-    {
-        XNextEvent(dpy, &myevent);
-        if (myevent.type == ConfigureNotify)
-        {
-            XConfigureEvent e = myevent.xconfigure;
-            if (e.width == width && e.height == height)
-                break;
-        }
-        else
-            m_display.processEvent(myevent);
-    }
+    XResizeWindow(dpy, m_window, width, height);
+    getDimensions(&width_, &height_);
+    DE_ASSERT(width_ == width && height_ == height);
 }
 
 void XlibWindow::processEvents(void)

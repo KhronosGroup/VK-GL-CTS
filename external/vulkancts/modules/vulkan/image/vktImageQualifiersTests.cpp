@@ -244,7 +244,7 @@ void MemoryQualifierTestCase::initPrograms(SourceCollections &programCollection)
 
     const char *const qualifierName = m_qualifier == QUALIFIER_COHERENT ? "coherent" :
                                       m_qualifier == QUALIFIER_VOLATILE ? "volatile" :
-                                                                          DE_NULL;
+                                                                          nullptr;
 
     const bool uintFormat                 = isUintFormat(mapTextureFormat(m_format));
     const bool intFormat                  = isIntFormat(mapTextureFormat(m_format));
@@ -384,7 +384,7 @@ tcu::TestStatus MemoryQualifierInstanceBase::iterate(void)
 
     deviceInterface.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
     deviceInterface.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                          &m_descriptorSet.get(), 0u, DE_NULL);
+                                          &m_descriptorSet.get(), 0u, nullptr);
 
     commandsBeforeCompute(*cmdBuffer, bufferSizeInBytes);
 
@@ -497,7 +497,7 @@ void MemoryQualifierInstanceImage::prepareResources(const VkDeviceSize bufferSiz
     // Create image
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         m_imageType == IMAGE_TYPE_CUBE || m_imageType == IMAGE_TYPE_CUBE_ARRAY ?
             (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT :
             0u,                                                       // VkImageCreateFlags flags;
@@ -511,7 +511,7 @@ void MemoryQualifierInstanceImage::prepareResources(const VkDeviceSize bufferSiz
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,                                    // VkSharingMode sharingMode;
         0u,                                                           // uint32_t queueFamilyIndexCount;
-        DE_NULL,                                                      // const uint32_t* pQueueFamilyIndices;
+        nullptr,                                                      // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,                                    // VkImageLayout initialLayout;
     };
 
@@ -551,7 +551,7 @@ void MemoryQualifierInstanceImage::prepareDescriptors(void)
 
     // Set the bindings
     const VkDescriptorImageInfo descriptorImageInfo =
-        makeDescriptorImageInfo(DE_NULL, *m_imageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *m_imageView, VK_IMAGE_LAYOUT_GENERAL);
 
     DescriptorSetUpdateBuilder()
         .writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
@@ -573,7 +573,7 @@ void MemoryQualifierInstanceImage::commandsBeforeCompute(const VkCommandBuffer c
                                m_image->get(), subresourceRange);
 
     deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u,
-                                       0u, DE_NULL, 0u, DE_NULL, 1u, &imageLayoutBarrier);
+                                       0u, nullptr, 0u, nullptr, 1u, &imageLayoutBarrier);
 }
 
 void MemoryQualifierInstanceImage::commandsAfterCompute(const VkCommandBuffer cmdBuffer,
@@ -588,7 +588,7 @@ void MemoryQualifierInstanceImage::commandsAfterCompute(const VkCommandBuffer cm
                                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_image->get(), subresourceRange);
 
     deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                       0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &imagePreCopyBarrier);
+                                       0u, 0u, nullptr, 0u, nullptr, 1u, &imagePreCopyBarrier);
 
     const VkBufferImageCopy copyParams = makeBufferImageCopy(makeExtent3D(getLayerSize(m_imageType, m_imageSize)),
                                                              getNumLayers(m_imageType, m_imageSize));
@@ -599,7 +599,7 @@ void MemoryQualifierInstanceImage::commandsAfterCompute(const VkCommandBuffer cm
         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, m_buffer->get(), 0ull, bufferSizeInBytes);
 
     deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                       DE_NULL, 1u, &bufferPostCopyBarrier, 0u, DE_NULL);
+                                       nullptr, 1u, &bufferPostCopyBarrier, 0u, nullptr);
 }
 
 class MemoryQualifierInstanceBuffer : public MemoryQualifierInstanceBase
@@ -679,7 +679,7 @@ void MemoryQualifierInstanceBuffer::commandsAfterCompute(const VkCommandBuffer c
         VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, m_buffer->get(), 0ull, bufferSizeInBytes);
 
     deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u,
-                                       0u, DE_NULL, 1u, &shaderWriteBarrier, 0u, DE_NULL);
+                                       0u, nullptr, 1u, &shaderWriteBarrier, 0u, nullptr);
 }
 
 TestInstance *MemoryQualifierTestCase::createInstance(Context &context) const
@@ -730,7 +730,7 @@ tcu::TestCaseGroup *createImageQualifiersTests(tcu::TestContext &testCtx)
             memoryQualifier == MemoryQualifierTestCase::QUALIFIER_COHERENT ? "coherent" :
             memoryQualifier == MemoryQualifierTestCase::QUALIFIER_VOLATILE ? "volatile" :
             memoryQualifier == MemoryQualifierTestCase::QUALIFIER_RESTRICT ? "restrict" :
-                                                                             DE_NULL;
+                                                                             nullptr;
 
         de::MovePtr<tcu::TestCaseGroup> qualifierGroup(new tcu::TestCaseGroup(testCtx, memoryQualifierName));
 

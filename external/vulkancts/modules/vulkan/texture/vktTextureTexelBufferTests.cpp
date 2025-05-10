@@ -64,8 +64,8 @@ tcu::TestCaseGroup *createUniformTexelBufferTests(tcu::TestContext &testCtx)
 
             VkImageCreateInfo imageParams = {
                 VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, //  VkStructureType         sType;
-                DE_NULL,                             //  const void*             pNext;
-                DE_NULL,                             //  VkImageCreateFlags      flags;
+                nullptr,                             //  const void*             pNext;
+                0,                                   //  VkImageCreateFlags      flags;
                 VK_IMAGE_TYPE_2D,                    //  VkImageType             imageType;
                 cases[i].format,                     //  VkFormat                format;
                 VkExtent3D({width, height, 1u}),     //  VkExtent3D              extent;
@@ -76,7 +76,7 @@ tcu::TestCaseGroup *createUniformTexelBufferTests(tcu::TestContext &testCtx)
                 usageFlags,                          //  VkImageUsageFlags       usage;
                 VK_SHARING_MODE_EXCLUSIVE,           //  VkSharingMode           sharingMode;
                 0u,                                  //  uint32_t                queueFamilyIndexCount;
-                DE_NULL,                             //  const uint32_t*         pQueueFamilyIndices;
+                nullptr,                             //  const uint32_t*         pQueueFamilyIndices;
                 VK_IMAGE_LAYOUT_UNDEFINED,           //  VkImageLayout           initialLayout;
             };
 
