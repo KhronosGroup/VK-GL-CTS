@@ -907,6 +907,18 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderAtomicInt64Features.pNext;
 	}
 
+#if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceShaderBfloat16FeaturesKHR physicalDeviceShaderBfloat16FeaturesKHR;
+	deMemset(&physicalDeviceShaderBfloat16FeaturesKHR, 0, sizeof(physicalDeviceShaderBfloat16FeaturesKHR));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_bfloat16"))
+	{
+		physicalDeviceShaderBfloat16FeaturesKHR.sType = getStructureType<VkPhysicalDeviceShaderBfloat16FeaturesKHR>();
+		*nextPtr = &physicalDeviceShaderBfloat16FeaturesKHR;
+		nextPtr  = &physicalDeviceShaderBfloat16FeaturesKHR.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
 	vk::VkPhysicalDeviceShaderClockFeaturesKHR physicalDeviceShaderClockFeaturesKHR;
 	deMemset(&physicalDeviceShaderClockFeaturesKHR, 0, sizeof(physicalDeviceShaderClockFeaturesKHR));
 
@@ -2678,6 +2690,17 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 			result = false;
 		}
 	}
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_bfloat16")) )
+	{
+		if ( ( physicalDeviceShaderBfloat16FeaturesKHR.shaderBFloat16Type == VK_FALSE ) && ( physicalDeviceShaderBfloat16FeaturesKHR.shaderBFloat16CooperativeMatrix == VK_FALSE || physicalDeviceShaderBfloat16FeaturesKHR.shaderBFloat16DotProduct == VK_FALSE ) )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderBFloat16Type or shaderBFloat16CooperativeMatrix,shaderBFloat16DotProduct not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
 
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_clock")) )
 	{

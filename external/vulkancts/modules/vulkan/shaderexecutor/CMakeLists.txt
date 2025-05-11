@@ -31,6 +31,10 @@ set(DEQP_VK_VKSC_SHADEREXECUTOR_SRCS
 set(DEQP_VK_SHADEREXECUTOR_SRCS
 	vktShaderExpectAssumeTests.cpp
 	vktShaderExpectAssumeTests.hpp
+	vktShaderBFloat16Tests.hpp
+	vktShaderBFloat16Tests.cpp
+	vktShaderBFloat16DotTests.cpp
+	vktShaderBFloat16ConstantTests.cpp
 )
 
 PCH(DEQP_VK_SHADEREXECUTOR_SRCS ../pch.cpp)

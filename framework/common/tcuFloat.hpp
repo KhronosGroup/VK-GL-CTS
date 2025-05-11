@@ -191,7 +191,9 @@ typedef Float<uint32_t, 8, 23, 127, FLOAT_HAS_SIGN | FLOAT_SUPPORT_DENORM>
     Float32; //!< IEEE 754 32-bit floating-point value
 typedef Float<uint64_t, 11, 52, 1023, FLOAT_HAS_SIGN | FLOAT_SUPPORT_DENORM>
     Float64; //!< IEEE 754 64-bit floating-point value
-
+typedef Float<uint16_t, 8, 7, 127, FLOAT_HAS_SIGN | FLOAT_SUPPORT_DENORM>
+    BrainFloat16; //!< IEEE 754-2008 16-bit floating-point value
+                  //
 typedef Float<uint16_t, 5, 10, 15, FLOAT_HAS_SIGN>
     Float16Denormless; //!< IEEE 754-2008 16-bit floating-point value without denormalized support
 

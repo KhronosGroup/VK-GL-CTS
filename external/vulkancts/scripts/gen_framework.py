@@ -45,6 +45,7 @@ DEFAULT_OUTPUT_DIR = { "" : os.path.join(os.path.dirname(__file__), "..", "frame
 
 EXTENSIONS_TO_READ_FROM_XML_NOT_JSON = """
 VK_KHR_cooperative_matrix
+VK_KHR_shader_bfloat16
 VK_KHR_video_encode_av1
 VK_KHR_video_encode_quantization_map
 """.split()
@@ -2489,6 +2490,12 @@ def writeTypeUtil (api, filename):
                     return True
             return False
 
+        def hasBitField (type):
+            for member in type.members:
+                if member.fieldWidth:
+                    return True
+            return False
+
         def hasCompositeMember (type):
             for member in type.members:
                 if member.pointer is not None and '*' not in member.pointer:
@@ -2501,7 +2508,8 @@ def writeTypeUtil (api, filename):
         type.members[0].type != "VkStructureType" and \
         not type.name in QUERY_RESULT_TYPES and \
         not hasArrayMember(type) and \
-        not hasCompositeMember(type)
+        not hasCompositeMember(type) and \
+        not hasBitField(type)
 
     def gen ():
         for type in api.compositeTypes:
@@ -3824,7 +3832,14 @@ def writeMandatoryFeatures(api, filename):
             for i, feature in enumerate(v[1]):
                 if i != 0:
                     condition = condition + ' && '
-                condition = condition + '( ' + structName + '.' + feature + ' == VK_FALSE )'
+                    # Here we do the "or"
+                features2 = feature.split(',')
+                condition2 = ""
+                for i2, feature2 in enumerate(features2):
+                    if i2 != 0:
+                        condition2 = condition2 + ' || '
+                    condition2 = condition2 + structName + '.' + feature2 + ' == VK_FALSE'
+                condition = condition + '( ' + condition2 + ' )'
             condition = condition + ' )'
             stream.append('\t\t' + condition)
         featureSet = " or ".join(v[1])

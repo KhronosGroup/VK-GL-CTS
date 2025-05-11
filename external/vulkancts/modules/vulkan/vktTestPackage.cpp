@@ -121,6 +121,7 @@
 #include "vktReconvergenceTests.hpp"
 #include "vktMeshShaderTests.hpp"
 #include "vktFragmentShadingBarycentricTests.hpp"
+#include "vktShaderBFloat16Tests.hpp"
 
 #ifndef DEQP_EXCLUDE_VK_VIDEO_TESTS
 #include "vktVideoTests.hpp"
@@ -1132,6 +1133,7 @@ void createGlslTests(tcu::TestCaseGroup *glslTests)
     glslTests->addChild(sr::createDiscardTests(testCtx));
 #ifndef CTS_USES_VULKANSC
     glslTests->addChild(sr::createDemoteTests(testCtx));
+    glslTests->addChild(shaderexecutor::createBFloat16Tests(testCtx));
 #endif // CTS_USES_VULKANSC
     glslTests->addChild(sr::createIndexingTests(testCtx));
     glslTests->addChild(sr::createShaderInvarianceTests(testCtx));

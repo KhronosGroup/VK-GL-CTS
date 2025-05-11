@@ -445,12 +445,71 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
                                       const VkPipelineMultisampleStateCreateInfo *multisampleStateCreateInfo,
                                       const VkPipelineDepthStencilStateCreateInfo *depthStencilStateCreateInfo,
                                       const VkPipelineColorBlendStateCreateInfo *colorBlendStateCreateInfo,
-                                      const VkPipelineDynamicStateCreateInfo *dynamicStateCreateInfo, const void *pNext)
+                                      const VkPipelineDynamicStateCreateInfo *dynamicStateCreateInfo, const void *pNext,
+                                      const VkPipelineVertexInputStateCreateInfo *vertexInputStateCreateInfo,
+                                      const VkPipelineInputAssemblyStateCreateInfo *inputAssemblyStateCreateInfo)
 {
     // Disable rasterization if no fragment shader info is found in pipelineShaderStageParams.
     const auto fragFound =
         std::any_of(begin(pipelineShaderStageParams), end(pipelineShaderStageParams), isFragShaderInfo);
     const VkBool32 disableRasterization = (!fragFound);
+
+    const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfoDefault = {
+        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                            sType
+        nullptr,                                                     // const void*                                pNext
+        0u,                                                          // VkPipelineInputAssemblyStateCreateFlags    flags
+        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, // VkPrimitiveTopology                        topology
+        VK_FALSE                             // VkBool32                                   primitiveRestartEnable
+    };
+    const VkPipelineInputAssemblyStateCreateInfo *pInputAssemblyState =
+        inputAssemblyStateCreateInfo ? inputAssemblyStateCreateInfo : &inputAssemblyStateCreateInfoDefault;
+    if (dynamicStateCreateInfo)
+    {
+        for (uint32_t i = 0u; i < dynamicStateCreateInfo->dynamicStateCount; ++i)
+        {
+            if (VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY_EXT == dynamicStateCreateInfo->pDynamicStates[i])
+            {
+                pInputAssemblyState = nullptr;
+                break;
+            }
+        }
+    }
+
+    const VkVertexInputBindingDescription vertexInputBindingDescription = {
+        0u,                          // uint32_t             binding
+        sizeof(tcu::Vec4),           // uint32_t             stride
+        VK_VERTEX_INPUT_RATE_VERTEX, // VkVertexInputRate    inputRate
+    };
+
+    const VkVertexInputAttributeDescription vertexInputAttributeDescription = {
+        0u,                            // uint32_t    location
+        0u,                            // uint32_t    binding
+        VK_FORMAT_R32G32B32A32_SFLOAT, // VkFormat    format
+        0u                             // uint32_t    offset
+    };
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfoDefault = {
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType
+        nullptr,                                                   // const void*                                 pNext
+        (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags       flags
+        1u,                              // uint32_t                                    vertexBindingDescriptionCount
+        &vertexInputBindingDescription,  // const VkVertexInputBindingDescription*      pVertexBindingDescriptions
+        1u,                              // uint32_t                                    vertexAttributeDescriptionCount
+        &vertexInputAttributeDescription // const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
+    };
+    const VkPipelineVertexInputStateCreateInfo *pVertexInputState =
+        vertexInputStateCreateInfo ? vertexInputStateCreateInfo : &vertexInputStateCreateInfoDefault;
+    if (dynamicStateCreateInfo)
+    {
+        for (uint32_t i = 0u; i < dynamicStateCreateInfo->dynamicStateCount; ++i)
+        {
+            if (VK_DYNAMIC_STATE_VERTEX_INPUT_EXT == dynamicStateCreateInfo->pDynamicStates[i])
+            {
+                pInputAssemblyState = nullptr;
+                break;
+            }
+        }
+    }
 
     VkPipelineViewportStateCreateInfo viewportStateCreateInfo = initVulkanStructure();
     viewportStateCreateInfo.viewportCount                     = static_cast<uint32_t>(viewports.size());
@@ -498,8 +557,8 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         static_cast<uint32_t>(
             pipelineShaderStageParams.size()),     // uint32_t                                         stageCount
         de::dataOrNull(pipelineShaderStageParams), // const VkPipelineShaderStageCreateInfo*           pStages
-        nullptr,                                   // const VkPipelineVertexInputStateCreateInfo*      pVertexInputState
-        nullptr,                  // const VkPipelineInputAssemblyStateCreateInfo*    pInputAssemblyState
+        pVertexInputState,                         // const VkPipelineVertexInputStateCreateInfo*      pVertexInputState
+        pInputAssemblyState,      // const VkPipelineInputAssemblyStateCreateInfo*    pInputAssemblyState
         nullptr,                  // const VkPipelineTessellationStateCreateInfo*     pTessellationState
         &viewportStateCreateInfo, // const VkPipelineViewportStateCreateInfo*         pViewportState
         rasterizationStateCreateInfo ?
