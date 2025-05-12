@@ -1998,9 +1998,9 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentDensityMap2F
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_QCOM;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_EXT;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentDensityMapPropertiesEXT> (void)
@@ -2013,9 +2013,9 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentDensityMap2P
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_QCOM;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_EXT;
 }
 
 template<> VkStructureType getStructureType<VkRenderPassFragmentDensityMapCreateInfoEXT> (void)
@@ -2023,9 +2023,9 @@ template<> VkStructureType getStructureType<VkRenderPassFragmentDensityMapCreate
 	return VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_CREATE_INFO_EXT;
 }
 
-template<> VkStructureType getStructureType<VkSubpassFragmentDensityMapOffsetEndInfoQCOM> (void)
+template<> VkStructureType getStructureType<VkRenderPassFragmentDensityMapOffsetEndInfoEXT> (void)
 {
-	return VK_STRUCTURE_TYPE_SUBPASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_QCOM;
+	return VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceScalarBlockLayoutFeatures> (void)
@@ -2886,6 +2886,11 @@ template<> VkStructureType getStructureType<VkMutableDescriptorTypeCreateInfoEXT
 template<> VkStructureType getStructureType<VkPhysicalDeviceDepthClipControlFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_CONTROL_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_DEVICE_MEMORY_FEATURES_EXT;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT> (void)
@@ -3923,6 +3928,11 @@ template<> VkStructureType getStructureType<VkRenderingInfo> (void)
 	return VK_STRUCTURE_TYPE_RENDERING_INFO;
 }
 
+template<> VkStructureType getStructureType<VkRenderingEndInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_RENDERING_END_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkRenderingAttachmentInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -4913,6 +4923,11 @@ template<> VkStructureType getStructureType<VkMemoryMapPlacedInfoEXT> (void)
 	return VK_STRUCTURE_TYPE_MEMORY_MAP_PLACED_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderBfloat16FeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_BFLOAT16_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceRawAccessChainsFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV;
@@ -4996,5 +5011,65 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceCooperativeVectorPro
 template<> VkStructureType getStructureType<VkConvertCooperativeVectorMatrixInfoNV> (void)
 {
 	return VK_STRUCTURE_TYPE_CONVERT_COOPERATIVE_VECTOR_MATRIX_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceTileShadingFeaturesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_SHADING_FEATURES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceTileShadingPropertiesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_SHADING_PROPERTIES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkRenderPassTileShadingCreateInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_RENDER_PASS_TILE_SHADING_CREATE_INFO_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPerTileBeginInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PER_TILE_BEGIN_INFO_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPerTileEndInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PER_TILE_END_INFO_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkDispatchTileInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_DISPATCH_TILE_INFO_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkSetPresentConfigNV> (void)
+{
+	return VK_STRUCTURE_TYPE_SET_PRESENT_CONFIG_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePresentMeteringFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_METERING_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkExternalComputeQueueDeviceCreateInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_EXTERNAL_COMPUTE_QUEUE_DEVICE_CREATE_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkExternalComputeQueueCreateInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_EXTERNAL_COMPUTE_QUEUE_CREATE_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkExternalComputeQueueDataParamsNV> (void)
+{
+	return VK_STRUCTURE_TYPE_EXTERNAL_COMPUTE_QUEUE_DATA_PARAMS_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceExternalComputeQueuePropertiesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_COMPUTE_QUEUE_PROPERTIES_NV;
 }
 

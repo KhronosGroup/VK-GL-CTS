@@ -102,6 +102,9 @@ public:
     static const MemoryRequirement NonLocal;
     static const MemoryRequirement DeviceAddress;
     static const MemoryRequirement DeviceAddressCaptureReplay;
+#ifndef CTS_USES_VULKANSC
+    static const MemoryRequirement ZeroInitialize;
+#endif // CTS_USES_VULKANSC
 
     inline MemoryRequirement operator|(MemoryRequirement requirement) const
     {
@@ -136,6 +139,7 @@ private:
         FLAG_NON_LOCAL                     = 1u << 6u,
         FLAG_DEVICE_ADDRESS                = 1u << 7u,
         FLAG_DEVICE_ADDRESS_CAPTURE_REPLAY = 1u << 8u,
+        FLAG_ZERO_INITIALIZE               = 1u << 9u,
     };
 };
 

@@ -689,6 +689,7 @@ tcu::Format::Bitfield<32>	getFrameBoundaryFlagsEXTStr									(VkFrameBoundaryFl
 tcu::Format::Bitfield<32>	getPresentScalingFlagsEXTStr								(VkPresentScalingFlagsEXT value);
 tcu::Format::Bitfield<32>	getPresentGravityFlagsEXTStr								(VkPresentGravityFlagsEXT value);
 tcu::Format::Bitfield<32>	getShaderCreateFlagsEXTStr									(VkShaderCreateFlagsEXT value);
+tcu::Format::Bitfield<32>	getTileShadingRenderPassFlagsQCOMStr						(VkTileShadingRenderPassFlagsQCOM value);
 tcu::Format::Bitfield<64>	getPhysicalDeviceSchedulingControlsFlagsARMStr				(VkPhysicalDeviceSchedulingControlsFlagsARM value);
 tcu::Format::Bitfield<32>	getVideoCodecOperationFlagsKHRStr							(VkVideoCodecOperationFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoCapabilityFlagsKHRStr								(VkVideoCapabilityFlagsKHR value);
@@ -1243,12 +1244,12 @@ std::ostream&	operator<<	(std::ostream& s, const VkImageStencilUsageCreateInfo& 
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceMemoryOverallocationCreateInfoAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMapFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2FeaturesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMapPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2PropertiesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassFragmentDensityMapCreateInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkSubpassFragmentDensityMapOffsetEndInfoQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRenderPassFragmentDensityMapOffsetEndInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceScalarBlockLayoutFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceProtectedCapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceUniformBufferStandardLayoutFeatures& value);
@@ -1441,6 +1442,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMutableDescript
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeListEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDepthClipControlFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkGeneratedCommandsPipelineInfoEXT& value);
@@ -1670,6 +1672,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkDrmFormatModifierProperties2E
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferFormatProperties2ANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRenderingCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderingInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRenderingEndInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderingAttachmentInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderingFragmentShadingRateAttachmentInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderingFragmentDensityMapAttachmentInfoEXT& value);
@@ -1878,6 +1881,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderAtomicFlo
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMapMemoryPlacedFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMapMemoryPlacedPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryMapPlacedInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderBfloat16FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRawAccessChainsFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCommandBufferInheritanceFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageAlignmentControlFeaturesMESA& value);
@@ -1896,6 +1900,18 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeVect
 std::ostream&	operator<<	(std::ostream& s, const VkCooperativeVectorPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeVectorPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkConvertCooperativeVectorMatrixInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceTileShadingFeaturesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceTileShadingPropertiesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRenderPassTileShadingCreateInfoQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPerTileBeginInfoQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPerTileEndInfoQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDispatchTileInfoQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSetPresentConfigNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentMeteringFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExternalComputeQueueDeviceCreateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExternalComputeQueueCreateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExternalComputeQueueDataParamsNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalComputeQueuePropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SpsVuiFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264HrdParameters& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SequenceParameterSetVui& value);

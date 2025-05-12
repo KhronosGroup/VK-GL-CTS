@@ -1325,6 +1325,16 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceYcbcrImageArraysFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT physicalDeviceZeroInitializeDeviceMemoryFeaturesEXT;
+	deMemset(&physicalDeviceZeroInitializeDeviceMemoryFeaturesEXT, 0, sizeof(physicalDeviceZeroInitializeDeviceMemoryFeaturesEXT));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_zero_initialize_device_memory"))
+	{
+		physicalDeviceZeroInitializeDeviceMemoryFeaturesEXT.sType = getStructureType<VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT>();
+		*nextPtr = &physicalDeviceZeroInitializeDeviceMemoryFeaturesEXT;
+		nextPtr  = &physicalDeviceZeroInitializeDeviceMemoryFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR physicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR;
 	deMemset(&physicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR, 0, sizeof(physicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR));
 
@@ -2333,6 +2343,15 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceYcbcrImageArraysFeaturesEXT.ycbcrImageArrays == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature ycbcrImageArrays not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_zero_initialize_device_memory")) )
+	{
+		if ( physicalDeviceZeroInitializeDeviceMemoryFeaturesEXT.zeroInitializeDeviceMemory == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature zeroInitializeDeviceMemory not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

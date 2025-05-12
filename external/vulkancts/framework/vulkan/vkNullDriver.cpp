@@ -395,6 +395,16 @@ public:
 #endif // CTS_USES_VULKANSC
 };
 
+#ifndef CTS_USES_VULKANSC
+class ExternalComputeQueueNV
+{
+public:
+    ExternalComputeQueueNV(VkDevice, const VkExternalComputeQueueCreateInfoNV *)
+    {
+    }
+};
+#endif // CTS_USES_VULKANSC
+
 class RenderPass
 {
 public:

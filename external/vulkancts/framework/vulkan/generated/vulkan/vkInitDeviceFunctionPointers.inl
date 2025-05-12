@@ -818,6 +818,7 @@ if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 3, 0))
     m_vk.cmdEndRendering = (CmdEndRenderingFunc) GET_PROC_ADDR("vkCmdEndRendering");
 if (!m_vk.cmdEndRendering)
     m_vk.cmdEndRendering = (CmdEndRenderingFunc) GET_PROC_ADDR("vkCmdEndRenderingKHR");
+m_vk.cmdEndRendering2EXT = (CmdEndRendering2EXTFunc) GET_PROC_ADDR("vkCmdEndRendering2EXT");
 m_vk.getDescriptorSetLayoutHostMappingInfoVALVE = (GetDescriptorSetLayoutHostMappingInfoVALVEFunc) GET_PROC_ADDR("vkGetDescriptorSetLayoutHostMappingInfoVALVE");
 m_vk.getDescriptorSetHostMappingVALVE = (GetDescriptorSetHostMappingVALVEFunc) GET_PROC_ADDR("vkGetDescriptorSetHostMappingVALVE");
 m_vk.createMicromapEXT = (CreateMicromapEXTFunc) GET_PROC_ADDR("vkCreateMicromapEXT");
@@ -913,3 +914,8 @@ m_vk.getMemoryMetalHandleEXT = (GetMemoryMetalHandleEXTFunc) GET_PROC_ADDR("vkGe
 m_vk.getMemoryMetalHandlePropertiesEXT = (GetMemoryMetalHandlePropertiesEXTFunc) GET_PROC_ADDR("vkGetMemoryMetalHandlePropertiesEXT");
 m_vk.convertCooperativeVectorMatrixNV = (ConvertCooperativeVectorMatrixNVFunc) GET_PROC_ADDR("vkConvertCooperativeVectorMatrixNV");
 m_vk.cmdConvertCooperativeVectorMatrixNV = (CmdConvertCooperativeVectorMatrixNVFunc) GET_PROC_ADDR("vkCmdConvertCooperativeVectorMatrixNV");
+m_vk.cmdDispatchTileQCOM = (CmdDispatchTileQCOMFunc) GET_PROC_ADDR("vkCmdDispatchTileQCOM");
+m_vk.cmdBeginPerTileExecutionQCOM = (CmdBeginPerTileExecutionQCOMFunc) GET_PROC_ADDR("vkCmdBeginPerTileExecutionQCOM");
+m_vk.cmdEndPerTileExecutionQCOM = (CmdEndPerTileExecutionQCOMFunc) GET_PROC_ADDR("vkCmdEndPerTileExecutionQCOM");
+m_vk.createExternalComputeQueueNV = (CreateExternalComputeQueueNVFunc) GET_PROC_ADDR("vkCreateExternalComputeQueueNV");
+m_vk.destroyExternalComputeQueueNV = (DestroyExternalComputeQueueNVFunc) GET_PROC_ADDR("vkDestroyExternalComputeQueueNV");

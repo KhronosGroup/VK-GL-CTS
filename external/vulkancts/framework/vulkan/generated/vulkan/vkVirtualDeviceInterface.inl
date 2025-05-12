@@ -465,6 +465,7 @@ virtual void				destroyCudaFunctionNV									(VkDevice device, VkCudaFunctionNV
 virtual void				cmdCudaLaunchKernelNV									(VkCommandBuffer commandBuffer, const VkCudaLaunchInfoNV* pLaunchInfo) const = 0;
 virtual void				cmdBeginRendering										(VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo) const = 0;
 virtual void				cmdEndRendering											(VkCommandBuffer commandBuffer) const = 0;
+virtual void				cmdEndRendering2EXT										(VkCommandBuffer commandBuffer, const VkRenderingEndInfoEXT* pRenderingEndInfo) const = 0;
 virtual void				getDescriptorSetLayoutHostMappingInfoVALVE				(VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping) const = 0;
 virtual void				getDescriptorSetHostMappingVALVE						(VkDevice device, VkDescriptorSet descriptorSet, void** ppData) const = 0;
 virtual VkResult			createMicromapEXT										(VkDevice device, const VkMicromapCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkMicromapEXT* pMicromap) const = 0;
@@ -528,3 +529,8 @@ virtual VkResult			getMemoryMetalHandleEXT									(VkDevice device, const VkMem
 virtual VkResult			getMemoryMetalHandlePropertiesEXT						(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHandle, VkMemoryMetalHandlePropertiesEXT* pMemoryMetalHandleProperties) const = 0;
 virtual VkResult			convertCooperativeVectorMatrixNV						(VkDevice device, const VkConvertCooperativeVectorMatrixInfoNV* pInfo) const = 0;
 virtual void				cmdConvertCooperativeVectorMatrixNV						(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkConvertCooperativeVectorMatrixInfoNV* pInfos) const = 0;
+virtual void				cmdDispatchTileQCOM										(VkCommandBuffer commandBuffer) const = 0;
+virtual void				cmdBeginPerTileExecutionQCOM							(VkCommandBuffer commandBuffer, const VkPerTileBeginInfoQCOM* pPerTileBeginInfo) const = 0;
+virtual void				cmdEndPerTileExecutionQCOM								(VkCommandBuffer commandBuffer, const VkPerTileEndInfoQCOM* pPerTileEndInfo) const = 0;
+virtual VkResult			createExternalComputeQueueNV							(VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkExternalComputeQueueNV* pExternalQueue) const = 0;
+virtual void				destroyExternalComputeQueueNV							(VkDevice device, VkExternalComputeQueueNV externalQueue, const VkAllocationCallbacks* pAllocator) const = 0;
