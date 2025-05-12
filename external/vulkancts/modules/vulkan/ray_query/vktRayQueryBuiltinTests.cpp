@@ -4222,8 +4222,10 @@ void TestConfigurationNullASStruct::checkSupport(Context &context, const TestPar
     const auto physicalDevice       = context.getPhysicalDevice();
     const auto &supportedExtensions = enumerateCachedDeviceExtensionProperties(vki, physicalDevice);
 
-    if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_robustness2")))
-        TCU_THROW(NotSupportedError, "VK_EXT_robustness2 not supported");
+    if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_KHR_robustness2")) &&
+        !isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_robustness2")))
+
+        TCU_THROW(NotSupportedError, "VK_KHR_robustness2 and VK_EXT_robustness2 not supported");
 
     VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = initVulkanStructure();
     VkPhysicalDeviceFeatures2 features2                        = initVulkanStructure(&robustness2Features);
@@ -4294,7 +4296,8 @@ void TestConfigurationNullASStruct::prepareTestEnvironment(Context &context)
     features2.pNext                       = &robustness2Features;
 
     // Add more needed extensions.
-    deviceExtensions.push_back("VK_EXT_robustness2");
+    deviceExtensions.push_back(context.isDeviceFunctionalitySupported("VK_KHR_robustness2") ? "VK_KHR_robustness2" :
+                                                                                              "VK_EXT_robustness2");
     if (accelStructSupport)
     {
         // Not promoted yet in Vulkan 1.1.

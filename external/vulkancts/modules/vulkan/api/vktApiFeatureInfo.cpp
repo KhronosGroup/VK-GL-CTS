@@ -1859,31 +1859,34 @@ tcu::TestStatus validateLimitsLineRasterization(Context &context)
 
 void checkSupportRobustness2(Context &context)
 {
-    context.requireDeviceFunctionality("VK_EXT_robustness2");
+    if (!context.isDeviceFunctionalitySupported("VK_EXT_robustness2") &&
+        !context.isDeviceFunctionalitySupported("VK_KHR_robustness2"))
+
+        TCU_THROW(NotSupportedError, "VK_EXT_robustness2 and VK_KHR_robustness2 are not supported");
 }
 
 tcu::TestStatus validateLimitsRobustness2(Context &context)
 {
-    const InstanceInterface &vki                                             = context.getInstanceInterface();
-    const VkPhysicalDevice physicalDevice                                    = context.getPhysicalDevice();
-    const VkPhysicalDeviceRobustness2PropertiesEXT &robustness2PropertiesEXT = context.getRobustness2Properties();
-    VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features               = initVulkanStructure();
-    VkPhysicalDeviceFeatures2 features2 = initVulkanStructure(&robustness2Features);
+    const InstanceInterface &vki                                          = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice                                 = context.getPhysicalDevice();
+    const VkPhysicalDeviceRobustness2PropertiesEXT &robustness2Properties = context.getRobustness2Properties();
+    VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features            = initVulkanStructure();
+    VkPhysicalDeviceFeatures2 features2                                   = initVulkanStructure(&robustness2Features);
 
     vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 
     if (robustness2Features.robustBufferAccess2 && !features2.features.robustBufferAccess)
         return tcu::TestStatus::fail("If robustBufferAccess2 is enabled then robustBufferAccess must also be enabled");
 
-    if (robustness2PropertiesEXT.robustStorageBufferAccessSizeAlignment != 1 &&
-        robustness2PropertiesEXT.robustStorageBufferAccessSizeAlignment != 4)
+    if (robustness2Properties.robustStorageBufferAccessSizeAlignment != 1 &&
+        robustness2Properties.robustStorageBufferAccessSizeAlignment != 4)
         return tcu::TestStatus::fail(
-            "robustness2PropertiesEXT.robustStorageBufferAccessSizeAlignment value must be either 1 or 4.");
+            "robustness2Properties.robustStorageBufferAccessSizeAlignment value must be either 1 or 4.");
 
-    if (!de::inRange(robustness2PropertiesEXT.robustUniformBufferAccessSizeAlignment, (VkDeviceSize)1u,
+    if (!de::inRange(robustness2Properties.robustUniformBufferAccessSizeAlignment, (VkDeviceSize)1u,
                      (VkDeviceSize)256u) ||
-        !deIsPowerOfTwo64(robustness2PropertiesEXT.robustUniformBufferAccessSizeAlignment))
-        return tcu::TestStatus::fail("robustness2PropertiesEXT.robustUniformBufferAccessSizeAlignment must be a power "
+        !deIsPowerOfTwo64(robustness2Properties.robustUniformBufferAccessSizeAlignment))
+        return tcu::TestStatus::fail("robustness2Properties.robustUniformBufferAccessSizeAlignment must be a power "
                                      "of two in the range [1, 256]");
 
     return tcu::TestStatus::pass("pass");

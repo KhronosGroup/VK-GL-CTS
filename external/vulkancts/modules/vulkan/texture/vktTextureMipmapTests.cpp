@@ -2158,7 +2158,12 @@ void Texture2DImageViewMinLodIntTexCoordTest::checkSupport(Context &context) con
     DE_ASSERT(m_params.testType > util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD);
 
     context.requireDeviceFunctionality("VK_EXT_image_view_min_lod");
-    context.requireDeviceFunctionality("VK_EXT_robustness2");
+
+    if (!context.isDeviceFunctionalitySupported("VK_KHR_robustness2") &&
+        !context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+
+        TCU_THROW(NotSupportedError, "VK_KHR_robustness2 and VK_EXT_robustness2 are not supported");
+
     vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures;
     imageViewMinLodFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT;
     imageViewMinLodFeatures.pNext = nullptr;
@@ -2177,7 +2182,7 @@ void Texture2DImageViewMinLodIntTexCoordTest::checkSupport(Context &context) con
         TCU_THROW(NotSupportedError, "VK_EXT_image_view_min_lod minLod feature not supported");
 
     if (robustness2Features.robustImageAccess2 == false)
-        TCU_THROW(NotSupportedError, "VK_EXT_robustness2 robustImageAccess2 feature not supported");
+        TCU_THROW(NotSupportedError, "robustImageAccess2 feature not supported");
 }
 
 TestInstance *Texture2DImageViewMinLodIntTexCoordTest::createInstance(Context &context) const
@@ -2332,7 +2337,12 @@ void Texture3DImageViewMinLodIntTexCoordTest::checkSupport(Context &context) con
     DE_ASSERT(m_params.testType > util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD);
 
     context.requireDeviceFunctionality("VK_EXT_image_view_min_lod");
-    context.requireDeviceFunctionality("VK_EXT_robustness2");
+
+    if (!context.isDeviceFunctionalitySupported("VK_KHR_robustness2") &&
+        !context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+
+        TCU_THROW(NotSupportedError, "VK_KHR_robustness2 and VK_EXT_robustness2 are not supported");
+
     vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures;
     imageViewMinLodFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT;
     imageViewMinLodFeatures.pNext = nullptr;
@@ -2351,7 +2361,7 @@ void Texture3DImageViewMinLodIntTexCoordTest::checkSupport(Context &context) con
         TCU_THROW(NotSupportedError, "VK_EXT_image_view_min_lod minLod feature not supported");
 
     if (robustness2Features.robustImageAccess2 == false)
-        TCU_THROW(NotSupportedError, "VK_EXT_robustness2 robustImageAccess2 feature not supported");
+        TCU_THROW(NotSupportedError, "robustImageAccess2 feature not supported");
 }
 
 TestInstance *Texture3DImageViewMinLodIntTexCoordTest::createInstance(Context &context) const
@@ -2505,7 +2515,10 @@ void TextureGatherMinLodTest::checkSupport(Context &context) const
 
     if (m_params.needsRobustness2())
     {
-        context.requireDeviceFunctionality("VK_EXT_robustness2");
+        if (!context.isDeviceFunctionalitySupported("VK_KHR_robustness2") &&
+            !context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+
+            TCU_THROW(NotSupportedError, "VK_KHR_robustness2 and VK_EXT_robustness2 are not supported");
 
         VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = initVulkanStructure();
         VkPhysicalDeviceFeatures2 features2                        = initVulkanStructure(&robustness2Features);
@@ -2608,7 +2621,7 @@ public:
         };
 
         const char *extensions[] = {
-            "VK_EXT_robustness2",
+            context.isDeviceFunctionalitySupported("VK_KHR_robustness2") ? "VK_KHR_robustness2" : "VK_EXT_robustness2",
             "VK_EXT_image_view_min_lod",
         };
 
