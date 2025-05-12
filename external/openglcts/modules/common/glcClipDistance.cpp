@@ -461,6 +461,12 @@ bool glcts::ClipDistance::CoverageTest::ClipDistancesValuePassing(const glw::Fun
      attribute and with a configured 1 x 1 pixel size framebuffer. Using
      glReadPixels function, check that point's fragments were not discarded. */
 
+    /* Enable all clip distances, since we will be using all of them. */
+    for (glw::GLint i = 0; i < m_gl_max_clip_distances_value; ++i)
+    {
+        gl.enable(GL_CLIP_DISTANCE0 + i);
+    }
+
     /* Creating red-color-only frambuffer. */
     glcts::ClipDistance::Utility::Framebuffer framebuffer(gl, 1, 1);
 
@@ -507,6 +513,12 @@ bool glcts::ClipDistance::CoverageTest::ClipDistancesValuePassing(const glw::Fun
     {
         m_testCtx.getLog() << tcu::TestLog::Message << "ReadPixels error.\n" << tcu::TestLog::EndMessage;
         return false;
+    }
+
+    /* Disable all clip distances to clean up */
+    for (glw::GLint i = 0; i < m_gl_max_clip_distances_value; ++i)
+    {
+        gl.disable(GL_CLIP_DISTANCE0 + i);
     }
 
     /* Check results. */
