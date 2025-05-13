@@ -655,7 +655,7 @@ BaseTestInstance::BaseTestInstance(Context &context, const CaseDefinition caseDe
                                         *m_descriptorSetLayout))
     , m_renderPass(makeRenderPassWithoutAttachments(m_context.getDeviceInterface(), m_context.getDevice()))
     , m_framebuffer(
-          makeFramebuffer(m_context.getDeviceInterface(), m_context.getDevice(), *m_renderPass, 0u, DE_NULL, 1u, 1u))
+          makeFramebuffer(m_context.getDeviceInterface(), m_context.getDevice(), *m_renderPass, 0u, nullptr, 1u, 1u))
     , m_pipelineLayout(
           makePipelineLayout(m_context.getDeviceInterface(), m_context.getDevice(), *m_descriptorSetLayout))
     , m_cmdPool(makeCommandPool(m_context.getDeviceInterface(), m_context.getDevice(),
@@ -690,14 +690,14 @@ BaseTestInstance::DrawResult BaseTestInstance::draw(const uint32_t vertexCount,
         GraphicsPipelineBuilder()
             .setPatchControlPoints(NUM_TESS_LEVELS)
             .setVertexInputSingleAttribute(m_vertexFormat, m_vertexStride)
-            .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("vert"), DE_NULL)
+            .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("vert"), nullptr)
             .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
-                       m_context.getBinaryCollection().get("tesc"), DE_NULL)
+                       m_context.getBinaryCollection().get("tesc"), nullptr)
             .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-                       m_context.getBinaryCollection().get(getProgramName("tese", winding, usePointMode)), DE_NULL)
+                       m_context.getBinaryCollection().get(getProgramName("tese", winding, usePointMode)), nullptr)
             .setShader(vk, device, VK_SHADER_STAGE_GEOMETRY_BIT,
                        m_context.getBinaryCollection().get(getProgramName("geom", usePointMode, geomPointSize)),
-                       DE_NULL)
+                       nullptr)
             .build(vk, device, *m_pipelineLayout, *m_renderPass));
 
     {
@@ -712,7 +712,7 @@ BaseTestInstance::DrawResult BaseTestInstance::draw(const uint32_t vertexCount,
 
     vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
     vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u,
-                             &m_descriptorSet.get(), 0u, DE_NULL);
+                             &m_descriptorSet.get(), 0u, nullptr);
     {
         const VkDeviceSize vertexBufferOffset = 0ull;
         vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &vertexBufferOffset);
@@ -726,7 +726,7 @@ BaseTestInstance::DrawResult BaseTestInstance::draw(const uint32_t vertexCount,
             VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *m_resultBuffer, 0ull, m_resultBufferSizeBytes);
 
         vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                              DE_NULL, 1u, &shaderWriteBarrier, 0u, DE_NULL);
+                              nullptr, 1u, &shaderWriteBarrier, 0u, nullptr);
     }
 
     endCommandBuffer(vk, *m_cmdBuffer);
@@ -955,12 +955,12 @@ tcu::TestStatus OuterEdgeIndexIndependenceTestInstance::iterate(void)
                     const char *const swizzleDesc =
                         m_caseDef.primitiveType == TESSPRIMITIVETYPE_TRIANGLES ? (outerEdgeIndex == 1 ? "(y, x, z)" :
                                                                                   outerEdgeIndex == 2 ? "(z, y, x)" :
-                                                                                                        DE_NULL) :
+                                                                                                        nullptr) :
                         m_caseDef.primitiveType == TESSPRIMITIVETYPE_QUADS     ? (outerEdgeIndex == 1 ? "(x, 0)" :
                                                                                   outerEdgeIndex == 2 ? "(y, 0)" :
                                                                                   outerEdgeIndex == 3 ? "(x, 0)" :
-                                                                                                        DE_NULL) :
-                                                                                 DE_NULL;
+                                                                                                        nullptr) :
+                                                                                 nullptr;
 
                     tcu::TestLog &log = m_context.getTestContext().getLog();
                     log << tcu::TestLog::Message << "Failure: the set of vertices on the " << edgeDesc.description()
@@ -1279,7 +1279,7 @@ inline Triangle makeTriangle(const PerPrimitive &primitive)
 template <typename IsTriangleRelevantT>
 bool compareTriangleSets(const PerPrimitiveVec &primitivesA, const PerPrimitiveVec &primitivesB, tcu::TestLog &log,
                          const IsTriangleRelevantT &isTriangleRelevant,
-                         const char *ignoredTriangleDescription = DE_NULL)
+                         const char *ignoredTriangleDescription = nullptr)
 {
     typedef LexCompare<Triangle, 3, VecLexLessThan<3>> TriangleLexLessThan;
     typedef std::set<Triangle, TriangleLexLessThan> TriangleSet;
@@ -1319,7 +1319,7 @@ bool compareTriangleSets(const PerPrimitiveVec &primitivesA, const PerPrimitiveV
             {
                 log << tcu::TestLog::Message
                     << "Failure: triangle sets in two cases are not equal (when ignoring triangle and vertex order"
-                    << (ignoredTriangleDescription == DE_NULL ? "" :
+                    << (ignoredTriangleDescription == nullptr ? "" :
                                                                 std::string() + ", and " + ignoredTriangleDescription)
                     << ")" << tcu::TestLog::EndMessage;
 
@@ -1558,7 +1558,7 @@ tcu::TestStatus InvarianceTestInstance::iterate(void)
         .update(vk, device);
 
     const Unique<VkRenderPass> renderPass(makeRenderPassWithoutAttachments(vk, device));
-    const Unique<VkFramebuffer> framebuffer(makeFramebuffer(vk, device, *renderPass, 0u, DE_NULL, 1u, 1u));
+    const Unique<VkFramebuffer> framebuffer(makeFramebuffer(vk, device, *renderPass, 0u, nullptr, 1u, 1u));
     const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
     const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
     const Unique<VkCommandBuffer> cmdBuffer(
@@ -1609,17 +1609,17 @@ tcu::TestStatus InvarianceTestInstance::iterate(void)
                         .setPatchControlPoints(NUM_TESS_LEVELS)
                         .setVertexInputSingleAttribute(vertexFormat, vertexStride)
                         .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("vert"),
-                                   DE_NULL)
+                                   nullptr)
                         .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
-                                   m_context.getBinaryCollection().get("tesc"), DE_NULL)
+                                   m_context.getBinaryCollection().get("tesc"), nullptr)
                         .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
                                    m_context.getBinaryCollection().get(
                                        getProgramName("tese", *windingIter, m_caseDef.usePointMode)),
-                                   DE_NULL)
+                                   nullptr)
                         .setShader(vk, device, VK_SHADER_STAGE_GEOMETRY_BIT,
                                    m_context.getBinaryCollection().get(
                                        getProgramName("geom", m_caseDef.usePointMode, geomPointSize)),
-                                   DE_NULL)
+                                   nullptr)
                         .build(vk, device, *pipelineLayout, *renderPass));
 
                 {
@@ -1634,7 +1634,7 @@ tcu::TestStatus InvarianceTestInstance::iterate(void)
 
                 vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
                 vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                                         &descriptorSet.get(), 0u, DE_NULL);
+                                         &descriptorSet.get(), 0u, nullptr);
                 {
                     const VkDeviceSize vertexBufferOffset = 0ull;
                     vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
@@ -1649,7 +1649,7 @@ tcu::TestStatus InvarianceTestInstance::iterate(void)
                                                 0ull, resultBufferSizeBytes);
 
                     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                          0u, 0u, DE_NULL, 1u, &shaderWriteBarrier, 0u, DE_NULL);
+                                          0u, 0u, nullptr, 1u, &shaderWriteBarrier, 0u, nullptr);
                 }
 
                 endCommandBuffer(vk, *cmdBuffer);
@@ -2031,7 +2031,7 @@ TestInstance *InvarianceTestCase::createInstance(Context &context) const
         return new InvariantInnerTriangleSetTestInstance(context, m_caseDef);
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -2304,7 +2304,7 @@ tcu::TestStatus test(Context &context, const CaseDefinition caseDef)
         .update(vk, device);
 
     const Unique<VkRenderPass> renderPass(makeRenderPassWithoutAttachments(vk, device));
-    const Unique<VkFramebuffer> framebuffer(makeFramebuffer(vk, device, *renderPass, 0u, DE_NULL, 1u, 1u));
+    const Unique<VkFramebuffer> framebuffer(makeFramebuffer(vk, device, *renderPass, 0u, nullptr, 1u, 1u));
     const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
     const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
     const Unique<VkCommandBuffer> cmdBuffer(
@@ -2314,11 +2314,11 @@ tcu::TestStatus test(Context &context, const CaseDefinition caseDef)
         GraphicsPipelineBuilder()
             .setPatchControlPoints(NUM_TESS_LEVELS)
             .setVertexInputSingleAttribute(vertexFormat, vertexStride)
-            .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("vert"), DE_NULL)
+            .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("vert"), nullptr)
             .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, context.getBinaryCollection().get("tesc"),
-                       DE_NULL)
+                       nullptr)
             .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-                       context.getBinaryCollection().get(getProgramName("tese", tessPointSize)), DE_NULL)
+                       context.getBinaryCollection().get(getProgramName("tese", tessPointSize)), nullptr)
             .build(vk, device, *pipelineLayout, *renderPass));
 
     for (int tessLevelCaseNdx = 0; tessLevelCaseNdx < numTessLevelCases; ++tessLevelCaseNdx)
@@ -2346,7 +2346,7 @@ tcu::TestStatus test(Context &context, const CaseDefinition caseDef)
 
         vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                                 &descriptorSet.get(), 0u, DE_NULL);
+                                 &descriptorSet.get(), 0u, nullptr);
         {
             const VkDeviceSize vertexBufferOffset = 0ull;
             vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
@@ -2360,7 +2360,7 @@ tcu::TestStatus test(Context &context, const CaseDefinition caseDef)
                 VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *resultBuffer, 0ull, resultBufferSizeBytes);
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                  DE_NULL, 1u, &shaderWriteBarrier, 0u, DE_NULL);
+                                  nullptr, 1u, &shaderWriteBarrier, 0u, nullptr);
         }
 
         endCommandBuffer(vk, *cmdBuffer);
@@ -2384,9 +2384,9 @@ tcu::TestStatus test(Context &context, const CaseDefinition caseDef)
 
             CompareFunc compare = (caseDef.caseType == CASETYPE_TESS_COORD_RANGE     ? compareTessCoordRange :
                                    caseDef.caseType == CASETYPE_ONE_MINUS_TESS_COORD ? compareOneMinusTessCoord :
-                                                                                       DE_NULL);
+                                                                                       nullptr);
 
-            DE_ASSERT(compare != DE_NULL);
+            DE_ASSERT(compare != nullptr);
 
             for (std::vector<tcu::Vec3>::const_iterator vertexIter = vertices.begin(); vertexIter != vertices.end();
                  ++vertexIter)

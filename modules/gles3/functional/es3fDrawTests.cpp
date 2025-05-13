@@ -454,7 +454,7 @@ void IndexGroup::init(void)
         const IndexTest &indexTest = tests[testNdx];
         tcu::TestCaseGroup *group  = (indexTest.storage == gls::DrawTestSpec::STORAGE_USER) ?
                                          ((indexTest.aligned) ? (userPtrGroup) : (unalignedUserPtrGroup)) :
-                                         ((indexTest.aligned) ? (bufferGroup) : (DE_NULL));
+                                         ((indexTest.aligned) ? (bufferGroup) : (nullptr));
 
         const std::string name = std::string("index_") + gls::DrawTestSpec::indexTypeToString(indexTest.type);
         const std::string desc = std::string("index ") + gls::DrawTestSpec::indexTypeToString(indexTest.type) + " in " +
@@ -731,21 +731,21 @@ void InstancedGridRenderTest::renderTo(sglr::Context &ctx, sglr::ShaderProgram &
     ctx.genBuffers(1, &positionBuf);
     ctx.bindBuffer(GL_ARRAY_BUFFER, positionBuf);
     ctx.bufferData(GL_ARRAY_BUFFER, sizeof(vertexPositions), vertexPositions, GL_STATIC_DRAW);
-    ctx.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    ctx.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     ctx.vertexAttribDivisor(posLocation, 0);
     ctx.enableVertexAttribArray(posLocation);
 
     ctx.genBuffers(1, &offsetBuf);
     ctx.bindBuffer(GL_ARRAY_BUFFER, offsetBuf);
     ctx.bufferData(GL_ARRAY_BUFFER, offsets.size() * sizeof(tcu::Vec4), &offsets[0], GL_STATIC_DRAW);
-    ctx.vertexAttribPointer(offsetLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    ctx.vertexAttribPointer(offsetLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     ctx.vertexAttribDivisor(offsetLocation, 1);
     ctx.enableVertexAttribArray(offsetLocation);
 
     ctx.genBuffers(1, &colorBuf);
     ctx.bindBuffer(GL_ARRAY_BUFFER, colorBuf);
     ctx.bufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(tcu::Vec4), &colors[0], GL_STATIC_DRAW);
-    ctx.vertexAttribPointer(colorLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    ctx.vertexAttribPointer(colorLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     ctx.vertexAttribDivisor(colorLocation, 1);
     ctx.enableVertexAttribArray(colorLocation);
 
@@ -763,7 +763,7 @@ void InstancedGridRenderTest::renderTo(sglr::Context &ctx, sglr::ShaderProgram &
 
     ctx.useProgram(programID);
     if (m_useIndices)
-        ctx.drawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, DE_NULL, m_gridSide * m_gridSide);
+        ctx.drawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, nullptr, m_gridSide * m_gridSide);
     else
         ctx.drawArraysInstanced(GL_TRIANGLES, 0, 6, m_gridSide * m_gridSide);
     ctx.useProgram(0);

@@ -369,7 +369,7 @@ tcu::TestStatus SharedLayoutCaseInstance::iterate(void)
     // Create descriptor set
     const vk::VkBufferCreateInfo params = {
         vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
-        DE_NULL,                                  // pNext
+        nullptr,                                  // pNext
         0u,                                       // flags
         bufferSize,                               // size
         vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,   // usage
@@ -399,7 +399,7 @@ tcu::TestStatus SharedLayoutCaseInstance::iterate(void)
 
     const vk::VkDescriptorSetAllocateInfo allocInfo = {
         vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                            // const void* pNext;
+        nullptr,                                            // const void* pNext;
         *descriptorPool,                                    // VkDescriptorPool descriptorPool;
         1u,                                                 // uint32_t descriptorSetCount;
         &descriptorSetLayout.get(),                         // const VkDescriptorSetLayout *pSetLayouts;
@@ -418,12 +418,12 @@ tcu::TestStatus SharedLayoutCaseInstance::iterate(void)
 
     const vk::VkPipelineLayoutCreateInfo pipelineLayoutParams = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                           // const void* pNext;
+        nullptr,                                           // const void* pNext;
         (vk::VkPipelineLayoutCreateFlags)0,                // VkPipelineLayoutCreateFlags flags;
         1u,                                                // uint32_t descriptorSetCount;
         &*descriptorSetLayout,                             // const VkDescriptorSetLayout* pSetLayouts;
         0u,                                                // uint32_t pushConstantRangeCount;
-        DE_NULL                                            // const VkPushConstantRange* pPushConstantRanges;
+        nullptr                                            // const VkPushConstantRange* pPushConstantRanges;
     };
     vk::Move<vk::VkPipelineLayout> pipelineLayout(createPipelineLayout(vk, device, &pipelineLayoutParams));
 
@@ -431,16 +431,16 @@ tcu::TestStatus SharedLayoutCaseInstance::iterate(void)
         createShaderModule(vk, device, m_context.getBinaryCollection().get("compute"), 0));
     const vk::VkPipelineShaderStageCreateInfo pipelineShaderStageParams = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                 // const void* pNext;
+        nullptr,                                                 // const void* pNext;
         (vk::VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags flags;
         vk::VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStage stage;
         *shaderModule,                                           // VkShaderModule module;
         "main",                                                  // const char* pName;
-        DE_NULL,                                                 // const VkSpecializationInfo* pSpecializationInfo;
+        nullptr,                                                 // const VkSpecializationInfo* pSpecializationInfo;
     };
     const vk::VkComputePipelineCreateInfo pipelineCreateInfo = {
         vk::VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                            // const void* pNext;
+        nullptr,                                            // const void* pNext;
         0,                                                  // VkPipelineCreateFlags flags;
         pipelineShaderStageParams,                          // VkPipelineShaderStageCreateInfo stage;
         *pipelineLayout,                                    // VkPipelineLayout layout;
@@ -459,7 +459,7 @@ tcu::TestStatus SharedLayoutCaseInstance::iterate(void)
     vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
 
     vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                             &descriptorSet.get(), 0u, DE_NULL);
+                             &descriptorSet.get(), 0u, nullptr);
 
     vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
 

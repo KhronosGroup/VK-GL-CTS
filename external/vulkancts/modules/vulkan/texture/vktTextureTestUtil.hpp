@@ -117,7 +117,7 @@ enum Program
 };
 
 void initializePrograms(vk::SourceCollections &programCollection, glu::Precision texCoordPrecision,
-                        const std::vector<Program> &programs, const char *texCoordSwizzle = DE_NULL,
+                        const std::vector<Program> &programs, const char *texCoordSwizzle = nullptr,
                         glu::Precision fragOutputPrecision = glu::Precision::PRECISION_MEDIUMP, bool unnormal = false);
 
 typedef de::SharedPtr<pipeline::TestTexture> TestTextureSp;
@@ -379,7 +379,7 @@ public:
 
     virtual void initPrograms(vk::SourceCollections &programCollection) const
     {
-        initializePrograms(programCollection, m_testsParameters.texCoordPrecision, m_testsParameters.programs, DE_NULL,
+        initializePrograms(programCollection, m_testsParameters.texCoordPrecision, m_testsParameters.programs, nullptr,
                            glu::PRECISION_MEDIUMP, m_testsParameters.unnormal);
     }
 

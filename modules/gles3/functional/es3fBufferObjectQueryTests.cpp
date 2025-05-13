@@ -289,7 +289,7 @@ public:
         for (int i = 0; i < numIterations; ++i)
         {
             const GLint len = rnd.getInt(0, 1024);
-            glBufferData(m_bufferTarget, len, DE_NULL, GL_STREAM_DRAW);
+            glBufferData(m_bufferTarget, len, nullptr, GL_STREAM_DRAW);
             expectError(GL_NO_ERROR);
 
             m_verifier->verifyInteger64(m_testCtx, m_bufferTarget, GL_BUFFER_SIZE, len);
@@ -315,7 +315,7 @@ public:
 
         for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(usages); ++ndx)
         {
-            glBufferData(m_bufferTarget, 16, DE_NULL, usages[ndx]);
+            glBufferData(m_bufferTarget, 16, nullptr, usages[ndx]);
             expectError(GL_NO_ERROR);
 
             m_verifier->verifyInteger(m_testCtx, m_bufferTarget, GL_BUFFER_USAGE, usages[ndx]);
@@ -364,7 +364,7 @@ public:
 
         for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(accessFlags); ++ndx)
         {
-            glBufferData(m_bufferTarget, 16, DE_NULL, GL_DYNAMIC_COPY);
+            glBufferData(m_bufferTarget, 16, nullptr, GL_DYNAMIC_COPY);
             glMapBufferRange(m_bufferTarget, 0, 16, accessFlags[ndx]);
             expectError(GL_NO_ERROR);
 
@@ -389,7 +389,7 @@ public:
     {
         m_verifier->verifyInteger(m_testCtx, m_bufferTarget, GL_BUFFER_MAPPED, GL_FALSE);
 
-        glBufferData(m_bufferTarget, 16, DE_NULL, GL_DYNAMIC_COPY);
+        glBufferData(m_bufferTarget, 16, nullptr, GL_DYNAMIC_COPY);
         glMapBufferRange(m_bufferTarget, 0, 16, GL_MAP_WRITE_BIT);
         expectError(GL_NO_ERROR);
 
@@ -414,7 +414,7 @@ public:
         m_verifier->verifyInteger(m_testCtx, m_bufferTarget, GL_BUFFER_MAP_OFFSET, 0);
         m_verifier->verifyInteger(m_testCtx, m_bufferTarget, GL_BUFFER_MAP_LENGTH, 0);
 
-        glBufferData(m_bufferTarget, 16, DE_NULL, GL_DYNAMIC_COPY);
+        glBufferData(m_bufferTarget, 16, nullptr, GL_DYNAMIC_COPY);
 
         const struct BufferRange
         {
@@ -461,7 +461,7 @@ public:
         initialState.verifyValidity(m_testCtx);
         checkPointerEquals(m_testCtx, initialState, 0);
 
-        glBufferData(GL_ARRAY_BUFFER, 8, DE_NULL, GL_DYNAMIC_COPY);
+        glBufferData(GL_ARRAY_BUFFER, 8, nullptr, GL_DYNAMIC_COPY);
         GLvoid *mapPointer = glMapBufferRange(GL_ARRAY_BUFFER, 0, 8, GL_MAP_READ_BIT);
         expectError(GL_NO_ERROR);
 
@@ -489,8 +489,8 @@ public:
 
 BufferObjectQueryTests::BufferObjectQueryTests(Context &context)
     : TestCaseGroup(context, "buffer_object", "Buffer Object Query tests")
-    , m_verifierInt(DE_NULL)
-    , m_verifierInt64(DE_NULL)
+    , m_verifierInt(nullptr)
+    , m_verifierInt64(nullptr)
 {
 }
 
@@ -503,8 +503,8 @@ void BufferObjectQueryTests::init(void)
 {
     using namespace BufferParamVerifiers;
 
-    DE_ASSERT(m_verifierInt == DE_NULL);
-    DE_ASSERT(m_verifierInt64 == DE_NULL);
+    DE_ASSERT(m_verifierInt == nullptr);
+    DE_ASSERT(m_verifierInt64 == nullptr);
 
     m_verifierInt                    = new GetBufferParameterIVerifier(m_context.getRenderContext().getFunctions(),
                                                                        m_context.getTestContext().getLog());

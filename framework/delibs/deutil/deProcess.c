@@ -74,11 +74,11 @@ static void dieLastError(int statusPipe, const char *message)
 {
     char msgBuf[256];
     int lastErr = errno;
-    deSprintf(msgBuf, sizeof(msgBuf), "%s, error %d: %s", message, lastErr, strerror(lastErr));
+    snprintf(msgBuf, sizeof(msgBuf), "%s, error %d: %s", message, lastErr, strerror(lastErr));
     die(statusPipe, msgBuf);
 }
 
-DE_INLINE bool beginsWithPath(const char *fileName, const char *pathPrefix)
+bool beginsWithPath(const char *fileName, const char *pathPrefix)
 {
     size_t pathLen = strlen(pathPrefix);
 
@@ -86,7 +86,7 @@ DE_INLINE bool beginsWithPath(const char *fileName, const char *pathPrefix)
     while (pathLen > 0 && pathPrefix[pathLen - 1] == '/')
         pathLen -= 1;
 
-    return pathLen > 0 && deMemoryEqual(fileName, pathPrefix, pathLen) && fileName[pathLen] == '/';
+    return pathLen > 0 && memcmp(fileName, pathPrefix, pathLen) == 0 && fileName[pathLen] == '/';
 }
 
 static void stripLeadingPath(char *fileName, const char *pathPrefix)
@@ -202,7 +202,7 @@ static bool deProcess_setErrorFromErrno(deProcess *process, const char *message)
 {
     char msgBuf[256];
     int lastErr = errno;
-    deSprintf(msgBuf, sizeof(msgBuf), "%s, error %d: %s", message, lastErr, strerror(lastErr));
+    snprintf(msgBuf, sizeof(msgBuf), "%s, error %d: %s", message, lastErr, strerror(lastErr));
     return deProcess_setError(process, message);
 }
 
@@ -553,14 +553,14 @@ static bool deProcess_setErrorFromWin32(deProcess *process, const char *msg)
     if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
                       error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&msgBuf, 0, NULL) > 0)
     {
-        deSprintf(errBuf, sizeof(errBuf), "%s, error %d: %s", msg, error, msgBuf);
+        snprintf(errBuf, sizeof(errBuf), "%s, error %lu: %s", msg, error, msgBuf);
         LocalFree(msgBuf);
         return deProcess_setError(process, errBuf);
     }
     else
     {
         /* Failed to get error str. */
-        deSprintf(errBuf, sizeof(errBuf), "%s, error %d", msg, error);
+        snprintf(errBuf, sizeof(errBuf), "%s, error %lu", msg, error);
         return deProcess_setError(process, errBuf);
     }
 }

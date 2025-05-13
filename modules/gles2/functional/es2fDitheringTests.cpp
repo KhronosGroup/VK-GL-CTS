@@ -133,7 +133,7 @@ const char *DitheringCase::getPatternTypeName(const PatternType type)
         return "unicolored_quad";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -146,7 +146,7 @@ DitheringCase::DitheringCase(tcu::TestContext &testCtx, glu::RenderContext &rend
     , m_patternType(patternType)
     , m_color(color)
     , m_renderFormat(renderCtx.getRenderTarget().getPixelFormat())
-    , m_renderer(DE_NULL)
+    , m_renderer(nullptr)
     , m_iteration(0)
 {
 }
@@ -166,7 +166,7 @@ void DitheringCase::init(void)
 void DitheringCase::deinit(void)
 {
     delete m_renderer;
-    m_renderer = DE_NULL;
+    m_renderer = nullptr;
 }
 
 bool DitheringCase::checkColor(const Vec4 &inputClr, const tcu::RGBA &renderedClr, const bool logErrors) const

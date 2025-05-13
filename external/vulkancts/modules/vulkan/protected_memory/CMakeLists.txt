@@ -53,7 +53,7 @@ set(DEQP_VK_PROTECTED_MEMORY_SRCS
 PCH(DEQP_VK_PROTECTED_MEMORY_SRCS ../pch.cpp)
 
 add_library(deqp-vk-protected-memory STATIC ${DEQP_VK_VKSC_PROTECTED_MEMORY_SRCS} ${DEQP_VK_PROTECTED_MEMORY_SRCS})
-target_link_libraries(deqp-vk-protected-memory tcutil vkutil)
+target_link_libraries(deqp-vk-protected-memory deqp-vk-ycbcr-util tcutil vkutil)
 
 add_library(deqp-vksc-protected-memory STATIC ${DEQP_VK_VKSC_PROTECTED_MEMORY_SRCS})
-target_link_libraries(deqp-vksc-protected-memory PUBLIC deqp-vksc-util tcutil vkscutil)
+target_link_libraries(deqp-vksc-protected-memory PUBLIC deqp-vksc-util deqp-vksc-ycbcr-util tcutil vkscutil)

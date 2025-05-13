@@ -30,6 +30,7 @@
 #include "deMath.h"
 
 #include "glcFramebufferBlitTests.hpp"
+#include "glcMisc.hpp"
 #include "gluContextInfo.hpp"
 #include "gluDefs.hpp"
 #include "gluTextureUtil.hpp"
@@ -41,10 +42,13 @@
 #include "tcuRenderTarget.hpp"
 #include "tcuStringTemplate.hpp"
 
+#include <cmath>
+#include <memory>
+
 #define CHECK(actual, expected, info)                                                                          \
     {                                                                                                          \
         result &= ((actual) != (expected)) ? false : true;                                                     \
-        if ((actual) != (expected))                                                                            \
+        if (!result)                                                                                           \
         {                                                                                                      \
             m_testCtx.getLog() << tcu::TestLog::Message << #info << ": " << __FILE__ << ":" << __LINE__ << ":" \
                                << "expected " << getEnumName((GLenum)(expected)) << "but got "                 \
@@ -55,7 +59,7 @@
 #define CHECK_COLOR(actual, expected, info)                                                             \
     {                                                                                                   \
         result &= ((actual) != (expected)) ? false : true;                                              \
-        if ((actual) != (expected))                                                                     \
+        if (!result)                                                                                    \
         {                                                                                               \
             m_testCtx.getLog() << tcu::TestLog::Message << #info << ": " << __FILE__ << ":" << __LINE__ \
                                << tcu::TestLog::EndMessage;                                             \
@@ -66,7 +70,7 @@
 #define CHECK_CONTINUE(actual, expected, info)                                                                 \
     {                                                                                                          \
         result &= ((actual) != (expected)) ? false : true;                                                     \
-        if ((actual) != (expected))                                                                            \
+        if (!result)                                                                                           \
         {                                                                                                      \
             m_testCtx.getLog() << tcu::TestLog::Message << #info << ": " << __FILE__ << ":" << __LINE__ << ":" \
                                << "expected " << getEnumName((GLenum)(expected)) << "but got "                 \
@@ -86,27 +90,39 @@ using namespace blt;
 
 namespace
 {
+/* Get epsilon based on format precision
+ */
+GLfloat GetEpsilon(GLuint resultPreBits, GLuint sourcePreBits)
+{
+    GLuint tolerance = std::min(resultPreBits, sourcePreBits);
+    tolerance        = std::min(tolerance, (GLuint)23); // don't exceed the amount of mantissa bits in a float
+    return (GLfloat)1.0 / (1 << tolerance);
+}
+
 /* multicolor pattern values */
 const tcu::Vec4 RED   = {1.0f, 0.0f, 0.0f, 1.0f};
 const tcu::Vec4 GREEN = {0.0f, 1.0f, 0.0f, 1.0f};
 const tcu::Vec4 BLUE  = {0.0f, 0.0f, 1.0f, 1.0f};
 const tcu::Vec4 WHITE = {1.0f, 1.0f, 1.0f, 1.0f};
 const tcu::Vec4 BLACK = {0.0f, 0.0f, 0.0f, 1.0f};
+const Depth Q0        = 0.0f;
 const Depth Q1        = 0.25f;
 const Depth Q2        = 0.5f;
 const Depth Q3        = 0.75f;
 const Depth Q4        = 1.0f;
+const Stencil ZERO    = 0;
 const Stencil ONE     = 1;
 const Stencil TWO     = 2;
 const Stencil THREE   = 3;
 const Stencil FOUR    = 4;
 
-const GLuint DEFAULT         = 0x12345678;
-const GLuint RED_CHANNEL     = 1 << 13;
-const GLuint GREEN_CHANNEL   = 1 << 14;
-const GLuint BLUE_CHANNEL    = 1 << 15;
-const GLuint ALPHA_CHANNEL   = 1 << 16;
-const GLuint MAX_BUF_OBJECTS = 256;
+const GLuint DEFAULT                    = 0x12345678;
+const GLuint RED_CHANNEL                = 1 << 13;
+const GLuint GREEN_CHANNEL              = 1 << 14;
+const GLuint BLUE_CHANNEL               = 1 << 15;
+const GLuint ALPHA_CHANNEL              = 1 << 16;
+const GLuint MAX_BUF_OBJECTS            = 256;
+const GLuint DEFAULT_COLOR_CHANNEL_BITS = RED_CHANNEL | GREEN_CHANNEL | BLUE_CHANNEL | ALPHA_CHANNEL;
 
 char STR_BUF[256];
 
@@ -116,21 +132,21 @@ const Stencil DST_STCIL = 0;
 
 const char *getEnumName(const GLenum e)
 {
-    if (glu::getUncompressedTextureFormatName(e) != DE_NULL)
+    if (glu::getUncompressedTextureFormatName(e) != nullptr)
         return glu::getUncompressedTextureFormatName(e);
-    else if (glu::getFaceName(e) != DE_NULL)
+    else if (glu::getFaceName(e) != nullptr)
         return glu::getFaceName(e);
-    else if (glu::getFramebufferAttachmentName(e) != DE_NULL)
+    else if (glu::getFramebufferAttachmentName(e) != nullptr)
         return glu::getFramebufferAttachmentName(e);
-    else if (glu::getBooleanName((int)e) != DE_NULL)
+    else if (glu::getBooleanName((int)e) != nullptr)
         return glu::getBooleanName((int)e);
-    else if (glu::getFramebufferStatusName(e) != DE_NULL)
+    else if (glu::getFramebufferStatusName(e) != nullptr)
         return glu::getFramebufferStatusName(e);
-    else if (glu::getInternalFormatTargetName(e) != DE_NULL)
+    else if (glu::getInternalFormatTargetName(e) != nullptr)
         return glu::getInternalFormatTargetName(e);
-    else if (glu::getFramebufferTargetName(e) != DE_NULL)
+    else if (glu::getFramebufferTargetName(e) != nullptr)
         return glu::getFramebufferTargetName(e);
-    else if (glu::getErrorName(e) != DE_NULL)
+    else if (glu::getErrorName(e) != nullptr)
         return glu::getErrorName(e);
     else
     {
@@ -159,7 +175,6 @@ const char *getEnumName(const GLenum e)
         return STR_BUF;
     }
 }
-
 } // namespace
 
 namespace glcts
@@ -167,7 +182,7 @@ namespace glcts
 // clang-format off
 
 /** @brief Vertex shader source code to test framebuffer blit of color buffers. */
-const glw::GLchar* glcts::FramebufferBlitMultiToSingleSampledTestCase::m_default_vert_shader =
+const glw::GLchar* glcts::FramebufferBlitBaseTestCase::m_default_vert_shader =
     R"(${VERSION}
     ${EXTENSION}
     in vec4 pos;
@@ -181,7 +196,7 @@ const glw::GLchar* glcts::FramebufferBlitMultiToSingleSampledTestCase::m_default
     )";
 
 /** @brief Fragment shader source code to test framebuffer blit of color buffers. */
-const glw::GLchar* glcts::FramebufferBlitMultiToSingleSampledTestCase::m_default_frag_shader =
+const glw::GLchar* glcts::FramebufferBlitBaseTestCase::m_default_frag_shader =
     R"(${VERSION}
     ${PRECISION}
     in vec2 vUV;
@@ -194,7 +209,7 @@ const glw::GLchar* glcts::FramebufferBlitMultiToSingleSampledTestCase::m_default
     )";
 
 /** @brief Vertex shader source code to test framebuffer blit of depth buffers. */
-const glw::GLchar* glcts::FramebufferBlitMultiToSingleSampledTestCase::m_render_vert_shader =
+const glw::GLchar* glcts::FramebufferBlitBaseTestCase::m_render_vert_shader =
     R"(${VERSION}
     ${EXTENSION}
     in vec4 pos;
@@ -205,7 +220,7 @@ const glw::GLchar* glcts::FramebufferBlitMultiToSingleSampledTestCase::m_render_
     )";
 
 /** @brief Fragment shader source code to test framebuffer blit of depth buffers. */
-const glw::GLchar* glcts::FramebufferBlitMultiToSingleSampledTestCase::m_render_frag_shader =
+const glw::GLchar* glcts::FramebufferBlitBaseTestCase::m_render_frag_shader =
     R"(${VERSION}
     ${PRECISION}
     out vec4 color;
@@ -218,15 +233,8 @@ const glw::GLchar* glcts::FramebufferBlitMultiToSingleSampledTestCase::m_render_
 
 // clang-format on
 
-/** Constructor.
- *
- *  @param context     Rendering context
- */
-FramebufferBlitMultiToSingleSampledTestCase::FramebufferBlitMultiToSingleSampledTestCase(deqp::Context &context)
-    : TestCase(
-          context, "framebuffer_blit_functionality_multisampled_to_singlesampled_blit",
-          "Confirm that blits from multisampled to single sampled framebuffers of various types are properly resolved.")
-    , m_defaultCoord(0, 0)
+FramebufferBlitBaseTestCase::FramebufferBlitBaseTestCase(deqp::Context &context, const char *name, const char *desc)
+    : TestCase(context, name, desc)
     , m_fbos{0, 0}
     , m_color_tbos{0, 0}
     , m_depth_tbos{0, 0}
@@ -235,24 +243,25 @@ FramebufferBlitMultiToSingleSampledTestCase::FramebufferBlitMultiToSingleSampled
     , m_depth_rbos{0, 0}
     , m_stcil_rbos{0, 0}
     , m_dflt(0)
+    , m_defaultCoord(0, 0)
+    , m_defaultProg(nullptr)
+    , m_renderProg(nullptr)
+    , m_isContextES(false)
+    , m_cbfTestSupported(false)
+    , m_msTbosSupported(false)
+    , m_minDrawBuffers(0)
+    , m_minColorAttachments(0)
     , m_depth_internalFormat(0)
     , m_depth_type(0)
     , m_depth_format(0)
     , m_stcil_internalFormat(0)
     , m_stcil_type(0)
     , m_stcil_format(0)
-    , m_cbfTestSupported(false)
-    , m_msTbosSupported(false)
-    , m_isContextES(false)
-    , m_minDrawBuffers(0)
-    , m_minColorAttachments(0)
-    , m_defaultProg(nullptr)
-    , m_renderProg(nullptr)
 {
 }
 
 /** Stub deinit method. */
-void FramebufferBlitMultiToSingleSampledTestCase::deinit()
+void FramebufferBlitBaseTestCase::deinit()
 {
     if (m_renderProg)
     {
@@ -268,7 +277,7 @@ void FramebufferBlitMultiToSingleSampledTestCase::deinit()
 }
 
 /** Stub init method */
-void FramebufferBlitMultiToSingleSampledTestCase::init()
+void FramebufferBlitBaseTestCase::init()
 {
     const glu::RenderContext &renderContext = m_context.getRenderContext();
     glu::GLSLVersion glslVersion            = glu::getContextTypeGLSLVersion(renderContext.getType());
@@ -285,6 +294,8 @@ void FramebufferBlitMultiToSingleSampledTestCase::init()
         specializationMap["EXTENSION"] = "";
         specializationMap["PRECISION"] = "";
     }
+
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
     auto contextType = m_context.getRenderContext().getType();
     if (m_isContextES)
@@ -303,8 +314,6 @@ void FramebufferBlitMultiToSingleSampledTestCase::init()
         m_minDrawBuffers      = 8;
         m_minColorAttachments = 8;
     }
-
-    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
     /* Building programs. */
     auto setup_shaders = [&](const std::string &vert, const std::string &frag)
@@ -331,6 +340,7 @@ void FramebufferBlitMultiToSingleSampledTestCase::init()
     m_defaultProg = setup_shaders(m_default_vert_shader, m_default_frag_shader);
     m_renderProg  = setup_shaders(m_render_vert_shader, m_render_frag_shader);
 
+    m_defaultFBO  = m_context.getRenderContext().getDefaultFramebuffer();
     int bufWidth  = m_context.getRenderTarget().getWidth();
     int bufHeight = m_context.getRenderTarget().getHeight();
 
@@ -395,33 +405,6 @@ void FramebufferBlitMultiToSingleSampledTestCase::init()
                                 true }); /* default READ_BUFFER and DRAW_BUFFER */
     }
 
-    m_multisampleColorCfg = {
-        /* internal format, format, type, color channel bits */
-        { GL_R8, GL_RED, GL_UNSIGNED_BYTE, RED_CHANNEL, false },
-        { GL_RG8, GL_RG, GL_UNSIGNED_BYTE, RED_CHANNEL|GREEN_CHANNEL, false },
-        { GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, RED_CHANNEL|GREEN_CHANNEL|BLUE_CHANNEL|ALPHA_CHANNEL, false },
-        { GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE, RED_CHANNEL|GREEN_CHANNEL|BLUE_CHANNEL|ALPHA_CHANNEL, false },
-        { GL_RGBA4, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, RED_CHANNEL|GREEN_CHANNEL|BLUE_CHANNEL|ALPHA_CHANNEL, false },
-        { GL_RGB5_A1, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, RED_CHANNEL|GREEN_CHANNEL|BLUE_CHANNEL|ALPHA_CHANNEL, false },
-        { GL_R11F_G11F_B10F, GL_RGB, GL_UNSIGNED_INT_10F_11F_11F_REV, RED_CHANNEL|GREEN_CHANNEL|BLUE_CHANNEL, true },
-        { GL_RG16F, GL_RG, GL_HALF_FLOAT, RED_CHANNEL|GREEN_CHANNEL, true },
-        { GL_R16F, GL_RED, GL_HALF_FLOAT, RED_CHANNEL, true },
-        { GL_RGB8, GL_RGB, GL_UNSIGNED_BYTE, RED_CHANNEL|GREEN_CHANNEL|BLUE_CHANNEL, false }, /* Texture only format */
-    };
-
-    if (!m_isContextES)
-    {
-        m_multisampleColorCfg.push_back({ GL_RGB10_A2, GL_RGBA, GL_UNSIGNED_INT_10_10_10_2,
-                                          RED_CHANNEL | GREEN_CHANNEL | BLUE_CHANNEL | ALPHA_CHANNEL, false });
-    }
-    else
-    {
-        m_multisampleColorCfg.push_back({ GL_RGB10_A2, GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV,
-                                          RED_CHANNEL | GREEN_CHANNEL | BLUE_CHANNEL | ALPHA_CHANNEL, false });
-        m_multisampleColorCfg.push_back(
-            { GL_RGB565, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, RED_CHANNEL | GREEN_CHANNEL | BLUE_CHANNEL, false });
-    }
-
     m_depthCfg = {
         /* From table 3.13 */
         /* internal format, format, type, attachment, depth bits */
@@ -439,163 +422,20 @@ void FramebufferBlitMultiToSingleSampledTestCase::init()
     // clang-format on
 }
 
-bool FramebufferBlitMultiToSingleSampledTestCase::GetBits(GLenum target, GLenum bits, GLint *value)
+template <typename... Args>
+inline void FramebufferBlitBaseTestCase::tcu_fail_msg(const std::string &format, Args... args)
 {
-    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
-    if (!m_isContextES)
-    {
-        GLint colorAttachment    = 0;
-        GLenum depthAttachment   = GL_DEPTH;
-        GLenum stencilAttachment = GL_STENCIL;
-        GLint fbo                = 0;
-        if (target == GL_READ_FRAMEBUFFER)
-        {
-            gl.getIntegerv(GL_READ_FRAMEBUFFER_BINDING, &fbo);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-        }
-        else
-        {
-            gl.getIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-        }
-
-        if (fbo)
-        {
-            depthAttachment   = GL_DEPTH_ATTACHMENT;
-            stencilAttachment = GL_STENCIL_ATTACHMENT;
-        }
-        if (target == GL_READ_FRAMEBUFFER)
-        {
-            gl.getIntegerv(GL_READ_BUFFER, &colorAttachment);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-        }
-        else
-        {
-            gl.getIntegerv(GL_DRAW_BUFFER, &colorAttachment);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-        }
-
-        if (colorAttachment == GL_BACK)
-            colorAttachment = GL_BACK_LEFT;
-        else if (colorAttachment == GL_FRONT)
-            colorAttachment = GL_FRONT_LEFT;
-
-        switch (bits)
-        {
-        case GL_RED_BITS:
-            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_RED_SIZE, value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-            break;
-        case GL_GREEN_BITS:
-            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_GREEN_SIZE,
-                                                   value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-            break;
-        case GL_BLUE_BITS:
-            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_BLUE_SIZE, value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-            break;
-        case GL_ALPHA_BITS:
-            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE,
-                                                   value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-            break;
-        case GL_DEPTH_BITS:
-        case GL_STENCIL_BITS:
-            /*
-             * OPENGL SPECS 4.5: Paragraph  9.2. BINDING AND MANAGING FRAMEBUFFER OBJECTS p.335
-             * If the value of GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE is GL_NONE, then either no framebuffer is bound to target;
-             * or a default framebuffer is queried, attachment is GL_DEPTH or GL_STENCIL,
-             * and the number of depth or stencil bits, respectively, is zero....
-             * and all other queries will generate an INVALID_OPERATION error.
-             * */
-            if (fbo == 0)
-            { //default framebuffer
-                gl.getFramebufferAttachmentParameteriv(target, (bits == GL_DEPTH_BITS ? GL_DEPTH : GL_STENCIL),
-                                                       GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, value);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-                if (*value == GL_NONE)
-                {
-                    *value = 0;
-                    break;
-                }
-            }
-            switch (bits)
-            {
-            case GL_DEPTH_BITS:
-                gl.getFramebufferAttachmentParameteriv(target, depthAttachment, GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE,
-                                                       value);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-                break;
-            case GL_STENCIL_BITS:
-                gl.getFramebufferAttachmentParameteriv(target, stencilAttachment,
-                                                       GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE, value);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-                break;
-            }
-            break;
-        default:
-            gl.getIntegerv(bits, value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-            break;
-        }
-    }
-    else
-    {
-        gl.getIntegerv(bits, value);
-        GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-    }
-    return true;
-}
-
-bool FramebufferBlitMultiToSingleSampledTestCase::GetDrawbuffer32DepthComponentType(glw::GLint *value)
-{
-    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
-    if (!m_isContextES)
-    {
-        GLenum target          = GL_DRAW_FRAMEBUFFER;
-        GLenum depthAttachment = GL_DEPTH;
-        GLint fbo              = 0;
-        gl.getIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
-        GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-
-        if (fbo)
-        {
-            depthAttachment = GL_DEPTH_ATTACHMENT;
-        }
-
-        /*
-         * OPENGL SPECS 4.5: Paragraph  9.2. BINDING AND MANAGING FRAMEBUFFER OBJECTS p.335
-         * If the value of GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE is GL_NONE, then either no framebuffer is bound to target;
-         * or a default framebuffer is queried, attachment is GL_DEPTH or GL_STENCIL,
-         * and the number of depth or stencil bits, respectively, is zero....
-         * and all other queries will generate an INVALID_OPERATION error.
-         * */
-        if (fbo == 0)
-        { //default framebuffer
-            gl.getFramebufferAttachmentParameteriv(target, GL_DEPTH, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-
-            if (*value == GL_NONE)
-            {
-                *value = GL_FLOAT;
-                return false;
-            }
-        }
-        gl.getFramebufferAttachmentParameteriv(target, depthAttachment, GL_FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE,
-                                               value);
-        GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-    }
-    else
-    {
-        *value = GL_FLOAT;
-    }
-
-    return true;
+    int str_size = std::snprintf(nullptr, 0, format.c_str(), args...) + 1;
+    if (str_size <= 0)
+        throw std::runtime_error("Formatting error.");
+    size_t s = static_cast<size_t>(str_size);
+    std::unique_ptr<char[]> buffer(new char[s]);
+    std::snprintf(buffer.get(), s, format.c_str(), args...);
+    m_testCtx.getLog() << tcu::TestLog::Message << buffer.get() << tcu::TestLog::EndMessage;
 }
 
 /* Get default frame buffer's compatible bliting format */
-bool FramebufferBlitMultiToSingleSampledTestCase::GetDefaultFramebufferBlitFormat(bool *noDepth, bool *noStencil)
+bool FramebufferBlitBaseTestCase::GetDefaultFramebufferBlitFormat(bool *noDepth, bool *noStencil)
 {
     int depthBits = 0, stencilBits = 0;
 
@@ -603,8 +443,8 @@ bool FramebufferBlitMultiToSingleSampledTestCase::GetDefaultFramebufferBlitForma
     gl.bindFramebuffer(GL_FRAMEBUFFER, m_defaultFBO);
     GLU_EXPECT_NO_ERROR(gl.getError(), "bindFramebuffer");
 
-    GetBits(GL_DRAW_FRAMEBUFFER, GL_DEPTH_BITS, &depthBits);
-    GetBits(GL_DRAW_FRAMEBUFFER, GL_STENCIL_BITS, &stencilBits);
+    getBits(gl, m_isContextES, GL_DRAW_FRAMEBUFFER, GL_DEPTH_BITS, &depthBits);
+    getBits(gl, m_isContextES, GL_DRAW_FRAMEBUFFER, GL_STENCIL_BITS, &stencilBits);
 
     m_depth_internalFormat = 0;
     m_depth_type           = 0;
@@ -690,28 +530,50 @@ bool FramebufferBlitMultiToSingleSampledTestCase::GetDefaultFramebufferBlitForma
     return false;
 }
 
-bool FramebufferBlitMultiToSingleSampledTestCase::check_param(glw::GLboolean expr, const char *str)
+bool FramebufferBlitBaseTestCase::GetDrawbuffer32DepthComponentType(glw::GLint *value)
 {
-    if (!expr)
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+    if (!m_isContextES)
     {
-        m_testCtx.getLog() << tcu::TestLog::Message << ":" << __FILE__ << ":" << __LINE__ << str
-                           << tcu::TestLog::EndMessage;
-        return false;
-    }
-    return true;
-}
+        GLenum target          = GL_DRAW_FRAMEBUFFER;
+        GLenum depthAttachment = GL_DEPTH;
+        GLint fbo              = 0;
+        gl.getIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
 
-/* Convert float [0,1] to byte [0,255].
- */
-GLubyte FramebufferBlitMultiToSingleSampledTestCase::floatToByte(GLfloat f)
-{
-    if (f < 0.0f || f > 1.0f)
-    {
-        m_testCtx.getLog() << tcu::TestLog::Message << ":" << __FILE__ << ":" << __LINE__
-                           << "float not in range [0.0f, 1.0f]" << tcu::TestLog::EndMessage;
-        return 0;
+        if (fbo)
+        {
+            depthAttachment = GL_DEPTH_ATTACHMENT;
+        }
+
+        /*
+         * OPENGL SPECS 4.5: Paragraph  9.2. BINDING AND MANAGING FRAMEBUFFER OBJECTS p.335
+         * If the value of GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE is GL_NONE, then either no framebuffer is bound to target;
+         * or a default framebuffer is queried, attachment is GL_DEPTH or GL_STENCIL,
+         * and the number of depth or stencil bits, respectively, is zero....
+         * and all other queries will generate an INVALID_OPERATION error.
+         * */
+        if (fbo == 0)
+        { //default framebuffer
+            gl.getFramebufferAttachmentParameteriv(target, GL_DEPTH, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, value);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
+
+            if (*value == GL_NONE)
+            {
+                *value = GL_FLOAT;
+                return false;
+            }
+        }
+        gl.getFramebufferAttachmentParameteriv(target, depthAttachment, GL_FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE,
+                                               value);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
     }
-    return (GLubyte)std::floor(f == 1.0f ? 255 : f * 255.0);
+    else
+    {
+        *value = GL_FLOAT;
+    }
+
+    return true;
 }
 
 ///* Initialize textures or renderbuffers. Return true if succeed, false otherwise.
@@ -721,8 +583,7 @@ GLubyte FramebufferBlitMultiToSingleSampledTestCase::floatToByte(GLfloat f)
 // * internal_format: tex internal format
 // */
 template <GLenum E, GLuint samples, typename F>
-bool FramebufferBlitMultiToSingleSampledTestCase::init_gl_objs(F f, const GLuint count, const GLuint *buf,
-                                                               const GLint format)
+bool FramebufferBlitBaseTestCase::init_gl_objs(F f, const GLuint count, const GLuint *buf, const GLint format)
 {
     if (!check_param(buf != NULL, "invalid buf pointer"))
         return false;
@@ -761,145 +622,12 @@ bool FramebufferBlitMultiToSingleSampledTestCase::init_gl_objs(F f, const GLuint
     return true;
 }
 
-/* Attach a buffer object to framebuffer. Return true if succeed,
- * false otherwise.
- *
- * target: fbo target
- * attachment: color/depth/stencil attachment
- * type: buf type
- * buf: buf to attach
- */
-bool FramebufferBlitMultiToSingleSampledTestCase::attachBufferToFramebuffer(GLenum target, GLenum attachment,
-                                                                            GLenum type, GLuint buf)
+bool FramebufferBlitBaseTestCase::check_param(glw::GLboolean expr, const char *str)
 {
-    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
-    if (type == GL_TEXTURE_2D || type == GL_TEXTURE_2D_MULTISAMPLE)
+    if (!expr)
     {
-        gl.framebufferTexture2D(target, attachment, type, buf, 0);
-        GLU_EXPECT_NO_ERROR(gl.getError(), "framebufferTexture2D");
-
-        if (buf)
-        {
-            m_testCtx.getLog() << tcu::TestLog::Message << "attaching texbuf" << buf << " to "
-                               << getEnumName(attachment) << " of " << getEnumName(target) << tcu::TestLog::EndMessage;
-        }
-        else
-        {
-            m_testCtx.getLog() << tcu::TestLog::Message << "detaching " << getEnumName(attachment) << " of "
-                               << getEnumName(target) << tcu::TestLog::EndMessage;
-        }
-    }
-    else if (type == GL_RENDERBUFFER)
-    {
-        gl.framebufferRenderbuffer(target, attachment, type, buf);
-        GLU_EXPECT_NO_ERROR(gl.getError(), "framebufferRenderbuffer");
-
-        if (buf)
-        {
-            m_testCtx.getLog() << tcu::TestLog::Message << "attaching renbuf" << buf << " to "
-                               << getEnumName(attachment) << " of " << getEnumName(target) << tcu::TestLog::EndMessage;
-        }
-        else
-        {
-            m_testCtx.getLog() << tcu::TestLog::Message << "detaching " << getEnumName(attachment) << " of "
-                               << getEnumName(target) << tcu::TestLog::EndMessage;
-        }
-    }
-    return true;
-}
-
-/* Get the color value from the given coordinates. Return true if
- * succeed, false otherwise.
- */
-bool FramebufferBlitMultiToSingleSampledTestCase::getColor(const Coord &coord, Color *color,
-                                                           const bool bFloatInternalFormat)
-{
-    bool result = true;
-
-    GLuint status;
-    GLint x = coord.x();
-    GLint y = coord.y();
-
-    if (!check_param(color != NULL, "invalid color pointer"))
-        return false;
-
-    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
-
-    status = gl.checkFramebufferStatus(GL_READ_FRAMEBUFFER);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "checkFramebufferStatus");
-    if (status != GL_FRAMEBUFFER_COMPLETE)
-        m_testCtx.getLog() << tcu::TestLog::Message << "checkFramebufferStatus unexpected status"
+        m_testCtx.getLog() << tcu::TestLog::Message << ":" << __FILE__ << ":" << __LINE__ << str
                            << tcu::TestLog::EndMessage;
-
-    if (bFloatInternalFormat)
-    {
-        GLfloat tmp_fcolor[4] = {0.6f, 0.6f, 0.6f, 0.6f};
-        gl.readPixels(x, y, 1, 1, GL_RGBA, GL_FLOAT, &tmp_fcolor[0]);
-        GLU_EXPECT_NO_ERROR(gl.getError(), "readPixels");
-
-        color->x() = tmp_fcolor[0];
-        color->y() = tmp_fcolor[1];
-        color->z() = tmp_fcolor[2];
-        color->w() = tmp_fcolor[3];
-    }
-    else
-    {
-        GLubyte tmp_color[4] = {100, 100, 100, 100};
-        gl.readPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &tmp_color[0]);
-        GLU_EXPECT_NO_ERROR(gl.getError(), "readPixels");
-
-        color->x() = tmp_color[0] / 255.0f;
-        color->y() = tmp_color[1] / 255.0f;
-        color->z() = tmp_color[2] / 255.0f;
-        color->w() = tmp_color[3] / 255.0f;
-    }
-
-    m_testCtx.getLog() << tcu::TestLog::Message << "getColor: XY=[" << x << "," << y << "] RGBA=[" << color->x() << ","
-                       << color->y() << "," << color->z() << "," << color->w() << "]" << tcu::TestLog::EndMessage;
-
-    return result;
-}
-
-/* Verify the actual color and the expected color match in given
- * channels. Return true if succeed, false otherwise.
- *
- * actual: actual color to be checked
- * expect: expected color
- * channels: bitfield combination of RED_CHANNEL, GREEN_CHANNEL,
- *           BLUE_CHANNEL, and ALPHA_CHANNEL
- */
-bool FramebufferBlitMultiToSingleSampledTestCase::checkColor(const Color &actual, const Color &expect,
-                                                             const GLuint channels)
-{
-    GLubyte expect_r = 0, expect_g = 0, expect_b = 0, expect_a = 0;
-    GLubyte actual_r = 0, actual_g = 0, actual_b = 0, actual_a = 0;
-
-    if (channels & RED_CHANNEL)
-    {
-        expect_r = floatToByte(expect.x());
-        actual_r = floatToByte(actual.x());
-    }
-    if (channels & GREEN_CHANNEL)
-    {
-        expect_g = floatToByte(expect.y());
-        actual_g = floatToByte(actual.y());
-    }
-    if (channels & BLUE_CHANNEL)
-    {
-        expect_b = floatToByte(expect.z());
-        actual_b = floatToByte(actual.z());
-    }
-    if (channels & ALPHA_CHANNEL)
-    {
-        expect_a = floatToByte(expect.w());
-        actual_a = floatToByte(actual.w());
-    }
-
-    if (actual_r != expect_r || actual_g != expect_g || actual_b != expect_b || actual_a != expect_a)
-    {
-        m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: expected  RGBA=[" << expect_r << "," << expect_g << ","
-                           << expect_b << "," << expect_a << "] but got RGBA[" << actual_r << "," << actual_g << ","
-                           << actual_b << "," << actual_a << "]" << tcu::TestLog::EndMessage;
         return false;
     }
     return true;
@@ -918,9 +646,10 @@ bool FramebufferBlitMultiToSingleSampledTestCase::checkColor(const Color &actual
  * check_coord: coord to verify buffer value after clearing
  * check_channels: channels to be verified
  */
-bool FramebufferBlitMultiToSingleSampledTestCase::clearColorBuffer(
-    const GLuint fbo, const GLenum attachment, const GLenum type, const GLuint buf, const Color &color,
-    const Rectangle &rect, const Coord &check_coord, const GLuint check_channels, const bool bFloatInternalFormat)
+bool FramebufferBlitBaseTestCase::clearColorBuffer(const GLuint fbo, const GLenum attachment, const GLenum type,
+                                                   const GLuint buf, const Color &color, const Rectangle &rect,
+                                                   const Coord &check_coord, const GLuint check_channels,
+                                                   const bool bFloatInternalFormat)
 {
     bool result          = true;
     Color tmp_color      = {0.5f, 0.5f, 0.5f, 0.5f};
@@ -1030,66 +759,285 @@ bool FramebufferBlitMultiToSingleSampledTestCase::clearColorBuffer(
     return result;
 }
 
-bool FramebufferBlitMultiToSingleSampledTestCase::setupDefaultShader(GLuint &vao, GLuint &vbo)
+/* Attach a buffer object to framebuffer. Return true if succeed,
+ * false otherwise.
+ *
+ * target: fbo target
+ * attachment: color/depth/stencil attachment
+ * type: buf type
+ * buf: buf to attach
+ */
+bool FramebufferBlitBaseTestCase::attachBufferToFramebuffer(GLenum target, GLenum attachment, GLenum type, GLuint buf)
+{
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+    if (type == GL_TEXTURE_2D || type == GL_TEXTURE_2D_MULTISAMPLE)
+    {
+        gl.framebufferTexture2D(target, attachment, type, buf, 0);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "framebufferTexture2D");
+
+        if (buf)
+        {
+            m_testCtx.getLog() << tcu::TestLog::Message << "attaching texbuf" << buf << " to "
+                               << getEnumName(attachment) << " of " << getEnumName(target) << tcu::TestLog::EndMessage;
+        }
+        else
+        {
+            m_testCtx.getLog() << tcu::TestLog::Message << "detaching " << getEnumName(attachment) << " of "
+                               << getEnumName(target) << tcu::TestLog::EndMessage;
+        }
+    }
+    else if (type == GL_RENDERBUFFER)
+    {
+        gl.framebufferRenderbuffer(target, attachment, type, buf);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "framebufferRenderbuffer");
+
+        if (buf)
+        {
+            m_testCtx.getLog() << tcu::TestLog::Message << "attaching renbuf" << buf << " to "
+                               << getEnumName(attachment) << " of " << getEnumName(target) << tcu::TestLog::EndMessage;
+        }
+        else
+        {
+            m_testCtx.getLog() << tcu::TestLog::Message << "detaching " << getEnumName(attachment) << " of "
+                               << getEnumName(target) << tcu::TestLog::EndMessage;
+        }
+    }
+    return true;
+}
+
+/* Get the color value from the given coordinates. Return true if
+ * succeed, false otherwise.
+ */
+bool FramebufferBlitBaseTestCase::getColor(const Coord &coord, Color *color, const bool bFloatInternalFormat)
 {
     bool result = true;
 
-    // clang-format off
-    const std::vector <GLfloat> vboData =
-    {
-        -1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-        1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f,
-        -1.0f,  1.0f, 0.0f, 1.0f, 0.0f, 1.0f,
-        1.0f,  1.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-    };
-    // clang-format on
+    GLuint status;
+    GLint x = coord.x();
+    GLint y = coord.y();
+
+    if (!check_param(color != NULL, "invalid color pointer"))
+        return false;
 
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-    gl.genVertexArrays(1, &vao);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "genVertexArrays");
-    gl.bindVertexArray(vao);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "bindVertexArray");
+    status = gl.checkFramebufferStatus(GL_READ_FRAMEBUFFER);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "checkFramebufferStatus");
+    if (status != GL_FRAMEBUFFER_COMPLETE)
+        m_testCtx.getLog() << tcu::TestLog::Message << "checkFramebufferStatus unexpected status"
+                           << tcu::TestLog::EndMessage;
 
-    gl.genBuffers(1, &vbo);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "genBuffers");
-    gl.bindBuffer(GL_ARRAY_BUFFER, vbo);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "bindBuffer");
+    if (bFloatInternalFormat)
+    {
+        GLfloat tmp_fcolor[4] = {0.6f, 0.6f, 0.6f, 0.6f};
+        gl.readPixels(x, y, 1, 1, GL_RGBA, GL_FLOAT, &tmp_fcolor[0]);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "readPixels");
 
-    gl.bufferData(GL_ARRAY_BUFFER, vboData.size() * sizeof(GLfloat), (GLvoid *)vboData.data(), GL_DYNAMIC_DRAW);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "bufferData");
+        color->x() = tmp_fcolor[0];
+        color->y() = tmp_fcolor[1];
+        color->z() = tmp_fcolor[2];
+        color->w() = tmp_fcolor[3];
+    }
+    else
+    {
+        GLubyte tmp_color[4] = {100, 100, 100, 100};
+        gl.readPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &tmp_color[0]);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "readPixels");
 
-    gl.useProgram(m_defaultProg->getProgram());
-    GLU_EXPECT_NO_ERROR(gl.getError(), "useProgram");
+        color->x() = tmp_color[0] / 255.0f;
+        color->y() = tmp_color[1] / 255.0f;
+        color->z() = tmp_color[2] / 255.0f;
+        color->w() = tmp_color[3] / 255.0f;
+    }
 
-    // Setup shader attributes
-    GLint attribPos = gl.getAttribLocation(m_defaultProg->getProgram(), "pos");
-    GLU_EXPECT_NO_ERROR(gl.getError(), "getAttribLocation");
-    CHECK_RET((attribPos != -1), true, getAttribLocation);
+    m_testCtx.getLog() << tcu::TestLog::Message << "getColor: XY=[" << x << "," << y << "] RGBA=[" << color->x() << ","
+                       << color->y() << "," << color->z() << "," << color->w() << "]" << tcu::TestLog::EndMessage;
 
-    GLint attribUV = gl.getAttribLocation(m_defaultProg->getProgram(), "UV");
-    GLU_EXPECT_NO_ERROR(gl.getError(), "getAttribLocation");
-    CHECK_RET((attribUV != -1), true, getAttribLocation);
+    return result;
+}
 
-    const GLsizei vertSize = (vboData.size() / 4) * sizeof(GLfloat);
-    const GLsizei uvOffset = (4 * sizeof(GLfloat));
+/* Verify the actual color and the expected color match in given
+ * channels. Return true if succeed, false otherwise.
+ *
+ * actual: actual color to be checked
+ * expect: expected color
+ * channels: bitfield combination of RED_CHANNEL, GREEN_CHANNEL,
+ *           BLUE_CHANNEL, and ALPHA_CHANNEL
+ */
+bool FramebufferBlitBaseTestCase::checkColor(const Color &actual, const Color &expect, const GLuint channels)
+{
+    GLubyte expect_r = 0, expect_g = 0, expect_b = 0, expect_a = 0;
+    GLubyte actual_r = 0, actual_g = 0, actual_b = 0, actual_a = 0;
 
-    gl.vertexAttribPointer(attribPos, 4, GL_FLOAT, GL_FALSE, vertSize, DE_NULL);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "vertexAttribPointer");
-    gl.enableVertexAttribArray(attribPos);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "enableVertexAttribArray");
+    if (channels & RED_CHANNEL)
+    {
+        expect_r = floatToByte(expect.x());
+        actual_r = floatToByte(actual.x());
+    }
+    if (channels & GREEN_CHANNEL)
+    {
+        expect_g = floatToByte(expect.y());
+        actual_g = floatToByte(actual.y());
+    }
+    if (channels & BLUE_CHANNEL)
+    {
+        expect_b = floatToByte(expect.z());
+        actual_b = floatToByte(actual.z());
+    }
+    if (channels & ALPHA_CHANNEL)
+    {
+        expect_a = floatToByte(expect.w());
+        actual_a = floatToByte(actual.w());
+    }
 
-    gl.vertexAttribPointer(attribUV, 2, GL_FLOAT, GL_FALSE, vertSize, (const GLvoid *)uvOffset);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "vertexAttribPointer");
-    gl.enableVertexAttribArray(attribUV);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "enableVertexAttribArray");
+    if (actual_r != expect_r || actual_g != expect_g || actual_b != expect_b || actual_a != expect_a)
+    {
+        m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: expected  RGBA=[" << expect_r << "," << expect_g << ","
+                           << expect_b << "," << expect_a << "] but got RGBA[" << actual_r << "," << actual_g << ","
+                           << actual_b << "," << actual_a << "]" << tcu::TestLog::EndMessage;
+        return false;
+    }
+    return true;
+}
 
-    // Setup shader uniform
-    GLint uniformTex = gl.getUniformLocation(m_defaultProg->getProgram(), "tex");
-    GLU_EXPECT_NO_ERROR(gl.getError(), "getUniformLocation");
-    CHECK_RET((uniformTex != -1), true, getUniformLocation);
-    gl.uniform1i(uniformTex, 0);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "uniform1i");
+/* Convert float [0,1] to byte [0,255].
+ */
+GLubyte FramebufferBlitBaseTestCase::floatToByte(GLfloat f)
+{
+    if (f < 0.0f || f > 1.0f)
+    {
+        m_testCtx.getLog() << tcu::TestLog::Message << ":" << __FILE__ << ":" << __LINE__
+                           << "float not in range [0.0f, 1.0f]" << tcu::TestLog::EndMessage;
+        return 0;
+    }
+    return (GLubyte)std::floor(f == 1.0f ? 255 : f * 255.0);
+}
+
+/* Clear the depth buffer to given depth. Prior to return, unbind all
+ * used attachments and setup default read and draw framebuffers.
+ * Return true if succeed, false otherwise.
+ *
+ * fbo: framebuffer to use
+ * attachment: framebuffer attachment to attach buffer
+ * type: buffer type
+ * buf: depthbuffer to be cleared
+ * depth: clear depth
+ * rect: region of depthbuffer to be cleared
+ * check_coord: coord to verify buffer value after clearing
+ */
+bool FramebufferBlitBaseTestCase::clearDepthBuffer(const GLuint fbo, const GLenum attachment, const GLenum type,
+                                                   const GLuint buf, const GLuint internalFormat, const Depth depth,
+                                                   const Rectangle &rect, const Coord &check_coord)
+{
+    bool result     = true;
+    Depth tmp_depth = 0.2f;
+    GLint sample_buffers;
+
+    /* Get epsilon based on format precision */
+    auto get_epsilon = [](const GLuint resultPreBits, const GLuint sourcePreBits)
+    {
+        GLuint tolerance = std::min(resultPreBits, sourcePreBits);
+        tolerance        = std::min(tolerance, GLuint(23)); // don't exceed the amount of mantissa bits in a float
+        return (float)1.0 / (1 << tolerance);
+    };
+
+    if (!check_param(
+            (type == 0 || type == GL_TEXTURE_2D || type == GL_TEXTURE_2D_MULTISAMPLE || type == GL_RENDERBUFFER),
+            "invalid type"))
+        return false;
+
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+
+    gl.bindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "bindFramebuffer");
+
+    gl.bindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "bindFramebuffer");
+
+    if (fbo && (fbo != m_defaultFBO))
+    {
+        result &= attachBufferToFramebuffer(GL_DRAW_FRAMEBUFFER, attachment, type, buf);
+        result &= attachBufferToFramebuffer(GL_READ_FRAMEBUFFER, attachment, type, buf);
+    }
+
+    // clear depth rectangle
+    gl.scissor(rect.x, rect.y, rect.w, rect.h);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "scissor");
+    gl.enable(GL_SCISSOR_TEST);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "enable");
+
+    GLuint status = gl.checkFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "checkFramebufferStatus");
+    CHECK_RET(status, GL_FRAMEBUFFER_COMPLETE, glCheckFramebufferStatus);
+
+    if (!m_isContextES)
+    {
+        gl.clearDepth(depth);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "clearDepth");
+    }
+    else
+    {
+        gl.clearDepthf(depth);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "clearDepthf");
+    }
+
+    m_testCtx.getLog() << tcu::TestLog::Message << "clearing depth to [" << depth << "]" << tcu::TestLog::EndMessage;
+
+    gl.clear(GL_DEPTH_BUFFER_BIT);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "clear");
+    gl.disable(GL_SCISSOR_TEST);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "disable");
+
+    /* Verify the depth in cleared depth in case of single-sampled
+     * buffers. Don't verify in case of multisampled buffer since
+     * glReadPixels generates GL_INVALID_OPERATION if
+     * GL_SAMPLE_BUFFERS is greater than zero. */
+    gl.getIntegerv(GL_SAMPLE_BUFFERS, &sample_buffers);
+
+    if (sample_buffers == 0)
+    {
+        if (fbo && (fbo != m_defaultFBO))
+        {
+            m_testCtx.getLog() << tcu::TestLog::Message << "verifying initial "
+                               << ((type == GL_TEXTURE_2D) ? "tex" : "ren") << "buf" << buf << " depth [" << depth
+                               << "]" << tcu::TestLog::EndMessage;
+        }
+        else
+        {
+            m_testCtx.getLog() << tcu::TestLog::Message << "verifying initial dfltbuf depth [" << depth << "]"
+                               << tcu::TestLog::EndMessage;
+        }
+
+        GLuint precisionBits[2] = {0, 0};
+        getDepth(check_coord, &tmp_depth, &precisionBits[0], fbo, internalFormat, rect);
+
+        /* Calculate precision */
+        precisionBits[1] = GetDepthPrecisionBits(internalFormat);
+        GLfloat epsilon  = get_epsilon(precisionBits[0], precisionBits[1]);
+
+        result = checkDepth(tmp_depth, depth, epsilon);
+        CHECK(result, true, checkDepth);
+    }
+    else
+    {
+        if (fbo && (fbo != m_defaultFBO))
+        {
+            m_testCtx.getLog() << tcu::TestLog::Message << "no verification of multisampled "
+                               << ((type == GL_RENDERBUFFER) ? "ren" : "tex") << "buf" << buf
+                               << tcu::TestLog::EndMessage;
+        }
+        else
+        {
+            m_testCtx.getLog() << tcu::TestLog::Message << "no verification of multisampled dfltbuf"
+                               << tcu::TestLog::EndMessage;
+        }
+    }
+
+    gl.bindFramebuffer(GL_READ_FRAMEBUFFER, m_defaultFBO);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "bindFramebuffer");
+
+    gl.bindFramebuffer(GL_DRAW_FRAMEBUFFER, m_defaultFBO);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "bindFramebuffer");
 
     return result;
 }
@@ -1097,9 +1045,8 @@ bool FramebufferBlitMultiToSingleSampledTestCase::setupDefaultShader(GLuint &vao
 /* Get the depth value from the given coordinates. Return true if
  * succeed, false otherwise.
  */
-bool FramebufferBlitMultiToSingleSampledTestCase::getDepth(const Coord &coord, Depth *depth, GLuint *precisionBits,
-                                                           const GLuint fbo, const GLuint internalFormat,
-                                                           const Rectangle &rect)
+bool FramebufferBlitBaseTestCase::getDepth(const Coord &coord, Depth *depth, GLuint *precisionBits, const GLuint fbo,
+                                           const GLuint internalFormat, const Rectangle &rect)
 {
     bool result   = true;
     GLuint status = 0;
@@ -1257,16 +1204,41 @@ bool FramebufferBlitMultiToSingleSampledTestCase::getDepth(const Coord &coord, D
     return result;
 }
 
-bool FramebufferBlitMultiToSingleSampledTestCase::setupRenderShader(GLuint &vao, GLuint &vbo, GLint *uColor)
+/* Get depth precision bit from a depth internal format
+ */
+GLuint FramebufferBlitBaseTestCase::GetDepthPrecisionBits(const GLenum depthInternalFormat)
+{
+    for (GLuint i = 0; i < m_depthCfg.size(); ++i)
+        if (m_depthCfg[i].internal_format == depthInternalFormat)
+            return m_depthCfg[i].precisionBits;
+    return 0;
+}
+
+/* Verify the actual and the expected depth match. Return true if
+ * succeed, false otherwise.
+ */
+bool FramebufferBlitBaseTestCase::checkDepth(const Depth actual, const Depth expected, const GLfloat eps)
+{
+    if (std::fabs(actual - expected) > eps)
+    {
+        m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: expected DEPTH[" << expected << "] but got DEPTH["
+                           << actual << "], epsilon[" << eps << "]" << tcu::TestLog::EndMessage;
+        return false;
+    }
+    return true;
+}
+
+bool FramebufferBlitBaseTestCase::setupDefaultShader(GLuint &vao, GLuint &vbo)
 {
     bool result = true;
 
     // clang-format off
-    const std::vector<GLfloat> vboData = {
-        -1.0f, -1.0f, 0.0f, 1.0f,
-         1.0f, -1.0f, 0.0f, 1.0f,
-        -1.0f, 1.0f, 0.0f, 1.0f,
-        1.0f, 1.0f, 0.0f, 1.0f,
+    const std::vector <GLfloat> vboData =
+    {
+        -1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+        1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+        -1.0f,  1.0f, 0.0f, 1.0f, 0.0f, 1.0f,
+        1.0f,  1.0f, 0.0f, 1.0f, 1.0f, 1.0f,
     };
     // clang-format on
 
@@ -1285,27 +1257,37 @@ bool FramebufferBlitMultiToSingleSampledTestCase::setupRenderShader(GLuint &vao,
     gl.bufferData(GL_ARRAY_BUFFER, vboData.size() * sizeof(GLfloat), (GLvoid *)vboData.data(), GL_DYNAMIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "bufferData");
 
-    // setup shader
-    gl.useProgram(m_renderProg->getProgram());
+    gl.useProgram(m_defaultProg->getProgram());
     GLU_EXPECT_NO_ERROR(gl.getError(), "useProgram");
 
-    GLint attribPos = gl.getAttribLocation(m_renderProg->getProgram(), "pos");
+    // Setup shader attributes
+    GLint attribPos = gl.getAttribLocation(m_defaultProg->getProgram(), "pos");
     GLU_EXPECT_NO_ERROR(gl.getError(), "getAttribLocation");
     CHECK_RET((attribPos != -1), true, getAttribLocation);
 
-    gl.vertexAttribPointer(attribPos, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "vertexAttribPointer");
+    GLint attribUV = gl.getAttribLocation(m_defaultProg->getProgram(), "UV");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "getAttribLocation");
+    CHECK_RET((attribUV != -1), true, getAttribLocation);
 
-    // Setup shader attributes
+    const GLsizei vertSize = (vboData.size() / 4) * sizeof(GLfloat);
+    const GLsizei uvOffset = (4 * sizeof(GLfloat));
+
+    gl.vertexAttribPointer(attribPos, 4, GL_FLOAT, GL_FALSE, vertSize, nullptr);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "vertexAttribPointer");
     gl.enableVertexAttribArray(attribPos);
     GLU_EXPECT_NO_ERROR(gl.getError(), "enableVertexAttribArray");
 
+    gl.vertexAttribPointer(attribUV, 2, GL_FLOAT, GL_FALSE, vertSize, (const GLvoid *)uvOffset);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "vertexAttribPointer");
+    gl.enableVertexAttribArray(attribUV);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "enableVertexAttribArray");
+
     // Setup shader uniform
-    *uColor = gl.getUniformLocation(m_renderProg->getProgram(), "uColor");
+    GLint uniformTex = gl.getUniformLocation(m_defaultProg->getProgram(), "tex");
     GLU_EXPECT_NO_ERROR(gl.getError(), "getUniformLocation");
-    CHECK_RET((*uColor != -1), true, getUniformLocation);
-    gl.uniform4f(*uColor, 1.0f, 1.0f, 1.0f, 1.0f);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "uniform4f");
+    CHECK_RET((uniformTex != -1), true, getUniformLocation);
+    gl.uniform1i(uniformTex, 0);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "uniform1i");
 
     return result;
 }
@@ -1313,8 +1295,8 @@ bool FramebufferBlitMultiToSingleSampledTestCase::setupRenderShader(GLuint &vao,
 /* Get the stencil value from the given coordinates. Return true if
  * succeed, false otherwise.
  */
-bool FramebufferBlitMultiToSingleSampledTestCase::getStencil(const Coord &coord, Stencil *stcil, const GLuint fbo,
-                                                             const GLuint internalFormat, const Rectangle &rect)
+bool FramebufferBlitBaseTestCase::getStencil(const Coord &coord, Stencil *stcil, const GLuint fbo,
+                                             const GLuint internalFormat, const Rectangle &rect)
 {
     bool result   = true;
     GLuint status = 0;
@@ -1471,35 +1453,10 @@ bool FramebufferBlitMultiToSingleSampledTestCase::getStencil(const Coord &coord,
     return result;
 }
 
-/* Get depth precision bit from a depth internal format
- */
-GLuint FramebufferBlitMultiToSingleSampledTestCase::GetDepthPrecisionBits(const GLenum depthInternalFormat)
-{
-    for (GLuint i = 0; i < m_depthCfg.size(); ++i)
-        if (m_depthCfg[i].internal_format == depthInternalFormat)
-            return m_depthCfg[i].precisionBits;
-    return 0;
-}
-
-/* Verify the actual and the expected depth match. Return true if
- * succeed, false otherwise.
- */
-bool FramebufferBlitMultiToSingleSampledTestCase::checkDepth(const Depth actual, const Depth expected,
-                                                             const GLfloat eps)
-{
-    if (std::fabs(actual - expected) > eps)
-    {
-        m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: expected DEPTH[" << expected << "] but got DEPTH["
-                           << actual << "], epsilon[" << eps << "]" << tcu::TestLog::EndMessage;
-        return false;
-    }
-    return true;
-}
-
 /* Verify the actual and the expected stencil match. Return true if
  * succeed, false otherwise.
  */
-bool FramebufferBlitMultiToSingleSampledTestCase::checkStencil(const Stencil actual, const Stencil expected)
+bool FramebufferBlitBaseTestCase::checkStencil(const Stencil actual, const Stencil expected)
 {
     if (actual != expected)
     {
@@ -1508,136 +1465,6 @@ bool FramebufferBlitMultiToSingleSampledTestCase::checkStencil(const Stencil act
         return false;
     }
     return true;
-}
-
-/* Clear the depth buffer to given depth. Prior to return, unbind all
- * used attachments and setup default read and draw framebuffers.
- * Return true if succeed, false otherwise.
- *
- * fbo: framebuffer to use
- * attachment: framebuffer attachment to attach buffer
- * type: buffer type
- * buf: depthbuffer to be cleared
- * depth: clear depth
- * rect: region of depthbuffer to be cleared
- * check_coord: coord to verify buffer value after clearing
- */
-bool FramebufferBlitMultiToSingleSampledTestCase::clearDepthBuffer(const GLuint fbo, const GLenum attachment,
-                                                                   const GLenum type, const GLuint buf,
-                                                                   const GLuint internalFormat, const Depth depth,
-                                                                   const Rectangle &rect, const Coord &check_coord)
-{
-    bool result     = true;
-    Depth tmp_depth = 0.2f;
-    GLint sample_buffers;
-
-    /* Get epsilon based on format precision */
-    auto get_epsilon = [](const GLuint resultPreBits, const GLuint sourcePreBits)
-    {
-        GLuint tolerance = std::min(resultPreBits, sourcePreBits);
-        tolerance        = std::min(tolerance, GLuint(23)); // don't exceed the amount of mantissa bits in a float
-        return (float)1.0 / (1 << tolerance);
-    };
-
-    if (!check_param(
-            (type == 0 || type == GL_TEXTURE_2D || type == GL_TEXTURE_2D_MULTISAMPLE || type == GL_RENDERBUFFER),
-            "invalid type"))
-        return false;
-
-    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
-
-    gl.bindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "bindFramebuffer");
-
-    gl.bindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "bindFramebuffer");
-
-    if (fbo && (fbo != m_defaultFBO))
-    {
-        result &= attachBufferToFramebuffer(GL_DRAW_FRAMEBUFFER, attachment, type, buf);
-        result &= attachBufferToFramebuffer(GL_READ_FRAMEBUFFER, attachment, type, buf);
-    }
-
-    // clear depth rectangle
-    gl.scissor(rect.x, rect.y, rect.w, rect.h);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "scissor");
-    gl.enable(GL_SCISSOR_TEST);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "enable");
-
-    GLuint status = gl.checkFramebufferStatus(GL_DRAW_FRAMEBUFFER);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "checkFramebufferStatus");
-    CHECK_RET(status, GL_FRAMEBUFFER_COMPLETE, glCheckFramebufferStatus);
-
-    if (!m_isContextES)
-    {
-        gl.clearDepth(depth);
-        GLU_EXPECT_NO_ERROR(gl.getError(), "clearDepth");
-    }
-    else
-    {
-        gl.clearDepthf(depth);
-        GLU_EXPECT_NO_ERROR(gl.getError(), "clearDepthf");
-    }
-
-    m_testCtx.getLog() << tcu::TestLog::Message << "clearing depth to [" << depth << "]" << tcu::TestLog::EndMessage;
-
-    gl.clear(GL_DEPTH_BUFFER_BIT);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "clear");
-    gl.disable(GL_SCISSOR_TEST);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "disable");
-
-    /* Verify the depth in cleared depth in case of single-sampled
-     * buffers. Don't verify in case of multisampled buffer since
-     * glReadPixels generates GL_INVALID_OPERATION if
-     * GL_SAMPLE_BUFFERS is greater than zero. */
-    gl.getIntegerv(GL_SAMPLE_BUFFERS, &sample_buffers);
-
-    if (sample_buffers == 0)
-    {
-        if (fbo && (fbo != m_defaultFBO))
-        {
-            m_testCtx.getLog() << tcu::TestLog::Message << "verifying initial "
-                               << ((type == GL_TEXTURE_2D) ? "tex" : "ren") << "buf" << buf << " depth [" << depth
-                               << "]" << tcu::TestLog::EndMessage;
-        }
-        else
-        {
-            m_testCtx.getLog() << tcu::TestLog::Message << "verifying initial dfltbuf depth [" << depth << "]"
-                               << tcu::TestLog::EndMessage;
-        }
-
-        GLuint precisionBits[2] = {0, 0};
-        getDepth(check_coord, &tmp_depth, &precisionBits[0], fbo, internalFormat, rect);
-
-        /* Calculate precision */
-        precisionBits[1] = GetDepthPrecisionBits(internalFormat);
-        GLfloat epsilon  = get_epsilon(precisionBits[0], precisionBits[1]);
-
-        result = checkDepth(tmp_depth, depth, epsilon);
-        CHECK(result, true, checkDepth);
-    }
-    else
-    {
-        if (fbo && (fbo != m_defaultFBO))
-        {
-            m_testCtx.getLog() << tcu::TestLog::Message << "no verification of multisampled "
-                               << ((type == GL_RENDERBUFFER) ? "ren" : "tex") << "buf" << buf
-                               << tcu::TestLog::EndMessage;
-        }
-        else
-        {
-            m_testCtx.getLog() << tcu::TestLog::Message << "no verification of multisampled dfltbuf"
-                               << tcu::TestLog::EndMessage;
-        }
-    }
-
-    gl.bindFramebuffer(GL_READ_FRAMEBUFFER, m_defaultFBO);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "bindFramebuffer");
-
-    gl.bindFramebuffer(GL_DRAW_FRAMEBUFFER, m_defaultFBO);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "bindFramebuffer");
-
-    return result;
 }
 
 /* Clear the stencil buffer to given stencil. Prior to return, unbind
@@ -1652,10 +1479,9 @@ bool FramebufferBlitMultiToSingleSampledTestCase::clearDepthBuffer(const GLuint 
  * rect: region of stencilbuffer to be cleared
  * check_coord: coord to verify buffer value after clearing
  */
-bool FramebufferBlitMultiToSingleSampledTestCase::clearStencilBuffer(const GLuint fbo, const GLenum attachment,
-                                                                     const GLenum type, const GLuint buf,
-                                                                     const GLuint internalFormat, const Stencil stcil,
-                                                                     const Rectangle &rect, const Coord &check_coord)
+bool FramebufferBlitBaseTestCase::clearStencilBuffer(const GLuint fbo, const GLenum attachment, const GLenum type,
+                                                     const GLuint buf, const GLuint internalFormat, const Stencil stcil,
+                                                     const Rectangle &rect, const Coord &check_coord)
 {
     bool result          = true;
     Stencil tmp_stcil    = 50;
@@ -1745,9 +1571,62 @@ bool FramebufferBlitMultiToSingleSampledTestCase::clearStencilBuffer(const GLuin
     return result;
 }
 
+bool FramebufferBlitBaseTestCase::setupRenderShader(GLuint &vao, GLuint &vbo, GLint *uColor)
+{
+    bool result = true;
+
+    // clang-format off
+    const std::vector<GLfloat> vboData = {
+        -1.0f, -1.0f, 0.0f, 1.0f,
+         1.0f, -1.0f, 0.0f, 1.0f,
+        -1.0f, 1.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, 0.0f, 1.0f,
+    };
+    // clang-format on
+
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+
+    gl.genVertexArrays(1, &vao);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "genVertexArrays");
+    gl.bindVertexArray(vao);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "bindVertexArray");
+
+    gl.genBuffers(1, &vbo);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "genBuffers");
+    gl.bindBuffer(GL_ARRAY_BUFFER, vbo);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "bindBuffer");
+
+    gl.bufferData(GL_ARRAY_BUFFER, vboData.size() * sizeof(GLfloat), (GLvoid *)vboData.data(), GL_DYNAMIC_DRAW);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "bufferData");
+
+    // setup shader
+    gl.useProgram(m_renderProg->getProgram());
+    GLU_EXPECT_NO_ERROR(gl.getError(), "useProgram");
+
+    GLint attribPos = gl.getAttribLocation(m_renderProg->getProgram(), "pos");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "getAttribLocation");
+    CHECK_RET((attribPos != -1), true, getAttribLocation);
+
+    gl.vertexAttribPointer(attribPos, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "vertexAttribPointer");
+
+    // Setup shader attributes
+    gl.enableVertexAttribArray(attribPos);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "enableVertexAttribArray");
+
+    // Setup shader uniform
+    *uColor = gl.getUniformLocation(m_renderProg->getProgram(), "uColor");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "getUniformLocation");
+    CHECK_RET((*uColor != -1), true, getUniformLocation);
+    gl.uniform4f(*uColor, 1.0f, 1.0f, 1.0f, 1.0f);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "uniform4f");
+
+    return result;
+}
+
 /* print values in global variables
  */
-void FramebufferBlitMultiToSingleSampledTestCase::printGlobalBufferInfo()
+void FramebufferBlitBaseTestCase::printGlobalBufferInfo()
 {
     auto print_info = [&](GLuint h0, GLuint h1, const char *str)
     {
@@ -1769,16 +1648,84 @@ void FramebufferBlitMultiToSingleSampledTestCase::printGlobalBufferInfo()
                        << tcu::TestLog::EndMessage;
 }
 
+/** Constructor.
+ *
+ *  @param context     Rendering context
+ */
+FramebufferBlitMultiToSingleSampledTestCase::FramebufferBlitMultiToSingleSampledTestCase(deqp::Context &context)
+    : FramebufferBlitBaseTestCase(
+          context, "multisampled_to_singlesampled_blit",
+          "Confirm that blits from multisampled to single sampled framebuffers of various types are properly resolved.")
+{
+}
+
+FramebufferBlitMultiToSingleSampledTestCase::FramebufferBlitMultiToSingleSampledTestCase(deqp::Context &context,
+                                                                                         const char *name,
+                                                                                         const char *desc)
+    : FramebufferBlitBaseTestCase(context, name, desc)
+{
+}
+
+/** Stub deinit method. */
+void FramebufferBlitMultiToSingleSampledTestCase::deinit()
+{
+    FramebufferBlitBaseTestCase::deinit();
+}
+
+/** Stub init method */
+void FramebufferBlitMultiToSingleSampledTestCase::init()
+{
+    FramebufferBlitBaseTestCase::init();
+
+    // clang-format off
+    /* buffer configs used in functionality tests */
+    m_multisampleColorCfg = {
+        /* internal format, format, type, color channel bits */
+        { GL_R8, GL_RED, GL_UNSIGNED_BYTE, RED_CHANNEL, false },
+        { GL_RG8, GL_RG, GL_UNSIGNED_BYTE, RED_CHANNEL|GREEN_CHANNEL, false },
+        { GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, RED_CHANNEL|GREEN_CHANNEL|BLUE_CHANNEL|ALPHA_CHANNEL, false },
+        { GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE, RED_CHANNEL|GREEN_CHANNEL|BLUE_CHANNEL|ALPHA_CHANNEL, false },
+        { GL_RGBA4, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, RED_CHANNEL|GREEN_CHANNEL|BLUE_CHANNEL|ALPHA_CHANNEL, false },
+        { GL_RGB5_A1, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, RED_CHANNEL|GREEN_CHANNEL|BLUE_CHANNEL|ALPHA_CHANNEL, false },
+        { GL_R11F_G11F_B10F, GL_RGB, GL_UNSIGNED_INT_10F_11F_11F_REV, RED_CHANNEL|GREEN_CHANNEL|BLUE_CHANNEL, true },
+        { GL_RG16F, GL_RG, GL_HALF_FLOAT, RED_CHANNEL|GREEN_CHANNEL, true },
+        { GL_R16F, GL_RED, GL_HALF_FLOAT, RED_CHANNEL, true },
+        { GL_RGB8, GL_RGB, GL_UNSIGNED_BYTE, RED_CHANNEL|GREEN_CHANNEL|BLUE_CHANNEL, false }, /* Texture only format */
+    };
+
+    if (!m_isContextES)
+    {
+        m_multisampleColorCfg.push_back({ GL_RGB10_A2, GL_RGBA, GL_UNSIGNED_INT_10_10_10_2,
+                                          RED_CHANNEL | GREEN_CHANNEL | BLUE_CHANNEL | ALPHA_CHANNEL, false });
+    }
+    else
+    {
+        m_multisampleColorCfg.push_back({ GL_RGB10_A2, GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV,
+                                          RED_CHANNEL | GREEN_CHANNEL | BLUE_CHANNEL | ALPHA_CHANNEL, false });
+        m_multisampleColorCfg.push_back(
+            { GL_RGB565, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, RED_CHANNEL | GREEN_CHANNEL | BLUE_CHANNEL, false });
+    }
+    // clang-format on
+}
+
+FramebufferBlitMultiToSingleSampledColorConfigTestCase::FramebufferBlitMultiToSingleSampledColorConfigTestCase(
+    deqp::Context &context)
+    : FramebufferBlitMultiToSingleSampledTestCase(context, "multisampled_to_singlesampled_blit_color_config_test",
+                                                  "Confirm that blits from multisampled to single sampled framebuffers "
+                                                  "of various types are properly resolved using color config.")
+{
+}
+
 /** Executes color configuration framebuffer blit tests.
  *
  *  @return Returns false if test went wrong.
  */
 template <GLuint samples>
-bool FramebufferBlitMultiToSingleSampledTestCase::testColorBlitConfig(const tcu::IVec2 &ul_center,
-                                                                      const tcu::IVec2 &ur_center,
-                                                                      const tcu::IVec2 &ll_center,
-                                                                      const tcu::IVec2 &lr_center,
-                                                                      const glw::GLint max_color_attachments)
+bool FramebufferBlitMultiToSingleSampledColorConfigTestCase::testColorBlitConfig(const tcu::IVec2 &ul_center,
+                                                                                 const tcu::IVec2 &ur_center,
+                                                                                 const tcu::IVec2 &ll_center,
+                                                                                 const tcu::IVec2 &lr_center,
+                                                                                 const glw::GLint max_color_attachments)
 {
     bool result  = true;
     GLint status = 0;
@@ -2087,8 +2034,7 @@ bool FramebufferBlitMultiToSingleSampledTestCase::testColorBlitConfig(const tcu:
                 {
                     if (m_isContextES)
                     {
-                        std::vector<GLenum> draw_attachments(max_color_attachments);
-                        draw_attachments.assign(max_color_attachments, GL_NONE);
+                        std::vector<GLenum> draw_attachments(max_color_attachments, GL_NONE);
                         draw_attachments[j] = attachment;
                         gl.drawBuffers(j + 1, draw_attachments.data());
                     }
@@ -2187,15 +2133,23 @@ bool FramebufferBlitMultiToSingleSampledTestCase::testColorBlitConfig(const tcu:
     return result;
 }
 
+FramebufferBlitMultiToSingleSampledDepthConfigTestCase::FramebufferBlitMultiToSingleSampledDepthConfigTestCase(
+    deqp::Context &context)
+    : FramebufferBlitMultiToSingleSampledTestCase(context, "multisampled_to_singlesampled_blit_depth_config_test",
+                                                  "Confirm that blits from multisampled to single sampled framebuffers "
+                                                  "of various types are properly resolved using depth config.")
+{
+}
+
 /** Executes depth configuration framebuffer blit tests.
  *
  *  @return Returns false if test went wrong.
  */
 template <GLuint samples>
-bool FramebufferBlitMultiToSingleSampledTestCase::testDepthBlitConfig(const tcu::IVec2 &ul_center,
-                                                                      const tcu::IVec2 &ur_center,
-                                                                      const tcu::IVec2 &ll_center,
-                                                                      const tcu::IVec2 &lr_center)
+bool FramebufferBlitMultiToSingleSampledDepthConfigTestCase::testDepthBlitConfig(const tcu::IVec2 &ul_center,
+                                                                                 const tcu::IVec2 &ur_center,
+                                                                                 const tcu::IVec2 &ll_center,
+                                                                                 const tcu::IVec2 &lr_center)
 {
     bool result       = true;
     GLint status      = 0;
@@ -2495,12 +2449,12 @@ bool FramebufferBlitMultiToSingleSampledTestCase::testDepthBlitConfig(const tcu:
                 if (buf_config.src_type)
                     srcPreBits = GetDepthPrecisionBits(depth_config.internal_format);
                 else
-                    GetBits(GL_READ_FRAMEBUFFER, GL_DEPTH_BITS, &srcPreBits);
+                    getBits(gl, m_isContextES, GL_READ_FRAMEBUFFER, GL_DEPTH_BITS, &srcPreBits);
 
                 if (buf_config.dst_type)
                     dstPreBits = GetDepthPrecisionBits(depth_config.internal_format);
                 else
-                    GetBits(GL_READ_FRAMEBUFFER, GL_DEPTH_BITS, &dstPreBits);
+                    getBits(gl, m_isContextES, GL_READ_FRAMEBUFFER, GL_DEPTH_BITS, &dstPreBits);
 
                 getDepth(m_setup.ul_coord, &tmp_depth, &resultPreBits,
                          buf_config.dst_type == 0 ? m_defaultFBO : *buf_config.dst_fbo, depth_config.internal_format,
@@ -2592,8 +2546,7 @@ bool FramebufferBlitMultiToSingleSampledTestCase::testDepthBlitConfig(const tcu:
  */
 tcu::TestNode::IterateResult FramebufferBlitMultiToSingleSampledTestCase::iterate()
 {
-    bool result                 = true;
-    GLint max_color_attachments = 0;
+    bool result = true;
     /* quadrant centers for verifying initial colors */
     tcu::IVec2 ul_center, ur_center, ll_center, lr_center;
     constexpr GLuint samples = 4;
@@ -2608,7 +2561,1047 @@ tcu::TestNode::IterateResult FramebufferBlitMultiToSingleSampledTestCase::iterat
     lr_center[0] = m_setup.lr_rect.x + m_setup.lr_rect.w / 2;
     lr_center[1] = m_setup.lr_rect.y + m_setup.lr_rect.h / 2;
 
+    FramebufferBlitMultiToSingleSampledColorConfigTestCase *colorTestCaseConfig =
+        dynamic_cast<FramebufferBlitMultiToSingleSampledColorConfigTestCase *>(this);
+    if (colorTestCaseConfig != nullptr)
+    {
+        GLint max_color_attachments = 0;
+        const glw::Functions &gl    = m_context.getRenderContext().getFunctions();
+
+        gl.getIntegerv(GL_MAX_COLOR_ATTACHMENTS, &max_color_attachments);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
+
+        CHECK_RET(max_color_attachments >= m_minColorAttachments, GL_TRUE, glGetIntegerv);
+
+        if (m_isContextES)
+        {
+            GLint max_draw_buffers = 0;
+            gl.getIntegerv(GL_MAX_DRAW_BUFFERS, &max_draw_buffers);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
+
+            CHECK_RET(max_draw_buffers >= m_minDrawBuffers, GL_TRUE, glGetIntegerv);
+            if (max_draw_buffers < max_color_attachments)
+            {
+                max_color_attachments = max_draw_buffers;
+            }
+        }
+
+        /* 1. Test all color buffer formats, no depth or stencil buffers
+         * attached here */
+        CHECK_RET(colorTestCaseConfig->testColorBlitConfig<samples>(ul_center, ur_center, ll_center, lr_center,
+                                                                    max_color_attachments),
+                  true, "color blit test failed");
+    }
+    else
+    {
+        FramebufferBlitMultiToSingleSampledDepthConfigTestCase *depthTestCaseConfig =
+            dynamic_cast<FramebufferBlitMultiToSingleSampledDepthConfigTestCase *>(this);
+        if (depthTestCaseConfig != nullptr)
+        {
+            /* 2. Test all depth buffer formats, no color or stencil buffers
+             * attached here */
+            CHECK_RET(depthTestCaseConfig->testDepthBlitConfig<samples>(ul_center, ur_center, ll_center, lr_center),
+                      true, "depth blit test failed");
+        }
+    }
+
+    if (result)
+        m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+    else
+        m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+    return STOP;
+}
+
+/** Constructor.
+ *
+ *  @param context     Rendering context
+ */
+FramebufferBlitScissorTestCase::FramebufferBlitScissorTestCase(deqp::Context &context)
+    : FramebufferBlitBaseTestCase(context, "scissor_blit", "Confirm that the scissor test is properly respected")
+{
+}
+
+/** Stub deinit method. */
+void FramebufferBlitScissorTestCase::deinit()
+{
+    FramebufferBlitBaseTestCase::deinit();
+}
+
+/** Stub init method */
+void FramebufferBlitScissorTestCase::init()
+{
+    FramebufferBlitBaseTestCase::init();
+
+    int bufWidth  = m_context.getRenderTarget().getWidth();
+    int bufHeight = m_context.getRenderTarget().getHeight();
+
+    /* setup specific for scissor test */
+    /* rectangle */
+    m_setup.scissor_rect = {0, 0, bufWidth / 2, bufHeight / 2}; /* lower left  (x, y, width, height) */
+
+    /* expected values */
+    m_setup.ul_color = BLACK;
+    m_setup.ur_color = BLACK;
+    m_setup.ll_color = GREEN;
+    m_setup.lr_color = BLACK;
+    m_setup.ul_depth = Q0;
+    m_setup.ur_depth = Q0;
+    m_setup.ll_depth = Q1;
+    m_setup.lr_depth = Q0;
+    m_setup.ul_stcil = ZERO;
+    m_setup.ur_stcil = ZERO;
+    m_setup.ll_stcil = ONE;
+    m_setup.lr_stcil = ZERO;
+}
+
+bool FramebufferBlitScissorTestCase::runMultiColorPatternTest(const GLint max_color_attachments)
+{
+    bool result          = true;
+    GLint status         = 0;
+    GLuint bits          = GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT;
+    blt::Color tmp_color = {0.0f, 0.0f, 0.0f, 0.0f};
+    GLfloat tmp_depth    = 0.0f;
+
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+    int bufWidth             = m_context.getRenderTarget().getWidth();
+
+    for (GLuint i = 0; i < m_bufferCfg.size(); i++)
+    {
+        /* test buffer combinations (texture to texture, texture to
+         * renderbuffer, etc.) */
+        GLuint effective_bits = bits;
+
+        /* test color attachments */
+        /* test color attachments */
+        for (GLint j = 0; j < max_color_attachments; j++)
+        {
+            const BufferConfig &buf_config = m_bufferCfg[i];
+            GLenum attachment              = GL_COLOR_ATTACHMENT0 + j;
+
+            /* default color, depth and stencil values for multicolor pattern */
+            blt::Color ul_color   = RED;
+            blt::Color ur_color   = GREEN;
+            blt::Color ll_color   = BLUE;
+            blt::Color lr_color   = WHITE;
+            blt::Depth ul_depth   = Q1;
+            blt::Depth ur_depth   = Q2;
+            blt::Depth ll_depth   = Q3;
+            blt::Depth lr_depth   = Q4;
+            blt::Stencil ul_stcil = ONE;
+            blt::Stencil ur_stcil = TWO;
+            blt::Stencil ll_stcil = THREE;
+            blt::Stencil lr_stcil = FOUR;
+
+            /* source quadrant rects */
+            blt::Rectangle src_ul_rect = m_setup.ul_rect;
+            blt::Rectangle src_ur_rect = m_setup.ur_rect;
+            blt::Rectangle src_ll_rect = m_setup.ll_rect;
+            blt::Rectangle src_lr_rect = m_setup.lr_rect;
+
+            /* destination quadrant rects */
+            blt::Rectangle dst_ul_rect;
+            blt::Rectangle dst_ur_rect;
+            blt::Rectangle dst_ll_rect;
+            blt::Rectangle dst_lr_rect;
+
+            /* destination rect, no quadrants */
+            blt::Rectangle dst_rect = m_setup.blt_dst_rect;
+
+            /* quadrant centers to verify initial colors */
+            blt::Coord src_ul_center = {src_ul_rect.x + src_ul_rect.w / 2, src_ul_rect.y + src_ul_rect.h / 2};
+            blt::Coord src_ur_center = {src_ur_rect.x + src_ur_rect.w / 2, src_ur_rect.y + src_ur_rect.h / 2};
+            blt::Coord src_ll_center = {src_ll_rect.x + src_ll_rect.w / 2, src_ll_rect.y + src_ll_rect.h / 2};
+            blt::Coord src_lr_center = {src_lr_rect.x + src_lr_rect.w / 2, src_lr_rect.y + src_lr_rect.h / 2};
+            blt::Coord dst_center    = {dst_rect.x + dst_rect.w / 2, dst_rect.y + dst_rect.h / 2};
+
+            /* end coords to verify final color */
+            blt::Coord end_ul_coord = m_setup.ul_coord;
+            blt::Coord end_ur_coord = m_setup.ur_coord;
+            blt::Coord end_ll_coord = m_setup.ll_coord;
+            blt::Coord end_lr_coord = m_setup.lr_coord;
+
+            /* blit rectangles */
+            blt::Rectangle blt_src_rect = m_setup.blt_src_rect;
+            blt::Rectangle blt_dst_rect = m_setup.blt_dst_rect;
+
+            /* special case for 4.14 test, when scissoring is enabled,
+               it is not suitable to test same_read_and_draw_buffer config */
+            if (m_setup.scissor_rect.w != m_fullRect.w && m_setup.scissor_rect.h != m_fullRect.h)
+            {
+                if (buf_config.same_read_and_draw_buffer)
+                {
+                    continue;
+                }
+            }
+
+            m_depth_internalFormat = 0;
+            m_depth_type           = 0;
+            m_depth_format         = 0;
+
+            m_stcil_internalFormat = 0;
+            m_stcil_type           = 0;
+            m_stcil_format         = 0;
+
+            // When default FB is involved
+            // Check the format of default FB
+            if ((buf_config.src_type == 0) || (buf_config.dst_type == 0))
+            {
+                GLint sample_buffers;
+                bool noDefaultDepth, noDefaultStcil;
+
+                // Multisample is not tested here
+                gl.bindFramebuffer(GL_FRAMEBUFFER, m_defaultFBO);
+                GLU_EXPECT_NO_ERROR(gl.getError(), "bindFramebuffer");
+
+                gl.getIntegerv(GL_SAMPLE_BUFFERS, &sample_buffers);
+                GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
+
+                if (sample_buffers != 0)
+                {
+                    m_testCtx.getLog() << tcu::TestLog::Message
+                                       << "SKIP --------------------------------------------------------------------"
+                                       << tcu::TestLog::EndMessage;
+                    continue;
+                }
+
+                if (!GetDefaultFramebufferBlitFormat(&noDefaultDepth, &noDefaultStcil))
+                {
+                    // No matched format can be found for blit depth and stencil
+                    if ((effective_bits & GL_COLOR_BUFFER_BIT) == 0)
+                    {
+                        m_testCtx.getLog()
+                            << tcu::TestLog::Message
+                            << "SKIP --------------------------------------------------------------------"
+                            << tcu::TestLog::EndMessage;
+                        continue;
+                    }
+                    else
+                    {
+                        // Just check color
+                        effective_bits &= ~GL_DEPTH_BUFFER_BIT;
+                        effective_bits &= ~GL_STENCIL_BUFFER_BIT;
+                    }
+                }
+
+                if (noDefaultDepth)
+                {
+                    effective_bits &= ~GL_DEPTH_BUFFER_BIT;
+                }
+
+                if (noDefaultStcil)
+                {
+                    effective_bits &= ~GL_STENCIL_BUFFER_BIT;
+                }
+            }
+
+            /* prepare read rectangles (to the left part of buffer)
+             * and draw rectangles (to the right part of buffer) when
+             * same buffer used for reading and drawing */
+            if (buf_config.same_read_and_draw_buffer)
+            {
+                m_testCtx.getLog() << tcu::TestLog::Message
+                                   << "........................................................................"
+                                   << tcu::TestLog::EndMessage;
+
+                tcu_fail_msg("from src_ul_rect [x,y,w,h]=[%d,%d,%d,%d]", src_ul_rect.x, src_ul_rect.y, src_ul_rect.w,
+                             src_ul_rect.h);
+                tcu_fail_msg("from src_ur_rect [x,y,w,h]=[%d,%d,%d,%d]", src_ur_rect.x, src_ur_rect.y, src_ur_rect.w,
+                             src_ur_rect.h);
+                tcu_fail_msg("from src_ll_rect [x,y,w,h]=[%d,%d,%d,%d]", src_ll_rect.x, src_ll_rect.y, src_ll_rect.w,
+                             src_ll_rect.h);
+                tcu_fail_msg("from src_lr_rect [x,y,w,h]=[%d,%d,%d,%d]", src_lr_rect.x, src_lr_rect.y, src_lr_rect.w,
+                             src_lr_rect.h);
+
+                /* src quadrants to the left side of buffer */
+                src_ll_rect.x = src_ll_rect.x / 2;            /* lower-left src */
+                src_ll_rect.w = src_ll_rect.w / 2;            /* lower-left src */
+                src_lr_rect.x = src_ll_rect.w;                /* lower-right src */
+                src_lr_rect.w = bufWidth / 2 - src_ll_rect.w; /* lower-right src */
+                src_ul_rect.x = src_ul_rect.x / 2;            /* upper-left src */
+                src_ul_rect.w = src_ul_rect.w / 2;            /* upper-left src */
+                src_ur_rect.x = src_ul_rect.w;                /* upper-right src */
+                src_ur_rect.w = bufWidth / 2 - src_ul_rect.w; /* upper-right src */
+
+                tcu_fail_msg("to src_ul_rect [x,y,w,h]=[%d,%d,%d,%d]", src_ul_rect.x, src_ul_rect.y, src_ul_rect.w,
+                             src_ul_rect.h);
+                tcu_fail_msg("to src_ur_rect [x,y,w,h]=[%d,%d,%d,%d]", src_ur_rect.x, src_ur_rect.y, src_ur_rect.w,
+                             src_ur_rect.h);
+                tcu_fail_msg("to src_ll_rect [x,y,w,h]=[%d,%d,%d,%d]", src_ll_rect.x, src_ll_rect.y, src_ll_rect.w,
+                             src_ll_rect.h);
+                tcu_fail_msg("to src_lr_rect [x,y,w,h]=[%d,%d,%d,%d]", src_lr_rect.x, src_lr_rect.y, src_lr_rect.w,
+                             src_lr_rect.h);
+                tcu_fail_msg("from dst_rect [x,y,w,h]=[%d,%d,%d,%d]", dst_rect.x, dst_rect.y, dst_rect.w, dst_rect.h);
+
+                /* dst rectangle to the right side of buffer */
+                dst_rect.x = bufWidth / 2 + dst_rect.x / 2;
+                dst_rect.w = bufWidth / 2;
+
+                tcu_fail_msg("to dst_rect [x,y,w,h]=[%d,%d,%d,%d]", dst_rect.x, dst_rect.y, dst_rect.w, dst_rect.h);
+                tcu_fail_msg("from src_ul_center [x,y]=[%d,%d]", src_ul_center.x(), src_ul_center.y());
+                tcu_fail_msg("from src_ur_center [x,y]=[%d,%d]", src_ur_center.x(), src_ur_center.y());
+                tcu_fail_msg("from src_ll_center [x,y]=[%d,%d]", src_ll_center.x(), src_ll_center.y());
+                tcu_fail_msg("from src_lr_center [x,y]=[%d,%d]", src_lr_center.x(), src_lr_center.y());
+
+                /* src quadrant centers to verify initial colors */
+                src_ul_center = blt::Coord(src_ul_rect.x + src_ul_rect.w / 2, src_ul_rect.y + src_ul_rect.h / 2);
+                src_ur_center = blt::Coord(src_ur_rect.x + src_ur_rect.w / 2, src_ur_rect.y + src_ur_rect.h / 2);
+                src_ll_center = blt::Coord(src_ll_rect.x + src_ll_rect.w / 2, src_ll_rect.y + src_ll_rect.h / 2);
+                src_lr_center = blt::Coord(src_lr_rect.x + src_lr_rect.w / 2, src_lr_rect.y + src_lr_rect.h / 2);
+
+                tcu_fail_msg("to src_ul_center [x,y]=[%d,%d]", src_ul_center.x(), src_ul_center.y());
+                tcu_fail_msg("to src_ur_center [x,y]=[%d,%d]", src_ur_center.x(), src_ur_center.y());
+                tcu_fail_msg("to src_ll_center [x,y]=[%d,%d]", src_ll_center.x(), src_ll_center.y());
+                tcu_fail_msg("to src_lr_center [x,y]=[%d,%d]", src_lr_center.x(), src_lr_center.y());
+                tcu_fail_msg("from dst_center [x,y]=[%d,%d]", dst_center.x(), dst_center.y());
+
+                /* dst center to verify initial color */
+                dst_center = blt::Coord(dst_rect.x + dst_rect.w / 2, dst_rect.y + dst_rect.h / 2);
+
+                tcu_fail_msg("to dst_center [x,y]=[%d,%d]", dst_center.x(), dst_center.y());
+                tcu_fail_msg("from end_ul_coord [x,y]=[%d,%d]", end_ul_coord.x(), end_ul_coord.y());
+                tcu_fail_msg("from end_ur_coord [x,y]=[%d,%d]", end_ur_coord.x(), end_ur_coord.y());
+                tcu_fail_msg("from end_ll_coord [x,y]=[%d,%d]", end_ll_coord.x(), end_ll_coord.y());
+                tcu_fail_msg("from end_lr_coord [x,y]=[%d,%d]", end_lr_coord.x(), end_lr_coord.y());
+
+                /* end coords to verify final colors */
+                end_ul_coord = blt::Coord(dst_rect.x, end_ul_coord.y());
+                end_ur_coord = blt::Coord(dst_rect.x + dst_rect.w - 1, end_ur_coord.y());
+                end_ll_coord = blt::Coord(dst_rect.x, end_ll_coord.y());
+                end_lr_coord = blt::Coord(dst_rect.x + dst_rect.w - 1, end_lr_coord.y());
+
+                tcu_fail_msg("to end_ul_coord [x,y]=[%d,%d]", end_ul_coord.x(), end_ul_coord.y());
+                tcu_fail_msg("to end_ur_coord [x,y]=[%d,%d]", end_ur_coord.x(), end_ur_coord.y());
+                tcu_fail_msg("to end_ll_coord [x,y]=[%d,%d]", end_ll_coord.x(), end_ll_coord.y());
+                tcu_fail_msg("to end_lr_coord [x,y]=[%d,%d]", end_lr_coord.x(), end_lr_coord.y());
+                tcu_fail_msg("from blt_src_rect [x,y,w,h]=[%d,%d,%d,%d]", blt_src_rect.x, blt_src_rect.y,
+                             blt_src_rect.w, blt_src_rect.h);
+                tcu_fail_msg("from blt_dst_rect [x,y,w,h]=[%d,%d,%d,%d]", blt_dst_rect.x, blt_dst_rect.y,
+                             blt_dst_rect.w, blt_dst_rect.h);
+
+                /* blit rectangles */
+                blt_src_rect.x = src_ll_rect.x;
+                blt_src_rect.w = src_ll_rect.w + src_lr_rect.w;
+                blt_dst_rect.x = dst_rect.x;
+                blt_dst_rect.w = dst_rect.w;
+
+                tcu_fail_msg("to blt_src_rect [x,y,w,h]=[%d,%d,%d,%d]", blt_src_rect.x, blt_src_rect.y, blt_src_rect.w,
+                             blt_src_rect.h);
+                tcu_fail_msg("to blt_dst_rect [x,y,w,h]=[%d,%d,%d,%d]", blt_dst_rect.x, blt_dst_rect.y, blt_dst_rect.w,
+                             blt_dst_rect.h);
+                m_testCtx.getLog() << tcu::TestLog::Message
+                                   << "........................................................................"
+                                   << tcu::TestLog::EndMessage;
+            }
+
+            /* dest quadrant rects */
+            dst_ul_rect = blt::Rectangle(blt_dst_rect.x, blt_dst_rect.y + blt_dst_rect.h / 2, blt_dst_rect.w / 2,
+                                         blt_dst_rect.h - blt_dst_rect.h / 2);
+            dst_ur_rect = blt::Rectangle(blt_dst_rect.x + blt_dst_rect.w / 2, blt_dst_rect.y + blt_dst_rect.h / 2,
+                                         blt_dst_rect.w - blt_dst_rect.w / 2, blt_dst_rect.h - blt_dst_rect.h / 2);
+            dst_ll_rect = blt::Rectangle(blt_dst_rect.x, blt_dst_rect.y, blt_dst_rect.w / 2, blt_dst_rect.h / 2);
+            dst_lr_rect = blt::Rectangle(blt_dst_rect.x + blt_dst_rect.w / 2, blt_dst_rect.y,
+                                         blt_dst_rect.w - blt_dst_rect.w / 2, blt_dst_rect.h / 2);
+
+            /* special case for 4.14 test, clear whole buffer to
+             * green color, depth one and stcil zero */
+            if (m_setup.scissor_rect.w != m_fullRect.w && m_setup.scissor_rect.h != m_fullRect.h)
+            {
+                ul_color = ur_color = ll_color = lr_color = GREEN;
+                ul_depth = ur_depth = ll_depth = lr_depth = Q1;
+                ul_stcil = ur_stcil = ll_stcil = lr_stcil = ONE;
+            }
+
+            gl.genFramebuffers(2, m_fbos);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "genFramebuffers");
+
+            m_testCtx.getLog() << tcu::TestLog::Message
+                               << "BEGIN ------------------------------------------------------------------"
+                               << tcu::TestLog::EndMessage;
+            tcu_fail_msg("BLITTING in %s from %s to %s %s", getEnumName(attachment),
+                         (!buf_config.src_type) ? getEnumName(DEFAULT) : getEnumName(buf_config.src_type),
+                         (!buf_config.dst_type) ? getEnumName(DEFAULT) : getEnumName(buf_config.dst_type),
+                         (buf_config.dst_type) ?
+                             (buf_config.same_read_and_draw_buffer) ? "(same buffer)" : "(different buffers)" :
+                             "");
+
+            *buf_config.src_cbuf = 0;
+            *buf_config.src_dbuf = 0;
+            *buf_config.src_sbuf = 0;
+            *buf_config.dst_cbuf = 0;
+            *buf_config.dst_dbuf = 0;
+            *buf_config.dst_sbuf = 0;
+
+            /* prepare color buffers */
+            if (effective_bits & GL_COLOR_BUFFER_BIT)
+            {
+                /* multicolor pattern to the source buffer */
+                if (buf_config.src_type == GL_TEXTURE_2D)
+                {
+                    gl.genTextures(1, buf_config.src_cbuf);
+                    GLU_EXPECT_NO_ERROR(gl.getError(), "genTextures");
+
+                    result &= init_gl_objs<GL_TEXTURE_2D, 0>(gl.bindTexture, 1, buf_config.src_cbuf, GL_RGBA8);
+
+                    result &= clearColorBuffer(m_fbos[0], GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *buf_config.src_cbuf,
+                                               ul_color, src_ul_rect, src_ul_center, DEFAULT_COLOR_CHANNEL_BITS, false);
+                    result &= clearColorBuffer(m_fbos[0], GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *buf_config.src_cbuf,
+                                               ur_color, src_ur_rect, src_ur_center, DEFAULT_COLOR_CHANNEL_BITS, false);
+                    result &= clearColorBuffer(m_fbos[0], GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *buf_config.src_cbuf,
+                                               ll_color, src_ll_rect, src_ll_center, DEFAULT_COLOR_CHANNEL_BITS, false);
+                    result &= clearColorBuffer(m_fbos[0], GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *buf_config.src_cbuf,
+                                               lr_color, src_lr_rect, src_lr_center, DEFAULT_COLOR_CHANNEL_BITS, false);
+                }
+                else if (buf_config.src_type == GL_RENDERBUFFER)
+                {
+                    gl.genRenderbuffers(1, buf_config.src_cbuf);
+                    GLU_EXPECT_NO_ERROR(gl.getError(), "genRenderbuffers");
+
+                    result &= init_gl_objs<GL_RENDERBUFFER, 0>(gl.bindRenderbuffer, 1, buf_config.src_cbuf, GL_RGBA8);
+
+                    result &= clearColorBuffer(m_fbos[0], GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, *buf_config.src_cbuf,
+                                               ul_color, src_ul_rect, src_ul_center, DEFAULT_COLOR_CHANNEL_BITS, false);
+                    result &= clearColorBuffer(m_fbos[0], GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, *buf_config.src_cbuf,
+                                               ur_color, src_ur_rect, src_ur_center, DEFAULT_COLOR_CHANNEL_BITS, false);
+                    result &= clearColorBuffer(m_fbos[0], GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, *buf_config.src_cbuf,
+                                               ll_color, src_ll_rect, src_ll_center, DEFAULT_COLOR_CHANNEL_BITS, false);
+                    result &= clearColorBuffer(m_fbos[0], GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, *buf_config.src_cbuf,
+                                               lr_color, src_lr_rect, src_lr_center, DEFAULT_COLOR_CHANNEL_BITS, false);
+                }
+                else
+                {
+                    result &= clearColorBuffer(m_defaultFBO, 0, 0, 0, ul_color, src_ul_rect, src_ul_center,
+                                               DEFAULT_COLOR_CHANNEL_BITS, false); /* default buffer */
+                    result &= clearColorBuffer(m_defaultFBO, 0, 0, 0, ur_color, src_ur_rect, src_ur_center,
+                                               DEFAULT_COLOR_CHANNEL_BITS, false); /* default buffer */
+                    result &= clearColorBuffer(m_defaultFBO, 0, 0, 0, ll_color, src_ll_rect, src_ll_center,
+                                               DEFAULT_COLOR_CHANNEL_BITS, false); /* default buffer */
+                    result &= clearColorBuffer(m_defaultFBO, 0, 0, 0, lr_color, src_lr_rect, src_lr_center,
+                                               DEFAULT_COLOR_CHANNEL_BITS, false); /* default buffer */
+                }
+
+                /* initial destination color to the destination buffer */
+                if (buf_config.dst_type == GL_TEXTURE_2D)
+                {
+                    *buf_config.dst_cbuf = *buf_config.src_cbuf;
+                    if (!buf_config.same_read_and_draw_buffer)
+                    {
+                        gl.genTextures(1, buf_config.dst_cbuf);
+                        GLU_EXPECT_NO_ERROR(gl.getError(), "genTextures");
+
+                        result &= init_gl_objs<GL_TEXTURE_2D, 0>(gl.bindTexture, 1, buf_config.dst_cbuf, GL_RGBA8);
+                    }
+                    result &= clearColorBuffer(m_fbos[1], GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *buf_config.dst_cbuf,
+                                               DST_COLOR, dst_rect, dst_center, DEFAULT_COLOR_CHANNEL_BITS, false);
+                }
+                else if (buf_config.dst_type == GL_RENDERBUFFER)
+                {
+                    *buf_config.dst_cbuf = *buf_config.src_cbuf;
+                    if (!buf_config.same_read_and_draw_buffer)
+                    {
+                        gl.genRenderbuffers(1, buf_config.dst_cbuf);
+                        GLU_EXPECT_NO_ERROR(gl.getError(), "genRenderbuffers");
+
+                        result &=
+                            init_gl_objs<GL_RENDERBUFFER, 0>(gl.bindRenderbuffer, 1, buf_config.dst_cbuf, GL_RGBA8);
+                    }
+                    result &= clearColorBuffer(m_fbos[1], GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, *buf_config.dst_cbuf,
+                                               DST_COLOR, dst_rect, dst_center, DEFAULT_COLOR_CHANNEL_BITS, false);
+                }
+                else
+                {
+                    result &= clearColorBuffer(m_defaultFBO, 0, 0, 0, DST_COLOR, dst_rect, dst_center,
+                                               DEFAULT_COLOR_CHANNEL_BITS, false); /* default buffer */
+                }
+            }
+
+            /* prepare depth buffers */
+            if (effective_bits & GL_DEPTH_BUFFER_BIT)
+            {
+                /* multicolor pattern to the source buffer */
+                if (buf_config.src_type == GL_TEXTURE_2D)
+                {
+                    gl.genTextures(1, buf_config.src_dbuf);
+                    GLU_EXPECT_NO_ERROR(gl.getError(), "genTextures");
+
+                    if (buf_config.dst_type != 0)
+                    {
+                        if (effective_bits & GL_STENCIL_BUFFER_BIT)
+                        {
+                            /* ES3.0 requires that depth and stencil attachments, if present, are the same image.
+                             * Desktop GL doesn't require implementations to support different depth+stencil from
+                             * different images (4.3 core page 279). */
+                            m_stcil_internalFormat = m_depth_internalFormat = GL_DEPTH24_STENCIL8;
+                            m_stcil_type = m_depth_type = GL_UNSIGNED_INT_24_8;
+                            m_stcil_format = m_depth_format = GL_DEPTH_STENCIL;
+                        }
+                        else
+                        {
+                            m_depth_internalFormat = GL_DEPTH_COMPONENT16;
+                            m_depth_type           = GL_UNSIGNED_SHORT;
+                            m_depth_format         = GL_DEPTH_COMPONENT;
+                        }
+                    }
+                    result &=
+                        init_gl_objs<GL_TEXTURE_2D, 0>(gl.bindTexture, 1, buf_config.src_dbuf, m_depth_internalFormat);
+
+                    result &= clearDepthBuffer(m_fbos[0], GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, *buf_config.src_dbuf,
+                                               m_depth_internalFormat, ul_depth, src_ul_rect, src_ul_center);
+                    result &= clearDepthBuffer(m_fbos[0], GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, *buf_config.src_dbuf,
+                                               m_depth_internalFormat, ur_depth, src_ur_rect, src_ur_center);
+                    result &= clearDepthBuffer(m_fbos[0], GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, *buf_config.src_dbuf,
+                                               m_depth_internalFormat, ll_depth, src_ll_rect, src_ll_center);
+                    result &= clearDepthBuffer(m_fbos[0], GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, *buf_config.src_dbuf,
+                                               m_depth_internalFormat, lr_depth, src_lr_rect, src_lr_center);
+                }
+                else if (buf_config.src_type == GL_RENDERBUFFER)
+                {
+                    gl.genRenderbuffers(1, buf_config.src_dbuf);
+                    GLU_EXPECT_NO_ERROR(gl.getError(), "genRenderbuffers");
+
+                    if (buf_config.dst_type != 0)
+                    {
+                        if (effective_bits & GL_STENCIL_BUFFER_BIT)
+                        {
+                            /* ES3.0 requires that depth and stencil attachments, if present, are the same image.
+                             * Desktop GL doesn't require implementations to support different depth+stencil from
+                             * different images (4.3 core page 279). */
+                            m_stcil_internalFormat = m_depth_internalFormat = GL_DEPTH24_STENCIL8;
+                            m_stcil_type = m_depth_type = GL_UNSIGNED_INT_24_8;
+                            m_stcil_format = m_depth_format = GL_DEPTH_STENCIL;
+                        }
+                        else
+                        {
+                            m_depth_internalFormat = GL_DEPTH_COMPONENT16;
+                            m_depth_type           = GL_UNSIGNED_SHORT;
+                            m_depth_format         = GL_DEPTH_COMPONENT;
+                        }
+                    }
+                    result &= init_gl_objs<GL_RENDERBUFFER, 0>(gl.bindRenderbuffer, 1, buf_config.src_dbuf,
+                                                               m_depth_internalFormat);
+                    result &= clearDepthBuffer(m_fbos[0], GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, *buf_config.src_dbuf,
+                                               m_depth_internalFormat, ul_depth, src_ul_rect, src_ul_center);
+                    result &= clearDepthBuffer(m_fbos[0], GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, *buf_config.src_dbuf,
+                                               m_depth_internalFormat, ur_depth, src_ur_rect, src_ur_center);
+                    result &= clearDepthBuffer(m_fbos[0], GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, *buf_config.src_dbuf,
+                                               m_depth_internalFormat, ll_depth, src_ll_rect, src_ll_center);
+                    result &= clearDepthBuffer(m_fbos[0], GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, *buf_config.src_dbuf,
+                                               m_depth_internalFormat, lr_depth, src_lr_rect, src_lr_center);
+                }
+                else
+                {
+                    result &= clearDepthBuffer(m_defaultFBO, 0, 0, 0, m_depth_internalFormat, ul_depth, src_ul_rect,
+                                               src_ul_center); /* default buffer */
+                    result &= clearDepthBuffer(m_defaultFBO, 0, 0, 0, m_depth_internalFormat, ur_depth, src_ur_rect,
+                                               src_ur_center); /* default buffer */
+                    result &= clearDepthBuffer(m_defaultFBO, 0, 0, 0, m_depth_internalFormat, ll_depth, src_ll_rect,
+                                               src_ll_center); /* default buffer */
+                    result &= clearDepthBuffer(m_defaultFBO, 0, 0, 0, m_depth_internalFormat, lr_depth, src_lr_rect,
+                                               src_lr_center); /* default buffer */
+                }
+
+                /* initial destination depth to the destination buffer */
+                if (buf_config.dst_type == GL_TEXTURE_2D)
+                {
+                    /* The depth blit requires source and dest has the same depth format */
+                    *buf_config.dst_dbuf = *buf_config.src_dbuf;
+                    if (!buf_config.same_read_and_draw_buffer)
+                    {
+                        gl.genTextures(1, buf_config.dst_dbuf);
+                        GLU_EXPECT_NO_ERROR(gl.getError(), "genTextures");
+
+                        result &= init_gl_objs<GL_TEXTURE_2D, 0>(gl.bindTexture, 1, buf_config.dst_dbuf,
+                                                                 m_depth_internalFormat);
+                    }
+                    result &= clearDepthBuffer(m_fbos[1], GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, *buf_config.dst_dbuf,
+                                               m_depth_internalFormat, DST_DEPTH, dst_rect, dst_center);
+                }
+                else if (buf_config.dst_type == GL_RENDERBUFFER)
+                {
+                    /* The depth blit requires source and dest has the same depth format */
+                    *buf_config.dst_dbuf = *buf_config.src_dbuf;
+                    if (!buf_config.same_read_and_draw_buffer)
+                    {
+                        gl.genRenderbuffers(1, buf_config.dst_dbuf);
+                        GLU_EXPECT_NO_ERROR(gl.getError(), "genRenderbuffers");
+
+                        result &= init_gl_objs<GL_RENDERBUFFER, 0>(gl.bindRenderbuffer, 1, buf_config.dst_dbuf,
+                                                                   m_depth_internalFormat);
+                    }
+                    result &= clearDepthBuffer(m_fbos[1], GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, *buf_config.dst_dbuf,
+                                               m_depth_internalFormat, DST_DEPTH, dst_rect, dst_center);
+                }
+                else
+                {
+                    result &= clearDepthBuffer(m_defaultFBO, 0, 0, 0, m_depth_internalFormat, DST_DEPTH, dst_rect,
+                                               dst_center); /* default buffer */
+                }
+            }
+
+            /* prepare stencil buffers */
+            if (effective_bits & GL_STENCIL_BUFFER_BIT)
+            {
+                /* multicolor pattern to the source buffer */
+                if (buf_config.src_type == GL_TEXTURE_2D)
+                {
+                    if (effective_bits & GL_DEPTH_BUFFER_BIT)
+                    {
+                        /* ES3.0 requires that depth and stencil attachments, if present, are the same image.
+                         * Desktop GL doesn't require implementations to support different depth+stencil from
+                         * different images (4.3 core page 279). */
+                        *buf_config.src_sbuf = *buf_config.src_dbuf;
+                    }
+                    else
+                    {
+                        gl.genTextures(1, buf_config.src_sbuf);
+                        GLU_EXPECT_NO_ERROR(gl.getError(), "genTextures");
+
+                        if (buf_config.dst_type != 0)
+                        {
+                            m_stcil_internalFormat = GL_DEPTH24_STENCIL8;
+                            m_stcil_type           = GL_UNSIGNED_INT_24_8;
+                            m_stcil_format         = GL_DEPTH_STENCIL;
+                        }
+
+                        result &= init_gl_objs<GL_TEXTURE_2D, 0>(gl.bindTexture, 1, buf_config.src_sbuf,
+                                                                 m_stcil_internalFormat);
+                    }
+                    result &= clearStencilBuffer(m_fbos[0], GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, *buf_config.src_sbuf,
+                                                 m_stcil_internalFormat, ul_stcil, src_ul_rect, src_ul_center);
+                    result &= clearStencilBuffer(m_fbos[0], GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, *buf_config.src_sbuf,
+                                                 m_stcil_internalFormat, ur_stcil, src_ur_rect, src_ur_center);
+                    result &= clearStencilBuffer(m_fbos[0], GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, *buf_config.src_sbuf,
+                                                 m_stcil_internalFormat, ll_stcil, src_ll_rect, src_ll_center);
+                    result &= clearStencilBuffer(m_fbos[0], GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, *buf_config.src_sbuf,
+                                                 m_stcil_internalFormat, lr_stcil, src_lr_rect, src_lr_center);
+                }
+                else if (buf_config.src_type == GL_RENDERBUFFER)
+                {
+                    if (effective_bits & GL_DEPTH_BUFFER_BIT)
+                    {
+                        /* ES3.0 requires that depth and stencil attachments, if present, are the same image.
+                         * Desktop GL doesn't require implementations to support different depth+stencil from
+                         * different images (4.3 core page 279). */
+                        *buf_config.src_sbuf = *buf_config.src_dbuf;
+                    }
+                    else
+                    {
+                        gl.genRenderbuffers(1, buf_config.src_sbuf);
+                        GLU_EXPECT_NO_ERROR(gl.getError(), "genRenderbuffers");
+
+                        if (buf_config.dst_type != 0)
+                        {
+                            if (buf_config.dst_type == GL_TEXTURE_2D)
+                            {
+                                m_stcil_internalFormat = GL_DEPTH24_STENCIL8;
+                                m_stcil_type           = GL_UNSIGNED_INT_24_8;
+                                m_stcil_format         = GL_DEPTH_STENCIL;
+                            }
+                            else
+                            {
+                                m_stcil_internalFormat = GL_STENCIL_INDEX8;
+                                m_stcil_type           = 0;
+                                m_stcil_format         = 0;
+                            }
+                        }
+
+                        result &= init_gl_objs<GL_RENDERBUFFER, 0>(gl.bindRenderbuffer, 1, buf_config.src_sbuf,
+                                                                   m_stcil_internalFormat);
+                    }
+                    result &=
+                        clearStencilBuffer(m_fbos[0], GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, *buf_config.src_sbuf,
+                                           m_stcil_internalFormat, ul_stcil, src_ul_rect, src_ul_center);
+                    result &=
+                        clearStencilBuffer(m_fbos[0], GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, *buf_config.src_sbuf,
+                                           m_stcil_internalFormat, ur_stcil, src_ur_rect, src_ur_center);
+                    result &=
+                        clearStencilBuffer(m_fbos[0], GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, *buf_config.src_sbuf,
+                                           m_stcil_internalFormat, ll_stcil, src_ll_rect, src_ll_center);
+                    result &=
+                        clearStencilBuffer(m_fbos[0], GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, *buf_config.src_sbuf,
+                                           m_stcil_internalFormat, lr_stcil, src_lr_rect, src_lr_center);
+                }
+                else /* default buffer */
+                {
+                    result &= clearStencilBuffer(m_defaultFBO, 0, 0, 0, m_stcil_internalFormat, ul_stcil, src_ul_rect,
+                                                 src_ul_center); /* default buffer */
+                    result &= clearStencilBuffer(m_defaultFBO, 0, 0, 0, m_stcil_internalFormat, ur_stcil, src_ur_rect,
+                                                 src_ur_center); /* default buffer */
+                    result &= clearStencilBuffer(m_defaultFBO, 0, 0, 0, m_stcil_internalFormat, ll_stcil, src_ll_rect,
+                                                 src_ll_center); /* default buffer */
+                    result &= clearStencilBuffer(m_defaultFBO, 0, 0, 0, m_stcil_internalFormat, lr_stcil, src_lr_rect,
+                                                 src_lr_center); /* default buffer */
+                }
+
+                /* initial destination stencil to the destination buffer */
+                if (buf_config.dst_type == GL_TEXTURE_2D)
+                {
+                    if (effective_bits & GL_DEPTH_BUFFER_BIT)
+                    {
+                        /* ES3.0 requires that depth and stencil attachments, if present, are the same image.
+                         * Desktop GL doesn't require implementations to support different depth+stencil from
+                         * different images (4.3 core page 279). */
+                        *buf_config.dst_sbuf = *buf_config.dst_dbuf;
+                    }
+                    else
+                    {
+                        /* The stencil blit requires source and dest has the same stencil format */
+                        *buf_config.dst_sbuf = *buf_config.src_sbuf;
+                        if (!buf_config.same_read_and_draw_buffer)
+                        {
+                            gl.genTextures(1, buf_config.dst_sbuf);
+                            GLU_EXPECT_NO_ERROR(gl.getError(), "genTextures");
+
+                            result &= init_gl_objs<GL_TEXTURE_2D, 0>(gl.bindTexture, 1, buf_config.dst_sbuf,
+                                                                     m_stcil_internalFormat);
+                        }
+                    }
+                    result &= clearStencilBuffer(m_fbos[1], GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, *buf_config.dst_sbuf,
+                                                 m_stcil_internalFormat, DST_STCIL, dst_rect, dst_center);
+                }
+                else if (buf_config.dst_type == GL_RENDERBUFFER)
+                {
+                    if (effective_bits & GL_DEPTH_BUFFER_BIT)
+                    {
+                        /* ES3.0 requires that depth and stencil attachments, if present, are the same image.
+                         * Desktop GL doesn't require implementations to support different depth+stencil from
+                         * different images (4.3 core page 279). */
+                        *buf_config.dst_sbuf = *buf_config.dst_dbuf;
+                    }
+                    else
+                    {
+                        /* The stencil blit requires source and dest has the same stencil format */
+                        *buf_config.dst_sbuf = *buf_config.src_sbuf;
+                        if (!buf_config.same_read_and_draw_buffer)
+                        {
+                            gl.genRenderbuffers(1, buf_config.dst_sbuf);
+                            GLU_EXPECT_NO_ERROR(gl.getError(), "genRenderbuffers");
+
+                            result &= init_gl_objs<GL_RENDERBUFFER, 0>(gl.bindRenderbuffer, 1, buf_config.dst_sbuf,
+                                                                       m_stcil_internalFormat);
+                        }
+                    }
+                    result &=
+                        clearStencilBuffer(m_fbos[1], GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, *buf_config.dst_sbuf,
+                                           m_stcil_internalFormat, DST_STCIL, dst_rect, dst_center);
+                }
+                else
+                {
+                    result &= clearStencilBuffer(m_defaultFBO, 0, 0, 0, m_stcil_internalFormat, DST_STCIL, dst_rect,
+                                                 dst_center); /* default buffer */
+                }
+            }
+
+            printGlobalBufferInfo();
+
+            /* bind framebuffers */
+            gl.bindFramebuffer(GL_READ_FRAMEBUFFER, buf_config.src_type == 0 ? m_defaultFBO : *buf_config.src_fbo);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "bindFramebuffer");
+
+            gl.bindFramebuffer(GL_DRAW_FRAMEBUFFER, buf_config.dst_type == 0 ? m_defaultFBO : *buf_config.dst_fbo);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "bindFramebuffer");
+
+            /* attach color, depth and stencil buffers */
+            if (effective_bits & GL_COLOR_BUFFER_BIT)
+            {
+                result &= attachBufferToFramebuffer(GL_READ_FRAMEBUFFER, attachment, buf_config.src_type,
+                                                    *buf_config.src_cbuf);
+                result &= attachBufferToFramebuffer(GL_DRAW_FRAMEBUFFER, attachment, buf_config.dst_type,
+                                                    *buf_config.dst_cbuf);
+            }
+            if (effective_bits & GL_DEPTH_BUFFER_BIT)
+            {
+                result &= attachBufferToFramebuffer(GL_READ_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, buf_config.src_type,
+                                                    *buf_config.src_dbuf);
+                result &= attachBufferToFramebuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, buf_config.dst_type,
+                                                    *buf_config.dst_dbuf);
+            }
+            if (effective_bits & GL_STENCIL_BUFFER_BIT)
+            {
+                result &= attachBufferToFramebuffer(GL_READ_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, buf_config.src_type,
+                                                    *buf_config.src_sbuf);
+                result &= attachBufferToFramebuffer(GL_DRAW_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, buf_config.dst_type,
+                                                    *buf_config.dst_sbuf);
+            }
+
+            /* setup the read and draw color buffers */
+            if (buf_config.src_type != 0)
+            {
+                gl.readBuffer(attachment);
+                GLU_EXPECT_NO_ERROR(gl.getError(), "readBuffer");
+            }
+
+            if (buf_config.dst_type != 0)
+            {
+                if (m_isContextES)
+                {
+                    std::vector<GLenum> draw_attachments(max_color_attachments, GL_NONE);
+                    draw_attachments[j] = attachment;
+                    gl.drawBuffers(j + 1, draw_attachments.data());
+                }
+                else
+                {
+                    gl.drawBuffers(1, &attachment);
+                }
+                GLU_EXPECT_NO_ERROR(gl.getError(), "drawBuffers");
+            }
+
+            /* special case for 4.14 test, enable scissoring */
+            if (m_setup.scissor_rect.w != m_fullRect.w && m_setup.scissor_rect.h != m_fullRect.h)
+            {
+                GLint x = m_setup.scissor_rect.x;
+                GLint y = m_setup.scissor_rect.y;
+                GLint w = m_setup.scissor_rect.w;
+                GLint h = m_setup.scissor_rect.h;
+
+                tcu_fail_msg("SCISSOR[%d,%d,%d,%d]", x, y, w, h);
+                gl.scissor(x, y, w, h);
+                GLU_EXPECT_NO_ERROR(gl.getError(), "scissor");
+
+                gl.enable(GL_SCISSOR_TEST);
+                GLU_EXPECT_NO_ERROR(gl.getError(), "enable");
+            }
+
+            status = gl.checkFramebufferStatus(GL_READ_FRAMEBUFFER);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "checkFramebufferStatus");
+            CHECK(status, GL_FRAMEBUFFER_COMPLETE, glCheckFramebufferStatus);
+
+            status = gl.checkFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "checkFramebufferStatus");
+            CHECK(status, GL_FRAMEBUFFER_COMPLETE, glCheckFramebufferStatus);
+
+            /* blit */
+            {
+                GLint srcX0 = blt_src_rect.x;
+                GLint srcY0 = blt_src_rect.y;
+                GLint srcX1 = blt_src_rect.x + blt_src_rect.w;
+                GLint srcY1 = blt_src_rect.y + blt_src_rect.h;
+
+                GLint dstX0 = blt_dst_rect.x;
+                GLint dstY0 = blt_dst_rect.y;
+                GLint dstX1 = blt_dst_rect.x + blt_dst_rect.w;
+                GLint dstY1 = blt_dst_rect.y + blt_dst_rect.h;
+
+                GLint temp;
+
+                if (m_setup.negative_src_width)
+                {
+                    temp          = srcX0;
+                    srcX0         = srcX1;
+                    srcX1         = temp;
+                    temp          = dst_ul_rect.w;
+                    dst_ul_rect.w = dst_ur_rect.w;
+                    dst_ur_rect.w = temp;
+                    dst_ur_rect.x = dst_ul_rect.x + dst_ul_rect.w;
+                    temp          = dst_ll_rect.w;
+                    dst_ll_rect.w = dst_lr_rect.w;
+                    dst_lr_rect.w = temp;
+                    dst_lr_rect.x = dst_ll_rect.x + dst_ll_rect.w;
+                }
+                if (m_setup.negative_src_height)
+                {
+                    temp          = srcY0;
+                    srcY0         = srcY1;
+                    srcY1         = temp;
+                    temp          = dst_ul_rect.h;
+                    dst_ul_rect.h = dst_ll_rect.h;
+                    dst_ll_rect.h = temp;
+                    dst_ul_rect.y = dst_ll_rect.y + dst_ll_rect.h;
+                    temp          = dst_ur_rect.h;
+                    dst_ur_rect.h = dst_lr_rect.h;
+                    dst_lr_rect.h = temp;
+                    dst_ur_rect.y = dst_lr_rect.y + dst_lr_rect.h;
+                }
+                if (m_setup.negative_dst_width)
+                {
+                    temp          = dstX0;
+                    dstX0         = dstX1;
+                    dstX1         = temp;
+                    temp          = dst_ul_rect.w;
+                    dst_ul_rect.w = dst_ur_rect.w;
+                    dst_ur_rect.w = temp;
+                    dst_ur_rect.x = dst_ul_rect.x + dst_ul_rect.w;
+                    temp          = dst_ll_rect.w;
+                    dst_ll_rect.w = dst_lr_rect.w;
+                    dst_lr_rect.w = temp;
+                    dst_lr_rect.x = dst_ll_rect.x + dst_ll_rect.w;
+                }
+                if (m_setup.negative_dst_height)
+                {
+                    temp          = dstY0;
+                    dstY0         = dstY1;
+                    dstY1         = temp;
+                    temp          = dst_ul_rect.h;
+                    dst_ul_rect.h = dst_ll_rect.h;
+                    dst_ll_rect.h = temp;
+                    dst_ul_rect.y = dst_ll_rect.y + dst_ll_rect.h;
+                    temp          = dst_ur_rect.h;
+                    dst_ur_rect.h = dst_lr_rect.h;
+                    dst_lr_rect.h = temp;
+                    dst_ur_rect.y = dst_lr_rect.y + dst_lr_rect.h;
+                }
+
+                tcu_fail_msg("BLIT blt_src_rect=[%d,%d,%d,%d] blt_dst_rect=[%d,%d,%d,%d]", srcX0, srcY0, srcX1, srcY1,
+                             dstX0, dstY0, dstX1, dstY1);
+
+                gl.blitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, effective_bits, GL_NEAREST);
+                GLU_EXPECT_NO_ERROR(gl.getError(), "blitFramebuffer");
+            }
+
+            /* bind dst_fbo to GL_READ_FRAMEBUFFER */
+            gl.bindFramebuffer(GL_READ_FRAMEBUFFER, buf_config.dst_type == 0 ? m_defaultFBO : *buf_config.dst_fbo);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "blitFramebuffer");
+
+            /* setup the read color buffer again if the destination
+             * buffer is an user fbo */
+            if (buf_config.dst_type != 0)
+            {
+                gl.readBuffer(attachment);
+                GLU_EXPECT_NO_ERROR(gl.getError(), "readBuffer");
+            }
+
+            /* special case for 4.14 test, disable scissoring */
+            if (m_setup.scissor_rect.w != m_fullRect.w && m_setup.scissor_rect.h != m_fullRect.h)
+            {
+                gl.disable(GL_SCISSOR_TEST);
+                GLU_EXPECT_NO_ERROR(gl.getError(), "disable");
+            }
+
+            /* read and verify color, depth and stencil values */
+            if (effective_bits & GL_COLOR_BUFFER_BIT)
+            {
+                getColor(end_ul_coord, &tmp_color, false);
+                result &= checkColor(tmp_color, m_setup.ul_color, DEFAULT_COLOR_CHANNEL_BITS);
+                CHECK_COLOR(result, true, checkColor);
+
+                getColor(end_ur_coord, &tmp_color, false);
+                result &= checkColor(tmp_color, m_setup.ur_color, DEFAULT_COLOR_CHANNEL_BITS);
+                CHECK_COLOR(result, true, checkColor);
+
+                getColor(end_ll_coord, &tmp_color, false);
+                result &= checkColor(tmp_color, m_setup.ll_color, DEFAULT_COLOR_CHANNEL_BITS);
+                CHECK_COLOR(result, true, checkColor);
+
+                getColor(end_lr_coord, &tmp_color, false);
+                result &= checkColor(tmp_color, m_setup.lr_color, DEFAULT_COLOR_CHANNEL_BITS);
+                CHECK_COLOR(result, true, checkColor);
+            }
+            if (effective_bits & GL_DEPTH_BUFFER_BIT)
+            {
+                GLuint resultPreBits, depthPreBits;
+                GLfloat epsilon;
+
+                depthPreBits = GetDepthPrecisionBits(m_depth_internalFormat);
+
+                getDepth(end_ul_coord, &tmp_depth, &resultPreBits,
+                         buf_config.dst_type == 0 ? m_defaultFBO : *buf_config.dst_fbo, m_depth_internalFormat,
+                         dst_ul_rect);
+                epsilon = GetEpsilon(resultPreBits, depthPreBits);
+                result &= checkDepth(tmp_depth, m_setup.ul_depth, epsilon);
+                CHECK_COLOR(result, true, checkDepth);
+
+                getDepth(end_ur_coord, &tmp_depth, &resultPreBits,
+                         buf_config.dst_type == 0 ? m_defaultFBO : *buf_config.dst_fbo, m_depth_internalFormat,
+                         dst_ur_rect);
+                epsilon = GetEpsilon(resultPreBits, depthPreBits);
+                result &= checkDepth(tmp_depth, m_setup.ur_depth, epsilon);
+                CHECK_COLOR(result, true, checkDepth);
+
+                getDepth(end_ll_coord, &tmp_depth, &resultPreBits,
+                         buf_config.dst_type == 0 ? m_defaultFBO : *buf_config.dst_fbo, m_depth_internalFormat,
+                         dst_ll_rect);
+                epsilon = GetEpsilon(resultPreBits, depthPreBits);
+                result &= checkDepth(tmp_depth, m_setup.ll_depth, epsilon);
+                CHECK_COLOR(result, true, checkDepth);
+
+                getDepth(end_lr_coord, &tmp_depth, &resultPreBits,
+                         buf_config.dst_type == 0 ? m_defaultFBO : *buf_config.dst_fbo, m_depth_internalFormat,
+                         dst_lr_rect);
+                epsilon = GetEpsilon(resultPreBits, depthPreBits);
+                result &= checkDepth(tmp_depth, m_setup.lr_depth, epsilon);
+                CHECK_COLOR(result, true, checkDepth);
+            }
+            if (effective_bits & GL_STENCIL_BUFFER_BIT)
+            {
+                Stencil tmp_stcil = 0;
+                getStencil(end_ul_coord, &tmp_stcil, buf_config.dst_type == 0 ? m_defaultFBO : *buf_config.dst_fbo,
+                           m_stcil_internalFormat, dst_ul_rect);
+                result &= checkStencil(tmp_stcil, m_setup.ul_stcil);
+                CHECK_COLOR(result, true, checkStencil);
+
+                getStencil(end_ur_coord, &tmp_stcil, buf_config.dst_type == 0 ? m_defaultFBO : *buf_config.dst_fbo,
+                           m_stcil_internalFormat, dst_ur_rect);
+                result &= checkStencil(tmp_stcil, m_setup.ur_stcil);
+                CHECK_COLOR(result, true, checkStencil);
+
+                getStencil(end_ll_coord, &tmp_stcil, buf_config.dst_type == 0 ? m_defaultFBO : *buf_config.dst_fbo,
+                           m_stcil_internalFormat, dst_ll_rect);
+                result &= checkStencil(tmp_stcil, m_setup.ll_stcil);
+                CHECK_COLOR(result, true, checkStencil);
+
+                getStencil(end_lr_coord, &tmp_stcil, buf_config.dst_type == 0 ? m_defaultFBO : *buf_config.dst_fbo,
+                           m_stcil_internalFormat, dst_lr_rect);
+                result &= checkStencil(tmp_stcil, m_setup.lr_stcil);
+                CHECK_COLOR(result, true, checkStencil);
+            }
+
+            /* cleanup */
+            if (*buf_config.dst_cbuf == *buf_config.src_cbuf && buf_config.dst_type == buf_config.src_type)
+            {
+                *buf_config.dst_cbuf = 0;
+            }
+            if (*buf_config.dst_dbuf == *buf_config.src_dbuf && buf_config.dst_type == buf_config.src_type)
+            {
+                *buf_config.dst_dbuf = 0;
+            }
+            if (*buf_config.dst_sbuf == *buf_config.src_sbuf && buf_config.dst_type == buf_config.src_type)
+            {
+                *buf_config.dst_sbuf = 0;
+            }
+            if (*buf_config.src_sbuf == *buf_config.src_dbuf && buf_config.dst_type == buf_config.src_type)
+            {
+                *buf_config.src_sbuf = 0;
+            }
+
+            gl.deleteTextures(2, m_color_tbos);
+            gl.deleteTextures(2, m_depth_tbos);
+            gl.deleteTextures(2, m_stcil_tbos);
+            gl.deleteRenderbuffers(2, m_color_rbos);
+            gl.deleteRenderbuffers(2, m_depth_rbos);
+            gl.deleteRenderbuffers(2, m_stcil_rbos);
+            gl.deleteFramebuffers(2, m_fbos);
+
+            m_color_tbos[0] = 0;
+            m_color_tbos[1] = 0;
+            m_depth_tbos[0] = 0;
+            m_depth_tbos[1] = 0;
+            m_stcil_tbos[0] = 0;
+            m_stcil_tbos[1] = 0;
+            m_color_rbos[0] = 0;
+            m_color_rbos[1] = 0;
+            m_depth_rbos[0] = 0;
+            m_depth_rbos[1] = 0;
+            m_stcil_rbos[0] = 0;
+            m_stcil_rbos[1] = 0;
+            m_fbos[0]       = 0;
+            m_fbos[1]       = 0;
+
+            m_testCtx.getLog() << tcu::TestLog::Message
+                               << "END --------------------------------------------------------------------"
+                               << tcu::TestLog::EndMessage;
+        }
+    }
+    return result;
+}
+
+/** Executes test iteration.
+ *
+ *  @return Returns STOP when test has finished executing, CONTINUE if more iterations are needed.
+ */
+tcu::TestNode::IterateResult FramebufferBlitScissorTestCase::iterate()
+{
+    bool result                 = true;
+    GLint max_color_attachments = 0;
+    const glw::Functions &gl    = m_context.getRenderContext().getFunctions();
 
     gl.getIntegerv(GL_MAX_COLOR_ATTACHMENTS, &max_color_attachments);
     GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
@@ -2628,16 +3621,8 @@ tcu::TestNode::IterateResult FramebufferBlitMultiToSingleSampledTestCase::iterat
         }
     }
 
-    /* 1. Test all color buffer formats, no depth or stencil buffers
-     * attached here */
-
-    CHECK_RET(testColorBlitConfig<samples>(ul_center, ur_center, ll_center, lr_center, max_color_attachments), true,
-              "color blit test failed");
-
-    /* 2. Test all depth buffer formats, no color or stencil buffers
-     * attached here */
-
-    CHECK_RET(testDepthBlitConfig<samples>(ul_center, ur_center, ll_center, lr_center), true, "depth blit test failed");
+    /* Test all color buffer formats, depth and stencil buffers attached here */
+    CHECK_RET(runMultiColorPatternTest(max_color_attachments), true, "Multi color blit test failed");
 
     if (result)
         m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -2658,7 +3643,9 @@ FramebufferBlitTests::FramebufferBlitTests(deqp::Context &context)
 /** Initializes the test group contents. */
 void FramebufferBlitTests::init()
 {
-    addChild(new FramebufferBlitMultiToSingleSampledTestCase(m_context));
+    addChild(new FramebufferBlitMultiToSingleSampledColorConfigTestCase(m_context));
+    addChild(new FramebufferBlitMultiToSingleSampledDepthConfigTestCase(m_context));
+    addChild(new FramebufferBlitScissorTestCase(m_context));
 }
 
 } // namespace glcts

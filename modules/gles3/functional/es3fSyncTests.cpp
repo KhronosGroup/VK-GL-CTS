@@ -96,8 +96,8 @@ FenceSyncCase::FenceSyncCase(Context &context, const char *name, const char *des
     , m_waitFlags(waitFlags)
     , m_timeout(timeout)
     , m_caseOptions(options)
-    , m_program(DE_NULL)
-    , m_syncObject(DE_NULL)
+    , m_program(nullptr)
+    , m_syncObject(nullptr)
     , m_iterNdx(0)
     , m_rnd(deStringHash(name))
 {
@@ -159,13 +159,13 @@ void FenceSyncCase::deinit(void)
     if (m_program)
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
     }
 
     if (m_syncObject)
     {
         glDeleteSync(m_syncObject);
-        m_syncObject = DE_NULL;
+        m_syncObject = nullptr;
     }
 }
 
@@ -259,7 +259,7 @@ FenceSyncCase::IterateResult FenceSyncCase::iterate(void)
     if (m_syncObject)
     {
         glDeleteSync(m_syncObject);
-        m_syncObject = DE_NULL;
+        m_syncObject = nullptr;
         GLU_CHECK_MSG("Sync object deleted");
         log << TestLog::Message << "// Sync object deleted." << TestLog::EndMessage;
     }

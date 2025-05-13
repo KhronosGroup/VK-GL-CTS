@@ -23,15 +23,17 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkMemUtil.hpp"
-#include "deDefs.h"
-#include "vkStrUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "vkImageUtil.hpp"
+
+#include "deDefs.h"
 #include "deInt32.h"
 
-#include <sstream>
+#include <vector>
+#include <algorithm>
+#include <memory>
 
 namespace vk
 {
@@ -182,7 +184,7 @@ private:
 };
 
 SimpleAllocation::SimpleAllocation(Move<VkDeviceMemory> mem, MovePtr<HostPtr> hostPtr, size_t offset)
-    : Allocation(*mem, offset, hostPtr ? hostPtr->get() : DE_NULL)
+    : Allocation(*mem, offset, hostPtr ? hostPtr->get() : nullptr)
     , m_memHolder(mem)
     , m_hostPtr(hostPtr)
 {
@@ -229,9 +231,16 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryAllocateInfo &allocI
     return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr, static_cast<size_t>(offset)));
 }
 
-MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReqs, MemoryRequirement requirement)
+MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReqs, MemoryRequirement requirement,
+                                              const tcu::Maybe<HostIntent> &hostIntent,
+                                              uint64_t memoryOpaqueCaptureAddr)
 {
+#ifdef CTS_USES_VULKANSC
     const auto memoryTypeNdx = selectMatchingMemoryType(m_memProps, memReqs.memoryTypeBits, requirement);
+    DE_UNREF(hostIntent);
+#else
+    const auto memoryTypeNdx = selectBestMemoryType(m_memProps, memReqs.memoryTypeBits, requirement, hostIntent);
+#endif
 
     // Align the offset to the requirements.
     // Aligning to the non coherent atom size prevents flush and memory invalidation valid usage errors.
@@ -241,23 +250,34 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReq
 
     VkMemoryAllocateInfo allocInfo = {
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         memReqs.size + offset,                  // VkDeviceSize allocationSize;
         memoryTypeNdx,                          // uint32_t memoryTypeIndex;
     };
 
     VkMemoryAllocateFlagsInfo allocFlagsInfo = {
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO, //    VkStructureType            sType
-        DE_NULL,                                      //    const void*                pNext
+        nullptr,                                      //    const void*                pNext
         0,                                            //    VkMemoryAllocateFlags    flags
         0,                                            //    uint32_t                deviceMask
+    };
+
+    VkMemoryOpaqueCaptureAddressAllocateInfoKHR captureInfo = {
+        VK_STRUCTURE_TYPE_MEMORY_OPAQUE_CAPTURE_ADDRESS_ALLOCATE_INFO, // VkStructureType sType
+        nullptr,                                                       // const void*     pNext
+        memoryOpaqueCaptureAddr,                                       // uint64_t        opaqueCaptureAddress
     };
 
     if (requirement & MemoryRequirement::DeviceAddress)
         allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
 
     if (requirement & MemoryRequirement::DeviceAddressCaptureReplay)
+    {
         allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
+
+        if (memoryOpaqueCaptureAddr)
+            allocFlagsInfo.pNext = &captureInfo;
+    }
 
     if (allocFlagsInfo.flags)
         allocInfo.pNext = &allocFlagsInfo;
@@ -272,6 +292,26 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReq
     }
 
     return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr, static_cast<size_t>(offset)));
+}
+
+MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReqs, MemoryRequirement requirement,
+                                              uint64_t memoryOpaqueCaptureAddr)
+{
+    return SimpleAllocator::allocate(memReqs, requirement, tcu::Nothing, memoryOpaqueCaptureAddr);
+}
+
+MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReqs, HostIntent intent,
+                                              VkMemoryAllocateFlags allocFlags)
+{
+    const bool devAddrCR = (allocFlags & VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT);
+    const bool devAddr   = (allocFlags & VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT);
+
+    const auto baseReq = ((intent == HostIntent::NONE) ? MemoryRequirement::Any : MemoryRequirement::HostVisible);
+    const auto crReq   = (devAddrCR ? MemoryRequirement::DeviceAddressCaptureReplay : MemoryRequirement::Any);
+    const auto daReq   = (devAddr ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any);
+
+    const auto requirement = (baseReq | crReq | daReq);
+    return SimpleAllocator::allocate(memReqs, requirement, tcu::just(intent));
 }
 
 MovePtr<Allocation> allocateExtended(const InstanceInterface &vki, const DeviceInterface &vkd,
@@ -306,7 +346,7 @@ de::MovePtr<Allocation> allocateDedicated(const InstanceInterface &vki, const De
     const VkMemoryRequirements memoryRequirements               = getBufferMemoryRequirements(vkd, device, buffer);
     const VkMemoryDedicatedAllocateInfo dedicatedAllocationInfo = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // VkStructureType        sType
-        DE_NULL,                                          // const void*            pNext
+        nullptr,                                          // const void*            pNext
         VK_NULL_HANDLE,                                   // VkImage                image
         buffer                                            // VkBuffer                buffer
     };
@@ -321,7 +361,7 @@ de::MovePtr<Allocation> allocateDedicated(const InstanceInterface &vki, const De
     const VkMemoryRequirements memoryRequirements               = getImageMemoryRequirements(vkd, device, image);
     const VkMemoryDedicatedAllocateInfo dedicatedAllocationInfo = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // VkStructureType        sType
-        DE_NULL,                                          // const void*            pNext
+        nullptr,                                          // const void*            pNext
         image,                                            // VkImage                image
         VK_NULL_HANDLE                                    // VkBuffer                buffer
     };
@@ -332,7 +372,7 @@ de::MovePtr<Allocation> allocateDedicated(const InstanceInterface &vki, const De
 void *mapMemory(const DeviceInterface &vkd, VkDevice device, VkDeviceMemory mem, VkDeviceSize offset, VkDeviceSize size,
                 VkMemoryMapFlags flags)
 {
-    void *hostPtr = DE_NULL;
+    void *hostPtr = nullptr;
     VK_CHECK(vkd.mapMemory(device, mem, offset, size, flags, &hostPtr));
     TCU_CHECK(hostPtr);
     return hostPtr;
@@ -341,7 +381,7 @@ void *mapMemory(const DeviceInterface &vkd, VkDevice device, VkDeviceMemory mem,
 void flushMappedMemoryRange(const DeviceInterface &vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset,
                             VkDeviceSize size)
 {
-    const VkMappedMemoryRange range = {VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, DE_NULL, memory, offset, size};
+    const VkMappedMemoryRange range = {VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, nullptr, memory, offset, size};
 
     VK_CHECK(vkd.flushMappedMemoryRanges(device, 1u, &range));
 }
@@ -349,7 +389,7 @@ void flushMappedMemoryRange(const DeviceInterface &vkd, VkDevice device, VkDevic
 void invalidateMappedMemoryRange(const DeviceInterface &vkd, VkDevice device, VkDeviceMemory memory,
                                  VkDeviceSize offset, VkDeviceSize size)
 {
-    const VkMappedMemoryRange range = {VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, DE_NULL, memory, offset, size};
+    const VkMappedMemoryRange range = {VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, nullptr, memory, offset, size};
 
     VK_CHECK(vkd.invalidateMappedMemoryRanges(device, 1u, &range));
 }
@@ -371,6 +411,231 @@ uint32_t selectMatchingMemoryType(const VkPhysicalDeviceMemoryProperties &device
         TCU_THROW(NotSupportedError, "No compatible memory type found");
 
     return (uint32_t)deCtz32(candidates);
+}
+
+namespace
+{
+
+struct MemoryTypeInfo
+{
+    uint32_t memoryTypeIndex;
+    VkMemoryPropertyFlags memoryFlags;
+
+    MemoryTypeInfo(uint32_t memTypeIndex, VkMemoryPropertyFlags memFlags)
+        : memoryTypeIndex(memTypeIndex)
+        , memoryFlags(memFlags)
+    {
+    }
+
+    bool hasProperty(VkMemoryPropertyFlagBits property) const
+    {
+        return ((memoryFlags & property) != 0u);
+    }
+};
+
+class MemoryTypeSorter
+{
+public:
+    virtual bool operator()(const MemoryTypeInfo &, const MemoryTypeInfo &) const = 0;
+    virtual ~MemoryTypeSorter()
+    {
+    }
+};
+
+class UnknownIntentSorter : public MemoryTypeSorter
+{
+public:
+    UnknownIntentSorter()
+    {
+    }
+    bool operator()(const MemoryTypeInfo &a, const MemoryTypeInfo &b) const override
+    {
+        // The strategy below has been reported to decrease overall CTS performance, so we use a simple classic
+        // alternative instead where we just sort memory types by index to choose the first one that matches.
+#if 0
+        // Non-host-visible types come first.
+        const bool aVisible = a.hasProperty(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+        const bool bVisible = b.hasProperty(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+
+        if (aVisible != bVisible)
+            return (aVisible < bVisible);
+
+        if (aVisible) // bVisible == true
+        {
+            // Prioritize cached host-visible memory.
+            const bool aCached = a.hasProperty(VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+            const bool bCached = b.hasProperty(VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+
+            if (aCached != bCached)
+                return (aCached > bCached);
+
+            // Otherwise, the one that is *not* coherent, because it's supposed to be faster.
+            const bool aCoherent = a.hasProperty(VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            const bool bCoherent = b.hasProperty(VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+            if (aCoherent != bCoherent)
+                return (aCoherent < bCoherent);
+        }
+#endif
+
+        // Fall back to memory index.
+        return (a.memoryTypeIndex < b.memoryTypeIndex);
+    }
+};
+
+class HostReadSorter : public MemoryTypeSorter
+{
+public:
+    HostReadSorter()
+    {
+    }
+    bool operator()(const MemoryTypeInfo &a, const MemoryTypeInfo &b) const override
+    {
+        // Prioritize host-cached memory so as not to hammer the possible PCIe bus.
+        const bool aCached = a.hasProperty(VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+        const bool bCached = b.hasProperty(VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+
+        if (aCached != bCached)
+            return (aCached > bCached);
+
+        // Otherwise, prioritize those types that are not device-local.
+        if (!aCached)
+        {
+            const bool aLocal = a.hasProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            const bool bLocal = b.hasProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+            if (aLocal != bLocal)
+                return (aLocal < bLocal);
+        }
+
+        // Fall back to memory index.
+        return (a.memoryTypeIndex < b.memoryTypeIndex);
+    }
+};
+
+class HostWriteSorter : public MemoryTypeSorter
+{
+public:
+    HostWriteSorter()
+    {
+    }
+    bool operator()(const MemoryTypeInfo &a, const MemoryTypeInfo &b) const override
+    {
+        // Prioritize device-local memory types.
+        const bool aLocal = a.hasProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        const bool bLocal = b.hasProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+        if (aLocal != bLocal)
+            return (aLocal > bLocal);
+
+        if (!aLocal)
+        {
+            // From those, prioritize host-cached memory.
+            const bool aCached = a.hasProperty(VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+            const bool bCached = b.hasProperty(VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+
+            if (aCached != bCached)
+                return (aCached > bCached);
+        }
+
+        // Fall back to memory index.
+        return (a.memoryTypeIndex < b.memoryTypeIndex);
+    }
+};
+
+class NoIntentSorter : public MemoryTypeSorter
+{
+public:
+    NoIntentSorter()
+    {
+    }
+    bool operator()(const MemoryTypeInfo &a, const MemoryTypeInfo &b) const override
+    {
+        // Prioritize memory that is not host-visible.
+        const bool aVisible = a.hasProperty(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+        const bool bVisible = b.hasProperty(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+
+        if (aVisible != bVisible)
+            return (aVisible < bVisible);
+
+        // From those, the ones that are device local.
+        const bool aLocal = a.hasProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        const bool bLocal = b.hasProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+        if (aLocal != bLocal)
+            return (aLocal > bLocal);
+
+        // Fall back to memory index.
+        return (a.memoryTypeIndex < b.memoryTypeIndex);
+    }
+};
+
+using MemoryTypeSorterPtr = std::unique_ptr<MemoryTypeSorter>;
+
+MemoryTypeSorterPtr buildMemoryTypeSorter(const tcu::Maybe<HostIntent> &hostIntent)
+{
+    if (!hostIntent)
+        return MemoryTypeSorterPtr(new UnknownIntentSorter());
+
+    switch (hostIntent.get())
+    {
+    case vk::HostIntent::NONE:
+        return MemoryTypeSorterPtr(new NoIntentSorter());
+    case vk::HostIntent::R:
+        return MemoryTypeSorterPtr(new HostReadSorter());
+    case vk::HostIntent::W:
+        return MemoryTypeSorterPtr(new HostWriteSorter());
+    case vk::HostIntent::RW:
+        return MemoryTypeSorterPtr(new HostReadSorter());
+    default:
+        break;
+    }
+
+    return MemoryTypeSorterPtr();
+}
+
+// Separate class that can be copied and used by std::sort. Does not own the memory type sorter.
+class MemoryTypeComp
+{
+public:
+    MemoryTypeComp(const MemoryTypeSorter *p) : m_sorter(p)
+    {
+    }
+    bool operator()(const MemoryTypeInfo &a, const MemoryTypeInfo &b) const
+    {
+        return (*m_sorter)(a, b);
+    }
+
+protected:
+    const MemoryTypeSorter *m_sorter;
+};
+
+} // namespace
+
+uint32_t selectBestMemoryType(const VkPhysicalDeviceMemoryProperties &deviceMemProps, uint32_t allowedMemTypeBits,
+                              MemoryRequirement requirement, const tcu::Maybe<HostIntent> &hostIntent)
+{
+    if (hostIntent && hostIntent.get() != HostIntent::NONE)
+        DE_ASSERT(!!(requirement & MemoryRequirement::HostVisible));
+
+    std::vector<MemoryTypeInfo> memoryTypes;
+    memoryTypes.reserve(deviceMemProps.memoryTypeCount);
+
+    for (uint32_t memoryTypeIndex = 0u; memoryTypeIndex < deviceMemProps.memoryTypeCount; ++memoryTypeIndex)
+    {
+        const auto memTypeBit    = (1u << memoryTypeIndex);
+        const auto &memTypeFlags = deviceMemProps.memoryTypes[memoryTypeIndex].propertyFlags;
+
+        if ((allowedMemTypeBits & memTypeBit) && requirement.matchesHeap(memTypeFlags))
+            memoryTypes.emplace_back(memoryTypeIndex, memTypeFlags);
+    }
+
+    if (memoryTypes.empty())
+        TCU_THROW(NotSupportedError, "No compatible memory type found");
+
+    auto sorter = buildMemoryTypeSorter(hostIntent);
+    std::sort(begin(memoryTypes), end(memoryTypes), MemoryTypeComp(sorter.get()));
+    return memoryTypes.front().memoryTypeIndex;
 }
 
 uint32_t getCompatibleMemoryTypes(const VkPhysicalDeviceMemoryProperties &deviceMemProps, MemoryRequirement requirement)
@@ -419,7 +684,7 @@ void bindImagePlanesMemory(const DeviceInterface &vkd, const VkDevice device, co
 
         allocations.push_back(AllocationSp(allocator.allocate(reqs, requirement).release()));
 
-        VkBindImagePlaneMemoryInfo planeInfo = {VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO, DE_NULL, planeAspect};
+        VkBindImagePlaneMemoryInfo planeInfo = {VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO, nullptr, planeAspect};
         planeInfos.push_back(planeInfo);
 
         VkBindImageMemoryInfo coreInfo = {
@@ -440,10 +705,30 @@ MovePtr<Allocation> bindImage(const DeviceInterface &vk, const VkDevice device, 
     return alloc;
 }
 
+de::MovePtr<Allocation> bindImage(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
+                                  const VkImage image, const HostIntent hostIntent,
+                                  const VkMemoryAllocateFlags memAllocFlags)
+{
+    MovePtr<Allocation> alloc =
+        allocator.allocate(getImageMemoryRequirements(vk, device, image), hostIntent, memAllocFlags);
+    VK_CHECK(vk.bindImageMemory(device, image, alloc->getMemory(), alloc->getOffset()));
+    return alloc;
+}
+
 MovePtr<Allocation> bindBuffer(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
                                const VkBuffer buffer, const MemoryRequirement requirement)
 {
     MovePtr<Allocation> alloc(allocator.allocate(getBufferMemoryRequirements(vk, device, buffer), requirement));
+    VK_CHECK(vk.bindBufferMemory(device, buffer, alloc->getMemory(), alloc->getOffset()));
+    return alloc;
+}
+
+de::MovePtr<Allocation> bindBuffer(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
+                                   const VkBuffer buffer, const HostIntent hostIntent,
+                                   const VkMemoryAllocateFlags memAllocFlags)
+{
+    MovePtr<Allocation> alloc(
+        allocator.allocate(getBufferMemoryRequirements(vk, device, buffer), hostIntent, memAllocFlags));
     VK_CHECK(vk.bindBufferMemory(device, buffer, alloc->getMemory(), alloc->getOffset()));
     return alloc;
 }

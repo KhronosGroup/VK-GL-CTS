@@ -1352,6 +1352,7 @@ static void adjustSpecForMemoryModel(MEMORY_MODEL_TYPE memModel, ComputeShaderSp
         memModelOp = "OpMemoryModel Logical Vulkan";
 
         spec.extensions.push_back("VK_KHR_vulkan_memory_model");
+        spec.spirvVersion = SPIRV_VERSION_1_3; // SPIR-V 1.3 or higher is required for VulkanMemoryModel
 
         break;
     }

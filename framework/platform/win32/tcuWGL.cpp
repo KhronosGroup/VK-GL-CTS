@@ -178,16 +178,16 @@ struct Functions
     wglSwapIntervalEXTFunc swapIntervalEXT;
 
     Functions(void)
-        : createContext(DE_NULL)
-        , deleteContext(DE_NULL)
-        , makeCurrent(DE_NULL)
-        , getProcAddress(DE_NULL)
-        , swapLayerBuffers(DE_NULL)
-        , getPixelFormatAttribivARB(DE_NULL)
-        , getPixelFormatAttribfvARB(DE_NULL)
-        , choosePixelFormatARB(DE_NULL)
-        , createContextAttribsARB(DE_NULL)
-        , getExtensionsStringARB(DE_NULL)
+        : createContext(nullptr)
+        , deleteContext(nullptr)
+        , makeCurrent(nullptr)
+        , getProcAddress(nullptr)
+        , swapLayerBuffers(nullptr)
+        , getPixelFormatAttribivARB(nullptr)
+        , getPixelFormatAttribfvARB(nullptr)
+        , choosePixelFormatARB(nullptr)
+        , createContextAttribsARB(nullptr)
+        , getExtensionsStringARB(nullptr)
     {
     }
 };
@@ -434,7 +434,7 @@ Context::Context(const Core *core, HDC deviceCtx, const Context *sharedContext, 
     // Context version and profile
     {
         int profileBit  = 0;
-        HGLRC sharedCtx = DE_NULL;
+        HGLRC sharedCtx = nullptr;
         int minor       = ctxType.getMinorVersion();
         int major       = ctxType.getMajorVersion();
 
@@ -527,8 +527,8 @@ Context::Context(const Core *core, HDC deviceCtx, const Context *sharedContext, 
             throw ResourceError("Failed to set pixel format");
     }
 
-    HGLRC sharedCtx = DE_NULL;
-    if (DE_NULL != sharedContext)
+    HGLRC sharedCtx = nullptr;
+    if (nullptr != sharedContext)
         sharedCtx = sharedContext->m_context;
 
     // Terminate attribList
@@ -560,7 +560,7 @@ Context::~Context(void)
 
 FunctionPtr Context::getGLFunction(const char *name) const
 {
-    FunctionPtr ptr = DE_NULL;
+    FunctionPtr ptr = nullptr;
 
     // Try first with wglGeProcAddress()
     ptr = (FunctionPtr)m_core->getLibrary()->getFunctions().getProcAddress(name);

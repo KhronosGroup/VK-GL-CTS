@@ -24,6 +24,7 @@
 #include "vktApiTests.hpp"
 
 #include "vktTestGroupUtil.hpp"
+#include "vktApiDebugUtilsTests.hpp"
 #include "vktApiDeviceInitializationTests.hpp"
 #include "vktApiDriverPropertiesTests.hpp"
 #include "vktApiObjectManagementTests.hpp"
@@ -49,6 +50,7 @@
 #include "vktApiMaintenance6Check.hpp"
 #include "vktApiExtensionDuplicatesTests.hpp"
 #include "vktApiMaintenance7Tests.hpp"
+#include "vktApiDSColorBitCopyTests.hpp"
 
 #ifndef CTS_USES_VULKANSC
 #include "vktApiSmokeTests.hpp"
@@ -84,6 +86,7 @@ void createApiTests(tcu::TestCaseGroup *apiTests)
     tcu::TestContext &testCtx = apiTests->getTestContext();
 
     apiTests->addChild(createVersionSanityCheckTests(testCtx));
+    apiTests->addChild(createDebugUtilsTests(testCtx));
     apiTests->addChild(createDriverPropertiesTests(testCtx));
 #ifndef CTS_USES_VULKANSC
     apiTests->addChild(createSmokeTests(testCtx));
@@ -101,6 +104,7 @@ void createApiTests(tcu::TestCaseGroup *apiTests)
     apiTests->addChild(createTestGroup(testCtx, "buffer_view", createBufferViewTests));
     apiTests->addChild(createCommandBuffersTests(testCtx));
     apiTests->addChild(createCopiesAndBlittingTests(testCtx));
+    apiTests->addChild(createDSColorBitCopyTests(testCtx));
     apiTests->addChild(createImageClearingTests(testCtx));
     apiTests->addChild(createFillAndUpdateBufferTests(testCtx));
     apiTests->addChild(createDescriptorPoolTests(testCtx));

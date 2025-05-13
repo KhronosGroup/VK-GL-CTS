@@ -289,6 +289,15 @@ bool isCooperativeMatrixFeaturesSupported(const Context &context,
 
     return true;
 }
+bool isMaintenance8FeaturesSupported(const Context &context, const vk::VkPhysicalDeviceMaintenance8FeaturesKHR &toCheck,
+                                     const char **missingFeature)
+{
+    const VkPhysicalDeviceMaintenance8FeaturesKHR &extensionFeatures = context.getMaintenance8Features();
+
+    IS_AVAIL("Maintenance8.", maintenance8);
+
+    return true;
+}
 #endif // CTS_USES_VULKANSC
 
 #undef IS_AVAIL
@@ -318,7 +327,7 @@ bool isFloatControlsFeaturesSupported(const Context &context,
     vk::VkPhysicalDeviceFloatControlsProperties refControls;
     {
         refControls.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES;
-        refControls.pNext = DE_NULL;
+        refControls.pNext = nullptr;
 
         VkPhysicalDeviceProperties2 deviceProperties;
         deviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
@@ -413,6 +422,9 @@ bool isVulkanFeaturesSupported(const Context &context, const VulkanFeatures &req
         return false;
 
     if (!isCooperativeMatrixFeaturesSupported(context, requested.extCooperativeMatrix, missingFeature))
+        return false;
+
+    if (!isMaintenance8FeaturesSupported(context, requested.extMaintenance8, missingFeature))
         return false;
 #endif // CTS_USES_VULKANSC
 

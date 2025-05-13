@@ -166,7 +166,7 @@ const char *getBufferTargetName(uint32_t target)
         return "uniform";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -194,7 +194,7 @@ const char *getUsageHintName(uint32_t hint)
         return "dynamic_copy";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -295,7 +295,7 @@ void BufferWriterBase::write(uint32_t buffer, int offset, int numBytes, const ui
 
 // BufferWriter
 
-BufferWriter::BufferWriter(glu::RenderContext &renderCtx, tcu::TestLog &log, WriteType writeType) : m_writer(DE_NULL)
+BufferWriter::BufferWriter(glu::RenderContext &renderCtx, tcu::TestLog &log, WriteType writeType) : m_writer(nullptr)
 {
     switch (writeType)
     {
@@ -387,7 +387,7 @@ bool BufferVerifierBase::verify(uint32_t buffer, const uint8_t *reference, int o
 // BufferVerifier
 
 BufferVerifier::BufferVerifier(glu::RenderContext &renderCtx, tcu::TestLog &log, VerifyType verifyType)
-    : m_verifier(DE_NULL)
+    : m_verifier(nullptr)
 {
     switch (verifyType)
     {
@@ -435,7 +435,7 @@ bool BufferMapVerifier::verify(uint32_t buffer, const uint8_t *reference, int of
 
 bool BufferMapVerifier::verify(uint32_t buffer, const uint8_t *reference, int offset, int numBytes, uint32_t target)
 {
-    const uint8_t *mapPtr = DE_NULL;
+    const uint8_t *mapPtr = nullptr;
     bool isOk             = false;
 
     glBindBuffer(target, buffer);
@@ -457,7 +457,7 @@ bool BufferMapVerifier::verify(uint32_t buffer, const uint8_t *reference, int of
 
 VertexArrayVerifier::VertexArrayVerifier(glu::RenderContext &renderCtx, tcu::TestLog &log)
     : BufferVerifierBase(renderCtx, log)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_posLoc(0)
     , m_byteVecLoc(0)
     , m_vao(0)
@@ -648,7 +648,7 @@ bool VertexArrayVerifier::verify(uint32_t buffer, const uint8_t *refPtr, int off
     glBufferData(GL_ARRAY_BUFFER, (glw::GLsizeiptr)(positions.size() * sizeof(positions[0])), &positions[0],
                  GL_STATIC_DRAW);
     glEnableVertexAttribArray(m_posLoc);
-    glVertexAttribPointer(m_posLoc, 2, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    glVertexAttribPointer(m_posLoc, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 
     // Upload indices
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuf);
@@ -680,7 +680,7 @@ bool VertexArrayVerifier::verify(uint32_t buffer, const uint8_t *refPtr, int off
         glClear(GL_COLOR_BUFFER_BIT);
         glVertexAttribPointer(m_byteVecLoc, 3, GL_UNSIGNED_BYTE, GL_TRUE, 0,
                               (const glw::GLvoid *)(uintptr_t)(offset + curOffset));
-        glDrawElements(GL_TRIANGLES, numQuads * 6, GL_UNSIGNED_SHORT, DE_NULL);
+        glDrawElements(GL_TRIANGLES, numQuads * 6, GL_UNSIGNED_SHORT, nullptr);
 
         renderQuadGridReference(reference, numQuads, numCols, refPtr + offset + curOffset);
 
@@ -706,7 +706,7 @@ bool VertexArrayVerifier::verify(uint32_t buffer, const uint8_t *refPtr, int off
 
 IndexArrayVerifier::IndexArrayVerifier(glu::RenderContext &renderCtx, tcu::TestLog &log)
     : BufferVerifierBase(renderCtx, log)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_posLoc(0)
     , m_colorLoc(0)
 {
@@ -869,11 +869,11 @@ bool IndexArrayVerifier::verify(uint32_t buffer, const uint8_t *refPtr, int offs
         glBindBuffer(GL_ARRAY_BUFFER, m_positionBuf);
         glBufferData(GL_ARRAY_BUFFER, (glw::GLsizeiptr)(positions.size() * sizeof(positions[0])), &positions[0],
                      GL_STREAM_DRAW);
-        glVertexAttribPointer(m_posLoc, 2, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+        glVertexAttribPointer(m_posLoc, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 
         glBindBuffer(GL_ARRAY_BUFFER, m_colorBuf);
         glBufferData(GL_ARRAY_BUFFER, (glw::GLsizeiptr)(colors.size() * sizeof(colors[0])), &colors[0], GL_STREAM_DRAW);
-        glVertexAttribPointer(m_colorLoc, 3, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+        glVertexAttribPointer(m_colorLoc, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
         glDrawElements(GL_LINE_STRIP, numBytesToVerify, GL_UNSIGNED_BYTE, (void *)(uintptr_t)(offset + curOffset));
         glu::readPixels(m_renderCtx, 0, 0, indexBufferImg.getAccess());
@@ -887,12 +887,12 @@ bool IndexArrayVerifier::verify(uint32_t buffer, const uint8_t *refPtr, int offs
         glBindBuffer(GL_ARRAY_BUFFER, m_positionBuf);
         glBufferData(GL_ARRAY_BUFFER, (glw::GLsizeiptr)(fetchedPos.size() * sizeof(fetchedPos[0])), &fetchedPos[0],
                      GL_STREAM_DRAW);
-        glVertexAttribPointer(m_posLoc, 2, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+        glVertexAttribPointer(m_posLoc, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 
         glBindBuffer(GL_ARRAY_BUFFER, m_colorBuf);
         glBufferData(GL_ARRAY_BUFFER, (glw::GLsizeiptr)(fetchedColor.size() * sizeof(fetchedColor[0])),
                      &fetchedColor[0], GL_STREAM_DRAW);
-        glVertexAttribPointer(m_colorLoc, 3, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+        glVertexAttribPointer(m_colorLoc, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
         glDrawArrays(GL_LINE_STRIP, 0, numBytesToVerify);
         glu::readPixels(m_renderCtx, 0, 0, referenceImg.getAccess());

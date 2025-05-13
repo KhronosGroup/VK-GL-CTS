@@ -77,7 +77,7 @@ SSBOArrayLengthCase::SSBOArrayLengthCase(Context &context, const char *name, con
     : TestCase(context, name, desc)
     , m_access(access)
     , m_sized(sized)
-    , m_shader(DE_NULL)
+    , m_shader(nullptr)
     , m_targetBufferID(0)
     , m_outputBufferID(0)
 {
@@ -125,7 +125,7 @@ void SSBOArrayLengthCase::init(void)
         if (index == GL_INVALID_INDEX)
             throw tcu::TestError("Failed to find outLength variable");
 
-        gl.getProgramResourceiv(m_shader->getProgram(), GL_BUFFER_VARIABLE, index, 1, &prop, 1, DE_NULL, &result);
+        gl.getProgramResourceiv(m_shader->getProgram(), GL_BUFFER_VARIABLE, index, 1, &prop, 1, nullptr, &result);
 
         if (result != 0)
             throw tcu::TestError("Unexpected outLength location");
@@ -138,7 +138,7 @@ void SSBOArrayLengthCase::init(void)
         if (index == GL_INVALID_INDEX)
             throw tcu::TestError("Failed to find unused variable");
 
-        gl.getProgramResourceiv(m_shader->getProgram(), GL_BUFFER_VARIABLE, index, 1, &prop, 1, DE_NULL, &result);
+        gl.getProgramResourceiv(m_shader->getProgram(), GL_BUFFER_VARIABLE, index, 1, &prop, 1, nullptr, &result);
 
         if (result != 4)
             throw tcu::TestError("Unexpected unused location");
@@ -151,7 +151,7 @@ void SSBOArrayLengthCase::init(void)
         if (index == GL_INVALID_INDEX)
             throw tcu::TestError("Failed to find array variable");
 
-        gl.getProgramResourceiv(m_shader->getProgram(), GL_BUFFER_VARIABLE, index, 1, &prop, 1, DE_NULL, &result);
+        gl.getProgramResourceiv(m_shader->getProgram(), GL_BUFFER_VARIABLE, index, 1, &prop, 1, nullptr, &result);
 
         if (result != 4)
             throw tcu::TestError("Unexpected array stride");
@@ -163,7 +163,7 @@ void SSBOArrayLengthCase::deinit(void)
     if (m_shader)
     {
         delete m_shader;
-        m_shader = DE_NULL;
+        m_shader = nullptr;
     }
 
     if (m_targetBufferID)
@@ -190,7 +190,7 @@ SSBOArrayLengthCase::IterateResult SSBOArrayLengthCase::iterate(void)
                        << static_cast<int>(s_fixedBufferSize) << " elements." << tcu::TestLog::EndMessage;
 
     gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, m_targetBufferID);
-    gl.bufferData(GL_SHADER_STORAGE_BUFFER, s_fixedBufferSize * (int)sizeof(float), DE_NULL, GL_DYNAMIC_COPY);
+    gl.bufferData(GL_SHADER_STORAGE_BUFFER, s_fixedBufferSize * (int)sizeof(float), nullptr, GL_DYNAMIC_COPY);
 
     GLU_EXPECT_NO_ERROR(gl.getError(), "update buffer");
 

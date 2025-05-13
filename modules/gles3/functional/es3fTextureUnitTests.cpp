@@ -643,7 +643,7 @@ TextureUnitCase::TextureUnitCase(Context &context, const char *name, const char 
     , m_randSeed(randSeed)
     , m_numTextures(0)
     , m_numUnits(0)
-    , m_shader(DE_NULL)
+    , m_shader(nullptr)
 {
 }
 
@@ -671,7 +671,7 @@ void TextureUnitCase::deinit(void)
     m_textures3d.clear();
 
     delete m_shader;
-    m_shader = DE_NULL;
+    m_shader = nullptr;
 }
 
 void TextureUnitCase::init(void)
@@ -900,7 +900,7 @@ void TextureUnitCase::init(void)
 
         // Create shader.
 
-        DE_ASSERT(m_shader == DE_NULL);
+        DE_ASSERT(m_shader == nullptr);
         m_shader = new MultiTexShader(rnd.getUint32(), m_numUnits, unitTypes, samplerTypes, texScales, texBiases,
                                       num2dArrayLayers);
     }
@@ -1225,9 +1225,9 @@ void TextureUnitTests::init(void)
                 (TextureUnitCase::CaseType)caseType == TextureUnitCase::CASE_ONLY_2D_ARRAY ? "only_2d_array" :
                 (TextureUnitCase::CaseType)caseType == TextureUnitCase::CASE_ONLY_3D       ? "only_3d" :
                 (TextureUnitCase::CaseType)caseType == TextureUnitCase::CASE_MIXED         ? "mixed" :
-                                                                                             DE_NULL;
+                                                                                             nullptr;
 
-            DE_ASSERT(caseTypeGroupName != DE_NULL);
+            DE_ASSERT(caseTypeGroupName != nullptr);
 
             tcu::TestCaseGroup *caseTypeGroup = new tcu::TestCaseGroup(m_testCtx, caseTypeGroupName, "");
             countGroup->addChild(caseTypeGroup);

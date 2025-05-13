@@ -75,7 +75,7 @@ tcu::TestNode::IterateResult ExecutorTestCase::iterate(void)
 
     int result          = 0;
     void *const outputs = &result;
-    executor->execute(1, DE_NULL, &outputs);
+    executor->execute(1, nullptr, &outputs);
 
     if (m_expectedOutput == result)
     {

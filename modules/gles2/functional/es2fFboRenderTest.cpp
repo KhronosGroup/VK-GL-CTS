@@ -295,7 +295,7 @@ const char *FboConfig::getFormatName(GLenum format)
         return "stencil_index8";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -636,7 +636,7 @@ TestCase::IterateResult FboRenderCase::iterate(void)
     glu::RenderContext &renderCtx         = m_context.getRenderContext();
     const tcu::RenderTarget &renderTarget = m_context.getRenderTarget();
     tcu::TestLog &log                     = m_testCtx.getLog();
-    const char *failReason                = DE_NULL;
+    const char *failReason                = nullptr;
 
     // Position & size for context
     deRandom rnd;
@@ -2144,7 +2144,7 @@ protected:
         {
             ctx.bindTexture(GL_TEXTURE_2D, textures[fboNdx]);
             ctx.texImage2D(GL_TEXTURE_2D, 0, getConfig().colorbufferFormat, fboSizes[fboNdx], fboSizes[fboNdx], 0,
-                           getConfig().colorbufferFormat, GL_UNSIGNED_BYTE, DE_NULL);
+                           getConfig().colorbufferFormat, GL_UNSIGNED_BYTE, nullptr);
             ctx.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             ctx.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             ctx.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);

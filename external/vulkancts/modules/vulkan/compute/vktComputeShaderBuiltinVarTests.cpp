@@ -558,14 +558,13 @@ tcu::TestStatus ComputeBuiltinVarInstance::iterate(void)
         .update(m_vki, m_device);
 
     m_vki.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
-                                &descriptorSet.get(), 0u, DE_NULL);
+                                &descriptorSet.get(), 0u, nullptr);
 
     // Dispatch indirect compute command
     m_vki.cmdDispatch(*cmdBuffer, subCase.numWorkGroups()[0], subCase.numWorkGroups()[1], subCase.numWorkGroups()[2]);
 
     m_vki.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                             (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &bufferBarrier, 0,
-                             (const VkImageMemoryBarrier *)DE_NULL);
+                             (VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier, 0, nullptr);
 
     // End recording commands
     endCommandBuffer(m_vki, *cmdBuffer);

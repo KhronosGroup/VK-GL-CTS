@@ -116,11 +116,11 @@ public:
     }
     void *getBasePtr(void)
     {
-        return m_data.empty() ? DE_NULL : &m_data[0];
+        return m_data.empty() ? nullptr : &m_data[0];
     }
     const void *getBasePtr(void) const
     {
-        return m_data.empty() ? DE_NULL : &m_data[0];
+        return m_data.empty() ? nullptr : &m_data[0];
     }
 
     const std::vector<glu::VertexArrayBinding> &getLayout(void) const
@@ -411,7 +411,7 @@ static int findShaderInputIndex(const vector<rsg::ShaderInput *> &vars, const ch
 {
     for (int ndx = 0; ndx < (int)vars.size(); ++ndx)
     {
-        if (deStringEqual(vars[ndx]->getVariable()->getName(), name))
+        if (strcmp(vars[ndx]->getVariable()->getName(), name) == 0)
             return ndx;
     }
 
@@ -489,9 +489,9 @@ FragOpInteractionCase::FragOpInteractionCase(tcu::TestContext &testCtx, glu::Ren
     , m_params(params)
     , m_vertexShader(rsg::Shader::TYPE_VERTEX)
     , m_fragmentShader(rsg::Shader::TYPE_FRAGMENT)
-    , m_program(DE_NULL)
-    , m_glCtx(DE_NULL)
-    , m_referenceCtx(DE_NULL)
+    , m_program(nullptr)
+    , m_glCtx(nullptr)
+    , m_referenceCtx(nullptr)
     , m_glProgram(0)
     , m_refProgram(0)
     , m_iterNdx(0)
@@ -520,7 +520,7 @@ void FragOpInteractionCase::init(void)
     {
         DE_ASSERT(!m_program);
         m_program = new gls::RandomShaderProgram(m_vertexShader, m_fragmentShader, (int)m_unifiedUniforms.size(),
-                                                 m_unifiedUniforms.empty() ? DE_NULL : &m_unifiedUniforms[0]);
+                                                 m_unifiedUniforms.empty() ? nullptr : &m_unifiedUniforms[0]);
 
         DE_ASSERT(!m_referenceCtx);
         m_referenceCtx = new ReferenceContext(m_renderCtx, viewportW, viewportH);
@@ -548,13 +548,13 @@ void FragOpInteractionCase::init(void)
 void FragOpInteractionCase::deinit(void)
 {
     delete m_referenceCtx;
-    m_referenceCtx = DE_NULL;
+    m_referenceCtx = nullptr;
 
     delete m_glCtx;
-    m_glCtx = DE_NULL;
+    m_glCtx = nullptr;
 
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 FragOpInteractionCase::IterateResult FragOpInteractionCase::iterate(void)

@@ -201,7 +201,7 @@ static Move<VkDevice> createDeviceWithAdressBindingReport(bool isValidationEnabl
     VkPhysicalDeviceFeatures features     = getPhysicalDeviceFeatures(vki, physicalDevice);
 
     VkPhysicalDeviceAddressBindingReportFeaturesEXT deviceAddressBindingReportFeatures{
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ADDRESS_BINDING_REPORT_FEATURES_EXT, DE_NULL, VK_TRUE};
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ADDRESS_BINDING_REPORT_FEATURES_EXT, nullptr, VK_TRUE};
 
     const VkPhysicalDeviceFeatures2 enabledFeatures2 = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, // VkStructureType sType;
@@ -210,7 +210,7 @@ static Move<VkDevice> createDeviceWithAdressBindingReport(bool isValidationEnabl
     };
     const VkDeviceQueueCreateInfo queueCreateInfo = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         (VkDeviceQueueCreateFlags)0,                // VkDeviceQueueCreateFlags flags;
         queueFamilyIndex,                           // uint32_t queueFamilyIndex;
         queueCount,                                 // uint32_t queueCount;
@@ -223,10 +223,10 @@ static Move<VkDevice> createDeviceWithAdressBindingReport(bool isValidationEnabl
         queueCount,                            // uint32_t queueCreateInfoCount;
         &queueCreateInfo,                      // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u,                                    // uint32_t enabledLayerCount;
-        DE_NULL,                               // const char* const* ppEnabledLayerNames;
+        nullptr,                               // const char* const* ppEnabledLayerNames;
         DE_LENGTH_OF_ARRAY(enabledExtensions), // uint32_t enabledExtensionCount;
         DE_ARRAY_BEGIN(enabledExtensions),     // const char* const* ppEnabledExtensionNames;
-        DE_NULL,                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
+        nullptr,                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
     return createCustomDevice(isValidationEnabled, vkp, instance, vki, physicalDevice, &deviceCreateInfo);
@@ -283,7 +283,7 @@ struct DeviceMemory
     {
         const VkMemoryAllocateInfo memoryAllocateInfo = {
             VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, // VkStructureType sType;
-            DE_NULL,                                // const void* pNext;
+            nullptr,                                // const void* pNext;
             params.size,                            // VkDeviceSize allocationSize;
             params.memoryTypeIndex,                 // uint32_t memoryTypeIndex;
         };
@@ -332,7 +332,7 @@ struct Buffer
     {
         const VkBufferCreateInfo bufferCreateInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             (VkBufferCreateFlags)0,               // VkBufferCreateFlags flags;
             params.size,                          // VkDeviceSize size;
             params.usage,                         // VkBufferUsageFlags usage;
@@ -382,7 +382,7 @@ struct BufferView
     {
         const VkBufferViewCreateInfo bufferViewCreateInfo = {
             VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             (VkBufferViewCreateFlags)0,                // VkBufferViewCreateFlags flags;
             *res.buffer.object,                        // VkBuffer buffer;
             params.format,                             // VkFormat format;
@@ -439,7 +439,7 @@ struct Image
     {
         const VkImageCreateInfo imageCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                             // const void* pNext;
+            nullptr,                             // const void* pNext;
             params.flags,                        // VkImageCreateFlags flags;
             params.imageType,                    // VkImageType imageType;
             params.format,                       // VkFormat format;
@@ -499,7 +499,7 @@ struct ImageView
     {
         const VkImageViewCreateInfo imageViewCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             (VkImageViewCreateFlags)0,                // VkImageViewCreateFlags flags;
             *res.image.object,                        // VkImage image;
             params.viewType,                          // VkImageViewType viewType;
@@ -536,7 +536,7 @@ struct Semaphore
     {
         const VkSemaphoreCreateInfo semaphoreCreateInfo = {
             VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                 // const void* pNext;
+            nullptr,                                 // const void* pNext;
             params.flags,                            // VkSemaphoreCreateFlags flags;
         };
 
@@ -568,7 +568,7 @@ struct Fence
     {
         const VkFenceCreateInfo fenceCreateInfo = {
             VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                             // const void* pNext;
+            nullptr,                             // const void* pNext;
             params.flags,                        // VkFenceCreateFlags flags;
         };
 
@@ -600,7 +600,7 @@ struct Event
     {
         const VkEventCreateInfo eventCreateInfo = {
             VK_STRUCTURE_TYPE_EVENT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                             // const void* pNext;
+            nullptr,                             // const void* pNext;
             params.flags,                        // VkEventCreateFlags flags;
         };
 
@@ -637,7 +637,7 @@ struct QueryPool
     {
         const VkQueryPoolCreateInfo queryPoolCreateInfo = {
             VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             (VkQueryPoolCreateFlags)0,                // VkQueryPoolCreateFlags flags;
             params.queryType,                         // VkQueryType queryType;
             params.entryCount,                        // uint32_t queryCount;
@@ -698,7 +698,7 @@ struct ShaderModule
 
         default:
             DE_FATAL("Not implemented");
-            return DE_NULL;
+            return nullptr;
         }
     }
 
@@ -715,7 +715,7 @@ struct ShaderModule
     {
         const VkShaderModuleCreateInfo shaderModuleCreateInfo = {
             VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                     // const void* pNext;
+            nullptr,                                     // const void* pNext;
             (VkShaderModuleCreateFlags)0,                // VkShaderModuleCreateFlags flags;
             res.binary.getSize(),                        // size_t codeSize;
             (const uint32_t *)res.binary.getBinary(),    // const uint32_t* pCode;
@@ -747,10 +747,10 @@ struct PipelineCache
     {
         const VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                      // const void* pNext;
+            nullptr,                                      // const void* pNext;
             (VkPipelineCacheCreateFlags)0u,               // VkPipelineCacheCreateFlags flags;
             0u,                                           // size_t initialDataSize;
-            DE_NULL,                                      // const void* pInitialData;
+            nullptr,                                      // const void* pInitialData;
         };
 
         return createPipelineCache(env.vkd, env.device, &pipelineCacheCreateInfo);
@@ -810,7 +810,7 @@ struct Sampler
     {
         const VkSamplerCreateInfo samplerCreateInfo = {
             VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                               // const void* pNext;
+            nullptr,                               // const void* pNext;
             (VkSamplerCreateFlags)0,               // VkSamplerCreateFlags flags;
             params.magFilter,                      // VkFilter magFilter;
             params.minFilter,                      // VkFilter minFilter;
@@ -911,7 +911,7 @@ struct DescriptorSetLayout
                     cur->descriptorCount, // uint32_t descriptorCount;
                     cur->stageFlags,      // VkShaderStageFlags stageFlags;
                     (cur->useImmutableSampler ? &immutableSamplersPtr[0] :
-                                                DE_NULL), // const VkSampler* pImmutableSamplers;
+                                                nullptr), // const VkSampler* pImmutableSamplers;
                 };
 
                 bindings.push_back(binding);
@@ -923,10 +923,10 @@ struct DescriptorSetLayout
     {
         const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             (VkDescriptorSetLayoutCreateFlags)0,                 // VkDescriptorSetLayoutCreateFlags flags;
             (uint32_t)res.bindings.size(),                       // uint32_t bindingCount;
-            (res.bindings.empty() ? DE_NULL : &res.bindings[0]), // const VkDescriptorSetLayoutBinding* pBindings;
+            (res.bindings.empty() ? nullptr : &res.bindings[0]), // const VkDescriptorSetLayoutBinding* pBindings;
         };
 
         return createDescriptorSetLayout(env.vkd, env.device, &descriptorSetLayoutCreateInfo);
@@ -984,13 +984,13 @@ struct PipelineLayout
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,             // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             (VkPipelineLayoutCreateFlags)0,                            // VkPipelineLayoutCreateFlags flags;
             (uint32_t)res.pSetLayouts.size(),                          // uint32_t setLayoutCount;
-            (res.pSetLayouts.empty() ? DE_NULL : &res.pSetLayouts[0]), // const VkDescriptorSetLayout* pSetLayouts;
+            (res.pSetLayouts.empty() ? nullptr : &res.pSetLayouts[0]), // const VkDescriptorSetLayout* pSetLayouts;
             (uint32_t)params.pushConstantRanges.size(),                // uint32_t pushConstantRangeCount;
             (params.pushConstantRanges.empty() ?
-                 DE_NULL :
+                 nullptr :
                  &params.pushConstantRanges[0]), // const VkPushConstantRange* pPushConstantRanges;
         };
 
@@ -1066,21 +1066,21 @@ struct GraphicsPipeline
         const VkPipelineShaderStageCreateInfo stages[] = {
             {
                 VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                             // const void* pNext;
+                nullptr,                                             // const void* pNext;
                 (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags flags;
                 VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits stage;
                 *res.vertexShader.object,                            // VkShaderModule module;
                 "main",                                              // const char* pName;
-                DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
+                nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
             },
             {
                 VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                             // const void* pNext;
+                nullptr,                                             // const void* pNext;
                 (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags flags;
                 VK_SHADER_STAGE_FRAGMENT_BIT,                        // VkShaderStageFlagBits stage;
                 *res.fragmentShader.object,                          // VkShaderModule module;
                 "main",                                              // const char* pName;
-                DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
+                nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
             }};
         const VkVertexInputBindingDescription vertexBindings[]      = {{
             0u,                          // uint32_t binding;
@@ -1095,7 +1095,7 @@ struct GraphicsPipeline
         }};
         const VkPipelineVertexInputStateCreateInfo vertexInputState = {
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags flags;
             DE_LENGTH_OF_ARRAY(vertexBindings),                        // uint32_t vertexBindingDescriptionCount;
             vertexBindings,                    // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -1104,7 +1104,7 @@ struct GraphicsPipeline
         };
         const VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = {
             VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                     // const void* pNext;
+            nullptr,                                                     // const void* pNext;
             (VkPipelineInputAssemblyStateCreateFlags)0, // VkPipelineInputAssemblyStateCreateFlags flags;
             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,        // VkPrimitiveTopology topology;
             VK_FALSE,                                   // VkBool32 primitiveRestartEnable;
@@ -1114,7 +1114,7 @@ struct GraphicsPipeline
 
         const VkPipelineViewportStateCreateInfo viewportState = {
             VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                               // const void* pNext;
+            nullptr,                                               // const void* pNext;
             (VkPipelineViewportStateCreateFlags)0,                 // VkPipelineViewportStateCreateFlags flags;
             1u,                                                    // uint32_t viewportCount;
             &viewport,                                             // const VkViewport* pViewports;
@@ -1123,7 +1123,7 @@ struct GraphicsPipeline
         };
         const VkPipelineRasterizationStateCreateInfo rasterState = {
             VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                    // const void* pNext;
+            nullptr,                                                    // const void* pNext;
             (VkPipelineRasterizationStateCreateFlags)0, // VkPipelineRasterizationStateCreateFlags flags;
             VK_FALSE,                                   // VkBool32 depthClampEnable;
             VK_FALSE,                                   // VkBool32 rasterizerDiscardEnable;
@@ -1138,18 +1138,18 @@ struct GraphicsPipeline
         };
         const VkPipelineMultisampleStateCreateInfo multisampleState = {
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
+            nullptr,                                                  // const void* pNext;
             (VkPipelineMultisampleStateCreateFlags)0,                 // VkPipelineMultisampleStateCreateFlags flags;
             VK_SAMPLE_COUNT_1_BIT,                                    // VkSampleCountFlagBits rasterizationSamples;
             VK_FALSE,                                                 // VkBool32 sampleShadingEnable;
             1.0f,                                                     // float minSampleShading;
-            DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+            nullptr,                                                  // const VkSampleMask* pSampleMask;
             VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
             VK_FALSE,                                                 // VkBool32 alphaToOneEnable;
         };
         const VkPipelineDepthStencilStateCreateInfo depthStencilState = {
             VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                    // const void* pNext;
+            nullptr,                                                    // const void* pNext;
             (VkPipelineDepthStencilStateCreateFlags)0,                  // VkPipelineDepthStencilStateCreateFlags flags;
             VK_TRUE,                                                    // VkBool32 depthTestEnable;
             VK_TRUE,                                                    // VkBool32 depthWriteEnable;
@@ -1190,7 +1190,7 @@ struct GraphicsPipeline
         }};
         const VkPipelineColorBlendStateCreateInfo colorBlendState      = {
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
+            nullptr,                                                  // const void* pNext;
             (VkPipelineColorBlendStateCreateFlags)0, // VkPipelineColorBlendStateCreateFlags flags;
             VK_FALSE,                                // VkBool32 logicOpEnable;
             VK_LOGIC_OP_COPY,                        // VkLogicOp logicOp;
@@ -1200,24 +1200,24 @@ struct GraphicsPipeline
         };
         const VkGraphicsPipelineCreateInfo pipelineCreateInfo = {
             VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                         // const void* pNext;
+            nullptr,                                         // const void* pNext;
             (VkPipelineCreateFlags)0,                        // VkPipelineCreateFlags flags;
             DE_LENGTH_OF_ARRAY(stages),                      // uint32_t stageCount;
             stages,                                          // const VkPipelineShaderStageCreateInfo* pStages;
-            &vertexInputState,   // const VkPipelineVertexInputStateCreateInfo* pVertexInputState;
-            &inputAssemblyState, // const VkPipelineInputAssemblyStateCreateInfo* pInputAssemblyState;
-            DE_NULL,             // const VkPipelineTessellationStateCreateInfo* pTessellationState;
-            &viewportState,      // const VkPipelineViewportStateCreateInfo* pViewportState;
-            &rasterState,        // const VkPipelineRasterizationStateCreateInfo* pRasterizationState;
-            &multisampleState,   // const VkPipelineMultisampleStateCreateInfo* pMultisampleState;
-            &depthStencilState,  // const VkPipelineDepthStencilStateCreateInfo* pDepthStencilState;
-            &colorBlendState,    // const VkPipelineColorBlendStateCreateInfo* pColorBlendState;
-            (const VkPipelineDynamicStateCreateInfo *)DE_NULL, // const VkPipelineDynamicStateCreateInfo* pDynamicState;
-            *res.layout.object,                                // VkPipelineLayout layout;
-            *res.renderPass.object,                            // VkRenderPass renderPass;
-            0u,                                                // uint32_t subpass;
-            VK_NULL_HANDLE,                                    // VkPipeline basePipelineHandle;
-            0,                                                 // int32_t basePipelineIndex;
+            &vertexInputState,      // const VkPipelineVertexInputStateCreateInfo* pVertexInputState;
+            &inputAssemblyState,    // const VkPipelineInputAssemblyStateCreateInfo* pInputAssemblyState;
+            nullptr,                // const VkPipelineTessellationStateCreateInfo* pTessellationState;
+            &viewportState,         // const VkPipelineViewportStateCreateInfo* pViewportState;
+            &rasterState,           // const VkPipelineRasterizationStateCreateInfo* pRasterizationState;
+            &multisampleState,      // const VkPipelineMultisampleStateCreateInfo* pMultisampleState;
+            &depthStencilState,     // const VkPipelineDepthStencilStateCreateInfo* pDepthStencilState;
+            &colorBlendState,       // const VkPipelineColorBlendStateCreateInfo* pColorBlendState;
+            nullptr,                // const VkPipelineDynamicStateCreateInfo* pDynamicState;
+            *res.layout.object,     // VkPipelineLayout layout;
+            *res.renderPass.object, // VkRenderPass renderPass;
+            0u,                     // uint32_t subpass;
+            VK_NULL_HANDLE,         // VkPipeline basePipelineHandle;
+            0,                      // int32_t basePipelineIndex;
         };
 
         return createGraphicsPipeline(env.vkd, env.device, *res.pipelineCache.object, &pipelineCreateInfo);
@@ -1270,16 +1270,16 @@ struct ComputePipeline
     {
         const VkComputePipelineCreateInfo pipelineCreateInfo = {
             VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             (VkPipelineCreateFlags)0,                       // VkPipelineCreateFlags flags;
             {
                 VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                             // const void* pNext;
+                nullptr,                                             // const void* pNext;
                 (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags flags;
                 VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
                 *res.shaderModule.object,                            // VkShaderModule module;
                 "main",                                              // const char* pName;
-                DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
+                nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
             },
             *res.layout.object, // VkPipelineLayout layout;
             VK_NULL_HANDLE,     // VkPipeline basePipelineHandle;
@@ -1328,11 +1328,11 @@ struct DescriptorPool
     {
         const VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,               // VkStructureType sType;
-            DE_NULL,                                                     // const void* pNext;
+            nullptr,                                                     // const void* pNext;
             params.flags,                                                // VkDescriptorPoolCreateFlags flags;
             params.maxSets,                                              // uint32_t maxSets;
             (uint32_t)params.poolSizes.size(),                           // uint32_t poolSizeCount;
-            (params.poolSizes.empty() ? DE_NULL : &params.poolSizes[0]), // const VkDescriptorPoolSize* pPoolSizes;
+            (params.poolSizes.empty() ? nullptr : &params.poolSizes[0]), // const VkDescriptorPoolSize* pPoolSizes;
         };
 
         return createDescriptorPool(env.vkd, env.device, &descriptorPoolCreateInfo);
@@ -1394,7 +1394,7 @@ struct DescriptorSet
     {
         const VkDescriptorSetAllocateInfo allocateInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             *res.descriptorPool.object,                     // VkDescriptorPool descriptorPool;
             1u,                                             // uint32_t descriptorSetCount;
             &(*res.descriptorSetLayout.object),             // const VkDescriptorSetLayout* pSetLayouts;
@@ -1449,7 +1449,7 @@ struct Framebuffer
         };
         const VkFramebufferCreateInfo framebufferCreateInfo = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             (VkFramebufferCreateFlags)0,               // VkFramebufferCreateFlags flags;
             *res.renderPass.object,                    // VkRenderPass renderPass;
             (uint32_t)DE_LENGTH_OF_ARRAY(attachments), // uint32_t attachmentCount;
@@ -1487,7 +1487,7 @@ struct CommandPool
     {
         const VkCommandPoolCreateInfo commandPoolCreateInfo = {
             VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                    // const void* pNext;
+            nullptr,                                    // const void* pNext;
             params.flags,                               // VkCommandPoolCreateFlags flags;
             env.queueFamilyIndex,                       // uint32_t queueFamilyIndex;
         };
@@ -1525,7 +1525,7 @@ struct CommandBuffer
     {
         const VkCommandBufferAllocateInfo allocateInfo = {
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             *res.commandPool.object,                        // VkCommandPool commandPool;
             params.level,                                   // VkCommandBufferLevel level;
             1,                                              // uint32_t commandBufferCount;
@@ -1734,14 +1734,14 @@ static std::vector<std::string> getInstanceExtensions(const uint32_t instanceVer
 static bool checkSupport(CustomInstance &customInstance, vk::VkPhysicalDevice &physicalDevice)
 {
     const std::vector<VkExtensionProperties> extensions =
-        enumerateDeviceExtensionProperties(customInstance.getDriver(), physicalDevice, DE_NULL);
+        enumerateDeviceExtensionProperties(customInstance.getDriver(), physicalDevice, nullptr);
 
     for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
     {
-        if (deStringEqual("VK_EXT_device_address_binding_report", extensions[extNdx].extensionName))
+        if (strcmp("VK_EXT_device_address_binding_report", extensions[extNdx].extensionName) == 0)
         {
             VkPhysicalDeviceAddressBindingReportFeaturesEXT deviceAddressBindingReportFeatures{
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ADDRESS_BINDING_REPORT_FEATURES_EXT, DE_NULL, VK_FALSE};
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ADDRESS_BINDING_REPORT_FEATURES_EXT, nullptr, VK_FALSE};
 
             VkPhysicalDeviceFeatures2 availFeatures;
             availFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;

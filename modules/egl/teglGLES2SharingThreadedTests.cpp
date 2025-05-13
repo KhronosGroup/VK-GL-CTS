@@ -203,7 +203,7 @@ GLES2Context::GLES2Context(SharedPtr<tcu::ThreadUtil::Event> event, SharedPtr<GL
     , display(EGL_NO_DISPLAY)
     , context(EGL_NO_CONTEXT)
 {
-    glExtensions.imageTargetTexture2D = DE_NULL;
+    glExtensions.imageTargetTexture2D = nullptr;
 }
 
 GLES2Context::~GLES2Context(void)
@@ -330,9 +330,9 @@ void FenceSync::init(EGLThread &thread, bool serverSync)
     m_lock.lock();
     if (m_waiterCount > 0)
     {
-        thread.newMessage() << "Begin -- eglCreateSyncKHR(" << ((size_t)m_display) << ", EGL_SYNC_FENCE_KHR, DE_NULL)"
+        thread.newMessage() << "Begin -- eglCreateSyncKHR(" << ((size_t)m_display) << ", EGL_SYNC_FENCE_KHR, nullptr)"
                             << tcu::ThreadUtil::Message::End;
-        m_sync = thread.egl.createSyncKHR(m_display, EGL_SYNC_FENCE_KHR, DE_NULL);
+        m_sync = thread.egl.createSyncKHR(m_display, EGL_SYNC_FENCE_KHR, nullptr);
         thread.newMessage() << "End -- " << ((size_t)m_sync) << " = eglCreateSyncKHR()"
                             << tcu::ThreadUtil::Message::End;
         TCU_CHECK(m_sync);
@@ -371,7 +371,7 @@ bool FenceSync::waitReady(EGLThread &thread)
                             << tcu::ThreadUtil::Message::End;
         EGLint destroyResult = thread.egl.destroySyncKHR(m_display, m_sync);
         thread.newMessage() << "End -- " << destroyResult << " = eglDestroySyncKHR()" << tcu::ThreadUtil::Message::End;
-        m_sync = DE_NULL;
+        m_sync = nullptr;
     }
 
     m_lock.unlock();
@@ -1523,9 +1523,9 @@ void ShaderSource::exec(tcu::ThreadUtil::Thread &t)
     EGLThread &thread        = dynamic_cast<EGLThread &>(t);
     const char *shaderSource = m_source.c_str();
 
-    thread.newMessage() << "Begin -- glShaderSource(" << m_shader->shader << ", 1, \"" << shaderSource << "\", DE_NULL)"
+    thread.newMessage() << "Begin -- glShaderSource(" << m_shader->shader << ", 1, \"" << shaderSource << "\", nullptr)"
                         << tcu::ThreadUtil::Message::End;
-    GLU_CHECK_GLW_CALL(thread.gl, shaderSource(m_shader->shader, 1, &shaderSource, DE_NULL));
+    GLU_CHECK_GLW_CALL(thread.gl, shaderSource(m_shader->shader, 1, &shaderSource, nullptr));
     thread.newMessage() << "End -- glShaderSource()" << tcu::ThreadUtil::Message::End;
 }
 
@@ -2384,7 +2384,7 @@ void GLES2SharingRandomTest::deinit(void)
     for (int threadNdx = 0; threadNdx < (int)m_threads.size(); threadNdx++)
     {
         delete m_threads[threadNdx];
-        m_threads[threadNdx] = DE_NULL;
+        m_threads[threadNdx] = nullptr;
     }
 
     m_threads.clear();
@@ -3899,7 +3899,7 @@ void GLES2ThreadedSharingTest::deinit(void)
     for (int threadNdx = 0; threadNdx < (int)m_threads.size(); threadNdx++)
     {
         delete m_threads[threadNdx];
-        m_threads[threadNdx] = DE_NULL;
+        m_threads[threadNdx] = nullptr;
     }
 
     m_threads.clear();

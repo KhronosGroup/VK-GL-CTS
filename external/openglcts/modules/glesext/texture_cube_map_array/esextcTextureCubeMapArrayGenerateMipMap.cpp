@@ -93,8 +93,8 @@ TextureCubeMapArrayGenerateMipMapFilterable::TextureCubeMapArrayGenerateMipMapFi
     : TestCaseBase(context, extParams, name, description)
     , m_fbo_id(0)
     , m_storage_type(storageType)
-    , m_reference_data_ptr(DE_NULL)
-    , m_rendered_data_ptr(DE_NULL)
+    , m_reference_data_ptr(nullptr)
+    , m_rendered_data_ptr(nullptr)
 {
     /* Nothing to be done here */
 }
@@ -127,18 +127,18 @@ void TextureCubeMapArrayGenerateMipMapFilterable::deinit()
     }
 
     /* Release buffers the test may have allocated */
-    if (m_reference_data_ptr != DE_NULL)
+    if (m_reference_data_ptr != nullptr)
     {
         delete[] m_reference_data_ptr;
 
-        m_reference_data_ptr = DE_NULL;
+        m_reference_data_ptr = nullptr;
     }
 
-    if (m_rendered_data_ptr != DE_NULL)
+    if (m_rendered_data_ptr != nullptr)
     {
         delete[] m_rendered_data_ptr;
 
-        m_rendered_data_ptr = DE_NULL;
+        m_rendered_data_ptr = nullptr;
     }
 
     /* Restore pixel pack/unpack settings */
@@ -161,7 +161,7 @@ void TextureCubeMapArrayGenerateMipMapFilterable::deinit()
 void TextureCubeMapArrayGenerateMipMapFilterable::generateTestData(int n_layer, unsigned char *data, int width,
                                                                    int height)
 {
-    DE_ASSERT(data != DE_NULL);
+    DE_ASSERT(data != nullptr);
 
     for (int x = 0; x < width; ++x)
     {
@@ -277,7 +277,7 @@ void TextureCubeMapArrayGenerateMipMapFilterable::initTest()
         {
             gl.texImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0,                                 /* level */
                           GL_RGBA8, config.m_width, config.m_height, config.m_depth, 0, /* border */
-                          GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                          GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
             GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage3D() call failed");
         }
@@ -329,7 +329,7 @@ tcu::TestCase::IterateResult TextureCubeMapArrayGenerateMipMapFilterable::iterat
                                                    sizeof(unsigned char));
             unsigned char *data_ptr = new unsigned char[data_size];
 
-            if (data_ptr == DE_NULL)
+            if (data_ptr == nullptr)
             {
                 TCU_FAIL("Out of memory");
             }
@@ -347,7 +347,7 @@ tcu::TestCase::IterateResult TextureCubeMapArrayGenerateMipMapFilterable::iterat
             /* Release the data buffer */
             delete[] data_ptr;
 
-            data_ptr = DE_NULL;
+            data_ptr = nullptr;
 
             /* Make sure the call was successful */
             GLU_EXPECT_NO_ERROR(gl.getError(), "glTexSubImage3D() call failed");
@@ -369,7 +369,7 @@ tcu::TestCase::IterateResult TextureCubeMapArrayGenerateMipMapFilterable::iterat
         m_reference_data_ptr = new unsigned char[size];
         m_rendered_data_ptr  = new unsigned char[size];
 
-        if (m_reference_data_ptr == DE_NULL || m_rendered_data_ptr == DE_NULL)
+        if (m_reference_data_ptr == nullptr || m_rendered_data_ptr == nullptr)
         {
             TCU_FAIL("Out of memory");
         }
@@ -455,18 +455,18 @@ tcu::TestCase::IterateResult TextureCubeMapArrayGenerateMipMapFilterable::iterat
         /* Release the buffers we allocated specifically for currently processed
          * storage config.
          */
-        if (m_reference_data_ptr != DE_NULL)
+        if (m_reference_data_ptr != nullptr)
         {
             delete[] m_reference_data_ptr;
 
-            m_reference_data_ptr = DE_NULL;
+            m_reference_data_ptr = nullptr;
         }
 
-        if (m_rendered_data_ptr != DE_NULL)
+        if (m_rendered_data_ptr != nullptr)
         {
             delete[] m_rendered_data_ptr;
 
-            m_rendered_data_ptr = DE_NULL;
+            m_rendered_data_ptr = nullptr;
         }
     } /* for (all storage configs) */
 

@@ -152,7 +152,7 @@ void ApiCase::expectNoDisplay(EGLDisplay got)
 
 void ApiCase::expectNull(const void *got)
 {
-    if (got != DE_NULL)
+    if (got != nullptr)
     {
         m_testCtx.getLog() << TestLog::Message << "// ERROR expected: NULL" << TestLog::EndMessage;
         if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)

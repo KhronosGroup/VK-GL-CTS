@@ -50,7 +50,7 @@ static const char *getVerifierSuffix(QueryType type)
         return "get_program_pipelineiv";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 

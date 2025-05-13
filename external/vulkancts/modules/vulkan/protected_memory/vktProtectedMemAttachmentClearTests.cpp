@@ -133,7 +133,7 @@ tcu::TestStatus AttachmentClearTestInstance::iterate()
     vk::Unique<vk::VkRenderPass> renderPass(createRenderPass(ctx, m_imageFormat));
     vk::Unique<vk::VkFramebuffer> framebuffer(
         createFramebuffer(ctx, RENDER_WIDTH, RENDER_HEIGHT, *renderPass, *colorImageView));
-    vk::Unique<vk::VkPipelineLayout> pipelineLayout(createPipelineLayout(ctx, 0u, DE_NULL));
+    vk::Unique<vk::VkPipelineLayout> pipelineLayout(createPipelineLayout(ctx, 0u, nullptr));
 
     vk::Unique<vk::VkCommandPool> cmdPool(makeCommandPool(vk, device, PROTECTION_ENABLED, queueFamilyIndex));
     vk::Unique<vk::VkCommandBuffer> cmdBuffer(
@@ -148,7 +148,7 @@ tcu::TestStatus AttachmentClearTestInstance::iterate()
     // Start image barrier
     {
         const vk::VkImageMemoryBarrier startImgBarrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // sType
-                                                          DE_NULL,                                      // pNext
+                                                          nullptr,                                      // pNext
                                                           0,                                            // srcAccessMask
                                                           vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // dstAccessMask
                                                           vk::VK_IMAGE_LAYOUT_UNDEFINED,                // oldLayout
@@ -165,8 +165,7 @@ tcu::TestStatus AttachmentClearTestInstance::iterate()
                                                           }};
 
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-                              (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                              (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &startImgBarrier);
+                              (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &startImgBarrier);
     }
 
     // Image clear to different from input color
@@ -186,7 +185,7 @@ tcu::TestStatus AttachmentClearTestInstance::iterate()
         // Begin secondary command buffer
         const vk::VkCommandBufferInheritanceInfo bufferInheritanceInfo = {
             vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // sType
-            DE_NULL,                                               // pNext
+            nullptr,                                               // pNext
             *renderPass,                                           // renderPass
             0u,                                                    // subpass
             *framebuffer,                                          // framebuffer
@@ -223,7 +222,7 @@ tcu::TestStatus AttachmentClearTestInstance::iterate()
     {
         // Image validator reads image in compute shader
         const vk::VkImageMemoryBarrier endImgBarrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // sType
-                                                        DE_NULL,                                      // pNext
+                                                        nullptr,                                      // pNext
                                                         vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // srcAccessMask
                                                         vk::VK_ACCESS_SHADER_READ_BIT,                // dstAccessMask
                                                         vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // oldLayout
@@ -239,9 +238,8 @@ tcu::TestStatus AttachmentClearTestInstance::iterate()
                                                             1u,                            // subresourceRange
                                                         }};
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-                              vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (vk::VkDependencyFlags)0, 0,
-                              (const vk::VkMemoryBarrier *)DE_NULL, 0, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1,
-                              &endImgBarrier);
+                              vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (vk::VkDependencyFlags)0, 0, nullptr, 0,
+                              nullptr, 1, &endImgBarrier);
     }
 
     endCommandBuffer(vk, *cmdBuffer);

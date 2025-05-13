@@ -42,6 +42,7 @@
 #include "tcuTextureUtil.hpp"
 
 #include <sstream>
+#include <memory>
 
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
@@ -341,10 +342,10 @@ TextureShadowLodTestCase::TextureShadowLodTestCase(Context &context, const char 
     , m_lookupSpec(lookup)
     , m_textureSpec(texture)
     , m_evaluator(evalFunc, m_lookupParams)
-    , m_texture2D(DE_NULL)
-    , m_textureCube(DE_NULL)
-    , m_textureCubeArray(DE_NULL)
-    , m_texture2DArray(DE_NULL)
+    , m_texture2D(nullptr)
+    , m_textureCube(nullptr)
+    , m_textureCubeArray(nullptr)
+    , m_texture2DArray(nullptr)
 {
 }
 
@@ -360,7 +361,7 @@ void TextureShadowLodTestCase::init(void)
 {
     // Check extension and other features are supported with this context/platform.
     {
-        glu::ContextInfo *info = glu::ContextInfo::create(m_renderCtx);
+        std::unique_ptr<glu::ContextInfo> info(glu::ContextInfo::create(m_renderCtx));
 
         // First check if extension is available.
         if (!info->isExtensionSupported("GL_EXT_texture_shadow_lod"))
@@ -722,7 +723,7 @@ void TextureShadowLodTestCase::initShaderSources(void)
     const char *coordTypeName = glu::getDataTypeName(coordType);
     const char *coordPrecName = glu::getPrecisionName(coordPrec);
     glu::DataType samplerType = glu::TYPE_LAST;
-    const char *baseFuncName  = DE_NULL;
+    const char *baseFuncName  = nullptr;
 
     switch (m_textureSpec.type)
     {
@@ -914,9 +915,9 @@ void TextureShadowLodTestCase::deinit(void)
     delete m_textureCube;
     delete m_texture2DArray;
 
-    m_texture2D      = DE_NULL;
-    m_textureCube    = DE_NULL;
-    m_texture2DArray = DE_NULL;
+    m_texture2D      = nullptr;
+    m_textureCube    = nullptr;
+    m_texture2DArray = nullptr;
 }
 
 void TextureShadowLodTestCase::setupUniforms(uint32_t programID, const tcu::Vec4 &)

@@ -78,7 +78,7 @@ private:
             : blockNdx(blockNdx_)
             , elements(reinterpret_cast<ElementType *>(deAlignedMalloc(
                   sizeof(ElementType) * size, deAlign32((uint32_t)alignOf<ElementType>(), (uint32_t)sizeof(void *)))))
-            , next(DE_NULL)
+            , next(nullptr)
         {
         }
 
@@ -220,7 +220,7 @@ void AppendList<ElementType>::clear(void)
     DE_ASSERT(elementNdx == m_numElements);
 
     m_numElements = 0;
-    m_first->next = DE_NULL;
+    m_first->next = nullptr;
     m_last        = m_first;
 }
 

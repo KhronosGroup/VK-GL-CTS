@@ -266,32 +266,33 @@ std::vector<vk::VkDynamicState> getDynamicStates(Context &context)
 }
 
 vk::VkShaderEXT createShaderFromBinary(const vk::DeviceInterface &vk, const vk::VkDevice device,
-                                       const vk::Move<vk::VkShaderEXT> &shader, vk::VkShaderStageFlagBits stage)
+                                       const vk::Move<vk::VkShaderEXT> &shader, vk::VkShaderStageFlagBits stage,
+                                       vk::VkShaderStageFlags nextStage)
 {
     size_t dataSize = 0;
-    vk.getShaderBinaryDataEXT(device, *shader, &dataSize, DE_NULL);
+    vk.getShaderBinaryDataEXT(device, *shader, &dataSize, nullptr);
     std::vector<uint8_t> data(dataSize);
     vk.getShaderBinaryDataEXT(device, *shader, &dataSize, data.data());
 
     const vk::VkShaderCreateInfoEXT binaryShaderCreateInfo = {
         vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, // VkStructureType sType;
-        DE_NULL,                                      // const void* pNext;
+        nullptr,                                      // const void* pNext;
         0u,                                           // VkShaderCreateFlagsEXT flags;
         stage,                                        // VkShaderStageFlagBits stage;
-        0u,                                           // VkShaderStageFlags nextStage;
+        nextStage,                                    // VkShaderStageFlags nextStage;
         vk::VK_SHADER_CODE_TYPE_BINARY_EXT,           // VkShaderCodeTypeEXT codeType;
         dataSize,                                     // size_t codeSize;
         data.data(),                                  // const void* pCode;
         "main",                                       // const char* pName;
         0u,                                           // uint32_t setLayoutCount;
-        DE_NULL,                                      // VkDescriptorSetLayout* pSetLayouts;
+        nullptr,                                      // VkDescriptorSetLayout* pSetLayouts;
         0u,                                           // uint32_t pushConstantRangeCount;
-        DE_NULL,                                      // const VkPushConstantRange* pPushConstantRanges;
-        DE_NULL,                                      // const VkSpecializationInfo* pSpecializationInfo;
+        nullptr,                                      // const VkPushConstantRange* pPushConstantRanges;
+        nullptr,                                      // const VkSpecializationInfo* pSpecializationInfo;
     };
 
     vk::VkShaderEXT binaryShader;
-    vk.createShadersEXT(device, 1, &binaryShaderCreateInfo, DE_NULL, &binaryShader);
+    vk.createShadersEXT(device, 1, &binaryShaderCreateInfo, nullptr, &binaryShader);
     return binaryShader;
 }
 
@@ -356,8 +357,8 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate(void)
         m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
     const bool tessellationSupported = m_context.getDeviceFeatures().tessellationShader;
     const bool geometrySupported     = m_context.getDeviceFeatures().geometryShader;
-    const bool taskSupported         = m_context.getMeshShaderFeatures().taskShader;
-    const bool meshSupported         = m_context.getMeshShaderFeatures().meshShader;
+    const bool taskSupported         = m_context.getMeshShaderFeaturesEXT().taskShader;
+    const bool meshSupported         = m_context.getMeshShaderFeaturesEXT().meshShader;
 
     vk::VkFormat colorAttachmentFormat = vk::VK_FORMAT_R8G8B8A8_UNORM;
     const auto subresourceRange        = makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -374,7 +375,7 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate(void)
 
     const vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-        DE_NULL,                                 // const void*                pNext
+        nullptr,                                 // const void*                pNext
         0u,                                      // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
         colorAttachmentFormat,                   // VkFormat                    format
@@ -386,7 +387,7 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate(void)
         vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags        usage
         vk::VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode
         0,                             // uint32_t                    queueFamilyIndexCount
-        DE_NULL,                       // const uint32_t*            pQueueFamilyIndices
+        nullptr,                       // const uint32_t*            pQueueFamilyIndices
         vk::VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
     };
 
@@ -467,23 +468,26 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate(void)
         for (auto &info : createInfos)
             info.flags = vk::VK_SHADER_CREATE_LINK_STAGE_BIT_EXT;
 
-        vk.createShadersEXT(device, (uint32_t)createInfos.size(), createInfos.data(), DE_NULL, refShaders.data());
+        vk.createShadersEXT(device, (uint32_t)createInfos.size(), createInfos.data(), nullptr, refShaders.data());
     }
     else if (m_type == DRAW_BINARY || m_type == DRAW_BINARY_BIND)
     {
         refShaders.resize(5, VK_NULL_HANDLE);
-        refShaders[0] = createShaderFromBinary(vk, device, vertShader, vk::VK_SHADER_STAGE_VERTEX_BIT);
-        refShaders[1] = createShaderFromBinary(vk, device, fragShader, vk::VK_SHADER_STAGE_FRAGMENT_BIT);
+        refShaders[0] =
+            createShaderFromBinary(vk, device, vertShader, vk::VK_SHADER_STAGE_VERTEX_BIT, createInfos[0].nextStage);
+        refShaders[1] =
+            createShaderFromBinary(vk, device, fragShader, vk::VK_SHADER_STAGE_FRAGMENT_BIT, createInfos[1].nextStage);
         if (tessellationSupported)
         {
-            refShaders[2] =
-                createShaderFromBinary(vk, device, tescShader, vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
-            refShaders[3] =
-                createShaderFromBinary(vk, device, teseShader, vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
+            refShaders[2] = createShaderFromBinary(vk, device, tescShader, vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+                                                   createInfos[2].nextStage);
+            refShaders[3] = createShaderFromBinary(
+                vk, device, teseShader, vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, createInfos[3].nextStage);
         }
         if (geometrySupported)
         {
-            refShaders[geomIndex] = createShaderFromBinary(vk, device, geomShader, vk::VK_SHADER_STAGE_GEOMETRY_BIT);
+            refShaders[geomIndex] = createShaderFromBinary(vk, device, geomShader, vk::VK_SHADER_STAGE_GEOMETRY_BIT,
+                                                           createInfos[4].nextStage);
         }
     }
 
@@ -491,23 +495,23 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate(void)
     vk.createShadersEXT(device, static_cast<uint32_t>(createInfos.size()), createInfos.data(), nullptr, linkedShaders);
 
     vk::Move<vk::VkShaderEXT> linkedVertShader = vk::Move<vk::VkShaderEXT>(
-        vk::check<vk::VkShaderEXT>(linkedShaders[0]), vk::Deleter<vk::VkShaderEXT>(vk, device, DE_NULL));
+        vk::check<vk::VkShaderEXT>(linkedShaders[0]), vk::Deleter<vk::VkShaderEXT>(vk, device, nullptr));
     vk::Move<vk::VkShaderEXT> linkedFragShader = vk::Move<vk::VkShaderEXT>(
-        vk::check<vk::VkShaderEXT>(linkedShaders[1]), vk::Deleter<vk::VkShaderEXT>(vk, device, DE_NULL));
+        vk::check<vk::VkShaderEXT>(linkedShaders[1]), vk::Deleter<vk::VkShaderEXT>(vk, device, nullptr));
     vk::Move<vk::VkShaderEXT> linkedTescShader;
     vk::Move<vk::VkShaderEXT> linkedTeseShader;
     vk::Move<vk::VkShaderEXT> linkedGeomShader;
     if (tessellationSupported)
     {
         linkedTescShader = vk::Move<vk::VkShaderEXT>(vk::check<vk::VkShaderEXT>(linkedShaders[2]),
-                                                     vk::Deleter<vk::VkShaderEXT>(vk, device, DE_NULL));
+                                                     vk::Deleter<vk::VkShaderEXT>(vk, device, nullptr));
         linkedTeseShader = vk::Move<vk::VkShaderEXT>(vk::check<vk::VkShaderEXT>(linkedShaders[3]),
-                                                     vk::Deleter<vk::VkShaderEXT>(vk, device, DE_NULL));
+                                                     vk::Deleter<vk::VkShaderEXT>(vk, device, nullptr));
     }
     if (geometrySupported)
     {
         linkedGeomShader = vk::Move<vk::VkShaderEXT>(vk::check<vk::VkShaderEXT>(linkedShaders[geomIndex]),
-                                                     vk::Deleter<vk::VkShaderEXT>(vk, device, DE_NULL));
+                                                     vk::Deleter<vk::VkShaderEXT>(vk, device, nullptr));
     }
 
     vk::Move<vk::VkShaderModule> vertShaderModule      = createShaderModule(vk, device, binaries.get("vert"));
@@ -531,24 +535,24 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate(void)
 
     const vk::VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                       // const void* pNext;
+        nullptr,                                                       // const void* pNext;
         0u,                                                            // VkPipelineVertexInputStateCreateFlags flags;
         0u,                                                            // uint32_t vertexBindingDescriptionCount;
-        DE_NULL, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+        nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
         0u,      // uint32_t vertexAttributeDescriptionCount;
-        DE_NULL  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+        nullptr  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
     };
 
     const vk::VkPipelineTessellationStateCreateInfo tessStateCreateInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                       // const void* pNext;
+        nullptr,                                                       // const void* pNext;
         0u,                                                            // VkPipelineTessellationStateCreateFlags flags;
         4u,                                                            // uint32_t patchControlPoints;
     };
 
     vk::VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                         // const void*                                 pNext;
+        nullptr,                                         // const void*                                 pNext;
         (vk::VkPipelineInputAssemblyStateCreateFlags)0u, // VkPipelineInputAssemblyStateCreateFlags     flags;
         topology,                                        // VkPrimitiveTopology                         topology;
         VK_FALSE, // VkBool32                                    primitiveRestartEnable;
@@ -556,7 +560,7 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate(void)
 
     vk::VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO, // VkStructureType    sType
-        DE_NULL,                                              // const void*        pNext
+        nullptr,                                              // const void*        pNext
         0u,                                                   // uint32_t            viewMask
         1u,                                                   // uint32_t            colorAttachmentCount
         &colorAttachmentFormat,                               // const VkFormat*    pColorAttachmentFormats
@@ -571,7 +575,7 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate(void)
 
     vk::VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                             sType
-        DE_NULL,                                                   // const void*                                 pNext
+        nullptr,                                                   // const void*                                 pNext
         (vk::VkPipelineViewportStateCreateFlags)0u,                // VkPipelineViewportStateCreateFlags          flags
         (m_type == DRAW_DYNAMIC_PIPELINE) ? 0u : 1u, // uint32_t                                    viewportCount
         &viewport,                                   // const VkViewport*                           pViewports
@@ -583,28 +587,28 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate(void)
 
     const vk::VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (vk::VkPipelineDynamicStateCreateFlags)0u,                // VkPipelineDynamicStateCreateFlags flags;
         static_cast<uint32_t>(dynamicStates.size()),              // uint32_t dynamicStateCount;
         dynamicStates.data(),                                     // const VkDynamicState* pDynamicStates;
     };
 
     const vk::VkPipelineDynamicStateCreateInfo *pDynamicStateCreateInfo =
-        (m_type == DRAW_DYNAMIC_PIPELINE) ? &dynamicStateCreateInfo : DE_NULL;
+        (m_type == DRAW_DYNAMIC_PIPELINE) ? &dynamicStateCreateInfo : nullptr;
 
     const auto pipeline = makeGraphicsPipeline(
         vk, device, emptyPipelineLayout.get(), vertShaderModule.get(), tescShaderModule.get(), teseShaderModule.get(),
         geomShaderModule.get(), fragShaderModule.get(), VK_NULL_HANDLE, 0u, &vertexInputStateParams,
-        &pipelineInputAssemblyStateInfo, &tessStateCreateInfo, &viewportStateCreateInfo, DE_NULL, DE_NULL, DE_NULL,
-        DE_NULL, pDynamicStateCreateInfo, &pipelineRenderingCreateInfo);
+        &pipelineInputAssemblyStateInfo, &tessStateCreateInfo, &viewportStateCreateInfo, nullptr, nullptr, nullptr,
+        nullptr, pDynamicStateCreateInfo, &pipelineRenderingCreateInfo);
     pipelineInputAssemblyStateInfo.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
     viewportStateCreateInfo.viewportCount   = 1u;
     viewportStateCreateInfo.scissorCount    = 1u;
     const auto dummyPipeline                = makeGraphicsPipeline(
         vk, device, emptyPipelineLayout.get(), dummyVertShaderModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE,
         VK_NULL_HANDLE, dummyFragShaderModule.get(), VK_NULL_HANDLE, 0u, &vertexInputStateParams,
-        &pipelineInputAssemblyStateInfo, &tessStateCreateInfo, &viewportStateCreateInfo, DE_NULL, DE_NULL, DE_NULL,
-        DE_NULL, DE_NULL, &pipelineRenderingCreateInfo);
+        &pipelineInputAssemblyStateInfo, &tessStateCreateInfo, &viewportStateCreateInfo, nullptr, nullptr, nullptr,
+        nullptr, nullptr, &pipelineRenderingCreateInfo);
 
     const vk::VkClearValue clearValue = vk::makeClearValueColor({0.0f, 0.0f, 0.0f, 1.0f});
 
@@ -751,7 +755,7 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate(void)
     }
 
     for (const auto &shader : refShaders)
-        vk.destroyShaderEXT(device, shader, DE_NULL);
+        vk.destroyShaderEXT(device, shader, nullptr);
 
     if (m_type == DRAW_STATIC_PIPELINE)
     {
@@ -972,7 +976,7 @@ tcu::TestStatus ShaderObjectDispatchPerformanceInstance::iterate(void)
     {
         vk::beginCommandBuffer(vk, *cmdBuffer, 0u);
         vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout.get(), 0, 1,
-                                 &descriptorSet.get(), 0, DE_NULL);
+                                 &descriptorSet.get(), 0, nullptr);
         vk::bindComputeShader(vk, *cmdBuffer, *compShader);
         if (m_dispatchType == DISPATCH)
         {
@@ -997,7 +1001,7 @@ tcu::TestStatus ShaderObjectDispatchPerformanceInstance::iterate(void)
 
         vk::beginCommandBuffer(vk, *cmdBuffer, 0u);
         vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout.get(), 0, 1,
-                                 &descriptorSet.get(), 0, DE_NULL);
+                                 &descriptorSet.get(), 0, nullptr);
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
         if (m_dispatchType == DISPATCH)
         {
@@ -1102,19 +1106,19 @@ tcu::TestStatus ShaderObjectBinaryPerformanceInstance::iterate(void)
                                                               tessellationSupported, geometrySupported);
         vk::VkShaderEXT spirvShader;
         const auto spirvStart = std::chrono::high_resolution_clock::now();
-        vk.createShadersEXT(device, 1u, &spirvCreateInfo, DE_NULL, &spirvShader);
+        vk.createShadersEXT(device, 1u, &spirvCreateInfo, nullptr, &spirvShader);
         const auto spirvEnd = std::chrono::high_resolution_clock::now();
         if (m_type == BINARY_SHADER_CREATE)
             refTime += spirvEnd - spirvStart;
 
         size_t dataSize = 0;
-        vk.getShaderBinaryDataEXT(device, spirvShader, &dataSize, DE_NULL);
+        vk.getShaderBinaryDataEXT(device, spirvShader, &dataSize, nullptr);
         std::vector<uint8_t> data(dataSize);
         vk.getShaderBinaryDataEXT(device, spirvShader, &dataSize, data.data());
 
         const vk::VkShaderCreateInfoEXT binaryShaderCreateInfo = {
             vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                      // const void* pNext;
+            nullptr,                                      // const void* pNext;
             0u,                                           // VkShaderCreateFlagsEXT flags;
             vk::VK_SHADER_STAGE_VERTEX_BIT,               // VkShaderStageFlagBits stage;
             0u,                                           // VkShaderStageFlags nextStage;
@@ -1123,15 +1127,15 @@ tcu::TestStatus ShaderObjectBinaryPerformanceInstance::iterate(void)
             data.data(),                                  // const void* pCode;
             "main",                                       // const char* pName;
             0u,                                           // uint32_t setLayoutCount;
-            DE_NULL,                                      // VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                      // VkDescriptorSetLayout* pSetLayouts;
             0u,                                           // uint32_t pushConstantRangeCount;
-            DE_NULL,                                      // const VkPushConstantRange* pPushConstantRanges;
-            DE_NULL,                                      // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                      // const VkPushConstantRange* pPushConstantRanges;
+            nullptr,                                      // const VkSpecializationInfo* pSpecializationInfo;
         };
 
         vk::VkShaderEXT binaryShader;
         const auto binaryStart = std::chrono::high_resolution_clock::now();
-        vk.createShadersEXT(device, 1, &binaryShaderCreateInfo, DE_NULL, &binaryShader);
+        vk.createShadersEXT(device, 1, &binaryShaderCreateInfo, nullptr, &binaryShader);
         time += std::chrono::high_resolution_clock::now() - binaryStart;
 
         const auto bufferCreateInfo   = vk::makeBufferCreateInfo(dataSize, vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
@@ -1158,8 +1162,8 @@ tcu::TestStatus ShaderObjectBinaryPerformanceInstance::iterate(void)
         if (m_type == BINARY_MEMCPY)
             refTime += memcpyEnd - memcpyStart;
 
-        vk.destroyShaderEXT(device, spirvShader, DE_NULL);
-        vk.destroyShaderEXT(device, binaryShader, DE_NULL);
+        vk.destroyShaderEXT(device, spirvShader, nullptr);
+        vk.destroyShaderEXT(device, binaryShader, nullptr);
     }
 
     if (m_type == BINARY_SHADER_CREATE)

@@ -147,7 +147,7 @@ public:
             const glu::ContextInfo &ctxInfo;
 
             ExtGroup(TestCaseGroup *parent, const char *name, const char *desc)
-                : group(DE_NULL)
+                : group(nullptr)
                 , ctxInfo(parent->getContext().getContextInfo())
             {
                 group = new tcu::TestCaseGroup(parent->getTestContext(), name, desc);

@@ -2294,7 +2294,7 @@ template <typename SampleType>
 BasicBufferCase<SampleType>::BasicBufferCase(Context &context, const char *name, const char *desc, int bufferSizeMin,
                                              int bufferSizeMax, int numSamples, int flags)
     : TestCase(context, tcu::NODETYPE_PERFORMANCE, name, desc)
-    , m_minimalProgram(DE_NULL)
+    , m_minimalProgram(nullptr)
     , m_minimalProgramPosLoc(-1)
     , m_bufferID(0)
     , m_numSamples(numSamples)
@@ -2368,7 +2368,7 @@ void BasicBufferCase<SampleType>::deinit(void)
     }
 
     delete m_minimalProgram;
-    m_minimalProgram = DE_NULL;
+    m_minimalProgram = nullptr;
 }
 
 template <typename SampleType>
@@ -2414,7 +2414,7 @@ TestCase::IterateResult BasicBufferCase<SampleType>::iterate(void)
 
                 if (rnd.getBool())
                 {
-                    gl.vertexAttribPointer(m_minimalProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+                    gl.vertexAttribPointer(m_minimalProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
                     gl.drawArrays(GL_POINTS, 0, 1);
                     gl.drawArrays(GL_POINTS, randomSize / (int)sizeof(float[4]) - 1, 1);
                 }
@@ -2477,7 +2477,7 @@ TestCase::IterateResult BasicBufferCase<SampleType>::iterate(void)
                 gl.bindBuffer(GL_ARRAY_BUFFER, bufferIDs[randomBufferNdx]);
                 gl.bufferData(GL_ARRAY_BUFFER, randomSize, &zeroData[0], usage);
 
-                gl.vertexAttribPointer(m_minimalProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+                gl.vertexAttribPointer(m_minimalProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
                 gl.drawArrays(GL_POINTS, 0, 1);
                 gl.drawArrays(GL_POINTS, randomSize / (int)sizeof(float[4]) - 1, 1);
 
@@ -2787,7 +2787,7 @@ void BasicUploadCase<SampleType>::createBuffer(int iteration, int bufferSize)
     // specify it
 
     if (m_caseType == CASE_UNSPECIFIED_BUFFER)
-        gl.bufferData(GL_ARRAY_BUFFER, bufferSize, DE_NULL, m_bufferUsage);
+        gl.bufferData(GL_ARRAY_BUFFER, bufferSize, nullptr, m_bufferUsage);
     else
     {
         const std::vector<uint8_t> unusedData(bufferSize, 0x20);
@@ -2843,7 +2843,7 @@ void BasicUploadCase<SampleType>::useBuffer(int bufferSize)
     gl.useProgram(m_minimalProgram->getProgram());
 
     gl.viewport(0, 0, UNUSED_RENDER_AREA_SIZE, UNUSED_RENDER_AREA_SIZE);
-    gl.vertexAttribPointer(m_minimalProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(m_minimalProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     gl.enableVertexAttribArray(m_minimalProgramPosLoc);
 
     // use whole buffer to make sure buffer is uploaded by drawing first and last
@@ -3047,7 +3047,7 @@ void BufferSubDataUploadCase::testBufferUpload(UploadSampleResult<SingleOperatio
 
     // "invalidate", upload null
     if (m_invalidateBeforeUse)
-        gl.bufferData(GL_ARRAY_BUFFER, bufferSize, DE_NULL, m_bufferUsage);
+        gl.bufferData(GL_ARRAY_BUFFER, bufferSize, nullptr, m_bufferUsage);
 
     // upload
     {
@@ -3222,7 +3222,7 @@ void MapBufferRangeCase::attemptBufferMap(UploadSampleResult<MapBufferRangeDurat
 
         // "invalidate" or allocate, upload null
         startTime = deGetMicroseconds();
-        gl.bufferData(GL_ARRAY_BUFFER, bufferSize, DE_NULL, m_bufferUsage);
+        gl.bufferData(GL_ARRAY_BUFFER, bufferSize, nullptr, m_bufferUsage);
         endTime = deGetMicroseconds();
 
         result.duration.allocDuration = endTime - startTime;
@@ -3454,7 +3454,7 @@ void MapBufferRangeFlushCase::attemptBufferMap(UploadSampleResult<MapBufferRange
 
         // Don't specify contents
         startTime = deGetMicroseconds();
-        gl.bufferData(GL_ARRAY_BUFFER, bufferSize, DE_NULL, m_bufferUsage);
+        gl.bufferData(GL_ARRAY_BUFFER, bufferSize, nullptr, m_bufferUsage);
         endTime = deGetMicroseconds();
 
         result.duration.allocDuration = endTime - startTime;
@@ -3728,7 +3728,7 @@ bool ModifyAfterBasicCase<SampleType>::prepareAndRunTest(int iteration, UploadSa
     gl.bufferData(GL_ARRAY_BUFFER, bufferSize, &m_zeroData[0], m_bufferUsage);
 
     // ...use it...
-    gl.vertexAttribPointer(m_minimalProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(m_minimalProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     drawBufferRange(0, bufferSize);
 
     // ..and make sure it is uploaded
@@ -4412,7 +4412,7 @@ private:
 
 RenderPerformanceTestBase::RenderPerformanceTestBase(Context &context, const char *name, const char *description)
     : TestCase(context, tcu::NODETYPE_PERFORMANCE, name, description)
-    , m_renderProgram(DE_NULL)
+    , m_renderProgram(nullptr)
     , m_colorLoc(0)
     , m_positionLoc(0)
 {
@@ -4448,7 +4448,7 @@ void RenderPerformanceTestBase::init(void)
 void RenderPerformanceTestBase::deinit(void)
 {
     delete m_renderProgram;
-    m_renderProgram = DE_NULL;
+    m_renderProgram = nullptr;
 }
 
 void RenderPerformanceTestBase::setupVertexAttribs(void) const
@@ -4837,7 +4837,7 @@ void ReferenceRenderTimeCase::runSample(SampleResult &sample)
     if (m_drawMethod == DRAWMETHOD_DRAW_ARRAYS)
         gl.drawArrays(GL_TRIANGLES, 0, numVertices);
     else if (m_drawMethod == DRAWMETHOD_DRAW_ELEMENTS)
-        gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, DE_NULL);
+        gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, nullptr);
     else
         DE_ASSERT(false);
     waitGLResults();
@@ -4855,7 +4855,7 @@ void ReferenceRenderTimeCase::runSample(SampleResult &sample)
         if (m_drawMethod == DRAWMETHOD_DRAW_ARRAYS)
             gl.drawArrays(GL_TRIANGLES, 0, numVertices);
         else if (m_drawMethod == DRAWMETHOD_DRAW_ELEMENTS)
-            gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, DE_NULL);
+            gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, nullptr);
         else
             DE_ASSERT(false);
 
@@ -4919,7 +4919,7 @@ void UnrelatedUploadRenderTimeCase::init(void)
             << ((m_unrelatedUploadMethod != UPLOADMETHOD_BUFFER_DATA)      ? ("bufferData") :
                 (m_unrelatedUploadMethod != UPLOADMETHOD_BUFFER_SUB_DATA)  ? ("bufferSubData") :
                 (m_unrelatedUploadMethod != UPLOADMETHOD_MAP_BUFFER_RANGE) ? ("mapBufferRange") :
-                                                                             ((const char *)DE_NULL))
+                                                                             (nullptr))
             << ".\n"
             << getNumSamples() << " test samples. Sample order is randomized.\n"
             << "All samples at even positions (first = 0) are tested before samples at odd positions.\n"
@@ -4978,7 +4978,7 @@ void UnrelatedUploadRenderTimeCase::runSample(SampleResult &sample)
     if (m_drawMethod == DRAWMETHOD_DRAW_ARRAYS)
         gl.drawArrays(GL_TRIANGLES, 0, numVertices);
     else if (m_drawMethod == DRAWMETHOD_DRAW_ELEMENTS)
-        gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, DE_NULL);
+        gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, nullptr);
     else
         DE_ASSERT(false);
     waitGLResults();
@@ -5002,7 +5002,7 @@ void UnrelatedUploadRenderTimeCase::runSample(SampleResult &sample)
         unrelatedUploadSize = (int)(vertexData.size() * sizeof(tcu::Vec4));
 
         gl.bindBuffer(GL_ARRAY_BUFFER, *unrelatedBuffer);
-        gl.bufferData(GL_ARRAY_BUFFER, unrelatedUploadSize, DE_NULL, GL_STATIC_DRAW);
+        gl.bufferData(GL_ARRAY_BUFFER, unrelatedUploadSize, nullptr, GL_STATIC_DRAW);
         gl.bufferSubData(GL_ARRAY_BUFFER, 0, unrelatedUploadSize, &vertexData[0]);
     }
     else if (m_unrelatedUploadMethod == UPLOADMETHOD_MAP_BUFFER_RANGE)
@@ -5013,7 +5013,7 @@ void UnrelatedUploadRenderTimeCase::runSample(SampleResult &sample)
         unrelatedUploadSize = (int)(vertexData.size() * sizeof(tcu::Vec4));
 
         gl.bindBuffer(GL_ARRAY_BUFFER, *unrelatedBuffer);
-        gl.bufferData(GL_ARRAY_BUFFER, unrelatedUploadSize, DE_NULL, GL_STATIC_DRAW);
+        gl.bufferData(GL_ARRAY_BUFFER, unrelatedUploadSize, nullptr, GL_STATIC_DRAW);
 
         mapPtr = gl.mapBufferRange(GL_ARRAY_BUFFER, 0, unrelatedUploadSize,
                                    GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT |
@@ -5040,7 +5040,7 @@ void UnrelatedUploadRenderTimeCase::runSample(SampleResult &sample)
         if (m_drawMethod == DRAWMETHOD_DRAW_ARRAYS)
             gl.drawArrays(GL_TRIANGLES, 0, numVertices);
         else if (m_drawMethod == DRAWMETHOD_DRAW_ELEMENTS)
-            gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, DE_NULL);
+            gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, nullptr);
         else
             DE_ASSERT(false);
 
@@ -5248,7 +5248,7 @@ void GenericUploadRenderTimeCase<SampleType>::init(void)
             << ((m_bufferState == BUFFERSTATE_NEW)     ? ("is uploaded ") :
                 (m_uploadRange == UPLOADRANGE_FULL)    ? ("are specified ") :
                 (m_uploadRange == UPLOADRANGE_PARTIAL) ? ("are updated (partial upload) ") :
-                                                         ((const char *)DE_NULL))
+                                                         (nullptr))
             << "just before issuing the rendering command.\n"
             << ((m_bufferState == BUFFERSTATE_EXISTING) ? ("The buffer has been used in rendering.\n") :
                                                           ("The buffer is generated just before uploading.\n"))
@@ -5256,7 +5256,7 @@ void GenericUploadRenderTimeCase<SampleType>::init(void)
             << ((m_bufferState == BUFFERSTATE_NEW)     ? ("is uploaded") :
                 (m_uploadRange == UPLOADRANGE_FULL)    ? ("contents are specified") :
                 (m_uploadRange == UPLOADRANGE_PARTIAL) ? ("contents are partially updated") :
-                                                         ((const char *)DE_NULL))
+                                                         (nullptr))
             << " with "
             << ((m_uploadMethod == UPLOADMETHOD_BUFFER_DATA)     ? ("bufferData") :
                 (m_uploadMethod == UPLOADMETHOD_BUFFER_SUB_DATA) ? ("bufferSubData") :
@@ -5346,7 +5346,7 @@ void GenericUploadRenderTimeCase<SampleType>::runSample(SampleResult &sample)
                       vertexDataUsage);
         gl.bufferData(GL_ELEMENT_ARRAY_BUFFER, (glw::GLsizeiptr)(indexData.size() * sizeof(uint32_t)), &indexData[0],
                       indexDataUsage);
-        gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, DE_NULL);
+        gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, nullptr);
     }
     else if (m_drawMethod == DRAWMETHOD_DRAW_ELEMENTS && m_bufferState == BUFFERSTATE_NEW)
     {
@@ -5363,7 +5363,7 @@ void GenericUploadRenderTimeCase<SampleType>::runSample(SampleResult &sample)
                           GL_STATIC_DRAW);
             gl.bufferData(GL_ELEMENT_ARRAY_BUFFER, (glw::GLsizeiptr)(indexData.size() * sizeof(uint32_t)),
                           &indexData[0], GL_STATIC_DRAW);
-            gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, DE_NULL);
+            gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, nullptr);
 
             // restore original state
             gl.bindBuffer(GL_ARRAY_BUFFER, *arrayBuffer);
@@ -5444,7 +5444,7 @@ void GenericUploadRenderTimeCase<SampleType>::runSample(SampleResult &sample)
         {
             // create buffer storage
             if (m_bufferState == BUFFERSTATE_NEW)
-                gl.bufferData(target, size, DE_NULL, GL_DYNAMIC_DRAW);
+                gl.bufferData(target, size, nullptr, GL_DYNAMIC_DRAW);
             gl.bufferSubData(target, offset, size, source);
         }
         else if (m_uploadMethod == UPLOADMETHOD_MAP_BUFFER_RANGE)
@@ -5454,7 +5454,7 @@ void GenericUploadRenderTimeCase<SampleType>::runSample(SampleResult &sample)
 
             // create buffer storage
             if (m_bufferState == BUFFERSTATE_NEW)
-                gl.bufferData(target, size, DE_NULL, GL_DYNAMIC_DRAW);
+                gl.bufferData(target, size, nullptr, GL_DYNAMIC_DRAW);
 
             mapPtr = gl.mapBufferRange(target, offset, size,
                                        GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT |
@@ -5497,7 +5497,7 @@ void GenericUploadRenderTimeCase<SampleType>::runSample(SampleResult &sample)
         if (m_drawMethod == DRAWMETHOD_DRAW_ARRAYS)
             gl.drawArrays(GL_TRIANGLES, 0, numVertices);
         else if (m_drawMethod == DRAWMETHOD_DRAW_ELEMENTS)
-            gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, DE_NULL);
+            gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, nullptr);
         else
             DE_ASSERT(false);
 
@@ -5601,7 +5601,7 @@ void BufferInUseRenderTimeCase::init(void)
                     << "    first draw: render using buffer B\n"
                     << ((m_uploadRange == UPLOADRANGE_FULL)    ? ("    upload: respecify buffer C contents\n") :
                         (m_uploadRange == UPLOADRANGE_PARTIAL) ? ("    upload: modify buffer C contents\n") :
-                                                                 ((const char *)DE_NULL))
+                                                                 (nullptr))
                     << "    second draw: render using buffer C\n"
                     << "    read: readPixels\n";
         else
@@ -5610,7 +5610,7 @@ void BufferInUseRenderTimeCase::init(void)
                     << "    first draw: render using buffer B\n"
                     << ((m_uploadRange == UPLOADRANGE_FULL)    ? ("    upload: respecify buffer B contents\n") :
                         (m_uploadRange == UPLOADRANGE_PARTIAL) ? ("    upload: modify buffer B contents\n") :
-                                                                 ((const char *)DE_NULL))
+                                                                 (nullptr))
                     << "    second draw: render using buffer B\n"
                     << "    read: readPixels\n";
 
@@ -5619,7 +5619,7 @@ void BufferInUseRenderTimeCase::init(void)
                     (m_mapFlags == MAPFLAG_INVALIDATE_BUFFER) ?
                                                                (", flags = MAP_WRITE_BIT | MAP_INVALIDATE_BUFFER_BIT") :
                     (m_mapFlags == MAPFLAG_NONE) ? ("") :
-                                                   ((const char *)DE_NULL))
+                                                   (nullptr))
                 << "\n"
                 << getNumSamples() << " test samples. Sample order is randomized.\n"
                 << "All samples at even positions (first = 0) are tested before samples at odd positions.\n"
@@ -5678,7 +5678,7 @@ void BufferInUseRenderTimeCase::runSample(SampleResult &sample)
                       GL_STREAM_DRAW);
         gl.bufferData(GL_ELEMENT_ARRAY_BUFFER, (glw::GLsizeiptr)(indexData.size() * sizeof(uint32_t)), &indexData[0],
                       GL_STREAM_DRAW);
-        gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, DE_NULL);
+        gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, nullptr);
     }
     else
         DE_ASSERT(false);
@@ -5700,7 +5700,7 @@ void BufferInUseRenderTimeCase::runSample(SampleResult &sample)
             gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, *alternativeUploadBuffer);
             gl.bufferData(GL_ELEMENT_ARRAY_BUFFER, (glw::GLsizeiptr)(indexData.size() * sizeof(uint32_t)),
                           &indexData[0], GL_STREAM_DRAW);
-            gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, DE_NULL);
+            gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, nullptr);
         }
         else
             DE_ASSERT(false);
@@ -5727,7 +5727,7 @@ void BufferInUseRenderTimeCase::runSample(SampleResult &sample)
         if (m_drawMethod == DRAWMETHOD_DRAW_ARRAYS)
             gl.drawArrays(GL_TRIANGLES, 0, numVertices);
         else if (m_drawMethod == DRAWMETHOD_DRAW_ELEMENTS)
-            gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, DE_NULL);
+            gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, nullptr);
         else
             DE_ASSERT(false);
 
@@ -5826,7 +5826,7 @@ void BufferInUseRenderTimeCase::runSample(SampleResult &sample)
         if (m_drawMethod == DRAWMETHOD_DRAW_ARRAYS)
             gl.drawArrays(GL_TRIANGLES, 0, numVertices);
         else if (m_drawMethod == DRAWMETHOD_DRAW_ELEMENTS)
-            gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, DE_NULL);
+            gl.drawElements(GL_TRIANGLES, numVertices, GL_UNSIGNED_INT, nullptr);
         else
             DE_ASSERT(false);
 
@@ -6005,7 +6005,7 @@ void UploadWaitDrawCase::init(void)
                               &m_indexData[0], GL_STATIC_DRAW);
 
                 setupVertexAttribs();
-                gl.drawElements(GL_TRIANGLES, m_numVertices, GL_UNSIGNED_INT, DE_NULL);
+                gl.drawElements(GL_TRIANGLES, m_numVertices, GL_UNSIGNED_INT, nullptr);
             }
             else if (m_targetBuffer == TARGETBUFFER_INDEX)
             {
@@ -6045,7 +6045,7 @@ void UploadWaitDrawCase::init(void)
         if (m_drawMethod == DRAWMETHOD_DRAW_ARRAYS)
             gl.drawArrays(GL_TRIANGLES, 0, m_numVertices);
         else if (m_drawMethod == DRAWMETHOD_DRAW_ELEMENTS)
-            gl.drawElements(GL_TRIANGLES, m_numVertices, GL_UNSIGNED_INT, DE_NULL);
+            gl.drawElements(GL_TRIANGLES, m_numVertices, GL_UNSIGNED_INT, nullptr);
         else
             DE_ASSERT(false);
     }
@@ -6105,7 +6105,7 @@ void UploadWaitDrawCase::init(void)
             (m_uploadMethod == UPLOADMETHOD_MAP_BUFFER_RANGE) ?
                 ("mapBufferRange, flags = GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | "
                  "GL_MAP_UNSYNCHRONIZED_BIT") :
-                ((const char *)DE_NULL))
+                (nullptr))
         << "\n"
         << "Upload size is " << getHumanReadableByteSize(m_numVertices * vertexUploadDataSize) << ".\n"
         << ((m_bufferState == BUFFERSTATE_EXISTING) ? ("All test samples use the same buffer object.\n") : (""))
@@ -6236,7 +6236,7 @@ void UploadWaitDrawCase::uploadBuffer(Sample &sample, Result &result)
 
         if (m_uploadMethod == UPLOADMETHOD_BUFFER_SUB_DATA || m_uploadMethod == UPLOADMETHOD_MAP_BUFFER_RANGE)
         {
-            gl.bufferData(target, size, DE_NULL, GL_STATIC_DRAW);
+            gl.bufferData(target, size, nullptr, GL_STATIC_DRAW);
         }
     }
     else if (m_bufferState == BUFFERSTATE_EXISTING)
@@ -6316,7 +6316,7 @@ void UploadWaitDrawCase::drawFromBuffer(Sample &sample, Result &result)
         if (m_drawMethod == DRAWMETHOD_DRAW_ARRAYS)
             gl.drawArrays(GL_TRIANGLES, 0, m_numVertices);
         else if (m_drawMethod == DRAWMETHOD_DRAW_ELEMENTS)
-            gl.drawElements(GL_TRIANGLES, m_numVertices, GL_UNSIGNED_INT, DE_NULL);
+            gl.drawElements(GL_TRIANGLES, m_numVertices, GL_UNSIGNED_INT, nullptr);
         else
             DE_ASSERT(false);
 
@@ -6349,7 +6349,7 @@ void UploadWaitDrawCase::reuseAndDeleteBuffer(void)
         DE_ASSERT(m_indexBuffer != 0);
 
         gl.bufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-        gl.drawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, DE_NULL);
+        gl.drawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
         gl.deleteBuffers(1, &m_indexBuffer);
         m_indexBuffer = 0;
     }

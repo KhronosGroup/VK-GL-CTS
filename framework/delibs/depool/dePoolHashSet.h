@@ -54,105 +54,107 @@ DE_END_EXTERN_C
  * bool      HashSet_exists            (const HashSet* hashSet, Key key, Value value);
  * \endcode
 *//*--------------------------------------------------------------------*/
-#define DE_DECLARE_POOL_HASH_SET(TYPENAME, KEYTYPE, VALUETYPE)                                                        \
-                                                                                                                      \
-    DE_DECLARE_POOL_SET(TYPENAME##Set, VALUETYPE);                                                                    \
-    DE_DECLARE_POOL_HASH(TYPENAME##Hash, KEYTYPE, TYPENAME##Set *);                                                   \
-    typedef struct TYPENAME##_s                                                                                       \
-    {                                                                                                                 \
-        TYPENAME##Hash *hash;                                                                                         \
-    } TYPENAME; /* NOLINT(TYPENAME) */                                                                                \
-                                                                                                                      \
-    DE_INLINE TYPENAME *TYPENAME##_create(deMemPool *pool);                                                           \
-    DE_INLINE int TYPENAME##_getNumElements(const TYPENAME *hashSet) DE_UNUSED_FUNCTION;                              \
-    DE_INLINE TYPENAME##Hash *TYPENAME##_getHash(const TYPENAME *hashSet) DE_UNUSED_FUNCTION;                         \
-    DE_INLINE bool TYPENAME##_insert(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value) DE_UNUSED_FUNCTION; \
-    DE_INLINE bool TYPENAME##_safeInsert(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value)                 \
-        DE_UNUSED_FUNCTION;                                                                                           \
-    DE_INLINE TYPENAME##Set *TYPENAME##_find(const TYPENAME *hashSet, KEYTYPE key) DE_UNUSED_FUNCTION;                \
-    DE_INLINE void TYPENAME##_delete(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value) DE_UNUSED_FUNCTION; \
-    DE_INLINE bool TYPENAME##_exists(const TYPENAME *hashSet, KEYTYPE key, VALUETYPE value) DE_UNUSED_FUNCTION;       \
-                                                                                                                      \
-    DE_INLINE TYPENAME *TYPENAME##_create(deMemPool *pool)                                                            \
-    {                                                                                                                 \
-        DE_PTR_TYPE(TYPENAME) hashSet = DE_POOL_NEW(pool, TYPENAME);                                                  \
-        if (!hashSet)                                                                                                 \
-            return NULL;                                                                                              \
-        if ((hashSet->hash = TYPENAME##Hash_create(pool)) == NULL)                                                    \
-            return NULL;                                                                                              \
-        return hashSet;                                                                                               \
-    }                                                                                                                 \
-                                                                                                                      \
-    DE_INLINE int TYPENAME##_getNumElements(const TYPENAME *hashSet)                                                  \
-    {                                                                                                                 \
-        return TYPENAME##Hash_getNumElements(hashSet->hash);                                                          \
-    }                                                                                                                 \
-                                                                                                                      \
-    DE_INLINE TYPENAME##Hash *TYPENAME##_getHash(const TYPENAME *hashSet)                                             \
-    {                                                                                                                 \
-        return hashSet->hash;                                                                                         \
-    }                                                                                                                 \
-                                                                                                                      \
-    DE_INLINE bool TYPENAME##_insert(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value)                     \
-    {                                                                                                                 \
-        TYPENAME##Set **setPtr = TYPENAME##Hash_find(hashSet->hash, key);                                             \
-        TYPENAME##Set *set     = setPtr ? *setPtr : NULL;                                                             \
-        if (!set)                                                                                                     \
-        {                                                                                                             \
-            set = TYPENAME##Set_create(hashSet->hash->pool);                                                          \
-            if (!set)                                                                                                 \
-                return false;                                                                                         \
-            if (!TYPENAME##Set_insert(set, value))                                                                    \
-                return false;                                                                                         \
-            return TYPENAME##Hash_insert(hashSet->hash, key, set);                                                    \
-        }                                                                                                             \
-        else                                                                                                          \
-        {                                                                                                             \
-            return TYPENAME##Set_insert(set, value);                                                                  \
-        }                                                                                                             \
-    }                                                                                                                 \
-                                                                                                                      \
-    DE_INLINE bool TYPENAME##_safeInsert(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value)                 \
-    {                                                                                                                 \
-        TYPENAME##Set **setPtr = TYPENAME##Hash_find(hashSet->hash, key);                                             \
-        TYPENAME##Set *set     = setPtr ? *setPtr : NULL;                                                             \
-        if (!set)                                                                                                     \
-        {                                                                                                             \
-            return TYPENAME##_insert(hashSet, key, value);                                                            \
-        }                                                                                                             \
-        else                                                                                                          \
-        {                                                                                                             \
-            return TYPENAME##Set_safeInsert(set, value);                                                              \
-        }                                                                                                             \
-    }                                                                                                                 \
-                                                                                                                      \
-    DE_INLINE TYPENAME##Set *TYPENAME##_find(const TYPENAME *hashSet, KEYTYPE key)                                    \
-    {                                                                                                                 \
-        TYPENAME##Set **setPtr = TYPENAME##Hash_find(hashSet->hash, key);                                             \
-        return setPtr ? *setPtr : NULL;                                                                               \
-    }                                                                                                                 \
-                                                                                                                      \
-    DE_INLINE void TYPENAME##_delete(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value)                     \
-    {                                                                                                                 \
-        TYPENAME##Set **setPtr = TYPENAME##Hash_find(hashSet->hash, key);                                             \
-        TYPENAME##Set *set;                                                                                           \
-        DE_ASSERT(setPtr);                                                                                            \
-        set = *setPtr;                                                                                                \
-        TYPENAME##Set_delete(set, value);                                                                             \
-    }                                                                                                                 \
-                                                                                                                      \
-    DE_INLINE bool TYPENAME##_exists(const TYPENAME *hashSet, KEYTYPE key, VALUETYPE value)                           \
-    {                                                                                                                 \
-        TYPENAME##Set **setPtr = TYPENAME##Hash_find(hashSet->hash, key);                                             \
-        if (setPtr)                                                                                                   \
-            return TYPENAME##Set_exists(*setPtr, value);                                                              \
-        else                                                                                                          \
-            return false;                                                                                             \
-    }                                                                                                                 \
-                                                                                                                      \
-    struct TYPENAME##Unused_s                                                                                         \
-    {                                                                                                                 \
-        int unused;                                                                                                   \
+#define DE_DECLARE_POOL_HASH_SET(TYPENAME, KEYTYPE, VALUETYPE)                                                      \
+                                                                                                                    \
+    DE_DECLARE_POOL_SET(TYPENAME##Set, VALUETYPE);                                                                  \
+    DE_DECLARE_POOL_HASH(TYPENAME##Hash, KEYTYPE, TYPENAME##Set *);                                                 \
+    typedef struct TYPENAME##_s                                                                                     \
+    {                                                                                                               \
+        TYPENAME##Hash *hash;                                                                                       \
+    } TYPENAME; /* NOLINT(TYPENAME) */                                                                              \
+                                                                                                                    \
+    static inline TYPENAME *TYPENAME##_create(deMemPool *pool);                                                     \
+    static inline int TYPENAME##_getNumElements(const TYPENAME *hashSet) DE_UNUSED_FUNCTION;                        \
+    static inline TYPENAME##Hash *TYPENAME##_getHash(const TYPENAME *hashSet) DE_UNUSED_FUNCTION;                   \
+    static inline bool TYPENAME##_insert(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value)               \
+        DE_UNUSED_FUNCTION;                                                                                         \
+    static inline bool TYPENAME##_safeInsert(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value)           \
+        DE_UNUSED_FUNCTION;                                                                                         \
+    static inline TYPENAME##Set *TYPENAME##_find(const TYPENAME *hashSet, KEYTYPE key) DE_UNUSED_FUNCTION;          \
+    static inline void TYPENAME##_delete(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value)               \
+        DE_UNUSED_FUNCTION;                                                                                         \
+    static inline bool TYPENAME##_exists(const TYPENAME *hashSet, KEYTYPE key, VALUETYPE value) DE_UNUSED_FUNCTION; \
+                                                                                                                    \
+    static inline TYPENAME *TYPENAME##_create(deMemPool *pool)                                                      \
+    {                                                                                                               \
+        DE_PTR_TYPE(TYPENAME) hashSet = DE_POOL_NEW(pool, TYPENAME);                                                \
+        if (!hashSet)                                                                                               \
+            return NULL;                                                                                            \
+        if ((hashSet->hash = TYPENAME##Hash_create(pool)) == NULL)                                                  \
+            return NULL;                                                                                            \
+        return hashSet;                                                                                             \
+    }                                                                                                               \
+                                                                                                                    \
+    static inline int TYPENAME##_getNumElements(const TYPENAME *hashSet)                                            \
+    {                                                                                                               \
+        return TYPENAME##Hash_getNumElements(hashSet->hash);                                                        \
+    }                                                                                                               \
+                                                                                                                    \
+    static inline TYPENAME##Hash *TYPENAME##_getHash(const TYPENAME *hashSet)                                       \
+    {                                                                                                               \
+        return hashSet->hash;                                                                                       \
+    }                                                                                                               \
+                                                                                                                    \
+    static inline bool TYPENAME##_insert(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value)               \
+    {                                                                                                               \
+        TYPENAME##Set **setPtr = TYPENAME##Hash_find(hashSet->hash, key);                                           \
+        TYPENAME##Set *set     = setPtr ? *setPtr : NULL;                                                           \
+        if (!set)                                                                                                   \
+        {                                                                                                           \
+            set = TYPENAME##Set_create(hashSet->hash->pool);                                                        \
+            if (!set)                                                                                               \
+                return false;                                                                                       \
+            if (!TYPENAME##Set_insert(set, value))                                                                  \
+                return false;                                                                                       \
+            return TYPENAME##Hash_insert(hashSet->hash, key, set);                                                  \
+        }                                                                                                           \
+        else                                                                                                        \
+        {                                                                                                           \
+            return TYPENAME##Set_insert(set, value);                                                                \
+        }                                                                                                           \
+    }                                                                                                               \
+                                                                                                                    \
+    static inline bool TYPENAME##_safeInsert(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value)           \
+    {                                                                                                               \
+        TYPENAME##Set **setPtr = TYPENAME##Hash_find(hashSet->hash, key);                                           \
+        TYPENAME##Set *set     = setPtr ? *setPtr : NULL;                                                           \
+        if (!set)                                                                                                   \
+        {                                                                                                           \
+            return TYPENAME##_insert(hashSet, key, value);                                                          \
+        }                                                                                                           \
+        else                                                                                                        \
+        {                                                                                                           \
+            return TYPENAME##Set_safeInsert(set, value);                                                            \
+        }                                                                                                           \
+    }                                                                                                               \
+                                                                                                                    \
+    static inline TYPENAME##Set *TYPENAME##_find(const TYPENAME *hashSet, KEYTYPE key)                              \
+    {                                                                                                               \
+        TYPENAME##Set **setPtr = TYPENAME##Hash_find(hashSet->hash, key);                                           \
+        return setPtr ? *setPtr : NULL;                                                                             \
+    }                                                                                                               \
+                                                                                                                    \
+    static inline void TYPENAME##_delete(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value)               \
+    {                                                                                                               \
+        TYPENAME##Set **setPtr = TYPENAME##Hash_find(hashSet->hash, key);                                           \
+        TYPENAME##Set *set;                                                                                         \
+        DE_ASSERT(setPtr);                                                                                          \
+        set = *setPtr;                                                                                              \
+        TYPENAME##Set_delete(set, value);                                                                           \
+    }                                                                                                               \
+                                                                                                                    \
+    static inline bool TYPENAME##_exists(const TYPENAME *hashSet, KEYTYPE key, VALUETYPE value)                     \
+    {                                                                                                               \
+        TYPENAME##Set **setPtr = TYPENAME##Hash_find(hashSet->hash, key);                                           \
+        if (setPtr)                                                                                                 \
+            return TYPENAME##Set_exists(*setPtr, value);                                                            \
+        else                                                                                                        \
+            return false;                                                                                           \
+    }                                                                                                               \
+                                                                                                                    \
+    struct TYPENAME##Unused_s                                                                                       \
+    {                                                                                                               \
+        int unused;                                                                                                 \
     }
 
 /*--------------------------------------------------------------------*//*!

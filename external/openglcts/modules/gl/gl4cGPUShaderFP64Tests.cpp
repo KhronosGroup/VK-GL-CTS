@@ -1988,7 +1988,7 @@ void GPUShaderFP64Test1::initTest()
     m_vs_id = gl.createShader(GL_VERTEX_SHADER);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateShader() call failed.");
 
-    gl.shaderSource(m_vs_id, 1 /* count */, &vs_body, DE_NULL /* length */);
+    gl.shaderSource(m_vs_id, 1 /* count */, &vs_body, nullptr /* length */);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
     gl.compileShader(m_vs_id);
@@ -6000,11 +6000,11 @@ void GPUShaderFP64Test4::deinit()
         m_te_id = 0;
     }
 
-    if (m_uniform_name_buffer != DE_NULL)
+    if (m_uniform_name_buffer != nullptr)
     {
         delete[] m_uniform_name_buffer;
 
-        m_uniform_name_buffer = DE_NULL;
+        m_uniform_name_buffer = nullptr;
     }
 
     if (m_vs_id != 0)
@@ -6181,7 +6181,7 @@ void GPUShaderFP64Test4::initProgramObjects()
     /* m_cs_id is initialized only if compute shaders are supported */
     if (0 != m_cs_id)
     {
-        gl.shaderSource(m_cs_id, 1 /* count */, &cs_body, DE_NULL /* length */);
+        gl.shaderSource(m_cs_id, 1 /* count */, &cs_body, nullptr /* length */);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
     }
 
@@ -6226,7 +6226,7 @@ void GPUShaderFP64Test4::initProgramObjects()
                           "    }\n"
                           "}\n";
 
-    gl.shaderSource(m_vs_id, 1 /* count */, &vs_body, DE_NULL /* length */);
+    gl.shaderSource(m_vs_id, 1 /* count */, &vs_body, nullptr /* length */);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
     /* Configure tessellation control shader body */
@@ -6279,7 +6279,7 @@ void GPUShaderFP64Test4::initProgramObjects()
         "    }\n"
         "}\n";
 
-    gl.shaderSource(m_tc_id, 1 /* count */, &tc_body, DE_NULL /* length */);
+    gl.shaderSource(m_tc_id, 1 /* count */, &tc_body, nullptr /* length */);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
     /* Configure tessellation evaluation shader body */
@@ -6325,7 +6325,7 @@ void GPUShaderFP64Test4::initProgramObjects()
                           "    }\n"
                           "}\n";
 
-    gl.shaderSource(m_te_id, 1 /* count */, &te_body, DE_NULL /* length */);
+    gl.shaderSource(m_te_id, 1 /* count */, &te_body, nullptr /* length */);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
     /* Configure geometry shader body */
@@ -6374,7 +6374,7 @@ void GPUShaderFP64Test4::initProgramObjects()
                           "    EmitVertex();\n"
                           "}\n";
 
-    gl.shaderSource(m_gs_id, 1 /* count */, &gs_body, DE_NULL /* length */);
+    gl.shaderSource(m_gs_id, 1 /* count */, &gs_body, nullptr /* length */);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
     /* Configure fragment shader body */
@@ -6420,7 +6420,7 @@ void GPUShaderFP64Test4::initProgramObjects()
                           "    }\n"
                           "}\n";
 
-    gl.shaderSource(m_fs_id, 1 /* count */, &fs_body, DE_NULL /* length */);
+    gl.shaderSource(m_fs_id, 1 /* count */, &fs_body, nullptr /* length */);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed");
 
     /* Compile the shaders */
@@ -6502,8 +6502,8 @@ void GPUShaderFP64Test4::initProgramObjects()
     {
         unsigned int n_uniform_prefixes = 0;
         glw::GLuint po_id               = programs[n_program];
-        _stage_data **stages_data       = DE_NULL;
-        const char **uniform_prefixes   = DE_NULL;
+        _stage_data **stages_data       = nullptr;
+        const char **uniform_prefixes   = nullptr;
 
         if (n_program == 0)
         {
@@ -6673,7 +6673,7 @@ void GPUShaderFP64Test4::initUniformValues()
     {
         glw::GLuint po_id        = programs[n_program];
         unsigned int n_stages    = 0;
-        _stage_data **stage_data = DE_NULL;
+        _stage_data **stage_data = nullptr;
 
         if (po_id == m_po_cs_id)
         {
@@ -6808,8 +6808,8 @@ bool GPUShaderFP64Test4::verifyProgramInterfaceQuerySupport()
     {
         glw::GLuint po_id           = programs[n_program];
         unsigned int n_stages       = 0;
-        const char **stage_prefixes = DE_NULL;
-        _stage_data **stage_data    = DE_NULL;
+        const char **stage_prefixes = nullptr;
+        _stage_data **stage_data    = nullptr;
 
         if (po_id == m_po_cs_id)
         {
@@ -6965,11 +6965,11 @@ bool GPUShaderFP64Test4::verifyProgramInterfaceQuerySupport()
 
         /* We're now OK to release the buffer we used to hold uniform names for
          * the program */
-        if (m_uniform_name_buffer != DE_NULL)
+        if (m_uniform_name_buffer != nullptr)
         {
             delete[] m_uniform_name_buffer;
 
-            m_uniform_name_buffer = DE_NULL;
+            m_uniform_name_buffer = nullptr;
         }
     } /* for (both program objects) */
 
@@ -7003,7 +7003,7 @@ bool GPUShaderFP64Test4::verifyUniformValues()
     {
         glw::GLuint po_id        = programs[n_program];
         unsigned int n_stages    = 0;
-        _stage_data **stage_data = DE_NULL;
+        _stage_data **stage_data = nullptr;
 
         if (po_id == m_po_cs_id)
         {
@@ -7246,7 +7246,7 @@ GPUShaderFP64Test5::GPUShaderFP64Test5(deqp::Context &context)
     : TestCase(context, "conversions",
                "Verifies explicit and implicit casts involving double-precision"
                " floating-point variables work correctly")
-    , m_base_value_bo_data(DE_NULL)
+    , m_base_value_bo_data(nullptr)
     , m_base_value_bo_id(0)
     , m_has_test_passed(true)
     , m_po_base_value_attribute_location(-1)
@@ -7286,11 +7286,11 @@ void GPUShaderFP64Test5::deinit()
 {
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-    if (m_base_value_bo_data != DE_NULL)
+    if (m_base_value_bo_data != nullptr)
     {
         delete[] m_base_value_bo_data;
 
-        m_base_value_bo_data = DE_NULL;
+        m_base_value_bo_data = nullptr;
     }
 
     if (m_base_value_bo_id != 0)
@@ -7416,14 +7416,14 @@ bool GPUShaderFP64Test5::executeIteration(const _test_case &test_case)
         gl.vertexAttribPointer(m_po_base_value_attribute_location, 1,                             /* size */
                                Utils::getGLDataTypeOfBaseVariableType(base_value_type), GL_FALSE, /* normalized */
                                0,                                                                 /* stride */
-                               DE_NULL);                                                          /* pointer */
+                               nullptr);                                                          /* pointer */
         GLU_EXPECT_NO_ERROR(gl.getError(), "glVertexAttribPointer() call failed.");
     }
     else if (base_value_type == Utils::VARIABLE_TYPE_INT || base_value_type == Utils::VARIABLE_TYPE_UINT)
     {
         gl.vertexAttribIPointer(m_po_base_value_attribute_location, 1,                      /* size */
                                 Utils::getGLDataTypeOfBaseVariableType(base_value_type), 0, /* stride */
-                                DE_NULL);                                                   /* pointer */
+                                nullptr);                                                   /* pointer */
         GLU_EXPECT_NO_ERROR(gl.getError(), "glVertexAttribIPointer() call failed.");
     }
     else
@@ -7432,7 +7432,7 @@ bool GPUShaderFP64Test5::executeIteration(const _test_case &test_case)
 
         gl.vertexAttribLPointer(m_po_base_value_attribute_location, 1, /* size */
                                 GL_DOUBLE, 0,                          /* stride */
-                                DE_NULL);                              /* pointer */
+                                nullptr);                              /* pointer */
         GLU_EXPECT_NO_ERROR(gl.getError(), "glVertxAttribLPointer() call failed.");
     }
 
@@ -7466,11 +7466,11 @@ bool GPUShaderFP64Test5::executeIteration(const _test_case &test_case)
     GLU_EXPECT_NO_ERROR(gl.getError(), "glUnmapBuffer() call failed.");
 
     /** Good to release the data buffer at this point */
-    if (m_base_value_bo_data != DE_NULL)
+    if (m_base_value_bo_data != nullptr)
     {
         delete[] m_base_value_bo_data;
 
-        m_base_value_bo_data = DE_NULL;
+        m_base_value_bo_data = nullptr;
     }
 
     /* All done */
@@ -7638,17 +7638,17 @@ void GPUShaderFP64Test5::getSwizzleTypeProperties(_swizzle_type type, std::strin
     }
     } /* switch (type) */
 
-    if (out_swizzle_string != DE_NULL)
+    if (out_swizzle_string != nullptr)
     {
         *out_swizzle_string = result_swizzle_string;
     }
 
-    if (out_n_components != DE_NULL)
+    if (out_n_components != nullptr)
     {
         *out_n_components = result_n_components;
     }
 
-    if (out_component_order != DE_NULL)
+    if (out_component_order != nullptr)
     {
         memcpy(out_component_order, result_component_order, sizeof(unsigned int) * result_n_components);
     }
@@ -7810,7 +7810,7 @@ void GPUShaderFP64Test5::initIteration(_test_case &test_case)
     std::string body         = getVertexShaderBody(test_case);
     const char *body_raw_ptr = body.c_str();
 
-    gl.shaderSource(m_vs_id, 1 /* count */, &body_raw_ptr, DE_NULL /* length */);
+    gl.shaderSource(m_vs_id, 1 /* count */, &body_raw_ptr, nullptr /* length */);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
     /* Store it in the test case descriptor for logging purposes */
@@ -7887,7 +7887,7 @@ void GPUShaderFP64Test5::initTest()
     gl.bindBuffer(GL_ARRAY_BUFFER, m_base_value_bo_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() call failed.");
 
-    gl.bufferData(GL_ARRAY_BUFFER, sizeof(double) * n_base_values, DE_NULL /* data */, GL_STATIC_DRAW);
+    gl.bufferData(GL_ARRAY_BUFFER, sizeof(double) * n_base_values, nullptr /* data */, GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 
     /* Allocate buffer object storage for XFB data. For each iteratiom we will be using
@@ -7902,7 +7902,7 @@ void GPUShaderFP64Test5::initTest()
     gl.bindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0 /* index */, m_xfb_bo_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBufferBase() call failed.");
 
-    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, xfb_bo_size, DE_NULL /* data */, GL_STATIC_DRAW);
+    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, xfb_bo_size, nullptr /* data */, GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 
     /* Allocate a client-side buffer to hold the data we will be mapping from XFB BO */
@@ -8027,8 +8027,8 @@ bool GPUShaderFP64Test5::verifyXFBData(const unsigned char *data_ptr, const _tes
 
         swizzle_operator = m_swizzle_matrix[n_result_components - 1][n_src_components - 1];
 
-        getSwizzleTypeProperties(swizzle_operator, DE_NULL, /* out_swizzle_string */
-                                 DE_NULL,                   /* out_n_components */
+        getSwizzleTypeProperties(swizzle_operator, nullptr, /* out_swizzle_string */
+                                 nullptr,                   /* out_n_components */
                                  swizzle_order);
     }
 
@@ -8810,14 +8810,14 @@ void GPUShaderFP64Test6::initIteration(_test_case &test_case)
     /* m_cs_id is initialized only if compute_shader is supported */
     if (0 != m_cs_id)
     {
-        gl.shaderSource(m_cs_id, 1 /* count */, &cs_body_raw_ptr, DE_NULL /* length */);
+        gl.shaderSource(m_cs_id, 1 /* count */, &cs_body_raw_ptr, nullptr /* length */);
     }
 
-    gl.shaderSource(m_fs_id, 1 /* count */, &fs_body_raw_ptr, DE_NULL /* length */);
-    gl.shaderSource(m_gs_id, 1 /* count */, &gs_body_raw_ptr, DE_NULL /* length */);
-    gl.shaderSource(m_tc_id, 1 /* count */, &tc_body_raw_ptr, DE_NULL /* length */);
-    gl.shaderSource(m_te_id, 1 /* count */, &te_body_raw_ptr, DE_NULL /* length */);
-    gl.shaderSource(m_vs_id, 1 /* count */, &vs_body_raw_ptr, DE_NULL /* length */);
+    gl.shaderSource(m_fs_id, 1 /* count */, &fs_body_raw_ptr, nullptr /* length */);
+    gl.shaderSource(m_gs_id, 1 /* count */, &gs_body_raw_ptr, nullptr /* length */);
+    gl.shaderSource(m_tc_id, 1 /* count */, &tc_body_raw_ptr, nullptr /* length */);
+    gl.shaderSource(m_te_id, 1 /* count */, &te_body_raw_ptr, nullptr /* length */);
+    gl.shaderSource(m_vs_id, 1 /* count */, &vs_body_raw_ptr, nullptr /* length */);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call(s) failed.");
 }
 
@@ -9116,7 +9116,7 @@ void GPUShaderFP64Test7::configureXFBBuffer(const _variables &variables)
     /* Set up the BO storage */
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, DE_NULL /* data */, GL_STATIC_DRAW);
+    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, nullptr /* data */, GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 }
 
@@ -9190,7 +9190,7 @@ void GPUShaderFP64Test7::deinit()
         m_xfb_bo_id = 0;
     }
 
-    if (m_xfb_varyings != DE_NULL)
+    if (m_xfb_varyings != nullptr)
     {
         releaseXFBVaryingNames();
     }
@@ -10385,7 +10385,7 @@ void GPUShaderFP64Test7::releaseXFBVaryingNames()
     }
 
     delete[] m_xfb_varyings;
-    m_xfb_varyings = DE_NULL;
+    m_xfb_varyings = nullptr;
 
     m_n_xfb_varyings = 0;
 }
@@ -11048,14 +11048,14 @@ void GPUShaderFP64Test8::initIteration(_test_case &test_case)
     /* m_cs_id is initialized only if compute_shader is supported */
     if (0 != m_cs_id)
     {
-        gl.shaderSource(m_cs_id, 1 /* count */, &cs_body_raw_ptr, DE_NULL /* length */);
+        gl.shaderSource(m_cs_id, 1 /* count */, &cs_body_raw_ptr, nullptr /* length */);
     }
 
-    gl.shaderSource(m_fs_id, 1 /* count */, &fs_body_raw_ptr, DE_NULL /* length */);
-    gl.shaderSource(m_gs_id, 1 /* count */, &gs_body_raw_ptr, DE_NULL /* length */);
-    gl.shaderSource(m_tc_id, 1 /* count */, &tc_body_raw_ptr, DE_NULL /* length */);
-    gl.shaderSource(m_te_id, 1 /* count */, &te_body_raw_ptr, DE_NULL /* length */);
-    gl.shaderSource(m_vs_id, 1 /* count */, &vs_body_raw_ptr, DE_NULL /* length */);
+    gl.shaderSource(m_fs_id, 1 /* count */, &fs_body_raw_ptr, nullptr /* length */);
+    gl.shaderSource(m_gs_id, 1 /* count */, &gs_body_raw_ptr, nullptr /* length */);
+    gl.shaderSource(m_tc_id, 1 /* count */, &tc_body_raw_ptr, nullptr /* length */);
+    gl.shaderSource(m_te_id, 1 /* count */, &te_body_raw_ptr, nullptr /* length */);
+    gl.shaderSource(m_vs_id, 1 /* count */, &vs_body_raw_ptr, nullptr /* length */);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call(s) failed.");
 }
 
@@ -11699,7 +11699,7 @@ void GPUShaderFP64Test9::initTestIteration(_test_case &test_case)
     /* Try to compile the shader */
     glw::GLint compile_status = GL_FALSE;
 
-    gl.shaderSource(m_vs_id, 1 /* count */, &vs_body_raw_ptr, DE_NULL /* length */);
+    gl.shaderSource(m_vs_id, 1 /* count */, &vs_body_raw_ptr, nullptr /* length */);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
     gl.compileShader(m_vs_id);
@@ -11740,7 +11740,7 @@ void GPUShaderFP64Test9::initTestIteration(_test_case &test_case)
     const unsigned int xfb_bo_size = static_cast<unsigned int>(
         result_variable_size + sizeof(int) * 2 /* ivec2s */ * 4); /* result_ output variables */
 
-    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, xfb_bo_size, DE_NULL /* data */, GL_STATIC_DRAW);
+    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, xfb_bo_size, nullptr /* data */, GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 }
 

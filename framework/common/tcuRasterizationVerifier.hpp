@@ -183,7 +183,7 @@ CoverageType calculateUnderestimateTriangleCoverage(const tcu::Vec4 &p0, const t
 bool verifyTriangleGroupRasterization(const tcu::Surface &surface, const TriangleSceneSpec &scene,
                                       const RasterizationArguments &args, tcu::TestLog &log,
                                       VerificationMode mode                              = VERIFICATIONMODE_STRICT,
-                                      VerifyTriangleGroupRasterizationLogStash *logStash = DE_NULL,
+                                      VerifyTriangleGroupRasterizationLogStash *logStash = nullptr,
                                       const bool vulkanLinesTest                         = false);
 
 /*--------------------------------------------------------------------*//*!

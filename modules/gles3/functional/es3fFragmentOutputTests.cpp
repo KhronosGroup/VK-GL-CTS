@@ -150,7 +150,7 @@ FragmentOutputCase::FragmentOutputCase(Context &context, const char *name, const
     : TestCase(context, name, desc)
     , m_fboSpec(fboSpec)
     , m_outputs(outputs)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_framebuffer(0)
 {
 }
@@ -314,7 +314,7 @@ void FragmentOutputCase::deinit(void)
     }
 
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 static IVec2 getMinSize(const vector<BufferSpec> &fboSpec)

@@ -89,7 +89,7 @@ tcu::TestCase::IterateResult TextureCubeMapArrayTex3DValidation::iterate()
 
     createTexture();
     gl.texImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0 /* level */, GL_RGBA8 /* internalformat*/, correctWidth, correctHeight,
-                  correctDepth, 0 /* border */, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                  correctDepth, 0 /* border */, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
     if (!checkError(GL_NO_ERROR, "glTexImage3D() call failed when called with valid arguments - "))
     {
@@ -115,7 +115,7 @@ tcu::TestCase::IterateResult TextureCubeMapArrayTex3DValidation::iterate()
     gl.texImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0,                     /* level */
                   GL_RGBA8,                                         /* internalformat*/
                   incorrectWidth, incorrectHeight, correctDepth, 0, /* border */
-                  GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                  GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
     if (!checkError(GL_INVALID_VALUE, "glTexImage3D() call generated an invalid error code when width != height - "))
     {
@@ -141,7 +141,7 @@ tcu::TestCase::IterateResult TextureCubeMapArrayTex3DValidation::iterate()
     gl.texImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0,                   /* level */
                   GL_RGBA8,                                       /* internalformat */
                   correctWidth, correctHeight, incorrectDepth, 0, /* border */
-                  GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                  GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
     if (!checkError(GL_INVALID_VALUE, "glTexImage3D() call generated an invalid error code"
                                       " when depth was not a multiple of six - "))

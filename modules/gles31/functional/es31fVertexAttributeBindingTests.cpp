@@ -153,7 +153,7 @@ BindingRenderCase::BindingRenderCase(Context &ctx, const char *name, const char 
     : TestCase(ctx, name, desc)
     , m_unalignedData(unalignedData)
     , m_vao(0)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
 }
 
@@ -188,7 +188,7 @@ void BindingRenderCase::deinit(void)
     }
 
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 BindingRenderCase::IterateResult BindingRenderCase::iterate(void)
@@ -744,7 +744,7 @@ void MultipleBindingCase::createBuffers(void)
 
     std::vector<tcu::Vec4> primitiveData(primitiveBufSize);
     std::vector<tcu::Vec4> colorOffsetData(colorOffsetBufSize);
-    tcu::Vec4 *colorOffsetWritePtr = DE_NULL;
+    tcu::Vec4 *colorOffsetWritePtr = nullptr;
 
     if (m_spec.aliasingBuffers)
     {
@@ -959,7 +959,7 @@ void MixedBindingCase::renderTo(tcu::Surface &dst)
         // bind color using old api
 
         gl.glBindBuffer(GL_ARRAY_BUFFER, m_colorOffsetBuffer);
-        gl.glVertexAttribPointer(colorLoc, 4, GL_FLOAT, GL_FALSE, glw::GLsizei(2 * sizeof(tcu::Vec4)), DE_NULL);
+        gl.glVertexAttribPointer(colorLoc, 4, GL_FLOAT, GL_FALSE, glw::GLsizei(2 * sizeof(tcu::Vec4)), nullptr);
         gl.glVertexAttribPointer(offsetLoc, 4, GL_FLOAT, GL_FALSE, glw::GLsizei(2 * sizeof(tcu::Vec4)),
                                  glu::BufferOffsetAsPointer(sizeof(tcu::Vec4)));
         GLU_EXPECT_NO_ERROR(gl.glGetError(), "set va");
@@ -976,7 +976,7 @@ void MixedBindingCase::renderTo(tcu::Surface &dst)
     {
         // bind position using old api
         gl.glBindBuffer(GL_ARRAY_BUFFER, m_posBuffer);
-        gl.glVertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+        gl.glVertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
         GLU_EXPECT_NO_ERROR(gl.glGetError(), "set va");
 
         // bind color using vertex_attrib_binding api
@@ -1009,7 +1009,7 @@ void MixedBindingCase::renderTo(tcu::Surface &dst)
 
         // bind color using old api
         gl.glBindBuffer(GL_ARRAY_BUFFER, m_colorOffsetBuffer);
-        gl.glVertexAttribPointer(colorLoc, 4, GL_FLOAT, GL_FALSE, glw::GLsizei(2 * sizeof(tcu::Vec4)), DE_NULL);
+        gl.glVertexAttribPointer(colorLoc, 4, GL_FLOAT, GL_FALSE, glw::GLsizei(2 * sizeof(tcu::Vec4)), nullptr);
         gl.glVertexAttribPointer(offsetLoc, 4, GL_FLOAT, GL_FALSE, glw::GLsizei(2 * sizeof(tcu::Vec4)),
                                  glu::BufferOffsetAsPointer(sizeof(tcu::Vec4)));
         gl.glVertexAttribDivisor(colorLoc, 1);

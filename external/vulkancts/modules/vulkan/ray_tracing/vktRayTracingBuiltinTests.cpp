@@ -166,7 +166,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, uint32_t 
         VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0u,              // VkImageCreateFlags flags;
         imageType,                           // VkImageType imageType;
         format,                              // VkFormat format;
@@ -178,7 +178,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, uint32_t 
         usage,                               // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
     };
 
@@ -1335,6 +1335,10 @@ de::MovePtr<TopLevelAccelerationStructure> RayTracingBuiltinLaunchTestInstance::
     const VkDevice device                             = m_context.getDevice();
     Allocator &allocator                              = m_context.getDefaultAllocator();
     de::MovePtr<TopLevelAccelerationStructure> result = makeTopLevelAccelerationStructure();
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     const bool transformTest =
         m_data.id == TEST_ID_WORLD_RAY_ORIGIN_EXT || m_data.id == TEST_ID_WORLD_RAY_DIRECTION_EXT ||
         m_data.id == TEST_ID_OBJECT_RAY_ORIGIN_EXT || m_data.id == TEST_ID_OBJECT_RAY_DIRECTION_EXT ||
@@ -1359,7 +1363,7 @@ de::MovePtr<TopLevelAccelerationStructure> RayTracingBuiltinLaunchTestInstance::
         result->addInstance(bottomLevelAccelerationStructures[structNdx], transform, uint32_t(2 * structNdx));
     }
 
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return result;
 }
@@ -1371,6 +1375,9 @@ de::MovePtr<BottomLevelAccelerationStructure> RayTracingBuiltinLaunchTestInstanc
     const VkDevice device                                = m_context.getDevice();
     Allocator &allocator                                 = m_context.getDefaultAllocator();
     de::MovePtr<BottomLevelAccelerationStructure> result = makeBottomLevelAccelerationStructure();
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
 
     result->setGeometryCount(m_data.geometriesGroupCount);
 
@@ -1638,7 +1645,7 @@ de::MovePtr<BottomLevelAccelerationStructure> RayTracingBuiltinLaunchTestInstanc
         TCU_THROW(InternalError, "Not implemented");
     }
 
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return result;
 }
@@ -1884,7 +1891,7 @@ de::MovePtr<BufferWithMemory> RayTracingBuiltinLaunchTestInstance::runTest(void)
         const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = topLevelAccelerationStructure.get();
         VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-            DE_NULL,                                                           //  const void* pNext;
+            nullptr,                                                           //  const void* pNext;
             1u,                                                                //  uint32_t accelerationStructureCount;
             topLevelAccelerationStructurePtr->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
         };
@@ -1897,7 +1904,7 @@ de::MovePtr<BufferWithMemory> RayTracingBuiltinLaunchTestInstance::runTest(void)
             .update(vkd, device);
 
         vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                                  &descriptorSet.get(), 0, DE_NULL);
+                                  &descriptorSet.get(), 0, nullptr);
 
         vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 
@@ -3482,7 +3489,7 @@ void RayTracingIndirectTestInstance::createPipelineLayoutAndSet(uint32_t setCoun
 
     const VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *descriptorPool,                                // VkDescriptorPool descriptorPool;
         1u,                                             // uint32_t setLayoutCount;
         &descriptorSetLayout.get()                      // const VkDescriptorSetLayout* pSetLayouts;
@@ -3493,7 +3500,7 @@ void RayTracingIndirectTestInstance::createPipelineLayoutAndSet(uint32_t setCoun
 
     const VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                       // const void* pNext;
+        nullptr,                                       // const void* pNext;
         (VkPipelineLayoutCreateFlags)0,                // VkPipelineLayoutCreateFlags flags;
         1u,                                            // uint32_t setLayoutCount;
         &descriptorSetLayout.get(),                    // const VkDescriptorSetLayout* pSetLayouts;
@@ -4086,15 +4093,18 @@ tcu::TestStatus RayTracingIndirectTestInstance::iterate(void)
 
     beginCommandBuffer(vk, *cmdBuffer);
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     for (const auto &accel : blas)
     {
-        accel->createAndBuild(vk, device, *cmdBuffer, allocator);
+        accel->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
     }
-    tlas->createAndBuild(vk, device, *cmdBuffer, allocator);
+    tlas->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
 
     VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-        DE_NULL,                                                           //  const void* pNext;
+        nullptr,                                                           //  const void* pNext;
         1u,                                                                //  uint32_t accelerationStructureCount;
         tlas->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
     };
@@ -4123,7 +4133,7 @@ tcu::TestStatus RayTracingIndirectTestInstance::iterate(void)
     }
 
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                             &descriptorSet[0].get(), 0, DE_NULL);
+                             &descriptorSet[0].get(), 0, nullptr);
 
     vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 

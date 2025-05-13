@@ -140,7 +140,7 @@ private:
 
         Data(void)
         {
-            array.elementType = DE_NULL;
+            array.elementType = nullptr;
             array.size        = 0;
         }
     } m_data;
@@ -198,7 +198,7 @@ public:
     }
     const char *getTypeName(void) const
     {
-        return hasTypeName() ? m_typeName.c_str() : DE_NULL;
+        return hasTypeName() ? m_typeName.c_str() : nullptr;
     }
 
     void addMember(const char *name, const VarType &type);

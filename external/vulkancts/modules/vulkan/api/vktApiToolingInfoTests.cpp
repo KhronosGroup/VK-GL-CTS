@@ -66,7 +66,7 @@ tcu::TestStatus validateGetter(Context &context)
     uint32_t toolCount = 0;
 
     result = context.getInstanceInterface().getPhysicalDeviceToolProperties(context.getPhysicalDevice(), &toolCount,
-                                                                            DE_NULL);
+                                                                            nullptr);
 
     if (result != VK_SUCCESS)
     {
@@ -186,7 +186,7 @@ tcu::TestStatus validateToolsProperties(Context &context)
     uint32_t toolCount = 0;
 
     VK_CHECK(context.getInstanceInterface().getPhysicalDeviceToolProperties(context.getPhysicalDevice(), &toolCount,
-                                                                            DE_NULL));
+                                                                            nullptr));
 
     if (toolCount > 0)
     {

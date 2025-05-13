@@ -74,7 +74,7 @@ VkDevice getDevice(Context &context)
         // Create a universal queue that supports graphics and compute
         const VkDeviceQueueCreateInfo queueParams{
             VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                    // const void* pNext;
+            nullptr,                                    // const void* pNext;
             0u,                                         // VkDeviceQueueCreateFlags flags;
             context.getUniversalQueueFamilyIndex(),     // uint32_t queueFamilyIndex;
             1u,                                         // uint32_t queueCount;
@@ -127,7 +127,7 @@ VkDevice getDevice(Context &context)
             nullptr,                              //ppEnabledLayerNames;
             de::sizeU32(extensionPtrs),           // uint32_t enabledExtensionCount;
             de::dataOrNull(extensionPtrs),        // const char* const* ppEnabledExtensionNames;
-            DE_NULL,                              //pEnabledFeatures;
+            nullptr,                              //pEnabledFeatures;
         };
 
         Move<VkDevice> device = createCustomDevice(
@@ -596,17 +596,20 @@ AccelerationStructureData makeDefaultAccelerationStructure(const DeviceInterface
     data.tlas = makeTopLevelAccelerationStructure();
     data.blas = makeBottomLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     VkGeometryInstanceFlagsKHR instanceFlags = 0u;
     if (triangles)
         instanceFlags |= VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
 
     data.blas->addGeometry(vertices, triangles, VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
-    data.blas->createAndBuild(vkd, device, cmdBuffer, alloc);
+    data.blas->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     de::SharedPtr<BottomLevelAccelerationStructure> blasSharedPtr(data.blas.release());
     data.tlas->setInstanceCount(1u);
     data.tlas->addInstance(blasSharedPtr, identityMatrix3x4, 0u, 0xFFu, 0u, instanceFlags);
-    data.tlas->createAndBuild(vkd, device, cmdBuffer, alloc);
+    data.tlas->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     return data;
 }

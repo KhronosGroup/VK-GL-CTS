@@ -34,7 +34,7 @@ VkBufferMemoryBarrier makeBufferMemoryBarrier(const VkAccessFlags srcAccessMask,
 {
     return {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         srcAccessMask,                           // VkAccessFlags srcAccessMask;
         dstAccessMask,                           // VkAccessFlags dstAccessMask;
         srcQueueFamilyIndex,                     // uint32_t srcQueueFamilyIndex;
@@ -55,7 +55,7 @@ VkBufferMemoryBarrier2KHR makeBufferMemoryBarrier2(const VkPipelineStageFlags2KH
 {
     return {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR, // VkStructureType sType;
-        DE_NULL,                                       // const void* pNext;
+        nullptr,                                       // const void* pNext;
         srcStageMask,                                  // VkPipelineStageFlags2KHR srcStageMask;
         srcAccessMask,                                 // VkAccessFlags2KHR srcAccessMask;
         dstStageMask,                                  // VkPipelineStageFlags2KHR dstStageMask;
@@ -75,7 +75,7 @@ VkImageMemoryBarrier makeImageMemoryBarrier(const VkAccessFlags srcAccessMask, c
 {
     return {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         srcAccessMask,                          // VkAccessFlags outputMask;
         dstAccessMask,                          // VkAccessFlags inputMask;
         oldLayout,                              // VkImageLayout oldLayout;
@@ -97,7 +97,7 @@ VkImageMemoryBarrier2KHR makeImageMemoryBarrier2(const VkPipelineStageFlags2KHR 
 {
     return {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR, // VkStructureType sType;
-        DE_NULL,                                      // const void* pNext;
+        nullptr,                                      // const void* pNext;
         srcStageMask,                                 // VkPipelineStageFlags2KHR srcStageMask;
         srcAccessMask,                                // VkAccessFlags2KHR srcAccessMask;
         dstStageMask,                                 // VkPipelineStageFlags2KHR dstStageMask;
@@ -115,7 +115,7 @@ VkMemoryBarrier makeMemoryBarrier(const VkAccessFlags srcAccessMask, const VkAcc
 {
     return {
         VK_STRUCTURE_TYPE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                          // const void* pNext;
+        nullptr,                          // const void* pNext;
         srcAccessMask,                    // VkAccessFlags srcAccessMask;
         dstAccessMask,                    // VkAccessFlags dstAccessMask;
     };
@@ -128,7 +128,7 @@ VkMemoryBarrier2KHR makeMemoryBarrier2(const VkPipelineStageFlags2KHR srcStageMa
 {
     return {
         VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         srcStageMask,                           // VkPipelineStageFlags2KHR srcStageMask;
         srcAccessMask,                          // VkAccessFlags2KHR srcAccessMask;
         dstStageMask,                           // VkPipelineStageFlags2KHR dstStageMask;
@@ -146,7 +146,7 @@ void cmdPipelineMemoryBarrier(const DeviceInterface &vk, const VkCommandBuffer c
     DE_ASSERT(memoryBarrierCount == memoryBarrierCount32);
 
     vk.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, memoryBarrierCount32,
-                          pMemoryBarriers, 0u, DE_NULL, 0u, DE_NULL);
+                          pMemoryBarriers, 0u, nullptr, 0u, nullptr);
 }
 
 void cmdPipelineBufferMemoryBarrier(const DeviceInterface &vk, const VkCommandBuffer commandBuffer,
@@ -158,8 +158,8 @@ void cmdPipelineBufferMemoryBarrier(const DeviceInterface &vk, const VkCommandBu
 
     DE_ASSERT(bufferMemoryBarrierCount == bufferMemoryBarrierCount32);
 
-    vk.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, 0u, DE_NULL,
-                          bufferMemoryBarrierCount32, pBufferMemoryBarriers, 0u, DE_NULL);
+    vk.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, 0u, nullptr,
+                          bufferMemoryBarrierCount32, pBufferMemoryBarriers, 0u, nullptr);
 }
 
 void cmdPipelineImageMemoryBarrier(const DeviceInterface &vk, const VkCommandBuffer commandBuffer,
@@ -171,7 +171,7 @@ void cmdPipelineImageMemoryBarrier(const DeviceInterface &vk, const VkCommandBuf
 
     DE_ASSERT(imageMemoryBarrierCount == imageMemoryBarrierCount32);
 
-    vk.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, 0u, DE_NULL, 0u, DE_NULL,
+    vk.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, 0u, nullptr, 0u, nullptr,
                           imageMemoryBarrierCount32, pImageMemoryBarriers);
 }
 } // namespace vk

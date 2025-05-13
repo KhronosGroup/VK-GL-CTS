@@ -339,6 +339,10 @@ tcu::TestStatus StackTestInstance::iterate(void)
     // Command buffer load is repeated 8 times () to avoid coincidental matches.
     for (int i = 0; (i < 8) && (result == true); i++)
     {
+        // Protected memory operations can take a long time, touch watchdog halfway through.
+        if (i == 4)
+            m_context.getTestContext().touchWatchdog();
+
         const vk::Unique<vk::VkFence> fence(vk::createFence(vk, device));
         vk::Unique<vk::VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, *computeShader));
         vk::Unique<vk::VkCommandBuffer> cmdBuffer(
@@ -348,7 +352,7 @@ tcu::TestStatus StackTestInstance::iterate(void)
 
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                 &*descriptorSet, 0u, DE_NULL);
+                                 &*descriptorSet, 0u, nullptr);
         vk.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
         endCommandBuffer(vk, *cmdBuffer);
 
@@ -404,7 +408,7 @@ tcu::TestCaseGroup *createStackTests(tcu::TestContext &testCtx)
     // Protected memory stack tests
     de::MovePtr<tcu::TestCaseGroup> stackGroup(new tcu::TestCaseGroup(testCtx, "stack"));
 
-    static const uint32_t stackMemSizes[] = {32, 64, 128, 256, 512, 1024};
+    static const uint32_t stackMemSizes[] = {32, 64, 128, 256, 512};
 
     for (int stackMemSizeIdx = 0; stackMemSizeIdx < DE_LENGTH_OF_ARRAY(stackMemSizes); ++stackMemSizeIdx)
     {

@@ -33,9 +33,9 @@ void beginCommandBuffer(const DeviceInterface &vk, const VkCommandBuffer command
 {
     const VkCommandBufferBeginInfo commandBufBeginParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType                  sType;
-        DE_NULL,                                     // const void*                      pNext;
+        nullptr,                                     // const void*                      pNext;
         flags,                                       // VkCommandBufferUsageFlags        flags;
-        (const VkCommandBufferInheritanceInfo *)DE_NULL,
+        nullptr,
     };
     VK_CHECK(vk.beginCommandBuffer(commandBuffer, &commandBufBeginParams));
 }
@@ -145,12 +145,12 @@ void beginRenderPass(const DeviceInterface &vk, const VkCommandBuffer commandBuf
 {
     const VkRenderPassBeginInfo renderPassBeginInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // VkStructureType         sType;
-        DE_NULL,                                  // const void*             pNext;
+        nullptr,                                  // const void*             pNext;
         renderPass,                               // VkRenderPass            renderPass;
         framebuffer,                              // VkFramebuffer           framebuffer;
         renderArea,                               // VkRect2D                renderArea;
         0u,                                       // uint32_t                clearValueCount;
-        DE_NULL,                                  // const VkClearValue*     pClearValues;
+        nullptr,                                  // const VkClearValue*     pClearValues;
     };
 
     vk.cmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, contents);
@@ -167,7 +167,7 @@ void beginRenderPass(const DeviceInterface &vk, const VkCommandBuffer commandBuf
 
     const VkRenderPassBeginInfo renderPassBeginInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // VkStructureType         sType;
-        DE_NULL,                                  // const void*             pNext;
+        nullptr,                                  // const void*             pNext;
         renderPass,                               // VkRenderPass            renderPass;
         framebuffer,                              // VkFramebuffer           framebuffer;
         renderArea,                               // VkRect2D                renderArea;
@@ -192,7 +192,7 @@ void beginRendering(const DeviceInterface &vk, const VkCommandBuffer commandBuff
 {
     VkRenderingAttachmentInfoKHR colorAttachment{
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         colorImageView,                                  // VkImageView imageView;
         imageLayout,                                     // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
@@ -205,15 +205,15 @@ void beginRendering(const DeviceInterface &vk, const VkCommandBuffer commandBuff
 
     VkRenderingInfoKHR renderingInfo{
         VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-        DE_NULL,
+        nullptr,
         renderingFlags,   // VkRenderingFlagsKHR flags;
         renderArea,       // VkRect2D renderArea;
         layerCount,       // uint32_t layerCount;
         viewMask,         // uint32_t viewMask;
         1u,               // uint32_t colorAttachmentCount;
         &colorAttachment, // const VkRenderingAttachmentInfoKHR* pColorAttachments;
-        DE_NULL,          // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
-        DE_NULL,          // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
+        nullptr,          // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
+        nullptr,          // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
     };
 
     vk.cmdBeginRendering(commandBuffer, &renderingInfo);
@@ -228,7 +228,7 @@ void beginRendering(const DeviceInterface &vk, const VkCommandBuffer commandBuff
 {
     VkRenderingAttachmentInfoKHR colorAttachment{
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         colorImageView,                                  // VkImageView imageView;
         colorImageLayout,                                // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
@@ -241,7 +241,7 @@ void beginRendering(const DeviceInterface &vk, const VkCommandBuffer commandBuff
 
     VkRenderingAttachmentInfoKHR depthStencilAttachment{
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         depthStencilImageView,                           // VkImageView imageView;
         depthImageLayout,                                // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
@@ -254,7 +254,7 @@ void beginRendering(const DeviceInterface &vk, const VkCommandBuffer commandBuff
 
     VkRenderingInfoKHR renderingInfo{
         VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-        DE_NULL,
+        nullptr,
         renderingFlags,          // VkRenderingFlagsKHR flags;
         renderArea,              // VkRect2D renderArea;
         layerCount,              // uint32_t layerCount;
@@ -263,7 +263,7 @@ void beginRendering(const DeviceInterface &vk, const VkCommandBuffer commandBuff
         &colorAttachment,        // const VkRenderingAttachmentInfoKHR* pColorAttachments;
         &depthStencilAttachment, // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
         useStencilAttachment ? &depthStencilAttachment :
-                               DE_NULL, // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
+                               nullptr, // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
     };
 
     vk.cmdBeginRendering(commandBuffer, &renderingInfo);

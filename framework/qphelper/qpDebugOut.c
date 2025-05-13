@@ -98,7 +98,7 @@ void qpDiev(const char *format, va_list args)
 }
 
 /* print() implementation. */
-#if (DE_OS == DE_OS_ANDROID)
+#if defined(DEQP_IS_ANDROID_APP)
 
 #include <android/log.h>
 

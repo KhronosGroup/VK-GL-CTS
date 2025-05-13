@@ -84,7 +84,7 @@ GPUShader5SSBOArrayIndexing::GPUShader5SSBOArrayIndexing(Context &context, const
     : TestCaseBase(context, extParams, name, description)
     , m_compute_shader_id(0)
     , m_program_id(0)
-    , m_ssbo_buffer_ids(DE_NULL)
+    , m_ssbo_buffer_ids(nullptr)
 {
     /* Nothing to be done here */
 }
@@ -247,12 +247,12 @@ void GPUShader5SSBOArrayIndexing::deinit(void)
         m_compute_shader_id = 0;
     }
 
-    if (m_ssbo_buffer_ids != DE_NULL)
+    if (m_ssbo_buffer_ids != nullptr)
     {
         gl.deleteBuffers(m_n_arrays, m_ssbo_buffer_ids);
 
         delete[] m_ssbo_buffer_ids;
-        m_ssbo_buffer_ids = DE_NULL;
+        m_ssbo_buffer_ids = nullptr;
     }
 
     /* Call base class' deinit() */

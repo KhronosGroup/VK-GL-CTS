@@ -311,14 +311,14 @@ const StructType *ShaderInterface::findStruct(const char *name) const
 {
     std::vector<StructType *>::const_iterator pos =
         std::find_if(m_structs.begin(), m_structs.end(), StructNameEquals(name));
-    return pos != m_structs.end() ? *pos : DE_NULL;
+    return pos != m_structs.end() ? *pos : nullptr;
 }
 
 void ShaderInterface::getNamedStructs(std::vector<const StructType *> &structs) const
 {
     for (std::vector<StructType *>::const_iterator i = m_structs.begin(); i != m_structs.end(); i++)
     {
-        if ((*i)->getTypeName() != DE_NULL)
+        if ((*i)->getTypeName() != nullptr)
             structs.push_back(*i);
     }
 }
@@ -561,7 +561,7 @@ void computeStd140Layout(UniformLayout &layout, const ShaderInterface &interface
     for (int blockNdx = 0; blockNdx < numUniformBlocks; blockNdx++)
     {
         const UniformBlock &block = interface.getUniformBlock(blockNdx);
-        bool hasInstanceName      = block.getInstanceName() != DE_NULL;
+        bool hasInstanceName      = block.getInstanceName() != nullptr;
         std::string blockPrefix   = hasInstanceName ? (std::string(block.getBlockName()) + ".") : std::string("");
         int curOffset             = 0;
         int activeBlockNdx        = (int)layout.blocks.size();
@@ -735,7 +735,7 @@ void generateFullDeclaration(std::ostringstream &src, const StructType &structTy
 
 void generateDeclaration(std::ostringstream &src, const StructType &structType, int indentLevel)
 {
-    DE_ASSERT(structType.getTypeName() != DE_NULL);
+    DE_ASSERT(structType.getTypeName() != nullptr);
     generateFullDeclaration(src, structType, indentLevel);
     src << ";\n";
 }
@@ -759,7 +759,7 @@ void generateFullDeclaration(std::ostringstream &src, const StructType &structTy
 
 void generateLocalDeclaration(std::ostringstream &src, const StructType &structType, int indentLevel)
 {
-    if (structType.getTypeName() == DE_NULL)
+    if (structType.getTypeName() == nullptr)
         generateFullDeclaration(src, structType, indentLevel);
     else
         src << structType.getTypeName();
@@ -849,7 +849,7 @@ void generateDeclaration(std::ostringstream &src, const UniformBlock &block)
 
     src << "}";
 
-    if (block.getInstanceName() != DE_NULL)
+    if (block.getInstanceName() != nullptr)
     {
         src << " " << block.getInstanceName();
         if (block.isArray())
@@ -997,7 +997,7 @@ void generateCompareSrc(std::ostringstream &src, const char *resultVar, const Sh
         if ((block.getFlags() & (isVertex ? DECLARE_VERTEX : DECLARE_FRAGMENT)) == 0)
             continue; // Skip.
 
-        bool hasInstanceName  = block.getInstanceName() != DE_NULL;
+        bool hasInstanceName  = block.getInstanceName() != nullptr;
         bool isArray          = block.isArray();
         int numInstances      = isArray ? block.getArraySize() : 1;
         std::string apiPrefix = hasInstanceName ? string(block.getBlockName()) + "." : string("");
@@ -1133,7 +1133,7 @@ void getGLUniformLayout(const glw::Functions &gl, UniformLayout &layout, uint32_
 
         // \note Some implementations incorrectly return 0 as name length even though the length should include null terminator.
         std::vector<char> nameBuf(nameLen > 0 ? nameLen : 1);
-        gl.getActiveUniformBlockName(program, (uint32_t)blockNdx, (glw::GLsizei)nameBuf.size(), DE_NULL, &nameBuf[0]);
+        gl.getActiveUniformBlockName(program, (uint32_t)blockNdx, (glw::GLsizei)nameBuf.size(), nullptr, &nameBuf[0]);
 
         entry.name = std::string(&nameBuf[0]);
         entry.size = size;
@@ -1268,7 +1268,7 @@ void copyUniformData(const UniformLayout &dstLayout, const std::map<int, void *>
         const BlockLayoutEntry &srcBlock = srcLayout.blocks[srcBlockNdx];
         const void *srcBlockPtr          = srcBlockPointers.find(srcBlockNdx)->second;
         int dstBlockNdx                  = dstLayout.getBlockIndex(srcBlock.name.c_str());
-        void *dstBlockPtr                = dstBlockNdx >= 0 ? dstBlockPointers.find(dstBlockNdx)->second : DE_NULL;
+        void *dstBlockPtr                = dstBlockNdx >= 0 ? dstBlockPointers.find(dstBlockNdx)->second : nullptr;
 
         if (dstBlockNdx < 0)
             continue;

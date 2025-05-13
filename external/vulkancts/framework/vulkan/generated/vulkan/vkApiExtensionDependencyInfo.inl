@@ -352,6 +352,18 @@ bool check_VK_GOOGLE_surfaceless_query(const tcu::UVec2& v, const ExtPropVect& v
 	return isSupported(vIEP, "VK_KHR_surface");
 }
 
+bool check_VK_NV_display_stereo(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vDEP);
+
+	if (!isSupported(vIEP, "VK_NV_display_stereo"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_display+VK_KHR_get_display_properties2
+	return isSupported(vIEP, "VK_KHR_display") && isSupported(vIEP, "VK_KHR_get_display_properties2");
+}
+
 static const DependencyCheckVect instanceExtensionDependencies
 {
 	std::make_pair("VK_KHR_display",							&check_VK_KHR_display),
@@ -381,6 +393,7 @@ static const DependencyCheckVect instanceExtensionDependencies
 	std::make_pair("VK_EXT_acquire_drm_display",				&check_VK_EXT_acquire_drm_display),
 	std::make_pair("VK_QNX_screen_surface",						&check_VK_QNX_screen_surface),
 	std::make_pair("VK_GOOGLE_surfaceless_query",				&check_VK_GOOGLE_surfaceless_query),
+	std::make_pair("VK_NV_display_stereo",						&check_VK_NV_display_stereo),
 };
 
 bool check_VK_KHR_swapchain(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -621,7 +634,9 @@ bool check_VK_EXT_astc_decode_mode(const tcu::UVec2& v, const ExtPropVect& vIEP,
 
 bool check_VK_EXT_pipeline_robustness(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	DE_UNREF(v);
+	if (isCompatibile(1, 4, v))
+		return true;
+
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_EXT_pipeline_robustness"))
@@ -721,7 +736,9 @@ bool check_VK_KHR_external_semaphore_fd(const tcu::UVec2& v, const ExtPropVect& 
 
 bool check_VK_KHR_push_descriptor(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	DE_UNREF(v);
+	if (isCompatibile(1, 4, v))
+		return true;
+
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_KHR_push_descriptor"))
@@ -1055,8 +1072,8 @@ bool check_VK_AMDX_shader_enqueue(const tcu::UVec2& v, const ExtPropVect& vIEP, 
 	if (!isSupported(vDEP, "VK_AMDX_shader_enqueue"))
 		return true;
 
-	// depends attribute in xml: (((VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_synchronization2),VK_VERSION_1_3)+VK_KHR_pipeline_library+VK_KHR_spirv_1_4
-	return ((((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_synchronization2")))) && isSupported(vDEP, "VK_KHR_pipeline_library") && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_spirv_1_4"));
+	// depends attribute in xml: ((VK_KHR_synchronization2+VK_KHR_spirv_1_4+VK_EXT_extended_dynamic_state),VK_VERSION_1_3)+VK_KHR_maintenance5+VK_KHR_pipeline_library
+	return (((isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_synchronization2")) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_spirv_1_4")) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_EXT_extended_dynamic_state")))) && (isCompatibile(1, 4, v) || isSupported(vDEP, "VK_KHR_maintenance5")) && isSupported(vDEP, "VK_KHR_pipeline_library");
 }
 
 bool check_VK_EXT_inline_uniform_block(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1071,6 +1088,18 @@ bool check_VK_EXT_inline_uniform_block(const tcu::UVec2& v, const ExtPropVect& v
 
 	// depends attribute in xml: (VK_KHR_get_physical_device_properties2+VK_KHR_maintenance1),VK_VERSION_1_1
 	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_maintenance1")));
+}
+
+bool check_VK_KHR_shader_bfloat16(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_shader_bfloat16"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
 bool check_VK_EXT_sample_locations(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1117,8 +1146,8 @@ bool check_VK_KHR_ray_tracing_pipeline(const tcu::UVec2& v, const ExtPropVect& v
 	if (!isSupported(vDEP, "VK_KHR_ray_tracing_pipeline"))
 		return true;
 
-	// depends attribute in xml: VK_KHR_spirv_1_4+VK_KHR_acceleration_structure
-	return (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_spirv_1_4")) && isSupported(vDEP, "VK_KHR_acceleration_structure");
+	// depends attribute in xml: (VK_KHR_spirv_1_4,VK_VERSION_1_2)+VK_KHR_acceleration_structure
+	return ((isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_spirv_1_4"))) && isSupported(vDEP, "VK_KHR_acceleration_structure");
 }
 
 bool check_VK_KHR_ray_query(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1129,8 +1158,8 @@ bool check_VK_KHR_ray_query(const tcu::UVec2& v, const ExtPropVect& vIEP, const 
 	if (!isSupported(vDEP, "VK_KHR_ray_query"))
 		return true;
 
-	// depends attribute in xml: VK_KHR_spirv_1_4+VK_KHR_acceleration_structure
-	return (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_spirv_1_4")) && isSupported(vDEP, "VK_KHR_acceleration_structure");
+	// depends attribute in xml: (VK_KHR_spirv_1_4,VK_VERSION_1_2)+VK_KHR_acceleration_structure
+	return ((isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_spirv_1_4"))) && isSupported(vDEP, "VK_KHR_acceleration_structure");
 }
 
 bool check_VK_NV_shader_sm_builtins(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1351,7 +1380,9 @@ bool check_VK_KHR_video_decode_h265(const tcu::UVec2& v, const ExtPropVect& vIEP
 
 bool check_VK_KHR_global_priority(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	DE_UNREF(v);
+	if (isCompatibile(1, 4, v))
+		return true;
+
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_KHR_global_priority"))
@@ -1679,7 +1710,9 @@ bool check_VK_AMD_device_coherent_memory(const tcu::UVec2& v, const ExtPropVect&
 
 bool check_VK_KHR_dynamic_rendering_local_read(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	DE_UNREF(v);
+	if (isCompatibile(1, 4, v))
+		return true;
+
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_KHR_dynamic_rendering_local_read"))
@@ -1709,8 +1742,8 @@ bool check_VK_KHR_shader_quad_control(const tcu::UVec2& v, const ExtPropVect& vI
 	if (!isSupported(vDEP, "VK_KHR_shader_quad_control"))
 		return true;
 
-	// depends attribute in xml: VK_VERSION_1_1+VK_KHR_vulkan_memory_model+VK_KHR_shader_maximal_reconvergence
-	return isCompatibile(1, 1, v) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_vulkan_memory_model")) && isSupported(vDEP, "VK_KHR_shader_maximal_reconvergence");
+	// depends attribute in xml: ((VK_VERSION_1_1+VK_KHR_vulkan_memory_model),VK_VERSION_1_2)+VK_KHR_shader_maximal_reconvergence
+	return ((isCompatibile(1, 1, v) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_vulkan_memory_model")))) && isSupported(vDEP, "VK_KHR_shader_maximal_reconvergence");
 }
 
 bool check_VK_KHR_spirv_1_4(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1979,7 +2012,9 @@ bool check_VK_KHR_pipeline_executable_properties(const tcu::UVec2& v, const ExtP
 
 bool check_VK_EXT_host_image_copy(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	DE_UNREF(v);
+	if (isCompatibile(1, 4, v))
+		return true;
+
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_EXT_host_image_copy"))
@@ -1997,8 +2032,8 @@ bool check_VK_EXT_map_memory_placed(const tcu::UVec2& v, const ExtPropVect& vIEP
 	if (!isSupported(vDEP, "VK_EXT_map_memory_placed"))
 		return true;
 
-	// depends attribute in xml: VK_KHR_map_memory2
-	return isSupported(vDEP, "VK_KHR_map_memory2");
+	// depends attribute in xml: VK_KHR_map_memory2,VK_VERSION_1_4
+	return (isCompatibile(1, 4, v) || isSupported(vDEP, "VK_KHR_map_memory2"));
 }
 
 bool check_VK_EXT_shader_atomic_float2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2215,6 +2250,18 @@ bool check_VK_NV_device_diagnostics_config(const tcu::UVec2& v, const ExtPropVec
 	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
+bool check_VK_QCOM_tile_shading(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_QCOM_tile_shading"))
+		return true;
+
+	// depends attribute in xml: VK_QCOM_tile_properties,VK_KHR_get_physical_device_properties2
+	return isSupported(vDEP, "VK_QCOM_tile_properties") || (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+}
+
 bool check_VK_KHR_synchronization2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	if (isCompatibile(1, 3, v))
@@ -2335,7 +2382,7 @@ bool check_VK_EXT_mesh_shader(const tcu::UVec2& v, const ExtPropVect& vIEP, cons
 	if (!isSupported(vDEP, "VK_EXT_mesh_shader"))
 		return true;
 
-	// depends attribute in xml: VK_KHR_spirv_1_4
+	// depends attribute in xml: VK_KHR_spirv_1_4,VK_VERSION_1_2
 	return (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_spirv_1_4"));
 }
 
@@ -2587,6 +2634,18 @@ bool check_VK_KHR_format_feature_flags2(const tcu::UVec2& v, const ExtPropVect& 
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
 	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+}
+
+bool check_VK_EXT_present_mode_fifo_latest_ready(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_present_mode_fifo_latest_ready"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_swapchain
+	return isSupported(vDEP, "VK_KHR_swapchain");
 }
 
 bool check_VK_FUCHSIA_external_memory(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3013,6 +3072,18 @@ bool check_VK_NV_device_generated_commands_compute(const tcu::UVec2& v, const Ex
 	return isSupported(vDEP, "VK_NV_device_generated_commands");
 }
 
+bool check_VK_NV_ray_tracing_linear_swept_spheres(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_NV_ray_tracing_linear_swept_spheres"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_ray_tracing_pipeline
+	return isSupported(vDEP, "VK_KHR_ray_tracing_pipeline");
+}
+
 bool check_VK_NV_linear_color_attachment(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3159,7 +3230,9 @@ bool check_VK_EXT_legacy_dithering(const tcu::UVec2& v, const ExtPropVect& vIEP,
 
 bool check_VK_EXT_pipeline_protected_access(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	DE_UNREF(v);
+	if (isCompatibile(1, 4, v))
+		return true;
+
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_EXT_pipeline_protected_access"))
@@ -3183,7 +3256,9 @@ bool check_VK_ANDROID_external_format_resolve(const tcu::UVec2& v, const ExtProp
 
 bool check_VK_KHR_maintenance5(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	DE_UNREF(v);
+	if (isCompatibile(1, 4, v))
+		return true;
+
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_KHR_maintenance5"))
@@ -3215,6 +3290,18 @@ bool check_VK_EXT_shader_object(const tcu::UVec2& v, const ExtPropVect& vIEP, co
 
 	// depends attribute in xml: ((VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_dynamic_rendering),VK_VERSION_1_3
 	return (((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_dynamic_rendering")));
+}
+
+bool check_VK_KHR_pipeline_binary(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_pipeline_binary"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_maintenance5,VK_VERSION_1_4
+	return (isCompatibile(1, 4, v) || isSupported(vDEP, "VK_KHR_maintenance5"));
 }
 
 bool check_VK_QCOM_tile_properties(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3273,7 +3360,7 @@ bool check_VK_EXT_mutable_descriptor_type(const tcu::UVec2& v, const ExtPropVect
 	if (!isSupported(vDEP, "VK_EXT_mutable_descriptor_type"))
 		return true;
 
-	// depends attribute in xml: VK_KHR_maintenance3
+	// depends attribute in xml: VK_KHR_maintenance3,VK_VERSION_1_1
 	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_maintenance3"));
 }
 
@@ -3349,6 +3436,18 @@ bool check_VK_KHR_cooperative_matrix(const tcu::UVec2& v, const ExtPropVect& vIE
 	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
+bool check_VK_KHR_compute_shader_derivatives(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_compute_shader_derivatives"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+}
+
 bool check_VK_KHR_video_decode_av1(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3359,6 +3458,18 @@ bool check_VK_KHR_video_decode_av1(const tcu::UVec2& v, const ExtPropVect& vIEP,
 
 	// depends attribute in xml: VK_KHR_video_decode_queue
 	return isSupported(vDEP, "VK_KHR_video_decode_queue");
+}
+
+bool check_VK_KHR_video_encode_av1(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_video_encode_av1"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_video_encode_queue
+	return isSupported(vDEP, "VK_KHR_video_encode_queue");
 }
 
 bool check_VK_KHR_video_maintenance1(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3381,8 +3492,8 @@ bool check_VK_NV_per_stage_descriptor_set(const tcu::UVec2& v, const ExtPropVect
 	if (!isSupported(vDEP, "VK_NV_per_stage_descriptor_set"))
 		return true;
 
-	// depends attribute in xml: VK_KHR_maintenance6
-	return isSupported(vDEP, "VK_KHR_maintenance6");
+	// depends attribute in xml: VK_KHR_maintenance6,VK_VERSION_1_4
+	return (isCompatibile(1, 4, v) || isSupported(vDEP, "VK_KHR_maintenance6"));
 }
 
 bool check_VK_QCOM_image_processing2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3435,7 +3546,9 @@ bool check_VK_EXT_attachment_feedback_loop_dynamic_state(const tcu::UVec2& v, co
 
 bool check_VK_KHR_vertex_attribute_divisor(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	DE_UNREF(v);
+	if (isCompatibile(1, 4, v))
+		return true;
+
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_KHR_vertex_attribute_divisor"))
@@ -3447,7 +3560,9 @@ bool check_VK_KHR_vertex_attribute_divisor(const tcu::UVec2& v, const ExtPropVec
 
 bool check_VK_KHR_shader_float_controls2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	DE_UNREF(v);
+	if (isCompatibile(1, 4, v))
+		return true;
+
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_KHR_shader_float_controls2"))
@@ -3483,7 +3598,9 @@ bool check_VK_MSFT_layered_driver(const tcu::UVec2& v, const ExtPropVect& vIEP, 
 
 bool check_VK_KHR_index_type_uint8(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	DE_UNREF(v);
+	if (isCompatibile(1, 4, v))
+		return true;
+
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_KHR_index_type_uint8"))
@@ -3495,7 +3612,9 @@ bool check_VK_KHR_index_type_uint8(const tcu::UVec2& v, const ExtPropVect& vIEP,
 
 bool check_VK_KHR_line_rasterization(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	DE_UNREF(v);
+	if (isCompatibile(1, 4, v))
+		return true;
+
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_KHR_line_rasterization"))
@@ -3519,7 +3638,9 @@ bool check_VK_KHR_calibrated_timestamps(const tcu::UVec2& v, const ExtPropVect& 
 
 bool check_VK_KHR_shader_expect_assume(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	DE_UNREF(v);
+	if (isCompatibile(1, 4, v))
+		return true;
+
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_KHR_shader_expect_assume"))
@@ -3531,7 +3652,9 @@ bool check_VK_KHR_shader_expect_assume(const tcu::UVec2& v, const ExtPropVect& v
 
 bool check_VK_KHR_maintenance6(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	DE_UNREF(v);
+	if (isCompatibile(1, 4, v))
+		return true;
+
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_KHR_maintenance6"))
@@ -3553,6 +3676,30 @@ bool check_VK_NV_descriptor_pool_overallocation(const tcu::UVec2& v, const ExtPr
 	return isCompatibile(1, 1, v);
 }
 
+bool check_VK_QCOM_tile_memory_heap(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_QCOM_tile_memory_heap"))
+		return true;
+
+	// depends attribute in xml: (VK_KHR_get_memory_requirements2+VK_KHR_get_physical_device_properties2),VK_VERSION_1_1
+	return ((isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_get_memory_requirements2")) && (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")));
+}
+
+bool check_VK_KHR_video_encode_quantization_map(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_video_encode_quantization_map"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_video_encode_queue+(VK_KHR_format_feature_flags2,VK_VERSION_1_3)
+	return isSupported(vDEP, "VK_KHR_video_encode_queue") && ((isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_format_feature_flags2")));
+}
+
 bool check_VK_KHR_maintenance7(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3565,12 +3712,192 @@ bool check_VK_KHR_maintenance7(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 	return isCompatibile(1, 1, v);
 }
 
+bool check_VK_NV_cluster_acceleration_structure(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_NV_cluster_acceleration_structure"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_acceleration_structure
+	return isSupported(vDEP, "VK_KHR_acceleration_structure");
+}
+
+bool check_VK_NV_partitioned_acceleration_structure(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_NV_partitioned_acceleration_structure"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_acceleration_structure
+	return isSupported(vDEP, "VK_KHR_acceleration_structure");
+}
+
+bool check_VK_EXT_device_generated_commands(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_device_generated_commands"))
+		return true;
+
+	// depends attribute in xml: ((VK_KHR_buffer_device_address,VK_VERSION_1_2)+VK_KHR_maintenance5),VK_VERSION_1_3
+	return (((isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_buffer_device_address"))) && (isCompatibile(1, 4, v) || isSupported(vDEP, "VK_KHR_maintenance5")));
+}
+
+bool check_VK_KHR_maintenance8(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_maintenance8"))
+		return true;
+
+	// depends attribute in xml: VK_VERSION_1_1
+	return isCompatibile(1, 1, v);
+}
+
 bool check_VK_MESA_image_alignment_control(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_MESA_image_alignment_control"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+}
+
+bool check_VK_EXT_depth_clamp_control(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_depth_clamp_control"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+}
+
+bool check_VK_KHR_video_maintenance2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_video_maintenance2"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_video_queue
+	return isSupported(vDEP, "VK_KHR_video_queue");
+}
+
+bool check_VK_HUAWEI_hdr_vivid(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_HUAWEI_hdr_vivid"))
+		return true;
+
+	// depends attribute in xml: (VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_swapchain+VK_EXT_hdr_metadata
+	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vDEP, "VK_EXT_hdr_metadata");
+}
+
+bool check_VK_NV_cooperative_matrix2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_NV_cooperative_matrix2"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_cooperative_matrix
+	return isSupported(vDEP, "VK_KHR_cooperative_matrix");
+}
+
+bool check_VK_ARM_pipeline_opacity_micromap(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_ARM_pipeline_opacity_micromap"))
+		return true;
+
+	// depends attribute in xml: VK_EXT_opacity_micromap
+	return isSupported(vDEP, "VK_EXT_opacity_micromap");
+}
+
+bool check_VK_EXT_external_memory_metal(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_external_memory_metal"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_external_memory,VK_VERSION_1_1
+	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_external_memory"));
+}
+
+bool check_VK_KHR_depth_clamp_zero_one(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_depth_clamp_zero_one"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+}
+
+bool check_VK_EXT_vertex_attribute_robustness(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_vertex_attribute_robustness"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+}
+
+bool check_VK_KHR_robustness2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_robustness2"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+}
+
+bool check_VK_EXT_fragment_density_map_offset(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_fragment_density_map_offset"))
+		return true;
+
+	// depends attribute in xml: (VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_EXT_fragment_density_map+(VK_KHR_create_renderpass2,VK_VERSION_1_2)+(VK_VERSION_1_3,VK_KHR_dynamic_rendering)
+	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && isSupported(vDEP, "VK_EXT_fragment_density_map") && ((isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_create_renderpass2"))) && (isCompatibile(1, 3, v) || (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_dynamic_rendering")));
+}
+
+bool check_VK_EXT_zero_initialize_device_memory(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_zero_initialize_device_memory"))
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
@@ -3634,6 +3961,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_sampler_filter_minmax",							&check_VK_EXT_sampler_filter_minmax),
 	std::make_pair("VK_AMDX_shader_enqueue",								&check_VK_AMDX_shader_enqueue),
 	std::make_pair("VK_EXT_inline_uniform_block",							&check_VK_EXT_inline_uniform_block),
+	std::make_pair("VK_KHR_shader_bfloat16",								&check_VK_KHR_shader_bfloat16),
 	std::make_pair("VK_EXT_sample_locations",								&check_VK_EXT_sample_locations),
 	std::make_pair("VK_EXT_blend_operation_advanced",						&check_VK_EXT_blend_operation_advanced),
 	std::make_pair("VK_KHR_acceleration_structure",							&check_VK_KHR_acceleration_structure),
@@ -3725,6 +4053,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_pipeline_creation_cache_control",				&check_VK_EXT_pipeline_creation_cache_control),
 	std::make_pair("VK_KHR_video_encode_queue",								&check_VK_KHR_video_encode_queue),
 	std::make_pair("VK_NV_device_diagnostics_config",						&check_VK_NV_device_diagnostics_config),
+	std::make_pair("VK_QCOM_tile_shading",									&check_VK_QCOM_tile_shading),
 	std::make_pair("VK_KHR_synchronization2",								&check_VK_KHR_synchronization2),
 	std::make_pair("VK_EXT_descriptor_buffer",								&check_VK_EXT_descriptor_buffer),
 	std::make_pair("VK_EXT_graphics_pipeline_library",						&check_VK_EXT_graphics_pipeline_library),
@@ -3755,6 +4084,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_depth_clip_control",								&check_VK_EXT_depth_clip_control),
 	std::make_pair("VK_EXT_primitive_topology_list_restart",				&check_VK_EXT_primitive_topology_list_restart),
 	std::make_pair("VK_KHR_format_feature_flags2",							&check_VK_KHR_format_feature_flags2),
+	std::make_pair("VK_EXT_present_mode_fifo_latest_ready",					&check_VK_EXT_present_mode_fifo_latest_ready),
 	std::make_pair("VK_FUCHSIA_external_memory",							&check_VK_FUCHSIA_external_memory),
 	std::make_pair("VK_FUCHSIA_external_semaphore",							&check_VK_FUCHSIA_external_semaphore),
 	std::make_pair("VK_FUCHSIA_buffer_collection",							&check_VK_FUCHSIA_buffer_collection),
@@ -3790,6 +4120,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_NV_copy_memory_indirect",							&check_VK_NV_copy_memory_indirect),
 	std::make_pair("VK_NV_memory_decompression",							&check_VK_NV_memory_decompression),
 	std::make_pair("VK_NV_device_generated_commands_compute",				&check_VK_NV_device_generated_commands_compute),
+	std::make_pair("VK_NV_ray_tracing_linear_swept_spheres",				&check_VK_NV_ray_tracing_linear_swept_spheres),
 	std::make_pair("VK_NV_linear_color_attachment",							&check_VK_NV_linear_color_attachment),
 	std::make_pair("VK_KHR_shader_maximal_reconvergence",					&check_VK_KHR_shader_maximal_reconvergence),
 	std::make_pair("VK_EXT_image_compression_control_swapchain",			&check_VK_EXT_image_compression_control_swapchain),
@@ -3807,6 +4138,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_KHR_maintenance5",									&check_VK_KHR_maintenance5),
 	std::make_pair("VK_KHR_ray_tracing_position_fetch",						&check_VK_KHR_ray_tracing_position_fetch),
 	std::make_pair("VK_EXT_shader_object",									&check_VK_EXT_shader_object),
+	std::make_pair("VK_KHR_pipeline_binary",								&check_VK_KHR_pipeline_binary),
 	std::make_pair("VK_QCOM_tile_properties",								&check_VK_QCOM_tile_properties),
 	std::make_pair("VK_SEC_amigo_profiling",								&check_VK_SEC_amigo_profiling),
 	std::make_pair("VK_QCOM_multiview_per_view_viewports",					&check_VK_QCOM_multiview_per_view_viewports),
@@ -3818,7 +4150,9 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_dynamic_rendering_unused_attachments",			&check_VK_EXT_dynamic_rendering_unused_attachments),
 	std::make_pair("VK_NV_low_latency2",									&check_VK_NV_low_latency2),
 	std::make_pair("VK_KHR_cooperative_matrix",								&check_VK_KHR_cooperative_matrix),
+	std::make_pair("VK_KHR_compute_shader_derivatives",						&check_VK_KHR_compute_shader_derivatives),
 	std::make_pair("VK_KHR_video_decode_av1",								&check_VK_KHR_video_decode_av1),
+	std::make_pair("VK_KHR_video_encode_av1",								&check_VK_KHR_video_encode_av1),
 	std::make_pair("VK_KHR_video_maintenance1",								&check_VK_KHR_video_maintenance1),
 	std::make_pair("VK_NV_per_stage_descriptor_set",						&check_VK_NV_per_stage_descriptor_set),
 	std::make_pair("VK_QCOM_image_processing2",								&check_VK_QCOM_image_processing2),
@@ -3835,17 +4169,34 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_KHR_shader_expect_assume",							&check_VK_KHR_shader_expect_assume),
 	std::make_pair("VK_KHR_maintenance6",									&check_VK_KHR_maintenance6),
 	std::make_pair("VK_NV_descriptor_pool_overallocation",					&check_VK_NV_descriptor_pool_overallocation),
+	std::make_pair("VK_QCOM_tile_memory_heap",								&check_VK_QCOM_tile_memory_heap),
+	std::make_pair("VK_KHR_video_encode_quantization_map",					&check_VK_KHR_video_encode_quantization_map),
 	std::make_pair("VK_KHR_maintenance7",									&check_VK_KHR_maintenance7),
+	std::make_pair("VK_NV_cluster_acceleration_structure",					&check_VK_NV_cluster_acceleration_structure),
+	std::make_pair("VK_NV_partitioned_acceleration_structure",				&check_VK_NV_partitioned_acceleration_structure),
+	std::make_pair("VK_EXT_device_generated_commands",						&check_VK_EXT_device_generated_commands),
+	std::make_pair("VK_KHR_maintenance8",									&check_VK_KHR_maintenance8),
 	std::make_pair("VK_MESA_image_alignment_control",						&check_VK_MESA_image_alignment_control),
+	std::make_pair("VK_EXT_depth_clamp_control",							&check_VK_EXT_depth_clamp_control),
+	std::make_pair("VK_KHR_video_maintenance2",								&check_VK_KHR_video_maintenance2),
+	std::make_pair("VK_HUAWEI_hdr_vivid",									&check_VK_HUAWEI_hdr_vivid),
+	std::make_pair("VK_NV_cooperative_matrix2",								&check_VK_NV_cooperative_matrix2),
+	std::make_pair("VK_ARM_pipeline_opacity_micromap",						&check_VK_ARM_pipeline_opacity_micromap),
+	std::make_pair("VK_EXT_external_memory_metal",							&check_VK_EXT_external_memory_metal),
+	std::make_pair("VK_KHR_depth_clamp_zero_one",							&check_VK_KHR_depth_clamp_zero_one),
+	std::make_pair("VK_EXT_vertex_attribute_robustness",					&check_VK_EXT_vertex_attribute_robustness),
+	std::make_pair("VK_KHR_robustness2",									&check_VK_KHR_robustness2),
+	std::make_pair("VK_EXT_fragment_density_map_offset",					&check_VK_EXT_fragment_density_map_offset),
+	std::make_pair("VK_EXT_zero_initialize_device_memory",					&check_VK_EXT_zero_initialize_device_memory),
 };
 
 static const std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>	releasedApiVersions[]	=
 {
-	std::make_tuple(541065216, 1, 1, 0),
-	std::make_tuple(541077504, 1, 1, 3),
-	std::make_tuple(541073408, 1, 1, 2),
-	std::make_tuple(541069312, 1, 1, 1),
-	std::make_tuple(541065216, 1, 1, 0),
+	std::make_tuple(4210688, 0, 1, 4),
+	std::make_tuple(4206592, 0, 1, 3),
+	std::make_tuple(4202496, 0, 1, 2),
+	std::make_tuple(4198400, 0, 1, 1),
+	std::make_tuple(4194304, 0, 1, 0),
 };
 static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVersion[]	 =
 {
@@ -3964,6 +4315,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_AMD_shader_fragment_mask"),
 	std::make_tuple(1, 0, "VK_EXT_inline_uniform_block"),
 	std::make_tuple(1, 0, "VK_EXT_shader_stencil_export"),
+	std::make_tuple(1, 0, "VK_KHR_shader_bfloat16"),
 	std::make_tuple(1, 0, "VK_EXT_sample_locations"),
 	std::make_tuple(1, 0, "VK_KHR_relaxed_block_layout"),
 	std::make_tuple(1, 0, "VK_KHR_get_memory_requirements2"),
@@ -4093,6 +4445,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_NV_device_diagnostics_config"),
 	std::make_tuple(1, 0, "VK_QCOM_render_pass_store_ops"),
 	std::make_tuple(1, 0, "VK_NV_cuda_kernel_launch"),
+	std::make_tuple(1, 0, "VK_QCOM_tile_shading"),
 	std::make_tuple(1, 0, "VK_NV_low_latency"),
 	std::make_tuple(1, 0, "VK_EXT_metal_objects"),
 	std::make_tuple(1, 0, "VK_KHR_synchronization2"),
@@ -4125,6 +4478,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_depth_clip_control"),
 	std::make_tuple(1, 0, "VK_EXT_primitive_topology_list_restart"),
 	std::make_tuple(1, 0, "VK_KHR_format_feature_flags2"),
+	std::make_tuple(1, 0, "VK_EXT_present_mode_fifo_latest_ready"),
 	std::make_tuple(1, 0, "VK_FUCHSIA_external_memory"),
 	std::make_tuple(1, 0, "VK_FUCHSIA_external_semaphore"),
 	std::make_tuple(1, 0, "VK_FUCHSIA_buffer_collection"),
@@ -4165,6 +4519,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_NV_copy_memory_indirect"),
 	std::make_tuple(1, 0, "VK_NV_memory_decompression"),
 	std::make_tuple(1, 0, "VK_NV_device_generated_commands_compute"),
+	std::make_tuple(1, 0, "VK_NV_ray_tracing_linear_swept_spheres"),
 	std::make_tuple(1, 0, "VK_NV_linear_color_attachment"),
 	std::make_tuple(1, 0, "VK_GOOGLE_surfaceless_query"),
 	std::make_tuple(1, 1, "VK_KHR_shader_maximal_reconvergence"),
@@ -4185,10 +4540,12 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_AMD_anti_lag"),
 	std::make_tuple(1, 0, "VK_KHR_ray_tracing_position_fetch"),
 	std::make_tuple(1, 0, "VK_EXT_shader_object"),
+	std::make_tuple(1, 0, "VK_KHR_pipeline_binary"),
 	std::make_tuple(1, 0, "VK_QCOM_tile_properties"),
 	std::make_tuple(1, 0, "VK_SEC_amigo_profiling"),
 	std::make_tuple(1, 0, "VK_QCOM_multiview_per_view_viewports"),
 	std::make_tuple(1, 0, "VK_NV_ray_tracing_invocation_reorder"),
+	std::make_tuple(1, 0, "VK_NV_cooperative_vector"),
 	std::make_tuple(1, 0, "VK_NV_extended_sparse_address_space"),
 	std::make_tuple(1, 0, "VK_EXT_mutable_descriptor_type"),
 	std::make_tuple(1, 0, "VK_EXT_legacy_vertex_attributes"),
@@ -4199,7 +4556,9 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_NV_low_latency2"),
 	std::make_tuple(1, 0, "VK_KHR_cooperative_matrix"),
 	std::make_tuple(1, 0, "VK_QCOM_multiview_per_view_render_areas"),
+	std::make_tuple(1, 0, "VK_KHR_compute_shader_derivatives"),
 	std::make_tuple(1, 0, "VK_KHR_video_decode_av1"),
+	std::make_tuple(1, 0, "VK_KHR_video_encode_av1"),
 	std::make_tuple(1, 0, "VK_KHR_video_maintenance1"),
 	std::make_tuple(1, 1, "VK_NV_per_stage_descriptor_set"),
 	std::make_tuple(1, 0, "VK_QCOM_image_processing2"),
@@ -4218,11 +4577,32 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_KHR_shader_expect_assume"),
 	std::make_tuple(1, 1, "VK_KHR_maintenance6"),
 	std::make_tuple(1, 1, "VK_NV_descriptor_pool_overallocation"),
+	std::make_tuple(1, 0, "VK_QCOM_tile_memory_heap"),
+	std::make_tuple(1, 0, "VK_NV_display_stereo"),
+	std::make_tuple(1, 0, "VK_KHR_video_encode_quantization_map"),
 	std::make_tuple(1, 0, "VK_NV_raw_access_chains"),
+	std::make_tuple(1, 0, "VK_NV_external_compute_queue"),
 	std::make_tuple(1, 0, "VK_KHR_shader_relaxed_extended_instruction"),
+	std::make_tuple(1, 0, "VK_NV_command_buffer_inheritance"),
 	std::make_tuple(1, 1, "VK_KHR_maintenance7"),
 	std::make_tuple(1, 0, "VK_NV_shader_atomic_float16_vector"),
 	std::make_tuple(1, 0, "VK_EXT_shader_replicated_composites"),
 	std::make_tuple(1, 0, "VK_NV_ray_tracing_validation"),
+	std::make_tuple(1, 0, "VK_NV_cluster_acceleration_structure"),
+	std::make_tuple(1, 0, "VK_NV_partitioned_acceleration_structure"),
+	std::make_tuple(1, 0, "VK_EXT_device_generated_commands"),
+	std::make_tuple(1, 1, "VK_KHR_maintenance8"),
 	std::make_tuple(1, 0, "VK_MESA_image_alignment_control"),
+	std::make_tuple(1, 0, "VK_EXT_depth_clamp_control"),
+	std::make_tuple(1, 0, "VK_KHR_video_maintenance2"),
+	std::make_tuple(1, 0, "VK_HUAWEI_hdr_vivid"),
+	std::make_tuple(1, 0, "VK_NV_cooperative_matrix2"),
+	std::make_tuple(1, 0, "VK_ARM_pipeline_opacity_micromap"),
+	std::make_tuple(1, 0, "VK_EXT_external_memory_metal"),
+	std::make_tuple(1, 0, "VK_KHR_depth_clamp_zero_one"),
+	std::make_tuple(1, 0, "VK_EXT_vertex_attribute_robustness"),
+	std::make_tuple(1, 0, "VK_KHR_robustness2"),
+	std::make_tuple(1, 0, "VK_NV_present_metering"),
+	std::make_tuple(1, 0, "VK_EXT_fragment_density_map_offset"),
+	std::make_tuple(1, 0, "VK_EXT_zero_initialize_device_memory"),
 };

@@ -34,6 +34,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkRefUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkImageUtil.hpp"
@@ -118,7 +119,7 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                                   // const void*                                 pNext;
+        nullptr,                                                   // const void*                                 pNext;
         (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags       flags;
         1u,                             // uint32_t                                    vertexBindingDescriptionCount;
         &vertexInputBindingDescription, // const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
@@ -129,7 +130,7 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
 
     const VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                    // const void*                                 pNext;
+        nullptr,                                    // const void*                                 pNext;
         (VkPipelineInputAssemblyStateCreateFlags)0, // VkPipelineInputAssemblyStateCreateFlags     flags;
         topology,                                   // VkPrimitiveTopology                         topology;
         VK_FALSE, // VkBool32                                    primitiveRestartEnable;
@@ -140,7 +141,7 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
 
     const VkPipelineViewportStateCreateInfo pipelineViewportStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                               // const void*                                 pNext;
+        nullptr,                                               // const void*                                 pNext;
         (VkPipelineViewportStateCreateFlags)0,                 // VkPipelineViewportStateCreateFlags          flags;
         1u,        // uint32_t                                    viewportCount;
         &viewport, // const VkViewport*                           pViewports;
@@ -150,7 +151,7 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
 
     const VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                          sType;
-        DE_NULL,                                                    // const void*                              pNext;
+        nullptr,                                                    // const void*                              pNext;
         (VkPipelineRasterizationStateCreateFlags)0,                 // VkPipelineRasterizationStateCreateFlags  flags;
         VK_FALSE,                        // VkBool32                                 depthClampEnable;
         VK_FALSE,                        // VkBool32                                 rasterizerDiscardEnable;
@@ -166,12 +167,12 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
 
     const VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (VkPipelineMultisampleStateCreateFlags)0,                 // VkPipelineMultisampleStateCreateFlags flags;
         numSamples,                                               // VkSampleCountFlagBits rasterizationSamples;
         VK_FALSE,                                                 // VkBool32 sampleShadingEnable;
         0.0f,                                                     // float minSampleShading;
-        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
         VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
         VK_FALSE                                                  // VkBool32 alphaToOneEnable;
     };
@@ -186,7 +187,7 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
 
     VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         (VkPipelineDepthStencilStateCreateFlags)0,                  // VkPipelineDepthStencilStateCreateFlags flags;
         VK_FALSE,                                                   // VkBool32 depthTestEnable;
         VK_FALSE,                                                   // VkBool32 depthWriteEnable;
@@ -215,7 +216,7 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
 
     const VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (VkPipelineColorBlendStateCreateFlags)0,                  // VkPipelineColorBlendStateCreateFlags flags;
         VK_FALSE,                                                 // VkBool32 logicOpEnable;
         VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -227,21 +228,21 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
     const VkPipelineShaderStageCreateInfo pShaderStages[] = {
         {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags flags;
             VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits stage;
             vertexModule.getModule(),                            // VkShaderModule module;
             "main",                                              // const char* pName;
-            DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
         },
         {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags flags;
             VK_SHADER_STAGE_FRAGMENT_BIT,                        // VkShaderStageFlagBits stage;
             fragmentModule.getModule(),                          // VkShaderModule module;
             "main",                                              // const char* pName;
-            DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
         }};
 
     DE_ASSERT(numSubpasses > 0u);
@@ -259,19 +260,19 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
 
         VkGraphicsPipelineCreateInfo createInfo = {
             VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                         // const void* pNext;
+            nullptr,                                         // const void* pNext;
             firstPipelineFlags,                              // VkPipelineCreateFlags flags;
             DE_LENGTH_OF_ARRAY(pShaderStages),               // uint32_t stageCount;
             pShaderStages,                                   // const VkPipelineShaderStageCreateInfo* pStages;
             &vertexInputStateInfo,           // const VkPipelineVertexInputStateCreateInfo* pVertexInputState;
             &pipelineInputAssemblyStateInfo, // const VkPipelineInputAssemblyStateCreateInfo* pInputAssemblyState;
-            DE_NULL,                         // const VkPipelineTessellationStateCreateInfo* pTessellationState;
+            nullptr,                         // const VkPipelineTessellationStateCreateInfo* pTessellationState;
             &pipelineViewportStateInfo,      // const VkPipelineViewportStateCreateInfo* pViewportState;
             &pipelineRasterizationStateInfo, // const VkPipelineRasterizationStateCreateInfo* pRasterizationState;
             &pipelineMultisampleStateInfo,   // const VkPipelineMultisampleStateCreateInfo* pMultisampleState;
             &pipelineDepthStencilStateInfo,  // const VkPipelineDepthStencilStateCreateInfo* pDepthStencilState;
             &pipelineColorBlendStateInfo,    // const VkPipelineColorBlendStateCreateInfo* pColorBlendState;
-            DE_NULL,                         // const VkPipelineDynamicStateCreateInfo* pDynamicState;
+            nullptr,                         // const VkPipelineDynamicStateCreateInfo* pDynamicState;
             pipelineLayout,                  // VkPipelineLayout layout;
             renderPass,                      // VkRenderPass renderPass;
             0u,                              // uint32_t subpass;
@@ -294,13 +295,13 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
     }
 
     VK_CHECK(vk.createGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(graphicsPipelineInfos.size()),
-                                        &graphicsPipelineInfos[0], DE_NULL, &rawPipelines[0]));
+                                        &graphicsPipelineInfos[0], nullptr, &rawPipelines[0]));
 
     std::vector<PipelineSp> pipelines;
 
     for (std::vector<VkPipeline>::const_iterator it = rawPipelines.begin(); it != rawPipelines.end(); ++it)
         pipelines.push_back(
-            makeSharedPtr(Move<VkPipeline>(check<VkPipeline>(*it), Deleter<VkPipeline>(vk, device, DE_NULL))));
+            makeSharedPtr(Move<VkPipeline>(check<VkPipeline>(*it), Deleter<VkPipeline>(vk, device, nullptr))));
 
     return pipelines;
 }
@@ -335,7 +336,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper &gpw, const uint32_t subpass
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                                   // const void*                                 pNext;
+        nullptr,                                                   // const void*                                 pNext;
         (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags       flags;
         1u,                             // uint32_t                                    vertexBindingDescriptionCount;
         &vertexInputBindingDescription, // const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
@@ -349,12 +350,12 @@ void preparePipelineWrapper(GraphicsPipelineWrapper &gpw, const uint32_t subpass
 
     const VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (VkPipelineMultisampleStateCreateFlags)0,                 // VkPipelineMultisampleStateCreateFlags flags;
         numSamples,                                               // VkSampleCountFlagBits rasterizationSamples;
         VK_FALSE,                                                 // VkBool32 sampleShadingEnable;
         0.0f,                                                     // float minSampleShading;
-        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
         VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
         VK_FALSE                                                  // VkBool32 alphaToOneEnable;
     };
@@ -375,7 +376,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper &gpw, const uint32_t subpass
 
     const VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (VkPipelineColorBlendStateCreateFlags)0,                  // VkPipelineColorBlendStateCreateFlags flags;
         VK_FALSE,                                                 // VkBool32 logicOpEnable;
         VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -389,7 +390,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper &gpw, const uint32_t subpass
         .setDefaultDepthStencilState()
         .setupVertexInputState(&vertexInputStateInfo)
         .setupPreRasterizationShaderState(viewport, scissor, pipelineLayout, renderPass, subpassNdx, vertexModule)
-        .setupFragmentShaderState(pipelineLayout, renderPass, subpassNdx, fragmentModule, DE_NULL,
+        .setupFragmentShaderState(pipelineLayout, renderPass, subpassNdx, fragmentModule, nullptr,
                                   &pipelineMultisampleStateInfo)
         .setupFragmentOutputState(renderPass, subpassNdx, &pipelineColorBlendStateInfo, &pipelineMultisampleStateInfo)
         .setMonolithicPipelineLayout(pipelineLayout)
@@ -432,27 +433,27 @@ RenderPassWrapper makeMultisampleRenderPass(const DeviceInterface &vk, const VkD
             (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags flags;
             VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
             0u,                              // uint32_t inputAttachmentCount;
-            DE_NULL,                         // const VkAttachmentReference* pInputAttachments;
+            nullptr,                         // const VkAttachmentReference* pInputAttachments;
             1u,                              // uint32_t colorAttachmentCount;
             &colorAttachmentReferences[i],   // const VkAttachmentReference* pColorAttachments;
-            DE_NULL,                         // const VkAttachmentReference* pResolveAttachments;
-            DE_NULL,                         // const VkAttachmentReference* pDepthStencilAttachment;
+            nullptr,                         // const VkAttachmentReference* pResolveAttachments;
+            nullptr,                         // const VkAttachmentReference* pDepthStencilAttachment;
             0u,                              // uint32_t preserveAttachmentCount;
-            DE_NULL                          // const uint32_t* pPreserveAttachments;
+            nullptr                          // const uint32_t* pPreserveAttachments;
         };
         subpasses.push_back(subpassDescription);
     }
 
     const VkRenderPassCreateInfo renderPassInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,            // VkStructureType sType;
-        DE_NULL,                                              // const void* pNext;
+        nullptr,                                              // const void* pNext;
         (VkRenderPassCreateFlags)0,                           // VkRenderPassCreateFlags flags;
         static_cast<uint32_t>(attachmentDescriptions.size()), // uint32_t attachmentCount;
         &attachmentDescriptions[0],                           // const VkAttachmentDescription* pAttachments;
         static_cast<uint32_t>(subpasses.size()),              // uint32_t subpassCount;
         &subpasses[0],                                        // const VkSubpassDescription* pSubpasses;
         0u,                                                   // uint32_t dependencyCount;
-        DE_NULL                                               // const VkSubpassDependency* pDependencies;
+        nullptr                                               // const VkSubpassDependency* pDependencies;
     };
 
     return RenderPassWrapper(pipelineConstructionType, vk, device, &renderPassInfo);
@@ -484,25 +485,25 @@ RenderPassWrapper makeSimpleRenderPass(const DeviceInterface &vk, const VkDevice
         (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags flags;
         VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
         0u,                              // uint32_t inputAttachmentCount;
-        DE_NULL,                         // const VkAttachmentReference* pInputAttachments;
+        nullptr,                         // const VkAttachmentReference* pInputAttachments;
         1u,                              // uint32_t colorAttachmentCount;
         &colorAttachmentRef,             // const VkAttachmentReference* pColorAttachments;
-        DE_NULL,                         // const VkAttachmentReference* pResolveAttachments;
-        DE_NULL,                         // const VkAttachmentReference* pDepthStencilAttachment;
+        nullptr,                         // const VkAttachmentReference* pResolveAttachments;
+        nullptr,                         // const VkAttachmentReference* pDepthStencilAttachment;
         0u,                              // uint32_t preserveAttachmentCount;
-        DE_NULL                          // const uint32_t* pPreserveAttachments;
+        nullptr                          // const uint32_t* pPreserveAttachments;
     };
 
     const VkRenderPassCreateInfo renderPassInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                   // const void* pNext;
+        nullptr,                                   // const void* pNext;
         (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags flags;
         1u,                                        // uint32_t attachmentCount;
         &colorAttachmentDescription,               // const VkAttachmentDescription* pAttachments;
         1u,                                        // uint32_t subpassCount;
         &subpassDescription,                       // const VkSubpassDescription* pSubpasses;
         0u,                                        // uint32_t dependencyCount;
-        DE_NULL                                    // const VkSubpassDependency* pDependencies;
+        nullptr                                    // const VkSubpassDependency* pDependencies;
     };
 
     return RenderPassWrapper(pipelineConstructionType, vk, device, &renderPassInfo);
@@ -513,7 +514,7 @@ Move<VkImage> makeImage(const DeviceInterface &vk, const VkDevice device, const 
 {
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0,               // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         format,                              // VkFormat format;
@@ -525,7 +526,7 @@ Move<VkImage> makeImage(const DeviceInterface &vk, const VkDevice device, const 
         usage,                               // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
     return createImage(vk, device, &imageParams);
@@ -536,7 +537,7 @@ Move<VkSampler> makeSampler(const DeviceInterface &vk, const VkDevice device)
 {
     const VkSamplerCreateInfo samplerParams = {
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         (VkSamplerCreateFlags)0,                 // VkSamplerCreateFlags flags;
         VK_FILTER_NEAREST,                       // VkFilter magFilter;
         VK_FILTER_NEAREST,                       // VkFilter minFilter;
@@ -837,7 +838,7 @@ std::string getShaderImageFormatQualifier(const tcu::TextureFormat &format)
 
     default:
         DE_ASSERT(false);
-        orderPart = DE_NULL;
+        orderPart = nullptr;
     }
 
     switch (format.type)
@@ -885,7 +886,7 @@ std::string getShaderImageFormatQualifier(const tcu::TextureFormat &format)
 
     default:
         DE_ASSERT(false);
-        typePart = DE_NULL;
+        typePart = nullptr;
     }
 
     return std::string() + orderPart + typePart;
@@ -1301,7 +1302,7 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
             const VkImageMemoryBarrier barriers[] = {
                 {
                     VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,          // VkStructureType sType;
-                    DE_NULL,                                         // const void* pNext;
+                    nullptr,                                         // const void* pNext;
                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,            // VkAccessFlags outputMask;
                     VK_ACCESS_SHADER_READ_BIT,                       // VkAccessFlags inputMask;
                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout oldLayout;
@@ -1314,7 +1315,7 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
             };
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL,
+                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr,
                                   DE_LENGTH_OF_ARRAY(barriers), barriers);
         }
 
@@ -1326,7 +1327,7 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
         else
             pipelineWrapper.back().bind(*cmdBuffer);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                                 &descriptorSet.get(), 0u, DE_NULL);
+                                 &descriptorSet.get(), 0u, nullptr);
         {
             const VkDeviceSize vertexBufferOffset = 0ull;
             vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
@@ -1448,7 +1449,7 @@ void renderAndResolve(Context &context, const CaseDef &caseDef, const VkBuffer r
     // Working image barrier, we change it based on which rendering stages were executed so far.
     VkImageMemoryBarrier colorImageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,          // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         (VkAccessFlags)0,                                // VkAccessFlags outputMask;
         (VkAccessFlags)0,                                // VkAccessFlags inputMask;
         VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout oldLayout;
@@ -1508,7 +1509,7 @@ void renderAndResolve(Context &context, const CaseDef &caseDef, const VkBuffer r
             colorImageBarrier.newLayout     = VK_IMAGE_LAYOUT_GENERAL;
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
                                   &colorImageBarrier);
 
             colorImageBarrier.srcAccessMask = colorImageBarrier.dstAccessMask;
@@ -1518,7 +1519,7 @@ void renderAndResolve(Context &context, const CaseDef &caseDef, const VkBuffer r
         {
             vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
             vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                     &descriptorSet.get(), 0u, DE_NULL);
+                                     &descriptorSet.get(), 0u, nullptr);
             vk.cmdDispatch(*cmdBuffer, caseDef.renderSize.x(), caseDef.renderSize.y(), caseDef.numLayers);
         }
 
@@ -1539,7 +1540,7 @@ void renderAndResolve(Context &context, const CaseDef &caseDef, const VkBuffer r
                 colorImageBarrier,
                 {
                     VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,          // VkStructureType sType;
-                    DE_NULL,                                         // const void* pNext;
+                    nullptr,                                         // const void* pNext;
                     (VkAccessFlags)0,                                // VkAccessFlags outputMask;
                     VK_ACCESS_TRANSFER_WRITE_BIT,                    // VkAccessFlags inputMask;
                     VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout oldLayout;
@@ -1556,8 +1557,8 @@ void renderAndResolve(Context &context, const CaseDef &caseDef, const VkBuffer r
                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT :
                     VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 
-            vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u,
-                                  DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers);
+            vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u,
+                                  nullptr, DE_LENGTH_OF_ARRAY(barriers), barriers);
 
             colorImageBarrier.srcAccessMask = colorImageBarrier.dstAccessMask;
             colorImageBarrier.oldLayout     = colorImageBarrier.newLayout;
@@ -1947,7 +1948,7 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
             const VkImageMemoryBarrier barriers[] = {
                 {
                     VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,          // VkStructureType sType;
-                    DE_NULL,                                         // const void* pNext;
+                    nullptr,                                         // const void* pNext;
                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,            // VkAccessFlags outputMask;
                     VK_ACCESS_SHADER_READ_BIT,                       // VkAccessFlags inputMask;
                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout oldLayout;
@@ -1960,7 +1961,7 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
             };
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL,
+                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr,
                                   DE_LENGTH_OF_ARRAY(barriers), barriers);
         }
 
@@ -1972,7 +1973,7 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
         else
             pipelineWrapper.back().bind(*cmdBuffer);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                                 &descriptorSet.get(), 0u, DE_NULL);
+                                 &descriptorSet.get(), 0u, nullptr);
         {
             const VkDeviceSize vertexBufferOffset = 0ull;
             vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
@@ -2005,6 +2006,238 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
 }
 
 } // namespace StandardSamplePosition
+
+namespace SamplesMappingOrder
+{
+
+void initPrograms(SourceCollections &programCollection, const CaseDef caseDef)
+{
+    std::string vert = "#version 450\n"
+                       "void main(void) {\n"
+                       "    gl_Position = vec4(float(gl_VertexIndex & 1) * 2.0 - 1.0,\n"
+                       "                       float((gl_VertexIndex >> 1) & 1) * 2.0 - 1.0, 0.0, 1.0);\n"
+                       "}\n";
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert);
+
+    std::string frag = "#version 450\n"
+                       "layout(location = 0) out vec4 outColor;\n"
+                       "void main(void) {\n"
+                       // normalize coordinates and sample id to <0; 1> range
+                       "    outColor = vec4(gl_FragCoord.xy / 16.0, gl_SampleID / 64.0, 1.0);\n"
+                       "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag);
+
+    std::string comp = "#version 450\n"
+                       "#extension GL_EXT_samplerless_texture_functions : enable\n"
+                       "layout(local_size_x = 16, local_size_y = 16) in;\n"
+                       "layout(set = 0, binding = 0) uniform texture2DMS inputImage;\n"
+                       "layout(set = 0, binding = 1) buffer Data { float v[]; };\n"
+                       "void main()\n"
+                       "{\n"
+                       "  ivec2 uv = ivec2(gl_GlobalInvocationID.xy);\n"
+                       "  float samplesMulSum = 0.1;\n"
+                       "  for (int i = 1 ; i < ${NUM_SAMPLES} ; i++) {\n"
+                       "      vec4 currSample = texelFetch(inputImage, uv, i);\n"
+                       // to make sure samples are in same order for each fragment we calculate
+                       // weighted sum of z component of all samples and later on host check if
+                       // same value was caluclated for all fragments
+                       "      samplesMulSum += float(i) * currSample.z;\n"
+                       "  }\n"
+                       "  v[gl_LocalInvocationIndex] = samplesMulSum;\n"
+                       "}\n";
+    std::string_view numSamples = "${NUM_SAMPLES}";
+    comp.replace(comp.find(numSamples), numSamples.length(), std::to_string(caseDef.numSamples));
+    programCollection.glslSources.add("comp") << glu::ComputeSource(comp);
+}
+
+void checkSupport(Context &context, const CaseDef caseDef)
+{
+    const VkImageUsageFlags colorImageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    checkImageFormatRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.numSamples,
+                                 caseDef.colorFormat, colorImageUsage);
+
+    if (!context.getDeviceFeatures().shaderStorageImageMultisample)
+        TCU_THROW(NotSupportedError, "Device does not support shaderStorageImageMultisample.");
+
+    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                          caseDef.pipelineConstructionType);
+}
+
+tcu::TestStatus test(Context &context, const CaseDef caseDef)
+{
+    const auto &vki    = context.getInstanceInterface();
+    const auto &vk     = context.getDeviceInterface();
+    const auto &device = context.getDevice();
+    const auto pd      = context.getPhysicalDevice();
+    auto &allocator    = context.getDefaultAllocator();
+    VkQueue queue      = context.getUniversalQueue();
+
+    const auto format  = caseDef.colorFormat;
+    const auto samples = caseDef.numSamples;
+    const int32_t w    = caseDef.renderSize.x();
+    const int32_t h    = caseDef.renderSize.y();
+
+    VkImageCreateInfo imageCreateInfo = initVulkanStructure();
+    imageCreateInfo.imageType         = VK_IMAGE_TYPE_2D;
+    imageCreateInfo.format            = format;
+    imageCreateInfo.extent            = makeExtent3D(w, h, 1);
+    imageCreateInfo.mipLevels         = 1u;
+    imageCreateInfo.arrayLayers       = 1u;
+    imageCreateInfo.samples           = samples;
+    imageCreateInfo.usage             = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+    // create multisampled image for color attachment
+    ImageWithMemory imageWithMemory(vk, device, allocator, imageCreateInfo, MemoryRequirement::Local);
+    const auto cSRR = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+    auto imageView  = makeImageView(vk, device, *imageWithMemory, VK_IMAGE_VIEW_TYPE_2D, format, cSRR);
+
+    // create renderpass
+    const VkAttachmentDescription attachment{0,
+                                             format,
+                                             samples,
+                                             VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                             VK_ATTACHMENT_STORE_OP_STORE,
+                                             VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                             VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                                             VK_IMAGE_LAYOUT_UNDEFINED,
+                                             VK_IMAGE_LAYOUT_GENERAL};
+    const VkAttachmentReference colorAttachment{0, VK_IMAGE_LAYOUT_GENERAL};
+    const VkSubpassDescription subpass{
+        0, VK_PIPELINE_BIND_POINT_GRAPHICS, 0, nullptr, 1, &colorAttachment, nullptr, nullptr, 0, nullptr};
+    VkRenderPassCreateInfo renderpassCreateInfo = initVulkanStructure();
+    renderpassCreateInfo.attachmentCount        = 1u;
+    renderpassCreateInfo.pAttachments           = &attachment;
+    renderpassCreateInfo.subpassCount           = 1u;
+    renderpassCreateInfo.pSubpasses             = &subpass;
+    RenderPassWrapper renderPass(caseDef.pipelineConstructionType, vk, device, &renderpassCreateInfo);
+
+    // create framebuffer
+    renderPass.createFramebuffer(vk, device, 1u, &*imageWithMemory, &*imageView, w, h);
+
+    auto &bc              = context.getBinaryCollection();
+    const auto vertModule = ShaderWrapper(vk, device, bc.get("vert"));
+    const auto fragModule = ShaderWrapper(vk, device, bc.get("frag"));
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(caseDef.renderSize));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(caseDef.renderSize));
+    PipelineLayoutWrapper graphicsPipelineLayout(caseDef.pipelineConstructionType, vk, device);
+
+    // create ssbo buffer used in compute shader for partial verification
+    const auto ssboSize = static_cast<VkDeviceSize>(w * h * sizeof(float));
+    const auto ssboInfo =
+        makeBufferCreateInfo(ssboSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    BufferWithMemory ssboBuffer(vk, device, allocator, ssboInfo, MemoryRequirement::HostVisible);
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachmentState;
+    deMemset(&colorBlendAttachmentState, 0x00, sizeof(VkPipelineColorBlendAttachmentState));
+    colorBlendAttachmentState.colorWriteMask = (VkColorComponentFlags)0xFu;
+
+    VkPipelineVertexInputStateCreateInfo vertexInputState     = initVulkanStructure();
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = initVulkanStructure();
+    inputAssemblyState.topology                               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+
+    VkPipelineColorBlendStateCreateInfo colorBlendState = initVulkanStructure();
+    colorBlendState.attachmentCount                     = 1;
+    colorBlendState.pAttachments                        = &colorBlendAttachmentState;
+
+    VkSampleMask sampleMask                               = 0xFF;
+    VkPipelineMultisampleStateCreateInfo multisampleState = initVulkanStructure();
+    multisampleState.rasterizationSamples                 = samples;
+    multisampleState.minSampleShading                     = 1.0f;
+    multisampleState.pSampleMask                          = &sampleMask;
+
+    // create graphics pipeline
+    GraphicsPipelineWrapper pipelineWrapper(vki, vk, pd, device, context.getDeviceExtensions(),
+                                            caseDef.pipelineConstructionType);
+    pipelineWrapper.setMonolithicPipelineLayout(graphicsPipelineLayout)
+        .setDefaultRasterizationState()
+        .setDefaultDepthStencilState()
+        .setupVertexInputState(&vertexInputState, &inputAssemblyState)
+        .setupPreRasterizationShaderState(viewports, scissors, graphicsPipelineLayout, *renderPass, 0u, vertModule)
+        .setupFragmentShaderState(graphicsPipelineLayout, *renderPass, 0u, fragModule, nullptr, &multisampleState)
+        .setupFragmentOutputState(*renderPass, 0u, &colorBlendState, &multisampleState)
+        .buildPipeline();
+
+    Move<VkShaderModule> compModule;
+    Move<VkPipelineLayout> computePipelineLayout;
+    Move<VkPipeline> computePipeline;
+
+    // create descriptor set
+    auto computeDescriptorSetLayout =
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .build(vk, device);
+    auto computeDescriptorPool = DescriptorPoolBuilder()
+                                     .addType(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+                                     .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+                                     .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+    auto computeDescriptorSet = makeDescriptorSet(vk, device, *computeDescriptorPool, *computeDescriptorSetLayout);
+    const VkDescriptorImageInfo imageDescriptorInfo =
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+    const VkDescriptorBufferInfo bufferDescriptorInfo = makeDescriptorBufferInfo(*ssboBuffer, 0ull, ssboSize);
+    DescriptorSetUpdateBuilder()
+        .writeSingle(*computeDescriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                     VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageDescriptorInfo)
+        .writeSingle(*computeDescriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u),
+                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescriptorInfo)
+        .update(vk, device);
+
+    // create compute pipeline
+    VkPipelineLayoutCreateInfo layoutCreateInfo = initVulkanStructure();
+    layoutCreateInfo.setLayoutCount             = 1u;
+    layoutCreateInfo.pSetLayouts                = &*computeDescriptorSetLayout;
+    computePipelineLayout                       = createPipelineLayout(vk, device, &layoutCreateInfo);
+    compModule                                  = createShaderModule(vk, device, bc.get("comp"));
+    computePipeline = makeComputePipeline(vk, device, *computePipelineLayout, 0, nullptr, *compModule, 0);
+
+    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+
+    auto cmdPool   = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
+    auto cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    beginCommandBuffer(vk, *cmdBuffer);
+    renderPass.begin(vk, *cmdBuffer, scissors.at(0u));
+    pipelineWrapper.bind(*cmdBuffer);
+    vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
+    renderPass.end(vk, *cmdBuffer);
+
+    // wait for multisampled image
+    auto barrier = makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 1u, &barrier, 0, 0, 0, 0);
+
+    // read each sample using compute shader
+    vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipelineLayout, 0u, 1u,
+                             &*computeDescriptorSet, 0u, nullptr);
+    vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
+    vk.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
+
+    // wait for ssbo
+    barrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                          (VkDependencyFlags)0, 1u, &barrier, 0, 0, 0, 0);
+
+    endCommandBuffer(vk, *cmdBuffer);
+    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+    // get ssbo buffer
+    invalidateAlloc(vk, device, ssboBuffer.getAllocation());
+    const float *data = reinterpret_cast<float *>(ssboBuffer.getAllocation().getHostPtr());
+
+    // in compute shader for each fragment we calculated value that is based on order of the samples;
+    // here we need to check if same value was calculated for all fragments
+    const float epsilon = 0.001f;
+    for (int32_t i = 1; i < w * h; i++)
+    {
+        if (std::fabs(data[0] - data[i]) > epsilon)
+            return tcu::TestStatus::fail(std::to_string(i));
+    }
+
+    return tcu::TestStatus::pass("OK");
+}
+
+} // namespace SamplesMappingOrder
 
 std::string getSizeLayerString(const IVec2 &size, const int numLayers)
 {
@@ -2112,6 +2345,35 @@ void addStandardSamplePositionTestCasesWithFunctions(tcu::TestCaseGroup *group,
     }
 }
 
+void addSamplesMappingOrderTestCasesWithFunctions(tcu::TestCaseGroup *group,
+                                                  FunctionSupport1<CaseDef>::Function checkSupport,
+                                                  FunctionPrograms1<CaseDef>::Function initPrograms,
+                                                  FunctionInstance1<CaseDef>::Function testFunc,
+                                                  PipelineConstructionType pipelineConstructionType)
+{
+    const VkSampleCountFlagBits samples[]{
+        VK_SAMPLE_COUNT_2_BIT,  VK_SAMPLE_COUNT_4_BIT,  VK_SAMPLE_COUNT_8_BIT,
+        VK_SAMPLE_COUNT_16_BIT, VK_SAMPLE_COUNT_32_BIT, VK_SAMPLE_COUNT_64_BIT,
+    };
+
+    for (auto s : samples)
+    {
+        std::string caseName = "samples_";
+        caseName += std::to_string(getNumSamples(s));
+
+        const CaseDef caseDef{
+            pipelineConstructionType, // PipelineConstructionType pipelineConstructionType;
+            IVec2(16, 16),            // IVec2 renderSize;
+            1,                        // int numLayers;
+            VK_FORMAT_R8G8B8A8_UNORM, // VkFormat colorFormat;
+            s,                        // VkSampleCountFlagBits numSamples;
+            true,                     // bool colorQuad;
+        };
+
+        addFunctionCaseWithPrograms(group, caseName, checkSupport, initPrograms, testFunc, caseDef);
+    }
+}
+
 void createSampledImageTestsInGroup(tcu::TestCaseGroup *group, PipelineConstructionType pipelineConstructionType)
 {
     addTestCasesWithFunctions(group, SampledImage::checkSupport, SampledImage::initPrograms, SampledImage::test,
@@ -2130,6 +2392,13 @@ void createStandardSamplePositionTestsInGroup(tcu::TestCaseGroup *group,
     addStandardSamplePositionTestCasesWithFunctions(group, StandardSamplePosition::checkSupport,
                                                     StandardSamplePosition::initPrograms, StandardSamplePosition::test,
                                                     pipelineConstructionType);
+}
+
+void createSamplesMappingOrderTestsInGroup(tcu::TestCaseGroup *group, PipelineConstructionType pipelineConstructionType)
+{
+    addSamplesMappingOrderTestCasesWithFunctions(group, SamplesMappingOrder::checkSupport,
+                                                 SamplesMappingOrder::initPrograms, SamplesMappingOrder::test,
+                                                 pipelineConstructionType);
 }
 
 } // namespace
@@ -2153,6 +2422,14 @@ tcu::TestCaseGroup *createMultisampleStandardSamplePositionTests(tcu::TestContex
                                                                  PipelineConstructionType pipelineConstructionType)
 {
     return createTestGroup(testCtx, "standardsampleposition", createStandardSamplePositionTestsInGroup,
+                           pipelineConstructionType);
+}
+
+//! Render to a multisampled image and verify if all samples are mapped in order
+tcu::TestCaseGroup *createMultisampleSamplesMappingOrderTests(tcu::TestContext &testCtx,
+                                                              PipelineConstructionType pipelineConstructionType)
+{
+    return createTestGroup(testCtx, "samples_mapping_order", createSamplesMappingOrderTestsInGroup,
                            pipelineConstructionType);
 }
 

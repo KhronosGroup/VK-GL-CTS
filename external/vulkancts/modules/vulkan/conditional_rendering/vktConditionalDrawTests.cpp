@@ -202,15 +202,16 @@ void ConditionalDraw::createRenderPassWithClear(void)
 
     const vk::VkAttachmentReference colorAttachmentReference{0, vk::VK_IMAGE_LAYOUT_GENERAL};
 
-    renderPassCreateInfo.addSubpass(Draw::SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, DE_NULL, 1,
-                                                             &colorAttachmentReference, DE_NULL,
-                                                             Draw::AttachmentReference(), 0, DE_NULL));
+    renderPassCreateInfo.addSubpass(Draw::SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, nullptr, 1,
+                                                             &colorAttachmentReference, nullptr,
+                                                             Draw::AttachmentReference(), 0, nullptr));
 
     m_rpWithClear = vk::createRenderPass(m_vk, device, &renderPassCreateInfo);
 
     // Framebuffer.
     std::vector<vk::VkImageView> colorAttachments{*m_colorTargetView};
-    const Draw::FramebufferCreateInfo framebufferCreateInfo(*m_rpWithClear, colorAttachments, WIDTH, HEIGHT, 1);
+    const Draw::FramebufferCreateInfo framebufferCreateInfo(*m_rpWithClear, colorAttachments, m_renderWidth,
+                                                            m_renderHeight, 1);
 
     m_fbWithClear = vk::createFramebuffer(m_vk, device, &framebufferCreateInfo);
 }
@@ -393,8 +394,8 @@ tcu::TestStatus ConditionalDraw::iterate(void)
     {
         // When clearing in the render pass we want to check the render pass clear is executed properly.
         beginConditionalRendering(m_vk, *m_cmdBuffer, *m_conditionalBuffer, m_conditionalData);
-        vk::beginRenderPass(m_vk, *m_cmdBuffer, *m_rpWithClear, *m_fbWithClear, vk::makeRect2D(WIDTH, HEIGHT),
-                            clearColor, subpassContents);
+        vk::beginRenderPass(m_vk, *m_cmdBuffer, *m_rpWithClear, *m_fbWithClear,
+                            vk::makeRect2D(m_renderWidth, m_renderHeight), clearColor, subpassContents);
     }
     else
     {
@@ -406,7 +407,7 @@ tcu::TestStatus ConditionalDraw::iterate(void)
     if (useSecondaryCmdBuffer)
     {
         const vk::VkCommandBufferInheritanceConditionalRenderingInfoEXT conditionalRenderingInheritanceInfo = {
-            vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_CONDITIONAL_RENDERING_INFO_EXT, DE_NULL,
+            vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_CONDITIONAL_RENDERING_INFO_EXT, nullptr,
             m_conditionalData.conditionInherited ? VK_TRUE : VK_FALSE // conditionalRenderingEnable
         };
 
@@ -422,7 +423,7 @@ tcu::TestStatus ConditionalDraw::iterate(void)
         };
 
         const vk::VkCommandBufferBeginInfo commandBufferBeginInfo = {
-            vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, DE_NULL,
+            vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, nullptr,
             vk::VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT, &inheritanceInfo};
 
         if (m_conditionalData.secondaryCommandBufferNested)
@@ -552,8 +553,9 @@ tcu::TestStatus ConditionalDraw::iterate(void)
     submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
     // Validation
-    tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)),
-                                  (int)(0.5f + static_cast<float>(HEIGHT)));
+    tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat),
+                                  (int)(0.5f + static_cast<float>(m_renderWidth)),
+                                  (int)(0.5f + static_cast<float>(m_renderHeight)));
     referenceFrame.allocLevel(0);
 
     const int32_t frameWidth  = referenceFrame.getWidth();
@@ -583,7 +585,7 @@ tcu::TestStatus ConditionalDraw::iterate(void)
     const vk::VkOffset3D zeroOffset = {0, 0, 0};
     const tcu::ConstPixelBufferAccess renderedFrame =
         m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(), vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset,
-                                        WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
+                                        m_renderWidth, m_renderHeight, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
     qpTestResult res = QP_TEST_RESULT_PASS;
 

@@ -111,7 +111,8 @@ de::MovePtr<tcu::TextureLevel> readStencilAttachment(
  *//*--------------------------------------------------------------------*/
 void uploadTestTexture(const vk::DeviceInterface &vk, vk::VkDevice device, vk::VkQueue queue, uint32_t queueFamilyIndex,
                        vk::Allocator &allocator, const TestTexture &testTexture, vk::VkImage destImage,
-                       vk::VkImageLayout destImageLayout = vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                       vk::VkImageLayout destImageLayout       = vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                       vk::VkPipelineStageFlags destStageFlags = vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
 /*--------------------------------------------------------------------*//*!
  * Uploads data from a test texture to a destination VK image using sparse

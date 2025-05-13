@@ -200,7 +200,7 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     VkExtent3D imageExtent = makeExtent3D(renderSize.x(), renderSize.y(), 1u);
     const VkImageCreateInfo imageCreateInfo{
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-        DE_NULL,                                                               // const void* pNext;
+        nullptr,                                                               // const void* pNext;
         0u,                                                                    // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
         colorFormat,                                                           // VkFormat format;
@@ -212,7 +212,7 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,                                             // VkSharingMode sharingMode;
         0u,                                                                    // uint32_t queueFamilyIndexCount;
-        DE_NULL,                                                               // const uint32_t* pQueueFamilyIndices;
+        nullptr,                                                               // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,                                             // VkImageLayout initialLayout;
     };
     const VkImageSubresourceRange colorSRR = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -270,7 +270,7 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
             {oobFirstIndex, 3, 0},
             {oobFirstIndex - 3, 3, 0},
         };
-        vk.cmdDrawMultiIndexedEXT(*cmdBuffer, 2, indexInfo, 1, 0, sizeof(VkMultiDrawIndexedInfoEXT), DE_NULL);
+        vk.cmdDrawMultiIndexedEXT(*cmdBuffer, 2, indexInfo, 1, 0, sizeof(VkMultiDrawIndexedInfoEXT), nullptr);
 #endif // CTS_USES_VULKANSC
     }
 
@@ -394,7 +394,10 @@ void DrawIndexedTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_EXT_multi_draw");
     if (m_robustnessVersion == 2)
     {
-        context.requireDeviceFunctionality("VK_EXT_robustness2");
+        if (!context.isDeviceFunctionalitySupported("VK_KHR_robustness2") &&
+            !context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+
+            TCU_THROW(NotSupportedError, "VK_KHR_robustness2 and VK_EXT_robustness2 are not supported");
 
         const auto &vki           = context.getInstanceInterface();
         const auto physicalDevice = context.getPhysicalDevice();
@@ -762,7 +765,7 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     const VkExtent3D imageExtent = makeExtent3D(renderSize.x(), renderSize.y(), 1u);
     const VkImageCreateInfo imageCreateInfo{
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-        DE_NULL,                                                               // const void* pNext;
+        nullptr,                                                               // const void* pNext;
         0u,                                                                    // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
         colorFormat,                                                           // VkFormat format;
@@ -774,7 +777,7 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,                                             // VkSharingMode sharingMode;
         0u,                                                                    // uint32_t queueFamilyIndexCount;
-        DE_NULL,                                                               // const uint32_t* pQueueFamilyIndices;
+        nullptr,                                                               // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,                                             // VkImageLayout initialLayout;
     };
     const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -817,7 +820,7 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer.get(), &static_cast<const VkDeviceSize &>(0));
 
 #ifndef CTS_USES_VULKANSC
-    vk.cmdBindIndexBuffer2KHR(*cmdBuffer, indexBuffer.get(), bindingOffset, bindingSize, VK_INDEX_TYPE_UINT32);
+    vk.cmdBindIndexBuffer2(*cmdBuffer, indexBuffer.get(), bindingOffset, bindingSize, VK_INDEX_TYPE_UINT32);
 #else
     DE_UNREF(bindingOffset);
     DE_UNREF(bindingSize);
@@ -847,7 +850,7 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
             {firstIndex, 3, 0},
         };
         vk.cmdDrawMultiIndexedEXT(*cmdBuffer, DE_LENGTH_OF_ARRAY(indexInfo), indexInfo, 1, 0,
-                                  sizeof(VkMultiDrawIndexedInfoEXT), DE_NULL);
+                                  sizeof(VkMultiDrawIndexedInfoEXT), nullptr);
     }
 #endif
     break;

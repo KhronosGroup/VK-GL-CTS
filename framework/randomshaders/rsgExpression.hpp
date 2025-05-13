@@ -79,7 +79,7 @@ public:
     Expression *createNextChild(GeneratorState &state)
     {
         DE_UNREF(state);
-        return DE_NULL;
+        return nullptr;
     }
     void tokenize(GeneratorState &state, TokenStream &str) const
     {
@@ -98,7 +98,7 @@ public:
     }
 
 protected:
-    VariableAccess(void) : m_variable(DE_NULL)
+    VariableAccess(void) : m_variable(nullptr)
     {
     }
 
@@ -141,7 +141,7 @@ public:
     Expression *createNextChild(GeneratorState &state)
     {
         DE_UNREF(state);
-        return DE_NULL;
+        return nullptr;
     }
     void tokenize(GeneratorState &state, TokenStream &str) const;
 
@@ -171,7 +171,7 @@ public:
     Expression *createNextChild(GeneratorState &state)
     {
         DE_UNREF(state);
-        return DE_NULL;
+        return nullptr;
     }
     void tokenize(GeneratorState &state, TokenStream &str) const;
 
@@ -202,7 +202,7 @@ public:
     Expression *createNextChild(GeneratorState &state)
     {
         DE_UNREF(state);
-        return DE_NULL;
+        return nullptr;
     }
     void tokenize(GeneratorState &state, TokenStream &str) const;
 

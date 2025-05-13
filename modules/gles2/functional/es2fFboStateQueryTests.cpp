@@ -91,7 +91,7 @@ public:
             GLuint textureID = 0;
             glGenTextures(1, &textureID);
             glBindTexture(GL_TEXTURE_2D, textureID);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 64, 64, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 64, 64, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
             expectError(GL_NO_ERROR);
 
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID, 0);
@@ -152,7 +152,7 @@ public:
 
             glGenTextures(1, &textureID);
             glBindTexture(GL_TEXTURE_2D, textureID);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 64, 64, 0, GL_RGB, GL_UNSIGNED_BYTE, DE_NULL);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 64, 64, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
             expectError(GL_NO_ERROR);
 
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID, 0);
@@ -195,7 +195,7 @@ public:
                                     GL_TEXTURE_CUBE_MAP_POSITIVE_Z, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z};
 
             for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(faces); ++ndx)
-                glTexImage2D(faces[ndx], 0, GL_RGB, 64, 64, 0, GL_RGB, GL_UNSIGNED_BYTE, DE_NULL);
+                glTexImage2D(faces[ndx], 0, GL_RGB, 64, 64, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
             expectError(GL_NO_ERROR);
 
             for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(faces); ++ndx)

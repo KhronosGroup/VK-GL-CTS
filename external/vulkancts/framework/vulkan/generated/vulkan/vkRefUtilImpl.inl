@@ -73,6 +73,12 @@ void Deleter<VkPipelineCache>::operator() (VkPipelineCache obj) const
 }
 
 template<>
+void Deleter<VkPipelineBinaryKHR>::operator() (VkPipelineBinaryKHR obj) const
+{
+	m_deviceIface->destroyPipelineBinaryKHR(m_device, obj, m_allocator);
+}
+
+template<>
 void Deleter<VkPipeline>::operator() (VkPipeline obj) const
 {
 	m_deviceIface->destroyPipeline(m_device, obj, m_allocator);
@@ -130,6 +136,18 @@ template<>
 void Deleter<VkIndirectCommandsLayoutNV>::operator() (VkIndirectCommandsLayoutNV obj) const
 {
 	m_deviceIface->destroyIndirectCommandsLayoutNV(m_device, obj, m_allocator);
+}
+
+template<>
+void Deleter<VkIndirectCommandsLayoutEXT>::operator() (VkIndirectCommandsLayoutEXT obj) const
+{
+	m_deviceIface->destroyIndirectCommandsLayoutEXT(m_device, obj, m_allocator);
+}
+
+template<>
+void Deleter<VkIndirectExecutionSetEXT>::operator() (VkIndirectExecutionSetEXT obj) const
+{
+	m_deviceIface->destroyIndirectExecutionSetEXT(m_device, obj, m_allocator);
 }
 
 template<>
@@ -232,6 +250,12 @@ template<>
 void Deleter<VkShaderEXT>::operator() (VkShaderEXT obj) const
 {
 	m_deviceIface->destroyShaderEXT(m_device, obj, m_allocator);
+}
+
+template<>
+void Deleter<VkExternalComputeQueueNV>::operator() (VkExternalComputeQueueNV obj) const
+{
+	m_deviceIface->destroyExternalComputeQueueNV(m_device, obj, m_allocator);
 }
 
 } // refdetails
@@ -474,6 +498,20 @@ Move<VkIndirectCommandsLayoutNV> createIndirectCommandsLayoutNV (const DeviceInt
 	return Move<VkIndirectCommandsLayoutNV>(check<VkIndirectCommandsLayoutNV>(object), Deleter<VkIndirectCommandsLayoutNV>(vk, device, pAllocator));
 }
 
+Move<VkIndirectCommandsLayoutEXT> createIndirectCommandsLayoutEXT (const DeviceInterface& vk, VkDevice device, const VkIndirectCommandsLayoutCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkIndirectCommandsLayoutEXT object = VK_NULL_HANDLE;
+	VK_CHECK(vk.createIndirectCommandsLayoutEXT(device, pCreateInfo, pAllocator, &object));
+	return Move<VkIndirectCommandsLayoutEXT>(check<VkIndirectCommandsLayoutEXT>(object), Deleter<VkIndirectCommandsLayoutEXT>(vk, device, pAllocator));
+}
+
+Move<VkIndirectExecutionSetEXT> createIndirectExecutionSetEXT (const DeviceInterface& vk, VkDevice device, const VkIndirectExecutionSetCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkIndirectExecutionSetEXT object = VK_NULL_HANDLE;
+	VK_CHECK(vk.createIndirectExecutionSetEXT(device, pCreateInfo, pAllocator, &object));
+	return Move<VkIndirectExecutionSetEXT>(check<VkIndirectExecutionSetEXT>(object), Deleter<VkIndirectExecutionSetEXT>(vk, device, pAllocator));
+}
+
 Move<VkDescriptorUpdateTemplate> createDescriptorUpdateTemplate (const DeviceInterface& vk, VkDevice device, const VkDescriptorUpdateTemplateCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
 {
 	VkDescriptorUpdateTemplate object = VK_NULL_HANDLE;
@@ -626,5 +664,12 @@ Move<VkOpticalFlowSessionNV> createOpticalFlowSessionNV (const DeviceInterface& 
 	VkOpticalFlowSessionNV object = VK_NULL_HANDLE;
 	VK_CHECK(vk.createOpticalFlowSessionNV(device, pCreateInfo, pAllocator, &object));
 	return Move<VkOpticalFlowSessionNV>(check<VkOpticalFlowSessionNV>(object), Deleter<VkOpticalFlowSessionNV>(vk, device, pAllocator));
+}
+
+Move<VkExternalComputeQueueNV> createExternalComputeQueueNV (const DeviceInterface& vk, VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkExternalComputeQueueNV object = VK_NULL_HANDLE;
+	VK_CHECK(vk.createExternalComputeQueueNV(device, pCreateInfo, pAllocator, &object));
+	return Move<VkExternalComputeQueueNV>(check<VkExternalComputeQueueNV>(object), Deleter<VkExternalComputeQueueNV>(vk, device, pAllocator));
 }
 

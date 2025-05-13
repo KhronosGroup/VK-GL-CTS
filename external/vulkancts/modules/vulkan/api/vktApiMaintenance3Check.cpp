@@ -345,7 +345,7 @@ vector<vk::VkDescriptorSetLayoutBinding> calculateBindings(const DevProp1 &prop1
             b.binding            = bindingNumber;
             b.descriptorCount    = tc.second.count;
             b.descriptorType     = tc.first;
-            b.pImmutableSamplers = DE_NULL;
+            b.pImmutableSamplers = nullptr;
             b.stageFlags         = tc.first == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT ? vk::VK_SHADER_STAGE_FRAGMENT_BIT :
                                                                                      vk::VK_SHADER_STAGE_ALL;
 
@@ -364,7 +364,7 @@ vector<vk::VkDescriptorSetLayoutBinding> calculateBindings(const DevProp1 &prop1
                 b.descriptorCount =
                     4u; // For inline uniform blocks, this must be a multiple of 4 according to the spec.
                 b.descriptorType     = tc.first;
-                b.pImmutableSamplers = DE_NULL;
+                b.pImmutableSamplers = nullptr;
                 b.stageFlags         = vk::VK_SHADER_STAGE_ALL;
             }
         }
@@ -418,7 +418,7 @@ public:
         // set values to be a bit smaller than required minimum values
         MaintDevProp3 maintProp3 = {
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES, //VkStructureType sType;
-            DE_NULL,                                                    //void* pNext;
+            nullptr,                                                    //void* pNext;
             maxDescriptorsInSet - 1u,                                   //uint32_t maxPerSetDescriptors;
             maxMemoryAllocationSize - 1u                                //VkDeviceSize maxMemoryAllocationSize;
         };
@@ -485,7 +485,7 @@ public:
 
         if (m_context.isDeviceFunctionalitySupported("VK_EXT_inline_uniform_block"))
         {
-            DevIubFeat iubFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT, DE_NULL, 0u,
+            DevIubFeat iubFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT, nullptr, 0u,
                                       0u};
 
             DevFeat2 features2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &iubFeatures,
@@ -497,7 +497,7 @@ public:
 
         DevIubProp devIubProp = {
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES_EXT, // VkStructureType sType;
-            DE_NULL,                                                               // void* pNext;
+            nullptr,                                                               // void* pNext;
             0u, // uint32_t maxInlineUniformBlockSize;
             0u, // uint32_t maxPerStageDescriptorInlineUniformBlocks;
             0u, // uint32_t maxPerStageDescriptorUpdateAfterBindInlineUniformBlocks;
@@ -509,9 +509,9 @@ public:
         MaintDevProp3 maintProp3 = {
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES, //VkStructureType sType;
 #ifndef CTS_USES_VULKANSC
-            (iubSupported ? &devIubProp : DE_NULL), //void* pNext;
+            (iubSupported ? &devIubProp : nullptr), //void* pNext;
 #else
-            DE_NULL, //void* pNext;
+            nullptr, //void* pNext;
 #endif                              // CTS_USES_VULKANSC
             maxDescriptorsInSet,    //uint32_t maxPerSetDescriptors;
             maxMemoryAllocationSize //VkDeviceSize maxMemoryAllocationSize;
@@ -546,16 +546,16 @@ public:
         // VkDescriptorSetLayoutCreateInfo setup
         vk::VkDescriptorSetLayoutCreateInfo pCreateInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, //VkStructureType sType;
-            DE_NULL,                                             //const void* pNext;
+            nullptr,                                             //const void* pNext;
             0u,                                                  //VkDescriptorSetLayoutCreateFlags flags;
             0u,                                                  //uint32_t bindingCount;
-            DE_NULL                                              //const VkDescriptorSetLayoutBinding* pBindings;
+            nullptr                                              //const VkDescriptorSetLayoutBinding* pBindings;
         };
 
         // VkDescriptorSetLayoutSupport setup
         vk::VkDescriptorSetLayoutSupport pSupport = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_SUPPORT, //VkStructureType sType;
-            DE_NULL,                                         //void* pNext;
+            nullptr,                                         //void* pNext;
             VK_FALSE                                         //VkBool32 supported;
         };
 
@@ -729,9 +729,33 @@ tcu::TestStatus testCountLayoutSupport(Context &context, CountLayoutSupportParam
         }
     }
 
+    uint32_t maxInlineUniformBlockSize = 256;
+#ifndef CTS_USES_VULKANSC
+    if (params.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
+    {
+        DevIubProp inlineUniformProps = {
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES, nullptr, 0, 0, 0, 0, 0};
+
+        VkPhysicalDeviceProperties2 props2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, &inlineUniformProps, {}};
+
+        context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &props2);
+        maxInlineUniformBlockSize = inlineUniformProps.maxInlineUniformBlockSize;
+    }
+#endif // CTS_USES_VULKANSC
+
     // VUID-VkDescriptorSetLayoutBinding-descriptorType-02209 mandates descriptorCount to be a multiple of 4 when using inline
     // uniform blocks.
-    const auto descriptorCount = ((params.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK) ? 4u : 1u);
+    // VUID-VkDescriptorSetLayoutBinding-descriptorType-08004 descriptorCount must be less than or equal
+    // to VkPhysicalDeviceInlineUniformBlockProperties::maxInlineUniformBlockSize
+    uint32_t descriptorCount;
+    if (params.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
+    {
+        descriptorCount = std::min(4u, maxInlineUniformBlockSize);
+    }
+    else
+    {
+        descriptorCount = 1u;
+    }
 
     bindings.emplace_back(VkDescriptorSetLayoutBinding{
         de::sizeU32(bindings), // uint32_t binding;
@@ -832,6 +856,10 @@ tcu::TestCaseGroup *createMaintenance3Tests(tcu::TestContext &testCtx)
             for (const auto &extraBindings : {false, true})
                 for (const auto &useVariableSize : {false, true})
                 {
+                    if (useVariableSize && (descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ||
+                                            descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC))
+                        continue;
+
                     const auto extraBindingsSuffix = (extraBindings ? "_extra_bindings" : "");
                     const auto variableSizeSuffix  = (useVariableSize ? "" : "_no_variable_size");
                     const auto caseName            = "support_count_" + getDescriptorTypeShortName(descriptorType) +

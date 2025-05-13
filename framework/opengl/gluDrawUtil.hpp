@@ -171,7 +171,7 @@ struct PrimitiveList
     PrimitiveType type;  //!< Primitive type.
     int numElements;     //!< Number of elements to be drawn.
     IndexType indexType; //!< Index type or INDEXTYPE_LAST if not used
-    const void *indices; //!< Index list or DE_NULL if not used.
+    const void *indices; //!< Index list or nullptr if not used.
 
     PrimitiveList(PrimitiveType type_, int numElements_)
         : type(type_)
@@ -206,17 +206,17 @@ public:
 };
 
 void draw(const RenderContext &context, uint32_t program, int numVertexArrays, const VertexArrayBinding *vertexArrays,
-          const PrimitiveList &primitives, DrawUtilCallback *callback = DE_NULL);
+          const PrimitiveList &primitives, DrawUtilCallback *callback = nullptr);
 
 void drawFromUserPointers(const RenderContext &context, uint32_t program, int numVertexArrays,
                           const VertexArrayBinding *vertexArrays, const PrimitiveList &primitives,
-                          DrawUtilCallback *callback = DE_NULL);
+                          DrawUtilCallback *callback = nullptr);
 void drawFromBuffers(const RenderContext &context, uint32_t program, int numVertexArrays,
                      const VertexArrayBinding *vertexArrays, const PrimitiveList &primitives,
-                     DrawUtilCallback *callback = DE_NULL);
+                     DrawUtilCallback *callback = nullptr);
 void drawFromVAOBuffers(const RenderContext &context, uint32_t program, int numVertexArrays,
                         const VertexArrayBinding *vertexArrays, const PrimitiveList &primitives,
-                        DrawUtilCallback *callback = DE_NULL);
+                        DrawUtilCallback *callback = nullptr);
 
 // Shorthands for PrimitiveList
 namespace pr

@@ -59,7 +59,7 @@ public:
 ShaderSwitchCase::ShaderSwitchCase(tcu::TestContext &testCtx, const string &name, bool isVertexCase,
                                    const string &vtxSource, const string &fragSource, ShaderEvalFunc evalFunc,
                                    UniformSetupFunc setupUniformsFunc)
-    : ShaderRenderCase(testCtx, name, isVertexCase, evalFunc, new UniformSetup(setupUniformsFunc), DE_NULL)
+    : ShaderRenderCase(testCtx, name, isVertexCase, evalFunc, new UniformSetup(setupUniformsFunc), nullptr)
 {
     m_vertShaderSource = vtxSource;
     m_fragShaderSource = fragSource;
@@ -175,8 +175,8 @@ static de::MovePtr<ShaderSwitchCase> makeSwitchCase(tcu::TestContext &testCtx, c
                                                               type == SWITCHTYPE_STATIC  ? evalSwitchStatic :
                                                               type == SWITCHTYPE_UNIFORM ? evalSwitchUniform :
                                                               type == SWITCHTYPE_DYNAMIC ? evalSwitchDynamic :
-                                                                                           (ShaderEvalFunc)DE_NULL,
-                                                              type == SWITCHTYPE_UNIFORM ? setUniforms : DE_NULL));
+                                                                                           nullptr,
+                                                              type == SWITCHTYPE_UNIFORM ? setUniforms : nullptr));
 }
 
 class ShaderSwitchTests : public tcu::TestCaseGroup

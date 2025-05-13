@@ -110,9 +110,9 @@ template <typename T>
 tcu::Vector<T, 4> readVarying(const FragmentPacket &packet, const FragmentShadingContext &context, int varyingLoc,
                               int fragNdx)
 {
-    if (context.varyings[1] == DE_NULL)
+    if (context.varyings[1] == nullptr)
         return readPointVarying<T>(packet, context, varyingLoc, fragNdx);
-    if (context.varyings[2] == DE_NULL)
+    if (context.varyings[2] == nullptr)
         return readLineVarying<T>(packet, context, varyingLoc, fragNdx);
     return readTriangleVarying<T>(packet, context, varyingLoc, fragNdx);
 }

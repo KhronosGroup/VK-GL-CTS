@@ -385,7 +385,9 @@ bool check_VK_KHR_shader_clock(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 
 bool check_VK_KHR_global_priority(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	DE_UNREF(v);
+	if (isCompatibile(1, 4, v))
+		return true;
+
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_KHR_global_priority"))
@@ -767,7 +769,9 @@ bool check_VK_NV_external_sci_sync2(const tcu::UVec2& v, const ExtPropVect& vIEP
 
 bool check_VK_KHR_vertex_attribute_divisor(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	DE_UNREF(v);
+	if (isCompatibile(1, 4, v))
+		return true;
+
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_KHR_vertex_attribute_divisor"))
@@ -791,7 +795,9 @@ bool check_VK_QNX_external_memory_screen_buffer(const tcu::UVec2& v, const ExtPr
 
 bool check_VK_KHR_index_type_uint8(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	DE_UNREF(v);
+	if (isCompatibile(1, 4, v))
+		return true;
+
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_KHR_index_type_uint8"))
@@ -803,7 +809,9 @@ bool check_VK_KHR_index_type_uint8(const tcu::UVec2& v, const ExtPropVect& vIEP,
 
 bool check_VK_KHR_line_rasterization(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	DE_UNREF(v);
+	if (isCompatibile(1, 4, v))
+		return true;
+
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_KHR_line_rasterization"))
@@ -845,6 +853,30 @@ bool check_VK_KHR_format_feature_flags2(const tcu::UVec2& v, const ExtPropVect& 
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_KHR_format_feature_flags2"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return true;
+}
+
+bool check_VK_EXT_vertex_attribute_divisor(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_vertex_attribute_divisor"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return true;
+}
+
+bool check_VK_EXT_calibrated_timestamps(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_calibrated_timestamps"))
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
@@ -912,11 +944,14 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_KHR_calibrated_timestamps",					&check_VK_KHR_calibrated_timestamps),
 	std::make_pair("VK_NV_device_diagnostic_checkpoints",			&check_VK_NV_device_diagnostic_checkpoints),
 	std::make_pair("VK_KHR_format_feature_flags2",					&check_VK_KHR_format_feature_flags2),
+	std::make_pair("VK_EXT_vertex_attribute_divisor",				&check_VK_EXT_vertex_attribute_divisor),
+	std::make_pair("VK_EXT_calibrated_timestamps",					&check_VK_EXT_calibrated_timestamps),
 };
 
 static const std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>	releasedApiVersions[]	=
 {
 	std::make_tuple(541065216, 1, 1, 0),
+	std::make_tuple(541081600, 1, 1, 4),
 	std::make_tuple(541077504, 1, 1, 3),
 	std::make_tuple(541073408, 1, 1, 2),
 	std::make_tuple(541069312, 1, 1, 1),
@@ -993,6 +1028,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_color_write_enable"),
 	std::make_tuple(1, 0, "VK_EXT_application_parameters"),
 	std::make_tuple(1, 1, "VK_NV_external_sci_sync2"),
+	std::make_tuple(1, 0, "VK_EXT_layer_settings"),
 	std::make_tuple(1, 0, "VK_KHR_vertex_attribute_divisor"),
 	std::make_tuple(1, 0, "VK_QNX_external_memory_screen_buffer"),
 	std::make_tuple(1, 0, "VK_KHR_index_type_uint8"),
@@ -1000,4 +1036,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_KHR_calibrated_timestamps"),
 	std::make_tuple(1, 0, "VK_NV_device_diagnostic_checkpoints"),
 	std::make_tuple(1, 0, "VK_KHR_format_feature_flags2"),
+	std::make_tuple(1, 0, "VK_EXT_vertex_attribute_divisor"),
+	std::make_tuple(1, 0, "VK_EXT_global_priority"),
+	std::make_tuple(1, 0, "VK_EXT_calibrated_timestamps"),
 };

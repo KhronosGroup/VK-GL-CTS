@@ -223,7 +223,7 @@ tcu::TestNode::IterateResult DefaultsTest::iterate()
         is_ok &= testProgramPipelineParameter(GL_VALIDATE_STATUS, 0);
         is_ok &= testProgramPipelineParameter(GL_INFO_LOG_LENGTH, 0);
 
-        is_ok &= testProgramPipelineInfoLog(DE_NULL);
+        is_ok &= testProgramPipelineInfoLog(nullptr);
     }
     catch (...)
     {
@@ -343,7 +343,7 @@ bool DefaultsTest::testProgramPipelineInfoLog(glw::GLchar *expected_value)
     GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramPipelineInfoLog have failed");
 
     /* Comparison. */
-    if (DE_NULL == expected_value)
+    if (nullptr == expected_value)
     {
         if (0 != log_size)
         {

@@ -199,19 +199,19 @@ void WaiverTreeBuilder::readWaivedTestsFromXML()
                 if (!deviceFound)
                 {
                     // if we found proper vendor and are reading deviceIds/rendererers list then allow it
-                    scanDevice = deStringEqual(elemName, m_deviceTag); // e.g. "d"
+                    scanDevice = strcmp(elemName, m_deviceTag) == 0; // e.g. "d"
                     if (scanDevice)
                         break;
                 }
 
                 // if we found waiver for current vendor and are reading test case names then allow it
-                memorizeCase = deStringEqual(elemName, "t");
+                memorizeCase = strcmp(elemName, "t") == 0;
                 break;
             }
 
             // we are searching for waiver definition for current vendor, till we find
             // it we skip everythingh; we also skip tags that we don't need eg. description
-            if (!deStringEqual(elemName, "waiver"))
+            if (strcmp(elemName, "waiver") != 0)
                 break;
 
             // we found waiver tag, check if it is deffined for current vendor
@@ -248,7 +248,7 @@ void WaiverTreeBuilder::readWaivedTestsFromXML()
         case xe::xml::ELEMENT_END:
             memorizeCase = false;
             scanDevice   = false;
-            if (deStringEqual(elemName, "waiver"))
+            if (strcmp(elemName, "waiver") == 0)
             {
                 // when we found proper waiver we can copy memorized cases and update waiver info
                 if (vendorFound && deviceFound)
@@ -294,8 +294,8 @@ uint32_t WaiverTreeBuilder::findComponentInBuildTree(const std::vector<std::stri
         uint32_t reverseLevel        = index;
         uint32_t ancestorInTreeIndex = componentInTree.parentIndex;
 
-        // if this component is the next after root then there is no ancestors to check
-        if (reverseLevel == 1)
+        // if this component and the ancestor component are both the next level after root, we have a match
+        if ((reverseLevel == 1) && (ancestorInTreeIndex == 0))
             return componentIndex;
 
         while (--reverseLevel > 0)

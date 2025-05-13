@@ -253,13 +253,13 @@ public:
         const tcu::TextureCubeArray *texCubeArray;
 
         inline ShaderSampler(void)
-            : tex1D(DE_NULL)
-            , tex2D(DE_NULL)
-            , tex3D(DE_NULL)
-            , texCube(DE_NULL)
-            , tex1DArray(DE_NULL)
-            , tex2DArray(DE_NULL)
-            , texCubeArray(DE_NULL)
+            : tex1D(nullptr)
+            , tex2D(nullptr)
+            , tex3D(nullptr)
+            , texCube(nullptr)
+            , tex1DArray(nullptr)
+            , tex2DArray(nullptr)
+            , texCubeArray(nullptr)
         {
         }
     };
@@ -373,6 +373,8 @@ public:
 protected:
     std::string m_vertShaderSource;
     std::string m_fragShaderSource;
+    de::MovePtr<vk::ShaderBuildOptions> m_vertShaderBuildOptions;
+    de::MovePtr<vk::ShaderBuildOptions> m_fragShaderBuildOptions;
 
     const bool m_isVertexCase;
     const de::UniquePtr<const ShaderEvaluator> m_evaluator;

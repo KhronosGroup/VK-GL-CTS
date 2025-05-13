@@ -233,6 +233,11 @@ TestSubcase::IterateResult TestSubcase::iterate(void)
         if (subError == ERROR)
             log.writeMessage("Test Setup() failed");
     }
+    catch (const tcu::NotSupportedError &ex)
+    {
+        log.writeMessage(ex.what());
+        subError = NOT_SUPPORTED;
+    }
     catch (const runtime_error &ex)
     {
         log.writeMessage(ex.what());
@@ -252,6 +257,11 @@ TestSubcase::IterateResult TestSubcase::iterate(void)
             subError = subcase->Run();
             if (subError == ERROR)
                 log.writeMessage("Test Run() failed");
+        }
+        catch (const tcu::NotSupportedError &ex)
+        {
+            log.writeMessage(ex.what());
+            subError = NOT_SUPPORTED;
         }
         catch (const runtime_error &ex)
         {
@@ -294,7 +304,7 @@ TestSubcase::IterateResult TestSubcase::iterate(void)
     if (glError != GL_NO_ERROR)
     {
         const char *name = glu::getErrorName(glError);
-        if (name == DE_NULL)
+        if (name == nullptr)
             name = "UNKNOWN ERROR";
         log << TestLog::Message << "After test execution glGetError() returned: " << name
             << ", forcing FAIL for subcase" << TestLog::EndMessage;

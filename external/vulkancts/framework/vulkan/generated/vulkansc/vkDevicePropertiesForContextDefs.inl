@@ -10,13 +10,13 @@ const vk::VkPhysicalDeviceSampleLocationsPropertiesEXT&				Context::getSampleLoc
 const vk::VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT&		Context::getBlendOperationAdvancedPropertiesEXT		(void) const { return m_device->getBlendOperationAdvancedPropertiesEXT();		}
 const vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			Context::getExternalMemoryHostPropertiesEXT			(void) const { return m_device->getExternalMemoryHostPropertiesEXT();			}
 const vk::VkPhysicalDevicePCIBusInfoPropertiesEXT&					Context::getPCIBusInfoPropertiesEXT					(void) const { return m_device->getPCIBusInfoPropertiesEXT();					}
-const vk::VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&			Context::getSubgroupSizeControlProperties			(void) const { return m_device->getSubgroupSizeControlProperties();				}
+const vk::VkPhysicalDeviceSubgroupSizeControlProperties&			Context::getSubgroupSizeControlProperties			(void) const { return m_device->getSubgroupSizeControlProperties();				}
 const vk::VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			Context::getFragmentShadingRateProperties			(void) const { return m_device->getFragmentShadingRateProperties();				}
-const vk::VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT&		Context::getTexelBufferAlignmentProperties			(void) const { return m_device->getTexelBufferAlignmentProperties();			}
-const vk::VkPhysicalDeviceRobustness2PropertiesEXT&					Context::getRobustness2PropertiesEXT				(void) const { return m_device->getRobustness2PropertiesEXT();					}
+const vk::VkPhysicalDeviceTexelBufferAlignmentProperties&			Context::getTexelBufferAlignmentProperties			(void) const { return m_device->getTexelBufferAlignmentProperties();			}
+const vk::VkPhysicalDeviceRobustness2PropertiesKHR&					Context::getRobustness2Properties					(void) const { return m_device->getRobustness2Properties();						}
 const vk::VkPhysicalDeviceCustomBorderColorPropertiesEXT&			Context::getCustomBorderColorPropertiesEXT			(void) const { return m_device->getCustomBorderColorPropertiesEXT();			}
-const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR&		Context::getVertexAttributeDivisorProperties		(void) const { return m_device->getVertexAttributeDivisorProperties();			}
-const vk::VkPhysicalDeviceLineRasterizationPropertiesKHR&			Context::getLineRasterizationProperties				(void) const { return m_device->getLineRasterizationProperties();				}
+const vk::VkPhysicalDeviceVertexAttributeDivisorProperties&			Context::getVertexAttributeDivisorProperties		(void) const { return m_device->getVertexAttributeDivisorProperties();			}
+const vk::VkPhysicalDeviceLineRasterizationProperties&				Context::getLineRasterizationProperties				(void) const { return m_device->getLineRasterizationProperties();				}
 const vk::VkPhysicalDeviceDriverProperties&							Context::getDriverProperties						(void) const { return m_device->getDriverProperties();							}
 const vk::VkPhysicalDeviceIDProperties&								Context::getIDProperties							(void) const { return m_device->getIDProperties();								}
 const vk::VkPhysicalDeviceMultiviewProperties&						Context::getMultiviewProperties						(void) const { return m_device->getMultiviewProperties();						}
@@ -29,4 +29,3 @@ const vk::VkPhysicalDeviceFloatControlsProperties&					Context::getFloatControls
 const vk::VkPhysicalDeviceDescriptorIndexingProperties&				Context::getDescriptorIndexingProperties			(void) const { return m_device->getDescriptorIndexingProperties();				}
 const vk::VkPhysicalDeviceTimelineSemaphoreProperties&				Context::getTimelineSemaphoreProperties				(void) const { return m_device->getTimelineSemaphoreProperties();				}
 const vk::VkPhysicalDeviceDepthStencilResolveProperties&			Context::getDepthStencilResolveProperties			(void) const { return m_device->getDepthStencilResolveProperties();				}
-const vk::VkPhysicalDeviceVulkanSC10Properties&						Context::getVulkanSC10Properties					(void) const { return m_device->getVulkanSC10Properties();						}

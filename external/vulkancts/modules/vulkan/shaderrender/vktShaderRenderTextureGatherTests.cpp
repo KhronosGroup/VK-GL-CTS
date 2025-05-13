@@ -853,7 +853,7 @@ static inline const char *gatherTypeName(GatherType type)
         return "offsets";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -904,7 +904,7 @@ static MovePtr<PixelOffsets> makePixelOffsetsFunctor(GatherType gatherType, cons
     else
     {
         DE_ASSERT(false);
-        return MovePtr<PixelOffsets>(DE_NULL);
+        return MovePtr<PixelOffsets>(nullptr);
     }
 }
 
@@ -1237,7 +1237,7 @@ private:
 const IVec2 TextureGatherInstance::RENDER_SIZE = IVec2(64, 64);
 
 TextureGatherInstance::TextureGatherInstance(Context &context, const GatherCaseBaseParams &baseParams)
-    : ShaderRenderCaseInstance(context, false, DE_NULL, DE_NULL, DE_NULL, baseParams.sparseCase)
+    : ShaderRenderCaseInstance(context, false, nullptr, nullptr, nullptr, baseParams.sparseCase)
     , m_baseParams(baseParams)
     , m_colorBufferFormat(tcu::TextureFormat(tcu::TextureFormat::RGBA, isDepthFormat(baseParams.textureFormat) ?
                                                                            tcu::TextureFormat::UNORM_INT8 :
@@ -2632,7 +2632,7 @@ static inline TestCase *makeTextureGatherCase(
 
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -2658,7 +2658,7 @@ static inline const char *compareModeName(tcu::Sampler::CompareMode mode)
         return "never";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -2711,7 +2711,7 @@ void TextureGatherTests::init(void)
                     new TestCaseGroup(m_testCtx, offsetSize == OFFSETSIZE_MINIMUM_REQUIRED ? "min_required_offset" :
                                                  offsetSize == OFFSETSIZE_IMPLEMENTATION_MAXIMUM ?
                                                                                              "implementation_offset" :
-                                                                                             DE_NULL);
+                                                                                             nullptr);
 
             if (offsetSizeGroup != gatherTypeGroup)
                 gatherTypeGroup->addChild(offsetSizeGroup);

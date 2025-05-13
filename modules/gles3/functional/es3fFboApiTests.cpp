@@ -135,7 +135,7 @@ static string getAttachmentParameterValueName(GLint value)
     default:
     {
         char tmp[64];
-        deSprintf(tmp, sizeof(tmp), "0x%x", value);
+        snprintf(tmp, sizeof(tmp), "0x%x", value);
         return string(tmp);
     }
     }

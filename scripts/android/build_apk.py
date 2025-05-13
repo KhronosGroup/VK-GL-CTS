@@ -171,7 +171,7 @@ class Environment:
         self.ndk = ndk
 
 class Configuration:
-    def __init__(self, env, buildPath, abis, nativeApi, javaApi, minApi, nativeBuildType, gtfTarget, verbose, layers, angle):
+    def __init__(self, env, buildPath, abis, nativeApi, javaApi, minApi, nativeBuildType, verbose, layers, angle):
         self.env = env
         self.sourcePath = DEQP_DIR
         self.buildPath = buildPath
@@ -180,7 +180,6 @@ class Configuration:
         self.javaApi = javaApi
         self.minApi = minApi
         self.nativeBuildType = nativeBuildType
-        self.gtfTarget = gtfTarget
         self.verbose = verbose
         self.layers = layers
         self.angle = angle
@@ -360,8 +359,7 @@ def buildNativeLibrary (config, abiName):
                 '-DCMAKE_CXX_FLAGS=-Werror',
                 '-DANDROID_NDK_PATH=%s' % config.env.ndk.path,
                 '-DANDROID_ABI=%s' % abiName,
-                '-DDE_ANDROID_API=%s' % config.nativeApi,
-                '-DGLCTS_GTF_TARGET=%s' % config.gtfTarget]
+                '-DDE_ANDROID_API=%s' % config.nativeApi]
 
         if config.angle is None:
             # Find any previous builds that may have embedded ANGLE libs and clear the CMake cache
@@ -980,11 +978,6 @@ def parseArgs ():
         help='Build target',
         choices=['deqp', 'openglcts'],
         default='deqp')
-    parser.add_argument('--kc-cts-target',
-        dest='gtfTarget',
-        default='gles32',
-        choices=['gles32', 'gles31', 'gles3', 'gles2', 'gl'],
-        help="KC-CTS (GTF) target API (only used in openglcts target)")
     parser.add_argument('--layers-path',
         dest='layers',
         default=None,
@@ -1027,7 +1020,7 @@ if __name__ == "__main__":
     sdk = SDKEnv(os.path.realpath(args.sdkPath), args.toolApi)
     buildPath = os.path.realpath(args.buildRoot)
     env = Environment(sdk, ndk)
-    config = Configuration(env, buildPath, abis=args.abis, nativeApi=args.nativeApi, javaApi=args.javaApi, minApi=args.minApi, nativeBuildType=args.nativeBuildType, gtfTarget=args.gtfTarget,
+    config = Configuration(env, buildPath, abis=args.abis, nativeApi=args.nativeApi, javaApi=args.javaApi, minApi=args.minApi, nativeBuildType=args.nativeBuildType,
                          verbose=args.verbose, layers=args.layers, angle=args.angle)
 
     try:

@@ -59,7 +59,7 @@ public:
 template <typename T>
 std::ostream &operator<<(std::ostream &str, PointerFmt<T> fmt)
 {
-    if (fmt.arr != DE_NULL)
+    if (fmt.arr != nullptr)
     {
         str << "{ ";
         for (uint32_t ndx = 0; ndx < fmt.size; ndx++)

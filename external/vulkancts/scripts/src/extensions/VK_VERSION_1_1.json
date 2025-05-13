@@ -1,19 +1,17 @@
 {
-    "mandatory_features":
-        {
-            "VkPhysicalDeviceMultiviewFeatures":
-                [
-                    {
-                        "features": [
-                            "multiview"
-                        ],
-                        "requirements": [
-                            "ApiVersion(0, 1, 1, 0)"
-                        ],
-                        "mandatory_variant": [
-                            "vulkan"
-                        ]
-                    }
+    "mandatory_features": {
+        "VkPhysicalDeviceMultiviewFeatures": [
+            {
+                "features": [
+                    "multiview"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 1, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
                 ]
-        }
+            }
+        ]
+    }
 }

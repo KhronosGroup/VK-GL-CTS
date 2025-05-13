@@ -38,33 +38,32 @@ namespace vkt
 namespace api
 {
 
-void BufferSuballocation::createTestBuffer(const DeviceInterface &vk, VkDevice vkDevice, uint32_t queueFamilyIndex,
-                                           VkDeviceSize size, VkBufferUsageFlags usage, Context &context,
-                                           Allocator &allocator, Move<VkBuffer> &buffer,
-                                           const MemoryRequirement &requirement, de::MovePtr<Allocation> &memory) const
+void BufferSuballocation::createTestBuffer(const DeviceInterface &vk, VkDevice vkDevice, VkDeviceSize size,
+                                           VkBufferUsageFlags usage, Context &context, Allocator &allocator,
+                                           Move<VkBuffer> &buffer, const MemoryRequirement &requirement,
+                                           de::MovePtr<Allocation> &memory) const
 {
     DE_UNREF(context);
 
     const VkBufferCreateInfo bufferParams{
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         size,                                 // VkDeviceSize size;
         usage,                                // VkBufferUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
-        1u,                                   // uint32_t queueFamilyCount;
-        &queueFamilyIndex,                    // const uint32_t* pQueueFamilyIndices;
+        0u,                                   // uint32_t queueFamilyCount;
+        nullptr,                              // const uint32_t* pQueueFamilyIndices;
     };
 
-    buffer = vk::createBuffer(vk, vkDevice, &bufferParams, (const VkAllocationCallbacks *)DE_NULL);
+    buffer = vk::createBuffer(vk, vkDevice, &bufferParams, nullptr);
     memory = allocator.allocate(getBufferMemoryRequirements(vk, vkDevice, *buffer), requirement);
     VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, memory->getMemory(), 0));
 }
 
-void BufferDedicatedAllocation::createTestBuffer(const DeviceInterface &vk, VkDevice vkDevice,
-                                                 uint32_t queueFamilyIndex, VkDeviceSize size, VkBufferUsageFlags usage,
-                                                 Context &context, Allocator &allocator, Move<VkBuffer> &buffer,
-                                                 const MemoryRequirement &requirement,
+void BufferDedicatedAllocation::createTestBuffer(const DeviceInterface &vk, VkDevice vkDevice, VkDeviceSize size,
+                                                 VkBufferUsageFlags usage, Context &context, Allocator &allocator,
+                                                 Move<VkBuffer> &buffer, const MemoryRequirement &requirement,
                                                  de::MovePtr<Allocation> &memory) const
 {
     DE_UNREF(allocator);
@@ -76,31 +75,31 @@ void BufferDedicatedAllocation::createTestBuffer(const DeviceInterface &vk, VkDe
 
     const VkBufferCreateInfo bufferParams{
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         size,                                 // VkDeviceSize size;
         usage,                                // VkBufferUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
-        1u,                                   // uint32_t queueFamilyCount;
-        &queueFamilyIndex,                    // const uint32_t* pQueueFamilyIndices;
+        0u,                                   // uint32_t queueFamilyCount;
+        nullptr,                              // const uint32_t* pQueueFamilyIndices;
     };
 
-    buffer = vk::createBuffer(vk, vkDevice, &bufferParams, (const VkAllocationCallbacks *)DE_NULL);
+    buffer = vk::createBuffer(vk, vkDevice, &bufferParams, nullptr);
     memory = allocateDedicated(vkInstance, vk, vkPhysicalDevice, vkDevice, buffer.get(), requirement);
     VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, memory->getMemory(), memory->getOffset()));
 }
 
 void ImageSuballocation::createTestImage(tcu::IVec2 size, VkFormat format, Context &context, Allocator &allocator,
                                          Move<VkImage> &image, const MemoryRequirement &requirement,
-                                         de::MovePtr<Allocation> &memory, VkImageTiling tiling) const
+                                         de::MovePtr<Allocation> &memory, VkImageTiling tiling,
+                                         VkImageUsageFlags usage) const
 {
-    const VkDevice vkDevice         = context.getDevice();
-    const DeviceInterface &vk       = context.getDeviceInterface();
-    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+    const VkDevice vkDevice   = context.getDevice();
+    const DeviceInterface &vk = context.getDeviceInterface();
 
     const VkImageCreateInfo colorImageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,          // VkStructureType sType;
-        DE_NULL,                                      // const void* pNext;
+        nullptr,                                      // const void* pNext;
         0u,                                           // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                             // VkImageType imageType;
         format,                                       // VkFormat format;
@@ -111,12 +110,11 @@ void ImageSuballocation::createTestImage(tcu::IVec2 size, VkFormat format, Conte
         tiling,                                       // VkImageTiling tiling;
         (vk::VkImageUsageFlags)((tiling == VK_IMAGE_TILING_LINEAR) ?
                                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT :
-                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                                        VK_IMAGE_USAGE_TRANSFER_SRC_BIT), // VkImageUsageFlags usage;
-        VK_SHARING_MODE_EXCLUSIVE,                                        // VkSharingMode sharingMode;
-        1u,                                                               // uint32_t queueFamilyCount;
-        &queueFamilyIndex,                                                // const uint32_t* pQueueFamilyIndices;
-        VK_IMAGE_LAYOUT_UNDEFINED,                                        // VkImageLayout initialLayout;
+                                    usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT), // VkImageUsageFlags usage;
+        VK_SHARING_MODE_EXCLUSIVE,                                            // VkSharingMode sharingMode;
+        0u,                                                                   // uint32_t queueFamilyCount;
+        nullptr,                                                              // const uint32_t* pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED,                                            // VkImageLayout initialLayout;
     };
 
     image  = createImage(vk, vkDevice, &colorImageParams);
@@ -126,7 +124,8 @@ void ImageSuballocation::createTestImage(tcu::IVec2 size, VkFormat format, Conte
 
 void ImageDedicatedAllocation::createTestImage(tcu::IVec2 size, VkFormat format, Context &context, Allocator &allocator,
                                                Move<VkImage> &image, const MemoryRequirement &requirement,
-                                               de::MovePtr<Allocation> &memory, VkImageTiling tiling) const
+                                               de::MovePtr<Allocation> &memory, VkImageTiling tiling,
+                                               VkImageUsageFlags usage) const
 {
     DE_UNREF(allocator);
     if (!context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation"))
@@ -136,11 +135,10 @@ void ImageDedicatedAllocation::createTestImage(tcu::IVec2 size, VkFormat format,
     const VkDevice vkDevice                 = context.getDevice();
     const VkPhysicalDevice vkPhysicalDevice = context.getPhysicalDevice();
     const DeviceInterface &vk               = context.getDeviceInterface();
-    const uint32_t queueFamilyIndex         = context.getUniversalQueueFamilyIndex();
 
     const VkImageCreateInfo colorImageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,          // VkStructureType sType;
-        DE_NULL,                                      // const void* pNext;
+        nullptr,                                      // const void* pNext;
         0u,                                           // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                             // VkImageType imageType;
         format,                                       // VkFormat format;
@@ -151,12 +149,11 @@ void ImageDedicatedAllocation::createTestImage(tcu::IVec2 size, VkFormat format,
         tiling,                                       // VkImageTiling tiling;
         (vk::VkImageUsageFlags)((tiling == VK_IMAGE_TILING_LINEAR) ?
                                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT :
-                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                                        VK_IMAGE_USAGE_TRANSFER_SRC_BIT), // VkImageUsageFlags usage;
-        VK_SHARING_MODE_EXCLUSIVE,                                        // VkSharingMode sharingMode;
-        1u,                                                               // uint32_t queueFamilyCount;
-        &queueFamilyIndex,                                                // const uint32_t* pQueueFamilyIndices;
-        VK_IMAGE_LAYOUT_UNDEFINED,                                        // VkImageLayout initialLayout;
+                                    usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT), // VkImageUsageFlags usage;
+        VK_SHARING_MODE_EXCLUSIVE,                                            // VkSharingMode sharingMode;
+        0u,                                                                   // uint32_t queueFamilyCount;
+        nullptr,                                                              // const uint32_t* pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED,                                            // VkImageLayout initialLayout;
     };
 
     image  = createImage(vk, vkDevice, &colorImageParams);

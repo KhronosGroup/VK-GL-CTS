@@ -37,28 +37,28 @@ NativePixmap::NativePixmap(Capability capabilities) : m_capabilities(capabilitie
 EGLNativePixmapType NativePixmap::getLegacyNative(void)
 {
     TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_CREATE_SURFACE_LEGACY) == 0);
-    throw tcu::NotSupportedError("eglu::NativePixmap doesn't support eglCreatePixmapSurface()", DE_NULL, __FILE__,
+    throw tcu::NotSupportedError("eglu::NativePixmap doesn't support eglCreatePixmapSurface()", nullptr, __FILE__,
                                  __LINE__);
 }
 
 void *NativePixmap::getPlatformExtension(void)
 {
     TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_CREATE_SURFACE_PLATFORM_EXTENSION) == 0);
-    throw tcu::NotSupportedError("eglu::NativePixmap doesn't support eglCreatePlatformPixmapSurfaceEXT()", DE_NULL,
+    throw tcu::NotSupportedError("eglu::NativePixmap doesn't support eglCreatePlatformPixmapSurfaceEXT()", nullptr,
                                  __FILE__, __LINE__);
 }
 
 void *NativePixmap::getPlatformNative(void)
 {
     TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_CREATE_SURFACE_PLATFORM) == 0);
-    throw tcu::NotSupportedError("eglu::NativePixmap doesn't support eglCreatePlatformPixmapSurface()", DE_NULL,
+    throw tcu::NotSupportedError("eglu::NativePixmap doesn't support eglCreatePlatformPixmapSurface()", nullptr,
                                  __FILE__, __LINE__);
 }
 
 void NativePixmap::readPixels(tcu::TextureLevel *)
 {
     TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_READ_PIXELS) == 0);
-    throw tcu::NotSupportedError("eglu::NativePixmap doesn't support readPixels", DE_NULL, __FILE__, __LINE__);
+    throw tcu::NotSupportedError("eglu::NativePixmap doesn't support readPixels", nullptr, __FILE__, __LINE__);
 }
 
 // NativePixmapFactory

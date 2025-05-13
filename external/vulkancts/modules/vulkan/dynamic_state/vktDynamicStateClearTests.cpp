@@ -123,22 +123,22 @@ public:
         {
             transition2DImage(m_vk, *m_cmdBuffer, m_image->object(), vk::VK_IMAGE_ASPECT_COLOR_BIT,
                               vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_GENERAL, 0u,
-                              vk::VK_ACCESS_TRANSFER_READ_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                              vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                               vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
             transition2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_ASPECT_COLOR_BIT,
                               vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_GENERAL, 0u,
-                              vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                              vk::VK_ACCESS_TRANSFER_READ_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                               vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
         }
         else
         {
             transition2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_ASPECT_COLOR_BIT,
                               vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_GENERAL, 0u,
-                              vk::VK_ACCESS_TRANSFER_READ_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                              vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                               vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
             transition2DImage(m_vk, *m_cmdBuffer, m_image->object(), vk::VK_IMAGE_ASPECT_COLOR_BIT,
                               vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_GENERAL, 0u,
-                              vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                              vk::VK_ACCESS_TRANSFER_READ_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                               vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
         }
 
@@ -409,7 +409,7 @@ public:
             };
             const vk::VkImageMemoryBarrier imageBarrier = {
                 vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-                DE_NULL,                                    // const void* pNext;
+                nullptr,                                    // const void* pNext;
                 vk::VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags srcAccessMask;
                 vk::VK_ACCESS_TRANSFER_READ_BIT,            // VkAccessFlags dstAccessMask;
                 vk::VK_IMAGE_LAYOUT_GENERAL,                // VkImageLayout oldLayout;
@@ -420,7 +420,7 @@ public:
                 subresourceRange,                           // VkImageSubresourceRange subresourceRange;
             };
             m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                    vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                                    vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
                                     &imageBarrier);
         }
     }

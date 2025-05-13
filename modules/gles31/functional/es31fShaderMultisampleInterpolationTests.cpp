@@ -1574,7 +1574,7 @@ NegativeCompileInterpolationCase::IterateResult NegativeCompileInterpolationCase
     m_testCtx.getLog() << tcu::TestLog::Message << "Fragment shader source:" << tcu::TestLog::EndMessage
                        << tcu::TestLog::KernelSource(source);
 
-    shader.setSources(1, &sourceStrPtr, DE_NULL);
+    shader.setSources(1, &sourceStrPtr, nullptr);
     shader.compile();
 
     m_testCtx.getLog() << tcu::TestLog::Message << "Info log:" << tcu::TestLog::EndMessage

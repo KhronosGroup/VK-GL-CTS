@@ -1,0 +1,89 @@
+#!amber
+
+DEVICE_EXTENSION VK_KHR_acceleration_structure
+DEVICE_EXTENSION VK_KHR_ray_tracing_pipeline
+DEVICE_EXTENSION VK_KHR_buffer_device_address
+DEVICE_FEATURE   RayTracingPipelineFeaturesKHR.rayTracingPipeline
+DEVICE_FEATURE   AccelerationStructureFeaturesKHR.accelerationStructure
+DEVICE_FEATURE   BufferDeviceAddressFeatures.bufferDeviceAddress
+
+SHADER ray_generation raygeneration1 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  layout(location = 0) rayPayloadEXT int payload;
+  layout(set = 0, binding = 0) uniform accelerationStructureEXT gScene;
+
+  void main()
+  {
+    float TMin      = 0.1;
+    float TMax      = 10;
+    vec3  Origin    = vec3(0, 0, -3);
+    vec3  Direction = vec3(0, 0, 1);
+
+    payload = 0;
+    traceRayEXT(gScene, gl_RayFlagsNoneEXT, 0xff, 0, 0, 0, Origin, TMin, Direction, TMax, 0);
+
+    payload = 1;
+    traceRayEXT(gScene, gl_RayFlagsTerminateOnFirstHitEXT , 0xff, 0, 0, 0, Origin, TMin, Direction, TMax, 0);
+}
+END
+
+SHADER intersection intersection1 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  hitAttributeEXT float hitAttribute;
+
+  void main()
+  {
+    reportIntersectionEXT(0.6f, gl_HitKindFrontFacingTriangleEXT);
+    // In case of gl_RayFlagsTerminateOnFirstHitEXT, we should never reach this part of the code,
+    // even though this would be the closest hit
+    reportIntersectionEXT(0.5f, gl_HitKindFrontFacingTriangleEXT);
+  }
+END
+
+SHADER closest_hit closesthit1 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  layout(location = 0) rayPayloadInEXT int payload;
+  layout(set = 0, binding = 1, r32f) uniform image1D result;
+  hitAttributeEXT float hitAttribute;
+
+  void main()
+  {
+    imageStore(result, payload, vec4(gl_HitTEXT, 0, 0, 0));
+  }
+END
+
+ACCELERATION_STRUCTURE BOTTOM_LEVEL proc_blas
+  GEOMETRY AABBS
+    -2.0 -2.0 -2.0 2.0 2.0 2.0
+  END
+END
+
+ACCELERATION_STRUCTURE TOP_LEVEL proc_tlas
+  BOTTOM_LEVEL_INSTANCE proc_blas
+  END
+END
+
+IMAGE outbuf FORMAT R32_SFLOAT DIM_1D WIDTH 2 FILL 0
+
+PIPELINE raytracing my_rtpipeline
+  MAX_RAY_PAYLOAD_SIZE 16
+  MAX_RAY_HIT_ATTRIBUTE_SIZE 8
+  MAX_RAY_RECURSION_DEPTH 1
+  BIND ACCELERATION_STRUCTURE proc_tlas DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER outbuf AS storage_image DESCRIPTOR_SET 0 BINDING 1
+  SHADER_GROUP group_rgen raygeneration1
+  SHADER_GROUP group_hits intersection1 closesthit1
+  SHADER_BINDING_TABLE sbt_raygen
+    group_rgen
+  END
+  SHADER_BINDING_TABLE sbt_hit
+    group_hits
+  END
+END
+
+RUN my_rtpipeline RAYGEN sbt_raygen HIT sbt_hit 2 1 1
+
+EXPECT outbuf IDX 0 EQ 0.5 0.6

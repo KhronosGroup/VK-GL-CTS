@@ -112,6 +112,7 @@ SampleShadingSampleAttributeTestCase::SampleShadingSampleAttributeTestCase(tcu::
 
 void SampleShadingSampleAttributeTestCase::checkSupport(Context &context) const
 {
+    const bool sampleFragInput       = (m_params.trigger == Trigger::SAMPLE_DECORATION_DYNAMIC_USE);
     const bool declareSampleId       = (m_params.trigger == Trigger::SAMPLE_ID_STATIC_USE);
     const bool declareSamplePosition = (m_params.trigger == Trigger::SAMPLE_POSITION_STATIC_USE);
 
@@ -119,7 +120,7 @@ void SampleShadingSampleAttributeTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
 
-    if (declareSampleId || declareSamplePosition)
+    if (declareSampleId || declareSamplePosition || sampleFragInput)
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
@@ -282,7 +283,7 @@ tcu::TestStatus SampleShadingSampleAttributeTestInstance::iterate(void)
 
     const VkPipelineRenderingCreateInfoKHR pipelineRenderInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR, // VkStructureType    sType;
-        DE_NULL,                                              // const void*        pNext;
+        nullptr,                                              // const void*        pNext;
         0,                                                    // uint32_t           viewMask;
         1,                                                    // uint32_t           colorAttachmentCount;
         &imageFormat,                                         // const VkFormat*    pColorAttachmentFormats;
@@ -368,9 +369,9 @@ tcu::TestStatus SampleShadingSampleAttributeTestInstance::iterate(void)
         &vertexInputState,                   // VkPipelineVertexInputStateCreateInfo   *vertexInputStateCreateInfo
         VK_NULL_HANDLE,                      // VkPipelineRasterizationStateCreateInfo *rasterizationStateCreateInfo
         &multisampling,                      // VkPipelineMultisampleStateCreateInfo   *multisampleStateCreateInfo
-        DE_NULL, // const VkPipelineDepthStencilStateCreateInfo*            depthStencilStateCreateInfo
-        DE_NULL, // const VkPipelineColorBlendStateCreateInfo*            colorBlendStateCreateInfo
-        DE_NULL, // const VkPipelineDynamicStateCreateInfo*                dynamicStateCreateInfo
+        nullptr, // const VkPipelineDepthStencilStateCreateInfo*            depthStencilStateCreateInfo
+        nullptr, // const VkPipelineColorBlendStateCreateInfo*            colorBlendStateCreateInfo
+        nullptr, // const VkPipelineDynamicStateCreateInfo*                dynamicStateCreateInfo
         gpPNext  // const void*                                            pNext
     );
 

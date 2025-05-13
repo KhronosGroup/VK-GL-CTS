@@ -80,7 +80,7 @@ void UniquePtr_selfTest(void)
         {
             UniquePtr<Object> ptr(new Object(exists));
             DE_TEST_ASSERT(exists);
-            DE_TEST_ASSERT(ptr.get() != DE_NULL);
+            DE_TEST_ASSERT(ptr.get() != nullptr);
         }
         DE_TEST_ASSERT(!exists);
     }
@@ -92,7 +92,7 @@ void UniquePtr_selfTest(void)
         {
             UniquePtr<Object> ptr(new Object(exists));
             DE_TEST_ASSERT(exists);
-            DE_TEST_ASSERT(ptr.get() != DE_NULL);
+            DE_TEST_ASSERT(ptr.get() != nullptr);
             throw std::exception();
         }
         catch (const std::exception &)
@@ -105,7 +105,7 @@ void UniquePtr_selfTest(void)
     // Expression test.
     {
         bool exists = false;
-        bool test   = (UniquePtr<Object>(new Object(exists))).get() != DE_NULL && exists;
+        bool test   = (UniquePtr<Object>(new Object(exists))).get() != nullptr && exists;
         DE_TEST_ASSERT(!exists);
         DE_TEST_ASSERT(test);
     }
@@ -118,7 +118,7 @@ void UniquePtr_selfTest(void)
             UniquePtr<Object, CustomDeleter> ptr(new Object(exists), CustomDeleter(&deleterCalled));
             DE_TEST_ASSERT(exists);
             DE_TEST_ASSERT(!deleterCalled);
-            DE_TEST_ASSERT(ptr.get() != DE_NULL);
+            DE_TEST_ASSERT(ptr.get() != nullptr);
         }
         DE_TEST_ASSERT(!exists);
         DE_TEST_ASSERT(deleterCalled);
@@ -174,12 +174,12 @@ void UniquePtr_selfTest(void)
     // MovePtr stealing
     {
         bool exists = false;
-        Object *raw = DE_NULL;
+        Object *raw = nullptr;
         {
             MovePtr<Object> ptr1(new Object(exists));
             raw = ptr1.release();
-            DE_TEST_ASSERT(raw != DE_NULL);
-            DE_TEST_ASSERT(ptr1.get() == DE_NULL);
+            DE_TEST_ASSERT(raw != nullptr);
+            DE_TEST_ASSERT(ptr1.get() == nullptr);
             DE_TEST_ASSERT(exists);
         }
         DE_TEST_ASSERT(exists);
@@ -192,12 +192,12 @@ void UniquePtr_selfTest(void)
         bool exists = false;
         {
             MovePtr<Object> ptr1;
-            DE_TEST_ASSERT(ptr1.get() == DE_NULL);
+            DE_TEST_ASSERT(ptr1.get() == nullptr);
             MovePtr<Object> ptr2(new Object(exists));
             ptr1 = ptr2;
             DE_TEST_ASSERT(exists);
-            DE_TEST_ASSERT(ptr1.get() != DE_NULL);
-            DE_TEST_ASSERT(ptr2.get() == DE_NULL);
+            DE_TEST_ASSERT(ptr1.get() != nullptr);
+            DE_TEST_ASSERT(ptr2.get() == nullptr);
         }
         DE_TEST_ASSERT(!exists);
     }

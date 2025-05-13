@@ -470,9 +470,9 @@ TestStatus ScissorTestInstance::iterate(void)
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
 
         const VkAttachmentReference colorAttachmentRef = {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
-        renderPassCreateInfo.addSubpass(SubpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, DE_NULL, 1,
-                                                           &colorAttachmentRef, DE_NULL, AttachmentReference(), 0,
-                                                           DE_NULL));
+        renderPassCreateInfo.addSubpass(SubpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, nullptr, 1,
+                                                           &colorAttachmentRef, nullptr, AttachmentReference(), 0,
+                                                           nullptr));
 
         renderPass = createRenderPass(vk, device, &renderPassCreateInfo);
 
@@ -560,7 +560,7 @@ TestStatus ScissorTestInstance::iterate(void)
 
 #ifndef CTS_USES_VULKANSC
         VkPipelineRenderingCreateInfoKHR renderingCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-                                                             DE_NULL,
+                                                             nullptr,
                                                              0u,
                                                              1u,
                                                              &colorImageFormat,
@@ -732,7 +732,7 @@ void ScissorTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkF
 {
     VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                         // const void* pNext;
+        nullptr,                                                         // const void* pNext;
         renderingFlags,                                                  // VkRenderingFlagsKHR flags;
         0u,                                                              // uint32_t viewMask;
         1u,                                                              // uint32_t colorAttachmentCount;
@@ -749,7 +749,7 @@ void ScissorTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkF
 
     const VkCommandBufferBeginInfo commandBufBeginParams{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         usageFlags,                                  // VkCommandBufferUsageFlags flags;
         &bufferInheritanceInfo};
 

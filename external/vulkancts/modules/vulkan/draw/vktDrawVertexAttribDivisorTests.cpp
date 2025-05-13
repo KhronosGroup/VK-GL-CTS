@@ -286,7 +286,7 @@ VertexAttributeDivisorInstance::VertexAttributeDivisorInstance(Context &context,
         (uint32_t)sizeof(float) * 2,    // uint32_t              size;
     };
 
-    const PipelineLayoutCreateInfo pipelineLayoutCreateInfo(0, DE_NULL, 1, &pushConstantRange);
+    const PipelineLayoutCreateInfo pipelineLayoutCreateInfo(0, nullptr, 1, &pushConstantRange);
     m_pipelineLayout = vk::createPipelineLayout(m_vk, device, &pipelineLayoutCreateInfo);
 
     const vk::VkExtent3D targetImageExtent = {m_width, m_height, 1};
@@ -315,9 +315,9 @@ VertexAttributeDivisorInstance::VertexAttributeDivisorInstance(Context &context,
 
         const vk::VkAttachmentReference colorAttachmentReference = {0, vk::VK_IMAGE_LAYOUT_GENERAL};
 
-        renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, DE_NULL, 1,
-                                                           &colorAttachmentReference, DE_NULL, AttachmentReference(), 0,
-                                                           DE_NULL));
+        renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, nullptr, 1,
+                                                           &colorAttachmentReference, nullptr, AttachmentReference(), 0,
+                                                           nullptr));
 
         m_renderPass = vk::createRenderPass(m_vk, device, &renderPassCreateInfo);
 
@@ -378,7 +378,7 @@ VertexAttributeDivisorInstance::VertexAttributeDivisorInstance(Context &context,
         const auto &vertSrc                              = m_context.getBinaryCollection().get("vert");
         const vk::VkShaderCreateInfoEXT vertexCreateInfo = {
             vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                      // const void* pNext;
+            nullptr,                                      // const void* pNext;
             0u,                                           // VkShaderCreateFlagsEXT flags;
             vk::VK_SHADER_STAGE_VERTEX_BIT,               // VkShaderStageFlagBits stage;
             vk::VK_SHADER_STAGE_FRAGMENT_BIT,             // VkShaderStageFlags nextStage;
@@ -387,17 +387,17 @@ VertexAttributeDivisorInstance::VertexAttributeDivisorInstance(Context &context,
             vertSrc.getBinary(),                          // const void* pCode;
             "main",                                       // const char* pName;
             0u,                                           // uint32_t setLayoutCount;
-            DE_NULL,                                      // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                      // const VkDescriptorSetLayout* pSetLayouts;
             1u,                                           // uint32_t pushConstantRangeCount;
             &pushConstantRange,                           // const VkPushConstantRange* pPushConstantRanges;
-            DE_NULL,                                      // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                      // const VkSpecializationInfo* pSpecializationInfo;
         };
         m_vertexShader = vk::createShader(m_vk, device, vertexCreateInfo);
 
         const auto &fragSrc                                = m_context.getBinaryCollection().get("frag");
         const vk::VkShaderCreateInfoEXT fragmentCreateInfo = {
             vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                      // const void* pNext;
+            nullptr,                                      // const void* pNext;
             0u,                                           // VkShaderCreateFlagsEXT flags;
             vk::VK_SHADER_STAGE_FRAGMENT_BIT,             // VkShaderStageFlagBits stage;
             0u,                                           // VkShaderStageFlags nextStage;
@@ -406,10 +406,10 @@ VertexAttributeDivisorInstance::VertexAttributeDivisorInstance(Context &context,
             fragSrc.getBinary(),                          // const void* pCode;
             "main",                                       // const char* pName;
             0u,                                           // uint32_t setLayoutCount;
-            DE_NULL,                                      // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                      // const VkDescriptorSetLayout* pSetLayouts;
             1u,                                           // uint32_t pushConstantRangeCount;
             &pushConstantRange,                           // const VkPushConstantRange* pPushConstantRanges;
-            DE_NULL,                                      // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                      // const VkSpecializationInfo* pSpecializationInfo;
         };
         m_fragmentShader = vk::createShader(m_vk, device, fragmentCreateInfo);
 #endif
@@ -443,7 +443,7 @@ VertexAttributeDivisorInstance::VertexAttributeDivisorInstance(Context &context,
         {
             vk::VkDynamicState dynStates[] = {vk::VK_DYNAMIC_STATE_VERTEX_INPUT_EXT};
             vk::VkPipelineDynamicStateCreateInfo dynamicState{vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-                                                              DE_NULL, 0u, 1u, dynStates};
+                                                              nullptr, 0u, 1u, dynStates};
             pipelineCreateInfo.addState(dynamicState);
         }
         else
@@ -454,7 +454,7 @@ VertexAttributeDivisorInstance::VertexAttributeDivisorInstance(Context &context,
 #ifndef CTS_USES_VULKANSC
         vk::VkPipelineRenderingCreateInfoKHR renderingFormatCreateInfo{
             vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-            DE_NULL,
+            nullptr,
             0u,
             1u,
             &m_colorAttachmentFormat,
@@ -771,12 +771,12 @@ void VertexAttributeDivisorInstance::preRenderCommands(const vk::VkClearValue &c
                             1, &subresourceRange);
 
     const vk::VkMemoryBarrier memBarrier{
-        vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER, DE_NULL, vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+        vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, vk::VK_ACCESS_TRANSFER_WRITE_BIT,
         vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT};
 
     m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                            vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 1, &memBarrier, 0, DE_NULL, 0,
-                            DE_NULL);
+                            vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 1, &memBarrier, 0, nullptr, 0,
+                            nullptr);
 }
 
 void VertexAttributeDivisorInstance::draw(vk::VkCommandBuffer cmdBuffer, vk::VkBuffer vertexBuffer,
@@ -819,18 +819,18 @@ void VertexAttributeDivisorInstance::draw(vk::VkCommandBuffer cmdBuffer, vk::VkB
     if (m_params.pipelineType != PipelineType::STATIC_PIPELINE)
     {
         vk::VkVertexInputBindingDescription2EXT vertexBindingDescription[2]{
-            {vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT, DE_NULL, 0u,
+            {vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT, nullptr, 0u,
              (uint32_t)sizeof(VertexPositionAndColor), vk::VK_VERTEX_INPUT_RATE_VERTEX, 1u},
-            {vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT, DE_NULL, 1u, (uint32_t)sizeof(tcu::Vec4),
+            {vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT, nullptr, 1u, (uint32_t)sizeof(tcu::Vec4),
              vk::VK_VERTEX_INPUT_RATE_INSTANCE, m_params.attribDivisor},
 
         };
         vk::VkVertexInputAttributeDescription2EXT vertexAttributeDescription[3]{
-            {vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT, DE_NULL, 0u, 0u,
+            {vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT, nullptr, 0u, 0u,
              vk::VK_FORMAT_R32G32B32A32_SFLOAT, 0u},
             {
                 vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,
-                DE_NULL,
+                nullptr,
                 1u,
                 0u,
                 vk::VK_FORMAT_R32G32B32A32_SFLOAT,
@@ -838,7 +838,7 @@ void VertexAttributeDivisorInstance::draw(vk::VkCommandBuffer cmdBuffer, vk::VkB
             },
             {
                 vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,
-                DE_NULL,
+                nullptr,
                 2u,
                 1u,
                 vk::VK_FORMAT_R32G32B32A32_SFLOAT,
@@ -904,7 +904,7 @@ void VertexAttributeDivisorInstance::beginSecondaryCmdBuffer(vk::VkRenderingFlag
 {
     const vk::VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                             // const void* pNext;
+        nullptr,                                                             // const void* pNext;
         renderingFlags,                                                      // VkRenderingFlagsKHR flags;
         0u,                                                                  // uint32_t viewMask;
         1u,                                                                  // uint32_t colorAttachmentCount;
@@ -931,7 +931,7 @@ void VertexAttributeDivisorInstance::beginSecondaryCmdBuffer(vk::VkRenderingFlag
 
     const vk::VkCommandBufferBeginInfo commandBufBeginParams{
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         usageFlags,                                      // VkCommandBufferUsageFlags flags;
         &bufferInheritanceInfo};
 
@@ -962,6 +962,7 @@ private:
 void VertexAttributeDivisorCase::checkSupport(Context &context) const
 {
     const auto attributeDivisorFeatures = context.getVertexAttributeDivisorFeatures();
+
     if (m_params.extension == Extension::EXT)
     {
         context.requireDeviceFunctionality("VK_EXT_vertex_attribute_divisor");

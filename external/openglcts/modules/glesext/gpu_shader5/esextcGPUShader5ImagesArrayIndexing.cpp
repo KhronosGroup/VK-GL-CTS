@@ -50,11 +50,11 @@ GPUShader5ImagesArrayIndexing::GPUShader5ImagesArrayIndexing(Context &context, c
                                                              const char *name, const char *description)
     : TestCaseBase(context, extParams, name, description)
     , m_compute_shader_id(0)
-    , m_data_buffer(DE_NULL)
+    , m_data_buffer(nullptr)
     , m_program_id(0)
     , m_texture_height(0)
     , m_texture_width(0)
-    , m_to_ids(DE_NULL)
+    , m_to_ids(nullptr)
     , m_fbo_id(0)
 {
     /* Nothing to be done here */
@@ -92,7 +92,7 @@ void GPUShader5ImagesArrayIndexing::initTest(void)
 
     /* Construct compute shader code */
     std::string compute_shader_code;
-    const char *compute_shader_code_ptr = DE_NULL;
+    const char *compute_shader_code_ptr = nullptr;
     std::stringstream local_size_x_stringstream;
     std::stringstream local_size_y_stringstream;
 
@@ -153,7 +153,7 @@ void GPUShader5ImagesArrayIndexing::initTest(void)
     }
 
     delete[] m_data_buffer;
-    m_data_buffer = DE_NULL;
+    m_data_buffer = nullptr;
 }
 
 /** Executes the test.
@@ -235,7 +235,7 @@ tcu::TestNode::IterateResult GPUShader5ImagesArrayIndexing::iterate(void)
                                        << " Expected data [" << resultExpected[0] << "]" << tcu::TestLog::EndMessage;
 
                     delete[] m_data_buffer;
-                    m_data_buffer = DE_NULL;
+                    m_data_buffer = nullptr;
 
                     m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
                     return STOP;
@@ -246,7 +246,7 @@ tcu::TestNode::IterateResult GPUShader5ImagesArrayIndexing::iterate(void)
     }         /*for (m_sizeOfArray)*/
 
     delete[] m_data_buffer;
-    m_data_buffer = DE_NULL;
+    m_data_buffer = nullptr;
 
     m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
     return STOP;
@@ -281,17 +281,17 @@ void GPUShader5ImagesArrayIndexing::deinit(void)
         m_compute_shader_id = 0;
     }
 
-    if (m_data_buffer != DE_NULL)
+    if (m_data_buffer != nullptr)
     {
         delete[] m_data_buffer;
-        m_data_buffer = DE_NULL;
+        m_data_buffer = nullptr;
     }
 
-    if (m_to_ids != DE_NULL)
+    if (m_to_ids != nullptr)
     {
         gl.deleteTextures(m_array_size, m_to_ids);
         delete[] m_to_ids;
-        m_to_ids = DE_NULL;
+        m_to_ids = nullptr;
     }
 
     if (m_fbo_id != 0)

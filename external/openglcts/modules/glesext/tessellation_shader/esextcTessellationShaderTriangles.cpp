@@ -312,7 +312,7 @@ void TessellationShaderTrianglesDegenerateTriangle::initTestDescriptor(
                               "    result_uvw  = gl_TessCoord;\n"
                               "}\n";
 
-    const char *te_body_raw_ptr = DE_NULL;
+    const char *te_body_raw_ptr = nullptr;
     std::string te_body_string  = te_template;
     std::string vertex_spacing_mode_string;
     const char *vertex_spacing_token       = "VERTEX_SPACING_MODE";
@@ -527,7 +527,7 @@ TessellationShaderTrianglesIdenticalTriangles::TessellationShaderTrianglesIdenti
                    "running in triangles mode do not change if second inner or fourth "
                    "outer tessellation level is changed")
     , m_vao_id(0)
-    , m_utils(DE_NULL)
+    , m_utils(nullptr)
 {
     /* Left blank on purpose */
 }
@@ -557,11 +557,11 @@ void TessellationShaderTrianglesIdenticalTriangles::deinit()
     }
 
     /* Deinitialize utils instance */
-    if (m_utils != DE_NULL)
+    if (m_utils != nullptr)
     {
         delete m_utils;
 
-        m_utils = DE_NULL;
+        m_utils = nullptr;
     }
 }
 
@@ -794,7 +794,7 @@ TessellationShaderTrianglesInnerTessellationLevelRounding::TessellationShaderTri
                    "inner tessellation level is set to 1 and any of the outer "
                    "tessellation levels is greater than one.")
     , m_vao_id(0)
-    , m_utils(DE_NULL)
+    , m_utils(nullptr)
 {
     /* Left blank on purpose */
 }
@@ -824,11 +824,11 @@ void TessellationShaderTrianglesInnerTessellationLevelRounding::deinit()
     }
 
     /* Deinitialize utils instance */
-    if (m_utils != DE_NULL)
+    if (m_utils != nullptr)
     {
         delete m_utils;
 
-        m_utils = DE_NULL;
+        m_utils = nullptr;
     }
 }
 
@@ -976,7 +976,7 @@ void TessellationShaderTrianglesInnerTessellationLevelRounding::runTestIteration
             run.set2_inner[1] = 0.0f;
 
             TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(vs_mode, 1.5f, gl_max_tess_gen_level_value,
-                                                                            DE_NULL, /* out_clamped */
+                                                                            nullptr, /* out_clamped */
                                                                             run.set2_inner);
             run.set1_outer[0] = (glw::GLfloat)tess_level;
             run.set2_outer[0] = (glw::GLfloat)tess_level;

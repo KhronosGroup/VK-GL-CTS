@@ -330,7 +330,7 @@ glw::GLuint EnableDisableAttributesTest::BuildProgram(const char *vertex_shader,
 
         for (glw::GLuint i = 0; i < shader_count; ++i)
         {
-            if (DE_NULL != shader[i].source)
+            if (nullptr != shader[i].source)
             {
                 shader[i].id = gl.createShader(shader[i].type);
 
@@ -490,7 +490,7 @@ void EnableDisableAttributesTest::PrepareVAO()
 
     glw::GLint *reference_data = new glw::GLint[m_max_attributes];
 
-    if (DE_NULL == reference_data)
+    if (nullptr == reference_data)
     {
         throw 0;
     }
@@ -896,7 +896,7 @@ void ElementBufferTest::PrepareProgram()
 
         for (glw::GLuint i = 0; i < shader_count; ++i)
         {
-            if (DE_NULL != shader[i].source)
+            if (nullptr != shader[i].source)
             {
                 shader[i].id = gl.createShader(shader[i].type);
 
@@ -1343,7 +1343,7 @@ void VertexBuffersTest::PrepareProgram()
 
         for (glw::GLuint i = 0; i < shader_count; ++i)
         {
-            if (DE_NULL != shader[i].source)
+            if (nullptr != shader[i].source)
             {
                 shader[i].id = gl.createShader(shader[i].type);
 
@@ -1959,7 +1959,7 @@ void AttributeFormatTest::PrepareProgram(glw::GLint size, AtributeFormatFunction
          3,
          GL_VERTEX_SHADER,
          0},
-        {{s_fragment_shader, DE_NULL, DE_NULL}, 1, GL_FRAGMENT_SHADER, 0}};
+        {{s_fragment_shader, nullptr, nullptr}, 1, GL_FRAGMENT_SHADER, 0}};
 
     glw::GLuint const shader_count = DE_LENGTH_OF_ARRAY(shader);
 
@@ -2662,7 +2662,7 @@ void AttributeBindingTest::PrepareProgram()
 
         for (glw::GLuint i = 0; i < shader_count; ++i)
         {
-            if (DE_NULL != shader[i].source)
+            if (nullptr != shader[i].source)
             {
                 shader[i].id = gl.createShader(shader[i].type);
 
@@ -3125,7 +3125,7 @@ void AttributeBindingDivisorTest::PrepareProgram()
 
         for (glw::GLuint i = 0; i < shader_count; ++i)
         {
-            if (DE_NULL != shader[i].source)
+            if (nullptr != shader[i].source)
             {
                 shader[i].id = gl.createShader(shader[i].type);
 

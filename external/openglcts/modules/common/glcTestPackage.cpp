@@ -47,7 +47,7 @@ TestPackage::TestPackage(tcu::TestContext &testCtx, const char *name, const char
     : tcu::TestPackage(testCtx, name, description)
     , m_waiverMechanism(new tcu::WaiverUtil)
     , m_renderContextType(renderContextType)
-    , m_packageCtx(DE_NULL)
+    , m_packageCtx(nullptr)
     , m_archive(testCtx.getRootArchive(), resourcesPath)
 {
 }
@@ -82,7 +82,7 @@ void TestPackage::init(void)
     catch (...)
     {
         delete m_packageCtx;
-        m_packageCtx = DE_NULL;
+        m_packageCtx = nullptr;
 
         throw;
     }
@@ -92,7 +92,7 @@ void TestPackage::deinit(void)
 {
     tcu::TestNode::deinit();
     delete m_packageCtx;
-    m_packageCtx = DE_NULL;
+    m_packageCtx = nullptr;
 }
 
 } // namespace deqp

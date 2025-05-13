@@ -48,8 +48,7 @@ void checkConditionalRenderingCapabilities(vkt::Context &context, const Conditio
     if (data.secondaryCommandBufferNested)
     {
         context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
-        const auto &features =
-            *vk::findStructure<vk::VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+        const auto &features = context.getNestedCommandBufferFeaturesEXT();
         if (!features.nestedCommandBuffer)
             TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
     }
@@ -58,8 +57,7 @@ void checkConditionalRenderingCapabilities(vkt::Context &context, const Conditio
 void checkNestedRenderPassCapabilities(vkt::Context &context)
 {
     context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
-    const auto &features =
-        *vk::findStructure<vk::VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+    const auto &features = context.getNestedCommandBufferFeaturesEXT();
     if (!features.nestedCommandBuffer)
         TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
     if (!features.nestedCommandBufferRendering)

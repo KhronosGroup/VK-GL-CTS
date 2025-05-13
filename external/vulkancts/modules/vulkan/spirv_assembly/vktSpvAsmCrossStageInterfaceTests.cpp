@@ -86,7 +86,7 @@ VkImageCreateInfo makeImageCreateInfo(const VkImageType imageType, const VkExten
 {
     const VkImageCreateInfo imageInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0,               // VkImageCreateFlags flags;
         imageType,                           // VkImageType imageType;
         format,                              // VkFormat format;
@@ -111,7 +111,7 @@ void imageBarrier(const DeviceInterface &vk, const VkCommandBuffer cmdBuffer, co
 {
     const VkImageMemoryBarrier barrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         srcAccessMask,                          // VkAccessFlags srcAccessMask;
         dstAccessMask,                          // VkAccessFlags dstAccessMask;
         oldLayout,                              // VkImageLayout oldLayout;
@@ -122,8 +122,8 @@ void imageBarrier(const DeviceInterface &vk, const VkCommandBuffer cmdBuffer, co
         subresourceRange,                       // VkImageSubresourceRange subresourceRange;
     };
 
-    vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, (VkDependencyFlags)0, 0u,
-                          (const VkMemoryBarrier *)DE_NULL, 0u, (const VkBufferMemoryBarrier *)DE_NULL, 1u, &barrier);
+    vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, 1u,
+                          &barrier);
 }
 
 class CrossStageTestInstance : public TestInstance
@@ -231,7 +231,7 @@ tcu::TestStatus CrossStageTestInstance::iterate(void)
     {
         const VkCommandPoolCreateInfo cmdPoolParams = {
             VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-            DE_NULL,                                         // const void* pNext;
+            nullptr,                                         // const void* pNext;
             VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCmdPoolCreateFlags flags;
             m_context.getUniversalQueueFamilyIndex(),        // uint32_t queueFamilyIndex;
         };
@@ -242,7 +242,7 @@ tcu::TestStatus CrossStageTestInstance::iterate(void)
     {
         const VkCommandBufferAllocateInfo cmdBufferAllocateInfo = {
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             *cmdPool,                                       // VkCommandPool commandPool;
             VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel level;
             1u,                                             // uint32_t bufferCount;
@@ -478,7 +478,7 @@ Move<VkPipeline> CrossStageTestInstance::makeGraphicsPipeline(const VkRenderPass
 
     VkPipelineDepthStencilStateCreateInfo depthStencilStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         0u,                                                         // VkPipelineDepthStencilStateCreateFlags flags;
         VK_TRUE,                                                    // VkBool32 depthTestEnable;
         VK_TRUE,                                                    // VkBool32 depthWriteEnable;
@@ -538,8 +538,8 @@ Move<VkPipeline> CrossStageTestInstance::makeGraphicsPipeline(const VkRenderPass
         0u,                        // const uint32_t                                subpass
         4u,                        // const uint32_t                                patchControlPoints
         &vertexInputStateParams,   // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-        DE_NULL,                   // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-        DE_NULL,                   // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+        nullptr,                   // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+        nullptr,                   // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
         &depthStencilStateParams); // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
 }
 
@@ -560,13 +560,13 @@ bool CrossStageTestInstance::checkImage(VkImage image, VkCommandPool cmdPool, Vk
     {
         const VkBufferCreateInfo bufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             pixelDataSize,                        // VkDeviceSize size;
             VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                   // uint32_t queueFamilyIndexCount;
-            DE_NULL,                              // const uint32_t* pQueueFamilyIndices;
+            nullptr,                              // const uint32_t* pQueueFamilyIndices;
         };
 
         buffer      = createBuffer(vk, vkDevice, &bufferParams);

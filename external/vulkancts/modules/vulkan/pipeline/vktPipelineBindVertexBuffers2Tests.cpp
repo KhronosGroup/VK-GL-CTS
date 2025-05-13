@@ -60,7 +60,7 @@ vk::VkImageCreateInfo makeImageCreateInfo(const vk::VkExtent2D extent, const vk:
 {
     const vk::VkImageCreateInfo imageParams = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,          // VkStructureType sType;
-        DE_NULL,                                          // const void* pNext;
+        nullptr,                                          // const void* pNext;
         (vk::VkImageCreateFlags)0u,                       // VkImageCreateFlags flags;
         vk::VK_IMAGE_TYPE_2D,                             // VkImageType imageType;
         format,                                           // VkFormat format;
@@ -72,7 +72,7 @@ vk::VkImageCreateInfo makeImageCreateInfo(const vk::VkExtent2D extent, const vk:
         usage,                                            // VkImageUsageFlags usage;
         vk::VK_SHARING_MODE_EXCLUSIVE,                    // VkSharingMode sharingMode;
         0u,                                               // uint32_t queueFamilyIndexCount;
-        DE_NULL,                                          // const uint32_t* pQueueFamilyIndices;
+        nullptr,                                          // const uint32_t* pQueueFamilyIndices;
         vk::VK_IMAGE_LAYOUT_UNDEFINED,                    // VkImageLayout initialLayout;
     };
     return imageParams;
@@ -137,6 +137,7 @@ typedef de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> DeviceDriverPtr
 typedef vk::Move<vk::VkDevice> DevicePtr;
 
 vk::Move<vk::VkDevice> createRobustBufferAccessDevice(Context &context,
+                                                      const std::vector<std::string> &enabledDeviceExtensions,
                                                       const vk::VkPhysicalDeviceFeatures2 *enabledFeatures2)
 {
     const float queuePriority = 1.0f;
@@ -144,7 +145,7 @@ vk::Move<vk::VkDevice> createRobustBufferAccessDevice(Context &context,
     // Create a universal queue that supports graphics and compute
     const vk::VkDeviceQueueCreateInfo queueParams = {
         vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         0u,                                             // VkDeviceQueueCreateFlags flags;
         context.getUniversalQueueFamilyIndex(),         // uint32_t queueFamilyIndex;
         1u,                                             // uint32_t queueCount;
@@ -154,9 +155,9 @@ vk::Move<vk::VkDevice> createRobustBufferAccessDevice(Context &context,
     vk::VkPhysicalDeviceFeatures enabledFeatures1 = context.getDeviceFeatures();
     enabledFeatures1.robustBufferAccess           = true;
 
-    // \note Extensions in core are not explicitly enabled even though
-    //         they are in the extension list advertised to tests.
-    const auto &extensionPtrs = context.getDeviceCreationExtensions();
+    std::vector<const char *> extensionPtrs;
+    for (const auto &ext : enabledDeviceExtensions)
+        extensionPtrs.push_back(ext.c_str());
 
     void *pNext = (void *)enabledFeatures2;
 #ifdef CTS_USES_VULKANSC
@@ -178,7 +179,7 @@ vk::Move<vk::VkDevice> createRobustBufferAccessDevice(Context &context,
         {
             pcCI = {
                 VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                      // const void* pNext;
+                nullptr,                                      // const void* pNext;
                 VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                     VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
                 context.getResourceInterface()->getCacheDataSize(),       // uintptr_t initialDataSize;
@@ -284,12 +285,12 @@ tcu::TestStatus BindBuffers2Instance::iterate(void)
 
     const vk::VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                           // const void* pNext;
+        nullptr,                                           // const void* pNext;
         0u,                                                // VkPipelineLayoutCreateFlags flags;
         0u,                                                // uint32_t descriptorSetCount;
-        DE_NULL,                                           // const VkDescriptorSetLayout* pSetLayouts;
+        nullptr,                                           // const VkDescriptorSetLayout* pSetLayouts;
         0u,                                                // uint32_t pushConstantRangeCount;
-        DE_NULL                                            // const VkPushDescriptorRange* pPushDescriptorRanges;
+        nullptr                                            // const VkPushDescriptorRange* pPushDescriptorRanges;
     };
 
     const vk::VkImageSubresourceRange colorSubresourceRange =
@@ -604,7 +605,7 @@ class BindVertexBuffers2Instance : public vkt::TestInstance
 public:
     BindVertexBuffers2Instance(Context &context, DeviceDriverPtr driver, DevicePtr device,
                                vk::PipelineConstructionType pipelineConstructionType, const TestParamsMaint5 &params,
-                               bool robustness2)
+                               bool robustness2, const std::vector<std::string> &enabledDeviceExtensions)
         : vkt::TestInstance(context)
         , m_pipelineConstructionType(pipelineConstructionType)
         , m_params(params)
@@ -615,10 +616,11 @@ public:
                                         context.getTestContext().getCommandLine()))
         , m_allocator(getDeviceInterface(), getDevice(),
                       getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), m_physicalDevice))
-        , m_pipelineWrapper(context.getInstanceInterface(), context.getDeviceInterface(), m_physicalDevice, getDevice(),
-                            m_context.getDeviceExtensions(), m_pipelineConstructionType, 0u)
-        , m_vertShaderModule(context.getDeviceInterface(), getDevice(), m_context.getBinaryCollection().get("vert"))
-        , m_fragShaderModule(context.getDeviceInterface(), getDevice(), m_context.getBinaryCollection().get("frag"))
+        , m_enabledDeviceExtensions(enabledDeviceExtensions)
+        , m_pipelineWrapper(context.getInstanceInterface(), getDeviceInterface(), m_physicalDevice, getDevice(),
+                            m_enabledDeviceExtensions, m_pipelineConstructionType, 0u)
+        , m_vertShaderModule(getDeviceInterface(), getDevice(), m_context.getBinaryCollection().get("vert"))
+        , m_fragShaderModule(getDeviceInterface(), getDevice(), m_context.getBinaryCollection().get("frag"))
     {
     }
     virtual ~BindVertexBuffers2Instance(void) = default;
@@ -643,6 +645,7 @@ private:
     DevicePtr m_device;
     const vk::VkPhysicalDevice m_physicalDevice;
     vk::SimpleAllocator m_allocator;
+    const std::vector<std::string> m_enabledDeviceExtensions;
     vk::GraphicsPipelineWrapper m_pipelineWrapper;
     const vk::ShaderWrapper m_vertShaderModule;
     const vk::ShaderWrapper m_fragShaderModule;
@@ -726,7 +729,7 @@ void BindVertexBuffers2Instance::createPipeline(const vk::PipelineLayoutWrapper 
 
     const vk::VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo{
         vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                                sType
-        DE_NULL,                     // const void*                                    pNext
+        nullptr,                     // const void*                                    pNext
         0u,                          // VkPipelineRasterizationStateCreateFlags        flags
         VK_FALSE,                    // VkBool32                                        depthClampEnable
         VK_FALSE,                    // VkBool32                                        rasterizerDiscardEnable
@@ -1292,7 +1295,11 @@ void BindVertexBuffers2Case::checkSupport(Context &context) const
         if (!features2.features.robustBufferAccess)
             TCU_THROW(NotSupportedError, "robustBufferAccess not supported by this implementation");
 
-        context.requireDeviceFunctionality("VK_EXT_robustness2");
+        if (!context.isDeviceFunctionalitySupported("VK_KHR_robustness2") &&
+            !context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+
+            TCU_THROW(NotSupportedError, "VK_KHR_robustness2 and VK_EXT_robustness2 are not supported");
+
         if (!robustness2Features.robustBufferAccess2)
             TCU_THROW(NotSupportedError, "robustBufferAccess2 not supported by this implementation");
     }
@@ -1338,38 +1345,54 @@ TestInstance *BindVertexBuffers2Case::createInstance(Context &context) const
     DevicePtr device;
     DeviceDriverPtr driver;
 
+    std::vector<std::string> enabledDeviceExtensions;
     if (m_robustness2)
     {
+        enabledDeviceExtensions.push_back("VK_EXT_extended_dynamic_state");
         vk::VkPhysicalDeviceFeatures2 features2                        = vk::initVulkanStructure();
         vk::VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = vk::initVulkanStructure();
 #ifndef CTS_USES_VULKANSC
-        vk::VkPhysicalDeviceMaintenance5FeaturesKHR maintenance5Features   = vk::initVulkanStructure();
-        vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT gplFeatures = vk::initVulkanStructure();
-        vk::VkPhysicalDeviceShaderObjectFeaturesEXT shaderObjectFeatures   = vk::initVulkanStructure();
+        vk::VkPhysicalDeviceMaintenance5FeaturesKHR maintenance5Features      = vk::initVulkanStructure();
+        vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT gplFeatures    = vk::initVulkanStructure();
+        vk::VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures = vk::initVulkanStructure();
+        vk::VkPhysicalDeviceShaderObjectFeaturesEXT shaderObjectFeatures      = vk::initVulkanStructure();
 #endif // CTS_USES_VULKANSC
 
         features2.features.robustBufferAccess   = VK_TRUE;
         robustness2Features.robustBufferAccess2 = VK_TRUE;
 #ifndef CTS_USES_VULKANSC
-        maintenance5Features.maintenance5   = VK_TRUE;
-        gplFeatures.graphicsPipelineLibrary = VK_TRUE;
-        shaderObjectFeatures.shaderObject   = VK_TRUE;
+        maintenance5Features.maintenance5         = VK_TRUE;
+        gplFeatures.graphicsPipelineLibrary       = VK_TRUE;
+        dynamicRenderingFeatures.dynamicRendering = VK_TRUE;
+        shaderObjectFeatures.shaderObject         = VK_TRUE;
 #endif // CTS_USES_VULKANSC
 
         const auto addFeatures = vk::makeStructChainAdder(&features2);
         addFeatures(&robustness2Features);
+        enabledDeviceExtensions.push_back(
+            context.isDeviceFunctionalitySupported("VK_KHR_robustness2") ? "VK_KHR_robustness2" : "VK_EXT_robustness2");
 
 #ifndef CTS_USES_VULKANSC
         addFeatures(&maintenance5Features);
+        enabledDeviceExtensions.push_back("VK_KHR_maintenance5");
         if (vk::isConstructionTypeLibrary(m_pipelineConstructionType))
+        {
             addFeatures(&gplFeatures);
+            enabledDeviceExtensions.push_back("VK_KHR_pipeline_library");
+            enabledDeviceExtensions.push_back("VK_EXT_graphics_pipeline_library");
+        }
         else if (vk::isConstructionTypeShaderObject(m_pipelineConstructionType))
+        {
+            addFeatures(&dynamicRenderingFeatures);
+            enabledDeviceExtensions.push_back("VK_KHR_dynamic_rendering");
             addFeatures(&shaderObjectFeatures);
+            enabledDeviceExtensions.push_back("VK_EXT_shader_object");
+        }
 #else
         TCU_THROW(NotSupportedError, "VulkanSC does not support VK_EXT_graphics_pipeline_library");
 #endif // CTS_USES_VULKANSC
 
-        device = createRobustBufferAccessDevice(context, &features2);
+        device = createRobustBufferAccessDevice(context, enabledDeviceExtensions, &features2);
         driver =
 #ifndef CTS_USES_VULKANSC
             DeviceDriverPtr(new vk::DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device,
@@ -1383,9 +1406,14 @@ TestInstance *BindVertexBuffers2Case::createInstance(Context &context) const
                             vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
 #endif // CTS_USES_VULKANSC
     }
+    else
+    {
+        for (const auto &ext : context.getDeviceCreationExtensions())
+            enabledDeviceExtensions.push_back(ext);
+    }
 
-    return (
-        new BindVertexBuffers2Instance(context, driver, device, m_pipelineConstructionType, m_params, m_robustness2));
+    return (new BindVertexBuffers2Instance(context, driver, device, m_pipelineConstructionType, m_params, m_robustness2,
+                                           enabledDeviceExtensions));
 }
 
 tcu::TestCaseGroup *createCmdBindVertexBuffers2Tests(tcu::TestContext &testCtx,

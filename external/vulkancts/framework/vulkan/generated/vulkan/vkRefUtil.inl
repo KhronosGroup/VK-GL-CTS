@@ -37,6 +37,8 @@ Move<VkSurfaceKHR>					createStreamDescriptorSurfaceGGP	(const InstanceInterface
 Move<VkSurfaceKHR>					createScreenSurfaceQNX				(const InstanceInterface& vk, VkInstance instance, const VkScreenSurfaceCreateInfoQNX* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
 Move<VkDebugReportCallbackEXT>		createDebugReportCallbackEXT		(const InstanceInterface& vk, VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
 Move<VkIndirectCommandsLayoutNV>	createIndirectCommandsLayoutNV		(const DeviceInterface& vk, VkDevice device, const VkIndirectCommandsLayoutCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
+Move<VkIndirectCommandsLayoutEXT>	createIndirectCommandsLayoutEXT		(const DeviceInterface& vk, VkDevice device, const VkIndirectCommandsLayoutCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
+Move<VkIndirectExecutionSetEXT>		createIndirectExecutionSetEXT		(const DeviceInterface& vk, VkDevice device, const VkIndirectExecutionSetCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
 Move<VkDescriptorUpdateTemplate>	createDescriptorUpdateTemplate		(const DeviceInterface& vk, VkDevice device, const VkDescriptorUpdateTemplateCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
 Move<VkSurfaceKHR>					createIOSSurfaceMVK					(const InstanceInterface& vk, VkInstance instance, const VkIOSSurfaceCreateInfoMVK* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
 Move<VkSurfaceKHR>					createMacOSSurfaceMVK				(const InstanceInterface& vk, VkInstance instance, const VkMacOSSurfaceCreateInfoMVK* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
@@ -59,3 +61,4 @@ Move<VkCudaModuleNV>				createCudaModuleNV					(const DeviceInterface& vk, VkDev
 Move<VkCudaFunctionNV>				createCudaFunctionNV				(const DeviceInterface& vk, VkDevice device, const VkCudaFunctionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
 Move<VkMicromapEXT>					createMicromapEXT					(const DeviceInterface& vk, VkDevice device, const VkMicromapCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
 Move<VkOpticalFlowSessionNV>		createOpticalFlowSessionNV			(const DeviceInterface& vk, VkDevice device, const VkOpticalFlowSessionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
+Move<VkExternalComputeQueueNV>		createExternalComputeQueueNV		(const DeviceInterface& vk, VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);

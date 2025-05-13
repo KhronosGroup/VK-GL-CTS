@@ -51,7 +51,7 @@ private:
 ShaderStructCase::ShaderStructCase(tcu::TestContext &testCtx, const std::string &name, bool isVertexCase,
                                    ShaderEvalFunc evalFunc, UniformSetupFunc setupUniformsFunc,
                                    const std::string &vertShaderSource, const std::string &fragShaderSource)
-    : ShaderRenderCase(testCtx, name, isVertexCase, evalFunc, new UniformSetup(setupUniformsFunc), DE_NULL)
+    : ShaderRenderCase(testCtx, name, isVertexCase, evalFunc, new UniformSetup(setupUniformsFunc), nullptr)
 {
     m_vertShaderSource = vertShaderSource;
     m_fragShaderSource = fragShaderSource;

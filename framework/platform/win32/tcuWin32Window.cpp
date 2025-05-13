@@ -37,7 +37,7 @@ static LRESULT CALLBACK windowProcCallback(HWND hWnd, UINT uMsg, WPARAM wParam, 
         return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
-Window::Window(HINSTANCE instance, int width, int height) : m_window(DE_NULL)
+Window::Window(HINSTANCE instance, int width, int height) : m_window(nullptr)
 {
     try
     {
@@ -98,10 +98,11 @@ void Window::setVisible(bool visible)
     processEvents();
 }
 
-void Window::setForeground(void)
+bool Window::setForeground(void)
 {
-    SetForegroundWindow(m_window);
+    const bool result = SetForegroundWindow(m_window);
     processEvents();
+    return result;
 }
 
 void Window::setSize(int width, int height)

@@ -91,7 +91,7 @@ GPUShader5UniformBlocksArrayIndexing::GPUShader5UniformBlocksArrayIndexing(Conte
     , m_fragment_shader_id(0)
     , m_program_id(0)
     , m_tf_buffer_id(0)
-    , m_uniform_buffer_ids(DE_NULL)
+    , m_uniform_buffer_ids(nullptr)
     , m_vertex_shader_id(0)
     , m_vao_id(0)
 {
@@ -142,7 +142,7 @@ void GPUShader5UniformBlocksArrayIndexing::initTest(void)
     /* Create a buffer object */
     gl.genBuffers(1, &m_tf_buffer_id);
     gl.bindBuffer(GL_ARRAY_BUFFER, m_tf_buffer_id);
-    gl.bufferData(GL_ARRAY_BUFFER, m_n_position_components * sizeof(glw::GLfloat) * nVaryings, DE_NULL,
+    gl.bufferData(GL_ARRAY_BUFFER, m_n_position_components * sizeof(glw::GLfloat) * nVaryings, nullptr,
                   GL_DYNAMIC_COPY);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Could not create and initialize a buffer object to be used for XFB!");
 
@@ -336,12 +336,12 @@ void GPUShader5UniformBlocksArrayIndexing::deinit(void)
         m_tf_buffer_id = 0;
     }
 
-    if (m_uniform_buffer_ids != DE_NULL)
+    if (m_uniform_buffer_ids != nullptr)
     {
         gl.deleteBuffers(m_n_array_size, m_uniform_buffer_ids);
 
         delete[] m_uniform_buffer_ids;
-        m_uniform_buffer_ids = DE_NULL;
+        m_uniform_buffer_ids = nullptr;
     }
 
     if (m_vao_id != 0)

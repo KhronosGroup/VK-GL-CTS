@@ -36,7 +36,7 @@ enum
 namespace xe
 {
 
-LocalTcpIpLink::LocalTcpIpLink(void) : m_process(DE_NULL)
+LocalTcpIpLink::LocalTcpIpLink(void) : m_process(nullptr)
 {
 }
 
@@ -59,7 +59,7 @@ void LocalTcpIpLink::start(const char *execServerPath, const char *workDir, int 
     {
         std::string err = deProcess_getLastError(m_process);
         deProcess_destroy(m_process);
-        m_process = DE_NULL;
+        m_process = nullptr;
 
         XE_FAIL((std::string("Failed to start ExecServer '") + execServerPath + "' : " + err).c_str());
     }
@@ -124,7 +124,7 @@ void LocalTcpIpLink::stop(void)
         deProcess_waitForFinish(m_process);
         deProcess_destroy(m_process);
 
-        m_process = DE_NULL;
+        m_process = nullptr;
     }
 }
 

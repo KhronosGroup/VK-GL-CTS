@@ -25,11 +25,11 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktPipelineVertexInputTests.hpp"
+#include "vktPipelineLegacyAttrTests.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktPipelineClearUtil.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
-#include "vktPipelineReferenceRenderer.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vkImageUtil.hpp"
@@ -44,6 +44,7 @@
 #include "tcuFloat.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuFloat.hpp"
+#include "tcuTextureUtil.hpp"
 #include "deMemory.h"
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
@@ -1177,7 +1178,7 @@ VertexInputInstance::VertexInputInstance(Context &context, const PipelineConstru
     {
         const VkImageCreateInfo colorImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-            DE_NULL,                                                               // const void* pNext;
+            nullptr,                                                               // const void* pNext;
             0u,                                                                    // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
             m_colorFormat,                                                         // VkFormat format;
@@ -1206,7 +1207,7 @@ VertexInputInstance::VertexInputInstance(Context &context, const PipelineConstru
     {
         const VkImageViewCreateInfo colorAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,    // VkStructureType sType;
-            DE_NULL,                                     // const void* pNext;
+            nullptr,                                     // const void* pNext;
             0u,                                          // VkImageViewCreateFlags flags;
             *m_colorImage,                               // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                       // VkImageViewType viewType;
@@ -1225,7 +1226,7 @@ VertexInputInstance::VertexInputInstance(Context &context, const PipelineConstru
     {
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             1u,                                        // uint32_t attachmentCount;
@@ -1242,12 +1243,12 @@ VertexInputInstance::VertexInputInstance(Context &context, const PipelineConstru
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             0u,                                            // uint32_t setLayoutCount;
-            DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_pipelineLayout = PipelineLayoutWrapper(pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
@@ -1284,7 +1285,7 @@ VertexInputInstance::VertexInputInstance(Context &context, const PipelineConstru
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
             (uint32_t)bindingDescriptions.size(),                      // uint32_t vertexBindingDescriptionCount;
             bindingDescriptions.data(), // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -1308,7 +1309,7 @@ VertexInputInstance::VertexInputInstance(Context &context, const PipelineConstru
 
         const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
+            nullptr,                                                  // const void* pNext;
             0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
             false,                                                    // VkBool32 logicOpEnable;
             VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -1323,7 +1324,7 @@ VertexInputInstance::VertexInputInstance(Context &context, const PipelineConstru
             .setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
             .setupVertexInputState(&vertexInputStateParams)
             .setupPreRasterizationShaderState(viewport, scissor, m_pipelineLayout, *m_renderPass, 0u,
-                                              m_vertexShaderModule, DE_NULL, ShaderWrapper(), ShaderWrapper(),
+                                              m_vertexShaderModule, nullptr, ShaderWrapper(), ShaderWrapper(),
                                               ShaderWrapper(), &specializationInfo)
             .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule)
             .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
@@ -1340,7 +1341,7 @@ VertexInputInstance::VertexInputInstance(Context &context, const PipelineConstru
 
         const VkBufferCreateInfo vertexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             bufferSize,                           // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
@@ -1377,7 +1378,7 @@ VertexInputInstance::VertexInputInstance(Context &context, const PipelineConstru
 
         const VkImageMemoryBarrier attachmentLayoutBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,      // VkStructureType sType;
-            DE_NULL,                                     // const void* pNext;
+            nullptr,                                     // const void* pNext;
             0u,                                          // VkAccessFlags srcAccessMask;
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,        // VkAccessFlags dstAccessMask;
             VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout oldLayout;
@@ -1393,8 +1394,8 @@ VertexInputInstance::VertexInputInstance(Context &context, const PipelineConstru
         beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
         vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 0u,
-                              DE_NULL, 1u, &attachmentLayoutBarrier);
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0u, nullptr, 0u,
+                              nullptr, 1u, &attachmentLayoutBarrier);
 
         m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()),
                            attachmentClearValue);
@@ -1439,7 +1440,7 @@ VertexInputInstance::~VertexInputInstance(void)
     const VkDevice vkDevice   = m_context.getDevice();
 
     for (size_t bufferNdx = 0; bufferNdx < m_vertexBuffers.size(); bufferNdx++)
-        vk.destroyBuffer(vkDevice, m_vertexBuffers[bufferNdx], DE_NULL);
+        vk.destroyBuffer(vkDevice, m_vertexBuffers[bufferNdx], nullptr);
 
     for (size_t allocNdx = 0; allocNdx < m_vertexBufferAllocs.size(); allocNdx++)
         delete m_vertexBufferAllocs[allocNdx];
@@ -2389,23 +2390,23 @@ tcu::TestStatus StrideChangeTest::iterate(void)
 
     // Vertices. See the test description above about padding and real vertices.
     const std::vector<tcu::Vec4> vertices{
+        // clang-format off
         tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f), // First triangle, vertex 0.
-        tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f),  // First triangle, vertex 1.
-        tcu::Vec4(1.0f, -1.0f, 0.0f, 1.0f),  // First triangle, vertex 2.
+        tcu::Vec4(-1.0f,  1.0f, 0.0f, 1.0f), // First triangle, vertex 1.
+        tcu::Vec4( 1.0f, -1.0f, 0.0f, 1.0f), // First triangle, vertex 2.
 
-        tcu::Vec4(1.0f, -1.0f, 0.0f, 1.0f), // Second triangle, vertex 0.  |
-        tcu::Vec4(-1.0f, -1.0f, 0.0f,
-                  1.0f), // Padding.                    | Padding such that it's the first triangle again.
-        tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f), // Padding.                    |
+        tcu::Vec4( 1.0f, -1.0f, 0.0f, 1.0f), // Second triangle, vertex 0.  |
+        tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f), // Padding.                    | Padding such that it's the first triangle again.
+        tcu::Vec4(-1.0f,  1.0f, 0.0f, 1.0f), // Padding.                    |
 
-        tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f), // Second triangle, vertex 1.  |
-        tcu::Vec4(1.0f, -1.0f, 0.0f,
-                  1.0f), // Padding.                    | Padding such that it's the first triangle again.
+        tcu::Vec4(-1.0f,  1.0f, 0.0f, 1.0f), // Second triangle, vertex 1.  |
+        tcu::Vec4( 1.0f, -1.0f, 0.0f, 1.0f), // Padding.                    | Padding such that it's the first triangle again.
         tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f), // Padding.                    |
 
-        tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f), // Second triangle, vertex 2.  |
-        tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f), // Padding.                    | Padding such that it's a zero-area triangle.
-        tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f), // Padding.                    |
+        tcu::Vec4( 1.0f,  1.0f, 0.0f, 1.0f), // Second triangle, vertex 2.  |
+        tcu::Vec4( 1.0f,  1.0f, 0.0f, 1.0f), // Padding.                    | Padding such that it's a zero-area triangle.
+        tcu::Vec4( 1.0f,  1.0f, 0.0f, 1.0f), // Padding.                    |
+        // clang-format on
     };
 
     // Vertex buffer
@@ -2531,6 +2532,255 @@ tcu::TestStatus StrideChangeTest::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+namespace UnusedBinding
+{
+
+struct Params
+{
+    PipelineConstructionType constructionType;
+    bool dynamicInputs;
+};
+
+void checkSupport(Context &context, Params params)
+{
+    const auto ctx = context.getContextCommonData();
+    checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, params.constructionType);
+
+    if (params.dynamicInputs && !isConstructionTypeShaderObject(params.constructionType))
+        context.requireDeviceFunctionality("VK_EXT_vertex_input_dynamic_state");
+}
+
+void initPrograms(SourceCollections &programCollection, Params)
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "layout (location=0) in vec4 inPos;\n"
+         << "layout (location=1) in vec4 inColor;\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main (void) {\n"
+         << "    gl_Position = inPos;\n"
+         << "    outColor = inColor;\n"
+         << "}\n";
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) in vec4 inColor;\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main (void) {\n"
+         << "    outColor = inColor;\n"
+         << "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+struct PositionColor
+{
+    tcu::Vec4 position;
+    tcu::Vec4 color;
+};
+
+tcu::TestStatus runTest(Context &context, Params params)
+{
+    const auto ctx = context.getContextCommonData();
+    const tcu::IVec3 fbExtent(2, 2, 1);
+    const auto apiExtent = makeExtent3D(fbExtent);
+    const auto format    = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto imgUsage =
+        (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+    // Vertices, in 4 triangle strips covering each quadrant, with a color each.
+    const std::vector<tcu::Vec4> colors{
+        tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f),
+        tcu::Vec4(0.0f, 1.0f, 1.0f, 1.0f),
+        tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f),
+        tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f),
+    };
+
+    const uint32_t verticesPerQuad = 4u;
+    const uint32_t totalQuadrants  = 4u;
+
+    const std::vector<PositionColor> vertices{
+        // clang-format off
+        PositionColor{tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f), colors.at(0u)},
+        PositionColor{tcu::Vec4(-1.0f,  0.0f, 0.0f, 1.0f), colors.at(0u)},
+        PositionColor{tcu::Vec4( 0.0f, -1.0f, 0.0f, 1.0f), colors.at(0u)},
+        PositionColor{tcu::Vec4( 0.0f,  0.0f, 0.0f, 1.0f), colors.at(0u)},
+
+        PositionColor{tcu::Vec4( 0.0f, -1.0f, 0.0f, 1.0f), colors.at(1u)},
+        PositionColor{tcu::Vec4( 0.0f,  0.0f, 0.0f, 1.0f), colors.at(1u)},
+        PositionColor{tcu::Vec4( 1.0f, -1.0f, 0.0f, 1.0f), colors.at(1u)},
+        PositionColor{tcu::Vec4( 1.0f,  0.0f, 0.0f, 1.0f), colors.at(1u)},
+
+        PositionColor{tcu::Vec4(-1.0f,  0.0f, 0.0f, 1.0f), colors.at(2u)},
+        PositionColor{tcu::Vec4(-1.0f,  1.0f, 0.0f, 1.0f), colors.at(2u)},
+        PositionColor{tcu::Vec4( 0.0f,  0.0f, 0.0f, 1.0f), colors.at(2u)},
+        PositionColor{tcu::Vec4( 0.0f,  1.0f, 0.0f, 1.0f), colors.at(2u)},
+
+        PositionColor{tcu::Vec4( 0.0f,  0.0f, 0.0f, 1.0f), colors.at(3u)},
+        PositionColor{tcu::Vec4( 0.0f,  1.0f, 0.0f, 1.0f), colors.at(3u)},
+        PositionColor{tcu::Vec4( 1.0f,  0.0f, 0.0f, 1.0f), colors.at(3u)},
+        PositionColor{tcu::Vec4( 1.0f,  1.0f, 0.0f, 1.0f), colors.at(3u)},
+        // clang-format on
+    };
+
+    // Vertex buffer.
+    const auto vtxBufferSize = static_cast<VkDeviceSize>(de::dataSize(vertices));
+    const auto vtxBufferInfo = makeBufferCreateInfo(vtxBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    BufferWithMemory vtxBuffer(ctx.vkd, ctx.device, ctx.allocator, vtxBufferInfo, MemoryRequirement::HostVisible);
+    {
+        auto &alloc = vtxBuffer.getAllocation();
+        void *data  = alloc.getHostPtr();
+        memcpy(data, de::dataOrNull(vertices), de::dataSize(vertices));
+    }
+    const VkDeviceSize vtxBufferOffset = 0ull;
+
+    // Color buffer.
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, apiExtent, format, imgUsage, VK_IMAGE_TYPE_2D);
+
+    RenderPassWrapper renderPass(params.constructionType, ctx.vkd, ctx.device, format);
+    renderPass.createFramebuffer(ctx.vkd, ctx.device, colorBuffer.getImage(), colorBuffer.getImageView(),
+                                 apiExtent.width, apiExtent.height);
+
+    // Vertex inputs.
+    const std::vector<VkVertexInputBindingDescription> actualBindings{
+        makeVertexInputBindingDescription(0u, DE_SIZEOF32(PositionColor), VK_VERTEX_INPUT_RATE_VERTEX),
+        makeVertexInputBindingDescription(1u, DE_SIZEOF32(tcu::Vec4), VK_VERTEX_INPUT_RATE_VERTEX),
+    };
+    const std::vector<VkVertexInputAttributeDescription> actualAttributes{
+        makeVertexInputAttributeDescription(0u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT,
+                                            static_cast<uint32_t>(offsetof(PositionColor, position))),
+        makeVertexInputAttributeDescription(1u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT,
+                                            static_cast<uint32_t>(offsetof(PositionColor, color))),
+    };
+
+    VkPipelineVertexInputStateCreateInfo staticVertexInputState = initVulkanStructure();
+
+    if (!params.dynamicInputs)
+    {
+        staticVertexInputState.vertexBindingDescriptionCount   = de::sizeU32(actualBindings);
+        staticVertexInputState.pVertexBindingDescriptions      = de::dataOrNull(actualBindings);
+        staticVertexInputState.vertexAttributeDescriptionCount = de::sizeU32(actualAttributes);
+        staticVertexInputState.pVertexAttributeDescriptions    = de::dataOrNull(actualAttributes);
+    }
+
+    // Shaders.
+    const auto &binaries = context.getBinaryCollection();
+    const ShaderWrapper vertShader(ctx.vkd, ctx.device, binaries.get("vert"));
+    const ShaderWrapper fragShader(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    // Dynamic state.
+    std::vector<VkDynamicState> dynamicStates;
+    if (params.dynamicInputs)
+        dynamicStates.push_back(VK_DYNAMIC_STATE_VERTEX_INPUT_EXT);
+
+    const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(dynamicStates),
+        de::dataOrNull(dynamicStates),
+    };
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
+
+    PipelineLayoutWrapper pipelineLayout(params.constructionType, ctx.vkd, ctx.device);
+
+    GraphicsPipelineWrapper pipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, context.getDeviceExtensions(),
+                                     params.constructionType);
+    pipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+        .setDefaultColorBlendState()
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setDefaultRasterizationState()
+        .setDynamicState(&dynamicStateCreateInfo)
+        .setupVertexInputState(&staticVertexInputState)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertShader)
+        .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragShader)
+        .setupFragmentOutputState(*renderPass)
+        .buildPipeline();
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u), clearColor);
+    pipeline.bind(cmdBuffer);
+    ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vtxBuffer.get(), &vtxBufferOffset);
+    if (params.dynamicInputs)
+    {
+        const std::vector<VkVertexInputBindingDescription2EXT> bindings{
+            VkVertexInputBindingDescription2EXT{
+                VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT,
+                nullptr,
+                actualBindings.at(0u).binding,
+                actualBindings.at(0u).stride,
+                actualBindings.at(0u).inputRate,
+                1u,
+            },
+            VkVertexInputBindingDescription2EXT{
+                VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT,
+                nullptr,
+                actualBindings.at(1u).binding,
+                actualBindings.at(1u).stride,
+                actualBindings.at(1u).inputRate,
+                1u,
+            },
+        };
+        const std::vector<VkVertexInputAttributeDescription2EXT> attributes{
+            VkVertexInputAttributeDescription2EXT{
+                VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,
+                nullptr,
+                actualAttributes.at(0u).location,
+                actualAttributes.at(0u).binding,
+                actualAttributes.at(0u).format,
+                actualAttributes.at(0u).offset,
+            },
+            VkVertexInputAttributeDescription2EXT{
+                VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,
+                nullptr,
+                actualAttributes.at(1u).location,
+                actualAttributes.at(1u).binding,
+                actualAttributes.at(1u).format,
+                actualAttributes.at(1u).offset,
+            },
+        };
+        ctx.vkd.cmdSetVertexInputEXT(cmdBuffer, de::sizeU32(bindings), de::dataOrNull(bindings),
+                                     de::sizeU32(attributes), de::dataOrNull(attributes));
+    }
+    // Draw the 4 quadrants.
+    for (uint32_t i = 0u; i < totalQuadrants; ++i)
+        ctx.vkd.cmdDraw(cmdBuffer, verticesPerQuad, 1u, i * verticesPerQuad, 1u);
+    renderPass.end(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), fbExtent.swizzle(0, 1));
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    const auto tcuFormat = mapVkFormat(format);
+    tcu::TextureLevel refLevel(tcuFormat, fbExtent.x(), fbExtent.y());
+    tcu::PixelBufferAccess refAccess = refLevel.getAccess();
+
+    refAccess.setPixel(colors.at(0u), 0, 0);
+    refAccess.setPixel(colors.at(1u), 1, 0);
+    refAccess.setPixel(colors.at(2u), 0, 1);
+    refAccess.setPixel(colors.at(3u), 1, 1);
+
+    invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+    tcu::ConstPixelBufferAccess resAccess(tcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+
+    const float threshold = 0.0f; // Expect exact colors.
+    const tcu::Vec4 thresholdVec(threshold, threshold, threshold, threshold);
+    auto &log = context.getTestContext().getLog();
+
+    if (!tcu::floatThresholdCompare(log, "Result", "", refAccess, resAccess, thresholdVec, tcu::COMPARE_LOG_ON_ERROR))
+        TCU_FAIL("Unexpected results in color buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+} // namespace UnusedBinding
+
 void createMiscVertexInputTests(tcu::TestCaseGroup *miscTests, PipelineConstructionType pipelineConstructionType)
 {
     auto &testCtx = miscTests->getTestContext();
@@ -2547,6 +2797,19 @@ void createMiscVertexInputTests(tcu::TestCaseGroup *miscTests, PipelineConstruct
                 std::string("stride_change_vert") + (useTess ? "_tess" : "") + (useGeom ? "_geom" : "") + "_frag";
             miscTests->addChild(new StrideChangeCase(testCtx, testName, params));
         }
+
+    if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC ||
+        pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY ||
+        pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV)
+    {
+        for (const auto dynamic : {false, true})
+        {
+            const auto testName = std::string("unused_binding") + (dynamic ? "_dynamic" : "");
+            const UnusedBinding::Params params{pipelineConstructionType, dynamic};
+            addFunctionCaseWithPrograms(miscTests, testName, UnusedBinding::checkSupport, UnusedBinding::initPrograms,
+                                        UnusedBinding::runTest, params);
+        }
+    }
 }
 
 } // namespace
@@ -2562,6 +2825,14 @@ void createVertexInputTests(tcu::TestCaseGroup *vertexInputTests, PipelineConstr
 
     // Miscellaneous tests.
     addTestGroup(vertexInputTests, "misc", createMiscVertexInputTests, pipelineConstructionType);
+
+    if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC ||
+        pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY ||
+        pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV)
+    {
+        addTestGroup(vertexInputTests, "legacy_vertex_attributes", createLegacyVertexAttributesTests,
+                     pipelineConstructionType);
+    }
 }
 
 } // namespace pipeline

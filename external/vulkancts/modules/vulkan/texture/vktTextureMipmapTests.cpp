@@ -1001,7 +1001,7 @@ Texture2DLodControlTestInstance::Texture2DLodControlTestInstance(
     , m_texHeight(64) //64
     , m_testParameters(testParameters)
     , m_minFilter(testParameters.minFilter)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(context, testParameters.sampleCount, m_texWidth * 4, m_texHeight * 4, vk::makeComponentMappingRGBA(),
                  testParameters.testType > util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD,
                  testParameters.testType >= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD)
@@ -1279,7 +1279,7 @@ TextureCubeLodControlTestInstance::TextureCubeLodControlTestInstance(
     , m_texSize(64)
     , m_testParameters(testParameters)
     , m_minFilter(testParameters.minFilter)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
 
     , m_renderer(context, testParameters.sampleCount, m_texSize * 2, m_texSize * 2)
 {
@@ -1571,7 +1571,7 @@ Texture3DLodControlTestInstance::Texture3DLodControlTestInstance(
     , m_texDepth(32)
     , m_testParameters(testParameters)
     , m_minFilter(testParameters.minFilter)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(context, testParameters.sampleCount, m_texWidth * 4, m_texHeight * 4, vk::makeComponentMappingRGBA(),
                  testParameters.testType > util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD,
                  testParameters.testType >= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD)
@@ -2158,10 +2158,15 @@ void Texture2DImageViewMinLodIntTexCoordTest::checkSupport(Context &context) con
     DE_ASSERT(m_params.testType > util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD);
 
     context.requireDeviceFunctionality("VK_EXT_image_view_min_lod");
-    context.requireDeviceFunctionality("VK_EXT_robustness2");
+
+    if (!context.isDeviceFunctionalitySupported("VK_KHR_robustness2") &&
+        !context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+
+        TCU_THROW(NotSupportedError, "VK_KHR_robustness2 and VK_EXT_robustness2 are not supported");
+
     vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures;
     imageViewMinLodFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT;
-    imageViewMinLodFeatures.pNext = DE_NULL;
+    imageViewMinLodFeatures.pNext = nullptr;
 
     VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features;
     robustness2Features.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT;
@@ -2177,7 +2182,7 @@ void Texture2DImageViewMinLodIntTexCoordTest::checkSupport(Context &context) con
         TCU_THROW(NotSupportedError, "VK_EXT_image_view_min_lod minLod feature not supported");
 
     if (robustness2Features.robustImageAccess2 == false)
-        TCU_THROW(NotSupportedError, "VK_EXT_robustness2 robustImageAccess2 feature not supported");
+        TCU_THROW(NotSupportedError, "robustImageAccess2 feature not supported");
 }
 
 TestInstance *Texture2DImageViewMinLodIntTexCoordTest::createInstance(Context &context) const
@@ -2332,10 +2337,15 @@ void Texture3DImageViewMinLodIntTexCoordTest::checkSupport(Context &context) con
     DE_ASSERT(m_params.testType > util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD);
 
     context.requireDeviceFunctionality("VK_EXT_image_view_min_lod");
-    context.requireDeviceFunctionality("VK_EXT_robustness2");
+
+    if (!context.isDeviceFunctionalitySupported("VK_KHR_robustness2") &&
+        !context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+
+        TCU_THROW(NotSupportedError, "VK_KHR_robustness2 and VK_EXT_robustness2 are not supported");
+
     vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures;
     imageViewMinLodFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT;
-    imageViewMinLodFeatures.pNext = DE_NULL;
+    imageViewMinLodFeatures.pNext = nullptr;
 
     VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features;
     robustness2Features.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT;
@@ -2351,7 +2361,7 @@ void Texture3DImageViewMinLodIntTexCoordTest::checkSupport(Context &context) con
         TCU_THROW(NotSupportedError, "VK_EXT_image_view_min_lod minLod feature not supported");
 
     if (robustness2Features.robustImageAccess2 == false)
-        TCU_THROW(NotSupportedError, "VK_EXT_robustness2 robustImageAccess2 feature not supported");
+        TCU_THROW(NotSupportedError, "robustImageAccess2 feature not supported");
 }
 
 TestInstance *Texture3DImageViewMinLodIntTexCoordTest::createInstance(Context &context) const
@@ -2505,7 +2515,10 @@ void TextureGatherMinLodTest::checkSupport(Context &context) const
 
     if (m_params.needsRobustness2())
     {
-        context.requireDeviceFunctionality("VK_EXT_robustness2");
+        if (!context.isDeviceFunctionalitySupported("VK_KHR_robustness2") &&
+            !context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+
+            TCU_THROW(NotSupportedError, "VK_KHR_robustness2 and VK_EXT_robustness2 are not supported");
 
         VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = initVulkanStructure();
         VkPhysicalDeviceFeatures2 features2                        = initVulkanStructure(&robustness2Features);
@@ -2600,7 +2613,7 @@ public:
         // Create a universal queue that supports graphics and compute.
         const VkDeviceQueueCreateInfo queueParams = {
             VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                    // const void* pNext;
+            nullptr,                                    // const void* pNext;
             0u,                                         // VkDeviceQueueCreateFlags flags;
             m_queueFamilyIndex,                         // uint32_t queueFamilyIndex;
             1u,                                         // uint32_t queueCount;
@@ -2608,7 +2621,7 @@ public:
         };
 
         const char *extensions[] = {
-            "VK_EXT_robustness2",
+            context.isDeviceFunctionalitySupported("VK_KHR_robustness2") ? "VK_KHR_robustness2" : "VK_EXT_robustness2",
             "VK_EXT_image_view_min_lod",
         };
 
@@ -2978,7 +2991,7 @@ void checkTextureSupport(Context &context, const Texture2DMipmapTestCaseParamete
         context.requireDeviceFunctionality("VK_EXT_image_view_min_lod");
         vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures;
         imageViewMinLodFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT;
-        imageViewMinLodFeatures.pNext = DE_NULL;
+        imageViewMinLodFeatures.pNext = nullptr;
 
         vk::VkPhysicalDeviceFeatures2 features2;
 
@@ -3000,7 +3013,7 @@ void checkTextureSupport(Context &context, const TextureCubeMipmapTestCaseParame
         context.requireDeviceFunctionality("VK_EXT_image_view_min_lod");
         vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures;
         imageViewMinLodFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT;
-        imageViewMinLodFeatures.pNext = DE_NULL;
+        imageViewMinLodFeatures.pNext = nullptr;
 
         vk::VkPhysicalDeviceFeatures2 features2;
 
@@ -3022,7 +3035,7 @@ void checkTextureSupport(Context &context, const Texture3DMipmapTestCaseParamete
         context.requireDeviceFunctionality("VK_EXT_image_view_min_lod");
         vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures;
         imageViewMinLodFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT;
-        imageViewMinLodFeatures.pNext = DE_NULL;
+        imageViewMinLodFeatures.pNext = nullptr;
 
         vk::VkPhysicalDeviceFeatures2 features2;
 
@@ -3129,7 +3142,7 @@ void populateTextureMipmappingTests(tcu::TestCaseGroup *textureMipmappingTests)
         const char *name;
         const int width;
         const int height;
-    } tex2DSizes[] = {{DE_NULL, 64, 64}, // Default.
+    } tex2DSizes[] = {{nullptr, 64, 64}, // Default.
                       {"npot", 63, 57},
                       {"non_square", 32, 64}};
 
@@ -3139,7 +3152,7 @@ void populateTextureMipmappingTests(tcu::TestCaseGroup *textureMipmappingTests)
         const int width;
         const int height;
         const int depth;
-    } tex3DSizes[] = {{DE_NULL, 32, 32, 32}, // Default.
+    } tex3DSizes[] = {{nullptr, 32, 32, 32}, // Default.
                       {"npot", 33, 29, 27}};
 
     const int cubeMapSize = 64;

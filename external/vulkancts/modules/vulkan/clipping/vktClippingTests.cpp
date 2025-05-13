@@ -337,12 +337,12 @@ VkPointClippingBehavior getClippingBehavior(const InstanceInterface &vk, VkPhysi
 {
     VkPhysicalDevicePointClippingProperties behaviorProperties = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES, // VkStructureType                sType
-        DE_NULL,                                                     // void*                        pNext
+        nullptr,                                                     // void*                        pNext
         invalidClippingBehavior                                      // VkPointClippingBehavior    pointClippingBehavior
     };
     VkPhysicalDeviceProperties2 properties2;
 
-    DE_ASSERT(getPointClippingBehaviorName(invalidClippingBehavior) == DE_NULL);
+    DE_ASSERT(getPointClippingBehaviorName(invalidClippingBehavior) == nullptr);
 
     deMemset(&properties2, 0, sizeof(properties2));
 

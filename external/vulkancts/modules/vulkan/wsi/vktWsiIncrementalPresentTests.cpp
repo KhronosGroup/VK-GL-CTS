@@ -104,22 +104,22 @@ vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk:
                                            const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
                                            const Extensions &supportedExtensions, const uint32_t queueFamilyIndex,
                                            bool requiresIncrementalPresent, bool validationEnabled,
-                                           const vk::VkAllocationCallbacks *pAllocator = DE_NULL)
+                                           const vk::VkAllocationCallbacks *pAllocator = nullptr)
 {
     const float queuePriorities[]                  = {1.0f};
-    const vk::VkDeviceQueueCreateInfo queueInfos[] = {{vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, DE_NULL,
+    const vk::VkDeviceQueueCreateInfo queueInfos[] = {{vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
                                                        (vk::VkDeviceQueueCreateFlags)0, queueFamilyIndex,
                                                        DE_LENGTH_OF_ARRAY(queuePriorities), &queuePriorities[0]}};
     const vk::VkPhysicalDeviceFeatures features    = getDeviceNullFeatures();
     const char *const extensions[]                 = {"VK_KHR_swapchain", "VK_KHR_incremental_present"};
 
     const vk::VkDeviceCreateInfo deviceParams = {vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-                                                 DE_NULL,
+                                                 nullptr,
                                                  (vk::VkDeviceCreateFlags)0,
                                                  DE_LENGTH_OF_ARRAY(queueInfos),
                                                  &queueInfos[0],
                                                  0u,
-                                                 DE_NULL,
+                                                 nullptr,
                                                  requiresIncrementalPresent ? 2u : 1u,
                                                  DE_ARRAY_BEGIN(extensions),
                                                  &features};
@@ -179,7 +179,7 @@ void deinitSemaphores(const vk::DeviceInterface &vkd, vk::VkDevice device, std::
     for (size_t ndx = 0; ndx < semaphores.size(); ndx++)
     {
         if (semaphores[ndx] != VK_NULL_HANDLE)
-            vkd.destroySemaphore(device, semaphores[ndx], DE_NULL);
+            vkd.destroySemaphore(device, semaphores[ndx], nullptr);
 
         semaphores[ndx] = VK_NULL_HANDLE;
     }
@@ -198,7 +198,7 @@ void deinitFences(const vk::DeviceInterface &vkd, vk::VkDevice device, std::vect
     for (size_t ndx = 0; ndx < fences.size(); ndx++)
     {
         if (fences[ndx] != VK_NULL_HANDLE)
-            vkd.destroyFence(device, fences[ndx], DE_NULL);
+            vkd.destroyFence(device, fences[ndx], nullptr);
 
         fences[ndx] = VK_NULL_HANDLE;
     }
@@ -273,7 +273,7 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer(const vk::DeviceInterface &vkd
                                                   size_t imageNextFrame, size_t currentFrame, uint32_t imageWidth,
                                                   uint32_t imageHeight)
 {
-    const vk::VkCommandBufferAllocateInfo allocateInfo = {vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, DE_NULL,
+    const vk::VkCommandBufferAllocateInfo allocateInfo = {vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, nullptr,
 
                                                           commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1};
 
@@ -284,7 +284,7 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer(const vk::DeviceInterface &vkd
         const vk::VkImageSubresourceRange subRange = {vk::VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
         const vk::VkImageMemoryBarrier barrier     = {
             vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-            DE_NULL,
+            nullptr,
             0u,
             0u,
             (isFirst ? vk::VK_IMAGE_LAYOUT_UNDEFINED : vk::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR),
@@ -328,7 +328,7 @@ void deinitCommandBuffers(const vk::DeviceInterface &vkd, vk::VkDevice device, v
 vk::Move<vk::VkCommandPool> createCommandPool(const vk::DeviceInterface &vkd, vk::VkDevice device,
                                               uint32_t queueFamilyIndex)
 {
-    const vk::VkCommandPoolCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, DE_NULL, 0u,
+    const vk::VkCommandPoolCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, nullptr, 0u,
                                                     queueFamilyIndex};
 
     return vk::createCommandPool(vkd, device, &createInfo);
@@ -339,7 +339,7 @@ vk::Move<vk::VkFramebuffer> createFramebuffer(const vk::DeviceInterface &vkd, vk
                                               uint32_t height)
 {
     const vk::VkFramebufferCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-                                                    DE_NULL,
+                                                    nullptr,
 
                                                     0u,
                                                     renderPass,
@@ -368,7 +368,7 @@ void deinitFramebuffers(const vk::DeviceInterface &vkd, vk::VkDevice device,
     for (size_t ndx = 0; ndx < framebuffers.size(); ndx++)
     {
         if (framebuffers[ndx] != VK_NULL_HANDLE)
-            vkd.destroyFramebuffer(device, framebuffers[ndx], DE_NULL);
+            vkd.destroyFramebuffer(device, framebuffers[ndx], nullptr);
 
         framebuffers[ndx] = VK_NULL_HANDLE;
     }
@@ -380,7 +380,7 @@ vk::Move<vk::VkImageView> createImageView(const vk::DeviceInterface &vkd, vk::Vk
                                           vk::VkFormat format)
 {
     const vk::VkImageViewCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                                                  DE_NULL,
+                                                  nullptr,
 
                                                   0u,
                                                   image,
@@ -389,7 +389,7 @@ vk::Move<vk::VkImageView> createImageView(const vk::DeviceInterface &vkd, vk::Vk
                                                   vk::makeComponentMappingRGBA(),
                                                   {vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}};
 
-    return vk::createImageView(vkd, device, &createInfo, DE_NULL);
+    return vk::createImageView(vkd, device, &createInfo, nullptr);
 }
 
 void initImageViews(const vk::DeviceInterface &vkd, vk::VkDevice device, const std::vector<vk::VkImage> &images,
@@ -406,7 +406,7 @@ void deinitImageViews(const vk::DeviceInterface &vkd, vk::VkDevice device, std::
     for (size_t ndx = 0; ndx < imageViews.size(); ndx++)
     {
         if (imageViews[ndx] != VK_NULL_HANDLE)
-            vkd.destroyImageView(device, imageViews[ndx], DE_NULL);
+            vkd.destroyImageView(device, imageViews[ndx], nullptr);
 
         imageViews[ndx] = VK_NULL_HANDLE;
     }
@@ -426,7 +426,7 @@ vk::Move<vk::VkPipeline> createPipeline(const vk::DeviceInterface &vkd, vk::VkDe
                                         uint32_t width, uint32_t height)
 {
     const vk::VkPipelineVertexInputStateCreateInfo vertexInputState = {
-        vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, DE_NULL, 0u, 0u, DE_NULL, 0u, DE_NULL};
+        vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, nullptr, 0u, 0u, nullptr, 0u, nullptr};
     const std::vector<vk::VkViewport> viewports(1, vk::makeViewport(tcu::UVec2(width, height)));
     const std::vector<vk::VkRect2D> scissors(1, vk::makeRect2D(tcu::UVec2(width, height)));
 
@@ -452,11 +452,11 @@ vk::Move<vk::VkPipelineLayout> createPipelineLayout(const vk::DeviceInterface &v
 {
     const vk::VkPushConstantRange pushConstants[]   = {{vk::VK_SHADER_STAGE_FRAGMENT_BIT, 0u, 4u}};
     const vk::VkPipelineLayoutCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-                                                       DE_NULL,
+                                                       nullptr,
                                                        0u,
 
                                                        0u,
-                                                       DE_NULL,
+                                                       nullptr,
 
                                                        DE_LENGTH_OF_ARRAY(pushConstants),
                                                        pushConstants};
@@ -608,7 +608,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs(
         const vk::VkFormat imageFormat                       = formats[formatNdx].format;
         const vk::VkColorSpaceKHR imageColorSpace            = formats[formatNdx].colorSpace;
         const vk::VkSwapchainCreateInfoKHR createInfo        = {vk::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-                                                                DE_NULL,
+                                                                nullptr,
                                                                 0u,
                                                                 surface,
                                                                 properties.minImageCount,
@@ -630,7 +630,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs(
 
         // add an extra unused swapchain
         const vk::VkSwapchainCreateInfoKHR unusedInfo = {vk::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-                                                         DE_NULL,
+                                                         nullptr,
                                                          0u,
                                                          surface,
                                                          properties.minImageCount,
@@ -659,7 +659,7 @@ IncrementalPresentTestInstance::IncrementalPresentTestInstance(Context &context,
     , m_testConfig(testConfig)
     , m_useIncrementalPresent(testConfig.useIncrementalPresent)
     , m_vkp(context.getPlatformInterface())
-    , m_instanceExtensions(vk::enumerateInstanceExtensionProperties(m_vkp, DE_NULL))
+    , m_instanceExtensions(vk::enumerateInstanceExtensionProperties(m_vkp, nullptr))
     , m_instance(createInstanceWithWsi(context, m_instanceExtensions, testConfig.wsiType))
     , m_vki(m_instance.getDriver())
     , m_physicalDevice(vk::chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
@@ -670,7 +670,7 @@ IncrementalPresentTestInstance::IncrementalPresentTestInstance(Context &context,
                                        context.getTestContext().getCommandLine()))
 
     , m_queueFamilyIndex(vk::wsi::chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
-    , m_deviceExtensions(vk::enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
+    , m_deviceExtensions(vk::enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, nullptr))
     , m_device(createDeviceWithWsi(m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex,
                                    testConfig.useIncrementalPresent,
                                    context.getTestContext().getCommandLine().isValidationEnabled()))
@@ -758,13 +758,13 @@ void IncrementalPresentTestInstance::deinitSwapchainResources(void)
 
     if (m_freeAcquireSemaphore != VK_NULL_HANDLE)
     {
-        m_vkd.destroySemaphore(*m_device, m_freeAcquireSemaphore, DE_NULL);
+        m_vkd.destroySemaphore(*m_device, m_freeAcquireSemaphore, nullptr);
         m_freeAcquireSemaphore = VK_NULL_HANDLE;
     }
 
     if (m_freeRenderSemaphore != VK_NULL_HANDLE)
     {
-        m_vkd.destroySemaphore(*m_device, m_freeRenderSemaphore, DE_NULL);
+        m_vkd.destroySemaphore(*m_device, m_freeRenderSemaphore, nullptr);
         m_freeRenderSemaphore = VK_NULL_HANDLE;
     }
 
@@ -827,7 +827,7 @@ void IncrementalPresentTestInstance::render(void)
     {
         const vk::VkPipelineStageFlags dstStageMask = vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         const vk::VkSubmitInfo submitInfo           = {vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                                                       DE_NULL,
+                                                       nullptr,
                                                        1u,
                                                        &currentAcquireSemaphore,
                                                        &dstStageMask,
@@ -844,8 +844,8 @@ void IncrementalPresentTestInstance::render(void)
     {
         vk::VkResult result;
         const vector<vk::VkRectLayerKHR> rects   = getUpdatedRects(imageNextFrame, m_frameNdx, width, height);
-        const vk::VkPresentRegionKHR region      = {(uint32_t)rects.size(), rects.empty() ? DE_NULL : &rects[0]};
-        const vk::VkPresentRegionsKHR regionInfo = {vk::VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR, DE_NULL, 1u, &region};
+        const vk::VkPresentRegionKHR region      = {(uint32_t)rects.size(), rects.empty() ? nullptr : &rects[0]};
+        const vk::VkPresentRegionsKHR regionInfo = {vk::VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR, nullptr, 1u, &region};
         const vk::VkPresentInfoKHR presentInfo   = {vk::VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
                                                     &regionInfo,
                                                     1u,
@@ -862,7 +862,7 @@ void IncrementalPresentTestInstance::render(void)
     {
         vk::VkResult result;
         const vk::VkPresentInfoKHR presentInfo = {vk::VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-                                                  DE_NULL,
+                                                  nullptr,
                                                   1u,
                                                   &currentRenderSemaphore,
                                                   1u,
@@ -1020,7 +1020,8 @@ void createIncrementalPresentTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type 
     } presentModes[] = {{vk::VK_PRESENT_MODE_IMMEDIATE_KHR, "immediate"},
                         {vk::VK_PRESENT_MODE_MAILBOX_KHR, "mailbox"},
                         {vk::VK_PRESENT_MODE_FIFO_KHR, "fifo"},
-                        {vk::VK_PRESENT_MODE_FIFO_RELAXED_KHR, "fifo_relaxed"}};
+                        {vk::VK_PRESENT_MODE_FIFO_RELAXED_KHR, "fifo_relaxed"},
+                        {vk::VK_PRESENT_MODE_FIFO_LATEST_READY_EXT, "fifo_latest_ready"}};
     const struct
     {
         vk::VkSurfaceTransformFlagsKHR transform;

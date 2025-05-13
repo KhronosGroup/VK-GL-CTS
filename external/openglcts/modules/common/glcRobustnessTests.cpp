@@ -180,7 +180,7 @@ static deqp::Context *createContext(tcu::TestContext &testCtx, glu::ApiType apiT
     if (!context)
     {
         testCtx.setTestResult(QP_TEST_RESULT_INTERNAL_ERROR, "Pointer to context is NULL.");
-        return DE_NULL;
+        return nullptr;
     }
 
     if (!(contextSupports(context->getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
@@ -189,7 +189,7 @@ static deqp::Context *createContext(tcu::TestContext &testCtx, glu::ApiType apiT
     {
         testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
         delete context;
-        return DE_NULL;
+        return nullptr;
     }
 
     return context;
@@ -274,7 +274,7 @@ tcu::TestNode::IterateResult GetnUniformTest::iterate()
     gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buf);
     GLU_EXPECT_NO_ERROR(gl.getError(), "BindBufferBase");
 
-    gl.bufferData(GL_SHADER_STORAGE_BUFFER, 16, DE_NULL, GL_STREAM_DRAW);
+    gl.bufferData(GL_SHADER_STORAGE_BUFFER, 16, nullptr, GL_STREAM_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "BufferData");
 
     /* passing uniform values */

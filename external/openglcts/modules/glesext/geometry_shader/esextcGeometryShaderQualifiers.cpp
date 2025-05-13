@@ -211,7 +211,7 @@ tcu::TestNode::IterateResult GeometryShaderFlatInterpolationTest::iterate(void)
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() call failed.");
 
     gl.bufferData(GL_ARRAY_BUFFER, sizeof(float) * 4, /* components */
-                  DE_NULL,                            /* data */
+                  nullptr,                            /* data */
                   GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 

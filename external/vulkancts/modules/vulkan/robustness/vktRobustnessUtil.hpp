@@ -42,7 +42,7 @@ vk::Move<vk::VkDevice> createRobustBufferAccessDevice(Context &context,
 #ifdef CTS_USES_VULKANSC
                                                       const vkt::CustomInstance &customInstance,
 #endif // CTS_USES_VULKANSC
-                                                      const vk::VkPhysicalDeviceFeatures2 *enabledFeatures2 = DE_NULL);
+                                                      const vk::VkPhysicalDeviceFeatures2 *enabledFeatures2 = nullptr);
 bool areEqual(float a, float b);
 bool isValueZero(const void *valuePtr, size_t valueSize);
 bool isValueWithinBuffer(const void *buffer, vk::VkDeviceSize bufferSize, const void *valuePtr,

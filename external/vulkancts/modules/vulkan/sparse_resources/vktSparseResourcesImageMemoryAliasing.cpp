@@ -213,7 +213,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
         const uint32_t secondDeviceID = (firstDeviceID + 1) % m_numPhysicalDevices;
 
         imageSparseInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageSparseInfo.pNext = DE_NULL;
+        imageSparseInfo.pNext = nullptr;
         imageSparseInfo.flags = VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT | VK_IMAGE_CREATE_SPARSE_ALIASED_BIT |
                                 VK_IMAGE_CREATE_SPARSE_BINDING_BIT;
         imageSparseInfo.imageType     = mapImageType(m_imageType);
@@ -227,7 +227,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
         imageSparseInfo.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
         imageSparseInfo.queueFamilyIndexCount = 0u;
-        imageSparseInfo.pQueueFamilyIndices   = DE_NULL;
+        imageSparseInfo.pQueueFamilyIndices   = nullptr;
 
         if (m_imageType == IMAGE_TYPE_CUBE || m_imageType == IMAGE_TYPE_CUBE_ARRAY)
             imageSparseInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
@@ -276,8 +276,9 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
 
             DE_ASSERT((imageMemoryRequirements.size % imageMemoryRequirements.alignment) == 0);
 
-            const uint32_t memoryType = findMatchingMemoryType(instance, getPhysicalDevice(secondDeviceID),
-                                                               imageMemoryRequirements, MemoryRequirement::Any);
+            const auto devMemProps    = getPhysicalDeviceMemoryProperties(instance, getPhysicalDevice(secondDeviceID));
+            const uint32_t memoryType = selectBestMemoryType(devMemProps, imageMemoryRequirements.memoryTypeBits,
+                                                             MemoryRequirement::Any, tcu::just(HostIntent::NONE));
 
             if (memoryType == NO_MATCH_FOUND)
                 return tcu::TestStatus::fail("No matching memory type found");
@@ -339,7 +340,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
 
                         deviceMemUniquePtrVec.push_back(makeVkSharedPtr(
                             Move<VkDeviceMemory>(check<VkDeviceMemory>(imageMemoryBind.memory),
-                                                 Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
+                                                 Deleter<VkDeviceMemory>(deviceInterface, getDevice(), nullptr))));
 
                         imageResidencyMemoryBinds.push_back(imageMemoryBind);
                     }
@@ -353,7 +354,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
 
                         deviceMemUniquePtrVec.push_back(makeVkSharedPtr(
                             Move<VkDeviceMemory>(check<VkDeviceMemory>(imageReadMipTailMemoryBind.memory),
-                                                 Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
+                                                 Deleter<VkDeviceMemory>(deviceInterface, getDevice(), nullptr))));
 
                         imageReadMipTailBinds.push_back(imageReadMipTailMemoryBind);
 
@@ -363,7 +364,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
 
                         deviceMemUniquePtrVec.push_back(makeVkSharedPtr(
                             Move<VkDeviceMemory>(check<VkDeviceMemory>(imageWriteMipTailMemoryBind.memory),
-                                                 Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
+                                                 Deleter<VkDeviceMemory>(deviceInterface, getDevice(), nullptr))));
 
                         imageWriteMipTailBinds.push_back(imageWriteMipTailMemoryBind);
                     }
@@ -378,7 +379,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
 
                     deviceMemUniquePtrVec.push_back(makeVkSharedPtr(
                         Move<VkDeviceMemory>(check<VkDeviceMemory>(imageReadMipTailMemoryBind.memory),
-                                             Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
+                                             Deleter<VkDeviceMemory>(deviceInterface, getDevice(), nullptr))));
 
                     imageReadMipTailBinds.push_back(imageReadMipTailMemoryBind);
 
@@ -388,7 +389,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
 
                     deviceMemUniquePtrVec.push_back(makeVkSharedPtr(
                         Move<VkDeviceMemory>(check<VkDeviceMemory>(imageWriteMipTailMemoryBind.memory),
-                                             Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
+                                             Deleter<VkDeviceMemory>(deviceInterface, getDevice(), nullptr))));
 
                     imageWriteMipTailBinds.push_back(imageWriteMipTailMemoryBind);
                 }
@@ -396,22 +397,22 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
 
             const VkDeviceGroupBindSparseInfo devGroupBindSparseInfo = {
                 VK_STRUCTURE_TYPE_DEVICE_GROUP_BIND_SPARSE_INFO, //VkStructureType sType;
-                DE_NULL,                                         //const void* pNext;
+                nullptr,                                         //const void* pNext;
                 firstDeviceID,                                   //uint32_t resourceDeviceIndex;
                 secondDeviceID,                                  //uint32_t memoryDeviceIndex;
             };
 
             VkBindSparseInfo bindSparseInfo = {
                 VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,                    //VkStructureType sType;
-                m_useDeviceGroups ? &devGroupBindSparseInfo : DE_NULL, //const void* pNext;
+                m_useDeviceGroups ? &devGroupBindSparseInfo : nullptr, //const void* pNext;
                 0u,                                                    //uint32_t waitSemaphoreCount;
-                DE_NULL,                                               //const VkSemaphore* pWaitSemaphores;
+                nullptr,                                               //const VkSemaphore* pWaitSemaphores;
                 0u,                                                    //uint32_t bufferBindCount;
-                DE_NULL,                  //const VkSparseBufferMemoryBindInfo* pBufferBinds;
+                nullptr,                  //const VkSparseBufferMemoryBindInfo* pBufferBinds;
                 0u,                       //uint32_t imageOpaqueBindCount;
-                DE_NULL,                  //const VkSparseImageOpaqueMemoryBindInfo* pImageOpaqueBinds;
+                nullptr,                  //const VkSparseImageOpaqueMemoryBindInfo* pImageOpaqueBinds;
                 0u,                       //uint32_t imageBindCount;
-                DE_NULL,                  //const VkSparseImageMemoryBindInfo* pImageBinds;
+                nullptr,                  //const VkSparseImageMemoryBindInfo* pImageBinds;
                 2u,                       //uint32_t signalSemaphoreCount;
                 imageMemoryBindSemaphores //const VkSemaphore* pSignalSemaphores;
             };
@@ -518,7 +519,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
             makeBufferCreateInfo(imageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
         const Unique<VkBuffer> inputBuffer(createBuffer(deviceInterface, getDevice(), &inputBufferCreateInfo));
         const de::UniquePtr<Allocation> inputBufferAlloc(
-            bindBuffer(deviceInterface, getDevice(), getAllocator(), *inputBuffer, MemoryRequirement::HostVisible));
+            bindBuffer(deviceInterface, getDevice(), getAllocator(), *inputBuffer, HostIntent::W));
 
         std::vector<uint8_t> referenceData(imageSizeInBytes);
 
@@ -543,8 +544,8 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
                 VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, *inputBuffer, 0u, imageSizeInBytes);
 
             deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_HOST_BIT,
-                                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 1u, &inputBufferBarrier,
-                                               0u, DE_NULL);
+                                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 1u, &inputBufferBarrier,
+                                               0u, nullptr);
         }
 
         {
@@ -566,7 +567,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
             }
 
             deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL,
+                                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr,
                                                static_cast<uint32_t>(imageSparseTransferDstBarriers.size()),
                                                imageSparseTransferDstBarriers.data());
         }
@@ -590,7 +591,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
             }
 
             deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL,
+                                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr,
                                                static_cast<uint32_t>(imageSparseTransferSrcBarriers.size()),
                                                imageSparseTransferSrcBarriers.data());
         }
@@ -609,7 +610,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
             }
 
             deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL,
+                                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr,
                                                static_cast<uint32_t>(imageSparseShaderStorageBarriers.size()),
                                                imageSparseShaderStorageBarriers.data());
         }
@@ -646,8 +647,8 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
             name << "comp" << mipLevelNdx;
 
             // Create and bind compute pipeline
-            Unique<VkShaderModule> shaderModule(createShaderModule(
-                deviceInterface, getDevice(), m_context.getBinaryCollection().get(name.str()), DE_NULL));
+            Unique<VkShaderModule> shaderModule(
+                createShaderModule(deviceInterface, getDevice(), m_context.getBinaryCollection().get(name.str()), 0));
 
             computePipelines[mipLevelNdx] =
                 makeVkSharedPtr(makeComputePipeline(deviceInterface, getDevice(), *pipelineLayout, *shaderModule));
@@ -678,7 +679,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
                 .update(deviceInterface, getDevice());
 
             deviceInterface.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u,
-                                                  1u, &descriptorSet, 0u, DE_NULL);
+                                                  1u, &descriptorSet, 0u, nullptr);
 
             const tcu::UVec3 gridSize = getShaderGridSize(m_imageType, m_imageSize, mipLevelNdx);
             const uint32_t xWorkGroupSize =
@@ -706,15 +707,15 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
                 makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
 
             deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 1u, &memoryBarrier, 0u, DE_NULL, 0u,
-                                               DE_NULL);
+                                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 1u, &memoryBarrier, 0u, nullptr, 0u,
+                                               nullptr);
         }
 
         const VkBufferCreateInfo outputBufferCreateInfo =
             makeBufferCreateInfo(imageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
         const Unique<VkBuffer> outputBuffer(createBuffer(deviceInterface, getDevice(), &outputBufferCreateInfo));
         const de::UniquePtr<Allocation> outputBufferAlloc(
-            bindBuffer(deviceInterface, getDevice(), getAllocator(), *outputBuffer, MemoryRequirement::HostVisible));
+            bindBuffer(deviceInterface, getDevice(), getAllocator(), *outputBuffer, HostIntent::R));
 
         deviceInterface.cmdCopyImageToBuffer(*commandBuffer, *imageRead, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                              *outputBuffer, static_cast<uint32_t>(bufferImageCopy.size()),
@@ -725,8 +726,8 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
                 VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *outputBuffer, 0u, imageSizeInBytes);
 
             deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                               VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u, &outputBufferBarrier,
-                                               0u, DE_NULL);
+                                               VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 1u, &outputBufferBarrier,
+                                               0u, nullptr);
         }
 
         // End recording commands
@@ -736,7 +737,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
 
         // Submit commands for execution and wait for completion
         submitCommandsAndWait(deviceInterface, getDevice(), computeQueue.queueHandle, *commandBuffer, 2u,
-                              imageMemoryBindSemaphores, stageBits, 0, DE_NULL, m_useDeviceGroups, firstDeviceID);
+                              imageMemoryBindSemaphores, stageBits, 0, nullptr, m_useDeviceGroups, firstDeviceID);
 
         // Retrieve data from buffer to host memory
         invalidateAlloc(deviceInterface, getDevice(), *outputBufferAlloc);

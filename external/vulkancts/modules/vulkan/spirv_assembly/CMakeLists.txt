@@ -95,6 +95,8 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmIntegerDotProductTests.hpp
 	vktSpvAsmUntypedPointersTests.cpp
 	vktSpvAsmUntypedPointersTests.hpp
+	vktSpvAsmComputeShaderDerivativesTests.cpp
+	vktSpvAsmComputeShaderDerivativesTests.hpp
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_LIBS

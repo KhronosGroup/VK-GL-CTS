@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktSynchronizationTests.hpp"
+#include "synchronization/vktSynchronizationImplicitTests.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktSynchronizationSmokeTests.hpp"
 #include "vktSynchronizationBasicFenceTests.hpp"
@@ -38,6 +39,7 @@
 #include "vktSynchronizationUtil.hpp"
 #include "vktSynchronizationImageLayoutTransitionTests.hpp"
 #include "vktGlobalPriorityQueueTests.hpp"
+#include "vktSynchronizationImplicitTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -150,6 +152,7 @@ tcu::TestCaseGroup *createTestsInternal(tcu::TestContext &testCtx, Synchronizati
 #ifndef CTS_USES_VULKANSC
         testGroup->addChild(createCrossInstanceSharingTest(testCtx, type));
         testGroup->addChild(createSignalOrderTests(testCtx, type));
+        testGroup->addChild(createImplicitSyncTests(testCtx, type));
 #endif // CTS_USES_VULKANSC
     }
 

@@ -233,20 +233,20 @@ tcu::TestStatus UniformDescriptorIndexingTestCaseTestInstance::iterate(void)
     DescriptorPoolBuilder descriptorPoolBuilder;
     descriptorPoolBuilder.addType(m_descriptorType, descriptorCount);
     DescriptorSetLayoutBuilder descriptorSetLayoutBuilder;
-    descriptorSetLayoutBuilder.addBinding(m_descriptorType, descriptorCount, VK_SHADER_STAGE_FRAGMENT_BIT, DE_NULL);
+    descriptorSetLayoutBuilder.addBinding(m_descriptorType, descriptorCount, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr);
 
     // some cases require additional descriptor types that are neede to be able to check currently tested ones
     if (m_descriptorType == VK_DESCRIPTOR_TYPE_SAMPLER)
     {
         descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1);
         descriptorSetLayoutBuilder.addIndexedBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT,
-                                                     4, DE_NULL);
+                                                     4, nullptr);
     }
     else if (m_descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
     {
         descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_SAMPLER, 1);
         descriptorSetLayoutBuilder.addIndexedBinding(VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT,
-                                                     descriptorCount, DE_NULL);
+                                                     descriptorCount, nullptr);
     }
 
     // create descriptors
@@ -414,25 +414,25 @@ Move<VkRenderPass> UniformDescriptorIndexingTestCaseTestInstance::setupRenderPas
         inputAttachmentsRefs.data(),     // const VkAttachmentReference*   pInputAttachments
         1u,                              // uint32_t                       colorAttachmentCount
         &colorAttachmentRef,             // const VkAttachmentReference*   pColorAttachments
-        DE_NULL,                         // const VkAttachmentReference*   pResolveAttachments
-        DE_NULL,                         // const VkAttachmentReference*   pDepthStencilAttachment
+        nullptr,                         // const VkAttachmentReference*   pResolveAttachments
+        nullptr,                         // const VkAttachmentReference*   pDepthStencilAttachment
         0u,                              // uint32_t                       preserveAttachmentCount
-        DE_NULL                          // const uint32_t*                pPreserveAttachments
+        nullptr                          // const uint32_t*                pPreserveAttachments
     };
 
     const VkRenderPassCreateInfo renderPassInfo{
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType                sType
-        DE_NULL,                                   // const void*                    pNext
+        nullptr,                                   // const void*                    pNext
         (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags        flags
         (uint32_t)attachmentDescriptions.size(),   // uint32_t                       attachmentCount
         attachmentDescriptions.data(),             // const VkAttachmentDescription* pAttachments
         1u,                                        // uint32_t                       subpassCount
         &subpassDescription,                       // const VkSubpassDescription*    pSubpasses
         0u,                                        // uint32_t                       dependencyCount
-        DE_NULL                                    // const VkSubpassDependency*     pDependencies
+        nullptr                                    // const VkSubpassDependency*     pDependencies
     };
 
-    return createRenderPass(vk, device, &renderPassInfo, DE_NULL);
+    return createRenderPass(vk, device, &renderPassInfo, nullptr);
 }
 
 void UniformDescriptorIndexingTestCaseTestInstance::setupImages(uint32_t imagesCount, uint32_t imageSize,
@@ -585,7 +585,7 @@ VkImageCreateInfo UniformDescriptorIndexingTestCaseTestInstance::getImageCreateI
 {
     return {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType       sType
-        DE_NULL,                             // const void*           pNext
+        nullptr,                             // const void*           pNext
         0u,                                  // VkImageCreateFlags    flags
         VK_IMAGE_TYPE_2D,                    // VkImageType           imageType
         format,                              // VkFormat              format
@@ -597,7 +597,7 @@ VkImageCreateInfo UniformDescriptorIndexingTestCaseTestInstance::getImageCreateI
         usage,                               // VkImageUsageFlags     usage
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode         sharingMode
         0u,                                  // uint32_t              queueFamilyIndexCount
-        DE_NULL,                             // const uint32_t*       pQueueFamilyIndices
+        nullptr,                             // const uint32_t*       pQueueFamilyIndices
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout         initialLayout
     };
 };

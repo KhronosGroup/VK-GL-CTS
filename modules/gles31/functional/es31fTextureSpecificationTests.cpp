@@ -763,7 +763,7 @@ public:
         glGenTextures(1, &tex);
         glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, tex);
         glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, m_internalFormat, m_size, m_size, m_depth, 0, transferFmt.format,
-                     transferFmt.dataType, DE_NULL);
+                     transferFmt.dataType, nullptr);
         glDeleteBuffers(1, &buf);
     }
 

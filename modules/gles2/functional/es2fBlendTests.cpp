@@ -123,9 +123,9 @@ BlendCase::BlendCase(Context &context, const char *name, const char *desc, const
     : TestCase(context, name, desc)
     , m_paramSets(paramSets)
     , m_curParamSetNdx(0)
-    , m_renderer(DE_NULL)
-    , m_referenceRenderer(DE_NULL)
-    , m_refColorBuffer(DE_NULL)
+    , m_renderer(nullptr)
+    , m_referenceRenderer(nullptr)
+    , m_refColorBuffer(nullptr)
     , m_viewportW(0)
     , m_viewportH(0)
 {
@@ -186,9 +186,9 @@ void BlendCase::deinit(void)
     delete m_referenceRenderer;
     delete m_refColorBuffer;
 
-    m_renderer          = DE_NULL;
-    m_referenceRenderer = DE_NULL;
-    m_refColorBuffer    = DE_NULL;
+    m_renderer          = nullptr;
+    m_referenceRenderer = nullptr;
+    m_refColorBuffer    = nullptr;
 }
 
 BlendCase::IterateResult BlendCase::iterate(void)

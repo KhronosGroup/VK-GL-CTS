@@ -286,7 +286,7 @@ template <>
 const char *dataTypeNameOf<Void>(void)
 {
     DE_FATAL("Impossible");
-    return DE_NULL;
+    return nullptr;
 }
 
 template <typename T>
@@ -1081,15 +1081,21 @@ struct IntervalWriter
 
         else if (interval.lo() == interval.hi())
         {
-            const auto lo = FloatTypeSelector<GenType>::type::template convert(tcu::Float64(interval.lo()));
+            const auto lo = FloatTypeSelector<GenType>::type::template convert<
+                tcu::Float64::StorageType, tcu::Float64::EXPONENT_BITS, tcu::Float64::MANTISSA_BITS,
+                tcu::Float64::EXPONENT_BIAS, tcu::Float64::FLAGS>(tcu::Float64(interval.lo()));
             os << '{';
             void(lo.isDenorm() ? (os << std::hexfloat << interval.lo() << std::defaultfloat) : (os << interval.lo()));
             os << '}';
         }
         else
         {
-            const auto lo = FloatTypeSelector<GenType>::type::template convert(tcu::Float64(interval.lo()));
-            const auto hi = FloatTypeSelector<GenType>::type::template convert(tcu::Float64(interval.hi()));
+            const auto lo = FloatTypeSelector<GenType>::type::template convert<
+                tcu::Float64::StorageType, tcu::Float64::EXPONENT_BITS, tcu::Float64::MANTISSA_BITS,
+                tcu::Float64::EXPONENT_BIAS, tcu::Float64::FLAGS>(tcu::Float64(interval.lo()));
+            const auto hi = FloatTypeSelector<GenType>::type::template convert<
+                tcu::Float64::StorageType, tcu::Float64::EXPONENT_BITS, tcu::Float64::MANTISSA_BITS,
+                tcu::Float64::EXPONENT_BIAS, tcu::Float64::FLAGS>(tcu::Float64(interval.hi()));
 
             os << '[';
             void(lo.isDenorm() ? (os << std::hexfloat << interval.lo() << std::defaultfloat) : (os << interval.lo()));
@@ -7048,7 +7054,7 @@ void DefaultSubnormalsSampling<T>::genSubnormals(const FloatFormat &fmt, const P
             DE_ASSERT((man & fullMantissaMask) != 0);
             DE_UNREF(fullMantissaMask);
 
-            outValues.push_back(SamplingT::SelectorT::template conv(val));
+            outValues.push_back(SamplingT::SelectorT::template conv<FloatT>(val));
         }
     }
 }

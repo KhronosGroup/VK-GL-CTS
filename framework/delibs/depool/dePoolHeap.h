@@ -63,16 +63,16 @@ DE_END_EXTERN_C
         TYPENAME##Array *array;                                                                                      \
     } TYPENAME; /* NOLINT(TYPENAME) */                                                                               \
                                                                                                                      \
-    DE_INLINE TYPENAME *TYPENAME##_create(deMemPool *pool);                                                          \
-    DE_INLINE int TYPENAME##_getNumElements(const TYPENAME *heap) DE_UNUSED_FUNCTION;                                \
-    DE_INLINE bool TYPENAME##_reserve(DE_PTR_TYPE(TYPENAME) heap, int capacity) DE_UNUSED_FUNCTION;                  \
-    DE_INLINE void TYPENAME##_reset(DE_PTR_TYPE(TYPENAME) heap) DE_UNUSED_FUNCTION;                                  \
-    DE_INLINE void TYPENAME##_moveDown(DE_PTR_TYPE(TYPENAME) heap, int ndx) DE_UNUSED_FUNCTION;                      \
-    DE_INLINE void TYPENAME##_moveUp(DE_PTR_TYPE(TYPENAME) heap, int ndx) DE_UNUSED_FUNCTION;                        \
-    DE_INLINE bool TYPENAME##_push(DE_PTR_TYPE(TYPENAME) heap, VALUETYPE elem) DE_UNUSED_FUNCTION;                   \
-    DE_INLINE VALUETYPE TYPENAME##_popMin(DE_PTR_TYPE(TYPENAME) heap) DE_UNUSED_FUNCTION;                            \
+    static inline TYPENAME *TYPENAME##_create(deMemPool *pool);                                                      \
+    static inline int TYPENAME##_getNumElements(const TYPENAME *heap) DE_UNUSED_FUNCTION;                            \
+    static inline bool TYPENAME##_reserve(DE_PTR_TYPE(TYPENAME) heap, int capacity) DE_UNUSED_FUNCTION;              \
+    static inline void TYPENAME##_reset(DE_PTR_TYPE(TYPENAME) heap) DE_UNUSED_FUNCTION;                              \
+    static inline void TYPENAME##_moveDown(DE_PTR_TYPE(TYPENAME) heap, int ndx) DE_UNUSED_FUNCTION;                  \
+    static inline void TYPENAME##_moveUp(DE_PTR_TYPE(TYPENAME) heap, int ndx) DE_UNUSED_FUNCTION;                    \
+    static inline bool TYPENAME##_push(DE_PTR_TYPE(TYPENAME) heap, VALUETYPE elem) DE_UNUSED_FUNCTION;               \
+    static inline VALUETYPE TYPENAME##_popMin(DE_PTR_TYPE(TYPENAME) heap) DE_UNUSED_FUNCTION;                        \
                                                                                                                      \
-    DE_INLINE TYPENAME *TYPENAME##_create(deMemPool *pool)                                                           \
+    static inline TYPENAME *TYPENAME##_create(deMemPool *pool)                                                       \
     {                                                                                                                \
         DE_PTR_TYPE(TYPENAME) heap = DE_POOL_NEW(pool, TYPENAME);                                                    \
         if (!heap)                                                                                                   \
@@ -83,22 +83,22 @@ DE_END_EXTERN_C
         return heap;                                                                                                 \
     }                                                                                                                \
                                                                                                                      \
-    DE_INLINE int TYPENAME##_getNumElements(const TYPENAME *heap)                                                    \
+    static inline int TYPENAME##_getNumElements(const TYPENAME *heap)                                                \
     {                                                                                                                \
         return TYPENAME##Array_getNumElements(heap->array);                                                          \
     }                                                                                                                \
                                                                                                                      \
-    DE_INLINE bool TYPENAME##_reserve(DE_PTR_TYPE(TYPENAME) heap, int capacity)                                      \
+    static inline bool TYPENAME##_reserve(DE_PTR_TYPE(TYPENAME) heap, int capacity)                                  \
     {                                                                                                                \
         return TYPENAME##Array_reserve(heap->array, capacity);                                                       \
     }                                                                                                                \
                                                                                                                      \
-    DE_INLINE void TYPENAME##_reset(DE_PTR_TYPE(TYPENAME) heap)                                                      \
+    static inline void TYPENAME##_reset(DE_PTR_TYPE(TYPENAME) heap)                                                  \
     {                                                                                                                \
         TYPENAME##Array_setSize(heap->array, 0);                                                                     \
     }                                                                                                                \
                                                                                                                      \
-    DE_INLINE void TYPENAME##_moveDown(DE_PTR_TYPE(TYPENAME) heap, int ndx)                                          \
+    static inline void TYPENAME##_moveDown(DE_PTR_TYPE(TYPENAME) heap, int ndx)                                      \
     {                                                                                                                \
         TYPENAME##Array *array = heap->array;                                                                        \
         int numElements        = TYPENAME##Array_getNumElements(array);                                              \
@@ -125,7 +125,7 @@ DE_END_EXTERN_C
         }                                                                                                            \
     }                                                                                                                \
                                                                                                                      \
-    DE_INLINE void TYPENAME##_moveUp(DE_PTR_TYPE(TYPENAME) heap, int ndx)                                            \
+    static inline void TYPENAME##_moveUp(DE_PTR_TYPE(TYPENAME) heap, int ndx)                                        \
     {                                                                                                                \
         TYPENAME##Array *array = heap->array;                                                                        \
         while (ndx > 0)                                                                                              \
@@ -142,7 +142,7 @@ DE_END_EXTERN_C
         }                                                                                                            \
     }                                                                                                                \
                                                                                                                      \
-    DE_INLINE bool TYPENAME##_push(DE_PTR_TYPE(TYPENAME) heap, VALUETYPE elem)                                       \
+    static inline bool TYPENAME##_push(DE_PTR_TYPE(TYPENAME) heap, VALUETYPE elem)                                   \
     {                                                                                                                \
         TYPENAME##Array *array = heap->array;                                                                        \
         int numElements        = TYPENAME##Array_getNumElements(array);                                              \
@@ -153,7 +153,7 @@ DE_END_EXTERN_C
         return true;                                                                                                 \
     }                                                                                                                \
                                                                                                                      \
-    DE_INLINE VALUETYPE TYPENAME##_popMin(DE_PTR_TYPE(TYPENAME) heap)                                                \
+    static inline VALUETYPE TYPENAME##_popMin(DE_PTR_TYPE(TYPENAME) heap)                                            \
     {                                                                                                                \
         TYPENAME##Array *array = heap->array;                                                                        \
         VALUETYPE tmp          = TYPENAME##Array_get(array, 0);                                                      \

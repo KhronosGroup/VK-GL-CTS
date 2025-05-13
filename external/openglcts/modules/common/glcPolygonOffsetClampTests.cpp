@@ -291,7 +291,7 @@ void PolygonOffsetClampValueTestCaseBase::test(const glw::Functions &gl)
 
     GLuint testProgramId = testProgram.getProgram();
 
-    ShaderProgram *readDepthProgram = DE_NULL;
+    ShaderProgram *readDepthProgram = nullptr;
     GLuint readDepthProgramId       = 0;
 
     // Prepare shader program for reading depth buffer indirectly
@@ -428,8 +428,8 @@ void PolygonOffsetClampValueTestCaseBase::test(const glw::Functions &gl)
     gl.disableVertexAttribArray(0);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glDisableVertexAttribArray");
 
-    gl.deleteVertexArrays(1, &arrayBuffer);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteVertexArrays");
+    gl.deleteBuffers(1, &arrayBuffer);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteBuffers");
 
     gl.deleteVertexArrays(1, &vao);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteVertexArrays");

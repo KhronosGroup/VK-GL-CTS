@@ -29,6 +29,7 @@
 
 #include "deMath.h"
 #include "deUniquePtr.hpp"
+#include "glcMisc.hpp"
 #include "gluContextInfo.hpp"
 #include "gluDefs.hpp"
 #include "gluStateReset.hpp"
@@ -163,7 +164,7 @@ void getEnumNames(const GLenum e, std::set<std::string> &names)
     // clang-format on
 
     for (size_t i = 0; i < sizeof(func_ptrs) / sizeof(func_ptrs[0]); i++)
-        if (func_ptrs[i](e) != DE_NULL)
+        if (func_ptrs[i](e) != nullptr)
             names.insert(func_ptrs[i](e));
 }
 
@@ -212,7 +213,7 @@ const GLchar *ApiCoverageTestCase::m_frag_shader =
     in vec3 texCoords;
     out vec4 frag_color;
     void main() {
-        frag_color = texture2D(tex0, texCoords.xy);
+        frag_color = texture(tex0, texCoords.xy);
     }
     )";
 
@@ -800,7 +801,6 @@ void ApiCoverageTestCase::init()
             funcs_map.insert({ "glDrawRangeElements",          &ApiCoverageTestCase::TestCoverageGLCallDrawRangeElements });
             funcs_map.insert({ "glTexImage3D",                 &ApiCoverageTestCase::TestCoverageGLCallTexImage3D });
             funcs_map.insert({ "glTexSubImage3D",              &ApiCoverageTestCase::TestCoverageGLCallTexSubImage3D });
-            funcs_map.insert({ "glCopyTexSubImage3D",          &ApiCoverageTestCase::TestCoverageGLCallCopyTexSubImage3D });
             funcs_map.insert({ "glCompressedTexImage3D",       &ApiCoverageTestCase::TestCoverageGLCallCompressedTexImage3D });
             funcs_map.insert({ "glCompressedTexSubImage3D",    &ApiCoverageTestCase::TestCoverageGLCallCompressedTexSubImage3D });
             funcs_map.insert({ "glGenQueries",                 &ApiCoverageTestCase::TestCoverageGLCallGenQueries });
@@ -1030,7 +1030,6 @@ void ApiCoverageTestCase::init()
             funcs_map.insert({ "glMapBufferOES",               &ApiCoverageTestCase::TestCoverageGLCallMapBufferOES });
             funcs_map.insert({ "glTexImage3DOES",              &ApiCoverageTestCase::TestCoverageGLCallTexImage3DOES });
             funcs_map.insert({ "glTexSubImage3DOES",           &ApiCoverageTestCase::TestCoverageGLCallTexSubImage3DOES });
-            funcs_map.insert({ "glCopyTexSubImage3DOES",       &ApiCoverageTestCase::TestCoverageGLCallCopyTexSubImage3DOES });
             funcs_map.insert({ "glCompressedTexImage3DOES",    &ApiCoverageTestCase::TestCoverageGLCallCompressedTexImage3DOES });
             funcs_map.insert({ "glCompressedTexSubImage3DOES", &ApiCoverageTestCase::TestCoverageGLCallCompressedTexSubImage3DOES });
             funcs_map.insert({ "glShaderBinary",               &ApiCoverageTestCase::TestCoverageGLCallShaderBinary });
@@ -1629,134 +1628,6 @@ void ApiCoverageTestCase::tcu_msg(const std::string &msg0, const std::string &ms
     m_testCtx.getLog() << tcu::TestLog::Message << msg0.c_str() << " : " << msg1.c_str() << tcu::TestLog::EndMessage;
 }
 
-bool ApiCoverageTestCase::GetBits(GLenum target, GLenum bits, GLint *value)
-{
-    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
-
-    if (!m_is_context_ES)
-    {
-        GLint colorAttachment;
-        GLenum depthAttachment   = GL_DEPTH;
-        GLenum stencilAttachment = GL_STENCIL;
-        GLint fbo                = 0;
-        if (target == GL_READ_FRAMEBUFFER)
-        {
-            gl.getIntegerv(GL_READ_FRAMEBUFFER_BINDING, &fbo);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-        }
-        else
-        {
-            gl.getIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-        }
-
-        if (fbo)
-        {
-            depthAttachment   = GL_DEPTH_ATTACHMENT;
-            stencilAttachment = GL_STENCIL_ATTACHMENT;
-        }
-        if (target == GL_READ_FRAMEBUFFER)
-        {
-            gl.getIntegerv(GL_READ_BUFFER, &colorAttachment);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-        }
-        else
-        {
-            gl.getIntegerv(GL_DRAW_BUFFER, &colorAttachment);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-        }
-        if (colorAttachment == GL_BACK)
-            colorAttachment = GL_BACK_LEFT;
-        else if (colorAttachment == GL_FRONT)
-            colorAttachment = GL_FRONT_LEFT;
-
-        switch (bits)
-        {
-        case GL_RED_BITS:
-            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_RED_SIZE, value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-            break;
-        case GL_GREEN_BITS:
-            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_GREEN_SIZE,
-                                                   value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-            break;
-        case GL_BLUE_BITS:
-            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_BLUE_SIZE, value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-            break;
-        case GL_ALPHA_BITS:
-            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE,
-                                                   value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-            break;
-        case GL_DEPTH_BITS:
-        case GL_STENCIL_BITS:
-            /*
-             * OPENGL SPECS 4.5: Paragraph  9.2. BINDING AND MANAGING FRAMEBUFFER OBJECTS p.335
-             * If the value of GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE is GL_NONE, then either no framebuffer is bound to target;
-             * or a default framebuffer is queried, attachment is GL_DEPTH or GL_STENCIL,
-             * and the number of depth or stencil bits, respectively, is zero....
-             * and all other queries will generate an INVALID_OPERATION error.
-             * */
-            if (fbo == 0)
-            { //default framebuffer
-                gl.getFramebufferAttachmentParameteriv(target, (bits == GL_DEPTH_BITS ? GL_DEPTH : GL_STENCIL),
-                                                       GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, value);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-
-                if (*value == GL_NONE)
-                {
-                    *value = 0;
-                    break;
-                }
-            }
-            switch (bits)
-            {
-            case GL_DEPTH_BITS:
-                gl.getFramebufferAttachmentParameteriv(target, depthAttachment, GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE,
-                                                       value);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-                break;
-            case GL_STENCIL_BITS:
-                gl.getFramebufferAttachmentParameteriv(target, stencilAttachment,
-                                                       GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE, value);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-                break;
-            }
-            break;
-        default:
-            gl.getIntegerv(bits, value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-            break;
-        }
-    }
-    else
-    {
-        gl.getIntegerv(bits, value);
-        GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-    }
-
-    const GLenum error = gl.getError();
-    if (error == GL_NO_ERROR)
-        return true;
-
-    m_testCtx.getLog() << tcu::TestLog::Message << "ApiCoverageTestCase::GetBits: " << glu::getErrorName(error)
-                       << tcu::TestLog::EndMessage;
-
-    return false;
-}
-
-bool ApiCoverageTestCase::GetReadbufferBits(GLenum bits, GLint *value)
-{
-    return GetBits(GL_READ_FRAMEBUFFER, bits, value);
-}
-
-bool ApiCoverageTestCase::GetDrawbufferBits(GLenum bits, GLint *value)
-{
-    return GetBits(GL_DRAW_FRAMEBUFFER, bits, value);
-}
-
 GLint ApiCoverageTestCase::createDefaultProgram(int mode)
 {
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
@@ -1903,11 +1774,11 @@ tcu::TestNode::IterateResult ApiCoverageTestCase::iterate()
         switch (currElement)
         {
         case xe::xml::ELEMENT_START:
-            if (deStringEqual(elemName, "func"))
+            if (strcmp(elemName, "func") == 0)
             {
                 skan_funcs = true;
             }
-            else if (deStringEqual(elemName, "enum"))
+            else if (strcmp(elemName, "enum") == 0)
             {
                 skan_enums = true;
             }
@@ -1916,18 +1787,18 @@ tcu::TestNode::IterateResult ApiCoverageTestCase::iterate()
         case xe::xml::ELEMENT_DATA:
             if (skan_funcs)
             {
-                if (name.empty() && deStringEqual(elemName, "name"))
+                if (name.empty() && strcmp(elemName, "name") == 0)
                 {
                     xmlParser.getDataStr(name);
                 }
             }
             else if (skan_enums)
             {
-                if (name.empty() && deStringEqual(elemName, "name"))
+                if (name.empty() && strcmp(elemName, "name") == 0)
                 {
                     xmlParser.getDataStr(name);
                 }
-                else if (value.empty() && deStringEqual(elemName, "value"))
+                else if (value.empty() && strcmp(elemName, "value") == 0)
                 {
                     xmlParser.getDataStr(value);
                 }
@@ -1936,7 +1807,7 @@ tcu::TestNode::IterateResult ApiCoverageTestCase::iterate()
 
         case xe::xml::ELEMENT_END:
 
-            if (deStringEqual(elemName, "func"))
+            if (strcmp(elemName, "func") == 0)
             {
                 skan_funcs = false;
                 if (!verifyFunc(name))
@@ -1949,7 +1820,7 @@ tcu::TestNode::IterateResult ApiCoverageTestCase::iterate()
 
                 name.clear();
             }
-            else if (deStringEqual(elemName, "enum"))
+            else if (strcmp(elemName, "enum") == 0)
             {
                 skan_enums = false;
 
@@ -2558,10 +2429,12 @@ GLenum ApiCoverageTestCase::TestCoverageGLGuessColorBufferFormat(void)
 {
     GLsizei colorBits[4];
 
-    GetReadbufferBits(GL_RED_BITS, &colorBits[0]);
-    GetReadbufferBits(GL_GREEN_BITS, &colorBits[1]);
-    GetReadbufferBits(GL_BLUE_BITS, &colorBits[2]);
-    GetReadbufferBits(GL_ALPHA_BITS, &colorBits[3]);
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+
+    getReadbufferBits(gl, m_is_context_ES, GL_RED_BITS, &colorBits[0]);
+    getReadbufferBits(gl, m_is_context_ES, GL_GREEN_BITS, &colorBits[1]);
+    getReadbufferBits(gl, m_is_context_ES, GL_BLUE_BITS, &colorBits[2]);
+    getReadbufferBits(gl, m_is_context_ES, GL_ALPHA_BITS, &colorBits[3]);
 
     if (m_is_context_ES)
     {
@@ -5915,53 +5788,6 @@ bool ApiCoverageTestCase::TestCoverageGLCallTexSubImage3DOES(void)
             {
                 tcu_fail_msg("ApiCoverageTestCase::CallTexSubImage3D", "Invalid enums : (%s, %s)",
                              ea_TextureFormat[i].name, ea_TextureType[i].name);
-                success = false;
-            }
-        }
-    }
-
-    return success;
-}
-
-bool ApiCoverageTestCase::TestCoverageGLCallCopyTexSubImage3DOES(void)
-{
-    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
-    bool success             = true;
-
-    if (m_context.getContextInfo().isExtensionSupported("GL_OES_texture_3D"))
-    {
-        GLubyte buf[1000];
-        GLint i;
-        GLenum colorBufferFormat, targetFormats[5];
-        GLsizei numTargetFormats;
-
-        colorBufferFormat = TestCoverageGLGuessColorBufferFormat();
-        numTargetFormats  = TestCoverageGLCalcTargetFormats(colorBufferFormat, targetFormats);
-
-        memset(buf, 0, sizeof(GLubyte) * 100);
-
-        for (i = 0; i != numTargetFormats; i++)
-        {
-            gl.texImage3DOES(GL_TEXTURE_2D, 0, targetFormats[i], 1, 1, 1, 0, targetFormats[i], GL_UNSIGNED_BYTE, buf);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "texImage3DOES");
-            gl.copyTexSubImage3DOES(GL_TEXTURE_2D, 0, 0, 0, 0, 0, 0, 1, 1);
-
-            if (gl.getError() == GL_INVALID_ENUM)
-            {
-                const char *invalidEnum = glu::getTextureFormatName(targetFormats[i]);
-                tcu_fail_msg("ApiCoverageTestCase::CallCopyTexSubImage3D", "Invalid enum : %s", invalidEnum);
-                success = false;
-            }
-
-            gl.texImage3DOES(GL_TEXTURE_2D, 0, targetFormats[i], 1, 1, 1, 0, targetFormats[i], GL_UNSIGNED_BYTE,
-                             (const void *)NULL);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "texImage3DOES");
-            gl.copyTexSubImage3DOES(GL_TEXTURE_2D, 0, 0, 0, 0, 0, 0, 1, 1);
-
-            if (gl.getError() == GL_INVALID_ENUM)
-            {
-                const char *invalidEnum = glu::getTextureFormatName(targetFormats[i]);
-                tcu_fail_msg("ApiCoverageTestCase::CallCopyTexSubImage3D", "Invalid enum : %s", invalidEnum);
                 success = false;
             }
         }

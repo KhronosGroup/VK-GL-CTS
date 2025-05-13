@@ -42,7 +42,7 @@ namespace gles31
 TestPackage::TestPackage(tcu::TestContext &testCtx)
     : tcu::TestPackage(testCtx, "dEQP-GLES31", "dEQP OpenGL ES 3.1 Tests")
     , m_archive(testCtx.getRootArchive(), "gles31/")
-    , m_context(DE_NULL)
+    , m_context(nullptr)
     , m_waiverMechanism(new tcu::WaiverUtil)
 {
 }
@@ -90,7 +90,7 @@ void TestPackage::init(void)
     catch (...)
     {
         delete m_context;
-        m_context = DE_NULL;
+        m_context = nullptr;
 
         throw;
     }
@@ -100,7 +100,7 @@ void TestPackage::deinit(void)
 {
     TestNode::deinit();
     delete m_context;
-    m_context = DE_NULL;
+    m_context = nullptr;
 }
 
 tcu::TestCaseExecutor *TestPackage::createExecutor(void) const

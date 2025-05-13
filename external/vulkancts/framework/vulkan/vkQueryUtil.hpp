@@ -147,8 +147,7 @@ struct RequiredLayer
 bool isCompatible(const VkExtensionProperties &extensionProperties, const RequiredExtension &required);
 bool isCompatible(const VkLayerProperties &layerProperties, const RequiredLayer &required);
 
-template <typename ExtensionIterator>
-bool isExtensionStructSupported(ExtensionIterator begin, ExtensionIterator end, const RequiredExtension &required);
+bool isExtensionStructSupported(const std::vector<std::string> &extensionStrings, const std::string &extensionName);
 bool isExtensionStructSupported(const std::vector<VkExtensionProperties> &extensions,
                                 const RequiredExtension &required);
 
@@ -179,7 +178,7 @@ StructType *findStructure(void *first)
 
 struct initVulkanStructure
 {
-    initVulkanStructure(void *pNext = DE_NULL) : m_next(pNext)
+    initVulkanStructure(void *pNext = nullptr) : m_next(pNext)
     {
     }
 
@@ -203,7 +202,7 @@ private:
 template <class StructType>
 void addToChainVulkanStructure(void ***chainPNextPtr, StructType &structType)
 {
-    DE_ASSERT(chainPNextPtr != DE_NULL);
+    DE_ASSERT(chainPNextPtr != nullptr);
 
     (**chainPNextPtr) = &structType;
 
@@ -213,7 +212,7 @@ void addToChainVulkanStructure(void ***chainPNextPtr, StructType &structType)
 template <class StructType>
 void addToChainVulkanStructure(const void ***chainPNextPtr, StructType &structType)
 {
-    DE_ASSERT(chainPNextPtr != DE_NULL);
+    DE_ASSERT(chainPNextPtr != nullptr);
 
     (**chainPNextPtr) = &structType;
 
@@ -222,7 +221,7 @@ void addToChainVulkanStructure(const void ***chainPNextPtr, StructType &structTy
 
 struct initVulkanStructureConst
 {
-    initVulkanStructureConst(const void *pNext = DE_NULL) : m_next(pNext)
+    initVulkanStructureConst(const void *pNext = nullptr) : m_next(pNext)
     {
     }
 

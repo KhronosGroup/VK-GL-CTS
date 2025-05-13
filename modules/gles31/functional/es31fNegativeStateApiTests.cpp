@@ -1156,7 +1156,7 @@ void get_vertex_attribi_uiv(NegativeTestContext &ctx)
 
 void get_vertex_attrib_pointerv(NegativeTestContext &ctx)
 {
-    GLvoid *ptr[1] = {DE_NULL};
+    GLvoid *ptr[1] = {nullptr};
     GLint maxVertexAttribs;
 
     ctx.beginSection("GL_INVALID_ENUM is generated if pname is not an accepted value.");
@@ -1244,7 +1244,7 @@ void get_buffer_parameteri64v(NegativeTestContext &ctx)
 
 void get_buffer_pointerv(NegativeTestContext &ctx)
 {
-    GLvoid *params = DE_NULL;
+    GLvoid *params = nullptr;
     GLuint buf;
     ctx.glGenBuffers(1, &buf);
     ctx.glBindBuffer(GL_ARRAY_BUFFER, buf);

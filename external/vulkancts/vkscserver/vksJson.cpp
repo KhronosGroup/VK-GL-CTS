@@ -86,7 +86,7 @@ void StringToVkObject(const string &in, vk::VkDeviceObjectReservationCreateInfo 
     {
         throw std::runtime_error("json parse error");
     }
-    vk_json_parser::parse_VkDeviceObjectReservationCreateInfo("", jsonRoot, out);
+    vk_json_parser::parse_VkDeviceObjectReservationCreateInfo(jsonRoot, out);
 }
 
 string writeJSON_VkGraphicsPipelineCreateInfo(const VkGraphicsPipelineCreateInfo &pCreateInfo)
@@ -789,7 +789,7 @@ void readJSON_VkGraphicsPipelineCreateInfo(Context &context, const string &graph
         &jsonRoot, &errors);
     if (!parsingSuccessful)
         TCU_THROW(InternalError, ("JSON parsing error: " + errors).c_str());
-    vk_json_parser::parse_VkGraphicsPipelineCreateInfo("", jsonRoot, gpCI);
+    vk_json_parser::parse_VkGraphicsPipelineCreateInfo(jsonRoot, gpCI);
 }
 
 void readJSON_VkComputePipelineCreateInfo(Context &context, const string &computePipelineCreateInfo,
@@ -802,7 +802,7 @@ void readJSON_VkComputePipelineCreateInfo(Context &context, const string &comput
                               computePipelineCreateInfo.c_str() + computePipelineCreateInfo.size(), &jsonRoot, &errors);
     if (!parsingSuccessful)
         TCU_THROW(InternalError, ("JSON parsing error: " + errors).c_str());
-    vk_json_parser::parse_VkComputePipelineCreateInfo("", jsonRoot, cpCI);
+    vk_json_parser::parse_VkComputePipelineCreateInfo(jsonRoot, cpCI);
 }
 
 void readJSON_VkRenderPassCreateInfo(Context &context, const string &renderPassCreateInfo, VkRenderPassCreateInfo &rpCI)
@@ -813,7 +813,7 @@ void readJSON_VkRenderPassCreateInfo(Context &context, const string &renderPassC
         renderPassCreateInfo.c_str(), renderPassCreateInfo.c_str() + renderPassCreateInfo.size(), &jsonRoot, &errors);
     if (!parsingSuccessful)
         TCU_THROW(InternalError, ("JSON parsing error: " + errors).c_str());
-    vk_json_parser::parse_VkRenderPassCreateInfo("", jsonRoot, rpCI);
+    vk_json_parser::parse_VkRenderPassCreateInfo(jsonRoot, rpCI);
 }
 
 void readJSON_VkRenderPassCreateInfo2(Context &context, const string &renderPassCreateInfo,
@@ -825,7 +825,7 @@ void readJSON_VkRenderPassCreateInfo2(Context &context, const string &renderPass
         renderPassCreateInfo.c_str(), renderPassCreateInfo.c_str() + renderPassCreateInfo.size(), &jsonRoot, &errors);
     if (!parsingSuccessful)
         TCU_THROW(InternalError, ("JSON parsing error: " + errors).c_str());
-    vk_json_parser::parse_VkRenderPassCreateInfo2("", jsonRoot, rpCI);
+    vk_json_parser::parse_VkRenderPassCreateInfo2(jsonRoot, rpCI);
 }
 
 void readJSON_VkDescriptorSetLayoutCreateInfo(Context &context, const string &descriptorSetLayoutCreateInfo,
@@ -838,7 +838,7 @@ void readJSON_VkDescriptorSetLayoutCreateInfo(Context &context, const string &de
         descriptorSetLayoutCreateInfo.c_str() + descriptorSetLayoutCreateInfo.size(), &jsonRoot, &errors);
     if (!parsingSuccessful)
         TCU_THROW(InternalError, ("JSON parsing error: " + errors).c_str());
-    vk_json_parser::parse_VkDescriptorSetLayoutCreateInfo("", jsonRoot, dsCI);
+    vk_json_parser::parse_VkDescriptorSetLayoutCreateInfo(jsonRoot, dsCI);
 }
 
 void readJSON_VkPipelineLayoutCreateInfo(Context &context, const string &pipelineLayoutCreateInfo,
@@ -851,7 +851,7 @@ void readJSON_VkPipelineLayoutCreateInfo(Context &context, const string &pipelin
                               pipelineLayoutCreateInfo.c_str() + pipelineLayoutCreateInfo.size(), &jsonRoot, &errors);
     if (!parsingSuccessful)
         TCU_THROW(InternalError, ("JSON parsing error: " + errors).c_str());
-    vk_json_parser::parse_VkPipelineLayoutCreateInfo("", jsonRoot, plCI);
+    vk_json_parser::parse_VkPipelineLayoutCreateInfo(jsonRoot, plCI);
 }
 
 void readJSON_VkDeviceObjectReservationCreateInfo(Context &context, const string &deviceMemoryReservation,
@@ -864,7 +864,7 @@ void readJSON_VkDeviceObjectReservationCreateInfo(Context &context, const string
                               deviceMemoryReservation.c_str() + deviceMemoryReservation.size(), &jsonRoot, &errors);
     if (!parsingSuccessful)
         TCU_THROW(InternalError, ("JSON parsing error: " + errors).c_str());
-    vk_json_parser::parse_VkDeviceObjectReservationCreateInfo("", jsonRoot, dmrCI);
+    vk_json_parser::parse_VkDeviceObjectReservationCreateInfo(jsonRoot, dmrCI);
 }
 
 void readJSON_VkPipelineOfflineCreateInfo(Context &context, const string &pipelineIdentifierInfo,
@@ -877,7 +877,7 @@ void readJSON_VkPipelineOfflineCreateInfo(Context &context, const string &pipeli
                               pipelineIdentifierInfo.c_str() + pipelineIdentifierInfo.size(), &jsonRoot, &errors);
     if (!parsingSuccessful)
         TCU_THROW(InternalError, ("JSON parsing error: " + errors).c_str());
-    vk_json_parser::parse_VkPipelineOfflineCreateInfo("", jsonRoot, piInfo);
+    vk_json_parser::parse_VkPipelineOfflineCreateInfo(jsonRoot, piInfo);
 }
 
 void readJSON_VkSamplerCreateInfo(Context &context, const string &samplerCreateInfo, VkSamplerCreateInfo &sCI)
@@ -888,7 +888,7 @@ void readJSON_VkSamplerCreateInfo(Context &context, const string &samplerCreateI
         samplerCreateInfo.c_str(), samplerCreateInfo.c_str() + samplerCreateInfo.size(), &jsonRoot, &errors);
     if (!parsingSuccessful)
         TCU_THROW(InternalError, ("JSON parsing error: " + errors).c_str());
-    vk_json_parser::parse_VkSamplerCreateInfo("", jsonRoot, sCI);
+    vk_json_parser::parse_VkSamplerCreateInfo(jsonRoot, sCI);
 }
 
 void readJSON_VkSamplerYcbcrConversionCreateInfo(Context &context, const std::string &samplerYcbcrConversionCreateInfo,
@@ -901,7 +901,7 @@ void readJSON_VkSamplerYcbcrConversionCreateInfo(Context &context, const std::st
         samplerYcbcrConversionCreateInfo.c_str() + samplerYcbcrConversionCreateInfo.size(), &jsonRoot, &errors);
     if (!parsingSuccessful)
         TCU_THROW(InternalError, (std::string("JSON parsing error: ") + errors).c_str());
-    vk_json_parser::parse_VkSamplerYcbcrConversionCreateInfo("", jsonRoot, sycCI);
+    vk_json_parser::parse_VkSamplerYcbcrConversionCreateInfo(jsonRoot, sycCI);
 }
 
 void readJSON_VkPhysicalDeviceFeatures2(Context &context, const std::string &featuresJson,
@@ -913,7 +913,7 @@ void readJSON_VkPhysicalDeviceFeatures2(Context &context, const std::string &fea
         context.reader->parse(featuresJson.c_str(), featuresJson.c_str() + featuresJson.size(), &jsonRoot, &errors);
     if (!parsingSuccessful)
         TCU_THROW(InternalError, (std::string("JSON parsing error: ") + errors).c_str());
-    vk_json_parser::parse_VkPhysicalDeviceFeatures2("", jsonRoot, features);
+    vk_json_parser::parse_VkPhysicalDeviceFeatures2(jsonRoot, features);
 }
 
 void *readJSON_pNextChain(Context &context, const std::string &chainJson)
@@ -932,13 +932,13 @@ static void parse_VkShaderModuleCreateInfo(const char *s, Json::Value &obj, VkSh
 {
     DE_UNREF(s);
 
-    vk_json_parser::parse_VkStructureType("sType", obj["sType"], (o.sType));
+    vk_json_parser::parse_VkStructureType(obj["sType"], (o.sType));
 
     o.pNext = (VkDeviceObjectReservationCreateInfo *)vk_json_parser::parsePNextChain(obj);
 
-    vk_json_parser::parse_uint32_t("flags", obj["flags"], (o.flags));
+    vk_json_parser::parse_uint32_t(obj["flags"], (o.flags));
     uint64_t codeSizeValue;
-    vk_json_parser::parse_uint64_t("codeSize", obj["codeSize"], (codeSizeValue));
+    vk_json_parser::parse_uint64_t(obj["codeSize"], (codeSizeValue));
     o.codeSize = (uintptr_t)codeSizeValue;
 
     // pCode is encoded using Base64.

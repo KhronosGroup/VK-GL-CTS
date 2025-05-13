@@ -313,7 +313,7 @@ public:
     }
     bool operator()(const glu::StructType *type)
     {
-        return type->hasTypeName() && (deStringEqual(m_name, type->getTypeName()) == true);
+        return type->hasTypeName() && strcmp(m_name, type->getTypeName()) == 0;
     }
 
 private:

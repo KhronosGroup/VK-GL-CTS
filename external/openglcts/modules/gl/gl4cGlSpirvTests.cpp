@@ -323,7 +323,7 @@ tcu::TestNode::IterateResult SpirvModulesPositiveTest::iterate()
     uint32_t outputs[ITERATE_LAST];
     for (int it = ITERATE_GLSL; it < ITERATE_LAST; ++it)
     {
-        ShaderProgram *program = DE_NULL;
+        ShaderProgram *program = nullptr;
         if (it == ITERATE_GLSL)
         {
             ProgramSources sources;
@@ -379,7 +379,7 @@ tcu::TestNode::IterateResult SpirvModulesPositiveTest::iterate()
         gl.enableVertexAttribArray(0);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glEnableVertexAttribArray");
 
-        gl.vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+        gl.vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glVertexAttribPointer");
 
         gl.patchParameteri(GL_PATCH_VERTICES, 3);
@@ -591,7 +591,7 @@ tcu::TestNode::IterateResult SpirvShaderBinaryMultipleShaderObjectsTest::iterate
     gl.enableVertexAttribArray(0);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glEnableVertexAttribArray");
 
-    gl.vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glVertexAttribPointer");
 
     gl.drawArrays(GL_TRIANGLE_STRIP, 0, 3);
@@ -919,7 +919,7 @@ tcu::TestNode::IterateResult SpirvModulesErrorVerificationTest::iterate()
 
     // 2) Verify if SpecializeShader function generate INVALID_VALUE error when
     //    <shader> is not the name of either a program or shader object.
-    gl.specializeShader(0xFFFF, "main", 0, DE_NULL, DE_NULL);
+    gl.specializeShader(0xFFFF, "main", 0, nullptr, nullptr);
     err = gl.getError();
     if (err != GL_INVALID_VALUE)
     {
@@ -934,7 +934,7 @@ tcu::TestNode::IterateResult SpirvModulesErrorVerificationTest::iterate()
 
     // 3) Verify if SpecializeShader function generate INVALID_OPERATION error when
     //    <shader> is the name of a program object.
-    gl.specializeShader(m_programId, "main", 0, DE_NULL, DE_NULL);
+    gl.specializeShader(m_programId, "main", 0, nullptr, nullptr);
     err = gl.getError();
     if (err != GL_INVALID_OPERATION)
     {
@@ -949,7 +949,7 @@ tcu::TestNode::IterateResult SpirvModulesErrorVerificationTest::iterate()
 
     // 4) Verify if SpecializeShader function generate INVALID_OPERATION error when
     //    SPIR_V_BINARY_ARB state for <shader> is not TRUE.
-    gl.specializeShader(m_glslShaderId, "main", 0, DE_NULL, DE_NULL);
+    gl.specializeShader(m_glslShaderId, "main", 0, nullptr, nullptr);
     err = gl.getError();
     if (err != GL_INVALID_OPERATION)
     {
@@ -964,7 +964,7 @@ tcu::TestNode::IterateResult SpirvModulesErrorVerificationTest::iterate()
 
     // 5) Verify if SpecializeShader function generate INVALID_VALUE when <pEntryPoint>
     //    does not name a valid entry point for <shader>.
-    gl.specializeShader(m_spirvShaderId, "entry", 0, DE_NULL, DE_NULL);
+    gl.specializeShader(m_spirvShaderId, "entry", 0, nullptr, nullptr);
     err = gl.getError();
     if (err != GL_INVALID_VALUE)
     {
@@ -1017,10 +1017,10 @@ tcu::TestNode::IterateResult SpirvModulesErrorVerificationTest::iterate()
 
     // 8) Verify if SpecializeShader function generate INVALID_OPERATION error if the
     //    shader has already been specialized.
-    gl.specializeShader(m_spirvShaderId, "main", 0, DE_NULL, DE_NULL);
+    gl.specializeShader(m_spirvShaderId, "main", 0, nullptr, nullptr);
     GLU_EXPECT_NO_ERROR(gl.getError(), "specializeShader");
 
-    gl.specializeShader(m_spirvShaderId, "main", 0, DE_NULL, DE_NULL);
+    gl.specializeShader(m_spirvShaderId, "main", 0, nullptr, nullptr);
     err = gl.getError();
     if (err != GL_INVALID_OPERATION)
     {
@@ -1777,7 +1777,7 @@ void SpirvGlslToSpirVBuiltInFunctionsTest::initMappings()
     m_mappings["ceil"].push_back("OpExtInst Ceil");
     m_mappings["fract"].push_back("OpExtInst Fract");
     m_mappings["mod"].push_back("OpFMod");
-    m_mappings["modf"].push_back("OpExtInst Modf");
+    m_mappings["modf"].push_back("OpExtInst ModfStruct");
     m_mappings["min"].push_back("OpExtInst FMin");
     m_mappings["max"].push_back("OpExtInst FMax");
     m_mappings["clamp"].push_back("OpExtInst FClamp");
@@ -2051,7 +2051,7 @@ tcu::TestNode::IterateResult SpirvGlslToSpirVSpecializationConstantsTest::iterat
     gl.enableVertexAttribArray(0);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glEnableVertexAttribArray");
 
-    gl.vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glVertexAttribPointer");
 
     gl.drawArrays(GL_TRIANGLES, 0, 3);
@@ -2376,7 +2376,7 @@ tcu::TestNode::IterateResult SpirvValidationBuiltInVariableDecorationsTest::iter
     {
         for (int it = ITERATE_GLSL; it < ITERATE_LAST; ++it)
         {
-            ShaderProgram *program = DE_NULL;
+            ShaderProgram *program = nullptr;
             if (it == ITERATE_GLSL)
             {
                 ProgramSources sources;
@@ -2654,7 +2654,7 @@ bool SpirvValidationBuiltInVariableDecorationsTest::validPerVertexFragFunc(Valid
     gl.enableVertexAttribArray(0);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glEnableVertexAttribArray");
 
-    gl.vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glVertexAttribPointer");
 
     gl.drawArrays(GL_TRIANGLES, 0, 3);
@@ -2737,7 +2737,7 @@ bool SpirvValidationBuiltInVariableDecorationsTest::validPerVertexPointFunc(Vali
     gl.enableVertexAttribArray(0);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glEnableVertexAttribArray");
 
-    gl.vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glVertexAttribPointer");
 
     gl.drawArraysInstanced(GL_POINTS, 0, 3, 3);
@@ -2821,7 +2821,7 @@ bool SpirvValidationBuiltInVariableDecorationsTest::validTesselationGeometryFunc
     gl.enableVertexAttribArray(0);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glEnableVertexAttribArray");
 
-    gl.vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glVertexAttribPointer");
 
     gl.patchParameteri(GL_PATCH_VERTICES, 3);
@@ -2928,7 +2928,7 @@ bool SpirvValidationBuiltInVariableDecorationsTest::validMultiSamplingFunc(Valid
     gl.enableVertexAttribArray(0);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glEnableVertexAttribArray");
 
-    gl.vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glVertexAttribPointer");
 
     gl.drawArrays(GL_TRIANGLES, 0, 3);

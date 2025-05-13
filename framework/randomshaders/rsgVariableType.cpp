@@ -36,13 +36,13 @@ VariableType &VariableType::operator=(const VariableType &other)
 
     delete m_elementType;
 
-    m_elementType = DE_NULL;
+    m_elementType = nullptr;
     m_baseType    = other.m_baseType;
     m_precision   = other.m_precision;
     m_typeName    = other.m_typeName;
     m_numElements = other.m_numElements;
     m_members     = other.m_members;
-    m_elementType = DE_NULL;
+    m_elementType = nullptr;
 
     if (other.m_elementType)
         m_elementType = new VariableType(*other.m_elementType);
@@ -50,7 +50,7 @@ VariableType &VariableType::operator=(const VariableType &other)
     return *this;
 }
 
-VariableType::VariableType(const VariableType &other) : m_elementType(DE_NULL)
+VariableType::VariableType(const VariableType &other) : m_elementType(nullptr)
 {
     *this = other;
 }

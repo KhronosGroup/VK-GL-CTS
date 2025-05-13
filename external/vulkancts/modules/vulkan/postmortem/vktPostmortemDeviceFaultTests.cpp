@@ -262,9 +262,9 @@ public:
         static uint64_t vendorFaultCodes[]{0x11223344, 0x22334455, 0xAABBCCDD, 0xCCDDEEFF};
         static Header vendorBinaryData;
 
-        if (DE_NULL == pFaultInfo)
+        if (nullptr == pFaultInfo)
         {
-            if (DE_NULL == pFaultCounts)
+            if (nullptr == pFaultCounts)
                 return VK_ERROR_UNKNOWN;
 
             DE_ASSERT(pFaultCounts->sType == VK_STRUCTURE_TYPE_DEVICE_FAULT_COUNTS_EXT);

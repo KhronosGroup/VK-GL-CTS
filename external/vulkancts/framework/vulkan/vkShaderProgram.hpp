@@ -48,6 +48,7 @@ struct ShaderBuildOptions
         FLAG_ALLOW_WORKGROUP_SCALAR_OFFSETS =
             (1u
              << 4), // allow scalar block offsets for Workgroup memory, part of VK_KHR_workgroup_memory_explicit_layout
+        FLAG_ALLOW_NON_CONST_OFFSETS = (1u << 5), // allow non-const offsets in texture*Offset functions (maint8)
     };
 
     uint32_t vulkanVersion;
@@ -92,6 +93,11 @@ struct ShaderBuildOptions
         if (flags & FLAG_ALLOW_WORKGROUP_SCALAR_OFFSETS)
         {
             validator_flags |= SpirvValidatorOptions::FLAG_SPIRV_VALIDATOR_WORKGROUP_SCALAR_BLOCK_LAYOUT;
+        }
+
+        if (flags & FLAG_ALLOW_NON_CONST_OFFSETS)
+        {
+            validator_flags |= SpirvValidatorOptions::FLAG_SPIRV_VALIDATOR_ALLOW_NON_CONST_OFFSETS;
         }
 
         return SpirvValidatorOptions(vulkanVersion, rules, supports_VK_KHR_spirv_1_4, validator_flags);

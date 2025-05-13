@@ -67,12 +67,12 @@ namespace FboUtil
 #if defined(DE_DEBUG)
 static bool isFramebufferStatus(glw::GLenum fboStatus)
 {
-    return glu::getFramebufferStatusName(fboStatus) != DE_NULL;
+    return glu::getFramebufferStatusName(fboStatus) != nullptr;
 }
 
 static bool isErrorCode(glw::GLenum errorCode)
 {
-    return glu::getErrorName(errorCode) != DE_NULL;
+    return glu::getErrorName(errorCode) != nullptr;
 }
 #endif
 
@@ -232,7 +232,7 @@ void addFormats(FormatDB &db, FormatEntries stdFmts)
 
 void addExtFormats(FormatDB &db, FormatExtEntries extFmts, const RenderContext *ctx)
 {
-    const UniquePtr<ContextInfo> ctxInfo(ctx != DE_NULL ? ContextInfo::create(*ctx) : DE_NULL);
+    const UniquePtr<ContextInfo> ctxInfo(ctx != nullptr ? ContextInfo::create(*ctx) : nullptr);
     for (const FormatExtEntry *entryIt = extFmts.begin(); entryIt != extFmts.end(); entryIt++)
     {
         bool supported = true;
@@ -317,15 +317,15 @@ GLsizei imageNumSamples(const Image &img)
 
 static GLenum glTarget(const Image &img)
 {
-    if (dynamic_cast<const Renderbuffer *>(&img) != DE_NULL)
+    if (dynamic_cast<const Renderbuffer *>(&img) != nullptr)
         return GL_RENDERBUFFER;
-    if (dynamic_cast<const Texture2D *>(&img) != DE_NULL)
+    if (dynamic_cast<const Texture2D *>(&img) != nullptr)
         return GL_TEXTURE_2D;
-    if (dynamic_cast<const TextureCubeMap *>(&img) != DE_NULL)
+    if (dynamic_cast<const TextureCubeMap *>(&img) != nullptr)
         return GL_TEXTURE_CUBE_MAP;
-    if (dynamic_cast<const Texture3D *>(&img) != DE_NULL)
+    if (dynamic_cast<const Texture3D *>(&img) != nullptr)
         return GL_TEXTURE_3D;
-    if (dynamic_cast<const Texture2DArray *>(&img) != DE_NULL)
+    if (dynamic_cast<const Texture2DArray *>(&img) != nullptr)
         return GL_TEXTURE_2D_ARRAY;
 
     DE_FATAL("Impossible image type");
@@ -339,7 +339,7 @@ static void glInitFlat(const TextureFlat &cfg, GLenum target, const glw::Functio
     GLint h                     = cfg.height;
     for (GLint level = 0; level < cfg.numLevels; level++)
     {
-        gl.texImage2D(target, level, cfg.internalFormat.format, w, h, 0, format.format, format.dataType, DE_NULL);
+        gl.texImage2D(target, level, cfg.internalFormat.format, w, h, 0, format.format, format.dataType, nullptr);
         w = de::max(1, w / 2);
         h = de::max(1, h / 2);
     }
@@ -354,7 +354,7 @@ static void glInitLayered(const TextureLayered &cfg, GLint depth_divider, const 
     for (GLint level = 0; level < cfg.numLevels; level++)
     {
         gl.texImage3D(glTarget(cfg), level, cfg.internalFormat.format, w, h, depth, 0, format.format, format.dataType,
-                      DE_NULL);
+                      nullptr);
         w     = de::max(1, w / 2);
         h     = de::max(1, h / 2);
         depth = de::max(1, depth / depth_divider);
@@ -414,9 +414,9 @@ static GLuint glCreate(const Image &cfg, const glw::Functions &gl)
 
 static void glDelete(const Image &cfg, GLuint img, const glw::Functions &gl)
 {
-    if (dynamic_cast<const Renderbuffer *>(&cfg) != DE_NULL)
+    if (dynamic_cast<const Renderbuffer *>(&cfg) != nullptr)
         gl.deleteRenderbuffers(1, &img);
-    else if (dynamic_cast<const Texture *>(&cfg) != DE_NULL)
+    else if (dynamic_cast<const Texture *>(&cfg) != nullptr)
         gl.deleteTextures(1, &img);
     else
         DE_FATAL("Impossible image type");
@@ -436,9 +436,9 @@ static void attachAttachment(const Attachment &att, GLenum attPoint, const glw::
 
 GLenum attachmentType(const Attachment &att)
 {
-    if (dynamic_cast<const RenderbufferAttachment *>(&att) != DE_NULL)
+    if (dynamic_cast<const RenderbufferAttachment *>(&att) != nullptr)
         return GL_RENDERBUFFER;
-    else if (dynamic_cast<const TextureAttachment *>(&att) != DE_NULL)
+    else if (dynamic_cast<const TextureAttachment *>(&att) != nullptr)
         return GL_TEXTURE;
 
     DE_FATAL("Impossible attachment type");
@@ -447,7 +447,7 @@ GLenum attachmentType(const Attachment &att)
 
 static GLsizei textureLayer(const TextureAttachment &tAtt)
 {
-    if (dynamic_cast<const TextureFlatAttachment *>(&tAtt) != DE_NULL)
+    if (dynamic_cast<const TextureFlatAttachment *>(&tAtt) != nullptr)
         return 0;
     else if (const TextureLayerAttachment *const lAtt = dynamic_cast<const TextureLayerAttachment *>(&tAtt))
         return lAtt->layer;
@@ -634,7 +634,7 @@ ValidStatusCodes FboVerifier::validStatusCodes(const Framebuffer &fboConfig) con
 
 void Framebuffer::attach(glw::GLenum attPoint, const Attachment *att)
 {
-    if (att == DE_NULL)
+    if (att == nullptr)
         attachments.erase(attPoint);
     else
         attachments[attPoint] = att;
@@ -645,13 +645,13 @@ const Image *Framebuffer::getImage(GLenum type, glw::GLuint imgName) const
     switch (type)
     {
     case GL_TEXTURE:
-        return de::lookupDefault(textures, imgName, DE_NULL);
+        return de::lookupDefault(textures, imgName, nullptr);
     case GL_RENDERBUFFER:
-        return de::lookupDefault(rbos, imgName, DE_NULL);
+        return de::lookupDefault(rbos, imgName, nullptr);
     default:
         DE_FATAL("Bad image type");
     }
-    return DE_NULL; // shut up compiler warning
+    return nullptr; // shut up compiler warning
 }
 
 void Framebuffer::setTexture(glw::GLuint texName, const Texture &texCfg)

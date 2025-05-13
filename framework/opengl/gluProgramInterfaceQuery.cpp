@@ -34,7 +34,7 @@ uint32_t getProgramResourceUint(const glw::Functions &gl, uint32_t program, uint
                                 uint32_t queryParam)
 {
     uint32_t value = 0;
-    gl.getProgramResourceiv(program, programInterface, index, 1, &queryParam, 1, DE_NULL, (int *)&value);
+    gl.getProgramResourceiv(program, programInterface, index, 1, &queryParam, 1, nullptr, (int *)&value);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramResourceiv()");
     return value;
 }
@@ -47,7 +47,7 @@ void getProgramResourceName(const glw::Functions &gl, uint32_t program, uint32_t
     if (length > 0)
     {
         std::vector<char> buf(length + 1);
-        gl.getProgramResourceName(program, programInterface, index, (int)buf.size(), DE_NULL, &buf[0]);
+        gl.getProgramResourceName(program, programInterface, index, (int)buf.size(), nullptr, &buf[0]);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramResourceName()");
 
         dst = (const char *)&buf[0];
@@ -69,7 +69,7 @@ static void getProgramInterfaceActiveVariables(const glw::Functions &gl, uint32_
     if (numActiveVariables > 0)
     {
         const uint32_t queryParam = GL_ACTIVE_VARIABLES;
-        gl.getProgramResourceiv(program, programInterface, index, 1, &queryParam, (int)activeVariables.size(), DE_NULL,
+        gl.getProgramResourceiv(program, programInterface, index, 1, &queryParam, (int)activeVariables.size(), nullptr,
                                 &activeVariables[0]);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramResourceiv(GL_PROGRAM_ACTIVE_VARIABLES)");
     }

@@ -944,7 +944,7 @@ typedef de::SharedPtr<de::Semaphore> SemaphoreSp;
 
 struct DrawOpPacket
 {
-    DrawOpPacket(void) : drawOps(DE_NULL), numOps(0)
+    DrawOpPacket(void) : drawOps(nullptr), numOps(0)
     {
     }
 

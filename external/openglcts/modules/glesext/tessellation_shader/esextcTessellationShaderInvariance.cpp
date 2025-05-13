@@ -82,7 +82,7 @@ TessellationShaderInvarianceBaseTest::TessellationShaderInvarianceBaseTest(Conte
                                                                            const ExtParameters &extParams,
                                                                            const char *name, const char *description)
     : TestCaseBase(context, extParams, name, description)
-    , m_utils_ptr(DE_NULL)
+    , m_utils_ptr(nullptr)
     , m_bo_id(0)
     , m_qo_tfpw_id(0)
     , m_vao_id(0)
@@ -351,7 +351,7 @@ void TessellationShaderInvarianceBaseTest::initTest()
         for (unsigned int n_shader_type = 0; n_shader_type < n_shader_types; ++n_shader_type)
         {
             std::string shader_body;
-            const char *shader_body_ptr = DE_NULL;
+            const char *shader_body_ptr = nullptr;
             glw::GLuint shader_id       = 0;
             glw::GLenum shader_type     = shader_types[n_shader_type];
             glw::GLenum shader_type_es  = (glw::GLenum)shader_type;
@@ -668,11 +668,11 @@ tcu::TestNode::IterateResult TessellationShaderInvarianceBaseTest::iterate(void)
         char *iter_data = (char *)iteration_data[n_iteration];
         delete[] iter_data;
 
-        iteration_data[n_iteration] = DE_NULL;
+        iteration_data[n_iteration] = nullptr;
     } /* for (all iterations) */
 
     delete[] iteration_data;
-    iteration_data = DE_NULL;
+    iteration_data = nullptr;
 
     /* All done */
     m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -874,8 +874,8 @@ void TessellationShaderInvarianceRule1Test::verifyResultData(const void **all_it
     /* Make sure the data sets match, given different draw call ordering */
     for (int n_type = 0; n_type < 3 /* lines, points, tris */; ++n_type)
     {
-        const float *data1_ptr = DE_NULL;
-        const float *data2_ptr = DE_NULL;
+        const float *data1_ptr = nullptr;
+        const float *data2_ptr = nullptr;
         std::string data_type_string;
         unsigned int n_vertices = 0;
 
@@ -1093,7 +1093,7 @@ void TessellationShaderInvarianceRule2Test::getIterationProperties(
     }
     }
 
-    if (out_result_buffer_size != DE_NULL)
+    if (out_result_buffer_size != nullptr)
     {
         *out_result_buffer_size = m_utils_ptr->getAmountOfVerticesGeneratedByTessellator(
             *out_primitive_mode, out_inner_tess_levels, out_outer_tess_levels, TESSELLATION_SHADER_VERTEX_SPACING_EQUAL,
@@ -1322,7 +1322,7 @@ void TessellationShaderInvarianceRule3Test::getIterationProperties(
     *out_primitive_mode  = test_iteration.primitive_mode;
     *out_vertex_ordering = TESSELLATION_SHADER_VERTEX_ORDERING_CCW;
 
-    if (out_result_buffer_size != DE_NULL)
+    if (out_result_buffer_size != nullptr)
     {
         *out_result_buffer_size = m_utils_ptr->getAmountOfVerticesGeneratedByTessellator(
             *out_primitive_mode, out_inner_tess_levels, out_outer_tess_levels, test_iteration.vertex_spacing,
@@ -1627,7 +1627,7 @@ void TessellationShaderInvarianceRule4Test::getIterationProperties(
     *out_primitive_mode  = test_iteration.primitive_mode;
     *out_vertex_ordering = TESSELLATION_SHADER_VERTEX_ORDERING_CCW;
 
-    if (out_result_buffer_size != DE_NULL)
+    if (out_result_buffer_size != nullptr)
     {
         *out_result_buffer_size = m_utils_ptr->getAmountOfVerticesGeneratedByTessellator(
             *out_primitive_mode, out_inner_tess_levels, out_outer_tess_levels, test_iteration.vertex_spacing,
@@ -1994,7 +1994,7 @@ void TessellationShaderInvarianceRule5Test::getIterationProperties(
     *out_primitive_mode  = test_iteration.primitive_mode;
     *out_vertex_ordering = test_iteration.vertex_ordering;
 
-    if (out_result_buffer_size != DE_NULL)
+    if (out_result_buffer_size != nullptr)
     {
         *out_result_buffer_size = m_utils_ptr->getAmountOfVerticesGeneratedByTessellator(
             *out_primitive_mode, out_inner_tess_levels, out_outer_tess_levels, TESSELLATION_SHADER_VERTEX_SPACING_EQUAL,
@@ -2276,7 +2276,7 @@ void TessellationShaderInvarianceRule6Test::getIterationProperties(
     *out_primitive_mode  = test_iteration.primitive_mode;
     *out_vertex_ordering = test_iteration.vertex_ordering;
 
-    if (out_result_buffer_size != DE_NULL)
+    if (out_result_buffer_size != nullptr)
     {
         *out_result_buffer_size = m_utils_ptr->getAmountOfVerticesGeneratedByTessellator(
             *out_primitive_mode, out_inner_tess_levels, out_outer_tess_levels, TESSELLATION_SHADER_VERTEX_SPACING_EQUAL,
@@ -2351,7 +2351,7 @@ void TessellationShaderInvarianceRule6Test::initTestIterations()
              * is unique and does not repeat, we'll just make sure the inner level values are set to
              * the same set of values, so that the conditions the test must meet are actually met.
              */
-            float *inner_levels_to_use = DE_NULL;
+            float *inner_levels_to_use = nullptr;
             _tessellation_levels_set levels_set;
             unsigned int n_levels_sets = 0;
 
@@ -2666,7 +2666,7 @@ void TessellationShaderInvarianceRule7Test::getIterationProperties(
     *out_primitive_mode  = test_iteration.primitive_mode;
     *out_vertex_ordering = test_iteration.vertex_ordering;
 
-    if (out_result_buffer_size != DE_NULL)
+    if (out_result_buffer_size != nullptr)
     {
         *out_result_buffer_size = m_utils_ptr->getAmountOfVerticesGeneratedByTessellator(
             *out_primitive_mode, out_inner_tess_levels, out_outer_tess_levels, TESSELLATION_SHADER_VERTEX_SPACING_EQUAL,

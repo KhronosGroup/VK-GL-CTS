@@ -105,6 +105,11 @@ if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 0, 0))
     m_vk.getPipelineCacheData = (GetPipelineCacheDataFunc) GET_PROC_ADDR("vkGetPipelineCacheData");
 if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 0, 0))
     m_vk.mergePipelineCaches = (MergePipelineCachesFunc) GET_PROC_ADDR("vkMergePipelineCaches");
+m_vk.createPipelineBinariesKHR = (CreatePipelineBinariesKHRFunc) GET_PROC_ADDR("vkCreatePipelineBinariesKHR");
+m_vk.destroyPipelineBinaryKHR = (DestroyPipelineBinaryKHRFunc) GET_PROC_ADDR("vkDestroyPipelineBinaryKHR");
+m_vk.getPipelineKeyKHR = (GetPipelineKeyKHRFunc) GET_PROC_ADDR("vkGetPipelineKeyKHR");
+m_vk.getPipelineBinaryDataKHR = (GetPipelineBinaryDataKHRFunc) GET_PROC_ADDR("vkGetPipelineBinaryDataKHR");
+m_vk.releaseCapturedPipelineDataKHR = (ReleaseCapturedPipelineDataKHRFunc) GET_PROC_ADDR("vkReleaseCapturedPipelineDataKHR");
 if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 0, 0))
     m_vk.createGraphicsPipelines = (CreateGraphicsPipelinesFunc) GET_PROC_ADDR("vkCreateGraphicsPipelines");
 if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 0, 0))
@@ -146,7 +151,10 @@ if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 0, 0))
     m_vk.destroyRenderPass = (DestroyRenderPassFunc) GET_PROC_ADDR("vkDestroyRenderPass");
 if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 0, 0))
     m_vk.getRenderAreaGranularity = (GetRenderAreaGranularityFunc) GET_PROC_ADDR("vkGetRenderAreaGranularity");
-m_vk.getRenderingAreaGranularityKHR = (GetRenderingAreaGranularityKHRFunc) GET_PROC_ADDR("vkGetRenderingAreaGranularityKHR");
+if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
+    m_vk.getRenderingAreaGranularity = (GetRenderingAreaGranularityFunc) GET_PROC_ADDR("vkGetRenderingAreaGranularity");
+if (!m_vk.getRenderingAreaGranularity)
+    m_vk.getRenderingAreaGranularity = (GetRenderingAreaGranularityFunc) GET_PROC_ADDR("vkGetRenderingAreaGranularityKHR");
 if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 0, 0))
     m_vk.createCommandPool = (CreateCommandPoolFunc) GET_PROC_ADDR("vkCreateCommandPool");
 if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 0, 0))
@@ -280,7 +288,19 @@ m_vk.cmdBindPipelineShaderGroupNV = (CmdBindPipelineShaderGroupNVFunc) GET_PROC_
 m_vk.getGeneratedCommandsMemoryRequirementsNV = (GetGeneratedCommandsMemoryRequirementsNVFunc) GET_PROC_ADDR("vkGetGeneratedCommandsMemoryRequirementsNV");
 m_vk.createIndirectCommandsLayoutNV = (CreateIndirectCommandsLayoutNVFunc) GET_PROC_ADDR("vkCreateIndirectCommandsLayoutNV");
 m_vk.destroyIndirectCommandsLayoutNV = (DestroyIndirectCommandsLayoutNVFunc) GET_PROC_ADDR("vkDestroyIndirectCommandsLayoutNV");
-m_vk.cmdPushDescriptorSetKHR = (CmdPushDescriptorSetKHRFunc) GET_PROC_ADDR("vkCmdPushDescriptorSetKHR");
+m_vk.cmdExecuteGeneratedCommandsEXT = (CmdExecuteGeneratedCommandsEXTFunc) GET_PROC_ADDR("vkCmdExecuteGeneratedCommandsEXT");
+m_vk.cmdPreprocessGeneratedCommandsEXT = (CmdPreprocessGeneratedCommandsEXTFunc) GET_PROC_ADDR("vkCmdPreprocessGeneratedCommandsEXT");
+m_vk.getGeneratedCommandsMemoryRequirementsEXT = (GetGeneratedCommandsMemoryRequirementsEXTFunc) GET_PROC_ADDR("vkGetGeneratedCommandsMemoryRequirementsEXT");
+m_vk.createIndirectCommandsLayoutEXT = (CreateIndirectCommandsLayoutEXTFunc) GET_PROC_ADDR("vkCreateIndirectCommandsLayoutEXT");
+m_vk.destroyIndirectCommandsLayoutEXT = (DestroyIndirectCommandsLayoutEXTFunc) GET_PROC_ADDR("vkDestroyIndirectCommandsLayoutEXT");
+m_vk.createIndirectExecutionSetEXT = (CreateIndirectExecutionSetEXTFunc) GET_PROC_ADDR("vkCreateIndirectExecutionSetEXT");
+m_vk.destroyIndirectExecutionSetEXT = (DestroyIndirectExecutionSetEXTFunc) GET_PROC_ADDR("vkDestroyIndirectExecutionSetEXT");
+m_vk.updateIndirectExecutionSetPipelineEXT = (UpdateIndirectExecutionSetPipelineEXTFunc) GET_PROC_ADDR("vkUpdateIndirectExecutionSetPipelineEXT");
+m_vk.updateIndirectExecutionSetShaderEXT = (UpdateIndirectExecutionSetShaderEXTFunc) GET_PROC_ADDR("vkUpdateIndirectExecutionSetShaderEXT");
+if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
+    m_vk.cmdPushDescriptorSet = (CmdPushDescriptorSetFunc) GET_PROC_ADDR("vkCmdPushDescriptorSet");
+if (!m_vk.cmdPushDescriptorSet)
+    m_vk.cmdPushDescriptorSet = (CmdPushDescriptorSetFunc) GET_PROC_ADDR("vkCmdPushDescriptorSetKHR");
 if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 1, 0))
     m_vk.trimCommandPool = (TrimCommandPoolFunc) GET_PROC_ADDR("vkTrimCommandPool");
 if (!m_vk.trimCommandPool)
@@ -341,7 +361,10 @@ if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 1, 0))
     m_vk.updateDescriptorSetWithTemplate = (UpdateDescriptorSetWithTemplateFunc) GET_PROC_ADDR("vkUpdateDescriptorSetWithTemplate");
 if (!m_vk.updateDescriptorSetWithTemplate)
     m_vk.updateDescriptorSetWithTemplate = (UpdateDescriptorSetWithTemplateFunc) GET_PROC_ADDR("vkUpdateDescriptorSetWithTemplateKHR");
-m_vk.cmdPushDescriptorSetWithTemplateKHR = (CmdPushDescriptorSetWithTemplateKHRFunc) GET_PROC_ADDR("vkCmdPushDescriptorSetWithTemplateKHR");
+if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
+    m_vk.cmdPushDescriptorSetWithTemplate = (CmdPushDescriptorSetWithTemplateFunc) GET_PROC_ADDR("vkCmdPushDescriptorSetWithTemplate");
+if (!m_vk.cmdPushDescriptorSetWithTemplate)
+    m_vk.cmdPushDescriptorSetWithTemplate = (CmdPushDescriptorSetWithTemplateFunc) GET_PROC_ADDR("vkCmdPushDescriptorSetWithTemplateKHR");
 m_vk.setHdrMetadataEXT = (SetHdrMetadataEXTFunc) GET_PROC_ADDR("vkSetHdrMetadataEXT");
 m_vk.getSwapchainStatusKHR = (GetSwapchainStatusKHRFunc) GET_PROC_ADDR("vkGetSwapchainStatusKHR");
 m_vk.getRefreshCycleDurationGOOGLE = (GetRefreshCycleDurationGOOGLEFunc) GET_PROC_ADDR("vkGetRefreshCycleDurationGOOGLE");
@@ -498,10 +521,13 @@ m_vk.createRayTracingPipelinesNV = (CreateRayTracingPipelinesNVFunc) GET_PROC_AD
 m_vk.createRayTracingPipelinesKHR = (CreateRayTracingPipelinesKHRFunc) GET_PROC_ADDR("vkCreateRayTracingPipelinesKHR");
 m_vk.cmdTraceRaysIndirectKHR = (CmdTraceRaysIndirectKHRFunc) GET_PROC_ADDR("vkCmdTraceRaysIndirectKHR");
 m_vk.cmdTraceRaysIndirect2KHR = (CmdTraceRaysIndirect2KHRFunc) GET_PROC_ADDR("vkCmdTraceRaysIndirect2KHR");
+m_vk.getClusterAccelerationStructureBuildSizesNV = (GetClusterAccelerationStructureBuildSizesNVFunc) GET_PROC_ADDR("vkGetClusterAccelerationStructureBuildSizesNV");
+m_vk.cmdBuildClusterAccelerationStructureIndirectNV = (CmdBuildClusterAccelerationStructureIndirectNVFunc) GET_PROC_ADDR("vkCmdBuildClusterAccelerationStructureIndirectNV");
 m_vk.getDeviceAccelerationStructureCompatibilityKHR = (GetDeviceAccelerationStructureCompatibilityKHRFunc) GET_PROC_ADDR("vkGetDeviceAccelerationStructureCompatibilityKHR");
 m_vk.getRayTracingShaderGroupStackSizeKHR = (GetRayTracingShaderGroupStackSizeKHRFunc) GET_PROC_ADDR("vkGetRayTracingShaderGroupStackSizeKHR");
 m_vk.cmdSetRayTracingPipelineStackSizeKHR = (CmdSetRayTracingPipelineStackSizeKHRFunc) GET_PROC_ADDR("vkCmdSetRayTracingPipelineStackSizeKHR");
 m_vk.getImageViewHandleNVX = (GetImageViewHandleNVXFunc) GET_PROC_ADDR("vkGetImageViewHandleNVX");
+m_vk.getImageViewHandle64NVX = (GetImageViewHandle64NVXFunc) GET_PROC_ADDR("vkGetImageViewHandle64NVX");
 m_vk.getImageViewAddressNVX = (GetImageViewAddressNVXFunc) GET_PROC_ADDR("vkGetImageViewAddressNVX");
 m_vk.getDeviceGroupSurfacePresentModes2EXT = (GetDeviceGroupSurfacePresentModes2EXTFunc) GET_PROC_ADDR("vkGetDeviceGroupSurfacePresentModes2EXT");
 m_vk.acquireFullScreenExclusiveModeEXT = (AcquireFullScreenExclusiveModeEXTFunc) GET_PROC_ADDR("vkAcquireFullScreenExclusiveModeEXT");
@@ -535,9 +561,12 @@ if (!m_vk.getDeviceMemoryOpaqueCaptureAddress)
 m_vk.getPipelineExecutablePropertiesKHR = (GetPipelineExecutablePropertiesKHRFunc) GET_PROC_ADDR("vkGetPipelineExecutablePropertiesKHR");
 m_vk.getPipelineExecutableStatisticsKHR = (GetPipelineExecutableStatisticsKHRFunc) GET_PROC_ADDR("vkGetPipelineExecutableStatisticsKHR");
 m_vk.getPipelineExecutableInternalRepresentationsKHR = (GetPipelineExecutableInternalRepresentationsKHRFunc) GET_PROC_ADDR("vkGetPipelineExecutableInternalRepresentationsKHR");
-m_vk.cmdSetLineStippleKHR = (CmdSetLineStippleKHRFunc) GET_PROC_ADDR("vkCmdSetLineStippleKHR");
-if (!m_vk.cmdSetLineStippleKHR)
-    m_vk.cmdSetLineStippleKHR = (CmdSetLineStippleKHRFunc) GET_PROC_ADDR("vkCmdSetLineStippleEXT");
+if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
+    m_vk.cmdSetLineStipple = (CmdSetLineStippleFunc) GET_PROC_ADDR("vkCmdSetLineStipple");
+if (!m_vk.cmdSetLineStipple)
+    m_vk.cmdSetLineStipple = (CmdSetLineStippleFunc) GET_PROC_ADDR("vkCmdSetLineStippleKHR");
+if (!m_vk.cmdSetLineStipple)
+    m_vk.cmdSetLineStipple = (CmdSetLineStippleFunc) GET_PROC_ADDR("vkCmdSetLineStippleEXT");
 m_vk.createAccelerationStructureKHR = (CreateAccelerationStructureKHRFunc) GET_PROC_ADDR("vkCreateAccelerationStructureKHR");
 m_vk.cmdBuildAccelerationStructuresKHR = (CmdBuildAccelerationStructuresKHRFunc) GET_PROC_ADDR("vkCmdBuildAccelerationStructuresKHR");
 m_vk.cmdBuildAccelerationStructuresIndirectKHR = (CmdBuildAccelerationStructuresIndirectKHRFunc) GET_PROC_ADDR("vkCmdBuildAccelerationStructuresIndirectKHR");
@@ -571,7 +600,10 @@ if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 3, 0))
     m_vk.cmdSetScissorWithCount = (CmdSetScissorWithCountFunc) GET_PROC_ADDR("vkCmdSetScissorWithCount");
 if (!m_vk.cmdSetScissorWithCount)
     m_vk.cmdSetScissorWithCount = (CmdSetScissorWithCountFunc) GET_PROC_ADDR("vkCmdSetScissorWithCountEXT");
-m_vk.cmdBindIndexBuffer2KHR = (CmdBindIndexBuffer2KHRFunc) GET_PROC_ADDR("vkCmdBindIndexBuffer2KHR");
+if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
+    m_vk.cmdBindIndexBuffer2 = (CmdBindIndexBuffer2Func) GET_PROC_ADDR("vkCmdBindIndexBuffer2");
+if (!m_vk.cmdBindIndexBuffer2)
+    m_vk.cmdBindIndexBuffer2 = (CmdBindIndexBuffer2Func) GET_PROC_ADDR("vkCmdBindIndexBuffer2KHR");
 if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 3, 0))
     m_vk.cmdBindVertexBuffers2 = (CmdBindVertexBuffers2Func) GET_PROC_ADDR("vkCmdBindVertexBuffers2");
 if (!m_vk.cmdBindVertexBuffers2)
@@ -716,10 +748,22 @@ if (!m_vk.cmdWriteTimestamp2)
     m_vk.cmdWriteTimestamp2 = (CmdWriteTimestamp2Func) GET_PROC_ADDR("vkCmdWriteTimestamp2KHR");
 m_vk.cmdWriteBufferMarker2AMD = (CmdWriteBufferMarker2AMDFunc) GET_PROC_ADDR("vkCmdWriteBufferMarker2AMD");
 m_vk.getQueueCheckpointData2NV = (GetQueueCheckpointData2NVFunc) GET_PROC_ADDR("vkGetQueueCheckpointData2NV");
-m_vk.copyMemoryToImageEXT = (CopyMemoryToImageEXTFunc) GET_PROC_ADDR("vkCopyMemoryToImageEXT");
-m_vk.copyImageToMemoryEXT = (CopyImageToMemoryEXTFunc) GET_PROC_ADDR("vkCopyImageToMemoryEXT");
-m_vk.copyImageToImageEXT = (CopyImageToImageEXTFunc) GET_PROC_ADDR("vkCopyImageToImageEXT");
-m_vk.transitionImageLayoutEXT = (TransitionImageLayoutEXTFunc) GET_PROC_ADDR("vkTransitionImageLayoutEXT");
+if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
+    m_vk.copyMemoryToImage = (CopyMemoryToImageFunc) GET_PROC_ADDR("vkCopyMemoryToImage");
+if (!m_vk.copyMemoryToImage)
+    m_vk.copyMemoryToImage = (CopyMemoryToImageFunc) GET_PROC_ADDR("vkCopyMemoryToImageEXT");
+if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
+    m_vk.copyImageToMemory = (CopyImageToMemoryFunc) GET_PROC_ADDR("vkCopyImageToMemory");
+if (!m_vk.copyImageToMemory)
+    m_vk.copyImageToMemory = (CopyImageToMemoryFunc) GET_PROC_ADDR("vkCopyImageToMemoryEXT");
+if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
+    m_vk.copyImageToImage = (CopyImageToImageFunc) GET_PROC_ADDR("vkCopyImageToImage");
+if (!m_vk.copyImageToImage)
+    m_vk.copyImageToImage = (CopyImageToImageFunc) GET_PROC_ADDR("vkCopyImageToImageEXT");
+if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
+    m_vk.transitionImageLayout = (TransitionImageLayoutFunc) GET_PROC_ADDR("vkTransitionImageLayout");
+if (!m_vk.transitionImageLayout)
+    m_vk.transitionImageLayout = (TransitionImageLayoutFunc) GET_PROC_ADDR("vkTransitionImageLayoutEXT");
 m_vk.createVideoSessionKHR = (CreateVideoSessionKHRFunc) GET_PROC_ADDR("vkCreateVideoSessionKHR");
 m_vk.destroyVideoSessionKHR = (DestroyVideoSessionKHRFunc) GET_PROC_ADDR("vkDestroyVideoSessionKHR");
 m_vk.createVideoSessionParametersKHR = (CreateVideoSessionParametersKHRFunc) GET_PROC_ADDR("vkCreateVideoSessionParametersKHR");
@@ -735,6 +779,8 @@ m_vk.cmdEndVideoCodingKHR = (CmdEndVideoCodingKHRFunc) GET_PROC_ADDR("vkCmdEndVi
 m_vk.cmdEncodeVideoKHR = (CmdEncodeVideoKHRFunc) GET_PROC_ADDR("vkCmdEncodeVideoKHR");
 m_vk.cmdDecompressMemoryNV = (CmdDecompressMemoryNVFunc) GET_PROC_ADDR("vkCmdDecompressMemoryNV");
 m_vk.cmdDecompressMemoryIndirectCountNV = (CmdDecompressMemoryIndirectCountNVFunc) GET_PROC_ADDR("vkCmdDecompressMemoryIndirectCountNV");
+m_vk.getPartitionedAccelerationStructuresBuildSizesNV = (GetPartitionedAccelerationStructuresBuildSizesNVFunc) GET_PROC_ADDR("vkGetPartitionedAccelerationStructuresBuildSizesNV");
+m_vk.cmdBuildPartitionedAccelerationStructuresNV = (CmdBuildPartitionedAccelerationStructuresNVFunc) GET_PROC_ADDR("vkCmdBuildPartitionedAccelerationStructuresNV");
 m_vk.createCuModuleNVX = (CreateCuModuleNVXFunc) GET_PROC_ADDR("vkCreateCuModuleNVX");
 m_vk.createCuFunctionNVX = (CreateCuFunctionNVXFunc) GET_PROC_ADDR("vkCreateCuFunctionNVX");
 m_vk.destroyCuModuleNVX = (DestroyCuModuleNVXFunc) GET_PROC_ADDR("vkDestroyCuModuleNVX");
@@ -772,6 +818,7 @@ if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 3, 0))
     m_vk.cmdEndRendering = (CmdEndRenderingFunc) GET_PROC_ADDR("vkCmdEndRendering");
 if (!m_vk.cmdEndRendering)
     m_vk.cmdEndRendering = (CmdEndRenderingFunc) GET_PROC_ADDR("vkCmdEndRenderingKHR");
+m_vk.cmdEndRendering2EXT = (CmdEndRendering2EXTFunc) GET_PROC_ADDR("vkCmdEndRendering2EXT");
 m_vk.getDescriptorSetLayoutHostMappingInfoVALVE = (GetDescriptorSetLayoutHostMappingInfoVALVEFunc) GET_PROC_ADDR("vkGetDescriptorSetLayoutHostMappingInfoVALVE");
 m_vk.getDescriptorSetHostMappingVALVE = (GetDescriptorSetHostMappingVALVEFunc) GET_PROC_ADDR("vkGetDescriptorSetHostMappingVALVE");
 m_vk.createMicromapEXT = (CreateMicromapEXTFunc) GET_PROC_ADDR("vkCreateMicromapEXT");
@@ -790,11 +837,15 @@ m_vk.getDeviceMicromapCompatibilityEXT = (GetDeviceMicromapCompatibilityEXTFunc)
 m_vk.getMicromapBuildSizesEXT = (GetMicromapBuildSizesEXTFunc) GET_PROC_ADDR("vkGetMicromapBuildSizesEXT");
 m_vk.getShaderModuleIdentifierEXT = (GetShaderModuleIdentifierEXTFunc) GET_PROC_ADDR("vkGetShaderModuleIdentifierEXT");
 m_vk.getShaderModuleCreateInfoIdentifierEXT = (GetShaderModuleCreateInfoIdentifierEXTFunc) GET_PROC_ADDR("vkGetShaderModuleCreateInfoIdentifierEXT");
-m_vk.getImageSubresourceLayout2KHR = (GetImageSubresourceLayout2KHRFunc) GET_PROC_ADDR("vkGetImageSubresourceLayout2KHR");
-if (!m_vk.getImageSubresourceLayout2KHR)
-    m_vk.getImageSubresourceLayout2KHR = (GetImageSubresourceLayout2KHRFunc) GET_PROC_ADDR("vkGetImageSubresourceLayout2EXT");
+if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
+    m_vk.getImageSubresourceLayout2 = (GetImageSubresourceLayout2Func) GET_PROC_ADDR("vkGetImageSubresourceLayout2");
+if (!m_vk.getImageSubresourceLayout2)
+    m_vk.getImageSubresourceLayout2 = (GetImageSubresourceLayout2Func) GET_PROC_ADDR("vkGetImageSubresourceLayout2KHR");
+if (!m_vk.getImageSubresourceLayout2)
+    m_vk.getImageSubresourceLayout2 = (GetImageSubresourceLayout2Func) GET_PROC_ADDR("vkGetImageSubresourceLayout2EXT");
 m_vk.getPipelinePropertiesEXT = (GetPipelinePropertiesEXTFunc) GET_PROC_ADDR("vkGetPipelinePropertiesEXT");
 m_vk.exportMetalObjectsEXT = (ExportMetalObjectsEXTFunc) GET_PROC_ADDR("vkExportMetalObjectsEXT");
+m_vk.cmdBindTileMemoryQCOM = (CmdBindTileMemoryQCOMFunc) GET_PROC_ADDR("vkCmdBindTileMemoryQCOM");
 m_vk.getFramebufferTilePropertiesQCOM = (GetFramebufferTilePropertiesQCOMFunc) GET_PROC_ADDR("vkGetFramebufferTilePropertiesQCOM");
 m_vk.getDynamicRenderingTilePropertiesQCOM = (GetDynamicRenderingTilePropertiesQCOMFunc) GET_PROC_ADDR("vkGetDynamicRenderingTilePropertiesQCOM");
 m_vk.createOpticalFlowSessionNV = (CreateOpticalFlowSessionNVFunc) GET_PROC_ADDR("vkCreateOpticalFlowSessionNV");
@@ -804,9 +855,18 @@ m_vk.cmdOpticalFlowExecuteNV = (CmdOpticalFlowExecuteNVFunc) GET_PROC_ADDR("vkCm
 m_vk.getDeviceFaultInfoEXT = (GetDeviceFaultInfoEXTFunc) GET_PROC_ADDR("vkGetDeviceFaultInfoEXT");
 m_vk.cmdSetDepthBias2EXT = (CmdSetDepthBias2EXTFunc) GET_PROC_ADDR("vkCmdSetDepthBias2EXT");
 m_vk.releaseSwapchainImagesEXT = (ReleaseSwapchainImagesEXTFunc) GET_PROC_ADDR("vkReleaseSwapchainImagesEXT");
-m_vk.getDeviceImageSubresourceLayoutKHR = (GetDeviceImageSubresourceLayoutKHRFunc) GET_PROC_ADDR("vkGetDeviceImageSubresourceLayoutKHR");
-m_vk.mapMemory2KHR = (MapMemory2KHRFunc) GET_PROC_ADDR("vkMapMemory2KHR");
-m_vk.unmapMemory2KHR = (UnmapMemory2KHRFunc) GET_PROC_ADDR("vkUnmapMemory2KHR");
+if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
+    m_vk.getDeviceImageSubresourceLayout = (GetDeviceImageSubresourceLayoutFunc) GET_PROC_ADDR("vkGetDeviceImageSubresourceLayout");
+if (!m_vk.getDeviceImageSubresourceLayout)
+    m_vk.getDeviceImageSubresourceLayout = (GetDeviceImageSubresourceLayoutFunc) GET_PROC_ADDR("vkGetDeviceImageSubresourceLayoutKHR");
+if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
+    m_vk.mapMemory2 = (MapMemory2Func) GET_PROC_ADDR("vkMapMemory2");
+if (!m_vk.mapMemory2)
+    m_vk.mapMemory2 = (MapMemory2Func) GET_PROC_ADDR("vkMapMemory2KHR");
+if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
+    m_vk.unmapMemory2 = (UnmapMemory2Func) GET_PROC_ADDR("vkUnmapMemory2");
+if (!m_vk.unmapMemory2)
+    m_vk.unmapMemory2 = (UnmapMemory2Func) GET_PROC_ADDR("vkUnmapMemory2KHR");
 m_vk.createShadersEXT = (CreateShadersEXTFunc) GET_PROC_ADDR("vkCreateShadersEXT");
 m_vk.destroyShaderEXT = (DestroyShaderEXTFunc) GET_PROC_ADDR("vkDestroyShaderEXT");
 m_vk.getShaderBinaryDataEXT = (GetShaderBinaryDataEXTFunc) GET_PROC_ADDR("vkGetShaderBinaryDataEXT");
@@ -819,10 +879,22 @@ m_vk.cmdInitializeGraphScratchMemoryAMDX = (CmdInitializeGraphScratchMemoryAMDXF
 m_vk.cmdDispatchGraphAMDX = (CmdDispatchGraphAMDXFunc) GET_PROC_ADDR("vkCmdDispatchGraphAMDX");
 m_vk.cmdDispatchGraphIndirectAMDX = (CmdDispatchGraphIndirectAMDXFunc) GET_PROC_ADDR("vkCmdDispatchGraphIndirectAMDX");
 m_vk.cmdDispatchGraphIndirectCountAMDX = (CmdDispatchGraphIndirectCountAMDXFunc) GET_PROC_ADDR("vkCmdDispatchGraphIndirectCountAMDX");
-m_vk.cmdBindDescriptorSets2KHR = (CmdBindDescriptorSets2KHRFunc) GET_PROC_ADDR("vkCmdBindDescriptorSets2KHR");
-m_vk.cmdPushConstants2KHR = (CmdPushConstants2KHRFunc) GET_PROC_ADDR("vkCmdPushConstants2KHR");
-m_vk.cmdPushDescriptorSet2KHR = (CmdPushDescriptorSet2KHRFunc) GET_PROC_ADDR("vkCmdPushDescriptorSet2KHR");
-m_vk.cmdPushDescriptorSetWithTemplate2KHR = (CmdPushDescriptorSetWithTemplate2KHRFunc) GET_PROC_ADDR("vkCmdPushDescriptorSetWithTemplate2KHR");
+if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
+    m_vk.cmdBindDescriptorSets2 = (CmdBindDescriptorSets2Func) GET_PROC_ADDR("vkCmdBindDescriptorSets2");
+if (!m_vk.cmdBindDescriptorSets2)
+    m_vk.cmdBindDescriptorSets2 = (CmdBindDescriptorSets2Func) GET_PROC_ADDR("vkCmdBindDescriptorSets2KHR");
+if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
+    m_vk.cmdPushConstants2 = (CmdPushConstants2Func) GET_PROC_ADDR("vkCmdPushConstants2");
+if (!m_vk.cmdPushConstants2)
+    m_vk.cmdPushConstants2 = (CmdPushConstants2Func) GET_PROC_ADDR("vkCmdPushConstants2KHR");
+if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
+    m_vk.cmdPushDescriptorSet2 = (CmdPushDescriptorSet2Func) GET_PROC_ADDR("vkCmdPushDescriptorSet2");
+if (!m_vk.cmdPushDescriptorSet2)
+    m_vk.cmdPushDescriptorSet2 = (CmdPushDescriptorSet2Func) GET_PROC_ADDR("vkCmdPushDescriptorSet2KHR");
+if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
+    m_vk.cmdPushDescriptorSetWithTemplate2 = (CmdPushDescriptorSetWithTemplate2Func) GET_PROC_ADDR("vkCmdPushDescriptorSetWithTemplate2");
+if (!m_vk.cmdPushDescriptorSetWithTemplate2)
+    m_vk.cmdPushDescriptorSetWithTemplate2 = (CmdPushDescriptorSetWithTemplate2Func) GET_PROC_ADDR("vkCmdPushDescriptorSetWithTemplate2KHR");
 m_vk.cmdSetDescriptorBufferOffsets2EXT = (CmdSetDescriptorBufferOffsets2EXTFunc) GET_PROC_ADDR("vkCmdSetDescriptorBufferOffsets2EXT");
 m_vk.cmdBindDescriptorBufferEmbeddedSamplers2EXT = (CmdBindDescriptorBufferEmbeddedSamplers2EXTFunc) GET_PROC_ADDR("vkCmdBindDescriptorBufferEmbeddedSamplers2EXT");
 m_vk.setLatencySleepModeNV = (SetLatencySleepModeNVFunc) GET_PROC_ADDR("vkSetLatencySleepModeNV");
@@ -830,5 +902,21 @@ m_vk.latencySleepNV = (LatencySleepNVFunc) GET_PROC_ADDR("vkLatencySleepNV");
 m_vk.setLatencyMarkerNV = (SetLatencyMarkerNVFunc) GET_PROC_ADDR("vkSetLatencyMarkerNV");
 m_vk.getLatencyTimingsNV = (GetLatencyTimingsNVFunc) GET_PROC_ADDR("vkGetLatencyTimingsNV");
 m_vk.queueNotifyOutOfBandNV = (QueueNotifyOutOfBandNVFunc) GET_PROC_ADDR("vkQueueNotifyOutOfBandNV");
-m_vk.cmdSetRenderingAttachmentLocationsKHR = (CmdSetRenderingAttachmentLocationsKHRFunc) GET_PROC_ADDR("vkCmdSetRenderingAttachmentLocationsKHR");
-m_vk.cmdSetRenderingInputAttachmentIndicesKHR = (CmdSetRenderingInputAttachmentIndicesKHRFunc) GET_PROC_ADDR("vkCmdSetRenderingInputAttachmentIndicesKHR");
+if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
+    m_vk.cmdSetRenderingAttachmentLocations = (CmdSetRenderingAttachmentLocationsFunc) GET_PROC_ADDR("vkCmdSetRenderingAttachmentLocations");
+if (!m_vk.cmdSetRenderingAttachmentLocations)
+    m_vk.cmdSetRenderingAttachmentLocations = (CmdSetRenderingAttachmentLocationsFunc) GET_PROC_ADDR("vkCmdSetRenderingAttachmentLocationsKHR");
+if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
+    m_vk.cmdSetRenderingInputAttachmentIndices = (CmdSetRenderingInputAttachmentIndicesFunc) GET_PROC_ADDR("vkCmdSetRenderingInputAttachmentIndices");
+if (!m_vk.cmdSetRenderingInputAttachmentIndices)
+    m_vk.cmdSetRenderingInputAttachmentIndices = (CmdSetRenderingInputAttachmentIndicesFunc) GET_PROC_ADDR("vkCmdSetRenderingInputAttachmentIndicesKHR");
+m_vk.cmdSetDepthClampRangeEXT = (CmdSetDepthClampRangeEXTFunc) GET_PROC_ADDR("vkCmdSetDepthClampRangeEXT");
+m_vk.getMemoryMetalHandleEXT = (GetMemoryMetalHandleEXTFunc) GET_PROC_ADDR("vkGetMemoryMetalHandleEXT");
+m_vk.getMemoryMetalHandlePropertiesEXT = (GetMemoryMetalHandlePropertiesEXTFunc) GET_PROC_ADDR("vkGetMemoryMetalHandlePropertiesEXT");
+m_vk.convertCooperativeVectorMatrixNV = (ConvertCooperativeVectorMatrixNVFunc) GET_PROC_ADDR("vkConvertCooperativeVectorMatrixNV");
+m_vk.cmdConvertCooperativeVectorMatrixNV = (CmdConvertCooperativeVectorMatrixNVFunc) GET_PROC_ADDR("vkCmdConvertCooperativeVectorMatrixNV");
+m_vk.cmdDispatchTileQCOM = (CmdDispatchTileQCOMFunc) GET_PROC_ADDR("vkCmdDispatchTileQCOM");
+m_vk.cmdBeginPerTileExecutionQCOM = (CmdBeginPerTileExecutionQCOMFunc) GET_PROC_ADDR("vkCmdBeginPerTileExecutionQCOM");
+m_vk.cmdEndPerTileExecutionQCOM = (CmdEndPerTileExecutionQCOMFunc) GET_PROC_ADDR("vkCmdEndPerTileExecutionQCOM");
+m_vk.createExternalComputeQueueNV = (CreateExternalComputeQueueNVFunc) GET_PROC_ADDR("vkCreateExternalComputeQueueNV");
+m_vk.destroyExternalComputeQueueNV = (DestroyExternalComputeQueueNVFunc) GET_PROC_ADDR("vkDestroyExternalComputeQueueNV");

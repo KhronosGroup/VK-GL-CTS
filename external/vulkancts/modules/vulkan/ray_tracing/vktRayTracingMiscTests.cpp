@@ -37,6 +37,7 @@
 
 #include "vkRayTracingUtil.hpp"
 
+#include "tcuImageCompare.hpp"
 #include "deRandom.hpp"
 #include <algorithm>
 #include <memory>
@@ -446,6 +447,9 @@ public:
         std::unique_ptr<TopLevelAccelerationStructure> resultPtr;
         de::MovePtr<TopLevelAccelerationStructure> tlPtr = makeTopLevelAccelerationStructure();
 
+        AccelerationStructBufferProperties bufferProps;
+        bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
         DE_ASSERT(((asLayout == AccelerationStructureLayout::ONE_TL_MANY_BLS_MANY_GEOMETRIES_WITH_VARYING_PRIM_TYPES) &&
                    (m_geometryType == GeometryType::AABB_AND_TRIANGLES)) ||
                   ((asLayout != AccelerationStructureLayout::ONE_TL_MANY_BLS_MANY_GEOMETRIES_WITH_VARYING_PRIM_TYPES) &&
@@ -471,7 +475,7 @@ public:
                 blPtr->setGeometryCount(1u);
                 blPtr->addGeometry(vertexVec, (m_geometryType == GeometryType::TRIANGLES), bottomLevelGeometryFlags);
 
-                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator);
+                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator, bufferProps);
 
                 tlPtr->addInstance(de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release()), identityMatrix3x4,
                                    instanceCustomIndex, cullMask);
@@ -529,7 +533,7 @@ public:
                                        bottomLevelGeometryFlags);
                 }
 
-                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator);
+                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator, bufferProps);
 
                 tlPtr->addInstance(de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release()), identityMatrix3x4,
                                    instanceCustomIndex, cullMask);
@@ -585,7 +589,7 @@ public:
                 blPtr->addGeometry(currentInstanceVertexVec, (m_geometryType == GeometryType::TRIANGLES),
                                    bottomLevelGeometryFlags);
 
-                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator);
+                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator, bufferProps);
 
                 tlPtr->addInstance(de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release()), identityMatrix3x4,
                                    instanceCustomIndex, cullMask);
@@ -648,7 +652,7 @@ public:
                                        bottomLevelGeometryFlags);
                 }
 
-                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator);
+                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator, bufferProps);
                 tlPtr->addInstance(de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release()), identityMatrix3x4,
                                    instanceCustomIndex, cullMask);
 
@@ -717,7 +721,7 @@ public:
                     blPtr->addGeometry(currentVertexVec, !usesAABB, bottomLevelGeometryFlags);
                 }
 
-                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator);
+                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator, bufferProps);
 
                 tlPtr->addInstance(de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release()), identityMatrix3x4,
                                    instanceCustomIndex, cullMask, instanceSBTOffset);
@@ -747,7 +751,7 @@ public:
         }
         }
 
-        tlPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator);
+        tlPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator, bufferProps);
 
         resultPtr = decltype(resultPtr)(tlPtr.release());
         return resultPtr;
@@ -919,6 +923,9 @@ public:
         std::unique_ptr<TopLevelAccelerationStructure> resultPtr;
         de::MovePtr<TopLevelAccelerationStructure> tlPtr = makeTopLevelAccelerationStructure();
 
+        AccelerationStructBufferProperties bufferProps;
+        bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
         {
 
             const auto cullMask = (optASPropertyProviderPtr != nullptr) ? optASPropertyProviderPtr->getCullMask(0, 0) :
@@ -936,14 +943,14 @@ public:
                 blPtr->addGeometry(vertexVec, true, /* triangles */
                                    bottomLevelGeometryFlags);
 
-                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator);
+                blPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator, bufferProps);
 
                 tlPtr->addInstance(de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release()), identityMatrix3x4,
                                    instanceCustomIndex, cullMask);
             }
         }
 
-        tlPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator);
+        tlPtr->createAndBuild(deviceInterface, deviceVk, cmdBuffer, allocator, bufferProps);
 
         resultPtr = decltype(resultPtr)(tlPtr.release());
         return resultPtr;
@@ -964,14 +971,68 @@ public:
         /* Stub */
     }
 
-    virtual tcu::UVec3 getDispatchSize() const                                       = 0;
-    virtual uint32_t getResultBufferSize() const                                     = 0;
-    virtual std::vector<TopLevelAccelerationStructure *> getTLASPtrVecToBind() const = 0;
-    virtual void resetTLAS()                                                         = 0;
+    virtual tcu::UVec3 getDispatchSize() const                                             = 0;
+    virtual uint32_t getResultBufferSize() const                                           = 0;
+    virtual std::vector<TopLevelAccelerationStructure *> getTLASPtrVecToBind() const       = 0;
+    virtual void resetTLAS()                                                               = 0;
     virtual void initAS(vkt::Context &context, RayTracingProperties *rtPropertiesPtr,
-                        VkCommandBuffer commandBuffer)                               = 0;
-    virtual void initPrograms(SourceCollections &programCollection) const            = 0;
-    virtual bool verifyResultBuffer(const void *inBufferPtr) const                   = 0;
+                        VkCommandBuffer commandBuffer)                                     = 0;
+    virtual void initPrograms(SourceCollections &programCollection) const                  = 0;
+    virtual bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const = 0;
+
+    void CopyBufferContent(vkt::Context &context, VkCommandBuffer cmdBuffer, BufferWithMemory &src,
+                           BufferWithMemory &dst, VkBufferCopy bufferCopy) const
+    {
+        const DeviceInterface &deviceInterface = context.getDeviceInterface();
+        const VkDevice deviceVk                = context.getDevice();
+        const VkQueue queueVk                  = context.getUniversalQueue();
+
+        deviceInterface.resetCommandBuffer(cmdBuffer, 0);
+        beginCommandBuffer(deviceInterface, cmdBuffer, 0u /* flags */);
+
+        deviceInterface.cmdCopyBuffer(cmdBuffer, *src, *dst, 1, &bufferCopy);
+
+        const VkMemoryBarrier postCopyMemoryBarrier =
+            makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+
+        cmdPipelineMemoryBarrier(deviceInterface, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                 &postCopyMemoryBarrier);
+
+        endCommandBuffer(deviceInterface, cmdBuffer);
+
+        submitCommandsAndWait(deviceInterface, deviceVk, queueVk, cmdBuffer);
+
+        invalidateMappedMemoryRange(deviceInterface, deviceVk, dst.getAllocation().getMemory(),
+                                    dst.getAllocation().getOffset(), VK_WHOLE_SIZE);
+    }
+
+    de::MovePtr<BufferWithMemory> copyDeviceBufferToHost(vkt::Context &context, BufferWithMemory &buffer) const
+    {
+        const DeviceInterface &deviceInterface = context.getDeviceInterface();
+        const VkDevice deviceVk                = context.getDevice();
+        Allocator &allocator                   = context.getDefaultAllocator();
+        const uint32_t queueFamilyIndex        = context.getUniversalQueueFamilyIndex();
+
+        const Move<VkCommandPool> cmdPoolPtr = createCommandPool(
+            deviceInterface, deviceVk, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, /* pCreateInfo */
+            queueFamilyIndex);
+        const Move<VkCommandBuffer> cmdBufferPtr =
+            allocateCommandBuffer(deviceInterface, deviceVk, *cmdPoolPtr, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+        VkDeviceSize resultBufferSize = buffer.getBufferSize();
+        const auto resultBufferCreateInfo =
+            makeBufferCreateInfo(resultBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+        de::MovePtr<BufferWithMemory> resultBufferPtr;
+
+        resultBufferPtr = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+            deviceInterface, deviceVk, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
+
+        const VkBufferCopy bufferCopy{0, 0, resultBufferSize};
+        CopyBufferContent(context, *cmdBufferPtr, buffer, *resultBufferPtr, bufferCopy);
+
+        return resultBufferPtr;
+    }
 
     virtual std::vector<std::string> getAHitShaderCollectionShaderNames() const
     {
@@ -1278,10 +1339,11 @@ public:
         }
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
-        const uint32_t *resultU32Ptr = reinterpret_cast<const uint32_t *>(resultDataPtr);
-        bool result                  = false;
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const uint32_t *resultU32Ptr                  = (uint32_t *)resultBufferPtr->getAllocation().getHostPtr();
+        bool result                                   = false;
 
         typedef struct
         {
@@ -1632,10 +1694,11 @@ public:
                                                       sizeof(uint32_t), &nDispatch);
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
-        const uint32_t *resultU32Ptr = reinterpret_cast<const uint32_t *>(resultDataPtr);
-        bool result                  = false;
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const uint32_t *resultU32Ptr                  = (uint32_t *)resultBufferPtr->getAllocation().getHostPtr();
+        bool result                                   = false;
 
         typedef struct
         {
@@ -2077,11 +2140,12 @@ public:
         return m_useDynamicStackSize;
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
-        const uint32_t *resultU32Ptr = reinterpret_cast<const uint32_t *>(resultDataPtr);
-        bool result                  = false;
-        const auto nItemsStored      = *resultU32Ptr;
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const uint32_t *resultU32Ptr                  = (uint32_t *)resultBufferPtr->getAllocation().getHostPtr();
+        bool result                                   = false;
+        const auto nItemsStored                       = *resultU32Ptr;
 
         /* Convert raw binary data into a human-readable vector representation */
         struct ResultItem
@@ -2578,12 +2642,13 @@ public:
         }
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
-        const uint32_t *resultU32Ptr = reinterpret_cast<const uint32_t *>(resultDataPtr);
-        const auto nHitsReported     = *resultU32Ptr;
-        const auto nMissesReported   = *(resultU32Ptr + 1);
-        bool result                  = true;
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const uint32_t *resultU32Ptr                  = (uint32_t *)resultBufferPtr->getAllocation().getHostPtr();
+        const auto nHitsReported                      = *resultU32Ptr;
+        const auto nMissesReported                    = *(resultU32Ptr + 1);
+        bool result                                   = true;
 
         // For each traced ray:
         //
@@ -2939,10 +3004,11 @@ public:
         }
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
-        const uint32_t *resultU32Ptr = reinterpret_cast<const uint32_t *>(resultDataPtr);
-        bool result                  = false;
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const uint32_t *resultU32Ptr                  = (uint32_t *)resultBufferPtr->getAllocation().getHostPtr();
+        bool result                                   = false;
 
         const auto nAHitsReported    = *resultU32Ptr;
         const auto nCHitsRegistered  = *(resultU32Ptr + 1);
@@ -3247,46 +3313,103 @@ public:
         m_tlPtr.reset();
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyHitsMisses(uint32_t nHitsReported, uint32_t nMissesReported) const
     {
-        const uint32_t *resultU32Ptr = reinterpret_cast<const uint32_t *>(resultDataPtr);
-        bool result                  = false;
+        if (nHitsReported != m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2])
+        {
+            return false;
+        }
+
+        if (nMissesReported != 0)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    bool verifyResultChunk(const void *inBufferPtr, uint32_t size, uint32_t offset) const
+    {
+        const uint32_t *resultU32Ptr = reinterpret_cast<const uint32_t *>(inBufferPtr);
 
         typedef struct
         {
             uint32_t instanceCustomIndex;
         } HitProperties;
 
-        const auto nHitsReported   = *resultU32Ptr;
-        const auto nMissesReported = *(resultU32Ptr + 1);
-
-        if (nHitsReported != m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2])
-        {
-            goto end;
-        }
-
-        if (nMissesReported != 0)
-        {
-            goto end;
-        }
-
-        for (uint32_t nRay = 0; nRay < nHitsReported; ++nRay)
+        for (uint32_t nRay = 0; nRay < size; ++nRay)
         {
             // Touch watch dog every 100000 loops to avoid timeout issue.
             if (nRay > 0 && (nRay % 100000 == 0))
                 m_context->getTestContext().touchWatchdog();
-            const HitProperties *hitPropsPtr =
-                reinterpret_cast<const HitProperties *>(resultU32Ptr + 2 /* preamble ints */) + nRay;
+            const HitProperties *hitPropsPtr = reinterpret_cast<const HitProperties *>(resultU32Ptr) + nRay;
 
-            if (m_nRayToInstanceIndexExpected.at(nRay % m_nMaxCells) != hitPropsPtr->instanceCustomIndex)
+            if (m_nRayToInstanceIndexExpected.at((nRay + offset) % m_nMaxCells) != hitPropsPtr->instanceCustomIndex)
             {
-                goto end;
+                return false;
             }
         }
 
-        result = true;
-    end:
-        return result;
+        return true;
+    }
+
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
+    {
+        const DeviceInterface &deviceInterface = context.getDeviceInterface();
+        const VkDevice deviceVk                = context.getDevice();
+        Allocator &allocator                   = context.getDefaultAllocator();
+        const uint32_t queueFamilyIndex        = context.getUniversalQueueFamilyIndex();
+
+        const Move<VkCommandPool> cmdPoolPtr = createCommandPool(
+            deviceInterface, deviceVk, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
+        const Move<VkCommandBuffer> cmdBufferPtr =
+            allocateCommandBuffer(deviceInterface, deviceVk, *cmdPoolPtr, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+        // first read the header and then data as chunks
+        uint32_t headerSize               = 2 * sizeof(uint32_t);
+        const auto headerBufferCreateInfo = makeBufferCreateInfo(headerSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+        de::MovePtr<BufferWithMemory> headerBufferPtr = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+            deviceInterface, deviceVk, allocator, headerBufferCreateInfo, MemoryRequirement::HostVisible));
+
+        const VkBufferCopy headerCopy{0, 0, headerSize};
+        CopyBufferContent(context, *cmdBufferPtr, buffer, *headerBufferPtr, headerCopy);
+
+        const uint32_t *headerPtr = (uint32_t *)headerBufferPtr->getAllocation().getHostPtr();
+
+        const auto nHitsReported   = headerPtr[0];
+        const auto nMissesReported = headerPtr[1];
+
+        if (!verifyHitsMisses(nHitsReported, nMissesReported))
+        {
+            return false;
+        }
+
+        // verification loop that works in chunks
+        uint32_t itemsInChunk = 1024 * 1024;
+        uint32_t chunkSize    = static_cast<uint32_t>(itemsInChunk * sizeof(uint32_t));
+        uint32_t amount       = (getResultBufferSize() - headerSize) / chunkSize;
+
+        // allocate a buffer for verification
+        const auto chunkBufferCreateInfo = makeBufferCreateInfo(chunkSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+        de::MovePtr<BufferWithMemory> chunkBufferPtr = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+            deviceInterface, deviceVk, allocator, chunkBufferCreateInfo, MemoryRequirement::HostVisible));
+
+        // copy each chunk using offset and verify the contents
+        for (uint32_t chunk = 0; chunk < amount; ++chunk)
+        {
+            uint32_t srcOffset = headerSize + (chunk * chunkSize);
+            const VkBufferCopy chunkCopy{srcOffset, 0, chunkSize};
+            CopyBufferContent(context, *cmdBufferPtr, buffer, *chunkBufferPtr, chunkCopy);
+
+            const uint32_t *chunkDataPtr = (uint32_t *)chunkBufferPtr->getAllocation().getHostPtr();
+
+            if (!verifyResultChunk(chunkDataPtr, itemsInChunk, static_cast<uint32_t>(srcOffset / sizeof(uint32_t))))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
 private:
@@ -3511,8 +3634,11 @@ public:
         }
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const void *resultDataPtr                     = resultBufferPtr->getAllocation().getHostPtr();
+
         const auto nTotalPrimitives = m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2];
         bool result                 = true;
 
@@ -4108,9 +4234,11 @@ public:
         return (has_u64 || has_u64vec2 || has_u64vec3 || has_u64vec4);
     }
 
-    bool verifyResultBuffer(const void *resultBufferDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
-        bool result = false;
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const void *resultBufferDataPtr               = resultBufferPtr->getAllocation().getHostPtr();
+        bool result                                   = false;
 
         for (const auto &iterator : m_shaderStageToResultBufferOffset)
         {
@@ -6413,14 +6541,15 @@ public:
         m_tlPtr.reset();
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
-        const uint32_t *resultU32Ptr = reinterpret_cast<const uint32_t *>(resultDataPtr);
-        bool result                  = false;
-        auto nItemsStored            = *resultU32Ptr;
-        const auto nCHitInvocations  = *(resultU32Ptr + 1);
-        const auto nMissInvocations  = *(resultU32Ptr + 2);
-        const bool doFullCheck       = (m_nResultItemsExpected < m_nMaxResultItemsPermitted);
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const uint32_t *resultU32Ptr                  = (uint32_t *)resultBufferPtr->getAllocation().getHostPtr();
+        bool result                                   = false;
+        auto nItemsStored                             = *resultU32Ptr;
+        const auto nCHitInvocations                   = *(resultU32Ptr + 1);
+        const auto nMissInvocations                   = *(resultU32Ptr + 2);
+        const bool doFullCheck                        = (m_nResultItemsExpected < m_nMaxResultItemsPermitted);
 
         struct ResultItem
         {
@@ -6446,8 +6575,11 @@ public:
         };
 
         std::map<uint32_t, ResultItem *> nItemToResultItemPtrMap;
-        std::map<uint32_t, std::vector<std::unique_ptr<ResultItem>>> nRayToResultItemPtrVecMap;
-        std::map<uint32_t, std::map<uint32_t, std::vector<ResultItem *>>> nRayToNLevelToResultItemPtrVecMap;
+        std::map<uint32_t, std::vector<ResultItem *>> nLevelToResultItemPtrVecMap;
+        std::vector<std::unique_ptr<ResultItem>> resultItemPtrVec;
+
+        uint32_t rayCount;
+        std::map<uint32_t, std::vector<std::pair<const uint32_t *, uint32_t>>> nRayToResultItemPtrIndexVecMap;
 
         if (doFullCheck)
         {
@@ -6482,72 +6614,95 @@ public:
             goto end;
         }
 
-        /* Convert an array of result items, stored in undefined order, to a representation we can easily verify */
+        /*
+         * We are creating a map of rays, each of which has a list of result items for that ray,
+         * so we can verify each ray sequentially and save memory on the temporary maps.
+         */
         for (uint32_t nItem = 0; nItem < nItemsStored; ++nItem)
         {
             const uint32_t *currentItemU32Ptr = resultU32Ptr +
                                                 3 /* nItemsRegistered, nCHitInvocations, nMissInvocations*/ +
                                                 4 /* items per result item */ * nItem;
-            std::unique_ptr<ResultItem> resultItemPtr;
-
-            resultItemPtr.reset(new ResultItem());
-
-            resultItemPtr->depth       = *(currentItemU32Ptr + 2);
-            resultItemPtr->nOriginRay  = *(currentItemU32Ptr + 0);
-            resultItemPtr->nParentNode = *(currentItemU32Ptr + 3);
-
-            switch (*(currentItemU32Ptr + 1))
-            {
-            case 1:
-                resultItemPtr->stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
-                break;
-            case 2:
-                resultItemPtr->stage = VK_SHADER_STAGE_MISS_BIT_KHR;
-                break;
-            case 3:
-                resultItemPtr->stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
-                break;
-
-            default:
-            {
-                /* This should never happen */
-                DE_ASSERT(false);
-
-                goto end;
-            }
-            }
-
-            if (resultItemPtr->depth >= m_depthToUse && m_depthToUse > 0u)
-            {
-                DE_ASSERT(resultItemPtr->depth < m_depthToUse);
-
-                goto end;
-            }
-
-            if (resultItemPtr->nOriginRay >= m_nRaysToTest)
-            {
-                DE_ASSERT(resultItemPtr->nOriginRay < m_nRaysToTest);
-
-                goto end;
-            }
-
-            nItemToResultItemPtrMap[nItem] = resultItemPtr.get();
-
-            nRayToNLevelToResultItemPtrVecMap[resultItemPtr->nOriginRay][resultItemPtr->depth].push_back(
-                resultItemPtr.get());
-            nRayToResultItemPtrVecMap[resultItemPtr->nOriginRay].push_back(std::move(resultItemPtr));
+            uint32_t nOriginRay = *(currentItemU32Ptr + 0);
+            nRayToResultItemPtrIndexVecMap[nOriginRay].push_back(std::make_pair(currentItemU32Ptr, nItem));
         }
 
-        if (doFullCheck)
+        /*
+         * Convert an array of result items, stored in undefined order, to a representation we can easily verify.
+         * Loop to verify result items with the same ray id in each iteration.
+         */
+        rayCount = getDispatchSize()[0] * getDispatchSize()[1] * getDispatchSize()[2];
+        for (uint32_t nRay = 0; nRay < rayCount; ++nRay)
         {
-            for (const auto &iterator1 : nRayToNLevelToResultItemPtrVecMap)
+            // If the nRay is not in the map, an empty vector will be created,
+            // and the subsequent verification will be simplified in this case.
+            const std::vector<std::pair<const uint32_t *, uint32_t>> &currentItemU32PtrIndexVec =
+                nRayToResultItemPtrIndexVecMap[nRay];
+            for (const auto &iterator1 : currentItemU32PtrIndexVec)
             {
-                const auto &currentNLevelToResultItemPtrVecMap = iterator1.second;
-                uint32_t nRayGenShaderResultItemsFound         = 0;
+                const uint32_t *currentItemU32Ptr = iterator1.first;
+                uint32_t nItem                    = iterator1.second;
 
-                for (const auto &iterator2 : currentNLevelToResultItemPtrVecMap)
+                std::unique_ptr<ResultItem> resultItemPtr;
+                resultItemPtr.reset(new ResultItem());
+
+                resultItemPtr->depth       = *(currentItemU32Ptr + 2);
+                resultItemPtr->nOriginRay  = *(currentItemU32Ptr + 0);
+                resultItemPtr->nParentNode = *(currentItemU32Ptr + 3);
+
+                switch (*(currentItemU32Ptr + 1))
                 {
-                    const auto &currentResultItemPtrVec = iterator2.second;
+                case 1:
+                    resultItemPtr->stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+                    break;
+                case 2:
+                    resultItemPtr->stage = VK_SHADER_STAGE_MISS_BIT_KHR;
+                    break;
+                case 3:
+                    resultItemPtr->stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+                    break;
+
+                default:
+                {
+                    /* This should never happen */
+                    DE_ASSERT(false);
+
+                    goto end;
+                }
+                }
+
+                if (resultItemPtr->depth >= m_depthToUse && m_depthToUse > 0u)
+                {
+                    DE_ASSERT(resultItemPtr->depth < m_depthToUse);
+
+                    goto end;
+                }
+
+                if (resultItemPtr->nOriginRay >= m_nRaysToTest)
+                {
+                    DE_ASSERT(resultItemPtr->nOriginRay < m_nRaysToTest);
+
+                    goto end;
+                }
+
+                nItemToResultItemPtrMap[nItem] = resultItemPtr.get();
+
+                nLevelToResultItemPtrVecMap[resultItemPtr->depth].push_back(resultItemPtr.get());
+                resultItemPtrVec.push_back(std::move(resultItemPtr));
+            }
+
+            if (nLevelToResultItemPtrVecMap.empty())
+            {
+                continue;
+            }
+
+            if (doFullCheck)
+            {
+                uint32_t nRayGenShaderResultItemsFound = 0;
+
+                for (const auto &iterator1 : nLevelToResultItemPtrVecMap)
+                {
+                    const auto &currentResultItemPtrVec = iterator1.second;
 
                     for (const auto &currentResultItemPtr : currentResultItemPtrVec)
                     {
@@ -6603,19 +6758,14 @@ public:
                     goto end;
                 }
             }
-        }
 
-        // 1. Verify all nodes that are not leaves have both child nodes attached, and that leaf nodes do not have any children assigned.
-        if (doFullCheck)
-        {
-            for (const auto &iterator1 : nRayToNLevelToResultItemPtrVecMap)
+            // 1. Verify all nodes that are not leaves have both child nodes attached, and that leaf nodes do not have any children assigned.
+            if (doFullCheck)
             {
-                const auto &currentNLevelToResultItemPtrVecMap = iterator1.second;
-
-                for (const auto &iterator2 : currentNLevelToResultItemPtrVecMap)
+                for (const auto &iterator1 : nLevelToResultItemPtrVecMap)
                 {
-                    const auto &currentNLevel           = iterator2.first;
-                    const auto &currentResultItemPtrVec = iterator2.second;
+                    const auto &currentNLevel           = iterator1.first;
+                    const auto &currentResultItemPtrVec = iterator1.second;
 
                     for (const auto &currentResultItemPtr : currentResultItemPtrVec)
                     {
@@ -6655,17 +6805,12 @@ public:
                     }
                 }
             }
-        }
 
-        // 2. Verify depth level is correct for each node.
-        for (const auto &iterator1 : nRayToNLevelToResultItemPtrVecMap)
-        {
-            const auto &currentNLevelToResultItemPtrVecMap = iterator1.second;
-
-            for (const auto &iterator2 : currentNLevelToResultItemPtrVecMap)
+            // 2. Verify depth level is correct for each node.
+            for (const auto &iterator1 : nLevelToResultItemPtrVecMap)
             {
-                const auto &currentNLevel           = iterator2.first;
-                const auto &currentResultItemPtrVec = iterator2.second;
+                const auto &currentNLevel           = iterator1.first;
+                const auto &currentResultItemPtrVec = iterator1.second;
 
                 for (const auto &currentResultItemPtr : currentResultItemPtrVec)
                 {
@@ -6686,55 +6831,34 @@ public:
                     }
                 }
             }
-        }
 
-        // 3. Verify child node ptrs point to nodes that are assigned correct shader stage.
-        for (const auto &iterator : nItemToResultItemPtrMap)
-        {
-            const auto &currentResultItemPtr = iterator.second;
-
-            if (currentResultItemPtr->childCHitNodePtr != nullptr &&
-                currentResultItemPtr->childCHitNodePtr->stage != VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
+            // 3. Verify child node ptrs point to nodes that are assigned correct shader stage.
+            for (const auto &iterator : nItemToResultItemPtrMap)
             {
-                DE_ASSERT(currentResultItemPtr->childCHitNodePtr->stage == VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+                const auto &currentResultItemPtr = iterator.second;
 
-                goto end;
-            }
-
-            if (currentResultItemPtr->childMissNodePtr != nullptr &&
-                currentResultItemPtr->childMissNodePtr->stage != VK_SHADER_STAGE_MISS_BIT_KHR)
-            {
-                DE_ASSERT(currentResultItemPtr->childMissNodePtr->stage = VK_SHADER_STAGE_MISS_BIT_KHR);
-
-                goto end;
-            }
-        }
-
-        // 4. Verify nodes hold correct ray index.
-        for (const auto &iterator : nRayToResultItemPtrVecMap)
-        {
-            const auto &currentNRay = iterator.first;
-
-            for (const auto &currentResultItemPtr : iterator.second)
-            {
-                if (currentResultItemPtr->nOriginRay != currentNRay)
+                if (currentResultItemPtr->childCHitNodePtr != nullptr &&
+                    currentResultItemPtr->childCHitNodePtr->stage != VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
                 {
-                    DE_ASSERT(currentResultItemPtr->nOriginRay == currentNRay);
+                    DE_ASSERT(currentResultItemPtr->childCHitNodePtr->stage == VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+
+                    goto end;
+                }
+
+                if (currentResultItemPtr->childMissNodePtr != nullptr &&
+                    currentResultItemPtr->childMissNodePtr->stage != VK_SHADER_STAGE_MISS_BIT_KHR)
+                {
+                    DE_ASSERT(currentResultItemPtr->childMissNodePtr->stage = VK_SHADER_STAGE_MISS_BIT_KHR);
 
                     goto end;
                 }
             }
-        }
 
-        // 5. Verify child nodes are assigned correct depth levels.
-        for (const auto &iterator1 : nRayToNLevelToResultItemPtrVecMap)
-        {
-            const auto &currentNLevelToResultItemPtrVecMap = iterator1.second;
-
-            for (const auto &iterator2 : currentNLevelToResultItemPtrVecMap)
+            // 4. Verify child nodes are assigned correct depth levels.
+            for (const auto &iterator1 : nLevelToResultItemPtrVecMap)
             {
-                const auto &currentNLevel           = iterator2.first;
-                const auto &currentResultItemPtrVec = iterator2.second;
+                const auto &currentNLevel           = iterator1.first;
+                const auto &currentResultItemPtrVec = iterator1.second;
 
                 for (const auto &currentResultItemPtr : currentResultItemPtrVec)
                 {
@@ -6767,16 +6891,13 @@ public:
                     }
                 }
             }
-        }
 
-        // 6. Verify that RT shader stages were invoked for all anticipated recursion levels.
-        if (doFullCheck)
-        {
-            for (const auto &iterator1 : nRayToNLevelToResultItemPtrVecMap)
+            // 5. Verify that RT shader stages were invoked for all anticipated recursion levels.
+            if (doFullCheck)
             {
                 for (uint32_t nLevel = 0; nLevel < m_depthToUse; nLevel++)
                 {
-                    if (iterator1.second.find(nLevel) == iterator1.second.end())
+                    if (nLevelToResultItemPtrVecMap.find(nLevel) == nLevelToResultItemPtrVecMap.end())
                     {
                         DE_ASSERT(false);
 
@@ -6784,7 +6905,22 @@ public:
                     }
                 }
             }
-        }
+
+            /* clear containers before next iteration */
+            {
+                nItemToResultItemPtrMap.clear();
+
+                /* clear nLevelToResultItemPtrVecMap */
+                for (auto &iterator1 : nLevelToResultItemPtrVecMap)
+                {
+                    iterator1.second.clear();
+                }
+                nLevelToResultItemPtrVecMap.clear();
+
+                resultItemPtrVec.clear();
+            }
+
+        } // end for (uint32_t nRay = 0; nRay < rayCount; ++nRay)
 
         result = true;
     end:
@@ -6968,8 +7104,11 @@ public:
             << buildOptions;
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const void *resultDataPtr                     = resultBufferPtr->getAllocation().getHostPtr();
+
         for (uint32_t nRay = 0; nRay < m_nRaysToTrace; ++nRay)
         {
             const uint32_t *rayProps = reinterpret_cast<const uint32_t *>(resultDataPtr) + 2 * nRay;
@@ -7237,10 +7376,12 @@ public:
         }
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
-        const uint32_t *resultU32Ptr = reinterpret_cast<const uint32_t *>(resultDataPtr);
-        bool result                  = false;
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const uint32_t *resultU32Ptr                  = (uint32_t *)resultBufferPtr->getAllocation().getHostPtr();
+
+        bool result = false;
 
         const auto nItemsStored                   = *resultU32Ptr;
         const auto nRays                          = m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2];
@@ -7703,10 +7844,11 @@ public:
         }
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
-        const uint32_t *resultU32DataPtr = reinterpret_cast<const uint32_t *>(resultDataPtr);
-        bool result                      = false;
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const uint32_t *resultU32DataPtr              = (uint32_t *)resultBufferPtr->getAllocation().getHostPtr();
+        bool result                                   = false;
 
         switch (m_mode)
         {
@@ -7816,6 +7958,7 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
     Allocator &allocator            = m_context.getDefaultAllocator();
 
     de::MovePtr<BufferWithMemory> resultBufferPtr;
+    de::MovePtr<BufferWithMemory> startBufferPtr;
 
     // Determine group indices
     const auto ahitCollectionShaderNameVec         = m_testPtr->getAHitShaderCollectionShaderNames();
@@ -8068,20 +8211,24 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 
     {
         const auto resultBufferCreateInfo = makeBufferCreateInfo(
-            resultBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+            resultBufferSize,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
         const auto resultBufferDataVec = m_testPtr->getResultBufferStartData();
 
         resultBufferPtr = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
-            deviceInterface, deviceVk, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
+            deviceInterface, deviceVk, allocator, resultBufferCreateInfo, MemoryRequirement::DeviceAddress));
 
         if (resultBufferDataVec.size() > 0)
         {
             DE_ASSERT(static_cast<uint32_t>(resultBufferDataVec.size()) == resultBufferSize);
 
-            memcpy(resultBufferPtr->getAllocation().getHostPtr(), resultBufferDataVec.data(),
+            startBufferPtr = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+                deviceInterface, deviceVk, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
+
+            memcpy(startBufferPtr->getAllocation().getHostPtr(), resultBufferDataVec.data(),
                    resultBufferDataVec.size());
 
-            flushAlloc(deviceInterface, deviceVk, resultBufferPtr->getAllocation());
+            flushAlloc(deviceInterface, deviceVk, startBufferPtr->getAllocation());
         }
     }
 
@@ -8097,28 +8244,35 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
             tlasVkVec.push_back(*currentTLASPtr->getPtr());
         }
 
+        // Clear result buffer if startdata was zero ...
         if (m_testPtr->getResultBufferStartData().size() == 0)
         {
             deviceInterface.cmdFillBuffer(*cmdBufferPtr, **resultBufferPtr, 0, /* dstOffset */
                                           VK_WHOLE_SIZE, 0);                   /* data */
+        }
+        else
+        {
+            // ... otherwise copy given startdata to the gpubuffer
+            const VkBufferCopy bufferCopy{0, 0, resultBufferSize};
+            deviceInterface.cmdCopyBuffer(*cmdBufferPtr, **startBufferPtr, **resultBufferPtr, 1, &bufferCopy);
+        }
 
-            {
-                const auto postFillBarrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, /* srcAccessMask */
-                                                                     VK_ACCESS_SHADER_WRITE_BIT,   /* dstAccessMask */
-                                                                     **resultBufferPtr, 0,         /* offset */
-                                                                     VK_WHOLE_SIZE);
+        {
+            const auto postMemoryBarrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, /* srcAccessMask */
+                                                                   VK_ACCESS_SHADER_WRITE_BIT,   /* dstAccessMask */
+                                                                   **resultBufferPtr, 0,         /* offset */
+                                                                   VK_WHOLE_SIZE);
 
-                cmdPipelineBufferMemoryBarrier(deviceInterface, *cmdBufferPtr,
-                                               VK_PIPELINE_STAGE_TRANSFER_BIT,               /* srcStageMask */
-                                               VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, /* dstStageMask */
-                                               &postFillBarrier);
-            }
+            cmdPipelineBufferMemoryBarrier(deviceInterface, *cmdBufferPtr,
+                                           VK_PIPELINE_STAGE_TRANSFER_BIT,               /* srcStageMask */
+                                           VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, /* dstStageMask */
+                                           &postMemoryBarrier);
         }
 
         {
             VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
                 VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-                DE_NULL,                                                           //  const void* pNext;
+                nullptr,                                                           //  const void* pNext;
                 static_cast<uint32_t>(tlasVkVec.size()), //  uint32_t accelerationStructureCount;
                 tlasVkVec.data(),                        //  const VkAccelerationStructureKHR* pAccelerationStructures;
             };
@@ -8139,7 +8293,7 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
                                               0,                          /* firstSet           */
                                               1,                          /* descriptorSetCount */
                                               &descriptorSetPtr.get(), 0, /* dynamicOffsetCount */
-                                              DE_NULL);                   /* pDynamicOffsets    */
+                                              nullptr);                   /* pDynamicOffsets    */
 
         deviceInterface.cmdBindPipeline(*cmdBufferPtr, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineVkPtr);
 
@@ -8226,12 +8380,16 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
                                      &postTraceMemoryBarrier);
         }
     }
+
+    const VkMemoryBarrier postTraceMemoryBarrier =
+        makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
+
+    cmdPipelineMemoryBarrier(deviceInterface, *cmdBufferPtr, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+                             VK_PIPELINE_STAGE_TRANSFER_BIT, &postTraceMemoryBarrier);
+
     endCommandBuffer(deviceInterface, *cmdBufferPtr);
 
     submitCommandsAndWait(deviceInterface, deviceVk, queueVk, cmdBufferPtr.get());
-
-    invalidateMappedMemoryRange(deviceInterface, deviceVk, resultBufferPtr->getAllocation().getMemory(),
-                                resultBufferPtr->getAllocation().getOffset(), VK_WHOLE_SIZE);
 
     m_testPtr->resetTLAS();
 
@@ -8243,8 +8401,7 @@ tcu::TestStatus RayTracingMiscTestInstance::iterate(void)
     checkSupport();
 
     const de::MovePtr<BufferWithMemory> bufferGPUPtr = runTest();
-    const uint32_t *bufferGPUDataPtr                 = (uint32_t *)bufferGPUPtr->getAllocation().getHostPtr();
-    const bool result                                = m_testPtr->verifyResultBuffer(bufferGPUDataPtr);
+    const bool result                                = m_testPtr->verifyResultBuffer(m_context, *bufferGPUPtr);
 
     if (result)
         return tcu::TestStatus::pass("Pass");
@@ -8260,6 +8417,11 @@ void checkRTPipelineSupport(Context &context)
 }
 
 void checkReuseCreationBufferSupport(Context &context, bool)
+{
+    checkRTPipelineSupport(context);
+}
+
+void checkReuseScratchBufferSupport(Context &context)
 {
     checkRTPipelineSupport(context);
 }
@@ -8309,6 +8471,57 @@ void initReuseCreationBufferPrograms(vk::SourceCollections &programCollection, b
     initBasicHitBufferPrograms(programCollection);
 }
 
+void initReuseScratchBufferPrograms(vk::SourceCollections &programCollection)
+{
+    const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
+    std::ostringstream rgen;
+    rgen << "#version 460 core\n"
+         << "#extension GL_EXT_ray_tracing : require\n"
+         << "layout (location=0) rayPayloadEXT vec4 payload;\n"
+         << "layout (set=0, binding=0) uniform accelerationStructureEXT topLevelAS;\n"
+         << "layout (set=0, binding=1, rgba8) uniform image2D outColor;\n"
+         << "void main()\n"
+         << "{\n"
+         << "    const uint  rayFlags  = gl_RayFlagsNoneEXT;\n"
+         << "    const vec3  origin    = vec3(float(gl_LaunchIDEXT.x) + 0.5, float(gl_LaunchIDEXT.y) + 0.5, 0.0);\n"
+         << "    const vec3  direction = vec3(0.0, 0.0, 1.0);\n"
+         << "    const float tMin      = 1.0;\n"
+         << "    const float tMax      = 10.0;\n"
+         << "    const uint  missIndex = 0u;\n"
+         << "    const uint  cullMask  = 0xFFu;\n"
+         << "    const uint  sbtOffset = 0u;\n"
+         << "    const uint  sbtStride = 0u;\n"
+         << "\n"
+         << "    traceRayEXT(topLevelAS, rayFlags, cullMask, sbtOffset, sbtStride, missIndex, origin, tMin, direction, "
+            "tMax, 0);\n"
+         << "    imageStore(outColor, ivec2(origin.xy), payload);\n"
+         << "}\n";
+    programCollection.glslSources.add("rgen") << glu::RaygenSource(rgen.str()) << buildOptions;
+
+    std::ostringstream chit;
+    chit << "#version 460 core\n"
+         //<< "#extension GL_EXT_debug_printf : enable\n"
+         << "#extension GL_EXT_ray_tracing : require\n"
+         << "layout (location=0) rayPayloadInEXT vec4 payload;\n"
+         << "void main(void) {\n"
+         //<< "    debugPrintfEXT(\"Hit for %u %u\\n\", gl_LaunchIDEXT.x, gl_LaunchIDEXT.y);\n"
+         << "    payload = vec4(0.0, 0.0, 1.0, 1.0);\n"
+         << "}\n";
+    programCollection.glslSources.add("chit") << glu::ClosestHitSource(chit.str()) << buildOptions;
+
+    std::ostringstream miss;
+    miss << "#version 460 core\n"
+         << "#extension GL_EXT_ray_tracing : require\n"
+         //<< "#extension GL_EXT_debug_printf : enable\n"
+         << "layout (location=0) rayPayloadInEXT vec4 payload;\n"
+         << "void main(void) {\n"
+         //<< "    debugPrintfEXT(\"Miss for %u %u\\n\", gl_LaunchIDEXT.x, gl_LaunchIDEXT.y);\n"
+         << "    payload = vec4(0.0, 0.0, 0.0, 1.0);\n"
+         << "}\n";
+    programCollection.glslSources.add("miss") << glu::MissSource(miss.str()) << buildOptions;
+}
+
 // Creates an empty shader binding table with a zeroed-out shader group handle.
 de::MovePtr<BufferWithMemory> createEmptySBT(const DeviceInterface &vkd, VkDevice device, Allocator &alloc,
                                              uint32_t shaderGroupHandleSize)
@@ -8351,18 +8564,21 @@ tcu::TestStatus nullMissInstance(Context &context)
     auto topLevelAS    = makeTopLevelAccelerationStructure();
     auto bottomLevelAS = makeBottomLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     std::vector<tcu::Vec3> triangle;
     triangle.reserve(3u);
     triangle.emplace_back(0.0f, 1.0f, 10.0f);
     triangle.emplace_back(-1.0f, -1.0f, 10.0f);
     triangle.emplace_back(1.0f, -1.0f, 10.0f);
     bottomLevelAS->addGeometry(triangle, true /*triangles*/);
-    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     de::SharedPtr<BottomLevelAccelerationStructure> blasSharedPtr(bottomLevelAS.release());
     topLevelAS->setInstanceCount(1);
     topLevelAS->addInstance(blasSharedPtr);
-    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     // Create output buffer.
     const auto bufferSize       = static_cast<VkDeviceSize>(sizeof(float));
@@ -8515,13 +8731,13 @@ tcu::TestStatus emptyPipelineLayoutInstance(Context &context)
 
     const VkRayTracingShaderGroupCreateInfoKHR defaultShaderGroupCreateInfo{
         VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,               // VkRayTracingShaderGroupTypeKHR type;
         VK_SHADER_UNUSED_KHR,                                       // uint32_t generalShader;
         VK_SHADER_UNUSED_KHR,                                       // uint32_t closestHitShader;
         VK_SHADER_UNUSED_KHR,                                       // uint32_t anyHitShader;
         VK_SHADER_UNUSED_KHR,                                       // uint32_t intersectionShader;
-        DE_NULL,                                                    // const void* pShaderGroupCaptureReplayHandle;
+        nullptr,                                                    // const void* pShaderGroupCaptureReplayHandle;
     };
     std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroupCreateInfoVect(2, defaultShaderGroupCreateInfo);
     shaderGroupCreateInfoVect[0].generalShader = 0u;
@@ -8600,14 +8816,23 @@ tcu::TestStatus reuseCreationBufferInstance(Context &context, const bool disturb
 
     beginCommandBuffer(vkd, bottomBuildCmd.get());
 
+    AccelerationStructBufferProperties bufferProps;
     if (disturbBottom)
     {
-        bottomLevelAS->create(vkd, device, alloc, 0u, 0u, nullptr, MemoryRequirement::Any, creationBuffer.get(),
-                              creationBufferSize);
+        bufferProps.useExternalBuffer = true;
+        bufferProps.extBuffer.buffer  = creationBuffer.get();
+        bufferProps.extBuffer.size    = creationBufferSize;
+
+        bottomLevelAS->create(vkd, device, alloc, bufferProps, 0u, 0u, 0u, 0u, nullptr, MemoryRequirement::Any);
         bottomLevelAS->build(vkd, device, bottomBuildCmd.get());
     }
     else
-        bottomLevelAS->createAndBuild(vkd, device, bottomBuildCmd.get(), alloc);
+    {
+        bufferProps.useExternalBuffer = false;
+        bufferProps.props.residency   = ResourceResidency::TRADITIONAL;
+
+        bottomLevelAS->createAndBuild(vkd, device, bottomBuildCmd.get(), alloc, bufferProps);
+    }
 
     // Submit command buffer so the bottom acceleration structure is actually built and stored in the creation buffer.
     endCommandBuffer(vkd, bottomBuildCmd.get());
@@ -8615,8 +8840,11 @@ tcu::TestStatus reuseCreationBufferInstance(Context &context, const bool disturb
 
     if (disturbBottom)
     {
-        bottomLevelOtherAS->create(vkd, device, alloc, 0u, 0u, nullptr, MemoryRequirement::Any, creationBuffer.get(),
-                                   creationBufferSize);
+        bufferProps.useExternalBuffer = true;
+        bufferProps.extBuffer.buffer  = creationBuffer.get();
+        bufferProps.extBuffer.size    = creationBufferSize;
+
+        bottomLevelOtherAS->create(vkd, device, alloc, bufferProps, 0u, 0u, 0u, 0u, nullptr, MemoryRequirement::Any);
         // Note how we have created the second bottom level accel structure reusing the buffer but we haven't built it.
     }
 
@@ -8632,14 +8860,25 @@ tcu::TestStatus reuseCreationBufferInstance(Context &context, const bool disturb
 
     if (disturbTop)
     {
-        topLevelAS->create(vkd, device, alloc, 0u, 0u, nullptr, MemoryRequirement::Any, creationBuffer.get(),
-                           creationBufferSize);
+        bufferProps.useExternalBuffer = true;
+        bufferProps.extBuffer.buffer  = creationBuffer.get();
+        bufferProps.extBuffer.size    = creationBufferSize;
+
+        topLevelAS->create(vkd, device, alloc, bufferProps, 0u, 0u, 0u, 0u, nullptr, MemoryRequirement::Any);
         topLevelAS->build(vkd, device, topBuildCmd.get());
 
-        bottomLevelOtherAS->createAndBuild(vkd, device, topBuildCmd.get(), alloc);
+        bufferProps.useExternalBuffer = false;
+        bufferProps.props.residency   = ResourceResidency::TRADITIONAL;
+
+        bottomLevelOtherAS->createAndBuild(vkd, device, topBuildCmd.get(), alloc, bufferProps);
     }
     else
-        topLevelAS->createAndBuild(vkd, device, topBuildCmd.get(), alloc);
+    {
+        bufferProps.useExternalBuffer = false;
+        bufferProps.props.residency   = ResourceResidency::TRADITIONAL;
+
+        topLevelAS->createAndBuild(vkd, device, topBuildCmd.get(), alloc, bufferProps);
+    }
 
     // Submit command buffer so the top acceleration structure is actually built and stored in the creation buffer.
     endCommandBuffer(vkd, topBuildCmd.get());
@@ -8650,10 +8889,13 @@ tcu::TestStatus reuseCreationBufferInstance(Context &context, const bool disturb
         SharedBottomPtr auxiliar(bottomLevelOtherAS.release());
         blasOtherSharedPtr.swap(auxiliar);
 
+        bufferProps.useExternalBuffer = true;
+        bufferProps.extBuffer.buffer  = creationBuffer.get();
+        bufferProps.extBuffer.size    = creationBufferSize;
+
         topLevelOtherAS->setInstanceCount(1);
         topLevelOtherAS->addInstance(blasOtherSharedPtr);
-        topLevelOtherAS->create(vkd, device, alloc, 0u, 0u, nullptr, MemoryRequirement::Any, creationBuffer.get(),
-                                creationBufferSize);
+        topLevelOtherAS->create(vkd, device, alloc, bufferProps, 0u, 0u, 0u, 0u, nullptr, MemoryRequirement::Any);
         // Note how we have created the second top level accel structure reusing the buffer but we haven't built it.
     }
 
@@ -8771,6 +9013,215 @@ tcu::TestStatus reuseCreationBufferInstance(Context &context, const bool disturb
     if (bufferValue != 1.0f)
         TCU_FAIL("Unexpected value found in buffer: " + de::toString(bufferValue));
 
+    return tcu::TestStatus::pass("Pass");
+}
+
+tcu::TestStatus reuseScratchBufferInstance(Context &context)
+{
+    const auto ctx = context.getContextCommonData();
+    const tcu::IVec3 extent(256, 256, 1);
+    const auto extentU                 = extent.asUint();
+    const auto pixelCount              = extentU.x() * extentU.y() * extentU.z();
+    const auto apiExtent               = makeExtent3D(extent);
+    const uint32_t blasCount           = 2u;                      // Number of bottom-level acceleration structures.
+    const uint32_t rowsPerAS           = extentU.y() / blasCount; // The last one could be larger but not in practice.
+    const float coordMargin            = 0.25f;
+    const uint32_t perTriangleVertices = 3u;
+    const uint32_t randomSeed          = 1722347394u;
+    const float geometryZ              = 5.0f; // Must be between tMin and tMax in the shaders.
+
+    const CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+    // Create a pseudorandom mask for coverage.
+    de::Random rnd(randomSeed);
+    std::vector<bool> coverageMask;
+    coverageMask.reserve(pixelCount);
+    for (int y = 0; y < extent.y(); ++y)
+        for (int x = 0; x < extent.x(); ++x)
+            coverageMask.push_back(rnd.getBool());
+
+    // Each bottom level AS will contain a number of rows.
+    DE_ASSERT(blasCount > 0u);
+    BottomLevelAccelerationStructurePool blasPool;
+    for (uint32_t a = 0u; a < blasCount; ++a)
+    {
+        const auto prevRows = rowsPerAS * a;
+        const auto rowCount = ((a < blasCount - 1u) ? rowsPerAS : (extentU.y() - prevRows));
+        std::vector<tcu::Vec3> triangles;
+        triangles.reserve(rowCount * extentU.x() * perTriangleVertices);
+
+        for (uint32_t y = 0u; y < rowCount; ++y)
+            for (uint32_t x = 0u; x < extentU.x(); ++x)
+            {
+                const auto row       = y + prevRows;
+                const auto col       = x;
+                const auto maskIndex = row * extentU.x() + col;
+
+                if (!coverageMask.at(maskIndex))
+                    continue;
+
+                const float xCenter = static_cast<float>(col) + 0.5f;
+                const float yCenter = static_cast<float>(row) + 0.5f;
+
+                triangles.push_back(tcu::Vec3(xCenter - coordMargin, yCenter + coordMargin, geometryZ));
+                triangles.push_back(tcu::Vec3(xCenter + coordMargin, yCenter + coordMargin, geometryZ));
+                triangles.push_back(tcu::Vec3(xCenter, yCenter - coordMargin, geometryZ));
+            }
+
+        const auto blas = blasPool.add();
+        blas->addGeometry(triangles, true /* triangles */);
+    }
+
+    blasPool.batchCreateAdjust(ctx.vkd, ctx.device, ctx.allocator, ~0ull, false /* scratch buffer is host visible */);
+    blasPool.batchBuild(ctx.vkd, ctx.device, cmdBuffer);
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
+    const auto tlas = makeTopLevelAccelerationStructure();
+    tlas->setInstanceCount(blasCount);
+    for (const auto &blas : blasPool.structures())
+        tlas->addInstance(blas, identityMatrix3x4, 0, 0xFFu, 0u,
+                          VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR);
+    tlas->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator, bufferProps);
+
+    // Create storage image.
+    const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM; // Must match the shader declaration.
+    const auto colorUsage =
+        (VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    const auto colorSSR = makeDefaultImageSubresourceRange();
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, apiExtent, colorFormat, colorUsage,
+                                VK_IMAGE_TYPE_2D, colorSSR);
+
+    // Descriptor pool and set.
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, blasCount);
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    const auto descritorPool =
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+    setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+    const auto setLayout      = setLayoutBuilder.build(ctx.vkd, ctx.device);
+    const auto descriptorSet  = makeDescriptorSet(ctx.vkd, ctx.device, *descritorPool, *setLayout);
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
+
+    DescriptorSetUpdateBuilder setUpdateBuilder;
+    using Location = DescriptorSetUpdateBuilder::Location;
+    {
+        const VkWriteDescriptorSetAccelerationStructureKHR accelerationStructure = {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+            nullptr,
+            1u,
+            tlas->getPtr(),
+        };
+        setUpdateBuilder.writeSingle(*descriptorSet, Location::binding(0u),
+                                     VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &accelerationStructure);
+
+        const auto imageInfo =
+            makeDescriptorImageInfo(VK_NULL_HANDLE, colorBuffer.getImageView(), VK_IMAGE_LAYOUT_GENERAL);
+        setUpdateBuilder.writeSingle(*descriptorSet, Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                                     &imageInfo);
+    }
+    setUpdateBuilder.update(ctx.vkd, ctx.device);
+
+    const auto &binaries = context.getBinaryCollection();
+    auto rgenModule      = createShaderModule(ctx.vkd, ctx.device, binaries.get("rgen"), 0);
+    auto missModule      = createShaderModule(ctx.vkd, ctx.device, binaries.get("miss"), 0);
+    auto chitModule      = createShaderModule(ctx.vkd, ctx.device, binaries.get("chit"), 0);
+
+    uint32_t shaderGroupHandleSize    = 0u;
+    uint32_t shaderGroupBaseAlignment = 1u;
+    {
+        const auto rayTracingPropertiesKHR = makeRayTracingProperties(ctx.vki, ctx.physicalDevice);
+        shaderGroupHandleSize              = rayTracingPropertiesKHR->getShaderGroupHandleSize();
+        shaderGroupBaseAlignment           = rayTracingPropertiesKHR->getShaderGroupBaseAlignment();
+    }
+
+    // Create raytracing pipeline and shader binding tables.
+    Move<VkPipeline> pipeline;
+    de::MovePtr<BufferWithMemory> raygenSBT;
+    de::MovePtr<BufferWithMemory> missSBT;
+    de::MovePtr<BufferWithMemory> hitSBT;
+    de::MovePtr<BufferWithMemory> callableSBT;
+
+    auto raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    auto missSBTRegion     = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    auto hitSBTRegion      = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    auto callableSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+
+    {
+        const auto rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
+        rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, rgenModule, 0);
+        rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, missModule, 1);
+        rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, chitModule, 2);
+
+        pipeline = rayTracingPipeline->createPipeline(ctx.vkd, ctx.device, pipelineLayout.get());
+
+        raygenSBT = rayTracingPipeline->createShaderBindingTable(ctx.vkd, ctx.device, pipeline.get(), ctx.allocator,
+                                                                 shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
+        raygenSBTRegion =
+            makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(ctx.vkd, ctx.device, raygenSBT->get(), 0),
+                                              shaderGroupHandleSize, shaderGroupHandleSize);
+
+        missSBT = rayTracingPipeline->createShaderBindingTable(ctx.vkd, ctx.device, pipeline.get(), ctx.allocator,
+                                                               shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
+        missSBTRegion =
+            makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(ctx.vkd, ctx.device, missSBT->get(), 0),
+                                              shaderGroupHandleSize, shaderGroupHandleSize);
+
+        hitSBT       = rayTracingPipeline->createShaderBindingTable(ctx.vkd, ctx.device, pipeline.get(), ctx.allocator,
+                                                                    shaderGroupHandleSize, shaderGroupBaseAlignment, 2, 1);
+        hitSBTRegion = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(ctx.vkd, ctx.device, hitSBT->get(), 0),
+                                                         shaderGroupHandleSize, shaderGroupHandleSize);
+    }
+
+    // Transition storage image.
+    const auto preRTBarrier = makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                                     VK_IMAGE_LAYOUT_GENERAL, colorBuffer.getImage(), colorSSR);
+    cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                  VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, &preRTBarrier);
+
+    // Trace rays.
+    const auto bindPoint = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, pipeline.get());
+    ctx.vkd.cmdTraceRaysKHR(cmdBuffer, &raygenSBTRegion, &missSBTRegion, &hitSBTRegion, &callableSBTRegion,
+                            apiExtent.width, apiExtent.height, 1u);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), extent.swizzle(0, 1),
+                      VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, 1u, VK_IMAGE_ASPECT_COLOR_BIT,
+                      VK_IMAGE_ASPECT_COLOR_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+
+    // These must match the shaders.
+    const tcu::Vec4 missColor(0.0f, 0.0f, 0.0f, 1.0f);
+    const tcu::Vec4 hitColor(0.0f, 0.0f, 1.0f, 1.0f);
+
+    const auto tcuFormat = mapVkFormat(colorFormat);
+    tcu::TextureLevel referenceLevel(tcuFormat, extent.x(), extent.y(), extent.z());
+    tcu::PixelBufferAccess referenceAccess = referenceLevel.getAccess();
+
+    for (int y = 0; y < extent.y(); ++y)
+        for (int x = 0; x < extent.x(); ++x)
+        {
+            const auto maskIdx = static_cast<uint32_t>(y * extent.x() + x);
+            const auto &color  = (coverageMask.at(maskIdx) ? hitColor : missColor);
+            referenceAccess.setPixel(color, x, y);
+        }
+
+    tcu::ConstPixelBufferAccess resultAccess(tcuFormat, extent, colorBuffer.getBufferAllocation().getHostPtr());
+
+    const tcu::Vec4 threshold(0.0f, 0.0f, 0.0f, 0.0f); // Only 1.0 and 0.0 so we expect exact results.
+    auto &log = context.getTestContext().getLog();
+    if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultAccess, threshold,
+                                    tcu::COMPARE_LOG_ON_ERROR))
+        return tcu::TestStatus::fail("Failed; check log for details");
     return tcu::TestStatus::pass("Pass");
 }
 
@@ -9581,14 +10032,17 @@ tcu::TestCaseGroup *createMiscTests(tcu::TestContext &testCtx)
     }
 
     {
-        addFunctionCaseWithPrograms(miscGroupPtr.get(), "null_miss", checkRTPipelineSupport, initBasicHitBufferPrograms,
+        const auto groupPtr = miscGroupPtr.get();
+        addFunctionCaseWithPrograms(groupPtr, "null_miss", checkRTPipelineSupport, initBasicHitBufferPrograms,
                                     nullMissInstance);
-        addFunctionCaseWithPrograms(miscGroupPtr.get(), "empty_pipeline_layout", checkRTPipelineSupport,
-                                    initEmptyPrograms, emptyPipelineLayoutInstance);
-        addFunctionCaseWithPrograms(miscGroupPtr.get(), "reuse_creation_buffer_top", checkReuseCreationBufferSupport,
+        addFunctionCaseWithPrograms(groupPtr, "empty_pipeline_layout", checkRTPipelineSupport, initEmptyPrograms,
+                                    emptyPipelineLayoutInstance);
+        addFunctionCaseWithPrograms(groupPtr, "reuse_creation_buffer_top", checkReuseCreationBufferSupport,
                                     initReuseCreationBufferPrograms, reuseCreationBufferInstance, true /*top*/);
-        addFunctionCaseWithPrograms(miscGroupPtr.get(), "reuse_creation_buffer_bottom", checkReuseCreationBufferSupport,
+        addFunctionCaseWithPrograms(groupPtr, "reuse_creation_buffer_bottom", checkReuseCreationBufferSupport,
                                     initReuseCreationBufferPrograms, reuseCreationBufferInstance, false /*top*/);
+        addFunctionCaseWithPrograms(groupPtr, "reuse_scratch_buffer", checkReuseScratchBufferSupport,
+                                    initReuseScratchBufferPrograms, reuseScratchBufferInstance);
     }
 
     return miscGroupPtr.release();

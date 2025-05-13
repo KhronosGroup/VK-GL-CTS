@@ -113,9 +113,9 @@ void deviceSignal(const DeviceInterface &vk, const VkDevice device, const VkQueu
         SynchronizationWrapperPtr synchronizationWrapper = getSynchronizationWrapper(type, vk, true);
         synchronizationWrapper->addSubmitInfo(
             0u,                         // uint32_t                                waitSemaphoreInfoCount
-            DE_NULL,                    // const VkSemaphoreSubmitInfoKHR*        pWaitSemaphoreInfos
+            nullptr,                    // const VkSemaphoreSubmitInfoKHR*        pWaitSemaphoreInfos
             0u,                         // uint32_t                                commandBufferInfoCount
-            DE_NULL,                    // const VkCommandBufferSubmitInfoKHR*    pCommandBufferInfos
+            nullptr,                    // const VkCommandBufferSubmitInfoKHR*    pCommandBufferInfos
             1u,                         // uint32_t                                signalSemaphoreInfoCount
             &signalSemaphoreSubmitInfo, // const VkSemaphoreSubmitInfoKHR*        pSignalSemaphoreInfos
             false, true);
@@ -126,11 +126,11 @@ void deviceSignal(const DeviceInterface &vk, const VkDevice device, const VkQueu
     {
         SynchronizationWrapperPtr synchronizationWrapper = getSynchronizationWrapper(type, vk, 1u);
         synchronizationWrapper->addSubmitInfo(0u,      // uint32_t                                waitSemaphoreInfoCount
-                                              DE_NULL, // const VkSemaphoreSubmitInfoKHR*        pWaitSemaphoreInfos
+                                              nullptr, // const VkSemaphoreSubmitInfoKHR*        pWaitSemaphoreInfos
                                               0u,      // uint32_t                                commandBufferInfoCount
-                                              DE_NULL, // const VkCommandBufferSubmitInfoKHR*    pCommandBufferInfos
+                                              nullptr, // const VkCommandBufferSubmitInfoKHR*    pCommandBufferInfos
                                               0u, // uint32_t                                signalSemaphoreInfoCount
-                                              DE_NULL // const VkSemaphoreSubmitInfoKHR*        pSignalSemaphoreInfos
+                                              nullptr // const VkSemaphoreSubmitInfoKHR*        pSignalSemaphoreInfos
         );
         VK_CHECK(synchronizationWrapper->queueSubmit(queue, fence));
         VK_CHECK(vk.waitForFences(device, 1u, &fence, VK_TRUE, ~(0ull)));
@@ -141,7 +141,7 @@ void hostSignal(const DeviceInterface &vk, const VkDevice &device, VkSemaphore s
 {
     VkSemaphoreSignalInfo ssi = {
         VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO, // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         semaphore,                               // VkSemaphore semaphore;
         timelineValue,                           // uint64_t value;
     };
@@ -204,7 +204,7 @@ public:
         {
             const VkSemaphoreWaitInfo waitInfo = {
                 VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,                            // VkStructureType sType;
-                DE_NULL,                                                          // const void* pNext;
+                nullptr,                                                          // const void* pNext;
                 m_waitAll ? 0u : (VkSemaphoreWaitFlags)VK_SEMAPHORE_WAIT_ANY_BIT, // VkSemaphoreWaitFlagsKHR flags;
                 (uint32_t)semaphores.size(),                                      // uint32_t semaphoreCount;
                 &semaphores[0],                                                   // const VkSemaphore* pSemaphores;
@@ -302,7 +302,7 @@ public:
                 1u,                         // uint32_t                                waitSemaphoreInfoCount
                 &waitSemaphoreSubmitInfo,   // const VkSemaphoreSubmitInfoKHR*        pWaitSemaphoreInfos
                 0u,                         // uint32_t                                commandBufferInfoCount
-                DE_NULL,                    // const VkCommandBufferSubmitInfoKHR*    pCommandBufferInfos
+                nullptr,                    // const VkCommandBufferSubmitInfoKHR*    pCommandBufferInfos
                 1u,                         // uint32_t                                signalSemaphoreInfoCount
                 &signalSemaphoreSubmitInfo, // const VkSemaphoreSubmitInfoKHR*        pSignalSemaphoreInfos
                 true, true);
@@ -315,7 +315,7 @@ public:
         {
             const VkSemaphoreWaitInfo waitInfo = {
                 VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO, // VkStructureType sType;
-                DE_NULL,                               // const void* pNext;
+                nullptr,                               // const void* pNext;
                 0u,                                    // VkSemaphoreWaitFlagsKHR flags;
                 (uint32_t)1u,                          // uint32_t semaphoreCount;
                 &semaphore.get(),                      // const VkSemaphore* pSemaphores;
@@ -332,7 +332,7 @@ public:
         {
             const VkSemaphoreWaitInfo waitInfo = {
                 VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO, // VkStructureType sType;
-                DE_NULL,                               // const void* pNext;
+                nullptr,                               // const void* pNext;
                 0u,                                    // VkSemaphoreWaitFlagsKHR flags;
                 (uint32_t)1u,                          // uint32_t semaphoreCount;
                 &semaphore.get(),                      // const VkSemaphore* pSemaphores;
@@ -643,10 +643,10 @@ tcu::TestStatus initialValueCase(Context &context, SynchronizationType type)
     uint64_t initialValue;
     VkSemaphoreWaitInfo waitInfo = {
         VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO, // VkStructureType sType;
-        DE_NULL,                               // const void* pNext;
+        nullptr,                               // const void* pNext;
         0u,                                    // VkSemaphoreWaitFlagsKHR flags;
         1u,                                    // uint32_t semaphoreCount;
-        DE_NULL,                               // const VkSemaphore* pSemaphores;
+        nullptr,                               // const VkSemaphore* pSemaphores;
         &initialValue,                         // const uint64_t* pValues;
     };
     uint64_t value;
@@ -667,9 +667,9 @@ tcu::TestStatus initialValueCase(Context &context, SynchronizationType type)
             1u,                       // uint32_t                                waitSemaphoreInfoCount
             &waitSemaphoreSubmitInfo, // const VkSemaphoreSubmitInfoKHR*        pWaitSemaphoreInfos
             0u,                       // uint32_t                                commandBufferInfoCount
-            DE_NULL,                  // const VkCommandBufferSubmitInfoKHR*    pCommandBufferInfos
+            nullptr,                  // const VkCommandBufferSubmitInfoKHR*    pCommandBufferInfos
             0u,                       // uint32_t                                signalSemaphoreInfoCount
-            DE_NULL,                  // const VkSemaphoreSubmitInfoKHR*        pSignalSemaphoreInfos
+            nullptr,                  // const VkSemaphoreSubmitInfoKHR*        pSignalSemaphoreInfos
             true, false);
 
         VK_CHECK(synchronizationWrapper->queueSubmit(queue, VK_NULL_HANDLE));
@@ -813,7 +813,7 @@ public:
             {
                 const VkSemaphoreWaitInfo waitInfo = {
                     VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO, // VkStructureType sType;
-                    DE_NULL,                               // const void* pNext;
+                    nullptr,                               // const void* pNext;
                     0u,                                    // VkSemaphoreWaitFlagsKHR flags;
                     1u,                                    // uint32_t                    semaphoreCount
                     &m_semaphore,                          // VkSemaphore* pSemaphores;
@@ -834,7 +834,7 @@ public:
             {
                 const VkSemaphoreSignalInfo signalInfo = {
                     VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO, // VkStructureType sType;
-                    DE_NULL,                                 // const void* pNext;
+                    nullptr,                                 // const void* pNext;
                     m_semaphore,                             // VkSemaphore semaphore;
                     m_iterations[iterIdx]->cpuValue,         // uint64_t value;
                 };
@@ -1009,7 +1009,7 @@ public:
                             resource.getImage().subresourceRange // VkImageSubresourceRange            subresourceRange
                         );
                         VkDependencyInfoKHR dependencyInfo =
-                            makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+                            makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
                         synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
                     }
                     else
@@ -1023,7 +1023,7 @@ public:
                             0,                           // VkDeviceSize                        offset
                             VK_WHOLE_SIZE                // VkDeviceSize                        size
                         );
-                        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+                        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
                         synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
                     }
                 }
@@ -1288,8 +1288,8 @@ std::vector<VkDeviceQueueCreateInfo> getQueueCreateInfo(
 
     for (uint32_t i = 0; i < queueFamilyProperties.size(); i++)
     {
-        VkDeviceQueueCreateInfo info = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, DE_NULL, 0, i,
-                                        queueFamilyProperties[i].queueCount,        DE_NULL};
+        VkDeviceQueueCreateInfo info = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr, 0, i,
+                                        queueFamilyProperties[i].queueCount,        nullptr};
         infos.push_back(info);
     }
 
@@ -1304,9 +1304,9 @@ Move<VkDevice> createTestDevice(Context &context, const VkInstance &instance, co
         getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos = getQueueCreateInfo(queueFamilyProperties);
     VkPhysicalDeviceSynchronization2FeaturesKHR synchronization2Features{
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR, DE_NULL, true};
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR, nullptr, true};
     VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures{
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES, DE_NULL, true};
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES, nullptr, true};
     VkPhysicalDeviceFeatures2 createPhysicalFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
                                                      &timelineSemaphoreFeatures, context.getDeviceFeatures()};
     void **nextPtr = &timelineSemaphoreFeatures.pNext;
@@ -1341,7 +1341,7 @@ Move<VkDevice> createTestDevice(Context &context, const VkInstance &instance, co
         {
             pcCI = {
                 VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                      // const void* pNext;
+                nullptr,                                      // const void* pNext;
                 VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                     VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
                 context.getResourceInterface()->getCacheDataSize(),       // uintptr_t initialDataSize;
@@ -1367,7 +1367,7 @@ Move<VkDevice> createTestDevice(Context &context, const VkInstance &instance, co
         static_cast<uint32_t>(queueCreateInfos.size()), //uint32_t queueCreateInfoCount;
         &queueCreateInfos[0],                           //const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u,                                             //uint32_t enabledLayerCount;
-        DE_NULL,                                        //const char* const* ppEnabledLayerNames;
+        nullptr,                                        //const char* const* ppEnabledLayerNames;
         static_cast<uint32_t>(deviceExtensions.size()), //uint32_t enabledExtensionCount;
         deviceExtensions.data(),                        //const char* const* ppEnabledExtensionNames;
         0u                                              //const VkPhysicalDeviceFeatures* pEnabledFeatures;
@@ -1607,6 +1607,34 @@ public:
                 true, true);
 
             beginCommandBuffer(vk, cmdBuffer);
+            if (iterIdx > 0)
+            {
+                const SyncInfo readSync      = m_iterations[iterIdx]->op->getInSyncInfo();
+                const Resource &readResource = *m_resources[iterIdx - 1];
+
+                if (readResource.getType() == RESOURCE_TYPE_IMAGE)
+                {
+                    DE_ASSERT(readSync.imageLayout != VK_IMAGE_LAYOUT_UNDEFINED);
+
+                    const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+                        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,        // VkPipelineStageFlags2KHR            srcStageMask
+                        VK_ACCESS_2_NONE,                         // VkAccessFlags2KHR                srcAccessMask
+                        readSync.stageMask,                       // VkPipelineStageFlags2KHR            dstStageMask
+                        readSync.accessMask,                      // VkAccessFlags2KHR                dstAccessMask
+                        VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout                    oldLayout
+                        readSync.imageLayout,                     // VkImageLayout                    newLayout
+                        readResource.getImage().handle,           // VkImage                            image
+                        readResource.getImage().subresourceRange, // VkImageSubresourceRange            subresourceRange
+                        m_iterations[iterIdx]
+                            ->queueFamilyIdx, // uint32_t                            srcQueueFamilyIndex
+                        m_iterations[iterIdx + 1]
+                            ->queueFamilyIdx // uint32_t                            destQueueFamilyIndex
+                    );
+                    VkDependencyInfoKHR dependencyInfo =
+                        makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
+                    synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
+                }
+            }
             m_iterations[iterIdx]->op->recordCommands(cmdBuffer);
 
             {
@@ -1634,7 +1662,7 @@ public:
                             ->queueFamilyIdx // uint32_t                            destQueueFamilyIndex
                     );
                     VkDependencyInfoKHR dependencyInfo =
-                        makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+                        makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
                     synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
                 }
                 else
@@ -1652,7 +1680,7 @@ public:
                         m_iterations[iterIdx + 1]
                             ->queueFamilyIdx // uint32_t                            dstQueueFamilyIndex
                     );
-                    VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+                    VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
                     synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
                 }
             }
@@ -2084,7 +2112,7 @@ public:
                 inIter.queueFamilyIdx,                 // uint32_t                            srcQueueFamilyIndex
                 outIter.queueFamilyIdx                 // uint32_t                            destQueueFamilyIndex
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
         }
         else
@@ -2100,7 +2128,7 @@ public:
                 inIter.queueFamilyIdx,       // uint32_t                            srcQueueFamilyIndex
                 outIter.queueFamilyIdx       // uint32_t                            dstQueueFamilyIndex
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
         }
     }

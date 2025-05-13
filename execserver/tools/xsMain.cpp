@@ -60,7 +60,7 @@ int main(int argc, const char *const *argv)
     xs::PosixTestProcess testProcess;
 
     // Set line buffered mode to stdout so executor gets any log messages in a timely manner.
-    setvbuf(stdout, DE_NULL, _IOLBF, 4 * 1024);
+    setvbuf(stdout, nullptr, _IOLBF, 4 * 1024);
 #endif
 
     // Parse command line.

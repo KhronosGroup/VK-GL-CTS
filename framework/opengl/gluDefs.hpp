@@ -27,9 +27,9 @@
 
 // Macros for checking API errors.
 #define GLU_EXPECT_NO_ERROR(ERR, MSG) glu::checkError((ERR), MSG, __FILE__, __LINE__)
-#define GLU_CHECK_ERROR(ERR) GLU_EXPECT_NO_ERROR(ERR, DE_NULL)
+#define GLU_CHECK_ERROR(ERR) GLU_EXPECT_NO_ERROR(ERR, nullptr)
 #define GLU_CHECK_MSG(MSG) GLU_EXPECT_NO_ERROR(glGetError(), MSG)
-#define GLU_CHECK() GLU_CHECK_MSG(DE_NULL)
+#define GLU_CHECK() GLU_CHECK_MSG(nullptr)
 #define GLU_CHECK_CALL_ERROR(CALL, ERR)  \
     do                                   \
     {                                    \
@@ -44,7 +44,7 @@
     } while (false)
 
 #define GLU_CHECK_GLW_MSG(GL, MSG) GLU_EXPECT_NO_ERROR((GL).getError(), MSG)
-#define GLU_CHECK_GLW(GL) GLU_CHECK_GLW_MSG(GL, DE_NULL)
+#define GLU_CHECK_GLW(GL) GLU_CHECK_GLW_MSG(GL, nullptr)
 #define GLU_CHECK_GLW_CALL(GL, CALL)                 \
     do                                               \
     {                                                \
@@ -58,7 +58,7 @@
 namespace glu
 {
 
-DE_INLINE void *BufferOffsetAsPointer(uintptr_t byteOffset)
+inline void *BufferOffsetAsPointer(uintptr_t byteOffset)
 {
     return reinterpret_cast<void *>(byteOffset);
 }

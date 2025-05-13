@@ -513,12 +513,12 @@ void createPipelineShaderStages(const DeviceInterface &vk, const VkDevice vkDevi
             const EntryToStage &stage                         = *shaderNdx;
             const VkPipelineShaderStageCreateInfo shaderParam = {
                 VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                             // const void* pNext;
+                nullptr,                                             // const void* pNext;
                 (VkPipelineShaderStageCreateFlags)0,
                 stage.second,        // VkShaderStageFlagBits stage;
                 **modules.back(),    // VkShaderModule module;
                 stage.first.c_str(), // const char* pName;
-                (const VkSpecializationInfo *)DE_NULL,
+                nullptr,
             };
             createInfos.push_back(shaderParam);
         }
@@ -1303,7 +1303,7 @@ void addShaderCodeCustomVertex(vk::SourceCollections &dst, InstanceContext &cont
     const uint32_t vulkanVersion = dst.usedVulkanVersion;
     SpirvVersion targetSpirvVersion;
 
-    if (spirVAsmBuildOptions == DE_NULL)
+    if (spirVAsmBuildOptions == nullptr)
         targetSpirvVersion = context.resources.spirvVersion;
     else
         targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
@@ -1336,7 +1336,7 @@ void addShaderCodeCustomVertex(vk::SourceCollections &dst, InstanceContext &cont
 
 void addShaderCodeCustomVertex(vk::SourceCollections &dst, InstanceContext context)
 {
-    addShaderCodeCustomVertex(dst, context, DE_NULL);
+    addShaderCodeCustomVertex(dst, context, nullptr);
 }
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
@@ -1348,7 +1348,7 @@ void addShaderCodeCustomTessControl(vk::SourceCollections &dst, InstanceContext 
     const uint32_t vulkanVersion = dst.usedVulkanVersion;
     SpirvVersion targetSpirvVersion;
 
-    if (spirVAsmBuildOptions == DE_NULL)
+    if (spirVAsmBuildOptions == nullptr)
         targetSpirvVersion = context.resources.spirvVersion;
     else
         targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
@@ -1393,7 +1393,7 @@ void addShaderCodeCustomTessControl(vk::SourceCollections &dst, InstanceContext 
 
 void addShaderCodeCustomTessControl(vk::SourceCollections &dst, InstanceContext context)
 {
-    addShaderCodeCustomTessControl(dst, context, DE_NULL);
+    addShaderCodeCustomTessControl(dst, context, nullptr);
 }
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
@@ -1405,7 +1405,7 @@ void addShaderCodeCustomTessEval(vk::SourceCollections &dst, InstanceContext &co
     const uint32_t vulkanVersion = dst.usedVulkanVersion;
     SpirvVersion targetSpirvVersion;
 
-    if (spirVAsmBuildOptions == DE_NULL)
+    if (spirVAsmBuildOptions == nullptr)
         targetSpirvVersion = context.resources.spirvVersion;
     else
         targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
@@ -1449,7 +1449,7 @@ void addShaderCodeCustomTessEval(vk::SourceCollections &dst, InstanceContext &co
 
 void addShaderCodeCustomTessEval(vk::SourceCollections &dst, InstanceContext context)
 {
-    addShaderCodeCustomTessEval(dst, context, DE_NULL);
+    addShaderCodeCustomTessEval(dst, context, nullptr);
 }
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
@@ -1460,7 +1460,7 @@ void addShaderCodeCustomGeometry(vk::SourceCollections &dst, InstanceContext &co
     const uint32_t vulkanVersion = dst.usedVulkanVersion;
     SpirvVersion targetSpirvVersion;
 
-    if (spirVAsmBuildOptions == DE_NULL)
+    if (spirVAsmBuildOptions == nullptr)
         targetSpirvVersion = context.resources.spirvVersion;
     else
         targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
@@ -1498,7 +1498,7 @@ void addShaderCodeCustomGeometry(vk::SourceCollections &dst, InstanceContext &co
 
 void addShaderCodeCustomGeometry(vk::SourceCollections &dst, InstanceContext context)
 {
-    addShaderCodeCustomGeometry(dst, context, DE_NULL);
+    addShaderCodeCustomGeometry(dst, context, nullptr);
 }
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
@@ -1509,7 +1509,7 @@ void addShaderCodeCustomFragment(vk::SourceCollections &dst, InstanceContext &co
     const uint32_t vulkanVersion = dst.usedVulkanVersion;
     SpirvVersion targetSpirvVersion;
 
-    if (spirVAsmBuildOptions == DE_NULL)
+    if (spirVAsmBuildOptions == nullptr)
         targetSpirvVersion = context.resources.spirvVersion;
     else
         targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
@@ -1541,7 +1541,7 @@ void addShaderCodeCustomFragment(vk::SourceCollections &dst, InstanceContext &co
 
 void addShaderCodeCustomFragment(vk::SourceCollections &dst, InstanceContext context)
 {
-    addShaderCodeCustomFragment(dst, context, DE_NULL);
+    addShaderCodeCustomFragment(dst, context, nullptr);
 }
 
 void createCombinedModule(vk::SourceCollections &dst, InstanceContext ctx)
@@ -3026,7 +3026,7 @@ Move<VkBuffer> createBufferForResource(const DeviceInterface &vk, const VkDevice
 
     const VkBufferCreateInfo resourceBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                            // sType
-        DE_NULL,                                                         // pNext
+        nullptr,                                                         // pNext
         (VkBufferCreateFlags)0,                                          // flags
         (VkDeviceSize)resourceBytes.size(),                              // size
         (VkBufferUsageFlags)getMatchingBufferUsageFlagBit(resourceType), // usage
@@ -3043,7 +3043,7 @@ Move<VkImage> createImageForResource(const DeviceInterface &vk, const VkDevice v
 {
     const VkImageCreateInfo resourceImageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                      // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         0u,                                                       // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                                         // VkImageType imageType;
         inputFormat,                                              // VkFormat format;
@@ -3222,7 +3222,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
             localRequired.coreFeatures.vertexPipelineStoresAndAtomics = false;
         }
 
-        const char *unsupportedFeature = DE_NULL;
+        const char *unsupportedFeature = nullptr;
         if (!isVulkanFeaturesSupported(context, localRequired, &unsupportedFeature))
             TCU_THROW(NotSupportedError,
                       std::string("At least following requested feature not supported: ") + unsupportedFeature);
@@ -3323,7 +3323,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
 
     const VkBufferCreateInfo vertexBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         (VkDeviceSize)vertexDataSize,         // VkDeviceSize size;
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
@@ -3341,7 +3341,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
     const VkDeviceSize imageSizeBytes              = (VkDeviceSize)(sizeof(uint32_t) * renderSize.x() * renderSize.y());
     const VkBufferCreateInfo readImageBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         imageSizeBytes,                       // VkDeviceSize size;
         VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
@@ -3358,7 +3358,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
 
     VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-        DE_NULL,                                                               // const void* pNext;
+        nullptr,                                                               // const void* pNext;
         0u,                                                                    // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
         VK_FORMAT_R8G8B8A8_UNORM,                                              // VkFormat format;
@@ -3393,7 +3393,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
         // Create an additional buffer and backing memory for one input variable.
         const VkBufferCreateInfo vertexInputParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             inputNumBytes,                        // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
@@ -3413,7 +3413,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
             (VkDeviceSize)(instance.interfaces.getOutputType().getNumBytes() * renderSize.x() * renderSize.y());
         const VkBufferCreateInfo fragOutputParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             fragOutputImgSize,                    // VkDeviceSize size;
             VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
@@ -3492,25 +3492,25 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
         0u,                              // VkSubpassDescriptionFlags flags;
         VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
         0u,                              // uint32_t inputCount;
-        DE_NULL,                         // const VkAttachmentReference* pInputAttachments;
+        nullptr,                         // const VkAttachmentReference* pInputAttachments;
         1u,                              // uint32_t colorCount;
         colorAttRefs.data(),             // const VkAttachmentReference* pColorAttachments;
-        DE_NULL,                         // const VkAttachmentReference* pResolveAttachments;
-        DE_NULL,                         // const VkAttachmentReference* pDepthStencilAttachment;
+        nullptr,                         // const VkAttachmentReference* pResolveAttachments;
+        nullptr,                         // const VkAttachmentReference* pDepthStencilAttachment;
         0u,                              // uint32_t preserveCount;
-        DE_NULL,                         // const VkAttachmentReference* pPreserveAttachments;
+        nullptr,                         // const VkAttachmentReference* pPreserveAttachments;
 
     };
     VkRenderPassCreateInfo renderPassParams = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                   // const void* pNext;
+        nullptr,                                   // const void* pNext;
         (VkRenderPassCreateFlags)0,
         1u,                   // uint32_t attachmentCount;
         colorAttDescs.data(), // const VkAttachmentDescription* pAttachments;
         1u,                   // uint32_t subpassCount;
         &subpassDesc,         // const VkSubpassDescription* pSubpasses;
         0u,                   // uint32_t dependencyCount;
-        DE_NULL,              // const VkSubpassDependency* pDependencies;
+        nullptr,              // const VkSubpassDependency* pDependencies;
     };
 
     if (needInterface)
@@ -3523,7 +3523,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
 
     const VkImageViewCreateInfo colorAttViewParams = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                  // const void* pNext;
+        nullptr,                                  // const void* pNext;
         0u,                                       // VkImageViewCreateFlags flags;
         *image,                                   // VkImage image;
         VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -3647,7 +3647,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
                 resource.getDescriptorType(), // descriptorType
                 1u,                           // descriptorCount
                 VK_SHADER_STAGE_ALL_GRAPHICS, // stageFlags
-                DE_NULL,                      // pImmutableSamplers
+                nullptr,                      // pImmutableSamplers
             };
             setLayoutBindings.push_back(binding);
 
@@ -3686,7 +3686,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
                 resource.getDescriptorType(), // descriptorType
                 1u,                           // descriptorCount
                 VK_SHADER_STAGE_ALL_GRAPHICS, // stageFlags
-                DE_NULL,                      // pImmutableSamplers
+                nullptr,                      // pImmutableSamplers
             };
             setLayoutBindings.push_back(binding);
 
@@ -3701,7 +3701,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
         // Create descriptor set layout, descriptor pool, and allocate descriptor set.
         const VkDescriptorSetLayoutCreateInfo setLayoutParams = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // sType
-            DE_NULL,                                             // pNext
+            nullptr,                                             // pNext
             (VkDescriptorSetLayoutCreateFlags)0,                 // flags
             numResources,                                        // bindingCount
             setLayoutBindings.data(),                            // pBindings
@@ -3711,7 +3711,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
 
         const VkDescriptorPoolCreateInfo poolParams = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO, // sType
-            DE_NULL,                                       // pNext
+            nullptr,                                       // pNext
             (VkDescriptorPoolCreateFlags)0,                // flags
             1u,                                            // maxSets
             numResources,                                  // poolSizeCount
@@ -3721,7 +3721,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
 
         const VkDescriptorSetAllocateInfo setAllocParams = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // sType
-            DE_NULL,                                        // pNext
+            nullptr,                                        // pNext
             *descriptorPool,                                // descriptorPool
             1u,                                             // descriptorSetCount
             &rawSetLayout,                                  // pSetLayouts
@@ -3759,7 +3759,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
                 {
                     const VkImageViewCreateInfo imgViewParams = {
                         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-                        DE_NULL,                                  // const void* pNext;
+                        nullptr,                                  // const void* pNext;
                         0u,                                       // VkImageViewCreateFlags flags;
                         **inResourceImages[imgResourceNdx++],     // VkImage image;
                         VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -3785,7 +3785,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
                         tcu::hasDepthComponent(vk::mapVkFormat(instance.resources.inputFormat).order);
                     const VkSamplerCreateInfo samplerParams{
                         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,    // VkStructureType sType;
-                        DE_NULL,                                  // const void* pNext;
+                        nullptr,                                  // const void* pNext;
                         0,                                        // VkSamplerCreateFlags flags;
                         VK_FILTER_NEAREST,                        // VkFilter                    magFilter:
                         VK_FILTER_NEAREST,                        // VkFilter minFilter;
@@ -3861,15 +3861,15 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
 
             const VkWriteDescriptorSet writeSpec = {
                 VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,                      // sType
-                DE_NULL,                                                     // pNext
+                nullptr,                                                     // pNext
                 rawSet,                                                      // dstSet
                 inputNdx,                                                    // binding
                 0,                                                           // dstArrayElement
                 1u,                                                          // descriptorCount
                 instance.resources.inputs[inputNdx].getDescriptorType(),     // descriptorType
-                ((hasImage | hasSampler) ? &dImageInfos.back() : DE_NULL),   // pImageInfo
-                (!(hasImage | hasSampler) ? &dBufferInfos.back() : DE_NULL), // pBufferInfo
-                DE_NULL,                                                     // pTexelBufferView
+                ((hasImage | hasSampler) ? &dImageInfos.back() : nullptr),   // pImageInfo
+                (!(hasImage | hasSampler) ? &dBufferInfos.back() : nullptr), // pBufferInfo
+                nullptr,                                                     // pTexelBufferView
             };
             writeSpecs.push_back(writeSpec);
         }
@@ -3885,30 +3885,30 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
 
             const VkWriteDescriptorSet writeSpec = {
                 VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,                    // sType
-                DE_NULL,                                                   // pNext
+                nullptr,                                                   // pNext
                 rawSet,                                                    // dstSet
                 numInResources + outputNdx,                                // binding
                 0,                                                         // dstArrayElement
                 1u,                                                        // descriptorCount
                 instance.resources.outputs[outputNdx].getDescriptorType(), // descriptorType
-                DE_NULL,                                                   // pImageInfo
+                nullptr,                                                   // pImageInfo
                 &dBufferInfos.back(),                                      // pBufferInfo
-                DE_NULL,                                                   // pTexelBufferView
+                nullptr,                                                   // pTexelBufferView
             };
             writeSpecs.push_back(writeSpec);
         }
-        vk.updateDescriptorSets(device, numResources, writeSpecs.data(), 0, DE_NULL);
+        vk.updateDescriptorSets(device, numResources, writeSpecs.data(), 0, nullptr);
     }
 
     // Pipeline layout
     VkPipelineLayoutCreateInfo pipelineLayoutParams = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                       // const void* pNext;
+        nullptr,                                       // const void* pNext;
         (VkPipelineLayoutCreateFlags)0,
         0u,      // uint32_t descriptorSetCount;
-        DE_NULL, // const VkDescriptorSetLayout* pSetLayouts;
+        nullptr, // const VkDescriptorSetLayout* pSetLayouts;
         0u,      // uint32_t pushConstantRangeCount;
-        DE_NULL, // const VkPushConstantRange* pPushConstantRanges;
+        nullptr, // const VkPushConstantRange* pPushConstantRanges;
     };
 
     VkPushConstantRange pushConstantRange = {
@@ -3938,7 +3938,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
     // We need these vectors to make sure that information about specialization constants for each stage can outlive createGraphicsPipeline().
     vector<vector<VkSpecializationMapEntry>> specConstantEntries;
     vector<VkSpecializationInfo> specializationInfos;
-    if (DE_NULL != instance.resources.verifyBinary)
+    if (nullptr != instance.resources.verifyBinary)
     {
         std::string shaderName;
         switch (instance.customizedStages)
@@ -4012,7 +4012,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
     }
     const VkPipelineDepthStencilStateCreateInfo depthStencilParams = {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         (VkPipelineDepthStencilStateCreateFlags)0,
         false,                // uint32_t depthTestEnable;
         false,                // uint32_t depthWriteEnable;
@@ -4044,7 +4044,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
     const VkRect2D scissor0                                = makeRect2D(0u, 0u);
     const VkPipelineViewportStateCreateInfo viewportParams = {
         VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                               // const void* pNext;
+        nullptr,                                               // const void* pNext;
         (VkPipelineViewportStateCreateFlags)0,
         1u, // uint32_t viewportCount;
         &viewport0,
@@ -4053,7 +4053,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
     const VkSampleMask sampleMask                                = ~0u;
     const VkPipelineMultisampleStateCreateInfo multisampleParams = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (VkPipelineMultisampleStateCreateFlags)0,
         VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits rasterSamples;
         false,                 // uint32_t sampleShadingEnable;
@@ -4064,7 +4064,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
     };
     const VkPipelineRasterizationStateCreateInfo rasterParams = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         (VkPipelineRasterizationStateCreateFlags)0,
         false,                           // uint32_t depthClampEnable;
         false,                           // uint32_t rasterizerDiscardEnable;
@@ -4081,7 +4081,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
         hasTessellation ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     const VkPipelineInputAssemblyStateCreateInfo inputAssemblyParams = {
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                     // const void* pNext;
+        nullptr,                                                     // const void* pNext;
         (VkPipelineInputAssemblyStateCreateFlags)0,
         topology, // VkPrimitiveTopology topology;
         false,    // uint32_t primitiveRestartEnable;
@@ -4150,7 +4150,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
 
     VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                   // const void* pNext;
+        nullptr,                                                   // const void* pNext;
         (VkPipelineVertexInputStateCreateFlags)0,
         1u,                    // uint32_t bindingCount;
         vertexBindings.data(), // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -4183,7 +4183,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
 
     VkPipelineColorBlendStateCreateInfo blendParams = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (VkPipelineColorBlendStateCreateFlags)0,
         false,                    // VkBool32 logicOpEnable;
         VK_LOGIC_OP_COPY,         // VkLogicOp logicOp;
@@ -4196,23 +4196,23 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
         blendParams.attachmentCount += 1;
     }
     const VkPipelineTessellationStateCreateInfo tessellationState = {
-        VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO, DE_NULL, (VkPipelineTessellationStateCreateFlags)0,
+        VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO, nullptr, (VkPipelineTessellationStateCreateFlags)0,
         3u};
 
     const VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_SCISSOR};
 
     const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // sType
-        DE_NULL,                                              // pNext
+        nullptr,                                              // pNext
         0u,                                                   // flags
         DE_LENGTH_OF_ARRAY(dynamicStates),                    // dynamicStateCount
         dynamicStates                                         // pDynamicStates
     };
 
-    const VkPipelineTessellationStateCreateInfo *tessellationInfo = hasTessellation ? &tessellationState : DE_NULL;
+    const VkPipelineTessellationStateCreateInfo *tessellationInfo = hasTessellation ? &tessellationState : nullptr;
     const VkGraphicsPipelineCreateInfo pipelineParams             = {
         VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         0u,                                              // VkPipelineCreateFlags flags;
         (uint32_t)shaderStageParams.size(),              // uint32_t stageCount;
         &shaderStageParams[0],                           // const VkPipelineShaderStageCreateInfo* pStages;
@@ -4238,7 +4238,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
     {
         const VkImageViewCreateInfo fragOutputViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,          // VkStructureType sType;
-            DE_NULL,                                           // const void* pNext;
+            nullptr,                                           // const void* pNext;
             0u,                                                // VkImageViewCreateFlags flags;
             *fragOutputImage,                                  // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                             // VkImageViewType viewType;
@@ -4260,7 +4260,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
     // Framebuffer
     VkFramebufferCreateInfo framebufferParams = {
         VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                   // const void* pNext;
+        nullptr,                                   // const void* pNext;
         (VkFramebufferCreateFlags)0,
         *renderPass,              // VkRenderPass renderPass;
         1u,                       // uint32_t attachmentCount;
@@ -4288,7 +4288,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
             {
                 const VkMemoryBarrier vertFlushBarrier = {
                     VK_STRUCTURE_TYPE_MEMORY_BARRIER,    // VkStructureType sType;
-                    DE_NULL,                             // const void* pNext;
+                    nullptr,                             // const void* pNext;
                     VK_ACCESS_HOST_WRITE_BIT,            // VkMemoryOutputFlags outputMask;
                     VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT, // VkMemoryInputFlags inputMask;
                 };
@@ -4296,7 +4296,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
 
                 VkImageMemoryBarrier imgBarrier = {
                     VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType sType;
-                    DE_NULL,                                  // const void* pNext;
+                    nullptr,                                  // const void* pNext;
                     0u,                                       // VkMemoryOutputFlags outputMask;
                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkMemoryInputFlags inputMask;
                     VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout oldLayout;
@@ -4318,14 +4318,14 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
                     imgBarrier.image = *fragOutputImage;
                     colorAttBarriers.push_back(imgBarrier);
                     vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-                                          (VkDependencyFlags)0, 1, &vertFlushBarrier, 0,
-                                          (const VkBufferMemoryBarrier *)DE_NULL, 2, colorAttBarriers.data());
+                                          (VkDependencyFlags)0, 1, &vertFlushBarrier, 0, nullptr, 2,
+                                          colorAttBarriers.data());
                 }
                 else
                 {
                     vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-                                          (VkDependencyFlags)0, 1, &vertFlushBarrier, 0,
-                                          (const VkBufferMemoryBarrier *)DE_NULL, 1, colorAttBarriers.data());
+                                          (VkDependencyFlags)0, 1, &vertFlushBarrier, 0, nullptr, 1,
+                                          colorAttBarriers.data());
                 }
             }
 
@@ -4370,7 +4370,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
             {
                 // Bind to set number 0.
                 vk.cmdBindDescriptorSets(*cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0, 1, &rawSet, 0,
-                                         DE_NULL);
+                                         nullptr);
             }
             vk.cmdDraw(*cmdBuf, uint32_t(vertexCount), 1u /*run pipeline once*/, 0u /*first vertex*/,
                        0u /*first instanceIndex*/);
@@ -4382,7 +4382,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
                     vector<VkImageMemoryBarrier> renderFinishBarrier;
                     VkImageMemoryBarrier imgBarrier = {
                         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType sType;
-                        DE_NULL,                                  // const void* pNext;
+                        nullptr,                                  // const void* pNext;
                         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkMemoryOutputFlags outputMask;
                         VK_ACCESS_TRANSFER_READ_BIT,              // VkMemoryInputFlags inputMask;
                         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout oldLayout;
@@ -4405,16 +4405,14 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
                         imgBarrier.image = *fragOutputImage;
                         renderFinishBarrier.push_back(imgBarrier);
                         vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-                                              VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0,
-                                              (const VkMemoryBarrier *)DE_NULL, 0,
-                                              (const VkBufferMemoryBarrier *)DE_NULL, 2, renderFinishBarrier.data());
+                                              VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, nullptr, 0,
+                                              nullptr, 2, renderFinishBarrier.data());
                     }
                     else
                     {
                         vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-                                              VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0,
-                                              (const VkMemoryBarrier *)DE_NULL, 0,
-                                              (const VkBufferMemoryBarrier *)DE_NULL, 1, renderFinishBarrier.data());
+                                              VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, nullptr, 0,
+                                              nullptr, 1, renderFinishBarrier.data());
                     }
                 }
 
@@ -4444,7 +4442,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
                     vector<VkBufferMemoryBarrier> cpFinishBarriers;
                     VkBufferMemoryBarrier copyFinishBarrier = {
                         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-                        DE_NULL,                                 // const void* pNext;
+                        nullptr,                                 // const void* pNext;
                         VK_ACCESS_TRANSFER_WRITE_BIT,            // VkMemoryOutputFlags outputMask;
                         VK_ACCESS_HOST_READ_BIT,                 // VkMemoryInputFlags inputMask;
                         queueFamilyIndex,                        // uint32_t srcQueueFamilyIndex;
@@ -4462,14 +4460,12 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
                         cpFinishBarriers.push_back(copyFinishBarrier);
 
                         vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 2,
-                                              cpFinishBarriers.data(), 0, (const VkImageMemoryBarrier *)DE_NULL);
+                                              (VkDependencyFlags)0, 0, nullptr, 2, cpFinishBarriers.data(), 0, nullptr);
                     }
                     else
                     {
                         vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1,
-                                              cpFinishBarriers.data(), 0, (const VkImageMemoryBarrier *)DE_NULL);
+                                              (VkDependencyFlags)0, 0, nullptr, 1, cpFinishBarriers.data(), 0, nullptr);
                     }
                 }
             }
@@ -4689,7 +4685,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
     {
         const BufferSp &expected = instance.resources.outputs[outputNdx].getBuffer();
 
-        if (instance.resources.verifyIO != DE_NULL)
+        if (instance.resources.verifyIO != nullptr)
         {
             if (!(*instance.resources.verifyIO)(instance.resources.inputs, outResourceMemories,
                                                 instance.resources.outputs, context.getTestContext().getLog()))
@@ -4799,7 +4795,7 @@ struct StageData
     GetPipelineStagesFn getPipelineFn;
     AddShaderCodeCustomStageFn initProgramsFn;
 
-    StageData() : getPipelineFn(DE_NULL), initProgramsFn(DE_NULL)
+    StageData() : getPipelineFn(nullptr), initProgramsFn(nullptr)
     {
     }
 

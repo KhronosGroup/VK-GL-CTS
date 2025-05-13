@@ -133,8 +133,8 @@ tcu::TestStatus ShaderObjectMiscInstance::iterate(void)
         m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
     const bool tessellationSupported = m_context.getDeviceFeatures().tessellationShader;
     const bool geometrySupported     = m_context.getDeviceFeatures().geometryShader;
-    const bool taskSupported         = m_context.getMeshShaderFeatures().taskShader;
-    const bool meshSupported         = m_context.getMeshShaderFeatures().meshShader;
+    const bool taskSupported         = m_context.getMeshShaderFeaturesEXT().taskShader;
+    const bool meshSupported         = m_context.getMeshShaderFeaturesEXT().meshShader;
 
     vk::VkFormat colorAttachmentFormat = vk::VK_FORMAT_R8G8B8A8_UNORM;
     const auto subresourceRange        = vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -144,7 +144,7 @@ tcu::TestStatus ShaderObjectMiscInstance::iterate(void)
 
     const vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-        DE_NULL,                                 // const void*                pNext
+        nullptr,                                 // const void*                pNext
         0u,                                      // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
         colorAttachmentFormat,                   // VkFormat                    format
@@ -156,7 +156,7 @@ tcu::TestStatus ShaderObjectMiscInstance::iterate(void)
         vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags        usage
         vk::VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode
         0,                             // uint32_t                    queueFamilyIndexCount
-        DE_NULL,                       // const uint32_t*            pQueueFamilyIndices
+        nullptr,                       // const uint32_t*            pQueueFamilyIndices
         vk::VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
     };
 
@@ -235,15 +235,14 @@ tcu::TestStatus ShaderObjectMiscInstance::iterate(void)
             vk::VK_ACCESS_NONE, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
             vk::VK_IMAGE_LAYOUT_GENERAL, **images[i], subresourceRange);
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u,
-                              (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                              &preImageBarrier);
+                              vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr,
+                              0u, nullptr, 1u, &preImageBarrier);
     }
 
     std::vector<vk::VkRenderingAttachmentInfoKHR> colorAttachments(colorAttachmentCount);
     vk::VkRenderingAttachmentInfoKHR colorAttachment{
         vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                             // const void* pNext;
+        nullptr,                                             // const void* pNext;
         VK_NULL_HANDLE,                                      // VkImageView imageView;
         vk::VK_IMAGE_LAYOUT_GENERAL,                         // VkImageLayout imageLayout;
         vk::VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
@@ -262,15 +261,15 @@ tcu::TestStatus ShaderObjectMiscInstance::iterate(void)
 
     vk::VkRenderingInfoKHR renderingInfo{
         vk::VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-        DE_NULL,
+        nullptr,
         (vk::VkRenderingFlags)0u,          // VkRenderingFlagsKHR flags;
         renderArea,                        // VkRect2D renderArea;
         1u,                                // uint32_t layerCount;
         0x0,                               // uint32_t viewMask;
         (uint32_t)colorAttachments.size(), // uint32_t colorAttachmentCount;
         colorAttachments.data(),           // const VkRenderingAttachmentInfoKHR* pColorAttachments;
-        DE_NULL,                           // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
-        DE_NULL,                           // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
+        nullptr,                           // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
+        nullptr,                           // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
     };
 
     const vk::VkDeviceSize bufferSize        = 1024;
@@ -329,14 +328,14 @@ tcu::TestStatus ShaderObjectMiscInstance::iterate(void)
         setVertexInput(vk, *cmdBuffer, m_params.vertexBuffersNullStride ? m_params.stride : 100);
 
     vk::VkDeviceSize stride   = m_params.stride;
-    vk::VkDeviceSize *pStride = m_params.vertexBuffersNullStride ? DE_NULL : &stride;
+    vk::VkDeviceSize *pStride = m_params.vertexBuffersNullStride ? nullptr : &stride;
     bindVertexBuffers(vk, *cmdBuffer, pStride, **buffer, bufferSize);
 
     if (!m_params.vertexInputBefore)
         setVertexInput(vk, *cmdBuffer, m_params.stride);
 
     vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0, 1,
-                             &descriptorSet.get(), 0, DE_NULL);
+                             &descriptorSet.get(), 0, nullptr);
 
     vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragShader,
                             taskSupported, meshSupported);
@@ -351,9 +350,8 @@ tcu::TestStatus ShaderObjectMiscInstance::iterate(void)
             vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT, vk::VK_IMAGE_LAYOUT_GENERAL,
             vk::VK_IMAGE_LAYOUT_GENERAL, **images[i], subresourceRange);
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                              vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u,
-                              (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                              &postImageBarrier);
+                              vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr,
+                              1u, &postImageBarrier);
     }
 
     const vk::VkBufferImageCopy copyRegion = vk::makeBufferImageCopy(extent, subresourceLayers);
@@ -508,13 +506,13 @@ de::MovePtr<tcu::TextureLevel> readDepthAttachment(const vk::DeviceInterface &vk
     {
         const vk::VkBufferCreateInfo bufferParams = {
             vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkBufferCreateFlags flags;
             pixelDataSize,                            // VkDeviceSize size;
             vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
             vk::VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                       // uint32_t queueFamilyIndexCount;
-            DE_NULL                                   // const uint32_t* pQueueFamilyIndices;
+            nullptr                                   // const uint32_t* pQueueFamilyIndices;
         };
 
         buffer = createBuffer(vk, device, &bufferParams);
@@ -567,13 +565,13 @@ de::MovePtr<tcu::TextureLevel> readStencilAttachment(const vk::DeviceInterface &
     {
         const vk::VkBufferCreateInfo bufferParams = {
             vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkBufferCreateFlags flags;
             pixelDataSize,                            // VkDeviceSize size;
             vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
             vk::VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                       // uint32_t queueFamilyIndexCount;
-            DE_NULL                                   // const uint32_t* pQueueFamilyIndices;
+            nullptr                                   // const uint32_t* pQueueFamilyIndices;
         };
 
         buffer = createBuffer(vk, device, &bufferParams);
@@ -625,7 +623,7 @@ struct StateTestParams
     bool sampleLocations;
     bool provokingVertex;
     bool lineRasterization;
-    bool cull;
+    vk::VkCullModeFlagBits cullMode;
     bool stencilTestEnable;
     bool depthTestEnable;
     bool depthBiasEnable;
@@ -655,7 +653,7 @@ struct StateTestParams
         sampleLocations                       = false;
         provokingVertex                       = false;
         lineRasterization                     = false;
-        cull                                  = false;
+        cullMode                              = vk::VK_CULL_MODE_NONE;
         stencilTestEnable                     = false;
         depthTestEnable                       = false;
         depthBiasEnable                       = false;
@@ -704,7 +702,7 @@ void ShaderObjectStateInstance::createDevice(void)
     vk::VkPhysicalDeviceDepthClipControlFeaturesEXT depthClipControlFeatures   = vk::initVulkanStructure();
     vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT depthClipEnableFeatures     = vk::initVulkanStructure();
     vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT transformFeedbackFeatures = vk::initVulkanStructure();
-    vk::VkPhysicalDeviceLineRasterizationFeaturesEXT lineRasterizationFeatures = vk::initVulkanStructure();
+    vk::VkPhysicalDeviceLineRasterizationFeatures lineRasterizationFeatures    = vk::initVulkanStructure();
 
     vk::VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures = m_context.getDynamicRenderingFeatures();
     vk::VkPhysicalDeviceShaderObjectFeaturesEXT shaderObjectFeatures      = m_context.getShaderObjectFeaturesEXT();
@@ -715,15 +713,16 @@ void ShaderObjectStateInstance::createDevice(void)
     vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT viFeatures =
         m_context.getVertexInputDynamicStateFeaturesEXT();
 
-    dynamicRenderingFeatures.pNext = DE_NULL;
-    shaderObjectFeatures.pNext     = DE_NULL;
-    edsFeatures.pNext              = DE_NULL;
-    eds2Features.pNext             = DE_NULL;
-    eds3Features.pNext             = DE_NULL;
-    viFeatures.pNext               = DE_NULL;
+    dynamicRenderingFeatures.pNext = nullptr;
+    shaderObjectFeatures.pNext     = nullptr;
+    edsFeatures.pNext              = nullptr;
+    eds2Features.pNext             = nullptr;
+    eds3Features.pNext             = nullptr;
+    viFeatures.pNext               = nullptr;
 
-    vk::VkPhysicalDeviceFeatures2 features2 = vk::initVulkanStructure();
-    void *pNext                             = &dynamicRenderingFeatures;
+    vk::VkPhysicalDeviceFeatures2 features2           = vk::initVulkanStructure();
+    features2.features.vertexPipelineStoresAndAtomics = VK_TRUE;
+    void *pNext                                       = &dynamicRenderingFeatures;
 
     const float queuePriority                  = 1.0f;
     std::vector<const char *> deviceExtensions = {"VK_KHR_dynamic_rendering"};
@@ -842,7 +841,7 @@ void ShaderObjectStateInstance::createDevice(void)
 
     vk::VkDeviceQueueCreateInfo queueInfo = {
         vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         0u,                                             // VkDeviceQueueCreateFlags flags;
         0u,                                             // uint32_t queueFamilyIndex;
         1u,                                             // uint32_t queueCount;
@@ -856,10 +855,10 @@ void ShaderObjectStateInstance::createDevice(void)
         1u,                                       // uint32_t queueCreateInfoCount;
         &queueInfo,                               // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u,                                       // uint32_t enabledLayerCount;
-        DE_NULL,                                  // const char* const* ppEnabledLayerNames;
+        nullptr,                                  // const char* const* ppEnabledLayerNames;
         uint32_t(deviceExtensions.size()),        // uint32_t enabledExtensionCount;
         deviceExtensions.data(),                  // const char* const* ppEnabledExtensionNames;
-        DE_NULL                                   // const VkPhysicalDeviceFeatures* pEnabledFeatures;
+        nullptr                                   // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
     m_customDevice           = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
@@ -924,7 +923,7 @@ std::vector<vk::VkDynamicState> ShaderObjectStateInstance::getDynamicStates(void
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_VERTEX_INPUT_EXT);
     if (eds2Features.extendedDynamicState2LogicOp)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LOGIC_OP_EXT);
-    if (eds2Features.extendedDynamicState2PatchControlPoints && !m_params.meshShader)
+    if (eds2Features.extendedDynamicState2PatchControlPoints)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_PATCH_CONTROL_POINTS_EXT);
     if (eds3Features.extendedDynamicState3TessellationDomainOrigin)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_TESSELLATION_DOMAIN_ORIGIN_EXT);
@@ -948,7 +947,7 @@ std::vector<vk::VkDynamicState> ShaderObjectStateInstance::getDynamicStates(void
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT);
     if (eds3Features.extendedDynamicState3ColorWriteMask)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT);
-    if (eds3Features.extendedDynamicState3RasterizationStream && m_params.geometryStreams)
+    if (eds3Features.extendedDynamicState3RasterizationStream)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_RASTERIZATION_STREAM_EXT);
     if (m_params.discardRectangles)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_ENABLE_EXT);
@@ -1041,9 +1040,9 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
     if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_STENCIL_REFERENCE))
         vk.cmdSetStencilReference(cmdBuffer, vk::VK_STENCIL_FACE_FRONT_AND_BACK, 0xFFFFFFFF);
     if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE))
-        vk.cmdBindVertexBuffers2(cmdBuffer, 0, 0, DE_NULL, DE_NULL, DE_NULL, DE_NULL);
+        vk.cmdBindVertexBuffers2(cmdBuffer, 0, 0, nullptr, nullptr, nullptr, nullptr);
     if (!m_params.rasterizerDiscardEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_CULL_MODE))
-        vk.cmdSetCullMode(cmdBuffer, m_params.cull ? vk::VK_CULL_MODE_FRONT_AND_BACK : vk::VK_CULL_MODE_NONE);
+        vk.cmdSetCullMode(cmdBuffer, m_params.cullMode);
     if (!m_params.rasterizerDiscardEnable && m_params.depthBounds &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE))
         vk.cmdSetDepthBoundsTestEnable(cmdBuffer, m_params.depthBoundsTestEnable ? VK_TRUE : VK_FALSE);
@@ -1053,7 +1052,8 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
         vk.cmdSetDepthTestEnable(cmdBuffer, m_params.depthTestEnable ? VK_TRUE : VK_FALSE);
     if (!m_params.rasterizerDiscardEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE))
         vk.cmdSetDepthWriteEnable(cmdBuffer, VK_TRUE);
-    if (!m_params.rasterizerDiscardEnable && (m_params.cull || m_params.stencilTestEnable) &&
+    if (!m_params.rasterizerDiscardEnable &&
+        (m_params.cullMode != vk::VK_CULL_MODE_NONE && m_params.cullMode != vk::VK_CULL_MODE_FRONT_AND_BACK) &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_FRONT_FACE))
         vk.cmdSetFrontFace(cmdBuffer, vk::VK_FRONT_FACE_CLOCKWISE);
     if (m_params.vertShader && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY))
@@ -1080,7 +1080,7 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
     if (m_params.vertShader && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE))
         if (extensionEnabled(deviceExtensions, "VK_EXT_shader_object") ||
             extensionEnabled(deviceExtensions, "VK_EXT_vertex_input_dynamic_state"))
-            vk.cmdSetVertexInputEXT(cmdBuffer, 0u, DE_NULL, 0u, DE_NULL);
+            vk.cmdSetVertexInputEXT(cmdBuffer, 0u, nullptr, 0u, nullptr);
     if (m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.logicOpEnable &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LOGIC_OP_EXT))
         vk.cmdSetLogicOpEXT(cmdBuffer, vk::VK_LOGIC_OP_COPY);
@@ -1159,7 +1159,7 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
     vk::VkSampleLocationEXT sampleLocation                 = {0.5f, 0.5f};
     const vk::VkSampleLocationsInfoEXT sampleLocationsInfo = {
         vk::VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT, // VkStructureType               sType;
-        DE_NULL,                                         // const void*                   pNext;
+        nullptr,                                         // const void*                   pNext;
         vk::VK_SAMPLE_COUNT_1_BIT,                       // VkSampleCountFlagBits         sampleLocationsPerPixel;
         {1u, 1u},                                        // VkExtent2D                    sampleLocationGridSize;
         1,                                               // uint32_t                      sampleLocationsCount;
@@ -1177,7 +1177,7 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
         if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_STIPPLE_ENABLE_EXT))
             vk.cmdSetLineStippleEnableEXT(cmdBuffer, m_params.stippledLineEnable ? VK_TRUE : VK_FALSE);
         if (m_params.stippledLineEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_STIPPLE_EXT))
-            vk.cmdSetLineStippleKHR(cmdBuffer, 1u, 0x1);
+            vk.cmdSetLineStipple(cmdBuffer, 1u, 0x1);
     }
     if (m_params.depthClipControl &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_CLIP_NEGATIVE_ONE_TO_ONE_EXT))
@@ -1257,12 +1257,13 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
     const vk::VkRect2D renderArea = vk::makeRect2D(0, 0, 32, 32);
     vk::VkExtent3D extent         = {renderArea.extent.width, renderArea.extent.height, 1};
 
-    const bool taskSupported = m_context.getMeshShaderFeatures().taskShader;
-    const bool meshSupported = m_context.getMeshShaderFeatures().meshShader;
+    const bool taskSupported = m_context.getMeshShaderFeaturesEXT().taskShader;
+    const bool meshSupported = m_context.getMeshShaderFeaturesEXT().meshShader;
+    const bool secondDraw    = !m_params.depthClamp && !m_params.depthClip;
 
     const vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-        DE_NULL,                                 // const void*                pNext
+        nullptr,                                 // const void*                pNext
         0u,                                      // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
         colorAttachmentFormat,                   // VkFormat                    format
@@ -1274,13 +1275,13 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
         vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags        usage
         vk::VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode
         0,                             // uint32_t                    queueFamilyIndexCount
-        DE_NULL,                       // const uint32_t*            pQueueFamilyIndices
+        nullptr,                       // const uint32_t*            pQueueFamilyIndices
         vk::VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
     };
 
     const vk::VkImageCreateInfo depthCreateInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-        DE_NULL,                                 // const void*                pNext
+        nullptr,                                 // const void*                pNext
         0u,                                      // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
         depthStencilAttachmentFormat,            // VkFormat                    format
@@ -1293,7 +1294,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
             vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags        usage
         vk::VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode            sharingMode
         0,                                       // uint32_t                    queueFamilyIndexCount
-        DE_NULL,                                 // const uint32_t*            pQueueFamilyIndices
+        nullptr,                                 // const uint32_t*            pQueueFamilyIndices
         vk::VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout            initialLayout
     };
 
@@ -1325,21 +1326,32 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
 
     const vk::Unique<vk::VkDescriptorPool> descriptorPool(
         vk::DescriptorPoolBuilder()
-            .addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-            .build(vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+            .addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2u)
+            .build(vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 2u));
 
     const vk::VkDeviceSize bufferSizeBytes = sizeof(uint32_t) * 8;
-    const vk::Unique<vk::VkDescriptorSet> descriptorSet(
+    const vk::Unique<vk::VkDescriptorSet> descriptorSet1(
         makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
-    const vk::BufferWithMemory outputBuffer(
+    const vk::Unique<vk::VkDescriptorSet> descriptorSet2(
+        makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+    const vk::BufferWithMemory outputBuffer1(
+        vk, device, alloc, vk::makeBufferCreateInfo(bufferSizeBytes, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+        vk::MemoryRequirement::HostVisible);
+    const vk::BufferWithMemory outputBuffer2(
         vk, device, alloc, vk::makeBufferCreateInfo(bufferSizeBytes, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
         vk::MemoryRequirement::HostVisible);
 
-    const vk::VkDescriptorBufferInfo descriptorInfo =
-        vk::makeDescriptorBufferInfo(*outputBuffer, 0ull, bufferSizeBytes);
+    const vk::VkDescriptorBufferInfo descriptorInfo1 =
+        vk::makeDescriptorBufferInfo(*outputBuffer1, 0ull, bufferSizeBytes);
+    const vk::VkDescriptorBufferInfo descriptorInfo2 =
+        vk::makeDescriptorBufferInfo(*outputBuffer2, 0ull, bufferSizeBytes);
     vk::DescriptorSetUpdateBuilder()
-        .writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
-                     vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo)
+        .writeSingle(*descriptorSet1, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
+                     vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo1)
+        .update(vk, device);
+    vk::DescriptorSetUpdateBuilder()
+        .writeSingle(*descriptorSet2, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
+                     vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo2)
         .update(vk, device);
 
     const auto pipelineLayout = makePipelineLayout(vk, device, *descriptorSetLayout);
@@ -1376,12 +1388,12 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
 
         const vk::VkPipelineVertexInputStateCreateInfo vertexInputState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                       // const void* pNext;
+            nullptr,                                                       // const void* pNext;
             (vk::VkPipelineVertexInputStateCreateFlags)0, // VkPipelineVertexInputStateCreateFlags flags;
             0u,                                           // uint32_t vertexBindingDescriptionCount;
-            DE_NULL, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+            nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
             0u,      // uint32_t vertexAttributeDescriptionCount;
-            DE_NULL  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+            nullptr  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
         };
 
         vk::VkPrimitiveTopology topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
@@ -1392,7 +1404,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
 
         const vk::VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                         // const void* pNext;
+            nullptr,                                                         // const void* pNext;
             (vk::VkPipelineInputAssemblyStateCreateFlags)0, // VkPipelineInputAssemblyStateCreateFlags flags;
             topology,                                       // VkPrimitiveTopology topology;
             VK_FALSE                                        // VkBool32 primitiveRestartEnable;
@@ -1400,43 +1412,42 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
 
         const vk::VkPipelineTessellationStateCreateInfo tessellationState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                       // const void* pNext;
+            nullptr,                                                       // const void* pNext;
             (vk::VkPipelineTessellationStateCreateFlags)0u, // VkPipelineTessellationStateCreateFlags flags;
             4u                                              // uint32_t patchControlPoints;
         };
 
         const vk::VkPipelineRasterizationDepthClipStateCreateInfoEXT depthClipState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                                                       // const void* pNext;
+            nullptr,                                                                       // const void* pNext;
             (vk::VkPipelineRasterizationDepthClipStateCreateFlagsEXT)0u, // VkPipelineRasterizationDepthClipStateCreateFlagsEXT flags;
             m_params.depthClip                                           // VkBool32 depthClipEnable;
         };
 
         const vk::VkPipelineRasterizationStateCreateInfo rasterizationState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType sType;
-            m_params.depthClip ? &depthClipState : DE_NULL,                 // const void* pNext;
+            m_params.depthClip ? &depthClipState : nullptr,                 // const void* pNext;
             (vk::VkPipelineRasterizationStateCreateFlags)0, // VkPipelineRasterizationStateCreateFlags flags;
             m_params.depthClamp,                            // VkBool32 depthClampEnable;
             m_params.rasterizerDiscardEnable,               // VkBool32 rasterizerDiscardEnable;
             vk::VK_POLYGON_MODE_FILL,                       // VkPolygonMode polygonMode;
-            m_params.cull ? (vk::VkCullModeFlags)vk::VK_CULL_MODE_FRONT_AND_BACK :
-                            (vk::VkCullModeFlags)vk::VK_CULL_MODE_NONE, // VkCullModeFlags cullMode;
-            vk::VK_FRONT_FACE_CLOCKWISE,                                // VkFrontFace frontFace;
-            m_params.depthBiasEnable ? VK_TRUE : VK_FALSE,              // VkBool32 depthBiasEnable;
-            0.0f,                                                       // float depthBiasConstantFactor;
-            0.0f,                                                       // float depthBiasClamp;
-            0.0f,                                                       // float depthBiasSlopeFactor;
-            1.0f                                                        // float lineWidth;
+            m_params.cullMode,                              // VkCullModeFlags cullMode;
+            vk::VK_FRONT_FACE_CLOCKWISE,                    // VkFrontFace frontFace;
+            m_params.depthBiasEnable ? VK_TRUE : VK_FALSE,  // VkBool32 depthBiasEnable;
+            0.0f,                                           // float depthBiasConstantFactor;
+            0.0f,                                           // float depthBiasClamp;
+            0.0f,                                           // float depthBiasSlopeFactor;
+            1.0f                                            // float lineWidth;
         };
 
         const vk::VkPipelineMultisampleStateCreateInfo multisampleState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType                            sType
-            DE_NULL,                                       // const void*                                pNext
+            nullptr,                                       // const void*                                pNext
             (vk::VkPipelineMultisampleStateCreateFlags)0u, // VkPipelineMultisampleStateCreateFlags    flags
             vk::VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits                    rasterizationSamples
             VK_FALSE,                  // VkBool32                                    sampleShadingEnable
             1.0f,                      // float                                    minSampleShading
-            DE_NULL,                   // const VkSampleMask*                        pSampleMask
+            nullptr,                   // const VkSampleMask*                        pSampleMask
             VK_FALSE,                  // VkBool32                                    alphaToCoverageEnable
             m_params.alphaToOne ? VK_TRUE : VK_FALSE // VkBool32                                    alphaToOneEnable
         };
@@ -1455,7 +1466,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
 
         const vk::VkPipelineDepthStencilStateCreateInfo depthStencilState{
             vk::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType                          sType
-            DE_NULL,                                        // const void*                              pNext
+            nullptr,                                        // const void*                              pNext
             (vk::VkPipelineDepthStencilStateCreateFlags)0u, // VkPipelineDepthStencilStateCreateFlags   flags
             m_params.depthTestEnable ? VK_TRUE : VK_FALSE,  // VkBool32                                 depthTestEnable
             VK_TRUE,                                        // VkBool32                                 depthWriteEnable
@@ -1492,14 +1503,14 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
         }
         const vk::VkPipelineColorWriteCreateInfoEXT colorWriteState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                                    // const void* pNext;
+            nullptr,                                                    // const void* pNext;
             (uint32_t)colorWriteEnables.size(),                         // uint32_t attachmentCount;
             colorWriteEnables.data()                                    // const VkBool32* pColorWriteEnables;
         };
 
         const vk::VkPipelineColorBlendStateCreateInfo colorBlendState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-            m_params.colorWrite ? &colorWriteState : DE_NULL,             // const void* pNext;
+            m_params.colorWrite ? &colorWriteState : nullptr,             // const void* pNext;
             (vk::VkPipelineColorBlendStateCreateFlags)0,                  // VkPipelineColorBlendStateCreateFlags flags;
             m_params.logicOpEnable ? VK_TRUE : VK_FALSE,                  // VkBool32 logicOpEnable;
             vk::VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -1511,30 +1522,21 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
         vk::VkViewport viewport = {
             0, 0, 32, 32, 0.0f, 1.0f,
         };
-        vk::VkRect2D scissor = {
-            {
-                0,
-                0,
-            },
-            {
-                32,
-                32,
-            },
-        };
+        vk::VkRect2D scissor = {{0, 0}, {32, 32}};
 
         const auto &edsFeatures          = m_context.getExtendedDynamicStateFeaturesEXT();
         uint32_t viewportAndScissorCount = edsFeatures.extendedDynamicState ? 0u : 1u;
 
         const vk::VkPipelineViewportDepthClipControlCreateInfoEXT depthClipControlState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                                                    // const void* pNext;
+            nullptr,                                                                    // const void* pNext;
             VK_TRUE,                                                                    // VkBool32 negativeOneToOne;
         };
 
         const vk::VkPipelineViewportStateCreateInfo viewportState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                                    sType
             m_params.depthClipControl ? &depthClipControlState :
-                                        DE_NULL,       // const void*                                        pNext
+                                        nullptr,       // const void*                                        pNext
             (vk::VkPipelineViewportStateCreateFlags)0, // VkPipelineViewportStateCreateFlags                flags
             viewportAndScissorCount, // uint32_t                                            viewportCount
             &viewport,               // const VkViewport*                                pViewports
@@ -1546,7 +1548,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
 
         const vk::VkPipelineDynamicStateCreateInfo dynamicState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType                                sType
-            DE_NULL,                        // const void*                                    pNext
+            nullptr,                        // const void*                                    pNext
             0u,                             // VkPipelineDynamicStateCreateFlags            flags
             (uint32_t)dynamicStates.size(), // uint32_t                                        dynamicStateCount
             dynamicStates.data(),           // const VkDynamicState*                        pDynamicStates
@@ -1554,7 +1556,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
 
         const vk::VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO, // VkStructureType    sType
-            DE_NULL,                                              // const void*        pNext
+            nullptr,                                              // const void*        pNext
             0u,                                                   // uint32_t            viewMask
             1u,                                                   // uint32_t            colorAttachmentCount
             &colorAttachmentFormat,                               // const VkFormat*    pColorAttachmentFormats
@@ -1631,23 +1633,21 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
     vk::beginCommandBuffer(vk, *cmdBuffer);
 
     vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0, 1,
-                             &descriptorSet.get(), 0, DE_NULL);
+                             &descriptorSet1.get(), 0, nullptr);
 
     vk::VkImageMemoryBarrier preImageBarrier = vk::makeImageMemoryBarrier(
         vk::VK_ACCESS_NONE, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
         vk::VK_IMAGE_LAYOUT_GENERAL, **image, subresourceRange);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                          vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u,
-                          (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                          &preImageBarrier);
+                          vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u,
+                          nullptr, 1u, &preImageBarrier);
 
     vk::VkImageMemoryBarrier preDepthImageBarrier = vk::makeImageMemoryBarrier(
         vk::VK_ACCESS_NONE, vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
         vk::VK_IMAGE_LAYOUT_GENERAL, **depthImage, depthSubresourceRange);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                          vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, (vk::VkDependencyFlags)0u, 0u,
-                          (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                          &preDepthImageBarrier);
+                          vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u,
+                          nullptr, 1u, &preDepthImageBarrier);
 
     vk::beginRendering(vk, *cmdBuffer, *imageView, *depthImageView, true, renderArea, clearValue, clearDepthValue,
                        vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
@@ -1683,10 +1683,9 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
     {
         vk::VkDeviceSize offset = 0u;
         vk.cmdBindTransformFeedbackBuffersEXT(*cmdBuffer, 0, 1, &*tfBuf, &offset, &tfBufSize);
-        vk.cmdBeginTransformFeedbackEXT(*cmdBuffer, 0, 0u, DE_NULL, DE_NULL);
+        vk.cmdBeginTransformFeedbackEXT(*cmdBuffer, 0, 0u, nullptr, nullptr);
     }
 
-    bool secondDraw = !m_params.depthClamp && !m_params.depthClip;
     if (m_params.meshShader)
     {
         if (secondDraw)
@@ -1698,36 +1697,43 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
     {
         vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
         if (secondDraw)
+        {
+            vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0, 1,
+                                     &descriptorSet2.get(), 0, nullptr);
             vk.cmdDraw(*cmdBuffer, 4, 1, 0, 1);
+        }
     }
     if (m_params.geometryStreams)
-        vk.cmdEndTransformFeedbackEXT(*cmdBuffer, 0, 0u, DE_NULL, DE_NULL);
+        vk.cmdEndTransformFeedbackEXT(*cmdBuffer, 0, 0u, nullptr, nullptr);
     vk::endRendering(vk, *cmdBuffer);
 
     vk::VkImageMemoryBarrier postImageBarrier =
         vk::makeImageMemoryBarrier(vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT,
                                    vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_IMAGE_LAYOUT_GENERAL, **image, subresourceRange);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u,
-                          (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
+                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u,
                           &postImageBarrier);
 
     vk::VkImageMemoryBarrier postDepthImageBarrier = vk::makeImageMemoryBarrier(
         vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT, vk::VK_IMAGE_LAYOUT_GENERAL,
         vk::VK_IMAGE_LAYOUT_GENERAL, **depthImage, depthSubresourceRange);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                          (vk::VkDependencyFlags)0u, 0u, (const vk::VkMemoryBarrier *)DE_NULL, 0u,
-                          (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u, &postDepthImageBarrier);
+                          (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u, &postDepthImageBarrier);
 
     vk::VkBufferMemoryBarrier bufferBarrier = vk::makeBufferMemoryBarrier(
-        vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, *outputBuffer, 0u, bufferSizeBytes);
+        vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, *outputBuffer1, 0u, bufferSizeBytes);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
-                          (vk::VkDependencyFlags)0u, 0u, (const vk::VkMemoryBarrier *)DE_NULL, 1u, &bufferBarrier, 0u,
-                          (const vk::VkImageMemoryBarrier *)DE_NULL);
+                          (vk::VkDependencyFlags)0u, 0u, nullptr, 1u, &bufferBarrier, 0u, nullptr);
+    if (secondDraw)
+    {
+        bufferBarrier.buffer = *outputBuffer2;
+        vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
+                              (vk::VkDependencyFlags)0u, 0u, nullptr, 1u, &bufferBarrier, 0u, nullptr);
+    }
 
     if (m_params.geometryStreams)
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,
-                              vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &tfMemoryBarrier, 0u, DE_NULL, 0u, DE_NULL);
+                              vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &tfMemoryBarrier, 0u, nullptr, 0u, nullptr);
 
     const vk::VkBufferImageCopy copyRegion = vk::makeBufferImageCopy(extent, subresourceLayers);
     vk.cmdCopyImageToBuffer(*cmdBuffer, **image, vk::VK_IMAGE_LAYOUT_GENERAL, **colorOutputBuffer, 1u, &copyRegion);
@@ -1745,7 +1751,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
     tcu::Vec4 whiteColor  = tcu::Vec4(0.75f);
     tcu::Vec4 blackColor  = tcu::Vec4(0.0f);
 
-    const vk::Allocation &outputBufferAllocation = outputBuffer.getAllocation();
+    const vk::Allocation &outputBufferAllocation = outputBuffer1.getAllocation();
     invalidateAlloc(vk, device, outputBufferAllocation);
 
     const uint32_t *bufferPtr = static_cast<uint32_t *>(outputBufferAllocation.getHostPtr());
@@ -1804,6 +1810,8 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
         }
     }
 
+    vk::VkCullModeFlagBits culled = m_params.meshShader ? vk::VK_CULL_MODE_BACK_BIT : vk::VK_CULL_MODE_FRONT_BIT;
+
     if (m_params.fragShader && !m_params.rasterizerDiscardEnable)
     {
         bool usesSrcOneDstOneBlending =
@@ -1820,7 +1828,10 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
                 bool inside             = isInsidePrimitive(i, j, width, height);
                 if (m_params.conservativeRasterization && m_params.conservativeRasterizationOverestimate && !inside)
                     continue;
-                if (inside && (!m_params.cull || m_params.lines) && (!m_params.colorWrite || m_params.colorWriteEnable))
+                if (inside &&
+                    ((m_params.cullMode != vk::VK_CULL_MODE_FRONT_AND_BACK && m_params.cullMode != culled) ||
+                     m_params.lines) &&
+                    (!m_params.colorWrite || m_params.colorWriteEnable))
                 {
                     if (!m_params.depthBoundsTestEnable && (!m_params.depthClip || i < 16) &&
                         !m_params.discardRectanglesEnable)
@@ -1876,7 +1887,8 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
                 if (m_params.conservativeRasterization && m_params.conservativeRasterizationOverestimate && !inside)
                     continue;
                 if (inside && !m_params.depthBoundsTestEnable && !m_params.discardRectanglesEnable &&
-                    (!m_params.cull || m_params.lines))
+                    ((m_params.cullMode != vk::VK_CULL_MODE_FRONT_AND_BACK && m_params.cullMode != culled) ||
+                     m_params.lines))
                 {
                     float depthMin = 0.4f - depthEpsilon;
                     float depthMax = 0.6f + depthEpsilon;
@@ -2009,6 +2021,9 @@ void ShaderObjectStateCase::checkSupport(Context &context) const
     else
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
+    if (!context.getDeviceFeatures().vertexPipelineStoresAndAtomics)
+        TCU_THROW(NotSupportedError, "vertexPipelineStoresAndAtomics not supported");
+
     if (m_params.logicOp)
     {
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_LOGIC_OP);
@@ -2069,10 +2084,10 @@ void ShaderObjectStateCase::checkSupport(Context &context) const
 
         uint32_t propertyCount = 0u;
         std::vector<vk::VkExtensionProperties> extensionsProperties;
-        context.getInstanceInterface().enumerateDeviceExtensionProperties(context.getPhysicalDevice(), DE_NULL,
-                                                                          &propertyCount, DE_NULL);
+        context.getInstanceInterface().enumerateDeviceExtensionProperties(context.getPhysicalDevice(), nullptr,
+                                                                          &propertyCount, nullptr);
         extensionsProperties.resize(propertyCount);
-        context.getInstanceInterface().enumerateDeviceExtensionProperties(context.getPhysicalDevice(), DE_NULL,
+        context.getInstanceInterface().enumerateDeviceExtensionProperties(context.getPhysicalDevice(), nullptr,
                                                                           &propertyCount, extensionsProperties.data());
 
         for (const auto &extProp : extensionsProperties)
@@ -2366,8 +2381,8 @@ tcu::TestStatus ShaderObjectUnusedBuiltinInstance::iterate(void)
         m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
     const bool tessellationSupported = m_context.getDeviceFeatures().tessellationShader;
     const bool geometrySupported     = m_context.getDeviceFeatures().geometryShader;
-    const bool taskSupported         = m_context.getMeshShaderFeatures().taskShader;
-    const bool meshSupported         = m_context.getMeshShaderFeatures().meshShader;
+    const bool taskSupported         = m_context.getMeshShaderFeaturesEXT().taskShader;
+    const bool meshSupported         = m_context.getMeshShaderFeaturesEXT().meshShader;
 
     vk::VkFormat colorAttachmentFormat = vk::VK_FORMAT_R8G8B8A8_UNORM;
     const auto subresourceRange        = makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -2377,7 +2392,7 @@ tcu::TestStatus ShaderObjectUnusedBuiltinInstance::iterate(void)
 
     const vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-        DE_NULL,                                 // const void*                pNext
+        nullptr,                                 // const void*                pNext
         0u,                                      // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
         colorAttachmentFormat,                   // VkFormat                    format
@@ -2389,7 +2404,7 @@ tcu::TestStatus ShaderObjectUnusedBuiltinInstance::iterate(void)
         vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags        usage
         vk::VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode
         0,                             // uint32_t                    queueFamilyIndexCount
-        DE_NULL,                       // const uint32_t*            pQueueFamilyIndices
+        nullptr,                       // const uint32_t*            pQueueFamilyIndices
         vk::VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
     };
 
@@ -2420,7 +2435,7 @@ tcu::TestStatus ShaderObjectUnusedBuiltinInstance::iterate(void)
                                  geometrySupported),
     };
 
-    vk.createShadersEXT(device, 5u, shaderCreateInfos, DE_NULL, shaders);
+    vk.createShadersEXT(device, 5u, shaderCreateInfos, nullptr, shaders);
 
     if (m_params.linked)
         for (auto &ci : shaderCreateInfos)
@@ -2436,9 +2451,8 @@ tcu::TestStatus ShaderObjectUnusedBuiltinInstance::iterate(void)
         vk::VK_ACCESS_NONE, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
         vk::VK_IMAGE_LAYOUT_GENERAL, **image, subresourceRange);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                          vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u,
-                          (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                          &preImageBarrier);
+                          vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u,
+                          nullptr, 1u, &preImageBarrier);
 
     const vk::VkClearValue clearValue = vk::makeClearValueColor({0.0f, 0.0f, 0.0f, 0.0f});
     vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL,
@@ -2456,8 +2470,7 @@ tcu::TestStatus ShaderObjectUnusedBuiltinInstance::iterate(void)
         vk::makeImageMemoryBarrier(vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT,
                                    vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_IMAGE_LAYOUT_GENERAL, **image, subresourceRange);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u,
-                          (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
+                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u,
                           &postImageBarrier);
 
     const vk::VkBufferImageCopy copyRegion = vk::makeBufferImageCopy(extent, subresourceLayers);
@@ -2467,7 +2480,7 @@ tcu::TestStatus ShaderObjectUnusedBuiltinInstance::iterate(void)
     vk::submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
     for (uint32_t i = 0u; i < 5u; ++i)
-        vk.destroyShaderEXT(device, shaders[i], DE_NULL);
+        vk.destroyShaderEXT(device, shaders[i], nullptr);
 
     tcu::ConstPixelBufferAccess resultBuffer = tcu::ConstPixelBufferAccess(
         vk::mapVkFormat(colorAttachmentFormat), renderArea.extent.width, renderArea.extent.height, 1,
@@ -2705,8 +2718,8 @@ tcu::TestStatus ShaderObjectTessellationModesInstance::iterate(void)
         m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
     const bool tessellationSupported = m_context.getDeviceFeatures().tessellationShader;
     const bool geometrySupported     = m_context.getDeviceFeatures().geometryShader;
-    const bool taskSupported         = m_context.getMeshShaderFeatures().taskShader;
-    const bool meshSupported         = m_context.getMeshShaderFeatures().meshShader;
+    const bool taskSupported         = m_context.getMeshShaderFeaturesEXT().taskShader;
+    const bool meshSupported         = m_context.getMeshShaderFeaturesEXT().meshShader;
 
     vk::VkFormat colorAttachmentFormat = vk::VK_FORMAT_R8G8B8A8_UNORM;
     const auto subresourceRange        = makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -2716,7 +2729,7 @@ tcu::TestStatus ShaderObjectTessellationModesInstance::iterate(void)
 
     const vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-        DE_NULL,                                 // const void*                pNext
+        nullptr,                                 // const void*                pNext
         0u,                                      // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
         colorAttachmentFormat,                   // VkFormat                    format
@@ -2728,7 +2741,7 @@ tcu::TestStatus ShaderObjectTessellationModesInstance::iterate(void)
         vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags        usage
         vk::VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode
         0,                             // uint32_t                    queueFamilyIndexCount
-        DE_NULL,                       // const uint32_t*            pQueueFamilyIndices
+        nullptr,                       // const uint32_t*            pQueueFamilyIndices
         vk::VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
     };
 
@@ -2771,9 +2784,8 @@ tcu::TestStatus ShaderObjectTessellationModesInstance::iterate(void)
         vk::VK_ACCESS_NONE, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
         vk::VK_IMAGE_LAYOUT_GENERAL, **image, subresourceRange);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                          vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u,
-                          (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                          &preImageBarrier);
+                          vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u,
+                          nullptr, 1u, &preImageBarrier);
 
     const vk::VkClearValue clearValue = vk::makeClearValueColor({0.0f, 0.0f, 0.0f, 0.0f});
     vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL,
@@ -2793,8 +2805,7 @@ tcu::TestStatus ShaderObjectTessellationModesInstance::iterate(void)
         vk::makeImageMemoryBarrier(vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT,
                                    vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_IMAGE_LAYOUT_GENERAL, **image, subresourceRange);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u,
-                          (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
+                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u,
                           &postImageBarrier);
 
     const vk::VkBufferImageCopy copyRegion = vk::makeBufferImageCopy(extent, subresourceLayers);
@@ -2813,981 +2824,39 @@ tcu::TestStatus ShaderObjectTessellationModesInstance::iterate(void)
     const uint32_t height = resultBuffer.getHeight();
 
     const bool equal1[17][17] = {
-        {
-            0,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-        },
+        {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1}, {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1},
+        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1}, {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1},
+        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}, {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1},
+        {1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1}, {1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1},
+        {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1}, {1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+        {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, {1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+        {1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, {1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
     };
 
     const bool even1[17][17] = {
-        {
-            0,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-        },
-        {
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-        },
-        {
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-        },
+        {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1},
+        {1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1}, {1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1},
+        {1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1}, {1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1},
+        {1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1}, {1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1},
+        {1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1}, {1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1},
+        {1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1}, {1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1},
+        {1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1}, {1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
     };
 
     const bool odd2[17][17] = {
-        {
-            0,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-        },
-        {
-            1,
-            1,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            1,
-            1,
-            1,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            1,
-            1,
-            0,
-            0,
-            1,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            1,
-        },
-        {
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-        },
-        {
-            1,
-            1,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            0,
-            1,
-        },
-        {
-            1,
-            1,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-            0,
-            1,
-        },
-        {
-            1,
-            1,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            1,
-            1,
-            1,
-        },
-        {
-            1,
-            1,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            1,
-            1,
-            1,
-        },
-        {
-            1,
-            0,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            1,
-        },
-        {
-            1,
-            0,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            1,
-        },
-        {
-            1,
-            0,
-            1,
-            1,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            1,
-            1,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            1,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-        },
-        {
-            1,
-            0,
-            0,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-        },
-        {
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-        },
-        {
-            1,
-            0,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            1,
-            1,
-            0,
-            0,
-            1,
-            1,
-            1,
-        },
-        {
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-        },
+        {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1},
+        {1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+        {1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1}, {1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1},
+        {1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1}, {1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1},
+        {1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1}, {1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1},
+        {1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1}, {1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1},
+        {1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1}, {1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
     };
 
     for (uint32_t j = 0; j < height; ++j)
@@ -4202,11 +3271,13 @@ tcu::TestCaseGroup *createShaderObjectMiscTests(tcu::TestContext &testCtx)
 
     const struct
     {
-        bool cull;
+        vk::VkCullModeFlagBits cullMode;
         const char *name;
     } cullTests[] = {
-        {false, "none"},
-        {true, "front_and_back"},
+        {vk::VK_CULL_MODE_NONE, "none"},
+        {vk::VK_CULL_MODE_FRONT_BIT, "front"},
+        {vk::VK_CULL_MODE_BACK_BIT, "back"},
+        {vk::VK_CULL_MODE_FRONT_AND_BACK, "front_and_back"},
     };
 
     const struct
@@ -4378,7 +3449,7 @@ tcu::TestCaseGroup *createShaderObjectMiscTests(tcu::TestContext &testCtx)
             de::MovePtr<tcu::TestCaseGroup> cullGroup(new tcu::TestCaseGroup(testCtx, "cull"));
             for (const auto &cullTest : cullTests)
             {
-                params.cull = cullTest.cull;
+                params.cullMode = cullTest.cullMode;
                 cullGroup->addChild(new ShaderObjectStateCase(testCtx, cullTest.name, params));
             }
             shadersGroup->addChild(cullGroup.release());

@@ -90,6 +90,7 @@
 #ifndef CTS_USES_VULKANSC
 #include "vktSpvAsmFloatControls2Tests.hpp"
 #include "vktSpvAsmIntegerDotProductTests.hpp"
+#include "vktSpvAsmComputeShaderDerivativesTests.hpp"
 #endif // CTS_USES_VULKANSC
 #include "vktSpvAsmPhysicalStorageBufferPointerTests.hpp"
 #include "vktSpvAsmUntypedPointersTests.hpp"
@@ -1598,6 +1599,7 @@ tcu::TestCaseGroup *createOpAtomicGroup(tcu::TestContext &testCtx, bool useStora
         {
             spec.extensions.push_back("VK_KHR_vulkan_memory_model");
             spec.requestedVulkanFeatures.extVulkanMemoryModel.vulkanMemoryModel = true;
+            spec.spirvVersion                                                   = SPIRV_VERSION_1_3;
 
             // volatile, queuefamily scope
             specializations["SEMANTICS"] = "%volbit";
@@ -1760,9 +1762,8 @@ bool veryfiBinaryShader(const ProgramBinary &binary)
 
     for (size_t ndx = 0u; ndx < binary.getSize(); ++ndx)
     {
-        if (false == paternsCheck[paternNdx] && patersns[paternNdx][0] == static_cast<char>(binary.getBinary()[ndx]) &&
-            deMemoryEqual((const char *)&binary.getBinary()[ndx], &patersns[paternNdx][0],
-                          patersns[paternNdx].length()))
+        if (!paternsCheck[paternNdx] && patersns[paternNdx][0] == static_cast<char>(binary.getBinary()[ndx]) &&
+            memcmp(&binary.getBinary()[ndx], &patersns[paternNdx][0], patersns[paternNdx].length()) == 0)
         {
             paternsCheck[paternNdx] = true;
             paternNdx++;
@@ -2520,7 +2521,8 @@ tcu::TestCaseGroup *createOpNClampGroup(tcu::TestContext &testCtx)
     return group.release();
 }
 
-tcu::TestCaseGroup *createOpSRemComputeGroup(tcu::TestContext &testCtx, qpTestResult negFailResult)
+tcu::TestCaseGroup *createOpSRemComputeGroup(tcu::TestContext &testCtx, bool useMaintenance8,
+                                             qpTestResult negFailResult)
 {
     de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "opsrem"));
     de::Random rnd(deStringHash(group->getName()));
@@ -2605,13 +2607,24 @@ tcu::TestCaseGroup *createOpSRemComputeGroup(tcu::TestContext &testCtx, qpTestRe
         spec.failResult    = params.failResult;
         spec.failMessage   = params.failMessage;
 
+#ifndef CTS_USES_VULKANSC
+        if (useMaintenance8)
+        {
+            spec.requestedVulkanFeatures.extMaintenance8.maintenance8 = true;
+        }
+#else
+        DE_ASSERT(!useMaintenance8);
+        DE_UNREF(useMaintenance8); // For release builds.
+#endif
+
         group->addChild(new SpvAsmComputeShaderCase(testCtx, params.name, spec));
     }
 
     return group.release();
 }
 
-tcu::TestCaseGroup *createOpSRemComputeGroup64(tcu::TestContext &testCtx, qpTestResult negFailResult)
+tcu::TestCaseGroup *createOpSRemComputeGroup64(tcu::TestContext &testCtx, bool useMaintenance8,
+                                               qpTestResult negFailResult)
 {
     de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "opsrem64"));
     de::Random rnd(deStringHash(group->getName()));
@@ -2707,13 +2720,24 @@ tcu::TestCaseGroup *createOpSRemComputeGroup64(tcu::TestContext &testCtx, qpTest
 
         spec.requestedVulkanFeatures.coreFeatures.shaderInt64 = VK_TRUE;
 
+#ifndef CTS_USES_VULKANSC
+        if (useMaintenance8)
+        {
+            spec.requestedVulkanFeatures.extMaintenance8.maintenance8 = true;
+        }
+#else
+        DE_ASSERT(!useMaintenance8);
+        DE_UNREF(useMaintenance8); // For release builds.
+#endif
+
         group->addChild(new SpvAsmComputeShaderCase(testCtx, params.name, spec));
     }
 
     return group.release();
 }
 
-tcu::TestCaseGroup *createOpSModComputeGroup(tcu::TestContext &testCtx, qpTestResult negFailResult)
+tcu::TestCaseGroup *createOpSModComputeGroup(tcu::TestContext &testCtx, bool useMaintenance8,
+                                             qpTestResult negFailResult)
 {
     de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "opsmod"));
     de::Random rnd(deStringHash(group->getName()));
@@ -2818,13 +2842,24 @@ tcu::TestCaseGroup *createOpSModComputeGroup(tcu::TestContext &testCtx, qpTestRe
         spec.failResult    = params.failResult;
         spec.failMessage   = params.failMessage;
 
+#ifndef CTS_USES_VULKANSC
+        if (useMaintenance8)
+        {
+            spec.requestedVulkanFeatures.extMaintenance8.maintenance8 = true;
+        }
+#else
+        DE_ASSERT(!useMaintenance8);
+        DE_UNREF(useMaintenance8); // For release builds.
+#endif
+
         group->addChild(new SpvAsmComputeShaderCase(testCtx, params.name, spec));
     }
 
     return group.release();
 }
 
-tcu::TestCaseGroup *createOpSModComputeGroup64(tcu::TestContext &testCtx, qpTestResult negFailResult)
+tcu::TestCaseGroup *createOpSModComputeGroup64(tcu::TestContext &testCtx, bool useMaintenance8,
+                                               qpTestResult negFailResult)
 {
     de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "opsmod64"));
     de::Random rnd(deStringHash(group->getName()));
@@ -2939,6 +2974,16 @@ tcu::TestCaseGroup *createOpSModComputeGroup64(tcu::TestContext &testCtx, qpTest
         spec.failMessage   = params.failMessage;
 
         spec.requestedVulkanFeatures.coreFeatures.shaderInt64 = VK_TRUE;
+
+#ifndef CTS_USES_VULKANSC
+        if (useMaintenance8)
+        {
+            spec.requestedVulkanFeatures.extMaintenance8.maintenance8 = true;
+        }
+#else
+        DE_ASSERT(!useMaintenance8);
+        DE_UNREF(useMaintenance8); // For release builds.
+#endif
 
         group->addChild(new SpvAsmComputeShaderCase(testCtx, params.name, spec));
     }
@@ -9448,10 +9493,12 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup *testCtx)
 
         if (tests[idx].preserveNanInf)
         {
-            fragments["capability"] = "OpCapability SignedZeroInfNanPreserve\n";
-            fragments["extension"]  = "OpExtension \"SPV_KHR_float_controls\"\n";
+            fragments["capability"]     = "OpCapability SignedZeroInfNanPreserve\n";
+            fragments["extension"]      = "OpExtension \"SPV_KHR_float_controls\"\n";
+            fragments["execution_mode"] = "OpExecutionMode %BP_main SignedZeroInfNanPreserve 32\n";
             extensions.push_back("VK_KHR_shader_float_controls");
             features.floatControlsProperties.shaderSignedZeroInfNanPreserveFloat16 = true;
+            features.floatControlsProperties.shaderSignedZeroInfNanPreserveFloat32 = true;
         }
 
         createTestsForAllStages(tests[idx].name, inputColors, expectedColors, fragments, SpecConstants(),
@@ -9476,10 +9523,12 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup *testCtx)
 
         if (tests[idx].preserveNanInf)
         {
-            fragments["capability"] = "OpCapability SignedZeroInfNanPreserve\n";
-            fragments["extension"]  = "OpExtension \"SPV_KHR_float_controls\"\n";
+            fragments["capability"]     = "OpCapability SignedZeroInfNanPreserve\n";
+            fragments["extension"]      = "OpExtension \"SPV_KHR_float_controls\"\n";
+            fragments["execution_mode"] = "OpExecutionMode %BP_main SignedZeroInfNanPreserve 32\n";
             extensions.push_back("VK_KHR_shader_float_controls");
             features.floatControlsProperties.shaderSignedZeroInfNanPreserveFloat16 = true;
+            features.floatControlsProperties.shaderSignedZeroInfNanPreserveFloat32 = true;
         }
 
         createTestsForAllStages(string("spec_const_") + tests[idx].name, inputColors, expectedColors, fragments,
@@ -10263,7 +10312,8 @@ tcu::TestCaseGroup *createFRemTests(tcu::TestContext &testCtx)
 }
 
 // Test for the OpSRem instruction.
-tcu::TestCaseGroup *createOpSRemGraphicsTests(tcu::TestContext &testCtx, qpTestResult negFailResult)
+tcu::TestCaseGroup *createOpSRemGraphicsTests(tcu::TestContext &testCtx, bool useMaintenance8,
+                                              qpTestResult negFailResult)
 {
     de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "srem"));
     map<string, string> fragments;
@@ -10338,15 +10388,29 @@ tcu::TestCaseGroup *createOpSRemGraphicsTests(tcu::TestContext &testCtx, qpTestR
                 RGBA(params.results[i][0] + 128, params.results[i][1] + 128, params.results[i][2] + 128, 255);
         }
 
-        createTestsForAllStages(params.name, inputColors, outputColors, fragments, testGroup.get(), params.failResult,
-                                params.failMessageTemplate);
+        std::vector<std::string> extensions;
+        VulkanFeatures requestedVulkanFeatures;
+#ifndef CTS_USES_VULKANSC
+        if (useMaintenance8)
+        {
+            requestedVulkanFeatures.extMaintenance8.maintenance8 = true;
+        }
+#else
+        DE_ASSERT(!useMaintenance8);
+        DE_UNREF(useMaintenance8); // For release builds.
+#endif
+
+        createTestsForAllStages(params.name, inputColors, outputColors, fragments, SpecConstants(), PushConstants(),
+                                GraphicsResources(), GraphicsInterfaces(), extensions, requestedVulkanFeatures,
+                                testGroup.get(), params.failResult, params.failMessageTemplate);
     }
 
     return testGroup.release();
 }
 
 // Test for the OpSMod instruction.
-tcu::TestCaseGroup *createOpSModGraphicsTests(tcu::TestContext &testCtx, qpTestResult negFailResult)
+tcu::TestCaseGroup *createOpSModGraphicsTests(tcu::TestContext &testCtx, bool useMaintenance8,
+                                              qpTestResult negFailResult)
 {
     de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "smod"));
     map<string, string> fragments;
@@ -10421,8 +10485,21 @@ tcu::TestCaseGroup *createOpSModGraphicsTests(tcu::TestContext &testCtx, qpTestR
                 RGBA(params.results[i][0] + 128, params.results[i][1] + 128, params.results[i][2] + 128, 255);
         }
 
-        createTestsForAllStages(params.name, inputColors, outputColors, fragments, testGroup.get(), params.failResult,
-                                params.failMessageTemplate);
+        std::vector<std::string> extensions;
+        VulkanFeatures requestedVulkanFeatures;
+#ifndef CTS_USES_VULKANSC
+        if (useMaintenance8)
+        {
+            requestedVulkanFeatures.extMaintenance8.maintenance8 = true;
+        }
+#else
+        DE_ASSERT(!useMaintenance8);
+        DE_UNREF(useMaintenance8); // For release builds.
+#endif
+
+        createTestsForAllStages(params.name, inputColors, outputColors, fragments, SpecConstants(), PushConstants(),
+                                GraphicsResources(), GraphicsInterfaces(), extensions, requestedVulkanFeatures,
+                                testGroup.get(), params.failResult, params.failMessageTemplate);
     }
     return testGroup.release();
 }
@@ -10607,7 +10684,7 @@ const string getTypeName(ConversionDataType type)
 
 const string getTestName(ConversionDataType from, ConversionDataType to, const char *suffix)
 {
-    const string fullSuffix(suffix == DE_NULL ? "" : string("_") + string(suffix));
+    const string fullSuffix(suffix == nullptr ? "" : string("_") + string(suffix));
 
     return getTypeName(from) + "_to_" + getTypeName(to) + fullSuffix;
 }
@@ -10755,7 +10832,7 @@ void getVulkanFeaturesAndExtensions(ConversionDataType from, ConversionDataType 
 struct ConvertCase
 {
     ConvertCase(const string &instruction, ConversionDataType from, ConversionDataType to, int64_t number,
-                bool separateOutput = false, int64_t outputNumber = 0, const char *suffix = DE_NULL,
+                bool separateOutput = false, int64_t outputNumber = 0, const char *suffix = nullptr,
                 bool useStorageExt = true)
         : m_fromType(from)
         , m_toType(to)
@@ -14429,7 +14506,7 @@ tcu::TestCaseGroup *createFloat16CompositeInsertExtractSet(tcu::TestContext &tes
 
     const char *accessPathF16[] = {
         "0", // %f16
-        DE_NULL,
+        nullptr,
     };
     const char *accessPathV2F16[] = {
         "0 0", // %v2f16
@@ -14439,7 +14516,7 @@ tcu::TestCaseGroup *createFloat16CompositeInsertExtractSet(tcu::TestContext &tes
         "0 0", // %v3f16
         "0 1",
         "0 2",
-        DE_NULL,
+        nullptr,
     };
     const char *accessPathV4F16[] = {
         "0 0", // %v4f16"
@@ -14451,13 +14528,13 @@ tcu::TestCaseGroup *createFloat16CompositeInsertExtractSet(tcu::TestContext &tes
         "0 0", // %f16arr3
         "0 1",
         "0 2",
-        DE_NULL,
+        nullptr,
     };
     const char *accessPathStruct16Arr3[] = {
         "0 0 0", // %struct16arr3
-        DE_NULL, "0 0 1 0 0", "0 0 1 0 1", "0 0 1 1 0", "0 0 1 1 1", "0 0 1 2 0", "0 0 1 2 1", "0 1 0",
-        DE_NULL, "0 1 1 0 0", "0 1 1 0 1", "0 1 1 1 0", "0 1 1 1 1", "0 1 1 2 0", "0 1 1 2 1", "0 2 0",
-        DE_NULL, "0 2 1 0 0", "0 2 1 0 1", "0 2 1 1 0", "0 2 1 1 1", "0 2 1 2 0", "0 2 1 2 1",
+        nullptr, "0 0 1 0 0", "0 0 1 0 1", "0 0 1 1 0", "0 0 1 1 1", "0 0 1 2 0", "0 0 1 2 1", "0 1 0",
+        nullptr, "0 1 1 0 0", "0 1 1 0 1", "0 1 1 1 0", "0 1 1 1 1", "0 1 1 2 0", "0 1 1 2 1", "0 2 0",
+        nullptr, "0 2 1 0 0", "0 2 1 0 1", "0 2 1 1 0", "0 2 1 1 1", "0 2 1 2 0", "0 2 1 2 1",
     };
     const char *accessPathV2F16Arr5[] = {
         "0 0 0", // %v2f16arr5
@@ -14465,13 +14542,13 @@ tcu::TestCaseGroup *createFloat16CompositeInsertExtractSet(tcu::TestContext &tes
     };
     const char *accessPathV3F16Arr5[] = {
         "0 0 0", // %v3f16arr5
-        "0 0 1", "0 0 2", DE_NULL, "0 1 0", "0 1 1", "0 1 2", DE_NULL, "0 2 0", "0 2 1", "0 2 2",
-        DE_NULL, "0 3 0", "0 3 1", "0 3 2", DE_NULL, "0 4 0", "0 4 1", "0 4 2", DE_NULL,
+        "0 0 1", "0 0 2", nullptr, "0 1 0", "0 1 1", "0 1 2", nullptr, "0 2 0", "0 2 1", "0 2 2",
+        nullptr, "0 3 0", "0 3 1", "0 3 2", nullptr, "0 4 0", "0 4 1", "0 4 2", nullptr,
     };
     const char *accessPathV4F16Arr3[] = {
         "0 0 0", // %v4f16arr3
         "0 0 1", "0 0 2", "0 0 3", "0 1 0", "0 1 1", "0 1 2", "0 1 3", "0 2 0",
-        "0 2 1", "0 2 2", "0 2 3", DE_NULL, DE_NULL, DE_NULL, DE_NULL,
+        "0 2 1", "0 2 2", "0 2 3", nullptr, nullptr, nullptr, nullptr,
     };
 
     struct TypeTestParameters
@@ -14513,7 +14590,7 @@ tcu::TestCaseGroup *createFloat16CompositeInsertExtractSet(tcu::TestContext &tes
         // Generate values for input
         inputFP16.reserve(structItemsCount);
         for (uint32_t structItemNdx = 0; structItemNdx < structItemsCount; ++structItemNdx)
-            inputFP16.push_back((accessPath[structItemNdx] == DE_NULL) ? exceptionValue :
+            inputFP16.push_back((accessPath[structItemNdx] == nullptr) ? exceptionValue :
                                                                          tcu::Float16(float(structItemNdx)).bits());
 
         unusedFP16Output.resize(structItemsCount);
@@ -14524,7 +14601,7 @@ tcu::TestCaseGroup *createFloat16CompositeInsertExtractSet(tcu::TestContext &tes
             string caseList;
 
             for (uint32_t caseNdx = 0; caseNdx < structItemsCount; ++caseNdx)
-                if (accessPath[caseNdx] != DE_NULL)
+                if (accessPath[caseNdx] != nullptr)
                 {
                     map<string, string> specCase;
 
@@ -17911,9 +17988,9 @@ bool compareFP16ArithmeticFunc(const std::vector<Resource> &inputs, const vector
         inputs[inputNdx].getBytes(inputBytes[inputNdx]);
 
     const deFloat16 *const inputsAsFP16[3] = {
-        inputs.size() >= 1 ? (const deFloat16 *)&inputBytes[0][0] : DE_NULL,
-        inputs.size() >= 2 ? (const deFloat16 *)&inputBytes[1][0] : DE_NULL,
-        inputs.size() >= 3 ? (const deFloat16 *)&inputBytes[2][0] : DE_NULL,
+        inputs.size() >= 1 ? (const deFloat16 *)&inputBytes[0][0] : nullptr,
+        inputs.size() >= 2 ? (const deFloat16 *)&inputBytes[1][0] : nullptr,
+        inputs.size() >= 3 ? (const deFloat16 *)&inputBytes[2][0] : nullptr,
     };
 
     for (size_t idx = 0; idx < iterationsCount; ++idx)
@@ -18932,7 +19009,7 @@ void createFloat16ArithmeticFuncTest(tcu::TestContext &testCtx, tcu::TestCaseGro
     const Math16TestType &testType         = testTypes[testTypeIdx];
     const string funcNameString            = string(testFunc.funcName) + string(testFunc.funcSuffix);
     const string testName                  = de::toLower(funcNameString);
-    const Math16ArgFragments *argFragments = DE_NULL;
+    const Math16ArgFragments *argFragments = nullptr;
     const size_t typeStructStride          = testType.typeStructStride;
     const bool extInst                     = !(testFunc.funcName[0] == 'O' && testFunc.funcName[1] == 'p');
     const size_t numFloatsPerArg0Type      = testTypes[testFunc.typeArg0].typeArrayStride / sizeof(deFloat16);
@@ -21204,10 +21281,10 @@ tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
     computeTests->addChild(createOpQuantizeToF16Group(testCtx, false));
     computeTests->addChild(createOpQuantizeToF16Group(testCtx, true));
     computeTests->addChild(createOpFRemGroup(testCtx));
-    computeTests->addChild(createOpSRemComputeGroup(testCtx, QP_TEST_RESULT_PASS));
-    computeTests->addChild(createOpSRemComputeGroup64(testCtx, QP_TEST_RESULT_PASS));
-    computeTests->addChild(createOpSModComputeGroup(testCtx, QP_TEST_RESULT_PASS));
-    computeTests->addChild(createOpSModComputeGroup64(testCtx, QP_TEST_RESULT_PASS));
+    computeTests->addChild(createOpSRemComputeGroup(testCtx, false, QP_TEST_RESULT_PASS));
+    computeTests->addChild(createOpSRemComputeGroup64(testCtx, false, QP_TEST_RESULT_PASS));
+    computeTests->addChild(createOpSModComputeGroup(testCtx, false, QP_TEST_RESULT_PASS));
+    computeTests->addChild(createOpSModComputeGroup64(testCtx, false, QP_TEST_RESULT_PASS));
 #ifndef CTS_USES_VULKANSC
     computeTests->addChild(createOpSDotKHRComputeGroup(testCtx));
     computeTests->addChild(createOpUDotKHRComputeGroup(testCtx));
@@ -21233,8 +21310,8 @@ tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
     {
         de::MovePtr<tcu::TestCaseGroup> computeAndroidTests(new tcu::TestCaseGroup(testCtx, "android"));
 
-        computeAndroidTests->addChild(createOpSRemComputeGroup(testCtx, QP_TEST_RESULT_QUALITY_WARNING));
-        computeAndroidTests->addChild(createOpSModComputeGroup(testCtx, QP_TEST_RESULT_QUALITY_WARNING));
+        computeAndroidTests->addChild(createOpSRemComputeGroup(testCtx, false, QP_TEST_RESULT_QUALITY_WARNING));
+        computeAndroidTests->addChild(createOpSModComputeGroup(testCtx, false, QP_TEST_RESULT_QUALITY_WARNING));
 
         computeTests->addChild(computeAndroidTests.release());
     }
@@ -21278,10 +21355,23 @@ tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
 #ifndef CTS_USES_VULKANSC
     computeTests->addChild(createOpArrayLengthComputeGroup(testCtx));
     computeTests->addChild(createUntypedPointersTestGroup(testCtx));
+    computeTests->addChild(createComputeShaderDerivativesTests(testCtx));
 #endif // CTS_USES_VULKANSC
     computeTests->addChild(createPhysicalStorageBufferTestGroup(testCtx));
     computeTests->addChild(createOpMulExtendedGroup(testCtx));
     computeTests->addChild(createRawAccessChainGroup(testCtx));
+#ifndef CTS_USES_VULKANSC
+    {
+        de::MovePtr<tcu::TestCaseGroup> maintenance8ComputeTests(new tcu::TestCaseGroup(testCtx, "maintenance8"));
+
+        maintenance8ComputeTests->addChild(createOpSRemComputeGroup(testCtx, true, QP_TEST_RESULT_FAIL));
+        maintenance8ComputeTests->addChild(createOpSRemComputeGroup64(testCtx, true, QP_TEST_RESULT_FAIL));
+        maintenance8ComputeTests->addChild(createOpSModComputeGroup(testCtx, true, QP_TEST_RESULT_FAIL));
+        maintenance8ComputeTests->addChild(createOpSModComputeGroup64(testCtx, true, QP_TEST_RESULT_FAIL));
+
+        computeTests->addChild(maintenance8ComputeTests.release());
+    }
+#endif // CTS_USES_VULKANSC
 
     graphicsTests->addChild(createCrossStageInterfaceTests(testCtx));
     graphicsTests->addChild(createSpivVersionCheckTests(testCtx, !testComputePipeline));
@@ -21308,14 +21398,14 @@ tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
     graphicsTests->addChild(createBarrierTests(testCtx));
     graphicsTests->addChild(createDecorationGroupTests(testCtx));
     graphicsTests->addChild(createFRemTests(testCtx));
-    graphicsTests->addChild(createOpSRemGraphicsTests(testCtx, QP_TEST_RESULT_PASS));
-    graphicsTests->addChild(createOpSModGraphicsTests(testCtx, QP_TEST_RESULT_PASS));
+    graphicsTests->addChild(createOpSRemGraphicsTests(testCtx, false, QP_TEST_RESULT_PASS));
+    graphicsTests->addChild(createOpSModGraphicsTests(testCtx, false, QP_TEST_RESULT_PASS));
 
     {
         de::MovePtr<tcu::TestCaseGroup> graphicsAndroidTests(new tcu::TestCaseGroup(testCtx, "android"));
 
-        graphicsAndroidTests->addChild(createOpSRemGraphicsTests(testCtx, QP_TEST_RESULT_QUALITY_WARNING));
-        graphicsAndroidTests->addChild(createOpSModGraphicsTests(testCtx, QP_TEST_RESULT_QUALITY_WARNING));
+        graphicsAndroidTests->addChild(createOpSRemGraphicsTests(testCtx, false, QP_TEST_RESULT_QUALITY_WARNING));
+        graphicsAndroidTests->addChild(createOpSModGraphicsTests(testCtx, false, QP_TEST_RESULT_QUALITY_WARNING));
 
         graphicsTests->addChild(graphicsAndroidTests.release());
     }
@@ -21356,6 +21446,16 @@ tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
     graphicsTests->addChild(createEarlyAndLateFragmentTests(testCtx));
     graphicsTests->addChild(createOpExecutionModeTests(testCtx));
     graphicsTests->addChild(createMixedRelaxedPrecisionOperandsTests(testCtx));
+#ifndef CTS_USES_VULKANSC
+    {
+        de::MovePtr<tcu::TestCaseGroup> maintenance8GraphicsTests(new tcu::TestCaseGroup(testCtx, "maintenance8"));
+
+        maintenance8GraphicsTests->addChild(createOpSRemGraphicsTests(testCtx, true, QP_TEST_RESULT_FAIL));
+        maintenance8GraphicsTests->addChild(createOpSModGraphicsTests(testCtx, true, QP_TEST_RESULT_FAIL));
+
+        graphicsTests->addChild(maintenance8GraphicsTests.release());
+    }
+#endif // CTS_USES_VULKANSC
 
     instructionTests->addChild(computeTests.release());
     instructionTests->addChild(graphicsTests.release());

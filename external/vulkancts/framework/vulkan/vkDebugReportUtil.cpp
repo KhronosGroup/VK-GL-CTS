@@ -117,7 +117,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugUtilsCallback(VkDebugUtilsMessageSeverityFla
     messageList.append(message);
 
     if (recorder->errorPrinting() && message.isError())
-        tcu::printError("%s\n", callbackData->pMessage);
+        tcu::printError("Validation ERROR: [%s] %s\n", callbackData->pMessageIdName, callbackData->pMessage);
 
     // Return false to indicate that the call should not return error and should
     // continue execution normally.
@@ -162,7 +162,7 @@ Move<VkDebugUtilsMessengerEXT> DebugReportRecorder::createCallback(const Instanc
 bool isDebugUtilsSupported(const PlatformInterface &vkp)
 {
 #ifndef CTS_USES_VULKANSC
-    return isExtensionStructSupported(enumerateInstanceExtensionProperties(vkp, DE_NULL),
+    return isExtensionStructSupported(enumerateInstanceExtensionProperties(vkp, nullptr),
                                       RequiredExtension("VK_EXT_debug_utils"));
 #else  // CTS_USES_VULKANSC
     DE_UNREF(vkp);

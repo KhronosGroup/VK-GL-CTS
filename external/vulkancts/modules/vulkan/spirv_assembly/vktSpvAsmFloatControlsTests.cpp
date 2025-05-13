@@ -42,9 +42,7 @@
 #include <cstdint>
 #include <cmath>
 
-namespace vkt
-{
-namespace SpirVAssembly
+namespace vkt::SpirVAssembly
 {
 
 namespace
@@ -1480,9 +1478,8 @@ void TypeSnippetsBase::updateSpirvSnippets()
     sm[V_DENORM]     = "OpFSub %type_valueType %c_valueType_denorm_base %c_valueType_eps\n";
     sm[V_NAN]        = "OpFDiv %type_valueType %c_valueType_0 %c_valueType_0\n"; // 0 / 0 == Nan
 
-    map<ValueId, string>::iterator it;
-    for (it = sm.begin(); it != sm.end(); it++)
-        sm[it->first] = replace(it->second, typeToken, typeName);
+    for (const auto &[v, s] : sm)
+        sm[v] = replace(s, typeToken, typeName);
 }
 
 typedef de::SharedPtr<TypeSnippetsBase> TypeSnippetsSP;
@@ -1585,9 +1582,7 @@ TypeSnippets<double>::TypeSnippets(bool floatType, bool signedInteger) : TypeSni
 class TypeTestResultsBase
 {
 public:
-    virtual ~TypeTestResultsBase()
-    {
-    }
+    virtual ~TypeTestResultsBase() = default;
     VariableType variableType() const;
 
 protected:
@@ -1623,8 +1618,7 @@ TypeTestResults<deFloat16>::TypeTestResults()
     // note: there are many FTZ test cases that can produce diferent result depending
     // on input denorm being flushed or not; because of that FTZ tests can be limited
     // to those that return denorm as those are the ones affected by tested extension
-    const BinaryCase binaryOpFTZArr[] = {
-        //operation            den op one        den op den        den op inf        den op nan
+    binaryOpFTZ = {
         {OID_ADD, V_ONE, V_ZERO_OR_DENORM_TIMES_TWO, V_INF, V_UNUSED},
         {OID_SUB, V_MINUS_ONE, V_ZERO, V_MINUS_INF, V_UNUSED},
         {OID_MUL, V_ZERO, V_ZERO, V_UNUSED, V_UNUSED},
@@ -1655,8 +1649,7 @@ TypeTestResults<deFloat16>::TypeTestResults()
         {OID_CROSS, V_ZERO, V_ZERO, V_UNUSED, V_UNUSED},
     };
 
-    const UnaryCase unaryOpFTZArr[] = {
-        //operation            op den
+    unaryOpFTZ = {
         {OID_NEGATE, V_MINUS_ZERO},
         {OID_ROUND, V_ZERO},
         {OID_ROUND_EV, V_ZERO},
@@ -1695,8 +1688,7 @@ TypeTestResults<deFloat16>::TypeTestResults()
         {OID_LENGTH, V_ZERO},
     };
 
-    const BinaryCase binaryOpDenormPreserveArr[] = {
-        //operation            den op one                den op den                den op inf        den op nan
+    binaryOpDenormPreserve = {
         {OID_PHI, V_DENORM, V_DENORM, V_DENORM, V_DENORM},
         {OID_SELECT, V_DENORM, V_DENORM, V_DENORM, V_DENORM},
         {OID_ADD, V_ONE, V_DENORM_TIMES_TWO, V_INF, V_NAN},
@@ -1719,8 +1711,7 @@ TypeTestResults<deFloat16>::TypeTestResults()
         {OID_NCLAMP, V_ONE, V_DENORM, V_INF, V_DENORM},
     };
 
-    const UnaryCase unaryOpDenormPreserveArr[] = {
-        //operation                op den
+    unaryOpDenormPreserve = {
         {OID_RETURN_VAL, V_DENORM},
         {OID_D_EXTRACT, V_DENORM},
         {OID_D_INSERT, V_DENORM},
@@ -1735,13 +1726,6 @@ TypeTestResults<deFloat16>::TypeTestResults()
         {OID_RADIANS, V_DENORM},
         {OID_DEGREES, V_DEGREES_DENORM},
     };
-
-    binaryOpFTZ.insert(binaryOpFTZ.begin(), binaryOpFTZArr, binaryOpFTZArr + DE_LENGTH_OF_ARRAY(binaryOpFTZArr));
-    unaryOpFTZ.insert(unaryOpFTZ.begin(), unaryOpFTZArr, unaryOpFTZArr + DE_LENGTH_OF_ARRAY(unaryOpFTZArr));
-    binaryOpDenormPreserve.insert(binaryOpDenormPreserve.begin(), binaryOpDenormPreserveArr,
-                                  binaryOpDenormPreserveArr + DE_LENGTH_OF_ARRAY(binaryOpDenormPreserveArr));
-    unaryOpDenormPreserve.insert(unaryOpDenormPreserve.begin(), unaryOpDenormPreserveArr,
-                                 unaryOpDenormPreserveArr + DE_LENGTH_OF_ARRAY(unaryOpDenormPreserveArr));
 }
 
 template <>
@@ -1749,8 +1733,7 @@ TypeTestResults<float>::TypeTestResults()
 {
     m_variableType = FP32;
 
-    const BinaryCase binaryOpFTZArr[] = {
-        //operation            den op one        den op den        den op inf        den op nan
+    binaryOpFTZ = {
         {OID_ADD, V_ONE, V_ZERO, V_INF, V_UNUSED},
         {OID_SUB, V_MINUS_ONE, V_ZERO, V_MINUS_INF, V_UNUSED},
         {OID_MUL, V_ZERO, V_ZERO, V_UNUSED, V_UNUSED},
@@ -1781,8 +1764,8 @@ TypeTestResults<float>::TypeTestResults()
         {OID_CROSS, V_ZERO, V_ZERO, V_UNUSED, V_UNUSED},
     };
 
-    const UnaryCase unaryOpFTZArr[] = {
-        //operation            op den
+    unaryOpFTZ = {
+        //operation    op den
         {OID_NEGATE, V_MINUS_ZERO},
         {OID_ROUND, V_ZERO},
         {OID_ROUND_EV, V_ZERO},
@@ -1821,8 +1804,8 @@ TypeTestResults<float>::TypeTestResults()
         {OID_LENGTH, V_ZERO},
     };
 
-    const BinaryCase binaryOpDenormPreserveArr[] = {
-        //operation            den op one            den op den                den op inf        den op nan
+    binaryOpDenormPreserve = {
+        //operation    den op one    den op den    den op inf    den op nan
         {OID_PHI, V_DENORM, V_DENORM, V_DENORM, V_DENORM},  {OID_SELECT, V_DENORM, V_DENORM, V_DENORM, V_DENORM},
         {OID_ADD, V_ONE, V_DENORM_TIMES_TWO, V_INF, V_NAN}, {OID_SUB, V_MINUS_ONE, V_ZERO, V_MINUS_INF, V_NAN},
         {OID_MUL, V_DENORM, V_ZERO, V_INF, V_NAN},          {OID_VEC_MUL_S, V_DENORM, V_ZERO, V_INF, V_NAN},
@@ -1835,7 +1818,7 @@ TypeTestResults<float>::TypeTestResults()
         {OID_NMAX, V_ONE, V_DENORM, V_INF, V_DENORM},       {OID_NCLAMP, V_ONE, V_DENORM, V_INF, V_DENORM},
     };
 
-    const UnaryCase unaryOpDenormPreserveArr[] = {
+    unaryOpDenormPreserve = {
         //operation                op den
         {OID_RETURN_VAL, V_DENORM},
         {OID_D_EXTRACT, V_DENORM},
@@ -1851,13 +1834,6 @@ TypeTestResults<float>::TypeTestResults()
         {OID_RADIANS, V_DENORM},
         {OID_DEGREES, V_DEGREES_DENORM},
     };
-
-    binaryOpFTZ.insert(binaryOpFTZ.begin(), binaryOpFTZArr, binaryOpFTZArr + DE_LENGTH_OF_ARRAY(binaryOpFTZArr));
-    unaryOpFTZ.insert(unaryOpFTZ.begin(), unaryOpFTZArr, unaryOpFTZArr + DE_LENGTH_OF_ARRAY(unaryOpFTZArr));
-    binaryOpDenormPreserve.insert(binaryOpDenormPreserve.begin(), binaryOpDenormPreserveArr,
-                                  binaryOpDenormPreserveArr + DE_LENGTH_OF_ARRAY(binaryOpDenormPreserveArr));
-    unaryOpDenormPreserve.insert(unaryOpDenormPreserve.begin(), unaryOpDenormPreserveArr,
-                                 unaryOpDenormPreserveArr + DE_LENGTH_OF_ARRAY(unaryOpDenormPreserveArr));
 }
 
 template <>
@@ -1867,8 +1843,8 @@ TypeTestResults<double>::TypeTestResults()
 
     // fp64 is supported by fewer operations then fp16 and fp32
     // e.g. Radians and Degrees functions are not supported
-    const BinaryCase binaryOpFTZArr[] = {
-        //operation            den op one        den op den        den op inf        den op nan
+    binaryOpFTZ = {
+        //operation    den op one    den op den    den op inf    den op nan
         {OID_ADD, V_ONE, V_ZERO, V_INF, V_UNUSED},
         {OID_SUB, V_MINUS_ONE, V_ZERO, V_MINUS_INF, V_UNUSED},
         {OID_MUL, V_ZERO, V_ZERO, V_UNUSED, V_UNUSED},
@@ -1897,8 +1873,8 @@ TypeTestResults<double>::TypeTestResults()
         {OID_CROSS, V_ZERO, V_ZERO, V_UNUSED, V_UNUSED},
     };
 
-    const UnaryCase unaryOpFTZArr[] = {
-        //operation            op den
+    unaryOpFTZ = {
+        //operation    op den
         {OID_NEGATE, V_MINUS_ZERO},
         {OID_ROUND, V_ZERO},
         {OID_ROUND_EV, V_ZERO},
@@ -1918,8 +1894,8 @@ TypeTestResults<double>::TypeTestResults()
         {OID_LENGTH, V_ZERO},
     };
 
-    const BinaryCase binaryOpDenormPreserveArr[] = {
-        //operation            den op one            den op den                den op inf        den op nan
+    binaryOpDenormPreserve = {
+        //operation    den op one    den op den    den op inf    den op nan
         {OID_PHI, V_DENORM, V_DENORM, V_DENORM, V_DENORM},
         {OID_SELECT, V_DENORM, V_DENORM, V_DENORM, V_DENORM},
         {OID_ADD, V_ONE, V_DENORM_TIMES_TWO, V_INF, V_NAN},
@@ -1942,19 +1918,12 @@ TypeTestResults<double>::TypeTestResults()
         {OID_NCLAMP, V_ONE, V_DENORM, V_INF, V_DENORM},
     };
 
-    const UnaryCase unaryOpDenormPreserveArr[] = {
-        //operation                op den
+    unaryOpDenormPreserve = {
+        //operation    op den
         {OID_RETURN_VAL, V_DENORM}, {OID_D_EXTRACT, V_DENORM},     {OID_D_INSERT, V_DENORM}, {OID_SHUFFLE, V_DENORM},
         {OID_COMPOSITE, V_DENORM},  {OID_COMPOSITE_INS, V_DENORM}, {OID_COPY, V_DENORM},     {OID_TRANSPOSE, V_DENORM},
         {OID_NEGATE, V_DENORM},     {OID_ABS, V_DENORM},           {OID_SIGN, V_ONE},
     };
-
-    binaryOpFTZ.insert(binaryOpFTZ.begin(), binaryOpFTZArr, binaryOpFTZArr + DE_LENGTH_OF_ARRAY(binaryOpFTZArr));
-    unaryOpFTZ.insert(unaryOpFTZ.begin(), unaryOpFTZArr, unaryOpFTZArr + DE_LENGTH_OF_ARRAY(unaryOpFTZArr));
-    binaryOpDenormPreserve.insert(binaryOpDenormPreserve.begin(), binaryOpDenormPreserveArr,
-                                  binaryOpDenormPreserveArr + DE_LENGTH_OF_ARRAY(binaryOpDenormPreserveArr));
-    unaryOpDenormPreserve.insert(unaryOpDenormPreserve.begin(), unaryOpDenormPreserveArr,
-                                 unaryOpDenormPreserveArr + DE_LENGTH_OF_ARRAY(unaryOpDenormPreserveArr));
 }
 
 // Operation structure holds data needed to test specified SPIR-V operation. This class contains
@@ -2142,7 +2111,6 @@ private:
 private:
     // Operations are shared betwean test cases so they are
     // passed to them as pointers to data stored in TestCasesBuilder.
-    typedef OperationTestCase OTC;
     typedef Operation Op;
     map<int, Op> m_operations;
     // SPIR-V assembly snippets that are used in m_operations
@@ -2701,51 +2669,47 @@ void TestCasesBuilder::build(vector<OperationTestCase> &testCases, TypeTestResul
             continue;
 
         // Denorm - FlushToZero - binary operations
-        for (size_t i = 0; i < typeTestResults->binaryOpFTZ.size(); ++i)
+        for (const BinaryCase &binaryCase : typeTestResults->binaryOpFTZ)
         {
-            const BinaryCase &binaryCase = typeTestResults->binaryOpFTZ[i];
-            OperationId operation        = binaryCase.operationId;
-            testCases.push_back(OTC("denorm_op_var_flush_to_zero", B_DENORM_FLUSH, operation, V_DENORM, V_ONE,
-                                    binaryCase.opVarResult, fp16NoStorage));
-            testCases.push_back(OTC("denorm_op_denorm_flush_to_zero", B_DENORM_FLUSH, operation, V_DENORM, V_DENORM,
-                                    binaryCase.opDenormResult, fp16NoStorage));
-            testCases.push_back(OTC("denorm_op_inf_flush_to_zero", B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM,
-                                    V_INF, binaryCase.opInfResult, fp16NoStorage));
-            testCases.push_back(OTC("denorm_op_nan_flush_to_zero", B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM,
-                                    V_NAN, binaryCase.opNanResult, fp16NoStorage));
+            OperationId operation = binaryCase.operationId;
+            testCases.emplace_back("denorm_op_var_flush_to_zero", B_DENORM_FLUSH, operation, V_DENORM, V_ONE,
+                                   binaryCase.opVarResult, fp16NoStorage);
+            testCases.emplace_back("denorm_op_denorm_flush_to_zero", B_DENORM_FLUSH, operation, V_DENORM, V_DENORM,
+                                   binaryCase.opDenormResult, fp16NoStorage);
+            testCases.emplace_back("denorm_op_inf_flush_to_zero", B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM,
+                                   V_INF, binaryCase.opInfResult, fp16NoStorage);
+            testCases.emplace_back("denorm_op_nan_flush_to_zero", B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM,
+                                   V_NAN, binaryCase.opNanResult, fp16NoStorage);
         }
 
         // Denorm - FlushToZero - unary operations
-        for (size_t i = 0; i < typeTestResults->unaryOpFTZ.size(); ++i)
+        for (const UnaryCase &unaryCase : typeTestResults->unaryOpFTZ)
         {
-            const UnaryCase &unaryCase = typeTestResults->unaryOpFTZ[i];
-            OperationId operation      = unaryCase.operationId;
-            testCases.push_back(OTC("op_denorm_flush_to_zero", B_DENORM_FLUSH, operation, V_DENORM, V_UNUSED,
-                                    unaryCase.result, fp16NoStorage));
+            OperationId operation = unaryCase.operationId;
+            testCases.emplace_back("op_denorm_flush_to_zero", B_DENORM_FLUSH, operation, V_DENORM, V_UNUSED,
+                                   unaryCase.result, fp16NoStorage);
         }
 
         // Denorm - Preserve - binary operations
-        for (size_t i = 0; i < typeTestResults->binaryOpDenormPreserve.size(); ++i)
+        for (const BinaryCase &binaryCase : typeTestResults->binaryOpDenormPreserve)
         {
-            const BinaryCase &binaryCase = typeTestResults->binaryOpDenormPreserve[i];
-            OperationId operation        = binaryCase.operationId;
-            testCases.push_back(OTC("denorm_op_var_preserve", B_DENORM_PRESERVE, operation, V_DENORM, V_ONE,
-                                    binaryCase.opVarResult, fp16NoStorage));
-            testCases.push_back(OTC("denorm_op_denorm_preserve", B_DENORM_PRESERVE, operation, V_DENORM, V_DENORM,
-                                    binaryCase.opDenormResult, fp16NoStorage));
-            testCases.push_back(OTC("denorm_op_inf_preserve", B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,
-                                    V_INF, binaryCase.opInfResult, fp16NoStorage));
-            testCases.push_back(OTC("denorm_op_nan_preserve", B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,
-                                    V_NAN, binaryCase.opNanResult, fp16NoStorage));
+            OperationId operation = binaryCase.operationId;
+            testCases.emplace_back("denorm_op_var_preserve", B_DENORM_PRESERVE, operation, V_DENORM, V_ONE,
+                                   binaryCase.opVarResult, fp16NoStorage);
+            testCases.emplace_back("denorm_op_denorm_preserve", B_DENORM_PRESERVE, operation, V_DENORM, V_DENORM,
+                                   binaryCase.opDenormResult, fp16NoStorage);
+            testCases.emplace_back("denorm_op_inf_preserve", B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,
+                                   V_INF, binaryCase.opInfResult, fp16NoStorage);
+            testCases.emplace_back("denorm_op_nan_preserve", B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,
+                                   V_NAN, binaryCase.opNanResult, fp16NoStorage);
         }
 
         // Denorm - Preserve - unary operations
-        for (size_t i = 0; i < typeTestResults->unaryOpDenormPreserve.size(); ++i)
+        for (const UnaryCase &unaryCase : typeTestResults->unaryOpDenormPreserve)
         {
-            const UnaryCase &unaryCase = typeTestResults->unaryOpDenormPreserve[i];
-            OperationId operation      = unaryCase.operationId;
-            testCases.push_back(OTC("op_denorm_preserve", B_DENORM_PRESERVE, operation, V_DENORM, V_UNUSED,
-                                    unaryCase.result, fp16NoStorage));
+            OperationId operation = unaryCase.operationId;
+            testCases.emplace_back("op_denorm_preserve", B_DENORM_PRESERVE, operation, V_DENORM, V_UNUSED,
+                                   unaryCase.result, fp16NoStorage);
         }
     }
 
@@ -2761,8 +2725,8 @@ void TestCasesBuilder::build(vector<OperationTestCase> &testCases, TypeTestResul
         ValueId preserveNanResult;
     };
 
-    const ZINCase binaryOpZINPreserve[] = {
-        // operation        fp64    second arg        preserve zero    preserve szero        preserve inf    preserve sinf        preserve nan
+    const ZINCase binaryOpZINPreserve[]{
+        // operation    fp64    second arg    preserve zero    preserve szero    preserve inf    preserve sinf    preserve nan
         {OID_PHI, true, V_INF, V_ZERO, V_MINUS_ZERO, V_INF, V_MINUS_INF, V_NAN},
         {OID_SELECT, true, V_ONE, V_ZERO, V_MINUS_ZERO, V_INF, V_MINUS_INF, V_NAN},
         {OID_ADD, true, V_ZERO, V_ZERO, V_ZERO, V_INF, V_MINUS_INF, V_NAN},
@@ -2770,8 +2734,8 @@ void TestCasesBuilder::build(vector<OperationTestCase> &testCases, TypeTestResul
         {OID_MUL, true, V_ONE, V_ZERO, V_MINUS_ZERO, V_INF, V_MINUS_INF, V_NAN},
     };
 
-    const ZINCase unaryOpZINPreserve[] = {
-        // operation                fp64    second arg        preserve zero    preserve szero        preserve inf    preserve sinf        preserve nan
+    const ZINCase unaryOpZINPreserve[]{
+        // operation    fp64    second arg    preserve zero    preserve szero    preserve inf    preserve sinf    preserve nan
         {OID_RETURN_VAL, true, V_UNUSED, V_ZERO, V_MINUS_ZERO, V_INF, V_MINUS_INF, V_NAN},
         {OID_D_EXTRACT, true, V_UNUSED, V_ZERO, V_MINUS_ZERO, V_INF, V_MINUS_INF, V_NAN},
         {OID_D_INSERT, true, V_UNUSED, V_ZERO, V_MINUS_ZERO, V_INF, V_MINUS_INF, V_NAN},
@@ -2793,41 +2757,39 @@ void TestCasesBuilder::build(vector<OperationTestCase> &testCases, TypeTestResul
         if (fp16NoStorage && !isFP16)
             continue;
 
-        for (size_t i = 0; i < DE_LENGTH_OF_ARRAY(binaryOpZINPreserve); ++i)
+        for (const ZINCase &zc : binaryOpZINPreserve)
         {
-            const ZINCase &zc = binaryOpZINPreserve[i];
             if (isFP64 && !zc.supportedByFP64)
                 continue;
 
-            testCases.push_back(OTC("zero_op_var_preserve", B_ZIN_PRESERVE, zc.operationId, V_ZERO, zc.secondArgument,
-                                    zc.preserveZeroResult, fp16NoStorage));
-            testCases.push_back(OTC("signed_zero_op_var_preserve", B_ZIN_PRESERVE, zc.operationId, V_MINUS_ZERO,
-                                    zc.secondArgument, zc.preserveSZeroResult, fp16NoStorage));
-            testCases.push_back(OTC("inf_op_var_preserve", B_ZIN_PRESERVE, zc.operationId, V_INF, zc.secondArgument,
-                                    zc.preserveInfResult, fp16NoStorage));
-            testCases.push_back(OTC("signed_inf_op_var_preserve", B_ZIN_PRESERVE, zc.operationId, V_MINUS_INF,
-                                    zc.secondArgument, zc.preserveSInfResult, fp16NoStorage));
-            testCases.push_back(OTC("nan_op_var_preserve", B_ZIN_PRESERVE, zc.operationId, V_NAN, zc.secondArgument,
-                                    zc.preserveNanResult, fp16NoStorage));
+            testCases.emplace_back("zero_op_var_preserve", B_ZIN_PRESERVE, zc.operationId, V_ZERO, zc.secondArgument,
+                                   zc.preserveZeroResult, fp16NoStorage);
+            testCases.emplace_back("signed_zero_op_var_preserve", B_ZIN_PRESERVE, zc.operationId, V_MINUS_ZERO,
+                                   zc.secondArgument, zc.preserveSZeroResult, fp16NoStorage);
+            testCases.emplace_back("inf_op_var_preserve", B_ZIN_PRESERVE, zc.operationId, V_INF, zc.secondArgument,
+                                   zc.preserveInfResult, fp16NoStorage);
+            testCases.emplace_back("signed_inf_op_var_preserve", B_ZIN_PRESERVE, zc.operationId, V_MINUS_INF,
+                                   zc.secondArgument, zc.preserveSInfResult, fp16NoStorage);
+            testCases.emplace_back("nan_op_var_preserve", B_ZIN_PRESERVE, zc.operationId, V_NAN, zc.secondArgument,
+                                   zc.preserveNanResult, fp16NoStorage);
         }
 
         // Signed Zero Inf Nan - Preserve - unary operations
-        for (size_t i = 0; i < DE_LENGTH_OF_ARRAY(unaryOpZINPreserve); ++i)
+        for (const ZINCase &zc : unaryOpZINPreserve)
         {
-            const ZINCase &zc = unaryOpZINPreserve[i];
             if (isFP64 && !zc.supportedByFP64)
                 continue;
 
-            testCases.push_back(OTC("op_zero_preserve", B_ZIN_PRESERVE, zc.operationId, V_ZERO, V_UNUSED,
-                                    zc.preserveZeroResult, fp16NoStorage));
-            testCases.push_back(OTC("op_signed_zero_preserve", B_ZIN_PRESERVE, zc.operationId, V_MINUS_ZERO, V_UNUSED,
-                                    zc.preserveSZeroResult, fp16NoStorage));
-            testCases.push_back(OTC("op_inf_preserve", B_ZIN_PRESERVE, zc.operationId, V_INF, V_UNUSED,
-                                    zc.preserveInfResult, fp16NoStorage));
-            testCases.push_back(OTC("op_signed_inf_preserve", B_ZIN_PRESERVE, zc.operationId, V_MINUS_INF, V_UNUSED,
-                                    zc.preserveSInfResult, fp16NoStorage));
-            testCases.push_back(OTC("op_nan_preserve", B_ZIN_PRESERVE, zc.operationId, V_NAN, V_UNUSED,
-                                    zc.preserveNanResult, fp16NoStorage));
+            testCases.emplace_back("op_zero_preserve", B_ZIN_PRESERVE, zc.operationId, V_ZERO, V_UNUSED,
+                                   zc.preserveZeroResult, fp16NoStorage);
+            testCases.emplace_back("op_signed_zero_preserve", B_ZIN_PRESERVE, zc.operationId, V_MINUS_ZERO, V_UNUSED,
+                                   zc.preserveSZeroResult, fp16NoStorage);
+            testCases.emplace_back("op_inf_preserve", B_ZIN_PRESERVE, zc.operationId, V_INF, V_UNUSED,
+                                   zc.preserveInfResult, fp16NoStorage);
+            testCases.emplace_back("op_signed_inf_preserve", B_ZIN_PRESERVE, zc.operationId, V_MINUS_INF, V_UNUSED,
+                                   zc.preserveSInfResult, fp16NoStorage);
+            testCases.emplace_back("op_nan_preserve", B_ZIN_PRESERVE, zc.operationId, V_NAN, V_UNUSED,
+                                   zc.preserveNanResult, fp16NoStorage);
         }
     }
 
@@ -2842,14 +2804,13 @@ void TestCasesBuilder::build(vector<OperationTestCase> &testCases, TypeTestResul
                                               {OID_UORD_NEQ, V_ONE}, {OID_ORD_LS, V_ONE},   {OID_UORD_LS, V_ONE},
                                               {OID_ORD_GT, V_ZERO},  {OID_UORD_GT, V_ZERO}, {OID_ORD_LE, V_ONE},
                                               {OID_UORD_LE, V_ONE},  {OID_ORD_GE, V_ZERO},  {OID_UORD_GE, V_ZERO}};
-    for (int op = 0; op < DE_LENGTH_OF_ARRAY(comparisonCases); ++op)
+    for (const ComparisonCase &cc : comparisonCases)
     {
-        const ComparisonCase &cc = comparisonCases[op];
-        testCases.push_back(
-            OTC("denorm_op_var_preserve", B_DENORM_PRESERVE, cc.operationId, V_DENORM, V_ONE, cc.denormPreserveResult));
+        testCases.emplace_back("denorm_op_var_preserve", B_DENORM_PRESERVE, cc.operationId, V_DENORM, V_ONE,
+                               cc.denormPreserveResult);
         if (isFP16)
-            testCases.push_back(OTC("denorm_op_var_preserve", B_DENORM_PRESERVE, cc.operationId, V_DENORM, V_ONE,
-                                    cc.denormPreserveResult, true));
+            testCases.emplace_back("denorm_op_var_preserve", B_DENORM_PRESERVE, cc.operationId, V_DENORM, V_ONE,
+                                   cc.denormPreserveResult, true);
     }
 
     if (argumentsFromInput)
@@ -2884,19 +2845,18 @@ void TestCasesBuilder::build(vector<OperationTestCase> &testCases, TypeTestResul
             // conversion operations are added separately - depending on float type width
         };
 
-        for (int c = 0; c < DE_LENGTH_OF_ARRAY(roundingCases); ++c)
+        for (const RoundingModeCase &rmc : roundingCases)
         {
-            const RoundingModeCase &rmc = roundingCases[c];
-            testCases.push_back(
-                OTC("rounding_rte_op", B_RTE_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2, rmc.expectedRTEResult));
-            testCases.push_back(
-                OTC("rounding_rtz_op", B_RTZ_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2, rmc.expectedRTZResult));
+            testCases.emplace_back("rounding_rte_op", B_RTE_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2,
+                                   rmc.expectedRTEResult);
+            testCases.emplace_back("rounding_rtz_op", B_RTZ_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2,
+                                   rmc.expectedRTZResult);
             if (isFP16)
             {
-                testCases.push_back(OTC("rounding_rte_op", B_RTE_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2,
-                                        rmc.expectedRTEResult, true));
-                testCases.push_back(OTC("rounding_rtz_op", B_RTZ_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2,
-                                        rmc.expectedRTZResult, true));
+                testCases.emplace_back("rounding_rte_op", B_RTE_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2,
+                                       rmc.expectedRTEResult, true);
+                testCases.emplace_back("rounding_rtz_op", B_RTZ_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2,
+                                       rmc.expectedRTZResult, true);
             }
         }
     }
@@ -2912,150 +2872,150 @@ void TestCasesBuilder::build(vector<OperationTestCase> &testCases, TypeTestResul
 
                 //// Conversions from arguments
                 // fp32 rte
-                testCases.push_back(OTC("rounding_rte_conv_from_fp32_up", B_RTE_ROUNDING, OID_CONV_FROM_FP32,
-                                        V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rte_conv_from_fp32_down", B_RTE_ROUNDING, OID_CONV_FROM_FP32,
-                                        V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rte_conv_from_fp32_tie_up", B_RTE_ROUNDING, OID_CONV_FROM_FP32,
-                                        V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rte_conv_from_fp32_tie_down", B_RTE_ROUNDING, OID_CONV_FROM_FP32,
-                                        V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT, noStorage));
+                testCases.emplace_back("rounding_rte_conv_from_fp32_up", B_RTE_ROUNDING, OID_CONV_FROM_FP32,
+                                       V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT, noStorage);
+                testCases.emplace_back("rounding_rte_conv_from_fp32_down", B_RTE_ROUNDING, OID_CONV_FROM_FP32,
+                                       V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT, noStorage);
+                testCases.emplace_back("rounding_rte_conv_from_fp32_tie_up", B_RTE_ROUNDING, OID_CONV_FROM_FP32,
+                                       V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT, noStorage);
+                testCases.emplace_back("rounding_rte_conv_from_fp32_tie_down", B_RTE_ROUNDING, OID_CONV_FROM_FP32,
+                                       V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT, noStorage);
 
                 // fp32 rtz
-                testCases.push_back(OTC("rounding_rtz_conv_from_fp32_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP32,
-                                        V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rtz_conv_from_fp32_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP32,
-                                        V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rtz_conv_from_fp32_tie_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP32,
-                                        V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rtz_conv_from_fp32_tie_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP32,
-                                        V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT, noStorage));
+                testCases.emplace_back("rounding_rtz_conv_from_fp32_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP32,
+                                       V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT, noStorage);
+                testCases.emplace_back("rounding_rtz_conv_from_fp32_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP32,
+                                       V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT, noStorage);
+                testCases.emplace_back("rounding_rtz_conv_from_fp32_tie_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP32,
+                                       V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT, noStorage);
+                testCases.emplace_back("rounding_rtz_conv_from_fp32_tie_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP32,
+                                       V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT, noStorage);
 
                 // fp64 rte
-                testCases.push_back(OTC("rounding_rte_conv_from_fp64_up", B_RTE_ROUNDING, OID_CONV_FROM_FP64,
-                                        V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rte_conv_from_fp64_down", B_RTE_ROUNDING, OID_CONV_FROM_FP64,
-                                        V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rte_conv_from_fp64_tie_up", B_RTE_ROUNDING, OID_CONV_FROM_FP64,
-                                        V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rte_conv_from_fp64_tie_down", B_RTE_ROUNDING, OID_CONV_FROM_FP64,
-                                        V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT, noStorage));
+                testCases.emplace_back("rounding_rte_conv_from_fp64_up", B_RTE_ROUNDING, OID_CONV_FROM_FP64,
+                                       V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT, noStorage);
+                testCases.emplace_back("rounding_rte_conv_from_fp64_down", B_RTE_ROUNDING, OID_CONV_FROM_FP64,
+                                       V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT, noStorage);
+                testCases.emplace_back("rounding_rte_conv_from_fp64_tie_up", B_RTE_ROUNDING, OID_CONV_FROM_FP64,
+                                       V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT, noStorage);
+                testCases.emplace_back("rounding_rte_conv_from_fp64_tie_down", B_RTE_ROUNDING, OID_CONV_FROM_FP64,
+                                       V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT, noStorage);
 
                 // fp64 rtz
-                testCases.push_back(OTC("rounding_rtz_conv_from_fp64_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP64,
-                                        V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rtz_conv_from_fp64_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP64,
-                                        V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rtz_conv_from_fp64_tie_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP64,
-                                        V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rtz_conv_from_fp64_tie_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP64,
-                                        V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT, noStorage));
+                testCases.emplace_back("rounding_rtz_conv_from_fp64_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP64,
+                                       V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT, noStorage);
+                testCases.emplace_back("rounding_rtz_conv_from_fp64_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP64,
+                                       V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT, noStorage);
+                testCases.emplace_back("rounding_rtz_conv_from_fp64_tie_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP64,
+                                       V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT, noStorage);
+                testCases.emplace_back("rounding_rtz_conv_from_fp64_tie_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP64,
+                                       V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT, noStorage);
 
                 //// Conversions from specialization constants
                 // fp32 rte
-                testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_up", B_RTE_ROUNDING,
-                                        OID_SCONST_CONV_FROM_FP32_TO_FP16_UP, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_down", B_RTE_ROUNDING,
-                                        OID_SCONST_CONV_FROM_FP32_TO_FP16_DOWN, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG,
-                                        V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_tie_up", B_RTE_ROUNDING,
-                                        OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_UP, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG,
-                                        V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_tie_down", B_RTE_ROUNDING,
-                                        OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_DOWN,
-                                        V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT, noStorage));
+                testCases.emplace_back("rounding_rte_sconst_conv_from_fp32_up", B_RTE_ROUNDING,
+                                       OID_SCONST_CONV_FROM_FP32_TO_FP16_UP, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT, noStorage);
+                testCases.emplace_back("rounding_rte_sconst_conv_from_fp32_down", B_RTE_ROUNDING,
+                                       OID_SCONST_CONV_FROM_FP32_TO_FP16_DOWN, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG,
+                                       V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT, noStorage);
+                testCases.emplace_back("rounding_rte_sconst_conv_from_fp32_tie_up", B_RTE_ROUNDING,
+                                       OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_UP, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG,
+                                       V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT, noStorage);
+                testCases.emplace_back("rounding_rte_sconst_conv_from_fp32_tie_down", B_RTE_ROUNDING,
+                                       OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_DOWN,
+                                       V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT, noStorage);
 
                 // fp32 rtz
-                testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_up", B_RTZ_ROUNDING,
-                                        OID_SCONST_CONV_FROM_FP32_TO_FP16_UP, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_down", B_RTZ_ROUNDING,
-                                        OID_SCONST_CONV_FROM_FP32_TO_FP16_DOWN, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG,
-                                        V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_tie_up", B_RTZ_ROUNDING,
-                                        OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_UP, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG,
-                                        V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_tie_down", B_RTZ_ROUNDING,
-                                        OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_DOWN,
-                                        V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT, noStorage));
+                testCases.emplace_back("rounding_rtz_sconst_conv_from_fp32_up", B_RTZ_ROUNDING,
+                                       OID_SCONST_CONV_FROM_FP32_TO_FP16_UP, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT, noStorage);
+                testCases.emplace_back("rounding_rtz_sconst_conv_from_fp32_down", B_RTZ_ROUNDING,
+                                       OID_SCONST_CONV_FROM_FP32_TO_FP16_DOWN, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG,
+                                       V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT, noStorage);
+                testCases.emplace_back("rounding_rtz_sconst_conv_from_fp32_tie_up", B_RTZ_ROUNDING,
+                                       OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_UP, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG,
+                                       V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT, noStorage);
+                testCases.emplace_back("rounding_rtz_sconst_conv_from_fp32_tie_down", B_RTZ_ROUNDING,
+                                       OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_DOWN,
+                                       V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT, noStorage);
 
                 // fp64 rte
-                testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_up", B_RTE_ROUNDING,
-                                        OID_SCONST_CONV_FROM_FP64_TO_FP16_UP, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_down", B_RTE_ROUNDING,
-                                        OID_SCONST_CONV_FROM_FP64_TO_FP16_DOWN, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG,
-                                        V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_tie_up", B_RTE_ROUNDING,
-                                        OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_UP, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG,
-                                        V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_tie_down", B_RTE_ROUNDING,
-                                        OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_DOWN,
-                                        V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT, noStorage));
+                testCases.emplace_back("rounding_rte_sconst_conv_from_fp64_up", B_RTE_ROUNDING,
+                                       OID_SCONST_CONV_FROM_FP64_TO_FP16_UP, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT, noStorage);
+                testCases.emplace_back("rounding_rte_sconst_conv_from_fp64_down", B_RTE_ROUNDING,
+                                       OID_SCONST_CONV_FROM_FP64_TO_FP16_DOWN, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG,
+                                       V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT, noStorage);
+                testCases.emplace_back("rounding_rte_sconst_conv_from_fp64_tie_up", B_RTE_ROUNDING,
+                                       OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_UP, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG,
+                                       V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT, noStorage);
+                testCases.emplace_back("rounding_rte_sconst_conv_from_fp64_tie_down", B_RTE_ROUNDING,
+                                       OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_DOWN,
+                                       V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT, noStorage);
 
                 // fp64 rtz
-                testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_up", B_RTZ_ROUNDING,
-                                        OID_SCONST_CONV_FROM_FP64_TO_FP16_UP, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_down", B_RTZ_ROUNDING,
-                                        OID_SCONST_CONV_FROM_FP64_TO_FP16_DOWN, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG,
-                                        V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_tie_up", B_RTZ_ROUNDING,
-                                        OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_UP, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG,
-                                        V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT, noStorage));
-                testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_tie_down", B_RTZ_ROUNDING,
-                                        OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_DOWN,
-                                        V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED,
-                                        V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT, noStorage));
+                testCases.emplace_back("rounding_rtz_sconst_conv_from_fp64_up", B_RTZ_ROUNDING,
+                                       OID_SCONST_CONV_FROM_FP64_TO_FP16_UP, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT, noStorage);
+                testCases.emplace_back("rounding_rtz_sconst_conv_from_fp64_down", B_RTZ_ROUNDING,
+                                       OID_SCONST_CONV_FROM_FP64_TO_FP16_DOWN, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG,
+                                       V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT, noStorage);
+                testCases.emplace_back("rounding_rtz_sconst_conv_from_fp64_tie_up", B_RTZ_ROUNDING,
+                                       OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_UP, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG,
+                                       V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT, noStorage);
+                testCases.emplace_back("rounding_rtz_sconst_conv_from_fp64_tie_down", B_RTZ_ROUNDING,
+                                       OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_DOWN,
+                                       V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED,
+                                       V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT, noStorage);
             }
 
             // verify that VkShaderFloatingPointRoundingModeKHR can be overridden for a given instruction by the FPRoundingMode decoration.
             // FPRoundingMode decoration requires VK_KHR_16bit_storage.
-            testCases.push_back(OTC("rounding_rte_override_from_fp32_up", B_RTE_ROUNDING, OID_ORTZ_ROUND,
-                                    V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT));
-            testCases.push_back(OTC("rounding_rte_override_from_fp32_down", B_RTE_ROUNDING, OID_ORTZ_ROUND,
-                                    V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED,
-                                    V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT));
-            testCases.push_back(OTC("rounding_rte_override_from_fp32_tie_up", B_RTE_ROUNDING, OID_ORTZ_ROUND,
-                                    V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED,
-                                    V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT));
-            testCases.push_back(OTC("rounding_rte_override_from_fp32_tie_down", B_RTE_ROUNDING, OID_ORTZ_ROUND,
-                                    V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED,
-                                    V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT));
+            testCases.emplace_back("rounding_rte_override_from_fp32_up", B_RTE_ROUNDING, OID_ORTZ_ROUND,
+                                   V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT);
+            testCases.emplace_back("rounding_rte_override_from_fp32_down", B_RTE_ROUNDING, OID_ORTZ_ROUND,
+                                   V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED,
+                                   V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT);
+            testCases.emplace_back("rounding_rte_override_from_fp32_tie_up", B_RTE_ROUNDING, OID_ORTZ_ROUND,
+                                   V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED,
+                                   V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT);
+            testCases.emplace_back("rounding_rte_override_from_fp32_tie_down", B_RTE_ROUNDING, OID_ORTZ_ROUND,
+                                   V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED,
+                                   V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT);
             // Missing for FP64 -> FP16
             // TODO(https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/4539)
 
-            testCases.push_back(OTC("rounding_rtz_override_from_fp32_up", B_RTE_ROUNDING, OID_ORTE_ROUND,
-                                    V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT));
-            testCases.push_back(OTC("rounding_rtz_override_from_fp32_down", B_RTE_ROUNDING, OID_ORTE_ROUND,
-                                    V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED,
-                                    V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT));
-            testCases.push_back(OTC("rounding_rtz_override_from_fp32_tie_up", B_RTE_ROUNDING, OID_ORTE_ROUND,
-                                    V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED,
-                                    V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT));
-            testCases.push_back(OTC("rounding_rtz_override_from_fp32_tie_down", B_RTE_ROUNDING, OID_ORTE_ROUND,
-                                    V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED,
-                                    V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT));
+            testCases.emplace_back("rounding_rtz_override_from_fp32_up", B_RTE_ROUNDING, OID_ORTE_ROUND,
+                                   V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT);
+            testCases.emplace_back("rounding_rtz_override_from_fp32_down", B_RTE_ROUNDING, OID_ORTE_ROUND,
+                                   V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED,
+                                   V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT);
+            testCases.emplace_back("rounding_rtz_override_from_fp32_tie_up", B_RTE_ROUNDING, OID_ORTE_ROUND,
+                                   V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED,
+                                   V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT);
+            testCases.emplace_back("rounding_rtz_override_from_fp32_tie_down", B_RTE_ROUNDING, OID_ORTE_ROUND,
+                                   V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED,
+                                   V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT);
             // Missing for FP64 -> FP16
             // TODO(https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/4539)
         }
@@ -3071,139 +3031,139 @@ void TestCasesBuilder::build(vector<OperationTestCase> &testCases, TypeTestResul
         {
             //// Conversions from arguments
             // fp64 rte
-            testCases.push_back(OTC("rounding_rte_conv_from_fp64_up", B_RTE_ROUNDING, OID_CONV_FROM_FP64,
-                                    V_CONV_FROM_FP64_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_UP_RTE_RESULT));
-            testCases.push_back(OTC("rounding_rte_conv_from_fp64_down", B_RTE_ROUNDING, OID_CONV_FROM_FP64,
-                                    V_CONV_FROM_FP64_TO_FP32_DOWN_ARG, V_UNUSED,
-                                    V_CONV_FROM_FP64_TO_FP32_DOWN_RTE_RESULT));
-            testCases.push_back(OTC("rounding_rte_conv_from_fp64_tie_up", B_RTE_ROUNDING, OID_CONV_FROM_FP64,
-                                    V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG, V_UNUSED,
-                                    V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTE_RESULT));
-            testCases.push_back(OTC("rounding_rte_conv_from_fp64_tie_down", B_RTE_ROUNDING, OID_CONV_FROM_FP64,
-                                    V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG, V_UNUSED,
-                                    V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTE_RESULT));
+            testCases.emplace_back("rounding_rte_conv_from_fp64_up", B_RTE_ROUNDING, OID_CONV_FROM_FP64,
+                                   V_CONV_FROM_FP64_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_UP_RTE_RESULT);
+            testCases.emplace_back("rounding_rte_conv_from_fp64_down", B_RTE_ROUNDING, OID_CONV_FROM_FP64,
+                                   V_CONV_FROM_FP64_TO_FP32_DOWN_ARG, V_UNUSED,
+                                   V_CONV_FROM_FP64_TO_FP32_DOWN_RTE_RESULT);
+            testCases.emplace_back("rounding_rte_conv_from_fp64_tie_up", B_RTE_ROUNDING, OID_CONV_FROM_FP64,
+                                   V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG, V_UNUSED,
+                                   V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTE_RESULT);
+            testCases.emplace_back("rounding_rte_conv_from_fp64_tie_down", B_RTE_ROUNDING, OID_CONV_FROM_FP64,
+                                   V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG, V_UNUSED,
+                                   V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTE_RESULT);
 
             // fp64 rtz
-            testCases.push_back(OTC("rounding_rtz_conv_from_fp64_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP64,
-                                    V_CONV_FROM_FP64_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_UP_RTZ_RESULT));
-            testCases.push_back(OTC("rounding_rtz_conv_from_fp64_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP64,
-                                    V_CONV_FROM_FP64_TO_FP32_DOWN_ARG, V_UNUSED,
-                                    V_CONV_FROM_FP64_TO_FP32_DOWN_RTZ_RESULT));
-            testCases.push_back(OTC("rounding_rtz_conv_from_fp64_tie_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP64,
-                                    V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG, V_UNUSED,
-                                    V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTZ_RESULT));
-            testCases.push_back(OTC("rounding_rtz_conv_from_fp64_tie_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP64,
-                                    V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG, V_UNUSED,
-                                    V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTZ_RESULT));
+            testCases.emplace_back("rounding_rtz_conv_from_fp64_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP64,
+                                   V_CONV_FROM_FP64_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_UP_RTZ_RESULT);
+            testCases.emplace_back("rounding_rtz_conv_from_fp64_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP64,
+                                   V_CONV_FROM_FP64_TO_FP32_DOWN_ARG, V_UNUSED,
+                                   V_CONV_FROM_FP64_TO_FP32_DOWN_RTZ_RESULT);
+            testCases.emplace_back("rounding_rtz_conv_from_fp64_tie_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP64,
+                                   V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG, V_UNUSED,
+                                   V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTZ_RESULT);
+            testCases.emplace_back("rounding_rtz_conv_from_fp64_tie_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP64,
+                                   V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG, V_UNUSED,
+                                   V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTZ_RESULT);
 
             //// Conversions from specialization constants
             // fp64 rte
-            testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_up", B_RTE_ROUNDING,
-                                    OID_SCONST_CONV_FROM_FP64_TO_FP32_UP, V_CONV_FROM_FP64_TO_FP32_UP_ARG, V_UNUSED,
-                                    V_CONV_FROM_FP64_TO_FP32_UP_RTE_RESULT));
-            testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_down", B_RTE_ROUNDING,
-                                    OID_SCONST_CONV_FROM_FP64_TO_FP32_DOWN, V_CONV_FROM_FP64_TO_FP32_DOWN_ARG, V_UNUSED,
-                                    V_CONV_FROM_FP64_TO_FP32_DOWN_RTE_RESULT));
-            testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_tie_up", B_RTE_ROUNDING,
-                                    OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_UP, V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG,
-                                    V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTE_RESULT));
-            testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_tie_down", B_RTE_ROUNDING,
-                                    OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_DOWN, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG,
-                                    V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTE_RESULT));
+            testCases.emplace_back("rounding_rte_sconst_conv_from_fp64_up", B_RTE_ROUNDING,
+                                   OID_SCONST_CONV_FROM_FP64_TO_FP32_UP, V_CONV_FROM_FP64_TO_FP32_UP_ARG, V_UNUSED,
+                                   V_CONV_FROM_FP64_TO_FP32_UP_RTE_RESULT);
+            testCases.emplace_back("rounding_rte_sconst_conv_from_fp64_down", B_RTE_ROUNDING,
+                                   OID_SCONST_CONV_FROM_FP64_TO_FP32_DOWN, V_CONV_FROM_FP64_TO_FP32_DOWN_ARG, V_UNUSED,
+                                   V_CONV_FROM_FP64_TO_FP32_DOWN_RTE_RESULT);
+            testCases.emplace_back("rounding_rte_sconst_conv_from_fp64_tie_up", B_RTE_ROUNDING,
+                                   OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_UP, V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG,
+                                   V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTE_RESULT);
+            testCases.emplace_back("rounding_rte_sconst_conv_from_fp64_tie_down", B_RTE_ROUNDING,
+                                   OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_DOWN, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG,
+                                   V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTE_RESULT);
 
             // fp64 rtz
-            testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_up", B_RTZ_ROUNDING,
-                                    OID_SCONST_CONV_FROM_FP64_TO_FP32_UP, V_CONV_FROM_FP64_TO_FP32_UP_ARG, V_UNUSED,
-                                    V_CONV_FROM_FP64_TO_FP32_UP_RTZ_RESULT));
-            testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_down", B_RTZ_ROUNDING,
-                                    OID_SCONST_CONV_FROM_FP64_TO_FP32_DOWN, V_CONV_FROM_FP64_TO_FP32_DOWN_ARG, V_UNUSED,
-                                    V_CONV_FROM_FP64_TO_FP32_DOWN_RTZ_RESULT));
-            testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_tie_up", B_RTZ_ROUNDING,
-                                    OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_UP, V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG,
-                                    V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTZ_RESULT));
-            testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_tie_down", B_RTZ_ROUNDING,
-                                    OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_DOWN, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG,
-                                    V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTZ_RESULT));
+            testCases.emplace_back("rounding_rtz_sconst_conv_from_fp64_up", B_RTZ_ROUNDING,
+                                   OID_SCONST_CONV_FROM_FP64_TO_FP32_UP, V_CONV_FROM_FP64_TO_FP32_UP_ARG, V_UNUSED,
+                                   V_CONV_FROM_FP64_TO_FP32_UP_RTZ_RESULT);
+            testCases.emplace_back("rounding_rtz_sconst_conv_from_fp64_down", B_RTZ_ROUNDING,
+                                   OID_SCONST_CONV_FROM_FP64_TO_FP32_DOWN, V_CONV_FROM_FP64_TO_FP32_DOWN_ARG, V_UNUSED,
+                                   V_CONV_FROM_FP64_TO_FP32_DOWN_RTZ_RESULT);
+            testCases.emplace_back("rounding_rtz_sconst_conv_from_fp64_tie_up", B_RTZ_ROUNDING,
+                                   OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_UP, V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG,
+                                   V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTZ_RESULT);
+            testCases.emplace_back("rounding_rtz_sconst_conv_from_fp64_tie_down", B_RTZ_ROUNDING,
+                                   OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_DOWN, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG,
+                                   V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTZ_RESULT);
 
             // Verify that VkShaderFloatingPointRoundingModeKHR can be overridden for a given instruction by the FPRoundingMode decoration.
             // Missing for FP64 -> FP32
             // TODO(https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/4539)
 
             // uint32 rtz
-            testCases.push_back(OTC("rounding_rtz_conv_from_uint32_up", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP32,
-                                    V_CONV_FROM_UINT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_UINT32_UP_RTZ_RESULT));
-            testCases.push_back(OTC("rounding_rtz_conv_from_uint32_tie", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP32,
-                                    V_CONV_FROM_UINT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_UINT32_TIE_RTZ_RESULT));
-            testCases.push_back(OTC("rounding_rtz_conv_from_uint32_down", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP32,
-                                    V_CONV_FROM_UINT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_UINT32_DOWN_RTZ_RESULT));
+            testCases.emplace_back("rounding_rtz_conv_from_uint32_up", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP32,
+                                   V_CONV_FROM_UINT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_UINT32_UP_RTZ_RESULT);
+            testCases.emplace_back("rounding_rtz_conv_from_uint32_tie", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP32,
+                                   V_CONV_FROM_UINT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_UINT32_TIE_RTZ_RESULT);
+            testCases.emplace_back("rounding_rtz_conv_from_uint32_down", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP32,
+                                   V_CONV_FROM_UINT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_UINT32_DOWN_RTZ_RESULT);
 
             // uint64 rtz
-            testCases.push_back(OTC("rounding_rtz_conv_from_uint64_up", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
-                                    V_CONV_FROM_UINT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_UINT64_UP_RTZ_RESULT));
-            testCases.push_back(OTC("rounding_rtz_conv_from_uint64_tie", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
-                                    V_CONV_FROM_UINT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_UINT64_TIE_RTZ_RESULT));
-            testCases.push_back(OTC("rounding_rtz_conv_from_uint64_down", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
-                                    V_CONV_FROM_UINT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_UINT64_DOWN_RTZ_RESULT));
+            testCases.emplace_back("rounding_rtz_conv_from_uint64_up", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
+                                   V_CONV_FROM_UINT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_UINT64_UP_RTZ_RESULT);
+            testCases.emplace_back("rounding_rtz_conv_from_uint64_tie", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
+                                   V_CONV_FROM_UINT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_UINT64_TIE_RTZ_RESULT);
+            testCases.emplace_back("rounding_rtz_conv_from_uint64_down", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
+                                   V_CONV_FROM_UINT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_UINT64_DOWN_RTZ_RESULT);
 
             // uint32 rte
-            testCases.push_back(OTC("rounding_rte_conv_from_uint32_up", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP32,
-                                    V_CONV_FROM_UINT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_UINT32_UP_RTE_RESULT));
-            testCases.push_back(OTC("rounding_rte_conv_from_uint32_tie", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP32,
-                                    V_CONV_FROM_UINT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_UINT32_TIE_RTE_RESULT));
-            testCases.push_back(OTC("rounding_rte_conv_from_uint32_down", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP32,
-                                    V_CONV_FROM_UINT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_UINT32_DOWN_RTE_RESULT));
+            testCases.emplace_back("rounding_rte_conv_from_uint32_up", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP32,
+                                   V_CONV_FROM_UINT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_UINT32_UP_RTE_RESULT);
+            testCases.emplace_back("rounding_rte_conv_from_uint32_tie", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP32,
+                                   V_CONV_FROM_UINT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_UINT32_TIE_RTE_RESULT);
+            testCases.emplace_back("rounding_rte_conv_from_uint32_down", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP32,
+                                   V_CONV_FROM_UINT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_UINT32_DOWN_RTE_RESULT);
 
             // uint64 rte
-            testCases.push_back(OTC("rounding_rte_conv_from_uint64_up", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
-                                    V_CONV_FROM_UINT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_UINT64_UP_RTE_RESULT));
-            testCases.push_back(OTC("rounding_rte_conv_from_uint64_tie", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
-                                    V_CONV_FROM_UINT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_UINT64_TIE_RTE_RESULT));
-            testCases.push_back(OTC("rounding_rte_conv_from_uint64_down", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
-                                    V_CONV_FROM_UINT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_UINT64_DOWN_RTE_RESULT));
+            testCases.emplace_back("rounding_rte_conv_from_uint64_up", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
+                                   V_CONV_FROM_UINT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_UINT64_UP_RTE_RESULT);
+            testCases.emplace_back("rounding_rte_conv_from_uint64_tie", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
+                                   V_CONV_FROM_UINT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_UINT64_TIE_RTE_RESULT);
+            testCases.emplace_back("rounding_rte_conv_from_uint64_down", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
+                                   V_CONV_FROM_UINT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_UINT64_DOWN_RTE_RESULT);
 
             // int32 rtz
-            testCases.push_back(OTC("rounding_rtz_conv_from_int32_up", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP32,
-                                    V_CONV_FROM_INT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_INT32_UP_RTZ_RESULT));
-            testCases.push_back(OTC("rounding_rtz_conv_from_int32_tie", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP32,
-                                    V_CONV_FROM_INT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_INT32_TIE_RTZ_RESULT));
-            testCases.push_back(OTC("rounding_rtz_conv_from_int32_down", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP32,
-                                    V_CONV_FROM_INT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_INT32_DOWN_RTZ_RESULT));
+            testCases.emplace_back("rounding_rtz_conv_from_int32_up", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP32,
+                                   V_CONV_FROM_INT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_INT32_UP_RTZ_RESULT);
+            testCases.emplace_back("rounding_rtz_conv_from_int32_tie", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP32,
+                                   V_CONV_FROM_INT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_INT32_TIE_RTZ_RESULT);
+            testCases.emplace_back("rounding_rtz_conv_from_int32_down", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP32,
+                                   V_CONV_FROM_INT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_INT32_DOWN_RTZ_RESULT);
 
             // int64 rtz
-            testCases.push_back(OTC("rounding_rtz_conv_from_int64_up", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
-                                    V_CONV_FROM_INT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_INT64_UP_RTZ_RESULT));
-            testCases.push_back(OTC("rounding_rtz_conv_from_int64_tie", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
-                                    V_CONV_FROM_INT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_INT64_TIE_RTZ_RESULT));
-            testCases.push_back(OTC("rounding_rtz_conv_from_int64_down", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
-                                    V_CONV_FROM_INT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_INT64_DOWN_RTZ_RESULT));
+            testCases.emplace_back("rounding_rtz_conv_from_int64_up", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
+                                   V_CONV_FROM_INT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_INT64_UP_RTZ_RESULT);
+            testCases.emplace_back("rounding_rtz_conv_from_int64_tie", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
+                                   V_CONV_FROM_INT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_INT64_TIE_RTZ_RESULT);
+            testCases.emplace_back("rounding_rtz_conv_from_int64_down", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
+                                   V_CONV_FROM_INT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_INT64_DOWN_RTZ_RESULT);
 
             // int32 rte
-            testCases.push_back(OTC("rounding_rte_conv_from_int32_up", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP32,
-                                    V_CONV_FROM_INT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_INT32_UP_RTE_RESULT));
-            testCases.push_back(OTC("rounding_rte_conv_from_int32_tie", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP32,
-                                    V_CONV_FROM_INT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_INT32_TIE_RTE_RESULT));
-            testCases.push_back(OTC("rounding_rte_conv_from_int32_down", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP32,
-                                    V_CONV_FROM_INT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_INT32_DOWN_RTE_RESULT));
+            testCases.emplace_back("rounding_rte_conv_from_int32_up", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP32,
+                                   V_CONV_FROM_INT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_INT32_UP_RTE_RESULT);
+            testCases.emplace_back("rounding_rte_conv_from_int32_tie", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP32,
+                                   V_CONV_FROM_INT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_INT32_TIE_RTE_RESULT);
+            testCases.emplace_back("rounding_rte_conv_from_int32_down", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP32,
+                                   V_CONV_FROM_INT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_INT32_DOWN_RTE_RESULT);
 
             // int64 rte
-            testCases.push_back(OTC("rounding_rte_conv_from_int64_up", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
-                                    V_CONV_FROM_INT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_INT64_UP_RTE_RESULT));
-            testCases.push_back(OTC("rounding_rte_conv_from_int64_tie", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
-                                    V_CONV_FROM_INT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_INT64_TIE_RTE_RESULT));
-            testCases.push_back(OTC("rounding_rte_conv_from_int64_down", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
-                                    V_CONV_FROM_INT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_INT64_DOWN_RTE_RESULT));
+            testCases.emplace_back("rounding_rte_conv_from_int64_up", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
+                                   V_CONV_FROM_INT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_INT64_UP_RTE_RESULT);
+            testCases.emplace_back("rounding_rte_conv_from_int64_tie", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
+                                   V_CONV_FROM_INT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_INT64_TIE_RTE_RESULT);
+            testCases.emplace_back("rounding_rte_conv_from_int64_down", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
+                                   V_CONV_FROM_INT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_INT64_DOWN_RTE_RESULT);
         }
         else
         {
             // PackHalf2x16 - verification done in SPIR-V
-            testCases.push_back(
-                OTC("pack_half_denorm_preserve", B_DENORM_PRESERVE, OID_PH_DENORM, V_UNUSED, V_UNUSED, V_ONE));
+            testCases.emplace_back("pack_half_denorm_preserve", B_DENORM_PRESERVE, OID_PH_DENORM, V_UNUSED, V_UNUSED,
+                                   V_ONE);
 
             // UnpackHalf2x16 - custom arguments defined as constants
-            testCases.push_back(
-                OTC("upack_half_denorm_flush_to_zero", B_DENORM_FLUSH, OID_UPH_DENORM, V_UNUSED, V_UNUSED, V_ZERO));
-            testCases.push_back(OTC("upack_half_denorm_preserve", B_DENORM_PRESERVE, OID_UPH_DENORM, V_UNUSED, V_UNUSED,
-                                    V_CONV_DENORM_SMALLER));
+            testCases.emplace_back("upack_half_denorm_flush_to_zero", B_DENORM_FLUSH, OID_UPH_DENORM, V_UNUSED,
+                                   V_UNUSED, V_ZERO);
+            testCases.emplace_back("upack_half_denorm_preserve", B_DENORM_PRESERVE, OID_UPH_DENORM, V_UNUSED, V_UNUSED,
+                                   V_CONV_DENORM_SMALLER);
         }
 
         createUnaryTestCases(testCases, OID_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP32);
@@ -3215,48 +3175,48 @@ void TestCasesBuilder::build(vector<OperationTestCase> &testCases, TypeTestResul
         if (argumentsFromInput)
         {
             // uint64 rtz
-            testCases.push_back(OTC("rounding_rtz_conv_from_uint64_up", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
-                                    V_CONV_FROM_UINT_TO_FP64_UP_ARG, V_UNUSED, V_CONV_FROM_UINT64_UP_RTZ_RESULT));
-            testCases.push_back(OTC("rounding_rtz_conv_from_uint64_tie", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
-                                    V_CONV_FROM_UINT_TO_FP64_TIE_ARG, V_UNUSED, V_CONV_FROM_UINT64_TIE_RTZ_RESULT));
-            testCases.push_back(OTC("rounding_rtz_conv_from_uint64_down", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
-                                    V_CONV_FROM_UINT_TO_FP64_DOWN_ARG, V_UNUSED, V_CONV_FROM_UINT64_DOWN_RTZ_RESULT));
+            testCases.emplace_back("rounding_rtz_conv_from_uint64_up", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
+                                   V_CONV_FROM_UINT_TO_FP64_UP_ARG, V_UNUSED, V_CONV_FROM_UINT64_UP_RTZ_RESULT);
+            testCases.emplace_back("rounding_rtz_conv_from_uint64_tie", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
+                                   V_CONV_FROM_UINT_TO_FP64_TIE_ARG, V_UNUSED, V_CONV_FROM_UINT64_TIE_RTZ_RESULT);
+            testCases.emplace_back("rounding_rtz_conv_from_uint64_down", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
+                                   V_CONV_FROM_UINT_TO_FP64_DOWN_ARG, V_UNUSED, V_CONV_FROM_UINT64_DOWN_RTZ_RESULT);
 
             // uint64 rte
-            testCases.push_back(OTC("rounding_rte_conv_from_uint64_up", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
-                                    V_CONV_FROM_UINT_TO_FP64_UP_ARG, V_UNUSED, V_CONV_FROM_UINT64_UP_RTE_RESULT));
-            testCases.push_back(OTC("rounding_rte_conv_from_uint64_tie", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
-                                    V_CONV_FROM_UINT_TO_FP64_TIE_ARG, V_UNUSED, V_CONV_FROM_UINT64_TIE_RTE_RESULT));
-            testCases.push_back(OTC("rounding_rte_conv_from_uint64_down", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
-                                    V_CONV_FROM_UINT_TO_FP64_DOWN_ARG, V_UNUSED, V_CONV_FROM_UINT64_DOWN_RTE_RESULT));
+            testCases.emplace_back("rounding_rte_conv_from_uint64_up", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
+                                   V_CONV_FROM_UINT_TO_FP64_UP_ARG, V_UNUSED, V_CONV_FROM_UINT64_UP_RTE_RESULT);
+            testCases.emplace_back("rounding_rte_conv_from_uint64_tie", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
+                                   V_CONV_FROM_UINT_TO_FP64_TIE_ARG, V_UNUSED, V_CONV_FROM_UINT64_TIE_RTE_RESULT);
+            testCases.emplace_back("rounding_rte_conv_from_uint64_down", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP64,
+                                   V_CONV_FROM_UINT_TO_FP64_DOWN_ARG, V_UNUSED, V_CONV_FROM_UINT64_DOWN_RTE_RESULT);
 
             // int64 rtz
-            testCases.push_back(OTC("rounding_rtz_conv_from_int64_up", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
-                                    V_CONV_FROM_INT_TO_FP64_UP_ARG, V_UNUSED, V_CONV_FROM_INT64_UP_RTZ_RESULT));
-            testCases.push_back(OTC("rounding_rtz_conv_from_int64_tie", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
-                                    V_CONV_FROM_INT_TO_FP64_TIE_ARG, V_UNUSED, V_CONV_FROM_INT64_TIE_RTZ_RESULT));
-            testCases.push_back(OTC("rounding_rtz_conv_from_int64_down", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
-                                    V_CONV_FROM_INT_TO_FP64_DOWN_ARG, V_UNUSED, V_CONV_FROM_INT64_DOWN_RTZ_RESULT));
+            testCases.emplace_back("rounding_rtz_conv_from_int64_up", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
+                                   V_CONV_FROM_INT_TO_FP64_UP_ARG, V_UNUSED, V_CONV_FROM_INT64_UP_RTZ_RESULT);
+            testCases.emplace_back("rounding_rtz_conv_from_int64_tie", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
+                                   V_CONV_FROM_INT_TO_FP64_TIE_ARG, V_UNUSED, V_CONV_FROM_INT64_TIE_RTZ_RESULT);
+            testCases.emplace_back("rounding_rtz_conv_from_int64_down", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
+                                   V_CONV_FROM_INT_TO_FP64_DOWN_ARG, V_UNUSED, V_CONV_FROM_INT64_DOWN_RTZ_RESULT);
 
             // int64 rte
-            testCases.push_back(OTC("rounding_rte_conv_from_int64_up", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
-                                    V_CONV_FROM_INT_TO_FP64_UP_ARG, V_UNUSED, V_CONV_FROM_INT64_UP_RTE_RESULT));
-            testCases.push_back(OTC("rounding_rte_conv_from_int64_tie", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
-                                    V_CONV_FROM_INT_TO_FP64_TIE_ARG, V_UNUSED, V_CONV_FROM_INT64_TIE_RTE_RESULT));
-            testCases.push_back(OTC("rounding_rte_conv_from_int64_down", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
-                                    V_CONV_FROM_INT_TO_FP64_DOWN_ARG, V_UNUSED, V_CONV_FROM_INT64_DOWN_RTE_RESULT));
+            testCases.emplace_back("rounding_rte_conv_from_int64_up", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
+                                   V_CONV_FROM_INT_TO_FP64_UP_ARG, V_UNUSED, V_CONV_FROM_INT64_UP_RTE_RESULT);
+            testCases.emplace_back("rounding_rte_conv_from_int64_tie", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
+                                   V_CONV_FROM_INT_TO_FP64_TIE_ARG, V_UNUSED, V_CONV_FROM_INT64_TIE_RTE_RESULT);
+            testCases.emplace_back("rounding_rte_conv_from_int64_down", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP64,
+                                   V_CONV_FROM_INT_TO_FP64_DOWN_ARG, V_UNUSED, V_CONV_FROM_INT64_DOWN_RTE_RESULT);
         }
         else
         {
             // PackDouble2x32 - custom arguments defined as constants
-            testCases.push_back(
-                OTC("pack_double_denorm_preserve", B_DENORM_PRESERVE, OID_PD_DENORM, V_UNUSED, V_UNUSED, V_DENORM));
+            testCases.emplace_back("pack_double_denorm_preserve", B_DENORM_PRESERVE, OID_PD_DENORM, V_UNUSED, V_UNUSED,
+                                   V_DENORM);
 
             // UnpackDouble2x32 - verification done in SPIR-V
-            testCases.push_back(OTC("upack_double_denorm_flush_to_zero", B_DENORM_FLUSH, OID_UPD_DENORM_FLUSH, V_DENORM,
-                                    V_UNUSED, V_ONE));
-            testCases.push_back(OTC("upack_double_denorm_preserve", B_DENORM_PRESERVE, OID_UPD_DENORM_PRESERVE,
-                                    V_DENORM, V_UNUSED, V_ONE));
+            testCases.emplace_back("upack_double_denorm_flush_to_zero", B_DENORM_FLUSH, OID_UPD_DENORM_FLUSH, V_DENORM,
+                                   V_UNUSED, V_ONE);
+            testCases.emplace_back("upack_double_denorm_preserve", B_DENORM_PRESERVE, OID_UPD_DENORM_PRESERVE, V_DENORM,
+                                   V_UNUSED, V_ONE);
         }
 
         createUnaryTestCases(testCases, OID_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP64);
@@ -3275,22 +3235,20 @@ void TestCasesBuilder::createUnaryTestCases(vector<OperationTestCase> &testCases
                                             bool fp16WithoutStorage) const
 {
     // Denorm - Preserve
-    testCases.push_back(OTC("op_denorm_preserve", B_DENORM_PRESERVE, operationId, V_DENORM, V_UNUSED,
-                            denormPreserveResult, fp16WithoutStorage));
+    testCases.emplace_back("op_denorm_preserve", B_DENORM_PRESERVE, operationId, V_DENORM, V_UNUSED,
+                           denormPreserveResult, fp16WithoutStorage);
 
     // Denorm - FlushToZero
-    testCases.push_back(OTC("op_denorm_flush_to_zero", B_DENORM_FLUSH, operationId, V_DENORM, V_UNUSED, denormFTZResult,
-                            fp16WithoutStorage));
+    testCases.emplace_back("op_denorm_flush_to_zero", B_DENORM_FLUSH, operationId, V_DENORM, V_UNUSED, denormFTZResult,
+                           fp16WithoutStorage);
 
     // Signed Zero Inf Nan - Preserve
-    testCases.push_back(
-        OTC("op_zero_preserve", B_ZIN_PRESERVE, operationId, V_ZERO, V_UNUSED, V_ZERO, fp16WithoutStorage));
-    testCases.push_back(OTC("op_signed_zero_preserve", B_ZIN_PRESERVE, operationId, V_MINUS_ZERO, V_UNUSED,
-                            V_MINUS_ZERO, fp16WithoutStorage));
-    testCases.push_back(
-        OTC("op_inf_preserve", B_ZIN_PRESERVE, operationId, V_INF, V_UNUSED, V_INF, fp16WithoutStorage));
-    testCases.push_back(
-        OTC("op_nan_preserve", B_ZIN_PRESERVE, operationId, V_NAN, V_UNUSED, V_NAN, fp16WithoutStorage));
+    testCases.emplace_back("op_zero_preserve", B_ZIN_PRESERVE, operationId, V_ZERO, V_UNUSED, V_ZERO,
+                           fp16WithoutStorage);
+    testCases.emplace_back("op_signed_zero_preserve", B_ZIN_PRESERVE, operationId, V_MINUS_ZERO, V_UNUSED, V_MINUS_ZERO,
+                           fp16WithoutStorage);
+    testCases.emplace_back("op_inf_preserve", B_ZIN_PRESERVE, operationId, V_INF, V_UNUSED, V_INF, fp16WithoutStorage);
+    testCases.emplace_back("op_nan_preserve", B_ZIN_PRESERVE, operationId, V_NAN, V_UNUSED, V_NAN, fp16WithoutStorage);
 }
 
 template <typename TYPE, typename FLOAT_TYPE>
@@ -3674,6 +3632,8 @@ protected:
     void specializeOperation(const OperationTestCaseInfo &testCaseInfo,
                              SpecializedOperation &specializedOperation) const;
 
+    bool isFloatControlsExtensionRequired(const OperationTestCaseInfo &testCaseInfo) const;
+
     void getBehaviorCapabilityAndExecutionMode(BehaviorFlags behaviorFlags, const string inBitWidth,
                                                const string outBitWidth, string &capability,
                                                string &executionMode) const;
@@ -3803,6 +3763,26 @@ void TestGroupBuilderBase::specializeOperation(const OperationTestCaseInfo &test
     }
 }
 
+bool TestGroupBuilderBase::isFloatControlsExtensionRequired(const OperationTestCaseInfo &testCaseInfo) const
+{
+    // there are various SPIR-V operations that Vulkan specifies will preserve
+    // denorms whether or not the DenormPreserve execution mode is specified
+    const auto mustPreserveDenorms = {OID_PHI,     OID_SELECT,    OID_RETURN_VAL,    OID_D_EXTRACT, OID_D_INSERT,
+                                      OID_SHUFFLE, OID_COMPOSITE, OID_COMPOSITE_INS, OID_TRANSPOSE, OID_COPY};
+
+    // float controls extension can be skipped only for cases that operate on arguments from input;
+    // generated inputs can't be used because this will use operations that don't preserve denorms
+    const auto &testCase = testCaseInfo.testCase;
+    if (testCaseInfo.argumentsFromInput && (testCase.behaviorFlags & B_DENORM_PRESERVE))
+    {
+        const auto oid = testCase.operationId;
+        const auto end = mustPreserveDenorms.end();
+        return (std::find(mustPreserveDenorms.begin(), end, oid) == end);
+    }
+
+    return true;
+}
+
 void TestGroupBuilderBase::getBehaviorCapabilityAndExecutionMode(BehaviorFlags behaviorFlags, const string inBitWidth,
                                                                  const string outBitWidth, string &capability,
                                                                  string &executionMode) const
@@ -3890,16 +3870,10 @@ void TestGroupBuilderBase::setupFloatControlsProperties(VariableType inVariableT
 // features are set to the same value when specific independence settings are used.
 tcu::TestStatus verifyIndependenceSettings(Context &context)
 {
-    if (!context.isDeviceFunctionalitySupported("VK_KHR_shader_float_controls"))
-        TCU_THROW(NotSupportedError, "VK_KHR_shader_float_controls not supported");
+    context.requireDeviceFunctionality("VK_KHR_shader_float_controls");
 
-    vk::VkPhysicalDeviceFloatControlsProperties fcProperties;
-    fcProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES;
-    fcProperties.pNext = DE_NULL;
-
-    vk::VkPhysicalDeviceProperties2 deviceProperties;
-    deviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-    deviceProperties.pNext = &fcProperties;
+    vk::VkPhysicalDeviceFloatControlsProperties fcProperties = initVulkanStructure();
+    vk::VkPhysicalDeviceProperties2 deviceProperties         = initVulkanStructure(&fcProperties);
 
     auto fail = [](const string &featureGroup)
     { return tcu::TestStatus::fail(featureGroup + " features should be set to the same value"); };
@@ -3997,7 +3971,6 @@ void ComputeTestGroupBuilder::init()
     m_operationShaderTemplate.setString("OpCapability Shader\n"
                                         "${capabilities}"
 
-                                        "OpExtension \"SPV_KHR_float_controls\"\n"
                                         "${extensions}"
 
                                         "%std450            = OpExtInstImport \"GLSL.std.450\"\n"
@@ -4157,8 +4130,8 @@ void ComputeTestGroupBuilder::createSettingsTests(TestCaseGroup *parentGroup)
     const SFCI independence32  = VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY;
     const SFCI independenceAll = VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL;
 
-    vector<SettingsTestCaseInfo> testCases = {
-        // name                                                            mode            independenceSetting        fp16Option        fp32Option        fp64Option        fp16Without16bitstorage
+    vector<SettingsTestCaseInfo> testCases{
+        // name    mode    independenceSetting    fp16Option    fp32Option    fp64Option    fp16Without16bitstorage
 
         // test rounding modes when only two float widths are available
         {"rounding_ind_all_fp16_rte_fp32_rtz", SM_ROUNDING, independenceAll, SO_RTE, SO_RTZ, SO_UNUSED, false},
@@ -4308,6 +4281,8 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo &testCa
     bool outFp16WithoutStorage = (outVariableType == FP16) && testCase.fp16Without16BitStorage;
     bool inFp16WithoutStorage  = (inVariableType == FP16) && testCase.fp16Without16BitStorage;
 
+    bool requiresFloatControlsExtension = isFloatControlsExtensionRequired(testCaseInfo);
+
     // The feature is required if OpCapability StorageUniform16 is used in the shader.
     bool requiresUniformAndStorage16BitBufferAccess = false;
 
@@ -4323,12 +4298,17 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo &testCa
 
     string behaviorCapability;
     string behaviorExecutionMode;
-    getBehaviorCapabilityAndExecutionMode(testCase.behaviorFlags, inFloatWidthForCaps, outTypeSnippets->bitWidth,
-                                          behaviorCapability, behaviorExecutionMode);
 
-    string capabilities = behaviorCapability + outTypeSnippets->capabilities;
-    string extensions   = outTypeSnippets->extensions;
-    string annotations  = inTypeSnippets->inputAnnotationsSnippet + outTypeSnippets->outputAnnotationsSnippet +
+    if (requiresFloatControlsExtension)
+    {
+        getBehaviorCapabilityAndExecutionMode(testCase.behaviorFlags, inFloatWidthForCaps, outTypeSnippets->bitWidth,
+                                              behaviorCapability, behaviorExecutionMode);
+    }
+
+    string floatControlsExtension = requiresFloatControlsExtension ? "OpExtension \"SPV_KHR_float_controls\"\n" : "";
+    string capabilities           = behaviorCapability + outTypeSnippets->capabilities;
+    string extensions             = floatControlsExtension + outTypeSnippets->extensions;
+    string annotations = inTypeSnippets->inputAnnotationsSnippet + outTypeSnippets->outputAnnotationsSnippet +
                          outTypeSnippets->typeAnnotationsSnippet;
     string types         = outTypeSnippets->typeDefinitionsSnippet;
     string constants     = outTypeSnippets->constantsDefinitionsSnippet;
@@ -4347,7 +4327,7 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo &testCa
 
         if (outFp16WithoutStorage)
         {
-            extensions   = outTypeSnippets->extensionsFp16Without16BitStorage;
+            extensions   = floatControlsExtension + outTypeSnippets->extensionsFp16Without16BitStorage;
             capabilities = behaviorCapability + outTypeSnippets->capabilitiesFp16Without16BitStorage;
             types += outTypeSnippets->typeDefinitionsFp16Snippet;
             annotations += outTypeSnippets->typeAnnotationsFp16Snippet;
@@ -4447,15 +4427,16 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo &testCa
     TypeValuesSP outTypeValues = m_typeData.at(outVariableType).values;
     BufferSp inBufferSp        = inTypeValues->constructInputBuffer(testCase.input);
     BufferSp outBufferSp       = outTypeValues->constructOutputBuffer(testCase.expectedOutput);
-    csSpec.inputs.push_back(Resource(inBufferSp, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
-    csSpec.outputs.push_back(Resource(outBufferSp));
+    csSpec.inputs.emplace_back(inBufferSp, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    csSpec.outputs.emplace_back(outBufferSp);
 
     // check which features/properties are needed
     csSpec.assembly      = shaderCode;
     csSpec.numWorkGroups = IVec3(1, 1, 1);
     csSpec.verifyIO      = checkFloatsLUT[outVariableType];
 
-    csSpec.extensions.push_back("VK_KHR_shader_float_controls");
+    if (requiresFloatControlsExtension)
+        csSpec.extensions.push_back("VK_KHR_shader_float_controls");
 
     csSpec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = float64FeatureRequired;
     csSpec.requestedVulkanFeatures.coreFeatures.shaderInt64   = int64FeatureRequired;
@@ -4584,8 +4565,7 @@ void ComputeTestGroupBuilder::fillShaderSpec(const SettingsTestCaseInfo &testCas
     // construct single input buffer containing arguments for all float widths
     // (maxPerStageDescriptorStorageBuffers can be min 4 and we need 3 for outputs)
     uint32_t inputOffset = 0;
-    std::vector<uint8_t> inputData((fp64Required * sizeof(double) + sizeof(float) + fp16Required * sizeof(deFloat16)) *
-                                   2);
+    vector<uint8_t> inputData((fp64Required * sizeof(double) + sizeof(float) + fp16Required * sizeof(deFloat16)) * 2);
 
     // to follow storage buffer layout rules we store data in ssbo in order 64 -> 16
     if (fp64Required)
@@ -4609,8 +4589,8 @@ void ComputeTestGroupBuilder::fillShaderSpec(const SettingsTestCaseInfo &testCas
 
         // construct separate buffers for outputs to make validation easier
         BufferSp fp64OutBufferSp = fp64Data.values->constructOutputBuffer(fp64resultValue);
-        csSpec.outputs.push_back(Resource(fp64OutBufferSp, vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                          reinterpret_cast<void *>(BufferDataType::DATA_FP64)));
+        csSpec.outputs.emplace_back(fp64OutBufferSp, vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                    reinterpret_cast<void *>(BufferDataType::DATA_FP64));
 
         csSpec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = VK_TRUE;
     }
@@ -4633,8 +4613,8 @@ void ComputeTestGroupBuilder::fillShaderSpec(const SettingsTestCaseInfo &testCas
         fp32Data.values->fillInputData(addArgs, inputData, inputOffset);
 
         BufferSp fp32OutBufferSp = fp32Data.values->constructOutputBuffer(fp32resultValue);
-        csSpec.outputs.push_back(Resource(fp32OutBufferSp, vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                          reinterpret_cast<void *>(BufferDataType::DATA_FP32)));
+        csSpec.outputs.emplace_back(fp32OutBufferSp, vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                    reinterpret_cast<void *>(BufferDataType::DATA_FP32));
     }
     if (fp16Required)
     {
@@ -4681,12 +4661,12 @@ void ComputeTestGroupBuilder::fillShaderSpec(const SettingsTestCaseInfo &testCas
         fp16Data.values->fillInputData(addArgs, inputData, inputOffset);
 
         BufferSp fp16OutBufferSp = fp16Data.values->constructOutputBuffer(fp16resultValue);
-        csSpec.outputs.push_back(Resource(fp16OutBufferSp, vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                          reinterpret_cast<void *>(BufferDataType::DATA_FP16)));
+        csSpec.outputs.emplace_back(fp16OutBufferSp, vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                    reinterpret_cast<void *>(BufferDataType::DATA_FP16));
     }
 
     BufferSp inBufferSp(new Buffer<uint8_t>(inputData));
-    csSpec.inputs.push_back(Resource(inBufferSp, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+    csSpec.inputs.emplace_back(inBufferSp, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
     map<string, string> specializations = {
         {"capabilities", capabilities},      {"extensions", extensions}, {"execution_modes", executionModes},
@@ -4715,7 +4695,6 @@ void getGraphicsShaderCode(vk::SourceCollections &dst, InstanceContext context)
         "OpCapability Shader\n"
         "${vert_capabilities}"
 
-        "OpExtension \"SPV_KHR_float_controls\"\n"
         "${vert_extensions}"
 
         "%std450            = OpExtInstImport \"GLSL.std.450\"\n"
@@ -4814,7 +4793,6 @@ void getGraphicsShaderCode(vk::SourceCollections &dst, InstanceContext context)
         "OpCapability Shader\n"
         "${frag_capabilities}"
 
-        "OpExtension \"SPV_KHR_float_controls\"\n"
         "${frag_extensions}"
 
         "%std450            = OpExtInstImport \"GLSL.std.450\"\n"
@@ -4893,9 +4871,9 @@ void getGraphicsShaderCode(vk::SourceCollections &dst, InstanceContext context)
         "OpReturn\n"
         "OpFunctionEnd\n";
 
-    dst.spirvAsmSources.add("vert", DE_NULL) << StringTemplate(vertexTemplate).specialize(context.testCodeFragments)
+    dst.spirvAsmSources.add("vert", nullptr) << StringTemplate(vertexTemplate).specialize(context.testCodeFragments)
                                              << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-    dst.spirvAsmSources.add("frag", DE_NULL) << StringTemplate(fragmentTemplate).specialize(context.testCodeFragments)
+    dst.spirvAsmSources.add("frag", nullptr) << StringTemplate(fragmentTemplate).specialize(context.testCodeFragments)
                                              << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
 }
 
@@ -5025,6 +5003,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
     bool outFp16WithoutStorage = (outVariableType == FP16) && testCase.fp16Without16BitStorage;
     bool inFp16WithoutStorage  = (inVariableType == FP16) && testCase.fp16Without16BitStorage;
 
+    bool requiresFloatControlsExtension = isFloatControlsExtensionRequired(testCaseInfo);
+
     // The feature is required if OpCapability StorageUniform16 is used in the shader.
     bool requiresUniformAndStorage16BitBufferAccess = false;
 
@@ -5045,8 +5025,12 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 
     string behaviorCapability;
     string behaviorExecutionMode;
-    getBehaviorCapabilityAndExecutionMode(testCase.behaviorFlags, inFloatWidthForCaps, outTypeSnippets->bitWidth,
-                                          behaviorCapability, behaviorExecutionMode);
+
+    if (requiresFloatControlsExtension)
+    {
+        getBehaviorCapabilityAndExecutionMode(testCase.behaviorFlags, inFloatWidthForCaps, outTypeSnippets->bitWidth,
+                                              behaviorCapability, behaviorExecutionMode);
+    }
 
     // check which format features are needed
     bool float16FeatureRequired = (inVariableType == FP16) || (outVariableType == FP16);
@@ -5058,8 +5042,9 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
     string fragExecutionMode;
     string vertCapabilities;
     string fragCapabilities;
-    string vertExtensions;
-    string fragExtensions;
+    string floatControlsExtension = requiresFloatControlsExtension ? "OpExtension \"SPV_KHR_float_controls\"\n" : "";
+    string vertExtensions         = floatControlsExtension;
+    string fragExtensions         = floatControlsExtension;
     string vertAnnotations;
     string fragAnnotations;
     string vertTypes;
@@ -5091,9 +5076,9 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
         {
             vertCapabilities = behaviorCapability + inTypeSnippets->capabilities + outTypeSnippets->capabilities;
             fragCapabilities = outTypeSnippets->capabilities;
-            vertExtensions   = inTypeSnippets->extensions + outTypeSnippets->extensions;
-            fragExtensions   = outTypeSnippets->extensions;
-            vertTypes        = inTypeSnippets->typeDefinitionsSnippet + outTypeSnippets->typeDefinitionsSnippet +
+            vertExtensions += inTypeSnippets->extensions + outTypeSnippets->extensions;
+            fragExtensions += outTypeSnippets->extensions;
+            vertTypes = inTypeSnippets->typeDefinitionsSnippet + outTypeSnippets->typeDefinitionsSnippet +
                         outTypeSnippets->varyingsTypesSnippet;
             if (inFp16WithoutStorage)
                 vertTypes += inTypeSnippets->typeDefinitionsFp16Snippet;
@@ -5110,12 +5095,12 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 
             vertCapabilities = behaviorCapability + outTypeSnippets->capabilities;
             fragCapabilities = vertCapabilities;
-            vertExtensions   = outTypeSnippets->extensions;
-            fragExtensions   = vertExtensions;
-            vertTypes        = outTypeSnippets->typeDefinitionsSnippet + outTypeSnippets->varyingsTypesSnippet;
-            fragTypes        = vertTypes;
-            vertConstants    = outTypeSnippets->constantsDefinitionsSnippet;
-            fragConstants    = outTypeSnippets->constantsDefinitionsSnippet;
+            vertExtensions += outTypeSnippets->extensions;
+            fragExtensions = vertExtensions;
+            vertTypes      = outTypeSnippets->typeDefinitionsSnippet + outTypeSnippets->varyingsTypesSnippet;
+            fragTypes      = vertTypes;
+            vertConstants  = outTypeSnippets->constantsDefinitionsSnippet;
+            fragConstants  = outTypeSnippets->constantsDefinitionsSnippet;
         }
 
         requiresUniformAndStorage16BitBufferAccess |= (outVariableType == FP16);
@@ -5174,10 +5159,10 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
                                                        inTypeSnippets->capabilities) +
                                (outFp16WithoutStorage ? outTypeSnippets->capabilitiesFp16Without16BitStorage :
                                                         outTypeSnippets->capabilities);
-            fragExtensions = (inFp16WithoutStorage ? inTypeSnippets->extensionsFp16Without16BitStorage :
-                                                     inTypeSnippets->extensions) +
-                             (outFp16WithoutStorage ? outTypeSnippets->extensionsFp16Without16BitStorage :
-                                                      outTypeSnippets->extensions);
+            fragExtensions += (inFp16WithoutStorage ? inTypeSnippets->extensionsFp16Without16BitStorage :
+                                                      inTypeSnippets->extensions) +
+                              (outFp16WithoutStorage ? outTypeSnippets->extensionsFp16Without16BitStorage :
+                                                       outTypeSnippets->extensions);
             fragTypes     = inTypeSnippets->typeDefinitionsSnippet + outTypeSnippets->typeDefinitionsSnippet;
             fragConstants = inTypeSnippets->constantsDefinitionsSnippet + outTypeSnippets->constantsDefinitionsSnippet;
             ;
@@ -5193,10 +5178,10 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
             fragCapabilities =
                 behaviorCapability + (outFp16WithoutStorage ? outTypeSnippets->capabilitiesFp16Without16BitStorage :
                                                               outTypeSnippets->capabilities);
-            fragExtensions = (outFp16WithoutStorage ? outTypeSnippets->extensionsFp16Without16BitStorage :
-                                                      outTypeSnippets->extensions);
-            fragTypes      = outTypeSnippets->typeDefinitionsSnippet;
-            fragConstants  = outTypeSnippets->constantsDefinitionsSnippet;
+            fragExtensions += (outFp16WithoutStorage ? outTypeSnippets->extensionsFp16Without16BitStorage :
+                                                       outTypeSnippets->extensions);
+            fragTypes     = outTypeSnippets->typeDefinitionsSnippet;
+            fragConstants = outTypeSnippets->constantsDefinitionsSnippet;
         }
 
         requiresUniformAndStorage16BitBufferAccess |=
@@ -5207,7 +5192,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
         string unusedFragVarying = "%BP_vertex_result     = OpVariable %type_i32_iptr Input\n";
 
         vertCapabilities = "";
-        vertExtensions   = "";
+        vertExtensions   = floatControlsExtension;
         vertAnnotations  = "OpDecorate %type_f32_arr_1 ArrayStride 4\n";
         vertTypes        = f32TypeMinimalRequired;
         vertConstants    = "";
@@ -5312,31 +5297,30 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
         fragCapabilities += "OpCapability Float16\n";
     }
 
-    map<string, string> specializations;
-    specializations["vert_capabilities"]   = vertCapabilities;
-    specializations["vert_extensions"]     = vertExtensions;
-    specializations["vert_execution_mode"] = vertExecutionMode;
-    specializations["vert_annotations"]    = vertAnnotations;
-    specializations["vert_types"]          = vertTypes;
-    specializations["vert_constants"]      = vertConstants;
-    specializations["vert_io_definitions"] = vertIODefinitions;
-    specializations["vert_arguments"]      = vertArguments;
-    specializations["vert_variables"]      = vertVariables;
-    specializations["vert_functions"]      = vertFunctions;
-    specializations["vert_commands"]       = vertCommands;
-    specializations["vert_process_result"] = vertProcessResult;
-    specializations["frag_capabilities"]   = fragCapabilities;
-    specializations["frag_extensions"]     = fragExtensions;
-    specializations["frag_execution_mode"] = fragExecutionMode;
-    specializations["frag_annotations"]    = fragAnnotations;
-    specializations["frag_types"]          = fragTypes;
-    specializations["frag_constants"]      = fragConstants;
-    specializations["frag_functions"]      = fragFunctions;
-    specializations["frag_io_definitions"] = fragIODefinitions;
-    specializations["frag_arguments"]      = fragArguments;
-    specializations["frag_variables"]      = fragVariables;
-    specializations["frag_commands"]       = fragCommands;
-    specializations["frag_process_result"] = fragProcessResult;
+    map<string, string> specializations{{"vert_capabilities", vertCapabilities},
+                                        {"vert_extensions", vertExtensions},
+                                        {"vert_execution_mode", vertExecutionMode},
+                                        {"vert_annotations", vertAnnotations},
+                                        {"vert_types", vertTypes},
+                                        {"vert_constants", vertConstants},
+                                        {"vert_io_definitions", vertIODefinitions},
+                                        {"vert_arguments", vertArguments},
+                                        {"vert_variables", vertVariables},
+                                        {"vert_functions", vertFunctions},
+                                        {"vert_commands", vertCommands},
+                                        {"vert_process_result", vertProcessResult},
+                                        {"frag_capabilities", fragCapabilities},
+                                        {"frag_extensions", fragExtensions},
+                                        {"frag_execution_mode", fragExecutionMode},
+                                        {"frag_annotations", fragAnnotations},
+                                        {"frag_types", fragTypes},
+                                        {"frag_constants", fragConstants},
+                                        {"frag_functions", fragFunctions},
+                                        {"frag_io_definitions", fragIODefinitions},
+                                        {"frag_arguments", fragArguments},
+                                        {"frag_variables", fragVariables},
+                                        {"frag_commands", fragCommands},
+                                        {"frag_process_result", fragProcessResult}};
 
     // colors are not used by the test - input is passed via uniform buffer
     RGBA defaultColors[4] = {RGBA::white(), RGBA::red(), RGBA::green(), RGBA::blue()};
@@ -5348,8 +5332,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
     BufferSp outBufferSp       = outTypeValues->constructOutputBuffer(testCase.expectedOutput);
 
     vkt::SpirVAssembly::GraphicsResources resources;
-    resources.inputs.push_back(Resource(inBufferSp, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
-    resources.outputs.push_back(Resource(outBufferSp, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+    resources.inputs.emplace_back(inBufferSp, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    resources.outputs.emplace_back(outBufferSp, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     resources.verifyIO = checkFloatsLUT[outVariableType];
 
     StageToSpecConstantMap noSpecConstants;
@@ -5368,13 +5352,14 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
         float16FeatureRequired && requiresUniformAndStorage16BitBufferAccess;
 
     vector<string> extensions;
-    extensions.push_back("VK_KHR_shader_float_controls");
+    if (requiresFloatControlsExtension)
+        extensions.push_back("VK_KHR_shader_float_controls");
 
     InstanceContext ctx(defaultColors, defaultColors, specializations, noSpecConstants, noPushConstants, resources,
                         noInterfaces, extensions, vulkanFeatures, testedStage);
 
-    ctx.moduleMap["vert"].push_back(std::make_pair("main", VK_SHADER_STAGE_VERTEX_BIT));
-    ctx.moduleMap["frag"].push_back(std::make_pair("main", VK_SHADER_STAGE_FRAGMENT_BIT));
+    ctx.moduleMap["vert"].emplace_back("main", VK_SHADER_STAGE_VERTEX_BIT);
+    ctx.moduleMap["frag"].emplace_back("main", VK_SHADER_STAGE_FRAGMENT_BIT);
 
     ctx.requiredStages = static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
     ctx.failResult     = QP_TEST_RESULT_FAIL;
@@ -5400,10 +5385,9 @@ tcu::TestCaseGroup *createFloatControlsTestGroup(TestContext &testCtx, TestGroup
         {FP64, "fp64"},
     };
 
-    for (int i = 0; i < DE_LENGTH_OF_ARRAY(testGroups); ++i)
+    for (const TestGroup &testGroup : testGroups)
     {
-        const TestGroup &testGroup = testGroups[i];
-        TestCaseGroup *typeGroup   = new TestCaseGroup(testCtx, testGroup.groupName);
+        TestCaseGroup *typeGroup = new TestCaseGroup(testCtx, testGroup.groupName);
         group->addChild(typeGroup);
 
         groupBuilder->createOperationTests(typeGroup, "input_args", testGroup.variableType, true);
@@ -5431,5 +5415,4 @@ tcu::TestCaseGroup *createFloatControlsGraphicsGroup(TestContext &testCtx)
     return createFloatControlsTestGroup(testCtx, &graphicsTestGroupBuilder);
 }
 
-} // namespace SpirVAssembly
-} // namespace vkt
+} // namespace vkt::SpirVAssembly

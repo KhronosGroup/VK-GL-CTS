@@ -83,7 +83,7 @@ FenceSyncCase::FenceSyncCase(Context &context, const char *name, const char *des
     , CallLogWrapper(context.getRenderContext().getFunctions(), context.getTestContext().getLog())
     , m_numSyncs(numSyncs)
     , m_waitCommand(waitCommand)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_iterNdx(0)
     , m_rnd(deStringHash(name))
 {
@@ -145,7 +145,7 @@ void FenceSyncCase::deinit(void)
     if (m_program)
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
     }
 
     for (int i = 0; i < (int)m_syncObjects.size(); i++)

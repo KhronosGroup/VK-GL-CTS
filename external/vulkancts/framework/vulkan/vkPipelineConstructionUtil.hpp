@@ -69,7 +69,7 @@ template <typename T>
 class PointerWrapper
 {
 public:
-    PointerWrapper() : ptr(DE_NULL)
+    PointerWrapper() : ptr(nullptr)
     {
     }
     PointerWrapper(T *p0) : ptr(p0)
@@ -82,7 +82,7 @@ template <typename T>
 class ConstPointerWrapper
 {
 public:
-    ConstPointerWrapper() : ptr(DE_NULL)
+    ConstPointerWrapper() : ptr(nullptr)
     {
     }
     ConstPointerWrapper(const T *p0) : ptr(p0)
@@ -102,7 +102,9 @@ typedef ConstPointerWrapper<VkPipelineShaderStageModuleIdentifierCreateInfoEXT>
     PipelineShaderStageModuleIdentifierCreateInfoWrapper;
 typedef PointerWrapper<VkPipelineRepresentativeFragmentTestStateCreateInfoNV>
     PipelineRepresentativeFragmentTestCreateInfoWrapper;
+typedef PointerWrapper<VkPipelineBinaryInfoKHR> PipelineBinaryInfoWrapper;
 typedef VkPipelineCreateFlags2KHR PipelineCreateFlags2;
+typedef VkShaderCreateFlagsEXT ShaderCreateFlags;
 typedef PointerWrapper<VkPipelineRobustnessCreateInfoEXT> PipelineRobustnessCreateInfoWrapper;
 #else
 typedef PointerWrapper<void> PipelineViewportDepthClipControlCreateInfoWrapper;
@@ -112,7 +114,9 @@ typedef PointerWrapper<void> RenderingInputAttachmentIndexInfoWrapper;
 typedef PointerWrapper<void> PipelineCreationFeedbackCreateInfoWrapper;
 typedef ConstPointerWrapper<void> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRepresentativeFragmentTestCreateInfoWrapper;
+typedef PointerWrapper<void> PipelineBinaryInfoWrapper;
 typedef uint64_t PipelineCreateFlags2;
+typedef uint32_t ShaderCreateFlags;
 typedef PointerWrapper<void> PipelineRobustnessCreateInfoWrapper;
 #endif
 
@@ -124,13 +128,13 @@ public:
     PipelineLayoutWrapper() = default;
     PipelineLayoutWrapper(PipelineConstructionType pipelineConstructionType, const DeviceInterface &vk, VkDevice device,
                           const VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE,
-                          const VkPushConstantRange *pushConstantRange    = DE_NULL);
+                          const VkPushConstantRange *pushConstantRange    = nullptr);
     PipelineLayoutWrapper(PipelineConstructionType pipelineConstructionType, const DeviceInterface &vk, VkDevice device,
                           const std::vector<vk::Move<VkDescriptorSetLayout>> &descriptorSetLayout);
     PipelineLayoutWrapper(PipelineConstructionType pipelineConstructionType, const DeviceInterface &vk, VkDevice device,
                           uint32_t setLayoutCount, const VkDescriptorSetLayout *descriptorSetLayout);
     PipelineLayoutWrapper(PipelineConstructionType pipelineConstructionType, const DeviceInterface &vk, VkDevice device,
-                          const VkPipelineLayoutCreateInfo *pCreateInfo, const VkAllocationCallbacks * = DE_NULL);
+                          const VkPipelineLayoutCreateInfo *pCreateInfo, const VkAllocationCallbacks * = nullptr);
     PipelineLayoutWrapper(PipelineConstructionType pipelineConstructionType, const DeviceInterface &vk,
                           const VkDevice device, const uint32_t setLayoutCount,
                           const VkDescriptorSetLayout *descriptorSetLayout, const uint32_t pushConstantRangeCount,
@@ -210,29 +214,35 @@ public:
                       const VkImageLayout finalLayoutDepthStencil   = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                       const VkImageLayout subpassLayoutColor        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                       const VkImageLayout subpassLayoutDepthStencil = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                      const VkAllocationCallbacks *const allocationCallbacks = DE_NULL);
+                      const VkAllocationCallbacks *const allocationCallbacks = nullptr);
 
     RenderPassWrapper(RenderPassWrapper &&rhs) noexcept;
     RenderPassWrapper &operator=(RenderPassWrapper &&rhs) noexcept;
+
+    // Clones the existing render pass by internally storing the same VkRenderPass handle. The new render pass wrapper
+    // will not manage the lifetime of the VkRenderPass object, but it will allow you to create new framebuffers
+    // sharing the same render pass.
+    RenderPassWrapper clone() const;
 
     ~RenderPassWrapper() = default;
 
     const VkRenderPass operator*(void) const
     {
-        return *m_renderPass;
+        return m_renderPass;
     }
     const VkRenderPass get(void) const
     {
-        return *m_renderPass;
+        return m_renderPass;
     }
     const VkFramebuffer getFramebuffer(void) const
     {
         return m_framebuffer ? *m_framebuffer : VK_NULL_HANDLE;
     }
+    void resetLayouts(void);
 
     void begin(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkRect2D &renderArea,
                const uint32_t clearValueCount, const VkClearValue *clearValues,
-               const VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE, const void *pNext = DE_NULL) const;
+               const VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE, const void *pNext = nullptr) const;
     void begin(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkRect2D &renderArea,
                const VkClearValue &clearValue, const VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE) const;
     void begin(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkRect2D &renderArea,
@@ -263,8 +273,9 @@ public:
 private:
     void beginRendering(const DeviceInterface &vk, const VkCommandBuffer commandBuffer) const;
 
-    bool m_isDynamicRendering;
-    vk::Move<vk::VkRenderPass> m_renderPass;
+    bool m_isDynamicRendering = false;
+    vk::Move<vk::VkRenderPass> m_renderPassPtr;
+    vk::VkRenderPass m_renderPass = VK_NULL_HANDLE;
     vk::Move<vk::VkFramebuffer> m_framebuffer;
 
 #ifndef CTS_USES_VULKANSC
@@ -342,7 +353,7 @@ public:
 
     bool isSet(void) const
     {
-        return m_binary != DE_NULL;
+        return m_binary != nullptr;
     }
 
     vk::VkShaderModule getModule(void) const;
@@ -428,6 +439,10 @@ public:
     // By default dynamic state has to be specified before specifying other CreateInfo structures
     GraphicsPipelineWrapper &setDynamicState(const VkPipelineDynamicStateCreateInfo *dynamicState);
 
+    // When this wrapper is used with functionality provided by VK_KHR_pipeline_binary
+    // then we need to be able to set binaries for individual pipeline parts as well as for monolithic pipeline.
+    GraphicsPipelineWrapper &setMonolithicPipelineBinaries(PipelineBinaryInfoWrapper binaries);
+
     // Specify the representative fragment test state.
     GraphicsPipelineWrapper &setRepresentativeFragmentTestState(
         PipelineRepresentativeFragmentTestCreateInfoWrapper representativeFragmentTestState);
@@ -437,6 +452,10 @@ public:
 
     // Specifying how a pipeline is created using VkPipelineCreateFlags2CreateInfoKHR.
     GraphicsPipelineWrapper &setPipelineCreateFlags2(PipelineCreateFlags2 pipelineFlags2);
+
+    // Specify how shaders should be created with explicit flags. Note we could try to unify this with
+    // setPipelineCreateFlags2 but the equivalence is not direct and some flags do not map.
+    GraphicsPipelineWrapper &setShaderCreateFlags(ShaderCreateFlags shaderFlags);
 
     // Specify topology that is used by default InputAssemblyState in vertex input state. This needs to be
     // specified only when there is no custom InputAssemblyState provided in setupVertexInputState and when
@@ -489,17 +508,21 @@ public:
         const VkPipelineInputAssemblyStateCreateInfo *inputAssemblyState = nullptr,
         const VkPipelineCache partPipelineCache                          = VK_NULL_HANDLE,
         PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback   = PipelineCreationFeedbackCreateInfoWrapper(),
-        const bool useNullPtrs                                           = false);
+        PipelineBinaryInfoWrapper partBinaries = PipelineBinaryInfoWrapper(), const bool useNullPtrs = false);
+
+    // When disableShaderModules is used module attributes in VkPipelineShaderStageCreateInfo will be set to NULL.
+    // This is needed for VK_KHR_pipeline_binary tests where we need to construct a pipeline from pipeline binaries without using modules.
+    GraphicsPipelineWrapper &disableShaderModules(const bool disable = true);
 
     // Setup pre-rasterization shader state.
     GraphicsPipelineWrapper &setupPreRasterizationShaderState(
         const std::vector<VkViewport> &viewports, const std::vector<VkRect2D> &scissors,
         const PipelineLayoutWrapper &layout, const VkRenderPass renderPass, const uint32_t subpass,
         const ShaderWrapper vertexShaderModule,
-        const VkPipelineRasterizationStateCreateInfo *rasterizationState = DE_NULL,
+        const VkPipelineRasterizationStateCreateInfo *rasterizationState = nullptr,
         const ShaderWrapper tessellationControlShader                    = ShaderWrapper(),
         const ShaderWrapper tessellationEvalShader                       = ShaderWrapper(),
-        const ShaderWrapper geometryShader = ShaderWrapper(), const VkSpecializationInfo *specializationInfo = DE_NULL,
+        const ShaderWrapper geometryShader = ShaderWrapper(), const VkSpecializationInfo *specializationInfo = nullptr,
         VkPipelineFragmentShadingRateStateCreateInfoKHR *fragmentShadingRateState = nullptr,
         PipelineRenderingCreateInfoWrapper rendering                   = PipelineRenderingCreateInfoWrapper(),
         const VkPipelineCache partPipelineCache                        = VK_NULL_HANDLE,
@@ -546,7 +569,8 @@ public:
         VkPipelineFragmentShadingRateStateCreateInfoKHR *fragmentShadingRateState = nullptr,
         PipelineRenderingCreateInfoWrapper rendering                   = PipelineRenderingCreateInfoWrapper(),
         const VkPipelineCache partPipelineCache                        = VK_NULL_HANDLE,
-        PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
+        PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
+        PipelineBinaryInfoWrapper partBinaries                         = PipelineBinaryInfoWrapper());
 
 #ifndef CTS_USES_VULKANSC
     // Setup pre-rasterization shader state, mesh shading version.
@@ -561,15 +585,28 @@ public:
         PipelineRenderingCreateInfoWrapper rendering                  = PipelineRenderingCreateInfoWrapper(),
         const VkPipelineCache partPipelineCache                       = VK_NULL_HANDLE,
         VkPipelineCreationFeedbackCreateInfoEXT *partCreationFeedback = nullptr);
+
+    GraphicsPipelineWrapper &setupPreRasterizationMeshShaderState2(
+        const std::vector<VkViewport> &viewports, const std::vector<VkRect2D> &scissors,
+        const PipelineLayoutWrapper &layout, const VkRenderPass renderPass, const uint32_t subpass,
+        const ShaderWrapper taskShader, PipelineShaderStageModuleIdentifierCreateInfoWrapper taskShaderModuleId,
+        const ShaderWrapper meshShader, PipelineShaderStageModuleIdentifierCreateInfoWrapper meshShaderModuleId,
+        const VkPipelineRasterizationStateCreateInfo *rasterizationState          = nullptr,
+        const VkSpecializationInfo *taskSpecializationInfo                        = nullptr,
+        const VkSpecializationInfo *meshSpecializationInfo                        = nullptr,
+        VkPipelineFragmentShadingRateStateCreateInfoKHR *fragmentShadingRateState = nullptr,
+        PipelineRenderingCreateInfoWrapper rendering                  = PipelineRenderingCreateInfoWrapper(),
+        const VkPipelineCache partPipelineCache                       = VK_NULL_HANDLE,
+        VkPipelineCreationFeedbackCreateInfoEXT *partCreationFeedback = nullptr);
 #endif // CTS_USES_VULKANSC
 
     // Setup fragment shader state.
     GraphicsPipelineWrapper &setupFragmentShaderState(
         const PipelineLayoutWrapper &layout, const VkRenderPass renderPass, const uint32_t subpass,
         const ShaderWrapper fragmentShaderModule,
-        const VkPipelineDepthStencilStateCreateInfo *depthStencilState = DE_NULL,
-        const VkPipelineMultisampleStateCreateInfo *multisampleState   = DE_NULL,
-        const VkSpecializationInfo *specializationInfo                 = DE_NULL,
+        const VkPipelineDepthStencilStateCreateInfo *depthStencilState = nullptr,
+        const VkPipelineMultisampleStateCreateInfo *multisampleState   = nullptr,
+        const VkSpecializationInfo *specializationInfo                 = nullptr,
         const VkPipelineCache partPipelineCache                        = VK_NULL_HANDLE,
         PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
         RenderingInputAttachmentIndexInfoWrapper renderingInputAttachmentIndexInfo =
@@ -587,23 +624,26 @@ public:
         const VkPipelineCache partPipelineCache                        = VK_NULL_HANDLE,
         PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
         RenderingInputAttachmentIndexInfoWrapper renderingInputAttachmentIndexInfo =
-            RenderingInputAttachmentIndexInfoWrapper());
+            RenderingInputAttachmentIndexInfoWrapper(),
+        PipelineBinaryInfoWrapper partBinaries = PipelineBinaryInfoWrapper());
 
     // Setup fragment output state.
     GraphicsPipelineWrapper &setupFragmentOutputState(
         const VkRenderPass renderPass, const uint32_t subpass = 0u,
-        const VkPipelineColorBlendStateCreateInfo *colorBlendState     = DE_NULL,
-        const VkPipelineMultisampleStateCreateInfo *multisampleState   = DE_NULL,
+        const VkPipelineColorBlendStateCreateInfo *colorBlendState     = nullptr,
+        const VkPipelineMultisampleStateCreateInfo *multisampleState   = nullptr,
         const VkPipelineCache partPipelineCache                        = VK_NULL_HANDLE,
         PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
         RenderingAttachmentLocationInfoWrapper renderingAttachmentLocationInfo =
-            RenderingAttachmentLocationInfoWrapper());
+            RenderingAttachmentLocationInfoWrapper(),
+        PipelineBinaryInfoWrapper partBinaries = PipelineBinaryInfoWrapper());
 
     // Build pipeline object out of provided state.
     void buildPipeline(
         const VkPipelineCache pipelineCache = VK_NULL_HANDLE, const VkPipeline basePipelineHandle = VK_NULL_HANDLE,
         const int32_t basePipelineIndex                            = 0,
-        PipelineCreationFeedbackCreateInfoWrapper creationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
+        PipelineCreationFeedbackCreateInfoWrapper creationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
+        void *pNext                                                = nullptr);
     // Create shader objects if used
 #ifndef CTS_USES_VULKANSC
     vk::VkShaderStageFlags getNextStages(vk::VkShaderStageFlagBits shaderStage, bool tessellationShaders,
@@ -623,6 +663,20 @@ public:
 
     // Get compleate pipeline. GraphicsPipelineWrapper preserves ovnership and will destroy pipeline in its destructor.
     vk::VkPipeline getPipeline(void) const;
+
+    // Get partial pipeline. GraphicsPipelineWrapper preserves ovnership and will desroy pipeline in its destructor.
+    vk::VkPipeline getPartialPipeline(uint32_t part) const;
+
+    // Get compleate pipeline create info.
+    const VkGraphicsPipelineCreateInfo &getPipelineCreateInfo(void) const;
+
+    // Get partial pipeline create info.
+    const VkGraphicsPipelineCreateInfo &getPartialPipelineCreateInfo(uint32_t part) const;
+
+#ifndef CTS_USES_VULKANSC
+    // Get particular shader. GraphicsPipelineWrapper preserves ovnership and will destroy shaders in its destructor.
+    vk::VkShaderEXT getShader(VkShaderStageFlagBits stage) const;
+#endif
 
     // Destroy compleate pipeline - pipeline parts are not destroyed.
     void destroyPipeline(void);
@@ -649,6 +703,8 @@ protected:
     // Store internal data that is needed only for pipeline construction.
     de::SharedPtr<InternalData> m_internalData;
 };
+
+std::vector<VkDynamicState> getShaderObjectDynamicStatesFromExtensions(const std::vector<std::string> &extensions);
 
 } // namespace vk
 

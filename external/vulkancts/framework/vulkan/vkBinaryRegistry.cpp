@@ -154,10 +154,7 @@ uint32_t binaryHash(const ProgramBinary *binary)
 
 bool binaryEqual(const ProgramBinary *a, const ProgramBinary *b)
 {
-    if (a->getSize() == b->getSize())
-        return deMemoryEqual(a->getBinary(), b->getBinary(), a->getSize());
-    else
-        return false;
+    return a->getSize() == b->getSize() && memcmp(a->getBinary(), b->getBinary(), a->getSize()) == 0;
 }
 
 std::vector<uint32_t> getSearchPath(const ProgramIdentifier &id)
@@ -194,7 +191,7 @@ const uint32_t *findBinaryIndex(BinaryIndexAccess *index, const ProgramIdentifie
             else if (wordNdx + 1 == words.size())
                 return &curNode.index;
             else
-                return DE_NULL;
+                return nullptr;
         }
         else if (curNode.word != 0)
         {
@@ -204,10 +201,10 @@ const uint32_t *findBinaryIndex(BinaryIndexAccess *index, const ProgramIdentifie
             TCU_CHECK_INTERNAL(nodeNdx < index->size());
         }
         else
-            return DE_NULL;
+            return nullptr;
     }
 
-    return DE_NULL;
+    return nullptr;
 }
 
 //! Sparse index node used for final binary index construction
@@ -244,7 +241,7 @@ bool isNullByteTerminated(uint32_t word)
 void addToSparseIndex(SparseIndexNode *group, const uint32_t *words, size_t numWords, uint32_t index)
 {
     const uint32_t curWord = words[0];
-    SparseIndexNode *child = DE_NULL;
+    SparseIndexNode *child = nullptr;
 
     for (size_t childNdx = 0; childNdx < group->children.size(); childNdx++)
     {
@@ -472,7 +469,7 @@ uint32_t BinaryRegistryWriter::getNextSlot(void) const
 void BinaryRegistryWriter::addBinary(uint32_t index, const ProgramBinary &binary)
 {
     DE_ASSERT(binary.getFormat() == vk::PROGRAM_FORMAT_SPIRV);
-    DE_ASSERT(findBinary(binary) == DE_NULL);
+    DE_ASSERT(findBinary(binary) == nullptr);
 
     ProgramBinary *const binaryClone = new ProgramBinary(binary);
 
@@ -531,7 +528,7 @@ void BinaryRegistryWriter::writeToPath(const std::string &dstPath) const
         const de::FilePath indexPath = getIndexPath(dstPath);
         std::vector<BinaryIndexNode> index;
 
-        buildBinaryIndex(&index, m_binaryIndices.size(), !m_binaryIndices.empty() ? &m_binaryIndices[0] : DE_NULL);
+        buildBinaryIndex(&index, m_binaryIndices.size(), !m_binaryIndices.empty() ? &m_binaryIndices[0] : nullptr);
 
         // Even in empty index there is always terminating node for the root group
         DE_ASSERT(!index.empty());

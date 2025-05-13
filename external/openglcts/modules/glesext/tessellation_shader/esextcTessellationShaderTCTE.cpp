@@ -112,7 +112,7 @@ TessellationShaderTCTEDataPassThrough::TessellationShaderTCTEDataPassThrough(Con
                    "Verifies data is correctly passed down the VS->TC->TS->(GS) pipeline.")
     , m_bo_id(0)
     , m_n_input_vertices_per_run(4)
-    , m_utils_ptr(DE_NULL)
+    , m_utils_ptr(nullptr)
     , m_vao_id(0)
 {
     /* Left blank on purpose */
@@ -166,11 +166,11 @@ void TessellationShaderTCTEDataPassThrough::deinit()
     m_runs.clear();
 
     /* Release Utils instance */
-    if (m_utils_ptr != DE_NULL)
+    if (m_utils_ptr != nullptr)
     {
         delete m_utils_ptr;
 
-        m_utils_ptr = DE_NULL;
+        m_utils_ptr = nullptr;
     }
 }
 
@@ -415,7 +415,7 @@ void TessellationShaderTCTEDataPassThrough::executeTestRun(_run &run, _tessellat
     {
         std::stringstream body_sstream;
         std::string body_string;
-        const char *body_raw_ptr = DE_NULL;
+        const char *body_raw_ptr = nullptr;
 
         body_sstream << "${VERSION}\n"
                         "\n"
@@ -495,7 +495,7 @@ void TessellationShaderTCTEDataPassThrough::executeTestRun(_run &run, _tessellat
     {
         std::stringstream body_sstream;
         std::string body_string;
-        const char *body_raw_ptr = DE_NULL;
+        const char *body_raw_ptr = nullptr;
 
         /* Preamble */
         body_sstream << "${VERSION}\n"
@@ -623,7 +623,7 @@ void TessellationShaderTCTEDataPassThrough::executeTestRun(_run &run, _tessellat
     {
         std::stringstream body_sstream;
         std::string body_string;
-        const char *body_raw_ptr = DE_NULL;
+        const char *body_raw_ptr = nullptr;
 
         body_sstream << "${VERSION}\n"
                         "\n"
@@ -712,7 +712,7 @@ void TessellationShaderTCTEDataPassThrough::executeTestRun(_run &run, _tessellat
     const unsigned int varying_position_size   = sizeof(float) * 4; /*  vec4 */
     const unsigned int varying_value1_size     = sizeof(float) * 4; /*  vec4 */
     const unsigned int varying_value2_size     = sizeof(int) * 4;   /* ivec4 */
-    const char **varyings                      = DE_NULL;
+    const char **varyings                      = nullptr;
     unsigned int varyings_size                 = 0;
 
     const char *gs_non_point_size_varyings[]     = {"gs_tc_position", "gs_tc_value1", "gs_tc_value2", "gs_te_position"};
@@ -853,7 +853,7 @@ void TessellationShaderTCTEDataPassThrough::executeTestRun(_run &run, _tessellat
     bo_size = n_result_tess_coords * varyings_size;
 
     /* Proceed with buffer object storage allocation */
-    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, DE_NULL, /* data */
+    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, nullptr, /* data */
                   GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed");
 
@@ -1846,7 +1846,7 @@ TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize::
     , m_bo_id(0)
     , m_gl_max_patch_vertices_value(0)
     , m_gl_max_tess_gen_level_value(0)
-    , m_utils_ptr(DE_NULL)
+    , m_utils_ptr(nullptr)
     , m_vao_id(0)
     , m_primitive_mode(primitive_mode)
     , m_vertex_ordering(vertex_ordering)
@@ -1902,11 +1902,11 @@ void TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize::deinit()
         m_vao_id = 0;
     }
 
-    if (m_utils_ptr != DE_NULL)
+    if (m_utils_ptr != nullptr)
     {
         delete m_utils_ptr;
 
-        m_utils_ptr = DE_NULL;
+        m_utils_ptr = nullptr;
     }
 
     /* Release all test runs */
@@ -2543,7 +2543,7 @@ void TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize::initTestRun(_
             sizeof(programs_for_program_iteration) / sizeof(programs_for_program_iteration[0]);
 
         unsigned int n_programs       = 0;
-        const glw::GLuint *programs   = DE_NULL;
+        const glw::GLuint *programs   = nullptr;
         int xfb_pointsize_data_offset = -1;
         int xfb_position_data_offset  = -1;
         int xfb_value1_data_offset    = -1;
@@ -2643,7 +2643,7 @@ void TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize::initTestRun(_
             "te_value1",
             "te_value2",
         };
-        const char **xfb_varyings   = DE_NULL;
+        const char **xfb_varyings   = nullptr;
         unsigned int n_xfb_varyings = 0;
 
         if (run.point_mode)
@@ -2893,7 +2893,7 @@ void TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize::initTestRun(_
         /* Allocate enough space to hold the result XFB data */
         const unsigned int bo_size = xfb_varyings_size * n_vertices_generated;
 
-        gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, DE_NULL /* data */, GL_STATIC_DRAW);
+        gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, nullptr /* data */, GL_STATIC_DRAW);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed");
 
         /* Use the pipeline or program object and render the data */

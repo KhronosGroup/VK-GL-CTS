@@ -79,12 +79,12 @@ QueueSubmission makeSubmissionRegular(const Queue *queue, const uint32_t numWait
 {
     const VkSubmitInfo submitInfo = {
         VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
-        DE_NULL,                       // const void* pNext;
+        nullptr,                       // const void* pNext;
         numWaitSemaphores,             // uint32_t waitSemaphoreCount;
         pWaitSemaphore,                // const VkSemaphore* pWaitSemaphores;
         pWaitDstStageMask,             // const VkPipelineStageFlags* pWaitDstStageMask;
         0u,                            // uint32_t commandBufferCount;
-        DE_NULL,                       // const VkCommandBuffer* pCommandBuffers;
+        nullptr,                       // const VkCommandBuffer* pCommandBuffers;
         numSignalSemaphores,           // uint32_t signalSemaphoreCount;
         pSignalSemaphore,              // const VkSemaphore* pSignalSemaphores;
     };
@@ -103,15 +103,15 @@ QueueSubmission makeSubmissionSparse(const Queue *queue, const uint32_t numWaitS
 {
     const VkBindSparseInfo bindInfo = {
         VK_STRUCTURE_TYPE_BIND_SPARSE_INFO, // VkStructureType sType;
-        DE_NULL,                            // const void* pNext;
+        nullptr,                            // const void* pNext;
         numWaitSemaphores,                  // uint32_t waitSemaphoreCount;
         pWaitSemaphore,                     // const VkSemaphore* pWaitSemaphores;
         0u,                                 // uint32_t bufferBindCount;
-        DE_NULL,                            // const VkSparseBufferMemoryBindInfo* pBufferBinds;
+        nullptr,                            // const VkSparseBufferMemoryBindInfo* pBufferBinds;
         0u,                                 // uint32_t imageOpaqueBindCount;
-        DE_NULL,                            // const VkSparseImageOpaqueMemoryBindInfo* pImageOpaqueBinds;
+        nullptr,                            // const VkSparseImageOpaqueMemoryBindInfo* pImageOpaqueBinds;
         0u,                                 // uint32_t imageBindCount;
-        DE_NULL,                            // const VkSparseImageMemoryBindInfo* pImageBinds;
+        nullptr,                            // const VkSparseImageMemoryBindInfo* pImageBinds;
         numSignalSemaphores,                // uint32_t signalSemaphoreCount;
         pSignalSemaphore,                   // const VkSemaphore* pSignalSemaphores;
     };
@@ -149,7 +149,7 @@ public:
 
     tcu::TestStatus iterate(void)
     {
-        const Queue *sparseQueue = DE_NULL;
+        const Queue *sparseQueue = nullptr;
         std::vector<const Queue *> otherQueues;
 
         // Determine required queues and create a device that supports them
@@ -202,7 +202,7 @@ public:
                 if (numQueues == 1u) // sparse queue is assigned last
                 {
                     // sparse queue can handle regular submissions as well
-                    queueSubmissions.push_back(makeSubmissionRegular(sparseQueue, 0u, DE_NULL, DE_NULL, numSemaphores,
+                    queueSubmissions.push_back(makeSubmissionRegular(sparseQueue, 0u, nullptr, nullptr, numSemaphores,
                                                                      getDataOrNullptr(waitSemaphores)));
                     numSemaphores = 0u;
                     numQueues     = 0u;
@@ -210,7 +210,7 @@ public:
                 else
                 {
                     queueSubmissions.push_back(
-                        makeSubmissionRegular(otherQueues[numQueues - 2], 0u, DE_NULL, DE_NULL, 1u,
+                        makeSubmissionRegular(otherQueues[numQueues - 2], 0u, nullptr, nullptr, 1u,
                                               getDataOrNullptr(waitSemaphores, numSemaphores - 1)));
                     --numQueues;
                     --numSemaphores;
@@ -228,7 +228,7 @@ public:
         else
         {
             // an unused submission, won't be used in a call to vkQueueBindSparse
-            queueSubmissions.push_back(makeSubmissionSparse(sparseQueue, 0u, DE_NULL, 0u, DE_NULL));
+            queueSubmissions.push_back(makeSubmissionSparse(sparseQueue, 0u, nullptr, 0u, nullptr));
         }
 
         // Prepare submissions: wait on semaphores signaled by the sparse bind operation
@@ -243,7 +243,7 @@ public:
                 {
                     queueSubmissions.push_back(
                         makeSubmissionRegular(sparseQueue, numSemaphores, getDataOrNullptr(signalSemaphores),
-                                              getDataOrNullptr(signalSemaphoresWaitDstStageMask), 0u, DE_NULL));
+                                              getDataOrNullptr(signalSemaphoresWaitDstStageMask), 0u, nullptr));
                     numSemaphores = 0u;
                     numQueues     = 0u;
                 }
@@ -251,7 +251,7 @@ public:
                 {
                     queueSubmissions.push_back(makeSubmissionRegular(
                         otherQueues[numQueues - 2], 1u, getDataOrNullptr(signalSemaphores, numSemaphores - 1),
-                        getDataOrNullptr(signalSemaphoresWaitDstStageMask, numSemaphores - 1), 0u, DE_NULL));
+                        getDataOrNullptr(signalSemaphoresWaitDstStageMask, numSemaphores - 1), 0u, nullptr));
                     --numQueues;
                     --numSemaphores;
                 }
@@ -277,7 +277,7 @@ public:
                     }
 
                     if (m_params.emptySubmission)
-                        VK_CHECK(vk.queueBindSparse(submissionIter->queue->queueHandle, 0u, DE_NULL, fence));
+                        VK_CHECK(vk.queueBindSparse(submissionIter->queue->queueHandle, 0u, nullptr, fence));
                     else
                         VK_CHECK(vk.queueBindSparse(submissionIter->queue->queueHandle, 1u,
                                                     &submissionIter->info.sparse, fence));

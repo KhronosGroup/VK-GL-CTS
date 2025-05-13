@@ -73,7 +73,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                   // const void* pNext;
+        nullptr,                                                   // const void* pNext;
         (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags flags;
         1u,                                                        // uint32_t vertexBindingDescriptionCount;
         &vertexBinding,                  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -99,7 +99,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     const VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (VkPipelineColorBlendStateCreateFlags)0,                  // VkPipelineColorBlendStateCreateFlags flags;
         VK_FALSE,                                                 // VkBool32 logicOpEnable;
         VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -124,9 +124,9 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         0u,                                   // const uint32_t                                    subpass
         0u,                                   // const uint32_t                                    patchControlPoints
         &vertexInputStateCreateInfo, // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
-        DE_NULL,                     // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
-        DE_NULL,                     // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
-        DE_NULL,                     // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo
+        nullptr,                     // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
+        nullptr,                     // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
+        nullptr,                     // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo
         &pipelineColorBlendStateInfo); // const VkPipelineColorBlendStateCreateInfo*        colorBlendStateCreateInfo
 }
 
@@ -673,25 +673,25 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands(const VkCommandBu
         (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags flags;
         VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
         0u,                              // uint32_t inputAttachmentCount;
-        DE_NULL,                         // const VkAttachmentReference* pInputAttachments;
+        nullptr,                         // const VkAttachmentReference* pInputAttachments;
         2u,                              // uint32_t colorAttachmentCount;
         colorAttachmentsReference,       // const VkAttachmentReference* pColorAttachments;
-        DE_NULL,                         // const VkAttachmentReference* pResolveAttachments;
+        nullptr,                         // const VkAttachmentReference* pResolveAttachments;
         &depthAttachmentReference,       // const VkAttachmentReference* pDepthStencilAttachment;
         0u,                              // uint32_t preserveAttachmentCount;
-        DE_NULL                          // const uint32_t* pPreserveAttachments;
+        nullptr                          // const uint32_t* pPreserveAttachments;
     };
 
     const VkRenderPassCreateInfo renderPassInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                   // const void* pNext;
+        nullptr,                                   // const void* pNext;
         (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags flags;
         2u,                                        // uint32_t attachmentCount;
         colorAttachmentsDescription,               // const VkAttachmentDescription* pAttachments;
         1u,                                        // uint32_t subpassCount;
         &subpassDescription,                       // const VkSubpassDescription* pSubpasses;
         0u,                                        // uint32_t dependencyCount;
-        DE_NULL                                    // const VkSubpassDependency* pDependencies;
+        nullptr                                    // const VkSubpassDependency* pDependencies;
     };
 
     m_renderPass = createRenderPass(deviceInterface, getDevice(), &renderPassInfo);
@@ -713,7 +713,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands(const VkCommandBu
 
     VkSamplerCreateInfo samplerCreateInfo = {
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkSamplerCreateFlags)0,
         mapFilterMode(tcu::Sampler::NEAREST),                // magFilter
         mapFilterMode(tcu::Sampler::NEAREST_MIPMAP_NEAREST), // minFilter
@@ -750,7 +750,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands(const VkCommandBu
 
     const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                       // const void* pNext;
+        nullptr,                                       // const void* pNext;
         0u,                                            // VkPipelineLayoutCreateFlags flags;
         1u,                                            // uint32_t setLayoutCount;
         &descriptorSetLayout.get(),                    // const VkDescriptorSetLayout* pSetLayouts;
@@ -806,7 +806,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands(const VkCommandBu
         deviceInterface.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
                                                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                           0u, 0u, DE_NULL, 0u, DE_NULL, 3u, imageShaderAccessBarriers);
+                                           0u, 0u, nullptr, 0u, nullptr, 3u, imageShaderAccessBarriers);
     }
 
     imageSparseViews.resize(imageSparseInfo.mipLevels);
@@ -840,7 +840,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands(const VkCommandBu
         // Create framebuffer
         const VkFramebufferCreateInfo framebufferInfo = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             (VkFramebufferCreateFlags)0,               // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             2u,                                        // uint32_t attachmentCount;
@@ -884,7 +884,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands(const VkCommandBu
 
         // Bind descriptor set
         deviceInterface.cmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                                              &descriptorSet, 0u, DE_NULL);
+                                              &descriptorSet, 0u, nullptr);
 
         // Bind vertex buffer
         {
@@ -929,7 +929,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands(const VkCommandBu
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, imageResidency, fullImageSubresourceRange);
 
         deviceInterface.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                           VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 2u,
+                                           VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 2u,
                                            imageOutputTransferSrcBarriers);
     }
 }

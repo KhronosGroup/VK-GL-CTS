@@ -48,7 +48,7 @@ inline bool MessageBuilder::isComplete(void) const
 
 const uint8_t *MessageBuilder::getMessageData(void) const
 {
-    return m_buffer.size() > MESSAGE_HEADER_SIZE ? &m_buffer[MESSAGE_HEADER_SIZE] : DE_NULL;
+    return m_buffer.size() > MESSAGE_HEADER_SIZE ? &m_buffer[MESSAGE_HEADER_SIZE] : nullptr;
 }
 
 size_t MessageBuilder::getMessageDataSize(void) const
@@ -140,7 +140,7 @@ void ExecutionServer::connectionDone(ConnectionHandler *handler)
 ExecutionRequestHandler::ExecutionRequestHandler(ExecutionServer *server, de::Socket *socket)
     : ConnectionHandler(server, socket)
     , m_execServer(server)
-    , m_testDriver(DE_NULL)
+    , m_testDriver(nullptr)
     , m_bufferIn(RECV_BUFFER_SIZE)
     , m_bufferOut(SEND_BUFFER_SIZE)
     , m_run(false)
@@ -186,7 +186,7 @@ void ExecutionRequestHandler::handle(void)
         {
         }
         m_execServer->releaseTestDriver(m_testDriver);
-        m_testDriver = DE_NULL;
+        m_testDriver = nullptr;
     }
 
     // Close connection.

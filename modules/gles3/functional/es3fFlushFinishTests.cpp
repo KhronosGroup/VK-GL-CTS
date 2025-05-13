@@ -174,7 +174,7 @@ FlushFinishCase::FlushFinishCase(Context &context, const char *name, const char 
     , m_waitThreshold(waitThreshold)
     , m_readBehavior(readBehavior)
     , m_readThreshold(readThreshold)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_iterCountLoc(0)
 {
 }
@@ -214,7 +214,7 @@ void FlushFinishCase::init(void)
     {
         m_testCtx.getLog() << *m_program;
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
         TCU_FAIL("Compile failed");
     }
 
@@ -226,7 +226,7 @@ void FlushFinishCase::init(void)
 void FlushFinishCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 tcu::TestLog &operator<<(tcu::TestLog &log, const FlushFinishCase::Sample &sample)
@@ -555,7 +555,7 @@ void FlushFinishCase::analyzeResults(const std::vector<Sample> &samples, const C
                                                                                  false;
         const char *cmpName             = behavior == EXPECT_COEF_GREATER_THAN ? "greater than" :
                                           behavior == EXPECT_COEF_LESS_THAN    ? "less than" :
-                                                                                 DE_NULL;
+                                                                                 nullptr;
 
         if (!isOk)
         {

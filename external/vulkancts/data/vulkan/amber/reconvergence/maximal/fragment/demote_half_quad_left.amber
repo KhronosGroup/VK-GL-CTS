@@ -16,7 +16,7 @@ layout(location = 0) out vec4 dEQP_FragColor;
 void main()
 [[maximally_reconverges]]
 {
-	const uvec4	fullBallot		= subgroupBallot(true);
+	const uvec4	fullBallot		= subgroupBallot( ! helperInvocationEXT() );
 	const uint	fragmentID		= uint(gl_FragCoord.y) * 16 + uint(gl_FragCoord.x);
 	const uvec4	quadBallot		= subgroupBallot((fragments[gl_SubgroupInvocationID % 4] - fragmentID) == 0);
 	const bool	quadSubgroup	= subgroupBallotBitCount(quadBallot) == 2;

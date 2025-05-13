@@ -230,7 +230,7 @@ ShaderFloatPrecisionCase::ShaderFloatPrecisionCase(Context &context, const char 
     , m_numTestsPerIter(32)
     , m_numIters(4)
     , m_rnd(deStringHash(name))
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_framebuffer(0)
     , m_renderbuffer(0)
     , m_iterNdx(0)
@@ -286,7 +286,7 @@ void ShaderFloatPrecisionCase::deinit(void)
     if (m_renderbuffer)
         m_context.getRenderContext().getFunctions().deleteRenderbuffers(1, &m_renderbuffer);
 
-    m_program      = DE_NULL;
+    m_program      = nullptr;
     m_framebuffer  = 0;
     m_renderbuffer = 0;
 }
@@ -487,7 +487,7 @@ ShaderIntPrecisionCase::ShaderIntPrecisionCase(Context &context, const char *nam
     , m_numTestsPerIter(32)
     , m_numIters(4)
     , m_rnd(deStringHash(name))
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_framebuffer(0)
     , m_renderbuffer(0)
     , m_iterNdx(0)
@@ -545,7 +545,7 @@ void ShaderIntPrecisionCase::deinit(void)
     if (m_renderbuffer)
         m_context.getRenderContext().getFunctions().deleteRenderbuffers(1, &m_renderbuffer);
 
-    m_program      = DE_NULL;
+    m_program      = nullptr;
     m_framebuffer  = 0;
     m_renderbuffer = 0;
 }
@@ -682,7 +682,7 @@ ShaderUintPrecisionCase::ShaderUintPrecisionCase(Context &context, const char *n
     , m_numTestsPerIter(32)
     , m_numIters(4)
     , m_rnd(deStringHash(name))
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_framebuffer(0)
     , m_renderbuffer(0)
     , m_iterNdx(0)
@@ -740,7 +740,7 @@ void ShaderUintPrecisionCase::deinit(void)
     if (m_renderbuffer)
         m_context.getRenderContext().getFunctions().deleteRenderbuffers(1, &m_renderbuffer);
 
-    m_program      = DE_NULL;
+    m_program      = nullptr;
     m_framebuffer  = 0;
     m_renderbuffer = 0;
 }

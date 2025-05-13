@@ -1189,7 +1189,7 @@ bool verifyMultisampleLineGroupRasterization(const tcu::Surface &surface, const 
         }
     }
 
-    if (logStash != DE_NULL)
+    if (logStash != nullptr)
     {
         logStash->messages.push_back(
             "Rasterization clipping mode: " +
@@ -1490,8 +1490,7 @@ void genScreenSpaceLines(std::vector<tcu::Vec4> &screenspaceLines, const std::ve
 bool verifySinglesampleLineGroupRasterization(const tcu::Surface &surface, const LineSceneSpec &scene,
                                               const RasterizationArguments &args, tcu::TestLog &log)
 {
-    DE_ASSERT(deFloatFrac(scene.lineWidth) != 0.5f); // rounding direction is not defined, disallow undefined cases
-    DE_ASSERT(scene.lines.size() < 255);             // indices are stored as unsigned 8-bit ints
+    DE_ASSERT(scene.lines.size() < 255); // indices are stored as unsigned 8-bit ints
 
     bool allOK               = true;
     bool overdrawInReference = false;
@@ -1532,7 +1531,7 @@ bool verifySinglesampleLineGroupRasterization(const tcu::Surface &surface, const
             int numRasterized    = 0;
             rr::FragmentPacket packets[maxPackets];
 
-            rasterizer.rasterize(packets, DE_NULL, maxPackets, numRasterized);
+            rasterizer.rasterize(packets, nullptr, maxPackets, numRasterized);
 
             for (int packetNdx = 0; packetNdx < numRasterized; ++packetNdx)
             {
@@ -1918,7 +1917,7 @@ void setMaskMapCoverageBitForLine(int bitNdx, const tcu::Vec2 &screenSpaceP0, co
 
     while (numRasterized == MAX_PACKETS)
     {
-        rasterizer.rasterize(packets, DE_NULL, MAX_PACKETS, numRasterized);
+        rasterizer.rasterize(packets, nullptr, MAX_PACKETS, numRasterized);
 
         for (int packetNdx = 0; packetNdx < numRasterized; ++packetNdx)
         {
@@ -2220,8 +2219,7 @@ bool isBlack(const tcu::RGBA &c)
 bool verifySinglesampleWideLineGroupInterpolation(const tcu::Surface &surface, const LineSceneSpec &scene,
                                                   const RasterizationArguments &args, tcu::TestLog &log)
 {
-    DE_ASSERT(deFloatFrac(scene.lineWidth) != 0.5f); // rounding direction is not defined, disallow undefined cases
-    DE_ASSERT(scene.lines.size() < 8);               // coverage indices are stored as bitmask in a unsigned 8-bit ints
+    DE_ASSERT(scene.lines.size() < 8); // coverage indices are stored as bitmask in a unsigned 8-bit ints
 
     enum
     {
@@ -3121,14 +3119,14 @@ bool verifyTriangleGroupRasterization(const tcu::Surface &surface, const Triangl
     // Output or stash results
     {
         VerifyTriangleGroupRasterizationLogStash *tempLogStash =
-            (logStash == DE_NULL) ? new VerifyTriangleGroupRasterizationLogStash : logStash;
+            (logStash == nullptr) ? new VerifyTriangleGroupRasterizationLogStash : logStash;
 
         tempLogStash->result           = result;
         tempLogStash->missingPixels    = missingPixels;
         tempLogStash->unexpectedPixels = unexpectedPixels;
         tempLogStash->errorMask        = errorMask;
 
-        if (logStash == DE_NULL)
+        if (logStash == nullptr)
         {
             logTriangleGroupRasterizationStash(surface, log, *tempLogStash);
             delete tempLogStash;
@@ -3144,7 +3142,7 @@ bool verifyLineGroupRasterization(const tcu::Surface &surface, const LineSceneSp
     const bool multisampled = args.numSamples != 0;
 
     if (multisampled)
-        return verifyMultisampleLineGroupRasterization(surface, scene, args, log, CLIPMODE_NO_CLIPPING, DE_NULL, false,
+        return verifyMultisampleLineGroupRasterization(surface, scene, args, log, CLIPMODE_NO_CLIPPING, nullptr, false,
                                                        true);
     else
         return verifySinglesampleLineGroupRasterization(surface, scene, args, log);
@@ -3153,7 +3151,7 @@ bool verifyLineGroupRasterization(const tcu::Surface &surface, const LineSceneSp
 bool verifyClippedTriangulatedLineGroupRasterization(const tcu::Surface &surface, const LineSceneSpec &scene,
                                                      const RasterizationArguments &args, tcu::TestLog &log)
 {
-    return verifyMultisampleLineGroupRasterization(surface, scene, args, log, CLIPMODE_USE_CLIPPING_BOX, DE_NULL, false,
+    return verifyMultisampleLineGroupRasterization(surface, scene, args, log, CLIPMODE_USE_CLIPPING_BOX, nullptr, false,
                                                    true);
 }
 

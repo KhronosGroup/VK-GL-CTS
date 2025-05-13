@@ -253,10 +253,10 @@ void InvalidCreateImage::checkCreate(createImageFuncType createImageFunc, string
     m_testCtx.getLog() << TestLog::Message << msg << TestLog::EndMessage;
     {
         const Library &egl    = m_eglTestCtx.getLibrary();
-        const imageType image = (egl.*createImageFunc)(dpy, context, source, 0, DE_NULL);
+        const imageType image = (egl.*createImageFunc)(dpy, context, source, 0, nullptr);
         ostringstream call;
 
-        call << createImageName << "(" << dpyStr << ", " << ctxStr << ", " << srcStr << ", 0, DE_NULL)";
+        call << createImageName << "(" << dpyStr << ", " << ctxStr << ", " << srcStr << ", 0, nullptr)";
         checkCallReturn(m_eglTestCtx, call.str().c_str(), image, noImageVal, expectError);
     }
 }
@@ -550,7 +550,7 @@ public:
 
         uint32_t srcTex = 1;
         GLU_CHECK_CALL(glBindTexture(GL_TEXTURE_2D, srcTex));
-        GLU_CHECK_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 64, 64, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL));
+        GLU_CHECK_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 64, 64, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr));
         GLU_CHECK_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
 
         // Create EGL image

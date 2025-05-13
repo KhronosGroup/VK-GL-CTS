@@ -143,14 +143,14 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
         m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
     const bool tessellationSupported = m_context.getDeviceFeatures().tessellationShader;
     const bool geometrySupported     = m_context.getDeviceFeatures().geometryShader;
-    const bool taskSupported         = m_context.getMeshShaderFeatures().taskShader;
-    const bool meshSupported         = m_context.getMeshShaderFeatures().meshShader;
+    const bool taskSupported         = m_context.getMeshShaderFeaturesEXT().taskShader;
+    const bool meshSupported         = m_context.getMeshShaderFeaturesEXT().meshShader;
 
     const auto subresourceRange = makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
 
     const vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                // VkStructureType            sType
-        DE_NULL,                                                // const void*                pNext
+        nullptr,                                                // const void*                pNext
         0u,                                                     // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                                   // VkImageType                imageType
         colorAttachmentFormat,                                  // VkFormat                    format
@@ -162,7 +162,7 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
         vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags        usage
         vk::VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode
         0,                             // uint32_t                    queueFamilyIndexCount
-        DE_NULL,                       // const uint32_t*            pQueueFamilyIndices
+        nullptr,                       // const uint32_t*            pQueueFamilyIndices
         vk::VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
     };
 
@@ -179,7 +179,7 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
 
     const vk::VkCommandPoolCreateInfo cmdPoolInfo = {
         vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType
-        DE_NULL,                                             // pNext
+        nullptr,                                             // pNext
         vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags
         queueFamilyIndex,                                    // queuefamilyindex
     };
@@ -268,24 +268,24 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
 
     const vk::VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                       // const void* pNext;
+        nullptr,                                                       // const void* pNext;
         0u,                                                            // VkPipelineVertexInputStateCreateFlags flags;
         0u,                                                            // uint32_t vertexBindingDescriptionCount;
-        DE_NULL, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+        nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
         0u,      // uint32_t vertexAttributeDescriptionCount;
-        DE_NULL  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+        nullptr  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
     };
 
     const vk::VkPipelineTessellationStateCreateInfo tessStateCreateInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                       // const void* pNext;
+        nullptr,                                                       // const void* pNext;
         0u,                                                            // VkPipelineTessellationStateCreateFlags flags;
         4u,                                                            // uint32_t patchControlPoints;
     };
 
     const vk::VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                         // const void*                                 pNext;
+        nullptr,                                         // const void*                                 pNext;
         (vk::VkPipelineInputAssemblyStateCreateFlags)0u, // VkPipelineInputAssemblyStateCreateFlags     flags;
         vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,            // VkPrimitiveTopology                         topology;
         VK_FALSE, // VkBool32                                    primitiveRestartEnable;
@@ -293,7 +293,7 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
 
     vk::VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO, // VkStructureType    sType
-        DE_NULL,                                              // const void*        pNext
+        nullptr,                                              // const void*        pNext
         0u,                                                   // uint32_t            viewMask
         1u,                                                   // uint32_t            colorAttachmentCount
         &colorAttachmentFormat,                               // const VkFormat*    pColorAttachmentFormats
@@ -312,7 +312,7 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
 
     const vk::VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                             sType
-        DE_NULL,                                                   // const void*                                 pNext
+        nullptr,                                                   // const void*                                 pNext
         (vk::VkPipelineViewportStateCreateFlags)0u,                // VkPipelineViewportStateCreateFlags          flags
         createDynamicPipeline ? 0u : 1u, // uint32_t                                    viewportCount
         &viewport,                       // const VkViewport*                           pViewports
@@ -396,7 +396,11 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_BLEND_ADVANCED_EXT);
     if (extensionEnabled(deviceExtensions, "VK_EXT_conservative_rasterization") &&
         eds3Features.extendedDynamicState3ConservativeRasterizationMode)
+    {
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_CONSERVATIVE_RASTERIZATION_MODE_EXT);
+        // // VUID-VkGraphicsPipelineCreateInfo-pDynamicState-09639
+        // dynamicStates.push_back(vk::VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT);
+    }
     if (extensionEnabled(deviceExtensions, "VK_NV_framebuffer_mixed_samples") &&
         eds3Features.extendedDynamicState3CoverageModulationMode)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COVERAGE_MODULATION_MODE_NV);
@@ -467,24 +471,64 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV);
     if (extensionEnabled(deviceExtensions, "VK_NV_scissor_exclusive"))
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV);
+    if (extensionEnabled(deviceExtensions, "VK_NV_scissor_exclusive"))
+        dynamicStates.push_back(vk::VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_ENABLE_NV);
     if (extensionEnabled(deviceExtensions, "VK_EXT_discard_rectangles"))
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_ENABLE_EXT);
     if (extensionEnabled(deviceExtensions, "VK_EXT_discard_rectangles"))
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT);
     if (extensionEnabled(deviceExtensions, "VK_EXT_discard_rectangles"))
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_MODE_EXT);
+    if (extensionEnabled(deviceExtensions, "VK_EXT_attachment_feedback_loop_dynamic_state"))
+        dynamicStates.push_back(vk::VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT);
+
+    vk::VkPipelineRasterizationStateCreateInfo *rasterizationStateCreateInfoDefault = nullptr;
+
+    vk::VkPipelineRasterizationConservativeStateCreateInfoEXT rasterizationConservativeStateCreateInfo = {
+        vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT, //  VkStructureType sType;
+        nullptr,                                                                         //  const void* pNext;
+        (vk::VkPipelineRasterizationConservativeStateCreateFlagsEXT)0, //  VkPipelineRasterizationConservativeStateCreateFlagsEXT flags;
+        vk::VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT, //  VkConservativeRasterizationModeEXT conservativeRasterizationMode;
+        0.0f                                                 //  float extraPrimitiveOverestimationSize;
+    };
+
+    vk::VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
+        vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                            sType
+        //nullptr,                             // const void*                                pNext
+        &rasterizationConservativeStateCreateInfo, // const void*                                pNext
+        0u,                                        // VkPipelineRasterizationStateCreateFlags    flags
+        VK_FALSE,                                  // VkBool32                                   depthClampEnable
+        VK_FALSE,                                  // VkBool32                                   rasterizerDiscardEnable
+        vk::VK_POLYGON_MODE_FILL,                  // VkPolygonMode                              polygonMode
+        vk::VK_CULL_MODE_NONE,                     // VkCullModeFlags                            cullMode
+        vk::VK_FRONT_FACE_COUNTER_CLOCKWISE,       // VkFrontFace                                frontFace
+        VK_FALSE,                                  // VkBool32                                   depthBiasEnable
+        0.0f,                                      // float                                      depthBiasConstantFactor
+        0.0f,                                      // float                                      depthBiasClamp
+        0.0f,                                      // float                                      depthBiasSlopeFactor
+        1.0f                                       // float                                      lineWidth
+    };
+
+    if (extensionEnabled(deviceExtensions, "VK_EXT_conservative_rasterization") &&
+        eds3Features.extendedDynamicState3ConservativeRasterizationMode)
+    {
+        // VUID-VkGraphicsPipelineCreateInfo-pDynamicState-09639
+        rasterizationStateCreateInfoDefault = &rasterizationStateCreateInfo;
+    }
 
     const vk::VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (vk::VkPipelineDynamicStateCreateFlags)0u,                // VkPipelineDynamicStateCreateFlags flags;
         static_cast<uint32_t>(dynamicStates.size()),              // uint32_t dynamicStateCount;
         dynamicStates.data(),                                     // const VkDynamicState* pDynamicStates;
     };
     const vk::VkPipelineDynamicStateCreateInfo *pipelineDynamicState =
-        (createDynamicPipeline) ? &dynamicStateCreateInfo : DE_NULL;
+        (createDynamicPipeline) ? &dynamicStateCreateInfo : nullptr;
 
-    const vk::VkDeviceSize bufferSizeBytes = sizeof(uint32_t) * 4;
+    const uint32_t local_size_x            = 16u;
+    const uint32_t dispatch_x_count        = 4u;
+    const vk::VkDeviceSize bufferSizeBytes = sizeof(uint32_t) * dispatch_x_count * local_size_x;
 
     const vk::Unique<vk::VkDescriptorSet> descriptorSet(
         makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
@@ -504,25 +548,28 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
     if (m_params.testType == RENDER_PASS_PIPELINE_SHADER_OBJECT ||
         m_params.testType == RENDER_PASS_PIPELINE_SHADER_OBJECT_AFTER_BEGIN)
     {
-        pPipelineRenderingCreateInfo = DE_NULL;
+        pPipelineRenderingCreateInfo = nullptr;
         renderPassHandle             = *renderPass;
     }
 
-    const auto pipeline1 = makeGraphicsPipeline(
-        vk, device, pipelineLayout.get(), vertShaderModule1.get(), tescShaderModule.get(), teseShaderModule.get(),
-        geomShaderModule.get(), fragShaderModule1.get(), renderPassHandle, 0u, &vertexInputStateParams,
-        &pipelineInputAssemblyStateInfo, &tessStateCreateInfo, &viewportStateCreateInfo, DE_NULL, DE_NULL, DE_NULL,
-        DE_NULL, pipelineDynamicState, pPipelineRenderingCreateInfo);
-    const auto pipeline2 = makeGraphicsPipeline(
-        vk, device, pipelineLayout.get(), vertShaderModule2.get(), tescShaderModule.get(), teseShaderModule.get(),
-        geomShaderModule.get(), fragShaderModule2.get(), renderPassHandle, 0u, &vertexInputStateParams,
-        &pipelineInputAssemblyStateInfo, &tessStateCreateInfo, &viewportStateCreateInfo, DE_NULL, DE_NULL, DE_NULL,
-        DE_NULL, pipelineDynamicState, pPipelineRenderingCreateInfo);
-    const auto pipeline3 = makeGraphicsPipeline(
-        vk, device, pipelineLayout.get(), vertShaderModule3.get(), tescShaderModule.get(), teseShaderModule.get(),
-        geomShaderModule.get(), fragShaderModule3.get(), renderPassHandle, 0u, &vertexInputStateParams,
-        &pipelineInputAssemblyStateInfo, &tessStateCreateInfo, &viewportStateCreateInfo, DE_NULL, DE_NULL, DE_NULL,
-        DE_NULL, pipelineDynamicState, pPipelineRenderingCreateInfo);
+    const auto pipeline1 =
+        makeGraphicsPipeline(vk, device, pipelineLayout.get(), vertShaderModule1.get(), tescShaderModule.get(),
+                             teseShaderModule.get(), geomShaderModule.get(), fragShaderModule1.get(), renderPassHandle,
+                             0u, &vertexInputStateParams, &pipelineInputAssemblyStateInfo, &tessStateCreateInfo,
+                             &viewportStateCreateInfo, rasterizationStateCreateInfoDefault, nullptr, nullptr, nullptr,
+                             pipelineDynamicState, pPipelineRenderingCreateInfo);
+    const auto pipeline2 =
+        makeGraphicsPipeline(vk, device, pipelineLayout.get(), vertShaderModule2.get(), tescShaderModule.get(),
+                             teseShaderModule.get(), geomShaderModule.get(), fragShaderModule2.get(), renderPassHandle,
+                             0u, &vertexInputStateParams, &pipelineInputAssemblyStateInfo, &tessStateCreateInfo,
+                             &viewportStateCreateInfo, rasterizationStateCreateInfoDefault, nullptr, nullptr, nullptr,
+                             pipelineDynamicState, pPipelineRenderingCreateInfo);
+    const auto pipeline3 =
+        makeGraphicsPipeline(vk, device, pipelineLayout.get(), vertShaderModule3.get(), tescShaderModule.get(),
+                             teseShaderModule.get(), geomShaderModule.get(), fragShaderModule3.get(), renderPassHandle,
+                             0u, &vertexInputStateParams, &pipelineInputAssemblyStateInfo, &tessStateCreateInfo,
+                             &viewportStateCreateInfo, rasterizationStateCreateInfoDefault, nullptr, nullptr, nullptr,
+                             pipelineDynamicState, pPipelineRenderingCreateInfo);
     const auto computePipeline =
         vk::makeComputePipeline(vk, device, computePipelineLayout.get(), compShaderModule.get());
 
@@ -539,7 +586,7 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
     vk::beginCommandBuffer(vk, *cmdBuffer, 0u);
 
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                          vk::VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0, DE_NULL, 0, DE_NULL, 1,
+                          vk::VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0, nullptr, 0, nullptr, 1,
                           &initialBarrier);
 
     if (m_params.testType == RENDER_PASS_PIPELINE_SHADER_OBJECT)
@@ -576,6 +623,13 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline1);
         vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 
+        //  VUID-vkCmdDraw-None-07630
+        if (extensionEnabled(deviceExtensions, "VK_EXT_conservative_rasterization") &&
+            eds3Features.extendedDynamicState3ConservativeRasterizationMode)
+        {
+            vk.cmdSetRasterizationStreamEXT(*cmdBuffer, 0);
+        }
+
         vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader2, *tescShader, *teseShader, *geomShader, *fragShader2,
                                 taskSupported, meshSupported);
         vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
@@ -592,6 +646,13 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline2);
         vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 
+        //  VUID-vkCmdDraw-None-07630
+        if (extensionEnabled(deviceExtensions, "VK_EXT_conservative_rasterization") &&
+            eds3Features.extendedDynamicState3ConservativeRasterizationMode)
+        {
+            vk.cmdSetRasterizationStreamEXT(*cmdBuffer, 0);
+        }
+
         vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader3, *tescShader, *teseShader, *geomShader, *fragShader3,
                                 taskSupported, meshSupported);
         vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
@@ -603,6 +664,9 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
 
         vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader2, *tescShader, *teseShader, *geomShader, *fragShader2,
                                 taskSupported, meshSupported);
+        vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,
+                                                false,
+                                                !m_context.getExtendedDynamicStateFeaturesEXT().extendedDynamicState);
         vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
     }
     else if (m_params.testType == RENDER_PASS_PIPELINE_SHADER_OBJECT)
@@ -616,6 +680,9 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline1);
         vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader1, *tescShader, *teseShader, *geomShader, *fragShader1,
                                 taskSupported, meshSupported);
+        vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,
+                                                false,
+                                                !m_context.getExtendedDynamicStateFeaturesEXT().extendedDynamicState);
         vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
     }
     else if (m_params.testType == SHADER_OBJECT_MIN_PIPELINE)
@@ -630,11 +697,11 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
     else if (m_params.testType == COMPUTE_SHADER_OBJECT_MIN_PIPELINE)
     {
         vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout.get(), 0, 1,
-                                 &descriptorSet.get(), 0, DE_NULL);
+                                 &descriptorSet.get(), 0, nullptr);
 
         vk::VkShaderStageFlagBits stages[] = {vk::VK_SHADER_STAGE_COMPUTE_BIT};
         vk.cmdBindShadersEXT(*cmdBuffer, 1, stages, &*compShader);
-        vk.cmdDispatch(*cmdBuffer, 4, 1, 1);
+        vk.cmdDispatch(*cmdBuffer, dispatch_x_count, 1, 1);
 
         vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL,
                            vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
@@ -645,7 +712,7 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
     else if (m_params.testType == SHADER_OBJECT_COMPUTE_PIPELINE)
     {
         vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout.get(), 0, 1,
-                                 &descriptorSet.get(), 0, DE_NULL);
+                                 &descriptorSet.get(), 0, nullptr);
 
         vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL,
                            vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
@@ -655,7 +722,7 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
         vk::endRendering(vk, *cmdBuffer);
 
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
-        vk.cmdDispatch(*cmdBuffer, 4, 1, 1);
+        vk.cmdDispatch(*cmdBuffer, dispatch_x_count, 1, 1);
     }
 
     if (m_params.testType != COMPUTE_SHADER_OBJECT_MIN_PIPELINE && m_params.testType != SHADER_OBJECT_COMPUTE_PIPELINE)
@@ -926,14 +993,14 @@ tcu::TestStatus ShaderObjectStageBindingInstance::iterate(void)
         m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
     const bool tessellationSupported = m_context.getDeviceFeatures().tessellationShader;
     const bool geometrySupported     = m_context.getDeviceFeatures().geometryShader;
-    const bool taskSupported         = m_context.getMeshShaderFeatures().taskShader;
-    const bool meshSupported         = m_context.getMeshShaderFeatures().meshShader;
+    const bool taskSupported         = m_context.getMeshShaderFeaturesEXT().taskShader;
+    const bool meshSupported         = m_context.getMeshShaderFeaturesEXT().meshShader;
 
     const auto subresourceRange = makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
 
     const vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                // VkStructureType            sType
-        DE_NULL,                                                // const void*                pNext
+        nullptr,                                                // const void*                pNext
         0u,                                                     // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                                   // VkImageType                imageType
         colorAttachmentFormat,                                  // VkFormat                    format
@@ -945,7 +1012,7 @@ tcu::TestStatus ShaderObjectStageBindingInstance::iterate(void)
         vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags        usage
         vk::VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode
         0,                             // uint32_t                    queueFamilyIndexCount
-        DE_NULL,                       // const uint32_t*            pQueueFamilyIndices
+        nullptr,                       // const uint32_t*            pQueueFamilyIndices
         vk::VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
     };
 
@@ -962,7 +1029,7 @@ tcu::TestStatus ShaderObjectStageBindingInstance::iterate(void)
 
     const vk::VkCommandPoolCreateInfo cmdPoolInfo = {
         vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType
-        DE_NULL,                                             // pNext
+        nullptr,                                             // pNext
         vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags
         queueFamilyIndex,                                    // queuefamilyindex
     };
@@ -1044,24 +1111,24 @@ tcu::TestStatus ShaderObjectStageBindingInstance::iterate(void)
 
     const vk::VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                       // const void* pNext;
+        nullptr,                                                       // const void* pNext;
         0u,                                                            // VkPipelineVertexInputStateCreateFlags flags;
         0u,                                                            // uint32_t vertexBindingDescriptionCount;
-        DE_NULL, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+        nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
         0u,      // uint32_t vertexAttributeDescriptionCount;
-        DE_NULL  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+        nullptr  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
     };
 
     const vk::VkPipelineTessellationStateCreateInfo tessStateCreateInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                       // const void* pNext;
+        nullptr,                                                       // const void* pNext;
         0u,                                                            // VkPipelineTessellationStateCreateFlags flags;
         4u,                                                            // uint32_t patchControlPoints;
     };
 
     const vk::VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                         // const void*                                 pNext;
+        nullptr,                                         // const void*                                 pNext;
         (vk::VkPipelineInputAssemblyStateCreateFlags)0u, // VkPipelineInputAssemblyStateCreateFlags     flags;
         topology,                                        // VkPrimitiveTopology                         topology;
         VK_FALSE, // VkBool32                                    primitiveRestartEnable;
@@ -1069,7 +1136,7 @@ tcu::TestStatus ShaderObjectStageBindingInstance::iterate(void)
 
     vk::VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO, // VkStructureType    sType
-        DE_NULL,                                              // const void*        pNext
+        nullptr,                                              // const void*        pNext
         0u,                                                   // uint32_t            viewMask
         1u,                                                   // uint32_t            colorAttachmentCount
         &colorAttachmentFormat,                               // const VkFormat*    pColorAttachmentFormats
@@ -1084,7 +1151,7 @@ tcu::TestStatus ShaderObjectStageBindingInstance::iterate(void)
 
     const vk::VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                             sType
-        DE_NULL,                                                   // const void*                                 pNext
+        nullptr,                                                   // const void*                                 pNext
         (vk::VkPipelineViewportStateCreateFlags)0u,                // VkPipelineViewportStateCreateFlags          flags
         1u,        // uint32_t                                    viewportCount
         &viewport, // const VkViewport*                           pViewports
@@ -1095,8 +1162,8 @@ tcu::TestStatus ShaderObjectStageBindingInstance::iterate(void)
     const auto pipeline = makeGraphicsPipeline(
         vk, device, emptyPipelineLayout.get(), vertShaderModule.get(), tescShaderModule.get(), teseShaderModule.get(),
         geomShaderModule.get(), fragShaderModule.get(), VK_NULL_HANDLE, 0u, &vertexInputStateParams,
-        &pipelineInputAssemblyStateInfo, &tessStateCreateInfo, &viewportStateCreateInfo, DE_NULL, DE_NULL, DE_NULL,
-        DE_NULL, DE_NULL, &pipelineRenderingCreateInfo);
+        &pipelineInputAssemblyStateInfo, &tessStateCreateInfo, &viewportStateCreateInfo, nullptr, nullptr, nullptr,
+        nullptr, nullptr, &pipelineRenderingCreateInfo);
 
     const vk::VkDeviceSize bufferSizeBytes = sizeof(uint32_t) * 4;
 
@@ -1121,7 +1188,7 @@ tcu::TestStatus ShaderObjectStageBindingInstance::iterate(void)
     vk::beginCommandBuffer(vk, *cmdBuffer, 0u);
 
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                          vk::VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0, DE_NULL, 0, DE_NULL, 1,
+                          vk::VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0, nullptr, 0, nullptr, 1,
                           &initialBarrier);
 
     vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL,
@@ -1131,7 +1198,7 @@ tcu::TestStatus ShaderObjectStageBindingInstance::iterate(void)
     vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 
     vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0, 1,
-                             &descriptorSet.get(), 0, DE_NULL);
+                             &descriptorSet.get(), 0, nullptr);
     vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, topology, false,
                                             !m_context.getExtendedDynamicStateFeaturesEXT().extendedDynamicState);
 

@@ -63,7 +63,7 @@ public:
         const float queuePriority             = 1.0f;
         vk::VkDeviceQueueCreateInfo queueInfo = {
             vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             (vk::VkDeviceQueueCreateFlags)0u,               // VkDeviceQueueCreateFlags flags;
             m_context.getUniversalQueueFamilyIndex(),       // uint32_t queueFamilyIndex;
             1u,                                             // uint32_t queueCount;
@@ -78,10 +78,10 @@ public:
             1,                                        // uint32_t queueCreateInfoCount;
             &queueInfo,                               // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
             0u,                                       // uint32_t enabledLayerCount;
-            DE_NULL,                                  // const char* const* ppEnabledLayerNames;
+            nullptr,                                  // const char* const* ppEnabledLayerNames;
             static_cast<uint32_t>(extensions.size()), // uint32_t enabledExtensionCount;
             extensions.data(),                        // const char* const* ppEnabledExtensionNames;
-            DE_NULL,                                  // const VkPhysicalDeviceFeatures* pEnabledFeatures;
+            nullptr,                                  // const VkPhysicalDeviceFeatures* pEnabledFeatures;
         };
 
         m_device =
@@ -151,7 +151,7 @@ public:
 
         const vk::VkQueryPoolCreateInfo queryPoolParams = {
             vk::VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType               sType;
-            DE_NULL,                                      // const void*                   pNext;
+            nullptr,                                      // const void*                   pNext;
             0u,                                           // VkQueryPoolCreateFlags        flags;
             vk::VK_QUERY_TYPE_TIMESTAMP,                  // VkQueryType                   queryType;
             1u,                                           // uint32_t                      entryCount;

@@ -122,7 +122,7 @@ static const char *getEquationName(glw::GLenum equation)
         return "hsl_luminosity";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -183,9 +183,9 @@ AdvancedBlendCase::AdvancedBlendCase(Context &context, const char *name, const c
     , m_fbo(0)
     , m_resolveColorRbo(0)
     , m_resolveFbo(0)
-    , m_program(DE_NULL)
-    , m_referenceRenderer(DE_NULL)
-    , m_refColorBuffer(DE_NULL)
+    , m_program(nullptr)
+    , m_referenceRenderer(nullptr)
+    , m_refColorBuffer(nullptr)
     , m_renderWidth(rtType != RENDERTARGETTYPE_DEFAULT ? 2 * MAX_VIEWPORT_WIDTH :
                                                          m_context.getRenderTarget().getWidth())
     , m_renderHeight(rtType != RENDERTARGETTYPE_DEFAULT ? 2 * MAX_VIEWPORT_HEIGHT :
@@ -273,7 +273,7 @@ void AdvancedBlendCase::init(void)
     if (!m_program->isOk())
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
         TCU_FAIL("Compile failed");
     }
 
@@ -341,9 +341,9 @@ void AdvancedBlendCase::deinit(void)
     delete m_referenceRenderer;
     delete m_refColorBuffer;
 
-    m_program           = DE_NULL;
-    m_referenceRenderer = DE_NULL;
-    m_refColorBuffer    = DE_NULL;
+    m_program           = nullptr;
+    m_referenceRenderer = nullptr;
+    m_refColorBuffer    = nullptr;
 
     if (m_colorRbo || m_fbo)
     {
@@ -466,13 +466,13 @@ AdvancedBlendCase::IterateResult AdvancedBlendCase::iterate(void)
         gl.bufferData(GL_ARRAY_BUFFER, (glw::GLsizeiptr)(positions.size() * sizeof(positions[0])), &positions[0],
                       GL_STATIC_DRAW);
         gl.enableVertexAttribArray(posLoc);
-        gl.vertexAttribPointer(posLoc, 2, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+        gl.vertexAttribPointer(posLoc, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 
         gl.bindBuffer(GL_ARRAY_BUFFER, *colorBuffer);
         gl.bufferData(GL_ARRAY_BUFFER, (glw::GLsizeiptr)(colors.size() * sizeof(colors[0])), &colors[0],
                       GL_STATIC_DRAW);
         gl.enableVertexAttribArray(colorLoc);
-        gl.vertexAttribPointer(colorLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+        gl.vertexAttribPointer(colorLoc, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
         GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to create buffers");
 
         gl.useProgram(program);
@@ -490,7 +490,7 @@ AdvancedBlendCase::IterateResult AdvancedBlendCase::iterate(void)
         gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         gl.disable(GL_BLEND);
-        gl.drawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, DE_NULL);
+        gl.drawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, nullptr);
         gl.enable(GL_BLEND);
 
         if (!m_coherentBlending)

@@ -256,6 +256,9 @@ struct Ballots : protected std::vector<std::bitset<128>>
     Ballots(add_cref<Ballots> other) : super(upcast(other))
     {
     }
+    Ballots(Ballots &&other) : super(std::move(other))
+    {
+    }
     using super::operator[];
     using super::at;
     /**
@@ -500,6 +503,13 @@ Ballot bitsetToBallot(const Ballots &bitset, uint32_t subgroupSize, uint32_t inv
     return bitset.at(invocationID / subgroupSize) & subgroupSizeToMask(subgroupSize, bitset.subgroupCount());
 }
 
+// Pick out the mask for the subgroup that invocationID is a member of
+Ballot bitsetToBallot(add_cref<Ballots> bitset, add_cref<Ballot> subgroupSizeMask, uint32_t subgroupSize,
+                      uint32_t invocationID)
+{
+    return bitset.at(invocationID / subgroupSize) & subgroupSizeMask;
+}
+
 Ballot bitsetToBallot(uint64_t value, uint32_t subgroupCount, uint32_t subgroupSize, uint32_t invocationID)
 {
     Ballots bs = ballotsFromU64(value, subgroupSize, subgroupCount);
@@ -577,6 +587,9 @@ struct Vertex
 
 typedef Vertex Triangle[3];
 
+class RandomProgram;
+class ComputeRandomProgram;
+
 std::pair<vk::VkPhysicalDeviceSubgroupProperties, vk::VkPhysicalDeviceProperties2> getSubgroupProperties(
     vkt::Context &context)
 {
@@ -622,7 +635,11 @@ protected:
 class ReconvergenceTestComputeInstance : public ReconvergenceTestInstance
 {
 public:
-    ReconvergenceTestComputeInstance(Context &context, const CaseDef &data) : ReconvergenceTestInstance(context, data)
+    ReconvergenceTestComputeInstance(Context &context, const CaseDef &data, std::shared_ptr<RandomProgram> program,
+                                     std::map<uint32_t, uint32_t> &&subgroupSizeToMaxLoc)
+        : ReconvergenceTestInstance(context, data)
+        , m_program(std::static_pointer_cast<ComputeRandomProgram>(program))
+        , m_subgroupSizeToMaxLoc(std::move(subgroupSizeToMaxLoc))
     {
     }
     ~ReconvergenceTestComputeInstance(void) = default;
@@ -630,6 +647,10 @@ public:
     virtual tcu::TestStatus iterate(void) override;
     qpTestResult_e calculateAndLogResult(const tcu::UVec4 *result, const std::vector<tcu::UVec4> &ref,
                                          uint32_t invocationStride, uint32_t subgroupSize, uint32_t shaderMaxLoc);
+
+private:
+    std::shared_ptr<ComputeRandomProgram> m_program;
+    std::map<uint32_t, uint32_t> m_subgroupSizeToMaxLoc;
 };
 
 class ReconvergenceTestGraphicsInstance : public ReconvergenceTestInstance
@@ -791,8 +812,11 @@ Move<VkPipeline> ReconvergenceTestInstance::createComputePipeline(const VkPipeli
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice device     = m_context.getDevice();
+    const VkBool32 computeFullSubgroups =
+        m_subgroupSize <= 64 && m_context.getSubgroupSizeControlFeatures().computeFullSubgroups;
 
-    const uint32_t specData[2]                                               = {m_data.sizeX, m_data.sizeY};
+    const uint32_t specData[2] = {computeFullSubgroups ? ROUNDUP(m_data.sizeX, m_subgroupSize) : m_data.sizeX,
+                                  m_data.sizeY};
     const vk::VkSpecializationMapEntry entries[DE_LENGTH_OF_ARRAY(specData)] = {
         {0, (uint32_t)(sizeof(uint32_t) * 0), sizeof(uint32_t)},
         {1, (uint32_t)(sizeof(uint32_t) * 1), sizeof(uint32_t)},
@@ -806,14 +830,11 @@ Move<VkPipeline> ReconvergenceTestInstance::createComputePipeline(const VkPipeli
 
     const VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT subgroupSizeCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT, // VkStructureType sType;
-        DE_NULL,                                                                        // void* pNext;
+        nullptr,                                                                        // void* pNext;
         m_subgroupSize // uint32_t requiredSubgroupSize;
     };
 
-    const VkBool32 computeFullSubgroups =
-        m_subgroupSize <= 64 && m_context.getSubgroupSizeControlFeatures().computeFullSubgroups;
-
-    const void *shaderPNext = computeFullSubgroups ? &subgroupSizeCreateInfo : DE_NULL;
+    const void *shaderPNext = computeFullSubgroups ? &subgroupSizeCreateInfo : nullptr;
     VkPipelineShaderStageCreateFlags pipelineShaderStageCreateFlags =
         (VkPipelineShaderStageCreateFlags)(computeFullSubgroups ?
                                                VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT :
@@ -831,7 +852,7 @@ Move<VkPipeline> ReconvergenceTestInstance::createComputePipeline(const VkPipeli
 
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0u,               // flags
         shaderCreateInfo, // cs
         pipelineLayout,   // layout
@@ -1599,9 +1620,10 @@ public:
             ops.push_back({OP_NOISE, 1});
     }
 
-    void generateRandomProgram(qpWatchDog *watchDog, add_ref<tcu::TestLog> log)
+    std::map<uint32_t, uint32_t> generateRandomProgram(qpWatchDog *watchDog, add_ref<tcu::TestLog> log)
     {
         std::vector<tcu::UVec4> ref;
+        std::map<uint32_t, uint32_t> subgroupSizeToMaxLoc;
 
         do
         {
@@ -1616,10 +1638,13 @@ public:
                 for (int32_t subgroupSize = 4; subgroupSize <= 128; subgroupSize *= 2)
                 {
                     //simulate(true, subgroupSize, ref);
-                    execute(watchDog, true, subgroupSize, 0u, invocationStride, ref, log);
+                    const uint32_t maxLoc = execute(watchDog, true, subgroupSize, 0u, invocationStride, ref, log);
+                    subgroupSizeToMaxLoc[subgroupSize] = maxLoc;
                 }
             }
         } while (caseDef.isUCF() && !hasUCF());
+
+        return subgroupSizeToMaxLoc;
     }
 
     void printIndent(std::stringstream &css)
@@ -2065,7 +2090,7 @@ public:
                 {
                     for (uint32_t id = 0; id < invocationStride; id += subgroupSize)
                     {
-                        const Ballot subgroupMask = bitsetToBallot(activeMask, subgroupSize, id);
+                        const Ballot subgroupMask = bitsetToBallot(activeMask, fullSubgroupMask, subgroupSize, id);
                         // Flag that this ballot is subgroup-nonuniform
                         if (subgroupMask != 0 && subgroupMask != fullSubgroupMask)
                             ops[i].caseValue = 1;
@@ -2494,8 +2519,15 @@ public:
 
     struct ComputePrerequisites : Prerequisites
     {
-        const uint32_t m_subgroupSize;
-        ComputePrerequisites(uint32_t subgroupSize) : m_subgroupSize(subgroupSize)
+        const uint32_t subgroupSize;
+        const uint32_t subgroupCount;
+        const Ballot subgroupSizeMask;
+        std::vector<std::pair<bool, tcu::UVec4>> ballots;
+        ComputePrerequisites(uint32_t subgroupSize_, uint32_t subgroupCount_)
+            : subgroupSize(subgroupSize_)
+            , subgroupCount(subgroupCount_)
+            , subgroupSizeMask(subgroupSizeToMask(subgroupSize, subgroupCount))
+            , ballots(subgroupCount_)
         {
         }
     };
@@ -2540,8 +2572,11 @@ protected:
         DE_UNREF(logFailureCount);
         DE_UNREF(reason);
         DE_UNREF(cmp);
+        auto pre                     = static_pointer_cast<ComputePrerequisites>(prerequisites);
         const uint32_t subgroupCount = activeMask.subgroupCount();
-        const uint32_t subgroupSize  = static_pointer_cast<ComputePrerequisites>(prerequisites)->m_subgroupSize;
+        const uint32_t subgroupSize  = pre->subgroupSize;
+
+        std::fill_n(pre->ballots.begin(), subgroupCount, std::pair<bool, tcu::UVec4>());
 
         for (uint32_t id = 0; id < invocationStride; ++id)
         {
@@ -2560,7 +2595,15 @@ protected:
                             bitsetToBallot(0x12345678, subgroupCount, subgroupSize, id);
                     }
                     else
-                        ref[(outLoc[id]++) * invocationStride + id] = bitsetToBallot(activeMask, subgroupSize, id);
+                    {
+                        add_ref<std::pair<bool, tcu::UVec4>> info(pre->ballots.at(id / subgroupSize));
+                        if (false == info.first)
+                        {
+                            info.first  = true;
+                            info.second = bitsetToBallot(activeMask, pre->subgroupSizeMask, subgroupSize, id);
+                        }
+                        ref[(outLoc[id]++) * invocationStride + id] = info.second;
+                    }
                 }
             }
         }
@@ -2577,7 +2620,7 @@ protected:
         DE_UNREF(logFailureCount);
         DE_UNREF(reason);
         DE_UNREF(cmp);
-        const uint32_t subgroupSize = static_pointer_cast<ComputePrerequisites>(prerequisites)->m_subgroupSize;
+        const uint32_t subgroupSize = static_pointer_cast<ComputePrerequisites>(prerequisites)->subgroupSize;
         for (uint32_t id = 0; id < invocationStride; ++id)
         {
             if (activeMask.test(Ballots::findBit(id, subgroupSize)))
@@ -2585,8 +2628,7 @@ protected:
                 if (countOnly)
                     outLoc[id]++;
                 else
-                    ref[(outLoc[id]++) * invocationStride + id] =
-                        Ballot(tcu::UVec4(uint32_t(storeValue & 0xFFFFFFFF), 0u, 0u, 0u));
+                    ref[(outLoc[id]++) * invocationStride + id][0] = uint32_t(storeValue & 0xFFFFFFFF);
             }
         }
     }
@@ -2601,8 +2643,8 @@ protected:
         DE_UNREF(outputP);
         DE_UNREF(fragmentStride);
         DE_ASSERT(invocationStride == primitiveStride);
-        auto prerequisites = std::make_shared<ComputePrerequisites>(subgroupSize);
         subgroupCount      = ROUNDUP(invocationStride, subgroupSize) / subgroupSize;
+        auto prerequisites = std::make_shared<ComputePrerequisites>(subgroupSize, subgroupCount);
         stateStack.resize(10u, SubgroupState2(subgroupCount));
         outLoc.resize(primitiveStride, 0u);
         add_ref<Ballots> activeMask(stateStack.at(0).activeMask);
@@ -4362,9 +4404,12 @@ public:
     ReconvergenceTestCase(tcu::TestContext &context, const std::string &name, const CaseDef data)
         : TestCase(context, name)
         , m_data(data)
+        , m_program()
+        , m_subgroupSizeToMaxLoc()
     {
     }
     ~ReconvergenceTestCase(void) = default;
+    virtual void delayedInit(void) override;
     virtual void checkSupport(Context &context) const override;
     virtual void initPrograms(SourceCollections &programCollection) const override;
     virtual TestInstance *createInstance(Context &context) const override;
@@ -4372,6 +4417,8 @@ public:
 
 private:
     CaseDef m_data;
+    std::shared_ptr<RandomProgram> m_program;
+    mutable std::map<uint32_t, uint32_t> m_subgroupSizeToMaxLoc;
 };
 
 void ReconvergenceTestCase::checkSupport(Context &context) const
@@ -4507,11 +4554,16 @@ std::string genPassThroughTessEvalSource()
     return str.str();
 }
 
+void ReconvergenceTestCase::delayedInit(void)
+{
+    m_program = std::shared_ptr<RandomProgram>(selectProgram().release());
+}
+
 void ReconvergenceTestCase::initPrograms(SourceCollections &programCollection) const
 {
     de::MovePtr<RandomProgram> program = selectProgram();
 
-    program->generateRandomProgram(m_testCtx.getWatchDog(), m_testCtx.getLog());
+    m_subgroupSizeToMaxLoc = program->generateRandomProgram(m_testCtx.getWatchDog(), m_testCtx.getLog());
 
     std::stringstream header, layout, globals, prologue, epilogue, aux;
 
@@ -4939,7 +4991,7 @@ void ReconvergenceTestCase::initPrograms(SourceCollections &programCollection) c
     }
 
     std::stringstream css, functions, main;
-    program->printCode(functions, main);
+    m_program->printCode(functions, main);
 
     css << header.str();
     css << layout.str();
@@ -5001,7 +5053,7 @@ TestInstance *ReconvergenceTestCase::createInstance(Context &context) const
     switch (m_data.shaderStage)
     {
     case VK_SHADER_STAGE_COMPUTE_BIT:
-        return new ReconvergenceTestComputeInstance(context, m_data);
+        return new ReconvergenceTestComputeInstance(context, m_data, m_program, std::move(m_subgroupSizeToMaxLoc));
     case VK_SHADER_STAGE_FRAGMENT_BIT:
         return new ReconvergenceTestFragmentInstance(context, m_data);
     case VK_SHADER_STAGE_VERTEX_BIT:
@@ -5026,15 +5078,20 @@ tcu::TestStatus ReconvergenceTestComputeInstance::iterate(void)
     tcu::TestLog &log                    = m_context.getTestContext().getLog();
     const VkPhysicalDeviceLimits &limits = m_context.getDeviceProperties().limits;
 
-    //const uint32_t invocationCount = (ROUNDUP(invocationCount, m_subgroupSize) / m_subgroupSize) * 128u;
     const uint32_t invocationStride = m_data.sizeX * m_data.sizeY;
 
     std::vector<tcu::UVec4> ref;
-    ComputeRandomProgram program(m_data);
-    program.generateRandomProgram(m_context.getTestContext().getWatchDog(), log);
+    add_ref<ComputeRandomProgram> program(*m_program);
 
-    uint32_t maxLoc =
-        program.execute(m_context.getTestContext().getWatchDog(), true, m_subgroupSize, 0u, invocationStride, ref, log);
+    uint32_t precalculatedMaxLoc = 0u;
+    if (auto itPrecalculatedMaxLoc = m_subgroupSizeToMaxLoc.find(m_subgroupSize);
+        itPrecalculatedMaxLoc != m_subgroupSizeToMaxLoc.end())
+    {
+        precalculatedMaxLoc = itPrecalculatedMaxLoc->second;
+    }
+    uint32_t maxLoc       = precalculatedMaxLoc ? precalculatedMaxLoc :
+                                                  program.execute(m_context.getTestContext().getWatchDog(), true,
+                                                                  m_subgroupSize, 0u, invocationStride, ref, log);
     uint32_t shaderMaxLoc = maxLoc;
 
     // maxLoc is per-invocation. Add one (to make sure no additional writes are done) and multiply by
@@ -5110,7 +5167,7 @@ tcu::TestStatus ReconvergenceTestComputeInstance::iterate(void)
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,
         1,                          // setLayoutCount
         &descriptorSetLayout.get(), // pSetLayouts
@@ -5144,7 +5201,7 @@ tcu::TestStatus ReconvergenceTestComputeInstance::iterate(void)
 
     // compute "maxLoc", the maximum number of locations written
     beginCommandBuffer(vk, *cmdBuffer, 0u);
-    vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, DE_NULL);
+    vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, nullptr);
     vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
     vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, m_data.shaderStage, 0, sizeof(pc), &pc);
     vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
@@ -5208,7 +5265,7 @@ tcu::TestStatus ReconvergenceTestComputeInstance::iterate(void)
 
     // run the actual shader
     beginCommandBuffer(vk, *cmdBuffer, 0u);
-    vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, DE_NULL);
+    vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, nullptr);
     vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
     vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, m_data.shaderStage, 0, sizeof(pc), &pc);
     vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
@@ -5219,15 +5276,26 @@ tcu::TestStatus ReconvergenceTestComputeInstance::iterate(void)
     invalidateAlloc(vk, device, buffers[1]->getAllocation());
 
     // Simulate execution on the CPU, and compare against the GPU result
-    try
     {
-        ref.resize(maxLoc, tcu::UVec4());
-    }
-    catch (const std::bad_alloc &)
-    {
-        // Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
-        return tcu::TestStatus(QP_TEST_RESULT_NOT_SUPPORTED,
-                               "Failed system memory allocation " + de::toString(maxLoc * sizeof(uint64_t)) + " bytes");
+        typedef decltype(ref) ref_t;
+        const typename ref_t::size_type allocSize = maxLoc * sizeof(ref_t::value_type);
+        // Allocation size is unpredictable and can be too large for some systems.
+        // Don't treat allocation failure as a test failure.
+        const tcu::TestStatus failAlloc(QP_TEST_RESULT_NOT_SUPPORTED,
+                                        "Failed system memory allocation " + de::toString(allocSize) + " bytes");
+        if (maxLoc > ref.max_size())
+        {
+            return failAlloc;
+        }
+
+        try
+        {
+            ref.resize(maxLoc, tcu::UVec4());
+        }
+        catch (const std::exception &)
+        {
+            return failAlloc;
+        }
     }
 
     program.execute(m_context.getTestContext().getWatchDog(), false, m_subgroupSize, 0u, invocationStride, ref, log);
@@ -5628,7 +5696,7 @@ void ReconvergenceTestGraphicsInstance::recordDrawingAndSubmit(
     const VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
     beginCommandBuffer(vk, cmdBuffer, 0u);
-    vk.cmdBindDescriptorSets(cmdBuffer, bindPoint, pipelineLayout, 0u, 1u, &descriptorSet, 0u, DE_NULL);
+    vk.cmdBindDescriptorSets(cmdBuffer, bindPoint, pipelineLayout, 0u, 1u, &descriptorSet, 0u, nullptr);
     vk.cmdBindPipeline(cmdBuffer, bindPoint, pipeline);
     vk.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &static_cast<const VkBuffer &>(vertexBuffer),
                             &static_cast<const VkDeviceSize &>(0u));
@@ -5912,7 +5980,7 @@ std::vector<uint32_t> ReconvergenceTestFragmentInstance::callAuxiliaryShader(tcu
     };
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,                // flags
         1u,                                            // setLayoutCount
         &descriptorSetLayout.get(),                    // pSetLayouts
@@ -6145,7 +6213,7 @@ tcu::TestStatus ReconvergenceTestFragmentInstance::iterate(void)
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,                // flags
         1u,                                            // setLayoutCount
         &descriptorSetLayout.get(),                    // pSetLayouts
@@ -6475,7 +6543,7 @@ tcu::TestStatus ReconvergenceTestVertexInstance::iterate(void)
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,                // flags
         1u,                                            // setLayoutCount
         &descriptorSetLayout.get(),                    // pSetLayouts
@@ -6852,7 +6920,7 @@ tcu::TestStatus ReconvergenceTestTessCtrlInstance::iterate(void)
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,                // flags
         1u,                                            // setLayoutCount
         &descriptorSetLayout.get(),                    // pSetLayouts
@@ -7178,7 +7246,7 @@ tcu::TestStatus ReconvergenceTestTessEvalInstance::iterate(void)
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,                // flags
         1u,                                            // setLayoutCount
         &descriptorSetLayout.get(),                    // pSetLayouts
@@ -7511,7 +7579,7 @@ tcu::TestStatus ReconvergenceTestGeometryInstance::iterate(void)
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,                // flags
         1u,                                            // setLayoutCount
         &descriptorSetLayout.get(),                    // pSetLayouts
@@ -7806,8 +7874,8 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
                         case VK_SHADER_STAGE_COMPUTE_BIT:
                             // we want to test at least full subgroup
                             // both are primary numbers
-                            sizeX = 13u;
-                            sizeY = 19u;
+                            sizeX = 7u;
+                            sizeY = 13u;
                             break;
                         case VK_SHADER_STAGE_FRAGMENT_BIT:
                             sizeX = 32;

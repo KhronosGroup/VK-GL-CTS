@@ -75,9 +75,9 @@ void checkError(uint32_t err, const char *msg, const char *file, int line)
         msgStr << "glGetError() returned " << getErrorStr(err);
 
         if (err == GL_OUT_OF_MEMORY)
-            throw OutOfMemoryError(msgStr.str().c_str(), DE_NULL, file, line);
+            throw OutOfMemoryError(msgStr.str().c_str(), nullptr, file, line);
         else
-            throw Error(err, msgStr.str().c_str(), DE_NULL, file, line);
+            throw Error(err, msgStr.str().c_str(), nullptr, file, line);
     }
 }
 

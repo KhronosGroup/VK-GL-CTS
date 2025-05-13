@@ -203,15 +203,10 @@ void MultipleRayQueriesCase::initPrograms(vk::SourceCollections &programCollecti
            "       proceed = false;\n"
            "        for (int idx=0;idx<rayQueryCount;++idx)\n"
            "        {\n"
-           "           prcds[idx] = prcds[idx] && rayQueryProceedEXT(rqs[idx]);\n"
+           "            prcds[idx] = prcds[idx] && rayQueryProceedEXT(rqs[idx]);\n"
            "            if (prcds[idx])\n"
            "            {\n"
-           "               if (rayQueryGetIntersectionTypeEXT(rqs[idx], true) == "
-           "gl_RayQueryCommittedIntersectionGeneratedEXT)\n"
-           "               {\n"
-           "                    prcds[idx] = false;\n"
-           "               }\n"
-           "               else if (rayQueryGetIntersectionTypeEXT(rqs[idx], false) == "
+           "               if (rayQueryGetIntersectionTypeEXT(rqs[idx], false) == "
            "gl_RayQueryCandidateIntersectionTriangleEXT)\n"
            "                {\n"
            "                    rayQueryConfirmIntersectionEXT(rqs[idx]);\n"
@@ -219,7 +214,9 @@ void MultipleRayQueriesCase::initPrograms(vk::SourceCollections &programCollecti
            "                else if (rayQueryGetIntersectionTypeEXT(rqs[idx], false) == "
            "gl_RayQueryCandidateIntersectionAABBEXT)\n"
            "                {\n"
-           "                    rayQueryGenerateIntersectionEXT(rqs[idx], 5.f + ((3 * idx) + (index - 3)) * 10.f );\n"
+           "                    uint primIndex = rayQueryGetIntersectionPrimitiveIndexEXT(rqs[idx], false);\n"
+           "                    rayQueryGenerateIntersectionEXT(rqs[idx], 100.f + primIndex * 10.f - (index/3 * "
+           "95.f));\n"
            "                }\n"
            "            }\n"
            "           proceed = proceed || prcds[idx];\n"
@@ -467,6 +464,7 @@ tcu::TestCaseGroup *createMultipleRayQueryTests(tcu::TestContext &testCtx)
         RayQueryTestParams testParams{};
         testParams.shaderSourceType = shaderSourceTypes[shaderSourceNdx].shaderSourceType;
         testParams.pipelineType     = shaderSourceTypes[shaderSourceNdx].shaderSourcePipeline;
+        testParams.resourceRes      = ResourceResidency::TRADITIONAL;
         group->addChild(
             new MultipleRayQueriesCase(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name, testParams));
     }

@@ -142,8 +142,8 @@ void RenderCase::executeForConfig(EGLDisplay display, EGLConfig config)
         {
             const eglu::WindowParams params(width, height, eglu::parseWindowVisibility(m_testCtx.getCommandLine()));
             de::UniquePtr<eglu::NativeWindow> window(
-                windowFactory.createWindow(&nativeDisplay, display, config, DE_NULL, params));
-            EGLSurface eglSurface = createWindowSurface(nativeDisplay, *window, display, config, DE_NULL);
+                windowFactory.createWindow(&nativeDisplay, display, config, nullptr, params));
+            EGLSurface eglSurface = createWindowSurface(nativeDisplay, *window, display, config, nullptr);
             eglu::UniqueSurface surface(egl, display, eglSurface);
 
             executeForSurface(display, *surface, Config(config, EGL_WINDOW_BIT, 0));
@@ -167,8 +167,8 @@ void RenderCase::executeForConfig(EGLDisplay display, EGLConfig config)
         try
         {
             de::UniquePtr<eglu::NativePixmap> pixmap(
-                pixmapFactory.createPixmap(&nativeDisplay, display, config, DE_NULL, width, height));
-            EGLSurface eglSurface = createPixmapSurface(nativeDisplay, *pixmap, display, config, DE_NULL);
+                pixmapFactory.createPixmap(&nativeDisplay, display, config, nullptr, width, height));
+            EGLSurface eglSurface = createPixmapSurface(nativeDisplay, *pixmap, display, config, nullptr);
             eglu::UniqueSurface surface(egl, display, eglSurface);
 
             executeForSurface(display, *surface, Config(config, EGL_PIXMAP_BIT, 0));
@@ -238,7 +238,7 @@ void SingleContextRenderCase::executeForSurface(EGLDisplay display, EGLSurface s
             continue;
 
         EGLint api          = EGL_NONE;
-        const char *apiName = DE_NULL;
+        const char *apiName = nullptr;
         vector<EGLint> contextAttribs;
 
         // Select api enum and build context attributes.

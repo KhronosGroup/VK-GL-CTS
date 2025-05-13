@@ -1214,10 +1214,10 @@ private:
 
 FloatStateQueryTests::FloatStateQueryTests(Context &context)
     : TestCaseGroup(context, "floats", "Float Values")
-    , m_verifierBoolean(DE_NULL)
-    , m_verifierInteger(DE_NULL)
-    , m_verifierInteger64(DE_NULL)
-    , m_verifierFloat(DE_NULL)
+    , m_verifierBoolean(nullptr)
+    , m_verifierInteger(nullptr)
+    , m_verifierInteger64(nullptr)
+    , m_verifierFloat(nullptr)
 {
 }
 
@@ -1228,10 +1228,10 @@ FloatStateQueryTests::~FloatStateQueryTests(void)
 
 void FloatStateQueryTests::init(void)
 {
-    DE_ASSERT(m_verifierBoolean == DE_NULL);
-    DE_ASSERT(m_verifierInteger == DE_NULL);
-    DE_ASSERT(m_verifierInteger64 == DE_NULL);
-    DE_ASSERT(m_verifierFloat == DE_NULL);
+    DE_ASSERT(m_verifierBoolean == nullptr);
+    DE_ASSERT(m_verifierInteger == nullptr);
+    DE_ASSERT(m_verifierInteger64 == nullptr);
+    DE_ASSERT(m_verifierFloat == nullptr);
 
     m_verifierBoolean =
         new GetBooleanVerifier(m_context.getRenderContext().getFunctions(), m_context.getTestContext().getLog());
@@ -1295,22 +1295,22 @@ void FloatStateQueryTests::deinit(void)
     if (m_verifierBoolean)
     {
         delete m_verifierBoolean;
-        m_verifierBoolean = DE_NULL;
+        m_verifierBoolean = nullptr;
     }
     if (m_verifierInteger)
     {
         delete m_verifierInteger;
-        m_verifierInteger = DE_NULL;
+        m_verifierInteger = nullptr;
     }
     if (m_verifierInteger64)
     {
         delete m_verifierInteger64;
-        m_verifierInteger64 = DE_NULL;
+        m_verifierInteger64 = nullptr;
     }
     if (m_verifierFloat)
     {
         delete m_verifierFloat;
-        m_verifierFloat = DE_NULL;
+        m_verifierFloat = nullptr;
     }
 
     this->TestCaseGroup::deinit();

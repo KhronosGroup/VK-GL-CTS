@@ -23,6 +23,7 @@
 
 #include "teglSyncTests.hpp"
 
+#include "deSTLUtil.hpp"
 #include "deStringUtil.hpp"
 
 #include "egluNativeWindow.hpp"
@@ -155,7 +156,7 @@ SyncTest::SyncTest(EglTestContext &eglTestCtx, EGLenum syncType, Extension exten
     , m_eglDisplay(EGL_NO_DISPLAY)
     , m_eglConfig(((eglw::EGLConfig)0)) // EGL_NO_CONFIG
     , m_eglSurface(EGL_NO_SURFACE)
-    , m_nativeWindow(DE_NULL)
+    , m_nativeWindow(nullptr)
     , m_eglContext(EGL_NO_CONTEXT)
     , m_sync(EGL_NO_SYNC_KHR)
 {
@@ -281,10 +282,10 @@ void SyncTest::init(void)
 
         // Create surface
         m_nativeWindow = windowFactory.createWindow(
-            &m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, DE_NULL,
+            &m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, nullptr,
             eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
         m_eglSurface = eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_nativeWindow, m_eglDisplay,
-                                                 m_eglConfig, DE_NULL);
+                                                 m_eglConfig, nullptr);
 
         EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
 
@@ -328,7 +329,7 @@ void SyncTest::deinit(void)
         }
 
         delete m_nativeWindow;
-        m_nativeWindow = DE_NULL;
+        m_nativeWindow = nullptr;
 
         egl.terminate(m_eglDisplay);
         m_eglDisplay = EGL_NO_DISPLAY;
@@ -387,7 +388,16 @@ class CreateLongRunningSyncTest : public SyncTest
         m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(3, 1));
 
         m_eglDisplay = eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
-        m_eglConfig  = eglu::chooseSingleConfig(egl, m_eglDisplay, displayAttribList);
+
+        if (eglu::getVersion(egl, m_eglDisplay) < eglu::Version(1, 5))
+        {
+            const vector<string> extensions = eglu::getDisplayExtensions(egl, m_eglDisplay);
+
+            if (!de::contains(extensions.begin(), extensions.end(), "EGL_KHR_create_context"))
+                TCU_THROW(NotSupportedError, "EGL_OPENGL_ES3_BIT_KHR not supported");
+        }
+
+        m_eglConfig = eglu::chooseSingleConfig(egl, m_eglDisplay, displayAttribList);
 
         m_extensions = (Extension)(m_extensions | getSyncTypeExtension(m_syncType));
 
@@ -398,11 +408,11 @@ class CreateLongRunningSyncTest : public SyncTest
             TCU_THROW(NotSupportedError, "GLES3 not supported");
 
         m_nativeWindow = windowFactory.createWindow(
-            &m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, DE_NULL,
+            &m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, nullptr,
             eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
 
         m_eglSurface = eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_nativeWindow, m_eglDisplay,
-                                                 m_eglConfig, DE_NULL);
+                                                 m_eglConfig, nullptr);
 
         EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
 
@@ -706,6 +716,8 @@ public:
                 "EGL_FOREVER", EGL_CONDITION_SATISFIED);
 
 #if (DE_OS == DE_OS_ANDROID)
+            m_testCtx.touchWatchdog();
+
             test<createSyncKHR, clientWaitSyncKHR, destroySyncKHR>(
                 m_funcNames, &Library::createSyncKHR, &Library::clientWaitSyncKHR, &Library::destroySyncKHR,
                 EGL_SYNC_NATIVE_FENCE_ANDROID, EGL_SYNC_FLUSH_COMMANDS_BIT, "EGL_SYNC_FLUSH_COMMANDS_BIT", EGL_FOREVER,

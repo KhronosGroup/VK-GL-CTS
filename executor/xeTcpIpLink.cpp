@@ -79,10 +79,10 @@ TcpIpLinkState::TcpIpLinkState(CommLinkState initialState, const char *initialEr
     : m_state(initialState)
     , m_error(initialErr)
     , m_lastKeepaliveReceived(0)
-    , m_stateChangedCallback(DE_NULL)
-    , m_testLogDataCallback(DE_NULL)
-    , m_infoLogDataCallback(DE_NULL)
-    , m_userPtr(DE_NULL)
+    , m_stateChangedCallback(nullptr)
+    , m_testLogDataCallback(nullptr)
+    , m_infoLogDataCallback(nullptr)
+    , m_userPtr(nullptr)
 {
 }
 
@@ -119,8 +119,8 @@ void TcpIpLinkState::setCallbacks(CommLink::StateChangedFunc stateChangedCallbac
 
 void TcpIpLinkState::setState(CommLinkState state, const char *error)
 {
-    CommLink::StateChangedFunc callback = DE_NULL;
-    void *userPtr                       = DE_NULL;
+    CommLink::StateChangedFunc callback = nullptr;
+    void *userPtr                       = nullptr;
 
     {
         de::ScopedLock lock(m_lock);
@@ -138,8 +138,8 @@ void TcpIpLinkState::setState(CommLinkState state, const char *error)
 
 void TcpIpLinkState::onTestLogData(const uint8_t *bytes, size_t numBytes) const
 {
-    CommLink::LogDataFunc callback = DE_NULL;
-    void *userPtr                  = DE_NULL;
+    CommLink::LogDataFunc callback = nullptr;
+    void *userPtr                  = nullptr;
 
     m_lock.lock();
     callback = m_testLogDataCallback;
@@ -152,8 +152,8 @@ void TcpIpLinkState::onTestLogData(const uint8_t *bytes, size_t numBytes) const
 
 void TcpIpLinkState::onInfoLogData(const uint8_t *bytes, size_t numBytes) const
 {
-    CommLink::LogDataFunc callback = DE_NULL;
-    void *userPtr                  = DE_NULL;
+    CommLink::LogDataFunc callback = nullptr;
+    void *userPtr                  = nullptr;
 
     m_lock.lock();
     callback = m_infoLogDataCallback;
@@ -307,7 +307,7 @@ void TcpIpRecvThread::run(void)
             {
                 // Process message.
                 handleMessage(messageType,
-                              m_curMsgPos > xs::MESSAGE_HEADER_SIZE ? &m_curMsgBuf[xs::MESSAGE_HEADER_SIZE] : DE_NULL,
+                              m_curMsgPos > xs::MESSAGE_HEADER_SIZE ? &m_curMsgBuf[xs::MESSAGE_HEADER_SIZE] : nullptr,
                               messageSize - xs::MESSAGE_HEADER_SIZE);
                 m_curMsgPos = 0;
             }
@@ -422,7 +422,7 @@ TcpIpLink::TcpIpLink(void)
     : m_state(COMMLINKSTATE_ERROR, "Not connected")
     , m_sendThread(m_socket, m_state)
     , m_recvThread(m_socket, m_state)
-    , m_keepaliveTimer(DE_NULL)
+    , m_keepaliveTimer(nullptr)
 {
     m_keepaliveTimer = deTimer_create(keepaliveTimerCallback, this);
     XE_CHECK(m_keepaliveTimer);

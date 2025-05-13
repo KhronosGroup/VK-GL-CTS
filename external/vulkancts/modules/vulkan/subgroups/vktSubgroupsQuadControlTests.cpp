@@ -55,6 +55,7 @@ enum class TestMode
     QUAD_DERIVATIVES = 0,
     REQUIRE_FULL_QUADS,
     DIVERGENT_CONDITION,
+    TERMINATED_INVOCATION,
 };
 
 class DrawWithQuadControlInstanceBase : public vkt::TestInstance
@@ -77,12 +78,13 @@ protected:
     tcu::UVec2 m_renderSize;
     VkPrimitiveTopology m_topology;
     std::vector<float> m_vertices;
+    std::string m_fragShaderName;
 };
 
-DrawWithQuadControlInstanceBase::DrawWithQuadControlInstanceBase(Context&    context,
-                                                                 TestMode    mode)
-    : vkt::TestInstance        (context)
-    , m_mode                (mode)
+DrawWithQuadControlInstanceBase::DrawWithQuadControlInstanceBase(Context& context,
+                                                                 TestMode mode)
+    : vkt::TestInstance(context)
+    , m_mode           (mode)
     , m_mipColors
     {
         { { 0.9f, 0.4f, 0.2f, 1.0f } }, // orange
@@ -91,8 +93,9 @@ DrawWithQuadControlInstanceBase::DrawWithQuadControlInstanceBase(Context&    con
         { { 0.9f, 0.9f, 0.2f, 1.0f } }, // yellow
         { { 0.6f, 0.1f, 0.9f, 1.0f } }, // violet
     }
-    , m_renderSize            (32)
-    , m_topology            (VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+    , m_renderSize(32)
+    , m_topology  (VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+    , m_fragShaderName ("frag")
 {
 }
 
@@ -101,7 +104,7 @@ VkImageCreateInfo DrawWithQuadControlInstanceBase::getImageCreateInfo(VkExtent3D
 {
     return {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         0u,                                  // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         VK_FORMAT_R8G8B8A8_UNORM,            // VkFormat format;
@@ -113,7 +116,7 @@ VkImageCreateInfo DrawWithQuadControlInstanceBase::getImageCreateInfo(VkExtent3D
         usage,                               // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
 }
@@ -166,7 +169,7 @@ tcu::TestStatus DrawWithQuadControlInstanceBase::iterate(void)
     // create sampler
     const VkSamplerCreateInfo samplerCreateInfo{
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         0u,                                      // VkSamplerCreateFlags flags;
         VK_FILTER_NEAREST,                       // VkFilter magFilter;
         VK_FILTER_NEAREST,                       // VkFilter minFilter;
@@ -187,35 +190,35 @@ tcu::TestStatus DrawWithQuadControlInstanceBase::iterate(void)
     Move<VkSampler> sampler = createSampler(vk, device, &samplerCreateInfo);
 
     const VkVertexInputBindingDescription vertexInputBindingDescription{
-        0u,                          // uint32_t                binding
-        6u * sizeof(float),          // uint32_t                stride
+        0u,                          // uint32_t             binding
+        6u * sizeof(float),          // uint32_t             stride
         VK_VERTEX_INPUT_RATE_VERTEX, // VkVertexInputRate    inputRate
     };
 
     const VkVertexInputAttributeDescription vertexInputAttributeDescription[]{
         {
             // position: 4 floats
-            0u,                            // uint32_t                location
-            0u,                            // uint32_t                binding
-            VK_FORMAT_R32G32B32A32_SFLOAT, // VkFormat                format
-            0u                             // uint32_t                offset
+            0u,                            // uint32_t location
+            0u,                            // uint32_t binding
+            VK_FORMAT_R32G32B32A32_SFLOAT, // VkFormat format
+            0u                             // uint32_t offset
         },
         {
             // uv: 2 floats
-            1u,                      // uint32_t                location
-            0u,                      // uint32_t                binding
-            VK_FORMAT_R32G32_SFLOAT, // VkFormat                format
-            4u * sizeof(float)       // uint32_t                offset
+            1u,                      // uint32_t location
+            0u,                      // uint32_t binding
+            VK_FORMAT_R32G32_SFLOAT, // VkFormat format
+            4u * sizeof(float)       // uint32_t offset
         }};
 
     const VkPipelineVertexInputStateCreateInfo vertexInputState{
-        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                                sType
-        DE_NULL,                                  // const void*                                    pNext
-        (VkPipelineVertexInputStateCreateFlags)0, // VkPipelineVertexInputStateCreateFlags        flags
-        1u,                             // uint32_t                                        vertexBindingDescriptionCount
-        &vertexInputBindingDescription, // const VkVertexInputBindingDescription*        pVertexBindingDescriptions
-        2u, // uint32_t                                        vertexAttributeDescriptionCount
-        vertexInputAttributeDescription // const VkVertexInputAttributeDescription*        pVertexAttributeDescriptions
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType
+        nullptr,                                                   // const void* pNext
+        (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags flags
+        1u,                                                        // uint32_t vertexBindingDescriptionCount
+        &vertexInputBindingDescription, // const VkVertexInputBindingDescription* pVertexBindingDescriptions
+        2u,                             // uint32_t vertexAttributeDescriptionCount
+        vertexInputAttributeDescription // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions
     };
 
     // create descriptor set
@@ -240,10 +243,8 @@ tcu::TestStatus DrawWithQuadControlInstanceBase::iterate(void)
     updater.update(vk, device);
 
     // create shader modules, renderpass, framebuffer and pipeline
-    Move<VkShaderModule> vertShaderModule =
-        createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0);
-    Move<VkShaderModule> fragShaderModule =
-        createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0);
+    auto vertShaderModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"));
+    auto fragShaderModule = createShaderModule(vk, device, m_context.getBinaryCollection().get(m_fragShaderName));
     Move<VkRenderPass> renderPass         = makeRenderPass(vk, device, colorFormat);
     Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device, *descriptorSetLayout);
     Move<VkFramebuffer> framebuffer =
@@ -350,21 +351,26 @@ QuadDerivativesInstance::QuadDerivativesInstance(Context &context, TestMode mode
 {
     // create vertex for 5 triangles - defined in order from displayed on the left to the right
     m_vertices = {
-        // position                        uvCoords
+        // position               uvCoords
         0.0f,  1.2f,  0.0f, 1.0f, 0.0f,  0.0f, // uv adjusted to get lod 1
-        -1.2f, -2.0f, 0.0f, 1.0f, 1.0f,  1.0f,  -1.2f, 1.2f,  0.0f, 1.0f, 0.0f, 1.0f,
+        -1.2f, -2.0f, 0.0f, 1.0f, 1.0f,  1.0f, //
+        -1.2f, 1.2f,  0.0f, 1.0f, 0.0f,  1.0f,
 
         -0.2f, 0.3f,  0.0f, 1.0f, 1.0f,  1.0f, // uv adjusted to get lod 2
-        -0.7f, -0.9f, 0.0f, 1.0f, 0.0f,  0.0f,  -0.3f, -0.8f, 0.0f, 1.0f, 0.0f, 1.0f,
+        -0.7f, -0.9f, 0.0f, 1.0f, 0.0f,  0.0f, //
+        -0.3f, -0.8f, 0.0f, 1.0f, 0.0f,  1.0f,
 
         0.0f,  0.2f,  0.0f, 1.0f, 10.0f, 10.0f, // uv adjusted to get lod 5
-        0.1f,  -1.0f, 0.0f, 1.0f, 0.0f,  0.0f,  -0.3f, -1.0f, 0.0f, 1.0f, 0.0f, 10.0f,
+        0.1f,  -1.0f, 0.0f, 1.0f, 0.0f,  0.0f,  //
+        -0.3f, -1.0f, 0.0f, 1.0f, 0.0f,  10.0f,
 
         0.2f,  -0.1f, 0.0f, 1.0f, 4.0f,  4.0f, // uv adjusted to get lod 4
-        0.7f,  -1.2f, 0.0f, 1.0f, 0.0f,  0.0f,  0.2f,  -1.8f, 0.0f, 1.0f, 0.0f, 4.0f,
+        0.7f,  -1.2f, 0.0f, 1.0f, 0.0f,  0.0f, //
+        0.2f,  -1.8f, 0.0f, 1.0f, 0.0f,  4.0f,
 
         -0.1f, 0.5f,  0.0f, 1.0f, 0.0f,  0.0f, // uv adjusted to get lod 3
-        0.8f,  -0.8f, 0.0f, 1.0f, 5.0f,  5.0f,  0.9f,  0.8f,  0.0f, 1.0f, 0.0f, 5.0f,
+        0.8f,  -0.8f, 0.0f, 1.0f, 5.0f,  5.0f, //
+        0.9f,  0.8f,  0.0f, 1.0f, 0.0f,  5.0f,
     };
 }
 
@@ -406,15 +412,14 @@ RequireFullQuadsInstance::RequireFullQuadsInstance(Context &context, TestMode mo
 {
     // create vertex for 4 conected triangles with an odd angles
     m_vertices = {
-        // position                        uvCoords
-        -0.9f, 0.6f,  0.0f, 1.0f,  0.0f,  1.0f,  -0.7f, -0.8f, 0.0f,
-        1.0f,  1.0f,  1.0f, -0.2f, 0.9f,  0.0f,  1.0f,  0.0f,  0.0f,
+        // position               uvCoords
+        -0.9f, 0.6f,  0.0f, 1.0f, 0.0f,  1.0f, //
+        -0.7f, -0.8f, 0.0f, 1.0f, 1.0f,  1.0f, //
+        -0.2f, 0.9f,  0.0f, 1.0f, 0.0f,  0.0f, //
 
-        0.0f,  0.2f,  0.0f, 1.0f,  20.0f, 20.0f,
-
-        0.6f,  0.5f,  0.0f, 1.0f,  21.0f, 0.0f,
-
-        1.2f,  -0.9f, 0.0f, 1.0f,  0.0f,  75.0f,
+        0.0f,  0.2f,  0.0f, 1.0f, 20.0f, 20.0f, // for second triangle
+        0.6f,  0.5f,  0.0f, 1.0f, 21.0f, 0.0f,  // for third triangle
+        1.2f,  -0.9f, 0.0f, 1.0f, 0.0f,  75.0f, // for fourth triangle
     };
     m_topology   = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
     m_renderSize = tcu::UVec2(128);
@@ -467,9 +472,11 @@ DivergentConditionInstance::DivergentConditionInstance(Context &context, TestMod
 {
     // create vertex for 2 triangles forming full screen quad
     m_vertices = {
-        // position                        uvCoords
-        -1.0f, 1.0f,  0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f,  0.0f, 1.0f, 1.0f, 1.0f,
-        -1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+        // position               uvCoords
+        -1.0f, 1.0f,  0.0f, 1.0f, 0.0f, 1.0f, //
+        1.0f,  1.0f,  0.0f, 1.0f, 1.0f, 1.0f, //
+        -1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, //
+        1.0f,  -1.0f, 0.0f, 1.0f, 1.0f, 0.0f,
     };
     m_topology   = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
     m_renderSize = tcu::UVec2(16);
@@ -531,6 +538,64 @@ bool DivergentConditionInstance::isResultCorrect(const tcu::ConstPixelBufferAcce
     return testPassed;
 }
 
+class TerminatedInvocationInstance : public DrawWithQuadControlInstanceBase
+{
+public:
+    TerminatedInvocationInstance(Context &context, TestMode mode);
+
+    virtual ~TerminatedInvocationInstance(void) = default;
+
+    virtual bool isResultCorrect(const tcu::ConstPixelBufferAccess &outputAccess) const override;
+};
+
+TerminatedInvocationInstance::TerminatedInvocationInstance(Context &context, TestMode mode)
+    : DrawWithQuadControlInstanceBase(context, mode)
+{
+    // create vertex for single triangle, half covering screen quad
+    m_vertices = {
+        // position               uvCoords
+        -1.0f, 1.0f,  0.0f, 1.0f, 0.0f, 1.0f, //
+        1.0f,  1.0f,  0.0f, 1.0f, 1.0f, 1.0f, //
+        -1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, //
+    };
+    m_topology   = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+    m_renderSize = tcu::UVec2(32);
+
+    // use subgroup_uniform_control_flow when maximal reconvergence is not supported
+    if (!context.isDeviceFunctionalitySupported("VK_KHR_shader_maximal_reconvergence"))
+        m_fragShaderName = "frag_ucf";
+}
+
+bool TerminatedInvocationInstance::isResultCorrect(const tcu::ConstPixelBufferAccess &outputAccess) const
+{
+    uint32_t wrongFragments    = 0;
+    uint32_t triangleFragments = 0;
+    const float threshold      = 0.01f;
+
+    for (uint32_t x = 0u; x < m_renderSize.x(); ++x)
+    {
+        for (uint32_t y = 0u; y < m_renderSize.y(); ++y)
+        {
+            tcu::Vec4 pixel = outputAccess.getPixel(x, y, 0);
+
+            // skip bottom-right fragments - terminated invocations
+            if ((x % 2) && (y % 2))
+                continue;
+
+            // skip fragments with background color
+            if (pixel.y() < 0.9)
+                continue;
+
+            // expect all fragments where triangle is drawn to have green color (0,1,0,1);
+            // any value greater than zero in read or blue channel indicates error
+            wrongFragments += (pixel.x() > threshold) || (pixel.z() > threshold);
+            ++triangleFragments;
+        }
+    }
+
+    return (wrongFragments == 0) && (triangleFragments > m_renderSize.x());
+}
+
 class DrawWithQuadControlTestCase : public vkt::TestCase
 {
 public:
@@ -556,6 +621,16 @@ DrawWithQuadControlTestCase::DrawWithQuadControlTestCase(tcu::TestContext &testC
 void DrawWithQuadControlTestCase::checkSupport(Context &context) const
 {
     context.requireDeviceFunctionality("VK_KHR_shader_quad_control");
+
+    if (m_testMode == TestMode::TERMINATED_INVOCATION)
+    {
+        context.requireDeviceFunctionality("VK_KHR_shader_terminate_invocation");
+        if (!context.isDeviceFunctionalitySupported("VK_KHR_shader_maximal_reconvergence") &&
+            !context.isDeviceFunctionalitySupported("VK_KHR_shader_subgroup_uniform_control_flow"))
+        {
+            TCU_THROW(NotSupportedError, "maximal_reconvergence and uniform_control_flow are not supported");
+        }
+    }
 }
 
 TestInstance *DrawWithQuadControlTestCase::createInstance(Context &context) const
@@ -564,12 +639,16 @@ TestInstance *DrawWithQuadControlTestCase::createInstance(Context &context) cons
         return new QuadDerivativesInstance(context, m_testMode);
     if (m_testMode == TestMode::REQUIRE_FULL_QUADS)
         return new RequireFullQuadsInstance(context, m_testMode);
+    if (m_testMode == TestMode::TERMINATED_INVOCATION)
+        return new TerminatedInvocationInstance(context, m_testMode);
 
     return new DivergentConditionInstance(context, m_testMode);
 }
 
 void DrawWithQuadControlTestCase::initPrograms(SourceCollections &sourceCollections) const
 {
+    const ShaderBuildOptions buildOptions(sourceCollections.usedVulkanVersion, SPIRV_VERSION_1_3, 0u);
+
     std::string vertexSource("#version 450\n"
                              "layout(location = 0) in vec4 inPosition;\n"
                              "layout(location = 1) in vec2 inTexCoords;\n"
@@ -637,7 +716,7 @@ void DrawWithQuadControlTestCase::initPrograms(SourceCollections &sourceCollecti
                          "\t\toutFragColor.a = 1.0;\n"
                          "}\n";
     }
-    else // TestMode::DIVERGENT_CONDITION
+    else if (m_testMode == TestMode::DIVERGENT_CONDITION)
     {
         // draw fullscreen quad and use quadAny/quadAll
         // inside divergent control flow
@@ -666,8 +745,62 @@ void DrawWithQuadControlTestCase::initPrograms(SourceCollections &sourceCollecti
                          "\t}\n"
                          "}\n";
     }
+    else // TestMode::TERMINATED_INVOCATION
+    {
+        // test should be valid without declaring maximal reconvergence, quad_derivatives, or full_quads,
+        // but including these ensures that the implementation will fail if it does the wrong thing
+        fragmentSource =
+            "#version 450\n"
+            "#extension GL_EXT_terminate_invocation: enable\n"
+            "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+            "#extension GL_KHR_shader_subgroup_vote: enable\n"
+            "#extension GL_EXT_shader_quad_control: enable\n"
+            "#extension GL_EXT_subgroup_uniform_control_flow: enable\n"
+            "layout(quad_derivatives) in;\n"
+            "layout(full_quads) in;\n"
+            "precision highp float;\n"
+            "precision highp int;\n"
+            "layout(location = 0) out vec4 outFragColor;\n"
+            "void main (void)\n"
+            "{\n"
+            // output green color to indicate a correct result;
+            // in case of errors, modify the red and blue channels
+            "\toutFragColor = vec4(vec3(0.0), 1.0);\n"
+            // use subgroupBallot to get the invocation mask
+            "\tuvec4 maskA = subgroupBallot(true);\n"
+            // terminate the bottom right invocation in every quad
+            "\tint x = int(gl_FragCoord.x);\n"
+            "\tint y = int(gl_FragCoord.y);\n"
+            "\tbool isBottomRight = ((x % 2 == 1) && (y % 2 == 1));\n"
+            "\tif (isBottomRight)\n"
+            "\t\tterminateInvocation;\n"
+            // use subgroupBallot to get the invocation mask again, only active invocations should participate
+            "\tuvec4 maskB = subgroupBallot(true);\n"
+            // verify that every bottom right invocation in every quad is no longer in the invocation mask;
+            // expect that countB is smaller than countA; if they are the same, indicate an error
+            "\tuint countA = subgroupBallotBitCount(maskA);\n"
+            "\tuint countB = subgroupBallotBitCount(maskB);\n"
+            "\tif (countA == countB)\n"
+            "\t\toutFragColor.r += 0.4;\n"
+            // indicate an error if the result of quadAny/quadAll includes the bottom-right invocation in any quad
+            "\tif (subgroupQuadAny(isBottomRight))\n"
+            "\t\toutFragColor.b += 0.4;\n"
+            "\tif (!subgroupQuadAll(!isBottomRight))\n"
+            "\t\toutFragColor.b += 0.4;\n"
+            // if there was no error set green component to one
+            "\toutFragColor.g = step(outFragColor.r + outFragColor.b, 0.2);\n"
+            "}\n";
 
-    const ShaderBuildOptions buildOptions(sourceCollections.usedVulkanVersion, SPIRV_VERSION_1_3, 0u);
+        // first prepare shader that uses GL_EXT_subgroup_uniform_control_flow
+        sourceCollections.glslSources.add("frag_ucf") << glu::FragmentSource(fragmentSource) << buildOptions;
+
+        // prepare also fragment shader that uses GL_EXT_maximal_reconvergence - proper shader will be selected during execution
+        std::string_view toReplace   = "GL_EXT_subgroup_uniform_control_flow";
+        size_t position              = fragmentSource.find(toReplace);
+        std::string_view replacement = "GL_EXT_maximal_reconvergence";
+        fragmentSource.replace(position, toReplace.length(), replacement);
+    }
+
     sourceCollections.glslSources.add("frag") << glu::FragmentSource(fragmentSource) << buildOptions;
 }
 
@@ -681,6 +814,8 @@ tcu::TestCaseGroup *createSubgroupsQuadControlTests(tcu::TestContext &testCtx)
         new DrawWithQuadControlTestCase(testCtx, "require_full_quads", TestMode::REQUIRE_FULL_QUADS));
     quadScopeTests->addChild(
         new DrawWithQuadControlTestCase(testCtx, "divergent_condition", TestMode::DIVERGENT_CONDITION));
+    quadScopeTests->addChild(
+        new DrawWithQuadControlTestCase(testCtx, "terminated_invocation", TestMode::TERMINATED_INVOCATION));
 
     return quadScopeTests.release();
 }

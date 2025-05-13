@@ -469,13 +469,13 @@ vk::VkAccessFlags usageToAccessFlags(Usage usage)
     if (usage & USAGE_VERTEX_BUFFER)
         flags |= vk::VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
 
-    if (usage & (USAGE_UNIFORM_BUFFER | USAGE_UNIFORM_TEXEL_BUFFER))
+    if (usage & USAGE_UNIFORM_BUFFER)
         flags |= vk::VK_ACCESS_UNIFORM_READ_BIT;
 
     if (usage & USAGE_SAMPLED_IMAGE)
         flags |= vk::VK_ACCESS_SHADER_READ_BIT;
 
-    if (usage & (USAGE_STORAGE_BUFFER | USAGE_STORAGE_TEXEL_BUFFER | USAGE_STORAGE_IMAGE))
+    if (usage & (USAGE_STORAGE_BUFFER | USAGE_UNIFORM_TEXEL_BUFFER | USAGE_STORAGE_TEXEL_BUFFER | USAGE_STORAGE_IMAGE))
         flags |= vk::VK_ACCESS_SHADER_READ_BIT | vk::VK_ACCESS_SHADER_WRITE_BIT;
 
     if (usage & USAGE_INDIRECT_BUFFER)
@@ -505,7 +505,7 @@ vk::Move<vk::VkCommandBuffer> createBeginCommandBuffer(const vk::DeviceInterface
                                                        vk::VkCommandPool pool, vk::VkCommandBufferLevel level)
 {
     const vk::VkCommandBufferInheritanceInfo inheritInfo = {vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-                                                            DE_NULL,
+                                                            nullptr,
                                                             VK_NULL_HANDLE,
                                                             0,
                                                             VK_NULL_HANDLE,
@@ -514,10 +514,9 @@ vk::Move<vk::VkCommandBuffer> createBeginCommandBuffer(const vk::DeviceInterface
                                                             0u};
     const vk::VkCommandBufferBeginInfo beginInfo         = {
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        DE_NULL,
+        nullptr,
         0u,
-        (level == vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY ? &inheritInfo :
-                                                                  (const vk::VkCommandBufferInheritanceInfo *)DE_NULL),
+        (level == vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY ? &inheritInfo : nullptr),
     };
 
     vk::Move<vk::VkCommandBuffer> commandBuffer(allocateCommandBuffer(vkd, device, pool, level));
@@ -532,7 +531,7 @@ vk::Move<vk::VkBuffer> createBuffer(const vk::DeviceInterface &vkd, vk::VkDevice
                                     const vector<uint32_t> &queueFamilies)
 {
     const vk::VkBufferCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-                                               DE_NULL,
+                                               nullptr,
 
                                                0, // flags
                                                size,
@@ -548,7 +547,7 @@ vk::Move<vk::VkDeviceMemory> allocMemory(const vk::DeviceInterface &vkd, vk::VkD
                                          uint32_t memoryTypeIndex)
 {
     const vk::VkMemoryAllocateInfo alloc = {vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, // sType
-                                            DE_NULL,                                    // pNext
+                                            nullptr,                                    // pNext
 
                                             size, memoryTypeIndex};
 
@@ -571,7 +570,7 @@ vk::Move<vk::VkDeviceMemory> bindBufferMemory(const vk::InstanceInterface &vki, 
         {
             try
             {
-                const vk::VkMemoryAllocateInfo allocationInfo = {vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, DE_NULL,
+                const vk::VkMemoryAllocateInfo allocationInfo = {vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, nullptr,
                                                                  memoryRequirements.size, memoryTypeIndex};
                 vk::Move<vk::VkDeviceMemory> memory(vk::allocateMemory(vkd, device, &allocationInfo));
 
@@ -614,7 +613,7 @@ vk::Move<vk::VkDeviceMemory> bindImageMemory(const vk::InstanceInterface &vki, c
         {
             try
             {
-                const vk::VkMemoryAllocateInfo allocationInfo = {vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, DE_NULL,
+                const vk::VkMemoryAllocateInfo allocationInfo = {vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, nullptr,
                                                                  memoryRequirements.size, memoryTypeIndex};
                 vk::Move<vk::VkDeviceMemory> memory(vk::allocateMemory(vkd, device, &allocationInfo));
 
@@ -893,7 +892,7 @@ IVec2 findMaxRGBA8ImageSize(const vk::DeviceInterface &vkd, vk::VkDevice device,
     for (int32_t stepSize = currentSize[0] / 2; currentSize[0] > 0; stepSize /= 2)
     {
         const vk::VkImageCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                                  DE_NULL,
+                                                  nullptr,
 
                                                   0u,
                                                   vk::VK_IMAGE_TYPE_2D,
@@ -1314,7 +1313,7 @@ public:
         const vk::VkDevice device      = context.getContext().getDevice();
 
         vkd.unmapMemory(device, m_memory);
-        context.setMapping(DE_NULL);
+        context.setMapping(nullptr);
     }
 
 private:
@@ -1628,7 +1627,7 @@ void DestroyBuffer::prepare(PrepareContext &context)
 {
     m_buffer = vk::Move<vk::VkBuffer>(vk::check(context.getBuffer()),
                                       vk::Deleter<vk::VkBuffer>(context.getContext().getDeviceInterface(),
-                                                                context.getContext().getDevice(), DE_NULL));
+                                                                context.getContext().getDevice(), nullptr));
     context.releaseBuffer();
 }
 
@@ -1642,7 +1641,7 @@ void DestroyBuffer::execute(ExecuteContext &context)
     const vk::DeviceInterface &vkd = context.getContext().getDeviceInterface();
     const vk::VkDevice device      = context.getContext().getDevice();
 
-    vkd.destroyBuffer(device, m_buffer.disown(), DE_NULL);
+    vkd.destroyBuffer(device, m_buffer.disown(), nullptr);
 }
 
 class BindBufferMemory : public Command
@@ -1724,7 +1723,7 @@ void CreateImage::prepare(PrepareContext &context)
 
     {
         const vk::VkImageCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                                  DE_NULL,
+                                                  nullptr,
 
                                                   0u,
                                                   vk::VK_IMAGE_TYPE_2D,
@@ -1784,7 +1783,7 @@ void DestroyImage::prepare(PrepareContext &context)
 {
     m_image = vk::Move<vk::VkImage>(
         vk::check(context.getImage()),
-        vk::Deleter<vk::VkImage>(context.getContext().getDeviceInterface(), context.getContext().getDevice(), DE_NULL));
+        vk::Deleter<vk::VkImage>(context.getContext().getDeviceInterface(), context.getContext().getDevice(), nullptr));
     context.releaseImage();
 }
 
@@ -1798,7 +1797,7 @@ void DestroyImage::execute(ExecuteContext &context)
     const vk::DeviceInterface &vkd = context.getContext().getDeviceInterface();
     const vk::VkDevice device      = context.getContext().getDevice();
 
-    vkd.destroyImage(device, m_image.disown(), DE_NULL);
+    vkd.destroyImage(device, m_image.disown(), nullptr);
 }
 
 class BindImageMemory : public Command
@@ -2046,17 +2045,17 @@ void SubmitCommandBuffer::execute(ExecuteContext &context)
     const vk::VkCommandBuffer cmd  = *m_commandBuffer;
     const vk::VkQueue queue        = context.getContext().getQueue();
     const vk::VkSubmitInfo submit  = {vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                                      DE_NULL,
+                                      nullptr,
 
                                       0,
-                                      DE_NULL,
-                                      (const vk::VkPipelineStageFlags *)DE_NULL,
+                                      nullptr,
+                                      nullptr,
 
                                       1,
                                       &cmd,
 
                                       0,
-                                      DE_NULL};
+                                      nullptr};
 
     vkd.queueSubmit(queue, 1, &submit, VK_NULL_HANDLE);
 }
@@ -2154,20 +2153,19 @@ void PipelineBarrier::submit(SubmitContext &context)
     {
     case TYPE_GLOBAL:
     {
-        const vk::VkMemoryBarrier barrier = {vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER, DE_NULL,
+        const vk::VkMemoryBarrier barrier = {vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr,
 
                                              m_srcAccesses, m_dstAccesses};
 
-        vkd.cmdPipelineBarrier(cmd, m_srcStages, m_dstStages, (vk::VkDependencyFlags)0, 1, &barrier, 0,
-                               (const vk::VkBufferMemoryBarrier *)DE_NULL, 0,
-                               (const vk::VkImageMemoryBarrier *)DE_NULL);
+        vkd.cmdPipelineBarrier(cmd, m_srcStages, m_dstStages, (vk::VkDependencyFlags)0, 1, &barrier, 0, nullptr, 0,
+                               nullptr);
         break;
     }
 
     case TYPE_BUFFER:
     {
         const vk::VkBufferMemoryBarrier barrier = {vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                                   DE_NULL,
+                                                   nullptr,
 
                                                    m_srcAccesses,
                                                    m_dstAccesses,
@@ -2179,16 +2177,15 @@ void PipelineBarrier::submit(SubmitContext &context)
                                                    0,
                                                    VK_WHOLE_SIZE};
 
-        vkd.cmdPipelineBarrier(cmd, m_srcStages, m_dstStages, (vk::VkDependencyFlags)0, 0,
-                               (const vk::VkMemoryBarrier *)DE_NULL, 1, &barrier, 0,
-                               (const vk::VkImageMemoryBarrier *)DE_NULL);
+        vkd.cmdPipelineBarrier(cmd, m_srcStages, m_dstStages, (vk::VkDependencyFlags)0, 0, nullptr, 1, &barrier, 0,
+                               nullptr);
         break;
     }
 
     case TYPE_IMAGE:
     {
         const vk::VkImageMemoryBarrier barrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                  DE_NULL,
+                                                  nullptr,
 
                                                   m_srcAccesses,
                                                   m_dstAccesses,
@@ -2202,8 +2199,7 @@ void PipelineBarrier::submit(SubmitContext &context)
                                                   context.getImage(),
                                                   {vk::VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
 
-        vkd.cmdPipelineBarrier(cmd, m_srcStages, m_dstStages, (vk::VkDependencyFlags)0, 0,
-                               (const vk::VkMemoryBarrier *)DE_NULL, 0, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1,
+        vkd.cmdPipelineBarrier(cmd, m_srcStages, m_dstStages, (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1,
                                &barrier);
         break;
     }
@@ -2285,7 +2281,7 @@ void ImageTransition::submit(SubmitContext &context)
     const vk::DeviceInterface &vkd         = context.getContext().getDeviceInterface();
     const vk::VkCommandBuffer cmd          = context.getCommandBuffer();
     const vk::VkImageMemoryBarrier barrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                              DE_NULL,
+                                              nullptr,
 
                                               m_srcAccesses,
                                               m_dstAccesses,
@@ -2299,8 +2295,7 @@ void ImageTransition::submit(SubmitContext &context)
                                               context.getImage(),
                                               {vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}};
 
-    vkd.cmdPipelineBarrier(cmd, m_srcStages, m_dstStages, (vk::VkDependencyFlags)0, 0,
-                           (const vk::VkMemoryBarrier *)DE_NULL, 0, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1,
+    vkd.cmdPipelineBarrier(cmd, m_srcStages, m_dstStages, (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1,
                            &barrier);
 }
 
@@ -2508,7 +2503,7 @@ void BufferCopyToBuffer::verify(VerifyContext &context, size_t commandIndex)
     const vk::Unique<vk::VkCommandBuffer> commandBuffer(
         createBeginCommandBuffer(vkd, device, commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
     const vk::VkBufferMemoryBarrier barrier = {vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                               DE_NULL,
+                                               nullptr,
 
                                                vk::VK_ACCESS_TRANSFER_WRITE_BIT,
                                                vk::VK_ACCESS_HOST_READ_BIT,
@@ -2520,8 +2515,7 @@ void BufferCopyToBuffer::verify(VerifyContext &context, size_t commandIndex)
                                                VK_WHOLE_SIZE};
 
     vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
-                           (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 1, &barrier, 0,
-                           (const vk::VkImageMemoryBarrier *)DE_NULL);
+                           (vk::VkDependencyFlags)0, 0, nullptr, 1, &barrier, 0, nullptr);
 
     endCommandBuffer(vkd, *commandBuffer);
     submitCommandsAndWait(vkd, device, queue, *commandBuffer);
@@ -2697,7 +2691,7 @@ void BufferCopyToImage::prepare(PrepareContext &context)
 
     {
         const vk::VkImageCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                                  DE_NULL,
+                                                  nullptr,
 
                                                   0,
                                                   vk::VK_IMAGE_TYPE_2D,
@@ -2729,7 +2723,7 @@ void BufferCopyToImage::prepare(PrepareContext &context)
         const vk::Unique<vk::VkCommandBuffer> commandBuffer(
             createBeginCommandBuffer(vkd, device, commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
         const vk::VkImageMemoryBarrier barrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                  DE_NULL,
+                                                  nullptr,
 
                                                   0,
                                                   vk::VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -2750,8 +2744,7 @@ void BufferCopyToImage::prepare(PrepareContext &context)
                                                   }};
 
         vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                               vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0,
-                               (const vk::VkMemoryBarrier *)DE_NULL, 0, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1,
+                               vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1,
                                &barrier);
 
         endCommandBuffer(vkd, *commandBuffer);
@@ -2804,7 +2797,7 @@ void BufferCopyToImage::verify(VerifyContext &context, size_t commandIndex)
         bindBufferMemory(vki, vkd, physicalDevice, device, *dstBuffer, vk::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
     {
         const vk::VkImageMemoryBarrier imageBarrier   = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                         DE_NULL,
+                                                         nullptr,
 
                                                          vk::VK_ACCESS_TRANSFER_WRITE_BIT,
                                                          vk::VK_ACCESS_TRANSFER_READ_BIT,
@@ -2824,7 +2817,7 @@ void BufferCopyToImage::verify(VerifyContext &context, size_t commandIndex)
                                                            1  // Layer count
                                                        }};
         const vk::VkBufferMemoryBarrier bufferBarrier = {vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                                         DE_NULL,
+                                                         nullptr,
 
                                                          vk::VK_ACCESS_TRANSFER_WRITE_BIT,
                                                          vk::VK_ACCESS_HOST_READ_BIT,
@@ -2848,13 +2841,11 @@ void BufferCopyToImage::verify(VerifyContext &context, size_t commandIndex)
                                               {(uint32_t)m_imageWidth, (uint32_t)m_imageHeight, 1u}};
 
         vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                               (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                               (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &imageBarrier);
+                               (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
         vkd.cmdCopyImageToBuffer(*commandBuffer, *m_dstImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstBuffer, 1,
                                  &region);
         vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
-                               (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 1, &bufferBarrier, 0,
-                               (const vk::VkImageMemoryBarrier *)DE_NULL);
+                               (vk::VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier, 0, nullptr);
     }
 
     endCommandBuffer(vkd, *commandBuffer);
@@ -2939,7 +2930,7 @@ void BufferCopyFromImage::prepare(PrepareContext &context)
 
     {
         const vk::VkImageCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                                  DE_NULL,
+                                                  nullptr,
 
                                                   0,
                                                   vk::VK_IMAGE_TYPE_2D,
@@ -2976,7 +2967,7 @@ void BufferCopyFromImage::prepare(PrepareContext &context)
         const vk::Unique<vk::VkCommandBuffer> commandBuffer(
             createBeginCommandBuffer(vkd, device, commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
         const vk::VkImageMemoryBarrier preImageBarrier  = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                           DE_NULL,
+                                                           nullptr,
 
                                                            0,
                                                            vk::VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -2996,7 +2987,7 @@ void BufferCopyFromImage::prepare(PrepareContext &context)
                                                               1  // Layer count
                                                           }};
         const vk::VkImageMemoryBarrier postImageBarrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                           DE_NULL,
+                                                           nullptr,
 
                                                            vk::VK_ACCESS_TRANSFER_WRITE_BIT,
                                                            0,
@@ -3043,14 +3034,12 @@ void BufferCopyFromImage::prepare(PrepareContext &context)
         }
 
         vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                               vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0,
-                               (const vk::VkMemoryBarrier *)DE_NULL, 0, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1,
+                               vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1,
                                &preImageBarrier);
         vkd.cmdCopyBufferToImage(*commandBuffer, *srcBuffer, *m_srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
                                  &region);
         vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                               (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                               (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &postImageBarrier);
+                               (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &postImageBarrier);
 
         endCommandBuffer(vkd, *commandBuffer);
         submitCommandsAndWait(vkd, device, queue, *commandBuffer);
@@ -3181,7 +3170,7 @@ void ImageCopyToBuffer::verify(VerifyContext &context, size_t commandIndex)
     const vk::Unique<vk::VkCommandBuffer> commandBuffer(
         createBeginCommandBuffer(vkd, device, commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
     const vk::VkBufferMemoryBarrier barrier = {vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                               DE_NULL,
+                                               nullptr,
 
                                                vk::VK_ACCESS_TRANSFER_WRITE_BIT,
                                                vk::VK_ACCESS_HOST_READ_BIT,
@@ -3193,8 +3182,7 @@ void ImageCopyToBuffer::verify(VerifyContext &context, size_t commandIndex)
                                                VK_WHOLE_SIZE};
 
     vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
-                           (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 1, &barrier, 0,
-                           (const vk::VkImageMemoryBarrier *)DE_NULL);
+                           (vk::VkDependencyFlags)0, 0, nullptr, 1, &barrier, 0, nullptr);
 
     endCommandBuffer(vkd, *commandBuffer);
     submitCommandsAndWait(vkd, device, queue, *commandBuffer);
@@ -3387,7 +3375,7 @@ void ImageCopyFromImage::prepare(PrepareContext &context)
 
     {
         const vk::VkImageCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                                  DE_NULL,
+                                                  nullptr,
 
                                                   0,
                                                   vk::VK_IMAGE_TYPE_2D,
@@ -3424,7 +3412,7 @@ void ImageCopyFromImage::prepare(PrepareContext &context)
         const vk::Unique<vk::VkCommandBuffer> commandBuffer(
             createBeginCommandBuffer(vkd, device, commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
         const vk::VkImageMemoryBarrier preImageBarrier  = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                           DE_NULL,
+                                                           nullptr,
 
                                                            0,
                                                            vk::VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -3444,7 +3432,7 @@ void ImageCopyFromImage::prepare(PrepareContext &context)
                                                               1  // Layer count
                                                           }};
         const vk::VkImageMemoryBarrier postImageBarrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                           DE_NULL,
+                                                           nullptr,
 
                                                            vk::VK_ACCESS_TRANSFER_WRITE_BIT,
                                                            0,
@@ -3491,14 +3479,12 @@ void ImageCopyFromImage::prepare(PrepareContext &context)
         }
 
         vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                               vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0,
-                               (const vk::VkMemoryBarrier *)DE_NULL, 0, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1,
+                               vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1,
                                &preImageBarrier);
         vkd.cmdCopyBufferToImage(*commandBuffer, *srcBuffer, *m_srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
                                  &region);
         vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                               (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                               (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &postImageBarrier);
+                               (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &postImageBarrier);
 
         endCommandBuffer(vkd, *commandBuffer);
         submitCommandsAndWait(vkd, device, queue, *commandBuffer);
@@ -3610,7 +3596,7 @@ void ImageCopyToImage::prepare(PrepareContext &context)
 
     {
         const vk::VkImageCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                                  DE_NULL,
+                                                  nullptr,
 
                                                   0,
                                                   vk::VK_IMAGE_TYPE_2D,
@@ -3642,7 +3628,7 @@ void ImageCopyToImage::prepare(PrepareContext &context)
         const vk::Unique<vk::VkCommandBuffer> commandBuffer(
             createBeginCommandBuffer(vkd, device, commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
         const vk::VkImageMemoryBarrier barrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                  DE_NULL,
+                                                  nullptr,
 
                                                   0,
                                                   vk::VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -3663,8 +3649,7 @@ void ImageCopyToImage::prepare(PrepareContext &context)
                                                   }};
 
         vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                               vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0,
-                               (const vk::VkMemoryBarrier *)DE_NULL, 0, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1,
+                               vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1,
                                &barrier);
 
         endCommandBuffer(vkd, *commandBuffer);
@@ -3722,7 +3707,7 @@ void ImageCopyToImage::verify(VerifyContext &context, size_t commandIndex)
         bindBufferMemory(vki, vkd, physicalDevice, device, *dstBuffer, vk::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
     {
         const vk::VkImageMemoryBarrier imageBarrier   = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                         DE_NULL,
+                                                         nullptr,
 
                                                          vk::VK_ACCESS_TRANSFER_WRITE_BIT,
                                                          vk::VK_ACCESS_TRANSFER_READ_BIT,
@@ -3742,7 +3727,7 @@ void ImageCopyToImage::verify(VerifyContext &context, size_t commandIndex)
                                                            1  // Layer count
                                                        }};
         const vk::VkBufferMemoryBarrier bufferBarrier = {vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                                         DE_NULL,
+                                                         nullptr,
 
                                                          vk::VK_ACCESS_TRANSFER_WRITE_BIT,
                                                          vk::VK_ACCESS_HOST_READ_BIT,
@@ -3765,13 +3750,11 @@ void ImageCopyToImage::verify(VerifyContext &context, size_t commandIndex)
                                                          {(uint32_t)m_imageWidth, (uint32_t)m_imageHeight, 1u}};
 
         vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                               (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                               (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &imageBarrier);
+                               (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
         vkd.cmdCopyImageToBuffer(*commandBuffer, *m_dstImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstBuffer, 1,
                                  &region);
         vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
-                               (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 1, &bufferBarrier, 0,
-                               (const vk::VkImageMemoryBarrier *)DE_NULL);
+                               (vk::VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier, 0, nullptr);
     }
 
     endCommandBuffer(vkd, *commandBuffer);
@@ -3875,7 +3858,7 @@ void ImageBlitFromImage::prepare(PrepareContext &context)
 
     {
         const vk::VkImageCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                                  DE_NULL,
+                                                  nullptr,
 
                                                   0,
                                                   vk::VK_IMAGE_TYPE_2D,
@@ -3912,7 +3895,7 @@ void ImageBlitFromImage::prepare(PrepareContext &context)
         const vk::Unique<vk::VkCommandBuffer> commandBuffer(
             createBeginCommandBuffer(vkd, device, commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
         const vk::VkImageMemoryBarrier preImageBarrier  = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                           DE_NULL,
+                                                           nullptr,
 
                                                            0,
                                                            vk::VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -3932,7 +3915,7 @@ void ImageBlitFromImage::prepare(PrepareContext &context)
                                                               1  // Layer count
                                                           }};
         const vk::VkImageMemoryBarrier postImageBarrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                           DE_NULL,
+                                                           nullptr,
 
                                                            vk::VK_ACCESS_TRANSFER_WRITE_BIT,
                                                            0,
@@ -3979,14 +3962,12 @@ void ImageBlitFromImage::prepare(PrepareContext &context)
         }
 
         vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                               vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0,
-                               (const vk::VkMemoryBarrier *)DE_NULL, 0, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1,
+                               vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1,
                                &preImageBarrier);
         vkd.cmdCopyBufferToImage(*commandBuffer, *srcBuffer, *m_srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
                                  &region);
         vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                               (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                               (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &postImageBarrier);
+                               (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &postImageBarrier);
 
         endCommandBuffer(vkd, *commandBuffer);
         submitCommandsAndWait(vkd, device, queue, *commandBuffer);
@@ -4146,7 +4127,7 @@ void ImageBlitToImage::prepare(PrepareContext &context)
 
     {
         const vk::VkImageCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                                  DE_NULL,
+                                                  nullptr,
 
                                                   0,
                                                   vk::VK_IMAGE_TYPE_2D,
@@ -4178,7 +4159,7 @@ void ImageBlitToImage::prepare(PrepareContext &context)
         const vk::Unique<vk::VkCommandBuffer> commandBuffer(
             createBeginCommandBuffer(vkd, device, commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
         const vk::VkImageMemoryBarrier barrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                  DE_NULL,
+                                                  nullptr,
 
                                                   0,
                                                   vk::VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -4199,8 +4180,7 @@ void ImageBlitToImage::prepare(PrepareContext &context)
                                                   }};
 
         vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                               vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0,
-                               (const vk::VkMemoryBarrier *)DE_NULL, 0, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1,
+                               vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1,
                                &barrier);
 
         endCommandBuffer(vkd, *commandBuffer);
@@ -4261,7 +4241,7 @@ void ImageBlitToImage::verify(VerifyContext &context, size_t commandIndex)
         bindBufferMemory(vki, vkd, physicalDevice, device, *dstBuffer, vk::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
     {
         const vk::VkImageMemoryBarrier imageBarrier   = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                         DE_NULL,
+                                                         nullptr,
 
                                                          vk::VK_ACCESS_TRANSFER_WRITE_BIT,
                                                          vk::VK_ACCESS_TRANSFER_READ_BIT,
@@ -4281,7 +4261,7 @@ void ImageBlitToImage::verify(VerifyContext &context, size_t commandIndex)
                                                            1  // Layer count
                                                        }};
         const vk::VkBufferMemoryBarrier bufferBarrier = {vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                                         DE_NULL,
+                                                         nullptr,
 
                                                          vk::VK_ACCESS_TRANSFER_WRITE_BIT,
                                                          vk::VK_ACCESS_HOST_READ_BIT,
@@ -4304,13 +4284,11 @@ void ImageBlitToImage::verify(VerifyContext &context, size_t commandIndex)
                                                          {(uint32_t)m_dstImageWidth, (uint32_t)m_dstImageHeight, 1}};
 
         vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                               (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                               (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &imageBarrier);
+                               (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
         vkd.cmdCopyImageToBuffer(*commandBuffer, *m_dstImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstBuffer, 1,
                                  &region);
         vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
-                               (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 1, &bufferBarrier, 0,
-                               (const vk::VkImageMemoryBarrier *)DE_NULL);
+                               (vk::VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier, 0, nullptr);
     }
 
     endCommandBuffer(vkd, *commandBuffer);
@@ -4588,7 +4566,7 @@ void SubmitRenderPass::prepare(PrepareContext &context)
 
     {
         const vk::VkImageCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                                  DE_NULL,
+                                                  nullptr,
                                                   0u,
 
                                                   vk::VK_IMAGE_TYPE_2D,
@@ -4612,7 +4590,7 @@ void SubmitRenderPass::prepare(PrepareContext &context)
 
     {
         const vk::VkImageViewCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                                                      DE_NULL,
+                                                      nullptr,
 
                                                       0u,
                                                       *m_colorTarget,
@@ -4631,7 +4609,7 @@ void SubmitRenderPass::prepare(PrepareContext &context)
     {
         const vk::VkImageView imageViews[]           = {*m_colorTargetView};
         const vk::VkFramebufferCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-                                                        DE_NULL,
+                                                        nullptr,
                                                         0u,
 
                                                         *m_renderPass,
@@ -4707,7 +4685,7 @@ void SubmitRenderPass::verify(VerifyContext &context, size_t commandIndex)
             bindBufferMemory(vki, vkd, physicalDevice, device, *dstBuffer, vk::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
         {
             const vk::VkImageMemoryBarrier imageBarrier   = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                             DE_NULL,
+                                                             nullptr,
 
                                                              vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                                                              vk::VK_ACCESS_TRANSFER_READ_BIT,
@@ -4727,7 +4705,7 @@ void SubmitRenderPass::verify(VerifyContext &context, size_t commandIndex)
                                                                1  // Layer count
                                                            }};
             const vk::VkBufferMemoryBarrier bufferBarrier = {vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                                             DE_NULL,
+                                                             nullptr,
 
                                                              vk::VK_ACCESS_TRANSFER_WRITE_BIT,
                                                              vk::VK_ACCESS_HOST_READ_BIT,
@@ -4750,14 +4728,12 @@ void SubmitRenderPass::verify(VerifyContext &context, size_t commandIndex)
                                                              {(uint32_t)m_targetWidth, (uint32_t)m_targetHeight, 1u}};
 
             vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                   vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0,
-                                   (const vk::VkMemoryBarrier *)DE_NULL, 0, (const vk::VkBufferMemoryBarrier *)DE_NULL,
+                                   vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr,
                                    1, &imageBarrier);
             vkd.cmdCopyImageToBuffer(*commandBuffer, *m_colorTarget, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                      *dstBuffer, 1, &region);
             vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
-                                   (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 1, &bufferBarrier,
-                                   0, (const vk::VkImageMemoryBarrier *)DE_NULL);
+                                   (vk::VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier, 0, nullptr);
         }
 
         endCommandBuffer(vkd, *commandBuffer);
@@ -4916,9 +4892,9 @@ void createPipelineWithResources(const vk::DeviceInterface &vkd, const vk::VkDev
     if (!bindings.empty())
     {
         const vk::VkDescriptorSetLayoutCreateInfo createInfo = {
-            vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, DE_NULL,
+            vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr,
 
-            0u, (uint32_t)bindings.size(), bindings.empty() ? DE_NULL : &bindings[0]};
+            0u, (uint32_t)bindings.size(), bindings.empty() ? nullptr : &bindings[0]};
 
         resources.descriptorSetLayout = vk::createDescriptorSetLayout(vkd, device, &createInfo);
     }
@@ -4926,12 +4902,12 @@ void createPipelineWithResources(const vk::DeviceInterface &vkd, const vk::VkDev
     {
         const vk::VkDescriptorSetLayout descriptorSetLayout_ = *resources.descriptorSetLayout;
         const vk::VkPipelineLayoutCreateInfo createInfo      = {vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-                                                                DE_NULL,
+                                                                nullptr,
                                                                 0,
 
                                                            resources.descriptorSetLayout ? 1u : 0u,
                                                            resources.descriptorSetLayout ? &descriptorSetLayout_ :
-                                                                                                DE_NULL,
+                                                                                                nullptr,
 
                                                                 pushConstantRangeCount,
                                                                 pushConstantRanges};
@@ -4946,14 +4922,14 @@ void createPipelineWithResources(const vk::DeviceInterface &vkd, const vk::VkDev
 
         const vk::VkPipelineVertexInputStateCreateInfo vertexInputState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             0u,
 
             (uint32_t)vertexBindingDescriptions.size(),
-            vertexBindingDescriptions.empty() ? DE_NULL : &vertexBindingDescriptions[0],
+            vertexBindingDescriptions.empty() ? nullptr : &vertexBindingDescriptions[0],
 
             (uint32_t)vertexAttributeDescriptions.size(),
-            vertexAttributeDescriptions.empty() ? DE_NULL : &vertexAttributeDescriptions[0]};
+            vertexAttributeDescriptions.empty() ? nullptr : &vertexAttributeDescriptions[0]};
 
         resources.pipeline = vk::makeGraphicsPipeline(
             vkd,                       // const DeviceInterface&                        vk
@@ -5026,7 +5002,7 @@ void RenderIndexBuffer::prepare(PrepareRenderPassContext &context)
         vkd, device, renderPass, subpass, *vertexShaderModule, *fragmentShaderModule, context.getTargetWidth(),
         context.getTargetHeight(), vector<vk::VkVertexInputBindingDescription>(),
         vector<vk::VkVertexInputAttributeDescription>(), vector<vk::VkDescriptorSetLayoutBinding>(),
-        vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, DE_NULL, m_resources);
+        vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, nullptr, m_resources);
     m_bufferSize = context.getBufferSize();
 }
 
@@ -5121,7 +5097,7 @@ void RenderVertexBuffer::prepare(PrepareRenderPassContext &context)
     createPipelineWithResources(vkd, device, renderPass, subpass, *vertexShaderModule, *fragmentShaderModule,
                                 context.getTargetWidth(), context.getTargetHeight(), vertexBindingDescriptions,
                                 vertexAttributeDescriptions, vector<vk::VkDescriptorSetLayoutBinding>(),
-                                vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, DE_NULL, m_resources);
+                                vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, nullptr, m_resources);
 
     m_bufferSize = context.getBufferSize();
 }
@@ -5212,7 +5188,7 @@ void RenderVertexUniformBuffer::prepare(PrepareRenderPassContext &context)
 
     {
         const vk::VkDescriptorSetLayoutBinding binding = {0u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-                                                          vk::VK_SHADER_STAGE_VERTEX_BIT, DE_NULL};
+                                                          vk::VK_SHADER_STAGE_VERTEX_BIT, nullptr};
 
         bindings.push_back(binding);
     }
@@ -5221,7 +5197,7 @@ void RenderVertexUniformBuffer::prepare(PrepareRenderPassContext &context)
                                 context.getTargetWidth(), context.getTargetHeight(),
                                 vector<vk::VkVertexInputBindingDescription>(),
                                 vector<vk::VkVertexInputAttributeDescription>(), bindings,
-                                vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, DE_NULL, m_resources);
+                                vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, nullptr, m_resources);
 
     {
         const uint32_t descriptorCount =
@@ -5229,7 +5205,7 @@ void RenderVertexUniformBuffer::prepare(PrepareRenderPassContext &context)
         const vk::VkDescriptorPoolSize poolSizes        = {vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, descriptorCount};
         const vk::VkDescriptorPoolCreateInfo createInfo = {
             vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
 
             descriptorCount,
@@ -5245,7 +5221,7 @@ void RenderVertexUniformBuffer::prepare(PrepareRenderPassContext &context)
     {
         const vk::VkDescriptorSetLayout layout             = *m_resources.descriptorSetLayout;
         const vk::VkDescriptorSetAllocateInfo allocateInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                                                              DE_NULL,
+                                                              nullptr,
 
                                                               *m_descriptorPool, 1, &layout};
 
@@ -5257,18 +5233,18 @@ void RenderVertexUniformBuffer::prepare(PrepareRenderPassContext &context)
                 calculateBufferPartSize(descriptorSetNdx)};
             const vk::VkWriteDescriptorSet write = {
                 vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                DE_NULL,
+                nullptr,
                 m_descriptorSets[descriptorSetNdx],
                 0u,
                 0u,
                 1u,
                 vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                DE_NULL,
+                nullptr,
                 &bufferInfo,
-                DE_NULL,
+                nullptr,
             };
 
-            vkd.updateDescriptorSets(device, 1u, &write, 0u, DE_NULL);
+            vkd.updateDescriptorSets(device, 1u, &write, 0u, nullptr);
         }
     }
 }
@@ -5286,7 +5262,7 @@ void RenderVertexUniformBuffer::submit(SubmitContext &context)
         const uint32_t count = (uint32_t)(size / 2);
 
         vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u,
-                                  1u, &m_descriptorSets[descriptorSetNdx], 0u, DE_NULL);
+                                  1u, &m_descriptorSets[descriptorSetNdx], 0u, nullptr);
         vkd.cmdDraw(commandBuffer, count, 1, 0, 0);
     }
 }
@@ -5354,7 +5330,7 @@ RenderVertexUniformTexelBuffer::~RenderVertexUniformTexelBuffer(void)
     {
         if (!!m_bufferViews[bufferViewNdx])
         {
-            m_vkd->destroyBufferView(m_device, m_bufferViews[bufferViewNdx], DE_NULL);
+            m_vkd->destroyBufferView(m_device, m_bufferViews[bufferViewNdx], nullptr);
             m_bufferViews[bufferViewNdx] = VK_NULL_HANDLE;
         }
     }
@@ -5393,7 +5369,7 @@ void RenderVertexUniformTexelBuffer::prepare(PrepareRenderPassContext &context)
 
     {
         const vk::VkDescriptorSetLayoutBinding binding = {0u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1,
-                                                          vk::VK_SHADER_STAGE_VERTEX_BIT, DE_NULL};
+                                                          vk::VK_SHADER_STAGE_VERTEX_BIT, nullptr};
 
         bindings.push_back(binding);
     }
@@ -5402,7 +5378,7 @@ void RenderVertexUniformTexelBuffer::prepare(PrepareRenderPassContext &context)
                                 context.getTargetWidth(), context.getTargetHeight(),
                                 vector<vk::VkVertexInputBindingDescription>(),
                                 vector<vk::VkVertexInputAttributeDescription>(), bindings,
-                                vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, DE_NULL, m_resources);
+                                vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, nullptr, m_resources);
 
     {
         const uint32_t descriptorCount =
@@ -5410,7 +5386,7 @@ void RenderVertexUniformTexelBuffer::prepare(PrepareRenderPassContext &context)
         const vk::VkDescriptorPoolSize poolSizes = {vk::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, descriptorCount};
         const vk::VkDescriptorPoolCreateInfo createInfo = {
             vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
 
             descriptorCount,
@@ -5431,7 +5407,7 @@ void RenderVertexUniformTexelBuffer::prepare(PrepareRenderPassContext &context)
                                2;
         const vk::VkDescriptorSetLayout layout             = *m_resources.descriptorSetLayout;
         const vk::VkDescriptorSetAllocateInfo allocateInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                                                              DE_NULL,
+                                                              nullptr,
 
                                                               *m_descriptorPool, 1, &layout};
 
@@ -5439,7 +5415,7 @@ void RenderVertexUniformTexelBuffer::prepare(PrepareRenderPassContext &context)
 
         {
             const vk::VkBufferViewCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,
-                                                           DE_NULL,
+                                                           nullptr,
                                                            0u,
 
                                                            context.getBuffer(),
@@ -5447,22 +5423,22 @@ void RenderVertexUniformTexelBuffer::prepare(PrepareRenderPassContext &context)
                                                            descriptorSetNdx * m_maxUniformTexelCount * 2,
                                                            count * 2};
 
-            VK_CHECK(vkd.createBufferView(device, &createInfo, DE_NULL, &m_bufferViews[descriptorSetNdx]));
+            VK_CHECK(vkd.createBufferView(device, &createInfo, nullptr, &m_bufferViews[descriptorSetNdx]));
         }
 
         {
             const vk::VkWriteDescriptorSet write = {vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                                    DE_NULL,
+                                                    nullptr,
                                                     m_descriptorSets[descriptorSetNdx],
                                                     0u,
                                                     0u,
                                                     1u,
                                                     vk::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
-                                                    DE_NULL,
-                                                    DE_NULL,
+                                                    nullptr,
+                                                    nullptr,
                                                     &m_bufferViews[descriptorSetNdx]};
 
-            vkd.updateDescriptorSets(device, 1u, &write, 0u, DE_NULL);
+            vkd.updateDescriptorSets(device, 1u, &write, 0u, nullptr);
         }
     }
 }
@@ -5482,7 +5458,7 @@ void RenderVertexUniformTexelBuffer::submit(SubmitContext &context)
                                2;
 
         vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u,
-                                  1u, &m_descriptorSets[descriptorSetNdx], 0u, DE_NULL);
+                                  1u, &m_descriptorSets[descriptorSetNdx], 0u, nullptr);
         vkd.cmdDraw(commandBuffer, count, 1, 0, 0);
     }
 }
@@ -5565,7 +5541,7 @@ void RenderVertexStorageBuffer::prepare(PrepareRenderPassContext &context)
 
     {
         const vk::VkDescriptorSetLayoutBinding binding = {0u, vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
-                                                          vk::VK_SHADER_STAGE_VERTEX_BIT, DE_NULL};
+                                                          vk::VK_SHADER_STAGE_VERTEX_BIT, nullptr};
 
         bindings.push_back(binding);
     }
@@ -5574,7 +5550,7 @@ void RenderVertexStorageBuffer::prepare(PrepareRenderPassContext &context)
                                 context.getTargetWidth(), context.getTargetHeight(),
                                 vector<vk::VkVertexInputBindingDescription>(),
                                 vector<vk::VkVertexInputAttributeDescription>(), bindings,
-                                vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, DE_NULL, m_resources);
+                                vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, nullptr, m_resources);
 
     {
         const uint32_t descriptorCount =
@@ -5582,7 +5558,7 @@ void RenderVertexStorageBuffer::prepare(PrepareRenderPassContext &context)
         const vk::VkDescriptorPoolSize poolSizes        = {vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, descriptorCount};
         const vk::VkDescriptorPoolCreateInfo createInfo = {
             vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
 
             descriptorCount,
@@ -5598,7 +5574,7 @@ void RenderVertexStorageBuffer::prepare(PrepareRenderPassContext &context)
     {
         const vk::VkDescriptorSetLayout layout             = *m_resources.descriptorSetLayout;
         const vk::VkDescriptorSetAllocateInfo allocateInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                                                              DE_NULL,
+                                                              nullptr,
 
                                                               *m_descriptorPool, 1, &layout};
 
@@ -5611,18 +5587,18 @@ void RenderVertexStorageBuffer::prepare(PrepareRenderPassContext &context)
                         (vk::VkDeviceSize)MAX_STORAGE_BUFFER_SIZE)};
             const vk::VkWriteDescriptorSet write = {
                 vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                DE_NULL,
+                nullptr,
                 m_descriptorSets[descriptorSetNdx],
                 0u,
                 0u,
                 1u,
                 vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                DE_NULL,
+                nullptr,
                 &bufferInfo,
-                DE_NULL,
+                nullptr,
             };
 
-            vkd.updateDescriptorSets(device, 1u, &write, 0u, DE_NULL);
+            vkd.updateDescriptorSets(device, 1u, &write, 0u, nullptr);
         }
     }
 }
@@ -5641,7 +5617,7 @@ void RenderVertexStorageBuffer::submit(SubmitContext &context)
                                 (size_t)(MAX_STORAGE_BUFFER_SIZE);
 
         vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u,
-                                  1u, &m_descriptorSets[descriptorSetNdx], 0u, DE_NULL);
+                                  1u, &m_descriptorSets[descriptorSetNdx], 0u, nullptr);
         vkd.cmdDraw(commandBuffer, (uint32_t)(size / 2), 1, 0, 0);
     }
 }
@@ -5701,7 +5677,7 @@ RenderVertexStorageTexelBuffer::~RenderVertexStorageTexelBuffer(void)
     {
         if (!!m_bufferViews[bufferViewNdx])
         {
-            m_vkd->destroyBufferView(m_device, m_bufferViews[bufferViewNdx], DE_NULL);
+            m_vkd->destroyBufferView(m_device, m_bufferViews[bufferViewNdx], nullptr);
             m_bufferViews[bufferViewNdx] = VK_NULL_HANDLE;
         }
     }
@@ -5740,7 +5716,7 @@ void RenderVertexStorageTexelBuffer::prepare(PrepareRenderPassContext &context)
 
     {
         const vk::VkDescriptorSetLayoutBinding binding = {0u, vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1,
-                                                          vk::VK_SHADER_STAGE_VERTEX_BIT, DE_NULL};
+                                                          vk::VK_SHADER_STAGE_VERTEX_BIT, nullptr};
 
         bindings.push_back(binding);
     }
@@ -5749,7 +5725,7 @@ void RenderVertexStorageTexelBuffer::prepare(PrepareRenderPassContext &context)
                                 context.getTargetWidth(), context.getTargetHeight(),
                                 vector<vk::VkVertexInputBindingDescription>(),
                                 vector<vk::VkVertexInputAttributeDescription>(), bindings,
-                                vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, DE_NULL, m_resources);
+                                vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, nullptr, m_resources);
 
     {
         const uint32_t descriptorCount =
@@ -5757,7 +5733,7 @@ void RenderVertexStorageTexelBuffer::prepare(PrepareRenderPassContext &context)
         const vk::VkDescriptorPoolSize poolSizes = {vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, descriptorCount};
         const vk::VkDescriptorPoolCreateInfo createInfo = {
             vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
 
             descriptorCount,
@@ -5774,7 +5750,7 @@ void RenderVertexStorageTexelBuffer::prepare(PrepareRenderPassContext &context)
     {
         const vk::VkDescriptorSetLayout layout             = *m_resources.descriptorSetLayout;
         const vk::VkDescriptorSetAllocateInfo allocateInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                                                              DE_NULL,
+                                                              nullptr,
 
                                                               *m_descriptorPool, 1, &layout};
 
@@ -5783,7 +5759,7 @@ void RenderVertexStorageTexelBuffer::prepare(PrepareRenderPassContext &context)
         {
             const vk::VkBufferViewCreateInfo createInfo = {
                 vk::VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,
-                DE_NULL,
+                nullptr,
                 0u,
 
                 context.getBuffer(),
@@ -5793,22 +5769,22 @@ void RenderVertexStorageTexelBuffer::prepare(PrepareRenderPassContext &context)
                                                     m_bufferSize -
                                                         descriptorSetNdx * m_maxStorageTexelCount * (uint64_t)(4))};
 
-            VK_CHECK(vkd.createBufferView(device, &createInfo, DE_NULL, &m_bufferViews[descriptorSetNdx]));
+            VK_CHECK(vkd.createBufferView(device, &createInfo, nullptr, &m_bufferViews[descriptorSetNdx]));
         }
 
         {
             const vk::VkWriteDescriptorSet write = {vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                                    DE_NULL,
+                                                    nullptr,
                                                     m_descriptorSets[descriptorSetNdx],
                                                     0u,
                                                     0u,
                                                     1u,
                                                     vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
-                                                    DE_NULL,
-                                                    DE_NULL,
+                                                    nullptr,
+                                                    nullptr,
                                                     &m_bufferViews[descriptorSetNdx]};
 
-            vkd.updateDescriptorSets(device, 1u, &write, 0u, DE_NULL);
+            vkd.updateDescriptorSets(device, 1u, &write, 0u, nullptr);
         }
     }
 }
@@ -5829,7 +5805,7 @@ void RenderVertexStorageTexelBuffer::submit(SubmitContext &context)
             2;
 
         vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u,
-                                  1u, &m_descriptorSets[descriptorSetNdx], 0u, DE_NULL);
+                                  1u, &m_descriptorSets[descriptorSetNdx], 0u, nullptr);
         vkd.cmdDraw(commandBuffer, count, 1, 0, 0);
     }
 }
@@ -5914,7 +5890,7 @@ void RenderVertexStorageImage::prepare(PrepareRenderPassContext &context)
 
     {
         const vk::VkDescriptorSetLayoutBinding binding = {0u, vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
-                                                          vk::VK_SHADER_STAGE_VERTEX_BIT, DE_NULL};
+                                                          vk::VK_SHADER_STAGE_VERTEX_BIT, nullptr};
 
         bindings.push_back(binding);
     }
@@ -5923,13 +5899,13 @@ void RenderVertexStorageImage::prepare(PrepareRenderPassContext &context)
                                 context.getTargetWidth(), context.getTargetHeight(),
                                 vector<vk::VkVertexInputBindingDescription>(),
                                 vector<vk::VkVertexInputAttributeDescription>(), bindings,
-                                vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, DE_NULL, m_resources);
+                                vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, nullptr, m_resources);
 
     {
         const vk::VkDescriptorPoolSize poolSizes        = {vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1};
         const vk::VkDescriptorPoolCreateInfo createInfo = {
             vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
 
             1u,
@@ -5943,7 +5919,7 @@ void RenderVertexStorageImage::prepare(PrepareRenderPassContext &context)
     {
         const vk::VkDescriptorSetLayout layout             = *m_resources.descriptorSetLayout;
         const vk::VkDescriptorSetAllocateInfo allocateInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                                                              DE_NULL,
+                                                              nullptr,
 
                                                               *m_descriptorPool, 1, &layout};
 
@@ -5951,7 +5927,7 @@ void RenderVertexStorageImage::prepare(PrepareRenderPassContext &context)
 
         {
             const vk::VkImageViewCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                                                          DE_NULL,
+                                                          nullptr,
                                                           0u,
 
                                                           context.getImage(),
@@ -5966,11 +5942,11 @@ void RenderVertexStorageImage::prepare(PrepareRenderPassContext &context)
         {
             const vk::VkDescriptorImageInfo imageInfo = {VK_NULL_HANDLE, *m_imageView, context.getImageLayout()};
             const vk::VkWriteDescriptorSet write      = {
-                vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, DE_NULL,    *m_descriptorSet, 0u,      0u, 1u,
-                vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,       &imageInfo, DE_NULL,          DE_NULL,
+                vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr,    *m_descriptorSet, 0u,      0u, 1u,
+                vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,       &imageInfo, nullptr,          nullptr,
             };
 
-            vkd.updateDescriptorSets(device, 1u, &write, 0u, DE_NULL);
+            vkd.updateDescriptorSets(device, 1u, &write, 0u, nullptr);
         }
     }
 }
@@ -5983,7 +5959,7 @@ void RenderVertexStorageImage::submit(SubmitContext &context)
     vkd.cmdBindPipeline(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipeline);
 
     vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u, 1u,
-                              &(*m_descriptorSet), 0u, DE_NULL);
+                              &(*m_descriptorSet), 0u, nullptr);
     vkd.cmdDraw(commandBuffer, context.getImageWidth() * context.getImageHeight() * 2, 1, 0, 0);
 }
 
@@ -6059,7 +6035,7 @@ void RenderVertexSampledImage::prepare(PrepareRenderPassContext &context)
 
     {
         const vk::VkDescriptorSetLayoutBinding binding = {0u, vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
-                                                          vk::VK_SHADER_STAGE_VERTEX_BIT, DE_NULL};
+                                                          vk::VK_SHADER_STAGE_VERTEX_BIT, nullptr};
 
         bindings.push_back(binding);
     }
@@ -6068,13 +6044,13 @@ void RenderVertexSampledImage::prepare(PrepareRenderPassContext &context)
                                 context.getTargetWidth(), context.getTargetHeight(),
                                 vector<vk::VkVertexInputBindingDescription>(),
                                 vector<vk::VkVertexInputAttributeDescription>(), bindings,
-                                vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, DE_NULL, m_resources);
+                                vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, nullptr, m_resources);
 
     {
         const vk::VkDescriptorPoolSize poolSizes        = {vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1};
         const vk::VkDescriptorPoolCreateInfo createInfo = {
             vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
 
             1u,
@@ -6088,7 +6064,7 @@ void RenderVertexSampledImage::prepare(PrepareRenderPassContext &context)
     {
         const vk::VkDescriptorSetLayout layout             = *m_resources.descriptorSetLayout;
         const vk::VkDescriptorSetAllocateInfo allocateInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                                                              DE_NULL,
+                                                              nullptr,
 
                                                               *m_descriptorPool, 1, &layout};
 
@@ -6096,7 +6072,7 @@ void RenderVertexSampledImage::prepare(PrepareRenderPassContext &context)
 
         {
             const vk::VkImageViewCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                                                          DE_NULL,
+                                                          nullptr,
                                                           0u,
 
                                                           context.getImage(),
@@ -6110,7 +6086,7 @@ void RenderVertexSampledImage::prepare(PrepareRenderPassContext &context)
 
         {
             const vk::VkSamplerCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-                                                        DE_NULL,
+                                                        nullptr,
                                                         0u,
 
                                                         vk::VK_FILTER_NEAREST,
@@ -6136,11 +6112,11 @@ void RenderVertexSampledImage::prepare(PrepareRenderPassContext &context)
         {
             const vk::VkDescriptorImageInfo imageInfo = {*m_sampler, *m_imageView, context.getImageLayout()};
             const vk::VkWriteDescriptorSet write      = {
-                vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,    DE_NULL,    *m_descriptorSet, 0u,      0u, 1u,
-                vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageInfo, DE_NULL,          DE_NULL,
+                vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,    nullptr,    *m_descriptorSet, 0u,      0u, 1u,
+                vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageInfo, nullptr,          nullptr,
             };
 
-            vkd.updateDescriptorSets(device, 1u, &write, 0u, DE_NULL);
+            vkd.updateDescriptorSets(device, 1u, &write, 0u, nullptr);
         }
     }
 }
@@ -6153,7 +6129,7 @@ void RenderVertexSampledImage::submit(SubmitContext &context)
     vkd.cmdBindPipeline(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipeline);
 
     vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u, 1u,
-                              &(*m_descriptorSet), 0u, DE_NULL);
+                              &(*m_descriptorSet), 0u, nullptr);
     vkd.cmdDraw(commandBuffer, context.getImageWidth() * context.getImageHeight() * 2, 1, 0, 0);
 }
 
@@ -6241,7 +6217,7 @@ void RenderFragmentUniformBuffer::prepare(PrepareRenderPassContext &context)
 
     {
         const vk::VkDescriptorSetLayoutBinding binding = {0u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-                                                          vk::VK_SHADER_STAGE_FRAGMENT_BIT, DE_NULL};
+                                                          vk::VK_SHADER_STAGE_FRAGMENT_BIT, nullptr};
 
         bindings.push_back(binding);
     }
@@ -6259,7 +6235,7 @@ void RenderFragmentUniformBuffer::prepare(PrepareRenderPassContext &context)
         const vk::VkDescriptorPoolSize poolSizes        = {vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, descriptorCount};
         const vk::VkDescriptorPoolCreateInfo createInfo = {
             vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
 
             descriptorCount,
@@ -6279,7 +6255,7 @@ void RenderFragmentUniformBuffer::prepare(PrepareRenderPassContext &context)
     {
         const vk::VkDescriptorSetLayout layout             = *m_resources.descriptorSetLayout;
         const vk::VkDescriptorSetAllocateInfo allocateInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                                                              DE_NULL,
+                                                              nullptr,
 
                                                               *m_descriptorPool, 1, &layout};
 
@@ -6291,18 +6267,18 @@ void RenderFragmentUniformBuffer::prepare(PrepareRenderPassContext &context)
                 calculateBufferPartSize(descriptorSetNdx)};
             const vk::VkWriteDescriptorSet write = {
                 vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                DE_NULL,
+                nullptr,
                 m_descriptorSets[descriptorSetNdx],
                 0u,
                 0u,
                 1u,
                 vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                DE_NULL,
+                nullptr,
                 &bufferInfo,
-                DE_NULL,
+                nullptr,
             };
 
-            vkd.updateDescriptorSets(device, 1u, &write, 0u, DE_NULL);
+            vkd.updateDescriptorSets(device, 1u, &write, 0u, nullptr);
         }
     }
 }
@@ -6324,7 +6300,7 @@ void RenderFragmentUniformBuffer::submit(SubmitContext &context)
         } callParams = {(uint32_t)descriptorSetNdx, m_valuesPerPixel, calculateBufferPartSize(descriptorSetNdx) / 16u};
 
         vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u,
-                                  1u, &m_descriptorSets[descriptorSetNdx], 0u, DE_NULL);
+                                  1u, &m_descriptorSets[descriptorSetNdx], 0u, nullptr);
         vkd.cmdPushConstants(commandBuffer, *m_resources.pipelineLayout, vk::VK_SHADER_STAGE_FRAGMENT_BIT, 0u,
                              (uint32_t)sizeof(callParams), &callParams);
         vkd.cmdDraw(commandBuffer, 6, 1, 0, 0);
@@ -6446,7 +6422,7 @@ void RenderFragmentStorageBuffer::prepare(PrepareRenderPassContext &context)
 
     {
         const vk::VkDescriptorSetLayoutBinding binding = {0u, vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
-                                                          vk::VK_SHADER_STAGE_FRAGMENT_BIT, DE_NULL};
+                                                          vk::VK_SHADER_STAGE_FRAGMENT_BIT, nullptr};
 
         bindings.push_back(binding);
     }
@@ -6463,7 +6439,7 @@ void RenderFragmentStorageBuffer::prepare(PrepareRenderPassContext &context)
         const vk::VkDescriptorPoolSize poolSizes        = {vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, descriptorCount};
         const vk::VkDescriptorPoolCreateInfo createInfo = {
             vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
 
             descriptorCount,
@@ -6477,7 +6453,7 @@ void RenderFragmentStorageBuffer::prepare(PrepareRenderPassContext &context)
     {
         const vk::VkDescriptorSetLayout layout             = *m_resources.descriptorSetLayout;
         const vk::VkDescriptorSetAllocateInfo allocateInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                                                              DE_NULL,
+                                                              nullptr,
 
                                                               *m_descriptorPool, 1, &layout};
 
@@ -6486,11 +6462,11 @@ void RenderFragmentStorageBuffer::prepare(PrepareRenderPassContext &context)
         {
             const vk::VkDescriptorBufferInfo bufferInfo = {context.getBuffer(), 0u, m_bufferSize};
             const vk::VkWriteDescriptorSet write        = {
-                vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, DE_NULL, m_descriptorSet.get(), 0u,      0u, 1u,
-                vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,      DE_NULL, &bufferInfo,           DE_NULL,
+                vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, m_descriptorSet.get(), 0u,      0u, 1u,
+                vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,      nullptr, &bufferInfo,           nullptr,
             };
 
-            vkd.updateDescriptorSets(device, 1u, &write, 0u, DE_NULL);
+            vkd.updateDescriptorSets(device, 1u, &write, 0u, nullptr);
         }
     }
 }
@@ -6510,7 +6486,7 @@ void RenderFragmentStorageBuffer::submit(SubmitContext &context)
                     (uint32_t)m_bufferSize};
 
     vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u, 1u,
-                              &m_descriptorSet.get(), 0u, DE_NULL);
+                              &m_descriptorSet.get(), 0u, nullptr);
     vkd.cmdPushConstants(commandBuffer, *m_resources.pipelineLayout, vk::VK_SHADER_STAGE_FRAGMENT_BIT, 0u,
                          (uint32_t)sizeof(callParams), &callParams);
     vkd.cmdDraw(commandBuffer, 6, 1, 0, 0);
@@ -6585,7 +6561,7 @@ RenderFragmentUniformTexelBuffer::~RenderFragmentUniformTexelBuffer(void)
     {
         if (!!m_bufferViews[bufferViewNdx])
         {
-            m_vkd->destroyBufferView(m_device, m_bufferViews[bufferViewNdx], DE_NULL);
+            m_vkd->destroyBufferView(m_device, m_bufferViews[bufferViewNdx], nullptr);
             m_bufferViews[bufferViewNdx] = VK_NULL_HANDLE;
         }
     }
@@ -6626,7 +6602,7 @@ void RenderFragmentUniformTexelBuffer::prepare(PrepareRenderPassContext &context
 
     {
         const vk::VkDescriptorSetLayoutBinding binding = {0u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1,
-                                                          vk::VK_SHADER_STAGE_FRAGMENT_BIT, DE_NULL};
+                                                          vk::VK_SHADER_STAGE_FRAGMENT_BIT, nullptr};
 
         bindings.push_back(binding);
     }
@@ -6644,7 +6620,7 @@ void RenderFragmentUniformTexelBuffer::prepare(PrepareRenderPassContext &context
         const vk::VkDescriptorPoolSize poolSizes = {vk::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, descriptorCount};
         const vk::VkDescriptorPoolCreateInfo createInfo = {
             vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
 
             descriptorCount,
@@ -6665,7 +6641,7 @@ void RenderFragmentUniformTexelBuffer::prepare(PrepareRenderPassContext &context
                                4;
         const vk::VkDescriptorSetLayout layout             = *m_resources.descriptorSetLayout;
         const vk::VkDescriptorSetAllocateInfo allocateInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                                                              DE_NULL,
+                                                              nullptr,
 
                                                               *m_descriptorPool, 1, &layout};
 
@@ -6673,7 +6649,7 @@ void RenderFragmentUniformTexelBuffer::prepare(PrepareRenderPassContext &context
 
         {
             const vk::VkBufferViewCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,
-                                                           DE_NULL,
+                                                           nullptr,
                                                            0u,
 
                                                            context.getBuffer(),
@@ -6681,22 +6657,22 @@ void RenderFragmentUniformTexelBuffer::prepare(PrepareRenderPassContext &context
                                                            descriptorSetNdx * m_maxUniformTexelCount * 4,
                                                            count * 4};
 
-            VK_CHECK(vkd.createBufferView(device, &createInfo, DE_NULL, &m_bufferViews[descriptorSetNdx]));
+            VK_CHECK(vkd.createBufferView(device, &createInfo, nullptr, &m_bufferViews[descriptorSetNdx]));
         }
 
         {
             const vk::VkWriteDescriptorSet write = {vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                                    DE_NULL,
+                                                    nullptr,
                                                     m_descriptorSets[descriptorSetNdx],
                                                     0u,
                                                     0u,
                                                     1u,
                                                     vk::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
-                                                    DE_NULL,
-                                                    DE_NULL,
+                                                    nullptr,
+                                                    nullptr,
                                                     &m_bufferViews[descriptorSetNdx]};
 
-            vkd.updateDescriptorSets(device, 1u, &write, 0u, DE_NULL);
+            vkd.updateDescriptorSets(device, 1u, &write, 0u, nullptr);
         }
     }
 }
@@ -6722,7 +6698,7 @@ void RenderFragmentUniformTexelBuffer::submit(SubmitContext &context)
                         m_maxUniformTexelCount};
 
         vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u,
-                                  1u, &m_descriptorSets[descriptorSetNdx], 0u, DE_NULL);
+                                  1u, &m_descriptorSets[descriptorSetNdx], 0u, nullptr);
         vkd.cmdPushConstants(commandBuffer, *m_resources.pipelineLayout, vk::VK_SHADER_STAGE_FRAGMENT_BIT, 0u,
                              (uint32_t)sizeof(callParams), &callParams);
         vkd.cmdDraw(commandBuffer, 6, 1, 0, 0);
@@ -6813,7 +6789,7 @@ RenderFragmentStorageTexelBuffer::~RenderFragmentStorageTexelBuffer(void)
     {
         if (!!m_bufferViews[bufferViewNdx])
         {
-            m_vkd->destroyBufferView(m_device, m_bufferViews[bufferViewNdx], DE_NULL);
+            m_vkd->destroyBufferView(m_device, m_bufferViews[bufferViewNdx], nullptr);
             m_bufferViews[bufferViewNdx] = VK_NULL_HANDLE;
         }
     }
@@ -6854,7 +6830,7 @@ void RenderFragmentStorageTexelBuffer::prepare(PrepareRenderPassContext &context
 
     {
         const vk::VkDescriptorSetLayoutBinding binding = {0u, vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1,
-                                                          vk::VK_SHADER_STAGE_FRAGMENT_BIT, DE_NULL};
+                                                          vk::VK_SHADER_STAGE_FRAGMENT_BIT, nullptr};
 
         bindings.push_back(binding);
     }
@@ -6872,7 +6848,7 @@ void RenderFragmentStorageTexelBuffer::prepare(PrepareRenderPassContext &context
         const vk::VkDescriptorPoolSize poolSizes = {vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, descriptorCount};
         const vk::VkDescriptorPoolCreateInfo createInfo = {
             vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
 
             descriptorCount,
@@ -6894,7 +6870,7 @@ void RenderFragmentStorageTexelBuffer::prepare(PrepareRenderPassContext &context
             4;
         const vk::VkDescriptorSetLayout layout             = *m_resources.descriptorSetLayout;
         const vk::VkDescriptorSetAllocateInfo allocateInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                                                              DE_NULL,
+                                                              nullptr,
 
                                                               *m_descriptorPool, 1, &layout};
 
@@ -6902,7 +6878,7 @@ void RenderFragmentStorageTexelBuffer::prepare(PrepareRenderPassContext &context
 
         {
             const vk::VkBufferViewCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,
-                                                           DE_NULL,
+                                                           nullptr,
                                                            0u,
 
                                                            context.getBuffer(),
@@ -6910,22 +6886,22 @@ void RenderFragmentStorageTexelBuffer::prepare(PrepareRenderPassContext &context
                                                            descriptorSetNdx * m_maxStorageTexelCount * (uint64_t)(4),
                                                            count * 4};
 
-            VK_CHECK(vkd.createBufferView(device, &createInfo, DE_NULL, &m_bufferViews[descriptorSetNdx]));
+            VK_CHECK(vkd.createBufferView(device, &createInfo, nullptr, &m_bufferViews[descriptorSetNdx]));
         }
 
         {
             const vk::VkWriteDescriptorSet write = {vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                                    DE_NULL,
+                                                    nullptr,
                                                     m_descriptorSets[descriptorSetNdx],
                                                     0u,
                                                     0u,
                                                     1u,
                                                     vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
-                                                    DE_NULL,
-                                                    DE_NULL,
+                                                    nullptr,
+                                                    nullptr,
                                                     &m_bufferViews[descriptorSetNdx]};
 
-            vkd.updateDescriptorSets(device, 1u, &write, 0u, DE_NULL);
+            vkd.updateDescriptorSets(device, 1u, &write, 0u, nullptr);
         }
     }
 }
@@ -6956,7 +6932,7 @@ void RenderFragmentStorageTexelBuffer::submit(SubmitContext &context)
                             4u};
 
         vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u,
-                                  1u, &m_descriptorSets[descriptorSetNdx], 0u, DE_NULL);
+                                  1u, &m_descriptorSets[descriptorSetNdx], 0u, nullptr);
         vkd.cmdPushConstants(commandBuffer, *m_resources.pipelineLayout, vk::VK_SHADER_STAGE_FRAGMENT_BIT, 0u,
                              (uint32_t)sizeof(callParams), &callParams);
         vkd.cmdDraw(commandBuffer, 6, 1, 0, 0);
@@ -7065,7 +7041,7 @@ void RenderFragmentStorageImage::prepare(PrepareRenderPassContext &context)
 
     {
         const vk::VkDescriptorSetLayoutBinding binding = {0u, vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
-                                                          vk::VK_SHADER_STAGE_FRAGMENT_BIT, DE_NULL};
+                                                          vk::VK_SHADER_STAGE_FRAGMENT_BIT, nullptr};
 
         bindings.push_back(binding);
     }
@@ -7074,13 +7050,13 @@ void RenderFragmentStorageImage::prepare(PrepareRenderPassContext &context)
                                 context.getTargetWidth(), context.getTargetHeight(),
                                 vector<vk::VkVertexInputBindingDescription>(),
                                 vector<vk::VkVertexInputAttributeDescription>(), bindings,
-                                vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, DE_NULL, m_resources);
+                                vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, nullptr, m_resources);
 
     {
         const vk::VkDescriptorPoolSize poolSizes        = {vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1};
         const vk::VkDescriptorPoolCreateInfo createInfo = {
             vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
 
             1u,
@@ -7094,7 +7070,7 @@ void RenderFragmentStorageImage::prepare(PrepareRenderPassContext &context)
     {
         const vk::VkDescriptorSetLayout layout             = *m_resources.descriptorSetLayout;
         const vk::VkDescriptorSetAllocateInfo allocateInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                                                              DE_NULL,
+                                                              nullptr,
 
                                                               *m_descriptorPool, 1, &layout};
 
@@ -7102,7 +7078,7 @@ void RenderFragmentStorageImage::prepare(PrepareRenderPassContext &context)
 
         {
             const vk::VkImageViewCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                                                          DE_NULL,
+                                                          nullptr,
                                                           0u,
 
                                                           context.getImage(),
@@ -7117,11 +7093,11 @@ void RenderFragmentStorageImage::prepare(PrepareRenderPassContext &context)
         {
             const vk::VkDescriptorImageInfo imageInfo = {VK_NULL_HANDLE, *m_imageView, context.getImageLayout()};
             const vk::VkWriteDescriptorSet write      = {
-                vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, DE_NULL,    *m_descriptorSet, 0u,      0u, 1u,
-                vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,       &imageInfo, DE_NULL,          DE_NULL,
+                vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr,    *m_descriptorSet, 0u,      0u, 1u,
+                vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,       &imageInfo, nullptr,          nullptr,
             };
 
-            vkd.updateDescriptorSets(device, 1u, &write, 0u, DE_NULL);
+            vkd.updateDescriptorSets(device, 1u, &write, 0u, nullptr);
         }
     }
 }
@@ -7134,7 +7110,7 @@ void RenderFragmentStorageImage::submit(SubmitContext &context)
     vkd.cmdBindPipeline(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipeline);
 
     vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u, 1u,
-                              &(*m_descriptorSet), 0u, DE_NULL);
+                              &(*m_descriptorSet), 0u, nullptr);
     vkd.cmdDraw(commandBuffer, 6, 1, 0, 0);
 }
 
@@ -7218,7 +7194,7 @@ void RenderFragmentSampledImage::prepare(PrepareRenderPassContext &context)
 
     {
         const vk::VkDescriptorSetLayoutBinding binding = {0u, vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
-                                                          vk::VK_SHADER_STAGE_FRAGMENT_BIT, DE_NULL};
+                                                          vk::VK_SHADER_STAGE_FRAGMENT_BIT, nullptr};
 
         bindings.push_back(binding);
     }
@@ -7227,13 +7203,13 @@ void RenderFragmentSampledImage::prepare(PrepareRenderPassContext &context)
                                 context.getTargetWidth(), context.getTargetHeight(),
                                 vector<vk::VkVertexInputBindingDescription>(),
                                 vector<vk::VkVertexInputAttributeDescription>(), bindings,
-                                vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, DE_NULL, m_resources);
+                                vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, nullptr, m_resources);
 
     {
         const vk::VkDescriptorPoolSize poolSizes        = {vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1};
         const vk::VkDescriptorPoolCreateInfo createInfo = {
             vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
 
             1u,
@@ -7247,7 +7223,7 @@ void RenderFragmentSampledImage::prepare(PrepareRenderPassContext &context)
     {
         const vk::VkDescriptorSetLayout layout             = *m_resources.descriptorSetLayout;
         const vk::VkDescriptorSetAllocateInfo allocateInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                                                              DE_NULL,
+                                                              nullptr,
 
                                                               *m_descriptorPool, 1, &layout};
 
@@ -7255,7 +7231,7 @@ void RenderFragmentSampledImage::prepare(PrepareRenderPassContext &context)
 
         {
             const vk::VkImageViewCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                                                          DE_NULL,
+                                                          nullptr,
                                                           0u,
 
                                                           context.getImage(),
@@ -7269,7 +7245,7 @@ void RenderFragmentSampledImage::prepare(PrepareRenderPassContext &context)
 
         {
             const vk::VkSamplerCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-                                                        DE_NULL,
+                                                        nullptr,
                                                         0u,
 
                                                         vk::VK_FILTER_NEAREST,
@@ -7295,11 +7271,11 @@ void RenderFragmentSampledImage::prepare(PrepareRenderPassContext &context)
         {
             const vk::VkDescriptorImageInfo imageInfo = {*m_sampler, *m_imageView, context.getImageLayout()};
             const vk::VkWriteDescriptorSet write      = {
-                vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,    DE_NULL,    *m_descriptorSet, 0u,      0u, 1u,
-                vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageInfo, DE_NULL,          DE_NULL,
+                vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,    nullptr,    *m_descriptorSet, 0u,      0u, 1u,
+                vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageInfo, nullptr,          nullptr,
             };
 
-            vkd.updateDescriptorSets(device, 1u, &write, 0u, DE_NULL);
+            vkd.updateDescriptorSets(device, 1u, &write, 0u, nullptr);
         }
     }
 }
@@ -7312,7 +7288,7 @@ void RenderFragmentSampledImage::submit(SubmitContext &context)
     vkd.cmdBindPipeline(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipeline);
 
     vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u, 1u,
-                              &(*m_descriptorSet), 0u, DE_NULL);
+                              &(*m_descriptorSet), 0u, nullptr);
     vkd.cmdDraw(commandBuffer, 6u, 1u, 0u, 0u);
 }
 
@@ -8267,8 +8243,8 @@ void getAvailableOps(const State &state, bool supportsBuffers, bool supportsImag
                (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT) ||
                 state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT))) ||
               ((usage & USAGE_UNIFORM_TEXEL_BUFFER) &&
-               (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT) ||
-                state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT))) ||
+               (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT) ||
+                state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))) ||
               ((usage & USAGE_STORAGE_BUFFER) &&
                (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT) ||
                 state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))) ||
@@ -8385,10 +8361,10 @@ void getAvailableOps(const State &state, bool supportsBuffers, bool supportsImag
 
         if ((usage & USAGE_UNIFORM_TEXEL_BUFFER) != 0 && state.memoryDefined && state.hasBoundBufferMemory)
         {
-            if (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT))
+            if (state.cache.isValid(vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))
                 ops.push_back(OP_RENDER_VERTEX_UNIFORM_TEXEL_BUFFER);
 
-            if (state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_UNIFORM_READ_BIT))
+            if (state.cache.isValid(vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_ACCESS_SHADER_READ_BIT))
                 ops.push_back(OP_RENDER_FRAGMENT_UNIFORM_TEXEL_BUFFER);
         }
 
@@ -8829,7 +8805,6 @@ void applyOp(State &state, const Memory &memory, Op op, Usage usage)
     }
 
     case OP_RENDER_VERTEX_UNIFORM_BUFFER:
-    case OP_RENDER_VERTEX_UNIFORM_TEXEL_BUFFER:
     {
         DE_ASSERT(state.stage == STAGE_RENDER_PASS);
 
@@ -8839,7 +8814,6 @@ void applyOp(State &state, const Memory &memory, Op op, Usage usage)
     }
 
     case OP_RENDER_FRAGMENT_UNIFORM_BUFFER:
-    case OP_RENDER_FRAGMENT_UNIFORM_TEXEL_BUFFER:
     {
         DE_ASSERT(state.stage == STAGE_RENDER_PASS);
 
@@ -8850,6 +8824,7 @@ void applyOp(State &state, const Memory &memory, Op op, Usage usage)
 
     case OP_RENDER_VERTEX_STORAGE_BUFFER:
     case OP_RENDER_VERTEX_STORAGE_TEXEL_BUFFER:
+    case OP_RENDER_VERTEX_UNIFORM_TEXEL_BUFFER:
     {
         DE_ASSERT(state.stage == STAGE_RENDER_PASS);
 
@@ -8860,6 +8835,7 @@ void applyOp(State &state, const Memory &memory, Op op, Usage usage)
 
     case OP_RENDER_FRAGMENT_STORAGE_BUFFER:
     case OP_RENDER_FRAGMENT_STORAGE_TEXEL_BUFFER:
+    case OP_RENDER_FRAGMENT_UNIFORM_TEXEL_BUFFER:
     {
         DE_ASSERT(state.stage == STAGE_RENDER_PASS);
 
@@ -8935,7 +8911,7 @@ de::MovePtr<Command> createHostCommand(Op op, de::Random &rng, Usage usage, vk::
 
     default:
         DE_FATAL("Unknown op");
-        return de::MovePtr<Command>(DE_NULL);
+        return de::MovePtr<Command>(nullptr);
     }
 }
 
@@ -9078,7 +9054,7 @@ de::MovePtr<CmdCommand> createCmdCommand(de::Random &rng, const State &state, Op
 
     default:
         DE_FATAL("Unknown op");
-        return de::MovePtr<CmdCommand>(DE_NULL);
+        return de::MovePtr<CmdCommand>(nullptr);
     }
 }
 
@@ -9123,7 +9099,7 @@ de::MovePtr<RenderPassCommand> createRenderPassCommand(de::Random &, const State
 
     default:
         DE_FATAL("Unknown op");
-        return de::MovePtr<RenderPassCommand>(DE_NULL);
+        return de::MovePtr<RenderPassCommand>(nullptr);
     }
 }
 
@@ -9384,7 +9360,7 @@ void MemoryTestInstance::resetResources(void)
     for (size_t commandNdx = 0; commandNdx < m_commands.size(); commandNdx++)
     {
         delete m_commands[commandNdx];
-        m_commands[commandNdx] = DE_NULL;
+        m_commands[commandNdx] = nullptr;
     }
 
     m_commands.clear();
@@ -9423,7 +9399,7 @@ bool MemoryTestInstance::nextMemoryType(void)
     }
     else
     {
-        m_stage = DE_NULL;
+        m_stage = nullptr;
         return false;
     }
 }
@@ -9440,7 +9416,7 @@ MemoryTestInstance::MemoryTestInstance(::vkt::Context &context, const TestConfig
     , m_stage(&MemoryTestInstance::createCommandsAndAllocateMemory)
     , m_resultCollector(context.getTestContext().getLog())
 
-    , m_memory(DE_NULL)
+    , m_memory(nullptr)
 {
     TestLog &log = context.getTestContext().getLog();
     {

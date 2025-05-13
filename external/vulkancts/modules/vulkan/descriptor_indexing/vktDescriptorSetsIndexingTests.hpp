@@ -147,7 +147,7 @@ void createImageAndBind(ut::ImageHandleAllocSp &output, const vkt::Context &ctx,
 
 void createFrameBuffer(ut::FrameBufferSp &outputFB, const vkt::Context &context, const VkExtent3D &extent,
                        VkFormat colorFormat, VkRenderPass renderpass, uint32_t additionalAttachmentCount = 0u,
-                       const VkImageView additionalAttachments[] = DE_NULL);
+                       const VkImageView additionalAttachments[] = nullptr);
 
 void recordCopyBufferToImage(VkCommandBuffer cmd, const DeviceInterface &interface,
                              VkPipelineStageFlagBits srcStageMask, VkPipelineStageFlagBits dstStageMask,

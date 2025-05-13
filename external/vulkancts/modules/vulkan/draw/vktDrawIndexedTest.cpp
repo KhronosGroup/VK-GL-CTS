@@ -24,6 +24,8 @@
 
 #include "vktDrawIndexedTest.hpp"
 
+#include "tcuDefs.hpp"
+#include "tcuVectorType.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktDrawTestCaseUtil.hpp"
 
@@ -37,6 +39,11 @@
 
 #include "vkDefs.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkBuilderUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkObjUtil.hpp"
+#include "vkRef.hpp"
+#include "vkBarrierUtil.hpp"
 
 #include "tcuTestCase.hpp"
 #include "tcuVectorUtil.hpp"
@@ -81,6 +88,14 @@ enum TestType
     TEST_TYPE_LAST
 };
 
+enum
+{
+    RENDER_WIDTH_SMALLEST  = 1,
+    RENDER_HEIGHT_SMALLEST = 1,
+    RENDER_WIDTH_DEFAULT   = 256,
+    RENDER_HEIGHT_DEFAULT  = 256,
+};
+
 struct TestSpec2 : TestSpecBase
 {
     const int32_t vertexOffset;
@@ -90,10 +105,12 @@ struct TestSpec2 : TestSpecBase
     bool useMaintenance5Ext;
     const bool nullDescriptor;
     const bool bindIndexBuffer2;
+    const bool testDrawCount;
 
     TestSpec2(const ShaderMap &shaders_, vk::VkPrimitiveTopology topology_, SharedGroupParams groupParams_,
               int32_t vertexOffset_, vk::VkDeviceSize bindIndexBufferOffset_, vk::VkDeviceSize memoryBindOffset_,
-              TestType testType_, bool useMaintenance5Ext_, bool nullDescriptor_, bool bindIndexBuffer2_)
+              TestType testType_, bool useMaintenance5Ext_, bool nullDescriptor_, bool bindIndexBuffer2_,
+              bool testDrawCount_ = false)
         : TestSpecBase{shaders_, topology_, groupParams_}
         , vertexOffset(vertexOffset_)
         , bindIndexBufferOffset(bindIndexBufferOffset_)
@@ -102,6 +119,7 @@ struct TestSpec2 : TestSpecBase
         , useMaintenance5Ext(useMaintenance5Ext_)
         , nullDescriptor(nullDescriptor_)
         , bindIndexBuffer2(bindIndexBuffer2_)
+        , testDrawCount(testDrawCount_)
     {
     }
 };
@@ -112,6 +130,7 @@ public:
     typedef TestSpec2 TestSpec;
 
     DrawIndexed(Context &context, TestSpec testSpec);
+    virtual void initialize(void);
     virtual tcu::TestStatus iterate(void);
 
 protected:
@@ -122,6 +141,123 @@ protected:
     const TestSpec m_testSpec;
 };
 
+void DrawIndexed::initialize(void)
+{
+    const vk::VkDevice device       = m_context.getDevice();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const auto viewMask             = getDefaultViewMask();
+    const auto multiview            = (viewMask != 0u);
+
+    vk::DescriptorSetLayoutBuilder layoutBuilder;
+    layoutBuilder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_FRAGMENT_BIT);
+    const auto descriptorSetLayout = layoutBuilder.build(m_vk, device);
+
+    PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
+
+    if (m_testSpec.testDrawCount)
+    {
+        pipelineLayoutCreateInfo.setLayoutCount = 1u;
+        pipelineLayoutCreateInfo.pSetLayouts    = &descriptorSetLayout.get();
+    }
+
+    m_pipelineLayout = vk::createPipelineLayout(m_vk, device, &pipelineLayoutCreateInfo);
+
+    const vk::VkExtent3D targetImageExtent = {m_renderWidth, m_renderHeight, 1};
+    const ImageCreateInfo targetImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, targetImageExtent, 1,
+                                                m_layers, vk::VK_SAMPLE_COUNT_1_BIT, vk::VK_IMAGE_TILING_OPTIMAL,
+                                                vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                                    vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                                                    vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+    m_colorTargetImage = Image::createAndAlloc(m_vk, device, targetImageCreateInfo, m_context.getDefaultAllocator(),
+                                               m_context.getUniversalQueueFamilyIndex());
+
+    const ImageSubresourceRange colorSRR(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_layers);
+    const auto imageViewType = (multiview ? vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY : vk::VK_IMAGE_VIEW_TYPE_2D);
+    const ImageViewCreateInfo colorTargetViewInfo(m_colorTargetImage->object(), imageViewType, m_colorAttachmentFormat,
+                                                  colorSRR);
+    m_colorTargetView = vk::createImageView(m_vk, device, &colorTargetViewInfo);
+
+    // create renderpass and framebuffer only when we are not using dynamic rendering
+    if (!m_groupParams->useDynamicRendering)
+    {
+        RenderPassCreateInfo renderPassCreateInfo;
+        renderPassCreateInfo.addAttachment(AttachmentDescription(
+            m_colorAttachmentFormat, vk::VK_SAMPLE_COUNT_1_BIT, vk::VK_ATTACHMENT_LOAD_OP_LOAD,
+            vk::VK_ATTACHMENT_STORE_OP_STORE, vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE, vk::VK_ATTACHMENT_STORE_OP_STORE,
+            vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_IMAGE_LAYOUT_GENERAL));
+
+        const vk::VkAttachmentReference colorAttachmentReference{0, vk::VK_IMAGE_LAYOUT_GENERAL};
+
+        renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, nullptr, 1,
+                                                           &colorAttachmentReference, nullptr, AttachmentReference(), 0,
+                                                           nullptr));
+
+        const std::vector<uint32_t> viewMasks(1u, viewMask);
+
+        const vk::VkRenderPassMultiviewCreateInfo multiviewCreateInfo = {
+            vk::VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO, // VkStructureType sType;
+            nullptr,                                                 // const void* pNext;
+            de::sizeU32(viewMasks),                                  // uint32_t subpassCount;
+            de::dataOrNull(viewMasks),                               // const uint32_t* pViewMasks;
+            0u,                                                      // uint32_t dependencyCount;
+            nullptr,                                                 // const int32_t* pViewOffsets;
+            de::sizeU32(viewMasks),                                  // uint32_t correlationMaskCount;
+            de::dataOrNull(viewMasks),                               // const uint32_t* pCorrelationMasks;
+        };
+
+        if (multiview)
+            renderPassCreateInfo.pNext = &multiviewCreateInfo;
+
+        m_renderPass = vk::createRenderPass(m_vk, device, &renderPassCreateInfo);
+
+        // create framebuffer
+        std::vector<vk::VkImageView> colorAttachments{*m_colorTargetView};
+        const FramebufferCreateInfo framebufferCreateInfo(*m_renderPass, colorAttachments, m_renderWidth,
+                                                          m_renderHeight, 1);
+        m_framebuffer = vk::createFramebuffer(m_vk, device, &framebufferCreateInfo);
+    }
+
+    const vk::VkVertexInputBindingDescription vertexInputBindingDescription = {
+        0,
+        sizeof(VertexElementData),
+        vk::VK_VERTEX_INPUT_RATE_VERTEX,
+    };
+
+    const vk::VkVertexInputAttributeDescription vertexInputAttributeDescriptions[] = {
+        {0u, 0u, vk::VK_FORMAT_R32G32B32A32_SFLOAT, 0u}, // VertexElementData::position
+        {1u, 0u, vk::VK_FORMAT_R32G32B32A32_SFLOAT,
+         static_cast<uint32_t>(sizeof(tcu::Vec4))}, // VertexElementData::color
+        {2u, 0u, vk::VK_FORMAT_R32_SINT,
+         static_cast<uint32_t>(sizeof(tcu::Vec4)) * 2} // VertexElementData::refVertexIndex
+    };
+
+    m_vertexInputState = m_testSpec.testDrawCount ?
+                             PipelineCreateInfo::VertexInputState(0, nullptr, 0, nullptr) :
+                             PipelineCreateInfo::VertexInputState(1, &vertexInputBindingDescription,
+                                                                  DE_LENGTH_OF_ARRAY(vertexInputAttributeDescriptions),
+                                                                  vertexInputAttributeDescriptions);
+
+    const vk::VkDeviceSize dataSize = m_data.size() * sizeof(VertexElementData);
+    m_vertexBuffer =
+        Buffer::createAndAlloc(m_vk, device, BufferCreateInfo(dataSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
+                               m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
+
+    uint8_t *ptr = reinterpret_cast<uint8_t *>(m_vertexBuffer->getBoundMemory().getHostPtr());
+    deMemcpy(ptr, &m_data[0], static_cast<size_t>(dataSize));
+
+    vk::flushAlloc(m_vk, device, m_vertexBuffer->getBoundMemory());
+
+    const CmdPoolCreateInfo cmdPoolCreateInfo(queueFamilyIndex);
+    m_cmdPool   = vk::createCommandPool(m_vk, device, &cmdPoolCreateInfo);
+    m_cmdBuffer = vk::allocateCommandBuffer(m_vk, device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    if (m_groupParams->useSecondaryCmdBuffer)
+        m_secCmdBuffer = vk::allocateCommandBuffer(m_vk, device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+
+    initPipeline(device);
+}
+
 class DrawInstancedIndexed : public DrawIndexed
 {
 public:
@@ -131,7 +267,9 @@ public:
 
 DrawIndexed::DrawIndexed(Context &context, TestSpec testSpec)
     : DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT],
-                         testSpec.groupParams, testSpec.topology)
+                         testSpec.groupParams, testSpec.topology, 1u,
+                         testSpec.testDrawCount ? RENDER_WIDTH_SMALLEST : RENDER_WIDTH_DEFAULT,
+                         testSpec.testDrawCount ? RENDER_HEIGHT_SMALLEST : RENDER_HEIGHT_DEFAULT)
     , m_testSpec(testSpec)
 {
     if (testSpec.testType == TEST_TYPE_NON_MAINTENANCE_6)
@@ -215,7 +353,7 @@ void DrawIndexed::cmdBindIndexBufferImpl(vk::VkCommandBuffer commandBuffer, vk::
 {
 #ifndef CTS_USES_VULKANSC
     if (m_testSpec.useMaintenance5Ext)
-        m_vk.cmdBindIndexBuffer2KHR(commandBuffer, indexBuffer, offset, dataSize, indexType);
+        m_vk.cmdBindIndexBuffer2(commandBuffer, indexBuffer, offset, dataSize, indexType);
     else
 #endif
     {
@@ -325,8 +463,9 @@ tcu::TestStatus DrawIndexed::iterate(void)
     submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
     // Validation
-    tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)),
-                                  (int)(0.5f + static_cast<float>(HEIGHT)));
+    tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat),
+                                  (int)(0.5f + static_cast<float>(m_renderWidth)),
+                                  (int)(0.5f + static_cast<float>(m_renderHeight)));
     referenceFrame.allocLevel(0);
 
     const int32_t frameWidth  = referenceFrame.getWidth();
@@ -353,7 +492,7 @@ tcu::TestStatus DrawIndexed::iterate(void)
     const vk::VkOffset3D zeroOffset = {0, 0, 0};
     const tcu::ConstPixelBufferAccess renderedFrame =
         m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(), vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset,
-                                        WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
+                                        m_renderWidth, m_renderHeight, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
     qpTestResult res = QP_TEST_RESULT_PASS;
 
@@ -456,8 +595,9 @@ tcu::TestStatus DrawInstancedIndexed::iterate(void)
     // Validation
     VK_CHECK(m_vk.queueWaitIdle(queue));
 
-    tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)),
-                                  (int)(0.5f + static_cast<float>(HEIGHT)));
+    tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat),
+                                  (int)(0.5f + static_cast<float>(m_renderWidth)),
+                                  (int)(0.5f + static_cast<float>(m_renderHeight)));
     referenceFrame.allocLevel(0);
 
     const int32_t frameWidth  = referenceFrame.getWidth();
@@ -484,7 +624,7 @@ tcu::TestStatus DrawInstancedIndexed::iterate(void)
     const vk::VkOffset3D zeroOffset = {0, 0, 0};
     const tcu::ConstPixelBufferAccess renderedFrame =
         m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(), vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset,
-                                        WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
+                                        m_renderWidth, m_renderHeight, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
     qpTestResult res = QP_TEST_RESULT_PASS;
 
@@ -615,13 +755,13 @@ tcu::TestStatus DrawIndexedMaintenance6::iterate(void)
 
     const vk::VkBuffer vertexBuffer           = m_vertexBuffer->object();
     const vk::VkDeviceSize vertexBufferOffset = 0;
-
-    m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+    if (!m_testSpec.testDrawCount)
+        m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 
 #ifndef CTS_USES_VULKANSC
     if (m_testSpec.bindIndexBuffer2)
     {
-        m_vk.cmdBindIndexBuffer2KHR(*m_cmdBuffer, VK_NULL_HANDLE, 0, 0, vk::VK_INDEX_TYPE_UINT32);
+        m_vk.cmdBindIndexBuffer2(*m_cmdBuffer, VK_NULL_HANDLE, 0, 0, vk::VK_INDEX_TYPE_UINT32);
     }
     else
 #endif
@@ -629,7 +769,41 @@ tcu::TestStatus DrawIndexedMaintenance6::iterate(void)
         m_vk.cmdBindIndexBuffer(*m_cmdBuffer, VK_NULL_HANDLE, 0, vk::VK_INDEX_TYPE_UINT32);
     }
 
+    de::MovePtr<vk::BufferWithMemory> ssboBuffer;
+    const auto ssboBufferSize = static_cast<vk::VkDeviceSize>(sizeof(uint32_t));
+    // Output SSBO
+    const auto ssboBufferInfo = makeBufferCreateInfo(ssboBufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    ssboBuffer                = de::MovePtr<vk::BufferWithMemory>(new vk::BufferWithMemory(
+        m_vk, device, m_context.getDefaultAllocator(), ssboBufferInfo, vk::MemoryRequirement::HostVisible));
+    auto &ssboBufferAlloc     = ssboBuffer->getAllocation();
+
+    deMemset(ssboBufferAlloc.getHostPtr(), 0, static_cast<size_t>(ssboBufferSize));
+    flushAlloc(m_vk, device, ssboBufferAlloc);
+
+    // Descriptor pool
+    vk::Move<vk::VkDescriptorPool> descriptorPool;
+    vk::DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    descriptorPool = poolBuilder.build(m_vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    vk::DescriptorSetLayoutBuilder layoutBuilder;
+    layoutBuilder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_FRAGMENT_BIT);
+    const auto descriptorSetLayout = layoutBuilder.build(m_vk, device);
+
+    // Descriptor set
+    vk::Move<vk::VkDescriptorSet> descriptorSet;
+    descriptorSet            = makeDescriptorSet(m_vk, device, descriptorPool.get(), descriptorSetLayout.get());
+    const auto ssboWriteInfo = makeDescriptorBufferInfo(ssboBuffer->get(), 0ull, ssboBufferSize);
+    vk::DescriptorSetUpdateBuilder updateBuilder;
+    updateBuilder.writeSingle(descriptorSet.get(), vk::DescriptorSetUpdateBuilder::Location::binding(0u),
+                              vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &ssboWriteInfo);
+    updateBuilder.update(m_vk, device);
+
     m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+
+    if (m_testSpec.testDrawCount)
+        m_vk.cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout.get(), 0u, 1u,
+                                   &descriptorSet.get(), 0u, nullptr);
 
     switch (m_testSpec.testType)
     {
@@ -681,6 +855,10 @@ tcu::TestStatus DrawIndexedMaintenance6::iterate(void)
     endLegacyRender(*m_cmdBuffer);
 #endif // CTS_USES_VULKANSC
 
+    const auto ssboBarrier = vk::makeMemoryBarrier(vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT);
+    m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u,
+                            1u, &ssboBarrier, 0u, nullptr, 0u, nullptr);
+
     endCommandBuffer(m_vk, *m_cmdBuffer);
 
     submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
@@ -688,8 +866,9 @@ tcu::TestStatus DrawIndexedMaintenance6::iterate(void)
     // Validation
     VK_CHECK(m_vk.queueWaitIdle(queue));
 
-    tcu::TextureLevel refImage(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)),
-                               (int)(0.5f + static_cast<float>(HEIGHT)));
+    tcu::TextureLevel refImage(vk::mapVkFormat(m_colorAttachmentFormat),
+                               (int)(0.5f + static_cast<float>(m_renderWidth)),
+                               (int)(0.5f + static_cast<float>(m_renderHeight)));
     tcu::clear(refImage.getAccess(), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
     if (m_testSpec.nullDescriptor)
@@ -698,8 +877,17 @@ tcu::TestStatus DrawIndexedMaintenance6::iterate(void)
         std::vector<tcu::Vec4> colors;
 
         // Draw just the first point
-        vertices.push_back(m_data[0].position);
-        colors.push_back(m_data[0].color);
+        if (m_testSpec.testDrawCount)
+        {
+            const tcu::Vec4 center = tcu::Vec4(0.5f, 0.5f, 1.0f, 1.0f);
+            vertices.push_back(center);
+            colors.push_back(tcu::RGBA::blue().toVec());
+        }
+        else
+        {
+            vertices.push_back(m_data[0].position);
+            colors.push_back(m_data[0].color);
+        }
 
         {
             const PassthruVertShader vertShader;
@@ -724,18 +912,41 @@ tcu::TestStatus DrawIndexedMaintenance6::iterate(void)
     const vk::VkOffset3D zeroOffset = {0, 0, 0};
     const tcu::ConstPixelBufferAccess renderedFrame =
         m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(), vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset,
-                                        WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
+                                        m_renderWidth, m_renderHeight, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
     qpTestResult res = QP_TEST_RESULT_PASS;
 
-    if (!tcu::intThresholdPositionDeviationCompare(log, "Result", "Image comparison result", refImage.getAccess(),
-                                                   renderedFrame,
-                                                   tcu::UVec4(4u),      // color threshold
-                                                   tcu::IVec3(1, 1, 0), // position deviation tolerance
-                                                   true,                // don't check the pixels at the boundary
-                                                   tcu::COMPARE_LOG_RESULT))
+    if (m_testSpec.testDrawCount)
     {
-        res = QP_TEST_RESULT_FAIL;
+        if (!tcu::intThresholdCompare(log, "Result", "Image comparison result", refImage.getAccess(), renderedFrame,
+                                      tcu::UVec4(0, 0, 0, 0), tcu::COMPARE_LOG_ON_ERROR))
+            res = QP_TEST_RESULT_FAIL;
+
+        if (res == QP_TEST_RESULT_PASS)
+        {
+            // Get stored counters.
+            auto &ssboAlloc = ssboBuffer->getAllocation();
+            invalidateAlloc(m_vk, device, ssboAlloc);
+
+            uint32_t ssboCounter = 0;
+            deMemcpy(&ssboCounter, ssboAlloc.getHostPtr(), ssboBufferSize);
+
+            uint32_t expectedCounter = indexCount;
+            if (ssboCounter != expectedCounter)
+                res = QP_TEST_RESULT_FAIL;
+        }
+    }
+    else
+    {
+        if (!tcu::intThresholdPositionDeviationCompare(log, "Result", "Image comparison result", refImage.getAccess(),
+                                                       renderedFrame,
+                                                       tcu::UVec4(4u),      // color threshold
+                                                       tcu::IVec3(1, 1, 0), // position deviation tolerance
+                                                       true,                // don't check the pixels at the boundary
+                                                       tcu::COMPARE_LOG_ON_ERROR))
+        {
+            res = QP_TEST_RESULT_FAIL;
+        }
     }
 
     return tcu::TestStatus(res, qpGetTestResultName(res));
@@ -782,6 +993,14 @@ void checkSupport(Context &context, DrawIndexed::TestSpec testSpec)
         if (testSpec.testType == TEST_TYPE_MAINTENANCE6_INDEXED_INDIRECT_COUNT)
         {
             context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
+        }
+
+        if (testSpec.testDrawCount)
+        {
+            const auto features =
+                getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice());
+            if (!features.fragmentStoresAndAtomics)
+                TCU_THROW(NotSupportedError, "fragmentStoresAndAtomics is supported");
         }
     }
 #ifndef CTS_USES_VULKANSC
@@ -925,21 +1144,30 @@ void DrawIndexedTests::init(bool useMaintenance5Ext)
         {
             for (int null = 0; null < 2; null++)
             {
-                DrawIndexedMaintenance6::TestSpec testSpec({{glu::SHADERTYPE_VERTEX, "vulkan/draw/VertexFetch.vert"},
-                                                            {glu::SHADERTYPE_FRAGMENT, "vulkan/draw/VertexFetch.frag"}},
-                                                           vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, m_groupParams, 0, 0, 0,
-                                                           maintenance6Case.testType, useMaintenance5Ext, null == 1,
-                                                           m5 == 1);
+                for (uint32_t testDrawCountIdx = 0; testDrawCountIdx < 2; testDrawCountIdx++)
+                {
+                    const char *m5Suffix       = m5 == 0 ? "" : "_bindindexbuffer2";
+                    const char *nullSuffix     = null == 0 ? "" : "_nulldescriptor";
+                    const auto drawCountSuffix = (testDrawCountIdx == 0) ? "" : "_count";
 
-                const char *m5Suffix   = m5 == 0 ? "" : "_bindindexbuffer2";
-                const char *nullSuffix = null == 0 ? "" : "_nulldescriptor";
+                    const auto testName = std::string("draw_indexed") + drawCountSuffix + maintenance6Case.nameSuffix +
+                                          m5Suffix + nullSuffix + maintenance5ExtNameSuffix +
+                                          std::string("_maintenance6");
 
-                const auto testName = std::string("draw_indexed") + maintenance6Case.nameSuffix + m5Suffix +
-                                      nullSuffix + maintenance5ExtNameSuffix + std::string("_maintenance6");
+                    const auto vertShader =
+                        (testDrawCountIdx == 0) ? "vulkan/draw/VertexFetch.vert" : "vulkan/draw/VertexFetchCount.vert";
+                    const auto fragShader =
+                        (testDrawCountIdx == 0) ? "vulkan/draw/VertexFetch.frag" : "vulkan/draw/VertexFetchCount.frag";
 
-                addChild(new InstanceFactory<DrawIndexedMaintenance6, FunctionSupport1<DrawIndexed::TestSpec>>(
-                    m_testCtx, testName, testSpec,
-                    FunctionSupport1<DrawIndexedMaintenance6::TestSpec>::Args(checkSupport, testSpec)));
+                    DrawIndexedMaintenance6::TestSpec testSpec(
+                        {{glu::SHADERTYPE_VERTEX, vertShader}, {glu::SHADERTYPE_FRAGMENT, fragShader}},
+                        vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, m_groupParams, 0, 0, 0, maintenance6Case.testType,
+                        useMaintenance5Ext, null == 1, m5 == 1, testDrawCountIdx == 1);
+
+                    addChild(new InstanceFactory<DrawIndexedMaintenance6, FunctionSupport1<DrawIndexed::TestSpec>>(
+                        m_testCtx, testName, testSpec,
+                        FunctionSupport1<DrawIndexedMaintenance6::TestSpec>::Args(checkSupport, testSpec)));
+                }
             }
         }
     }

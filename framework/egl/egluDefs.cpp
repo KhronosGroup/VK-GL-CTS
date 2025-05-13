@@ -46,9 +46,9 @@ void checkError(uint32_t err, const char *message, const char *file, int line)
             desc << ": " << message;
 
         if (err == EGL_BAD_ALLOC)
-            throw BadAllocError(desc.str().c_str(), DE_NULL, file, line);
+            throw BadAllocError(desc.str().c_str(), nullptr, file, line);
         else
-            throw Error(err, desc.str().c_str(), DE_NULL, file, line);
+            throw Error(err, desc.str().c_str(), nullptr, file, line);
     }
 }
 

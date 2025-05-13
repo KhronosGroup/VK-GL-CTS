@@ -294,7 +294,7 @@ FragmentShaderParameters::FragmentShaderParameters(const ShaderOutputs paramsOut
     , blendRequired(paramsBlendRequired)
     , toggleRequired(paramsToggleRequired)
 {
-    if (paramsComparisonFunction != DE_NULL)
+    if (paramsComparisonFunction != nullptr)
     {
         functionName           = paramsComparisonFunction->name;
         functionParameters     = paramsComparisonFunction->parameters;
@@ -433,7 +433,6 @@ private:
     Context &m_context;
     glu::Texture2D m_source;
     glu::TextureTestUtil::TextureType m_targetType;
-    const tcu::TextureFormat m_internalFormat;
     const int m_width;
     const int m_height;
     tcu::Vec4 m_color;
@@ -453,7 +452,6 @@ SRGBTestTexture::SRGBTestTexture(Context &context, const glu::TextureTestUtil::T
     : m_context(context)
     , m_source(context.getRenderContext(), glu::getInternalFormat(internalFormat), width, height)
     , m_targetType(targetType)
-    , m_internalFormat(internalFormat)
     , m_width(width)
     , m_height(height)
     , m_color(color)
@@ -671,7 +669,7 @@ SRGBTestProgram::SRGBTestProgram(Context &context, const FragmentShaderParameter
 
 SRGBTestProgram::~SRGBTestProgram(void)
 {
-    m_program = de::MovePtr<glu::ShaderProgram>(DE_NULL);
+    m_program = de::MovePtr<glu::ShaderProgram>(nullptr);
 }
 
 void SRGBTestProgram::setBlendRequired(bool blendRequired)
@@ -986,7 +984,7 @@ void SRGBTestCase::deinit(void)
 {
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-    m_framebuffer = de::MovePtr<glu::Framebuffer>(DE_NULL);
+    m_framebuffer = de::MovePtr<glu::Framebuffer>(nullptr);
 
     for (std::size_t renderBufferIdx = 0; renderBufferIdx < m_renderBufferList.size(); renderBufferIdx++)
     {

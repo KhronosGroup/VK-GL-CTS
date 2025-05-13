@@ -89,7 +89,7 @@ void addTestsForAmberFiles(tcu::TestCaseGroup *tests, CaseGroup group)
         const std::string file = std::string(cases[i].basename) + ".amber";
         cts_amber::AmberTestCase *testCase =
             cts_amber::createAmberTestCase(testCtx, cases[i].basename, category.c_str(), file);
-        DE_ASSERT(testCase != DE_NULL);
+        DE_ASSERT(testCase != nullptr);
         // Add Vulkan extension requirements.
         // VK_KHR_spirv_1_4 requires Vulkan 1.1, which includes many common extensions.
         // So for, example, these tests never have to request VK_KHR_storage_buffer_storage_class,

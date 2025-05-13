@@ -86,7 +86,7 @@ struct Params
     VertexTopology vertexTopology;
     GeometryOutput geometryOutput;
     VkPolygonMode polygonMode;
-    VkLineRasterizationModeKHR lineRasterizationMode;
+    VkLineRasterizationMode lineRasterizationMode;
 
     bool useGeometryShader(void) const
     {
@@ -247,6 +247,9 @@ void NonLineDrawCase::checkSupport(Context &context) const
 
     if (!(*requiredFeature))
         TCU_THROW(NotSupportedError, "Required line type not supported");
+
+    if (m_params.polygonMode != VK_POLYGON_MODE_FILL && !context.getDeviceFeatures().fillModeNonSolid)
+        TCU_THROW(NotSupportedError, "Required polygon mode not supported");
 }
 
 void NonLineDrawCase::initPrograms(SourceCollections &dst) const
@@ -283,6 +286,7 @@ void NonLineDrawCase::initPrograms(SourceCollections &dst) const
         const std::string outputPrimitive = m_params.getGeometryOutputPrimitive();
         const auto inputLength            = m_params.getVertexOutputLength();
         const auto outputLength           = m_params.getGeometryOutputLength();
+        const auto iterLength             = deMin32(inputLength, outputLength);
 
         std::ostringstream geom;
         geom << "#version 460\n"
@@ -304,7 +308,7 @@ void NonLineDrawCase::initPrograms(SourceCollections &dst) const
 
         if (m_params.geometryOutput == GeometryOutput::POINTS)
         {
-            geom << "    for (uint i = 0; i < " << inputLength << "; ++i) {\n"
+            geom << "    for (uint i = 0; i < " << iterLength << "; ++i) {\n"
                  << "        gl_Position = gl_in[i].gl_Position;\n"
                  << "        gl_PointSize = gl_in[i].gl_PointSize;\n"
                  << "        outColor = inColor[i];\n"
@@ -314,7 +318,7 @@ void NonLineDrawCase::initPrograms(SourceCollections &dst) const
         else if (m_params.geometryOutput == GeometryOutput::TRIANGLES &&
                  m_params.vertexTopology == VertexTopology::TRIANGLES)
         {
-            geom << "    for (uint i = 0; i < " << inputLength << "; ++i) {\n"
+            geom << "    for (uint i = 0; i < " << iterLength << "; ++i) {\n"
                  << "        gl_Position = gl_in[i].gl_Position;\n"
                  << "        gl_PointSize = gl_in[i].gl_PointSize;\n"
                  << "        outColor = inColor[i];\n"
@@ -325,7 +329,7 @@ void NonLineDrawCase::initPrograms(SourceCollections &dst) const
         else if (m_params.geometryOutput == GeometryOutput::TRIANGLES &&
                  m_params.vertexTopology == VertexTopology::LINES)
         {
-            geom << "    for (uint i = 0; i < " << inputLength << "; ++i) {\n"
+            geom << "    for (uint i = 0; i < " << iterLength << "; ++i) {\n"
                  << "        gl_Position = gl_in[i].gl_Position;\n"
                  << "        gl_PointSize = gl_in[i].gl_PointSize;\n"
                  << "        outColor = inColor[i];\n"
@@ -623,7 +627,7 @@ tcu::TestCaseGroup *createDrawNonLineTests(tcu::TestContext &testCtx)
 
     const struct
     {
-        VkLineRasterizationModeKHR lineRasterMode;
+        VkLineRasterizationMode lineRasterMode;
         const char *suffix;
     } lineRasterModeCases[] = {
         {VK_LINE_RASTERIZATION_MODE_RECTANGULAR_KHR, "_line_raster_rect"},

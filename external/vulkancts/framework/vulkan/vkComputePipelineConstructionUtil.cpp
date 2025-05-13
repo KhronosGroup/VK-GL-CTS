@@ -59,10 +59,10 @@ struct ComputePipelineWrapper::InternalData
 ComputePipelineWrapper::ComputePipelineWrapper(const DeviceInterface &vk, VkDevice device,
                                                const ComputePipelineConstructionType pipelineConstructionType)
     : m_internalData(new ComputePipelineWrapper::InternalData(vk, device, pipelineConstructionType))
-    , m_programBinary(DE_NULL)
+    , m_programBinary(nullptr)
     , m_specializationInfo{}
     , m_pipelineCreateFlags((VkPipelineCreateFlags)0u)
-    , m_pipelineCreatePNext(DE_NULL)
+    , m_pipelineCreatePNext(nullptr)
     , m_subgroupSize(0)
 {
 }
@@ -74,7 +74,7 @@ ComputePipelineWrapper::ComputePipelineWrapper(const DeviceInterface &vk, VkDevi
     , m_programBinary(&programBinary)
     , m_specializationInfo{}
     , m_pipelineCreateFlags((VkPipelineCreateFlags)0u)
-    , m_pipelineCreatePNext(DE_NULL)
+    , m_pipelineCreatePNext(nullptr)
     , m_subgroupSize(0)
 {
 }
@@ -176,7 +176,7 @@ void ComputePipelineWrapper::buildPipeline(void)
     const auto &vk     = m_internalData->vk;
     const auto &device = m_internalData->device;
 
-    VkSpecializationInfo *specializationInfo = m_specializationInfo.mapEntryCount > 0 ? &m_specializationInfo : DE_NULL;
+    VkSpecializationInfo *specializationInfo = m_specializationInfo.mapEntryCount > 0 ? &m_specializationInfo : nullptr;
     if (m_internalData->pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_PIPELINE)
     {
         DE_ASSERT(m_pipeline.get() == VK_NULL_HANDLE);
@@ -194,7 +194,7 @@ void ComputePipelineWrapper::buildPipeline(void)
 
         VkShaderRequiredSubgroupSizeCreateInfoEXT subgroupSizeCreateInfo = {
             VK_STRUCTURE_TYPE_SHADER_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                                         // void* pNext;
+            nullptr,                                                         // void* pNext;
             m_subgroupSize,                                                  // uint32_t requiredSubgroupSize;
         };
 
@@ -208,7 +208,7 @@ void ComputePipelineWrapper::buildPipeline(void)
 
         vk::VkShaderCreateInfoEXT createInfo = {
             vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT,            // VkStructureType sType;
-            m_subgroupSize != 0 ? &subgroupSizeCreateInfo : DE_NULL, // const void* pNext;
+            m_subgroupSize != 0 ? &subgroupSizeCreateInfo : nullptr, // const void* pNext;
             flags,                                                   // VkShaderCreateFlagsEXT flags;
             vk::VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
             0u,                                                      // VkShaderStageFlags nextStage;
@@ -219,7 +219,7 @@ void ComputePipelineWrapper::buildPipeline(void)
             (uint32_t)m_descriptorSetLayouts.size(),                 // uint32_t setLayoutCount;
             m_descriptorSetLayouts.data(),                           // VkDescriptorSetLayout* pSetLayouts;
             0u,                                                      // uint32_t pushConstantRangeCount;
-            DE_NULL,                                                 // const VkPushConstantRange* pPushConstantRanges;
+            nullptr,                                                 // const VkPushConstantRange* pPushConstantRanges;
             specializationInfo,                                      // const VkSpecializationInfo* pSpecializationInfo;
         };
 
@@ -228,7 +228,7 @@ void ComputePipelineWrapper::buildPipeline(void)
         if (m_internalData->pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY)
         {
             size_t dataSize;
-            vk.getShaderBinaryDataEXT(device, *m_shader, &dataSize, DE_NULL);
+            vk.getShaderBinaryDataEXT(device, *m_shader, &dataSize, nullptr);
             std::vector<uint8_t> data(dataSize);
             vk.getShaderBinaryDataEXT(device, *m_shader, &dataSize, data.data());
 

@@ -241,7 +241,7 @@ private: /* Private structs */
         ValidationOutputVec outputs;
         ValidationFuncPtr validationFuncPtr;
 
-        ValidationStruct() : validationFuncPtr(DE_NULL)
+        ValidationStruct() : validationFuncPtr(nullptr)
         {
         }
 

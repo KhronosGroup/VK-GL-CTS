@@ -228,7 +228,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, VkFormat 
 {
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0u,              // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         format,                              // VkFormat format;
@@ -241,7 +241,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, VkFormat 
             VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
     };
 
@@ -428,6 +428,9 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> RayTracingPipelineL
     tcu::Vec3 v2(1.0, 1.0, 0.0);
     tcu::Vec3 v3(1.0, 0.0, 0.0);
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     for (uint32_t y = 0; y < m_data.height; ++y)
         for (uint32_t x = 0; x < m_data.width; ++x)
         {
@@ -457,7 +460,7 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> RayTracingPipelineL
             }
 
             bottomLevelAccelerationStructure->addGeometry(geometryData, !m_data.useAABBs /*triangles*/);
-            bottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+            bottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
             result.push_back(
                 de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
         }
@@ -472,6 +475,9 @@ de::MovePtr<TopLevelAccelerationStructure> RayTracingPipelineLibraryTestInstance
     const auto &vkd   = m_context.getDeviceInterface();
     const auto device = m_context.getDevice();
     auto &allocator   = m_context.getDefaultAllocator();
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
 
     uint32_t instanceCount = m_data.width * m_data.height / 2;
 
@@ -491,7 +497,7 @@ de::MovePtr<TopLevelAccelerationStructure> RayTracingPipelineLibraryTestInstance
                                 currentInstanceIndex % numShadersUsed, 0U);
             currentInstanceIndex++;
         }
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return result;
 }
@@ -728,7 +734,7 @@ std::vector<uint32_t> RayTracingPipelineLibraryTestInstance::runTest(bool replay
 
         std::vector<deThread> threads;
         for (uint32_t i = 0; i < csmds.size(); ++i)
-            threads.push_back(deThread_create(compileShadersThread, (void *)&csmds[i], DE_NULL));
+            threads.push_back(deThread_create(compileShadersThread, (void *)&csmds[i], nullptr));
 
         for (uint32_t i = 0; i < threads.size(); ++i)
         {
@@ -805,8 +811,8 @@ std::vector<uint32_t> RayTracingPipelineLibraryTestInstance::runTest(bool replay
                 const auto curHandles      = handleGetter->getShaderGroupHandlesVector(curRTPipeline, vkd, device,
                                                                                        curPipeline, 0u, curGroupCount);
 
-                const auto rangeStart = curGroupOffset * shaderGroupHandleSize;
-                const auto rangeEnd   = (curGroupOffset + curGroupCount) * shaderGroupHandleSize;
+                const auto rangeStart = curGroupOffset * handleSize;
+                const auto rangeEnd   = (curGroupOffset + curGroupCount) * handleSize;
 
                 const std::vector<uint8_t> handleRange(allHandles.begin() + rangeStart, allHandles.begin() + rangeEnd);
                 if (handleRange != curHandles)
@@ -909,7 +915,7 @@ std::vector<uint32_t> RayTracingPipelineLibraryTestInstance::runTest(bool replay
         const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = topLevelAccelerationStructure.get();
         VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-            DE_NULL,                                                           //  const void* pNext;
+            nullptr,                                                           //  const void* pNext;
             1u,                                                                //  uint32_t accelerationStructureCount;
             topLevelAccelerationStructurePtr->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
         };
@@ -922,7 +928,7 @@ std::vector<uint32_t> RayTracingPipelineLibraryTestInstance::runTest(bool replay
             .update(vkd, device);
 
         vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                                  &descriptorSet.get(), 0, DE_NULL);
+                                  &descriptorSet.get(), 0, nullptr);
 
         vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline);
 

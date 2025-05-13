@@ -48,7 +48,7 @@ namespace cts_amber
 AmberTestCase::AmberTestCase(tcu::TestContext &testCtx, const char *name, const char *description,
                              const std::string &readFilename)
     : TestCase(testCtx, name)
-    , m_recipe(DE_NULL)
+    , m_recipe(nullptr)
     , m_readFilename(readFilename)
 {
     (void)description;
@@ -132,6 +132,14 @@ static bool isFeatureSupported(const vkt::Context &ctx, const std::string &featu
         return ctx.get8BitStorageFeatures().storageBuffer8BitAccess;
     if (feature == "IndexTypeUint8Features.indexTypeUint8")
         return ctx.getIndexTypeUint8Features().indexTypeUint8;
+    if (feature == "RayTracingPipelineFeaturesKHR.rayTracingPipeline")
+        return ctx.getRayTracingPipelineFeatures().rayTracingPipeline;
+    if (feature == "AccelerationStructureFeaturesKHR.accelerationStructure")
+        return ctx.getAccelerationStructureFeatures().accelerationStructure;
+    if (feature == "BufferDeviceAddressFeatures.bufferDeviceAddress")
+        return ctx.getBufferDeviceAddressFeatures().bufferDeviceAddress;
+    if (feature == "DepthClampZeroOneFeatures.depthClampZeroOne")
+        return ctx.getDepthClampZeroOneFeatures().depthClampZeroOne;
 
     std::string message = std::string("Unexpected feature name: ") + feature;
     TCU_THROW(InternalError, message.c_str());
@@ -279,6 +287,8 @@ public:
     amber::Result LoadBufferData(const std::string file_name, amber::BufferDataFileType file_type,
                                  amber::BufferInfo *buffer) const override;
 
+    amber::Result LoadFile(const std::string file_name, std::vector<char> *buffer) const override;
+
     void Log(const std::string & /*message*/) override
     {
         DE_FATAL("amber::Delegate::Log unimplemented");
@@ -364,6 +374,30 @@ amber::Result Delegate::LoadBufferData(const std::string file_name, amber::Buffe
     return {};
 }
 
+amber::Result Delegate::LoadFile(const std::string file_name, std::vector<char> *buffer) const
+{
+    if (!buffer)
+    {
+        return amber::Result("Buffer pointer is null.");
+    }
+
+    const tcu::Archive &archive = m_testCtx.getArchive();
+    const de::FilePath filePath = de::FilePath(m_path).join(file_name);
+    de::UniquePtr<tcu::Resource> file(archive.getResource(filePath.getPath()));
+    int numBytes = file->getSize();
+    std::vector<uint8_t> bytes(numBytes);
+
+    file->read(bytes.data(), numBytes);
+
+    if (bytes.empty())
+        return amber::Result("Failed to load buffer data " + file_name);
+
+    // Convert uint8_t vector to char vector
+    buffer->assign(bytes.begin(), bytes.end());
+
+    return {};
+}
+
 bool AmberTestCase::parse(const std::string &readFilename)
 {
     std::string script = ShaderSourceProvider::getSource(m_testCtx.getArchive(), readFilename.c_str());
@@ -386,7 +420,7 @@ bool AmberTestCase::parse(const std::string &readFilename)
                                   << r.Error() << "\n"
                                   << tcu::TestLog::EndMessage;
         // TODO(dneto): Enhance Amber to not require this.
-        m_recipe->SetImpl(DE_NULL);
+        m_recipe->SetImpl(nullptr);
         return false;
     }
     return true;
@@ -458,8 +492,41 @@ void AmberTestCase::initPrograms(vk::SourceCollections &programCollection) const
                     << glu::TessellationEvaluationSource(shader.shader_source)
                     << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, allowSpirv14);
                 break;
+            case amber::kShaderTypeRayGeneration:
+                programCollection.glslSources.add(shader.shader_name)
+                    << glu::RaygenSource(shader.shader_source)
+                    << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, true);
+                break;
+            case amber::kShaderTypeAnyHit:
+                programCollection.glslSources.add(shader.shader_name)
+                    << glu::AnyHitSource(shader.shader_source)
+                    << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, true);
+                break;
+            case amber::kShaderTypeClosestHit:
+                programCollection.glslSources.add(shader.shader_name)
+                    << glu::ClosestHitSource(shader.shader_source)
+                    << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, true);
+                break;
+            case amber::kShaderTypeMiss:
+                programCollection.glslSources.add(shader.shader_name)
+                    << glu::MissSource(shader.shader_source)
+                    << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, true);
+                break;
+            case amber::kShaderTypeIntersection:
+                programCollection.glslSources.add(shader.shader_name)
+                    << glu::IntersectionSource(shader.shader_source)
+                    << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, true);
+                break;
+            case amber::kShaderTypeCall:
+                programCollection.glslSources.add(shader.shader_name)
+                    << glu::CallableSource(shader.shader_source)
+                    << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, true);
+                break;
             case amber::kShaderTypeMulti:
                 DE_ASSERT(false && "Multi shaders not supported");
+                break;
+            default:
+                DE_ASSERT(false && "Unknown shader");
                 break;
             }
         }
@@ -472,7 +539,7 @@ void AmberTestCase::initPrograms(vk::SourceCollections &programCollection) const
 
 tcu::TestStatus AmberTestInstance::iterate(void)
 {
-    amber::Amber am(DE_NULL);
+    amber::Amber am(nullptr);
     amber::Options amber_options;
     amber::ShaderMap shaderMap;
     amber::Result r;

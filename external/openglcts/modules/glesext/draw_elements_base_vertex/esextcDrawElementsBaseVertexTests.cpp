@@ -74,18 +74,18 @@ DrawElementsBaseVertexTestBase::DrawElementsBaseVertexTestBase(glcts::Context &c
     , m_vs_id(0)
     , m_bo_negative_data_index_size(-1)
     , m_bo_negative_data_vertex_size(-1)
-    , m_draw_call_color_offset(DE_NULL)
-    , m_draw_call_index_offset(DE_NULL)
-    , m_draw_call_index2_offset(DE_NULL)
-    , m_draw_call_index3_offset(DE_NULL)
-    , m_draw_call_index4_offset(DE_NULL)
-    , m_draw_call_index5_offset(DE_NULL)
-    , m_draw_call_vertex_offset(DE_NULL)
-    , m_draw_call_vertex2_offset(DE_NULL)
+    , m_draw_call_color_offset(nullptr)
+    , m_draw_call_index_offset(nullptr)
+    , m_draw_call_index2_offset(nullptr)
+    , m_draw_call_index3_offset(nullptr)
+    , m_draw_call_index4_offset(nullptr)
+    , m_draw_call_index5_offset(nullptr)
+    , m_draw_call_vertex_offset(nullptr)
+    , m_draw_call_vertex2_offset(nullptr)
     , m_to_height(128)
     , m_to_width(128)
-    , m_to_base_data(DE_NULL)
-    , m_to_ref_data(DE_NULL)
+    , m_to_base_data(nullptr)
+    , m_to_ref_data(nullptr)
 {
     static const glw::GLuint functional_index_data[] = /* used for a number of Functional Tests */
         {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22};
@@ -222,17 +222,17 @@ void DrawElementsBaseVertexTestBase::buildProgram(const char *fs_code, const cha
     m_fs_id = gl.createShader(GL_FRAGMENT_SHADER);
     m_vs_id = gl.createShader(GL_VERTEX_SHADER);
 
-    if (tc_code != DE_NULL)
+    if (tc_code != nullptr)
     {
         m_tc_id = gl.createShader(GL_TESS_CONTROL_SHADER);
     }
 
-    if (te_code != DE_NULL)
+    if (te_code != nullptr)
     {
         m_te_id = gl.createShader(GL_TESS_EVALUATION_SHADER);
     }
 
-    if (gs_code != DE_NULL)
+    if (gs_code != nullptr)
     {
         m_gs_id = gl.createShader(GL_GEOMETRY_SHADER);
     }
@@ -244,26 +244,26 @@ void DrawElementsBaseVertexTestBase::buildProgram(const char *fs_code, const cha
 
     /* Assign source code to the shader objects */
     gl.shaderSource(m_fs_id, 1,         /* count */
-                    &fs_code, DE_NULL); /* length */
+                    &fs_code, nullptr); /* length */
     gl.shaderSource(m_vs_id, 1,         /* count */
-                    &vs_code, DE_NULL); /* length */
+                    &vs_code, nullptr); /* length */
 
     if (m_tc_id != 0)
     {
         gl.shaderSource(m_tc_id, 1,         /* count */
-                        &tc_code, DE_NULL); /* length */
+                        &tc_code, nullptr); /* length */
     }
 
     if (m_te_id != 0)
     {
         gl.shaderSource(m_te_id, 1,         /* count */
-                        &te_code, DE_NULL); /* length */
+                        &te_code, nullptr); /* length */
     }
 
     if (m_gs_id != 0)
     {
         gl.shaderSource(m_gs_id, 1,         /* count */
-                        &gs_code, DE_NULL); /* length */
+                        &gs_code, nullptr); /* length */
     }
 
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call(s) failed.");
@@ -502,7 +502,7 @@ void DrawElementsBaseVertexTestBase::computeVBODataOffsets(bool use_clientside_i
                                               m_bo_functional_data_index_size + m_bo_functional2_data_index_size +
                                               m_bo_functional3_data_index_size + m_bo_functional4_data_index_size +
                                               m_bo_functional5_data_index_size);
-        m_draw_call_vertex_offset  = DE_NULL;
+        m_draw_call_vertex_offset  = nullptr;
         m_draw_call_vertex2_offset = (const glw::GLfloat *)(uintptr_t)m_bo_functional_data_vertex_size;
     }
 }
@@ -543,11 +543,11 @@ void DrawElementsBaseVertexTestBase::deinitPerTestObjects()
         m_fbo_id = 0;
     }
 
-    if (m_to_base_data != DE_NULL)
+    if (m_to_base_data != nullptr)
     {
         delete[] m_to_base_data;
 
-        m_to_base_data = DE_NULL;
+        m_to_base_data = nullptr;
     }
 
     if (m_to_base_id != 0)
@@ -557,11 +557,11 @@ void DrawElementsBaseVertexTestBase::deinitPerTestObjects()
         m_to_base_id = 0;
     }
 
-    if (m_to_ref_data != DE_NULL)
+    if (m_to_ref_data != nullptr)
     {
         delete[] m_to_ref_data;
 
-        m_to_ref_data = DE_NULL;
+        m_to_ref_data = nullptr;
     }
 
     if (m_to_ref_id != 0)
@@ -1081,7 +1081,7 @@ void DrawElementsBaseVertexTestBase::setUpFunctionalTestObjects(
                           m_bo_functional2_data_vertex_size + m_bo_functional2_data_index_size +
                           m_bo_functional3_data_index_size + m_bo_functional4_data_index_size +
                           m_bo_functional5_data_index_size + m_bo_functional_data_color_size,
-                      DE_NULL, /* data */
+                      nullptr, /* data */
                       GL_STATIC_DRAW);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 
@@ -1371,9 +1371,9 @@ void DrawElementsBaseVertexTestBase::setUpFunctionalTestObjects(
         }         /* for (all bodies) */
 
         /* Build the actual program */
-        buildProgram(fs_body.c_str(), vs_body.c_str(), use_tessellation_shader_stage ? tc_body.c_str() : DE_NULL,
-                     use_tessellation_shader_stage ? te_body.c_str() : DE_NULL,
-                     use_geometry_shader_stage ? gs_body.c_str() : DE_NULL);
+        buildProgram(fs_body.c_str(), vs_body.c_str(), use_tessellation_shader_stage ? tc_body.c_str() : nullptr,
+                     use_tessellation_shader_stage ? te_body.c_str() : nullptr,
+                     use_geometry_shader_stage ? gs_body.c_str() : nullptr);
 
         m_po_uses_gs_stage              = use_geometry_shader_stage;
         m_po_uses_tc_te_stages          = use_tessellation_shader_stage;
@@ -1496,7 +1496,7 @@ void DrawElementsBaseVertexTestBase::setUpNegativeTestObjects(bool use_clientsid
         GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() call failed.");
 
         gl.bufferData(GL_ARRAY_BUFFER, m_bo_negative_data_index_size + m_bo_negative_data_vertex_size,
-                      DE_NULL, /* data */
+                      nullptr, /* data */
                       GL_STATIC_DRAW);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 
@@ -1522,7 +1522,7 @@ void DrawElementsBaseVertexTestBase::setUpNegativeTestObjects(bool use_clientsid
     }
     else
     {
-        m_draw_call_vertex_offset = DE_NULL;
+        m_draw_call_vertex_offset = nullptr;
     }
 
     /* Set up the test program object */
@@ -1551,9 +1551,9 @@ void DrawElementsBaseVertexTestBase::setUpNegativeTestObjects(bool use_clientsid
         std::string vs_specialized_code     = specializeShader(1, &negative_vs_code);
         const char *vs_specialized_code_raw = vs_specialized_code.c_str();
 
-        buildProgram(fs_specialized_code_raw, vs_specialized_code_raw, DE_NULL, /* tc_code */
-                     DE_NULL,                                                   /* te_code */
-                     DE_NULL);                                                  /* gs_code */
+        buildProgram(fs_specialized_code_raw, vs_specialized_code_raw, nullptr, /* tc_code */
+                     nullptr,                                                   /* te_code */
+                     nullptr);                                                  /* gs_code */
     }
 
     /* Set up a vertex array object */
@@ -2507,7 +2507,7 @@ void DrawElementsBaseVertexNegativeActiveTransformFeedbackTest::init()
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() call failed");
 
     gl.bufferData(GL_ARRAY_BUFFER, 3 /* count */ * sizeof(float) * 4 /* components used by gl_Position */,
-                  DE_NULL, /* data */
+                  nullptr, /* data */
                   GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 

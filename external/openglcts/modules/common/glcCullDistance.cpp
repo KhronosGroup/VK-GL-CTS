@@ -95,7 +95,7 @@ void CullDistance::Utilities::buildProgram(const glw::Functions &gl, tcu::TestCo
 
         for (glw::GLuint n_shader_index = 0; n_shader_index < n_shaders_configuration; n_shader_index++)
         {
-            if (shaders_configuration[n_shader_index].body != DE_NULL)
+            if (shaders_configuration[n_shader_index].body != nullptr)
             {
                 /* Generate shader object */
                 shaders_configuration[n_shader_index].id = gl.createShader(shaders_configuration[n_shader_index].type);
@@ -106,7 +106,7 @@ void CullDistance::Utilities::buildProgram(const glw::Functions &gl, tcu::TestCo
 
                 /* Assign shader source code */
                 gl.shaderSource(shaders_configuration[n_shader_index].id, 1,           /* count */
-                                &shaders_configuration[n_shader_index].body, DE_NULL); /* length */
+                                &shaders_configuration[n_shader_index].body, nullptr); /* length */
                 GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed");
 
                 gl.compileShader(so_id);
@@ -127,7 +127,7 @@ void CullDistance::Utilities::buildProgram(const glw::Functions &gl, tcu::TestCo
 
                     log_array.resize(log_length + 1, 0);
 
-                    gl.getShaderInfoLog(so_id, log_length, DE_NULL, &log_array[0]);
+                    gl.getShaderInfoLog(so_id, log_length, nullptr, &log_array[0]);
                     GLU_EXPECT_NO_ERROR(gl.getError(), "glGetShaderInfoLog() call failed.");
 
                     log_string = std::string(&log_array[0]);
@@ -147,7 +147,7 @@ void CullDistance::Utilities::buildProgram(const glw::Functions &gl, tcu::TestCo
                 gl.attachShader(po_id, so_id);
 
                 GLU_EXPECT_NO_ERROR(gl.getError(), "glAttachShader() call failed");
-            } /* if (shaders_configuration[n_shader_index].body != DE_NULL) */
+            } /* if (shaders_configuration[n_shader_index].body != nullptr) */
         }     /* for (all shader object IDs) */
 
         /* Set transform feedback if requested */
@@ -181,7 +181,7 @@ void CullDistance::Utilities::buildProgram(const glw::Functions &gl, tcu::TestCo
                 log_array.resize(log_length + 1, 0);
 
                 /* Retreive compilation log */
-                gl.getProgramInfoLog(po_id, log_length, DE_NULL, &log_array[0]);
+                gl.getProgramInfoLog(po_id, log_length, nullptr, &log_array[0]);
                 GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramInfoLog() call failed.");
 
                 log_string = std::string(&log_array[0]);
@@ -195,7 +195,7 @@ void CullDistance::Utilities::buildProgram(const glw::Functions &gl, tcu::TestCo
                 /* Log shader source code of shaders involved */
                 for (glw::GLuint n_shader_index = 0; n_shader_index < n_shaders_configuration; n_shader_index++)
                 {
-                    if (shaders_configuration[n_shader_index].body != DE_NULL)
+                    if (shaders_configuration[n_shader_index].body != nullptr)
                     {
                         testCtx.getLog() << tcu::TestLog::Message << "Shader source code of type "
                                          << shaders_configuration[n_shader_index].type << " follows:\n"
@@ -600,7 +600,7 @@ void CullDistance::APICoverageTest::test()
                       m_bo_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() or glBindBufferBase() call(s) failed.");
 
-    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, DE_NULL, GL_STATIC_DRAW);
+    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, nullptr, GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 
     for (glw::GLuint n_to_id = 0; n_to_id < 2; /* CS, FBO */ ++n_to_id)
@@ -1069,10 +1069,10 @@ void CullDistance::APICoverageTest::test()
 
             /* Build the test program */
             CullDistance::Utilities::buildProgram(
-                gl, m_testCtx, current_stage.use_cs ? cs_body.c_str() : DE_NULL,
-                current_stage.use_fs ? fs_body.c_str() : DE_NULL, current_stage.use_gs ? gs_body.c_str() : DE_NULL,
-                current_stage.use_tc ? tc_body.c_str() : DE_NULL, current_stage.use_te ? te_body.c_str() : DE_NULL,
-                current_stage.use_vs ? vs_body.c_str() : DE_NULL, (current_stage.tf_output_name != NULL) ? 1 : 0,
+                gl, m_testCtx, current_stage.use_cs ? cs_body.c_str() : nullptr,
+                current_stage.use_fs ? fs_body.c_str() : nullptr, current_stage.use_gs ? gs_body.c_str() : nullptr,
+                current_stage.use_tc ? tc_body.c_str() : nullptr, current_stage.use_te ? te_body.c_str() : nullptr,
+                current_stage.use_vs ? vs_body.c_str() : nullptr, (current_stage.tf_output_name != NULL) ? 1 : 0,
                 (const glw::GLchar **)&current_stage.tf_output_name, &m_po_id);
 
             /* Bind the test program */
@@ -1108,7 +1108,7 @@ void CullDistance::APICoverageTest::test()
             /* Verify the result values */
             if (!current_stage.use_cs)
             {
-                glw::GLint *result_data_ptr = DE_NULL;
+                glw::GLint *result_data_ptr = nullptr;
 
                 /* Retrieve the data captured by Transform Feedback */
                 result_data_ptr = (glw::GLint *)gl.mapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, /* offset */
@@ -1475,11 +1475,11 @@ void CullDistance::FunctionalTest::buildPO(glw::GLuint clipdistances_array_size,
         "    gl_Position = vec4(2.0 * position.x - 1.0, 2.0 * position.y - 1.0, 0.0, 1.0);\n"
         "}\n";
 
-    std::string *shader_body_string_fs = DE_NULL;
-    std::string *shader_body_string_gs = DE_NULL;
-    std::string *shader_body_string_tc = DE_NULL;
-    std::string *shader_body_string_te = DE_NULL;
-    std::string *shader_body_string_vs = DE_NULL;
+    std::string *shader_body_string_fs = nullptr;
+    std::string *shader_body_string_gs = nullptr;
+    std::string *shader_body_string_tc = nullptr;
+    std::string *shader_body_string_te = nullptr;
+    std::string *shader_body_string_vs = nullptr;
 
     if (!m_isContextES)
     {
@@ -1937,19 +1937,19 @@ void CullDistance::FunctionalTest::buildPO(glw::GLuint clipdistances_array_size,
 
     /* Build the geometry shader */
     CullDistance::Utilities::buildProgram(
-        m_context.getRenderContext().getFunctions(), m_testCtx, DE_NULL, /* Compute shader                    */
-        shader_body_string_fs != DE_NULL ? shader_body_string_fs->c_str() :
-                                           DE_NULL, /* Fragment shader                   */
-        shader_body_string_gs != DE_NULL ? shader_body_string_gs->c_str() :
-                                           DE_NULL, /* Geometry shader                   */
-        shader_body_string_tc != DE_NULL ? shader_body_string_tc->c_str() :
-                                           DE_NULL, /* Tesselation control shader        */
-        shader_body_string_te != DE_NULL ? shader_body_string_te->c_str() :
-                                           DE_NULL, /* Tesselation evaluation shader     */
-        shader_body_string_vs != DE_NULL ? shader_body_string_vs->c_str() :
-                                           DE_NULL, /* Vertex shader                     */
+        m_context.getRenderContext().getFunctions(), m_testCtx, nullptr, /* Compute shader                    */
+        shader_body_string_fs != nullptr ? shader_body_string_fs->c_str() :
+                                           nullptr, /* Fragment shader                   */
+        shader_body_string_gs != nullptr ? shader_body_string_gs->c_str() :
+                                           nullptr, /* Geometry shader                   */
+        shader_body_string_tc != nullptr ? shader_body_string_tc->c_str() :
+                                           nullptr, /* Tesselation control shader        */
+        shader_body_string_te != nullptr ? shader_body_string_te->c_str() :
+                                           nullptr, /* Tesselation evaluation shader     */
+        shader_body_string_vs != nullptr ? shader_body_string_vs->c_str() :
+                                           nullptr, /* Vertex shader                     */
         0,                                          /* Transform feedback varyings count */
-        DE_NULL,                                    /* Transform feedback varyings       */
+        nullptr,                                    /* Transform feedback varyings       */
         &m_po_id                                    /* Program object id                 */
     );
 }
@@ -3044,7 +3044,7 @@ CullDistance::NegativeTest::NegativeTest(deqp::Context &context)
     : CullDistanceTestBase(context, "negative", "Cull Distance Negative Test")
     , m_fs_id(0)
     , m_po_id(0)
-    , m_temp_buffer(DE_NULL)
+    , m_temp_buffer(nullptr)
     , m_vs_id(0)
 {
     /* Left blank on purpose */
@@ -3076,11 +3076,11 @@ void CullDistance::NegativeTest::deinit()
         m_vs_id = 0;
     }
 
-    if (m_temp_buffer != DE_NULL)
+    if (m_temp_buffer != nullptr)
     {
         delete[] m_temp_buffer;
 
-        m_temp_buffer = DE_NULL;
+        m_temp_buffer = nullptr;
     }
 }
 
@@ -3238,7 +3238,7 @@ void CullDistance::NegativeTest::test()
     const char *fs_body_raw_ptr = fs_body_spec.c_str();
 
     gl.shaderSource(m_fs_id, 1,                 /* count */
-                    &fs_body_raw_ptr, DE_NULL); /* length */
+                    &fs_body_raw_ptr, nullptr); /* length */
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
     gl.compileShader(m_fs_id);
@@ -3317,7 +3317,7 @@ void CullDistance::NegativeTest::test()
         const char *vs_body_raw_ptr        = vs_body_string.c_str();
 
         gl.shaderSource(m_vs_id, 1,                 /* count */
-                        &vs_body_raw_ptr, DE_NULL); /* length */
+                        &vs_body_raw_ptr, nullptr); /* length */
         GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
         gl.compileShader(m_vs_id);
@@ -3344,14 +3344,14 @@ void CullDistance::NegativeTest::test()
 
             memset(m_temp_buffer, 0, buffer_size + 1);
 
-            gl.getShaderInfoLog(m_vs_id, buffer_size, DE_NULL, /* length */
+            gl.getShaderInfoLog(m_vs_id, buffer_size, nullptr, /* length */
                                 m_temp_buffer);
             GLU_EXPECT_NO_ERROR(gl.getError(), "glGetShaderInfoLog() call failed.");
 
             m_testCtx.getLog() << tcu::TestLog::Message << m_temp_buffer << tcu::TestLog::EndMessage;
 
             delete[] m_temp_buffer;
-            m_temp_buffer = DE_NULL;
+            m_temp_buffer = nullptr;
 
             /* Move on to the next iteration */
             continue;
@@ -3392,14 +3392,14 @@ void CullDistance::NegativeTest::test()
 
             memset(m_temp_buffer, 0, buffer_size + 1);
 
-            gl.getProgramInfoLog(m_po_id, buffer_size, DE_NULL, /* length */
+            gl.getProgramInfoLog(m_po_id, buffer_size, nullptr, /* length */
                                  m_temp_buffer);
             GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramInfoLog() call failed.");
 
             m_testCtx.getLog() << tcu::TestLog::Message << m_temp_buffer << tcu::TestLog::EndMessage;
 
             delete[] m_temp_buffer;
-            m_temp_buffer = DE_NULL;
+            m_temp_buffer = nullptr;
         }
     } /* for (all test items) */
 

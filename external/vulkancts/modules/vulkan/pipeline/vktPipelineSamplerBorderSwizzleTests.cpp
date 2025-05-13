@@ -1028,7 +1028,7 @@ tcu::TestStatus BorderSwizzleInstance::iterate(void)
         .setDefaultMultisampleState()
         .setupVertexInputState(&vertexInputInfo)
         .setupPreRasterizationShaderState(viewport, scissor, pipelineLayout, *renderPass, 0u, vertShader)
-        .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragShader, DE_NULL, DE_NULL, &specializationInfo)
+        .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragShader, nullptr, nullptr, &specializationInfo)
         .setupFragmentOutputState(*renderPass, 0u, &colorBlendInfo)
         .setMonolithicPipelineLayout(pipelineLayout)
         .buildPipeline();

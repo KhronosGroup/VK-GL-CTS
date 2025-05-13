@@ -66,7 +66,7 @@ static const char *getVerifierSuffix(QueryType type)
         return "isenabledi";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -367,9 +367,9 @@ BufferStartCase::IterateResult BufferStartCase::iterate(void)
             const tcu::ScopedLogSection section(m_testCtx.getLog(), "Generic", "After setting generic binding point");
 
             gl.glBindBuffer(m_bufferTarget, *bufferA);
-            gl.glBufferData(m_bufferTarget, 16, DE_NULL, GL_DYNAMIC_READ);
+            gl.glBufferData(m_bufferTarget, 16, nullptr, GL_DYNAMIC_READ);
             gl.glBindBuffer(m_bufferTarget, *bufferB);
-            gl.glBufferData(m_bufferTarget, 32, DE_NULL, GL_DYNAMIC_READ);
+            gl.glBufferData(m_bufferTarget, 32, nullptr, GL_DYNAMIC_READ);
             GLU_EXPECT_NO_ERROR(gl.glGetError(), "gen bufs");
 
             verifyStateIndexedInteger(result, gl, m_queryTarget, 0, 0, m_verifierType);
@@ -456,9 +456,9 @@ BufferSizeCase::IterateResult BufferSizeCase::iterate(void)
             const tcu::ScopedLogSection section(m_testCtx.getLog(), "Generic", "After setting generic binding point");
 
             gl.glBindBuffer(m_bufferTarget, *bufferA);
-            gl.glBufferData(m_bufferTarget, 16, DE_NULL, GL_DYNAMIC_READ);
+            gl.glBufferData(m_bufferTarget, 16, nullptr, GL_DYNAMIC_READ);
             gl.glBindBuffer(m_bufferTarget, *bufferB);
-            gl.glBufferData(m_bufferTarget, 32, DE_NULL, GL_DYNAMIC_READ);
+            gl.glBufferData(m_bufferTarget, 32, nullptr, GL_DYNAMIC_READ);
             GLU_EXPECT_NO_ERROR(gl.glGetError(), "gen bufs");
 
             verifyStateIndexedInteger(result, gl, m_queryTarget, 0, 0, m_verifierType);
