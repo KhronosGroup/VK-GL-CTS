@@ -35,11 +35,9 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
-#include "vkObjUtil.hpp"
 #include "tcuTexLookupVerifier.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuTestLog.hpp"
-#include "deSTLUtil.hpp"
 
 namespace vkt
 {
@@ -1574,12 +1572,19 @@ tcu::TestStatus ImageSamplingInstance::verifyImage(void)
         lookupPrecision.coordBits = tcu::IVec3(17, 17, 17);
         lookupPrecision.uvwBits   = tcu::IVec3(5, 5, 5);
         lookupPrecision.colorMask = m_componentMask;
+
+        tcu::IVec4 formatBitDepth(7); // Approximation for almost all compressed formats that seems to work well.
+        if (!isCompressedFormat(m_imageFormat))
+            formatBitDepth = tcu::getTextureFormatBitDepth(mapVkFormat(m_imageFormat));
+        else if (m_imageFormat == VK_FORMAT_BC5_UNORM_BLOCK || m_imageFormat == VK_FORMAT_BC5_SNORM_BLOCK)
+            formatBitDepth = tcu::IVec4(5); // Approximation, seems to work well.
+
         lookupPrecision.colorThreshold =
-            tcu::computeFixedPointThreshold(max((tcu::IVec4(8, 8, 8, 8) - (isNearestOnly ? 1 : 2)), tcu::IVec4(0))) /
+            tcu::computeFixedPointThreshold(
+                max((min(formatBitDepth, tcu::IVec4(8)) - (isNearestOnly ? 1 : 2)), tcu::IVec4(0))) /
             swizzleScaleBias(lookupScale, m_componentMapping, 1.0f);
 
-        if (m_imageFormat == VK_FORMAT_BC5_UNORM_BLOCK || m_imageFormat == VK_FORMAT_BC5_SNORM_BLOCK)
-            lookupPrecision.colorThreshold = tcu::Vec4(0.06f, 0.06f, 0.06f, 0.06f);
+        // Account for sRGB conversion precision.
         if (tcu::isSRGB(m_texture->getTextureFormat()))
             lookupPrecision.colorThreshold += tcu::Vec4(4.f / 255.f);
 
