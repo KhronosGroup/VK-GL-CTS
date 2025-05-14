@@ -783,8 +783,9 @@ BaseTestInstance::BaseTestInstance(Context &context, const Texture &texture, con
     , m_minalign(minalign)
     , m_bufferLoadUniform(bufferLoadUniform)
     , m_srcViewOffset(getViewOffset(context, format, m_bufferLoadUniform))
-    , m_dstViewOffset(
-          getViewOffset(context, formatHasThreeComponents(format) ? getSingleComponentFormat(format) : format, false))
+    , m_dstViewOffset(getViewOffset(
+          context, formatHasThreeComponents(format) && m_bufferLoadUniform ? getSingleComponentFormat(format) : format,
+          false))
 {
 }
 
@@ -883,8 +884,9 @@ uint32_t BaseTestInstance::getViewOffset(Context &context, const VkFormat format
         VkDeviceSize align            = uniform ? alignmentProperties.uniformTexelBufferOffsetAlignmentBytes :
                                                   alignmentProperties.storageTexelBufferOffsetAlignmentBytes;
 
-        VkDeviceSize texelSize = formatHasThreeComponents(format) ? tcu::getChannelSize(vk::mapVkFormat(format).type) :
-                                                                    tcu::getPixelSize(vk::mapVkFormat(format));
+        VkDeviceSize texelSize = formatHasThreeComponents(format) && uniform ?
+                                     tcu::getChannelSize(vk::mapVkFormat(format).type) :
+                                     tcu::getPixelSize(vk::mapVkFormat(format));
 
         if (singleTexelAlignment)
             align = de::min(align, texelSize);
@@ -1280,7 +1282,7 @@ void LoadStoreTest::checkSupport(Context &context) const
     if ((m_texture.type() == IMAGE_TYPE_BUFFER) && !(imageFormatProperties.bufferFeatures))
         TCU_THROW(NotSupportedError, "Underlying format not supported at all for buffers");
 
-    if (formatHasThreeComponents(m_format))
+    if (formatHasThreeComponents(m_format) && m_bufferLoadUniform)
     {
         // When the source buffer is three-component, the destination buffer is single-component.
         VkFormat dstFormat = getSingleComponentFormat(m_format);
@@ -1337,7 +1339,7 @@ void LoadStoreTest::checkSupport(Context &context) const
     if ((m_texture.type() == IMAGE_TYPE_BUFFER) && !(imageFormatProperties.bufferFeatures))
         TCU_THROW(NotSupportedError, "Underlying format not supported at all for buffers");
 
-    if (formatHasThreeComponents(m_format))
+    if (formatHasThreeComponents(m_format) && m_bufferLoadUniform)
     {
         // When the source buffer is three-component, the destination buffer is single-component.
         VkFormat dstFormat = getSingleComponentFormat(m_format);
@@ -1422,9 +1424,10 @@ void LoadStoreTest::initPrograms(SourceCollections &programCollection) const
         src << "layout (binding = 0" << maybeFmtQualStrReads << ") " << maybeRestrictStr << "readonly uniform "
             << imageTypeStr << " u_image0;\n";
 
-    // For three-component formats, the dst buffer is single-component and the shader expands the store into 3 component-wise stores.
-    // We always use the format qualifier for the dst buffer, except when splitting it up.
-    if (formatHasThreeComponents(m_format))
+    // For three-component formats used with UNIFORM_TEXEL_BUFFER, the dst buffer is single-component and the shader uses this
+    // dst buffer to create 3 component-wise stores. We always use the format qualifier for the dst buffer, except when splitting
+    // it up.
+    if (formatHasThreeComponents(m_format) && m_bufferLoadUniform)
         src << "layout (binding = 1) " << maybeRestrictStr << "writeonly uniform " << imageTypeStr << " u_image1;\n";
     else
         src << "layout (binding = 1" << maybeFmtQualStrWrites << ") " << maybeRestrictStr << "writeonly uniform "
@@ -2171,7 +2174,8 @@ VkDescriptorSetLayout BufferLoadStoreTestInstance::prepareDescriptors(void)
                            .addType(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER)
                            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
-    VkFormat dstFormat = formatHasThreeComponents(m_format) ? getSingleComponentFormat(m_format) : m_format;
+    VkFormat dstFormat =
+        formatHasThreeComponents(m_format) && m_bufferLoadUniform ? getSingleComponentFormat(m_format) : m_format;
 
     m_descriptorSet = makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout);
     m_bufferViewSrc = makeBufferView(vk, device, m_imageBuffer->get(), m_format, m_srcViewOffset, m_imageSizeBytes);
