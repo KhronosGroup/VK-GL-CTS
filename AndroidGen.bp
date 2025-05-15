@@ -290,6 +290,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/memory/vktMemoryPipelineBarrierTests.cpp",
         "external/vulkancts/modules/vulkan/memory/vktMemoryRequirementsTests.cpp",
         "external/vulkancts/modules/vulkan/memory/vktMemoryTests.cpp",
+        "external/vulkancts/modules/vulkan/memory/vktMemoryZeroInitializeDeviceMemoryTests.cpp",
         "external/vulkancts/modules/vulkan/memory_model/vktMemoryModelMessagePassing.cpp",
         "external/vulkancts/modules/vulkan/memory_model/vktMemoryModelPadding.cpp",
         "external/vulkancts/modules/vulkan/memory_model/vktMemoryModelSharedLayout.cpp",
