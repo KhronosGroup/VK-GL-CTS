@@ -2999,6 +2999,8 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     extensions.push_back("VK_KHR_buffer_device_address");
     extensions.push_back("VK_KHR_synchronization2");
     extensions.push_back("VK_EXT_descriptor_indexing");
+    extensions.push_back("VK_KHR_descriptor_update_template");
+    extensions.push_back("VK_KHR_maintenance3");
     extensions.push_back("VK_KHR_maintenance4");
 
     if (m_params.useMaintenance5)
