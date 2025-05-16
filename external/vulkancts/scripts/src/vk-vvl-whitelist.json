@@ -66,6 +66,69 @@
                 "Undefined-Value-StorageImage-FormatMismatch-ImageView"
              ],
             "description": "Warning about mismatched format handling in storage images. This is intentional for testing purposes."
+        },
+        {
+            "groups": [
+                "dEQP-VK.api.device_init.create_device_unsupported_features.mesh_shader_features_ext"
+            ],
+            "messages": [
+                "If multiviewMeshShader is VK_TRUE then multiview also needs to be VK_TRUE"
+            ],
+            "description": "Warning about not enabled VkPhysicalDeviceMultiviewFeaturesKHR::multiview feature, however, this behavior is intentional."
+        },
+        {
+            "groups": [
+                "dEQP-VK.pipeline.*.extended_dynamic_state.mesh_shader.*.null_*"
+            ],
+            "messages": [
+                "vkCreateGraphicsPipelines(): pCreateInfos[0].pMultisampleState is NULL, but pipeline is being created with fragment shader that uses samples"
+            ],
+            "description": "Warning about null at pMultisampleState  with pipeline that uses samples, however, this behavior is intentional."
+        },
+        {
+            "groups": [
+                "dEQP-VK.pipeline.*.extended_dynamic_state.*.null_multisample_state_*"
+            ],
+            "messages": [
+                "VUID-VkGraphicsPipelineCreateInfo-renderpass-06631"
+            ],
+            "description": "Warning about null pMultisampleState when alphaToOne feature is disabled but VK_DYNAMIC_STATE_ALPHA_TO_COVERAGE_ENABLE_EXT is not dynamic, this behavior is intentional."
+        },
+        {
+            "groups": [
+                "dEQP-VK.pipeline.*.extended_dynamic_state.*.null_multisample_state_no_alpha_to_one"
+            ],
+            "messages": [
+                "VUID-VkGraphicsPipelineCreateInfo-multisampledRenderToSingleSampled-06853"
+            ],
+            "description": "Warning about sample count mismatch between static pipeline (4 samples) and renderpass (1 sample) for 'to_one' sample transitions, however, this behavior is intentional."
+        },
+        {
+            "groups": [
+                "dEQP-VK.pipeline.*.multisample.multisampled_render_to_single_sampled.*"
+            ],
+            "messages": [
+                "VUID-VkSubpassDescription2-externalFormatResolve-09338"
+            ],
+            "description": "DOTO raport validaiton layers issue. VK_EXT_multisampled_render_to_single_sampled extension IS allowing single-sampled attachments to be used as resolve targets in multisampled rendering contexts including VK_SAMPLE_COUNT_1_BIT"
+        },
+        {
+            "groups": [
+                "dEQP-VK.pipeline.pipeline_library.graphics_library.misc.bind_null_descriptor_set.*"
+            ],
+            "messages": [
+                "VUID-VkGraphicsPipelineCreateInfo-pLibraries-06681"
+            ],
+            "description": "Testing edge cases in pipeline library linking. These tests intentionally create graphics pipeline libraries with NULL descriptor set in the same index to verify descriptor set binding functionality"
+        },
+        {
+            "groups": [
+                "dEQP-VK.pipeline.*.extended_dynamic_state.cmd_buffer_start.*_bind_unused_ms"
+            ],
+            "messages": [
+                "VUID-vkCmdDraw-pStrides-04913"
+            ],
+            "description": "Tests bind unused mesh shading pipeline before graphics pipeline, intentionally invalidating dynamic stride state to test pipeline binding edge cases."
         }
     ]
 }
