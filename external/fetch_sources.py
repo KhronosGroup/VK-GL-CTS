@@ -247,13 +247,14 @@ class SourceFile (Source):
         writeBinaryFile(dstPath, data)
 
 class GitRepo (Source):
-    def __init__(self, httpsUrl, sshUrl, revision, baseDir, extractDir = "src", removeTags = [], patch = ""):
+    def __init__(self, httpsUrl, sshUrl, revision, baseDir, extractDir = "src", removeTags = [], patch = "", postCheckout = None):
         Source.__init__(self, baseDir, extractDir)
         self.httpsUrl = httpsUrl
         self.sshUrl = sshUrl
         self.revision = revision
         self.removeTags = removeTags
         self.patch = patch
+        self.postCheckout = postCheckout
 
     def checkout(self, url, fullDstPath, force):
         print("Directory: " + fullDstPath)
@@ -301,6 +302,12 @@ class GitRepo (Source):
 
         try:
             self.checkout(url, fullDstPath, force)
+            if self.postCheckout:
+                if self.baseDir == "vulkan-validationlayers" and SYSTEM_NAME != "Linux":
+                    print(f"Skipping post checkout command for {self.baseDir} on {SYSTEM_NAME} platform")
+                else:
+                    print(f"Running post checkout command for {self.baseDir}: {self.postCheckout}")
+                    subprocess.check_call(self.postCheckout, shell=True, cwd=fullDstPath)
         except KeyboardInterrupt:
             # Propagate the exception to stop the process if possible.
             raise
@@ -351,7 +358,8 @@ PACKAGES = [
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
         "git@github.com:KhronosGroup/Vulkan-ValidationLayers.git",
         "68e4cdd8269c2af39aa16793c9089d1893eae972",
-        "vulkan-validationlayers"),
+        "vulkan-validationlayers",
+        postCheckout="python3 scripts/update_deps.py --dir external  --optional tests  --api vulkan"),
     GitRepo(
         "https://github.com/google/amber.git",
         "git@github.com:google/amber.git",
