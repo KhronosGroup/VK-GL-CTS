@@ -79,14 +79,19 @@ void checkAllSupported(const Extensions &supportedExtensions, const std::vector<
     }
 }
 
-std::vector<std::string> getRequiredWsiExtensions(const Extensions &supportedExtensions, vk::wsi::Type wsiType)
+std::vector<std::string> getRequiredWsiExtensions(Context &context, const Extensions &supportedExtensions,
+						  vk::wsi::Type wsiType)
 {
+    const uint32_t version    = context.getUsedApiVersion();
     std::vector<std::string> extensions;
 
     extensions.push_back("VK_KHR_surface");
     extensions.push_back(getExtensionName(wsiType));
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
+
+    if (!vk::isCoreInstanceExtension(version, "VK_KHR_get_physical_device_properties2"))
+        extensions.push_back("VK_KHR_get_physical_device_properties2");
 
     // VK_EXT_swapchain_colorspace adds new surface formats. Driver can enumerate
     // the formats regardless of whether VK_EXT_swapchain_colorspace was enabled,
@@ -882,7 +887,7 @@ tcu::TestStatus createSwapchainTest(Context &baseCtx, TestParameters params)
     bool isExtensionForPresentModeEnabled = false;
     std::vector<vk::VkExtensionProperties> supportedExtensions(
         enumerateInstanceExtensionProperties(baseCtx.getPlatformInterface(), nullptr));
-    std::vector<std::string> instExts = getRequiredWsiExtensions(supportedExtensions, params.wsiType);
+    std::vector<std::string> instExts = getRequiredWsiExtensions(baseCtx, supportedExtensions, params.wsiType);
     std::vector<std::string> devExts;
     devExts.push_back("VK_KHR_swapchain");
 
@@ -1284,7 +1289,7 @@ tcu::TestStatus basicRenderTest(Context &baseCtx, vk::wsi::Type wsiType)
 {
     std::vector<vk::VkExtensionProperties> supportedExtensions(
         enumerateInstanceExtensionProperties(baseCtx.getPlatformInterface(), nullptr));
-    std::vector<std::string> instExts = getRequiredWsiExtensions(supportedExtensions, wsiType);
+    std::vector<std::string> instExts = getRequiredWsiExtensions(baseCtx, supportedExtensions, wsiType);
     std::vector<std::string> devExts;
     devExts.push_back("VK_KHR_swapchain");
 

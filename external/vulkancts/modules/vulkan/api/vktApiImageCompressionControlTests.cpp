@@ -470,6 +470,9 @@ CustomInstance createInstanceWithWsi(Context &context, Type wsiType, const vecto
     extensions.push_back(getExtensionName(wsiType));
     extensions.push_back("VK_KHR_get_surface_capabilities2");
 
+    if (!vk::isCoreInstanceExtension(version, "VK_KHR_get_physical_device_properties2"))
+        extensions.push_back("VK_KHR_get_physical_device_properties2");
+
     vector<string> instanceExtensions;
     for (const auto &ext : extensions)
     {

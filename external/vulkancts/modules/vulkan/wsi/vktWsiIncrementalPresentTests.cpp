@@ -81,6 +81,7 @@ void checkAllSupported(const Extensions &supportedExtensions, const vector<strin
 
 CustomInstance createInstanceWithWsi(Context &context, const Extensions &supportedExtensions, vk::wsi::Type wsiType)
 {
+    const uint32_t version    = context.getUsedApiVersion();
     vector<string> extensions;
 
     extensions.push_back("VK_KHR_surface");
@@ -91,6 +92,9 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     // VUID-VkSwapchainCreateInfoKHR-imageColorSpace-parameter
     if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_EXT_swapchain_colorspace")))
         extensions.push_back("VK_EXT_swapchain_colorspace");
+
+    if (!vk::isCoreInstanceExtension(version, "VK_KHR_get_physical_device_properties2"))
+        extensions.push_back("VK_KHR_get_physical_device_properties2");
 
     checkAllSupported(supportedExtensions, extensions);
 

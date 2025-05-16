@@ -79,12 +79,16 @@ void checkAllSupported(const Extensions &supportedExtensions, const std::vector<
 CustomInstance createInstanceWithWsi(Context &context, const Extensions &supportedExtensions, Type wsiType,
                                      const VkAllocationCallbacks *pAllocator = nullptr)
 {
+    const uint32_t version    = context.getUsedApiVersion();
     std::vector<std::string> extensions;
 
     extensions.push_back("VK_KHR_surface");
     extensions.push_back(getExtensionName(wsiType));
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
+
+    if (!vk::isCoreInstanceExtension(version, "VK_KHR_get_physical_device_properties2"))
+        extensions.push_back("VK_KHR_get_physical_device_properties2");
 
     if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_KHR_get_surface_capabilities2")))
         extensions.push_back("VK_KHR_get_surface_capabilities2");

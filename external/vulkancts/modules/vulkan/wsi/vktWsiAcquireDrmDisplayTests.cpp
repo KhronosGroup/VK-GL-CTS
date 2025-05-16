@@ -81,7 +81,7 @@ public:
     tcu::TestStatus iterate(void) override;
 
 private:
-    CustomInstance createInstanceWithAcquireDrmDisplay(void);
+    CustomInstance createInstanceWithAcquireDrmDisplay(vkt::Context& context);
 
 #if DEQP_SUPPORT_DRM && !defined(CTS_USES_VULKANSC)
     LibDrm::FdPtr getDrmFdPtr(void);
@@ -120,7 +120,7 @@ private:
  *//*--------------------------------------------------------------------*/
 AcquireDrmDisplayTestInstance::AcquireDrmDisplayTestInstance(Context &context, const DrmTestIndex testId)
     : TestInstance(context)
-    , m_instance(createInstanceWithAcquireDrmDisplay())
+    , m_instance(createInstanceWithAcquireDrmDisplay(context))
     , m_vki(m_instance.getDriver())
     , m_physDevice(vk::chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
     , m_testId(testId)
@@ -176,14 +176,18 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::iterate(void)
 //  *
 //  * \return The created instance
 //  *//*--------------------------------------------------------------------*/
-CustomInstance AcquireDrmDisplayTestInstance::createInstanceWithAcquireDrmDisplay(void)
+CustomInstance AcquireDrmDisplayTestInstance::createInstanceWithAcquireDrmDisplay(vkt::Context& context)
 {
+    const uint32_t version    = context.getUsedApiVersion();
     vector<VkExtensionProperties> supportedExtensions =
         enumerateInstanceExtensionProperties(m_context.getPlatformInterface(), nullptr);
     vector<string> requiredExtensions = {
         "VK_EXT_acquire_drm_display",
         "VK_EXT_direct_mode_display",
     };
+
+    if (!vk::isCoreInstanceExtension(version, "VK_KHR_get_physical_device_properties2"))
+        requiredExtensions.push_back("VK_KHR_get_physical_device_properties2");
 
     for (const auto &extension : requiredExtensions)
         if (!isExtensionStructSupported(supportedExtensions, RequiredExtension(extension)))

@@ -153,6 +153,7 @@ vector<const char *> getRequiredWsiInstanceExtensions(vk::wsi::Type wsiType)
     extensions.push_back(getExtensionName(wsiType));
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
+    extensions.push_back("VK_KHR_get_physical_device_properties2");
     return extensions;
 }
 

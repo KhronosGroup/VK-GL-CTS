@@ -1999,12 +1999,16 @@ void checkAllSupported(const Extensions &supportedExtensions, const vector<strin
 CustomInstance createInstanceWithWsi(Context &context, const Extensions &supportedExtensions, Type wsiType,
                                      const VkAllocationCallbacks *pAllocator = nullptr)
 {
+    const uint32_t version    = context.getUsedApiVersion();
     vector<string> extensions;
 
     extensions.push_back("VK_KHR_surface");
     extensions.push_back(getExtensionName(wsiType));
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
+
+    if (!vk::isCoreInstanceExtension(version, "VK_KHR_get_physical_device_properties2"))
+        extensions.push_back("VK_KHR_get_physical_device_properties2");
 
     // VUID-vkCreateInstance-ppEnabledExtensionNames-01388
     if (wsiType == TYPE_DIRECT_DRM)
