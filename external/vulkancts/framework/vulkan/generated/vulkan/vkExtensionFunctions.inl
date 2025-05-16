@@ -1732,6 +1732,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_maintenance10")
+	{
+		return;
+	}
 	if (extName == "vulkan_video_codecs_common")
 	{
 		return;
@@ -4008,6 +4012,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_maintenance10")
+	{
+		functions.push_back("vkCmdEndRendering2KHR");
+		return;
+	}
 	if (extName == "vulkan_video_codecs_common")
 	{
 		return;
@@ -4461,4 +4470,5 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_present_metering",
 	"VK_EXT_fragment_density_map_offset",
 	"VK_EXT_zero_initialize_device_memory",
+	"VK_KHR_maintenance10",
 };

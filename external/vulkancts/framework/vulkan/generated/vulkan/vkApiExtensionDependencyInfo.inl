@@ -3892,6 +3892,18 @@ bool check_VK_EXT_zero_initialize_device_memory(const tcu::UVec2& v, const ExtPr
 	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
+bool check_VK_KHR_maintenance10(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_maintenance10"))
+		return true;
+
+	// depends attribute in xml: VK_VERSION_1_1
+	return isCompatibile(1, 1, v);
+}
+
 static const DependencyCheckVect deviceExtensionDependencies
 {
 	std::make_pair("VK_KHR_swapchain",										&check_VK_KHR_swapchain),
@@ -4175,6 +4187,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_KHR_robustness2",									&check_VK_KHR_robustness2),
 	std::make_pair("VK_EXT_fragment_density_map_offset",					&check_VK_EXT_fragment_density_map_offset),
 	std::make_pair("VK_EXT_zero_initialize_device_memory",					&check_VK_EXT_zero_initialize_device_memory),
+	std::make_pair("VK_KHR_maintenance10",									&check_VK_KHR_maintenance10),
 };
 
 static const std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>	releasedApiVersions[]	=
@@ -4591,4 +4604,5 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_NV_present_metering"),
 	std::make_tuple(1, 0, "VK_EXT_fragment_density_map_offset"),
 	std::make_tuple(1, 0, "VK_EXT_zero_initialize_device_memory"),
+	std::make_tuple(1, 1, "VK_KHR_maintenance10"),
 };

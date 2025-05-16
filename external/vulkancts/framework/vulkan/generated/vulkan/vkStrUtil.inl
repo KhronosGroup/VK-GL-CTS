@@ -1109,7 +1109,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance7Pro
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLayeredApiPropertiesListKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLayeredApiPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLayeredApiVulkanPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance10PropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance8FeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance10FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderingAreaInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDescriptorSetLayoutSupport& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderDrawParametersFeatures& value);
@@ -1672,7 +1674,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkDrmFormatModifierProperties2E
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferFormatProperties2ANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRenderingCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderingInfo& value);
-std::ostream&	operator<<	(std::ostream& s, const VkRenderingEndInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRenderingEndInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderingAttachmentInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderingFragmentShadingRateAttachmentInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderingFragmentDensityMapAttachmentInfoEXT& value);

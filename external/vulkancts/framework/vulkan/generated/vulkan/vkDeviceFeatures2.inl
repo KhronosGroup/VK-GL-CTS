@@ -673,6 +673,45 @@ tcu::TestStatus testPhysicalDeviceFeatureMaintenance8FeaturesKHR (Context& conte
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureMaintenance10FeaturesKHR (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceMaintenance10FeaturesKHR deviceMaintenance10FeaturesKHR[count];
+    const bool                               isMaintenance10FeaturesKHR = checkExtension(properties, "VK_KHR_maintenance10");
+
+    if (!isMaintenance10FeaturesKHR)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceMaintenance10FeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceMaintenance10FeaturesKHR));
+        deviceMaintenance10FeaturesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_10_FEATURES_KHR;
+        deviceMaintenance10FeaturesKHR[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceMaintenance10FeaturesKHR[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceMaintenance10FeaturesKHR[0] << TestLog::EndMessage;
+
+    if (
+        deviceMaintenance10FeaturesKHR[0].maintenance10 != deviceMaintenance10FeaturesKHR[1].maintenance10)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceMaintenance10FeaturesKHR");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureShaderDrawParametersFeatures (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -6469,6 +6508,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "maintenance6_features", testPhysicalDeviceFeatureMaintenance6Features);
 	addFunctionCase(testGroup, "maintenance7_features_khr", testPhysicalDeviceFeatureMaintenance7FeaturesKHR);
 	addFunctionCase(testGroup, "maintenance8_features_khr", testPhysicalDeviceFeatureMaintenance8FeaturesKHR);
+	addFunctionCase(testGroup, "maintenance10_features_khr", testPhysicalDeviceFeatureMaintenance10FeaturesKHR);
 	addFunctionCase(testGroup, "shader_draw_parameters_features", testPhysicalDeviceFeatureShaderDrawParametersFeatures);
 	addFunctionCase(testGroup, "shader_float16_int8_features", testPhysicalDeviceFeatureShaderFloat16Int8Features);
 	addFunctionCase(testGroup, "host_query_reset_features", testPhysicalDeviceFeatureHostQueryResetFeatures);

@@ -1388,9 +1388,19 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceLayeredApiVulkanProp
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_VULKAN_PROPERTIES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceMaintenance10PropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_10_PROPERTIES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceMaintenance8FeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_8_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceMaintenance10FeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_10_FEATURES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkRenderingAreaInfo> (void)
@@ -3928,9 +3938,9 @@ template<> VkStructureType getStructureType<VkRenderingInfo> (void)
 	return VK_STRUCTURE_TYPE_RENDERING_INFO;
 }
 
-template<> VkStructureType getStructureType<VkRenderingEndInfoEXT> (void)
+template<> VkStructureType getStructureType<VkRenderingEndInfoKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_RENDERING_END_INFO_EXT;
+	return VK_STRUCTURE_TYPE_RENDERING_END_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkRenderingAttachmentInfo> (void)

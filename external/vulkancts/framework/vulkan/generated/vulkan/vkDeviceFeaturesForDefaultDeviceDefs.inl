@@ -213,5 +213,6 @@ const VkPhysicalDeviceRobustness2FeaturesKHR&							getRobustness2Features						
 const VkPhysicalDevicePresentMeteringFeaturesNV&						getPresentMeteringFeaturesNV						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePresentMeteringFeaturesNV>();						}
 const VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT&				getFragmentDensityMapOffsetFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT>();			}
 const VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT&			getZeroInitializeDeviceMemoryFeaturesEXT			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT>();			}
+const VkPhysicalDeviceMaintenance10FeaturesKHR&							getMaintenance10Features							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceMaintenance10FeaturesKHR>();						}
 const VkPhysicalDeviceProtectedMemoryFeatures&							getProtectedMemoryFeatures							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceProtectedMemoryFeatures>();						}
 const VkPhysicalDeviceShaderDrawParametersFeatures&						getShaderDrawParametersFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderDrawParametersFeatures>();					}

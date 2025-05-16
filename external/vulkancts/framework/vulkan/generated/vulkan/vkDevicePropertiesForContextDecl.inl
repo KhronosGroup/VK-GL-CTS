@@ -98,5 +98,6 @@ const vk::VkPhysicalDeviceImageAlignmentControlPropertiesMESA&			getImageAlignme
 const vk::VkPhysicalDeviceCooperativeMatrix2PropertiesNV&				getCooperativeMatrix2PropertiesNV				(void) const;
 const vk::VkPhysicalDeviceRobustness2PropertiesKHR&						getRobustness2Properties						(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT&		getFragmentDensityMapOffsetPropertiesEXT		(void) const;
+const vk::VkPhysicalDeviceMaintenance10PropertiesKHR&					getMaintenance10Properties						(void) const;
 const vk::VkPhysicalDeviceSubgroupProperties&							getSubgroupProperties							(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryProperties&					getProtectedMemoryProperties					(void) const;

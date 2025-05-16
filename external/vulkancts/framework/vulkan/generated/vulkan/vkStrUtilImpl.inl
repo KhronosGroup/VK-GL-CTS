@@ -2539,8 +2539,10 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_SET_PRESENT_CONFIG_NV:												return "VK_STRUCTURE_TYPE_SET_PRESENT_CONFIG_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_METERING_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_METERING_FEATURES_NV";
-		case VK_STRUCTURE_TYPE_RENDERING_END_INFO_EXT:												return "VK_STRUCTURE_TYPE_RENDERING_END_INFO_EXT";
+		case VK_STRUCTURE_TYPE_RENDERING_END_INFO_KHR:												return "VK_STRUCTURE_TYPE_RENDERING_END_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_DEVICE_MEMORY_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_DEVICE_MEMORY_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_10_FEATURES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_10_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_10_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_10_PROPERTIES_KHR";
 		default:																					return nullptr;
 	}
 }
@@ -11039,12 +11041,31 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLayeredApiVulka
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance10PropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceMaintenance10PropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance8FeaturesKHR& value)
 {
 	s << "VkPhysicalDeviceMaintenance8FeaturesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmaintenance8 = " << value.maintenance8 << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance10FeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceMaintenance10FeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaintenance10 = " << value.maintenance10 << '\n';
 	s << '}';
 	return s;
 }
@@ -18139,9 +18160,9 @@ std::ostream& operator<< (std::ostream& s, const VkRenderingInfo& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkRenderingEndInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkRenderingEndInfoKHR& value)
 {
-	s << "VkRenderingEndInfoEXT = {\n";
+	s << "VkRenderingEndInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << '}';

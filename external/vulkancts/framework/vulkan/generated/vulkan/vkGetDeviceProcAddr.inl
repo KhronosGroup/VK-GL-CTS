@@ -611,6 +611,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetMemoryMetalHandleEXT",
 		"vkGetMemoryMetalHandlePropertiesEXT",
 		"vkCmdEndRendering2EXT",
+		"vkCmdEndRendering2KHR",
     };
 
     bool fail = false;

@@ -3514,11 +3514,24 @@ struct VkPhysicalDeviceLayeredApiVulkanPropertiesKHR
 	VkPhysicalDeviceProperties2	properties;
 };
 
+struct VkPhysicalDeviceMaintenance10PropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+};
+
 struct VkPhysicalDeviceMaintenance8FeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		maintenance8;
+};
+
+struct VkPhysicalDeviceMaintenance10FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		maintenance10;
 };
 
 struct VkRenderingAreaInfo
@@ -8672,7 +8685,7 @@ struct VkPipelineRenderingCreateInfo
 	VkFormat		stencilAttachmentFormat;
 };
 
-struct VkRenderingEndInfoEXT
+struct VkRenderingEndInfoKHR
 {
 	VkStructureType	sType;
 	const void*		pNext;
@@ -12644,6 +12657,8 @@ typedef VkFormatProperties3 VkFormatProperties3KHR;
 typedef VkPipelineRenderingCreateInfo VkPipelineRenderingCreateInfoKHR;
 
 typedef VkRenderingInfo VkRenderingInfoKHR;
+
+typedef VkRenderingEndInfoKHR VkRenderingEndInfoEXT;
 
 typedef VkRenderingAttachmentInfo VkRenderingAttachmentInfoKHR;
 

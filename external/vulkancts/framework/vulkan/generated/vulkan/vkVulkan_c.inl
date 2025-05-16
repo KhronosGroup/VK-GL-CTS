@@ -3152,8 +3152,10 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_EXT = 1000425000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_EXT = 1000425001,
     VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_EXT = 1000425002,
-    VK_STRUCTURE_TYPE_RENDERING_END_INFO_EXT = 1000619003,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_DEVICE_MEMORY_FEATURES_EXT = 1000620000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_10_FEATURES_KHR = 1000630000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_10_PROPERTIES_KHR = 1000630001,
+    VK_STRUCTURE_TYPE_RENDERING_END_INFO_KHR = 1000619003,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
   // VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT is a deprecated alias
@@ -3395,6 +3397,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO_KHR = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO,
     VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO_KHR = VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO,
     VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO_KHR = VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO,
+    VK_STRUCTURE_TYPE_RENDERING_END_INFO_EXT = VK_STRUCTURE_TYPE_RENDERING_END_INFO_KHR,
     VK_STRUCTURE_TYPE_MAX_ENUM = 0x7FFFFFFF
 } VkStructureType;
 
@@ -14883,6 +14886,35 @@ typedef struct VkPhysicalDeviceRobustness2PropertiesKHR {
 
 
 
+// VK_KHR_maintenance10 is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_maintenance10 1
+#define VK_KHR_MAINTENANCE_10_SPEC_VERSION 1
+#define VK_KHR_MAINTENANCE_10_EXTENSION_NAME "VK_KHR_maintenance10"
+typedef struct VkPhysicalDeviceMaintenance10FeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           maintenance10;
+} VkPhysicalDeviceMaintenance10FeaturesKHR;
+
+typedef struct VkPhysicalDeviceMaintenance10PropertiesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+} VkPhysicalDeviceMaintenance10PropertiesKHR;
+
+typedef struct VkRenderingEndInfoKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+} VkRenderingEndInfoKHR;
+
+typedef void (VKAPI_PTR *PFN_vkCmdEndRendering2KHR)(VkCommandBuffer                   commandBuffer, const VkRenderingEndInfoKHR*        pRenderingEndInfo);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR void VKAPI_CALL vkCmdEndRendering2KHR(
+    VkCommandBuffer                             commandBuffer,
+    const VkRenderingEndInfoKHR*                pRenderingEndInfo);
+#endif
+
+
 // VK_EXT_debug_report is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_debug_report 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDebugReportCallbackEXT)
@@ -23525,17 +23557,14 @@ typedef struct VkPhysicalDevicePresentMeteringFeaturesNV {
 #define VK_EXT_fragment_density_map_offset 1
 #define VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET_SPEC_VERSION 1
 #define VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET_EXTENSION_NAME "VK_EXT_fragment_density_map_offset"
-typedef struct VkRenderingEndInfoEXT {
-    VkStructureType    sType;
-    const void*        pNext;
-} VkRenderingEndInfoEXT;
+typedef VkRenderingEndInfoKHR VkRenderingEndInfoEXT;
 
-typedef void (VKAPI_PTR *PFN_vkCmdEndRendering2EXT)(VkCommandBuffer                   commandBuffer, const VkRenderingEndInfoEXT*        pRenderingEndInfo);
+typedef void (VKAPI_PTR *PFN_vkCmdEndRendering2EXT)(VkCommandBuffer                   commandBuffer, const VkRenderingEndInfoKHR*        pRenderingEndInfo);
 
 #ifndef VK_NO_PROTOTYPES
 VKAPI_ATTR void VKAPI_CALL vkCmdEndRendering2EXT(
     VkCommandBuffer                             commandBuffer,
-    const VkRenderingEndInfoEXT*                pRenderingEndInfo);
+    const VkRenderingEndInfoKHR*                pRenderingEndInfo);
 #endif
 
 

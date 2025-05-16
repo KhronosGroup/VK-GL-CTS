@@ -465,7 +465,7 @@ DestroyCudaFunctionNVFunc									destroyCudaFunctionNV;
 CmdCudaLaunchKernelNVFunc									cmdCudaLaunchKernelNV;
 CmdBeginRenderingFunc										cmdBeginRendering;
 CmdEndRenderingFunc											cmdEndRendering;
-CmdEndRendering2EXTFunc										cmdEndRendering2EXT;
+CmdEndRendering2KHRFunc										cmdEndRendering2KHR;
 GetDescriptorSetLayoutHostMappingInfoVALVEFunc				getDescriptorSetLayoutHostMappingInfoVALVE;
 GetDescriptorSetHostMappingVALVEFunc						getDescriptorSetHostMappingVALVE;
 CreateMicromapEXTFunc										createMicromapEXT;

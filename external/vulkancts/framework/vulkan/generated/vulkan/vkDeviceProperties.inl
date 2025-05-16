@@ -232,6 +232,7 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceMaintenance7PropertiesKHR>(
 template<> void initPropertyFromBlob<VkPhysicalDeviceLayeredApiPropertiesListKHR>(VkPhysicalDeviceLayeredApiPropertiesListKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceLayeredApiPropertiesKHR>(VkPhysicalDeviceLayeredApiPropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceLayeredApiVulkanPropertiesKHR>(VkPhysicalDeviceLayeredApiVulkanPropertiesKHR&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceMaintenance10PropertiesKHR>(VkPhysicalDeviceMaintenance10PropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceExternalMemoryHostPropertiesEXT>(VkPhysicalDeviceExternalMemoryHostPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceConservativeRasterizationPropertiesEXT>(VkPhysicalDeviceConservativeRasterizationPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceShaderCorePropertiesAMD>(VkPhysicalDeviceShaderCorePropertiesAMD&, const AllPropertiesBlobs&) {}
@@ -400,6 +401,7 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceImageAlignmentControlPr
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceCooperativeMatrix2PropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_PROPERTIES_NV, VK_NV_COOPERATIVE_MATRIX_2_EXTENSION_NAME, VK_NV_COOPERATIVE_MATRIX_2_SPEC_VERSION}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceRobustness2PropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_PROPERTIES_KHR, VK_KHR_ROBUSTNESS_2_EXTENSION_NAME, VK_KHR_ROBUSTNESS_2_SPEC_VERSION}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_EXT, VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET_EXTENSION_NAME, VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET_SPEC_VERSION}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMaintenance10PropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_10_PROPERTIES_KHR, VK_KHR_MAINTENANCE_10_EXTENSION_NAME, VK_KHR_MAINTENANCE_10_SPEC_VERSION}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceSubgroupProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES, DECL_SUBGROUP_EXTENSION_NAME, 0}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceProtectedMemoryProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES, DECL_PROTECTED_MEMORY_EXTENSION_NAME, 0}; }
 
@@ -501,6 +503,7 @@ static const PropertyStructCreationData propertyStructCreationArray[] =
 	{ createPropertyStructWrapper<VkPhysicalDeviceCooperativeMatrix2PropertiesNV>, VK_NV_COOPERATIVE_MATRIX_2_EXTENSION_NAME, VK_NV_COOPERATIVE_MATRIX_2_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceRobustness2PropertiesKHR>, VK_KHR_ROBUSTNESS_2_EXTENSION_NAME, VK_KHR_ROBUSTNESS_2_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT>, VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET_EXTENSION_NAME, VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET_SPEC_VERSION },
+	{ createPropertyStructWrapper<VkPhysicalDeviceMaintenance10PropertiesKHR>, VK_KHR_MAINTENANCE_10_EXTENSION_NAME, VK_KHR_MAINTENANCE_10_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceSubgroupProperties>, DECL_SUBGROUP_EXTENSION_NAME, 0 },
 	{ createPropertyStructWrapper<VkPhysicalDeviceProtectedMemoryProperties>, DECL_PROTECTED_MEMORY_EXTENSION_NAME, 0 },
 };
