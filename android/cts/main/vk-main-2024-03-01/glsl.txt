@@ -164,6 +164,10 @@ dEQP-VK.glsl.bfloat16.constant.vertex
 dEQP-VK.glsl.bfloat16.dot.vec2
 dEQP-VK.glsl.bfloat16.dot.vec3
 dEQP-VK.glsl.bfloat16.dot.vec4
+dEQP-VK.glsl.bfloat16.various.access_chains
+dEQP-VK.glsl.bfloat16.various.composites
+dEQP-VK.glsl.bfloat16.various.function_call
+dEQP-VK.glsl.bfloat16.various.swizzling
 dEQP-VK.glsl.builtin.precision.atan2_y_subnormal.highp.scalar
 dEQP-VK.glsl.builtin.precision.atan2_y_subnormal.highp.vec2
 dEQP-VK.glsl.builtin.precision.atan2_y_subnormal.highp.vec3

@@ -1698,6 +1698,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/shader_object/vktShaderObjectTests.cpp",
         "external/vulkancts/modules/vulkan/shaderexecutor/vktAtomicOperationTests.cpp",
         "external/vulkancts/modules/vulkan/shaderexecutor/vktOpaqueTypeIndexingTests.cpp",
+        "external/vulkancts/modules/vulkan/shaderexecutor/vktShaderBFloat16ComboTests.cpp",
         "external/vulkancts/modules/vulkan/shaderexecutor/vktShaderBFloat16ConstantTests.cpp",
         "external/vulkancts/modules/vulkan/shaderexecutor/vktShaderBFloat16DotTests.cpp",
         "external/vulkancts/modules/vulkan/shaderexecutor/vktShaderBFloat16Tests.cpp",
