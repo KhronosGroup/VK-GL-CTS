@@ -384,7 +384,7 @@ Move<VkImage> makeImage(const DeviceInterface &vk, VkDevice device, VkDeviceSize
     return createImage(vk, device, &colorImageParams);
 }
 
-Move<VkBuffer> makeBuffer(const DeviceInterface &vk, VkDevice device, VkDeviceSize size, uint32_t queueFamilyIndex)
+Move<VkBuffer> makeBufferQF(const DeviceInterface &vk, VkDevice device, VkDeviceSize size, uint32_t queueFamilyIndex)
 {
     const VkBufferCreateInfo bufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                                // VkStructureType sType;
@@ -745,7 +745,7 @@ tcu::TestStatus testMemoryMapping(Context &context, const TestConfig config)
             }
             else if (config.allocationKind == ALLOCATION_KIND_DEDICATED_BUFFER)
             {
-                buffer = makeBuffer(vkd, device, allocationSize, queueFamilyIndex);
+                buffer = makeBufferQF(vkd, device, allocationSize, queueFamilyIndex);
                 req    = getBufferMemoryRequirements(vkd, device, buffer);
             }
             allocationSize             = req.size;

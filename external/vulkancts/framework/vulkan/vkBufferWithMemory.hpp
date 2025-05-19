@@ -27,9 +27,16 @@
 #include "vkDefs.hpp"
 
 #include "vkMemUtil.hpp"
+#include "vkObjUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
+
+#include "deSTLUtil.hpp"
+
+#include <memory>
+#include <vector>
+#include <cstring>
 
 namespace vk
 {
@@ -105,6 +112,26 @@ private:
     BufferWithMemory(const BufferWithMemory &);
     BufferWithMemory operator=(const BufferWithMemory &);
 };
+
+// Convenience function to fill a buffer with the contents of a vector.
+template <class T>
+std::unique_ptr<BufferWithMemory> makeBufferWithMemory(const vk::DeviceInterface &vk, const vk::VkDevice device,
+                                                       vk::Allocator &allocator, const std::vector<T> &bufferData,
+                                                       VkBufferUsageFlags usage)
+{
+    const auto bufferSize = static_cast<VkDeviceSize>(de::dataSize(bufferData));
+    const auto bufferInfo = makeBufferCreateInfo(bufferSize, usage);
+    std::unique_ptr<BufferWithMemory> bufferPtr(
+        new BufferWithMemory(vk, device, allocator, bufferInfo, MemoryRequirement::HostVisible));
+    {
+        auto &bufferAlloc = bufferPtr->getAllocation();
+        memcpy(bufferAlloc.getHostPtr(), de::dataOrNull(bufferData), de::dataSize(bufferData));
+        flushAlloc(vk, device, bufferAlloc);
+    }
+
+    return bufferPtr;
+}
+
 } // namespace vk
 
 #endif // _VKBUFFERWITHMEMORY_HPP
