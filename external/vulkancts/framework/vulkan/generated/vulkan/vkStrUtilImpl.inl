@@ -56,6 +56,7 @@ template<> const char*	getTypeName<VkVideoSessionKHR>					(void) { return "VkVid
 template<> const char*	getTypeName<VkVideoSessionParametersKHR>		(void) { return "VkVideoSessionParametersKHR";		}
 template<> const char*	getTypeName<VkCudaModuleNV>						(void) { return "VkCudaModuleNV";					}
 template<> const char*	getTypeName<VkCudaFunctionNV>					(void) { return "VkCudaFunctionNV";					}
+template<> const char*	getTypeName<VkExternalComputeQueueNV>			(void) { return "VkExternalComputeQueueNV";			}
 
 namespace pt
 {
@@ -2122,6 +2123,12 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_CUDA_LAUNCH_INFO_NV:													return "VK_STRUCTURE_TYPE_CUDA_LAUNCH_INFO_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUDA_KERNEL_LAUNCH_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUDA_KERNEL_LAUNCH_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUDA_KERNEL_LAUNCH_PROPERTIES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUDA_KERNEL_LAUNCH_PROPERTIES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_SHADING_FEATURES_QCOM:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_SHADING_FEATURES_QCOM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_SHADING_PROPERTIES_QCOM:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_SHADING_PROPERTIES_QCOM";
+		case VK_STRUCTURE_TYPE_RENDER_PASS_TILE_SHADING_CREATE_INFO_QCOM:							return "VK_STRUCTURE_TYPE_RENDER_PASS_TILE_SHADING_CREATE_INFO_QCOM";
+		case VK_STRUCTURE_TYPE_PER_TILE_BEGIN_INFO_QCOM:											return "VK_STRUCTURE_TYPE_PER_TILE_BEGIN_INFO_QCOM";
+		case VK_STRUCTURE_TYPE_PER_TILE_END_INFO_QCOM:												return "VK_STRUCTURE_TYPE_PER_TILE_END_INFO_QCOM";
+		case VK_STRUCTURE_TYPE_DISPATCH_TILE_INFO_QCOM:												return "VK_STRUCTURE_TYPE_DISPATCH_TILE_INFO_QCOM";
 		case VK_STRUCTURE_TYPE_QUERY_LOW_LATENCY_SUPPORT_NV:										return "VK_STRUCTURE_TYPE_QUERY_LOW_LATENCY_SUPPORT_NV";
 		case VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECT_CREATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECT_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECTS_INFO_EXT:										return "VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECTS_INFO_EXT";
@@ -2467,6 +2474,10 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_VIDEO_FORMAT_AV1_QUANTIZATION_MAP_PROPERTIES_KHR:					return "VK_STRUCTURE_TYPE_VIDEO_FORMAT_AV1_QUANTIZATION_MAP_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUANTIZATION_MAP_FEATURES_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUANTIZATION_MAP_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_EXTERNAL_COMPUTE_QUEUE_DEVICE_CREATE_INFO_NV:						return "VK_STRUCTURE_TYPE_EXTERNAL_COMPUTE_QUEUE_DEVICE_CREATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_EXTERNAL_COMPUTE_QUEUE_CREATE_INFO_NV:								return "VK_STRUCTURE_TYPE_EXTERNAL_COMPUTE_QUEUE_CREATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_EXTERNAL_COMPUTE_QUEUE_DATA_PARAMS_NV:								return "VK_STRUCTURE_TYPE_EXTERNAL_COMPUTE_QUEUE_DATA_PARAMS_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_COMPUTE_QUEUE_PROPERTIES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_COMPUTE_QUEUE_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMMAND_BUFFER_INHERITANCE_FEATURES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMMAND_BUFFER_INHERITANCE_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_FEATURES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_FEATURES_KHR";
@@ -2801,6 +2812,7 @@ const char* getObjectTypeName (VkObjectType value)
 		case VK_OBJECT_TYPE_OPTICAL_FLOW_SESSION_NV:			return "VK_OBJECT_TYPE_OPTICAL_FLOW_SESSION_NV";
 		case VK_OBJECT_TYPE_SHADER_EXT:							return "VK_OBJECT_TYPE_SHADER_EXT";
 		case VK_OBJECT_TYPE_PIPELINE_BINARY_KHR:				return "VK_OBJECT_TYPE_PIPELINE_BINARY_KHR";
+		case VK_OBJECT_TYPE_EXTERNAL_COMPUTE_QUEUE_NV:			return "VK_OBJECT_TYPE_EXTERNAL_COMPUTE_QUEUE_NV";
 		case VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_EXT:		return "VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_EXT";
 		case VK_OBJECT_TYPE_INDIRECT_EXECUTION_SET_EXT:			return "VK_OBJECT_TYPE_INDIRECT_EXECUTION_SET_EXT";
 		default:												return nullptr;
@@ -2922,6 +2934,7 @@ tcu::Format::Bitfield<32> getSubpassDescriptionFlagsStr (VkSubpassDescriptionFla
 		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_EXT,	"VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_EXT"),
 		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_EXT,	"VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_EXT"),
 		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_ENABLE_LEGACY_DITHERING_BIT_EXT,						"VK_SUBPASS_DESCRIPTION_ENABLE_LEGACY_DITHERING_BIT_EXT"),
+		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_TILE_SHADING_APRON_BIT_QCOM,							"VK_SUBPASS_DESCRIPTION_TILE_SHADING_APRON_BIT_QCOM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3541,6 +3554,8 @@ tcu::Format::Bitfield<64> getAccessFlags2Str (VkAccessFlags2 value)
 		tcu::Format::BitDesc(VK_ACCESS_2_OPTICAL_FLOW_WRITE_BIT_NV,						"VK_ACCESS_2_OPTICAL_FLOW_WRITE_BIT_NV"),
 		tcu::Format::BitDesc(VK_ACCESS_2_MICROMAP_READ_BIT_EXT,							"VK_ACCESS_2_MICROMAP_READ_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_MICROMAP_WRITE_BIT_EXT,						"VK_ACCESS_2_MICROMAP_WRITE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_ACCESS_2_SHADER_TILE_ATTACHMENT_READ_BIT_QCOM,			"VK_ACCESS_2_SHADER_TILE_ATTACHMENT_READ_BIT_QCOM"),
+		tcu::Format::BitDesc(VK_ACCESS_2_SHADER_TILE_ATTACHMENT_WRITE_BIT_QCOM,			"VK_ACCESS_2_SHADER_TILE_ATTACHMENT_WRITE_BIT_QCOM"),
 	};
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -4219,6 +4234,16 @@ const char* getDepthClampModeEXTName (VkDepthClampModeEXT value)
 		case VK_DEPTH_CLAMP_MODE_USER_DEFINED_RANGE_EXT:	return "VK_DEPTH_CLAMP_MODE_USER_DEFINED_RANGE_EXT";
 		default:											return nullptr;
 	}
+}
+
+tcu::Format::Bitfield<32> getTileShadingRenderPassFlagsQCOMStr (VkTileShadingRenderPassFlagsQCOM value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_TILE_SHADING_RENDER_PASS_ENABLE_BIT_QCOM,				"VK_TILE_SHADING_RENDER_PASS_ENABLE_BIT_QCOM"),
+		tcu::Format::BitDesc(VK_TILE_SHADING_RENDER_PASS_PER_TILE_EXECUTION_BIT_QCOM,	"VK_TILE_SHADING_RENDER_PASS_PER_TILE_EXECUTION_BIT_QCOM"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
 const char* getCooperativeVectorMatrixLayoutNVName (VkCooperativeVectorMatrixLayoutNV value)
@@ -20759,6 +20784,80 @@ std::ostream& operator<< (std::ostream& s, const VkConvertCooperativeVectorMatri
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceTileShadingFeaturesQCOM& value)
+{
+	s << "VkPhysicalDeviceTileShadingFeaturesQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttileShading = " << value.tileShading << '\n';
+	s << "\ttileShadingFragmentStage = " << value.tileShadingFragmentStage << '\n';
+	s << "\ttileShadingColorAttachments = " << value.tileShadingColorAttachments << '\n';
+	s << "\ttileShadingDepthAttachments = " << value.tileShadingDepthAttachments << '\n';
+	s << "\ttileShadingStencilAttachments = " << value.tileShadingStencilAttachments << '\n';
+	s << "\ttileShadingInputAttachments = " << value.tileShadingInputAttachments << '\n';
+	s << "\ttileShadingSampledAttachments = " << value.tileShadingSampledAttachments << '\n';
+	s << "\ttileShadingPerTileDraw = " << value.tileShadingPerTileDraw << '\n';
+	s << "\ttileShadingPerTileDispatch = " << value.tileShadingPerTileDispatch << '\n';
+	s << "\ttileShadingDispatchTile = " << value.tileShadingDispatchTile << '\n';
+	s << "\ttileShadingApron = " << value.tileShadingApron << '\n';
+	s << "\ttileShadingAnisotropicApron = " << value.tileShadingAnisotropicApron << '\n';
+	s << "\ttileShadingAtomicOps = " << value.tileShadingAtomicOps << '\n';
+	s << "\ttileShadingImageProcessing = " << value.tileShadingImageProcessing << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceTileShadingPropertiesQCOM& value)
+{
+	s << "VkPhysicalDeviceTileShadingPropertiesQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxApronSize = " << value.maxApronSize << '\n';
+	s << "\tpreferNonCoherent = " << value.preferNonCoherent << '\n';
+	s << "\ttileGranularity = " << value.tileGranularity << '\n';
+	s << "\tmaxTileShadingRate = " << value.maxTileShadingRate << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderPassTileShadingCreateInfoQCOM& value)
+{
+	s << "VkRenderPassTileShadingCreateInfoQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getTileShadingRenderPassFlagsQCOMStr(value.flags) << '\n';
+	s << "\ttileApronSize = " << value.tileApronSize << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPerTileBeginInfoQCOM& value)
+{
+	s << "VkPerTileBeginInfoQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPerTileEndInfoQCOM& value)
+{
+	s << "VkPerTileEndInfoQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDispatchTileInfoQCOM& value)
+{
+	s << "VkDispatchTileInfoQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkSetPresentConfigNV& value)
 {
 	s << "VkSetPresentConfigNV = {\n";
@@ -20776,6 +20875,47 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePresentMetering
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpresentMetering = " << value.presentMetering << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExternalComputeQueueDeviceCreateInfoNV& value)
+{
+	s << "VkExternalComputeQueueDeviceCreateInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\treservedExternalQueues = " << value.reservedExternalQueues << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExternalComputeQueueCreateInfoNV& value)
+{
+	s << "VkExternalComputeQueueCreateInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpreferredQueue = " << value.preferredQueue << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExternalComputeQueueDataParamsNV& value)
+{
+	s << "VkExternalComputeQueueDataParamsNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdeviceIndex = " << value.deviceIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalComputeQueuePropertiesNV& value)
+{
+	s << "VkPhysicalDeviceExternalComputeQueuePropertiesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\texternalDataSize = " << value.externalDataSize << '\n';
+	s << "\tmaxExternalQueues = " << value.maxExternalQueues << '\n';
 	s << '}';
 	return s;
 }

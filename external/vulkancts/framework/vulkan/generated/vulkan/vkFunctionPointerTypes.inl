@@ -728,3 +728,9 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryMetalHandlePropertiesEXTFun
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCooperativeVectorPropertiesNVFunc)					(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeVectorPropertiesNV* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ConvertCooperativeVectorMatrixNVFunc)									(VkDevice device, const VkConvertCooperativeVectorMatrixInfoNV* pInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdConvertCooperativeVectorMatrixNVFunc)								(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkConvertCooperativeVectorMatrixInfoNV* pInfos);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDispatchTileQCOMFunc)												(VkCommandBuffer commandBuffer);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginPerTileExecutionQCOMFunc)										(VkCommandBuffer commandBuffer, const VkPerTileBeginInfoQCOM* pPerTileBeginInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndPerTileExecutionQCOMFunc)										(VkCommandBuffer commandBuffer, const VkPerTileEndInfoQCOM* pPerTileEndInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateExternalComputeQueueNVFunc)										(VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkExternalComputeQueueNV* pExternalQueue);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyExternalComputeQueueNVFunc)										(VkDevice device, VkExternalComputeQueueNV externalQueue, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetExternalComputeQueueDataNVFunc)										(VkExternalComputeQueueNV externalQueue, VkExternalComputeQueueDataParamsNV* params, void* pData);

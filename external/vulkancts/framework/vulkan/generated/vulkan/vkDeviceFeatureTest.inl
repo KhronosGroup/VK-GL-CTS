@@ -9276,6 +9276,61 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCooperativeVectorFeatures
 }
 
 
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTileShadingFeaturesQCOM (Context& context)
+{
+    const PlatformInterface&                vkp = context.getPlatformInterface();
+    tcu::TestLog&                            log = context.getTestContext().getLog();
+    tcu::ResultCollector                    resultCollector            (log);
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
+    const InstanceDriver&                    instanceDriver            (instance.getDriver());
+    const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const uint32_t                            queueFamilyIndex = 0;
+    const uint32_t                            queueCount = 1;
+    const float                                queuePriority = 1.0f;
+    const DeviceFeatures                    deviceFeaturesAll        (context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), true);
+    const VkPhysicalDeviceFeatures2            deviceFeatures2 = deviceFeaturesAll.getCoreFeatures2();
+    int                                        numErrors = 0;
+    const tcu::CommandLine&                    commandLine = context.getTestContext().getCommandLine();
+    bool                                    isSubProcess = context.getTestContext().getCommandLine().isSubProcess();
+
+
+    VkPhysicalDeviceFeatures emptyDeviceFeatures;
+    deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+    // Only non-core extensions will be used when creating the device.
+    const auto& extensionNames = context.getDeviceCreationExtensions();
+    DE_UNREF(extensionNames); // In some cases this is not used.
+
+    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceTileShadingFeaturesQCOM>()))
+    {
+        static const Feature features[] =
+        {
+        FEATURE_ITEM (VkPhysicalDeviceTileShadingFeaturesQCOM, tileShading),
+        FEATURE_ITEM (VkPhysicalDeviceTileShadingFeaturesQCOM, tileShadingFragmentStage),
+        FEATURE_ITEM (VkPhysicalDeviceTileShadingFeaturesQCOM, tileShadingColorAttachments),
+        FEATURE_ITEM (VkPhysicalDeviceTileShadingFeaturesQCOM, tileShadingDepthAttachments),
+        FEATURE_ITEM (VkPhysicalDeviceTileShadingFeaturesQCOM, tileShadingStencilAttachments),
+        FEATURE_ITEM (VkPhysicalDeviceTileShadingFeaturesQCOM, tileShadingInputAttachments),
+        FEATURE_ITEM (VkPhysicalDeviceTileShadingFeaturesQCOM, tileShadingSampledAttachments),
+        FEATURE_ITEM (VkPhysicalDeviceTileShadingFeaturesQCOM, tileShadingPerTileDraw),
+        FEATURE_ITEM (VkPhysicalDeviceTileShadingFeaturesQCOM, tileShadingPerTileDispatch),
+        FEATURE_ITEM (VkPhysicalDeviceTileShadingFeaturesQCOM, tileShadingDispatchTile),
+        FEATURE_ITEM (VkPhysicalDeviceTileShadingFeaturesQCOM, tileShadingApron),
+        FEATURE_ITEM (VkPhysicalDeviceTileShadingFeaturesQCOM, tileShadingAnisotropicApron),
+        FEATURE_ITEM (VkPhysicalDeviceTileShadingFeaturesQCOM, tileShadingAtomicOps),
+        FEATURE_ITEM (VkPhysicalDeviceTileShadingFeaturesQCOM, tileShadingImageProcessing),
+        };
+        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceTileShadingFeaturesQCOM*>(featuresStruct);
+        checkFeatures(vkp, instance, instanceDriver, physicalDevice, 14, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion(), commandLine);
+    }
+
+    if (numErrors > 0)
+        return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
 tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPresentMeteringFeaturesNV (Context& context)
 {
     const PlatformInterface&                vkp = context.getPlatformInterface();
@@ -9535,6 +9590,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "vertex_attribute_robustness_features_ext", createDeviceWithUnsupportedFeaturesTestVertexAttributeRobustnessFeaturesEXT);
 	addFunctionCase(testGroup, "depth_clamp_zero_one_features_khr", createDeviceWithUnsupportedFeaturesTestDepthClampZeroOneFeaturesKHR);
 	addFunctionCase(testGroup, "cooperative_vector_features_nv", createDeviceWithUnsupportedFeaturesTestCooperativeVectorFeaturesNV);
+	addFunctionCase(testGroup, "tile_shading_features_qcom", createDeviceWithUnsupportedFeaturesTestTileShadingFeaturesQCOM);
 	addFunctionCase(testGroup, "present_metering_features_nv", createDeviceWithUnsupportedFeaturesTestPresentMeteringFeaturesNV);
 }
 

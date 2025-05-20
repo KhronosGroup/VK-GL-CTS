@@ -5023,6 +5023,36 @@ template<> VkStructureType getStructureType<VkConvertCooperativeVectorMatrixInfo
 	return VK_STRUCTURE_TYPE_CONVERT_COOPERATIVE_VECTOR_MATRIX_INFO_NV;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceTileShadingFeaturesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_SHADING_FEATURES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceTileShadingPropertiesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_SHADING_PROPERTIES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkRenderPassTileShadingCreateInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_RENDER_PASS_TILE_SHADING_CREATE_INFO_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPerTileBeginInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PER_TILE_BEGIN_INFO_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPerTileEndInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PER_TILE_END_INFO_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkDispatchTileInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_DISPATCH_TILE_INFO_QCOM;
+}
+
 template<> VkStructureType getStructureType<VkSetPresentConfigNV> (void)
 {
 	return VK_STRUCTURE_TYPE_SET_PRESENT_CONFIG_NV;
@@ -5031,5 +5061,25 @@ template<> VkStructureType getStructureType<VkSetPresentConfigNV> (void)
 template<> VkStructureType getStructureType<VkPhysicalDevicePresentMeteringFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_METERING_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkExternalComputeQueueDeviceCreateInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_EXTERNAL_COMPUTE_QUEUE_DEVICE_CREATE_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkExternalComputeQueueCreateInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_EXTERNAL_COMPUTE_QUEUE_CREATE_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkExternalComputeQueueDataParamsNV> (void)
+{
+	return VK_STRUCTURE_TYPE_EXTERNAL_COMPUTE_QUEUE_DATA_PARAMS_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceExternalComputeQueuePropertiesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_COMPUTE_QUEUE_PROPERTIES_NV;
 }
 

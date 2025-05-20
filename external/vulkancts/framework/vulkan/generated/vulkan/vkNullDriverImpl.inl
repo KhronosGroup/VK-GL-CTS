@@ -355,6 +355,12 @@ VKAPI_ATTR VkResult VKAPI_CALL createExecutionGraphPipelinesAMDX (VkDevice devic
 	VK_NULL_RETURN((allocateNonDispHandleArray<Pipeline, VkPipeline>(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createExternalComputeQueueNV (VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkExternalComputeQueueNV* pExternalQueue)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pExternalQueue = allocateHandle<ExternalComputeQueueNV, VkExternalComputeQueueNV>(device, pCreateInfo, pAllocator)));
+}
+
 VKAPI_ATTR void VKAPI_CALL destroyInstance (VkInstance instance, const VkAllocationCallbacks* pAllocator)
 {
 	freeHandle<Instance, VkInstance>(instance, pAllocator);
@@ -627,6 +633,12 @@ VKAPI_ATTR void VKAPI_CALL destroyShaderEXT (VkDevice device, VkShaderEXT shader
 {
 	DE_UNREF(device);
 	freeNonDispHandle<ShaderEXT, VkShaderEXT>(shader, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyExternalComputeQueueNV (VkDevice device, VkExternalComputeQueueNV externalQueue, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeHandle<ExternalComputeQueueNV, VkExternalComputeQueueNV>(externalQueue, pAllocator);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL enumerateInstanceVersion (uint32_t* pApiVersion)
@@ -4421,6 +4433,30 @@ VKAPI_ATTR void VKAPI_CALL cmdConvertCooperativeVectorMatrixNV (VkCommandBuffer 
 	DE_UNREF(pInfos);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdDispatchTileQCOM (VkCommandBuffer commandBuffer)
+{
+	DE_UNREF(commandBuffer);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdBeginPerTileExecutionQCOM (VkCommandBuffer commandBuffer, const VkPerTileBeginInfoQCOM* pPerTileBeginInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pPerTileBeginInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdEndPerTileExecutionQCOM (VkCommandBuffer commandBuffer, const VkPerTileEndInfoQCOM* pPerTileEndInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pPerTileEndInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL getExternalComputeQueueDataNV (VkExternalComputeQueueNV externalQueue, VkExternalComputeQueueDataParamsNV* params, void* pData)
+{
+	DE_UNREF(externalQueue);
+	DE_UNREF(params);
+	DE_UNREF(pData);
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -4428,6 +4464,7 @@ static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkEnumerateInstanceVersion,				enumerateInstanceVersion),
 	VK_NULL_FUNC_ENTRY(vkEnumerateInstanceLayerProperties,		enumerateInstanceLayerProperties),
 	VK_NULL_FUNC_ENTRY(vkEnumerateInstanceExtensionProperties,	enumerateInstanceExtensionProperties),
+	VK_NULL_FUNC_ENTRY(vkGetExternalComputeQueueDataNV,			getExternalComputeQueueDataNV),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
@@ -5053,5 +5090,10 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetMemoryMetalHandlePropertiesEXT,							getMemoryMetalHandlePropertiesEXT),
 	VK_NULL_FUNC_ENTRY(vkConvertCooperativeVectorMatrixNV,							convertCooperativeVectorMatrixNV),
 	VK_NULL_FUNC_ENTRY(vkCmdConvertCooperativeVectorMatrixNV,						cmdConvertCooperativeVectorMatrixNV),
+	VK_NULL_FUNC_ENTRY(vkCmdDispatchTileQCOM,										cmdDispatchTileQCOM),
+	VK_NULL_FUNC_ENTRY(vkCmdBeginPerTileExecutionQCOM,								cmdBeginPerTileExecutionQCOM),
+	VK_NULL_FUNC_ENTRY(vkCmdEndPerTileExecutionQCOM,								cmdEndPerTileExecutionQCOM),
+	VK_NULL_FUNC_ENTRY(vkCreateExternalComputeQueueNV,								createExternalComputeQueueNV),
+	VK_NULL_FUNC_ENTRY(vkDestroyExternalComputeQueueNV,								destroyExternalComputeQueueNV),
 };
 

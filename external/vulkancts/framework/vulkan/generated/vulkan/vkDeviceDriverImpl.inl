@@ -2762,3 +2762,28 @@ void DeviceDriver::cmdConvertCooperativeVectorMatrixNV (VkCommandBuffer commandB
 {
     m_vk.cmdConvertCooperativeVectorMatrixNV(commandBuffer, infoCount, pInfos);
 }
+
+void DeviceDriver::cmdDispatchTileQCOM (VkCommandBuffer commandBuffer) const
+{
+    m_vk.cmdDispatchTileQCOM(commandBuffer);
+}
+
+void DeviceDriver::cmdBeginPerTileExecutionQCOM (VkCommandBuffer commandBuffer, const VkPerTileBeginInfoQCOM* pPerTileBeginInfo) const
+{
+    m_vk.cmdBeginPerTileExecutionQCOM(commandBuffer, pPerTileBeginInfo);
+}
+
+void DeviceDriver::cmdEndPerTileExecutionQCOM (VkCommandBuffer commandBuffer, const VkPerTileEndInfoQCOM* pPerTileEndInfo) const
+{
+    m_vk.cmdEndPerTileExecutionQCOM(commandBuffer, pPerTileEndInfo);
+}
+
+VkResult DeviceDriver::createExternalComputeQueueNV (VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkExternalComputeQueueNV* pExternalQueue) const
+{
+    return m_vk.createExternalComputeQueueNV(device, pCreateInfo, pAllocator, pExternalQueue);
+}
+
+void DeviceDriver::destroyExternalComputeQueueNV (VkDevice device, VkExternalComputeQueueNV externalQueue, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyExternalComputeQueueNV(device, externalQueue, pAllocator);
+}

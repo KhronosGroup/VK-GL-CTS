@@ -10643,6 +10643,62 @@ struct VkConvertCooperativeVectorMatrixInfoNV
 	size_t								dstStride;
 };
 
+struct VkPhysicalDeviceTileShadingFeaturesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		tileShading;
+	VkBool32		tileShadingFragmentStage;
+	VkBool32		tileShadingColorAttachments;
+	VkBool32		tileShadingDepthAttachments;
+	VkBool32		tileShadingStencilAttachments;
+	VkBool32		tileShadingInputAttachments;
+	VkBool32		tileShadingSampledAttachments;
+	VkBool32		tileShadingPerTileDraw;
+	VkBool32		tileShadingPerTileDispatch;
+	VkBool32		tileShadingDispatchTile;
+	VkBool32		tileShadingApron;
+	VkBool32		tileShadingAnisotropicApron;
+	VkBool32		tileShadingAtomicOps;
+	VkBool32		tileShadingImageProcessing;
+};
+
+struct VkPhysicalDeviceTileShadingPropertiesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxApronSize;
+	VkBool32		preferNonCoherent;
+	VkExtent2D		tileGranularity;
+	VkExtent2D		maxTileShadingRate;
+};
+
+struct VkRenderPassTileShadingCreateInfoQCOM
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkTileShadingRenderPassFlagsQCOM	flags;
+	VkExtent2D							tileApronSize;
+};
+
+struct VkPerTileBeginInfoQCOM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+};
+
+struct VkPerTileEndInfoQCOM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+};
+
+struct VkDispatchTileInfoQCOM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+};
+
 struct VkSetPresentConfigNV
 {
 	VkStructureType	sType;
@@ -10656,6 +10712,35 @@ struct VkPhysicalDevicePresentMeteringFeaturesNV
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		presentMetering;
+};
+
+struct VkExternalComputeQueueDeviceCreateInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		reservedExternalQueues;
+};
+
+struct VkExternalComputeQueueCreateInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkQueue			preferredQueue;
+};
+
+struct VkExternalComputeQueueDataParamsNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		deviceIndex;
+};
+
+struct VkPhysicalDeviceExternalComputeQueuePropertiesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		externalDataSize;
+	uint32_t		maxExternalQueues;
 };
 
 struct StdVideoH264SpsVuiFlags

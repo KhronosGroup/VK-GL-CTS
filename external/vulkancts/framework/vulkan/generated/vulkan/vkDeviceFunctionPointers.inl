@@ -529,3 +529,8 @@ GetMemoryMetalHandleEXTFunc									getMemoryMetalHandleEXT;
 GetMemoryMetalHandlePropertiesEXTFunc						getMemoryMetalHandlePropertiesEXT;
 ConvertCooperativeVectorMatrixNVFunc						convertCooperativeVectorMatrixNV;
 CmdConvertCooperativeVectorMatrixNVFunc						cmdConvertCooperativeVectorMatrixNV;
+CmdDispatchTileQCOMFunc										cmdDispatchTileQCOM;
+CmdBeginPerTileExecutionQCOMFunc							cmdBeginPerTileExecutionQCOM;
+CmdEndPerTileExecutionQCOMFunc								cmdEndPerTileExecutionQCOM;
+CreateExternalComputeQueueNVFunc							createExternalComputeQueueNV;
+DestroyExternalComputeQueueNVFunc							destroyExternalComputeQueueNV;

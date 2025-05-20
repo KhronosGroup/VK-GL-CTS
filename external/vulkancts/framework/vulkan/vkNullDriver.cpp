@@ -274,6 +274,7 @@ VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Shader, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, EXT);
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectExecutionSet, EXT);
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, PipelineBinary, KHR)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, ExternalComputeQueue, NV)
 #endif // CTS_USES_VULKANSC
 
 class Instance

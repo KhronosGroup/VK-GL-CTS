@@ -48,6 +48,7 @@ const vk::VkPhysicalDeviceTexelBufferAlignmentProperties&				getTexelBufferAlign
 const vk::VkPhysicalDeviceRobustness2PropertiesEXT&						getRobustness2PropertiesEXT						(void) const;
 const vk::VkPhysicalDeviceCustomBorderColorPropertiesEXT&				getCustomBorderColorPropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceCudaKernelLaunchPropertiesNV&					getCudaKernelLaunchPropertiesNV					(void) const;
+const vk::VkPhysicalDeviceTileShadingPropertiesQCOM&					getTileShadingPropertiesQCOM					(void) const;
 const vk::VkPhysicalDeviceDescriptorBufferPropertiesEXT&				getDescriptorBufferPropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT&			getGraphicsPipelineLibraryPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR&		getFragmentShaderBarycentricProperties			(void) const;
@@ -88,6 +89,7 @@ const vk::VkPhysicalDeviceVertexAttributeDivisorProperties&				getVertexAttribut
 const vk::VkPhysicalDeviceLayeredDriverPropertiesMSFT&					getLayeredDriverPropertiesMSFT					(void) const;
 const vk::VkPhysicalDeviceLineRasterizationProperties&					getLineRasterizationProperties					(void) const;
 const vk::VkPhysicalDeviceMaintenance6Properties&						getMaintenance6Properties						(void) const;
+const vk::VkPhysicalDeviceExternalComputeQueuePropertiesNV&				getExternalComputeQueuePropertiesNV				(void) const;
 const vk::VkPhysicalDeviceMaintenance7PropertiesKHR&					getMaintenance7Properties						(void) const;
 const vk::VkPhysicalDeviceClusterAccelerationStructurePropertiesNV&		getClusterAccelerationStructurePropertiesNV		(void) const;
 const vk::VkPhysicalDevicePartitionedAccelerationStructurePropertiesNV&	getPartitionedAccelerationStructurePropertiesNV	(void) const;

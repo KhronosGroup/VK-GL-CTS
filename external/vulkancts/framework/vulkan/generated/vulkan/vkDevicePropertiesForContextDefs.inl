@@ -48,6 +48,7 @@ const vk::VkPhysicalDeviceTexelBufferAlignmentProperties&				Context::getTexelBu
 const vk::VkPhysicalDeviceRobustness2PropertiesEXT&						Context::getRobustness2PropertiesEXT						(void) const { return m_device->getRobustness2PropertiesEXT();						}
 const vk::VkPhysicalDeviceCustomBorderColorPropertiesEXT&				Context::getCustomBorderColorPropertiesEXT					(void) const { return m_device->getCustomBorderColorPropertiesEXT();				}
 const vk::VkPhysicalDeviceCudaKernelLaunchPropertiesNV&					Context::getCudaKernelLaunchPropertiesNV					(void) const { return m_device->getCudaKernelLaunchPropertiesNV();					}
+const vk::VkPhysicalDeviceTileShadingPropertiesQCOM&					Context::getTileShadingPropertiesQCOM						(void) const { return m_device->getTileShadingPropertiesQCOM();						}
 const vk::VkPhysicalDeviceDescriptorBufferPropertiesEXT&				Context::getDescriptorBufferPropertiesEXT					(void) const { return m_device->getDescriptorBufferPropertiesEXT();					}
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT&			Context::getGraphicsPipelineLibraryPropertiesEXT			(void) const { return m_device->getGraphicsPipelineLibraryPropertiesEXT();			}
 const vk::VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR&		Context::getFragmentShaderBarycentricProperties				(void) const { return m_device->getFragmentShaderBarycentricProperties();			}
@@ -88,6 +89,7 @@ const vk::VkPhysicalDeviceVertexAttributeDivisorProperties&				Context::getVerte
 const vk::VkPhysicalDeviceLayeredDriverPropertiesMSFT&					Context::getLayeredDriverPropertiesMSFT						(void) const { return m_device->getLayeredDriverPropertiesMSFT();					}
 const vk::VkPhysicalDeviceLineRasterizationProperties&					Context::getLineRasterizationProperties						(void) const { return m_device->getLineRasterizationProperties();					}
 const vk::VkPhysicalDeviceMaintenance6Properties&						Context::getMaintenance6Properties							(void) const { return m_device->getMaintenance6Properties();						}
+const vk::VkPhysicalDeviceExternalComputeQueuePropertiesNV&				Context::getExternalComputeQueuePropertiesNV				(void) const { return m_device->getExternalComputeQueuePropertiesNV();				}
 const vk::VkPhysicalDeviceMaintenance7PropertiesKHR&					Context::getMaintenance7Properties							(void) const { return m_device->getMaintenance7Properties();						}
 const vk::VkPhysicalDeviceClusterAccelerationStructurePropertiesNV&		Context::getClusterAccelerationStructurePropertiesNV		(void) const { return m_device->getClusterAccelerationStructurePropertiesNV();		}
 const vk::VkPhysicalDevicePartitionedAccelerationStructurePropertiesNV&	Context::getPartitionedAccelerationStructurePropertiesNV	(void) const { return m_device->getPartitionedAccelerationStructurePropertiesNV();	}

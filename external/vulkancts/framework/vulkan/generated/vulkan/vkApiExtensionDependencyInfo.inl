@@ -2250,6 +2250,18 @@ bool check_VK_NV_device_diagnostics_config(const tcu::UVec2& v, const ExtPropVec
 	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
+bool check_VK_QCOM_tile_shading(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_QCOM_tile_shading"))
+		return true;
+
+	// depends attribute in xml: VK_QCOM_tile_properties,VK_KHR_get_physical_device_properties2
+	return isSupported(vDEP, "VK_QCOM_tile_properties") || (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+}
+
 bool check_VK_KHR_synchronization2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	if (isCompatibile(1, 3, v))
@@ -4005,6 +4017,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_pipeline_creation_cache_control",				&check_VK_EXT_pipeline_creation_cache_control),
 	std::make_pair("VK_KHR_video_encode_queue",								&check_VK_KHR_video_encode_queue),
 	std::make_pair("VK_NV_device_diagnostics_config",						&check_VK_NV_device_diagnostics_config),
+	std::make_pair("VK_QCOM_tile_shading",									&check_VK_QCOM_tile_shading),
 	std::make_pair("VK_KHR_synchronization2",								&check_VK_KHR_synchronization2),
 	std::make_pair("VK_EXT_descriptor_buffer",								&check_VK_EXT_descriptor_buffer),
 	std::make_pair("VK_EXT_graphics_pipeline_library",						&check_VK_EXT_graphics_pipeline_library),
@@ -4394,6 +4407,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_NV_device_diagnostics_config"),
 	std::make_tuple(1, 0, "VK_QCOM_render_pass_store_ops"),
 	std::make_tuple(1, 0, "VK_NV_cuda_kernel_launch"),
+	std::make_tuple(1, 0, "VK_QCOM_tile_shading"),
 	std::make_tuple(1, 0, "VK_NV_low_latency"),
 	std::make_tuple(1, 0, "VK_EXT_metal_objects"),
 	std::make_tuple(1, 0, "VK_KHR_synchronization2"),
@@ -4527,6 +4541,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_NV_display_stereo"),
 	std::make_tuple(1, 0, "VK_KHR_video_encode_quantization_map"),
 	std::make_tuple(1, 0, "VK_NV_raw_access_chains"),
+	std::make_tuple(1, 0, "VK_NV_external_compute_queue"),
 	std::make_tuple(1, 0, "VK_KHR_shader_relaxed_extended_instruction"),
 	std::make_tuple(1, 0, "VK_NV_command_buffer_inheritance"),
 	std::make_tuple(1, 1, "VK_KHR_maintenance7"),
