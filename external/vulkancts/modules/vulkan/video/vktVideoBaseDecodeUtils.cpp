@@ -3683,6 +3683,15 @@ int32_t VkParserVideoPictureParameters::Release()
 shared_ptr<VideoBaseDecoder> createBasicDecoder(DeviceContext *deviceContext, const VkVideoCoreProfile *profile,
                                                 size_t framesToCheck, bool resolutionChange)
 {
+    VkVideoCapabilitiesKHR videoCapabilities;
+    VkVideoDecodeCapabilitiesKHR videoDecodeCapabilities;
+    VkResult res =
+        util::getVideoDecodeCapabilities(*deviceContext, *profile, videoCapabilities, videoDecodeCapabilities);
+    if (res != VK_SUCCESS)
+        TCU_THROW(NotSupportedError, "Implementation does not support this video profile");
+
+    bool separateReferenceImages = videoCapabilities.flags & VK_VIDEO_CAPABILITY_SEPARATE_REFERENCE_IMAGES_BIT_KHR;
+
     VkSharedBaseObj<VulkanVideoFrameBuffer> vkVideoFrameBuffer;
 
     VK_CHECK(VulkanVideoFrameBuffer::Create(deviceContext,
@@ -3699,7 +3708,7 @@ shared_ptr<VideoBaseDecoder> createBasicDecoder(DeviceContext *deviceContext, co
     params.queryDecodeStatus  = false;
     params.outOfOrderDecoding = false;
     params.alwaysRecreateDPB  = resolutionChange;
-    params.layeredDpb         = true;
+    params.layeredDpb         = !separateReferenceImages;
 
     return std::make_shared<VideoBaseDecoder>(std::move(params));
 }
