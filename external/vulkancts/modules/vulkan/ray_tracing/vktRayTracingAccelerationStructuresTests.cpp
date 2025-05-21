@@ -6659,6 +6659,15 @@ void addUpdateTests(TestCaseGroup *group)
         {UpdateCase::TRANSFORM, "transform"},
     };
 
+    struct
+    {
+        OperationType operationType;
+        const char *name;
+    } operationTypes[] = {
+        {OP_NONE, "normal"},
+        {OP_COMPACT, "compact"},
+    };
+
     auto &ctx = group->getTestContext();
 
     for (size_t structResidencyNdx = 0; structResidencyNdx < DE_LENGTH_OF_ARRAY(accStructBufferResTypes);
@@ -6672,41 +6681,56 @@ void addUpdateTests(TestCaseGroup *group)
             de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(
                 new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str()));
 
-            for (int updateTypesIdx = 0; updateTypesIdx < DE_LENGTH_OF_ARRAY(updateTypes); ++updateTypesIdx)
+            for (int operationTypeIdx = 0; operationTypeIdx < DE_LENGTH_OF_ARRAY(operationTypes); ++operationTypeIdx)
             {
-                if ((buildTypes[buildTypeIdx].buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR) &&
-                    (accStructBufferResTypes[structResidencyNdx].res == ResourceResidency::SPARSE_BINDING))
-                    continue;
+                de::MovePtr<tcu::TestCaseGroup> operationTypeGroup(
+                    new tcu::TestCaseGroup(ctx, operationTypes[operationTypeIdx].name));
 
-                TestParams testParams{
-                    buildTypes[buildTypeIdx].buildType,
-                    VK_FORMAT_R32G32B32_SFLOAT,
-                    false,
-                    VK_INDEX_TYPE_UINT16,
-                    BottomTestType::TRIANGLES,
-                    InstanceCullFlags::NONE,
-                    false,
-                    false,
-                    false,
-                    TopTestType::IDENTICAL_INSTANCES,
-                    false,
-                    false,
-                    false,
-                    VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR,
-                    OT_TOP_ACCELERATION,
-                    OP_NONE,
-                    RTAS_DEFAULT_SIZE,
-                    RTAS_DEFAULT_SIZE,
-                    de::SharedPtr<TestConfiguration>(new UpdateableASConfiguration()),
-                    0u,
-                    EmptyAccelerationStructureCase::NOT_EMPTY,
-                    InstanceCustomIndexCase::NONE,
-                    false,
-                    0xFFu,
-                    updateTypes[updateTypesIdx].updateType,
-                    accStructBufferResTypes[structResidencyNdx].res,
-                };
-                buildTypeGroup->addChild(new ASUpdateCase(ctx, updateTypes[updateTypesIdx].name, testParams));
+                for (int updateTypesIdx = 0; updateTypesIdx < DE_LENGTH_OF_ARRAY(updateTypes); ++updateTypesIdx)
+                {
+                    if ((buildTypes[buildTypeIdx].buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR) &&
+                        (accStructBufferResTypes[structResidencyNdx].res == ResourceResidency::SPARSE_BINDING))
+                        continue;
+
+                    // Base build flags for update
+                    VkBuildAccelerationStructureFlagsKHR buildFlags =
+                        VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
+
+                    // Add compaction flag if needed
+                    if (operationTypes[operationTypeIdx].operationType == OP_COMPACT)
+                        buildFlags |= VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR;
+
+                    TestParams testParams{
+                        buildTypes[buildTypeIdx].buildType,
+                        VK_FORMAT_R32G32B32_SFLOAT,
+                        false,
+                        VK_INDEX_TYPE_UINT16,
+                        BottomTestType::TRIANGLES,
+                        InstanceCullFlags::NONE,
+                        false,
+                        false,
+                        false,
+                        TopTestType::IDENTICAL_INSTANCES,
+                        false,
+                        false,
+                        false,
+                        buildFlags,
+                        OT_TOP_ACCELERATION,
+                        operationTypes[operationTypeIdx].operationType,
+                        RTAS_DEFAULT_SIZE,
+                        RTAS_DEFAULT_SIZE,
+                        de::SharedPtr<TestConfiguration>(new UpdateableASConfiguration()),
+                        0u,
+                        EmptyAccelerationStructureCase::NOT_EMPTY,
+                        InstanceCustomIndexCase::NONE,
+                        false,
+                        0xFFu,
+                        updateTypes[updateTypesIdx].updateType,
+                        accStructBufferResTypes[structResidencyNdx].res,
+                    };
+                    operationTypeGroup->addChild(new ASUpdateCase(ctx, updateTypes[updateTypesIdx].name, testParams));
+                }
+                buildTypeGroup->addChild(operationTypeGroup.release());
             }
             structResidencyGroup->addChild(buildTypeGroup.release());
         }
