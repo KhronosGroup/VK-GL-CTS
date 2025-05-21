@@ -5703,6 +5703,99 @@ tcu::TestStatus RebindSetsInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+// Test that emits multiple constant outputs, one for each vertex, in the same mesh shader invocation.
+// The outputs should be interpolated in the result instead of being passed as flat to the frag shader.
+class MultipleOutputsVertsCase : public MeshShaderMiscCase
+{
+public:
+    MultipleOutputsVertsCase(tcu::TestContext &testCtx, const std::string &name, ParamsPtr params)
+        : MeshShaderMiscCase(testCtx, name, std::move(params))
+    {
+        const auto drawCount = m_params->drawCount();
+        DE_ASSERT(drawCount.x() == 1u && drawCount.y() == 1u && drawCount.z() == 1u);
+        DE_UNREF(drawCount); // For release builds.
+    }
+    virtual ~MultipleOutputsVertsCase(void) = default;
+
+    TestInstance *createInstance(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+};
+
+class MultipleOutputsVertsInstance : public MeshShaderMiscInstance
+{
+public:
+    MultipleOutputsVertsInstance(Context &context, const MiscTestParams *params)
+        : MeshShaderMiscInstance(context, params)
+    {
+    }
+
+    void generateReferenceLevel() override;
+};
+
+TestInstance *MultipleOutputsVertsCase::createInstance(Context &context) const
+{
+    return new MultipleOutputsVertsInstance(context, m_params.get());
+}
+
+void MultipleOutputsVertsCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    std::ostringstream mesh;
+    mesh << "#version 460\n"
+         << "#extension GL_EXT_mesh_shader : require\n"
+         << "\n"
+         << "layout (local_size_x=1) in;\n"
+         << "layout (max_vertices=3, max_primitives=1) out;\n"
+         << "layout (triangles) out;\n"
+         << "\n"
+         << "layout (location=0) out vec4 color[];\n"
+         << "\n"
+         << "void main()\n"
+         << "{\n"
+         << "    SetMeshOutputsEXT(3, 1);\n"
+         << "\n"
+         << "    color[0] = vec4(0.0, 0.0, 0.0, 1.0);\n"
+         << "    color[1] = vec4(0.0, 0.0, 1.0, 1.0);\n"
+         << "    color[2] = vec4(1.0, 0.0, 0.0, 1.0);\n"
+         << "\n"
+         << "    gl_MeshVerticesEXT[0].gl_Position = vec4(-1.0, -1.0, 0.0, 1.0);\n"
+         << "    gl_MeshVerticesEXT[1].gl_Position = vec4(-1.0,  3.0, 0.0, 1.0);\n"
+         << "    gl_MeshVerticesEXT[2].gl_Position = vec4( 3.0, -1.0, 0.0, 1.0);\n"
+         << "\n"
+         << "    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0, 1, 2);\n"
+         << "}\n";
+    const auto buildOptions = getMinMeshEXTBuildOptions(programCollection.usedVulkanVersion);
+    programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << buildOptions;
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) in vec4 inColor;\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main() {\n"
+         << "    outColor = inColor;\n"
+         << "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+void MultipleOutputsVertsInstance::generateReferenceLevel()
+{
+    const tcu::UVec3 uExtent(m_params->width, m_params->height, 1u);
+    const auto extent    = uExtent.asInt();
+    const auto fExtent   = uExtent.asFloat();
+    const auto tcuFormat = mapVkFormat(getOutputFormat());
+
+    m_referenceLevel.reset(new tcu::TextureLevel(tcuFormat, extent.x(), extent.y(), extent.z()));
+    tcu::PixelBufferAccess reference = m_referenceLevel->getAccess();
+
+    for (int y = 0; y < extent.y(); ++y)
+        for (int x = 0; x < extent.x(); ++x)
+        {
+            // We halve the red and green values because value 1.0 is at coordinate 3.0 for both.
+            const float red  = (static_cast<float>(x) + 0.5f) / fExtent.x() * 0.5f;
+            const float blue = (static_cast<float>(y) + 0.5f) / fExtent.y() * 0.5f;
+            reference.setPixel(tcu::Vec4(red, 0.0f, blue, 1.0f), x, y);
+        }
+}
+
 } // anonymous namespace
 
 tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
@@ -6150,6 +6243,16 @@ tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
             /*height*/ 8u));
 
         miscTests->addChild(new RebindSetsCase(testCtx, "rebind_sets", std::move(paramsPtr)));
+    }
+
+    {
+        ParamsPtr paramsPtr(new MiscTestParams(
+            /*taskCount*/ tcu::Nothing,
+            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+            /*width*/ 8u,
+            /*height*/ 8u));
+
+        miscTests->addChild(new MultipleOutputsVertsCase(testCtx, "multiple_outputs_vertices", std::move(paramsPtr)));
     }
 
     return miscTests.release();
