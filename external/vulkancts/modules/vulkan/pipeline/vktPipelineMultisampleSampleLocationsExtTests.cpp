@@ -1032,7 +1032,7 @@ void recordWaitEventWithImage(const DeviceInterface &vk, const VkCommandBuffer c
 void recordCopyImageToBuffer(const DeviceInterface &vk, const VkCommandBuffer cmdBuffer, const UVec2 &imageSize,
                              const VkImage srcImage, const VkBuffer dstBuffer)
 {
-    // Resolve image -> host buffer
+    // Color/Resolve image -> host buffer
     {
         const VkBufferImageCopy region = {
             0ull, // VkDeviceSize                bufferOffset;
@@ -1154,8 +1154,8 @@ tcu::TestStatus testQuerySampleLocationProperties(Context &context)
                                       << tcu::TestLog::EndSection;
 
     const VkSampleCountFlags allowedSampleCounts =
-        (VK_SAMPLE_COUNT_2_BIT | VK_SAMPLE_COUNT_4_BIT | VK_SAMPLE_COUNT_8_BIT | VK_SAMPLE_COUNT_16_BIT |
-         VK_SAMPLE_COUNT_32_BIT | VK_SAMPLE_COUNT_64_BIT);
+        (VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_2_BIT | VK_SAMPLE_COUNT_4_BIT | VK_SAMPLE_COUNT_8_BIT |
+         VK_SAMPLE_COUNT_16_BIT | VK_SAMPLE_COUNT_32_BIT | VK_SAMPLE_COUNT_64_BIT);
 
     if ((sampleLocationsProperties.sampleLocationSampleCounts & allowedSampleCounts) == 0)
     {
@@ -1528,8 +1528,12 @@ public:
 
             // Images and staging buffers
 
+            const VkImageUsageFlags colorImageUsageFlags =
+                (isMSAA() ? VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT :
+                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+
             m_colorImage      = makeImage(vk, device, (VkImageCreateFlags)0, m_colorFormat, m_renderSize,
-                                          m_params.numSamples, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+                                          m_params.numSamples, colorImageUsageFlags);
             m_colorImageAlloc = bindImage(vk, device, allocator, *m_colorImage, MemoryRequirement::Any);
             m_colorImageView  = makeImageView(vk, device, *m_colorImage, VK_IMAGE_VIEW_TYPE_2D, m_colorFormat,
                                               makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
@@ -1575,6 +1579,11 @@ protected:
         return true;
     }
 
+    bool isMSAA(void) const
+    {
+        return (m_params.numSamples != VK_SAMPLE_COUNT_1_BIT);
+    }
+
     void drawSinglePass(const VertexInputConfig vertexInputConfig)
     {
         DE_ASSERT(m_descriptorSetLayout);
@@ -1611,29 +1620,36 @@ protected:
                          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout                finalLayout,
                          makeClearValueColor(CLEAR_COLOR_0));      // VkClearValue                    clearValue,
 
-        rt.addAttachment(*m_resolveImage,                      // VkImage                        image
-                         *m_resolveImageView,                  // VkImageView                    imageView,
-                         (VkAttachmentDescriptionFlags)0,      // VkAttachmentDescriptionFlags    flags,
-                         m_colorFormat,                        // VkFormat                        format,
-                         VK_SAMPLE_COUNT_1_BIT,                // VkSampleCountFlagBits        numSamples,
-                         VK_ATTACHMENT_LOAD_OP_DONT_CARE,      // VkAttachmentLoadOp            loadOp,
-                         VK_ATTACHMENT_STORE_OP_STORE,         // VkAttachmentStoreOp            storeOp,
-                         VK_ATTACHMENT_LOAD_OP_DONT_CARE,      // VkAttachmentLoadOp            stencilLoadOp,
-                         VK_ATTACHMENT_STORE_OP_DONT_CARE,     // VkAttachmentStoreOp            stencilStoreOp,
-                         VK_IMAGE_LAYOUT_UNDEFINED,            // VkImageLayout                initialLayout,
-                         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, // VkImageLayout                finalLayout,
-                         VkClearValue());                      // VkClearValue                    clearValue,
+        rt.addAttachment(*m_resolveImage,                          // VkImage                        image
+                         *m_resolveImageView,                      // VkImageView                    imageView,
+                         (VkAttachmentDescriptionFlags)0,          // VkAttachmentDescriptionFlags   flags,
+                         m_colorFormat,                            // VkFormat                       format,
+                         VK_SAMPLE_COUNT_1_BIT,                    // VkSampleCountFlagBits          numSamples,
+                         VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp             loadOp,
+                         VK_ATTACHMENT_STORE_OP_STORE,             // VkAttachmentStoreOp            storeOp,
+                         VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp             stencilLoadOp,
+                         VK_ATTACHMENT_STORE_OP_DONT_CARE,         // VkAttachmentStoreOp            stencilStoreOp,
+                         VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout                  initialLayout,
+                         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout                  finalLayout,
+                         VkClearValue());                          // VkClearValue                   clearValue,
 
-        if (TEST_OPTION_VARIABLE_SAMPLE_LOCATIONS_BIT & m_params.options)
+        if (isMSAA())
         {
-            DE_ASSERT(!useStdLocations);
-            rt.addSubpassColorAttachmentWithResolve(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
-                                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, &sampleLocationsInfo);
+            if (TEST_OPTION_VARIABLE_SAMPLE_LOCATIONS_BIT & m_params.options)
+            {
+                DE_ASSERT(!useStdLocations);
+                rt.addSubpassColorAttachmentWithResolve(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
+                                                        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, &sampleLocationsInfo);
+            }
+            else
+            {
+                rt.addSubpassColorAttachmentWithResolve(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
+                                                        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            }
         }
         else
         {
-            rt.addSubpassColorAttachmentWithResolve(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
-                                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            rt.addSubpassColorAttachment(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         }
 
         rt.bake(vk, device, m_params.pipelineConstructionType, m_renderSize);
@@ -1687,7 +1703,12 @@ protected:
         vk.cmdDraw(*cmdBuffer, m_numVertices, 1u, 0u, 0u);
         rt.endRenderPass(vk, *cmdBuffer);
 
-        recordCopyImageToBuffer(vk, *cmdBuffer, m_renderSize, *m_resolveImage, *m_colorBuffer);
+        // Color/Resolve image -> host buffer
+        {
+            const VkImage sourceImage = (isMSAA() ? *m_resolveImage : *m_colorImage);
+
+            recordCopyImageToBuffer(vk, *cmdBuffer, m_renderSize, sourceImage, *m_colorBuffer);
+        }
 
         endCommandBuffer(vk, *cmdBuffer);
         submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *cmdBuffer);
@@ -1920,10 +1941,14 @@ void addCases(tcu::TestCaseGroup *group, const VkSampleCountFlagBits numSamples,
                                                   (getString(numSamples) + "_dynamic" + options.testSuffix).c_str(),
                                                   supportCheck, initPrograms, params);
 
-            params.options |= TEST_OPTION_CLOSELY_PACKED_BIT;
-            addInstanceTestCaseWithPrograms<Test>(group,
-                                                  (getString(numSamples) + "_packed" + options.testSuffix).c_str(),
-                                                  supportCheck, initPrograms, params);
+            // This is redundant for single-sampled.
+            if (numSamples != VK_SAMPLE_COUNT_1_BIT)
+            {
+                params.options |= TEST_OPTION_CLOSELY_PACKED_BIT;
+                addInstanceTestCaseWithPrograms<Test>(group,
+                                                      (getString(numSamples) + "_packed" + options.testSuffix).c_str(),
+                                                      supportCheck, initPrograms, params);
+            }
         }
     }
 }
@@ -2417,9 +2442,15 @@ protected:
     {
         return (m_params.options & TEST_OPTION_FRAGMENT_SHADING_RATE_BIT) != 0u;
     }
+
     bool useStdLocations(void) const
     {
         return (m_params.options & TEST_OPTION_STD_SAMPLE_LOCATIONS_BIT) != 0u;
+    }
+
+    bool isMSAA(void) const
+    {
+        return (m_params.numSamples != VK_SAMPLE_COUNT_1_BIT);
     }
 
     //! Draw the second pass image, but with sample pattern from the first pass -- used to verify that the pattern is different
@@ -2454,21 +2485,28 @@ protected:
                          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout                finalLayout,
                          clearColor0);                             // VkClearValue                 clearValue,
 
-        rt.addAttachment(*m_resolveImage,                      // VkImage                      image
-                         *m_resolveImageView,                  // VkImageView                  imageView,
-                         (VkAttachmentDescriptionFlags)0,      // VkAttachmentDescriptionFlags flags,
-                         m_colorFormat,                        // VkFormat                     format,
-                         VK_SAMPLE_COUNT_1_BIT,                // VkSampleCountFlagBits        numSamples,
-                         VK_ATTACHMENT_LOAD_OP_DONT_CARE,      // VkAttachmentLoadOp           loadOp,
-                         VK_ATTACHMENT_STORE_OP_STORE,         // VkAttachmentStoreOp          storeOp,
-                         VK_ATTACHMENT_LOAD_OP_DONT_CARE,      // VkAttachmentLoadOp           stencilLoadOp,
-                         VK_ATTACHMENT_STORE_OP_DONT_CARE,     // VkAttachmentStoreOp          stencilStoreOp,
-                         VK_IMAGE_LAYOUT_UNDEFINED,            // VkImageLayout                initialLayout,
-                         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, // VkImageLayout                finalLayout,
-                         VkClearValue());                      // VkClearValue                 clearValue,
+        rt.addAttachment(*m_resolveImage,                          // VkImage                      image
+                         *m_resolveImageView,                      // VkImageView                  imageView,
+                         (VkAttachmentDescriptionFlags)0,          // VkAttachmentDescriptionFlags flags,
+                         m_colorFormat,                            // VkFormat                     format,
+                         VK_SAMPLE_COUNT_1_BIT,                    // VkSampleCountFlagBits        numSamples,
+                         VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp           loadOp,
+                         VK_ATTACHMENT_STORE_OP_STORE,             // VkAttachmentStoreOp          storeOp,
+                         VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp           stencilLoadOp,
+                         VK_ATTACHMENT_STORE_OP_DONT_CARE,         // VkAttachmentStoreOp          stencilStoreOp,
+                         VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout                initialLayout,
+                         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout                finalLayout,
+                         VkClearValue());                          // VkClearValue                 clearValue,
 
-        rt.addSubpassColorAttachmentWithResolve(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
-                                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        if (isMSAA())
+        {
+            rt.addSubpassColorAttachmentWithResolve(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
+                                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        }
+        else
+        {
+            rt.addSubpassColorAttachment(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        }
 
         if (useDepth() || useStencil())
         {
@@ -2543,7 +2581,12 @@ protected:
 
         rt.endRenderPass(vk, *cmdBuffer);
 
-        recordCopyImageToBuffer(vk, *cmdBuffer, m_renderSize, *m_resolveImage, *m_colorBuffer);
+        // Color/Resolve image -> host buffer
+        {
+            const VkImage sourceImage = (isMSAA() ? *m_resolveImage : *m_colorImage);
+
+            recordCopyImageToBuffer(vk, *cmdBuffer, m_renderSize, sourceImage, *m_colorBuffer);
+        }
 
         endCommandBuffer(vk, *cmdBuffer);
         submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *cmdBuffer);
@@ -2652,20 +2695,27 @@ protected:
                                 colorLayout1,                     // VkImageLayout                finalLayout,
                                 clearColor1);                     // VkClearValue                    clearValue,
 
-            rt[1].addAttachment(*m_resolveImage,                      // VkImage                        image
-                                *m_resolveImageView,                  // VkImageView                    imageView,
-                                (VkAttachmentDescriptionFlags)0,      // VkAttachmentDescriptionFlags    flags,
-                                m_colorFormat,                        // VkFormat                        format,
-                                VK_SAMPLE_COUNT_1_BIT,                // VkSampleCountFlagBits        numSamples,
-                                VK_ATTACHMENT_LOAD_OP_DONT_CARE,      // VkAttachmentLoadOp            loadOp,
-                                VK_ATTACHMENT_STORE_OP_STORE,         // VkAttachmentStoreOp            storeOp,
-                                VK_ATTACHMENT_LOAD_OP_DONT_CARE,      // VkAttachmentLoadOp            stencilLoadOp,
-                                VK_ATTACHMENT_STORE_OP_DONT_CARE,     // VkAttachmentStoreOp            stencilStoreOp,
-                                VK_IMAGE_LAYOUT_UNDEFINED,            // VkImageLayout                initialLayout,
-                                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, // VkImageLayout                finalLayout,
-                                VkClearValue());                      // VkClearValue                    clearValue,
+            rt[1].addAttachment(*m_resolveImage,                  // VkImage                        image
+                                *m_resolveImageView,              // VkImageView                    imageView,
+                                (VkAttachmentDescriptionFlags)0,  // VkAttachmentDescriptionFlags    flags,
+                                m_colorFormat,                    // VkFormat                        format,
+                                VK_SAMPLE_COUNT_1_BIT,            // VkSampleCountFlagBits        numSamples,
+                                VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp            loadOp,
+                                VK_ATTACHMENT_STORE_OP_STORE,     // VkAttachmentStoreOp            storeOp,
+                                VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp            stencilLoadOp,
+                                VK_ATTACHMENT_STORE_OP_DONT_CARE, // VkAttachmentStoreOp            stencilStoreOp,
+                                VK_IMAGE_LAYOUT_UNDEFINED,        // VkImageLayout                initialLayout,
+                                colorLayout1,                     // VkImageLayout                finalLayout,
+                                VkClearValue());                  // VkClearValue                    clearValue,
 
-            rt[1].addSubpassColorAttachmentWithResolve(0u, colorLayout1, 1u, colorLayout1);
+            if (isMSAA())
+            {
+                rt[1].addSubpassColorAttachmentWithResolve(0u, colorLayout1, 1u, colorLayout1);
+            }
+            else
+            {
+                rt[1].addSubpassColorAttachment(0u, colorLayout1);
+            }
 
             if (useDepth() || useStencil())
             {
@@ -2922,8 +2972,12 @@ protected:
             rt[1].endRenderPass(vk, currentCmdBuffer);
         }
 
-        // Resolve image -> host buffer
-        recordCopyImageToBuffer(vk, currentCmdBuffer, m_renderSize, *m_resolveImage, *m_colorBuffer);
+        // Color/Resolve image -> host buffer
+        {
+            const VkImage sourceImage = (isMSAA() ? *m_resolveImage : *m_colorImage);
+
+            recordCopyImageToBuffer(vk, currentCmdBuffer, m_renderSize, sourceImage, *m_colorBuffer);
+        }
 
         endCommandBuffer(vk, currentCmdBuffer);
 
@@ -3054,18 +3108,18 @@ protected:
                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout                finalLayout,
                              clearColor0);                             // VkClearValue                    clearValue,
 
-            rt.addAttachment(*m_resolveImage,                      // VkImage                        image
-                             *m_resolveImageView,                  // VkImageView                    imageView,
-                             (VkAttachmentDescriptionFlags)0,      // VkAttachmentDescriptionFlags    flags,
-                             m_colorFormat,                        // VkFormat                        format,
-                             VK_SAMPLE_COUNT_1_BIT,                // VkSampleCountFlagBits        numSamples,
-                             VK_ATTACHMENT_LOAD_OP_DONT_CARE,      // VkAttachmentLoadOp            loadOp,
-                             VK_ATTACHMENT_STORE_OP_STORE,         // VkAttachmentStoreOp            storeOp,
-                             VK_ATTACHMENT_LOAD_OP_DONT_CARE,      // VkAttachmentLoadOp            stencilLoadOp,
-                             VK_ATTACHMENT_STORE_OP_DONT_CARE,     // VkAttachmentStoreOp            stencilStoreOp,
-                             VK_IMAGE_LAYOUT_UNDEFINED,            // VkImageLayout                initialLayout,
-                             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, // VkImageLayout                finalLayout,
-                             VkClearValue());                      // VkClearValue                    clearValue,
+            rt.addAttachment(*m_resolveImage,                  // VkImage                         image
+                             *m_resolveImageView,              // VkImageView                     imageView,
+                             (VkAttachmentDescriptionFlags)0,  // VkAttachmentDescriptionFlags    flags,
+                             m_colorFormat,                    // VkFormat                        format,
+                             VK_SAMPLE_COUNT_1_BIT,            // VkSampleCountFlagBits           numSamples,
+                             VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp              loadOp,
+                             VK_ATTACHMENT_STORE_OP_STORE,     // VkAttachmentStoreOp             storeOp,
+                             VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp              stencilLoadOp,
+                             VK_ATTACHMENT_STORE_OP_DONT_CARE, // VkAttachmentStoreOp             stencilStoreOp,
+                             VK_IMAGE_LAYOUT_UNDEFINED,        // VkImageLayout                   initialLayout,
+                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout                   finalLayout,
+                             VkClearValue());                          // VkClearValue                    clearValue,
 
             // First subpass
             rt.addSubpassColorAttachment(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -3095,7 +3149,15 @@ protected:
 
             // Second subpass
             rt.nextSubpass();
-            rt.addSubpassColorAttachmentWithResolve(0u, colorLayout1, 1u, colorLayout1);
+
+            if (isMSAA())
+            {
+                rt.addSubpassColorAttachmentWithResolve(0u, colorLayout1, 1u, colorLayout1);
+            }
+            else
+            {
+                rt.addSubpassColorAttachment(0u, colorLayout1);
+            }
 
             if (useDepth() || useStencil())
             {
@@ -3186,8 +3248,12 @@ protected:
 
         rt.endRenderPass(vk, *cmdBuffer);
 
-        // Resolve image -> host buffer
-        recordCopyImageToBuffer(vk, *cmdBuffer, m_renderSize, *m_resolveImage, *m_colorBuffer);
+        // Color/Resolve image -> host buffer
+        {
+            const VkImage sourceImage = (isMSAA() ? *m_resolveImage : *m_colorImage);
+
+            recordCopyImageToBuffer(vk, *cmdBuffer, m_renderSize, sourceImage, *m_colorBuffer);
+        }
 
         endCommandBuffer(vk, *cmdBuffer);
 
@@ -3243,21 +3309,28 @@ protected:
                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout                finalLayout,
                              clearColor0);                             // VkClearValue                    clearValue,
 
-            rt.addAttachment(*m_resolveImage,                      // VkImage                        image
-                             *m_resolveImageView,                  // VkImageView                    imageView,
-                             (VkAttachmentDescriptionFlags)0,      // VkAttachmentDescriptionFlags    flags,
-                             m_colorFormat,                        // VkFormat                        format,
-                             VK_SAMPLE_COUNT_1_BIT,                // VkSampleCountFlagBits        numSamples,
-                             VK_ATTACHMENT_LOAD_OP_DONT_CARE,      // VkAttachmentLoadOp            loadOp,
-                             VK_ATTACHMENT_STORE_OP_STORE,         // VkAttachmentStoreOp            storeOp,
-                             VK_ATTACHMENT_LOAD_OP_DONT_CARE,      // VkAttachmentLoadOp            stencilLoadOp,
-                             VK_ATTACHMENT_STORE_OP_DONT_CARE,     // VkAttachmentStoreOp            stencilStoreOp,
-                             VK_IMAGE_LAYOUT_UNDEFINED,            // VkImageLayout                initialLayout,
-                             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, // VkImageLayout                finalLayout,
-                             VkClearValue());                      // VkClearValue                    clearValue,
+            rt.addAttachment(*m_resolveImage,                          // VkImage                        image
+                             *m_resolveImageView,                      // VkImageView                    imageView,
+                             (VkAttachmentDescriptionFlags)0,          // VkAttachmentDescriptionFlags   flags,
+                             m_colorFormat,                            // VkFormat                       format,
+                             VK_SAMPLE_COUNT_1_BIT,                    // VkSampleCountFlagBits          numSamples,
+                             VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp             loadOp,
+                             VK_ATTACHMENT_STORE_OP_STORE,             // VkAttachmentStoreOp            storeOp,
+                             VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp             stencilLoadOp,
+                             VK_ATTACHMENT_STORE_OP_DONT_CARE,         // VkAttachmentStoreOp            stencilStoreOp,
+                             VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout                  initialLayout,
+                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout                  finalLayout,
+                             VkClearValue());                          // VkClearValue                   clearValue,
 
-            rt.addSubpassColorAttachmentWithResolve(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
-                                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            if (isMSAA())
+            {
+                rt.addSubpassColorAttachmentWithResolve(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
+                                                        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            }
+            else
+            {
+                rt.addSubpassColorAttachment(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            }
 
             if (useDepth() || useStencil())
             {
@@ -3353,8 +3426,12 @@ protected:
 
         rt.endRenderPass(vk, *cmdBuffer);
 
-        // Resolve image -> host buffer
-        recordCopyImageToBuffer(vk, *cmdBuffer, m_renderSize, *m_resolveImage, *m_colorBuffer);
+        // Color/Resolve image -> host buffer
+        {
+            const VkImage sourceImage = (isMSAA() ? *m_resolveImage : *m_colorImage);
+
+            recordCopyImageToBuffer(vk, *cmdBuffer, m_renderSize, sourceImage, *m_colorBuffer);
+        }
 
         endCommandBuffer(vk, *cmdBuffer);
 
@@ -3415,7 +3492,8 @@ void createTestsInGroup(tcu::TestCaseGroup *rootGroup, GroupParams groupParams)
     }
 
     const VkSampleCountFlagBits sampleCountRange[] = {
-        VK_SAMPLE_COUNT_2_BIT, VK_SAMPLE_COUNT_4_BIT, VK_SAMPLE_COUNT_8_BIT, VK_SAMPLE_COUNT_16_BIT,
+        VK_SAMPLE_COUNT_1_BIT, VK_SAMPLE_COUNT_2_BIT,  VK_SAMPLE_COUNT_4_BIT,
+        VK_SAMPLE_COUNT_8_BIT, VK_SAMPLE_COUNT_16_BIT,
         // There are no implementations that support 32 or 64 programmable samples currently
     };
 
