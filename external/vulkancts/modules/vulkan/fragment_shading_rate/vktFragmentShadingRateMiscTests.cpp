@@ -459,9 +459,9 @@ tcu::TestStatus testEnableDisable(Context &context)
     {
         // Initialize the FSR attachment.
         const auto preTransferBarrier =
-            makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+            makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
                                    fsrAttachment.get(), colorSRR);
-        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                       VK_PIPELINE_STAGE_TRANSFER_BIT, &preTransferBarrier);
         const auto copyRegion = makeBufferImageCopy(fsrExtent, colorSRL);
         ctx.vkd.cmdCopyBufferToImage(cmdBuffer, fsrFillBuffer.get(), fsrAttachment.get(), VK_IMAGE_LAYOUT_GENERAL, 1u,
