@@ -4483,12 +4483,14 @@ def writeConformanceVersions(api, filename):
             remote_url = line.split()[1]
             break
     listOfTags = os.popen("git ls-remote -t %s" % (remote_url)).read()
-    pattern = r"vulkan-cts-(\d).(\d).(\d).(\d)"
+    pattern = r"vulkan-cts-(\d+).(\d+).(\d+).(\d+)"
     if args.api == 'SC':
-        pattern = r"vulkansc-cts-(\d).(\d).(\d).(\d)"
+        pattern = r"vulkansc-cts-(\d+).(\d+).(\d+).(\d+)"
     matches = re.findall(pattern, listOfTags, re.M)
+    matches = sorted([tuple(map(int, tup)) for tup in matches])
     if len(matches) == 0:
         return
+
     # read all text files in doc folder and find withdrawn cts versions (branches)
     withdrawnBranches = set()
     today = datetime.date.today()
@@ -4504,6 +4506,7 @@ def writeConformanceVersions(api, filename):
             if today > datetime.date(int(match[1]), int(match[2]), int(match[3])):
                 # get names of withdrawn branches
                 branchMatches = re.findall(pattern, fileContent, re.M)
+                branchMatches = [tuple(map(int, tup)) for tup in branchMatches]
                 for v in branchMatches:
                     withdrawnBranches.add((v[0], v[1], v[2], v[3]))
     # define helper function that will be used to add entries for both vk and sc
@@ -4616,7 +4619,7 @@ if __name__ == "__main__":
     writeApiExtensionDependencyInfo             (api, os.path.join(outputPath, "vkApiExtensionDependencyInfo.inl"))
     writeEntryPointValidation                   (api, os.path.join(outputPath, "vkEntryPointValidation.inl"))
     writeGetDeviceProcAddr                      (api, os.path.join(outputPath, "vkGetDeviceProcAddr.inl"))
-    #writeConformanceVersions                    (api, os.path.join(outputPath, "vkKnownConformanceVersions.inl"))
+    writeConformanceVersions                    (api, os.path.join(outputPath, "vkKnownConformanceVersions.inl"))
     if args.api=='SC':
         writeFuncPtrInterfaceSCImpl(api, os.path.join(outputPath, "vkDeviceDriverSCImpl.inl"), deviceFuncs, "DeviceDriverSC")
     else:
