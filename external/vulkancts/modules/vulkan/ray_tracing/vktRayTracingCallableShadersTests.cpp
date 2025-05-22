@@ -44,6 +44,8 @@
 
 #include "vkRayTracingUtil.hpp"
 
+#include <cmath>
+
 namespace vkt
 {
 namespace RayTracing
@@ -947,7 +949,7 @@ bool compareFloat(float actual, float expected)
     constexpr float eps = 0.01f;
     bool success        = true;
 
-    if (abs(expected - actual) > eps)
+    if (std::fabs(expected - actual) > eps)
     {
         success = false;
     }
