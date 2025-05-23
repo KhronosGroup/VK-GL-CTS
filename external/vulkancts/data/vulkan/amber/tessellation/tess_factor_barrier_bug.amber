@@ -1,0 +1,132 @@
+#!amber
+DEVICE_FEATURE tessellationShader
+DEVICE_FEATURE vertexPipelineStoresAndAtomics
+
+SHADER vertex vert GLSL
+#version 450 core
+
+layout(set = 0, binding = 0) buffer coherent block {
+   uint ssbo_val;
+};
+
+layout(location=0) in vec2 position;
+layout(location=0) out uint patch_index;
+
+void main() {
+   gl_Position = vec4(position, 0.0, 1.0);
+   patch_index = gl_InstanceIndex;
+
+   /*
+    * RADV groups TCS wave in workgroups similar to compute ones.
+    *
+    * This test assumes that the TCS workgroup has at most 256 invocations (64 patches). Try to
+    * cause the first wave of the workgroup to start the TCS much later than ones which write
+    * non-zero factors.
+    *
+    * This loop makes the test much more likely to fail.
+   */
+   uint wave32_in_workgroup = patch_index % 64u / 8u;
+   uint threshold = patch_index / 64u % 8u;
+   if (wave32_in_workgroup <= threshold) {
+      /*for (uint i = 0; i < 8192; i++) {
+         patch_index += (i & 0x1) == 0 ? -1 : 1;
+      }*/
+      for (uint i = 0; i < 512; i++)
+         atomicAdd(ssbo_val, i);
+   }
+}
+END
+
+SHADER tessellation_control tesc GLSL
+#version 450 core
+
+/*
+ * For the workgroup barriers to be optimized to wave ones, each TCS output patch must be part of a
+ * single wave.
+ */
+layout(vertices = 4) out;
+
+layout(location=0) in uint patch_index_in[];
+
+void main() {
+   gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
+
+   /* The compiler must either know that all invocations define tessellation levels or that a
+    * workgroup barrier exists. This test ensures that both are true.
+    */
+   barrier();
+
+   /*
+    * We assume that the TCS workgroup has 256 invocations (64 patches). All waves in the workgroup
+    * will discard all patches except for the last. If the timing is right, the bug causes the
+    * factors of the last wave to be dismissed when determining whether all waves in the workgroup
+    * write zero as a factor.
+   */
+   uint patch_index = patch_index_in[gl_InvocationID];
+   uint wave32_in_workgroup = patch_index % 64u / 8u;
+   if (wave32_in_workgroup == 7) {
+      uint index_in_wave32 = patch_index % 8u;
+      uint workgroup_index = patch_index / 64u;
+      uint index = (workgroup_index * 8u) + index_in_wave32;
+      uint grid_size = 256;
+      vec2 pos = (vec2(index % grid_size, index / grid_size) + gl_out[gl_InvocationID].gl_Position.xy);
+      gl_out[gl_InvocationID].gl_Position.xy = pos / float(grid_size) * 2.0 - 1.0;
+
+      gl_TessLevelOuter = float[4](1.0, 1.0, 1.0, 1.0);
+   } else {
+      gl_TessLevelOuter = float[4](0.0, 0.0, 0.0, 0.0);
+   }
+   gl_TessLevelInner = float[2](0.0, 0.0);
+}
+END
+
+SHADER tessellation_evaluation tese GLSL
+#version 450 core
+
+layout(quads) in;
+
+void main() {
+   vec4 low = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord[0]);
+   vec4 high = mix(gl_in[3].gl_Position, gl_in[2].gl_Position, gl_TessCoord[0]);
+   gl_Position = mix(low, high, gl_TessCoord[1]);
+}
+END
+
+SHADER fragment frag GLSL
+#version 450 core
+
+layout(location = 0) out vec4 color;
+
+void main() {
+   color = vec4(0.502, 1.0, 0.502, 1.0);
+}
+END
+
+BUFFER framebuffer FORMAT B8G8R8A8_UNORM
+
+BUFFER buf DATA_TYPE int32 DATA 0 END
+
+BUFFER position_buf DATA_TYPE vec2<float> DATA
+0.0 0.0
+1.0 0.0
+1.0 1.0
+0.0 1.0
+END
+
+PIPELINE graphics pipeline
+   ATTACH vert
+   ATTACH tesc
+   ATTACH tese
+   ATTACH frag
+   PATCH_CONTROL_POINTS 4
+   BIND BUFFER buf AS storage DESCRIPTOR_SET 0 BINDING 0
+   VERTEX_DATA position_buf LOCATION 0
+   FRAMEBUFFER_SIZE 128 128
+   BIND BUFFER framebuffer AS color LOCATION 0
+END
+
+CLEAR_COLOR pipeline 0 0 0 255
+CLEAR pipeline
+# 64 * 64 * 8 (64x64 grid, only 1/8 instances are not discarded)
+RUN pipeline DRAW_ARRAY AS PATCH_LIST START_IDX 0 COUNT 4 START_INSTANCE 0 INSTANCE_COUNT 524288
+EXPECT framebuffer IDX 0 0 SIZE 128 128 EQ_RGBA 128 255 128 255
