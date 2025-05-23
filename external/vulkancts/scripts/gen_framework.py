@@ -106,6 +106,7 @@ VK_EXT_primitives_generated_query
 VK_EXT_provoking_vertex
 VK_EXT_rgba10x6_formats
 VK_EXT_robustness2
+VK_EXT_shader_64bit_indexing
 VK_EXT_shader_atomic_float
 VK_EXT_shader_atomic_float2
 VK_EXT_shader_float8

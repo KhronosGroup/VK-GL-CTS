@@ -60,6 +60,7 @@ vk-main-2024-03-01/shader-object/pipeline-interaction.txt
 vk-main-2024-03-01/shader-object/rendering.txt
 vk-main-2024-03-01/sparse-resources.txt
 vk-main-2024-03-01/spirv-assembly.txt
+vk-main-2024-03-01/ssbo.txt
 vk-main-2024-03-01/subgroups.txt
 vk-main-2024-03-01/synchronization.txt
 vk-main-2024-03-01/synchronization2.txt

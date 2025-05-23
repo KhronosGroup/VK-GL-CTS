@@ -67,6 +67,7 @@ struct Spec
     bool usesInt8;
     bool usesInt16;
     bool usesInt64;
+    bool uses64BitIndexing;
 };
 
 enum BoundsCheck
@@ -109,6 +110,7 @@ struct Parameters
     bool variablePointers;
     bool descriptorIndexing;
     bool physicalBuffers;
+    bool uses64BitIndexing;
 
     BoundsCheck inputBoundsCheck;
     BoundsCheck outputBoundsCheck;
@@ -237,7 +239,7 @@ Move<VkBuffer> createBufferAndBindMemory(const DeviceInterface &vkdi, const VkDe
 }
 
 Move<VkPipeline> createComputePipeline(const DeviceInterface &vkdi, const VkDevice &device,
-                                       VkPipelineLayout pipelineLayout, VkShaderModule shader)
+                                       VkPipelineLayout pipelineLayout, VkShaderModule shader, bool uses64BitIndexing)
 {
     const VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // sType
@@ -248,9 +250,20 @@ Move<VkPipeline> createComputePipeline(const DeviceInterface &vkdi, const VkDevi
         "main",                                              // pName
         nullptr,                                             // pSpecializationInfo
     };
+
+    const void *pNext = nullptr;
+#ifndef CTS_USES_VULKANSC
+    VkPipelineCreateFlags2CreateInfo pipelineFlags2CreateInfo = initVulkanStructure();
+    if (uses64BitIndexing)
+    {
+        pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_64_BIT_INDEXING_BIT_EXT;
+        pNext                          = &pipelineFlags2CreateInfo;
+    }
+#endif
+
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // sType
-        nullptr,                                        // pNext
+        pNext,                                          // pNext
         (VkPipelineCreateFlags)0,                       // flags
         pipelineShaderStageCreateInfo,                  // cs
         pipelineLayout,                                 // layout
@@ -341,7 +354,8 @@ tcu::TestStatus SpvAsmRawAccessChainInstance::iterate(void)
     const ProgramBinary &binary = m_context.getBinaryCollection().get("compute");
     Unique<VkShaderModule> module(createShaderModule(vkdi, device, binary, (VkShaderModuleCreateFlags)0u));
 
-    Unique<VkPipeline> computePipeline(createComputePipeline(vkdi, device, *pipelineLayout, *module));
+    Unique<VkPipeline> computePipeline(
+        createComputePipeline(vkdi, device, *pipelineLayout, *module, m_spec.uses64BitIndexing));
 
     // Create command pool and command buffer
 
@@ -470,6 +484,11 @@ void SpvAsmRawAccessChainTestCase::checkSupport(Context &context) const
 
     if (m_spec.usesInt64)
         context.requireDeviceCoreFeature(vkt::DEVICE_CORE_FEATURE_SHADER_INT64);
+
+#ifndef CTS_USES_VULKANSC
+    if (m_spec.uses64BitIndexing && !context.getShader64BitIndexingFeaturesEXT().shader64BitIndexing)
+        TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
+#endif
 }
 
 void SpvAsmRawAccessChainTestCase::initPrograms(vk::SourceCollections &programCollection) const
@@ -967,6 +986,7 @@ void addTest(tcu::TestCaseGroup *group, const Parameters &p)
     spec.usesVariablePointers   = p.variablePointers;
     spec.usesDescriptorIndexing = p.descriptorIndexing;
     spec.usesPhysicalBuffers    = p.physicalBuffers;
+    spec.uses64BitIndexing      = p.uses64BitIndexing;
     spec.usesInt8               = (p.inputSize == 1) || (p.outputSize == 1);
     spec.usesInt16              = (p.inputSize == 2) || (p.outputSize == 2);
     spec.usesInt64              = (p.inputSize == 8) || (p.outputSize == 8);
@@ -995,187 +1015,185 @@ void addTests(tcu::TestCaseGroup *group)
         for (const bool variablePointers : {false, true})
             for (const bool descriptorIndexing : {false, true})
                 for (const bool physicalBuffers : {false, true})
-                    for (const BoundsCheck boundsCheck :
-                         {NO_BOUNDS_CHECK, BOUNDS_CHECK_PER_COMPONENT, BOUNDS_CHECK_PER_ELEMENT})
-                        for (const int qualifiers : qualifiersCombinations)
-                            for (const bool stride : {true, false})
-                                for (const int size : {4, 8, 2, 1})
-                                    for (const int components : {1, 2, 3, 4})
-                                        for (const int alignmentDiv : {1, 4, 2, 3})
-                                        {
-                                            // Skip illegal combinations.
-                                            if (!stride && boundsCheck == BOUNDS_CHECK_PER_ELEMENT)
-                                                continue;
-
-                                            // Skip alignments that don't match the number of components.
-                                            if (components < alignmentDiv)
-                                                continue;
-                                            if (components % alignmentDiv != 0)
-                                                continue;
-
-                                            // Skip physical pointer related tests.
-                                            if (physicalBuffers)
+                    for (const bool uses64BitIndexing : {false, true})
+                        for (const BoundsCheck boundsCheck :
+                             {NO_BOUNDS_CHECK, BOUNDS_CHECK_PER_COMPONENT, BOUNDS_CHECK_PER_ELEMENT})
+                            for (const int qualifiers : qualifiersCombinations)
+                                for (const bool stride : {true, false})
+                                    for (const int size : {4, 8, 2, 1})
+                                        for (const int components : {1, 2, 3, 4})
+                                            for (const int alignmentDiv : {1, 4, 2, 3})
                                             {
+                                                // Skip illegal combinations.
+                                                if (!stride && boundsCheck == BOUNDS_CHECK_PER_ELEMENT)
+                                                    continue;
+
+                                                // Skip alignments that don't match the number of components.
+                                                if (components < alignmentDiv)
+                                                    continue;
+                                                if (components % alignmentDiv != 0)
+                                                    continue;
+
+                                                // Skip physical pointer related tests.
+                                                if (physicalBuffers)
+                                                {
+                                                    if (variablePointers)
+                                                        continue;
+                                                    if (descriptorIndexing)
+                                                        continue;
+                                                    if (boundsCheck != NO_BOUNDS_CHECK)
+                                                        continue;
+                                                }
+
+                                                // Skip complex qualifiers mixed with other complex configurations.
+                                                if (qualifiers != QUALIFIER_NONE &&
+                                                    qualifiers != QUALIFIER_LOAD_NON_WRITABLE)
+                                                {
+                                                    if (size != 4)
+                                                        continue;
+                                                    if (components != 4)
+                                                        continue;
+                                                    if (alignmentDiv != 1)
+                                                        continue;
+                                                }
+
+                                                // Add padding to test instruction offsets.
+                                                int prePadding = components * size;
+                                                while (!deIsPowerOfTwo32(prePadding))
+                                                    prePadding += size;
+
+                                                // Add misalignment when requested.
+                                                int alignment = 0;
+                                                if (alignmentDiv > 1)
+                                                {
+                                                    alignment = (components * size) / alignmentDiv;
+                                                    prePadding += alignment;
+                                                }
+
+                                                string name;
+
+                                                name += testingStore ? "store_" : "load_";
+
+                                                if (physicalBuffers)
+                                                    name += "physical_buffers_";
+
                                                 if (variablePointers)
-                                                    continue;
+                                                    name += "variable_pointers_";
+
                                                 if (descriptorIndexing)
-                                                    continue;
-                                                if (boundsCheck != NO_BOUNDS_CHECK)
-                                                    continue;
-                                            }
+                                                    name += "descriptor_indexing_";
 
-                                            // Skip complex qualifiers mixed with other complex configurations.
-                                            if (qualifiers != QUALIFIER_NONE &&
-                                                qualifiers != QUALIFIER_LOAD_NON_WRITABLE)
-                                            {
-                                                if (size != 4)
-                                                    continue;
-                                                if (components != 4)
-                                                    continue;
-                                                if (alignmentDiv != 1)
-                                                    continue;
-                                            }
-
-                                            // Add padding to test instruction offsets.
-                                            int prePadding = components * size;
-                                            while (!deIsPowerOfTwo32(prePadding))
-                                                prePadding += size;
-
-                                            // Add misalignment when requested.
-                                            int alignment = 0;
-                                            if (alignmentDiv > 1)
-                                            {
-                                                alignment = (components * size) / alignmentDiv;
-                                                prePadding += alignment;
-                                            }
-
-                                            string name;
-
-                                            name += testingStore ? "store_" : "load_";
-
-                                            if (physicalBuffers)
-                                                name += "physical_buffers_";
-
-                                            if (variablePointers)
-                                                name += "variable_pointers_";
-
-                                            if (descriptorIndexing)
-                                                name += "descriptor_indexing_";
-
-                                            if (components > 1)
-                                                name += 'v' + to_string(components);
-                                            name += "int";
-                                            name += to_string(size * 8);
-
-                                            if (alignment != 0)
-                                            {
-                                                name += "_align_";
-                                                name += to_string(alignment);
-                                            }
-
-                                            name += stride ? "_stride" : "_no_stride";
-
-                                            switch (boundsCheck)
-                                            {
-                                            case NO_BOUNDS_CHECK:
-                                                name += "_no_bounds";
-                                                break;
-                                            case BOUNDS_CHECK_PER_COMPONENT:
-                                                name += "_per_component";
-                                                break;
-                                            case BOUNDS_CHECK_PER_ELEMENT:
-                                                name += "_per_element";
-                                                break;
-                                            }
-
-                                            // Add qualifiers to the name
-                                            if (qualifiers & QUALIFIER_LOAD_NON_WRITABLE)
-                                                name += "_load_non_writable";
-                                            if (qualifiers & QUALIFIER_LOAD_VOLATILE)
-                                                name += "_load_volatile";
-                                            if (qualifiers & QUALIFIER_LOAD_COHERENT)
-                                                name += "_load_coherent";
-                                            if (qualifiers & QUALIFIER_STORE_NON_READABLE)
-                                                name += "_store_non_readable";
-                                            if (qualifiers & QUALIFIER_STORE_VOLATILE)
-                                                name += "_store_volatile";
-                                            if (qualifiers & QUALIFIER_STORE_COHERENT)
-                                                name += "_store_coherent";
-
-                                            int inputAlignment  = testingStore ? 0 : alignment;
-                                            int outputAlignment = testingStore ? alignment : 0;
-
-                                            int inputPrePadding  = testingStore ? 0 : prePadding;
-                                            int outputPrePadding = testingStore ? prePadding : 0;
-
-                                            int inputComponents  = testingStore ? 4 : components;
-                                            int outputComponents = testingStore ? components : 4;
-
-                                            int inputSize  = testingStore ? 4 : size;
-                                            int outputSize = testingStore ? size : 4;
-
-                                            BoundsCheck loadBoundsCheck  = testingStore ? NO_BOUNDS_CHECK : boundsCheck;
-                                            BoundsCheck storeBoundsCheck = testingStore ? boundsCheck : NO_BOUNDS_CHECK;
-
-                                            bool strideLoad  = stride || testingStore;
-                                            bool strideStore = stride || !testingStore;
-
-                                            // Align structures to a power of two with post padding.
-                                            int inputPostPadding = 0;
-                                            while (!deIsPowerOfTwo32(inputComponents * inputSize + inputPrePadding +
-                                                                     inputPostPadding))
-                                                inputPostPadding += inputSize;
-
-                                            int outputPostPadding = 0;
-                                            while (!deIsPowerOfTwo32(outputComponents * outputSize + outputPrePadding +
-                                                                     outputPostPadding))
-                                                outputPostPadding += outputSize;
-
-                                            // Set an arbitrary descriptor range.
-                                            VkDeviceSize descriptorRange = VK_WHOLE_SIZE;
-                                            if (boundsCheck != NO_BOUNDS_CHECK)
-                                            {
-                                                // Bind 11 structures to test bounds checking.
-                                                int postPadding = testingStore ? outputPostPadding : inputPostPadding;
-                                                descriptorRange = 11 * (components * size + prePadding + postPadding);
-                                            }
-                                            if (boundsCheck == BOUNDS_CHECK_PER_COMPONENT)
-                                            {
-                                                // In the case of per component bounds checking, skip one component too.
                                                 if (components > 1)
-                                                    descriptorRange -= size;
+                                                    name += 'v' + to_string(components);
+                                                name += "int";
+                                                name += to_string(size * 8);
+
+                                                if (alignment != 0)
+                                                {
+                                                    name += "_align_";
+                                                    name += to_string(alignment);
+                                                }
+
+                                                name += stride ? "_stride" : "_no_stride";
+
+                                                switch (boundsCheck)
+                                                {
+                                                case NO_BOUNDS_CHECK:
+                                                    name += "_no_bounds";
+                                                    break;
+                                                case BOUNDS_CHECK_PER_COMPONENT:
+                                                    name += "_per_component";
+                                                    break;
+                                                case BOUNDS_CHECK_PER_ELEMENT:
+                                                    name += "_per_element";
+                                                    break;
+                                                }
+
+                                                // Add qualifiers to the name
+                                                if (qualifiers & QUALIFIER_LOAD_NON_WRITABLE)
+                                                    name += "_load_non_writable";
+                                                if (qualifiers & QUALIFIER_LOAD_VOLATILE)
+                                                    name += "_load_volatile";
+                                                if (qualifiers & QUALIFIER_LOAD_COHERENT)
+                                                    name += "_load_coherent";
+                                                if (qualifiers & QUALIFIER_STORE_NON_READABLE)
+                                                    name += "_store_non_readable";
+                                                if (qualifiers & QUALIFIER_STORE_VOLATILE)
+                                                    name += "_store_volatile";
+                                                if (qualifiers & QUALIFIER_STORE_COHERENT)
+                                                    name += "_store_coherent";
+
+                                                if (uses64BitIndexing)
+                                                    name += "_64b_indexing";
+
+                                                int inputAlignment  = testingStore ? 0 : alignment;
+                                                int outputAlignment = testingStore ? alignment : 0;
+
+                                                int inputPrePadding  = testingStore ? 0 : prePadding;
+                                                int outputPrePadding = testingStore ? prePadding : 0;
+
+                                                int inputComponents  = testingStore ? 4 : components;
+                                                int outputComponents = testingStore ? components : 4;
+
+                                                int inputSize  = testingStore ? 4 : size;
+                                                int outputSize = testingStore ? size : 4;
+
+                                                BoundsCheck loadBoundsCheck =
+                                                    testingStore ? NO_BOUNDS_CHECK : boundsCheck;
+                                                BoundsCheck storeBoundsCheck =
+                                                    testingStore ? boundsCheck : NO_BOUNDS_CHECK;
+
+                                                bool strideLoad  = stride || testingStore;
+                                                bool strideStore = stride || !testingStore;
+
+                                                // Align structures to a power of two with post padding.
+                                                int inputPostPadding = 0;
+                                                while (!deIsPowerOfTwo32(inputComponents * inputSize + inputPrePadding +
+                                                                         inputPostPadding))
+                                                    inputPostPadding += inputSize;
+
+                                                int outputPostPadding = 0;
+                                                while (!deIsPowerOfTwo32(outputComponents * outputSize +
+                                                                         outputPrePadding + outputPostPadding))
+                                                    outputPostPadding += outputSize;
+
+                                                // Set an arbitrary descriptor range.
+                                                VkDeviceSize descriptorRange = VK_WHOLE_SIZE;
+                                                if (boundsCheck != NO_BOUNDS_CHECK)
+                                                {
+                                                    // Bind 11 structures to test bounds checking.
+                                                    int postPadding =
+                                                        testingStore ? outputPostPadding : inputPostPadding;
+                                                    descriptorRange =
+                                                        11 * (components * size + prePadding + postPadding);
+                                                }
+                                                if (boundsCheck == BOUNDS_CHECK_PER_COMPONENT)
+                                                {
+                                                    // In the case of per component bounds checking, skip one component too.
+                                                    if (components > 1)
+                                                        descriptorRange -= size;
+                                                }
+
+                                                VkDeviceSize inputDescriptorRange =
+                                                    testingStore ? VK_WHOLE_SIZE : descriptorRange;
+                                                VkDeviceSize outputDescriptorRange =
+                                                    testingStore ? descriptorRange : VK_WHOLE_SIZE;
+
+                                                const Parameters parameters = {
+                                                    name.c_str(),         inputSize,
+                                                    inputComponents,      inputPrePadding,
+                                                    inputPostPadding,     inputAlignment,
+                                                    outputSize,           outputComponents,
+                                                    outputPrePadding,     outputPostPadding,
+                                                    outputAlignment,      strideLoad,
+                                                    strideStore,          variablePointers,
+                                                    descriptorIndexing,   physicalBuffers,
+                                                    uses64BitIndexing,    loadBoundsCheck,
+                                                    storeBoundsCheck,     qualifiers,
+                                                    inputDescriptorRange, outputDescriptorRange,
+                                                };
+                                                addTest(group, parameters);
                                             }
-
-                                            VkDeviceSize inputDescriptorRange =
-                                                testingStore ? VK_WHOLE_SIZE : descriptorRange;
-                                            VkDeviceSize outputDescriptorRange =
-                                                testingStore ? descriptorRange : VK_WHOLE_SIZE;
-
-                                            const Parameters parameters = {
-                                                name.c_str(),
-                                                inputSize,
-                                                inputComponents,
-                                                inputPrePadding,
-                                                inputPostPadding,
-                                                inputAlignment,
-                                                outputSize,
-                                                outputComponents,
-                                                outputPrePadding,
-                                                outputPostPadding,
-                                                outputAlignment,
-                                                strideLoad,
-                                                strideStore,
-                                                variablePointers,
-                                                descriptorIndexing,
-                                                physicalBuffers,
-                                                loadBoundsCheck,
-                                                storeBoundsCheck,
-                                                qualifiers,
-                                                inputDescriptorRange,
-                                                outputDescriptorRange,
-                                            };
-                                            addTest(group, parameters);
-                                        }
 }
 
 } // namespace

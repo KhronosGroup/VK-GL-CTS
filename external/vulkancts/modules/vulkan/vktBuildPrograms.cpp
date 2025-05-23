@@ -502,6 +502,7 @@ BuildStats buildPrograms(tcu::TestContext &testCtx, const std::string &dstPath, 
                     buildSpirvAsmTasks.back().setCommandline(testCtx.getCommandLine());
                     executor.submit(&buildSpirvAsmTasks.back());
                 }
+                testCase->deinit();
             }
 
             iterator.next();

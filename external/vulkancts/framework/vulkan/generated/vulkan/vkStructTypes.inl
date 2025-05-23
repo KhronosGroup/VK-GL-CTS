@@ -7975,6 +7975,13 @@ struct VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures
 	VkBool32		separateDepthStencilLayouts;
 };
 
+struct VkPhysicalDeviceShader64BitIndexingFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shader64BitIndexing;
+};
+
 struct VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV
 {
 	VkStructureType	sType;

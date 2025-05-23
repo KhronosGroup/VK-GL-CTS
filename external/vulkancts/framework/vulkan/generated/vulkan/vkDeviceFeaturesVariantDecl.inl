@@ -84,6 +84,10 @@ typedef std::variant<
     , VkPhysicalDeviceHostImageCopyFeatures
     , VkPhysicalDeviceMapMemoryPlacedFeaturesEXT
     , VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT
+<<<<<<< HEAD
+=======
+    , VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT
+>>>>>>> f8775f1838 (Test VK_EXT_shader_64bit_indexing)
     , VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures
     , VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV
     , VkPhysicalDeviceInheritedViewportScissorFeaturesNV
@@ -122,6 +126,10 @@ typedef std::variant<
     , VkPhysicalDeviceAddressBindingReportFeaturesEXT
     , VkPhysicalDeviceDepthClipControlFeaturesEXT
     , VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT
+<<<<<<< HEAD
+=======
+    , VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT
+>>>>>>> f8775f1838 (Test VK_EXT_shader_64bit_indexing)
     , VkPhysicalDeviceSubpassShadingFeaturesHUAWEI
     , VkPhysicalDeviceInvocationMaskFeaturesHUAWEI
     , VkPhysicalDeviceExternalMemoryRDMAFeaturesNV
@@ -148,6 +156,10 @@ typedef std::variant<
     , VkPhysicalDeviceDescriptorSetHostMappingFeaturesVALVE
     , VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT
     , VkPhysicalDeviceRenderPassStripedFeaturesARM
+<<<<<<< HEAD
+=======
+    , VkPhysicalDeviceCopyMemoryIndirectFeaturesNV
+>>>>>>> f8775f1838 (Test VK_EXT_shader_64bit_indexing)
     , VkPhysicalDeviceMemoryDecompressionFeaturesNV
     , VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV
     , VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV
@@ -158,7 +170,10 @@ typedef std::variant<
     , VkPhysicalDeviceNestedCommandBufferFeaturesEXT
     , VkPhysicalDeviceExtendedDynamicState3FeaturesEXT
     , VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT
+<<<<<<< HEAD
     , VkPhysicalDeviceTensorFeaturesARM
+=======
+>>>>>>> f8775f1838 (Test VK_EXT_shader_64bit_indexing)
     , VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT
     , VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT
     , VkPhysicalDeviceOpticalFlowFeaturesNV
@@ -167,14 +182,20 @@ typedef std::variant<
     , VkPhysicalDeviceExternalFormatResolveFeaturesANDROID
     , VkPhysicalDeviceMaintenance5Features
     , VkPhysicalDeviceAntiLagFeaturesAMD
+<<<<<<< HEAD
     , VkPhysicalDevicePresentId2FeaturesKHR
     , VkPhysicalDevicePresentWait2FeaturesKHR
+=======
+>>>>>>> f8775f1838 (Test VK_EXT_shader_64bit_indexing)
     , VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR
     , VkPhysicalDeviceShaderObjectFeaturesEXT
     , VkPhysicalDevicePipelineBinaryFeaturesKHR
     , VkPhysicalDeviceTilePropertiesFeaturesQCOM
     , VkPhysicalDeviceAmigoProfilingFeaturesSEC
+<<<<<<< HEAD
     , VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR
+=======
+>>>>>>> f8775f1838 (Test VK_EXT_shader_64bit_indexing)
     , VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM
     , VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV
     , VkPhysicalDeviceCooperativeVectorFeaturesNV
@@ -185,11 +206,17 @@ typedef std::variant<
     , VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT
     , VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT
     , VkPhysicalDeviceCooperativeMatrixFeaturesKHR
+<<<<<<< HEAD
     , VkPhysicalDeviceDataGraphFeaturesARM
     , VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM
     , VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR
     , VkPhysicalDeviceVideoEncodeAV1FeaturesKHR
     , VkPhysicalDeviceVideoDecodeVP9FeaturesKHR
+=======
+    , VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM
+    , VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR
+    , VkPhysicalDeviceVideoEncodeAV1FeaturesKHR
+>>>>>>> f8775f1838 (Test VK_EXT_shader_64bit_indexing)
     , VkPhysicalDeviceVideoMaintenance1FeaturesKHR
     , VkPhysicalDevicePerStageDescriptorSetFeaturesNV
     , VkPhysicalDeviceImageProcessing2FeaturesQCOM
@@ -198,7 +225,10 @@ typedef std::variant<
     , VkPhysicalDeviceCubicClampFeaturesQCOM
     , VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT
     , VkPhysicalDeviceVertexAttributeDivisorFeatures
+<<<<<<< HEAD
     , VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR
+=======
+>>>>>>> f8775f1838 (Test VK_EXT_shader_64bit_indexing)
     , VkPhysicalDeviceShaderFloatControls2Features
     , VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX
     , VkPhysicalDeviceIndexTypeUint8Features
@@ -207,8 +237,11 @@ typedef std::variant<
     , VkPhysicalDeviceMaintenance6Features
     , VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV
     , VkPhysicalDeviceTileMemoryHeapFeaturesQCOM
+<<<<<<< HEAD
     , VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR
     , VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR
+=======
+>>>>>>> f8775f1838 (Test VK_EXT_shader_64bit_indexing)
     , VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR
     , VkPhysicalDeviceRawAccessChainsFeaturesNV
     , VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR
@@ -216,29 +249,44 @@ typedef std::variant<
     , VkPhysicalDeviceMaintenance7FeaturesKHR
     , VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV
     , VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT
+<<<<<<< HEAD
     , VkPhysicalDeviceShaderFloat8FeaturesEXT
+=======
+>>>>>>> f8775f1838 (Test VK_EXT_shader_64bit_indexing)
     , VkPhysicalDeviceRayTracingValidationFeaturesNV
     , VkPhysicalDeviceClusterAccelerationStructureFeaturesNV
     , VkPhysicalDevicePartitionedAccelerationStructureFeaturesNV
     , VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT
     , VkPhysicalDeviceMaintenance8FeaturesKHR
     , VkPhysicalDeviceImageAlignmentControlFeaturesMESA
+<<<<<<< HEAD
     , VkPhysicalDeviceShaderFmaFeaturesKHR
     , VkPhysicalDeviceDepthClampControlFeaturesEXT
     , VkPhysicalDeviceMaintenance9FeaturesKHR
+=======
+    , VkPhysicalDeviceDepthClampControlFeaturesEXT
+>>>>>>> f8775f1838 (Test VK_EXT_shader_64bit_indexing)
     , VkPhysicalDeviceVideoMaintenance2FeaturesKHR
     , VkPhysicalDeviceHdrVividFeaturesHUAWEI
     , VkPhysicalDeviceCooperativeMatrix2FeaturesNV
     , VkPhysicalDevicePipelineOpacityMicromapFeaturesARM
     , VkPhysicalDeviceDepthClampZeroOneFeaturesKHR
+<<<<<<< HEAD
     , VkPhysicalDeviceFormatPackFeaturesARM
     , VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE
+=======
+    , VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT
+>>>>>>> f8775f1838 (Test VK_EXT_shader_64bit_indexing)
     , VkPhysicalDeviceRobustness2FeaturesKHR
     , VkPhysicalDevicePresentMeteringFeaturesNV
     , VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT
     , VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT
+<<<<<<< HEAD
     , VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR
     , VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC
+=======
+    , VkPhysicalDeviceShader64BitIndexingFeaturesEXT
+>>>>>>> f8775f1838 (Test VK_EXT_shader_64bit_indexing)
     , VkPhysicalDeviceProtectedMemoryFeatures
     , VkPhysicalDeviceShaderDrawParametersFeatures
 > ImplementedFeaturesVariant;

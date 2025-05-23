@@ -1711,6 +1711,18 @@ bool check_VK_EXT_scalar_block_layout(const tcu::UVec2& v, const ExtPropVect& vI
 	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
+bool check_VK_EXT_shader_64bit_indexing(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_shader_64bit_indexing"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
+}
+
 bool check_VK_EXT_shader_atomic_float(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -4205,6 +4217,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_sample_locations",								&check_VK_EXT_sample_locations),
 	std::make_pair("VK_EXT_sampler_filter_minmax",							&check_VK_EXT_sampler_filter_minmax),
 	std::make_pair("VK_EXT_scalar_block_layout",							&check_VK_EXT_scalar_block_layout),
+	std::make_pair("VK_EXT_shader_64bit_indexing",							&check_VK_EXT_shader_64bit_indexing),
 	std::make_pair("VK_EXT_shader_atomic_float",							&check_VK_EXT_shader_atomic_float),
 	std::make_pair("VK_EXT_shader_atomic_float2",							&check_VK_EXT_shader_atomic_float2),
 	std::make_pair("VK_EXT_shader_demote_to_helper_invocation",				&check_VK_EXT_shader_demote_to_helper_invocation),
@@ -4549,6 +4562,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_sampler_filter_minmax"),
 	std::make_tuple(1, 0, "VK_EXT_scalar_block_layout"),
 	std::make_tuple(1, 0, "VK_EXT_separate_stencil_usage"),
+	std::make_tuple(1, 0, "VK_EXT_shader_64bit_indexing"),
 	std::make_tuple(1, 0, "VK_EXT_shader_atomic_float"),
 	std::make_tuple(1, 0, "VK_EXT_shader_atomic_float2"),
 	std::make_tuple(1, 0, "VK_EXT_shader_demote_to_helper_invocation"),

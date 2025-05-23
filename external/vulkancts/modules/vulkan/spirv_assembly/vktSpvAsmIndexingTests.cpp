@@ -91,7 +91,7 @@ void addComputeIndexingStructTests(tcu::TestCaseGroup *group)
             for (int sign = 0; sign < 2; ++sign)
             {
                 const int idxSize = idxSizes[idxSizeIdx];
-                const string testName =
+                string testName =
                     chainOpTestNames[chainOpIdx] + string(sign == 0 ? "_u" : "_s") + de::toString(idxSize);
                 VulkanFeatures vulkanFeatures;
                 map<string, string> specs;
@@ -280,6 +280,12 @@ void addComputeIndexingStructTests(tcu::TestCaseGroup *group)
                     spec.requestedVulkanFeatures.coreFeatures.shaderInt64 = VK_TRUE;
 
                 structGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+
+#ifndef CTS_USES_VULKANSC
+                spec.uses64BitIndexing = true;
+                testName += "_64bit_indexing";
+                structGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+#endif
             }
         }
     }
@@ -315,7 +321,7 @@ void addGraphicsIndexingStructTests(tcu::TestCaseGroup *group)
             for (int sign = 0; sign < 2; sign++)
             {
                 const int idxSize = idxSizes[idxSizeIdx];
-                const string testName =
+                string testName =
                     chainOpTestNames[chainOpIdx] + string(sign == 0 ? "_u" : "_s") + de::toString(idxSize);
                 VulkanFeatures vulkanFeatures;
                 vector<string> extensions;
@@ -325,7 +331,6 @@ void addGraphicsIndexingStructTests(tcu::TestCaseGroup *group)
                 map<string, string> specs;
                 map<string, string> fragments;
                 vector<float> outputData;
-                ComputeShaderSpec spec;
                 int element = 0;
                 GraphicsResources resources;
 
@@ -512,6 +517,14 @@ void addGraphicsIndexingStructTests(tcu::TestCaseGroup *group)
                 createTestsForAllStages(testName.c_str(), defaultColors, defaultColors, fragments, noSpecConstants,
                                         noPushConstants, resources, noInterfaces, extensions, vulkanFeatures,
                                         structGroup.get());
+
+#ifndef CTS_USES_VULKANSC
+                resources.uses64BitIndexing = true;
+                testName += "_64bit_indexing";
+                createTestsForAllStages(testName.c_str(), defaultColors, defaultColors, fragments, noSpecConstants,
+                                        noPushConstants, resources, noInterfaces, extensions, vulkanFeatures,
+                                        structGroup.get());
+#endif
             }
         }
     }

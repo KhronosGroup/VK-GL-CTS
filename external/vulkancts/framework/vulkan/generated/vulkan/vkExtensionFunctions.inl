@@ -613,6 +613,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_64bit_indexing")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_atomic_float")
 	{
 		return;
@@ -2634,6 +2638,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_64bit_indexing")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_atomic_float")
 	{
 		return;
@@ -4610,6 +4618,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_present_metering",
 	"VK_EXT_fragment_density_map_offset",
 	"VK_EXT_zero_initialize_device_memory",
+	"VK_EXT_shader_64bit_indexing",
 	"VK_SEC_pipeline_cache_incremental_mode",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",

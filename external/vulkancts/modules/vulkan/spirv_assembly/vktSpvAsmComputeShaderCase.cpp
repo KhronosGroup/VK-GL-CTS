@@ -364,7 +364,7 @@ Move<VkDescriptorSet> createDescriptorSet(const DeviceInterface &vkdi, const VkD
  *//*--------------------------------------------------------------------*/
 Move<VkPipeline> createComputePipeline(const DeviceInterface &vkdi, const VkDevice &device,
                                        VkPipelineLayout pipelineLayout, VkShaderModule shader, const char *entryPoint,
-                                       const vkt::SpirVAssembly::SpecConstants &specConstants)
+                                       const vkt::SpirVAssembly::SpecConstants &specConstants, bool uses64BitIndexing)
 {
     const uint32_t numSpecConstants = (uint32_t)specConstants.getValuesCount();
     vector<VkSpecializationMapEntry> entries;
@@ -401,9 +401,22 @@ Move<VkPipeline> createComputePipeline(const DeviceInterface &vkdi, const VkDevi
         entryPoint,                                          // pName
         (numSpecConstants == 0) ? nullptr : &specInfo,       // pSpecializationInfo
     };
+
+    const void *pNext = nullptr;
+#ifndef CTS_USES_VULKANSC
+    VkPipelineCreateFlags2CreateInfo pipelineFlags2CreateInfo = initVulkanStructure();
+    if (uses64BitIndexing)
+    {
+        pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_64_BIT_INDEXING_BIT_EXT;
+        pNext                          = &pipelineFlags2CreateInfo;
+    }
+#else
+    DE_UNREF(uses64BitIndexing);
+#endif
+
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // sType
-        nullptr,                                        // pNext
+        pNext,                                          // pNext
         (VkPipelineCreateFlags)0,
         pipelineShaderStageCreateInfo, // cs
         pipelineLayout,                // layout
@@ -480,6 +493,11 @@ void SpvAsmComputeShaderCase::checkSupport(Context &context) const
     // Extension features
     if (m_shaderSpec.usesPhysStorageBuffer && !context.isBufferDeviceAddressSupported())
         TCU_THROW(NotSupportedError, "Request physical storage buffer feature not supported");
+
+#ifndef CTS_USES_VULKANSC
+    if (m_shaderSpec.uses64BitIndexing && !context.getShader64BitIndexingFeaturesEXT().shader64BitIndexing)
+        TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
+#endif
 }
 
 void SpvAsmComputeShaderCase::initPrograms(SourceCollections &programCollection) const
@@ -868,8 +886,9 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate(void)
     }
     Unique<VkShaderModule> module(createShaderModule(vkdi, device, binary, (VkShaderModuleCreateFlags)0u));
 
-    Unique<VkPipeline> computePipeline(createComputePipeline(
-        vkdi, device, *pipelineLayout, *module, m_shaderSpec.entryPoint.c_str(), m_shaderSpec.specConstants));
+    Unique<VkPipeline> computePipeline(
+        createComputePipeline(vkdi, device, *pipelineLayout, *module, m_shaderSpec.entryPoint.c_str(),
+                              m_shaderSpec.specConstants, m_shaderSpec.uses64BitIndexing));
 
     // Create command buffer and record commands
 

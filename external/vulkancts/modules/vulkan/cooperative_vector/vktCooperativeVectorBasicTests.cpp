@@ -194,6 +194,7 @@ struct CaseDef
     bool nonuniformOffset;
     bool cfDivergent;
     ResultAddress resultAddr;
+    bool uses64BitIndexing;
 };
 
 bool isRayTracingStageKHR(const Stage stage)
@@ -314,6 +315,11 @@ void CooperativeVectorTestCase::checkSupport(Context &context) const
     {
         TCU_THROW(NotSupportedError, "cooperativeVector not supported");
     }
+
+#ifndef CTS_USES_VULKANSC
+    if (m_data.uses64BitIndexing && !context.getShader64BitIndexingFeaturesEXT().shader64BitIndexing)
+        TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
+#endif
 
     if (isRayTracingStageKHR(m_data.stage))
     {
@@ -540,7 +546,8 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
            "#extension GL_NV_cooperative_vector : enable\n"
            "#extension GL_EXT_buffer_reference : enable\n"
            "#extension GL_EXT_ray_tracing : enable\n"
-           "#extension GL_EXT_control_flow_attributes : enable\n";
+           "#extension GL_EXT_control_flow_attributes : enable\n"
+           "#extension GL_EXT_shader_64bit_indexing : enable\n";
 
     switch (m_data.stage)
     {
@@ -818,6 +825,8 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
         css << "   if (atomicAdd(inputC.x[globalInvocationIndex], 1) != 0) return;\n";
     }
 
+    std::string offsetType = m_data.uses64BitIndexing ? "uint64_t" : "uint32_t";
+
     if (m_data.storageClass == SC_WORKGROUP || m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)
     {
         css << "   " << vecAType.str() << " loadTemp;\n";
@@ -830,7 +839,7 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
     }
     else
     {
-        css << "   coopVecLoadNV(vecA, inputA.x, inputBase * inputElementSize);\n";
+        css << "   coopVecLoadNV(vecA, inputA.x, " << offsetType << "(inputBase * inputElementSize));\n";
     }
 
     if (m_data.act0 == ACT_LOAD_SHARED)
@@ -1061,6 +1070,7 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
         css << "   uint32_t biasOffset = 0;\n";
         biasOffsetString = "biasOffset";
     }
+    matrixOffsetString = offsetType + "(" + matrixOffsetString + ")";
 
     if (m_data.cfDivergent)
     {
@@ -1403,11 +1413,11 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
         {
         case TT_REDUCESUM:
             css << "   uint offset = outputVectorPaddedElements * outputElementSize * index;\n";
-            css << "   coopVecReduceSumAccumulateNV(vecA, outputO.x, offset);;\n";
+            css << "   coopVecReduceSumAccumulateNV(vecA, outputO.x, " << offsetType << "(offset));\n";
             break;
         case TT_OUTERPRODUCT:
             css << "   uint offset = outerProductSize * index;\n";
-            css << "   coopVecOuterProductAccumulateNV(vecA, vecB, outputO.x, offset, 0, "
+            css << "   coopVecOuterProductAccumulateNV(vecA, vecB, outputO.x, " << offsetType << "(offset), 0, "
                 << matrixLayoutStr[m_data.matrixLayout[0]] << ", "
                 << getComponentTypeInfo(m_data.outputType).interpString << ");\n";
             break;
@@ -1453,7 +1463,7 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
         }
         else
         {
-            css << "   coopVecStoreNV(vecO, outputO.x, outputBase * outputElementSize);\n";
+            css << "   coopVecStoreNV(vecO, outputO.x, " << offsetType << "(outputBase * outputElementSize));\n";
         }
     }
 
@@ -1480,7 +1490,7 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
 
     css << "}\n";
 
-    const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u);
+    const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0);
 
     switch (m_data.stage)
     {
@@ -2239,6 +2249,16 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
         Move<VkRenderPass> renderPass;
         Move<VkFramebuffer> framebuffer;
 
+        const void *pNext = nullptr;
+#ifndef CTS_USES_VULKANSC
+        VkPipelineCreateFlags2CreateInfo pipelineFlags2CreateInfo = initVulkanStructure();
+        if (m_data.uses64BitIndexing)
+        {
+            pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_64_BIT_INDEXING_BIT_EXT;
+            pNext                          = &pipelineFlags2CreateInfo;
+        }
+#endif
+
         if (m_data.stage == STAGE_COMPUTE)
         {
             const Unique<VkShaderModule> shader(
@@ -2255,10 +2275,10 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
             };
 
             // Enable robustness for ACT_LOAD_READONLY pipelines, if supported
-            const void *pNext                                      = nullptr;
             VkPipelineRobustnessCreateInfoEXT robustnessCreateInfo = initVulkanStructure();
             if (m_data.act0 == ACT_LOAD_READONLY && m_context.getPipelineRobustnessFeatures().pipelineRobustness)
             {
+                robustnessCreateInfo.pNext          = pNext;
                 robustnessCreateInfo.storageBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2;
                 pNext                               = &robustnessCreateInfo;
             }
@@ -2282,7 +2302,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                 VK_SHADER_STAGE_RAYGEN_BIT_KHR,
                 createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0), 0, &specInfo);
 
-            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
+            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout, {}, VK_NULL_HANDLE, pNext);
 
             raygenShaderBindingTable = rayTracingPipeline->createShaderBindingTable(
                 vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
@@ -2301,7 +2321,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                 VK_SHADER_STAGE_INTERSECTION_BIT_KHR,
                 createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0), 1, &specInfo);
 
-            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
+            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout, {}, VK_NULL_HANDLE, pNext);
 
             raygenShaderBindingTable = rayTracingPipeline->createShaderBindingTable(
                 vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
@@ -2326,7 +2346,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                 VK_SHADER_STAGE_ANY_HIT_BIT_KHR,
                 createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0), 1, &specInfo);
 
-            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
+            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout, {}, VK_NULL_HANDLE, pNext);
 
             raygenShaderBindingTable = rayTracingPipeline->createShaderBindingTable(
                 vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
@@ -2351,7 +2371,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                 VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
                 createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0), 1, &specInfo);
 
-            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
+            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout, {}, VK_NULL_HANDLE, pNext);
 
             raygenShaderBindingTable = rayTracingPipeline->createShaderBindingTable(
                 vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
@@ -2376,7 +2396,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                 VK_SHADER_STAGE_MISS_BIT_KHR,
                 createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0), 1, &specInfo);
 
-            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
+            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout, {}, VK_NULL_HANDLE, pNext);
 
             raygenShaderBindingTable = rayTracingPipeline->createShaderBindingTable(
                 vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
@@ -2401,7 +2421,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                 VK_SHADER_STAGE_CALLABLE_BIT_KHR,
                 createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0), 1, &specInfo);
 
-            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
+            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout, {}, VK_NULL_HANDLE, pNext);
 
             raygenShaderBindingTable = rayTracingPipeline->createShaderBindingTable(
                 vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
@@ -2589,7 +2609,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
 
             const VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {
                 VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType sType;
-                nullptr,                                         // const void* pNext;
+                pNext,                                           // const void* pNext;
                 (VkPipelineCreateFlags)0,                        // VkPipelineCreateFlags flags;
                 static_cast<uint32_t>(stageCreateInfos.size()),  // uint32_t stageCount;
                 de::dataOrNull(stageCreateInfos),                // const VkPipelineShaderStageCreateInfo* pStages;
@@ -4036,6 +4056,7 @@ tcu::TestCaseGroup *createCooperativeVectorBasicTests(tcu::TestContext &testCtx)
                             false,                                              // bool nonuniformOffset;
                             false,                                              // bool cfDivergent;
                             RESULT_ADDR_UNIFORM,                                // ResultAddress resultAddr;
+                            false,                                              // bool uses64BitIndexing;
                         };
                         sizeGroup->addChild(new CooperativeVectorTestCase(testCtx, stageCases[stageNdx].name, c));
                     }
@@ -4466,6 +4487,7 @@ tcu::TestCaseGroup *createCooperativeVectorMatrixMulTests(tcu::TestContext &test
                                             !!nonunifCases[nuNdx].value,           // bool nonuniformOffset;
                                             !!cfCases[cfNdx].value,                // bool cfDivergent;
                                             RESULT_ADDR_UNIFORM,                   // ResultAddress resultAddr;
+                                            false,                                 // bool uses64BitIndexing;
                                         };
                                         colGroup->addChild(
                                             new CooperativeVectorTestCase(testCtx, stageCases[stageNdx].name, c));
@@ -4486,6 +4508,51 @@ tcu::TestCaseGroup *createCooperativeVectorMatrixMulTests(tcu::TestContext &test
         }
         group->addChild(ttGroup.release());
     }
+
+    de::MovePtr<tcu::TestCaseGroup> group64(new tcu::TestCaseGroup(testCtx, "64b_indexing"));
+
+    // 64bit indexing test cases
+    for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
+    {
+        uint32_t threadsPerWorkgroupX = stageCases[stageNdx].value[1];
+        uint32_t threadsPerWorkgroupY = stageCases[stageNdx].value[2];
+        uint32_t workgroupsX          = 2u;
+        uint32_t workgroupsY          = 2u;
+
+        CaseDef c = {
+            (Stage)stageCases[stageNdx].value[0], // Stage stage;
+            TT_MATRIXMAD,                         // TestType testtype;
+            threadsPerWorkgroupX,                 // uint32_t threadsPerWorkgroupX;
+            threadsPerWorkgroupY,                 // uint32_t threadsPerWorkgroupY;
+            workgroupsX,                          // uint32_t workgroupsX;
+            workgroupsY,                          // uint32_t workgroupsY;
+            VK_COMPONENT_TYPE_FLOAT16_NV,         // VkComponentTypeKHR inputType;
+            VK_COMPONENT_TYPE_FLOAT16_NV,         // VkComponentTypeKHR inputInterpretation;
+            VK_COMPONENT_TYPE_FLOAT16_NV,         // VkComponentTypeKHR matrixType;
+            VK_COMPONENT_TYPE_FLOAT16_NV,         // VkComponentTypeKHR outputType;
+            false,                                // bool inputPacked;
+            {
+                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV,
+                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV,
+                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV,
+            },                   // VkCooperativeVectorMatrixLayoutNV matrixLayout;
+            false,               // bool transpose;
+            SC_BUFFER,           // StorageClass storageClass;
+            5,                   // uint32_t inputVectorSize;
+            5,                   // uint32_t outputVectorSize;
+            ACT_NONE,            // Activation act0;
+            ACT_NONE,            // Activation act1;
+            ACT_NONE,            // Activation act2;
+            false,               // bool nonuniformOffset;
+            false,               // bool cfDivergent;
+            RESULT_ADDR_UNIFORM, // ResultAddress resultAddr;
+            true,                // bool uses64BitIndexing;
+        };
+        std::string name = std::string("muladd_") + stageCases[stageNdx].name;
+        group64->addChild(new CooperativeVectorTestCase(testCtx, name.c_str(), c));
+    }
+    group->addChild(group64.release());
+
     return group.release();
 }
 
@@ -4652,6 +4719,7 @@ tcu::TestCaseGroup *createCooperativeVectorTrainingTests(tcu::TestContext &testC
                                         !!nonunifCases[nuNdx].value,              // bool nonuniformOffset;
                                         !!cfCases[cfNdx].value,                   // bool cfDivergent;
                                         (ResultAddress)nonunifCases[nuNdx].value, // ResultAddress resultAddr;
+                                        false,                                    // bool uses64BitIndexing;
                                     };
                                     colGroup->addChild(
                                         new CooperativeVectorTestCase(testCtx, stageCases[stageNdx].name, c));
@@ -4670,6 +4738,55 @@ tcu::TestCaseGroup *createCooperativeVectorTrainingTests(tcu::TestContext &testC
         }
         group->addChild(ttGroup.release());
     }
+
+    de::MovePtr<tcu::TestCaseGroup> group64(new tcu::TestCaseGroup(testCtx, "64b_indexing"));
+
+    // 64bit indexing test cases
+    for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
+    {
+        uint32_t threadsPerWorkgroupX = stageCases[stageNdx].value[1];
+        uint32_t threadsPerWorkgroupY = stageCases[stageNdx].value[2];
+        uint32_t workgroupsX          = 2u;
+        uint32_t workgroupsY          = 2u;
+
+        CaseDef c = {
+            (Stage)stageCases[stageNdx].value[0], // Stage stage;
+            TT_REDUCESUM,                         // TestType testtype;
+            threadsPerWorkgroupX,                 // uint32_t threadsPerWorkgroupX;
+            threadsPerWorkgroupY,                 // uint32_t threadsPerWorkgroupY;
+            workgroupsX,                          // uint32_t workgroupsX;
+            workgroupsY,                          // uint32_t workgroupsY;
+            VK_COMPONENT_TYPE_FLOAT16_NV,         // VkComponentTypeKHR inputType;
+            VK_COMPONENT_TYPE_FLOAT16_NV,         // VkComponentTypeKHR inputInterpretation;
+            VK_COMPONENT_TYPE_FLOAT16_NV,         // VkComponentTypeKHR matrixType;
+            VK_COMPONENT_TYPE_FLOAT16_NV,         // VkComponentTypeKHR outputType;
+            false,                                // bool inputPacked;
+            {
+                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV,
+                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV,
+                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV,
+            },                   // VkCooperativeVectorMatrixLayoutNV matrixLayout;
+            false,               // bool transpose;
+            SC_BUFFER,           // StorageClass storageClass;
+            5,                   // uint32_t inputVectorSize;
+            5,                   // uint32_t outputVectorSize;
+            ACT_NONE,            // Activation act0;
+            ACT_NONE,            // Activation act1;
+            ACT_NONE,            // Activation act2;
+            false,               // bool nonuniformOffset;
+            false,               // bool cfDivergent;
+            RESULT_ADDR_UNIFORM, // ResultAddress resultAddr;
+            true,                // bool uses64BitIndexing;
+        };
+        std::string name = std::string("reducesum_") + stageCases[stageNdx].name;
+        group64->addChild(new CooperativeVectorTestCase(testCtx, name.c_str(), c));
+
+        c.testType = TT_OUTERPRODUCT;
+        name       = std::string("outerproduct_") + stageCases[stageNdx].name;
+        group64->addChild(new CooperativeVectorTestCase(testCtx, name.c_str(), c));
+    }
+    group->addChild(group64.release());
+
     return group.release();
 }
 
