@@ -374,7 +374,6 @@ struct TestParams
     bool imageOffset;
     bool useSecondaryCmdBuffer;
     bool useSparseBinding;
-    bool useMaxSlices;
     bool useGeneralLayout;
 
     TestParams(void)
@@ -397,7 +396,6 @@ struct TestParams
         imageOffset             = false;
         useSecondaryCmdBuffer   = false;
         useSparseBinding        = false;
-        useMaxSlices            = false;
         useGeneralLayout        = false;
     }
 
@@ -4052,7 +4050,7 @@ VkImageSubresourceLayers makeDefaultSRL(uint32_t baseArrayLayer = 0u, uint32_t l
 
 // Helper to create a blit from 3D to a 2D array image.
 VkImageBlit make3Dto2DArrayBlit(VkExtent3D srcBaseSize, VkExtent3D dstBaseSize, uint32_t srcBaseSlice,
-                                uint32_t dstBaseSlice, uint32_t sliceCount)
+                                uint32_t dstBaseSlice)
 {
     const VkImageBlit blit = {
         makeDefaultSRL(), // src subresource layers.
@@ -4060,9 +4058,9 @@ VkImageBlit make3Dto2DArrayBlit(VkExtent3D srcBaseSize, VkExtent3D dstBaseSize, 
             // src offsets.
             {0, 0, static_cast<int32_t>(srcBaseSlice)},
             {static_cast<int32_t>(srcBaseSize.width), static_cast<int32_t>(srcBaseSize.height),
-             static_cast<int32_t>(srcBaseSlice + sliceCount)},
+             static_cast<int32_t>(srcBaseSlice + 1)},
         },
-        makeDefaultSRL(dstBaseSlice, sliceCount), // dst subresource layers
+        makeDefaultSRL(dstBaseSlice, 1), // dst subresource layers
         {
             // dst offsets.
             {0, 0, 0},
@@ -4085,43 +4083,6 @@ BlittingImages::BlittingImages(Context &context, TestParams params)
     const auto sparseFlags              = (VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
     const auto srcCreateFlags = (getCreateFlags(m_params.src.image) | (m_params.useSparseBinding ? sparseFlags : 0u));
     const auto dstCreateFlags = getCreateFlags(m_params.dst.image);
-
-    if (m_params.useMaxSlices)
-    {
-        // Modify the regions and the depth of the source and destination images before proceeding.
-        DE_ASSERT(m_params.regions.empty());
-        DE_ASSERT(m_params.src.image.extent.depth == 0u);
-        DE_ASSERT(m_params.dst.image.extent.depth == 0u);
-
-        VkImageFormatProperties srcFormatProperties;
-        VkImageFormatProperties dstFormatProperties;
-
-        uint32_t srcMaxSlices = 0u;
-        uint32_t dstMaxSlices = 0u;
-
-        srcFormatProperties = getPhysicalDeviceImageFormatProperties(
-            vki, vkPhysDevice, m_params.src.image.format, m_params.src.image.imageType, m_params.src.image.tiling,
-            imageUsage, srcCreateFlags);
-
-        srcMaxSlices = ((m_params.src.image.imageType == VK_IMAGE_TYPE_3D) ? srcFormatProperties.maxExtent.depth :
-                                                                             srcFormatProperties.maxArrayLayers);
-
-        dstFormatProperties = getPhysicalDeviceImageFormatProperties(
-            vki, vkPhysDevice, m_params.dst.image.format, m_params.dst.image.imageType, m_params.dst.image.tiling,
-            imageUsage, dstCreateFlags);
-
-        dstMaxSlices = ((m_params.dst.image.imageType == VK_IMAGE_TYPE_3D) ? dstFormatProperties.maxExtent.depth :
-                                                                             dstFormatProperties.maxArrayLayers);
-
-        const auto maxSlices = ((srcMaxSlices < dstMaxSlices) ? srcMaxSlices : dstMaxSlices);
-
-        m_params.src.image.extent.depth = maxSlices;
-        m_params.dst.image.extent.depth = maxSlices;
-
-        CopyRegion r;
-        r.imageBlit = make3Dto2DArrayBlit(m_params.src.image.extent, m_params.dst.image.extent, 0u, 0u, maxSlices);
-        m_params.regions.push_back(r);
-    }
 
     const VkImageCreateInfo sourceImageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
@@ -4223,12 +4184,6 @@ tcu::TestStatus BlittingImages::iterate(void)
     // When using maximum slices, we'll generate the copy region on the fly. This is because we don't know, at test
     // creation time, the exact size of the images.
     std::vector<CopyRegion> generatedRegions;
-
-    if (m_params.useMaxSlices)
-    {
-        auto &log = m_context.getTestContext().getLog();
-        log << tcu::TestLog::Message << "Max slices: " << m_params.src.image.extent.depth << tcu::TestLog::EndMessage;
-    }
 
     // setup blit regions - they are also needed for reference generation
     if (!(m_params.extensionFlags & COPY_COMMANDS_2))
@@ -14976,7 +14931,7 @@ void addBlittingImage3DTo2DArrayTests(tcu::TestCaseGroup *group, TestParams para
             cubeParams.dst.image.extent.depth = cubeLayers;
 
             const std::vector<VkImageBlit> blits{
-                make3Dto2DArrayBlit(cubeParams.src.image.extent, cubeParams.dst.image.extent, 3u, 1u, 1u),
+                make3Dto2DArrayBlit(cubeParams.src.image.extent, cubeParams.dst.image.extent, 3u, 1u),
             };
 
             cubeParams.regions.clear();
@@ -14995,10 +14950,10 @@ void addBlittingImage3DTo2DArrayTests(tcu::TestCaseGroup *group, TestParams para
         // Attempt to blit one layer at a time, for multiple layers.
         {
             const std::vector<VkImageBlit> blits{
-                make3Dto2DArrayBlit(params.src.image.extent, params.dst.image.extent, 2u, 5u, 1u),
-                make3Dto2DArrayBlit(params.src.image.extent, params.dst.image.extent, 4u, 11u, 1u),
-                make3Dto2DArrayBlit(params.src.image.extent, params.dst.image.extent, 7u, 2u, 1u),
-                make3Dto2DArrayBlit(params.src.image.extent, params.dst.image.extent, 13u, 0u, 1u),
+                make3Dto2DArrayBlit(params.src.image.extent, params.dst.image.extent, 2u, 5u),
+                make3Dto2DArrayBlit(params.src.image.extent, params.dst.image.extent, 4u, 11u),
+                make3Dto2DArrayBlit(params.src.image.extent, params.dst.image.extent, 7u, 2u),
+                make3Dto2DArrayBlit(params.src.image.extent, params.dst.image.extent, 13u, 0u),
             };
 
             params.regions.clear();
@@ -15014,22 +14969,9 @@ void addBlittingImage3DTo2DArrayTests(tcu::TestCaseGroup *group, TestParams para
             group->addChild(new BlitImageTestCase(testCtx, "single_slices_" + suffix, params));
         }
 
-        {
-            TestParams maxSlicesParams = params;
-
-            maxSlicesParams.useMaxSlices           = true;
-            maxSlicesParams.src.image.extent       = defaultQuarterExtent;
-            maxSlicesParams.dst.image.extent       = defaultQuarterExtent;
-            maxSlicesParams.src.image.extent.depth = 0u;
-            maxSlicesParams.dst.image.extent.depth = 0u;
-            maxSlicesParams.regions.clear();
-
-            group->addChild(new BlitImageTestCase(testCtx, "max_slices_" + suffix, maxSlicesParams));
-        }
-
         // Blit a slice into a smaller slice of a cube image.
         {
-            auto blit = make3Dto2DArrayBlit(params.src.image.extent, params.dst.image.extent, 3u, 7u, 1u);
+            auto blit = make3Dto2DArrayBlit(params.src.image.extent, params.dst.image.extent, 3u, 7u);
 
             blit.dstOffsets[0].x = defaultSize / 4;
             blit.dstOffsets[0].y = defaultSize / 2;
