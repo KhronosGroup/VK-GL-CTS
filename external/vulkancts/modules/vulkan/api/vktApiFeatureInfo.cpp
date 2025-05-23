@@ -1667,20 +1667,20 @@ tcu::TestStatus validateLimitsExtVertexAttributeDivisorEXT(Context &context)
     const VkBool32 checkAlways            = VK_TRUE;
     const InstanceInterface &vk           = context.getInstanceInterface();
     const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
-    vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR vertexAttributeDivisorPropertiesKHR =
+    vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT vertexAttributeDivisorPropertiesEXT =
         vk::initVulkanStructure();
-    vk::VkPhysicalDeviceProperties2 properties2 = vk::initVulkanStructure(&vertexAttributeDivisorPropertiesKHR);
+    vk::VkPhysicalDeviceProperties2 properties2 = vk::initVulkanStructure(&vertexAttributeDivisorPropertiesEXT);
     TestLog &log                                = context.getTestContext().getLog();
     bool limitsOk                               = true;
 
     vk.getPhysicalDeviceProperties2(physicalDevice, &properties2);
 
     FeatureLimitTableItem featureLimitTable[] = {
-        {PN(checkAlways), PN(vertexAttributeDivisorPropertiesKHR.maxVertexAttribDivisor),
+        {PN(checkAlways), PN(vertexAttributeDivisorPropertiesEXT.maxVertexAttribDivisor),
          LIM_MIN_UINT32((1 << 16) - 1)},
     };
 
-    log << TestLog::Message << vertexAttributeDivisorPropertiesKHR << TestLog::EndMessage;
+    log << TestLog::Message << vertexAttributeDivisorPropertiesEXT << TestLog::EndMessage;
 
     for (uint32_t ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
         limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
