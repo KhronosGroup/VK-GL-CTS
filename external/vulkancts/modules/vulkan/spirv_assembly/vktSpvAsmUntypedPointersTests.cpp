@@ -2649,6 +2649,9 @@ std::string createShaderAnnotations(POINTER_TEST_CASE testCase)
                                    "OpDecorate       %data_buffer      Block\n"
                                    "OpMemberDecorate %data_buffer      0 Offset 0\n"
 
+                                   "OpMemberDecorate %push_constant    0        Offset 0\n"
+                                   "OpDecorate       %push_constant    Block\n"
+
                                    "OpDecorate       %phys_ptrs_struct Block\n"
                                    "OpMemberDecorate %phys_ptrs_struct 0 Offset 0\n"
                                    "OpMemberDecorate %phys_ptrs_struct 1 Offset 8\n"
@@ -4010,9 +4013,12 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
     {
         variables += std::string(
             /* Structs */
+            "%push_constant = OpTypeStruct %uint32\n"
             "%data_buffer   = OpTypeStruct %${baseType}\n"
 
             /* Pointers */
+            "%push_constant_ptr                = OpTypePointer           PushConstant          %push_constant\n"
+            "%uint32_push_constant_ptr         = OpTypePointer           PushConstant          %uint32\n"
             "%untyped_phys_ptr                 = OpTypeUntypedPointerKHR PhysicalStorageBuffer\n"
             "%data_buffer_phys_ptr             = OpTypePointer           PhysicalStorageBuffer %data_buffer\n"
             "%data_buffer_phys_ptr_ptr         = OpTypePointer           StorageBuffer         %data_buffer_phys_ptr\n"
@@ -4024,6 +4030,8 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
             "%phys_ptrs_struct_ptr = OpTypePointer StorageBuffer %phys_ptrs_struct\n"
 
             /* Variables */
+            "%push_constant_var                = OpVariable              %push_constant_ptr                "
+            "PushConstant\n"
             "%all_data_var = OpVariable %phys_ptrs_struct_ptr  StorageBuffer\n");
 
         break;
@@ -5272,7 +5280,12 @@ std::string createShaderMain(POINTER_TEST_CASE testCase)
             "%output     = OpLoad                   %data_buffer_phys_ptr     %output_ptr\n"
             "%output_loc = OpUntypedAccessChainKHR  %untyped_phys_ptr         %data_buffer  %output     %c_uint32_0\n"
 
-            "%selected_phys_ptr = OpSelect %untyped_phys_ptr ${condition}       %input_0_loc %input_1_loc\n"
+            "%push_const_loc   = OpAccessChain           %uint32_push_constant_ptr                    "
+            "%push_constant_var        %c_uint32_0\n"
+            "%condition_int    = OpLoad                  %uint32                         %push_const_loc\n"
+            "%condition_bool   = OpIEqual                %bool            %condition_int %c_uint32_1\n"
+
+            "%selected_phys_ptr = OpSelect %untyped_phys_ptr %condition_bool    %input_0_loc %input_1_loc\n"
             "%selected_val      = OpLoad   %${baseType}      %selected_phys_ptr Aligned ${alignment}\n"
             "                     OpStore  %output_loc       %selected_val      Aligned ${alignment}\n");
         break;
@@ -5292,8 +5305,13 @@ std::string createShaderMain(POINTER_TEST_CASE testCase)
             "%output     = OpLoad                   %data_buffer_phys_ptr     %output_ptr\n"
             "%output_loc = OpUntypedAccessChainKHR  %untyped_phys_ptr         %data_buffer  %output     %c_uint32_0\n"
 
-            "                OpSelectionMerge       %end_label   None\n"
-            "                OpBranchConditional    ${condition} %take_input_0 %take_input_1\n"
+            "%push_const_loc   = OpAccessChain           %uint32_push_constant_ptr                    "
+            "%push_constant_var        %c_uint32_0\n"
+            "%condition_int    = OpLoad                  %uint32                         %push_const_loc\n"
+            "%condition_bool   = OpIEqual                %bool            %condition_int %c_uint32_1\n"
+
+            "                OpSelectionMerge       %end_label      None\n"
+            "                OpBranchConditional    %condition_bool %take_input_0 %take_input_1\n"
             "%take_input_0 = OpLabel\n"
             "                OpBranch               %end_label\n"
             "%take_input_1 = OpLabel\n"
@@ -8238,7 +8256,7 @@ void addPhysicalStorageOpSelectTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL
     de::MovePtr<tcu::TestCaseGroup> firstGroup(new tcu::TestCaseGroup(testCtx, "first", ""));
     de::MovePtr<tcu::TestCaseGroup> secondGroup(new tcu::TestCaseGroup(testCtx, "second", ""));
 
-    tcu::StringTemplate shaderHeader(createShaderHeader("%all_data_var"));
+    tcu::StringTemplate shaderHeader(createShaderHeader("%push_constant_var %all_data_var"));
 
     tcu::StringTemplate shaderAnnotations(createShaderAnnotations(PointerTestCases::OP_SELECT_PHYSICAL_STORAGE));
 
@@ -8253,17 +8271,6 @@ void addPhysicalStorageOpSelectTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL
             std::string testName = toString(BASE_DATA_TYPE_CASES[i]);
 
             std::map<std::string, std::string> specMap;
-            if (j)
-            {
-                specMap["boolConst"] = "%c_bool_true = OpConstantTrue %bool";
-                specMap["condition"] = "%c_bool_true";
-            }
-            else
-            {
-                specMap["boolConst"] = "%c_bool_false = OpConstantFalse %bool";
-                specMap["condition"] = "%c_bool_false";
-            }
-
             specMap["baseDecl"]  = getDeclaration(BASE_DATA_TYPE_CASES[i]);
             specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
             specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
@@ -8317,10 +8324,16 @@ void addPhysicalStorageOpSelectTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL
                 spec.outputs.push_back(output);
             }
 
+            desc.dataType      = DataTypes::UINT32;
+            desc.elemCount     = 1;
+            desc.value         = j;
+            Resource pushConst = createFilledResource(desc);
+
             spec.assembly              = shaderAsm;
             spec.numWorkGroups         = tcu::IVec3(1, 1, 1);
             spec.spirvVersion          = SPIRV_VERSION_1_4;
             spec.usesPhysStorageBuffer = true;
+            spec.pushConstants         = pushConst.getBuffer();
             spec.inputs.push_back(input0);
             spec.inputs.push_back(input1);
             spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
@@ -8451,7 +8464,7 @@ void addPhysicalStorageOpPhiTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
     de::MovePtr<tcu::TestCaseGroup> firstGroup(new tcu::TestCaseGroup(testCtx, "first", ""));
     de::MovePtr<tcu::TestCaseGroup> secondGroup(new tcu::TestCaseGroup(testCtx, "second", ""));
 
-    tcu::StringTemplate shaderHeader(createShaderHeader("%all_data_var"));
+    tcu::StringTemplate shaderHeader(createShaderHeader("%push_constant_var %all_data_var"));
 
     tcu::StringTemplate shaderAnnotations(createShaderAnnotations(PointerTestCases::OP_PHI_PHYSICAL_STORAGE));
 
@@ -8466,17 +8479,6 @@ void addPhysicalStorageOpPhiTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
             std::string testName = toString(BASE_DATA_TYPE_CASES[i]);
 
             std::map<std::string, std::string> specMap;
-            if (j)
-            {
-                specMap["boolConst"] = "%c_bool_true = OpConstantTrue %bool";
-                specMap["condition"] = "%c_bool_true";
-            }
-            else
-            {
-                specMap["boolConst"] = "%c_bool_false = OpConstantFalse %bool";
-                specMap["condition"] = "%c_bool_false";
-            }
-
             specMap["baseDecl"]  = getDeclaration(BASE_DATA_TYPE_CASES[i]);
             specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
             specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
@@ -8530,11 +8532,17 @@ void addPhysicalStorageOpPhiTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
                 spec.outputs.push_back(output);
             }
 
+            desc.dataType      = DataTypes::UINT32;
+            desc.elemCount     = 1;
+            desc.value         = j;
+            Resource pushConst = createFilledResource(desc);
+
             spec.assembly      = shaderAsm;
             spec.numWorkGroups = tcu::IVec3(1, 1, 1);
             spec.spirvVersion =
                 SPIRV_VERSION_1_4; // After spir-v version 1.6 OpBranchConditional labels nust not be the same.
             spec.usesPhysStorageBuffer = true;
+            spec.pushConstants         = pushConst.getBuffer();
             spec.inputs.push_back(input0);
             spec.inputs.push_back(input1);
             spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
