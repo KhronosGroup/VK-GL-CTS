@@ -329,10 +329,22 @@ inline T Increment(T a)
     return ++a;
 }
 
+template <>
+inline tcu::Float16 Increment<tcu::Float16>(tcu::Float16)
+{
+    return tcu::Float16();
+}
+
 template <class T>
 inline T Decrement(T a)
 {
     return --a;
+}
+
+template <>
+inline tcu::Float16 Decrement<tcu::Float16>(tcu::Float16)
+{
+    return tcu::Float16();
 }
 
 template <class T>
@@ -341,10 +353,22 @@ inline T Add(T a, T b)
     return static_cast<T>(a + b);
 }
 
+template <>
+inline tcu::Float16 Add<tcu::Float16>(tcu::Float16 a, tcu::Float16 b)
+{
+    return tcu::Float16(a.asFloat() + b.asFloat());
+}
+
 template <class T>
 inline T Subtract(T a, T b)
 {
     return static_cast<T>(a - b);
+}
+
+template <>
+inline tcu::Float16 Subtract<tcu::Float16>(tcu::Float16 a, tcu::Float16 b)
+{
+    return tcu::Float16(a.asFloat() - b.asFloat());
 }
 
 template <class T>
@@ -353,16 +377,34 @@ inline T Min(T a, T b)
     return a < b ? a : b;
 }
 
+template <>
+inline tcu::Float16 Min<tcu::Float16>(tcu::Float16 a, tcu::Float16 b)
+{
+    return a.asFloat() < b.asFloat() ? a : b;
+}
+
 template <class T>
 inline T Max(T a, T b)
 {
     return a > b ? a : b;
 }
 
+template <>
+inline tcu::Float16 Max<tcu::Float16>(tcu::Float16 a, tcu::Float16 b)
+{
+    return a.asFloat() > b.asFloat() ? a : b;
+}
+
 template <class T>
 inline T And(T a, T b)
 {
     return a & b;
+}
+
+template <>
+inline tcu::Float16 And<tcu::Float16>(tcu::Float16, tcu::Float16)
+{
+    return tcu::Float16();
 }
 
 template <>
@@ -384,6 +426,12 @@ inline T Or(T a, T b)
 }
 
 template <>
+inline tcu::Float16 Or<tcu::Float16>(tcu::Float16, tcu::Float16)
+{
+    return tcu::Float16();
+}
+
+template <>
 inline float Or<float>(float, float)
 {
     return 0;
@@ -399,6 +447,12 @@ template <class T>
 inline T Xor(T a, T b)
 {
     return a ^ b;
+}
+
+template <>
+inline tcu::Float16 Xor<tcu::Float16>(tcu::Float16, tcu::Float16)
+{
+    return tcu::Float16();
 }
 
 template <>
@@ -425,6 +479,12 @@ inline T CompareExchange(T a, T b, T comp)
     return a == comp ? b : a;
 }
 
+template <>
+inline tcu::Float16 CompareExchange<tcu::Float16>(tcu::Float16 a, tcu::Float16 b, tcu::Float16 comp)
+{
+    return a.asFloat() == comp.asFloat() ? b : a;
+}
+
 /*----------------------------------------------------------------------------------------*//*!
  * \brief Concrete class for an input/output storage buffer object for atomic operations
  *//*----------------------------------------------------------------------------------------*/
@@ -441,7 +501,7 @@ public:
     void getBytes(std::vector<uint8_t> &bytes) const
     {
         const size_t size     = m_elements.size() * sizeof(T);
-        const uint8_t initVal = 0xffu; // Initial value for all GPU atomic operations
+        const uint8_t initVal = 0x00u; // Initial value for all GPU atomic operations
         bytes.resize(size, initVal);
 
         for (size_t ndx = 0; ndx < m_atomicOpDescs.size(); ndx++)

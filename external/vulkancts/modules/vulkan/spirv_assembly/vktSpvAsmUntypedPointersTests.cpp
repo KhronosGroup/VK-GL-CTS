@@ -2229,7 +2229,8 @@ static Resource createAtomicResource(const AtomicResourceDesc &desc, const std::
     }
     case DataTypes::FLOAT16:
     {
-        return Resource(BufferSp(new AtomicBuffer<deFloat16>(std::vector<deFloat16>(desc.elemCount), atomicOpDescs)));
+        return Resource(
+            BufferSp(new AtomicBuffer<tcu::Float16>(std::vector<tcu::Float16>(desc.elemCount), atomicOpDescs)));
     }
     case DataTypes::UINT32:
     {
@@ -3267,6 +3268,7 @@ std::string createShaderVariables(ATOMIC_TEST_CASE testCase)
             "%void_func = OpTypeFunction %void\n"
 
             /* Constants */
+            "%c_base_0   = OpConstant %${baseType} 0\n"
             "%c_uint32_0 = OpConstant %uint32      0\n"
             "%c_uint32_1 = OpConstant %uint32      1\n"
 
@@ -3301,6 +3303,7 @@ std::string createShaderVariables(ATOMIC_TEST_CASE testCase)
             "%void_func = OpTypeFunction %void\n"
 
             /* Constants */
+            "%c_base_0        = OpConstant %${baseType} 0\n"
             "%c_uint32_0      = OpConstant %uint32      0\n"
             "%c_${baseType}_1 = OpConstant %${baseType} 1\n"
             "%op_value        = OpConstant %${baseType} ${opValue}\n"
@@ -3329,6 +3332,7 @@ std::string createShaderVariables(ATOMIC_TEST_CASE testCase)
             "%void_func = OpTypeFunction %void\n"
 
             /* Constants */
+            "%c_base_0        = OpConstant %${baseType} 0\n"
             "%c_uint32_0      = OpConstant %uint32      0\n"
             "%c_uint32_1      = OpConstant %uint32      1\n"
             "%op_value        = OpConstant %${baseType} ${opValue}\n"
@@ -4953,6 +4957,7 @@ std::string createShaderMain(ATOMIC_TEST_CASE testCase)
     {
         main += std::string("%output_data_var_loc = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr %output_buffer "
                             "%output_data_untyped_var %c_uint32_0\n"
+                            "                       OpStore   %output_data_var_loc %c_base_0\n"
                             "%return_val          = ${opType}               %${baseType}                               "
                             "%output_data_var_loc     %c_uint32_1 %c_uint32_0\n");
         break;
@@ -4965,6 +4970,7 @@ std::string createShaderMain(ATOMIC_TEST_CASE testCase)
     {
         main += std::string("%output_data_var_loc = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr %output_buffer "
                             "%output_data_untyped_var %c_uint32_0\n"
+                            "                       OpStore   %output_data_var_loc %c_base_0\n"
                             "%return_val          = ${opType}               %${baseType}                               "
                             "%output_data_var_loc     %c_uint32_1 %c_uint32_0 %op_value\n");
         break;
@@ -4975,6 +4981,7 @@ std::string createShaderMain(ATOMIC_TEST_CASE testCase)
     {
         main += std::string("%output_data_var_loc = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr %output_buffer "
                             "%output_data_untyped_var %c_uint32_0\n"
+                            "                       OpStore   %output_data_var_loc %c_base_0\n"
                             "%return_val          = ${opType}               %${baseType}                               "
                             "%output_data_var_loc     %c_uint32_1 %c_uint32_0 %op_value\n");
         break;
@@ -4983,8 +4990,7 @@ std::string createShaderMain(ATOMIC_TEST_CASE testCase)
     {
         main += std::string("%output_data_var_loc = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr %output_buffer "
                             "%output_data_untyped_var %c_uint32_0\n"
-                            "%unused_id           = ${opMin}                %${baseType}                               "
-                            "%output_data_var_loc     %c_uint32_1 %c_uint32_0 %c_${baseType}_1\n"
+                            "                       OpStore   %output_data_var_loc %c_${baseType}_1\n"
                             "%return_val          = ${opType}               %${baseType}                               "
                             "%output_data_var_loc     %c_uint32_1 %c_uint32_0 %c_uint32_0 %op_value %comp\n");
         break;
@@ -8079,7 +8085,6 @@ void addAtomicCompareExchangeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_T
             specMap["baseDecl"]  = getDeclaration(ATOMIC_INT_DATA_TYPE_CASES[i]);
             specMap["baseType"]  = toString(ATOMIC_INT_DATA_TYPE_CASES[i]);
             specMap["opType"]    = getAtomicCompareExchangeOperator(ATOMIC_INT_DATA_TYPE_CASES[i]);
-            specMap["opMin"]     = getAtomicMinOperator(ATOMIC_INT_DATA_TYPE_CASES[i]);
             specMap["compValue"] = std::to_string(j);
             specMap["opValue"]   = std::to_string(16);
 
@@ -8113,10 +8118,10 @@ void addAtomicCompareExchangeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_T
             desc.dataType  = ATOMIC_INT_DATA_TYPE_CASES[i];
             desc.elemCount = 1;
 
-            AtomicOpDesc minDesc;
-            minDesc.type      = OP_ATOMIC_MIN;
-            minDesc.elemIndex = 0;
-            minDesc.userData0 = 1;
+            AtomicOpDesc storeDesc;
+            storeDesc.type      = OP_ATOMIC_STORE;
+            storeDesc.elemIndex = 0;
+            storeDesc.userData0 = 1;
 
             AtomicOpDesc compExDesc;
             compExDesc.type      = OP_ATOMIC_COMPARE_EXCHANGE;
@@ -8124,7 +8129,7 @@ void addAtomicCompareExchangeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_T
             compExDesc.userData0 = 16;
             compExDesc.userData1 = j;
 
-            Resource output = createAtomicResource(desc, std::vector<AtomicOpDesc>({minDesc, compExDesc}));
+            Resource output = createAtomicResource(desc, std::vector<AtomicOpDesc>({storeDesc, compExDesc}));
 
             spec.assembly      = shaderAsm;
             spec.numWorkGroups = tcu::IVec3(1, 1, 1);
