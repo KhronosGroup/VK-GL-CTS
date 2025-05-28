@@ -86,6 +86,8 @@ set(DEQP_VK_VKSC_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmPhysicalStorageBufferPointerTests.hpp
 	vktSpvAsmRawAccessChainTests.cpp
 	vktSpvAsmRawAccessChainTests.hpp
+	vktSpvAsmMaint9VectorizationTests.cpp
+	vktSpvAsmMaint9VectorizationTests.hpp
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
