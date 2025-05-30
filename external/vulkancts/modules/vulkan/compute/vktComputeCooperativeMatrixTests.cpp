@@ -3392,6 +3392,34 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                     {
                         setDataInt(ptrs[i], dataTypes[i], j, 123);
                     }
+                    else if (m_data.testType == TT_DIV)
+                    {
+                        uint32_t value = (deRandom_getUint32(&rnd) & 0xff) - 128;
+                        if (isSIntType(dataTypes[3]) && i == 1)
+                        {
+                            if (value == 0)
+                            {
+                                // Divide by 0 is undefined behaviour.
+                                value = 1; // Arbitrarily set to 1.
+                            }
+                            else
+                            {
+                                // It is also an undefined behaviour if value is
+                                // -1 and the numerator (corresponding matA
+                                // value) is the minimum representable value.
+                                uint32_t bits = componentTypeInfo.at(dataTypes[i]).bits;
+                                uint32_t mask = bits == 32 ? ~0 : ((1 << bits) - 1);
+                                // A and B matrices have same datatype and size.
+                                uint32_t matAVal = getDataInt(ptrs[0], dataTypes[0], j);
+                                if (((value & mask) == (uint32_t)((1 << bits) - 1)) &&
+                                    ((matAVal & mask) == (uint32_t)(1 << (bits - 1))))
+                                {
+                                    value = 1; // Arbitrarily set to 1.
+                                }
+                            }
+                        }
+                        setDataInt(ptrs[i], dataTypes[i], j, value);
+                    }
                     else
                     {
                         uint32_t value = (deRandom_getUint32(&rnd) & 0xff) - 128;
@@ -4907,7 +4935,12 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                     {
                         if (isSIntType(dataTypes[3]))
                         {
-                            if (inputB != 0 && ((int32_t)output & mask) != (((int32_t)inputA / (int32_t)inputB) & mask))
+                            // Assert conditions that lead to undefined behaviour.
+                            DE_ASSERT(inputB != 0);
+                            DE_ASSERT(!((inputA & mask) == (uint32_t)(1 << (resultSize - 1)) &&
+                                        (inputB & mask) == (uint32_t)((1 << resultSize) - 1)));
+
+                            if (((int32_t)output & mask) != (((int32_t)inputA / (int32_t)inputB) & mask))
                                 res = QP_TEST_RESULT_FAIL;
                         }
                         else
