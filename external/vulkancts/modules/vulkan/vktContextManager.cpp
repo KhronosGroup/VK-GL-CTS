@@ -50,11 +50,11 @@
 namespace vk
 {
 
-#define MAKE_FEATURE_IMPL(clazz, enume)   \
-    template <>                           \
-    FeatureDesc makeFeatureDesc<clazz>()  \
-    {                                     \
-        return FeatureDesc{enume, "", 1}; \
+#define MAKE_FEATURE_IMPL(clazz, enume)  \
+    template <>                          \
+    FeatureDesc makeFeatureDesc<clazz>() \
+    {                                    \
+        return FeatureDesc{enume, ""};   \
     }
 
 #define INIT_FEATURE_IMPL(clazz, enume)                                \
@@ -82,6 +82,7 @@ INIT_FEATURE_IMPL(VkPhysicalDeviceVulkan14Features, VK_STRUCTURE_TYPE_PHYSICAL_D
 MAKE_FEATURE_IMPL(VkFaultCallbackInfo, VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO)
 INIT_FEATURE_IMPL(VkFaultCallbackInfo, VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO)
 MAKE_FEATURE_IMPL(VkPhysicalDeviceVulkanSC10Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES)
+INIT_FEATURE_IMPL(VkPhysicalDeviceVulkanSC10Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES)
 MAKE_FEATURE_IMPL(VkDeviceObjectReservationCreateInfo, VK_STRUCTURE_TYPE_DEVICE_OBJECT_RESERVATION_CREATE_INFO)
 INIT_FEATURE_IMPL(VkDeviceObjectReservationCreateInfo, VK_STRUCTURE_TYPE_DEVICE_OBJECT_RESERVATION_CREATE_INFO)
 #endif

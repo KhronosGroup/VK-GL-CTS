@@ -632,6 +632,7 @@ m_vk.getEncodedVideoSessionParametersKHR = (GetEncodedVideoSessionParametersKHRF
 m_vk.getEventStatus = (GetEventStatusFunc) GET_PROC_ADDR("vkGetEventStatus");
 m_vk.getExecutionGraphPipelineNodeIndexAMDX = (GetExecutionGraphPipelineNodeIndexAMDXFunc) GET_PROC_ADDR("vkGetExecutionGraphPipelineNodeIndexAMDX");
 m_vk.getExecutionGraphPipelineScratchSizeAMDX = (GetExecutionGraphPipelineScratchSizeAMDXFunc) GET_PROC_ADDR("vkGetExecutionGraphPipelineScratchSizeAMDX");
+m_vk.getExternalComputeQueueDataNV = (GetExternalComputeQueueDataNVFunc) GET_PROC_ADDR("vkGetExternalComputeQueueDataNV");
 m_vk.getFenceFdKHR = (GetFenceFdKHRFunc) GET_PROC_ADDR("vkGetFenceFdKHR");
 m_vk.getFenceStatus = (GetFenceStatusFunc) GET_PROC_ADDR("vkGetFenceStatus");
 m_vk.getFenceWin32HandleKHR = (GetFenceWin32HandleKHRFunc) GET_PROC_ADDR("vkGetFenceWin32HandleKHR");

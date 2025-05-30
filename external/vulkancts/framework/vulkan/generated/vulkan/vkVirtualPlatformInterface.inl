@@ -7,5 +7,4 @@ virtual VkResult			createInstance							(const VkInstanceCreateInfo* pCreateInfo
 virtual VkResult			enumerateInstanceExtensionProperties	(const char* pLayerName, uint32_t* pPropertyCount, VkExtensionProperties* pProperties) const = 0;
 virtual VkResult			enumerateInstanceLayerProperties		(uint32_t* pPropertyCount, VkLayerProperties* pProperties) const = 0;
 virtual VkResult			enumerateInstanceVersion				(uint32_t* pApiVersion) const = 0;
-virtual void				getExternalComputeQueueDataNV			(VkExternalComputeQueueNV externalQueue, VkExternalComputeQueueDataParamsNV* params, void* pData) const = 0;
 virtual PFN_vkVoidFunction	getInstanceProcAddr						(VkInstance instance, const char* pName) const = 0;

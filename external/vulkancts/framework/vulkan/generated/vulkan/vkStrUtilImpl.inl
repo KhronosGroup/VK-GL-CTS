@@ -61,6 +61,7 @@ template<> const char*	getTypeName<VkValidationCacheEXT>				(void) { return "VkV
 template<> const char*	getTypeName<VkVideoSessionKHR>					(void) { return "VkVideoSessionKHR";				}
 template<> const char*	getTypeName<VkVideoSessionParametersKHR>		(void) { return "VkVideoSessionParametersKHR";		}
 
+
 namespace pt
 {
 std::ostream& operator<< (std::ostream& s, XlibDisplayPtr				v) { return s << tcu::toHex(v.internal); }
@@ -100,7 +101,10 @@ std::ostream& operator<< (std::ostream& s, NvSciSyncFence				v) { return s << tc
 std::ostream& operator<< (std::ostream& s, NvSciBufAttrList				v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, NvSciSyncAttrList			v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, OHNativeWindow				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, IDirectFB					v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, IDirectFBSurface				v) { return s << tcu::toHex(v.internal); }
 }
+
 
 const char* getdVideoAV1ChromaSamplePositionName (StdVideoAV1ChromaSamplePosition value)
 {
@@ -114,6 +118,7 @@ const char* getdVideoAV1ChromaSamplePositionName (StdVideoAV1ChromaSamplePositio
 		default:												return nullptr;
 	}
 }
+
 
 const char* getdVideoAV1ColorPrimariesName (StdVideoAV1ColorPrimaries value)
 {
@@ -136,6 +141,7 @@ const char* getdVideoAV1ColorPrimariesName (StdVideoAV1ColorPrimaries value)
 	}
 }
 
+
 const char* getdVideoAV1FrameRestorationTypeName (StdVideoAV1FrameRestorationType value)
 {
 	switch (value)
@@ -148,6 +154,7 @@ const char* getdVideoAV1FrameRestorationTypeName (StdVideoAV1FrameRestorationTyp
 		default:												return nullptr;
 	}
 }
+
 
 const char* getdVideoAV1FrameTypeName (StdVideoAV1FrameType value)
 {
@@ -162,6 +169,7 @@ const char* getdVideoAV1FrameTypeName (StdVideoAV1FrameType value)
 	}
 }
 
+
 const char* getdVideoAV1InterpolationFilterName (StdVideoAV1InterpolationFilter value)
 {
 	switch (value)
@@ -175,6 +183,7 @@ const char* getdVideoAV1InterpolationFilterName (StdVideoAV1InterpolationFilter 
 		default:													return nullptr;
 	}
 }
+
 
 const char* getdVideoAV1LevelName (StdVideoAV1Level value)
 {
@@ -209,6 +218,7 @@ const char* getdVideoAV1LevelName (StdVideoAV1Level value)
 	}
 }
 
+
 const char* getdVideoAV1MatrixCoefficientsName (StdVideoAV1MatrixCoefficients value)
 {
 	switch (value)
@@ -233,6 +243,7 @@ const char* getdVideoAV1MatrixCoefficientsName (StdVideoAV1MatrixCoefficients va
 	}
 }
 
+
 const char* getdVideoAV1ProfileName (StdVideoAV1Profile value)
 {
 	switch (value)
@@ -244,6 +255,7 @@ const char* getdVideoAV1ProfileName (StdVideoAV1Profile value)
 		default:									return nullptr;
 	}
 }
+
 
 const char* getdVideoAV1ReferenceNameName (StdVideoAV1ReferenceName value)
 {
@@ -261,6 +273,7 @@ const char* getdVideoAV1ReferenceNameName (StdVideoAV1ReferenceName value)
 		default:											return nullptr;
 	}
 }
+
 
 const char* getdVideoAV1TransferCharacteristicsName (StdVideoAV1TransferCharacteristics value)
 {
@@ -290,6 +303,7 @@ const char* getdVideoAV1TransferCharacteristicsName (StdVideoAV1TransferCharacte
 	}
 }
 
+
 const char* getdVideoAV1TxModeName (StdVideoAV1TxMode value)
 {
 	switch (value)
@@ -302,6 +316,7 @@ const char* getdVideoAV1TxModeName (StdVideoAV1TxMode value)
 	}
 }
 
+
 const char* getdVideoDecodeH264FieldOrderCountName (StdVideoDecodeH264FieldOrderCount value)
 {
 	switch (value)
@@ -312,6 +327,7 @@ const char* getdVideoDecodeH264FieldOrderCountName (StdVideoDecodeH264FieldOrder
 		default:												return nullptr;
 	}
 }
+
 
 const char* getdVideoH264AspectRatioIdcName (StdVideoH264AspectRatioIdc value)
 {
@@ -340,6 +356,7 @@ const char* getdVideoH264AspectRatioIdcName (StdVideoH264AspectRatioIdc value)
 	}
 }
 
+
 const char* getdVideoH264CabacInitIdcName (StdVideoH264CabacInitIdc value)
 {
 	switch (value)
@@ -351,6 +368,7 @@ const char* getdVideoH264CabacInitIdcName (StdVideoH264CabacInitIdc value)
 		default:									return nullptr;
 	}
 }
+
 
 const char* getdVideoH264ChromaFormatIdcName (StdVideoH264ChromaFormatIdc value)
 {
@@ -365,6 +383,7 @@ const char* getdVideoH264ChromaFormatIdcName (StdVideoH264ChromaFormatIdc value)
 	}
 }
 
+
 const char* getdVideoH264DisableDeblockingFilterIdcName (StdVideoH264DisableDeblockingFilterIdc value)
 {
 	switch (value)
@@ -376,6 +395,7 @@ const char* getdVideoH264DisableDeblockingFilterIdcName (StdVideoH264DisableDebl
 		default:													return nullptr;
 	}
 }
+
 
 const char* getdVideoH264LevelIdcName (StdVideoH264LevelIdc value)
 {
@@ -405,6 +425,7 @@ const char* getdVideoH264LevelIdcName (StdVideoH264LevelIdc value)
 	}
 }
 
+
 const char* getdVideoH264MemMgmtControlOpName (StdVideoH264MemMgmtControlOp value)
 {
 	switch (value)
@@ -421,6 +442,7 @@ const char* getdVideoH264MemMgmtControlOpName (StdVideoH264MemMgmtControlOp valu
 	}
 }
 
+
 const char* getdVideoH264ModificationOfPicNumsIdcName (StdVideoH264ModificationOfPicNumsIdc value)
 {
 	switch (value)
@@ -433,6 +455,7 @@ const char* getdVideoH264ModificationOfPicNumsIdcName (StdVideoH264ModificationO
 		default:																return nullptr;
 	}
 }
+
 
 const char* getdVideoH264NonVclNaluTypeName (StdVideoH264NonVclNaluType value)
 {
@@ -450,6 +473,7 @@ const char* getdVideoH264NonVclNaluTypeName (StdVideoH264NonVclNaluType value)
 	}
 }
 
+
 const char* getdVideoH264PictureTypeName (StdVideoH264PictureType value)
 {
 	switch (value)
@@ -463,6 +487,7 @@ const char* getdVideoH264PictureTypeName (StdVideoH264PictureType value)
 	}
 }
 
+
 const char* getdVideoH264PocTypeName (StdVideoH264PocType value)
 {
 	switch (value)
@@ -474,6 +499,7 @@ const char* getdVideoH264PocTypeName (StdVideoH264PocType value)
 		default:								return nullptr;
 	}
 }
+
 
 const char* getdVideoH264ProfileIdcName (StdVideoH264ProfileIdc value)
 {
@@ -488,6 +514,7 @@ const char* getdVideoH264ProfileIdcName (StdVideoH264ProfileIdc value)
 	}
 }
 
+
 const char* getdVideoH264SliceTypeName (StdVideoH264SliceType value)
 {
 	switch (value)
@@ -500,6 +527,7 @@ const char* getdVideoH264SliceTypeName (StdVideoH264SliceType value)
 	}
 }
 
+
 const char* getdVideoH264WeightedBipredIdcName (StdVideoH264WeightedBipredIdc value)
 {
 	switch (value)
@@ -511,6 +539,7 @@ const char* getdVideoH264WeightedBipredIdcName (StdVideoH264WeightedBipredIdc va
 		default:											return nullptr;
 	}
 }
+
 
 const char* getdVideoH265AspectRatioIdcName (StdVideoH265AspectRatioIdc value)
 {
@@ -539,6 +568,7 @@ const char* getdVideoH265AspectRatioIdcName (StdVideoH265AspectRatioIdc value)
 	}
 }
 
+
 const char* getdVideoH265ChromaFormatIdcName (StdVideoH265ChromaFormatIdc value)
 {
 	switch (value)
@@ -551,6 +581,7 @@ const char* getdVideoH265ChromaFormatIdcName (StdVideoH265ChromaFormatIdc value)
 		default:											return nullptr;
 	}
 }
+
 
 const char* getdVideoH265LevelIdcName (StdVideoH265LevelIdc value)
 {
@@ -574,6 +605,7 @@ const char* getdVideoH265LevelIdcName (StdVideoH265LevelIdc value)
 	}
 }
 
+
 const char* getdVideoH265PictureTypeName (StdVideoH265PictureType value)
 {
 	switch (value)
@@ -586,6 +618,7 @@ const char* getdVideoH265PictureTypeName (StdVideoH265PictureType value)
 		default:									return nullptr;
 	}
 }
+
 
 const char* getdVideoH265ProfileIdcName (StdVideoH265ProfileIdc value)
 {
@@ -601,6 +634,7 @@ const char* getdVideoH265ProfileIdcName (StdVideoH265ProfileIdc value)
 	}
 }
 
+
 const char* getdVideoH265SliceTypeName (StdVideoH265SliceType value)
 {
 	switch (value)
@@ -612,6 +646,7 @@ const char* getdVideoH265SliceTypeName (StdVideoH265SliceType value)
 		default:								return nullptr;
 	}
 }
+
 
 const char* getdVideoVP9ColorSpaceName (StdVideoVP9ColorSpace value)
 {
@@ -630,6 +665,7 @@ const char* getdVideoVP9ColorSpaceName (StdVideoVP9ColorSpace value)
 	}
 }
 
+
 const char* getdVideoVP9FrameTypeName (StdVideoVP9FrameType value)
 {
 	switch (value)
@@ -640,6 +676,7 @@ const char* getdVideoVP9FrameTypeName (StdVideoVP9FrameType value)
 		default:								return nullptr;
 	}
 }
+
 
 const char* getdVideoVP9InterpolationFilterName (StdVideoVP9InterpolationFilter value)
 {
@@ -654,6 +691,7 @@ const char* getdVideoVP9InterpolationFilterName (StdVideoVP9InterpolationFilter 
 		default:													return nullptr;
 	}
 }
+
 
 const char* getdVideoVP9LevelName (StdVideoVP9Level value)
 {
@@ -678,6 +716,7 @@ const char* getdVideoVP9LevelName (StdVideoVP9Level value)
 	}
 }
 
+
 const char* getdVideoVP9ProfileName (StdVideoVP9Profile value)
 {
 	switch (value)
@@ -690,6 +729,7 @@ const char* getdVideoVP9ProfileName (StdVideoVP9Profile value)
 		default:							return nullptr;
 	}
 }
+
 
 const char* getdVideoVP9ReferenceNameName (StdVideoVP9ReferenceName value)
 {
@@ -704,6 +744,7 @@ const char* getdVideoVP9ReferenceNameName (StdVideoVP9ReferenceName value)
 	}
 }
 
+
 const char* getAccelerationStructureBuildTypeKHRName (VkAccelerationStructureBuildTypeKHR value)
 {
 	switch (value)
@@ -715,6 +756,7 @@ const char* getAccelerationStructureBuildTypeKHRName (VkAccelerationStructureBui
 	}
 }
 
+
 const char* getAccelerationStructureCompatibilityKHRName (VkAccelerationStructureCompatibilityKHR value)
 {
 	switch (value)
@@ -724,6 +766,7 @@ const char* getAccelerationStructureCompatibilityKHRName (VkAccelerationStructur
 		default:														return nullptr;
 	}
 }
+
 
 const char* getAccelerationStructureMemoryRequirementsTypeNVName (VkAccelerationStructureMemoryRequirementsTypeNV value)
 {
@@ -736,6 +779,7 @@ const char* getAccelerationStructureMemoryRequirementsTypeNVName (VkAcceleration
 	}
 }
 
+
 const char* getAccelerationStructureMotionInstanceTypeNVName (VkAccelerationStructureMotionInstanceTypeNV value)
 {
 	switch (value)
@@ -746,6 +790,7 @@ const char* getAccelerationStructureMotionInstanceTypeNVName (VkAccelerationStru
 		default:																return nullptr;
 	}
 }
+
 
 const char* getAccelerationStructureTypeKHRName (VkAccelerationStructureTypeKHR value)
 {
@@ -758,6 +803,7 @@ const char* getAccelerationStructureTypeKHRName (VkAccelerationStructureTypeKHR 
 	}
 }
 
+
 const char* getAntiLagModeAMDName (VkAntiLagModeAMD value)
 {
 	switch (value)
@@ -769,6 +815,7 @@ const char* getAntiLagModeAMDName (VkAntiLagModeAMD value)
 	}
 }
 
+
 const char* getAntiLagStageAMDName (VkAntiLagStageAMD value)
 {
 	switch (value)
@@ -778,6 +825,7 @@ const char* getAntiLagStageAMDName (VkAntiLagStageAMD value)
 		default:							return nullptr;
 	}
 }
+
 
 const char* getAttachmentLoadOpName (VkAttachmentLoadOp value)
 {
@@ -791,6 +839,7 @@ const char* getAttachmentLoadOpName (VkAttachmentLoadOp value)
 	}
 }
 
+
 const char* getAttachmentStoreOpName (VkAttachmentStoreOp value)
 {
 	switch (value)
@@ -801,6 +850,7 @@ const char* getAttachmentStoreOpName (VkAttachmentStoreOp value)
 		default:								return nullptr;
 	}
 }
+
 
 const char* getBlendFactorName (VkBlendFactor value)
 {
@@ -828,6 +878,7 @@ const char* getBlendFactorName (VkBlendFactor value)
 		default:										return nullptr;
 	}
 }
+
 
 const char* getBlendOpName (VkBlendOp value)
 {
@@ -888,6 +939,7 @@ const char* getBlendOpName (VkBlendOp value)
 	}
 }
 
+
 const char* getBlendOverlapEXTName (VkBlendOverlapEXT value)
 {
 	switch (value)
@@ -899,6 +951,7 @@ const char* getBlendOverlapEXTName (VkBlendOverlapEXT value)
 	}
 }
 
+
 const char* getBlockMatchWindowCompareModeQCOMName (VkBlockMatchWindowCompareModeQCOM value)
 {
 	switch (value)
@@ -908,6 +961,7 @@ const char* getBlockMatchWindowCompareModeQCOMName (VkBlockMatchWindowCompareMod
 		default:											return nullptr;
 	}
 }
+
 
 const char* getBorderColorName (VkBorderColor value)
 {
@@ -925,6 +979,7 @@ const char* getBorderColorName (VkBorderColor value)
 	}
 }
 
+
 const char* getBuildAccelerationStructureModeKHRName (VkBuildAccelerationStructureModeKHR value)
 {
 	switch (value)
@@ -935,6 +990,7 @@ const char* getBuildAccelerationStructureModeKHRName (VkBuildAccelerationStructu
 	}
 }
 
+
 const char* getBuildMicromapModeEXTName (VkBuildMicromapModeEXT value)
 {
 	switch (value)
@@ -943,6 +999,7 @@ const char* getBuildMicromapModeEXTName (VkBuildMicromapModeEXT value)
 		default:								return nullptr;
 	}
 }
+
 
 const char* getChromaLocationName (VkChromaLocation value)
 {
@@ -954,6 +1011,7 @@ const char* getChromaLocationName (VkChromaLocation value)
 	}
 }
 
+
 const char* getClusterAccelerationStructureOpModeNVName (VkClusterAccelerationStructureOpModeNV value)
 {
 	switch (value)
@@ -964,6 +1022,7 @@ const char* getClusterAccelerationStructureOpModeNVName (VkClusterAccelerationSt
 		default:																	return nullptr;
 	}
 }
+
 
 const char* getClusterAccelerationStructureOpTypeNVName (VkClusterAccelerationStructureOpTypeNV value)
 {
@@ -979,6 +1038,7 @@ const char* getClusterAccelerationStructureOpTypeNVName (VkClusterAccelerationSt
 	}
 }
 
+
 const char* getClusterAccelerationStructureTypeNVName (VkClusterAccelerationStructureTypeNV value)
 {
 	switch (value)
@@ -989,6 +1049,7 @@ const char* getClusterAccelerationStructureTypeNVName (VkClusterAccelerationStru
 		default:																	return nullptr;
 	}
 }
+
 
 const char* getCoarseSampleOrderTypeNVName (VkCoarseSampleOrderTypeNV value)
 {
@@ -1001,6 +1062,7 @@ const char* getCoarseSampleOrderTypeNVName (VkCoarseSampleOrderTypeNV value)
 		default:											return nullptr;
 	}
 }
+
 
 const char* getColorSpaceKHRName (VkColorSpaceKHR value)
 {
@@ -1026,6 +1088,7 @@ const char* getColorSpaceKHRName (VkColorSpaceKHR value)
 	}
 }
 
+
 const char* getCommandBufferLevelName (VkCommandBufferLevel value)
 {
 	switch (value)
@@ -1035,6 +1098,7 @@ const char* getCommandBufferLevelName (VkCommandBufferLevel value)
 		default:								return nullptr;
 	}
 }
+
 
 const char* getCompareOpName (VkCompareOp value)
 {
@@ -1052,6 +1116,7 @@ const char* getCompareOpName (VkCompareOp value)
 	}
 }
 
+
 const char* getComponentSwizzleName (VkComponentSwizzle value)
 {
 	switch (value)
@@ -1066,6 +1131,7 @@ const char* getComponentSwizzleName (VkComponentSwizzle value)
 		default:							return nullptr;
 	}
 }
+
 
 const char* getComponentTypeKHRName (VkComponentTypeKHR value)
 {
@@ -1091,6 +1157,7 @@ const char* getComponentTypeKHRName (VkComponentTypeKHR value)
 	}
 }
 
+
 const char* getCompressedTriangleFormatAMDXName (VkCompressedTriangleFormatAMDX value)
 {
 	switch (value)
@@ -1099,6 +1166,7 @@ const char* getCompressedTriangleFormatAMDXName (VkCompressedTriangleFormatAMDX 
 		default:										return nullptr;
 	}
 }
+
 
 const char* getConservativeRasterizationModeEXTName (VkConservativeRasterizationModeEXT value)
 {
@@ -1110,6 +1178,7 @@ const char* getConservativeRasterizationModeEXTName (VkConservativeRasterization
 		default:													return nullptr;
 	}
 }
+
 
 const char* getCooperativeVectorMatrixLayoutNVName (VkCooperativeVectorMatrixLayoutNV value)
 {
@@ -1123,6 +1192,7 @@ const char* getCooperativeVectorMatrixLayoutNVName (VkCooperativeVectorMatrixLay
 	}
 }
 
+
 const char* getCopyAccelerationStructureModeKHRName (VkCopyAccelerationStructureModeKHR value)
 {
 	switch (value)
@@ -1134,6 +1204,7 @@ const char* getCopyAccelerationStructureModeKHRName (VkCopyAccelerationStructure
 		default:													return nullptr;
 	}
 }
+
 
 const char* getCopyMicromapModeEXTName (VkCopyMicromapModeEXT value)
 {
@@ -1147,6 +1218,7 @@ const char* getCopyMicromapModeEXTName (VkCopyMicromapModeEXT value)
 	}
 }
 
+
 const char* getCoverageModulationModeNVName (VkCoverageModulationModeNV value)
 {
 	switch (value)
@@ -1159,6 +1231,7 @@ const char* getCoverageModulationModeNVName (VkCoverageModulationModeNV value)
 	}
 }
 
+
 const char* getCoverageReductionModeNVName (VkCoverageReductionModeNV value)
 {
 	switch (value)
@@ -1168,6 +1241,7 @@ const char* getCoverageReductionModeNVName (VkCoverageReductionModeNV value)
 		default:										return nullptr;
 	}
 }
+
 
 const char* getCubicFilterWeightsQCOMName (VkCubicFilterWeightsQCOM value)
 {
@@ -1181,6 +1255,7 @@ const char* getCubicFilterWeightsQCOMName (VkCubicFilterWeightsQCOM value)
 	}
 }
 
+
 const char* getDataGraphPipelinePropertyARMName (VkDataGraphPipelinePropertyARM value)
 {
 	switch (value)
@@ -1191,6 +1266,7 @@ const char* getDataGraphPipelinePropertyARMName (VkDataGraphPipelinePropertyARM 
 	}
 }
 
+
 const char* getDataGraphPipelineSessionBindPointARMName (VkDataGraphPipelineSessionBindPointARM value)
 {
 	switch (value)
@@ -1200,6 +1276,7 @@ const char* getDataGraphPipelineSessionBindPointARMName (VkDataGraphPipelineSess
 	}
 }
 
+
 const char* getDataGraphPipelineSessionBindPointTypeARMName (VkDataGraphPipelineSessionBindPointTypeARM value)
 {
 	switch (value)
@@ -1208,6 +1285,7 @@ const char* getDataGraphPipelineSessionBindPointTypeARMName (VkDataGraphPipeline
 		default:														return nullptr;
 	}
 }
+
 
 const char* getDebugReportObjectTypeEXTName (VkDebugReportObjectTypeEXT value)
 {
@@ -1258,6 +1336,7 @@ const char* getDebugReportObjectTypeEXTName (VkDebugReportObjectTypeEXT value)
 	}
 }
 
+
 const char* getDefaultVertexAttributeValueKHRName (VkDefaultVertexAttributeValueKHR value)
 {
 	switch (value)
@@ -1267,6 +1346,7 @@ const char* getDefaultVertexAttributeValueKHRName (VkDefaultVertexAttributeValue
 		default:														return nullptr;
 	}
 }
+
 
 const char* getDepthBiasRepresentationEXTName (VkDepthBiasRepresentationEXT value)
 {
@@ -1279,6 +1359,7 @@ const char* getDepthBiasRepresentationEXTName (VkDepthBiasRepresentationEXT valu
 	}
 }
 
+
 const char* getDepthClampModeEXTName (VkDepthClampModeEXT value)
 {
 	switch (value)
@@ -1288,6 +1369,7 @@ const char* getDepthClampModeEXTName (VkDepthClampModeEXT value)
 		default:											return nullptr;
 	}
 }
+
 
 const char* getDescriptorTypeName (VkDescriptorType value)
 {
@@ -1316,6 +1398,7 @@ const char* getDescriptorTypeName (VkDescriptorType value)
 	}
 }
 
+
 const char* getDescriptorUpdateTemplateTypeName (VkDescriptorUpdateTemplateType value)
 {
 	switch (value)
@@ -1325,6 +1408,7 @@ const char* getDescriptorUpdateTemplateTypeName (VkDescriptorUpdateTemplateType 
 		default:													return nullptr;
 	}
 }
+
 
 const char* getDeviceAddressBindingTypeEXTName (VkDeviceAddressBindingTypeEXT value)
 {
@@ -1336,6 +1420,7 @@ const char* getDeviceAddressBindingTypeEXTName (VkDeviceAddressBindingTypeEXT va
 	}
 }
 
+
 const char* getDeviceEventTypeEXTName (VkDeviceEventTypeEXT value)
 {
 	switch (value)
@@ -1344,6 +1429,7 @@ const char* getDeviceEventTypeEXTName (VkDeviceEventTypeEXT value)
 		default:										return nullptr;
 	}
 }
+
 
 const char* getDeviceFaultAddressTypeEXTName (VkDeviceFaultAddressTypeEXT value)
 {
@@ -1360,6 +1446,7 @@ const char* getDeviceFaultAddressTypeEXTName (VkDeviceFaultAddressTypeEXT value)
 	}
 }
 
+
 const char* getDeviceFaultVendorBinaryHeaderVersionEXTName (VkDeviceFaultVendorBinaryHeaderVersionEXT value)
 {
 	switch (value)
@@ -1368,6 +1455,7 @@ const char* getDeviceFaultVendorBinaryHeaderVersionEXTName (VkDeviceFaultVendorB
 		default:													return nullptr;
 	}
 }
+
 
 const char* getDeviceMemoryReportEventTypeEXTName (VkDeviceMemoryReportEventTypeEXT value)
 {
@@ -1382,6 +1470,7 @@ const char* getDeviceMemoryReportEventTypeEXTName (VkDeviceMemoryReportEventType
 	}
 }
 
+
 const char* getDirectDriverLoadingModeLUNARGName (VkDirectDriverLoadingModeLUNARG value)
 {
 	switch (value)
@@ -1392,6 +1481,7 @@ const char* getDirectDriverLoadingModeLUNARGName (VkDirectDriverLoadingModeLUNAR
 	}
 }
 
+
 const char* getDiscardRectangleModeEXTName (VkDiscardRectangleModeEXT value)
 {
 	switch (value)
@@ -1401,6 +1491,7 @@ const char* getDiscardRectangleModeEXTName (VkDiscardRectangleModeEXT value)
 		default:										return nullptr;
 	}
 }
+
 
 const char* getDisplacementMicromapFormatNVName (VkDisplacementMicromapFormatNV value)
 {
@@ -1413,6 +1504,7 @@ const char* getDisplacementMicromapFormatNVName (VkDisplacementMicromapFormatNV 
 	}
 }
 
+
 const char* getDisplayEventTypeEXTName (VkDisplayEventTypeEXT value)
 {
 	switch (value)
@@ -1421,6 +1513,7 @@ const char* getDisplayEventTypeEXTName (VkDisplayEventTypeEXT value)
 		default:										return nullptr;
 	}
 }
+
 
 const char* getDisplayPowerStateEXTName (VkDisplayPowerStateEXT value)
 {
@@ -1433,6 +1526,7 @@ const char* getDisplayPowerStateEXTName (VkDisplayPowerStateEXT value)
 	}
 }
 
+
 const char* getDisplaySurfaceStereoTypeNVName (VkDisplaySurfaceStereoTypeNV value)
 {
 	switch (value)
@@ -1444,6 +1538,7 @@ const char* getDisplaySurfaceStereoTypeNVName (VkDisplaySurfaceStereoTypeNV valu
 		default:													return nullptr;
 	}
 }
+
 
 const char* getDriverIdName (VkDriverId value)
 {
@@ -1479,6 +1574,7 @@ const char* getDriverIdName (VkDriverId value)
 		default:											return nullptr;
 	}
 }
+
 
 const char* getDynamicStateName (VkDynamicState value)
 {
@@ -1561,6 +1657,7 @@ const char* getDynamicStateName (VkDynamicState value)
 	}
 }
 
+
 const char* getFilterName (VkFilter value)
 {
 	switch (value)
@@ -1571,6 +1668,7 @@ const char* getFilterName (VkFilter value)
 		default:					return nullptr;
 	}
 }
+
 
 const char* getFormatName (VkFormat value)
 {
@@ -1845,6 +1943,7 @@ const char* getFormatName (VkFormat value)
 	}
 }
 
+
 const char* getFragmentShadingRateCombinerOpKHRName (VkFragmentShadingRateCombinerOpKHR value)
 {
 	switch (value)
@@ -1857,6 +1956,7 @@ const char* getFragmentShadingRateCombinerOpKHRName (VkFragmentShadingRateCombin
 		default:												return nullptr;
 	}
 }
+
 
 const char* getFragmentShadingRateNVName (VkFragmentShadingRateNV value)
 {
@@ -1878,6 +1978,7 @@ const char* getFragmentShadingRateNVName (VkFragmentShadingRateNV value)
 	}
 }
 
+
 const char* getFragmentShadingRateTypeNVName (VkFragmentShadingRateTypeNV value)
 {
 	switch (value)
@@ -1888,6 +1989,7 @@ const char* getFragmentShadingRateTypeNVName (VkFragmentShadingRateTypeNV value)
 	}
 }
 
+
 const char* getFrontFaceName (VkFrontFace value)
 {
 	switch (value)
@@ -1897,6 +1999,7 @@ const char* getFrontFaceName (VkFrontFace value)
 		default:								return nullptr;
 	}
 }
+
 
 const char* getFullScreenExclusiveEXTName (VkFullScreenExclusiveEXT value)
 {
@@ -1909,6 +2012,7 @@ const char* getFullScreenExclusiveEXTName (VkFullScreenExclusiveEXT value)
 		default:													return nullptr;
 	}
 }
+
 
 const char* getGeometryTypeKHRName (VkGeometryTypeKHR value)
 {
@@ -1923,6 +2027,7 @@ const char* getGeometryTypeKHRName (VkGeometryTypeKHR value)
 		default:													return nullptr;
 	}
 }
+
 
 const char* getImageLayoutName (VkImageLayout value)
 {
@@ -1964,6 +2069,7 @@ const char* getImageLayoutName (VkImageLayout value)
 	}
 }
 
+
 const char* getImageTilingName (VkImageTiling value)
 {
 	switch (value)
@@ -1975,6 +2081,7 @@ const char* getImageTilingName (VkImageTiling value)
 	}
 }
 
+
 const char* getImageTypeName (VkImageType value)
 {
 	switch (value)
@@ -1985,6 +2092,7 @@ const char* getImageTypeName (VkImageType value)
 		default:				return nullptr;
 	}
 }
+
 
 const char* getImageViewTypeName (VkImageViewType value)
 {
@@ -2001,6 +2109,7 @@ const char* getImageViewTypeName (VkImageViewType value)
 	}
 }
 
+
 const char* getIndexTypeName (VkIndexType value)
 {
 	switch (value)
@@ -2012,6 +2121,7 @@ const char* getIndexTypeName (VkIndexType value)
 		default:						return nullptr;
 	}
 }
+
 
 const char* getIndirectCommandsTokenTypeEXTName (VkIndirectCommandsTokenTypeEXT value)
 {
@@ -2036,6 +2146,7 @@ const char* getIndirectCommandsTokenTypeEXTName (VkIndirectCommandsTokenTypeEXT 
 	}
 }
 
+
 const char* getIndirectCommandsTokenTypeNVName (VkIndirectCommandsTokenTypeNV value)
 {
 	switch (value)
@@ -2055,6 +2166,7 @@ const char* getIndirectCommandsTokenTypeNVName (VkIndirectCommandsTokenTypeNV va
 	}
 }
 
+
 const char* getIndirectExecutionSetInfoTypeEXTName (VkIndirectExecutionSetInfoTypeEXT value)
 {
 	switch (value)
@@ -2065,6 +2177,7 @@ const char* getIndirectExecutionSetInfoTypeEXTName (VkIndirectExecutionSetInfoTy
 	}
 }
 
+
 const char* getInternalAllocationTypeName (VkInternalAllocationType value)
 {
 	switch (value)
@@ -2073,6 +2186,7 @@ const char* getInternalAllocationTypeName (VkInternalAllocationType value)
 		default:										return nullptr;
 	}
 }
+
 
 const char* getLatencyMarkerNVName (VkLatencyMarkerNV value)
 {
@@ -2094,6 +2208,7 @@ const char* getLatencyMarkerNVName (VkLatencyMarkerNV value)
 	}
 }
 
+
 const char* getLayerSettingTypeEXTName (VkLayerSettingTypeEXT value)
 {
 	switch (value)
@@ -2110,6 +2225,7 @@ const char* getLayerSettingTypeEXTName (VkLayerSettingTypeEXT value)
 	}
 }
 
+
 const char* getLayeredDriverUnderlyingApiMSFTName (VkLayeredDriverUnderlyingApiMSFT value)
 {
 	switch (value)
@@ -2119,6 +2235,7 @@ const char* getLayeredDriverUnderlyingApiMSFTName (VkLayeredDriverUnderlyingApiM
 		default:											return nullptr;
 	}
 }
+
 
 const char* getLineRasterizationModeName (VkLineRasterizationMode value)
 {
@@ -2131,6 +2248,7 @@ const char* getLineRasterizationModeName (VkLineRasterizationMode value)
 		default:											return nullptr;
 	}
 }
+
 
 const char* getLogicOpName (VkLogicOp value)
 {
@@ -2156,6 +2274,7 @@ const char* getLogicOpName (VkLogicOp value)
 	}
 }
 
+
 const char* getMemoryOverallocationBehaviorAMDName (VkMemoryOverallocationBehaviorAMD value)
 {
 	switch (value)
@@ -2167,6 +2286,7 @@ const char* getMemoryOverallocationBehaviorAMDName (VkMemoryOverallocationBehavi
 	}
 }
 
+
 const char* getMicromapTypeEXTName (VkMicromapTypeEXT value)
 {
 	switch (value)
@@ -2176,6 +2296,7 @@ const char* getMicromapTypeEXTName (VkMicromapTypeEXT value)
 		default:										return nullptr;
 	}
 }
+
 
 const char* getObjectTypeName (VkObjectType value)
 {
@@ -2243,6 +2364,7 @@ const char* getObjectTypeName (VkObjectType value)
 	}
 }
 
+
 const char* getOpacityMicromapFormatEXTName (VkOpacityMicromapFormatEXT value)
 {
 	switch (value)
@@ -2252,6 +2374,7 @@ const char* getOpacityMicromapFormatEXTName (VkOpacityMicromapFormatEXT value)
 		default:										return nullptr;
 	}
 }
+
 
 const char* getOpacityMicromapSpecialIndexEXTName (VkOpacityMicromapSpecialIndexEXT value)
 {
@@ -2266,6 +2389,7 @@ const char* getOpacityMicromapSpecialIndexEXTName (VkOpacityMicromapSpecialIndex
 	}
 }
 
+
 const char* getOpticalFlowPerformanceLevelNVName (VkOpticalFlowPerformanceLevelNV value)
 {
 	switch (value)
@@ -2277,6 +2401,7 @@ const char* getOpticalFlowPerformanceLevelNVName (VkOpticalFlowPerformanceLevelN
 		default:											return nullptr;
 	}
 }
+
 
 const char* getOpticalFlowSessionBindingPointNVName (VkOpticalFlowSessionBindingPointNV value)
 {
@@ -2295,6 +2420,7 @@ const char* getOpticalFlowSessionBindingPointNVName (VkOpticalFlowSessionBinding
 	}
 }
 
+
 const char* getOutOfBandQueueTypeNVName (VkOutOfBandQueueTypeNV value)
 {
 	switch (value)
@@ -2304,6 +2430,7 @@ const char* getOutOfBandQueueTypeNVName (VkOutOfBandQueueTypeNV value)
 		default:									return nullptr;
 	}
 }
+
 
 const char* getPartitionedAccelerationStructureOpTypeNVName (VkPartitionedAccelerationStructureOpTypeNV value)
 {
@@ -2316,6 +2443,7 @@ const char* getPartitionedAccelerationStructureOpTypeNVName (VkPartitionedAccele
 	}
 }
 
+
 const char* getPerformanceConfigurationTypeINTELName (VkPerformanceConfigurationTypeINTEL value)
 {
 	switch (value)
@@ -2324,6 +2452,7 @@ const char* getPerformanceConfigurationTypeINTELName (VkPerformanceConfiguration
 		default:																				return nullptr;
 	}
 }
+
 
 const char* getPerformanceCounterScopeKHRName (VkPerformanceCounterScopeKHR value)
 {
@@ -2335,6 +2464,7 @@ const char* getPerformanceCounterScopeKHRName (VkPerformanceCounterScopeKHR valu
 		default:												return nullptr;
 	}
 }
+
 
 const char* getPerformanceCounterStorageKHRName (VkPerformanceCounterStorageKHR value)
 {
@@ -2349,6 +2479,7 @@ const char* getPerformanceCounterStorageKHRName (VkPerformanceCounterStorageKHR 
 		default:											return nullptr;
 	}
 }
+
 
 const char* getPerformanceCounterUnitKHRName (VkPerformanceCounterUnitKHR value)
 {
@@ -2369,6 +2500,7 @@ const char* getPerformanceCounterUnitKHRName (VkPerformanceCounterUnitKHR value)
 	}
 }
 
+
 const char* getPerformanceOverrideTypeINTELName (VkPerformanceOverrideTypeINTEL value)
 {
 	switch (value)
@@ -2379,6 +2511,7 @@ const char* getPerformanceOverrideTypeINTELName (VkPerformanceOverrideTypeINTEL 
 	}
 }
 
+
 const char* getPerformanceParameterTypeINTELName (VkPerformanceParameterTypeINTEL value)
 {
 	switch (value)
@@ -2388,6 +2521,7 @@ const char* getPerformanceParameterTypeINTELName (VkPerformanceParameterTypeINTE
 		default:															return nullptr;
 	}
 }
+
 
 const char* getPerformanceValueTypeINTELName (VkPerformanceValueTypeINTEL value)
 {
@@ -2402,6 +2536,7 @@ const char* getPerformanceValueTypeINTELName (VkPerformanceValueTypeINTEL value)
 	}
 }
 
+
 const char* getPhysicalDeviceDataGraphOperationTypeARMName (VkPhysicalDeviceDataGraphOperationTypeARM value)
 {
 	switch (value)
@@ -2411,6 +2546,7 @@ const char* getPhysicalDeviceDataGraphOperationTypeARMName (VkPhysicalDeviceData
 	}
 }
 
+
 const char* getPhysicalDeviceDataGraphProcessingEngineTypeARMName (VkPhysicalDeviceDataGraphProcessingEngineTypeARM value)
 {
 	switch (value)
@@ -2419,6 +2555,7 @@ const char* getPhysicalDeviceDataGraphProcessingEngineTypeARMName (VkPhysicalDev
 		default:																return nullptr;
 	}
 }
+
 
 const char* getPhysicalDeviceLayeredApiKHRName (VkPhysicalDeviceLayeredApiKHR value)
 {
@@ -2433,6 +2570,7 @@ const char* getPhysicalDeviceLayeredApiKHRName (VkPhysicalDeviceLayeredApiKHR va
 	}
 }
 
+
 const char* getPhysicalDeviceTypeName (VkPhysicalDeviceType value)
 {
 	switch (value)
@@ -2445,6 +2583,7 @@ const char* getPhysicalDeviceTypeName (VkPhysicalDeviceType value)
 		default:										return nullptr;
 	}
 }
+
 
 const char* getPipelineBindPointName (VkPipelineBindPoint value)
 {
@@ -2460,6 +2599,7 @@ const char* getPipelineBindPointName (VkPipelineBindPoint value)
 	}
 }
 
+
 const char* getPipelineCacheHeaderVersionName (VkPipelineCacheHeaderVersion value)
 {
 	switch (value)
@@ -2468,6 +2608,7 @@ const char* getPipelineCacheHeaderVersionName (VkPipelineCacheHeaderVersion valu
 		default:									return nullptr;
 	}
 }
+
 
 const char* getPipelineExecutableStatisticFormatKHRName (VkPipelineExecutableStatisticFormatKHR value)
 {
@@ -2481,6 +2622,7 @@ const char* getPipelineExecutableStatisticFormatKHRName (VkPipelineExecutableSta
 	}
 }
 
+
 const char* getPipelineRobustnessBufferBehaviorName (VkPipelineRobustnessBufferBehavior value)
 {
 	switch (value)
@@ -2492,6 +2634,7 @@ const char* getPipelineRobustnessBufferBehaviorName (VkPipelineRobustnessBufferB
 		default:															return nullptr;
 	}
 }
+
 
 const char* getPipelineRobustnessImageBehaviorName (VkPipelineRobustnessImageBehavior value)
 {
@@ -2505,6 +2648,7 @@ const char* getPipelineRobustnessImageBehaviorName (VkPipelineRobustnessImageBeh
 	}
 }
 
+
 const char* getPointClippingBehaviorName (VkPointClippingBehavior value)
 {
 	switch (value)
@@ -2514,6 +2658,7 @@ const char* getPointClippingBehaviorName (VkPointClippingBehavior value)
 		default:												return nullptr;
 	}
 }
+
 
 const char* getPolygonModeName (VkPolygonMode value)
 {
@@ -2526,6 +2671,7 @@ const char* getPolygonModeName (VkPolygonMode value)
 		default:								return nullptr;
 	}
 }
+
 
 const char* getPresentModeKHRName (VkPresentModeKHR value)
 {
@@ -2541,6 +2687,7 @@ const char* getPresentModeKHRName (VkPresentModeKHR value)
 		default:											return nullptr;
 	}
 }
+
 
 const char* getPrimitiveTopologyName (VkPrimitiveTopology value)
 {
@@ -2561,6 +2708,7 @@ const char* getPrimitiveTopologyName (VkPrimitiveTopology value)
 	}
 }
 
+
 const char* getProvokingVertexModeEXTName (VkProvokingVertexModeEXT value)
 {
 	switch (value)
@@ -2571,6 +2719,7 @@ const char* getProvokingVertexModeEXTName (VkProvokingVertexModeEXT value)
 	}
 }
 
+
 const char* getQueryPoolSamplingModeINTELName (VkQueryPoolSamplingModeINTEL value)
 {
 	switch (value)
@@ -2579,6 +2728,7 @@ const char* getQueryPoolSamplingModeINTELName (VkQueryPoolSamplingModeINTEL valu
 		default:										return nullptr;
 	}
 }
+
 
 const char* getQueryResultStatusKHRName (VkQueryResultStatusKHR value)
 {
@@ -2591,6 +2741,7 @@ const char* getQueryResultStatusKHRName (VkQueryResultStatusKHR value)
 		default:																return nullptr;
 	}
 }
+
 
 const char* getQueryTypeName (VkQueryType value)
 {
@@ -2617,6 +2768,7 @@ const char* getQueryTypeName (VkQueryType value)
 	}
 }
 
+
 const char* getQueueGlobalPriorityName (VkQueueGlobalPriority value)
 {
 	switch (value)
@@ -2629,6 +2781,7 @@ const char* getQueueGlobalPriorityName (VkQueueGlobalPriority value)
 	}
 }
 
+
 const char* getRasterizationOrderAMDName (VkRasterizationOrderAMD value)
 {
 	switch (value)
@@ -2638,6 +2791,7 @@ const char* getRasterizationOrderAMDName (VkRasterizationOrderAMD value)
 		default:									return nullptr;
 	}
 }
+
 
 const char* getRayTracingInvocationReorderModeNVName (VkRayTracingInvocationReorderModeNV value)
 {
@@ -2649,6 +2803,7 @@ const char* getRayTracingInvocationReorderModeNVName (VkRayTracingInvocationReor
 	}
 }
 
+
 const char* getRayTracingLssIndexingModeNVName (VkRayTracingLssIndexingModeNV value)
 {
 	switch (value)
@@ -2658,6 +2813,7 @@ const char* getRayTracingLssIndexingModeNVName (VkRayTracingLssIndexingModeNV va
 		default:												return nullptr;
 	}
 }
+
 
 const char* getRayTracingLssPrimitiveEndCapsModeNVName (VkRayTracingLssPrimitiveEndCapsModeNV value)
 {
@@ -2669,6 +2825,7 @@ const char* getRayTracingLssPrimitiveEndCapsModeNVName (VkRayTracingLssPrimitive
 	}
 }
 
+
 const char* getRayTracingShaderGroupTypeKHRName (VkRayTracingShaderGroupTypeKHR value)
 {
 	switch (value)
@@ -2679,6 +2836,7 @@ const char* getRayTracingShaderGroupTypeKHRName (VkRayTracingShaderGroupTypeKHR 
 		default:														return nullptr;
 	}
 }
+
 
 const char* getResultName (VkResult value)
 {
@@ -2737,6 +2895,7 @@ const char* getResultName (VkResult value)
 	}
 }
 
+
 const char* getSamplerAddressModeName (VkSamplerAddressMode value)
 {
 	switch (value)
@@ -2750,6 +2909,7 @@ const char* getSamplerAddressModeName (VkSamplerAddressMode value)
 	}
 }
 
+
 const char* getSamplerMipmapModeName (VkSamplerMipmapMode value)
 {
 	switch (value)
@@ -2759,6 +2919,7 @@ const char* getSamplerMipmapModeName (VkSamplerMipmapMode value)
 		default:								return nullptr;
 	}
 }
+
 
 const char* getSamplerReductionModeName (VkSamplerReductionMode value)
 {
@@ -2771,6 +2932,7 @@ const char* getSamplerReductionModeName (VkSamplerReductionMode value)
 		default:															return nullptr;
 	}
 }
+
 
 const char* getSamplerYcbcrModelConversionName (VkSamplerYcbcrModelConversion value)
 {
@@ -2785,6 +2947,7 @@ const char* getSamplerYcbcrModelConversionName (VkSamplerYcbcrModelConversion va
 	}
 }
 
+
 const char* getSamplerYcbcrRangeName (VkSamplerYcbcrRange value)
 {
 	switch (value)
@@ -2794,6 +2957,7 @@ const char* getSamplerYcbcrRangeName (VkSamplerYcbcrRange value)
 		default:								return nullptr;
 	}
 }
+
 
 const char* getScopeKHRName (VkScopeKHR value)
 {
@@ -2807,6 +2971,7 @@ const char* getScopeKHRName (VkScopeKHR value)
 	}
 }
 
+
 const char* getSemaphoreTypeName (VkSemaphoreType value)
 {
 	switch (value)
@@ -2816,6 +2981,7 @@ const char* getSemaphoreTypeName (VkSemaphoreType value)
 		default:							return nullptr;
 	}
 }
+
 
 const char* getShaderCodeTypeEXTName (VkShaderCodeTypeEXT value)
 {
@@ -2827,6 +2993,7 @@ const char* getShaderCodeTypeEXTName (VkShaderCodeTypeEXT value)
 	}
 }
 
+
 const char* getShaderFloatControlsIndependenceName (VkShaderFloatControlsIndependence value)
 {
 	switch (value)
@@ -2837,6 +3004,7 @@ const char* getShaderFloatControlsIndependenceName (VkShaderFloatControlsIndepen
 		default:												return nullptr;
 	}
 }
+
 
 const char* getShaderGroupShaderKHRName (VkShaderGroupShaderKHR value)
 {
@@ -2850,6 +3018,7 @@ const char* getShaderGroupShaderKHRName (VkShaderGroupShaderKHR value)
 	}
 }
 
+
 const char* getShaderInfoTypeAMDName (VkShaderInfoTypeAMD value)
 {
 	switch (value)
@@ -2860,6 +3029,7 @@ const char* getShaderInfoTypeAMDName (VkShaderInfoTypeAMD value)
 		default:									return nullptr;
 	}
 }
+
 
 const char* getShadingRatePaletteEntryNVName (VkShadingRatePaletteEntryNV value)
 {
@@ -2881,6 +3051,7 @@ const char* getShadingRatePaletteEntryNVName (VkShadingRatePaletteEntryNV value)
 	}
 }
 
+
 const char* getSharingModeName (VkSharingMode value)
 {
 	switch (value)
@@ -2890,6 +3061,7 @@ const char* getSharingModeName (VkSharingMode value)
 		default:							return nullptr;
 	}
 }
+
 
 const char* getStencilOpName (VkStencilOp value)
 {
@@ -2906,6 +3078,7 @@ const char* getStencilOpName (VkStencilOp value)
 		default:								return nullptr;
 	}
 }
+
 
 const char* getStructureTypeName (VkStructureType value)
 {
@@ -3315,7 +3488,6 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_KHR:													return "VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_KHR";
 		case VK_STRUCTURE_TYPE_PERFORMANCE_MARKER_INFO_INTEL:											return "VK_STRUCTURE_TYPE_PERFORMANCE_MARKER_INFO_INTEL";
 		case VK_STRUCTURE_TYPE_PERFORMANCE_OVERRIDE_INFO_INTEL:											return "VK_STRUCTURE_TYPE_PERFORMANCE_OVERRIDE_INFO_INTEL";
-		case VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_RESERVATION_INFO_KHR:									return "VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_RESERVATION_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR:										return "VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PERFORMANCE_STREAM_MARKER_INFO_INTEL:									return "VK_STRUCTURE_TYPE_PERFORMANCE_STREAM_MARKER_INFO_INTEL";
 		case VK_STRUCTURE_TYPE_PER_TILE_BEGIN_INFO_QCOM:												return "VK_STRUCTURE_TYPE_PER_TILE_BEGIN_INFO_QCOM";
@@ -4011,6 +4183,7 @@ const char* getStructureTypeName (VkStructureType value)
 	}
 }
 
+
 const char* getSubpassContentsName (VkSubpassContents value)
 {
 	switch (value)
@@ -4021,6 +4194,7 @@ const char* getSubpassContentsName (VkSubpassContents value)
 		default:															return nullptr;
 	}
 }
+
 
 const char* getSubpassMergeStatusEXTName (VkSubpassMergeStatusEXT value)
 {
@@ -4044,6 +4218,7 @@ const char* getSubpassMergeStatusEXTName (VkSubpassMergeStatusEXT value)
 	}
 }
 
+
 const char* getSystemAllocationScopeName (VkSystemAllocationScope value)
 {
 	switch (value)
@@ -4057,6 +4232,7 @@ const char* getSystemAllocationScopeName (VkSystemAllocationScope value)
 	}
 }
 
+
 const char* getTensorTilingARMName (VkTensorTilingARM value)
 {
 	switch (value)
@@ -4067,6 +4243,7 @@ const char* getTensorTilingARMName (VkTensorTilingARM value)
 	}
 }
 
+
 const char* getTessellationDomainOriginName (VkTessellationDomainOrigin value)
 {
 	switch (value)
@@ -4076,6 +4253,7 @@ const char* getTessellationDomainOriginName (VkTessellationDomainOrigin value)
 		default:										return nullptr;
 	}
 }
+
 
 const char* getTimeDomainKHRName (VkTimeDomainKHR value)
 {
@@ -4089,6 +4267,7 @@ const char* getTimeDomainKHRName (VkTimeDomainKHR value)
 	}
 }
 
+
 const char* getValidationCacheHeaderVersionEXTName (VkValidationCacheHeaderVersionEXT value)
 {
 	switch (value)
@@ -4097,6 +4276,7 @@ const char* getValidationCacheHeaderVersionEXTName (VkValidationCacheHeaderVersi
 		default:											return nullptr;
 	}
 }
+
 
 const char* getValidationCheckEXTName (VkValidationCheckEXT value)
 {
@@ -4107,6 +4287,7 @@ const char* getValidationCheckEXTName (VkValidationCheckEXT value)
 		default:								return nullptr;
 	}
 }
+
 
 const char* getValidationFeatureDisableEXTName (VkValidationFeatureDisableEXT value)
 {
@@ -4124,6 +4305,7 @@ const char* getValidationFeatureDisableEXTName (VkValidationFeatureDisableEXT va
 	}
 }
 
+
 const char* getValidationFeatureEnableEXTName (VkValidationFeatureEnableEXT value)
 {
 	switch (value)
@@ -4136,6 +4318,7 @@ const char* getValidationFeatureEnableEXTName (VkValidationFeatureEnableEXT valu
 		default:																	return nullptr;
 	}
 }
+
 
 const char* getVendorIdName (VkVendorId value)
 {
@@ -4153,6 +4336,7 @@ const char* getVendorIdName (VkVendorId value)
 	}
 }
 
+
 const char* getVertexInputRateName (VkVertexInputRate value)
 {
 	switch (value)
@@ -4162,6 +4346,7 @@ const char* getVertexInputRateName (VkVertexInputRate value)
 		default:							return nullptr;
 	}
 }
+
 
 const char* getVideoEncodeAV1PredictionModeKHRName (VkVideoEncodeAV1PredictionModeKHR value)
 {
@@ -4175,6 +4360,7 @@ const char* getVideoEncodeAV1PredictionModeKHRName (VkVideoEncodeAV1PredictionMo
 	}
 }
 
+
 const char* getVideoEncodeAV1RateControlGroupKHRName (VkVideoEncodeAV1RateControlGroupKHR value)
 {
 	switch (value)
@@ -4185,6 +4371,7 @@ const char* getVideoEncodeAV1RateControlGroupKHRName (VkVideoEncodeAV1RateContro
 		default:														return nullptr;
 	}
 }
+
 
 const char* getVideoEncodeTuningModeKHRName (VkVideoEncodeTuningModeKHR value)
 {
@@ -4198,6 +4385,7 @@ const char* getVideoEncodeTuningModeKHRName (VkVideoEncodeTuningModeKHR value)
 		default:												return nullptr;
 	}
 }
+
 
 const char* getViewportCoordinateSwizzleNVName (VkViewportCoordinateSwizzleNV value)
 {
@@ -4215,6 +4403,7 @@ const char* getViewportCoordinateSwizzleNVName (VkViewportCoordinateSwizzleNV va
 	}
 }
 
+
 tcu::Format::Bitfield<32> getAccelerationStructureCreateFlagsKHRStr (VkAccelerationStructureCreateFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4225,6 +4414,7 @@ tcu::Format::Bitfield<32> getAccelerationStructureCreateFlagsKHRStr (VkAccelerat
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getAccessFlagsStr (VkAccessFlags value)
 {
@@ -4262,6 +4452,7 @@ tcu::Format::Bitfield<32> getAccessFlagsStr (VkAccessFlags value)
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<64> getAccessFlags2Str (VkAccessFlags2 value)
 {
@@ -4318,6 +4509,7 @@ tcu::Format::Bitfield<64> getAccessFlags2Str (VkAccessFlags2 value)
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<64> getAccessFlags3KHRStr (VkAccessFlags3KHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4327,6 +4519,17 @@ tcu::Format::Bitfield<64> getAccessFlags3KHRStr (VkAccessFlags3KHR value)
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
+tcu::Format::Bitfield<32> getAcquireProfilingLockFlagsKHRStr (VkAcquireProfilingLockFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(0, "0")
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
 tcu::Format::Bitfield<32> getAttachmentDescriptionFlagsStr (VkAttachmentDescriptionFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4335,6 +4538,7 @@ tcu::Format::Bitfield<32> getAttachmentDescriptionFlagsStr (VkAttachmentDescript
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getBufferCreateFlagsStr (VkBufferCreateFlags value)
 {
@@ -4350,6 +4554,7 @@ tcu::Format::Bitfield<32> getBufferCreateFlagsStr (VkBufferCreateFlags value)
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getBufferUsageFlagsStr (VkBufferUsageFlags value)
 {
@@ -4385,6 +4590,7 @@ tcu::Format::Bitfield<32> getBufferUsageFlagsStr (VkBufferUsageFlags value)
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<64> getBufferUsageFlags2Str (VkBufferUsageFlags2 value)
 {
@@ -4424,6 +4630,7 @@ tcu::Format::Bitfield<64> getBufferUsageFlags2Str (VkBufferUsageFlags2 value)
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getBuildAccelerationStructureFlagsKHRStr (VkBuildAccelerationStructureFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4444,6 +4651,7 @@ tcu::Format::Bitfield<32> getBuildAccelerationStructureFlagsKHRStr (VkBuildAccel
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getBuildMicromapFlagsEXTStr (VkBuildMicromapFlagsEXT value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4454,6 +4662,7 @@ tcu::Format::Bitfield<32> getBuildMicromapFlagsEXTStr (VkBuildMicromapFlagsEXT v
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getClusterAccelerationStructureAddressResolutionFlagsNVStr (VkClusterAccelerationStructureAddressResolutionFlagsNV value)
 {
@@ -4470,6 +4679,7 @@ tcu::Format::Bitfield<32> getClusterAccelerationStructureAddressResolutionFlagsN
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getClusterAccelerationStructureClusterFlagsNVStr (VkClusterAccelerationStructureClusterFlagsNV value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4478,6 +4688,7 @@ tcu::Format::Bitfield<32> getClusterAccelerationStructureClusterFlagsNVStr (VkCl
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getClusterAccelerationStructureGeometryFlagsNVStr (VkClusterAccelerationStructureGeometryFlagsNV value)
 {
@@ -4490,6 +4701,7 @@ tcu::Format::Bitfield<32> getClusterAccelerationStructureGeometryFlagsNVStr (VkC
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getClusterAccelerationStructureIndexFormatFlagsNVStr (VkClusterAccelerationStructureIndexFormatFlagsNV value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4500,6 +4712,7 @@ tcu::Format::Bitfield<32> getClusterAccelerationStructureIndexFormatFlagsNVStr (
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getColorComponentFlagsStr (VkColorComponentFlags value)
 {
@@ -4513,6 +4726,7 @@ tcu::Format::Bitfield<32> getColorComponentFlagsStr (VkColorComponentFlags value
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getCommandBufferResetFlagsStr (VkCommandBufferResetFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4521,6 +4735,7 @@ tcu::Format::Bitfield<32> getCommandBufferResetFlagsStr (VkCommandBufferResetFla
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getCommandBufferUsageFlagsStr (VkCommandBufferUsageFlags value)
 {
@@ -4533,6 +4748,7 @@ tcu::Format::Bitfield<32> getCommandBufferUsageFlagsStr (VkCommandBufferUsageFla
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getCommandPoolCreateFlagsStr (VkCommandPoolCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4544,6 +4760,7 @@ tcu::Format::Bitfield<32> getCommandPoolCreateFlagsStr (VkCommandPoolCreateFlags
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getCommandPoolResetFlagsStr (VkCommandPoolResetFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4552,6 +4769,7 @@ tcu::Format::Bitfield<32> getCommandPoolResetFlagsStr (VkCommandPoolResetFlags v
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getCompositeAlphaFlagsKHRStr (VkCompositeAlphaFlagsKHR value)
 {
@@ -4565,6 +4783,7 @@ tcu::Format::Bitfield<32> getCompositeAlphaFlagsKHRStr (VkCompositeAlphaFlagsKHR
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getConditionalRenderingFlagsEXTStr (VkConditionalRenderingFlagsEXT value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4573,6 +4792,7 @@ tcu::Format::Bitfield<32> getConditionalRenderingFlagsEXTStr (VkConditionalRende
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getCullModeFlagsStr (VkCullModeFlags value)
 {
@@ -4586,6 +4806,17 @@ tcu::Format::Bitfield<32> getCullModeFlagsStr (VkCullModeFlags value)
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
+tcu::Format::Bitfield<64> getDataGraphPipelineDispatchFlagsARMStr (VkDataGraphPipelineDispatchFlagsARM value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(0, "0")
+	};
+	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
 tcu::Format::Bitfield<64> getDataGraphPipelineSessionCreateFlagsARMStr (VkDataGraphPipelineSessionCreateFlagsARM value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4594,6 +4825,7 @@ tcu::Format::Bitfield<64> getDataGraphPipelineSessionCreateFlagsARMStr (VkDataGr
 	};
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getDebugReportFlagsEXTStr (VkDebugReportFlagsEXT value)
 {
@@ -4608,6 +4840,7 @@ tcu::Format::Bitfield<32> getDebugReportFlagsEXTStr (VkDebugReportFlagsEXT value
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getDebugUtilsMessageSeverityFlagsEXTStr (VkDebugUtilsMessageSeverityFlagsEXT value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4620,6 +4853,7 @@ tcu::Format::Bitfield<32> getDebugUtilsMessageSeverityFlagsEXTStr (VkDebugUtilsM
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getDebugUtilsMessageTypeFlagsEXTStr (VkDebugUtilsMessageTypeFlagsEXT value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4631,6 +4865,7 @@ tcu::Format::Bitfield<32> getDebugUtilsMessageTypeFlagsEXTStr (VkDebugUtilsMessa
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getDependencyFlagsStr (VkDependencyFlags value)
 {
@@ -4646,6 +4881,7 @@ tcu::Format::Bitfield<32> getDependencyFlagsStr (VkDependencyFlags value)
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getDescriptorBindingFlagsStr (VkDescriptorBindingFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4657,6 +4893,7 @@ tcu::Format::Bitfield<32> getDescriptorBindingFlagsStr (VkDescriptorBindingFlags
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getDescriptorPoolCreateFlagsStr (VkDescriptorPoolCreateFlags value)
 {
@@ -4670,6 +4907,7 @@ tcu::Format::Bitfield<32> getDescriptorPoolCreateFlagsStr (VkDescriptorPoolCreat
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getDescriptorSetLayoutCreateFlagsStr (VkDescriptorSetLayoutCreateFlags value)
 {
@@ -4686,6 +4924,7 @@ tcu::Format::Bitfield<32> getDescriptorSetLayoutCreateFlagsStr (VkDescriptorSetL
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getDeviceAddressBindingFlagsEXTStr (VkDeviceAddressBindingFlagsEXT value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4694,6 +4933,7 @@ tcu::Format::Bitfield<32> getDeviceAddressBindingFlagsEXTStr (VkDeviceAddressBin
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getDeviceDiagnosticsConfigFlagsNVStr (VkDeviceDiagnosticsConfigFlagsNV value)
 {
@@ -4707,6 +4947,7 @@ tcu::Format::Bitfield<32> getDeviceDiagnosticsConfigFlagsNVStr (VkDeviceDiagnost
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getDeviceGroupPresentModeFlagsKHRStr (VkDeviceGroupPresentModeFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4719,6 +4960,7 @@ tcu::Format::Bitfield<32> getDeviceGroupPresentModeFlagsKHRStr (VkDeviceGroupPre
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getDeviceQueueCreateFlagsStr (VkDeviceQueueCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4727,6 +4969,7 @@ tcu::Format::Bitfield<32> getDeviceQueueCreateFlagsStr (VkDeviceQueueCreateFlags
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getDisplayPlaneAlphaFlagsKHRStr (VkDisplayPlaneAlphaFlagsKHR value)
 {
@@ -4740,6 +4983,7 @@ tcu::Format::Bitfield<32> getDisplayPlaneAlphaFlagsKHRStr (VkDisplayPlaneAlphaFl
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getEventCreateFlagsStr (VkEventCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4748,6 +4992,7 @@ tcu::Format::Bitfield<32> getEventCreateFlagsStr (VkEventCreateFlags value)
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getExportMetalObjectTypeFlagsEXTStr (VkExportMetalObjectTypeFlagsEXT value)
 {
@@ -4763,6 +5008,7 @@ tcu::Format::Bitfield<32> getExportMetalObjectTypeFlagsEXTStr (VkExportMetalObje
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getExternalFenceFeatureFlagsStr (VkExternalFenceFeatureFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4772,6 +5018,7 @@ tcu::Format::Bitfield<32> getExternalFenceFeatureFlagsStr (VkExternalFenceFeatur
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getExternalFenceHandleTypeFlagsStr (VkExternalFenceHandleTypeFlags value)
 {
@@ -4785,6 +5032,7 @@ tcu::Format::Bitfield<32> getExternalFenceHandleTypeFlagsStr (VkExternalFenceHan
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getExternalMemoryFeatureFlagsStr (VkExternalMemoryFeatureFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4796,6 +5044,7 @@ tcu::Format::Bitfield<32> getExternalMemoryFeatureFlagsStr (VkExternalMemoryFeat
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getExternalMemoryFeatureFlagsNVStr (VkExternalMemoryFeatureFlagsNV value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4806,6 +5055,7 @@ tcu::Format::Bitfield<32> getExternalMemoryFeatureFlagsNVStr (VkExternalMemoryFe
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getExternalMemoryHandleTypeFlagsStr (VkExternalMemoryHandleTypeFlags value)
 {
@@ -4832,6 +5082,7 @@ tcu::Format::Bitfield<32> getExternalMemoryHandleTypeFlagsStr (VkExternalMemoryH
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getExternalMemoryHandleTypeFlagsNVStr (VkExternalMemoryHandleTypeFlagsNV value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4844,6 +5095,7 @@ tcu::Format::Bitfield<32> getExternalMemoryHandleTypeFlagsNVStr (VkExternalMemor
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getExternalSemaphoreFeatureFlagsStr (VkExternalSemaphoreFeatureFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4853,6 +5105,7 @@ tcu::Format::Bitfield<32> getExternalSemaphoreFeatureFlagsStr (VkExternalSemapho
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getExternalSemaphoreHandleTypeFlagsStr (VkExternalSemaphoreHandleTypeFlags value)
 {
@@ -4868,6 +5121,7 @@ tcu::Format::Bitfield<32> getExternalSemaphoreHandleTypeFlagsStr (VkExternalSema
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getFenceCreateFlagsStr (VkFenceCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4877,6 +5131,7 @@ tcu::Format::Bitfield<32> getFenceCreateFlagsStr (VkFenceCreateFlags value)
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getFenceImportFlagsStr (VkFenceImportFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4885,6 +5140,7 @@ tcu::Format::Bitfield<32> getFenceImportFlagsStr (VkFenceImportFlags value)
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getFormatFeatureFlagsStr (VkFormatFeatureFlags value)
 {
@@ -4924,6 +5180,7 @@ tcu::Format::Bitfield<32> getFormatFeatureFlagsStr (VkFormatFeatureFlags value)
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<64> getFormatFeatureFlags2Str (VkFormatFeatureFlags2 value)
 {
@@ -4982,6 +5239,7 @@ tcu::Format::Bitfield<64> getFormatFeatureFlags2Str (VkFormatFeatureFlags2 value
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getFrameBoundaryFlagsEXTStr (VkFrameBoundaryFlagsEXT value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4990,6 +5248,7 @@ tcu::Format::Bitfield<32> getFrameBoundaryFlagsEXTStr (VkFrameBoundaryFlagsEXT v
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getFramebufferCreateFlagsStr (VkFramebufferCreateFlags value)
 {
@@ -5000,6 +5259,7 @@ tcu::Format::Bitfield<32> getFramebufferCreateFlagsStr (VkFramebufferCreateFlags
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getGeometryFlagsKHRStr (VkGeometryFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5009,6 +5269,7 @@ tcu::Format::Bitfield<32> getGeometryFlagsKHRStr (VkGeometryFlagsKHR value)
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getGeometryInstanceFlagsKHRStr (VkGeometryInstanceFlagsKHR value)
 {
@@ -5024,6 +5285,7 @@ tcu::Format::Bitfield<32> getGeometryInstanceFlagsKHRStr (VkGeometryInstanceFlag
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getGraphicsPipelineLibraryFlagsEXTStr (VkGraphicsPipelineLibraryFlagsEXT value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5036,6 +5298,7 @@ tcu::Format::Bitfield<32> getGraphicsPipelineLibraryFlagsEXTStr (VkGraphicsPipel
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getHostImageCopyFlagsStr (VkHostImageCopyFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5044,6 +5307,7 @@ tcu::Format::Bitfield<32> getHostImageCopyFlagsStr (VkHostImageCopyFlags value)
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getImageAspectFlagsStr (VkImageAspectFlags value)
 {
@@ -5064,6 +5328,7 @@ tcu::Format::Bitfield<32> getImageAspectFlagsStr (VkImageAspectFlags value)
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getImageCompressionFixedRateFlagsEXTStr (VkImageCompressionFixedRateFlagsEXT value)
 {
@@ -5098,6 +5363,7 @@ tcu::Format::Bitfield<32> getImageCompressionFixedRateFlagsEXTStr (VkImageCompre
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getImageCompressionFlagsEXTStr (VkImageCompressionFlagsEXT value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5109,6 +5375,7 @@ tcu::Format::Bitfield<32> getImageCompressionFlagsEXTStr (VkImageCompressionFlag
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getImageConstraintsInfoFlagsFUCHSIAStr (VkImageConstraintsInfoFlagsFUCHSIA value)
 {
@@ -5122,6 +5389,7 @@ tcu::Format::Bitfield<32> getImageConstraintsInfoFlagsFUCHSIAStr (VkImageConstra
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getImageCreateFlagsStr (VkImageCreateFlags value)
 {
@@ -5150,6 +5418,7 @@ tcu::Format::Bitfield<32> getImageCreateFlagsStr (VkImageCreateFlags value)
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getImageUsageFlagsStr (VkImageUsageFlags value)
 {
@@ -5184,6 +5453,7 @@ tcu::Format::Bitfield<32> getImageUsageFlagsStr (VkImageUsageFlags value)
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getImageViewCreateFlagsStr (VkImageViewCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5195,6 +5465,7 @@ tcu::Format::Bitfield<32> getImageViewCreateFlagsStr (VkImageViewCreateFlags val
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getIndirectCommandsInputModeFlagsEXTStr (VkIndirectCommandsInputModeFlagsEXT value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5205,6 +5476,7 @@ tcu::Format::Bitfield<32> getIndirectCommandsInputModeFlagsEXTStr (VkIndirectCom
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getIndirectCommandsLayoutUsageFlagsEXTStr (VkIndirectCommandsLayoutUsageFlagsEXT value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5214,6 +5486,7 @@ tcu::Format::Bitfield<32> getIndirectCommandsLayoutUsageFlagsEXTStr (VkIndirectC
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getIndirectCommandsLayoutUsageFlagsNVStr (VkIndirectCommandsLayoutUsageFlagsNV value)
 {
@@ -5226,6 +5499,7 @@ tcu::Format::Bitfield<32> getIndirectCommandsLayoutUsageFlagsNVStr (VkIndirectCo
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getIndirectStateFlagsNVStr (VkIndirectStateFlagsNV value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5235,6 +5509,7 @@ tcu::Format::Bitfield<32> getIndirectStateFlagsNVStr (VkIndirectStateFlagsNV val
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getInstanceCreateFlagsStr (VkInstanceCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5243,6 +5518,7 @@ tcu::Format::Bitfield<32> getInstanceCreateFlagsStr (VkInstanceCreateFlags value
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getMemoryAllocateFlagsStr (VkMemoryAllocateFlags value)
 {
@@ -5256,6 +5532,7 @@ tcu::Format::Bitfield<32> getMemoryAllocateFlagsStr (VkMemoryAllocateFlags value
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<64> getMemoryDecompressionMethodFlagsNVStr (VkMemoryDecompressionMethodFlagsNV value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5264,6 +5541,7 @@ tcu::Format::Bitfield<64> getMemoryDecompressionMethodFlagsNVStr (VkMemoryDecomp
 	};
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getMemoryHeapFlagsStr (VkMemoryHeapFlags value)
 {
@@ -5276,6 +5554,7 @@ tcu::Format::Bitfield<32> getMemoryHeapFlagsStr (VkMemoryHeapFlags value)
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getMemoryMapFlagsStr (VkMemoryMapFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5284,6 +5563,7 @@ tcu::Format::Bitfield<32> getMemoryMapFlagsStr (VkMemoryMapFlags value)
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getMemoryPropertyFlagsStr (VkMemoryPropertyFlags value)
 {
@@ -5302,6 +5582,7 @@ tcu::Format::Bitfield<32> getMemoryPropertyFlagsStr (VkMemoryPropertyFlags value
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getMemoryUnmapFlagsStr (VkMemoryUnmapFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5310,6 +5591,7 @@ tcu::Format::Bitfield<32> getMemoryUnmapFlagsStr (VkMemoryUnmapFlags value)
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getMicromapCreateFlagsEXTStr (VkMicromapCreateFlagsEXT value)
 {
@@ -5320,6 +5602,7 @@ tcu::Format::Bitfield<32> getMicromapCreateFlagsEXTStr (VkMicromapCreateFlagsEXT
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getOpticalFlowExecuteFlagsNVStr (VkOpticalFlowExecuteFlagsNV value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5328,6 +5611,7 @@ tcu::Format::Bitfield<32> getOpticalFlowExecuteFlagsNVStr (VkOpticalFlowExecuteF
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getOpticalFlowGridSizeFlagsNVStr (VkOpticalFlowGridSizeFlagsNV value)
 {
@@ -5342,6 +5626,7 @@ tcu::Format::Bitfield<32> getOpticalFlowGridSizeFlagsNVStr (VkOpticalFlowGridSiz
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getOpticalFlowSessionCreateFlagsNVStr (VkOpticalFlowSessionCreateFlagsNV value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5354,6 +5639,7 @@ tcu::Format::Bitfield<32> getOpticalFlowSessionCreateFlagsNVStr (VkOpticalFlowSe
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getOpticalFlowUsageFlagsNVStr (VkOpticalFlowUsageFlagsNV value)
 {
@@ -5369,6 +5655,7 @@ tcu::Format::Bitfield<32> getOpticalFlowUsageFlagsNVStr (VkOpticalFlowUsageFlags
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getPartitionedAccelerationStructureInstanceFlagsNVStr (VkPartitionedAccelerationStructureInstanceFlagsNV value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5382,6 +5669,7 @@ tcu::Format::Bitfield<32> getPartitionedAccelerationStructureInstanceFlagsNVStr 
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getPeerMemoryFeatureFlagsStr (VkPeerMemoryFeatureFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5394,6 +5682,7 @@ tcu::Format::Bitfield<32> getPeerMemoryFeatureFlagsStr (VkPeerMemoryFeatureFlags
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getPerformanceCounterDescriptionFlagsKHRStr (VkPerformanceCounterDescriptionFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5404,6 +5693,7 @@ tcu::Format::Bitfield<32> getPerformanceCounterDescriptionFlagsKHRStr (VkPerform
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<64> getPhysicalDeviceSchedulingControlsFlagsARMStr (VkPhysicalDeviceSchedulingControlsFlagsARM value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5412,6 +5702,7 @@ tcu::Format::Bitfield<64> getPhysicalDeviceSchedulingControlsFlagsARMStr (VkPhys
 	};
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getPipelineCacheCreateFlagsStr (VkPipelineCacheCreateFlags value)
 {
@@ -5423,6 +5714,7 @@ tcu::Format::Bitfield<32> getPipelineCacheCreateFlagsStr (VkPipelineCacheCreateF
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getPipelineColorBlendStateCreateFlagsStr (VkPipelineColorBlendStateCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5431,6 +5723,17 @@ tcu::Format::Bitfield<32> getPipelineColorBlendStateCreateFlagsStr (VkPipelineCo
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
+
+tcu::Format::Bitfield<32> getPipelineCompilerControlFlagsAMDStr (VkPipelineCompilerControlFlagsAMD value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(0, "0")
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 
 tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value)
 {
@@ -5470,6 +5773,7 @@ tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<64> getPipelineCreateFlags2Str (VkPipelineCreateFlags2 value)
 {
@@ -5517,6 +5821,7 @@ tcu::Format::Bitfield<64> getPipelineCreateFlags2Str (VkPipelineCreateFlags2 val
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getPipelineCreationFeedbackFlagsStr (VkPipelineCreationFeedbackFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5528,6 +5833,7 @@ tcu::Format::Bitfield<32> getPipelineCreationFeedbackFlagsStr (VkPipelineCreatio
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getPipelineDepthStencilStateCreateFlagsStr (VkPipelineDepthStencilStateCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5538,6 +5844,7 @@ tcu::Format::Bitfield<32> getPipelineDepthStencilStateCreateFlagsStr (VkPipeline
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getPipelineLayoutCreateFlagsStr (VkPipelineLayoutCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5546,6 +5853,7 @@ tcu::Format::Bitfield<32> getPipelineLayoutCreateFlagsStr (VkPipelineLayoutCreat
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getPipelineShaderStageCreateFlagsStr (VkPipelineShaderStageCreateFlags value)
 {
@@ -5556,6 +5864,7 @@ tcu::Format::Bitfield<32> getPipelineShaderStageCreateFlagsStr (VkPipelineShader
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getPipelineStageFlagsStr (VkPipelineStageFlags value)
 {
@@ -5591,6 +5900,7 @@ tcu::Format::Bitfield<32> getPipelineStageFlagsStr (VkPipelineStageFlags value)
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<64> getPipelineStageFlags2Str (VkPipelineStageFlags2 value)
 {
@@ -5644,6 +5954,7 @@ tcu::Format::Bitfield<64> getPipelineStageFlags2Str (VkPipelineStageFlags2 value
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getPresentGravityFlagsKHRStr (VkPresentGravityFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5654,6 +5965,7 @@ tcu::Format::Bitfield<32> getPresentGravityFlagsKHRStr (VkPresentGravityFlagsKHR
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getPresentScalingFlagsKHRStr (VkPresentScalingFlagsKHR value)
 {
@@ -5666,6 +5978,7 @@ tcu::Format::Bitfield<32> getPresentScalingFlagsKHRStr (VkPresentScalingFlagsKHR
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getQueryControlFlagsStr (VkQueryControlFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5674,6 +5987,7 @@ tcu::Format::Bitfield<32> getQueryControlFlagsStr (VkQueryControlFlags value)
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getQueryPipelineStatisticFlagsStr (VkQueryPipelineStatisticFlags value)
 {
@@ -5697,6 +6011,7 @@ tcu::Format::Bitfield<32> getQueryPipelineStatisticFlagsStr (VkQueryPipelineStat
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getQueryPoolCreateFlagsStr (VkQueryPoolCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5705,6 +6020,7 @@ tcu::Format::Bitfield<32> getQueryPoolCreateFlagsStr (VkQueryPoolCreateFlags val
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getQueryResultFlagsStr (VkQueryResultFlags value)
 {
@@ -5718,6 +6034,7 @@ tcu::Format::Bitfield<32> getQueryResultFlagsStr (VkQueryResultFlags value)
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getQueueFlagsStr (VkQueueFlags value)
 {
@@ -5736,6 +6053,7 @@ tcu::Format::Bitfield<32> getQueueFlagsStr (VkQueueFlags value)
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getRenderPassCreateFlagsStr (VkRenderPassCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5745,6 +6063,7 @@ tcu::Format::Bitfield<32> getRenderPassCreateFlagsStr (VkRenderPassCreateFlags v
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getRenderingFlagsStr (VkRenderingFlags value)
 {
@@ -5760,6 +6079,7 @@ tcu::Format::Bitfield<32> getRenderingFlagsStr (VkRenderingFlags value)
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getResolveModeFlagsStr (VkResolveModeFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5773,6 +6093,7 @@ tcu::Format::Bitfield<32> getResolveModeFlagsStr (VkResolveModeFlags value)
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getSampleCountFlagsStr (VkSampleCountFlags value)
 {
@@ -5789,6 +6110,7 @@ tcu::Format::Bitfield<32> getSampleCountFlagsStr (VkSampleCountFlags value)
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getSamplerCreateFlagsStr (VkSamplerCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5802,6 +6124,7 @@ tcu::Format::Bitfield<32> getSamplerCreateFlagsStr (VkSamplerCreateFlags value)
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getSemaphoreImportFlagsStr (VkSemaphoreImportFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5811,6 +6134,7 @@ tcu::Format::Bitfield<32> getSemaphoreImportFlagsStr (VkSemaphoreImportFlags val
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getSemaphoreWaitFlagsStr (VkSemaphoreWaitFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5819,6 +6143,17 @@ tcu::Format::Bitfield<32> getSemaphoreWaitFlagsStr (VkSemaphoreWaitFlags value)
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
+
+tcu::Format::Bitfield<32> getShaderCorePropertiesFlagsAMDStr (VkShaderCorePropertiesFlagsAMD value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(0, "0")
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 
 tcu::Format::Bitfield<32> getShaderCreateFlagsEXTStr (VkShaderCreateFlagsEXT value)
 {
@@ -5835,6 +6170,7 @@ tcu::Format::Bitfield<32> getShaderCreateFlagsEXTStr (VkShaderCreateFlagsEXT val
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getShaderStageFlagsStr (VkShaderStageFlags value)
 {
@@ -5862,6 +6198,7 @@ tcu::Format::Bitfield<32> getShaderStageFlagsStr (VkShaderStageFlags value)
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getSparseImageFormatFlagsStr (VkSparseImageFormatFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5873,6 +6210,7 @@ tcu::Format::Bitfield<32> getSparseImageFormatFlagsStr (VkSparseImageFormatFlags
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getSparseMemoryBindFlagsStr (VkSparseMemoryBindFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5881,6 +6219,7 @@ tcu::Format::Bitfield<32> getSparseMemoryBindFlagsStr (VkSparseMemoryBindFlags v
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getStencilFaceFlagsStr (VkStencilFaceFlags value)
 {
@@ -5892,6 +6231,7 @@ tcu::Format::Bitfield<32> getStencilFaceFlagsStr (VkStencilFaceFlags value)
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getSubgroupFeatureFlagsStr (VkSubgroupFeatureFlags value)
 {
@@ -5912,6 +6252,7 @@ tcu::Format::Bitfield<32> getSubgroupFeatureFlagsStr (VkSubgroupFeatureFlags val
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getSubmitFlagsStr (VkSubmitFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5920,6 +6261,7 @@ tcu::Format::Bitfield<32> getSubmitFlagsStr (VkSubmitFlags value)
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getSubpassDescriptionFlagsStr (VkSubpassDescriptionFlags value)
 {
@@ -5938,6 +6280,7 @@ tcu::Format::Bitfield<32> getSubpassDescriptionFlagsStr (VkSubpassDescriptionFla
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getSurfaceCounterFlagsEXTStr (VkSurfaceCounterFlagsEXT value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5946,6 +6289,7 @@ tcu::Format::Bitfield<32> getSurfaceCounterFlagsEXTStr (VkSurfaceCounterFlagsEXT
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getSurfaceTransformFlagsKHRStr (VkSurfaceTransformFlagsKHR value)
 {
@@ -5964,6 +6308,7 @@ tcu::Format::Bitfield<32> getSurfaceTransformFlagsKHRStr (VkSurfaceTransformFlag
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getSwapchainCreateFlagsKHRStr (VkSwapchainCreateFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5978,6 +6323,7 @@ tcu::Format::Bitfield<32> getSwapchainCreateFlagsKHRStr (VkSwapchainCreateFlagsK
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<64> getTensorCreateFlagsARMStr (VkTensorCreateFlagsARM value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5988,6 +6334,7 @@ tcu::Format::Bitfield<64> getTensorCreateFlagsARMStr (VkTensorCreateFlagsARM val
 	};
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<64> getTensorUsageFlagsARMStr (VkTensorUsageFlagsARM value)
 {
@@ -6002,6 +6349,7 @@ tcu::Format::Bitfield<64> getTensorUsageFlagsARMStr (VkTensorUsageFlagsARM value
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<64> getTensorViewCreateFlagsARMStr (VkTensorViewCreateFlagsARM value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -6010,6 +6358,7 @@ tcu::Format::Bitfield<64> getTensorViewCreateFlagsARMStr (VkTensorViewCreateFlag
 	};
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getTileShadingRenderPassFlagsQCOMStr (VkTileShadingRenderPassFlagsQCOM value)
 {
@@ -6020,6 +6369,7 @@ tcu::Format::Bitfield<32> getTileShadingRenderPassFlagsQCOMStr (VkTileShadingRen
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getToolPurposeFlagsStr (VkToolPurposeFlags value)
 {
@@ -6036,6 +6386,7 @@ tcu::Format::Bitfield<32> getToolPurposeFlagsStr (VkToolPurposeFlags value)
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getVideoCapabilityFlagsKHRStr (VkVideoCapabilityFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -6045,6 +6396,7 @@ tcu::Format::Bitfield<32> getVideoCapabilityFlagsKHRStr (VkVideoCapabilityFlagsK
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getVideoChromaSubsamplingFlagsKHRStr (VkVideoChromaSubsamplingFlagsKHR value)
 {
@@ -6058,6 +6410,7 @@ tcu::Format::Bitfield<32> getVideoChromaSubsamplingFlagsKHRStr (VkVideoChromaSub
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getVideoCodecOperationFlagsKHRStr (VkVideoCodecOperationFlagsKHR value)
 {
@@ -6075,6 +6428,7 @@ tcu::Format::Bitfield<32> getVideoCodecOperationFlagsKHRStr (VkVideoCodecOperati
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getVideoCodingControlFlagsKHRStr (VkVideoCodingControlFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -6085,6 +6439,7 @@ tcu::Format::Bitfield<32> getVideoCodingControlFlagsKHRStr (VkVideoCodingControl
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getVideoComponentBitDepthFlagsKHRStr (VkVideoComponentBitDepthFlagsKHR value)
 {
@@ -6098,6 +6453,7 @@ tcu::Format::Bitfield<32> getVideoComponentBitDepthFlagsKHRStr (VkVideoComponent
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getVideoDecodeCapabilityFlagsKHRStr (VkVideoDecodeCapabilityFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -6107,6 +6463,7 @@ tcu::Format::Bitfield<32> getVideoDecodeCapabilityFlagsKHRStr (VkVideoDecodeCapa
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getVideoDecodeH264PictureLayoutFlagsKHRStr (VkVideoDecodeH264PictureLayoutFlagsKHR value)
 {
@@ -6119,6 +6476,7 @@ tcu::Format::Bitfield<32> getVideoDecodeH264PictureLayoutFlagsKHRStr (VkVideoDec
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getVideoDecodeUsageFlagsKHRStr (VkVideoDecodeUsageFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -6130,6 +6488,7 @@ tcu::Format::Bitfield<32> getVideoDecodeUsageFlagsKHRStr (VkVideoDecodeUsageFlag
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getVideoEncodeAV1CapabilityFlagsKHRStr (VkVideoEncodeAV1CapabilityFlagsKHR value)
 {
@@ -6145,6 +6504,7 @@ tcu::Format::Bitfield<32> getVideoEncodeAV1CapabilityFlagsKHRStr (VkVideoEncodeA
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getVideoEncodeAV1RateControlFlagsKHRStr (VkVideoEncodeAV1RateControlFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -6156,6 +6516,7 @@ tcu::Format::Bitfield<32> getVideoEncodeAV1RateControlFlagsKHRStr (VkVideoEncode
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getVideoEncodeAV1StdFlagsKHRStr (VkVideoEncodeAV1StdFlagsKHR value)
 {
@@ -6169,6 +6530,7 @@ tcu::Format::Bitfield<32> getVideoEncodeAV1StdFlagsKHRStr (VkVideoEncodeAV1StdFl
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getVideoEncodeAV1SuperblockSizeFlagsKHRStr (VkVideoEncodeAV1SuperblockSizeFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -6178,6 +6540,7 @@ tcu::Format::Bitfield<32> getVideoEncodeAV1SuperblockSizeFlagsKHRStr (VkVideoEnc
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getVideoEncodeCapabilityFlagsKHRStr (VkVideoEncodeCapabilityFlagsKHR value)
 {
@@ -6191,6 +6554,7 @@ tcu::Format::Bitfield<32> getVideoEncodeCapabilityFlagsKHRStr (VkVideoEncodeCapa
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getVideoEncodeContentFlagsKHRStr (VkVideoEncodeContentFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -6203,6 +6567,7 @@ tcu::Format::Bitfield<32> getVideoEncodeContentFlagsKHRStr (VkVideoEncodeContent
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getVideoEncodeFeedbackFlagsKHRStr (VkVideoEncodeFeedbackFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -6214,6 +6579,7 @@ tcu::Format::Bitfield<32> getVideoEncodeFeedbackFlagsKHRStr (VkVideoEncodeFeedba
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getVideoEncodeFlagsKHRStr (VkVideoEncodeFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -6224,6 +6590,7 @@ tcu::Format::Bitfield<32> getVideoEncodeFlagsKHRStr (VkVideoEncodeFlagsKHR value
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getVideoEncodeH264CapabilityFlagsKHRStr (VkVideoEncodeH264CapabilityFlagsKHR value)
 {
@@ -6244,6 +6611,7 @@ tcu::Format::Bitfield<32> getVideoEncodeH264CapabilityFlagsKHRStr (VkVideoEncode
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getVideoEncodeH264RateControlFlagsKHRStr (VkVideoEncodeH264RateControlFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -6256,6 +6624,7 @@ tcu::Format::Bitfield<32> getVideoEncodeH264RateControlFlagsKHRStr (VkVideoEncod
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getVideoEncodeH264StdFlagsKHRStr (VkVideoEncodeH264StdFlagsKHR value)
 {
@@ -6285,6 +6654,7 @@ tcu::Format::Bitfield<32> getVideoEncodeH264StdFlagsKHRStr (VkVideoEncodeH264Std
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getVideoEncodeH265CapabilityFlagsKHRStr (VkVideoEncodeH265CapabilityFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -6305,6 +6675,7 @@ tcu::Format::Bitfield<32> getVideoEncodeH265CapabilityFlagsKHRStr (VkVideoEncode
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getVideoEncodeH265CtbSizeFlagsKHRStr (VkVideoEncodeH265CtbSizeFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -6315,6 +6686,7 @@ tcu::Format::Bitfield<32> getVideoEncodeH265CtbSizeFlagsKHRStr (VkVideoEncodeH26
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getVideoEncodeH265RateControlFlagsKHRStr (VkVideoEncodeH265RateControlFlagsKHR value)
 {
@@ -6328,6 +6700,7 @@ tcu::Format::Bitfield<32> getVideoEncodeH265RateControlFlagsKHRStr (VkVideoEncod
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getVideoEncodeH265StdFlagsKHRStr (VkVideoEncodeH265StdFlagsKHR value)
 {
@@ -6358,6 +6731,7 @@ tcu::Format::Bitfield<32> getVideoEncodeH265StdFlagsKHRStr (VkVideoEncodeH265Std
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getVideoEncodeH265TransformBlockSizeFlagsKHRStr (VkVideoEncodeH265TransformBlockSizeFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -6369,6 +6743,7 @@ tcu::Format::Bitfield<32> getVideoEncodeH265TransformBlockSizeFlagsKHRStr (VkVid
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getVideoEncodeIntraRefreshModeFlagsKHRStr (VkVideoEncodeIntraRefreshModeFlagsKHR value)
 {
@@ -6383,6 +6758,7 @@ tcu::Format::Bitfield<32> getVideoEncodeIntraRefreshModeFlagsKHRStr (VkVideoEnco
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getVideoEncodeRateControlModeFlagsKHRStr (VkVideoEncodeRateControlModeFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -6394,6 +6770,7 @@ tcu::Format::Bitfield<32> getVideoEncodeRateControlModeFlagsKHRStr (VkVideoEncod
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getVideoEncodeUsageFlagsKHRStr (VkVideoEncodeUsageFlagsKHR value)
 {
@@ -6407,6 +6784,7 @@ tcu::Format::Bitfield<32> getVideoEncodeUsageFlagsKHRStr (VkVideoEncodeUsageFlag
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
 
 tcu::Format::Bitfield<32> getVideoSessionCreateFlagsKHRStr (VkVideoSessionCreateFlagsKHR value)
 {
@@ -6422,6 +6800,7 @@ tcu::Format::Bitfield<32> getVideoSessionCreateFlagsKHRStr (VkVideoSessionCreate
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+
 tcu::Format::Bitfield<32> getVideoSessionParametersCreateFlagsKHRStr (VkVideoSessionParametersCreateFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -6431,1903 +6810,6 @@ tcu::Format::Bitfield<32> getVideoSessionParametersCreateFlagsKHRStr (VkVideoSes
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getAccelerationStructureMotionInfoFlagsNVStr (VkAccelerationStructureMotionInfoFlagsNV value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getAccelerationStructureMotionInstanceFlagsNVStr (VkAccelerationStructureMotionInstanceFlagsNV value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getAcquireProfilingLockFlagsKHRStr (VkAcquireProfilingLockFlagsKHR value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getAndroidSurfaceCreateFlagsKHRStr (VkAndroidSurfaceCreateFlagsKHR value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getBufferViewCreateFlagsStr (VkBufferViewCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getCommandPoolTrimFlagsStr (VkCommandPoolTrimFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<64> getDataGraphPipelineDispatchFlagsARMStr (VkDataGraphPipelineDispatchFlagsARM value)
-{
-	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getDebugUtilsMessengerCallbackDataFlagsEXTStr (VkDebugUtilsMessengerCallbackDataFlagsEXT value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getDebugUtilsMessengerCreateFlagsEXTStr (VkDebugUtilsMessengerCreateFlagsEXT value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getDescriptorPoolResetFlagsStr (VkDescriptorPoolResetFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getDescriptorUpdateTemplateCreateFlagsStr (VkDescriptorUpdateTemplateCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getDeviceCreateFlagsStr (VkDeviceCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getDeviceMemoryReportFlagsEXTStr (VkDeviceMemoryReportFlagsEXT value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getDirectDriverLoadingFlagsLUNARGStr (VkDirectDriverLoadingFlagsLUNARG value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getDirectFBSurfaceCreateFlagsEXTStr (VkDirectFBSurfaceCreateFlagsEXT value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getDisplayModeCreateFlagsKHRStr (VkDisplayModeCreateFlagsKHR value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getDisplaySurfaceCreateFlagsKHRStr (VkDisplaySurfaceCreateFlagsKHR value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getHeadlessSurfaceCreateFlagsEXTStr (VkHeadlessSurfaceCreateFlagsEXT value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getIOSSurfaceCreateFlagsMVKStr (VkIOSSurfaceCreateFlagsMVK value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getImageFormatConstraintsFlagsFUCHSIAStr (VkImageFormatConstraintsFlagsFUCHSIA value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getImagePipeSurfaceCreateFlagsFUCHSIAStr (VkImagePipeSurfaceCreateFlagsFUCHSIA value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getMacOSSurfaceCreateFlagsMVKStr (VkMacOSSurfaceCreateFlagsMVK value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getMetalSurfaceCreateFlagsEXTStr (VkMetalSurfaceCreateFlagsEXT value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getPipelineCompilerControlFlagsAMDStr (VkPipelineCompilerControlFlagsAMD value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getPipelineCoverageModulationStateCreateFlagsNVStr (VkPipelineCoverageModulationStateCreateFlagsNV value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getPipelineCoverageReductionStateCreateFlagsNVStr (VkPipelineCoverageReductionStateCreateFlagsNV value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getPipelineCoverageToColorStateCreateFlagsNVStr (VkPipelineCoverageToColorStateCreateFlagsNV value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getPipelineDiscardRectangleStateCreateFlagsEXTStr (VkPipelineDiscardRectangleStateCreateFlagsEXT value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getPipelineDynamicStateCreateFlagsStr (VkPipelineDynamicStateCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getPipelineInputAssemblyStateCreateFlagsStr (VkPipelineInputAssemblyStateCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getPipelineMultisampleStateCreateFlagsStr (VkPipelineMultisampleStateCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getPipelineRasterizationConservativeStateCreateFlagsEXTStr (VkPipelineRasterizationConservativeStateCreateFlagsEXT value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getPipelineRasterizationDepthClipStateCreateFlagsEXTStr (VkPipelineRasterizationDepthClipStateCreateFlagsEXT value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getPipelineRasterizationStateCreateFlagsStr (VkPipelineRasterizationStateCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getPipelineRasterizationStateStreamCreateFlagsEXTStr (VkPipelineRasterizationStateStreamCreateFlagsEXT value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getPipelineTessellationStateCreateFlagsStr (VkPipelineTessellationStateCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getPipelineVertexInputStateCreateFlagsStr (VkPipelineVertexInputStateCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getPipelineViewportStateCreateFlagsStr (VkPipelineViewportStateCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getPipelineViewportSwizzleStateCreateFlagsNVStr (VkPipelineViewportSwizzleStateCreateFlagsNV value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getPrivateDataSlotCreateFlagsStr (VkPrivateDataSlotCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getRefreshObjectFlagsKHRStr (VkRefreshObjectFlagsKHR value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getScreenSurfaceCreateFlagsQNXStr (VkScreenSurfaceCreateFlagsQNX value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getSemaphoreCreateFlagsStr (VkSemaphoreCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getShaderCorePropertiesFlagsAMDStr (VkShaderCorePropertiesFlagsAMD value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getShaderModuleCreateFlagsStr (VkShaderModuleCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getStreamDescriptorSurfaceCreateFlagsGGPStr (VkStreamDescriptorSurfaceCreateFlagsGGP value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getSurfaceCreateFlagsOHOSStr (VkSurfaceCreateFlagsOHOS value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getSwapchainImageUsageFlagsANDROIDStr (VkSwapchainImageUsageFlagsANDROID value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getValidationCacheCreateFlagsEXTStr (VkValidationCacheCreateFlagsEXT value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getViSurfaceCreateFlagsNNStr (VkViSurfaceCreateFlagsNN value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getVideoBeginCodingFlagsKHRStr (VkVideoBeginCodingFlagsKHR value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getVideoDecodeFlagsKHRStr (VkVideoDecodeFlagsKHR value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getVideoEncodeRateControlFlagsKHRStr (VkVideoEncodeRateControlFlagsKHR value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getVideoEndCodingFlagsKHRStr (VkVideoEndCodingFlagsKHR value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getWaylandSurfaceCreateFlagsKHRStr (VkWaylandSurfaceCreateFlagsKHR value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getWin32SurfaceCreateFlagsKHRStr (VkWin32SurfaceCreateFlagsKHR value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getXcbSurfaceCreateFlagsKHRStr (VkXcbSurfaceCreateFlagsKHR value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getXlibSurfaceCreateFlagsKHRStr (VkXlibSurfaceCreateFlagsKHR value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoAV1CDEF& value)
-{
-	s << "StdVideoAV1CDEF = {\n";
-	s << "\tcdef_damping_minus_3 = " << value.cdef_damping_minus_3 << '\n';
-	s << "\tcdef_bits = " << value.cdef_bits << '\n';
-	s << "\tcdef_y_pri_strength = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.cdef_y_pri_strength)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.cdef_y_pri_strength))) << '\n';
-	s << "\tcdef_y_sec_strength = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.cdef_y_sec_strength)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.cdef_y_sec_strength))) << '\n';
-	s << "\tcdef_uv_pri_strength = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.cdef_uv_pri_strength)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.cdef_uv_pri_strength))) << '\n';
-	s << "\tcdef_uv_sec_strength = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.cdef_uv_sec_strength)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.cdef_uv_sec_strength))) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoAV1ColorConfig& value)
-{
-	s << "StdVideoAV1ColorConfig = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tBitDepth = " << value.BitDepth << '\n';
-	s << "\tsubsampling_x = " << value.subsampling_x << '\n';
-	s << "\tsubsampling_y = " << value.subsampling_y << '\n';
-	s << "\treserved1 = " << value.reserved1 << '\n';
-	s << "\tcolor_primaries = " << value.color_primaries << '\n';
-	s << "\ttransfer_characteristics = " << value.transfer_characteristics << '\n';
-	s << "\tmatrix_coefficients = " << value.matrix_coefficients << '\n';
-	s << "\tchroma_sample_position = " << value.chroma_sample_position << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoAV1ColorConfigFlags& value)
-{
-	s << "StdVideoAV1ColorConfigFlags = {\n";
-	s << "\tmono_chrome = " << value.mono_chrome << '\n';
-	s << "\tcolor_range = " << value.color_range << '\n';
-	s << "\tseparate_uv_delta_q = " << value.separate_uv_delta_q << '\n';
-	s << "\tcolor_description_present_flag = " << value.color_description_present_flag << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoAV1FilmGrain& value)
-{
-	s << "StdVideoAV1FilmGrain = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tgrain_scaling_minus_8 = " << value.grain_scaling_minus_8 << '\n';
-	s << "\tar_coeff_lag = " << value.ar_coeff_lag << '\n';
-	s << "\tar_coeff_shift_minus_6 = " << value.ar_coeff_shift_minus_6 << '\n';
-	s << "\tgrain_scale_shift = " << value.grain_scale_shift << '\n';
-	s << "\tgrain_seed = " << value.grain_seed << '\n';
-	s << "\tfilm_grain_params_ref_idx = " << value.film_grain_params_ref_idx << '\n';
-	s << "\tnum_y_points = " << value.num_y_points << '\n';
-	s << "\tpoint_y_value = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.point_y_value)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.point_y_value))) << '\n';
-	s << "\tpoint_y_scaling = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.point_y_scaling)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.point_y_scaling))) << '\n';
-	s << "\tnum_cb_points = " << value.num_cb_points << '\n';
-	s << "\tpoint_cb_value = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.point_cb_value)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.point_cb_value))) << '\n';
-	s << "\tpoint_cb_scaling = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.point_cb_scaling)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.point_cb_scaling))) << '\n';
-	s << "\tnum_cr_points = " << value.num_cr_points << '\n';
-	s << "\tpoint_cr_value = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.point_cr_value)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.point_cr_value))) << '\n';
-	s << "\tpoint_cr_scaling = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.point_cr_scaling)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.point_cr_scaling))) << '\n';
-	s << "\tar_coeffs_y_plus_128 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ar_coeffs_y_plus_128), DE_ARRAY_END(value.ar_coeffs_y_plus_128)) << '\n';
-	s << "\tar_coeffs_cb_plus_128 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ar_coeffs_cb_plus_128), DE_ARRAY_END(value.ar_coeffs_cb_plus_128)) << '\n';
-	s << "\tar_coeffs_cr_plus_128 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ar_coeffs_cr_plus_128), DE_ARRAY_END(value.ar_coeffs_cr_plus_128)) << '\n';
-	s << "\tcb_mult = " << value.cb_mult << '\n';
-	s << "\tcb_luma_mult = " << value.cb_luma_mult << '\n';
-	s << "\tcb_offset = " << value.cb_offset << '\n';
-	s << "\tcr_mult = " << value.cr_mult << '\n';
-	s << "\tcr_luma_mult = " << value.cr_luma_mult << '\n';
-	s << "\tcr_offset = " << value.cr_offset << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoAV1FilmGrainFlags& value)
-{
-	s << "StdVideoAV1FilmGrainFlags = {\n";
-	s << "\tchroma_scaling_from_luma = " << value.chroma_scaling_from_luma << '\n';
-	s << "\toverlap_flag = " << value.overlap_flag << '\n';
-	s << "\tclip_to_restricted_range = " << value.clip_to_restricted_range << '\n';
-	s << "\tupdate_grain = " << value.update_grain << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoAV1GlobalMotion& value)
-{
-	s << "StdVideoAV1GlobalMotion = {\n";
-	s << "\tGmType = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.GmType)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.GmType))) << '\n';
-	s << "\tgm_params = " << '\n';
-	for(uint32_t i0 = 0 ; i0 < STD_VIDEO_AV1_NUM_REF_FRAMES ; ++i0)
-		s << tcu::formatArray(DE_ARRAY_BEGIN(value.gm_params[i0]), DE_ARRAY_END(value.gm_params[i0])) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoAV1LoopFilter& value)
-{
-	s << "StdVideoAV1LoopFilter = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tloop_filter_level = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.loop_filter_level)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.loop_filter_level))) << '\n';
-	s << "\tloop_filter_sharpness = " << value.loop_filter_sharpness << '\n';
-	s << "\tupdate_ref_delta = " << value.update_ref_delta << '\n';
-	s << "\tloop_filter_ref_deltas = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.loop_filter_ref_deltas), DE_ARRAY_END(value.loop_filter_ref_deltas)) << '\n';
-	s << "\tupdate_mode_delta = " << value.update_mode_delta << '\n';
-	s << "\tloop_filter_mode_deltas = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.loop_filter_mode_deltas), DE_ARRAY_END(value.loop_filter_mode_deltas)) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoAV1LoopFilterFlags& value)
-{
-	s << "StdVideoAV1LoopFilterFlags = {\n";
-	s << "\tloop_filter_delta_enabled = " << value.loop_filter_delta_enabled << '\n';
-	s << "\tloop_filter_delta_update = " << value.loop_filter_delta_update << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoAV1LoopRestoration& value)
-{
-	s << "StdVideoAV1LoopRestoration = {\n";
-	s << "\tFrameRestorationType = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.FrameRestorationType), DE_ARRAY_END(value.FrameRestorationType)) << '\n';
-	s << "\tLoopRestorationSize = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.LoopRestorationSize), DE_ARRAY_END(value.LoopRestorationSize)) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoAV1Quantization& value)
-{
-	s << "StdVideoAV1Quantization = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tbase_q_idx = " << value.base_q_idx << '\n';
-	s << "\tDeltaQYDc = " << value.DeltaQYDc << '\n';
-	s << "\tDeltaQUDc = " << value.DeltaQUDc << '\n';
-	s << "\tDeltaQUAc = " << value.DeltaQUAc << '\n';
-	s << "\tDeltaQVDc = " << value.DeltaQVDc << '\n';
-	s << "\tDeltaQVAc = " << value.DeltaQVAc << '\n';
-	s << "\tqm_y = " << value.qm_y << '\n';
-	s << "\tqm_u = " << value.qm_u << '\n';
-	s << "\tqm_v = " << value.qm_v << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoAV1QuantizationFlags& value)
-{
-	s << "StdVideoAV1QuantizationFlags = {\n";
-	s << "\tusing_qmatrix = " << value.using_qmatrix << '\n';
-	s << "\tdiff_uv_delta = " << value.diff_uv_delta << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoAV1Segmentation& value)
-{
-	s << "StdVideoAV1Segmentation = {\n";
-	s << "\tFeatureEnabled = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.FeatureEnabled)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.FeatureEnabled))) << '\n';
-	s << "\tFeatureData = " << '\n';
-	for(uint32_t i0 = 0 ; i0 < STD_VIDEO_AV1_MAX_SEGMENTS ; ++i0)
-		s << tcu::formatArray(DE_ARRAY_BEGIN(value.FeatureData[i0]), DE_ARRAY_END(value.FeatureData[i0])) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoAV1SequenceHeader& value)
-{
-	s << "StdVideoAV1SequenceHeader = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tseq_profile = " << value.seq_profile << '\n';
-	s << "\tframe_width_bits_minus_1 = " << value.frame_width_bits_minus_1 << '\n';
-	s << "\tframe_height_bits_minus_1 = " << value.frame_height_bits_minus_1 << '\n';
-	s << "\tmax_frame_width_minus_1 = " << value.max_frame_width_minus_1 << '\n';
-	s << "\tmax_frame_height_minus_1 = " << value.max_frame_height_minus_1 << '\n';
-	s << "\tdelta_frame_id_length_minus_2 = " << value.delta_frame_id_length_minus_2 << '\n';
-	s << "\tadditional_frame_id_length_minus_1 = " << value.additional_frame_id_length_minus_1 << '\n';
-	s << "\torder_hint_bits_minus_1 = " << value.order_hint_bits_minus_1 << '\n';
-	s << "\tseq_force_integer_mv = " << value.seq_force_integer_mv << '\n';
-	s << "\tseq_force_screen_content_tools = " << value.seq_force_screen_content_tools << '\n';
-	s << "\treserved1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.reserved1)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.reserved1))) << '\n';
-	s << "\tpColorConfig = " << value.pColorConfig << '\n';
-	s << "\tpTimingInfo = " << value.pTimingInfo << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoAV1SequenceHeaderFlags& value)
-{
-	s << "StdVideoAV1SequenceHeaderFlags = {\n";
-	s << "\tstill_picture = " << value.still_picture << '\n';
-	s << "\treduced_still_picture_header = " << value.reduced_still_picture_header << '\n';
-	s << "\tuse_128x128_superblock = " << value.use_128x128_superblock << '\n';
-	s << "\tenable_filter_intra = " << value.enable_filter_intra << '\n';
-	s << "\tenable_intra_edge_filter = " << value.enable_intra_edge_filter << '\n';
-	s << "\tenable_interintra_compound = " << value.enable_interintra_compound << '\n';
-	s << "\tenable_masked_compound = " << value.enable_masked_compound << '\n';
-	s << "\tenable_warped_motion = " << value.enable_warped_motion << '\n';
-	s << "\tenable_dual_filter = " << value.enable_dual_filter << '\n';
-	s << "\tenable_order_hint = " << value.enable_order_hint << '\n';
-	s << "\tenable_jnt_comp = " << value.enable_jnt_comp << '\n';
-	s << "\tenable_ref_frame_mvs = " << value.enable_ref_frame_mvs << '\n';
-	s << "\tframe_id_numbers_present_flag = " << value.frame_id_numbers_present_flag << '\n';
-	s << "\tenable_superres = " << value.enable_superres << '\n';
-	s << "\tenable_cdef = " << value.enable_cdef << '\n';
-	s << "\tenable_restoration = " << value.enable_restoration << '\n';
-	s << "\tfilm_grain_params_present = " << value.film_grain_params_present << '\n';
-	s << "\ttiming_info_present_flag = " << value.timing_info_present_flag << '\n';
-	s << "\tinitial_display_delay_present_flag = " << value.initial_display_delay_present_flag << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoAV1TileInfo& value)
-{
-	s << "StdVideoAV1TileInfo = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tTileCols = " << value.TileCols << '\n';
-	s << "\tTileRows = " << value.TileRows << '\n';
-	s << "\tcontext_update_tile_id = " << value.context_update_tile_id << '\n';
-	s << "\ttile_size_bytes_minus_1 = " << value.tile_size_bytes_minus_1 << '\n';
-	s << "\treserved1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.reserved1)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.reserved1))) << '\n';
-	s << "\tpMiColStarts = " << value.pMiColStarts << '\n';
-	s << "\tpMiRowStarts = " << value.pMiRowStarts << '\n';
-	s << "\tpWidthInSbsMinus1 = " << value.pWidthInSbsMinus1 << '\n';
-	s << "\tpHeightInSbsMinus1 = " << value.pHeightInSbsMinus1 << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoAV1TileInfoFlags& value)
-{
-	s << "StdVideoAV1TileInfoFlags = {\n";
-	s << "\tuniform_tile_spacing_flag = " << value.uniform_tile_spacing_flag << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoAV1TimingInfo& value)
-{
-	s << "StdVideoAV1TimingInfo = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tnum_units_in_display_tick = " << value.num_units_in_display_tick << '\n';
-	s << "\ttime_scale = " << value.time_scale << '\n';
-	s << "\tnum_ticks_per_picture_minus_1 = " << value.num_ticks_per_picture_minus_1 << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoAV1TimingInfoFlags& value)
-{
-	s << "StdVideoAV1TimingInfoFlags = {\n";
-	s << "\tequal_picture_interval = " << value.equal_picture_interval << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoDecodeAV1PictureInfo& value)
-{
-	s << "StdVideoDecodeAV1PictureInfo = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tframe_type = " << value.frame_type << '\n';
-	s << "\tcurrent_frame_id = " << value.current_frame_id << '\n';
-	s << "\tOrderHint = " << value.OrderHint << '\n';
-	s << "\tprimary_ref_frame = " << value.primary_ref_frame << '\n';
-	s << "\trefresh_frame_flags = " << value.refresh_frame_flags << '\n';
-	s << "\treserved1 = " << value.reserved1 << '\n';
-	s << "\tinterpolation_filter = " << value.interpolation_filter << '\n';
-	s << "\tTxMode = " << value.TxMode << '\n';
-	s << "\tdelta_q_res = " << value.delta_q_res << '\n';
-	s << "\tdelta_lf_res = " << value.delta_lf_res << '\n';
-	s << "\tSkipModeFrame = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.SkipModeFrame)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.SkipModeFrame))) << '\n';
-	s << "\tcoded_denom = " << value.coded_denom << '\n';
-	s << "\treserved2 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.reserved2)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.reserved2))) << '\n';
-	s << "\tOrderHints = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.OrderHints)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.OrderHints))) << '\n';
-	s << "\texpectedFrameId = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.expectedFrameId), DE_ARRAY_END(value.expectedFrameId)) << '\n';
-	s << "\tpTileInfo = " << value.pTileInfo << '\n';
-	s << "\tpQuantization = " << value.pQuantization << '\n';
-	s << "\tpSegmentation = " << value.pSegmentation << '\n';
-	s << "\tpLoopFilter = " << value.pLoopFilter << '\n';
-	s << "\tpCDEF = " << value.pCDEF << '\n';
-	s << "\tpLoopRestoration = " << value.pLoopRestoration << '\n';
-	s << "\tpGlobalMotion = " << value.pGlobalMotion << '\n';
-	s << "\tpFilmGrain = " << value.pFilmGrain << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoDecodeAV1PictureInfoFlags& value)
-{
-	s << "StdVideoDecodeAV1PictureInfoFlags = {\n";
-	s << "\terror_resilient_mode = " << value.error_resilient_mode << '\n';
-	s << "\tdisable_cdf_update = " << value.disable_cdf_update << '\n';
-	s << "\tuse_superres = " << value.use_superres << '\n';
-	s << "\trender_and_frame_size_different = " << value.render_and_frame_size_different << '\n';
-	s << "\tallow_screen_content_tools = " << value.allow_screen_content_tools << '\n';
-	s << "\tis_filter_switchable = " << value.is_filter_switchable << '\n';
-	s << "\tforce_integer_mv = " << value.force_integer_mv << '\n';
-	s << "\tframe_size_override_flag = " << value.frame_size_override_flag << '\n';
-	s << "\tbuffer_removal_time_present_flag = " << value.buffer_removal_time_present_flag << '\n';
-	s << "\tallow_intrabc = " << value.allow_intrabc << '\n';
-	s << "\tframe_refs_short_signaling = " << value.frame_refs_short_signaling << '\n';
-	s << "\tallow_high_precision_mv = " << value.allow_high_precision_mv << '\n';
-	s << "\tis_motion_mode_switchable = " << value.is_motion_mode_switchable << '\n';
-	s << "\tuse_ref_frame_mvs = " << value.use_ref_frame_mvs << '\n';
-	s << "\tdisable_frame_end_update_cdf = " << value.disable_frame_end_update_cdf << '\n';
-	s << "\tallow_warped_motion = " << value.allow_warped_motion << '\n';
-	s << "\treduced_tx_set = " << value.reduced_tx_set << '\n';
-	s << "\treference_select = " << value.reference_select << '\n';
-	s << "\tskip_mode_present = " << value.skip_mode_present << '\n';
-	s << "\tdelta_q_present = " << value.delta_q_present << '\n';
-	s << "\tdelta_lf_present = " << value.delta_lf_present << '\n';
-	s << "\tdelta_lf_multi = " << value.delta_lf_multi << '\n';
-	s << "\tsegmentation_enabled = " << value.segmentation_enabled << '\n';
-	s << "\tsegmentation_update_map = " << value.segmentation_update_map << '\n';
-	s << "\tsegmentation_temporal_update = " << value.segmentation_temporal_update << '\n';
-	s << "\tsegmentation_update_data = " << value.segmentation_update_data << '\n';
-	s << "\tUsesLr = " << value.UsesLr << '\n';
-	s << "\tusesChromaLr = " << value.usesChromaLr << '\n';
-	s << "\tapply_grain = " << value.apply_grain << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoDecodeAV1ReferenceInfo& value)
-{
-	s << "StdVideoDecodeAV1ReferenceInfo = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tframe_type = " << value.frame_type << '\n';
-	s << "\tRefFrameSignBias = " << value.RefFrameSignBias << '\n';
-	s << "\tOrderHint = " << value.OrderHint << '\n';
-	s << "\tSavedOrderHints = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.SavedOrderHints)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.SavedOrderHints))) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoDecodeAV1ReferenceInfoFlags& value)
-{
-	s << "StdVideoDecodeAV1ReferenceInfoFlags = {\n";
-	s << "\tdisable_frame_end_update_cdf = " << value.disable_frame_end_update_cdf << '\n';
-	s << "\tsegmentation_enabled = " << value.segmentation_enabled << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoDecodeH264PictureInfo& value)
-{
-	s << "StdVideoDecodeH264PictureInfo = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tseq_parameter_set_id = " << value.seq_parameter_set_id << '\n';
-	s << "\tpic_parameter_set_id = " << value.pic_parameter_set_id << '\n';
-	s << "\treserved1 = " << value.reserved1 << '\n';
-	s << "\treserved2 = " << value.reserved2 << '\n';
-	s << "\tframe_num = " << value.frame_num << '\n';
-	s << "\tidr_pic_id = " << value.idr_pic_id << '\n';
-	s << "\tPicOrderCnt = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.PicOrderCnt), DE_ARRAY_END(value.PicOrderCnt)) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoDecodeH264PictureInfoFlags& value)
-{
-	s << "StdVideoDecodeH264PictureInfoFlags = {\n";
-	s << "\tfield_pic_flag = " << value.field_pic_flag << '\n';
-	s << "\tis_intra = " << value.is_intra << '\n';
-	s << "\tIdrPicFlag = " << value.IdrPicFlag << '\n';
-	s << "\tbottom_field_flag = " << value.bottom_field_flag << '\n';
-	s << "\tis_reference = " << value.is_reference << '\n';
-	s << "\tcomplementary_field_pair = " << value.complementary_field_pair << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoDecodeH264ReferenceInfo& value)
-{
-	s << "StdVideoDecodeH264ReferenceInfo = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tFrameNum = " << value.FrameNum << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << "\tPicOrderCnt = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.PicOrderCnt), DE_ARRAY_END(value.PicOrderCnt)) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoDecodeH264ReferenceInfoFlags& value)
-{
-	s << "StdVideoDecodeH264ReferenceInfoFlags = {\n";
-	s << "\ttop_field_flag = " << value.top_field_flag << '\n';
-	s << "\tbottom_field_flag = " << value.bottom_field_flag << '\n';
-	s << "\tused_for_long_term_reference = " << value.used_for_long_term_reference << '\n';
-	s << "\tis_non_existing = " << value.is_non_existing << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoDecodeH265PictureInfo& value)
-{
-	s << "StdVideoDecodeH265PictureInfo = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tsps_video_parameter_set_id = " << value.sps_video_parameter_set_id << '\n';
-	s << "\tpps_seq_parameter_set_id = " << value.pps_seq_parameter_set_id << '\n';
-	s << "\tpps_pic_parameter_set_id = " << value.pps_pic_parameter_set_id << '\n';
-	s << "\tNumDeltaPocsOfRefRpsIdx = " << value.NumDeltaPocsOfRefRpsIdx << '\n';
-	s << "\tPicOrderCntVal = " << value.PicOrderCntVal << '\n';
-	s << "\tNumBitsForSTRefPicSetInSlice = " << value.NumBitsForSTRefPicSetInSlice << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << "\tRefPicSetStCurrBefore = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.RefPicSetStCurrBefore)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.RefPicSetStCurrBefore))) << '\n';
-	s << "\tRefPicSetStCurrAfter = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.RefPicSetStCurrAfter)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.RefPicSetStCurrAfter))) << '\n';
-	s << "\tRefPicSetLtCurr = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.RefPicSetLtCurr)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.RefPicSetLtCurr))) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoDecodeH265PictureInfoFlags& value)
-{
-	s << "StdVideoDecodeH265PictureInfoFlags = {\n";
-	s << "\tIrapPicFlag = " << value.IrapPicFlag << '\n';
-	s << "\tIdrPicFlag = " << value.IdrPicFlag << '\n';
-	s << "\tIsReference = " << value.IsReference << '\n';
-	s << "\tshort_term_ref_pic_set_sps_flag = " << value.short_term_ref_pic_set_sps_flag << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoDecodeH265ReferenceInfo& value)
-{
-	s << "StdVideoDecodeH265ReferenceInfo = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tPicOrderCntVal = " << value.PicOrderCntVal << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoDecodeH265ReferenceInfoFlags& value)
-{
-	s << "StdVideoDecodeH265ReferenceInfoFlags = {\n";
-	s << "\tused_for_long_term_reference = " << value.used_for_long_term_reference << '\n';
-	s << "\tunused_for_reference = " << value.unused_for_reference << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoDecodeVP9PictureInfo& value)
-{
-	s << "StdVideoDecodeVP9PictureInfo = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tprofile = " << value.profile << '\n';
-	s << "\tframe_type = " << value.frame_type << '\n';
-	s << "\tframe_context_idx = " << value.frame_context_idx << '\n';
-	s << "\treset_frame_context = " << value.reset_frame_context << '\n';
-	s << "\trefresh_frame_flags = " << value.refresh_frame_flags << '\n';
-	s << "\tref_frame_sign_bias_mask = " << value.ref_frame_sign_bias_mask << '\n';
-	s << "\tinterpolation_filter = " << value.interpolation_filter << '\n';
-	s << "\tbase_q_idx = " << value.base_q_idx << '\n';
-	s << "\tdelta_q_y_dc = " << value.delta_q_y_dc << '\n';
-	s << "\tdelta_q_uv_dc = " << value.delta_q_uv_dc << '\n';
-	s << "\tdelta_q_uv_ac = " << value.delta_q_uv_ac << '\n';
-	s << "\ttile_cols_log2 = " << value.tile_cols_log2 << '\n';
-	s << "\ttile_rows_log2 = " << value.tile_rows_log2 << '\n';
-	s << "\treserved1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.reserved1), DE_ARRAY_END(value.reserved1)) << '\n';
-	s << "\tpColorConfig = " << value.pColorConfig << '\n';
-	s << "\tpLoopFilter = " << value.pLoopFilter << '\n';
-	s << "\tpSegmentation = " << value.pSegmentation << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoDecodeVP9PictureInfoFlags& value)
-{
-	s << "StdVideoDecodeVP9PictureInfoFlags = {\n";
-	s << "\terror_resilient_mode = " << value.error_resilient_mode << '\n';
-	s << "\tintra_only = " << value.intra_only << '\n';
-	s << "\tallow_high_precision_mv = " << value.allow_high_precision_mv << '\n';
-	s << "\trefresh_frame_context = " << value.refresh_frame_context << '\n';
-	s << "\tframe_parallel_decoding_mode = " << value.frame_parallel_decoding_mode << '\n';
-	s << "\tsegmentation_enabled = " << value.segmentation_enabled << '\n';
-	s << "\tshow_frame = " << value.show_frame << '\n';
-	s << "\tUsePrevFrameMvs = " << value.UsePrevFrameMvs << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeAV1DecoderModelInfo& value)
-{
-	s << "StdVideoEncodeAV1DecoderModelInfo = {\n";
-	s << "\tbuffer_delay_length_minus_1 = " << value.buffer_delay_length_minus_1 << '\n';
-	s << "\tbuffer_removal_time_length_minus_1 = " << value.buffer_removal_time_length_minus_1 << '\n';
-	s << "\tframe_presentation_time_length_minus_1 = " << value.frame_presentation_time_length_minus_1 << '\n';
-	s << "\treserved1 = " << value.reserved1 << '\n';
-	s << "\tnum_units_in_decoding_tick = " << value.num_units_in_decoding_tick << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeAV1ExtensionHeader& value)
-{
-	s << "StdVideoEncodeAV1ExtensionHeader = {\n";
-	s << "\ttemporal_id = " << value.temporal_id << '\n';
-	s << "\tspatial_id = " << value.spatial_id << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeAV1OperatingPointInfo& value)
-{
-	s << "StdVideoEncodeAV1OperatingPointInfo = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\toperating_point_idc = " << value.operating_point_idc << '\n';
-	s << "\tseq_level_idx = " << value.seq_level_idx << '\n';
-	s << "\tseq_tier = " << value.seq_tier << '\n';
-	s << "\tdecoder_buffer_delay = " << value.decoder_buffer_delay << '\n';
-	s << "\tencoder_buffer_delay = " << value.encoder_buffer_delay << '\n';
-	s << "\tinitial_display_delay_minus_1 = " << value.initial_display_delay_minus_1 << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeAV1OperatingPointInfoFlags& value)
-{
-	s << "StdVideoEncodeAV1OperatingPointInfoFlags = {\n";
-	s << "\tdecoder_model_present_for_this_op = " << value.decoder_model_present_for_this_op << '\n';
-	s << "\tlow_delay_mode_flag = " << value.low_delay_mode_flag << '\n';
-	s << "\tinitial_display_delay_present_for_this_op = " << value.initial_display_delay_present_for_this_op << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeAV1PictureInfo& value)
-{
-	s << "StdVideoEncodeAV1PictureInfo = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tframe_type = " << value.frame_type << '\n';
-	s << "\tframe_presentation_time = " << value.frame_presentation_time << '\n';
-	s << "\tcurrent_frame_id = " << value.current_frame_id << '\n';
-	s << "\torder_hint = " << value.order_hint << '\n';
-	s << "\tprimary_ref_frame = " << value.primary_ref_frame << '\n';
-	s << "\trefresh_frame_flags = " << value.refresh_frame_flags << '\n';
-	s << "\tcoded_denom = " << value.coded_denom << '\n';
-	s << "\trender_width_minus_1 = " << value.render_width_minus_1 << '\n';
-	s << "\trender_height_minus_1 = " << value.render_height_minus_1 << '\n';
-	s << "\tinterpolation_filter = " << value.interpolation_filter << '\n';
-	s << "\tTxMode = " << value.TxMode << '\n';
-	s << "\tdelta_q_res = " << value.delta_q_res << '\n';
-	s << "\tdelta_lf_res = " << value.delta_lf_res << '\n';
-	s << "\tref_order_hint = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.ref_order_hint)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.ref_order_hint))) << '\n';
-	s << "\tref_frame_idx = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ref_frame_idx), DE_ARRAY_END(value.ref_frame_idx)) << '\n';
-	s << "\treserved1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.reserved1)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.reserved1))) << '\n';
-	s << "\tdelta_frame_id_minus_1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_frame_id_minus_1), DE_ARRAY_END(value.delta_frame_id_minus_1)) << '\n';
-	s << "\tpTileInfo = " << value.pTileInfo << '\n';
-	s << "\tpQuantization = " << value.pQuantization << '\n';
-	s << "\tpSegmentation = " << value.pSegmentation << '\n';
-	s << "\tpLoopFilter = " << value.pLoopFilter << '\n';
-	s << "\tpCDEF = " << value.pCDEF << '\n';
-	s << "\tpLoopRestoration = " << value.pLoopRestoration << '\n';
-	s << "\tpGlobalMotion = " << value.pGlobalMotion << '\n';
-	s << "\tpExtensionHeader = " << value.pExtensionHeader << '\n';
-	s << "\tpBufferRemovalTimes = " << value.pBufferRemovalTimes << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeAV1PictureInfoFlags& value)
-{
-	s << "StdVideoEncodeAV1PictureInfoFlags = {\n";
-	s << "\terror_resilient_mode = " << value.error_resilient_mode << '\n';
-	s << "\tdisable_cdf_update = " << value.disable_cdf_update << '\n';
-	s << "\tuse_superres = " << value.use_superres << '\n';
-	s << "\trender_and_frame_size_different = " << value.render_and_frame_size_different << '\n';
-	s << "\tallow_screen_content_tools = " << value.allow_screen_content_tools << '\n';
-	s << "\tis_filter_switchable = " << value.is_filter_switchable << '\n';
-	s << "\tforce_integer_mv = " << value.force_integer_mv << '\n';
-	s << "\tframe_size_override_flag = " << value.frame_size_override_flag << '\n';
-	s << "\tbuffer_removal_time_present_flag = " << value.buffer_removal_time_present_flag << '\n';
-	s << "\tallow_intrabc = " << value.allow_intrabc << '\n';
-	s << "\tframe_refs_short_signaling = " << value.frame_refs_short_signaling << '\n';
-	s << "\tallow_high_precision_mv = " << value.allow_high_precision_mv << '\n';
-	s << "\tis_motion_mode_switchable = " << value.is_motion_mode_switchable << '\n';
-	s << "\tuse_ref_frame_mvs = " << value.use_ref_frame_mvs << '\n';
-	s << "\tdisable_frame_end_update_cdf = " << value.disable_frame_end_update_cdf << '\n';
-	s << "\tallow_warped_motion = " << value.allow_warped_motion << '\n';
-	s << "\treduced_tx_set = " << value.reduced_tx_set << '\n';
-	s << "\tskip_mode_present = " << value.skip_mode_present << '\n';
-	s << "\tdelta_q_present = " << value.delta_q_present << '\n';
-	s << "\tdelta_lf_present = " << value.delta_lf_present << '\n';
-	s << "\tdelta_lf_multi = " << value.delta_lf_multi << '\n';
-	s << "\tsegmentation_enabled = " << value.segmentation_enabled << '\n';
-	s << "\tsegmentation_update_map = " << value.segmentation_update_map << '\n';
-	s << "\tsegmentation_temporal_update = " << value.segmentation_temporal_update << '\n';
-	s << "\tsegmentation_update_data = " << value.segmentation_update_data << '\n';
-	s << "\tUsesLr = " << value.UsesLr << '\n';
-	s << "\tusesChromaLr = " << value.usesChromaLr << '\n';
-	s << "\tshow_frame = " << value.show_frame << '\n';
-	s << "\tshowable_frame = " << value.showable_frame << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeAV1ReferenceInfo& value)
-{
-	s << "StdVideoEncodeAV1ReferenceInfo = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tRefFrameId = " << value.RefFrameId << '\n';
-	s << "\tframe_type = " << value.frame_type << '\n';
-	s << "\tOrderHint = " << value.OrderHint << '\n';
-	s << "\treserved1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.reserved1)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.reserved1))) << '\n';
-	s << "\tpExtensionHeader = " << value.pExtensionHeader << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeAV1ReferenceInfoFlags& value)
-{
-	s << "StdVideoEncodeAV1ReferenceInfoFlags = {\n";
-	s << "\tdisable_frame_end_update_cdf = " << value.disable_frame_end_update_cdf << '\n';
-	s << "\tsegmentation_enabled = " << value.segmentation_enabled << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264PictureInfo& value)
-{
-	s << "StdVideoEncodeH264PictureInfo = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tseq_parameter_set_id = " << value.seq_parameter_set_id << '\n';
-	s << "\tpic_parameter_set_id = " << value.pic_parameter_set_id << '\n';
-	s << "\tidr_pic_id = " << value.idr_pic_id << '\n';
-	s << "\tprimary_pic_type = " << value.primary_pic_type << '\n';
-	s << "\tframe_num = " << value.frame_num << '\n';
-	s << "\tPicOrderCnt = " << value.PicOrderCnt << '\n';
-	s << "\ttemporal_id = " << value.temporal_id << '\n';
-	s << "\treserved1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.reserved1)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.reserved1))) << '\n';
-	s << "\tpRefLists = " << value.pRefLists << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264PictureInfoFlags& value)
-{
-	s << "StdVideoEncodeH264PictureInfoFlags = {\n";
-	s << "\tIdrPicFlag = " << value.IdrPicFlag << '\n';
-	s << "\tis_reference = " << value.is_reference << '\n';
-	s << "\tno_output_of_prior_pics_flag = " << value.no_output_of_prior_pics_flag << '\n';
-	s << "\tlong_term_reference_flag = " << value.long_term_reference_flag << '\n';
-	s << "\tadaptive_ref_pic_marking_mode_flag = " << value.adaptive_ref_pic_marking_mode_flag << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264RefListModEntry& value)
-{
-	s << "StdVideoEncodeH264RefListModEntry = {\n";
-	s << "\tmodification_of_pic_nums_idc = " << value.modification_of_pic_nums_idc << '\n';
-	s << "\tabs_diff_pic_num_minus1 = " << value.abs_diff_pic_num_minus1 << '\n';
-	s << "\tlong_term_pic_num = " << value.long_term_pic_num << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264RefPicMarkingEntry& value)
-{
-	s << "StdVideoEncodeH264RefPicMarkingEntry = {\n";
-	s << "\tmemory_management_control_operation = " << value.memory_management_control_operation << '\n';
-	s << "\tdifference_of_pic_nums_minus1 = " << value.difference_of_pic_nums_minus1 << '\n';
-	s << "\tlong_term_pic_num = " << value.long_term_pic_num << '\n';
-	s << "\tlong_term_frame_idx = " << value.long_term_frame_idx << '\n';
-	s << "\tmax_long_term_frame_idx_plus1 = " << value.max_long_term_frame_idx_plus1 << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264ReferenceInfo& value)
-{
-	s << "StdVideoEncodeH264ReferenceInfo = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tprimary_pic_type = " << value.primary_pic_type << '\n';
-	s << "\tFrameNum = " << value.FrameNum << '\n';
-	s << "\tPicOrderCnt = " << value.PicOrderCnt << '\n';
-	s << "\tlong_term_pic_num = " << value.long_term_pic_num << '\n';
-	s << "\tlong_term_frame_idx = " << value.long_term_frame_idx << '\n';
-	s << "\ttemporal_id = " << value.temporal_id << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264ReferenceInfoFlags& value)
-{
-	s << "StdVideoEncodeH264ReferenceInfoFlags = {\n";
-	s << "\tused_for_long_term_reference = " << value.used_for_long_term_reference << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264ReferenceListsInfo& value)
-{
-	s << "StdVideoEncodeH264ReferenceListsInfo = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tnum_ref_idx_l0_active_minus1 = " << value.num_ref_idx_l0_active_minus1 << '\n';
-	s << "\tnum_ref_idx_l1_active_minus1 = " << value.num_ref_idx_l1_active_minus1 << '\n';
-	s << "\tRefPicList0 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.RefPicList0)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.RefPicList0))) << '\n';
-	s << "\tRefPicList1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.RefPicList1)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.RefPicList1))) << '\n';
-	s << "\trefList0ModOpCount = " << value.refList0ModOpCount << '\n';
-	s << "\trefList1ModOpCount = " << value.refList1ModOpCount << '\n';
-	s << "\trefPicMarkingOpCount = " << value.refPicMarkingOpCount << '\n';
-	s << "\treserved1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.reserved1)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.reserved1))) << '\n';
-	s << "\tpRefList0ModOperations = " << value.pRefList0ModOperations << '\n';
-	s << "\tpRefList1ModOperations = " << value.pRefList1ModOperations << '\n';
-	s << "\tpRefPicMarkingOperations = " << value.pRefPicMarkingOperations << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264ReferenceListsInfoFlags& value)
-{
-	s << "StdVideoEncodeH264ReferenceListsInfoFlags = {\n";
-	s << "\tref_pic_list_modification_flag_l0 = " << value.ref_pic_list_modification_flag_l0 << '\n';
-	s << "\tref_pic_list_modification_flag_l1 = " << value.ref_pic_list_modification_flag_l1 << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264SliceHeader& value)
-{
-	s << "StdVideoEncodeH264SliceHeader = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tfirst_mb_in_slice = " << value.first_mb_in_slice << '\n';
-	s << "\tslice_type = " << value.slice_type << '\n';
-	s << "\tslice_alpha_c0_offset_div2 = " << value.slice_alpha_c0_offset_div2 << '\n';
-	s << "\tslice_beta_offset_div2 = " << value.slice_beta_offset_div2 << '\n';
-	s << "\tslice_qp_delta = " << value.slice_qp_delta << '\n';
-	s << "\treserved1 = " << value.reserved1 << '\n';
-	s << "\tcabac_init_idc = " << value.cabac_init_idc << '\n';
-	s << "\tdisable_deblocking_filter_idc = " << value.disable_deblocking_filter_idc << '\n';
-	s << "\tpWeightTable = " << value.pWeightTable << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264SliceHeaderFlags& value)
-{
-	s << "StdVideoEncodeH264SliceHeaderFlags = {\n";
-	s << "\tdirect_spatial_mv_pred_flag = " << value.direct_spatial_mv_pred_flag << '\n';
-	s << "\tnum_ref_idx_active_override_flag = " << value.num_ref_idx_active_override_flag << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264WeightTable& value)
-{
-	s << "StdVideoEncodeH264WeightTable = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tluma_log2_weight_denom = " << value.luma_log2_weight_denom << '\n';
-	s << "\tchroma_log2_weight_denom = " << value.chroma_log2_weight_denom << '\n';
-	s << "\tluma_weight_l0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.luma_weight_l0), DE_ARRAY_END(value.luma_weight_l0)) << '\n';
-	s << "\tluma_offset_l0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.luma_offset_l0), DE_ARRAY_END(value.luma_offset_l0)) << '\n';
-	s << "\tchroma_weight_l0 = " << '\n';
-	for(uint32_t i0 = 0 ; i0 < STD_VIDEO_H264_MAX_NUM_LIST_REF ; ++i0)
-		s << tcu::formatArray(DE_ARRAY_BEGIN(value.chroma_weight_l0[i0]), DE_ARRAY_END(value.chroma_weight_l0[i0])) << '\n';
-	s << "\tchroma_offset_l0 = " << '\n';
-	for(uint32_t i0 = 0 ; i0 < STD_VIDEO_H264_MAX_NUM_LIST_REF ; ++i0)
-		s << tcu::formatArray(DE_ARRAY_BEGIN(value.chroma_offset_l0[i0]), DE_ARRAY_END(value.chroma_offset_l0[i0])) << '\n';
-	s << "\tluma_weight_l1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.luma_weight_l1), DE_ARRAY_END(value.luma_weight_l1)) << '\n';
-	s << "\tluma_offset_l1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.luma_offset_l1), DE_ARRAY_END(value.luma_offset_l1)) << '\n';
-	s << "\tchroma_weight_l1 = " << '\n';
-	for(uint32_t i0 = 0 ; i0 < STD_VIDEO_H264_MAX_NUM_LIST_REF ; ++i0)
-		s << tcu::formatArray(DE_ARRAY_BEGIN(value.chroma_weight_l1[i0]), DE_ARRAY_END(value.chroma_weight_l1[i0])) << '\n';
-	s << "\tchroma_offset_l1 = " << '\n';
-	for(uint32_t i0 = 0 ; i0 < STD_VIDEO_H264_MAX_NUM_LIST_REF ; ++i0)
-		s << tcu::formatArray(DE_ARRAY_BEGIN(value.chroma_offset_l1[i0]), DE_ARRAY_END(value.chroma_offset_l1[i0])) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264WeightTableFlags& value)
-{
-	s << "StdVideoEncodeH264WeightTableFlags = {\n";
-	s << "\tluma_weight_l0_flag = " << value.luma_weight_l0_flag << '\n';
-	s << "\tchroma_weight_l0_flag = " << value.chroma_weight_l0_flag << '\n';
-	s << "\tluma_weight_l1_flag = " << value.luma_weight_l1_flag << '\n';
-	s << "\tchroma_weight_l1_flag = " << value.chroma_weight_l1_flag << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH265LongTermRefPics& value)
-{
-	s << "StdVideoEncodeH265LongTermRefPics = {\n";
-	s << "\tnum_long_term_sps = " << value.num_long_term_sps << '\n';
-	s << "\tnum_long_term_pics = " << value.num_long_term_pics << '\n';
-	s << "\tlt_idx_sps = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.lt_idx_sps)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.lt_idx_sps))) << '\n';
-	s << "\tpoc_lsb_lt = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.poc_lsb_lt)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.poc_lsb_lt))) << '\n';
-	s << "\tused_by_curr_pic_lt_flag = " << value.used_by_curr_pic_lt_flag << '\n';
-	s << "\tdelta_poc_msb_present_flag = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.delta_poc_msb_present_flag)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.delta_poc_msb_present_flag))) << '\n';
-	s << "\tdelta_poc_msb_cycle_lt = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.delta_poc_msb_cycle_lt)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.delta_poc_msb_cycle_lt))) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH265PictureInfo& value)
-{
-	s << "StdVideoEncodeH265PictureInfo = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tpic_type = " << value.pic_type << '\n';
-	s << "\tsps_video_parameter_set_id = " << value.sps_video_parameter_set_id << '\n';
-	s << "\tpps_seq_parameter_set_id = " << value.pps_seq_parameter_set_id << '\n';
-	s << "\tpps_pic_parameter_set_id = " << value.pps_pic_parameter_set_id << '\n';
-	s << "\tshort_term_ref_pic_set_idx = " << value.short_term_ref_pic_set_idx << '\n';
-	s << "\tPicOrderCntVal = " << value.PicOrderCntVal << '\n';
-	s << "\tTemporalId = " << value.TemporalId << '\n';
-	s << "\treserved1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.reserved1)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.reserved1))) << '\n';
-	s << "\tpRefLists = " << value.pRefLists << '\n';
-	s << "\tpShortTermRefPicSet = " << value.pShortTermRefPicSet << '\n';
-	s << "\tpLongTermRefPics = " << value.pLongTermRefPics << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH265PictureInfoFlags& value)
-{
-	s << "StdVideoEncodeH265PictureInfoFlags = {\n";
-	s << "\tis_reference = " << value.is_reference << '\n';
-	s << "\tIrapPicFlag = " << value.IrapPicFlag << '\n';
-	s << "\tused_for_long_term_reference = " << value.used_for_long_term_reference << '\n';
-	s << "\tdiscardable_flag = " << value.discardable_flag << '\n';
-	s << "\tcross_layer_bla_flag = " << value.cross_layer_bla_flag << '\n';
-	s << "\tpic_output_flag = " << value.pic_output_flag << '\n';
-	s << "\tno_output_of_prior_pics_flag = " << value.no_output_of_prior_pics_flag << '\n';
-	s << "\tshort_term_ref_pic_set_sps_flag = " << value.short_term_ref_pic_set_sps_flag << '\n';
-	s << "\tslice_temporal_mvp_enabled_flag = " << value.slice_temporal_mvp_enabled_flag << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH265ReferenceInfo& value)
-{
-	s << "StdVideoEncodeH265ReferenceInfo = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tpic_type = " << value.pic_type << '\n';
-	s << "\tPicOrderCntVal = " << value.PicOrderCntVal << '\n';
-	s << "\tTemporalId = " << value.TemporalId << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH265ReferenceInfoFlags& value)
-{
-	s << "StdVideoEncodeH265ReferenceInfoFlags = {\n";
-	s << "\tused_for_long_term_reference = " << value.used_for_long_term_reference << '\n';
-	s << "\tunused_for_reference = " << value.unused_for_reference << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH265ReferenceListsInfo& value)
-{
-	s << "StdVideoEncodeH265ReferenceListsInfo = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tnum_ref_idx_l0_active_minus1 = " << value.num_ref_idx_l0_active_minus1 << '\n';
-	s << "\tnum_ref_idx_l1_active_minus1 = " << value.num_ref_idx_l1_active_minus1 << '\n';
-	s << "\tRefPicList0 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.RefPicList0)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.RefPicList0))) << '\n';
-	s << "\tRefPicList1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.RefPicList1)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.RefPicList1))) << '\n';
-	s << "\tlist_entry_l0 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.list_entry_l0)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.list_entry_l0))) << '\n';
-	s << "\tlist_entry_l1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.list_entry_l1)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.list_entry_l1))) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH265ReferenceListsInfoFlags& value)
-{
-	s << "StdVideoEncodeH265ReferenceListsInfoFlags = {\n";
-	s << "\tref_pic_list_modification_flag_l0 = " << value.ref_pic_list_modification_flag_l0 << '\n';
-	s << "\tref_pic_list_modification_flag_l1 = " << value.ref_pic_list_modification_flag_l1 << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH265SliceSegmentHeader& value)
-{
-	s << "StdVideoEncodeH265SliceSegmentHeader = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tslice_type = " << value.slice_type << '\n';
-	s << "\tslice_segment_address = " << value.slice_segment_address << '\n';
-	s << "\tcollocated_ref_idx = " << value.collocated_ref_idx << '\n';
-	s << "\tMaxNumMergeCand = " << value.MaxNumMergeCand << '\n';
-	s << "\tslice_cb_qp_offset = " << value.slice_cb_qp_offset << '\n';
-	s << "\tslice_cr_qp_offset = " << value.slice_cr_qp_offset << '\n';
-	s << "\tslice_beta_offset_div2 = " << value.slice_beta_offset_div2 << '\n';
-	s << "\tslice_tc_offset_div2 = " << value.slice_tc_offset_div2 << '\n';
-	s << "\tslice_act_y_qp_offset = " << value.slice_act_y_qp_offset << '\n';
-	s << "\tslice_act_cb_qp_offset = " << value.slice_act_cb_qp_offset << '\n';
-	s << "\tslice_act_cr_qp_offset = " << value.slice_act_cr_qp_offset << '\n';
-	s << "\tslice_qp_delta = " << value.slice_qp_delta << '\n';
-	s << "\treserved1 = " << value.reserved1 << '\n';
-	s << "\tpWeightTable = " << value.pWeightTable << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH265SliceSegmentHeaderFlags& value)
-{
-	s << "StdVideoEncodeH265SliceSegmentHeaderFlags = {\n";
-	s << "\tfirst_slice_segment_in_pic_flag = " << value.first_slice_segment_in_pic_flag << '\n';
-	s << "\tdependent_slice_segment_flag = " << value.dependent_slice_segment_flag << '\n';
-	s << "\tslice_sao_luma_flag = " << value.slice_sao_luma_flag << '\n';
-	s << "\tslice_sao_chroma_flag = " << value.slice_sao_chroma_flag << '\n';
-	s << "\tnum_ref_idx_active_override_flag = " << value.num_ref_idx_active_override_flag << '\n';
-	s << "\tmvd_l1_zero_flag = " << value.mvd_l1_zero_flag << '\n';
-	s << "\tcabac_init_flag = " << value.cabac_init_flag << '\n';
-	s << "\tcu_chroma_qp_offset_enabled_flag = " << value.cu_chroma_qp_offset_enabled_flag << '\n';
-	s << "\tdeblocking_filter_override_flag = " << value.deblocking_filter_override_flag << '\n';
-	s << "\tslice_deblocking_filter_disabled_flag = " << value.slice_deblocking_filter_disabled_flag << '\n';
-	s << "\tcollocated_from_l0_flag = " << value.collocated_from_l0_flag << '\n';
-	s << "\tslice_loop_filter_across_slices_enabled_flag = " << value.slice_loop_filter_across_slices_enabled_flag << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH265WeightTable& value)
-{
-	s << "StdVideoEncodeH265WeightTable = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tluma_log2_weight_denom = " << value.luma_log2_weight_denom << '\n';
-	s << "\tdelta_chroma_log2_weight_denom = " << value.delta_chroma_log2_weight_denom << '\n';
-	s << "\tdelta_luma_weight_l0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_luma_weight_l0), DE_ARRAY_END(value.delta_luma_weight_l0)) << '\n';
-	s << "\tluma_offset_l0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.luma_offset_l0), DE_ARRAY_END(value.luma_offset_l0)) << '\n';
-	s << "\tdelta_chroma_weight_l0 = " << '\n';
-	for(uint32_t i0 = 0 ; i0 < STD_VIDEO_H265_MAX_NUM_LIST_REF ; ++i0)
-		s << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_chroma_weight_l0[i0]), DE_ARRAY_END(value.delta_chroma_weight_l0[i0])) << '\n';
-	s << "\tdelta_chroma_offset_l0 = " << '\n';
-	for(uint32_t i0 = 0 ; i0 < STD_VIDEO_H265_MAX_NUM_LIST_REF ; ++i0)
-		s << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_chroma_offset_l0[i0]), DE_ARRAY_END(value.delta_chroma_offset_l0[i0])) << '\n';
-	s << "\tdelta_luma_weight_l1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_luma_weight_l1), DE_ARRAY_END(value.delta_luma_weight_l1)) << '\n';
-	s << "\tluma_offset_l1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.luma_offset_l1), DE_ARRAY_END(value.luma_offset_l1)) << '\n';
-	s << "\tdelta_chroma_weight_l1 = " << '\n';
-	for(uint32_t i0 = 0 ; i0 < STD_VIDEO_H265_MAX_NUM_LIST_REF ; ++i0)
-		s << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_chroma_weight_l1[i0]), DE_ARRAY_END(value.delta_chroma_weight_l1[i0])) << '\n';
-	s << "\tdelta_chroma_offset_l1 = " << '\n';
-	for(uint32_t i0 = 0 ; i0 < STD_VIDEO_H265_MAX_NUM_LIST_REF ; ++i0)
-		s << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_chroma_offset_l1[i0]), DE_ARRAY_END(value.delta_chroma_offset_l1[i0])) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH265WeightTableFlags& value)
-{
-	s << "StdVideoEncodeH265WeightTableFlags = {\n";
-	s << "\tluma_weight_l0_flag = " << value.luma_weight_l0_flag << '\n';
-	s << "\tchroma_weight_l0_flag = " << value.chroma_weight_l0_flag << '\n';
-	s << "\tluma_weight_l1_flag = " << value.luma_weight_l1_flag << '\n';
-	s << "\tchroma_weight_l1_flag = " << value.chroma_weight_l1_flag << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH264HrdParameters& value)
-{
-	s << "StdVideoH264HrdParameters = {\n";
-	s << "\tcpb_cnt_minus1 = " << value.cpb_cnt_minus1 << '\n';
-	s << "\tbit_rate_scale = " << value.bit_rate_scale << '\n';
-	s << "\tcpb_size_scale = " << value.cpb_size_scale << '\n';
-	s << "\treserved1 = " << value.reserved1 << '\n';
-	s << "\tbit_rate_value_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.bit_rate_value_minus1), DE_ARRAY_END(value.bit_rate_value_minus1)) << '\n';
-	s << "\tcpb_size_value_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.cpb_size_value_minus1), DE_ARRAY_END(value.cpb_size_value_minus1)) << '\n';
-	s << "\tcbr_flag = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.cbr_flag)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.cbr_flag))) << '\n';
-	s << "\tinitial_cpb_removal_delay_length_minus1 = " << value.initial_cpb_removal_delay_length_minus1 << '\n';
-	s << "\tcpb_removal_delay_length_minus1 = " << value.cpb_removal_delay_length_minus1 << '\n';
-	s << "\tdpb_output_delay_length_minus1 = " << value.dpb_output_delay_length_minus1 << '\n';
-	s << "\ttime_offset_length = " << value.time_offset_length << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH264PictureParameterSet& value)
-{
-	s << "StdVideoH264PictureParameterSet = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tseq_parameter_set_id = " << value.seq_parameter_set_id << '\n';
-	s << "\tpic_parameter_set_id = " << value.pic_parameter_set_id << '\n';
-	s << "\tnum_ref_idx_l0_default_active_minus1 = " << value.num_ref_idx_l0_default_active_minus1 << '\n';
-	s << "\tnum_ref_idx_l1_default_active_minus1 = " << value.num_ref_idx_l1_default_active_minus1 << '\n';
-	s << "\tweighted_bipred_idc = " << value.weighted_bipred_idc << '\n';
-	s << "\tpic_init_qp_minus26 = " << value.pic_init_qp_minus26 << '\n';
-	s << "\tpic_init_qs_minus26 = " << value.pic_init_qs_minus26 << '\n';
-	s << "\tchroma_qp_index_offset = " << value.chroma_qp_index_offset << '\n';
-	s << "\tsecond_chroma_qp_index_offset = " << value.second_chroma_qp_index_offset << '\n';
-	s << "\tpScalingLists = " << value.pScalingLists << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH264PpsFlags& value)
-{
-	s << "StdVideoH264PpsFlags = {\n";
-	s << "\ttransform_8x8_mode_flag = " << value.transform_8x8_mode_flag << '\n';
-	s << "\tredundant_pic_cnt_present_flag = " << value.redundant_pic_cnt_present_flag << '\n';
-	s << "\tconstrained_intra_pred_flag = " << value.constrained_intra_pred_flag << '\n';
-	s << "\tdeblocking_filter_control_present_flag = " << value.deblocking_filter_control_present_flag << '\n';
-	s << "\tweighted_pred_flag = " << value.weighted_pred_flag << '\n';
-	s << "\tbottom_field_pic_order_in_frame_present_flag = " << value.bottom_field_pic_order_in_frame_present_flag << '\n';
-	s << "\tentropy_coding_mode_flag = " << value.entropy_coding_mode_flag << '\n';
-	s << "\tpic_scaling_matrix_present_flag = " << value.pic_scaling_matrix_present_flag << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH264ScalingLists& value)
-{
-	s << "StdVideoH264ScalingLists = {\n";
-	s << "\tscaling_list_present_mask = " << value.scaling_list_present_mask << '\n';
-	s << "\tuse_default_scaling_matrix_mask = " << value.use_default_scaling_matrix_mask << '\n';
-	s << "\tScalingList4x4 = " << '\n';
-	for(uint32_t i0 = 0 ; i0 < STD_VIDEO_H264_SCALING_LIST_4X4_NUM_LISTS ; ++i0)
-		s << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList4x4[i0]), DE_ARRAY_END(value.ScalingList4x4[i0])) << '\n';
-	s << "\tScalingList8x8 = " << '\n';
-	for(uint32_t i0 = 0 ; i0 < STD_VIDEO_H264_SCALING_LIST_8X8_NUM_LISTS ; ++i0)
-		s << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList8x8[i0]), DE_ARRAY_END(value.ScalingList8x8[i0])) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH264SequenceParameterSet& value)
-{
-	s << "StdVideoH264SequenceParameterSet = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tprofile_idc = " << value.profile_idc << '\n';
-	s << "\tlevel_idc = " << value.level_idc << '\n';
-	s << "\tchroma_format_idc = " << value.chroma_format_idc << '\n';
-	s << "\tseq_parameter_set_id = " << value.seq_parameter_set_id << '\n';
-	s << "\tbit_depth_luma_minus8 = " << value.bit_depth_luma_minus8 << '\n';
-	s << "\tbit_depth_chroma_minus8 = " << value.bit_depth_chroma_minus8 << '\n';
-	s << "\tlog2_max_frame_num_minus4 = " << value.log2_max_frame_num_minus4 << '\n';
-	s << "\tpic_order_cnt_type = " << value.pic_order_cnt_type << '\n';
-	s << "\toffset_for_non_ref_pic = " << value.offset_for_non_ref_pic << '\n';
-	s << "\toffset_for_top_to_bottom_field = " << value.offset_for_top_to_bottom_field << '\n';
-	s << "\tlog2_max_pic_order_cnt_lsb_minus4 = " << value.log2_max_pic_order_cnt_lsb_minus4 << '\n';
-	s << "\tnum_ref_frames_in_pic_order_cnt_cycle = " << value.num_ref_frames_in_pic_order_cnt_cycle << '\n';
-	s << "\tmax_num_ref_frames = " << value.max_num_ref_frames << '\n';
-	s << "\treserved1 = " << value.reserved1 << '\n';
-	s << "\tpic_width_in_mbs_minus1 = " << value.pic_width_in_mbs_minus1 << '\n';
-	s << "\tpic_height_in_map_units_minus1 = " << value.pic_height_in_map_units_minus1 << '\n';
-	s << "\tframe_crop_left_offset = " << value.frame_crop_left_offset << '\n';
-	s << "\tframe_crop_right_offset = " << value.frame_crop_right_offset << '\n';
-	s << "\tframe_crop_top_offset = " << value.frame_crop_top_offset << '\n';
-	s << "\tframe_crop_bottom_offset = " << value.frame_crop_bottom_offset << '\n';
-	s << "\treserved2 = " << value.reserved2 << '\n';
-	s << "\tpOffsetForRefFrame = " << value.pOffsetForRefFrame << '\n';
-	s << "\tpScalingLists = " << value.pScalingLists << '\n';
-	s << "\tpSequenceParameterSetVui = " << value.pSequenceParameterSetVui << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH264SequenceParameterSetVui& value)
-{
-	s << "StdVideoH264SequenceParameterSetVui = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\taspect_ratio_idc = " << value.aspect_ratio_idc << '\n';
-	s << "\tsar_width = " << value.sar_width << '\n';
-	s << "\tsar_height = " << value.sar_height << '\n';
-	s << "\tvideo_format = " << value.video_format << '\n';
-	s << "\tcolour_primaries = " << value.colour_primaries << '\n';
-	s << "\ttransfer_characteristics = " << value.transfer_characteristics << '\n';
-	s << "\tmatrix_coefficients = " << value.matrix_coefficients << '\n';
-	s << "\tnum_units_in_tick = " << value.num_units_in_tick << '\n';
-	s << "\ttime_scale = " << value.time_scale << '\n';
-	s << "\tmax_num_reorder_frames = " << value.max_num_reorder_frames << '\n';
-	s << "\tmax_dec_frame_buffering = " << value.max_dec_frame_buffering << '\n';
-	s << "\tchroma_sample_loc_type_top_field = " << value.chroma_sample_loc_type_top_field << '\n';
-	s << "\tchroma_sample_loc_type_bottom_field = " << value.chroma_sample_loc_type_bottom_field << '\n';
-	s << "\treserved1 = " << value.reserved1 << '\n';
-	s << "\tpHrdParameters = " << value.pHrdParameters << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH264SpsFlags& value)
-{
-	s << "StdVideoH264SpsFlags = {\n";
-	s << "\tconstraint_set0_flag = " << value.constraint_set0_flag << '\n';
-	s << "\tconstraint_set1_flag = " << value.constraint_set1_flag << '\n';
-	s << "\tconstraint_set2_flag = " << value.constraint_set2_flag << '\n';
-	s << "\tconstraint_set3_flag = " << value.constraint_set3_flag << '\n';
-	s << "\tconstraint_set4_flag = " << value.constraint_set4_flag << '\n';
-	s << "\tconstraint_set5_flag = " << value.constraint_set5_flag << '\n';
-	s << "\tdirect_8x8_inference_flag = " << value.direct_8x8_inference_flag << '\n';
-	s << "\tmb_adaptive_frame_field_flag = " << value.mb_adaptive_frame_field_flag << '\n';
-	s << "\tframe_mbs_only_flag = " << value.frame_mbs_only_flag << '\n';
-	s << "\tdelta_pic_order_always_zero_flag = " << value.delta_pic_order_always_zero_flag << '\n';
-	s << "\tseparate_colour_plane_flag = " << value.separate_colour_plane_flag << '\n';
-	s << "\tgaps_in_frame_num_value_allowed_flag = " << value.gaps_in_frame_num_value_allowed_flag << '\n';
-	s << "\tqpprime_y_zero_transform_bypass_flag = " << value.qpprime_y_zero_transform_bypass_flag << '\n';
-	s << "\tframe_cropping_flag = " << value.frame_cropping_flag << '\n';
-	s << "\tseq_scaling_matrix_present_flag = " << value.seq_scaling_matrix_present_flag << '\n';
-	s << "\tvui_parameters_present_flag = " << value.vui_parameters_present_flag << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH264SpsVuiFlags& value)
-{
-	s << "StdVideoH264SpsVuiFlags = {\n";
-	s << "\taspect_ratio_info_present_flag = " << value.aspect_ratio_info_present_flag << '\n';
-	s << "\toverscan_info_present_flag = " << value.overscan_info_present_flag << '\n';
-	s << "\toverscan_appropriate_flag = " << value.overscan_appropriate_flag << '\n';
-	s << "\tvideo_signal_type_present_flag = " << value.video_signal_type_present_flag << '\n';
-	s << "\tvideo_full_range_flag = " << value.video_full_range_flag << '\n';
-	s << "\tcolor_description_present_flag = " << value.color_description_present_flag << '\n';
-	s << "\tchroma_loc_info_present_flag = " << value.chroma_loc_info_present_flag << '\n';
-	s << "\ttiming_info_present_flag = " << value.timing_info_present_flag << '\n';
-	s << "\tfixed_frame_rate_flag = " << value.fixed_frame_rate_flag << '\n';
-	s << "\tbitstream_restriction_flag = " << value.bitstream_restriction_flag << '\n';
-	s << "\tnal_hrd_parameters_present_flag = " << value.nal_hrd_parameters_present_flag << '\n';
-	s << "\tvcl_hrd_parameters_present_flag = " << value.vcl_hrd_parameters_present_flag << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH265DecPicBufMgr& value)
-{
-	s << "StdVideoH265DecPicBufMgr = {\n";
-	s << "\tmax_latency_increase_plus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.max_latency_increase_plus1), DE_ARRAY_END(value.max_latency_increase_plus1)) << '\n';
-	s << "\tmax_dec_pic_buffering_minus1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.max_dec_pic_buffering_minus1)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.max_dec_pic_buffering_minus1))) << '\n';
-	s << "\tmax_num_reorder_pics = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.max_num_reorder_pics)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.max_num_reorder_pics))) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH265HrdFlags& value)
-{
-	s << "StdVideoH265HrdFlags = {\n";
-	s << "\tnal_hrd_parameters_present_flag = " << value.nal_hrd_parameters_present_flag << '\n';
-	s << "\tvcl_hrd_parameters_present_flag = " << value.vcl_hrd_parameters_present_flag << '\n';
-	s << "\tsub_pic_hrd_params_present_flag = " << value.sub_pic_hrd_params_present_flag << '\n';
-	s << "\tsub_pic_cpb_params_in_pic_timing_sei_flag = " << value.sub_pic_cpb_params_in_pic_timing_sei_flag << '\n';
-	s << "\tfixed_pic_rate_general_flag = " << value.fixed_pic_rate_general_flag << '\n';
-	s << "\tfixed_pic_rate_within_cvs_flag = " << value.fixed_pic_rate_within_cvs_flag << '\n';
-	s << "\tlow_delay_hrd_flag = " << value.low_delay_hrd_flag << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH265HrdParameters& value)
-{
-	s << "StdVideoH265HrdParameters = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\ttick_divisor_minus2 = " << value.tick_divisor_minus2 << '\n';
-	s << "\tdu_cpb_removal_delay_increment_length_minus1 = " << value.du_cpb_removal_delay_increment_length_minus1 << '\n';
-	s << "\tdpb_output_delay_du_length_minus1 = " << value.dpb_output_delay_du_length_minus1 << '\n';
-	s << "\tbit_rate_scale = " << value.bit_rate_scale << '\n';
-	s << "\tcpb_size_scale = " << value.cpb_size_scale << '\n';
-	s << "\tcpb_size_du_scale = " << value.cpb_size_du_scale << '\n';
-	s << "\tinitial_cpb_removal_delay_length_minus1 = " << value.initial_cpb_removal_delay_length_minus1 << '\n';
-	s << "\tau_cpb_removal_delay_length_minus1 = " << value.au_cpb_removal_delay_length_minus1 << '\n';
-	s << "\tdpb_output_delay_length_minus1 = " << value.dpb_output_delay_length_minus1 << '\n';
-	s << "\tcpb_cnt_minus1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.cpb_cnt_minus1)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.cpb_cnt_minus1))) << '\n';
-	s << "\telemental_duration_in_tc_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.elemental_duration_in_tc_minus1), DE_ARRAY_END(value.elemental_duration_in_tc_minus1)) << '\n';
-	s << "\treserved = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.reserved), DE_ARRAY_END(value.reserved)) << '\n';
-	s << "\tpSubLayerHrdParametersNal = " << value.pSubLayerHrdParametersNal << '\n';
-	s << "\tpSubLayerHrdParametersVcl = " << value.pSubLayerHrdParametersVcl << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH265LongTermRefPicsSps& value)
-{
-	s << "StdVideoH265LongTermRefPicsSps = {\n";
-	s << "\tused_by_curr_pic_lt_sps_flag = " << value.used_by_curr_pic_lt_sps_flag << '\n';
-	s << "\tlt_ref_pic_poc_lsb_sps = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.lt_ref_pic_poc_lsb_sps), DE_ARRAY_END(value.lt_ref_pic_poc_lsb_sps)) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH265PictureParameterSet& value)
-{
-	s << "StdVideoH265PictureParameterSet = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tpps_pic_parameter_set_id = " << value.pps_pic_parameter_set_id << '\n';
-	s << "\tpps_seq_parameter_set_id = " << value.pps_seq_parameter_set_id << '\n';
-	s << "\tsps_video_parameter_set_id = " << value.sps_video_parameter_set_id << '\n';
-	s << "\tnum_extra_slice_header_bits = " << value.num_extra_slice_header_bits << '\n';
-	s << "\tnum_ref_idx_l0_default_active_minus1 = " << value.num_ref_idx_l0_default_active_minus1 << '\n';
-	s << "\tnum_ref_idx_l1_default_active_minus1 = " << value.num_ref_idx_l1_default_active_minus1 << '\n';
-	s << "\tinit_qp_minus26 = " << value.init_qp_minus26 << '\n';
-	s << "\tdiff_cu_qp_delta_depth = " << value.diff_cu_qp_delta_depth << '\n';
-	s << "\tpps_cb_qp_offset = " << value.pps_cb_qp_offset << '\n';
-	s << "\tpps_cr_qp_offset = " << value.pps_cr_qp_offset << '\n';
-	s << "\tpps_beta_offset_div2 = " << value.pps_beta_offset_div2 << '\n';
-	s << "\tpps_tc_offset_div2 = " << value.pps_tc_offset_div2 << '\n';
-	s << "\tlog2_parallel_merge_level_minus2 = " << value.log2_parallel_merge_level_minus2 << '\n';
-	s << "\tlog2_max_transform_skip_block_size_minus2 = " << value.log2_max_transform_skip_block_size_minus2 << '\n';
-	s << "\tdiff_cu_chroma_qp_offset_depth = " << value.diff_cu_chroma_qp_offset_depth << '\n';
-	s << "\tchroma_qp_offset_list_len_minus1 = " << value.chroma_qp_offset_list_len_minus1 << '\n';
-	s << "\tcb_qp_offset_list = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.cb_qp_offset_list), DE_ARRAY_END(value.cb_qp_offset_list)) << '\n';
-	s << "\tcr_qp_offset_list = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.cr_qp_offset_list), DE_ARRAY_END(value.cr_qp_offset_list)) << '\n';
-	s << "\tlog2_sao_offset_scale_luma = " << value.log2_sao_offset_scale_luma << '\n';
-	s << "\tlog2_sao_offset_scale_chroma = " << value.log2_sao_offset_scale_chroma << '\n';
-	s << "\tpps_act_y_qp_offset_plus5 = " << value.pps_act_y_qp_offset_plus5 << '\n';
-	s << "\tpps_act_cb_qp_offset_plus5 = " << value.pps_act_cb_qp_offset_plus5 << '\n';
-	s << "\tpps_act_cr_qp_offset_plus3 = " << value.pps_act_cr_qp_offset_plus3 << '\n';
-	s << "\tpps_num_palette_predictor_initializers = " << value.pps_num_palette_predictor_initializers << '\n';
-	s << "\tluma_bit_depth_entry_minus8 = " << value.luma_bit_depth_entry_minus8 << '\n';
-	s << "\tchroma_bit_depth_entry_minus8 = " << value.chroma_bit_depth_entry_minus8 << '\n';
-	s << "\tnum_tile_columns_minus1 = " << value.num_tile_columns_minus1 << '\n';
-	s << "\tnum_tile_rows_minus1 = " << value.num_tile_rows_minus1 << '\n';
-	s << "\treserved1 = " << value.reserved1 << '\n';
-	s << "\treserved2 = " << value.reserved2 << '\n';
-	s << "\tcolumn_width_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.column_width_minus1), DE_ARRAY_END(value.column_width_minus1)) << '\n';
-	s << "\trow_height_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.row_height_minus1), DE_ARRAY_END(value.row_height_minus1)) << '\n';
-	s << "\treserved3 = " << value.reserved3 << '\n';
-	s << "\tpScalingLists = " << value.pScalingLists << '\n';
-	s << "\tpPredictorPaletteEntries = " << value.pPredictorPaletteEntries << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH265PpsFlags& value)
-{
-	s << "StdVideoH265PpsFlags = {\n";
-	s << "\tdependent_slice_segments_enabled_flag = " << value.dependent_slice_segments_enabled_flag << '\n';
-	s << "\toutput_flag_present_flag = " << value.output_flag_present_flag << '\n';
-	s << "\tsign_data_hiding_enabled_flag = " << value.sign_data_hiding_enabled_flag << '\n';
-	s << "\tcabac_init_present_flag = " << value.cabac_init_present_flag << '\n';
-	s << "\tconstrained_intra_pred_flag = " << value.constrained_intra_pred_flag << '\n';
-	s << "\ttransform_skip_enabled_flag = " << value.transform_skip_enabled_flag << '\n';
-	s << "\tcu_qp_delta_enabled_flag = " << value.cu_qp_delta_enabled_flag << '\n';
-	s << "\tpps_slice_chroma_qp_offsets_present_flag = " << value.pps_slice_chroma_qp_offsets_present_flag << '\n';
-	s << "\tweighted_pred_flag = " << value.weighted_pred_flag << '\n';
-	s << "\tweighted_bipred_flag = " << value.weighted_bipred_flag << '\n';
-	s << "\ttransquant_bypass_enabled_flag = " << value.transquant_bypass_enabled_flag << '\n';
-	s << "\ttiles_enabled_flag = " << value.tiles_enabled_flag << '\n';
-	s << "\tentropy_coding_sync_enabled_flag = " << value.entropy_coding_sync_enabled_flag << '\n';
-	s << "\tuniform_spacing_flag = " << value.uniform_spacing_flag << '\n';
-	s << "\tloop_filter_across_tiles_enabled_flag = " << value.loop_filter_across_tiles_enabled_flag << '\n';
-	s << "\tpps_loop_filter_across_slices_enabled_flag = " << value.pps_loop_filter_across_slices_enabled_flag << '\n';
-	s << "\tdeblocking_filter_control_present_flag = " << value.deblocking_filter_control_present_flag << '\n';
-	s << "\tdeblocking_filter_override_enabled_flag = " << value.deblocking_filter_override_enabled_flag << '\n';
-	s << "\tpps_deblocking_filter_disabled_flag = " << value.pps_deblocking_filter_disabled_flag << '\n';
-	s << "\tpps_scaling_list_data_present_flag = " << value.pps_scaling_list_data_present_flag << '\n';
-	s << "\tlists_modification_present_flag = " << value.lists_modification_present_flag << '\n';
-	s << "\tslice_segment_header_extension_present_flag = " << value.slice_segment_header_extension_present_flag << '\n';
-	s << "\tpps_extension_present_flag = " << value.pps_extension_present_flag << '\n';
-	s << "\tcross_component_prediction_enabled_flag = " << value.cross_component_prediction_enabled_flag << '\n';
-	s << "\tchroma_qp_offset_list_enabled_flag = " << value.chroma_qp_offset_list_enabled_flag << '\n';
-	s << "\tpps_curr_pic_ref_enabled_flag = " << value.pps_curr_pic_ref_enabled_flag << '\n';
-	s << "\tresidual_adaptive_colour_transform_enabled_flag = " << value.residual_adaptive_colour_transform_enabled_flag << '\n';
-	s << "\tpps_slice_act_qp_offsets_present_flag = " << value.pps_slice_act_qp_offsets_present_flag << '\n';
-	s << "\tpps_palette_predictor_initializers_present_flag = " << value.pps_palette_predictor_initializers_present_flag << '\n';
-	s << "\tmonochrome_palette_flag = " << value.monochrome_palette_flag << '\n';
-	s << "\tpps_range_extension_flag = " << value.pps_range_extension_flag << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH265PredictorPaletteEntries& value)
-{
-	s << "StdVideoH265PredictorPaletteEntries = {\n";
-	s << "\tPredictorPaletteEntries = " << '\n';
-	for(uint32_t i0 = 0 ; i0 < STD_VIDEO_H265_PREDICTOR_PALETTE_COMPONENTS_LIST_SIZE ; ++i0)
-		s << tcu::formatArray(DE_ARRAY_BEGIN(value.PredictorPaletteEntries[i0]), DE_ARRAY_END(value.PredictorPaletteEntries[i0])) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH265ProfileTierLevel& value)
-{
-	s << "StdVideoH265ProfileTierLevel = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tgeneral_profile_idc = " << value.general_profile_idc << '\n';
-	s << "\tgeneral_level_idc = " << value.general_level_idc << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH265ProfileTierLevelFlags& value)
-{
-	s << "StdVideoH265ProfileTierLevelFlags = {\n";
-	s << "\tgeneral_tier_flag = " << value.general_tier_flag << '\n';
-	s << "\tgeneral_progressive_source_flag = " << value.general_progressive_source_flag << '\n';
-	s << "\tgeneral_interlaced_source_flag = " << value.general_interlaced_source_flag << '\n';
-	s << "\tgeneral_non_packed_constraint_flag = " << value.general_non_packed_constraint_flag << '\n';
-	s << "\tgeneral_frame_only_constraint_flag = " << value.general_frame_only_constraint_flag << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH265ScalingLists& value)
-{
-	s << "StdVideoH265ScalingLists = {\n";
-	s << "\tScalingList4x4 = " << '\n';
-	for(uint32_t i0 = 0 ; i0 < STD_VIDEO_H265_SCALING_LIST_4X4_NUM_LISTS ; ++i0)
-		s << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList4x4[i0]), DE_ARRAY_END(value.ScalingList4x4[i0])) << '\n';
-	s << "\tScalingList8x8 = " << '\n';
-	for(uint32_t i0 = 0 ; i0 < STD_VIDEO_H265_SCALING_LIST_8X8_NUM_LISTS ; ++i0)
-		s << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList8x8[i0]), DE_ARRAY_END(value.ScalingList8x8[i0])) << '\n';
-	s << "\tScalingList16x16 = " << '\n';
-	for(uint32_t i0 = 0 ; i0 < STD_VIDEO_H265_SCALING_LIST_16X16_NUM_LISTS ; ++i0)
-		s << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList16x16[i0]), DE_ARRAY_END(value.ScalingList16x16[i0])) << '\n';
-	s << "\tScalingList32x32 = " << '\n';
-	for(uint32_t i0 = 0 ; i0 < STD_VIDEO_H265_SCALING_LIST_32X32_NUM_LISTS ; ++i0)
-		s << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList32x32[i0]), DE_ARRAY_END(value.ScalingList32x32[i0])) << '\n';
-	s << "\tScalingListDCCoef16x16 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.ScalingListDCCoef16x16)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.ScalingListDCCoef16x16))) << '\n';
-	s << "\tScalingListDCCoef32x32 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.ScalingListDCCoef32x32)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.ScalingListDCCoef32x32))) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH265SequenceParameterSet& value)
-{
-	s << "StdVideoH265SequenceParameterSet = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tchroma_format_idc = " << value.chroma_format_idc << '\n';
-	s << "\tpic_width_in_luma_samples = " << value.pic_width_in_luma_samples << '\n';
-	s << "\tpic_height_in_luma_samples = " << value.pic_height_in_luma_samples << '\n';
-	s << "\tsps_video_parameter_set_id = " << value.sps_video_parameter_set_id << '\n';
-	s << "\tsps_max_sub_layers_minus1 = " << value.sps_max_sub_layers_minus1 << '\n';
-	s << "\tsps_seq_parameter_set_id = " << value.sps_seq_parameter_set_id << '\n';
-	s << "\tbit_depth_luma_minus8 = " << value.bit_depth_luma_minus8 << '\n';
-	s << "\tbit_depth_chroma_minus8 = " << value.bit_depth_chroma_minus8 << '\n';
-	s << "\tlog2_max_pic_order_cnt_lsb_minus4 = " << value.log2_max_pic_order_cnt_lsb_minus4 << '\n';
-	s << "\tlog2_min_luma_coding_block_size_minus3 = " << value.log2_min_luma_coding_block_size_minus3 << '\n';
-	s << "\tlog2_diff_max_min_luma_coding_block_size = " << value.log2_diff_max_min_luma_coding_block_size << '\n';
-	s << "\tlog2_min_luma_transform_block_size_minus2 = " << value.log2_min_luma_transform_block_size_minus2 << '\n';
-	s << "\tlog2_diff_max_min_luma_transform_block_size = " << value.log2_diff_max_min_luma_transform_block_size << '\n';
-	s << "\tmax_transform_hierarchy_depth_inter = " << value.max_transform_hierarchy_depth_inter << '\n';
-	s << "\tmax_transform_hierarchy_depth_intra = " << value.max_transform_hierarchy_depth_intra << '\n';
-	s << "\tnum_short_term_ref_pic_sets = " << value.num_short_term_ref_pic_sets << '\n';
-	s << "\tnum_long_term_ref_pics_sps = " << value.num_long_term_ref_pics_sps << '\n';
-	s << "\tpcm_sample_bit_depth_luma_minus1 = " << value.pcm_sample_bit_depth_luma_minus1 << '\n';
-	s << "\tpcm_sample_bit_depth_chroma_minus1 = " << value.pcm_sample_bit_depth_chroma_minus1 << '\n';
-	s << "\tlog2_min_pcm_luma_coding_block_size_minus3 = " << value.log2_min_pcm_luma_coding_block_size_minus3 << '\n';
-	s << "\tlog2_diff_max_min_pcm_luma_coding_block_size = " << value.log2_diff_max_min_pcm_luma_coding_block_size << '\n';
-	s << "\treserved1 = " << value.reserved1 << '\n';
-	s << "\treserved2 = " << value.reserved2 << '\n';
-	s << "\tpalette_max_size = " << value.palette_max_size << '\n';
-	s << "\tdelta_palette_max_predictor_size = " << value.delta_palette_max_predictor_size << '\n';
-	s << "\tmotion_vector_resolution_control_idc = " << value.motion_vector_resolution_control_idc << '\n';
-	s << "\tsps_num_palette_predictor_initializers_minus1 = " << value.sps_num_palette_predictor_initializers_minus1 << '\n';
-	s << "\tconf_win_left_offset = " << value.conf_win_left_offset << '\n';
-	s << "\tconf_win_right_offset = " << value.conf_win_right_offset << '\n';
-	s << "\tconf_win_top_offset = " << value.conf_win_top_offset << '\n';
-	s << "\tconf_win_bottom_offset = " << value.conf_win_bottom_offset << '\n';
-	s << "\tpProfileTierLevel = " << value.pProfileTierLevel << '\n';
-	s << "\tpDecPicBufMgr = " << value.pDecPicBufMgr << '\n';
-	s << "\tpScalingLists = " << value.pScalingLists << '\n';
-	s << "\tpShortTermRefPicSet = " << value.pShortTermRefPicSet << '\n';
-	s << "\tpLongTermRefPicsSps = " << value.pLongTermRefPicsSps << '\n';
-	s << "\tpSequenceParameterSetVui = " << value.pSequenceParameterSetVui << '\n';
-	s << "\tpPredictorPaletteEntries = " << value.pPredictorPaletteEntries << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH265SequenceParameterSetVui& value)
-{
-	s << "StdVideoH265SequenceParameterSetVui = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\taspect_ratio_idc = " << value.aspect_ratio_idc << '\n';
-	s << "\tsar_width = " << value.sar_width << '\n';
-	s << "\tsar_height = " << value.sar_height << '\n';
-	s << "\tvideo_format = " << value.video_format << '\n';
-	s << "\tcolour_primaries = " << value.colour_primaries << '\n';
-	s << "\ttransfer_characteristics = " << value.transfer_characteristics << '\n';
-	s << "\tmatrix_coeffs = " << value.matrix_coeffs << '\n';
-	s << "\tchroma_sample_loc_type_top_field = " << value.chroma_sample_loc_type_top_field << '\n';
-	s << "\tchroma_sample_loc_type_bottom_field = " << value.chroma_sample_loc_type_bottom_field << '\n';
-	s << "\treserved1 = " << value.reserved1 << '\n';
-	s << "\treserved2 = " << value.reserved2 << '\n';
-	s << "\tdef_disp_win_left_offset = " << value.def_disp_win_left_offset << '\n';
-	s << "\tdef_disp_win_right_offset = " << value.def_disp_win_right_offset << '\n';
-	s << "\tdef_disp_win_top_offset = " << value.def_disp_win_top_offset << '\n';
-	s << "\tdef_disp_win_bottom_offset = " << value.def_disp_win_bottom_offset << '\n';
-	s << "\tvui_num_units_in_tick = " << value.vui_num_units_in_tick << '\n';
-	s << "\tvui_time_scale = " << value.vui_time_scale << '\n';
-	s << "\tvui_num_ticks_poc_diff_one_minus1 = " << value.vui_num_ticks_poc_diff_one_minus1 << '\n';
-	s << "\tmin_spatial_segmentation_idc = " << value.min_spatial_segmentation_idc << '\n';
-	s << "\treserved3 = " << value.reserved3 << '\n';
-	s << "\tmax_bytes_per_pic_denom = " << value.max_bytes_per_pic_denom << '\n';
-	s << "\tmax_bits_per_min_cu_denom = " << value.max_bits_per_min_cu_denom << '\n';
-	s << "\tlog2_max_mv_length_horizontal = " << value.log2_max_mv_length_horizontal << '\n';
-	s << "\tlog2_max_mv_length_vertical = " << value.log2_max_mv_length_vertical << '\n';
-	s << "\tpHrdParameters = " << value.pHrdParameters << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH265ShortTermRefPicSet& value)
-{
-	s << "StdVideoH265ShortTermRefPicSet = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tdelta_idx_minus1 = " << value.delta_idx_minus1 << '\n';
-	s << "\tuse_delta_flag = " << value.use_delta_flag << '\n';
-	s << "\tabs_delta_rps_minus1 = " << value.abs_delta_rps_minus1 << '\n';
-	s << "\tused_by_curr_pic_flag = " << value.used_by_curr_pic_flag << '\n';
-	s << "\tused_by_curr_pic_s0_flag = " << value.used_by_curr_pic_s0_flag << '\n';
-	s << "\tused_by_curr_pic_s1_flag = " << value.used_by_curr_pic_s1_flag << '\n';
-	s << "\treserved1 = " << value.reserved1 << '\n';
-	s << "\treserved2 = " << value.reserved2 << '\n';
-	s << "\treserved3 = " << value.reserved3 << '\n';
-	s << "\tnum_negative_pics = " << value.num_negative_pics << '\n';
-	s << "\tnum_positive_pics = " << value.num_positive_pics << '\n';
-	s << "\tdelta_poc_s0_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_poc_s0_minus1), DE_ARRAY_END(value.delta_poc_s0_minus1)) << '\n';
-	s << "\tdelta_poc_s1_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_poc_s1_minus1), DE_ARRAY_END(value.delta_poc_s1_minus1)) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH265ShortTermRefPicSetFlags& value)
-{
-	s << "StdVideoH265ShortTermRefPicSetFlags = {\n";
-	s << "\tinter_ref_pic_set_prediction_flag = " << value.inter_ref_pic_set_prediction_flag << '\n';
-	s << "\tdelta_rps_sign = " << value.delta_rps_sign << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH265SpsFlags& value)
-{
-	s << "StdVideoH265SpsFlags = {\n";
-	s << "\tsps_temporal_id_nesting_flag = " << value.sps_temporal_id_nesting_flag << '\n';
-	s << "\tseparate_colour_plane_flag = " << value.separate_colour_plane_flag << '\n';
-	s << "\tconformance_window_flag = " << value.conformance_window_flag << '\n';
-	s << "\tsps_sub_layer_ordering_info_present_flag = " << value.sps_sub_layer_ordering_info_present_flag << '\n';
-	s << "\tscaling_list_enabled_flag = " << value.scaling_list_enabled_flag << '\n';
-	s << "\tsps_scaling_list_data_present_flag = " << value.sps_scaling_list_data_present_flag << '\n';
-	s << "\tamp_enabled_flag = " << value.amp_enabled_flag << '\n';
-	s << "\tsample_adaptive_offset_enabled_flag = " << value.sample_adaptive_offset_enabled_flag << '\n';
-	s << "\tpcm_enabled_flag = " << value.pcm_enabled_flag << '\n';
-	s << "\tpcm_loop_filter_disabled_flag = " << value.pcm_loop_filter_disabled_flag << '\n';
-	s << "\tlong_term_ref_pics_present_flag = " << value.long_term_ref_pics_present_flag << '\n';
-	s << "\tsps_temporal_mvp_enabled_flag = " << value.sps_temporal_mvp_enabled_flag << '\n';
-	s << "\tstrong_intra_smoothing_enabled_flag = " << value.strong_intra_smoothing_enabled_flag << '\n';
-	s << "\tvui_parameters_present_flag = " << value.vui_parameters_present_flag << '\n';
-	s << "\tsps_extension_present_flag = " << value.sps_extension_present_flag << '\n';
-	s << "\tsps_range_extension_flag = " << value.sps_range_extension_flag << '\n';
-	s << "\ttransform_skip_rotation_enabled_flag = " << value.transform_skip_rotation_enabled_flag << '\n';
-	s << "\ttransform_skip_context_enabled_flag = " << value.transform_skip_context_enabled_flag << '\n';
-	s << "\timplicit_rdpcm_enabled_flag = " << value.implicit_rdpcm_enabled_flag << '\n';
-	s << "\texplicit_rdpcm_enabled_flag = " << value.explicit_rdpcm_enabled_flag << '\n';
-	s << "\textended_precision_processing_flag = " << value.extended_precision_processing_flag << '\n';
-	s << "\tintra_smoothing_disabled_flag = " << value.intra_smoothing_disabled_flag << '\n';
-	s << "\thigh_precision_offsets_enabled_flag = " << value.high_precision_offsets_enabled_flag << '\n';
-	s << "\tpersistent_rice_adaptation_enabled_flag = " << value.persistent_rice_adaptation_enabled_flag << '\n';
-	s << "\tcabac_bypass_alignment_enabled_flag = " << value.cabac_bypass_alignment_enabled_flag << '\n';
-	s << "\tsps_scc_extension_flag = " << value.sps_scc_extension_flag << '\n';
-	s << "\tsps_curr_pic_ref_enabled_flag = " << value.sps_curr_pic_ref_enabled_flag << '\n';
-	s << "\tpalette_mode_enabled_flag = " << value.palette_mode_enabled_flag << '\n';
-	s << "\tsps_palette_predictor_initializers_present_flag = " << value.sps_palette_predictor_initializers_present_flag << '\n';
-	s << "\tintra_boundary_filtering_disabled_flag = " << value.intra_boundary_filtering_disabled_flag << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH265SpsVuiFlags& value)
-{
-	s << "StdVideoH265SpsVuiFlags = {\n";
-	s << "\taspect_ratio_info_present_flag = " << value.aspect_ratio_info_present_flag << '\n';
-	s << "\toverscan_info_present_flag = " << value.overscan_info_present_flag << '\n';
-	s << "\toverscan_appropriate_flag = " << value.overscan_appropriate_flag << '\n';
-	s << "\tvideo_signal_type_present_flag = " << value.video_signal_type_present_flag << '\n';
-	s << "\tvideo_full_range_flag = " << value.video_full_range_flag << '\n';
-	s << "\tcolour_description_present_flag = " << value.colour_description_present_flag << '\n';
-	s << "\tchroma_loc_info_present_flag = " << value.chroma_loc_info_present_flag << '\n';
-	s << "\tneutral_chroma_indication_flag = " << value.neutral_chroma_indication_flag << '\n';
-	s << "\tfield_seq_flag = " << value.field_seq_flag << '\n';
-	s << "\tframe_field_info_present_flag = " << value.frame_field_info_present_flag << '\n';
-	s << "\tdefault_display_window_flag = " << value.default_display_window_flag << '\n';
-	s << "\tvui_timing_info_present_flag = " << value.vui_timing_info_present_flag << '\n';
-	s << "\tvui_poc_proportional_to_timing_flag = " << value.vui_poc_proportional_to_timing_flag << '\n';
-	s << "\tvui_hrd_parameters_present_flag = " << value.vui_hrd_parameters_present_flag << '\n';
-	s << "\tbitstream_restriction_flag = " << value.bitstream_restriction_flag << '\n';
-	s << "\ttiles_fixed_structure_flag = " << value.tiles_fixed_structure_flag << '\n';
-	s << "\tmotion_vectors_over_pic_boundaries_flag = " << value.motion_vectors_over_pic_boundaries_flag << '\n';
-	s << "\trestricted_ref_pic_lists_flag = " << value.restricted_ref_pic_lists_flag << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH265SubLayerHrdParameters& value)
-{
-	s << "StdVideoH265SubLayerHrdParameters = {\n";
-	s << "\tbit_rate_value_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.bit_rate_value_minus1), DE_ARRAY_END(value.bit_rate_value_minus1)) << '\n';
-	s << "\tcpb_size_value_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.cpb_size_value_minus1), DE_ARRAY_END(value.cpb_size_value_minus1)) << '\n';
-	s << "\tcpb_size_du_value_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.cpb_size_du_value_minus1), DE_ARRAY_END(value.cpb_size_du_value_minus1)) << '\n';
-	s << "\tbit_rate_du_value_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.bit_rate_du_value_minus1), DE_ARRAY_END(value.bit_rate_du_value_minus1)) << '\n';
-	s << "\tcbr_flag = " << value.cbr_flag << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH265VideoParameterSet& value)
-{
-	s << "StdVideoH265VideoParameterSet = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tvps_video_parameter_set_id = " << value.vps_video_parameter_set_id << '\n';
-	s << "\tvps_max_sub_layers_minus1 = " << value.vps_max_sub_layers_minus1 << '\n';
-	s << "\treserved1 = " << value.reserved1 << '\n';
-	s << "\treserved2 = " << value.reserved2 << '\n';
-	s << "\tvps_num_units_in_tick = " << value.vps_num_units_in_tick << '\n';
-	s << "\tvps_time_scale = " << value.vps_time_scale << '\n';
-	s << "\tvps_num_ticks_poc_diff_one_minus1 = " << value.vps_num_ticks_poc_diff_one_minus1 << '\n';
-	s << "\treserved3 = " << value.reserved3 << '\n';
-	s << "\tpDecPicBufMgr = " << value.pDecPicBufMgr << '\n';
-	s << "\tpHrdParameters = " << value.pHrdParameters << '\n';
-	s << "\tpProfileTierLevel = " << value.pProfileTierLevel << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoH265VpsFlags& value)
-{
-	s << "StdVideoH265VpsFlags = {\n";
-	s << "\tvps_temporal_id_nesting_flag = " << value.vps_temporal_id_nesting_flag << '\n';
-	s << "\tvps_sub_layer_ordering_info_present_flag = " << value.vps_sub_layer_ordering_info_present_flag << '\n';
-	s << "\tvps_timing_info_present_flag = " << value.vps_timing_info_present_flag << '\n';
-	s << "\tvps_poc_proportional_to_timing_flag = " << value.vps_poc_proportional_to_timing_flag << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoVP9ColorConfig& value)
-{
-	s << "StdVideoVP9ColorConfig = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tBitDepth = " << value.BitDepth << '\n';
-	s << "\tsubsampling_x = " << value.subsampling_x << '\n';
-	s << "\tsubsampling_y = " << value.subsampling_y << '\n';
-	s << "\treserved1 = " << value.reserved1 << '\n';
-	s << "\tcolor_space = " << value.color_space << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoVP9ColorConfigFlags& value)
-{
-	s << "StdVideoVP9ColorConfigFlags = {\n";
-	s << "\tcolor_range = " << value.color_range << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoVP9LoopFilter& value)
-{
-	s << "StdVideoVP9LoopFilter = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tloop_filter_level = " << value.loop_filter_level << '\n';
-	s << "\tloop_filter_sharpness = " << value.loop_filter_sharpness << '\n';
-	s << "\tupdate_ref_delta = " << value.update_ref_delta << '\n';
-	s << "\tloop_filter_ref_deltas = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.loop_filter_ref_deltas), DE_ARRAY_END(value.loop_filter_ref_deltas)) << '\n';
-	s << "\tupdate_mode_delta = " << value.update_mode_delta << '\n';
-	s << "\tloop_filter_mode_deltas = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.loop_filter_mode_deltas), DE_ARRAY_END(value.loop_filter_mode_deltas)) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoVP9LoopFilterFlags& value)
-{
-	s << "StdVideoVP9LoopFilterFlags = {\n";
-	s << "\tloop_filter_delta_enabled = " << value.loop_filter_delta_enabled << '\n';
-	s << "\tloop_filter_delta_update = " << value.loop_filter_delta_update << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoVP9Segmentation& value)
-{
-	s << "StdVideoVP9Segmentation = {\n";
-	s << "\tflags = " << value.flags << '\n';
-	s << "\tsegmentation_tree_probs = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.segmentation_tree_probs)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.segmentation_tree_probs))) << '\n';
-	s << "\tsegmentation_pred_prob = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.segmentation_pred_prob)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.segmentation_pred_prob))) << '\n';
-	s << "\tFeatureEnabled = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.FeatureEnabled)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.FeatureEnabled))) << '\n';
-	s << "\tFeatureData = " << '\n';
-	for(uint32_t i0 = 0 ; i0 < STD_VIDEO_VP9_MAX_SEGMENTS ; ++i0)
-		s << tcu::formatArray(DE_ARRAY_BEGIN(value.FeatureData[i0]), DE_ARRAY_END(value.FeatureData[i0])) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const StdVideoVP9SegmentationFlags& value)
-{
-	s << "StdVideoVP9SegmentationFlags = {\n";
-	s << "\tsegmentation_update_map = " << value.segmentation_update_map << '\n';
-	s << "\tsegmentation_temporal_update = " << value.segmentation_temporal_update << '\n';
-	s << "\tsegmentation_update_data = " << value.segmentation_update_data << '\n';
-	s << "\tsegmentation_abs_or_delta_update = " << value.segmentation_abs_or_delta_update << '\n';
-	s << "\treserved = " << value.reserved << '\n';
-	s << '}';
-	return s;
-}
 
 std::ostream& operator<< (std::ostream& s, const VkAabbPositionsKHR& value)
 {
@@ -8612,7 +7094,7 @@ std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureMotionIn
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmaxInstances = " << value.maxInstances << '\n';
-	s << "\tflags = " << getAccelerationStructureMotionInfoFlagsNVStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << '}';
 	return s;
 }
@@ -8631,7 +7113,7 @@ std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureMotionIn
 {
 	s << "VkAccelerationStructureMotionInstanceNV = {\n";
 	s << "\ttype = " << value.type << '\n';
-	s << "\tflags = " << getAccelerationStructureMotionInstanceFlagsNVStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tdata = " << value.data << '\n';
 	s << '}';
 	return s;
@@ -8822,7 +7304,7 @@ std::ostream& operator<< (std::ostream& s, const VkAndroidSurfaceCreateInfoKHR& 
 	s << "VkAndroidSurfaceCreateInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getAndroidSurfaceCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\twindow = " << value.window << '\n';
 	s << '}';
 	return s;
@@ -9493,7 +7975,7 @@ std::ostream& operator<< (std::ostream& s, const VkBufferViewCreateInfo& value)
 	s << "VkBufferViewCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getBufferViewCreateFlagsStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tbuffer = " << value.buffer << '\n';
 	s << "\tformat = " << value.format << '\n';
 	s << "\toffset = " << value.offset << '\n';
@@ -10670,7 +9152,7 @@ std::ostream& operator<< (std::ostream& s, const VkDebugUtilsMessengerCallbackDa
 	s << "VkDebugUtilsMessengerCallbackDataEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getDebugUtilsMessengerCallbackDataFlagsEXTStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tpMessageIdName = " << getCharPtrStr(value.pMessageIdName) << '\n';
 	s << "\tmessageIdNumber = " << value.messageIdNumber << '\n';
 	s << "\tpMessage = " << getCharPtrStr(value.pMessage) << '\n';
@@ -10689,7 +9171,7 @@ std::ostream& operator<< (std::ostream& s, const VkDebugUtilsMessengerCreateInfo
 	s << "VkDebugUtilsMessengerCreateInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getDebugUtilsMessengerCreateFlagsEXTStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tmessageSeverity = " << getDebugUtilsMessageSeverityFlagsEXTStr(value.messageSeverity) << '\n';
 	s << "\tmessageType = " << getDebugUtilsMessageTypeFlagsEXTStr(value.messageType) << '\n';
 	s << "\tpfnUserCallback = " << value.pfnUserCallback << '\n';
@@ -11043,7 +9525,7 @@ std::ostream& operator<< (std::ostream& s, const VkDescriptorUpdateTemplateCreat
 	s << "VkDescriptorUpdateTemplateCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getDescriptorUpdateTemplateCreateFlagsStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tdescriptorUpdateEntryCount = " << value.descriptorUpdateEntryCount << '\n';
 	s << "\tpDescriptorUpdateEntries = " << value.pDescriptorUpdateEntries << '\n';
 	s << "\ttemplateType = " << value.templateType << '\n';
@@ -11096,7 +9578,7 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceCreateInfo& value)
 	s << "VkDeviceCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getDeviceCreateFlagsStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tqueueCreateInfoCount = " << value.queueCreateInfoCount << '\n';
 	s << "\tpQueueCreateInfos = " << value.pQueueCreateInfos << '\n';
 	s << "\tenabledLayerCount = " << value.enabledLayerCount << '\n';
@@ -11113,7 +9595,7 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceDeviceMemoryReportCreat
 	s << "VkDeviceDeviceMemoryReportCreateInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getDeviceMemoryReportFlagsEXTStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tpfnUserCallback = " << value.pfnUserCallback << '\n';
 	s << "\tpUserData = " << value.pUserData << '\n';
 	s << '}';
@@ -11342,7 +9824,7 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceMemoryReportCallbackDat
 	s << "VkDeviceMemoryReportCallbackDataEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getDeviceMemoryReportFlagsEXTStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\ttype = " << value.type << '\n';
 	s << "\tmemoryObjectId = " << value.memoryObjectId << '\n';
 	s << "\tsize = " << value.size << '\n';
@@ -11460,7 +9942,7 @@ std::ostream& operator<< (std::ostream& s, const VkDirectDriverLoadingInfoLUNARG
 	s << "VkDirectDriverLoadingInfoLUNARG = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getDirectDriverLoadingFlagsLUNARGStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tpfnGetInstanceProcAddr = " << value.pfnGetInstanceProcAddr << '\n';
 	s << '}';
 	return s;
@@ -11474,6 +9956,18 @@ std::ostream& operator<< (std::ostream& s, const VkDirectDriverLoadingListLUNARG
 	s << "\tmode = " << value.mode << '\n';
 	s << "\tdriverCount = " << value.driverCount << '\n';
 	s << "\tpDrivers = " << value.pDrivers << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDirectFBSurfaceCreateInfoEXT& value)
+{
+	s << "VkDirectFBSurfaceCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << value.flags << '\n';
+	s << "\tdfb = " << value.dfb << '\n';
+	s << "\tsurface = " << value.surface << '\n';
 	s << '}';
 	return s;
 }
@@ -11533,7 +10027,7 @@ std::ostream& operator<< (std::ostream& s, const VkDisplayModeCreateInfoKHR& val
 	s << "VkDisplayModeCreateInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getDisplayModeCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tparameters = " << value.parameters << '\n';
 	s << '}';
 	return s;
@@ -11694,7 +10188,7 @@ std::ostream& operator<< (std::ostream& s, const VkDisplaySurfaceCreateInfoKHR& 
 	s << "VkDisplaySurfaceCreateInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getDisplaySurfaceCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tdisplayMode = " << value.displayMode << '\n';
 	s << "\tplaneIndex = " << value.planeIndex << '\n';
 	s << "\tplaneStackIndex = " << value.planeStackIndex << '\n';
@@ -11865,7 +10359,7 @@ std::ostream& operator<< (std::ostream& s, const VkExportFenceWin32HandleInfoKHR
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpAttributes = " << value.pAttributes << '\n';
 	s << "\tdwAccess = " << value.dwAccess << '\n';
-	s << "\tname = " << getWStr(value.name) << '\n';
+	s << "\tname = " << value.name << '\n';
 	s << '}';
 	return s;
 }
@@ -11897,7 +10391,7 @@ std::ostream& operator<< (std::ostream& s, const VkExportMemoryWin32HandleInfoKH
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpAttributes = " << value.pAttributes << '\n';
 	s << "\tdwAccess = " << value.dwAccess << '\n';
-	s << "\tname = " << getWStr(value.name) << '\n';
+	s << "\tname = " << value.name << '\n';
 	s << '}';
 	return s;
 }
@@ -12018,7 +10512,7 @@ std::ostream& operator<< (std::ostream& s, const VkExportSemaphoreWin32HandleInf
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpAttributes = " << value.pAttributes << '\n';
 	s << "\tdwAccess = " << value.dwAccess << '\n';
-	s << "\tname = " << getWStr(value.name) << '\n';
+	s << "\tname = " << value.name << '\n';
 	s << '}';
 	return s;
 }
@@ -12645,7 +11139,7 @@ std::ostream& operator<< (std::ostream& s, const VkHeadlessSurfaceCreateInfoEXT&
 	s << "VkHeadlessSurfaceCreateInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getHeadlessSurfaceCreateFlagsEXTStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << '}';
 	return s;
 }
@@ -12679,7 +11173,7 @@ std::ostream& operator<< (std::ostream& s, const VkIOSSurfaceCreateInfoMVK& valu
 	s << "VkIOSSurfaceCreateInfoMVK = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getIOSSurfaceCreateFlagsMVKStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tpView = " << value.pView << '\n';
 	s << '}';
 	return s;
@@ -12853,7 +11347,7 @@ std::ostream& operator<< (std::ostream& s, const VkImageFormatConstraintsInfoFUC
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\timageCreateInfo = " << value.imageCreateInfo << '\n';
 	s << "\trequiredFormatFeatures = " << getFormatFeatureFlagsStr(value.requiredFormatFeatures) << '\n';
-	s << "\tflags = " << getImageFormatConstraintsFlagsFUCHSIAStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tsysmemPixelFormat = " << value.sysmemPixelFormat << '\n';
 	s << "\tcolorSpaceCount = " << value.colorSpaceCount << '\n';
 	s << "\tpColorSpaces = " << value.pColorSpaces << '\n';
@@ -12945,7 +11439,7 @@ std::ostream& operator<< (std::ostream& s, const VkImagePipeSurfaceCreateInfoFUC
 	s << "VkImagePipeSurfaceCreateInfoFUCHSIA = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getImagePipeSurfaceCreateFlagsFUCHSIAStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\timagePipeHandle = " << value.imagePipeHandle << '\n';
 	s << '}';
 	return s;
@@ -13208,7 +11702,7 @@ std::ostream& operator<< (std::ostream& s, const VkImportFenceWin32HandleInfoKHR
 	s << "\tflags = " << getFenceImportFlagsStr(value.flags) << '\n';
 	s << "\thandleType = " << value.handleType << '\n';
 	s << "\thandle = " << value.handle << '\n';
-	s << "\tname = " << getWStr(value.name) << '\n';
+	s << "\tname = " << value.name << '\n';
 	s << '}';
 	return s;
 }
@@ -13264,7 +11758,7 @@ std::ostream& operator<< (std::ostream& s, const VkImportMemoryWin32HandleInfoKH
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\thandleType = " << value.handleType << '\n';
 	s << "\thandle = " << value.handle << '\n';
-	s << "\tname = " << getWStr(value.name) << '\n';
+	s << "\tname = " << value.name << '\n';
 	s << '}';
 	return s;
 }
@@ -13364,7 +11858,7 @@ std::ostream& operator<< (std::ostream& s, const VkImportSemaphoreWin32HandleInf
 	s << "\tflags = " << getSemaphoreImportFlagsStr(value.flags) << '\n';
 	s << "\thandleType = " << value.handleType << '\n';
 	s << "\thandle = " << value.handle << '\n';
-	s << "\tname = " << getWStr(value.name) << '\n';
+	s << "\tname = " << value.name << '\n';
 	s << '}';
 	return s;
 }
@@ -13697,7 +12191,7 @@ std::ostream& operator<< (std::ostream& s, const VkMacOSSurfaceCreateInfoMVK& va
 	s << "VkMacOSSurfaceCreateInfoMVK = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getMacOSSurfaceCreateFlagsMVKStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tpView = " << value.pView << '\n';
 	s << '}';
 	return s;
@@ -14031,7 +12525,7 @@ std::ostream& operator<< (std::ostream& s, const VkMetalSurfaceCreateInfoEXT& va
 	s << "VkMetalSurfaceCreateInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getMetalSurfaceCreateFlagsEXTStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tpLayer = " << value.pLayer << '\n';
 	s << '}';
 	return s;
@@ -14453,16 +12947,6 @@ std::ostream& operator<< (std::ostream& s, const VkPerformanceOverrideInfoINTEL&
 	s << "\ttype = " << value.type << '\n';
 	s << "\tenable = " << value.enable << '\n';
 	s << "\tparameter = " << value.parameter << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPerformanceQueryReservationInfoKHR& value)
-{
-	s << "VkPerformanceQueryReservationInfoKHR = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tmaxPerformanceQueriesPerPool = " << value.maxPerformanceQueriesPerPool << '\n';
 	s << '}';
 	return s;
 }
@@ -19371,7 +17855,7 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineCoverageModulationSta
 	s << "VkPipelineCoverageModulationStateCreateInfoNV = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getPipelineCoverageModulationStateCreateFlagsNVStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tcoverageModulationMode = " << value.coverageModulationMode << '\n';
 	s << "\tcoverageModulationTableEnable = " << value.coverageModulationTableEnable << '\n';
 	s << "\tcoverageModulationTableCount = " << value.coverageModulationTableCount << '\n';
@@ -19385,7 +17869,7 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineCoverageReductionStat
 	s << "VkPipelineCoverageReductionStateCreateInfoNV = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getPipelineCoverageReductionStateCreateFlagsNVStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tcoverageReductionMode = " << value.coverageReductionMode << '\n';
 	s << '}';
 	return s;
@@ -19396,7 +17880,7 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineCoverageToColorStateC
 	s << "VkPipelineCoverageToColorStateCreateInfoNV = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getPipelineCoverageToColorStateCreateFlagsNVStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tcoverageToColorEnable = " << value.coverageToColorEnable << '\n';
 	s << "\tcoverageToColorLocation = " << value.coverageToColorLocation << '\n';
 	s << '}';
@@ -19467,7 +17951,7 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineDiscardRectangleState
 	s << "VkPipelineDiscardRectangleStateCreateInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getPipelineDiscardRectangleStateCreateFlagsEXTStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tdiscardRectangleMode = " << value.discardRectangleMode << '\n';
 	s << "\tdiscardRectangleCount = " << value.discardRectangleCount << '\n';
 	s << "\tpDiscardRectangles = " << value.pDiscardRectangles << '\n';
@@ -19480,7 +17964,7 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineDynamicStateCreateInf
 	s << "VkPipelineDynamicStateCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getPipelineDynamicStateCreateFlagsStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tdynamicStateCount = " << value.dynamicStateCount << '\n';
 	s << "\tpDynamicStates = " << value.pDynamicStates << '\n';
 	s << '}';
@@ -19608,7 +18092,7 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineInputAssemblyStateCre
 	s << "VkPipelineInputAssemblyStateCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getPipelineInputAssemblyStateCreateFlagsStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\ttopology = " << value.topology << '\n';
 	s << "\tprimitiveRestartEnable = " << value.primitiveRestartEnable << '\n';
 	s << '}';
@@ -19645,7 +18129,7 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineMultisampleStateCreat
 	s << "VkPipelineMultisampleStateCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getPipelineMultisampleStateCreateFlagsStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\trasterizationSamples = " << value.rasterizationSamples << '\n';
 	s << "\tsampleShadingEnable = " << value.sampleShadingEnable << '\n';
 	s << "\tminSampleShading = " << value.minSampleShading << '\n';
@@ -19671,7 +18155,7 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineRasterizationConserva
 	s << "VkPipelineRasterizationConservativeStateCreateInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getPipelineRasterizationConservativeStateCreateFlagsEXTStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tconservativeRasterizationMode = " << value.conservativeRasterizationMode << '\n';
 	s << "\textraPrimitiveOverestimationSize = " << value.extraPrimitiveOverestimationSize << '\n';
 	s << '}';
@@ -19683,7 +18167,7 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineRasterizationDepthCli
 	s << "VkPipelineRasterizationDepthClipStateCreateInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getPipelineRasterizationDepthClipStateCreateFlagsEXTStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tdepthClipEnable = " << value.depthClipEnable << '\n';
 	s << '}';
 	return s;
@@ -19717,7 +18201,7 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineRasterizationStateCre
 	s << "VkPipelineRasterizationStateCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getPipelineRasterizationStateCreateFlagsStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tdepthClampEnable = " << value.depthClampEnable << '\n';
 	s << "\trasterizerDiscardEnable = " << value.rasterizerDiscardEnable << '\n';
 	s << "\tpolygonMode = " << value.polygonMode << '\n';
@@ -19747,7 +18231,7 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineRasterizationStateStr
 	s << "VkPipelineRasterizationStateStreamCreateInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getPipelineRasterizationStateStreamCreateFlagsEXTStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\trasterizationStream = " << value.rasterizationStream << '\n';
 	s << '}';
 	return s;
@@ -19862,7 +18346,7 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineTessellationStateCrea
 	s << "VkPipelineTessellationStateCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getPipelineTessellationStateCreateFlagsStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tpatchControlPoints = " << value.patchControlPoints << '\n';
 	s << '}';
 	return s;
@@ -19884,7 +18368,7 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineVertexInputStateCreat
 	s << "VkPipelineVertexInputStateCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getPipelineVertexInputStateCreateFlagsStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tvertexBindingDescriptionCount = " << value.vertexBindingDescriptionCount << '\n';
 	s << "\tpVertexBindingDescriptions = " << value.pVertexBindingDescriptions << '\n';
 	s << "\tvertexAttributeDescriptionCount = " << value.vertexAttributeDescriptionCount << '\n';
@@ -19954,7 +18438,7 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineViewportStateCreateIn
 	s << "VkPipelineViewportStateCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getPipelineViewportStateCreateFlagsStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tviewportCount = " << value.viewportCount << '\n';
 	s << "\tpViewports = " << value.pViewports << '\n';
 	s << "\tscissorCount = " << value.scissorCount << '\n';
@@ -19968,7 +18452,7 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineViewportSwizzleStateC
 	s << "VkPipelineViewportSwizzleStateCreateInfoNV = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getPipelineViewportSwizzleStateCreateFlagsNVStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tviewportCount = " << value.viewportCount << '\n';
 	s << "\tpViewportSwizzles = " << value.pViewportSwizzles << '\n';
 	s << '}';
@@ -20090,7 +18574,7 @@ std::ostream& operator<< (std::ostream& s, const VkPrivateDataSlotCreateInfo& va
 	s << "VkPrivateDataSlotCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getPrivateDataSlotCreateFlagsStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << '}';
 	return s;
 }
@@ -21007,7 +19491,7 @@ std::ostream& operator<< (std::ostream& s, const VkScreenSurfaceCreateInfoQNX& v
 	s << "VkScreenSurfaceCreateInfoQNX = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getScreenSurfaceCreateFlagsQNXStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tcontext = " << value.context << '\n';
 	s << "\twindow = " << value.window << '\n';
 	s << '}';
@@ -21019,7 +19503,7 @@ std::ostream& operator<< (std::ostream& s, const VkSemaphoreCreateInfo& value)
 	s << "VkSemaphoreCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getSemaphoreCreateFlagsStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << '}';
 	return s;
 }
@@ -21176,7 +19660,7 @@ std::ostream& operator<< (std::ostream& s, const VkShaderModuleCreateInfo& value
 	s << "VkShaderModuleCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getShaderModuleCreateFlagsStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tcodeSize = " << value.codeSize << '\n';
 	s << "\tpCode = " << value.pCode << '\n';
 	s << '}';
@@ -21386,7 +19870,7 @@ std::ostream& operator<< (std::ostream& s, const VkStreamDescriptorSurfaceCreate
 	s << "VkStreamDescriptorSurfaceCreateInfoGGP = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getStreamDescriptorSurfaceCreateFlagsGGPStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tstreamDescriptor = " << value.streamDescriptor << '\n';
 	s << '}';
 	return s;
@@ -21696,7 +20180,7 @@ std::ostream& operator<< (std::ostream& s, const VkSurfaceCreateInfoOHOS& value)
 	s << "VkSurfaceCreateInfoOHOS = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getSurfaceCreateFlagsOHOSStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\twindow = " << value.window << '\n';
 	s << '}';
 	return s;
@@ -22140,7 +20624,7 @@ std::ostream& operator<< (std::ostream& s, const VkValidationCacheCreateInfoEXT&
 	s << "VkValidationCacheCreateInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getValidationCacheCreateFlagsEXTStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tinitialDataSize = " << value.initialDataSize << '\n';
 	s << "\tpInitialData = " << value.pInitialData << '\n';
 	s << '}';
@@ -22232,7 +20716,7 @@ std::ostream& operator<< (std::ostream& s, const VkViSurfaceCreateInfoNN& value)
 	s << "VkViSurfaceCreateInfoNN = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getViSurfaceCreateFlagsNNStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\twindow = " << value.window << '\n';
 	s << '}';
 	return s;
@@ -22243,7 +20727,7 @@ std::ostream& operator<< (std::ostream& s, const VkVideoBeginCodingInfoKHR& valu
 	s << "VkVideoBeginCodingInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getVideoBeginCodingFlagsKHRStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tvideoSession = " << value.videoSession << '\n';
 	s << "\tvideoSessionParameters = " << value.videoSessionParameters << '\n';
 	s << "\treferenceSlotCount = " << value.referenceSlotCount << '\n';
@@ -22523,7 +21007,7 @@ std::ostream& operator<< (std::ostream& s, const VkVideoDecodeInfoKHR& value)
 	s << "VkVideoDecodeInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getVideoDecodeFlagsKHRStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tsrcBuffer = " << value.srcBuffer << '\n';
 	s << "\tsrcBufferOffset = " << value.srcBufferOffset << '\n';
 	s << "\tsrcBufferRange = " << value.srcBufferRange << '\n';
@@ -23326,7 +21810,7 @@ std::ostream& operator<< (std::ostream& s, const VkVideoEncodeRateControlInfoKHR
 	s << "VkVideoEncodeRateControlInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getVideoEncodeRateControlFlagsKHRStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\trateControlMode = " << value.rateControlMode << '\n';
 	s << "\tlayerCount = " << value.layerCount << '\n';
 	s << "\tpLayers = " << value.pLayers << '\n';
@@ -23396,7 +21880,7 @@ std::ostream& operator<< (std::ostream& s, const VkVideoEndCodingInfoKHR& value)
 	s << "VkVideoEndCodingInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getVideoEndCodingFlagsKHRStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << '}';
 	return s;
 }
@@ -23605,7 +22089,7 @@ std::ostream& operator<< (std::ostream& s, const VkWaylandSurfaceCreateInfoKHR& 
 	s << "VkWaylandSurfaceCreateInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getWaylandSurfaceCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tdisplay = " << value.display << '\n';
 	s << "\tsurface = " << value.surface << '\n';
 	s << '}';
@@ -23649,7 +22133,7 @@ std::ostream& operator<< (std::ostream& s, const VkWin32SurfaceCreateInfoKHR& va
 	s << "VkWin32SurfaceCreateInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getWin32SurfaceCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\thinstance = " << value.hinstance << '\n';
 	s << "\thwnd = " << value.hwnd << '\n';
 	s << '}';
@@ -23764,7 +22248,7 @@ std::ostream& operator<< (std::ostream& s, const VkXcbSurfaceCreateInfoKHR& valu
 	s << "VkXcbSurfaceCreateInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getXcbSurfaceCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tconnection = " << value.connection << '\n';
 	s << "\twindow = " << value.window << '\n';
 	s << '}';
@@ -23776,9 +22260,10 @@ std::ostream& operator<< (std::ostream& s, const VkXlibSurfaceCreateInfoKHR& val
 	s << "VkXlibSurfaceCreateInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getXlibSurfaceCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tflags = " << value.flags << '\n';
 	s << "\tdpy = " << value.dpy << '\n';
 	s << "\twindow = " << value.window << '\n';
 	s << '}';
 	return s;
 }
+

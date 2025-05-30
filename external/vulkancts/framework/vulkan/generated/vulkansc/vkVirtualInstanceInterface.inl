@@ -57,6 +57,7 @@ virtual VkResult	getPhysicalDeviceSurfaceFormats2KHR								(VkPhysicalDevice ph
 virtual VkResult	getPhysicalDeviceSurfaceFormatsKHR								(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t* pSurfaceFormatCount, VkSurfaceFormatKHR* pSurfaceFormats) const = 0;
 virtual VkResult	getPhysicalDeviceSurfacePresentModesKHR							(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t* pPresentModeCount, VkPresentModeKHR* pPresentModes) const = 0;
 virtual VkResult	getPhysicalDeviceSurfaceSupportKHR								(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, VkSurfaceKHR surface, VkBool32* pSupported) const = 0;
+virtual VkResult	getPhysicalDeviceToolProperties									(VkPhysicalDevice physicalDevice, uint32_t* pToolCount, VkPhysicalDeviceToolProperties* pToolProperties) const = 0;
 virtual VkResult	getWinrtDisplayNV												(VkPhysicalDevice physicalDevice, uint32_t deviceRelativeId, VkDisplayKHR* pDisplay) const = 0;
 virtual VkResult	releaseDisplayEXT												(VkPhysicalDevice physicalDevice, VkDisplayKHR display) const = 0;
 virtual void		submitDebugUtilsMessageEXT										(VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData) const = 0;

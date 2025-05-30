@@ -7,5 +7,4 @@ CreateInstanceFunc							createInstance;
 EnumerateInstanceExtensionPropertiesFunc	enumerateInstanceExtensionProperties;
 EnumerateInstanceLayerPropertiesFunc		enumerateInstanceLayerProperties;
 EnumerateInstanceVersionFunc				enumerateInstanceVersion;
-GetExternalComputeQueueDataNVFunc			getExternalComputeQueueDataNV;
 GetInstanceProcAddrFunc						getInstanceProcAddr;

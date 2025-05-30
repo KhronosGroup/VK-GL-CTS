@@ -1652,18 +1652,20 @@ tcu::TestStatus validateLimitsExtInlineUniformBlock(Context &context)
         return tcu::TestStatus::fail("fail");
 }
 
-#endif // CTS_USES_VULKANSC
-
 void checkSupportExtVertexAttributeDivisorEXT(Context &context)
 {
     context.requireDeviceFunctionality("VK_EXT_vertex_attribute_divisor");
 }
+
+#endif // CTS_USES_VULKANSC
 
 void checkSupportExtVertexAttributeDivisorKHR(Context &context)
 {
     context.requireDeviceFunctionality("VK_KHR_vertex_attribute_divisor");
 }
 
+#ifndef CTS_USES_VULKANSC
+// VK_EXT_vertex_attribute_divisor is not supported for Vulkan SC
 tcu::TestStatus validateLimitsExtVertexAttributeDivisorEXT(Context &context)
 {
     const VkBool32 checkAlways            = VK_TRUE;
@@ -1692,6 +1694,7 @@ tcu::TestStatus validateLimitsExtVertexAttributeDivisorEXT(Context &context)
     else
         return tcu::TestStatus::fail("fail");
 }
+#endif
 
 tcu::TestStatus validateLimitsExtVertexAttributeDivisorKHR(Context &context)
 {
@@ -8623,9 +8626,9 @@ tcu::TestCaseGroup *createFeatureInfoTests(tcu::TestContext &testCtx)
         // Removed from Vulkan SC test set: VK_EXT_inline_uniform_block extension removed from Vulkan SC
         addFunctionCase(limitsValidationTests.get(), "ext_inline_uniform_block", checkSupportExtInlineUniformBlock,
                         validateLimitsExtInlineUniformBlock);
-#endif // CTS_USES_VULKANSC
         addFunctionCase(limitsValidationTests.get(), "ext_vertex_attribute_divisor",
                         checkSupportExtVertexAttributeDivisorEXT, validateLimitsExtVertexAttributeDivisorEXT);
+#endif // CTS_USES_VULKANSC
         addFunctionCase(limitsValidationTests.get(), "khr_vertex_attribute_divisor",
                         checkSupportExtVertexAttributeDivisorKHR, validateLimitsExtVertexAttributeDivisorKHR);
 #ifndef CTS_USES_VULKANSC

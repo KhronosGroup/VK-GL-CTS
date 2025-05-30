@@ -17,6 +17,7 @@ namespace vkt
 
 using namespace vk;
 
+
 tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 {
     tcu::TestLog&                                log                        (context.getTestContext().getLog());
@@ -57,177 +58,201 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
     const DeviceDriver                        deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 
     const std::vector<std::string> functions{
-		"vkGetPhysicalDeviceCalibrateableTimeDomainsEXT",
-		"vkGetCalibratedTimestampsEXT",
+
+		// "VK_EXT_color_write_enable
 		"vkCmdSetColorWriteEnableEXT",
-		"vkSetDebugUtilsObjectNameEXT",
-		"vkSetDebugUtilsObjectTagEXT",
-		"vkQueueBeginDebugUtilsLabelEXT",
-		"vkQueueEndDebugUtilsLabelEXT",
-		"vkQueueInsertDebugUtilsLabelEXT",
+
+		// "VK_EXT_debug_utils
 		"vkCmdBeginDebugUtilsLabelEXT",
 		"vkCmdEndDebugUtilsLabelEXT",
 		"vkCmdInsertDebugUtilsLabelEXT",
 		"vkCreateDebugUtilsMessengerEXT",
 		"vkDestroyDebugUtilsMessengerEXT",
+		"vkQueueBeginDebugUtilsLabelEXT",
+		"vkQueueEndDebugUtilsLabelEXT",
+		"vkQueueInsertDebugUtilsLabelEXT",
+		"vkSetDebugUtilsObjectNameEXT",
+		"vkSetDebugUtilsObjectTagEXT",
 		"vkSubmitDebugUtilsMessageEXT",
+
+		// "VK_EXT_direct_mode_display
 		"vkReleaseDisplayEXT",
+
+		// "VK_EXT_discard_rectangles
 		"vkCmdSetDiscardRectangleEXT",
 		"vkCmdSetDiscardRectangleEnableEXT",
 		"vkCmdSetDiscardRectangleModeEXT",
+
+		// "VK_EXT_display_control
 		"vkDisplayPowerControlEXT",
+		"vkGetSwapchainCounterEXT",
 		"vkRegisterDeviceEventEXT",
 		"vkRegisterDisplayEventEXT",
-		"vkGetSwapchainCounterEXT",
+
+		// "VK_EXT_display_surface_counter
 		"vkGetPhysicalDeviceSurfaceCapabilities2EXT",
-		"vkCmdSetCullModeEXT",
-		"vkCmdSetFrontFaceEXT",
-		"vkCmdSetPrimitiveTopologyEXT",
-		"vkCmdSetViewportWithCountEXT",
-		"vkCmdSetScissorWithCountEXT",
+
+		// "VK_EXT_extended_dynamic_state
 		"vkCmdBindVertexBuffers2EXT",
+		"vkCmdSetCullModeEXT",
+		"vkCmdSetDepthBoundsTestEnableEXT",
+		"vkCmdSetDepthCompareOpEXT",
 		"vkCmdSetDepthTestEnableEXT",
 		"vkCmdSetDepthWriteEnableEXT",
-		"vkCmdSetDepthCompareOpEXT",
-		"vkCmdSetDepthBoundsTestEnableEXT",
-		"vkCmdSetStencilTestEnableEXT",
+		"vkCmdSetFrontFaceEXT",
+		"vkCmdSetPrimitiveTopologyEXT",
+		"vkCmdSetScissorWithCountEXT",
 		"vkCmdSetStencilOpEXT",
-		"vkCmdSetPatchControlPointsEXT",
-		"vkCmdSetRasterizerDiscardEnableEXT",
+		"vkCmdSetStencilTestEnableEXT",
+		"vkCmdSetViewportWithCountEXT",
+
+		// "VK_EXT_extended_dynamic_state2
 		"vkCmdSetDepthBiasEnableEXT",
 		"vkCmdSetLogicOpEXT",
+		"vkCmdSetPatchControlPointsEXT",
 		"vkCmdSetPrimitiveRestartEnableEXT",
+		"vkCmdSetRasterizerDiscardEnableEXT",
+
+		// "VK_EXT_external_memory_host
 		"vkGetMemoryHostPointerPropertiesEXT",
+
+		// "VK_EXT_hdr_metadata
 		"vkSetHdrMetadataEXT",
+
+		// "VK_EXT_headless_surface
 		"vkCreateHeadlessSurfaceEXT",
+
+		// "VK_EXT_image_drm_format_modifier
 		"vkGetImageDrmFormatModifierPropertiesEXT",
+
+		// "VK_EXT_line_rasterization
 		"vkCmdSetLineStippleEXT",
+
+		// "VK_EXT_sample_locations
 		"vkCmdSetSampleLocationsEXT",
 		"vkGetPhysicalDeviceMultisamplePropertiesEXT",
+
+		// "VK_EXT_vertex_input_dynamic_state
 		"vkCmdSetVertexInputEXT",
-		"vkBindBufferMemory2KHR",
-		"vkBindImageMemory2KHR",
-		"vkGetBufferDeviceAddressKHR",
-		"vkGetBufferOpaqueCaptureAddressKHR",
-		"vkGetDeviceMemoryOpaqueCaptureAddressKHR",
-		"vkGetPhysicalDeviceCalibrateableTimeDomainsKHR",
+
+		// "VK_KHR_calibrated_timestamps
 		"vkGetCalibratedTimestampsKHR",
-		"vkCmdCopyBuffer2KHR",
-		"vkCmdCopyImage2KHR",
-		"vkCmdCopyBufferToImage2KHR",
-		"vkCmdCopyImageToBuffer2KHR",
+		"vkGetPhysicalDeviceCalibrateableTimeDomainsKHR",
+
+		// "VK_KHR_copy_commands2
 		"vkCmdBlitImage2KHR",
+		"vkCmdCopyBuffer2KHR",
+		"vkCmdCopyBufferToImage2KHR",
+		"vkCmdCopyImage2KHR",
+		"vkCmdCopyImageToBuffer2KHR",
 		"vkCmdResolveImage2KHR",
-		"vkCreateRenderPass2KHR",
-		"vkCmdBeginRenderPass2KHR",
-		"vkCmdNextSubpass2KHR",
-		"vkCmdEndRenderPass2KHR",
-		"vkCreateDescriptorUpdateTemplateKHR",
-		"vkDestroyDescriptorUpdateTemplateKHR",
-		"vkUpdateDescriptorSetWithTemplateKHR",
-		"vkCmdPushDescriptorSetWithTemplateKHR",
-		"vkGetDeviceGroupPeerMemoryFeaturesKHR",
-		"vkCmdSetDeviceMaskKHR",
-		"vkCmdDispatchBaseKHR",
-		"vkGetDeviceGroupPresentCapabilitiesKHR",
-		"vkGetDeviceGroupSurfacePresentModesKHR",
-		"vkGetPhysicalDevicePresentRectanglesKHR",
-		"vkAcquireNextImage2KHR",
-		"vkEnumeratePhysicalDeviceGroupsKHR",
-		"vkGetPhysicalDeviceDisplayPropertiesKHR",
-		"vkGetPhysicalDeviceDisplayPlanePropertiesKHR",
-		"vkGetDisplayPlaneSupportedDisplaysKHR",
-		"vkGetDisplayModePropertiesKHR",
+
+		// "VK_KHR_display
 		"vkCreateDisplayModeKHR",
-		"vkGetDisplayPlaneCapabilitiesKHR",
 		"vkCreateDisplayPlaneSurfaceKHR",
+		"vkGetDisplayModePropertiesKHR",
+		"vkGetDisplayPlaneCapabilitiesKHR",
+		"vkGetDisplayPlaneSupportedDisplaysKHR",
+		"vkGetPhysicalDeviceDisplayPlanePropertiesKHR",
+		"vkGetPhysicalDeviceDisplayPropertiesKHR",
+
+		// "VK_KHR_display_swapchain
 		"vkCreateSharedSwapchainsKHR",
-		"vkCmdDrawIndirectCountKHR",
-		"vkCmdDrawIndexedIndirectCountKHR",
-		"vkGetPhysicalDeviceExternalFencePropertiesKHR",
-		"vkImportFenceFdKHR",
+
+		// "VK_KHR_external_fence_fd
 		"vkGetFenceFdKHR",
-		"vkGetPhysicalDeviceExternalBufferPropertiesKHR",
+		"vkImportFenceFdKHR",
+
+		// "VK_KHR_external_memory_fd
 		"vkGetMemoryFdKHR",
 		"vkGetMemoryFdPropertiesKHR",
-		"vkGetPhysicalDeviceExternalSemaphorePropertiesKHR",
-		"vkImportSemaphoreFdKHR",
+
+		// "VK_KHR_external_semaphore_fd
 		"vkGetSemaphoreFdKHR",
-		"vkGetPhysicalDeviceFragmentShadingRatesKHR",
+		"vkImportSemaphoreFdKHR",
+
+		// "VK_KHR_fragment_shading_rate
 		"vkCmdSetFragmentShadingRateKHR",
-		"vkGetPhysicalDeviceDisplayProperties2KHR",
-		"vkGetPhysicalDeviceDisplayPlaneProperties2KHR",
+		"vkGetPhysicalDeviceFragmentShadingRatesKHR",
+
+		// "VK_KHR_get_display_properties2
 		"vkGetDisplayModeProperties2KHR",
 		"vkGetDisplayPlaneCapabilities2KHR",
-		"vkGetImageMemoryRequirements2KHR",
-		"vkGetBufferMemoryRequirements2KHR",
-		"vkGetImageSparseMemoryRequirements2KHR",
-		"vkGetPhysicalDeviceFeatures2KHR",
-		"vkGetPhysicalDeviceProperties2KHR",
-		"vkGetPhysicalDeviceFormatProperties2KHR",
-		"vkGetPhysicalDeviceImageFormatProperties2KHR",
-		"vkGetPhysicalDeviceQueueFamilyProperties2KHR",
-		"vkGetPhysicalDeviceMemoryProperties2KHR",
-		"vkGetPhysicalDeviceSparseImageFormatProperties2KHR",
+		"vkGetPhysicalDeviceDisplayPlaneProperties2KHR",
+		"vkGetPhysicalDeviceDisplayProperties2KHR",
+
+		// "VK_KHR_get_surface_capabilities2
 		"vkGetPhysicalDeviceSurfaceCapabilities2KHR",
 		"vkGetPhysicalDeviceSurfaceFormats2KHR",
+
+		// "VK_KHR_line_rasterization
 		"vkCmdSetLineStippleKHR",
-		"vkTrimCommandPoolKHR",
-		"vkGetDescriptorSetLayoutSupportKHR",
+
+		// "VK_KHR_object_refresh
 		"vkCmdRefreshObjectsKHR",
 		"vkGetPhysicalDeviceRefreshableObjectTypesKHR",
+
+		// "VK_KHR_performance_query
+		"vkAcquireProfilingLockKHR",
 		"vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR",
 		"vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR",
-		"vkAcquireProfilingLockKHR",
 		"vkReleaseProfilingLockKHR",
-		"vkCreateSamplerYcbcrConversionKHR",
-		"vkDestroySamplerYcbcrConversionKHR",
+
+		// "VK_KHR_shared_presentable_image
 		"vkGetSwapchainStatusKHR",
+
+		// "VK_KHR_surface
 		"vkDestroySurfaceKHR",
-		"vkGetPhysicalDeviceSurfaceSupportKHR",
 		"vkGetPhysicalDeviceSurfaceCapabilitiesKHR",
 		"vkGetPhysicalDeviceSurfaceFormatsKHR",
 		"vkGetPhysicalDeviceSurfacePresentModesKHR",
-		"vkCreateSwapchainKHR",
-		"vkDestroySwapchainKHR",
-		"vkGetSwapchainImagesKHR",
+		"vkGetPhysicalDeviceSurfaceSupportKHR",
+
+		// "VK_KHR_swapchain
+		"vkAcquireNextImage2KHR",
 		"vkAcquireNextImageKHR",
-		"vkQueuePresentKHR",
+		"vkCreateSwapchainKHR",
 		"vkGetDeviceGroupPresentCapabilitiesKHR",
 		"vkGetDeviceGroupSurfacePresentModesKHR",
 		"vkGetPhysicalDevicePresentRectanglesKHR",
-		"vkAcquireNextImage2KHR",
-		"vkCmdSetEvent2KHR",
-		"vkCmdResetEvent2KHR",
-		"vkCmdWaitEvents2KHR",
+		"vkGetSwapchainImagesKHR",
+		"vkQueuePresentKHR",
+
+		// "VK_KHR_synchronization2
 		"vkCmdPipelineBarrier2KHR",
+		"vkCmdResetEvent2KHR",
+		"vkCmdSetEvent2KHR",
+		"vkCmdWaitEvents2KHR",
 		"vkCmdWriteTimestamp2KHR",
 		"vkQueueSubmit2KHR",
-		"vkGetSemaphoreCounterValueKHR",
-		"vkWaitSemaphoresKHR",
-		"vkSignalSemaphoreKHR",
+
+		// "VK_NV_acquire_winrt_display
 		"vkAcquireWinrtDisplayNV",
 		"vkGetWinrtDisplayNV",
-		"vkCmdSetCheckpointNV",
-		"vkGetQueueCheckpointDataNV",
-		"vkGetQueueCheckpointData2NV",
+
+		// "VK_NV_external_memory_sci_buf
 		"vkGetMemorySciBufNV",
 		"vkGetPhysicalDeviceExternalMemorySciBufPropertiesNV",
 		"vkGetPhysicalDeviceSciBufAttributesNV",
+
+		// "VK_NV_external_sci_sync
 		"vkGetFenceSciSyncFenceNV",
 		"vkGetFenceSciSyncObjNV",
-		"vkImportFenceSciSyncFenceNV",
-		"vkImportFenceSciSyncObjNV",
 		"vkGetPhysicalDeviceSciSyncAttributesNV",
 		"vkGetSemaphoreSciSyncObjNV",
-		"vkImportSemaphoreSciSyncObjNV",
-		"vkCreateSemaphoreSciSyncPoolNV",
-		"vkDestroySemaphoreSciSyncPoolNV",
-		"vkGetFenceSciSyncFenceNV",
-		"vkGetFenceSciSyncObjNV",
 		"vkImportFenceSciSyncFenceNV",
 		"vkImportFenceSciSyncObjNV",
+		"vkImportSemaphoreSciSyncObjNV",
+
+		// "VK_NV_external_sci_sync2
+		"vkCreateSemaphoreSciSyncPoolNV",
+		"vkGetFenceSciSyncFenceNV",
+		"vkGetFenceSciSyncObjNV",
 		"vkGetPhysicalDeviceSciSyncAttributesNV",
+		"vkImportFenceSciSyncFenceNV",
+		"vkImportFenceSciSyncObjNV",
+
+		// "VK_QNX_external_memory_screen_buffer
 		"vkGetScreenBufferPropertiesQNX",
     };
 

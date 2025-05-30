@@ -17,6 +17,7 @@ namespace vkt
 
 using namespace vk;
 
+
 tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 {
     tcu::TestLog&                                log                        (context.getTestContext().getLog());
@@ -57,585 +58,919 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
     const DeviceDriver                        deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 
     const std::vector<std::string> functions{
-		"vkCreateExecutionGraphPipelinesAMDX",
-		"vkGetExecutionGraphPipelineScratchSizeAMDX",
-		"vkGetExecutionGraphPipelineNodeIndexAMDX",
-		"vkCmdInitializeGraphScratchMemoryAMDX",
+
+		// "VK_AMDX_shader_enqueue
 		"vkCmdDispatchGraphAMDX",
 		"vkCmdDispatchGraphIndirectAMDX",
 		"vkCmdDispatchGraphIndirectCountAMDX",
+		"vkCmdInitializeGraphScratchMemoryAMDX",
+		"vkCreateExecutionGraphPipelinesAMDX",
+		"vkGetExecutionGraphPipelineNodeIndexAMDX",
+		"vkGetExecutionGraphPipelineScratchSizeAMDX",
+
+		// "VK_AMD_anti_lag
 		"vkAntiLagUpdateAMD",
-		"vkCmdWriteBufferMarkerAMD",
+
+		// "VK_AMD_buffer_marker
 		"vkCmdWriteBufferMarker2AMD",
+		"vkCmdWriteBufferMarkerAMD",
+
+		// "VK_AMD_display_native_hdr
 		"vkSetLocalDimmingAMD",
-		"vkCmdDrawIndirectCountAMD",
+
+		// "VK_AMD_draw_indirect_count
 		"vkCmdDrawIndexedIndirectCountAMD",
+		"vkCmdDrawIndirectCountAMD",
+
+		// "VK_AMD_shader_info
 		"vkGetShaderInfoAMD",
+
+		// "VK_ANDROID_external_memory_android_hardware_buffer
 		"vkGetAndroidHardwareBufferPropertiesANDROID",
 		"vkGetMemoryAndroidHardwareBufferANDROID",
-		"vkCreateDataGraphPipelinesARM",
-		"vkCreateDataGraphPipelineSessionARM",
-		"vkGetDataGraphPipelineSessionBindPointRequirementsARM",
-		"vkGetDataGraphPipelineSessionMemoryRequirementsARM",
+
+		// "VK_ARM_data_graph
 		"vkBindDataGraphPipelineSessionMemoryARM",
-		"vkDestroyDataGraphPipelineSessionARM",
 		"vkCmdDispatchDataGraphARM",
+		"vkCreateDataGraphPipelineSessionARM",
+		"vkCreateDataGraphPipelinesARM",
+		"vkDestroyDataGraphPipelineSessionARM",
 		"vkGetDataGraphPipelineAvailablePropertiesARM",
 		"vkGetDataGraphPipelinePropertiesARM",
-		"vkGetPhysicalDeviceQueueFamilyDataGraphPropertiesARM",
+		"vkGetDataGraphPipelineSessionBindPointRequirementsARM",
+		"vkGetDataGraphPipelineSessionMemoryRequirementsARM",
 		"vkGetPhysicalDeviceQueueFamilyDataGraphProcessingEnginePropertiesARM",
-		"vkCreateTensorARM",
-		"vkDestroyTensorARM",
-		"vkCreateTensorViewARM",
-		"vkDestroyTensorViewARM",
-		"vkGetTensorMemoryRequirementsARM",
+		"vkGetPhysicalDeviceQueueFamilyDataGraphPropertiesARM",
+
+		// "VK_ARM_tensors
 		"vkBindTensorMemoryARM",
-		"vkGetDeviceTensorMemoryRequirementsARM",
 		"vkCmdCopyTensorARM",
+		"vkCreateTensorARM",
+		"vkCreateTensorViewARM",
+		"vkDestroyTensorARM",
+		"vkDestroyTensorViewARM",
+		"vkGetDeviceTensorMemoryRequirementsARM",
 		"vkGetPhysicalDeviceExternalTensorPropertiesARM",
+		"vkGetTensorMemoryRequirementsARM",
 		"vkGetTensorOpaqueCaptureDescriptorDataARM",
 		"vkGetTensorViewOpaqueCaptureDescriptorDataARM",
+
+		// "VK_EXT_acquire_drm_display
 		"vkAcquireDrmDisplayEXT",
 		"vkGetDrmDisplayEXT",
+
+		// "VK_EXT_acquire_xlib_display
 		"vkAcquireXlibDisplayEXT",
 		"vkGetRandROutputDisplayEXT",
+
+		// "VK_EXT_attachment_feedback_loop_dynamic_state
 		"vkCmdSetAttachmentFeedbackLoopEnableEXT",
+
+		// "VK_EXT_buffer_device_address
 		"vkGetBufferDeviceAddressEXT",
-		"vkGetPhysicalDeviceCalibrateableTimeDomainsEXT",
+
+		// "VK_EXT_calibrated_timestamps
 		"vkGetCalibratedTimestampsEXT",
+		"vkGetPhysicalDeviceCalibrateableTimeDomainsEXT",
+
+		// "VK_EXT_color_write_enable
 		"vkCmdSetColorWriteEnableEXT",
+
+		// "VK_EXT_conditional_rendering
 		"vkCmdBeginConditionalRenderingEXT",
 		"vkCmdEndConditionalRenderingEXT",
-		"vkDebugMarkerSetObjectTagEXT",
-		"vkDebugMarkerSetObjectNameEXT",
+
+		// "VK_EXT_debug_marker
 		"vkCmdDebugMarkerBeginEXT",
 		"vkCmdDebugMarkerEndEXT",
 		"vkCmdDebugMarkerInsertEXT",
+		"vkDebugMarkerSetObjectNameEXT",
+		"vkDebugMarkerSetObjectTagEXT",
+
+		// "VK_EXT_debug_report
 		"vkCreateDebugReportCallbackEXT",
-		"vkDestroyDebugReportCallbackEXT",
 		"vkDebugReportMessageEXT",
-		"vkSetDebugUtilsObjectNameEXT",
-		"vkSetDebugUtilsObjectTagEXT",
-		"vkQueueBeginDebugUtilsLabelEXT",
-		"vkQueueEndDebugUtilsLabelEXT",
-		"vkQueueInsertDebugUtilsLabelEXT",
+		"vkDestroyDebugReportCallbackEXT",
+
+		// "VK_EXT_debug_utils
 		"vkCmdBeginDebugUtilsLabelEXT",
 		"vkCmdEndDebugUtilsLabelEXT",
 		"vkCmdInsertDebugUtilsLabelEXT",
 		"vkCreateDebugUtilsMessengerEXT",
 		"vkDestroyDebugUtilsMessengerEXT",
+		"vkQueueBeginDebugUtilsLabelEXT",
+		"vkQueueEndDebugUtilsLabelEXT",
+		"vkQueueInsertDebugUtilsLabelEXT",
+		"vkSetDebugUtilsObjectNameEXT",
+		"vkSetDebugUtilsObjectTagEXT",
 		"vkSubmitDebugUtilsMessageEXT",
+
+		// "VK_EXT_depth_bias_control
 		"vkCmdSetDepthBias2EXT",
+
+		// "VK_EXT_depth_clamp_control
 		"vkCmdSetDepthClampRangeEXT",
-		"vkGetDescriptorSetLayoutSizeEXT",
-		"vkGetDescriptorSetLayoutBindingOffsetEXT",
-		"vkGetDescriptorEXT",
+
+		// "VK_EXT_descriptor_buffer
+		"vkCmdBindDescriptorBufferEmbeddedSamplersEXT",
 		"vkCmdBindDescriptorBuffersEXT",
 		"vkCmdSetDescriptorBufferOffsetsEXT",
-		"vkCmdBindDescriptorBufferEmbeddedSamplersEXT",
+		"vkGetAccelerationStructureOpaqueCaptureDescriptorDataEXT",
 		"vkGetBufferOpaqueCaptureDescriptorDataEXT",
+		"vkGetDescriptorEXT",
+		"vkGetDescriptorSetLayoutBindingOffsetEXT",
+		"vkGetDescriptorSetLayoutSizeEXT",
 		"vkGetImageOpaqueCaptureDescriptorDataEXT",
 		"vkGetImageViewOpaqueCaptureDescriptorDataEXT",
 		"vkGetSamplerOpaqueCaptureDescriptorDataEXT",
-		"vkGetAccelerationStructureOpaqueCaptureDescriptorDataEXT",
+
+		// "VK_EXT_device_fault
 		"vkGetDeviceFaultInfoEXT",
-		"vkGetGeneratedCommandsMemoryRequirementsEXT",
-		"vkCmdPreprocessGeneratedCommandsEXT",
+
+		// "VK_EXT_device_generated_commands
 		"vkCmdExecuteGeneratedCommandsEXT",
+		"vkCmdPreprocessGeneratedCommandsEXT",
 		"vkCreateIndirectCommandsLayoutEXT",
-		"vkDestroyIndirectCommandsLayoutEXT",
 		"vkCreateIndirectExecutionSetEXT",
+		"vkDestroyIndirectCommandsLayoutEXT",
 		"vkDestroyIndirectExecutionSetEXT",
+		"vkGetGeneratedCommandsMemoryRequirementsEXT",
 		"vkUpdateIndirectExecutionSetPipelineEXT",
 		"vkUpdateIndirectExecutionSetShaderEXT",
+
+		// "VK_EXT_direct_mode_display
 		"vkReleaseDisplayEXT",
+
+		// "VK_EXT_directfb_surface
+		"vkCreateDirectFBSurfaceEXT",
+		"vkGetPhysicalDeviceDirectFBPresentationSupportEXT",
+
+		// "VK_EXT_discard_rectangles
 		"vkCmdSetDiscardRectangleEXT",
 		"vkCmdSetDiscardRectangleEnableEXT",
 		"vkCmdSetDiscardRectangleModeEXT",
+
+		// "VK_EXT_display_control
 		"vkDisplayPowerControlEXT",
+		"vkGetSwapchainCounterEXT",
 		"vkRegisterDeviceEventEXT",
 		"vkRegisterDisplayEventEXT",
-		"vkGetSwapchainCounterEXT",
+
+		// "VK_EXT_display_surface_counter
 		"vkGetPhysicalDeviceSurfaceCapabilities2EXT",
-		"vkCmdSetCullModeEXT",
-		"vkCmdSetFrontFaceEXT",
-		"vkCmdSetPrimitiveTopologyEXT",
-		"vkCmdSetViewportWithCountEXT",
-		"vkCmdSetScissorWithCountEXT",
+
+		// "VK_EXT_extended_dynamic_state
 		"vkCmdBindVertexBuffers2EXT",
+		"vkCmdSetCullModeEXT",
+		"vkCmdSetDepthBoundsTestEnableEXT",
+		"vkCmdSetDepthCompareOpEXT",
 		"vkCmdSetDepthTestEnableEXT",
 		"vkCmdSetDepthWriteEnableEXT",
-		"vkCmdSetDepthCompareOpEXT",
-		"vkCmdSetDepthBoundsTestEnableEXT",
-		"vkCmdSetStencilTestEnableEXT",
+		"vkCmdSetFrontFaceEXT",
+		"vkCmdSetPrimitiveTopologyEXT",
+		"vkCmdSetScissorWithCountEXT",
 		"vkCmdSetStencilOpEXT",
-		"vkCmdSetPatchControlPointsEXT",
-		"vkCmdSetRasterizerDiscardEnableEXT",
+		"vkCmdSetStencilTestEnableEXT",
+		"vkCmdSetViewportWithCountEXT",
+
+		// "VK_EXT_extended_dynamic_state2
 		"vkCmdSetDepthBiasEnableEXT",
 		"vkCmdSetLogicOpEXT",
+		"vkCmdSetPatchControlPointsEXT",
 		"vkCmdSetPrimitiveRestartEnableEXT",
-		"vkCmdSetDepthClampEnableEXT",
-		"vkCmdSetPolygonModeEXT",
-		"vkCmdSetRasterizationSamplesEXT",
-		"vkCmdSetSampleMaskEXT",
+		"vkCmdSetRasterizerDiscardEnableEXT",
+
+		// "VK_EXT_extended_dynamic_state3
 		"vkCmdSetAlphaToCoverageEnableEXT",
 		"vkCmdSetAlphaToOneEnableEXT",
-		"vkCmdSetLogicOpEnableEXT",
+		"vkCmdSetColorBlendAdvancedEXT",
 		"vkCmdSetColorBlendEnableEXT",
 		"vkCmdSetColorBlendEquationEXT",
 		"vkCmdSetColorWriteMaskEXT",
-		"vkCmdSetTessellationDomainOriginEXT",
-		"vkCmdSetRasterizationStreamEXT",
 		"vkCmdSetConservativeRasterizationModeEXT",
-		"vkCmdSetExtraPrimitiveOverestimationSizeEXT",
-		"vkCmdSetDepthClipEnableEXT",
-		"vkCmdSetSampleLocationsEnableEXT",
-		"vkCmdSetColorBlendAdvancedEXT",
-		"vkCmdSetProvokingVertexModeEXT",
-		"vkCmdSetLineRasterizationModeEXT",
-		"vkCmdSetLineStippleEnableEXT",
-		"vkCmdSetDepthClipNegativeOneToOneEXT",
-		"vkCmdSetViewportWScalingEnableNV",
-		"vkCmdSetViewportSwizzleNV",
-		"vkCmdSetCoverageToColorEnableNV",
-		"vkCmdSetCoverageToColorLocationNV",
 		"vkCmdSetCoverageModulationModeNV",
 		"vkCmdSetCoverageModulationTableEnableNV",
 		"vkCmdSetCoverageModulationTableNV",
-		"vkCmdSetShadingRateImageEnableNV",
-		"vkCmdSetRepresentativeFragmentTestEnableNV",
 		"vkCmdSetCoverageReductionModeNV",
+		"vkCmdSetCoverageToColorEnableNV",
+		"vkCmdSetCoverageToColorLocationNV",
+		"vkCmdSetDepthClampEnableEXT",
+		"vkCmdSetDepthClipEnableEXT",
+		"vkCmdSetDepthClipNegativeOneToOneEXT",
+		"vkCmdSetExtraPrimitiveOverestimationSizeEXT",
+		"vkCmdSetLineRasterizationModeEXT",
+		"vkCmdSetLineStippleEnableEXT",
+		"vkCmdSetLogicOpEnableEXT",
+		"vkCmdSetPolygonModeEXT",
+		"vkCmdSetProvokingVertexModeEXT",
+		"vkCmdSetRasterizationSamplesEXT",
+		"vkCmdSetRasterizationStreamEXT",
+		"vkCmdSetRepresentativeFragmentTestEnableNV",
+		"vkCmdSetSampleLocationsEnableEXT",
+		"vkCmdSetSampleMaskEXT",
+		"vkCmdSetShadingRateImageEnableNV",
+		"vkCmdSetTessellationDomainOriginEXT",
+		"vkCmdSetViewportSwizzleNV",
+		"vkCmdSetViewportWScalingEnableNV",
+
+		// "VK_EXT_external_memory_host
 		"vkGetMemoryHostPointerPropertiesEXT",
+
+		// "VK_EXT_external_memory_metal
 		"vkGetMemoryMetalHandleEXT",
 		"vkGetMemoryMetalHandlePropertiesEXT",
+
+		// "VK_EXT_fragment_density_map_offset
 		"vkCmdEndRendering2EXT",
-		"vkGetPhysicalDeviceSurfacePresentModes2EXT",
+
+		// "VK_EXT_full_screen_exclusive
 		"vkAcquireFullScreenExclusiveModeEXT",
-		"vkReleaseFullScreenExclusiveModeEXT",
 		"vkGetDeviceGroupSurfacePresentModes2EXT",
+		"vkGetPhysicalDeviceSurfacePresentModes2EXT",
+		"vkReleaseFullScreenExclusiveModeEXT",
+
+		// "VK_EXT_hdr_metadata
 		"vkSetHdrMetadataEXT",
+
+		// "VK_EXT_headless_surface
 		"vkCreateHeadlessSurfaceEXT",
-		"vkCopyMemoryToImageEXT",
-		"vkCopyImageToMemoryEXT",
+
+		// "VK_EXT_host_image_copy
 		"vkCopyImageToImageEXT",
+		"vkCopyImageToMemoryEXT",
+		"vkCopyMemoryToImageEXT",
+		"vkGetImageSubresourceLayout2EXT",
 		"vkTransitionImageLayoutEXT",
-		"vkGetImageSubresourceLayout2EXT",
+
+		// "VK_EXT_host_query_reset
 		"vkResetQueryPoolEXT",
+
+		// "VK_EXT_image_compression_control
 		"vkGetImageSubresourceLayout2EXT",
+
+		// "VK_EXT_image_drm_format_modifier
 		"vkGetImageDrmFormatModifierPropertiesEXT",
+
+		// "VK_EXT_line_rasterization
 		"vkCmdSetLineStippleEXT",
+
+		// "VK_EXT_mesh_shader
 		"vkCmdDrawMeshTasksEXT",
-		"vkCmdDrawMeshTasksIndirectEXT",
 		"vkCmdDrawMeshTasksIndirectCountEXT",
+		"vkCmdDrawMeshTasksIndirectEXT",
+
+		// "VK_EXT_metal_objects
 		"vkExportMetalObjectsEXT",
+
+		// "VK_EXT_metal_surface
 		"vkCreateMetalSurfaceEXT",
+
+		// "VK_EXT_multi_draw
 		"vkCmdDrawMultiEXT",
 		"vkCmdDrawMultiIndexedEXT",
-		"vkCreateMicromapEXT",
-		"vkDestroyMicromapEXT",
-		"vkCmdBuildMicromapsEXT",
+
+		// "VK_EXT_opacity_micromap
 		"vkBuildMicromapsEXT",
-		"vkCopyMicromapEXT",
-		"vkCopyMicromapToMemoryEXT",
-		"vkCopyMemoryToMicromapEXT",
-		"vkWriteMicromapsPropertiesEXT",
+		"vkCmdBuildMicromapsEXT",
+		"vkCmdCopyMemoryToMicromapEXT",
 		"vkCmdCopyMicromapEXT",
 		"vkCmdCopyMicromapToMemoryEXT",
-		"vkCmdCopyMemoryToMicromapEXT",
 		"vkCmdWriteMicromapsPropertiesEXT",
+		"vkCopyMemoryToMicromapEXT",
+		"vkCopyMicromapEXT",
+		"vkCopyMicromapToMemoryEXT",
+		"vkCreateMicromapEXT",
+		"vkDestroyMicromapEXT",
 		"vkGetDeviceMicromapCompatibilityEXT",
 		"vkGetMicromapBuildSizesEXT",
+		"vkWriteMicromapsPropertiesEXT",
+
+		// "VK_EXT_pageable_device_local_memory
 		"vkSetDeviceMemoryPriorityEXT",
+
+		// "VK_EXT_pipeline_properties
 		"vkGetPipelinePropertiesEXT",
+
+		// "VK_EXT_private_data
 		"vkCreatePrivateDataSlotEXT",
 		"vkDestroyPrivateDataSlotEXT",
-		"vkSetPrivateDataEXT",
 		"vkGetPrivateDataEXT",
+		"vkSetPrivateDataEXT",
+
+		// "VK_EXT_sample_locations
 		"vkCmdSetSampleLocationsEXT",
 		"vkGetPhysicalDeviceMultisamplePropertiesEXT",
-		"vkGetShaderModuleIdentifierEXT",
+
+		// "VK_EXT_shader_module_identifier
 		"vkGetShaderModuleCreateInfoIdentifierEXT",
+		"vkGetShaderModuleIdentifierEXT",
+
+		// "VK_EXT_shader_object
+		"vkCmdBindShadersEXT",
+		"vkCmdBindVertexBuffers2EXT",
+		"vkCmdSetAlphaToCoverageEnableEXT",
+		"vkCmdSetAlphaToOneEnableEXT",
+		"vkCmdSetColorBlendAdvancedEXT",
+		"vkCmdSetColorBlendEnableEXT",
+		"vkCmdSetColorBlendEquationEXT",
+		"vkCmdSetColorWriteMaskEXT",
+		"vkCmdSetConservativeRasterizationModeEXT",
+		"vkCmdSetCoverageModulationModeNV",
+		"vkCmdSetCoverageModulationTableEnableNV",
+		"vkCmdSetCoverageModulationTableNV",
+		"vkCmdSetCoverageReductionModeNV",
+		"vkCmdSetCoverageToColorEnableNV",
+		"vkCmdSetCoverageToColorLocationNV",
+		"vkCmdSetCullModeEXT",
+		"vkCmdSetDepthBiasEnableEXT",
+		"vkCmdSetDepthBoundsTestEnableEXT",
+		"vkCmdSetDepthClampEnableEXT",
+		"vkCmdSetDepthClampRangeEXT",
+		"vkCmdSetDepthClipEnableEXT",
+		"vkCmdSetDepthClipNegativeOneToOneEXT",
+		"vkCmdSetDepthCompareOpEXT",
+		"vkCmdSetDepthTestEnableEXT",
+		"vkCmdSetDepthWriteEnableEXT",
+		"vkCmdSetExtraPrimitiveOverestimationSizeEXT",
+		"vkCmdSetFrontFaceEXT",
+		"vkCmdSetLineRasterizationModeEXT",
+		"vkCmdSetLineStippleEnableEXT",
+		"vkCmdSetLogicOpEXT",
+		"vkCmdSetLogicOpEnableEXT",
+		"vkCmdSetPatchControlPointsEXT",
+		"vkCmdSetPolygonModeEXT",
+		"vkCmdSetPrimitiveRestartEnableEXT",
+		"vkCmdSetPrimitiveTopologyEXT",
+		"vkCmdSetProvokingVertexModeEXT",
+		"vkCmdSetRasterizationSamplesEXT",
+		"vkCmdSetRasterizationStreamEXT",
+		"vkCmdSetRasterizerDiscardEnableEXT",
+		"vkCmdSetRepresentativeFragmentTestEnableNV",
+		"vkCmdSetSampleLocationsEnableEXT",
+		"vkCmdSetSampleMaskEXT",
+		"vkCmdSetScissorWithCountEXT",
+		"vkCmdSetShadingRateImageEnableNV",
+		"vkCmdSetStencilOpEXT",
+		"vkCmdSetStencilTestEnableEXT",
+		"vkCmdSetTessellationDomainOriginEXT",
+		"vkCmdSetVertexInputEXT",
+		"vkCmdSetViewportSwizzleNV",
+		"vkCmdSetViewportWScalingEnableNV",
+		"vkCmdSetViewportWithCountEXT",
 		"vkCreateShadersEXT",
 		"vkDestroyShaderEXT",
 		"vkGetShaderBinaryDataEXT",
-		"vkCmdBindShadersEXT",
-		"vkCmdSetCullModeEXT",
-		"vkCmdSetFrontFaceEXT",
-		"vkCmdSetPrimitiveTopologyEXT",
-		"vkCmdSetViewportWithCountEXT",
-		"vkCmdSetScissorWithCountEXT",
-		"vkCmdBindVertexBuffers2EXT",
-		"vkCmdSetDepthTestEnableEXT",
-		"vkCmdSetDepthWriteEnableEXT",
-		"vkCmdSetDepthCompareOpEXT",
-		"vkCmdSetDepthBoundsTestEnableEXT",
-		"vkCmdSetStencilTestEnableEXT",
-		"vkCmdSetStencilOpEXT",
-		"vkCmdSetVertexInputEXT",
-		"vkCmdSetPatchControlPointsEXT",
-		"vkCmdSetRasterizerDiscardEnableEXT",
-		"vkCmdSetDepthBiasEnableEXT",
-		"vkCmdSetLogicOpEXT",
-		"vkCmdSetPrimitiveRestartEnableEXT",
-		"vkCmdSetTessellationDomainOriginEXT",
-		"vkCmdSetDepthClampEnableEXT",
-		"vkCmdSetPolygonModeEXT",
-		"vkCmdSetRasterizationSamplesEXT",
-		"vkCmdSetSampleMaskEXT",
-		"vkCmdSetAlphaToCoverageEnableEXT",
-		"vkCmdSetAlphaToOneEnableEXT",
-		"vkCmdSetLogicOpEnableEXT",
-		"vkCmdSetColorBlendEnableEXT",
-		"vkCmdSetColorBlendEquationEXT",
-		"vkCmdSetColorWriteMaskEXT",
-		"vkCmdSetRasterizationStreamEXT",
-		"vkCmdSetConservativeRasterizationModeEXT",
-		"vkCmdSetExtraPrimitiveOverestimationSizeEXT",
-		"vkCmdSetDepthClipEnableEXT",
-		"vkCmdSetSampleLocationsEnableEXT",
-		"vkCmdSetColorBlendAdvancedEXT",
-		"vkCmdSetProvokingVertexModeEXT",
-		"vkCmdSetLineRasterizationModeEXT",
-		"vkCmdSetLineStippleEnableEXT",
-		"vkCmdSetDepthClipNegativeOneToOneEXT",
-		"vkCmdSetViewportWScalingEnableNV",
-		"vkCmdSetViewportSwizzleNV",
-		"vkCmdSetCoverageToColorEnableNV",
-		"vkCmdSetCoverageToColorLocationNV",
-		"vkCmdSetCoverageModulationModeNV",
-		"vkCmdSetCoverageModulationTableEnableNV",
-		"vkCmdSetCoverageModulationTableNV",
-		"vkCmdSetShadingRateImageEnableNV",
-		"vkCmdSetRepresentativeFragmentTestEnableNV",
-		"vkCmdSetCoverageReductionModeNV",
-		"vkCmdSetDepthClampRangeEXT",
+
+		// "VK_EXT_swapchain_maintenance1
 		"vkReleaseSwapchainImagesEXT",
+
+		// "VK_EXT_tooling_info
 		"vkGetPhysicalDeviceToolPropertiesEXT",
-		"vkCmdBindTransformFeedbackBuffersEXT",
-		"vkCmdBeginTransformFeedbackEXT",
-		"vkCmdEndTransformFeedbackEXT",
+
+		// "VK_EXT_transform_feedback
 		"vkCmdBeginQueryIndexedEXT",
-		"vkCmdEndQueryIndexedEXT",
+		"vkCmdBeginTransformFeedbackEXT",
+		"vkCmdBindTransformFeedbackBuffersEXT",
 		"vkCmdDrawIndirectByteCountEXT",
+		"vkCmdEndQueryIndexedEXT",
+		"vkCmdEndTransformFeedbackEXT",
+
+		// "VK_EXT_validation_cache
 		"vkCreateValidationCacheEXT",
 		"vkDestroyValidationCacheEXT",
-		"vkMergeValidationCachesEXT",
 		"vkGetValidationCacheDataEXT",
+		"vkMergeValidationCachesEXT",
+
+		// "VK_EXT_vertex_input_dynamic_state
 		"vkCmdSetVertexInputEXT",
+
+		// "VK_FUCHSIA_buffer_collection
 		"vkCreateBufferCollectionFUCHSIA",
-		"vkSetBufferCollectionImageConstraintsFUCHSIA",
-		"vkSetBufferCollectionBufferConstraintsFUCHSIA",
 		"vkDestroyBufferCollectionFUCHSIA",
 		"vkGetBufferCollectionPropertiesFUCHSIA",
+		"vkSetBufferCollectionBufferConstraintsFUCHSIA",
+		"vkSetBufferCollectionImageConstraintsFUCHSIA",
+
+		// "VK_FUCHSIA_external_memory
 		"vkGetMemoryZirconHandleFUCHSIA",
 		"vkGetMemoryZirconHandlePropertiesFUCHSIA",
-		"vkImportSemaphoreZirconHandleFUCHSIA",
+
+		// "VK_FUCHSIA_external_semaphore
 		"vkGetSemaphoreZirconHandleFUCHSIA",
+		"vkImportSemaphoreZirconHandleFUCHSIA",
+
+		// "VK_FUCHSIA_imagepipe_surface
 		"vkCreateImagePipeSurfaceFUCHSIA",
+
+		// "VK_GGP_stream_descriptor_surface
 		"vkCreateStreamDescriptorSurfaceGGP",
-		"vkGetRefreshCycleDurationGOOGLE",
+
+		// "VK_GOOGLE_display_timing
 		"vkGetPastPresentationTimingGOOGLE",
+		"vkGetRefreshCycleDurationGOOGLE",
+
+		// "VK_HUAWEI_cluster_culling_shader
 		"vkCmdDrawClusterHUAWEI",
 		"vkCmdDrawClusterIndirectHUAWEI",
+
+		// "VK_HUAWEI_invocation_mask
 		"vkCmdBindInvocationMaskHUAWEI",
-		"vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI",
+
+		// "VK_HUAWEI_subpass_shading
 		"vkCmdSubpassShadingHUAWEI",
-		"vkInitializePerformanceApiINTEL",
-		"vkUninitializePerformanceApiINTEL",
-		"vkCmdSetPerformanceMarkerINTEL",
-		"vkCmdSetPerformanceStreamMarkerINTEL",
-		"vkCmdSetPerformanceOverrideINTEL",
+		"vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI",
+
+		// "VK_INTEL_performance_query
 		"vkAcquirePerformanceConfigurationINTEL",
-		"vkReleasePerformanceConfigurationINTEL",
-		"vkQueueSetPerformanceConfigurationINTEL",
+		"vkCmdSetPerformanceMarkerINTEL",
+		"vkCmdSetPerformanceOverrideINTEL",
+		"vkCmdSetPerformanceStreamMarkerINTEL",
 		"vkGetPerformanceParameterINTEL",
-		"vkCreateAccelerationStructureKHR",
-		"vkDestroyAccelerationStructureKHR",
-		"vkCmdBuildAccelerationStructuresKHR",
-		"vkCmdBuildAccelerationStructuresIndirectKHR",
+		"vkInitializePerformanceApiINTEL",
+		"vkQueueSetPerformanceConfigurationINTEL",
+		"vkReleasePerformanceConfigurationINTEL",
+		"vkUninitializePerformanceApiINTEL",
+
+		// "VK_KHR_acceleration_structure
 		"vkBuildAccelerationStructuresKHR",
-		"vkCopyAccelerationStructureKHR",
-		"vkCopyAccelerationStructureToMemoryKHR",
-		"vkCopyMemoryToAccelerationStructureKHR",
-		"vkWriteAccelerationStructuresPropertiesKHR",
+		"vkCmdBuildAccelerationStructuresIndirectKHR",
+		"vkCmdBuildAccelerationStructuresKHR",
 		"vkCmdCopyAccelerationStructureKHR",
 		"vkCmdCopyAccelerationStructureToMemoryKHR",
 		"vkCmdCopyMemoryToAccelerationStructureKHR",
-		"vkGetAccelerationStructureDeviceAddressKHR",
 		"vkCmdWriteAccelerationStructuresPropertiesKHR",
-		"vkGetDeviceAccelerationStructureCompatibilityKHR",
+		"vkCopyAccelerationStructureKHR",
+		"vkCopyAccelerationStructureToMemoryKHR",
+		"vkCopyMemoryToAccelerationStructureKHR",
+		"vkCreateAccelerationStructureKHR",
+		"vkDestroyAccelerationStructureKHR",
 		"vkGetAccelerationStructureBuildSizesKHR",
+		"vkGetAccelerationStructureDeviceAddressKHR",
+		"vkGetDeviceAccelerationStructureCompatibilityKHR",
+		"vkWriteAccelerationStructuresPropertiesKHR",
+
+		// "VK_KHR_android_surface
 		"vkCreateAndroidSurfaceKHR",
+
+		// "VK_KHR_bind_memory2
 		"vkBindBufferMemory2KHR",
 		"vkBindImageMemory2KHR",
+
+		// "VK_KHR_buffer_device_address
 		"vkGetBufferDeviceAddressKHR",
 		"vkGetBufferOpaqueCaptureAddressKHR",
 		"vkGetDeviceMemoryOpaqueCaptureAddressKHR",
-		"vkGetPhysicalDeviceCalibrateableTimeDomainsKHR",
+
+		// "VK_KHR_calibrated_timestamps
 		"vkGetCalibratedTimestampsKHR",
+		"vkGetPhysicalDeviceCalibrateableTimeDomainsKHR",
+
+		// "VK_KHR_cooperative_matrix
 		"vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR",
-		"vkCmdCopyBuffer2KHR",
-		"vkCmdCopyImage2KHR",
-		"vkCmdCopyBufferToImage2KHR",
-		"vkCmdCopyImageToBuffer2KHR",
+
+		// "VK_KHR_copy_commands2
 		"vkCmdBlitImage2KHR",
+		"vkCmdCopyBuffer2KHR",
+		"vkCmdCopyBufferToImage2KHR",
+		"vkCmdCopyImage2KHR",
+		"vkCmdCopyImageToBuffer2KHR",
 		"vkCmdResolveImage2KHR",
-		"vkCreateRenderPass2KHR",
+
+		// "VK_KHR_create_renderpass2
 		"vkCmdBeginRenderPass2KHR",
-		"vkCmdNextSubpass2KHR",
 		"vkCmdEndRenderPass2KHR",
+		"vkCmdNextSubpass2KHR",
+		"vkCreateRenderPass2KHR",
+
+		// "VK_KHR_deferred_host_operations
 		"vkCreateDeferredOperationKHR",
+		"vkDeferredOperationJoinKHR",
 		"vkDestroyDeferredOperationKHR",
 		"vkGetDeferredOperationMaxConcurrencyKHR",
 		"vkGetDeferredOperationResultKHR",
-		"vkDeferredOperationJoinKHR",
+
+		// "VK_KHR_descriptor_update_template
+		"vkCmdPushDescriptorSetWithTemplateKHR",
 		"vkCreateDescriptorUpdateTemplateKHR",
 		"vkDestroyDescriptorUpdateTemplateKHR",
 		"vkUpdateDescriptorSetWithTemplateKHR",
-		"vkCmdPushDescriptorSetWithTemplateKHR",
-		"vkGetDeviceGroupPeerMemoryFeaturesKHR",
-		"vkCmdSetDeviceMaskKHR",
+
+		// "VK_KHR_device_group
+		"vkAcquireNextImage2KHR",
 		"vkCmdDispatchBaseKHR",
+		"vkCmdSetDeviceMaskKHR",
+		"vkGetDeviceGroupPeerMemoryFeaturesKHR",
 		"vkGetDeviceGroupPresentCapabilitiesKHR",
 		"vkGetDeviceGroupSurfacePresentModesKHR",
 		"vkGetPhysicalDevicePresentRectanglesKHR",
-		"vkAcquireNextImage2KHR",
+
+		// "VK_KHR_device_group_creation
 		"vkEnumeratePhysicalDeviceGroupsKHR",
-		"vkGetPhysicalDeviceDisplayPropertiesKHR",
-		"vkGetPhysicalDeviceDisplayPlanePropertiesKHR",
-		"vkGetDisplayPlaneSupportedDisplaysKHR",
-		"vkGetDisplayModePropertiesKHR",
+
+		// "VK_KHR_display
 		"vkCreateDisplayModeKHR",
-		"vkGetDisplayPlaneCapabilitiesKHR",
 		"vkCreateDisplayPlaneSurfaceKHR",
+		"vkGetDisplayModePropertiesKHR",
+		"vkGetDisplayPlaneCapabilitiesKHR",
+		"vkGetDisplayPlaneSupportedDisplaysKHR",
+		"vkGetPhysicalDeviceDisplayPlanePropertiesKHR",
+		"vkGetPhysicalDeviceDisplayPropertiesKHR",
+
+		// "VK_KHR_display_swapchain
 		"vkCreateSharedSwapchainsKHR",
-		"vkCmdDrawIndirectCountKHR",
+
+		// "VK_KHR_draw_indirect_count
 		"vkCmdDrawIndexedIndirectCountKHR",
+		"vkCmdDrawIndirectCountKHR",
+
+		// "VK_KHR_dynamic_rendering
 		"vkCmdBeginRenderingKHR",
 		"vkCmdEndRenderingKHR",
+
+		// "VK_KHR_dynamic_rendering_local_read
 		"vkCmdSetRenderingAttachmentLocationsKHR",
 		"vkCmdSetRenderingInputAttachmentIndicesKHR",
+
+		// "VK_KHR_external_fence_capabilities
 		"vkGetPhysicalDeviceExternalFencePropertiesKHR",
-		"vkImportFenceFdKHR",
+
+		// "VK_KHR_external_fence_fd
 		"vkGetFenceFdKHR",
-		"vkImportFenceWin32HandleKHR",
+		"vkImportFenceFdKHR",
+
+		// "VK_KHR_external_fence_win32
 		"vkGetFenceWin32HandleKHR",
+		"vkImportFenceWin32HandleKHR",
+
+		// "VK_KHR_external_memory_capabilities
 		"vkGetPhysicalDeviceExternalBufferPropertiesKHR",
+
+		// "VK_KHR_external_memory_fd
 		"vkGetMemoryFdKHR",
 		"vkGetMemoryFdPropertiesKHR",
+
+		// "VK_KHR_external_memory_win32
 		"vkGetMemoryWin32HandleKHR",
 		"vkGetMemoryWin32HandlePropertiesKHR",
+
+		// "VK_KHR_external_semaphore_capabilities
 		"vkGetPhysicalDeviceExternalSemaphorePropertiesKHR",
-		"vkImportSemaphoreFdKHR",
+
+		// "VK_KHR_external_semaphore_fd
 		"vkGetSemaphoreFdKHR",
-		"vkImportSemaphoreWin32HandleKHR",
+		"vkImportSemaphoreFdKHR",
+
+		// "VK_KHR_external_semaphore_win32
 		"vkGetSemaphoreWin32HandleKHR",
-		"vkGetPhysicalDeviceFragmentShadingRatesKHR",
+		"vkImportSemaphoreWin32HandleKHR",
+
+		// "VK_KHR_fragment_shading_rate
 		"vkCmdSetFragmentShadingRateKHR",
-		"vkGetPhysicalDeviceDisplayProperties2KHR",
-		"vkGetPhysicalDeviceDisplayPlaneProperties2KHR",
+		"vkGetPhysicalDeviceFragmentShadingRatesKHR",
+
+		// "VK_KHR_get_display_properties2
 		"vkGetDisplayModeProperties2KHR",
 		"vkGetDisplayPlaneCapabilities2KHR",
-		"vkGetImageMemoryRequirements2KHR",
+		"vkGetPhysicalDeviceDisplayPlaneProperties2KHR",
+		"vkGetPhysicalDeviceDisplayProperties2KHR",
+
+		// "VK_KHR_get_memory_requirements2
 		"vkGetBufferMemoryRequirements2KHR",
+		"vkGetImageMemoryRequirements2KHR",
 		"vkGetImageSparseMemoryRequirements2KHR",
+
+		// "VK_KHR_get_physical_device_properties2
 		"vkGetPhysicalDeviceFeatures2KHR",
-		"vkGetPhysicalDeviceProperties2KHR",
 		"vkGetPhysicalDeviceFormatProperties2KHR",
 		"vkGetPhysicalDeviceImageFormatProperties2KHR",
-		"vkGetPhysicalDeviceQueueFamilyProperties2KHR",
 		"vkGetPhysicalDeviceMemoryProperties2KHR",
+		"vkGetPhysicalDeviceProperties2KHR",
+		"vkGetPhysicalDeviceQueueFamilyProperties2KHR",
 		"vkGetPhysicalDeviceSparseImageFormatProperties2KHR",
+
+		// "VK_KHR_get_surface_capabilities2
 		"vkGetPhysicalDeviceSurfaceCapabilities2KHR",
 		"vkGetPhysicalDeviceSurfaceFormats2KHR",
+
+		// "VK_KHR_line_rasterization
 		"vkCmdSetLineStippleKHR",
+
+		// "VK_KHR_maintenance1
 		"vkTrimCommandPoolKHR",
+
+		// "VK_KHR_maintenance3
 		"vkGetDescriptorSetLayoutSupportKHR",
+
+		// "VK_KHR_maintenance4
 		"vkGetDeviceBufferMemoryRequirementsKHR",
 		"vkGetDeviceImageMemoryRequirementsKHR",
 		"vkGetDeviceImageSparseMemoryRequirementsKHR",
+
+		// "VK_KHR_maintenance5
 		"vkCmdBindIndexBuffer2KHR",
-		"vkGetRenderingAreaGranularityKHR",
 		"vkGetDeviceImageSubresourceLayoutKHR",
 		"vkGetImageSubresourceLayout2KHR",
+		"vkGetRenderingAreaGranularityKHR",
+
+		// "VK_KHR_maintenance6
+		"vkCmdBindDescriptorBufferEmbeddedSamplers2EXT",
 		"vkCmdBindDescriptorSets2KHR",
 		"vkCmdPushConstants2KHR",
 		"vkCmdPushDescriptorSet2KHR",
 		"vkCmdPushDescriptorSetWithTemplate2KHR",
 		"vkCmdSetDescriptorBufferOffsets2EXT",
-		"vkCmdBindDescriptorBufferEmbeddedSamplers2EXT",
+
+		// "VK_KHR_map_memory2
 		"vkMapMemory2KHR",
 		"vkUnmapMemory2KHR",
+
+		// "VK_KHR_performance_query
+		"vkAcquireProfilingLockKHR",
 		"vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR",
 		"vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR",
-		"vkAcquireProfilingLockKHR",
 		"vkReleaseProfilingLockKHR",
+
+		// "VK_KHR_pipeline_binary
 		"vkCreatePipelineBinariesKHR",
 		"vkDestroyPipelineBinaryKHR",
-		"vkGetPipelineKeyKHR",
 		"vkGetPipelineBinaryDataKHR",
+		"vkGetPipelineKeyKHR",
 		"vkReleaseCapturedPipelineDataKHR",
+
+		// "VK_KHR_pipeline_executable_properties
+		"vkGetPipelineExecutableInternalRepresentationsKHR",
 		"vkGetPipelineExecutablePropertiesKHR",
 		"vkGetPipelineExecutableStatisticsKHR",
-		"vkGetPipelineExecutableInternalRepresentationsKHR",
+
+		// "VK_KHR_present_wait
 		"vkWaitForPresentKHR",
+
+		// "VK_KHR_present_wait2
 		"vkWaitForPresent2KHR",
+
+		// "VK_KHR_push_descriptor
 		"vkCmdPushDescriptorSetKHR",
 		"vkCmdPushDescriptorSetWithTemplateKHR",
+
+		// "VK_KHR_ray_tracing_maintenance1
 		"vkCmdTraceRaysIndirect2KHR",
+
+		// "VK_KHR_ray_tracing_pipeline
+		"vkCmdSetRayTracingPipelineStackSizeKHR",
+		"vkCmdTraceRaysIndirectKHR",
 		"vkCmdTraceRaysKHR",
 		"vkCreateRayTracingPipelinesKHR",
-		"vkGetRayTracingShaderGroupHandlesKHR",
 		"vkGetRayTracingCaptureReplayShaderGroupHandlesKHR",
-		"vkCmdTraceRaysIndirectKHR",
+		"vkGetRayTracingShaderGroupHandlesKHR",
 		"vkGetRayTracingShaderGroupStackSizeKHR",
-		"vkCmdSetRayTracingPipelineStackSizeKHR",
+
+		// "VK_KHR_sampler_ycbcr_conversion
 		"vkCreateSamplerYcbcrConversionKHR",
 		"vkDestroySamplerYcbcrConversionKHR",
+
+		// "VK_KHR_shared_presentable_image
 		"vkGetSwapchainStatusKHR",
+
+		// "VK_KHR_surface
 		"vkDestroySurfaceKHR",
-		"vkGetPhysicalDeviceSurfaceSupportKHR",
 		"vkGetPhysicalDeviceSurfaceCapabilitiesKHR",
 		"vkGetPhysicalDeviceSurfaceFormatsKHR",
 		"vkGetPhysicalDeviceSurfacePresentModesKHR",
+		"vkGetPhysicalDeviceSurfaceSupportKHR",
+
+		// "VK_KHR_swapchain
+		"vkAcquireNextImage2KHR",
+		"vkAcquireNextImageKHR",
 		"vkCreateSwapchainKHR",
 		"vkDestroySwapchainKHR",
-		"vkGetSwapchainImagesKHR",
-		"vkAcquireNextImageKHR",
-		"vkQueuePresentKHR",
 		"vkGetDeviceGroupPresentCapabilitiesKHR",
 		"vkGetDeviceGroupSurfacePresentModesKHR",
 		"vkGetPhysicalDevicePresentRectanglesKHR",
-		"vkAcquireNextImage2KHR",
+		"vkGetSwapchainImagesKHR",
+		"vkQueuePresentKHR",
+
+		// "VK_KHR_swapchain_maintenance1
 		"vkReleaseSwapchainImagesKHR",
-		"vkCmdSetEvent2KHR",
-		"vkCmdResetEvent2KHR",
-		"vkCmdWaitEvents2KHR",
+
+		// "VK_KHR_synchronization2
 		"vkCmdPipelineBarrier2KHR",
+		"vkCmdResetEvent2KHR",
+		"vkCmdSetEvent2KHR",
+		"vkCmdWaitEvents2KHR",
 		"vkCmdWriteTimestamp2KHR",
 		"vkQueueSubmit2KHR",
+
+		// "VK_KHR_timeline_semaphore
 		"vkGetSemaphoreCounterValueKHR",
-		"vkWaitSemaphoresKHR",
 		"vkSignalSemaphoreKHR",
+		"vkWaitSemaphoresKHR",
+
+		// "VK_KHR_video_decode_queue
 		"vkCmdDecodeVideoKHR",
-		"vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR",
-		"vkGetEncodedVideoSessionParametersKHR",
+
+		// "VK_KHR_video_encode_queue
 		"vkCmdEncodeVideoKHR",
+		"vkGetEncodedVideoSessionParametersKHR",
+		"vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR",
+
+		// "VK_KHR_video_queue
+		"vkBindVideoSessionMemoryKHR",
+		"vkCmdBeginVideoCodingKHR",
+		"vkCmdControlVideoCodingKHR",
+		"vkCmdEndVideoCodingKHR",
+		"vkCreateVideoSessionKHR",
+		"vkCreateVideoSessionParametersKHR",
+		"vkDestroyVideoSessionKHR",
+		"vkDestroyVideoSessionParametersKHR",
 		"vkGetPhysicalDeviceVideoCapabilitiesKHR",
 		"vkGetPhysicalDeviceVideoFormatPropertiesKHR",
-		"vkCreateVideoSessionKHR",
-		"vkDestroyVideoSessionKHR",
 		"vkGetVideoSessionMemoryRequirementsKHR",
-		"vkBindVideoSessionMemoryKHR",
-		"vkCreateVideoSessionParametersKHR",
 		"vkUpdateVideoSessionParametersKHR",
-		"vkDestroyVideoSessionParametersKHR",
-		"vkCmdBeginVideoCodingKHR",
-		"vkCmdEndVideoCodingKHR",
-		"vkCmdControlVideoCodingKHR",
+
+		// "VK_KHR_wayland_surface
 		"vkCreateWaylandSurfaceKHR",
 		"vkGetPhysicalDeviceWaylandPresentationSupportKHR",
+
+		// "VK_KHR_win32_surface
 		"vkCreateWin32SurfaceKHR",
 		"vkGetPhysicalDeviceWin32PresentationSupportKHR",
+
+		// "VK_KHR_xcb_surface
 		"vkCreateXcbSurfaceKHR",
 		"vkGetPhysicalDeviceXcbPresentationSupportKHR",
+
+		// "VK_KHR_xlib_surface
 		"vkCreateXlibSurfaceKHR",
 		"vkGetPhysicalDeviceXlibPresentationSupportKHR",
+
+		// "VK_MVK_ios_surface
 		"vkCreateIOSSurfaceMVK",
+
+		// "VK_MVK_macos_surface
 		"vkCreateMacOSSurfaceMVK",
+
+		// "VK_NN_vi_surface
 		"vkCreateViSurfaceNN",
-		"vkCreateCuModuleNVX",
-		"vkCreateCuFunctionNVX",
-		"vkDestroyCuModuleNVX",
-		"vkDestroyCuFunctionNVX",
+
+		// "VK_NVX_binary_import
 		"vkCmdCuLaunchKernelNVX",
-		"vkGetImageViewHandleNVX",
-		"vkGetImageViewHandle64NVX",
+		"vkCreateCuFunctionNVX",
+		"vkCreateCuModuleNVX",
+		"vkDestroyCuFunctionNVX",
+		"vkDestroyCuModuleNVX",
+
+		// "VK_NVX_image_view_handle
 		"vkGetImageViewAddressNVX",
+		"vkGetImageViewHandle64NVX",
+		"vkGetImageViewHandleNVX",
+
+		// "VK_NV_acquire_winrt_display
 		"vkAcquireWinrtDisplayNV",
 		"vkGetWinrtDisplayNV",
+
+		// "VK_NV_clip_space_w_scaling
 		"vkCmdSetViewportWScalingNV",
-		"vkGetClusterAccelerationStructureBuildSizesNV",
+
+		// "VK_NV_cluster_acceleration_structure
 		"vkCmdBuildClusterAccelerationStructureIndirectNV",
+		"vkGetClusterAccelerationStructureBuildSizesNV",
+
+		// "VK_NV_cooperative_matrix
 		"vkGetPhysicalDeviceCooperativeMatrixPropertiesNV",
+
+		// "VK_NV_cooperative_matrix2
 		"vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV",
-		"vkGetPhysicalDeviceCooperativeVectorPropertiesNV",
-		"vkConvertCooperativeVectorMatrixNV",
+
+		// "VK_NV_cooperative_vector
 		"vkCmdConvertCooperativeVectorMatrixNV",
+		"vkConvertCooperativeVectorMatrixNV",
+		"vkGetPhysicalDeviceCooperativeVectorPropertiesNV",
+
+		// "VK_NV_copy_memory_indirect
 		"vkCmdCopyMemoryIndirectNV",
 		"vkCmdCopyMemoryToImageIndirectNV",
+
+		// "VK_NV_coverage_reduction_mode
 		"vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV",
-		"vkCreateCudaModuleNV",
-		"vkGetCudaModuleCacheNV",
-		"vkCreateCudaFunctionNV",
-		"vkDestroyCudaModuleNV",
-		"vkDestroyCudaFunctionNV",
+
+		// "VK_NV_cuda_kernel_launch
 		"vkCmdCudaLaunchKernelNV",
+		"vkCreateCudaFunctionNV",
+		"vkCreateCudaModuleNV",
+		"vkDestroyCudaFunctionNV",
+		"vkDestroyCudaModuleNV",
+		"vkGetCudaModuleCacheNV",
+
+		// "VK_NV_device_diagnostic_checkpoints
 		"vkCmdSetCheckpointNV",
-		"vkGetQueueCheckpointDataNV",
 		"vkGetQueueCheckpointData2NV",
-		"vkGetGeneratedCommandsMemoryRequirementsNV",
-		"vkCmdPreprocessGeneratedCommandsNV",
-		"vkCmdExecuteGeneratedCommandsNV",
+		"vkGetQueueCheckpointDataNV",
+
+		// "VK_NV_device_generated_commands
 		"vkCmdBindPipelineShaderGroupNV",
+		"vkCmdExecuteGeneratedCommandsNV",
+		"vkCmdPreprocessGeneratedCommandsNV",
 		"vkCreateIndirectCommandsLayoutNV",
 		"vkDestroyIndirectCommandsLayoutNV",
-		"vkGetPipelineIndirectMemoryRequirementsNV",
+		"vkGetGeneratedCommandsMemoryRequirementsNV",
+
+		// "VK_NV_device_generated_commands_compute
 		"vkCmdUpdatePipelineIndirectBufferNV",
 		"vkGetPipelineIndirectDeviceAddressNV",
+		"vkGetPipelineIndirectMemoryRequirementsNV",
+
+		// "VK_NV_external_compute_queue
 		"vkCreateExternalComputeQueueNV",
 		"vkDestroyExternalComputeQueueNV",
 		"vkGetExternalComputeQueueDataNV",
+
+		// "VK_NV_external_memory_capabilities
 		"vkGetPhysicalDeviceExternalImageFormatPropertiesNV",
+
+		// "VK_NV_external_memory_rdma
 		"vkGetMemoryRemoteAddressNV",
+
+		// "VK_NV_external_memory_win32
 		"vkGetMemoryWin32HandleNV",
+
+		// "VK_NV_fragment_shading_rate_enums
 		"vkCmdSetFragmentShadingRateEnumNV",
-		"vkSetLatencySleepModeNV",
-		"vkLatencySleepNV",
-		"vkSetLatencyMarkerNV",
+
+		// "VK_NV_low_latency2
 		"vkGetLatencyTimingsNV",
+		"vkLatencySleepNV",
 		"vkQueueNotifyOutOfBandNV",
-		"vkCmdDecompressMemoryNV",
+		"vkSetLatencyMarkerNV",
+		"vkSetLatencySleepModeNV",
+
+		// "VK_NV_memory_decompression
 		"vkCmdDecompressMemoryIndirectCountNV",
-		"vkCmdDrawMeshTasksNV",
-		"vkCmdDrawMeshTasksIndirectNV",
+		"vkCmdDecompressMemoryNV",
+
+		// "VK_NV_mesh_shader
 		"vkCmdDrawMeshTasksIndirectCountNV",
-		"vkGetPhysicalDeviceOpticalFlowImageFormatsNV",
-		"vkCreateOpticalFlowSessionNV",
-		"vkDestroyOpticalFlowSessionNV",
+		"vkCmdDrawMeshTasksIndirectNV",
+		"vkCmdDrawMeshTasksNV",
+
+		// "VK_NV_optical_flow
 		"vkBindOpticalFlowSessionImageNV",
 		"vkCmdOpticalFlowExecuteNV",
-		"vkGetPartitionedAccelerationStructuresBuildSizesNV",
+		"vkCreateOpticalFlowSessionNV",
+		"vkDestroyOpticalFlowSessionNV",
+		"vkGetPhysicalDeviceOpticalFlowImageFormatsNV",
+
+		// "VK_NV_partitioned_acceleration_structure
 		"vkCmdBuildPartitionedAccelerationStructuresNV",
-		"vkCreateAccelerationStructureNV",
-		"vkDestroyAccelerationStructureNV",
-		"vkGetAccelerationStructureMemoryRequirementsNV",
+		"vkGetPartitionedAccelerationStructuresBuildSizesNV",
+
+		// "VK_NV_ray_tracing
 		"vkBindAccelerationStructureMemoryNV",
 		"vkCmdBuildAccelerationStructureNV",
 		"vkCmdCopyAccelerationStructureNV",
 		"vkCmdTraceRaysNV",
-		"vkCreateRayTracingPipelinesNV",
-		"vkGetRayTracingShaderGroupHandlesNV",
-		"vkGetAccelerationStructureHandleNV",
 		"vkCmdWriteAccelerationStructuresPropertiesNV",
 		"vkCompileDeferredNV",
+		"vkCreateAccelerationStructureNV",
+		"vkCreateRayTracingPipelinesNV",
+		"vkDestroyAccelerationStructureNV",
+		"vkGetAccelerationStructureHandleNV",
+		"vkGetAccelerationStructureMemoryRequirementsNV",
+		"vkGetRayTracingShaderGroupHandlesNV",
+
+		// "VK_NV_scissor_exclusive
 		"vkCmdSetExclusiveScissorEnableNV",
 		"vkCmdSetExclusiveScissorNV",
+
+		// "VK_NV_shading_rate_image
 		"vkCmdBindShadingRateImageNV",
-		"vkCmdSetViewportShadingRatePaletteNV",
 		"vkCmdSetCoarseSampleOrderNV",
+		"vkCmdSetViewportShadingRatePaletteNV",
+
+		// "VK_OHOS_surface
 		"vkCreateSurfaceOHOS",
+
+		// "VK_QCOM_tile_memory_heap
 		"vkCmdBindTileMemoryQCOM",
-		"vkGetFramebufferTilePropertiesQCOM",
+
+		// "VK_QCOM_tile_properties
 		"vkGetDynamicRenderingTilePropertiesQCOM",
-		"vkCmdDispatchTileQCOM",
+		"vkGetFramebufferTilePropertiesQCOM",
+
+		// "VK_QCOM_tile_shading
 		"vkCmdBeginPerTileExecutionQCOM",
+		"vkCmdDispatchTileQCOM",
 		"vkCmdEndPerTileExecutionQCOM",
+
+		// "VK_QNX_external_memory_screen_buffer
 		"vkGetScreenBufferPropertiesQNX",
+
+		// "VK_QNX_screen_surface
 		"vkCreateScreenSurfaceQNX",
 		"vkGetPhysicalDeviceScreenPresentationSupportQNX",
-		"vkGetDescriptorSetLayoutHostMappingInfoVALVE",
+
+		// "VK_VALVE_descriptor_set_host_mapping
 		"vkGetDescriptorSetHostMappingVALVE",
+		"vkGetDescriptorSetLayoutHostMappingInfoVALVE",
     };
 
     bool fail = false;

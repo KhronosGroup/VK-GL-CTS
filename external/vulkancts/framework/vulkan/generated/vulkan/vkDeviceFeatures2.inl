@@ -575,7 +575,7 @@ tcu::TestStatus testPhysicalDeviceFeatureComputeShaderDerivativesFeaturesKHR (Co
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR deviceComputeShaderDerivativesFeaturesKHR[count];
-    const bool                                          isComputeShaderDerivativesFeaturesKHR = checkExtension(properties, "VK_KHR_compute_shader_derivatives");
+    const bool                                          isComputeShaderDerivativesFeaturesKHR = checkExtension(properties, "VK_KHR_compute_shader_derivatives") || checkExtension(properties, "VK_NV_compute_shader_derivatives");
 
     if (!isComputeShaderDerivativesFeaturesKHR)
         return tcu::TestStatus::pass("Querying not supported");
@@ -1498,7 +1498,7 @@ tcu::TestStatus testPhysicalDeviceFeatureFragmentDensityMapOffsetFeaturesEXT (Co
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT deviceFragmentDensityMapOffsetFeaturesEXT[count];
-    const bool                                          isFragmentDensityMapOffsetFeaturesEXT = checkExtension(properties, "VK_EXT_fragment_density_map_offset");
+    const bool                                          isFragmentDensityMapOffsetFeaturesEXT = checkExtension(properties, "VK_QCOM_fragment_density_map_offset") || checkExtension(properties, "VK_EXT_fragment_density_map_offset");
 
     if (!isFragmentDensityMapOffsetFeaturesEXT)
         return tcu::TestStatus::pass("Querying not supported");
@@ -1537,7 +1537,7 @@ tcu::TestStatus testPhysicalDeviceFeatureFragmentShaderBarycentricFeaturesKHR (C
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR deviceFragmentShaderBarycentricFeaturesKHR[count];
-    const bool                                           isFragmentShaderBarycentricFeaturesKHR = checkExtension(properties, "VK_KHR_fragment_shader_barycentric");
+    const bool                                           isFragmentShaderBarycentricFeaturesKHR = checkExtension(properties, "VK_KHR_fragment_shader_barycentric") || checkExtension(properties, "VK_NV_fragment_shader_barycentric");
 
     if (!isFragmentShaderBarycentricFeaturesKHR)
         return tcu::TestStatus::pass("Querying not supported");
@@ -2843,7 +2843,7 @@ tcu::TestStatus testPhysicalDeviceFeatureMutableDescriptorTypeFeaturesEXT (Conte
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT deviceMutableDescriptorTypeFeaturesEXT[count];
-    const bool                                       isMutableDescriptorTypeFeaturesEXT = checkExtension(properties, "VK_EXT_mutable_descriptor_type");
+    const bool                                       isMutableDescriptorTypeFeaturesEXT = checkExtension(properties, "VK_VALVE_mutable_descriptor_type") || checkExtension(properties, "VK_EXT_mutable_descriptor_type");
 
     if (!isMutableDescriptorTypeFeaturesEXT)
         return tcu::TestStatus::pass("Querying not supported");
@@ -3880,7 +3880,7 @@ tcu::TestStatus testPhysicalDeviceFeatureRasterizationOrderAttachmentAccessFeatu
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT deviceRasterizationOrderAttachmentAccessFeaturesEXT[count];
-    const bool                                                    isRasterizationOrderAttachmentAccessFeaturesEXT = checkExtension(properties, "VK_EXT_rasterization_order_attachment_access") || checkExtension(properties, "VK_ARM_rasterization_order_attachment_access");
+    const bool                                                    isRasterizationOrderAttachmentAccessFeaturesEXT = checkExtension(properties, "VK_ARM_rasterization_order_attachment_access") || checkExtension(properties, "VK_EXT_rasterization_order_attachment_access");
 
     if (!isRasterizationOrderAttachmentAccessFeaturesEXT)
         return tcu::TestStatus::pass("Querying not supported");
@@ -5759,7 +5759,7 @@ tcu::TestStatus testPhysicalDeviceFeatureVertexAttributeRobustnessFeaturesEXT (C
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT deviceVertexAttributeRobustnessFeaturesEXT[count];
-    const bool                                           isVertexAttributeRobustnessFeaturesEXT = checkExtension(properties, "VK_KHR_maintenance9") || checkExtension(properties, "VK_EXT_vertex_attribute_robustness");
+    const bool                                           isVertexAttributeRobustnessFeaturesEXT = checkExtension(properties, "VK_EXT_vertex_attribute_robustness");
 
     if (!isVertexAttributeRobustnessFeaturesEXT)
         return tcu::TestStatus::pass("Querying not supported");
@@ -6576,8 +6576,8 @@ tcu::TestStatus createDeviceWithPromoted11Structures (Context& context)
 	VkPhysicalDeviceMultiviewFeatures deviceMultiviewFeatures = initVulkanStructure(&device16BitStorageFeatures);
 	VkPhysicalDeviceProtectedMemoryFeatures deviceProtectedMemoryFeatures = initVulkanStructure(&deviceMultiviewFeatures);
 	VkPhysicalDeviceSamplerYcbcrConversionFeatures deviceSamplerYcbcrConversionFeatures = initVulkanStructure(&deviceProtectedMemoryFeatures);
-	VkPhysicalDeviceShaderDrawParameterFeatures deviceShaderDrawParametersFeatures = initVulkanStructure(&deviceSamplerYcbcrConversionFeatures);
-	VkPhysicalDeviceVariablePointerFeatures deviceVariablePointersFeatures = initVulkanStructure(&deviceShaderDrawParametersFeatures);
+	VkPhysicalDeviceShaderDrawParametersFeatures deviceShaderDrawParametersFeatures = initVulkanStructure(&deviceSamplerYcbcrConversionFeatures);
+	VkPhysicalDeviceVariablePointersFeatures deviceVariablePointersFeatures = initVulkanStructure(&deviceShaderDrawParametersFeatures);
 	VkPhysicalDeviceFeatures2 extFeatures = initVulkanStructure(&deviceVariablePointersFeatures);
 
     instanceDriver.getPhysicalDeviceFeatures2 (physicalDevice, &extFeatures);

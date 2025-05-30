@@ -359,7 +359,7 @@ VertexAttributeDivisorInstance::VertexAttributeDivisorInstance(Context &context,
                                                               DE_LENGTH_OF_ARRAY(vertexInputAttributeDescriptions),
                                                               vertexInputAttributeDescriptions);
 
-    const vk::VkVertexInputBindingDivisorDescriptionEXT vertexInputBindingDivisorDescription = {
+    const vk::VkVertexInputBindingDivisorDescription vertexInputBindingDivisorDescription = {
         1u,
         m_params.attribDivisor,
     };

@@ -10,6 +10,7 @@ virtual VkResult	createAndroidSurfaceKHR												(VkInstance instance, const 
 virtual VkResult	createDebugReportCallbackEXT										(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback) const = 0;
 virtual VkResult	createDebugUtilsMessengerEXT										(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pMessenger) const = 0;
 virtual VkResult	createDevice														(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice) const = 0;
+virtual VkResult	createDirectFBSurfaceEXT											(VkInstance instance, const VkDirectFBSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const = 0;
 virtual VkResult	createDisplayModeKHR												(VkPhysicalDevice physicalDevice, VkDisplayKHR display, const VkDisplayModeCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDisplayModeKHR* pMode) const = 0;
 virtual VkResult	createDisplayPlaneSurfaceKHR										(VkInstance instance, const VkDisplaySurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const = 0;
 virtual VkResult	createHeadlessSurfaceEXT											(VkInstance instance, const VkHeadlessSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const = 0;
@@ -46,6 +47,7 @@ virtual VkResult	getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesN
 virtual VkResult	getPhysicalDeviceCooperativeMatrixPropertiesKHR						(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesKHR* pProperties) const = 0;
 virtual VkResult	getPhysicalDeviceCooperativeMatrixPropertiesNV						(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties) const = 0;
 virtual VkResult	getPhysicalDeviceCooperativeVectorPropertiesNV						(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeVectorPropertiesNV* pProperties) const = 0;
+virtual VkBool32	getPhysicalDeviceDirectFBPresentationSupportEXT						(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, pt::IDirectFB* dfb) const = 0;
 virtual VkResult	getPhysicalDeviceDisplayPlaneProperties2KHR							(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkDisplayPlaneProperties2KHR* pProperties) const = 0;
 virtual VkResult	getPhysicalDeviceDisplayPlanePropertiesKHR							(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkDisplayPlanePropertiesKHR* pProperties) const = 0;
 virtual VkResult	getPhysicalDeviceDisplayProperties2KHR								(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkDisplayProperties2KHR* pProperties) const = 0;

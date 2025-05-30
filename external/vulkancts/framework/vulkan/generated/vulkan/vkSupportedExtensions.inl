@@ -33,25 +33,6 @@ void getCoreDeviceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char
         dst.push_back("VK_KHR_uniform_buffer_standard_layout");
         dst.push_back("VK_KHR_vulkan_memory_model");
     }
-    if (coreVersion >= VK_API_VERSION_1_4)
-    {
-        dst.push_back("VK_EXT_host_image_copy");
-        dst.push_back("VK_EXT_pipeline_protected_access");
-        dst.push_back("VK_EXT_pipeline_robustness");
-        dst.push_back("VK_KHR_dynamic_rendering_local_read");
-        dst.push_back("VK_KHR_global_priority");
-        dst.push_back("VK_KHR_index_type_uint8");
-        dst.push_back("VK_KHR_line_rasterization");
-        dst.push_back("VK_KHR_load_store_op_none");
-        dst.push_back("VK_KHR_maintenance5");
-        dst.push_back("VK_KHR_maintenance6");
-        dst.push_back("VK_KHR_map_memory2");
-        dst.push_back("VK_KHR_push_descriptor");
-        dst.push_back("VK_KHR_shader_expect_assume");
-        dst.push_back("VK_KHR_shader_float_controls2");
-        dst.push_back("VK_KHR_shader_subgroup_rotate");
-        dst.push_back("VK_KHR_vertex_attribute_divisor");
-    }
     if (coreVersion >= VK_API_VERSION_1_3)
     {
         dst.push_back("VK_EXT_image_robustness");
@@ -93,6 +74,25 @@ void getCoreDeviceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char
         dst.push_back("VK_KHR_shader_draw_parameters");
         dst.push_back("VK_KHR_storage_buffer_storage_class");
         dst.push_back("VK_KHR_variable_pointers");
+    }
+    if (coreVersion >= VK_API_VERSION_1_4)
+    {
+        dst.push_back("VK_EXT_host_image_copy");
+        dst.push_back("VK_EXT_pipeline_protected_access");
+        dst.push_back("VK_EXT_pipeline_robustness");
+        dst.push_back("VK_KHR_dynamic_rendering_local_read");
+        dst.push_back("VK_KHR_global_priority");
+        dst.push_back("VK_KHR_index_type_uint8");
+        dst.push_back("VK_KHR_line_rasterization");
+        dst.push_back("VK_KHR_load_store_op_none");
+        dst.push_back("VK_KHR_maintenance5");
+        dst.push_back("VK_KHR_maintenance6");
+        dst.push_back("VK_KHR_map_memory2");
+        dst.push_back("VK_KHR_push_descriptor");
+        dst.push_back("VK_KHR_shader_expect_assume");
+        dst.push_back("VK_KHR_shader_float_controls2");
+        dst.push_back("VK_KHR_shader_subgroup_rotate");
+        dst.push_back("VK_KHR_vertex_attribute_divisor");
     }
 }
 

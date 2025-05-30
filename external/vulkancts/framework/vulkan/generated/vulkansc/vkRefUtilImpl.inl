@@ -5,7 +5,6 @@
 
 namespace refdetails
 {
-
 template<>
 void Deleter<VkBuffer>::operator() (VkBuffer obj) const
 {
@@ -97,6 +96,7 @@ void Deleter<VkSemaphore>::operator() (VkSemaphore obj) const
 }
 
 } // refdetails
+
 
 Move<VkDeviceMemory> allocateMemory (const DeviceInterface& vk, VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator)
 {

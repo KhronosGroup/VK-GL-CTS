@@ -993,6 +993,11 @@ template<> VkStructureType getStructureType<VkDirectDriverLoadingListLUNARG> (vo
 	return VK_STRUCTURE_TYPE_DIRECT_DRIVER_LOADING_LIST_LUNARG;
 }
 
+template<> VkStructureType getStructureType<VkDirectFBSurfaceCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkDispatchTileInfoQCOM> (void)
 {
 	return VK_STRUCTURE_TYPE_DISPATCH_TILE_INFO_QCOM;
@@ -2016,11 +2021,6 @@ template<> VkStructureType getStructureType<VkPerformanceMarkerInfoINTEL> (void)
 template<> VkStructureType getStructureType<VkPerformanceOverrideInfoINTEL> (void)
 {
 	return VK_STRUCTURE_TYPE_PERFORMANCE_OVERRIDE_INFO_INTEL;
-}
-
-template<> VkStructureType getStructureType<VkPerformanceQueryReservationInfoKHR> (void)
-{
-	return VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_RESERVATION_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPerformanceQuerySubmitInfoKHR> (void)

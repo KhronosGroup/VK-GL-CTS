@@ -81,7 +81,7 @@ virtual void				cmdCopyMemoryToMicromapEXT								(VkCommandBuffer commandBuffer
 virtual void				cmdCopyMicromapEXT										(VkCommandBuffer commandBuffer, const VkCopyMicromapInfoEXT* pInfo) const = 0;
 virtual void				cmdCopyMicromapToMemoryEXT								(VkCommandBuffer commandBuffer, const VkCopyMicromapToMemoryInfoEXT* pInfo) const = 0;
 virtual void				cmdCopyQueryPoolResults									(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize stride, VkQueryResultFlags flags) const = 0;
-virtual void				cmdCopyTensorARM										(VkCommandBuffer commandBuffer,  const VkCopyTensorInfoARM* pCopyTensorInfo) const = 0;
+virtual void				cmdCopyTensorARM										(VkCommandBuffer commandBuffer, const VkCopyTensorInfoARM* pCopyTensorInfo) const = 0;
 virtual void				cmdCuLaunchKernelNVX									(VkCommandBuffer commandBuffer, const VkCuLaunchInfoNVX* pLaunchInfo) const = 0;
 virtual void				cmdCudaLaunchKernelNV									(VkCommandBuffer commandBuffer, const VkCudaLaunchInfoNV* pLaunchInfo) const = 0;
 virtual void				cmdDebugMarkerBeginEXT									(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const = 0;
@@ -420,6 +420,7 @@ virtual VkResult			getEncodedVideoSessionParametersKHR						(VkDevice device, co
 virtual VkResult			getEventStatus											(VkDevice device, VkEvent event) const = 0;
 virtual VkResult			getExecutionGraphPipelineNodeIndexAMDX					(VkDevice device, VkPipeline executionGraph, const VkPipelineShaderStageNodeCreateInfoAMDX* pNodeInfo, uint32_t* pNodeIndex) const = 0;
 virtual VkResult			getExecutionGraphPipelineScratchSizeAMDX				(VkDevice device, VkPipeline executionGraph, VkExecutionGraphPipelineScratchSizeAMDX* pSizeInfo) const = 0;
+virtual void				getExternalComputeQueueDataNV							(VkExternalComputeQueueNV externalQueue, VkExternalComputeQueueDataParamsNV* params, void* pData) const = 0;
 virtual VkResult			getFenceFdKHR											(VkDevice device, const VkFenceGetFdInfoKHR* pGetFdInfo, int* pFd) const = 0;
 virtual VkResult			getFenceStatus											(VkDevice device, VkFence fence) const = 0;
 virtual VkResult			getFenceWin32HandleKHR									(VkDevice device, const VkFenceGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const = 0;

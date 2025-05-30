@@ -151,17 +151,21 @@ tcu::TestStatus validate_roadmap_2022(Context& context)
 		{ PN(checkAlways), PN(vkProperties.limits.standardSampleLocations), LIM_MIN_UINT32(true) },
 		{ PN(checkAlways), PN(vkProperties.limits.maxColorAttachments), LIM_MIN_UINT32(7) },
 
+
 		// vulkan11requirements
 		{ PN(checkAlways), PN(vkVulkan11Properties.maxMultiviewViewCount), LIM_MIN_UINT32(6) },
 		{ PN(checkAlways), PN(vkVulkan11Properties.maxMultiviewInstanceIndex), LIM_MIN_UINT32(134217727) },
+
 
 		// vulkan11requirements_roadmap2022
 		{ PN(checkAlways), PN(vkVulkan11Properties.subgroupSize), LIM_MIN_UINT32(4) },
 		{ PN(checkAlways), PN(vkVulkan11Properties.subgroupSupportedStages), LIM_MIN_UINT32(VK_SHADER_STAGE_COMPUTE_BIT|VK_SHADER_STAGE_FRAGMENT_BIT) },
 		{ PN(checkAlways), PN(vkVulkan11Properties.subgroupSupportedOperations), LIM_MIN_UINT32(VK_SUBGROUP_FEATURE_BASIC_BIT|VK_SUBGROUP_FEATURE_VOTE_BIT|VK_SUBGROUP_FEATURE_ARITHMETIC_BIT|VK_SUBGROUP_FEATURE_BALLOT_BIT|VK_SUBGROUP_FEATURE_SHUFFLE_BIT|VK_SUBGROUP_FEATURE_SHUFFLE_RELATIVE_BIT|VK_SUBGROUP_FEATURE_QUAD_BIT) },
 
+
 		// vulkan12requirements
 		{ PN(checkAlways), PN(vkVulkan12Properties.maxTimelineSemaphoreValueDifference), LIM_MIN_UINT32(2147483647) },
+
 
 		// vulkan12requirements_roadmap2022
 		{ PN(checkAlways), PN(vkVulkan12Properties.shaderSignedZeroInfNanPreserveFloat16), LIM_MIN_UINT32(true) },
@@ -182,6 +186,7 @@ tcu::TestStatus validate_roadmap_2022(Context& context)
 		{ PN(checkAlways), PN(vkVulkan12Properties.maxDescriptorSetUpdateAfterBindStorageImages), LIM_MIN_UINT32(500000) },
 		{ PN(checkAlways), PN(vkVulkan12Properties.maxDescriptorSetUpdateAfterBindInputAttachments), LIM_MIN_UINT32(7) },
 
+
 		// vulkan13requirements
 		{ PN(checkAlways), PN(vkVulkan13Properties.maxBufferSize), LIM_MIN_DEVSIZE(1073741824) },
 		{ PN(checkAlways), PN(vkVulkan13Properties.maxInlineUniformBlockSize), LIM_MIN_UINT32(256) },
@@ -190,6 +195,7 @@ tcu::TestStatus validate_roadmap_2022(Context& context)
 		{ PN(checkAlways), PN(vkVulkan13Properties.maxDescriptorSetInlineUniformBlocks), LIM_MIN_UINT32(4) },
 		{ PN(checkAlways), PN(vkVulkan13Properties.maxDescriptorSetUpdateAfterBindInlineUniformBlocks), LIM_MIN_UINT32(4) },
 		{ PN(checkAlways), PN(vkVulkan13Properties.maxInlineUniformTotalSize), LIM_MIN_UINT32(256) },
+
 
 		// vulkan10optionals_roadmap2022
 		{ PN(checkAlways), PN(vkProperties.limits.pointSizeGranularity), LIM_MAX_FLOAT(0.125) },
@@ -270,6 +276,7 @@ tcu::TestStatus validate_roadmap_2024(Context& context)
 		{ PN(checkAlways), PN(vkProperties.limits.timestampComputeAndGraphics), LIM_MIN_UINT32(true) },
 		{ PN(checkAlways), PN(vkProperties.limits.maxColorAttachments), LIM_MIN_UINT32(8) },
 		{ PN(checkAlways), PN(vkProperties.limits.maxBoundDescriptorSets), LIM_MIN_UINT32(7) },
+
 
 		// vulkan12requirements_roadmap2024
 		{ PN(checkAlways), PN(vkVulkan12Properties.shaderRoundingModeRTEFloat16), LIM_MIN_UINT32(true) },

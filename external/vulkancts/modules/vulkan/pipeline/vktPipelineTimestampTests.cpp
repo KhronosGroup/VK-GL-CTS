@@ -60,12 +60,6 @@
 #include <time.h>
 #include <algorithm>
 
-#ifdef CTS_USES_VULKANSC
-// VulkanSC supports VK_EXT_calibrated_timestamps but not VK_KHR_calibrated_timestamps
-#define VkCalibratedTimestampInfoKHR VkCalibratedTimestampInfoEXT
-#define VkTimeDomainKHR VkTimeDomainEXT
-#endif // CTS_USES_VULKANSC
-
 #if (DE_OS == DE_OS_WIN32)
 #define VC_EXTRALEAN
 #define WIN32_LEAN_AND_MEAN

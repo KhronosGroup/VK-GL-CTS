@@ -4,7 +4,6 @@
  */
 
 
-
 tcu::TestStatus createDeviceWithUnsupportedFeaturesTest16BitStorageFeatures (Context& context)
 {
     const PlatformInterface&                vkp = context.getPlatformInterface();
@@ -10292,4 +10291,5 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "zero_initialize_device_memory_features_ext", createDeviceWithUnsupportedFeaturesTestZeroInitializeDeviceMemoryFeaturesEXT);
 	addFunctionCase(testGroup, "zero_initialize_workgroup_memory_features", createDeviceWithUnsupportedFeaturesTestZeroInitializeWorkgroupMemoryFeatures);
 }
+
 

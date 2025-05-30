@@ -10,6 +10,7 @@ m_vk.createAndroidSurfaceKHR = (CreateAndroidSurfaceKHRFunc) GET_PROC_ADDR("vkCr
 m_vk.createDebugReportCallbackEXT = (CreateDebugReportCallbackEXTFunc) GET_PROC_ADDR("vkCreateDebugReportCallbackEXT");
 m_vk.createDebugUtilsMessengerEXT = (CreateDebugUtilsMessengerEXTFunc) GET_PROC_ADDR("vkCreateDebugUtilsMessengerEXT");
 m_vk.createDevice = (CreateDeviceFunc) GET_PROC_ADDR("vkCreateDevice");
+m_vk.createDirectFBSurfaceEXT = (CreateDirectFBSurfaceEXTFunc) GET_PROC_ADDR("vkCreateDirectFBSurfaceEXT");
 m_vk.createDisplayModeKHR = (CreateDisplayModeKHRFunc) GET_PROC_ADDR("vkCreateDisplayModeKHR");
 m_vk.createDisplayPlaneSurfaceKHR = (CreateDisplayPlaneSurfaceKHRFunc) GET_PROC_ADDR("vkCreateDisplayPlaneSurfaceKHR");
 m_vk.createHeadlessSurfaceEXT = (CreateHeadlessSurfaceEXTFunc) GET_PROC_ADDR("vkCreateHeadlessSurfaceEXT");
@@ -46,11 +47,12 @@ m_vk.getDrmDisplayEXT = (GetDrmDisplayEXTFunc) GET_PROC_ADDR("vkGetDrmDisplayEXT
 m_vk.getPhysicalDeviceCalibrateableTimeDomainsKHR = (GetPhysicalDeviceCalibrateableTimeDomainsKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceCalibrateableTimeDomainsKHR");
 if (!m_vk.getPhysicalDeviceCalibrateableTimeDomainsKHR)
     m_vk.getPhysicalDeviceCalibrateableTimeDomainsKHR = (GetPhysicalDeviceCalibrateableTimeDomainsKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");
-m_vk.getPhysicalDeviceCalibrateableTimeDomainsEXT = (GetPhysicalDeviceCalibrateableTimeDomainsEXTFunc) GET_PROC_ADDR("vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");
+m_vk.getPhysicalDeviceCalibrateableTimeDomainsEXT = (GetPhysicalDeviceCalibrateableTimeDomainsKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");
 m_vk.getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV = (GetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNVFunc) GET_PROC_ADDR("vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV");
 m_vk.getPhysicalDeviceCooperativeMatrixPropertiesKHR = (GetPhysicalDeviceCooperativeMatrixPropertiesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR");
 m_vk.getPhysicalDeviceCooperativeMatrixPropertiesNV = (GetPhysicalDeviceCooperativeMatrixPropertiesNVFunc) GET_PROC_ADDR("vkGetPhysicalDeviceCooperativeMatrixPropertiesNV");
 m_vk.getPhysicalDeviceCooperativeVectorPropertiesNV = (GetPhysicalDeviceCooperativeVectorPropertiesNVFunc) GET_PROC_ADDR("vkGetPhysicalDeviceCooperativeVectorPropertiesNV");
+m_vk.getPhysicalDeviceDirectFBPresentationSupportEXT = (GetPhysicalDeviceDirectFBPresentationSupportEXTFunc) GET_PROC_ADDR("vkGetPhysicalDeviceDirectFBPresentationSupportEXT");
 m_vk.getPhysicalDeviceDisplayPlaneProperties2KHR = (GetPhysicalDeviceDisplayPlaneProperties2KHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceDisplayPlaneProperties2KHR");
 m_vk.getPhysicalDeviceDisplayPlanePropertiesKHR = (GetPhysicalDeviceDisplayPlanePropertiesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceDisplayPlanePropertiesKHR");
 m_vk.getPhysicalDeviceDisplayProperties2KHR = (GetPhysicalDeviceDisplayProperties2KHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceDisplayProperties2KHR");
@@ -58,38 +60,38 @@ m_vk.getPhysicalDeviceDisplayPropertiesKHR = (GetPhysicalDeviceDisplayProperties
 m_vk.getPhysicalDeviceExternalBufferProperties = (GetPhysicalDeviceExternalBufferPropertiesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceExternalBufferProperties");
 if (!m_vk.getPhysicalDeviceExternalBufferProperties)
     m_vk.getPhysicalDeviceExternalBufferProperties = (GetPhysicalDeviceExternalBufferPropertiesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceExternalBufferPropertiesKHR");
-m_vk.getPhysicalDeviceExternalBufferPropertiesKHR = (GetPhysicalDeviceExternalBufferPropertiesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceExternalBufferPropertiesKHR");
+m_vk.getPhysicalDeviceExternalBufferPropertiesKHR = (GetPhysicalDeviceExternalBufferPropertiesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceExternalBufferPropertiesKHR");
 m_vk.getPhysicalDeviceExternalFenceProperties = (GetPhysicalDeviceExternalFencePropertiesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceExternalFenceProperties");
 if (!m_vk.getPhysicalDeviceExternalFenceProperties)
     m_vk.getPhysicalDeviceExternalFenceProperties = (GetPhysicalDeviceExternalFencePropertiesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceExternalFencePropertiesKHR");
-m_vk.getPhysicalDeviceExternalFencePropertiesKHR = (GetPhysicalDeviceExternalFencePropertiesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceExternalFencePropertiesKHR");
+m_vk.getPhysicalDeviceExternalFencePropertiesKHR = (GetPhysicalDeviceExternalFencePropertiesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceExternalFencePropertiesKHR");
 m_vk.getPhysicalDeviceExternalImageFormatPropertiesNV = (GetPhysicalDeviceExternalImageFormatPropertiesNVFunc) GET_PROC_ADDR("vkGetPhysicalDeviceExternalImageFormatPropertiesNV");
 m_vk.getPhysicalDeviceExternalSemaphoreProperties = (GetPhysicalDeviceExternalSemaphorePropertiesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceExternalSemaphoreProperties");
 if (!m_vk.getPhysicalDeviceExternalSemaphoreProperties)
     m_vk.getPhysicalDeviceExternalSemaphoreProperties = (GetPhysicalDeviceExternalSemaphorePropertiesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceExternalSemaphorePropertiesKHR");
-m_vk.getPhysicalDeviceExternalSemaphorePropertiesKHR = (GetPhysicalDeviceExternalSemaphorePropertiesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceExternalSemaphorePropertiesKHR");
+m_vk.getPhysicalDeviceExternalSemaphorePropertiesKHR = (GetPhysicalDeviceExternalSemaphorePropertiesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceExternalSemaphorePropertiesKHR");
 m_vk.getPhysicalDeviceExternalTensorPropertiesARM = (GetPhysicalDeviceExternalTensorPropertiesARMFunc) GET_PROC_ADDR("vkGetPhysicalDeviceExternalTensorPropertiesARM");
 m_vk.getPhysicalDeviceFeatures = (GetPhysicalDeviceFeaturesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceFeatures");
 m_vk.getPhysicalDeviceFeatures2 = (GetPhysicalDeviceFeatures2Func) GET_PROC_ADDR("vkGetPhysicalDeviceFeatures2");
 if (!m_vk.getPhysicalDeviceFeatures2)
     m_vk.getPhysicalDeviceFeatures2 = (GetPhysicalDeviceFeatures2Func) GET_PROC_ADDR("vkGetPhysicalDeviceFeatures2KHR");
-m_vk.getPhysicalDeviceFeatures2KHR = (GetPhysicalDeviceFeatures2KHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceFeatures2KHR");
+m_vk.getPhysicalDeviceFeatures2KHR = (GetPhysicalDeviceFeatures2Func) GET_PROC_ADDR("vkGetPhysicalDeviceFeatures2KHR");
 m_vk.getPhysicalDeviceFormatProperties = (GetPhysicalDeviceFormatPropertiesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceFormatProperties");
 m_vk.getPhysicalDeviceFormatProperties2 = (GetPhysicalDeviceFormatProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceFormatProperties2");
 if (!m_vk.getPhysicalDeviceFormatProperties2)
     m_vk.getPhysicalDeviceFormatProperties2 = (GetPhysicalDeviceFormatProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceFormatProperties2KHR");
-m_vk.getPhysicalDeviceFormatProperties2KHR = (GetPhysicalDeviceFormatProperties2KHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceFormatProperties2KHR");
+m_vk.getPhysicalDeviceFormatProperties2KHR = (GetPhysicalDeviceFormatProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceFormatProperties2KHR");
 m_vk.getPhysicalDeviceFragmentShadingRatesKHR = (GetPhysicalDeviceFragmentShadingRatesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceFragmentShadingRatesKHR");
 m_vk.getPhysicalDeviceImageFormatProperties = (GetPhysicalDeviceImageFormatPropertiesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceImageFormatProperties");
 m_vk.getPhysicalDeviceImageFormatProperties2 = (GetPhysicalDeviceImageFormatProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceImageFormatProperties2");
 if (!m_vk.getPhysicalDeviceImageFormatProperties2)
     m_vk.getPhysicalDeviceImageFormatProperties2 = (GetPhysicalDeviceImageFormatProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceImageFormatProperties2KHR");
-m_vk.getPhysicalDeviceImageFormatProperties2KHR = (GetPhysicalDeviceImageFormatProperties2KHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceImageFormatProperties2KHR");
+m_vk.getPhysicalDeviceImageFormatProperties2KHR = (GetPhysicalDeviceImageFormatProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceImageFormatProperties2KHR");
 m_vk.getPhysicalDeviceMemoryProperties = (GetPhysicalDeviceMemoryPropertiesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceMemoryProperties");
 m_vk.getPhysicalDeviceMemoryProperties2 = (GetPhysicalDeviceMemoryProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceMemoryProperties2");
 if (!m_vk.getPhysicalDeviceMemoryProperties2)
     m_vk.getPhysicalDeviceMemoryProperties2 = (GetPhysicalDeviceMemoryProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceMemoryProperties2KHR");
-m_vk.getPhysicalDeviceMemoryProperties2KHR = (GetPhysicalDeviceMemoryProperties2KHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceMemoryProperties2KHR");
+m_vk.getPhysicalDeviceMemoryProperties2KHR = (GetPhysicalDeviceMemoryProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceMemoryProperties2KHR");
 m_vk.getPhysicalDeviceMultisamplePropertiesEXT = (GetPhysicalDeviceMultisamplePropertiesEXTFunc) GET_PROC_ADDR("vkGetPhysicalDeviceMultisamplePropertiesEXT");
 m_vk.getPhysicalDeviceOpticalFlowImageFormatsNV = (GetPhysicalDeviceOpticalFlowImageFormatsNVFunc) GET_PROC_ADDR("vkGetPhysicalDeviceOpticalFlowImageFormatsNV");
 m_vk.getPhysicalDevicePresentRectanglesKHR = (GetPhysicalDevicePresentRectanglesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDevicePresentRectanglesKHR");
@@ -97,7 +99,7 @@ m_vk.getPhysicalDeviceProperties = (GetPhysicalDevicePropertiesFunc) GET_PROC_AD
 m_vk.getPhysicalDeviceProperties2 = (GetPhysicalDeviceProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceProperties2");
 if (!m_vk.getPhysicalDeviceProperties2)
     m_vk.getPhysicalDeviceProperties2 = (GetPhysicalDeviceProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceProperties2KHR");
-m_vk.getPhysicalDeviceProperties2KHR = (GetPhysicalDeviceProperties2KHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceProperties2KHR");
+m_vk.getPhysicalDeviceProperties2KHR = (GetPhysicalDeviceProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceProperties2KHR");
 m_vk.getPhysicalDeviceQueueFamilyDataGraphProcessingEnginePropertiesARM = (GetPhysicalDeviceQueueFamilyDataGraphProcessingEnginePropertiesARMFunc) GET_PROC_ADDR("vkGetPhysicalDeviceQueueFamilyDataGraphProcessingEnginePropertiesARM");
 m_vk.getPhysicalDeviceQueueFamilyDataGraphPropertiesARM = (GetPhysicalDeviceQueueFamilyDataGraphPropertiesARMFunc) GET_PROC_ADDR("vkGetPhysicalDeviceQueueFamilyDataGraphPropertiesARM");
 m_vk.getPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR = (GetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR");
@@ -105,13 +107,13 @@ m_vk.getPhysicalDeviceQueueFamilyProperties = (GetPhysicalDeviceQueueFamilyPrope
 m_vk.getPhysicalDeviceQueueFamilyProperties2 = (GetPhysicalDeviceQueueFamilyProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceQueueFamilyProperties2");
 if (!m_vk.getPhysicalDeviceQueueFamilyProperties2)
     m_vk.getPhysicalDeviceQueueFamilyProperties2 = (GetPhysicalDeviceQueueFamilyProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceQueueFamilyProperties2KHR");
-m_vk.getPhysicalDeviceQueueFamilyProperties2KHR = (GetPhysicalDeviceQueueFamilyProperties2KHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceQueueFamilyProperties2KHR");
+m_vk.getPhysicalDeviceQueueFamilyProperties2KHR = (GetPhysicalDeviceQueueFamilyProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceQueueFamilyProperties2KHR");
 m_vk.getPhysicalDeviceScreenPresentationSupportQNX = (GetPhysicalDeviceScreenPresentationSupportQNXFunc) GET_PROC_ADDR("vkGetPhysicalDeviceScreenPresentationSupportQNX");
 m_vk.getPhysicalDeviceSparseImageFormatProperties = (GetPhysicalDeviceSparseImageFormatPropertiesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceSparseImageFormatProperties");
 m_vk.getPhysicalDeviceSparseImageFormatProperties2 = (GetPhysicalDeviceSparseImageFormatProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceSparseImageFormatProperties2");
 if (!m_vk.getPhysicalDeviceSparseImageFormatProperties2)
     m_vk.getPhysicalDeviceSparseImageFormatProperties2 = (GetPhysicalDeviceSparseImageFormatProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceSparseImageFormatProperties2KHR");
-m_vk.getPhysicalDeviceSparseImageFormatProperties2KHR = (GetPhysicalDeviceSparseImageFormatProperties2KHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceSparseImageFormatProperties2KHR");
+m_vk.getPhysicalDeviceSparseImageFormatProperties2KHR = (GetPhysicalDeviceSparseImageFormatProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceSparseImageFormatProperties2KHR");
 m_vk.getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV = (GetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNVFunc) GET_PROC_ADDR("vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV");
 m_vk.getPhysicalDeviceSurfaceCapabilities2EXT = (GetPhysicalDeviceSurfaceCapabilities2EXTFunc) GET_PROC_ADDR("vkGetPhysicalDeviceSurfaceCapabilities2EXT");
 m_vk.getPhysicalDeviceSurfaceCapabilities2KHR = (GetPhysicalDeviceSurfaceCapabilities2KHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceSurfaceCapabilities2KHR");
@@ -124,7 +126,7 @@ m_vk.getPhysicalDeviceSurfaceSupportKHR = (GetPhysicalDeviceSurfaceSupportKHRFun
 m_vk.getPhysicalDeviceToolProperties = (GetPhysicalDeviceToolPropertiesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceToolProperties");
 if (!m_vk.getPhysicalDeviceToolProperties)
     m_vk.getPhysicalDeviceToolProperties = (GetPhysicalDeviceToolPropertiesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceToolPropertiesEXT");
-m_vk.getPhysicalDeviceToolPropertiesEXT = (GetPhysicalDeviceToolPropertiesEXTFunc) GET_PROC_ADDR("vkGetPhysicalDeviceToolPropertiesEXT");
+m_vk.getPhysicalDeviceToolPropertiesEXT = (GetPhysicalDeviceToolPropertiesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceToolPropertiesEXT");
 m_vk.getPhysicalDeviceVideoCapabilitiesKHR = (GetPhysicalDeviceVideoCapabilitiesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceVideoCapabilitiesKHR");
 m_vk.getPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR = (GetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR");
 m_vk.getPhysicalDeviceVideoFormatPropertiesKHR = (GetPhysicalDeviceVideoFormatPropertiesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceVideoFormatPropertiesKHR");

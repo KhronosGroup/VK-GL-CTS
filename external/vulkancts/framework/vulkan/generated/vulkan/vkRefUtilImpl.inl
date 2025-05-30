@@ -5,7 +5,6 @@
 
 namespace refdetails
 {
-
 template<>
 void Deleter<VkAccelerationStructureKHR>::operator() (VkAccelerationStructureKHR obj) const
 {
@@ -278,6 +277,7 @@ void Deleter<VkDeviceMemory>::operator() (VkDeviceMemory obj) const
 
 } // refdetails
 
+
 Move<VkDeviceMemory> allocateMemory (const DeviceInterface& vk, VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator)
 {
 	VkDeviceMemory object = VK_NULL_HANDLE;
@@ -416,6 +416,13 @@ Move<VkDevice> createDevice (const PlatformInterface& vkp, VkInstance instance, 
 	VkDevice object = VK_NULL_HANDLE;
 	VK_CHECK(vk.createDevice(physicalDevice, pCreateInfo, pAllocator, &object));
 	return Move<VkDevice>(check<VkDevice>(object), Deleter<VkDevice>(vkp, instance, object, pAllocator));
+}
+
+Move<VkSurfaceKHR> createDirectFBSurfaceEXT (const InstanceInterface& vk, VkInstance instance, const VkDirectFBSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkSurfaceKHR object = VK_NULL_HANDLE;
+	VK_CHECK(vk.createDirectFBSurfaceEXT(instance, pCreateInfo, pAllocator, &object));
+	return Move<VkSurfaceKHR>(check<VkSurfaceKHR>(object), Deleter<VkSurfaceKHR>(vk, instance, pAllocator));
 }
 
 Move<VkSurfaceKHR> createDisplayPlaneSurfaceKHR (const InstanceInterface& vk, VkInstance instance, const VkDisplaySurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator)

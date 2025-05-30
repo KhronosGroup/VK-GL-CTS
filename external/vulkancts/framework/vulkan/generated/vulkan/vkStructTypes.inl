@@ -3239,6 +3239,15 @@ struct VkDirectDriverLoadingListLUNARG
 	const VkDirectDriverLoadingInfoLUNARG*	pDrivers;
 };
 
+struct VkDirectFBSurfaceCreateInfoEXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkDirectFBSurfaceCreateFlagsEXT	flags;
+	pt::IDirectFB*					dfb;
+	pt::IDirectFBSurface*			surface;
+};
+
 struct VkDispatchGraphCountInfoAMDX
 {
 	uint32_t						count;
@@ -5449,13 +5458,6 @@ struct VkPerformanceOverrideInfoINTEL
 	VkPerformanceOverrideTypeINTEL	type;
 	VkBool32						enable;
 	uint64_t						parameter;
-};
-
-struct VkPerformanceQueryReservationInfoKHR
-{
-	VkStructureType	sType;
-	const void*		pNext;
-	uint32_t		maxPerformanceQueriesPerPool;
 };
 
 struct VkPerformanceQuerySubmitInfoKHR
@@ -9493,10 +9495,10 @@ struct VkPipelineShaderStageModuleIdentifierCreateInfoEXT
 
 struct VkPipelineShaderStageNodeCreateInfoAMDX
 {
-	  VkStructureType	sType;
-	const void*			pNext;
-	const char*			pName;
-	uint32_t			index;
+	VkStructureType	sType;
+	const void*		pNext;
+	const char*		pName;
+	uint32_t		index;
 };
 
 struct VkPipelineShaderStageRequiredSubgroupSizeCreateInfo
@@ -12934,517 +12936,772 @@ struct VkXlibSurfaceCreateInfoKHR
 
 typedef VkAabbPositionsKHR VkAabbPositionsNV;
 
+
 typedef VkAccelerationStructureInstanceKHR VkAccelerationStructureInstanceNV;
+
 
 typedef VkAttachmentDescription2 VkAttachmentDescription2KHR;
 
+
 typedef VkAttachmentDescriptionStencilLayout VkAttachmentDescriptionStencilLayoutKHR;
+
 
 typedef VkAttachmentReference2 VkAttachmentReference2KHR;
 
+
 typedef VkAttachmentReferenceStencilLayout VkAttachmentReferenceStencilLayoutKHR;
+
 
 typedef VkAttachmentSampleCountInfoAMD VkAttachmentSampleCountInfoNV;
 
+
 typedef VkBindBufferMemoryDeviceGroupInfo VkBindBufferMemoryDeviceGroupInfoKHR;
+
 
 typedef VkBindBufferMemoryInfo VkBindBufferMemoryInfoKHR;
 
+
 typedef VkBindDescriptorSetsInfo VkBindDescriptorSetsInfoKHR;
+
 
 typedef VkBindImageMemoryDeviceGroupInfo VkBindImageMemoryDeviceGroupInfoKHR;
 
+
 typedef VkBindImageMemoryInfo VkBindImageMemoryInfoKHR;
+
 
 typedef VkBindImagePlaneMemoryInfo VkBindImagePlaneMemoryInfoKHR;
 
+
 typedef VkBindMemoryStatus VkBindMemoryStatusKHR;
+
 
 typedef VkBlitImageInfo2 VkBlitImageInfo2KHR;
 
+
 typedef VkBufferCopy2 VkBufferCopy2KHR;
+
 
 typedef VkBufferDeviceAddressInfo VkBufferDeviceAddressInfoEXT;
 
+
 typedef VkBufferDeviceAddressInfo VkBufferDeviceAddressInfoKHR;
+
 
 typedef VkBufferImageCopy2 VkBufferImageCopy2KHR;
 
+
 typedef VkBufferMemoryBarrier2 VkBufferMemoryBarrier2KHR;
+
 
 typedef VkBufferMemoryRequirementsInfo2 VkBufferMemoryRequirementsInfo2KHR;
 
+
 typedef VkBufferOpaqueCaptureAddressCreateInfo VkBufferOpaqueCaptureAddressCreateInfoKHR;
+
 
 typedef VkBufferUsageFlags2CreateInfo VkBufferUsageFlags2CreateInfoKHR;
 
+
 typedef VkCalibratedTimestampInfoKHR VkCalibratedTimestampInfoEXT;
+
 
 typedef VkCommandBufferInheritanceRenderingInfo VkCommandBufferInheritanceRenderingInfoKHR;
 
+
 typedef VkCommandBufferSubmitInfo VkCommandBufferSubmitInfoKHR;
+
 
 typedef VkConformanceVersion VkConformanceVersionKHR;
 
+
 typedef VkCopyBufferInfo2 VkCopyBufferInfo2KHR;
+
 
 typedef VkCopyBufferToImageInfo2 VkCopyBufferToImageInfo2KHR;
 
+
 typedef VkCopyImageInfo2 VkCopyImageInfo2KHR;
+
 
 typedef VkCopyImageToBufferInfo2 VkCopyImageToBufferInfo2KHR;
 
+
 typedef VkCopyImageToImageInfo VkCopyImageToImageInfoEXT;
+
 
 typedef VkCopyImageToMemoryInfo VkCopyImageToMemoryInfoEXT;
 
+
 typedef VkCopyMemoryToImageInfo VkCopyMemoryToImageInfoEXT;
+
 
 typedef VkDependencyInfo VkDependencyInfoKHR;
 
+
 typedef VkDescriptorPoolInlineUniformBlockCreateInfo VkDescriptorPoolInlineUniformBlockCreateInfoEXT;
+
 
 typedef VkDescriptorSetLayoutBindingFlagsCreateInfo VkDescriptorSetLayoutBindingFlagsCreateInfoEXT;
 
+
 typedef VkDescriptorSetLayoutSupport VkDescriptorSetLayoutSupportKHR;
+
 
 typedef VkDescriptorSetVariableDescriptorCountAllocateInfo VkDescriptorSetVariableDescriptorCountAllocateInfoEXT;
 
+
 typedef VkDescriptorSetVariableDescriptorCountLayoutSupport VkDescriptorSetVariableDescriptorCountLayoutSupportEXT;
+
 
 typedef VkDescriptorUpdateTemplateCreateInfo VkDescriptorUpdateTemplateCreateInfoKHR;
 
+
 typedef VkDescriptorUpdateTemplateEntry VkDescriptorUpdateTemplateEntryKHR;
+
 
 typedef VkDeviceBufferMemoryRequirements VkDeviceBufferMemoryRequirementsKHR;
 
+
 typedef VkDeviceGroupBindSparseInfo VkDeviceGroupBindSparseInfoKHR;
+
 
 typedef VkDeviceGroupCommandBufferBeginInfo VkDeviceGroupCommandBufferBeginInfoKHR;
 
+
 typedef VkDeviceGroupDeviceCreateInfo VkDeviceGroupDeviceCreateInfoKHR;
+
 
 typedef VkDeviceGroupRenderPassBeginInfo VkDeviceGroupRenderPassBeginInfoKHR;
 
+
 typedef VkDeviceGroupSubmitInfo VkDeviceGroupSubmitInfoKHR;
+
 
 typedef VkDeviceImageMemoryRequirements VkDeviceImageMemoryRequirementsKHR;
 
+
 typedef VkDeviceImageSubresourceInfo VkDeviceImageSubresourceInfoKHR;
+
 
 typedef VkDeviceMemoryOpaqueCaptureAddressInfo VkDeviceMemoryOpaqueCaptureAddressInfoKHR;
 
+
 typedef VkDevicePrivateDataCreateInfo VkDevicePrivateDataCreateInfoEXT;
+
 
 typedef VkDeviceQueueGlobalPriorityCreateInfo VkDeviceQueueGlobalPriorityCreateInfoEXT;
 
+
 typedef VkDeviceQueueGlobalPriorityCreateInfo VkDeviceQueueGlobalPriorityCreateInfoKHR;
+
 
 typedef VkExportFenceCreateInfo VkExportFenceCreateInfoKHR;
 
+
 typedef VkExportMemoryAllocateInfo VkExportMemoryAllocateInfoKHR;
+
 
 typedef VkExportSemaphoreCreateInfo VkExportSemaphoreCreateInfoKHR;
 
+
 typedef VkExternalBufferProperties VkExternalBufferPropertiesKHR;
+
 
 typedef VkExternalFenceProperties VkExternalFencePropertiesKHR;
 
+
 typedef VkExternalImageFormatProperties VkExternalImageFormatPropertiesKHR;
+
 
 typedef VkExternalMemoryBufferCreateInfo VkExternalMemoryBufferCreateInfoKHR;
 
+
 typedef VkExternalMemoryImageCreateInfo VkExternalMemoryImageCreateInfoKHR;
+
 
 typedef VkExternalMemoryProperties VkExternalMemoryPropertiesKHR;
 
+
 typedef VkExternalSemaphoreProperties VkExternalSemaphorePropertiesKHR;
+
 
 typedef VkFormatProperties2 VkFormatProperties2KHR;
 
+
 typedef VkFormatProperties3 VkFormatProperties3KHR;
+
 
 typedef VkFramebufferAttachmentImageInfo VkFramebufferAttachmentImageInfoKHR;
 
+
 typedef VkFramebufferAttachmentsCreateInfo VkFramebufferAttachmentsCreateInfoKHR;
+
 
 typedef VkHostImageCopyDevicePerformanceQuery VkHostImageCopyDevicePerformanceQueryEXT;
 
+
 typedef VkHostImageLayoutTransitionInfo VkHostImageLayoutTransitionInfoEXT;
+
 
 typedef VkImageBlit2 VkImageBlit2KHR;
 
+
 typedef VkImageCopy2 VkImageCopy2KHR;
+
 
 typedef VkImageFormatListCreateInfo VkImageFormatListCreateInfoKHR;
 
+
 typedef VkImageFormatProperties2 VkImageFormatProperties2KHR;
+
 
 typedef VkImageMemoryBarrier2 VkImageMemoryBarrier2KHR;
 
+
 typedef VkImageMemoryRequirementsInfo2 VkImageMemoryRequirementsInfo2KHR;
+
 
 typedef VkImagePlaneMemoryRequirementsInfo VkImagePlaneMemoryRequirementsInfoKHR;
 
+
 typedef VkImageResolve2 VkImageResolve2KHR;
+
 
 typedef VkImageSparseMemoryRequirementsInfo2 VkImageSparseMemoryRequirementsInfo2KHR;
 
+
 typedef VkImageStencilUsageCreateInfo VkImageStencilUsageCreateInfoEXT;
+
 
 typedef VkImageSubresource2 VkImageSubresource2EXT;
 
+
 typedef VkImageSubresource2 VkImageSubresource2KHR;
+
 
 typedef VkImageToMemoryCopy VkImageToMemoryCopyEXT;
 
+
 typedef VkImageViewUsageCreateInfo VkImageViewUsageCreateInfoKHR;
+
 
 typedef VkInputAttachmentAspectReference VkInputAttachmentAspectReferenceKHR;
 
+
 typedef VkMemoryAllocateFlagsInfo VkMemoryAllocateFlagsInfoKHR;
+
 
 typedef VkMemoryBarrier2 VkMemoryBarrier2KHR;
 
+
 typedef VkMemoryDedicatedAllocateInfo VkMemoryDedicatedAllocateInfoKHR;
+
 
 typedef VkMemoryDedicatedRequirements VkMemoryDedicatedRequirementsKHR;
 
+
 typedef VkMemoryMapInfo VkMemoryMapInfoKHR;
+
 
 typedef VkMemoryOpaqueCaptureAddressAllocateInfo VkMemoryOpaqueCaptureAddressAllocateInfoKHR;
 
+
 typedef VkMemoryRequirements2 VkMemoryRequirements2KHR;
+
 
 typedef VkMemoryToImageCopy VkMemoryToImageCopyEXT;
 
+
 typedef VkMemoryUnmapInfo VkMemoryUnmapInfoKHR;
+
 
 typedef VkMutableDescriptorTypeCreateInfoEXT VkMutableDescriptorTypeCreateInfoVALVE;
 
+
 typedef VkMutableDescriptorTypeListEXT VkMutableDescriptorTypeListVALVE;
+
 
 typedef VkPhysicalDevice16BitStorageFeatures VkPhysicalDevice16BitStorageFeaturesKHR;
 
+
 typedef VkPhysicalDevice8BitStorageFeatures VkPhysicalDevice8BitStorageFeaturesKHR;
+
 
 typedef VkPhysicalDeviceBufferDeviceAddressFeatures VkPhysicalDeviceBufferDeviceAddressFeaturesKHR;
 
+
 typedef VkPhysicalDeviceBufferDeviceAddressFeaturesEXT VkPhysicalDeviceBufferAddressFeaturesEXT;
+
 
 typedef VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR VkPhysicalDeviceComputeShaderDerivativesFeaturesNV;
 
+
 typedef VkPhysicalDeviceDepthClampZeroOneFeaturesKHR VkPhysicalDeviceDepthClampZeroOneFeaturesEXT;
+
 
 typedef VkPhysicalDeviceDepthStencilResolveProperties VkPhysicalDeviceDepthStencilResolvePropertiesKHR;
 
+
 typedef VkPhysicalDeviceDescriptorIndexingFeatures VkPhysicalDeviceDescriptorIndexingFeaturesEXT;
+
 
 typedef VkPhysicalDeviceDescriptorIndexingProperties VkPhysicalDeviceDescriptorIndexingPropertiesEXT;
 
+
 typedef VkPhysicalDeviceDriverProperties VkPhysicalDeviceDriverPropertiesKHR;
+
 
 typedef VkPhysicalDeviceDynamicRenderingFeatures VkPhysicalDeviceDynamicRenderingFeaturesKHR;
 
+
 typedef VkPhysicalDeviceDynamicRenderingLocalReadFeatures VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR;
+
 
 typedef VkPhysicalDeviceExternalBufferInfo VkPhysicalDeviceExternalBufferInfoKHR;
 
+
 typedef VkPhysicalDeviceExternalFenceInfo VkPhysicalDeviceExternalFenceInfoKHR;
+
 
 typedef VkPhysicalDeviceExternalImageFormatInfo VkPhysicalDeviceExternalImageFormatInfoKHR;
 
+
 typedef VkPhysicalDeviceExternalSemaphoreInfo VkPhysicalDeviceExternalSemaphoreInfoKHR;
+
 
 typedef VkPhysicalDeviceFeatures2 VkPhysicalDeviceFeatures2KHR;
 
+
 typedef VkPhysicalDeviceFloatControlsProperties VkPhysicalDeviceFloatControlsPropertiesKHR;
+
 
 typedef VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM;
 
+
 typedef VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM;
 
-typedef VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV;
 
 typedef VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV;
+
 
 typedef VkPhysicalDeviceGlobalPriorityQueryFeatures VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT;
 
+
 typedef VkPhysicalDeviceGlobalPriorityQueryFeatures VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR;
+
 
 typedef VkPhysicalDeviceGroupProperties VkPhysicalDeviceGroupPropertiesKHR;
 
+
 typedef VkPhysicalDeviceHostImageCopyFeatures VkPhysicalDeviceHostImageCopyFeaturesEXT;
+
 
 typedef VkPhysicalDeviceHostImageCopyProperties VkPhysicalDeviceHostImageCopyPropertiesEXT;
 
+
 typedef VkPhysicalDeviceHostQueryResetFeatures VkPhysicalDeviceHostQueryResetFeaturesEXT;
+
 
 typedef VkPhysicalDeviceIDProperties VkPhysicalDeviceIDPropertiesKHR;
 
+
 typedef VkPhysicalDeviceImageFormatInfo2 VkPhysicalDeviceImageFormatInfo2KHR;
+
 
 typedef VkPhysicalDeviceImageRobustnessFeatures VkPhysicalDeviceImageRobustnessFeaturesEXT;
 
+
 typedef VkPhysicalDeviceImagelessFramebufferFeatures VkPhysicalDeviceImagelessFramebufferFeaturesKHR;
+
 
 typedef VkPhysicalDeviceIndexTypeUint8Features VkPhysicalDeviceIndexTypeUint8FeaturesEXT;
 
+
 typedef VkPhysicalDeviceIndexTypeUint8Features VkPhysicalDeviceIndexTypeUint8FeaturesKHR;
+
 
 typedef VkPhysicalDeviceInlineUniformBlockFeatures VkPhysicalDeviceInlineUniformBlockFeaturesEXT;
 
+
 typedef VkPhysicalDeviceInlineUniformBlockProperties VkPhysicalDeviceInlineUniformBlockPropertiesEXT;
+
 
 typedef VkPhysicalDeviceLineRasterizationFeatures VkPhysicalDeviceLineRasterizationFeaturesEXT;
 
+
 typedef VkPhysicalDeviceLineRasterizationFeatures VkPhysicalDeviceLineRasterizationFeaturesKHR;
+
 
 typedef VkPhysicalDeviceLineRasterizationProperties VkPhysicalDeviceLineRasterizationPropertiesEXT;
 
+
 typedef VkPhysicalDeviceLineRasterizationProperties VkPhysicalDeviceLineRasterizationPropertiesKHR;
+
 
 typedef VkPhysicalDeviceMaintenance3Properties VkPhysicalDeviceMaintenance3PropertiesKHR;
 
+
 typedef VkPhysicalDeviceMaintenance4Features VkPhysicalDeviceMaintenance4FeaturesKHR;
+
 
 typedef VkPhysicalDeviceMaintenance4Properties VkPhysicalDeviceMaintenance4PropertiesKHR;
 
+
 typedef VkPhysicalDeviceMaintenance5Features VkPhysicalDeviceMaintenance5FeaturesKHR;
+
 
 typedef VkPhysicalDeviceMaintenance5Properties VkPhysicalDeviceMaintenance5PropertiesKHR;
 
+
 typedef VkPhysicalDeviceMaintenance6Features VkPhysicalDeviceMaintenance6FeaturesKHR;
+
 
 typedef VkPhysicalDeviceMaintenance6Properties VkPhysicalDeviceMaintenance6PropertiesKHR;
 
+
 typedef VkPhysicalDeviceMemoryProperties2 VkPhysicalDeviceMemoryProperties2KHR;
+
 
 typedef VkPhysicalDeviceMultiviewFeatures VkPhysicalDeviceMultiviewFeaturesKHR;
 
+
 typedef VkPhysicalDeviceMultiviewProperties VkPhysicalDeviceMultiviewPropertiesKHR;
+
 
 typedef VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE;
 
+
 typedef VkPhysicalDevicePipelineCreationCacheControlFeatures VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT;
+
 
 typedef VkPhysicalDevicePipelineProtectedAccessFeatures VkPhysicalDevicePipelineProtectedAccessFeaturesEXT;
 
+
 typedef VkPhysicalDevicePipelineRobustnessFeatures VkPhysicalDevicePipelineRobustnessFeaturesEXT;
+
 
 typedef VkPhysicalDevicePipelineRobustnessProperties VkPhysicalDevicePipelineRobustnessPropertiesEXT;
 
+
 typedef VkPhysicalDevicePointClippingProperties VkPhysicalDevicePointClippingPropertiesKHR;
+
 
 typedef VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT;
 
+
 typedef VkPhysicalDevicePrivateDataFeatures VkPhysicalDevicePrivateDataFeaturesEXT;
+
 
 typedef VkPhysicalDeviceProperties2 VkPhysicalDeviceProperties2KHR;
 
+
 typedef VkPhysicalDevicePushDescriptorProperties VkPhysicalDevicePushDescriptorPropertiesKHR;
+
 
 typedef VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM;
 
+
 typedef VkPhysicalDeviceRobustness2FeaturesKHR VkPhysicalDeviceRobustness2FeaturesEXT;
+
 
 typedef VkPhysicalDeviceRobustness2PropertiesKHR VkPhysicalDeviceRobustness2PropertiesEXT;
 
+
 typedef VkPhysicalDeviceSamplerFilterMinmaxProperties VkPhysicalDeviceSamplerFilterMinmaxPropertiesEXT;
+
 
 typedef VkPhysicalDeviceSamplerYcbcrConversionFeatures VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR;
 
+
 typedef VkPhysicalDeviceScalarBlockLayoutFeatures VkPhysicalDeviceScalarBlockLayoutFeaturesEXT;
+
 
 typedef VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures VkPhysicalDeviceSeparateDepthStencilLayoutsFeaturesKHR;
 
+
 typedef VkPhysicalDeviceShaderAtomicInt64Features VkPhysicalDeviceShaderAtomicInt64FeaturesKHR;
+
 
 typedef VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT;
 
+
 typedef VkPhysicalDeviceShaderDrawParametersFeatures VkPhysicalDeviceShaderDrawParameterFeatures;
+
 
 typedef VkPhysicalDeviceShaderExpectAssumeFeatures VkPhysicalDeviceShaderExpectAssumeFeaturesKHR;
 
+
 typedef VkPhysicalDeviceShaderFloat16Int8Features VkPhysicalDeviceFloat16Int8FeaturesKHR;
+
 
 typedef VkPhysicalDeviceShaderFloat16Int8Features VkPhysicalDeviceShaderFloat16Int8FeaturesKHR;
 
+
 typedef VkPhysicalDeviceShaderFloatControls2Features VkPhysicalDeviceShaderFloatControls2FeaturesKHR;
+
 
 typedef VkPhysicalDeviceShaderIntegerDotProductFeatures VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR;
 
+
 typedef VkPhysicalDeviceShaderIntegerDotProductProperties VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR;
+
 
 typedef VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures VkPhysicalDeviceShaderSubgroupExtendedTypesFeaturesKHR;
 
+
 typedef VkPhysicalDeviceShaderSubgroupRotateFeatures VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR;
+
 
 typedef VkPhysicalDeviceShaderTerminateInvocationFeatures VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR;
 
+
 typedef VkPhysicalDeviceSparseImageFormatInfo2 VkPhysicalDeviceSparseImageFormatInfo2KHR;
+
 
 typedef VkPhysicalDeviceSubgroupSizeControlFeatures VkPhysicalDeviceSubgroupSizeControlFeaturesEXT;
 
+
 typedef VkPhysicalDeviceSubgroupSizeControlProperties VkPhysicalDeviceSubgroupSizeControlPropertiesEXT;
+
 
 typedef VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT;
 
+
 typedef VkPhysicalDeviceSynchronization2Features VkPhysicalDeviceSynchronization2FeaturesKHR;
+
 
 typedef VkPhysicalDeviceTexelBufferAlignmentProperties VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT;
 
+
 typedef VkPhysicalDeviceTextureCompressionASTCHDRFeatures VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT;
+
 
 typedef VkPhysicalDeviceTimelineSemaphoreFeatures VkPhysicalDeviceTimelineSemaphoreFeaturesKHR;
 
+
 typedef VkPhysicalDeviceTimelineSemaphoreProperties VkPhysicalDeviceTimelineSemaphorePropertiesKHR;
+
 
 typedef VkPhysicalDeviceToolProperties VkPhysicalDeviceToolPropertiesEXT;
 
+
 typedef VkPhysicalDeviceUniformBufferStandardLayoutFeatures VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR;
+
 
 typedef VkPhysicalDeviceVariablePointersFeatures VkPhysicalDeviceVariablePointerFeatures;
 
+
 typedef VkPhysicalDeviceVariablePointersFeatures VkPhysicalDeviceVariablePointerFeaturesKHR;
+
 
 typedef VkPhysicalDeviceVariablePointersFeatures VkPhysicalDeviceVariablePointersFeaturesKHR;
 
+
 typedef VkPhysicalDeviceVertexAttributeDivisorFeatures VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT;
+
 
 typedef VkPhysicalDeviceVertexAttributeDivisorFeatures VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR;
 
+
 typedef VkPhysicalDeviceVertexAttributeDivisorProperties VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR;
+
 
 typedef VkPhysicalDeviceVulkanMemoryModelFeatures VkPhysicalDeviceVulkanMemoryModelFeaturesKHR;
 
+
 typedef VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeatures VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR;
+
 
 typedef VkPipelineCreateFlags2CreateInfo VkPipelineCreateFlags2CreateInfoKHR;
 
+
 typedef VkPipelineCreationFeedback VkPipelineCreationFeedbackEXT;
+
 
 typedef VkPipelineCreationFeedbackCreateInfo VkPipelineCreationFeedbackCreateInfoEXT;
 
+
 typedef VkPipelineInfoKHR VkPipelineInfoEXT;
+
 
 typedef VkPipelineRasterizationLineStateCreateInfo VkPipelineRasterizationLineStateCreateInfoEXT;
 
+
 typedef VkPipelineRasterizationLineStateCreateInfo VkPipelineRasterizationLineStateCreateInfoKHR;
+
 
 typedef VkPipelineRenderingCreateInfo VkPipelineRenderingCreateInfoKHR;
 
+
 typedef VkPipelineRobustnessCreateInfo VkPipelineRobustnessCreateInfoEXT;
+
 
 typedef VkPipelineShaderStageRequiredSubgroupSizeCreateInfo VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT;
 
+
 typedef VkPipelineShaderStageRequiredSubgroupSizeCreateInfo VkShaderRequiredSubgroupSizeCreateInfoEXT;
+
 
 typedef VkPipelineTessellationDomainOriginStateCreateInfo VkPipelineTessellationDomainOriginStateCreateInfoKHR;
 
+
 typedef VkPipelineVertexInputDivisorStateCreateInfo VkPipelineVertexInputDivisorStateCreateInfoEXT;
+
 
 typedef VkPipelineVertexInputDivisorStateCreateInfo VkPipelineVertexInputDivisorStateCreateInfoKHR;
 
+
 typedef VkPrivateDataSlotCreateInfo VkPrivateDataSlotCreateInfoEXT;
+
 
 typedef VkPushConstantsInfo VkPushConstantsInfoKHR;
 
+
 typedef VkPushDescriptorSetInfo VkPushDescriptorSetInfoKHR;
+
 
 typedef VkPushDescriptorSetWithTemplateInfo VkPushDescriptorSetWithTemplateInfoKHR;
 
+
 typedef VkQueryPoolPerformanceQueryCreateInfoINTEL VkQueryPoolCreateInfoINTEL;
+
 
 typedef VkQueueFamilyGlobalPriorityProperties VkQueueFamilyGlobalPriorityPropertiesEXT;
 
+
 typedef VkQueueFamilyGlobalPriorityProperties VkQueueFamilyGlobalPriorityPropertiesKHR;
+
 
 typedef VkQueueFamilyProperties2 VkQueueFamilyProperties2KHR;
 
+
 typedef VkReleaseSwapchainImagesInfoKHR VkReleaseSwapchainImagesInfoEXT;
+
 
 typedef VkRenderPassAttachmentBeginInfo VkRenderPassAttachmentBeginInfoKHR;
 
+
 typedef VkRenderPassCreateInfo2 VkRenderPassCreateInfo2KHR;
+
 
 typedef VkRenderPassFragmentDensityMapOffsetEndInfoEXT VkSubpassFragmentDensityMapOffsetEndInfoQCOM;
 
+
 typedef VkRenderPassInputAttachmentAspectCreateInfo VkRenderPassInputAttachmentAspectCreateInfoKHR;
+
 
 typedef VkRenderPassMultiviewCreateInfo VkRenderPassMultiviewCreateInfoKHR;
 
+
 typedef VkRenderingAreaInfo VkRenderingAreaInfoKHR;
+
 
 typedef VkRenderingAttachmentInfo VkRenderingAttachmentInfoKHR;
 
+
 typedef VkRenderingAttachmentLocationInfo VkRenderingAttachmentLocationInfoKHR;
+
 
 typedef VkRenderingInfo VkRenderingInfoKHR;
 
+
 typedef VkRenderingInputAttachmentIndexInfo VkRenderingInputAttachmentIndexInfoKHR;
+
 
 typedef VkResolveImageInfo2 VkResolveImageInfo2KHR;
 
+
 typedef VkSamplerReductionModeCreateInfo VkSamplerReductionModeCreateInfoEXT;
+
 
 typedef VkSamplerYcbcrConversionCreateInfo VkSamplerYcbcrConversionCreateInfoKHR;
 
+
 typedef VkSamplerYcbcrConversionImageFormatProperties VkSamplerYcbcrConversionImageFormatPropertiesKHR;
+
 
 typedef VkSamplerYcbcrConversionInfo VkSamplerYcbcrConversionInfoKHR;
 
+
 typedef VkSemaphoreSignalInfo VkSemaphoreSignalInfoKHR;
+
 
 typedef VkSemaphoreSubmitInfo VkSemaphoreSubmitInfoKHR;
 
+
 typedef VkSemaphoreTypeCreateInfo VkSemaphoreTypeCreateInfoKHR;
+
 
 typedef VkSemaphoreWaitInfo VkSemaphoreWaitInfoKHR;
 
+
 typedef VkSparseImageFormatProperties2 VkSparseImageFormatProperties2KHR;
+
 
 typedef VkSparseImageMemoryRequirements2 VkSparseImageMemoryRequirements2KHR;
 
+
 typedef VkSubmitInfo2 VkSubmitInfo2KHR;
+
 
 typedef VkSubpassBeginInfo VkSubpassBeginInfoKHR;
 
+
 typedef VkSubpassDependency2 VkSubpassDependency2KHR;
+
 
 typedef VkSubpassDescription2 VkSubpassDescription2KHR;
 
+
 typedef VkSubpassDescriptionDepthStencilResolve VkSubpassDescriptionDepthStencilResolveKHR;
+
 
 typedef VkSubpassEndInfo VkSubpassEndInfoKHR;
 
+
 typedef VkSubresourceHostMemcpySize VkSubresourceHostMemcpySizeEXT;
+
 
 typedef VkSubresourceLayout2 VkSubresourceLayout2EXT;
 
+
 typedef VkSubresourceLayout2 VkSubresourceLayout2KHR;
+
 
 typedef VkSurfacePresentModeCompatibilityKHR VkSurfacePresentModeCompatibilityEXT;
 
+
 typedef VkSurfacePresentModeKHR VkSurfacePresentModeEXT;
+
 
 typedef VkSurfacePresentScalingCapabilitiesKHR VkSurfacePresentScalingCapabilitiesEXT;
 
+
 typedef VkSwapchainPresentFenceInfoKHR VkSwapchainPresentFenceInfoEXT;
+
 
 typedef VkSwapchainPresentModeInfoKHR VkSwapchainPresentModeInfoEXT;
 
+
 typedef VkSwapchainPresentModesCreateInfoKHR VkSwapchainPresentModesCreateInfoEXT;
+
 
 typedef VkSwapchainPresentScalingCreateInfoKHR VkSwapchainPresentScalingCreateInfoEXT;
 
+
 typedef VkTimelineSemaphoreSubmitInfo VkTimelineSemaphoreSubmitInfoKHR;
+
 
 typedef VkTransformMatrixKHR VkTransformMatrixNV;
 
+
 typedef VkVertexInputBindingDivisorDescription VkVertexInputBindingDivisorDescriptionEXT;
+
 
 typedef VkVertexInputBindingDivisorDescription VkVertexInputBindingDivisorDescriptionKHR;
 
+
 typedef VkWriteDescriptorSetInlineUniformBlock VkWriteDescriptorSetInlineUniformBlockEXT;
+
 

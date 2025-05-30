@@ -58,6 +58,18 @@ bool check_VK_EXT_direct_mode_display(const tcu::UVec2& v, const ExtPropVect& vI
 	return isSupported(vIEP, "VK_KHR_display");
 }
 
+bool check_VK_EXT_directfb_surface(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vDEP);
+
+	if (!isSupported(vIEP, "VK_EXT_directfb_surface"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_surface
+	return isSupported(vIEP, "VK_KHR_surface");
+}
+
 bool check_VK_EXT_display_surface_counter(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -393,6 +405,7 @@ static const DependencyCheckVect instanceExtensionDependencies
 	std::make_pair("VK_EXT_acquire_drm_display",				&check_VK_EXT_acquire_drm_display),
 	std::make_pair("VK_EXT_acquire_xlib_display",				&check_VK_EXT_acquire_xlib_display),
 	std::make_pair("VK_EXT_direct_mode_display",				&check_VK_EXT_direct_mode_display),
+	std::make_pair("VK_EXT_directfb_surface",					&check_VK_EXT_directfb_surface),
 	std::make_pair("VK_EXT_display_surface_counter",			&check_VK_EXT_display_surface_counter),
 	std::make_pair("VK_EXT_headless_surface",					&check_VK_EXT_headless_surface),
 	std::make_pair("VK_EXT_metal_surface",						&check_VK_EXT_metal_surface),
@@ -4365,7 +4378,7 @@ static const std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>	releasedApiVersi
 	std::make_tuple(4206592, 0, 1, 3),
 	std::make_tuple(4202496, 0, 1, 2),
 	std::make_tuple(4198400, 0, 1, 1),
-	std::make_tuple(4194304, 0, 1, 0),
+	std::make_tuple(4194304, 0, 1, 0)
 };
 static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVersion[]	 =
 {
@@ -4435,6 +4448,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_device_generated_commands"),
 	std::make_tuple(1, 0, "VK_EXT_device_memory_report"),
 	std::make_tuple(1, 0, "VK_EXT_direct_mode_display"),
+	std::make_tuple(1, 0, "VK_EXT_directfb_surface"),
 	std::make_tuple(1, 0, "VK_EXT_discard_rectangles"),
 	std::make_tuple(1, 0, "VK_EXT_display_control"),
 	std::make_tuple(1, 0, "VK_EXT_display_surface_counter"),

@@ -23,6 +23,7 @@ Move<VkDescriptorPool>				createDescriptorPool				(const DeviceInterface& vk, Vk
 Move<VkDescriptorSetLayout>			createDescriptorSetLayout			(const DeviceInterface& vk, VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
 Move<VkDescriptorUpdateTemplate>	createDescriptorUpdateTemplate		(const DeviceInterface& vk, VkDevice device, const VkDescriptorUpdateTemplateCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
 Move<VkDevice>						createDevice						(const PlatformInterface& vkp, VkInstance instance, const InstanceInterface& vk, VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
+Move<VkSurfaceKHR>					createDirectFBSurfaceEXT			(const InstanceInterface& vk, VkInstance instance, const VkDirectFBSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
 Move<VkSurfaceKHR>					createDisplayPlaneSurfaceKHR		(const InstanceInterface& vk, VkInstance instance, const VkDisplaySurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
 Move<VkEvent>						createEvent							(const DeviceInterface& vk, VkDevice device, const VkEventCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
 Move<VkExternalComputeQueueNV>		createExternalComputeQueueNV		(const DeviceInterface& vk, VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);

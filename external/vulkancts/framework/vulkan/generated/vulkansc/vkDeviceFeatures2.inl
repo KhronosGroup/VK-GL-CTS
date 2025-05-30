@@ -14,7 +14,7 @@ tcu::TestStatus testPhysicalDeviceFeature16BitStorageFeatures (Context& context)
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDevice16BitStorageFeatures device16BitStorageFeatures[count];
-    const bool                           is16BitStorageFeatures = checkExtension(properties, "VK_KHR_16bit_storage") || context.contextSupports(vk::ApiVersion(1, 1, 1, 0));
+    const bool                           is16BitStorageFeatures = context.contextSupports(vk::ApiVersion(1, 1, 1, 0));
 
     if (!is16BitStorageFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -96,7 +96,7 @@ tcu::TestStatus testPhysicalDeviceFeature8BitStorageFeatures (Context& context)
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDevice8BitStorageFeatures device8BitStorageFeatures[count];
-    const bool                          is8BitStorageFeatures = checkExtension(properties, "VK_KHR_8bit_storage") || context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
+    const bool                          is8BitStorageFeatures = context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
 
     if (!is8BitStorageFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -215,7 +215,7 @@ tcu::TestStatus testPhysicalDeviceFeatureBufferDeviceAddressFeatures (Context& c
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceBufferDeviceAddressFeatures deviceBufferDeviceAddressFeatures[count];
-    const bool                                  isBufferDeviceAddressFeatures = checkExtension(properties, "VK_KHR_buffer_device_address") || context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
+    const bool                                  isBufferDeviceAddressFeatures = context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
 
     if (!isBufferDeviceAddressFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -421,6 +421,84 @@ tcu::TestStatus testPhysicalDeviceFeatureDescriptorIndexingFeatures (Context& co
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureDynamicRenderingFeatures (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceDynamicRenderingFeatures deviceDynamicRenderingFeatures[count];
+    const bool                               isDynamicRenderingFeatures = context.contextSupports(vk::ApiVersion(1, 1, 3, 0));
+
+    if (!isDynamicRenderingFeatures)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceDynamicRenderingFeatures[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceDynamicRenderingFeatures));
+        deviceDynamicRenderingFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
+        deviceDynamicRenderingFeatures[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceDynamicRenderingFeatures[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceDynamicRenderingFeatures[0] << TestLog::EndMessage;
+
+    if (
+        deviceDynamicRenderingFeatures[0].dynamicRendering != deviceDynamicRenderingFeatures[1].dynamicRendering)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceDynamicRenderingFeatures");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
+tcu::TestStatus testPhysicalDeviceFeatureDynamicRenderingLocalReadFeatures (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceDynamicRenderingLocalReadFeatures deviceDynamicRenderingLocalReadFeatures[count];
+    const bool                                        isDynamicRenderingLocalReadFeatures = context.contextSupports(vk::ApiVersion(1, 1, 4, 0));
+
+    if (!isDynamicRenderingLocalReadFeatures)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceDynamicRenderingLocalReadFeatures[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceDynamicRenderingLocalReadFeatures));
+        deviceDynamicRenderingLocalReadFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_LOCAL_READ_FEATURES;
+        deviceDynamicRenderingLocalReadFeatures[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceDynamicRenderingLocalReadFeatures[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceDynamicRenderingLocalReadFeatures[0] << TestLog::EndMessage;
+
+    if (
+        deviceDynamicRenderingLocalReadFeatures[0].dynamicRenderingLocalRead != deviceDynamicRenderingLocalReadFeatures[1].dynamicRenderingLocalRead)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceDynamicRenderingLocalReadFeatures");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureExtendedDynamicState2FeaturesEXT (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -622,6 +700,45 @@ tcu::TestStatus testPhysicalDeviceFeatureGlobalPriorityQueryFeatures (Context& c
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureHostImageCopyFeatures (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceHostImageCopyFeatures deviceHostImageCopyFeatures[count];
+    const bool                            isHostImageCopyFeatures = context.contextSupports(vk::ApiVersion(1, 1, 4, 0));
+
+    if (!isHostImageCopyFeatures)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceHostImageCopyFeatures[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceHostImageCopyFeatures));
+        deviceHostImageCopyFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_FEATURES;
+        deviceHostImageCopyFeatures[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceHostImageCopyFeatures[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceHostImageCopyFeatures[0] << TestLog::EndMessage;
+
+    if (
+        deviceHostImageCopyFeatures[0].hostImageCopy != deviceHostImageCopyFeatures[1].hostImageCopy)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceHostImageCopyFeatures");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureHostQueryResetFeatures (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -711,7 +828,7 @@ tcu::TestStatus testPhysicalDeviceFeatureImagelessFramebufferFeatures (Context& 
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceImagelessFramebufferFeatures deviceImagelessFramebufferFeatures[count];
-    const bool                                   isImagelessFramebufferFeatures = checkExtension(properties, "VK_KHR_imageless_framebuffer") || context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
+    const bool                                   isImagelessFramebufferFeatures = context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
 
     if (!isImagelessFramebufferFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -739,6 +856,246 @@ tcu::TestStatus testPhysicalDeviceFeatureImagelessFramebufferFeatures (Context& 
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureIndexTypeUint8Features (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceIndexTypeUint8Features deviceIndexTypeUint8Features[count];
+    const bool                             isIndexTypeUint8Features = checkExtension(properties, "VK_KHR_index_type_uint8") || checkExtension(properties, "VK_EXT_index_type_uint8") || context.contextSupports(vk::ApiVersion(1, 1, 4, 0));
+
+    if (!isIndexTypeUint8Features)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceIndexTypeUint8Features[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceIndexTypeUint8Features));
+        deviceIndexTypeUint8Features[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES;
+        deviceIndexTypeUint8Features[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceIndexTypeUint8Features[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceIndexTypeUint8Features[0] << TestLog::EndMessage;
+
+    if (
+        deviceIndexTypeUint8Features[0].indexTypeUint8 != deviceIndexTypeUint8Features[1].indexTypeUint8)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceIndexTypeUint8Features");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
+tcu::TestStatus testPhysicalDeviceFeatureInlineUniformBlockFeatures (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceInlineUniformBlockFeatures deviceInlineUniformBlockFeatures[count];
+    const bool                                 isInlineUniformBlockFeatures = context.contextSupports(vk::ApiVersion(1, 1, 3, 0));
+
+    if (!isInlineUniformBlockFeatures)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceInlineUniformBlockFeatures[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceInlineUniformBlockFeatures));
+        deviceInlineUniformBlockFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES;
+        deviceInlineUniformBlockFeatures[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceInlineUniformBlockFeatures[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceInlineUniformBlockFeatures[0] << TestLog::EndMessage;
+
+    if (
+        deviceInlineUniformBlockFeatures[0].inlineUniformBlock != deviceInlineUniformBlockFeatures[1].inlineUniformBlock ||
+        deviceInlineUniformBlockFeatures[0].descriptorBindingInlineUniformBlockUpdateAfterBind != deviceInlineUniformBlockFeatures[1].descriptorBindingInlineUniformBlockUpdateAfterBind)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceInlineUniformBlockFeatures");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
+tcu::TestStatus testPhysicalDeviceFeatureLineRasterizationFeatures (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceLineRasterizationFeatures deviceLineRasterizationFeatures[count];
+    const bool                                isLineRasterizationFeatures = checkExtension(properties, "VK_KHR_line_rasterization") || checkExtension(properties, "VK_EXT_line_rasterization") || context.contextSupports(vk::ApiVersion(1, 1, 4, 0));
+
+    if (!isLineRasterizationFeatures)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceLineRasterizationFeatures[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceLineRasterizationFeatures));
+        deviceLineRasterizationFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES;
+        deviceLineRasterizationFeatures[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceLineRasterizationFeatures[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceLineRasterizationFeatures[0] << TestLog::EndMessage;
+
+    if (
+        deviceLineRasterizationFeatures[0].rectangularLines != deviceLineRasterizationFeatures[1].rectangularLines ||
+        deviceLineRasterizationFeatures[0].bresenhamLines != deviceLineRasterizationFeatures[1].bresenhamLines ||
+        deviceLineRasterizationFeatures[0].smoothLines != deviceLineRasterizationFeatures[1].smoothLines ||
+        deviceLineRasterizationFeatures[0].stippledRectangularLines != deviceLineRasterizationFeatures[1].stippledRectangularLines ||
+        deviceLineRasterizationFeatures[0].stippledBresenhamLines != deviceLineRasterizationFeatures[1].stippledBresenhamLines ||
+        deviceLineRasterizationFeatures[0].stippledSmoothLines != deviceLineRasterizationFeatures[1].stippledSmoothLines)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceLineRasterizationFeatures");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
+tcu::TestStatus testPhysicalDeviceFeatureMaintenance4Features (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceMaintenance4Features deviceMaintenance4Features[count];
+    const bool                           isMaintenance4Features = context.contextSupports(vk::ApiVersion(1, 1, 3, 0));
+
+    if (!isMaintenance4Features)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceMaintenance4Features[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceMaintenance4Features));
+        deviceMaintenance4Features[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES;
+        deviceMaintenance4Features[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceMaintenance4Features[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceMaintenance4Features[0] << TestLog::EndMessage;
+
+    if (
+        deviceMaintenance4Features[0].maintenance4 != deviceMaintenance4Features[1].maintenance4)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceMaintenance4Features");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
+tcu::TestStatus testPhysicalDeviceFeatureMaintenance5Features (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceMaintenance5Features deviceMaintenance5Features[count];
+    const bool                           isMaintenance5Features = context.contextSupports(vk::ApiVersion(1, 1, 4, 0));
+
+    if (!isMaintenance5Features)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceMaintenance5Features[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceMaintenance5Features));
+        deviceMaintenance5Features[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES;
+        deviceMaintenance5Features[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceMaintenance5Features[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceMaintenance5Features[0] << TestLog::EndMessage;
+
+    if (
+        deviceMaintenance5Features[0].maintenance5 != deviceMaintenance5Features[1].maintenance5)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceMaintenance5Features");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
+tcu::TestStatus testPhysicalDeviceFeatureMaintenance6Features (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceMaintenance6Features deviceMaintenance6Features[count];
+    const bool                           isMaintenance6Features = context.contextSupports(vk::ApiVersion(1, 1, 4, 0));
+
+    if (!isMaintenance6Features)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceMaintenance6Features[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceMaintenance6Features));
+        deviceMaintenance6Features[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_FEATURES;
+        deviceMaintenance6Features[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceMaintenance6Features[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceMaintenance6Features[0] << TestLog::EndMessage;
+
+    if (
+        deviceMaintenance6Features[0].maintenance6 != deviceMaintenance6Features[1].maintenance6)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceMaintenance6Features");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureMultiviewFeatures (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -750,7 +1107,7 @@ tcu::TestStatus testPhysicalDeviceFeatureMultiviewFeatures (Context& context)
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceMultiviewFeatures deviceMultiviewFeatures[count];
-    const bool                        isMultiviewFeatures = checkExtension(properties, "VK_KHR_multiview") || context.contextSupports(vk::ApiVersion(1, 1, 1, 0));
+    const bool                        isMultiviewFeatures = context.contextSupports(vk::ApiVersion(1, 1, 1, 0));
 
     if (!isMultiviewFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -816,6 +1173,162 @@ tcu::TestStatus testPhysicalDeviceFeaturePerformanceQueryFeaturesKHR (Context& c
         devicePerformanceQueryFeaturesKHR[0].performanceCounterMultipleQueryPools != devicePerformanceQueryFeaturesKHR[1].performanceCounterMultipleQueryPools)
     {
         TCU_FAIL("Mismatch between VkPhysicalDevicePerformanceQueryFeaturesKHR");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
+tcu::TestStatus testPhysicalDeviceFeaturePipelineCreationCacheControlFeatures (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDevicePipelineCreationCacheControlFeatures devicePipelineCreationCacheControlFeatures[count];
+    const bool                                           isPipelineCreationCacheControlFeatures = context.contextSupports(vk::ApiVersion(1, 1, 3, 0));
+
+    if (!isPipelineCreationCacheControlFeatures)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&devicePipelineCreationCacheControlFeatures[ndx], 0xFF * ndx, sizeof(VkPhysicalDevicePipelineCreationCacheControlFeatures));
+        devicePipelineCreationCacheControlFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES;
+        devicePipelineCreationCacheControlFeatures[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &devicePipelineCreationCacheControlFeatures[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << devicePipelineCreationCacheControlFeatures[0] << TestLog::EndMessage;
+
+    if (
+        devicePipelineCreationCacheControlFeatures[0].pipelineCreationCacheControl != devicePipelineCreationCacheControlFeatures[1].pipelineCreationCacheControl)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDevicePipelineCreationCacheControlFeatures");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
+tcu::TestStatus testPhysicalDeviceFeaturePipelineProtectedAccessFeatures (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDevicePipelineProtectedAccessFeatures devicePipelineProtectedAccessFeatures[count];
+    const bool                                      isPipelineProtectedAccessFeatures = context.contextSupports(vk::ApiVersion(1, 1, 4, 0));
+
+    if (!isPipelineProtectedAccessFeatures)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&devicePipelineProtectedAccessFeatures[ndx], 0xFF * ndx, sizeof(VkPhysicalDevicePipelineProtectedAccessFeatures));
+        devicePipelineProtectedAccessFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES;
+        devicePipelineProtectedAccessFeatures[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &devicePipelineProtectedAccessFeatures[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << devicePipelineProtectedAccessFeatures[0] << TestLog::EndMessage;
+
+    if (
+        devicePipelineProtectedAccessFeatures[0].pipelineProtectedAccess != devicePipelineProtectedAccessFeatures[1].pipelineProtectedAccess)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDevicePipelineProtectedAccessFeatures");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
+tcu::TestStatus testPhysicalDeviceFeaturePipelineRobustnessFeatures (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDevicePipelineRobustnessFeatures devicePipelineRobustnessFeatures[count];
+    const bool                                 isPipelineRobustnessFeatures = context.contextSupports(vk::ApiVersion(1, 1, 4, 0));
+
+    if (!isPipelineRobustnessFeatures)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&devicePipelineRobustnessFeatures[ndx], 0xFF * ndx, sizeof(VkPhysicalDevicePipelineRobustnessFeatures));
+        devicePipelineRobustnessFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_ROBUSTNESS_FEATURES;
+        devicePipelineRobustnessFeatures[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &devicePipelineRobustnessFeatures[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << devicePipelineRobustnessFeatures[0] << TestLog::EndMessage;
+
+    if (
+        devicePipelineRobustnessFeatures[0].pipelineRobustness != devicePipelineRobustnessFeatures[1].pipelineRobustness)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDevicePipelineRobustnessFeatures");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
+tcu::TestStatus testPhysicalDeviceFeaturePrivateDataFeatures (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDevicePrivateDataFeatures devicePrivateDataFeatures[count];
+    const bool                          isPrivateDataFeatures = context.contextSupports(vk::ApiVersion(1, 1, 3, 0));
+
+    if (!isPrivateDataFeatures)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&devicePrivateDataFeatures[ndx], 0xFF * ndx, sizeof(VkPhysicalDevicePrivateDataFeatures));
+        devicePrivateDataFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIVATE_DATA_FEATURES;
+        devicePrivateDataFeatures[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &devicePrivateDataFeatures[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << devicePrivateDataFeatures[0] << TestLog::EndMessage;
+
+    if (
+        devicePrivateDataFeatures[0].privateData != devicePrivateDataFeatures[1].privateData)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDevicePrivateDataFeatures");
     }
     return tcu::TestStatus::pass("Querying succeeded");
 }
@@ -911,7 +1424,7 @@ tcu::TestStatus testPhysicalDeviceFeatureSamplerYcbcrConversionFeatures (Context
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceSamplerYcbcrConversionFeatures deviceSamplerYcbcrConversionFeatures[count];
-    const bool                                     isSamplerYcbcrConversionFeatures = checkExtension(properties, "VK_KHR_sampler_ycbcr_conversion") || context.contextSupports(vk::ApiVersion(1, 1, 1, 0));
+    const bool                                     isSamplerYcbcrConversionFeatures = context.contextSupports(vk::ApiVersion(1, 1, 1, 0));
 
     if (!isSamplerYcbcrConversionFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -989,7 +1502,7 @@ tcu::TestStatus testPhysicalDeviceFeatureSeparateDepthStencilLayoutsFeatures (Co
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures deviceSeparateDepthStencilLayoutsFeatures[count];
-    const bool                                          isSeparateDepthStencilLayoutsFeatures = checkExtension(properties, "VK_KHR_separate_depth_stencil_layouts") || context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
+    const bool                                          isSeparateDepthStencilLayoutsFeatures = context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
 
     if (!isSeparateDepthStencilLayoutsFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -1078,7 +1591,7 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderAtomicInt64Features (Context& con
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceShaderAtomicInt64Features deviceShaderAtomicInt64Features[count];
-    const bool                                isShaderAtomicInt64Features = checkExtension(properties, "VK_KHR_shader_atomic_int64") || context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
+    const bool                                isShaderAtomicInt64Features = context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
 
     if (!isShaderAtomicInt64Features)
         return tcu::TestStatus::pass("Querying not supported");
@@ -1225,6 +1738,45 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderDrawParametersFeatures (Context& 
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureShaderExpectAssumeFeatures (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceShaderExpectAssumeFeatures deviceShaderExpectAssumeFeatures[count];
+    const bool                                 isShaderExpectAssumeFeatures = context.contextSupports(vk::ApiVersion(1, 1, 4, 0));
+
+    if (!isShaderExpectAssumeFeatures)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceShaderExpectAssumeFeatures[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceShaderExpectAssumeFeatures));
+        deviceShaderExpectAssumeFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_EXPECT_ASSUME_FEATURES;
+        deviceShaderExpectAssumeFeatures[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceShaderExpectAssumeFeatures[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceShaderExpectAssumeFeatures[0] << TestLog::EndMessage;
+
+    if (
+        deviceShaderExpectAssumeFeatures[0].shaderExpectAssume != deviceShaderExpectAssumeFeatures[1].shaderExpectAssume)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceShaderExpectAssumeFeatures");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureShaderFloat16Int8Features (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -1236,7 +1788,7 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderFloat16Int8Features (Context& con
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceShaderFloat16Int8Features deviceShaderFloat16Int8Features[count];
-    const bool                                isShaderFloat16Int8Features = checkExtension(properties, "VK_KHR_shader_float16_int8") || context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
+    const bool                                isShaderFloat16Int8Features = context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
 
     if (!isShaderFloat16Int8Features)
         return tcu::TestStatus::pass("Querying not supported");
@@ -1261,6 +1813,45 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderFloat16Int8Features (Context& con
         deviceShaderFloat16Int8Features[0].shaderInt8 != deviceShaderFloat16Int8Features[1].shaderInt8)
     {
         TCU_FAIL("Mismatch between VkPhysicalDeviceShaderFloat16Int8Features");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
+tcu::TestStatus testPhysicalDeviceFeatureShaderFloatControls2Features (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceShaderFloatControls2Features deviceShaderFloatControls2Features[count];
+    const bool                                   isShaderFloatControls2Features = context.contextSupports(vk::ApiVersion(1, 1, 4, 0));
+
+    if (!isShaderFloatControls2Features)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceShaderFloatControls2Features[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceShaderFloatControls2Features));
+        deviceShaderFloatControls2Features[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT_CONTROLS_2_FEATURES;
+        deviceShaderFloatControls2Features[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceShaderFloatControls2Features[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceShaderFloatControls2Features[0] << TestLog::EndMessage;
+
+    if (
+        deviceShaderFloatControls2Features[0].shaderFloatControls2 != deviceShaderFloatControls2Features[1].shaderFloatControls2)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceShaderFloatControls2Features");
     }
     return tcu::TestStatus::pass("Querying succeeded");
 }
@@ -1305,6 +1896,45 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderImageAtomicInt64FeaturesEXT (Cont
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureShaderIntegerDotProductFeatures (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceShaderIntegerDotProductFeatures deviceShaderIntegerDotProductFeatures[count];
+    const bool                                      isShaderIntegerDotProductFeatures = context.contextSupports(vk::ApiVersion(1, 1, 3, 0));
+
+    if (!isShaderIntegerDotProductFeatures)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceShaderIntegerDotProductFeatures[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceShaderIntegerDotProductFeatures));
+        deviceShaderIntegerDotProductFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES;
+        deviceShaderIntegerDotProductFeatures[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceShaderIntegerDotProductFeatures[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceShaderIntegerDotProductFeatures[0] << TestLog::EndMessage;
+
+    if (
+        deviceShaderIntegerDotProductFeatures[0].shaderIntegerDotProduct != deviceShaderIntegerDotProductFeatures[1].shaderIntegerDotProduct)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceShaderIntegerDotProductFeatures");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureShaderSubgroupExtendedTypesFeatures (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -1316,7 +1946,7 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderSubgroupExtendedTypesFeatures (Co
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures deviceShaderSubgroupExtendedTypesFeatures[count];
-    const bool                                          isShaderSubgroupExtendedTypesFeatures = checkExtension(properties, "VK_KHR_shader_subgroup_extended_types") || context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
+    const bool                                          isShaderSubgroupExtendedTypesFeatures = context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
 
     if (!isShaderSubgroupExtendedTypesFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -1340,6 +1970,46 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderSubgroupExtendedTypesFeatures (Co
         deviceShaderSubgroupExtendedTypesFeatures[0].shaderSubgroupExtendedTypes != deviceShaderSubgroupExtendedTypesFeatures[1].shaderSubgroupExtendedTypes)
     {
         TCU_FAIL("Mismatch between VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
+tcu::TestStatus testPhysicalDeviceFeatureShaderSubgroupRotateFeatures (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceShaderSubgroupRotateFeatures deviceShaderSubgroupRotateFeatures[count];
+    const bool                                   isShaderSubgroupRotateFeatures = context.contextSupports(vk::ApiVersion(1, 1, 4, 0));
+
+    if (!isShaderSubgroupRotateFeatures)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceShaderSubgroupRotateFeatures[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceShaderSubgroupRotateFeatures));
+        deviceShaderSubgroupRotateFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_ROTATE_FEATURES;
+        deviceShaderSubgroupRotateFeatures[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceShaderSubgroupRotateFeatures[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceShaderSubgroupRotateFeatures[0] << TestLog::EndMessage;
+
+    if (
+        deviceShaderSubgroupRotateFeatures[0].shaderSubgroupRotate != deviceShaderSubgroupRotateFeatures[1].shaderSubgroupRotate ||
+        deviceShaderSubgroupRotateFeatures[0].shaderSubgroupRotateClustered != deviceShaderSubgroupRotateFeatures[1].shaderSubgroupRotateClustered)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceShaderSubgroupRotateFeatures");
     }
     return tcu::TestStatus::pass("Querying succeeded");
 }
@@ -1551,7 +2221,7 @@ tcu::TestStatus testPhysicalDeviceFeatureTimelineSemaphoreFeatures (Context& con
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceTimelineSemaphoreFeatures deviceTimelineSemaphoreFeatures[count];
-    const bool                                isTimelineSemaphoreFeatures = checkExtension(properties, "VK_KHR_timeline_semaphore") || context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
+    const bool                                isTimelineSemaphoreFeatures = context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
 
     if (!isTimelineSemaphoreFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -1590,7 +2260,7 @@ tcu::TestStatus testPhysicalDeviceFeatureUniformBufferStandardLayoutFeatures (Co
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceUniformBufferStandardLayoutFeatures deviceUniformBufferStandardLayoutFeatures[count];
-    const bool                                          isUniformBufferStandardLayoutFeatures = checkExtension(properties, "VK_KHR_uniform_buffer_standard_layout") || context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
+    const bool                                          isUniformBufferStandardLayoutFeatures = context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
 
     if (!isUniformBufferStandardLayoutFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -1629,7 +2299,7 @@ tcu::TestStatus testPhysicalDeviceFeatureVariablePointersFeatures (Context& cont
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceVariablePointersFeatures deviceVariablePointersFeatures[count];
-    const bool                               isVariablePointersFeatures = checkExtension(properties, "VK_KHR_variable_pointers") || context.contextSupports(vk::ApiVersion(1, 1, 1, 0));
+    const bool                               isVariablePointersFeatures = context.contextSupports(vk::ApiVersion(1, 1, 1, 0));
 
     if (!isVariablePointersFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -1669,7 +2339,7 @@ tcu::TestStatus testPhysicalDeviceFeatureVertexAttributeDivisorFeatures (Context
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceVertexAttributeDivisorFeatures deviceVertexAttributeDivisorFeatures[count];
-    const bool                                     isVertexAttributeDivisorFeatures = checkExtension(properties, "VK_KHR_vertex_attribute_divisor") || checkExtension(properties, "VK_EXT_vertex_attribute_divisor") || context.contextSupports(vk::ApiVersion(1, 1, 4, 0));
+    const bool                                     isVertexAttributeDivisorFeatures = checkExtension(properties, "VK_KHR_vertex_attribute_divisor") || context.contextSupports(vk::ApiVersion(1, 1, 4, 0));
 
     if (!isVertexAttributeDivisorFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -1872,6 +2542,118 @@ tcu::TestStatus testPhysicalDeviceFeatureVulkan12Features (Context& context)
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureVulkan13Features (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceVulkan13Features deviceVulkan13Features[count];
+    const bool                       isVulkan13Features = context.contextSupports(vk::ApiVersion(1, 1, 3, 0));
+
+    if (!isVulkan13Features)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceVulkan13Features[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVulkan13Features));
+        deviceVulkan13Features[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+        deviceVulkan13Features[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceVulkan13Features[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceVulkan13Features[0] << TestLog::EndMessage;
+
+    if (
+        deviceVulkan13Features[0].robustImageAccess != deviceVulkan13Features[1].robustImageAccess ||
+        deviceVulkan13Features[0].inlineUniformBlock != deviceVulkan13Features[1].inlineUniformBlock ||
+        deviceVulkan13Features[0].descriptorBindingInlineUniformBlockUpdateAfterBind != deviceVulkan13Features[1].descriptorBindingInlineUniformBlockUpdateAfterBind ||
+        deviceVulkan13Features[0].pipelineCreationCacheControl != deviceVulkan13Features[1].pipelineCreationCacheControl ||
+        deviceVulkan13Features[0].privateData != deviceVulkan13Features[1].privateData ||
+        deviceVulkan13Features[0].shaderDemoteToHelperInvocation != deviceVulkan13Features[1].shaderDemoteToHelperInvocation ||
+        deviceVulkan13Features[0].shaderTerminateInvocation != deviceVulkan13Features[1].shaderTerminateInvocation ||
+        deviceVulkan13Features[0].subgroupSizeControl != deviceVulkan13Features[1].subgroupSizeControl ||
+        deviceVulkan13Features[0].computeFullSubgroups != deviceVulkan13Features[1].computeFullSubgroups ||
+        deviceVulkan13Features[0].synchronization2 != deviceVulkan13Features[1].synchronization2 ||
+        deviceVulkan13Features[0].textureCompressionASTC_HDR != deviceVulkan13Features[1].textureCompressionASTC_HDR ||
+        deviceVulkan13Features[0].shaderZeroInitializeWorkgroupMemory != deviceVulkan13Features[1].shaderZeroInitializeWorkgroupMemory ||
+        deviceVulkan13Features[0].dynamicRendering != deviceVulkan13Features[1].dynamicRendering ||
+        deviceVulkan13Features[0].shaderIntegerDotProduct != deviceVulkan13Features[1].shaderIntegerDotProduct ||
+        deviceVulkan13Features[0].maintenance4 != deviceVulkan13Features[1].maintenance4)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceVulkan13Features");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
+tcu::TestStatus testPhysicalDeviceFeatureVulkan14Features (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceVulkan14Features deviceVulkan14Features[count];
+    const bool                       isVulkan14Features = context.contextSupports(vk::ApiVersion(1, 1, 4, 0));
+
+    if (!isVulkan14Features)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceVulkan14Features[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVulkan14Features));
+        deviceVulkan14Features[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES;
+        deviceVulkan14Features[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceVulkan14Features[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceVulkan14Features[0] << TestLog::EndMessage;
+
+    if (
+        deviceVulkan14Features[0].globalPriorityQuery != deviceVulkan14Features[1].globalPriorityQuery ||
+        deviceVulkan14Features[0].shaderSubgroupRotate != deviceVulkan14Features[1].shaderSubgroupRotate ||
+        deviceVulkan14Features[0].shaderSubgroupRotateClustered != deviceVulkan14Features[1].shaderSubgroupRotateClustered ||
+        deviceVulkan14Features[0].shaderFloatControls2 != deviceVulkan14Features[1].shaderFloatControls2 ||
+        deviceVulkan14Features[0].shaderExpectAssume != deviceVulkan14Features[1].shaderExpectAssume ||
+        deviceVulkan14Features[0].rectangularLines != deviceVulkan14Features[1].rectangularLines ||
+        deviceVulkan14Features[0].bresenhamLines != deviceVulkan14Features[1].bresenhamLines ||
+        deviceVulkan14Features[0].smoothLines != deviceVulkan14Features[1].smoothLines ||
+        deviceVulkan14Features[0].stippledRectangularLines != deviceVulkan14Features[1].stippledRectangularLines ||
+        deviceVulkan14Features[0].stippledBresenhamLines != deviceVulkan14Features[1].stippledBresenhamLines ||
+        deviceVulkan14Features[0].stippledSmoothLines != deviceVulkan14Features[1].stippledSmoothLines ||
+        deviceVulkan14Features[0].vertexAttributeInstanceRateDivisor != deviceVulkan14Features[1].vertexAttributeInstanceRateDivisor ||
+        deviceVulkan14Features[0].vertexAttributeInstanceRateZeroDivisor != deviceVulkan14Features[1].vertexAttributeInstanceRateZeroDivisor ||
+        deviceVulkan14Features[0].indexTypeUint8 != deviceVulkan14Features[1].indexTypeUint8 ||
+        deviceVulkan14Features[0].dynamicRenderingLocalRead != deviceVulkan14Features[1].dynamicRenderingLocalRead ||
+        deviceVulkan14Features[0].maintenance5 != deviceVulkan14Features[1].maintenance5 ||
+        deviceVulkan14Features[0].maintenance6 != deviceVulkan14Features[1].maintenance6 ||
+        deviceVulkan14Features[0].pipelineProtectedAccess != deviceVulkan14Features[1].pipelineProtectedAccess ||
+        deviceVulkan14Features[0].pipelineRobustness != deviceVulkan14Features[1].pipelineRobustness ||
+        deviceVulkan14Features[0].hostImageCopy != deviceVulkan14Features[1].hostImageCopy ||
+        deviceVulkan14Features[0].pushDescriptor != deviceVulkan14Features[1].pushDescriptor)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceVulkan14Features");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureVulkanMemoryModelFeatures (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -1883,7 +2665,7 @@ tcu::TestStatus testPhysicalDeviceFeatureVulkanMemoryModelFeatures (Context& con
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceVulkanMemoryModelFeatures deviceVulkanMemoryModelFeatures[count];
-    const bool                                isVulkanMemoryModelFeatures = checkExtension(properties, "VK_KHR_vulkan_memory_model") || context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
+    const bool                                isVulkanMemoryModelFeatures = context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
 
     if (!isVulkanMemoryModelFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -1924,7 +2706,7 @@ tcu::TestStatus testPhysicalDeviceFeatureVulkanSC10Features (Context& context)
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceVulkanSC10Features deviceVulkanSC10Features[count];
-    const bool                         isVulkanSC10Features = context.contextSupports(vk::ApiVersion(1, 1, 0, 0));
+    const bool                         isVulkanSC10Features = true;
 
     if (!isVulkanSC10Features)
         return tcu::TestStatus::pass("Querying not supported");
@@ -2030,6 +2812,302 @@ tcu::TestStatus testPhysicalDeviceFeatureYcbcrImageArraysFeaturesEXT (Context& c
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureZeroInitializeWorkgroupMemoryFeatures (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeatures deviceZeroInitializeWorkgroupMemoryFeatures[count];
+    const bool                                            isZeroInitializeWorkgroupMemoryFeatures = context.contextSupports(vk::ApiVersion(1, 1, 3, 0));
+
+    if (!isZeroInitializeWorkgroupMemoryFeatures)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceZeroInitializeWorkgroupMemoryFeatures[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeatures));
+        deviceZeroInitializeWorkgroupMemoryFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_WORKGROUP_MEMORY_FEATURES;
+        deviceZeroInitializeWorkgroupMemoryFeatures[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceZeroInitializeWorkgroupMemoryFeatures[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceZeroInitializeWorkgroupMemoryFeatures[0] << TestLog::EndMessage;
+
+    if (
+        deviceZeroInitializeWorkgroupMemoryFeatures[0].shaderZeroInitializeWorkgroupMemory != deviceZeroInitializeWorkgroupMemoryFeatures[1].shaderZeroInitializeWorkgroupMemory)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeatures");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
+tcu::TestStatus createDeviceWithPromoted11Structures (Context& context)
+{
+    if (!context.contextSupports(vk::ApiVersion(1, 1, 1, 0)))
+        TCU_THROW(NotSupportedError, "Vulkan 1.1 is not supported");
+
+    const PlatformInterface&        platformInterface = context.getPlatformInterface();
+    const CustomInstance            instance            (createCustomInstanceFromContext(context));
+    const InstanceDriver&            instanceDriver        (instance.getDriver());
+    const VkPhysicalDevice            physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const uint32_t                    queueFamilyIndex = 0;
+    const uint32_t                    queueCount = 1;
+    const uint32_t                    queueIndex = 0;
+    const float                        queuePriority = 1.0f;
+
+    const vector<VkQueueFamilyProperties> queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+
+    const VkDeviceQueueCreateInfo    deviceQueueCreateInfo =
+    {
+        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        nullptr,
+        (VkDeviceQueueCreateFlags)0u,
+        queueFamilyIndex, //queueFamilyIndex;
+        queueCount, //queueCount;
+        &queuePriority, //pQueuePriorities;
+    };
+
+	VkPhysicalDevice16BitStorageFeatures device16BitStorageFeatures = initVulkanStructure();
+	VkPhysicalDeviceMultiviewFeatures deviceMultiviewFeatures = initVulkanStructure(&device16BitStorageFeatures);
+	VkPhysicalDeviceProtectedMemoryFeatures deviceProtectedMemoryFeatures = initVulkanStructure(&deviceMultiviewFeatures);
+	VkPhysicalDeviceSamplerYcbcrConversionFeatures deviceSamplerYcbcrConversionFeatures = initVulkanStructure(&deviceProtectedMemoryFeatures);
+	VkPhysicalDeviceShaderDrawParametersFeatures deviceShaderDrawParametersFeatures = initVulkanStructure(&deviceSamplerYcbcrConversionFeatures);
+	VkPhysicalDeviceVariablePointersFeatures deviceVariablePointersFeatures = initVulkanStructure(&deviceShaderDrawParametersFeatures);
+	VkPhysicalDeviceFeatures2 extFeatures = initVulkanStructure(&deviceVariablePointersFeatures);
+
+    instanceDriver.getPhysicalDeviceFeatures2 (physicalDevice, &extFeatures);
+
+    const VkDeviceCreateInfo        deviceCreateInfo =
+    {
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, //sType;
+        &extFeatures, //pNext;
+        (VkDeviceCreateFlags)0u,
+        1, //queueRecordCount;
+        &deviceQueueCreateInfo, //pRequestedQueues;
+        0, //layerCount;
+        nullptr, //ppEnabledLayerNames;
+        0, //extensionCount;
+        nullptr, //ppEnabledExtensionNames;
+        nullptr, //pEnabledFeatures;
+    };
+
+    const Unique<VkDevice>            device            (createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+    const DeviceDriver                deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
+    const VkQueue                    queue = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
+
+    VK_CHECK(deviceDriver.queueWaitIdle(queue));
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+tcu::TestStatus createDeviceWithPromoted12Structures (Context& context)
+{
+    if (!context.contextSupports(vk::ApiVersion(1, 1, 2, 0)))
+        TCU_THROW(NotSupportedError, "Vulkan 1.2 is not supported");
+
+    const PlatformInterface&        platformInterface = context.getPlatformInterface();
+    const CustomInstance            instance            (createCustomInstanceFromContext(context));
+    const InstanceDriver&            instanceDriver        (instance.getDriver());
+    const VkPhysicalDevice            physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const uint32_t                    queueFamilyIndex = 0;
+    const uint32_t                    queueCount = 1;
+    const uint32_t                    queueIndex = 0;
+    const float                        queuePriority = 1.0f;
+
+    const vector<VkQueueFamilyProperties> queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+
+    const VkDeviceQueueCreateInfo    deviceQueueCreateInfo =
+    {
+        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        nullptr,
+        (VkDeviceQueueCreateFlags)0u,
+        queueFamilyIndex, //queueFamilyIndex;
+        queueCount, //queueCount;
+        &queuePriority, //pQueuePriorities;
+    };
+
+	VkPhysicalDevice8BitStorageFeatures device8BitStorageFeatures = initVulkanStructure();
+	VkPhysicalDeviceBufferDeviceAddressFeatures deviceBufferDeviceAddressFeatures = initVulkanStructure(&device8BitStorageFeatures);
+	VkPhysicalDeviceDescriptorIndexingFeatures deviceDescriptorIndexingFeatures = initVulkanStructure(&deviceBufferDeviceAddressFeatures);
+	VkPhysicalDeviceHostQueryResetFeatures deviceHostQueryResetFeatures = initVulkanStructure(&deviceDescriptorIndexingFeatures);
+	VkPhysicalDeviceImagelessFramebufferFeatures deviceImagelessFramebufferFeatures = initVulkanStructure(&deviceHostQueryResetFeatures);
+	VkPhysicalDeviceScalarBlockLayoutFeatures deviceScalarBlockLayoutFeatures = initVulkanStructure(&deviceImagelessFramebufferFeatures);
+	VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures deviceSeparateDepthStencilLayoutsFeatures = initVulkanStructure(&deviceScalarBlockLayoutFeatures);
+	VkPhysicalDeviceShaderAtomicInt64Features deviceShaderAtomicInt64Features = initVulkanStructure(&deviceSeparateDepthStencilLayoutsFeatures);
+	VkPhysicalDeviceShaderFloat16Int8Features deviceShaderFloat16Int8Features = initVulkanStructure(&deviceShaderAtomicInt64Features);
+	VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures deviceShaderSubgroupExtendedTypesFeatures = initVulkanStructure(&deviceShaderFloat16Int8Features);
+	VkPhysicalDeviceTimelineSemaphoreFeatures deviceTimelineSemaphoreFeatures = initVulkanStructure(&deviceShaderSubgroupExtendedTypesFeatures);
+	VkPhysicalDeviceUniformBufferStandardLayoutFeatures deviceUniformBufferStandardLayoutFeatures = initVulkanStructure(&deviceTimelineSemaphoreFeatures);
+	VkPhysicalDeviceVulkanMemoryModelFeatures deviceVulkanMemoryModelFeatures = initVulkanStructure(&deviceUniformBufferStandardLayoutFeatures);
+	VkPhysicalDeviceFeatures2 extFeatures = initVulkanStructure(&deviceVulkanMemoryModelFeatures);
+
+    instanceDriver.getPhysicalDeviceFeatures2 (physicalDevice, &extFeatures);
+
+    const VkDeviceCreateInfo        deviceCreateInfo =
+    {
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, //sType;
+        &extFeatures, //pNext;
+        (VkDeviceCreateFlags)0u,
+        1, //queueRecordCount;
+        &deviceQueueCreateInfo, //pRequestedQueues;
+        0, //layerCount;
+        nullptr, //ppEnabledLayerNames;
+        0, //extensionCount;
+        nullptr, //ppEnabledExtensionNames;
+        nullptr, //pEnabledFeatures;
+    };
+
+    const Unique<VkDevice>            device            (createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+    const DeviceDriver                deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
+    const VkQueue                    queue = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
+
+    VK_CHECK(deviceDriver.queueWaitIdle(queue));
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+tcu::TestStatus createDeviceWithPromoted13Structures (Context& context)
+{
+    if (!context.contextSupports(vk::ApiVersion(1, 1, 3, 0)))
+        TCU_THROW(NotSupportedError, "Vulkan 1.3 is not supported");
+
+    const PlatformInterface&        platformInterface = context.getPlatformInterface();
+    const CustomInstance            instance            (createCustomInstanceFromContext(context));
+    const InstanceDriver&            instanceDriver        (instance.getDriver());
+    const VkPhysicalDevice            physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const uint32_t                    queueFamilyIndex = 0;
+    const uint32_t                    queueCount = 1;
+    const uint32_t                    queueIndex = 0;
+    const float                        queuePriority = 1.0f;
+
+    const vector<VkQueueFamilyProperties> queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+
+    const VkDeviceQueueCreateInfo    deviceQueueCreateInfo =
+    {
+        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        nullptr,
+        (VkDeviceQueueCreateFlags)0u,
+        queueFamilyIndex, //queueFamilyIndex;
+        queueCount, //queueCount;
+        &queuePriority, //pQueuePriorities;
+    };
+
+	VkPhysicalDeviceDynamicRenderingFeatures deviceDynamicRenderingFeatures = initVulkanStructure();
+	VkPhysicalDeviceImageRobustnessFeatures deviceImageRobustnessFeatures = initVulkanStructure(&deviceDynamicRenderingFeatures);
+	VkPhysicalDeviceInlineUniformBlockFeatures deviceInlineUniformBlockFeatures = initVulkanStructure(&deviceImageRobustnessFeatures);
+	VkPhysicalDeviceMaintenance4Features deviceMaintenance4Features = initVulkanStructure(&deviceInlineUniformBlockFeatures);
+	VkPhysicalDevicePipelineCreationCacheControlFeatures devicePipelineCreationCacheControlFeatures = initVulkanStructure(&deviceMaintenance4Features);
+	VkPhysicalDevicePrivateDataFeatures devicePrivateDataFeatures = initVulkanStructure(&devicePipelineCreationCacheControlFeatures);
+	VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures deviceShaderDemoteToHelperInvocationFeatures = initVulkanStructure(&devicePrivateDataFeatures);
+	VkPhysicalDeviceShaderIntegerDotProductFeatures deviceShaderIntegerDotProductFeatures = initVulkanStructure(&deviceShaderDemoteToHelperInvocationFeatures);
+	VkPhysicalDeviceShaderTerminateInvocationFeatures deviceShaderTerminateInvocationFeatures = initVulkanStructure(&deviceShaderIntegerDotProductFeatures);
+	VkPhysicalDeviceSubgroupSizeControlFeatures deviceSubgroupSizeControlFeatures = initVulkanStructure(&deviceShaderTerminateInvocationFeatures);
+	VkPhysicalDeviceSynchronization2Features deviceSynchronization2Features = initVulkanStructure(&deviceSubgroupSizeControlFeatures);
+	VkPhysicalDeviceTextureCompressionASTCHDRFeatures deviceTextureCompressionASTCHDRFeatures = initVulkanStructure(&deviceSynchronization2Features);
+	VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeatures deviceZeroInitializeWorkgroupMemoryFeatures = initVulkanStructure(&deviceTextureCompressionASTCHDRFeatures);
+	VkPhysicalDeviceFeatures2 extFeatures = initVulkanStructure(&deviceZeroInitializeWorkgroupMemoryFeatures);
+
+    instanceDriver.getPhysicalDeviceFeatures2 (physicalDevice, &extFeatures);
+
+    const VkDeviceCreateInfo        deviceCreateInfo =
+    {
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, //sType;
+        &extFeatures, //pNext;
+        (VkDeviceCreateFlags)0u,
+        1, //queueRecordCount;
+        &deviceQueueCreateInfo, //pRequestedQueues;
+        0, //layerCount;
+        nullptr, //ppEnabledLayerNames;
+        0, //extensionCount;
+        nullptr, //ppEnabledExtensionNames;
+        nullptr, //pEnabledFeatures;
+    };
+
+    const Unique<VkDevice>            device            (createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+    const DeviceDriver                deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
+    const VkQueue                    queue = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
+
+    VK_CHECK(deviceDriver.queueWaitIdle(queue));
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+tcu::TestStatus createDeviceWithPromoted14Structures (Context& context)
+{
+    if (!context.contextSupports(vk::ApiVersion(1, 1, 4, 0)))
+        TCU_THROW(NotSupportedError, "Vulkan 1.4 is not supported");
+
+    const PlatformInterface&        platformInterface = context.getPlatformInterface();
+    const CustomInstance            instance            (createCustomInstanceFromContext(context));
+    const InstanceDriver&            instanceDriver        (instance.getDriver());
+    const VkPhysicalDevice            physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const uint32_t                    queueFamilyIndex = 0;
+    const uint32_t                    queueCount = 1;
+    const uint32_t                    queueIndex = 0;
+    const float                        queuePriority = 1.0f;
+
+    const vector<VkQueueFamilyProperties> queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+
+    const VkDeviceQueueCreateInfo    deviceQueueCreateInfo =
+    {
+        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        nullptr,
+        (VkDeviceQueueCreateFlags)0u,
+        queueFamilyIndex, //queueFamilyIndex;
+        queueCount, //queueCount;
+        &queuePriority, //pQueuePriorities;
+    };
+
+	VkPhysicalDeviceDynamicRenderingLocalReadFeatures deviceDynamicRenderingLocalReadFeatures = initVulkanStructure();
+	VkPhysicalDeviceGlobalPriorityQueryFeatures deviceGlobalPriorityQueryFeatures = initVulkanStructure(&deviceDynamicRenderingLocalReadFeatures);
+	VkPhysicalDeviceHostImageCopyFeatures deviceHostImageCopyFeatures = initVulkanStructure(&deviceGlobalPriorityQueryFeatures);
+	VkPhysicalDeviceIndexTypeUint8Features deviceIndexTypeUint8Features = initVulkanStructure(&deviceHostImageCopyFeatures);
+	VkPhysicalDeviceLineRasterizationFeatures deviceLineRasterizationFeatures = initVulkanStructure(&deviceIndexTypeUint8Features);
+	VkPhysicalDeviceMaintenance5Features deviceMaintenance5Features = initVulkanStructure(&deviceLineRasterizationFeatures);
+	VkPhysicalDeviceMaintenance6Features deviceMaintenance6Features = initVulkanStructure(&deviceMaintenance5Features);
+	VkPhysicalDevicePipelineProtectedAccessFeatures devicePipelineProtectedAccessFeatures = initVulkanStructure(&deviceMaintenance6Features);
+	VkPhysicalDevicePipelineRobustnessFeatures devicePipelineRobustnessFeatures = initVulkanStructure(&devicePipelineProtectedAccessFeatures);
+	VkPhysicalDeviceShaderExpectAssumeFeatures deviceShaderExpectAssumeFeatures = initVulkanStructure(&devicePipelineRobustnessFeatures);
+	VkPhysicalDeviceShaderFloatControls2Features deviceShaderFloatControls2Features = initVulkanStructure(&deviceShaderExpectAssumeFeatures);
+	VkPhysicalDeviceShaderSubgroupRotateFeatures deviceShaderSubgroupRotateFeatures = initVulkanStructure(&deviceShaderFloatControls2Features);
+	VkPhysicalDeviceVertexAttributeDivisorFeatures deviceVertexAttributeDivisorFeatures = initVulkanStructure(&deviceShaderSubgroupRotateFeatures);
+	VkPhysicalDeviceFeatures2 extFeatures = initVulkanStructure(&deviceVertexAttributeDivisorFeatures);
+
+    instanceDriver.getPhysicalDeviceFeatures2 (physicalDevice, &extFeatures);
+
+    const VkDeviceCreateInfo        deviceCreateInfo =
+    {
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, //sType;
+        &extFeatures, //pNext;
+        (VkDeviceCreateFlags)0u,
+        1, //queueRecordCount;
+        &deviceQueueCreateInfo, //pRequestedQueues;
+        0, //layerCount;
+        nullptr, //ppEnabledLayerNames;
+        0, //extensionCount;
+        nullptr, //ppEnabledExtensionNames;
+        nullptr, //pEnabledFeatures;
+    };
+
+    const Unique<VkDevice>            device            (createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+    const DeviceDriver                deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
+    const VkQueue                    queue = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
+
+    VK_CHECK(deviceDriver.queueWaitIdle(queue));
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 {
 	addFunctionCase(testGroup, "16_bit_storage_features", testPhysicalDeviceFeature16BitStorageFeatures);
@@ -2042,16 +3120,29 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "custom_border_color_features_ext", testPhysicalDeviceFeatureCustomBorderColorFeaturesEXT);
 	addFunctionCase(testGroup, "depth_clip_enable_features_ext", testPhysicalDeviceFeatureDepthClipEnableFeaturesEXT);
 	addFunctionCase(testGroup, "descriptor_indexing_features", testPhysicalDeviceFeatureDescriptorIndexingFeatures);
+	addFunctionCase(testGroup, "dynamic_rendering_features", testPhysicalDeviceFeatureDynamicRenderingFeatures);
+	addFunctionCase(testGroup, "dynamic_rendering_local_read_features", testPhysicalDeviceFeatureDynamicRenderingLocalReadFeatures);
 	addFunctionCase(testGroup, "extended_dynamic_state2_features_ext", testPhysicalDeviceFeatureExtendedDynamicState2FeaturesEXT);
 	addFunctionCase(testGroup, "extended_dynamic_state_features_ext", testPhysicalDeviceFeatureExtendedDynamicStateFeaturesEXT);
 	addFunctionCase(testGroup, "fragment_shader_interlock_features_ext", testPhysicalDeviceFeatureFragmentShaderInterlockFeaturesEXT);
 	addFunctionCase(testGroup, "fragment_shading_rate_features_khr", testPhysicalDeviceFeatureFragmentShadingRateFeaturesKHR);
 	addFunctionCase(testGroup, "global_priority_query_features", testPhysicalDeviceFeatureGlobalPriorityQueryFeatures);
+	addFunctionCase(testGroup, "host_image_copy_features", testPhysicalDeviceFeatureHostImageCopyFeatures);
 	addFunctionCase(testGroup, "host_query_reset_features", testPhysicalDeviceFeatureHostQueryResetFeatures);
 	addFunctionCase(testGroup, "image_robustness_features", testPhysicalDeviceFeatureImageRobustnessFeatures);
 	addFunctionCase(testGroup, "imageless_framebuffer_features", testPhysicalDeviceFeatureImagelessFramebufferFeatures);
+	addFunctionCase(testGroup, "index_type_uint8_features", testPhysicalDeviceFeatureIndexTypeUint8Features);
+	addFunctionCase(testGroup, "inline_uniform_block_features", testPhysicalDeviceFeatureInlineUniformBlockFeatures);
+	addFunctionCase(testGroup, "line_rasterization_features", testPhysicalDeviceFeatureLineRasterizationFeatures);
+	addFunctionCase(testGroup, "maintenance4_features", testPhysicalDeviceFeatureMaintenance4Features);
+	addFunctionCase(testGroup, "maintenance5_features", testPhysicalDeviceFeatureMaintenance5Features);
+	addFunctionCase(testGroup, "maintenance6_features", testPhysicalDeviceFeatureMaintenance6Features);
 	addFunctionCase(testGroup, "multiview_features", testPhysicalDeviceFeatureMultiviewFeatures);
 	addFunctionCase(testGroup, "performance_query_features_khr", testPhysicalDeviceFeaturePerformanceQueryFeaturesKHR);
+	addFunctionCase(testGroup, "pipeline_creation_cache_control_features", testPhysicalDeviceFeaturePipelineCreationCacheControlFeatures);
+	addFunctionCase(testGroup, "pipeline_protected_access_features", testPhysicalDeviceFeaturePipelineProtectedAccessFeatures);
+	addFunctionCase(testGroup, "pipeline_robustness_features", testPhysicalDeviceFeaturePipelineRobustnessFeatures);
+	addFunctionCase(testGroup, "private_data_features", testPhysicalDeviceFeaturePrivateDataFeatures);
 	addFunctionCase(testGroup, "protected_memory_features", testPhysicalDeviceFeatureProtectedMemoryFeatures);
 	addFunctionCase(testGroup, "robustness2_features_khr", testPhysicalDeviceFeatureRobustness2FeaturesKHR);
 	addFunctionCase(testGroup, "sampler_ycbcr_conversion_features", testPhysicalDeviceFeatureSamplerYcbcrConversionFeatures);
@@ -2062,9 +3153,13 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "shader_clock_features_khr", testPhysicalDeviceFeatureShaderClockFeaturesKHR);
 	addFunctionCase(testGroup, "shader_demote_to_helper_invocation_features", testPhysicalDeviceFeatureShaderDemoteToHelperInvocationFeatures);
 	addFunctionCase(testGroup, "shader_draw_parameters_features", testPhysicalDeviceFeatureShaderDrawParametersFeatures);
+	addFunctionCase(testGroup, "shader_expect_assume_features", testPhysicalDeviceFeatureShaderExpectAssumeFeatures);
 	addFunctionCase(testGroup, "shader_float16_int8_features", testPhysicalDeviceFeatureShaderFloat16Int8Features);
+	addFunctionCase(testGroup, "shader_float_controls2_features", testPhysicalDeviceFeatureShaderFloatControls2Features);
 	addFunctionCase(testGroup, "shader_image_atomic_int64_features_ext", testPhysicalDeviceFeatureShaderImageAtomicInt64FeaturesEXT);
+	addFunctionCase(testGroup, "shader_integer_dot_product_features", testPhysicalDeviceFeatureShaderIntegerDotProductFeatures);
 	addFunctionCase(testGroup, "shader_subgroup_extended_types_features", testPhysicalDeviceFeatureShaderSubgroupExtendedTypesFeatures);
+	addFunctionCase(testGroup, "shader_subgroup_rotate_features", testPhysicalDeviceFeatureShaderSubgroupRotateFeatures);
 	addFunctionCase(testGroup, "shader_terminate_invocation_features", testPhysicalDeviceFeatureShaderTerminateInvocationFeatures);
 	addFunctionCase(testGroup, "subgroup_size_control_features", testPhysicalDeviceFeatureSubgroupSizeControlFeatures);
 	addFunctionCase(testGroup, "synchronization2_features", testPhysicalDeviceFeatureSynchronization2Features);
@@ -2077,9 +3172,16 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "vertex_input_dynamic_state_features_ext", testPhysicalDeviceFeatureVertexInputDynamicStateFeaturesEXT);
 	addFunctionCase(testGroup, "vulkan11_features", testPhysicalDeviceFeatureVulkan11Features);
 	addFunctionCase(testGroup, "vulkan12_features", testPhysicalDeviceFeatureVulkan12Features);
+	addFunctionCase(testGroup, "vulkan13_features", testPhysicalDeviceFeatureVulkan13Features);
+	addFunctionCase(testGroup, "vulkan14_features", testPhysicalDeviceFeatureVulkan14Features);
 	addFunctionCase(testGroup, "vulkan_memory_model_features", testPhysicalDeviceFeatureVulkanMemoryModelFeatures);
 	addFunctionCase(testGroup, "vulkan_sc10_features", testPhysicalDeviceFeatureVulkanSC10Features);
 	addFunctionCase(testGroup, "ycbcr2_plane444_formats_features_ext", testPhysicalDeviceFeatureYcbcr2Plane444FormatsFeaturesEXT);
 	addFunctionCase(testGroup, "ycbcr_image_arrays_features_ext", testPhysicalDeviceFeatureYcbcrImageArraysFeaturesEXT);
+	addFunctionCase(testGroup, "zero_initialize_workgroup_memory_features", testPhysicalDeviceFeatureZeroInitializeWorkgroupMemoryFeatures);
+	addFunctionCase(testGroup, "create_device_with_promoted11_structures", createDeviceWithPromoted11Structures);
+	addFunctionCase(testGroup, "create_device_with_promoted12_structures", createDeviceWithPromoted12Structures);
+	addFunctionCase(testGroup, "create_device_with_promoted13_structures", createDeviceWithPromoted13Structures);
+	addFunctionCase(testGroup, "create_device_with_promoted14_structures", createDeviceWithPromoted14Structures);
 }
 
