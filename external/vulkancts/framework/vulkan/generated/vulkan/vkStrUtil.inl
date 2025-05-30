@@ -1917,6 +1917,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkExternalComputeQueueDeviceCre
 std::ostream&	operator<<	(std::ostream& s, const VkExternalComputeQueueCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExternalComputeQueueDataParamsNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalComputeQueuePropertiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceUniformBufferUnsizedArrayFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SpsVuiFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264HrdParameters& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SequenceParameterSetVui& value);

@@ -65,5 +65,6 @@ vk-main-2024-03-01/synchronization2.txt
 vk-main-2024-03-01/tessellation.txt
 vk-main-2024-03-01/texture.txt
 vk-main-2024-03-01/transform-feedback.txt
+vk-main-2024-03-01/ubo.txt
 vk-main-2024-03-01/wsi.txt
 vk-main-2024-03-01/ycbcr.txt

@@ -10765,6 +10765,13 @@ struct VkPhysicalDeviceExternalComputeQueuePropertiesNV
 	uint32_t		maxExternalQueues;
 };
 
+struct VkPhysicalDeviceUniformBufferUnsizedArrayFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		uniformBufferUnsizedArray;
+};
+
 struct StdVideoH264SpsVuiFlags
 {
 	uint32_t	aspect_ratio_info_present_flag:1;

@@ -6193,6 +6193,45 @@ tcu::TestStatus testPhysicalDeviceFeatureDepthClampZeroOneFeaturesKHR (Context& 
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureUniformBufferUnsizedArrayFeaturesEXT (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceUniformBufferUnsizedArrayFeaturesEXT deviceUniformBufferUnsizedArrayFeaturesEXT[count];
+    const bool                                           isUniformBufferUnsizedArrayFeaturesEXT = checkExtension(properties, "VK_EXT_uniform_buffer_unsized_array");
+
+    if (!isUniformBufferUnsizedArrayFeaturesEXT)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceUniformBufferUnsizedArrayFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceUniformBufferUnsizedArrayFeaturesEXT));
+        deviceUniformBufferUnsizedArrayFeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_UNSIZED_ARRAY_FEATURES_EXT;
+        deviceUniformBufferUnsizedArrayFeaturesEXT[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceUniformBufferUnsizedArrayFeaturesEXT[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceUniformBufferUnsizedArrayFeaturesEXT[0] << TestLog::EndMessage;
+
+    if (
+        deviceUniformBufferUnsizedArrayFeaturesEXT[0].uniformBufferUnsizedArray != deviceUniformBufferUnsizedArrayFeaturesEXT[1].uniformBufferUnsizedArray)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceUniformBufferUnsizedArrayFeaturesEXT");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus createDeviceWithPromoted11Structures (Context& context)
 {
     if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
@@ -6604,6 +6643,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "present_mode_fifo_latest_ready_features_ext", testPhysicalDeviceFeaturePresentModeFifoLatestReadyFeaturesEXT);
 	addFunctionCase(testGroup, "vertex_attribute_robustness_features_ext", testPhysicalDeviceFeatureVertexAttributeRobustnessFeaturesEXT);
 	addFunctionCase(testGroup, "depth_clamp_zero_one_features_khr", testPhysicalDeviceFeatureDepthClampZeroOneFeaturesKHR);
+	addFunctionCase(testGroup, "uniform_buffer_unsized_array_features_ext", testPhysicalDeviceFeatureUniformBufferUnsizedArrayFeaturesEXT);
 	addFunctionCase(testGroup, "create_device_with_promoted11_structures", createDeviceWithPromoted11Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted12_structures", createDeviceWithPromoted12Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted13_structures", createDeviceWithPromoted13Structures);

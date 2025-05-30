@@ -2541,6 +2541,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_METERING_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_METERING_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_RENDERING_END_INFO_EXT:												return "VK_STRUCTURE_TYPE_RENDERING_END_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_DEVICE_MEMORY_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_DEVICE_MEMORY_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_UNSIZED_ARRAY_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_UNSIZED_ARRAY_FEATURES_EXT";
 		default:																					return nullptr;
 	}
 }
@@ -20941,6 +20942,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalCompute
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\texternalDataSize = " << value.externalDataSize << '\n';
 	s << "\tmaxExternalQueues = " << value.maxExternalQueues << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceUniformBufferUnsizedArrayFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceUniformBufferUnsizedArrayFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tuniformBufferUnsizedArray = " << value.uniformBufferUnsizedArray << '\n';
 	s << '}';
 	return s;
 }

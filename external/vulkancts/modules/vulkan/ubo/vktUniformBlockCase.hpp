@@ -28,6 +28,7 @@
 #include "vktTestCase.hpp"
 #include "tcuDefs.hpp"
 #include "gluShaderUtil.hpp"
+#include "gluVarType.hpp"
 
 #include <map>
 
@@ -304,13 +305,20 @@ public:
     {
         m_flags = flags;
     }
-    void setArraySize(int arraySize)
-    {
-        m_arraySize = arraySize;
-    }
+    void setArraySize(int arraySize);
+
     void addUniform(const Uniform &uniform)
     {
         m_uniforms.push_back(uniform);
+    }
+
+    int getLastUnsizedArraySize(int instanceNdx) const
+    {
+        return m_lastUnsizedArraySizes[instanceNdx];
+    }
+    void setLastUnsizedArraySize(int instanceNdx, int size)
+    {
+        m_lastUnsizedArraySizes[instanceNdx] = size;
     }
 
     inline Iterator begin(void)
@@ -336,6 +344,7 @@ private:
     std::vector<Uniform> m_uniforms;
     int m_arraySize; //!< Array size or 0 if not interface block array.
     uint32_t m_flags;
+    std::vector<int> m_lastUnsizedArraySizes; //!< Sizes of last unsized array element, can be different per instance.
 };
 
 typedef de::SharedPtr<StructType> StructTypeSP;

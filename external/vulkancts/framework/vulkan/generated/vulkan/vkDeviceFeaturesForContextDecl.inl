@@ -213,5 +213,6 @@ const vk::VkPhysicalDeviceRobustness2FeaturesKHR&							getRobustness2Features		
 const vk::VkPhysicalDevicePresentMeteringFeaturesNV&						getPresentMeteringFeaturesNV						(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT&				getFragmentDensityMapOffsetFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT&			getZeroInitializeDeviceMemoryFeaturesEXT			(void) const;
+const vk::VkPhysicalDeviceUniformBufferUnsizedArrayFeaturesEXT&				getUniformBufferUnsizedArrayFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							getProtectedMemoryFeatures							(void) const;
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						getShaderDrawParametersFeatures						(void) const;

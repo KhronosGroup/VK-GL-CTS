@@ -3154,6 +3154,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_EXT = 1000425002,
     VK_STRUCTURE_TYPE_RENDERING_END_INFO_EXT = 1000619003,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_DEVICE_MEMORY_FEATURES_EXT = 1000620000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_UNSIZED_ARRAY_FEATURES_EXT = 1000631000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
   // VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT is a deprecated alias
@@ -23548,6 +23549,18 @@ typedef struct VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT {
     void*              pNext;
     VkBool32           zeroInitializeDeviceMemory;
 } VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT;
+
+
+
+// VK_EXT_uniform_buffer_unsized_array is a preprocessor guard. Do not pass it to API calls.
+#define VK_EXT_uniform_buffer_unsized_array 1
+#define VK_EXT_UNIFORM_BUFFER_UNSIZED_ARRAY_SPEC_VERSION 1
+#define VK_EXT_UNIFORM_BUFFER_UNSIZED_ARRAY_EXTENSION_NAME "VK_EXT_uniform_buffer_unsized_array"
+typedef struct VkPhysicalDeviceUniformBufferUnsizedArrayFeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           uniformBufferUnsizedArray;
+} VkPhysicalDeviceUniformBufferUnsizedArrayFeaturesEXT;
 
 
 

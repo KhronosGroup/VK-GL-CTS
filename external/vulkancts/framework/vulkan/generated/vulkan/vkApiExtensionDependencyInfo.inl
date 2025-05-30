@@ -4591,4 +4591,5 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_NV_present_metering"),
 	std::make_tuple(1, 0, "VK_EXT_fragment_density_map_offset"),
 	std::make_tuple(1, 0, "VK_EXT_zero_initialize_device_memory"),
+	std::make_tuple(1, 0, "VK_EXT_uniform_buffer_unsized_array"),
 };

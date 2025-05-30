@@ -213,5 +213,6 @@ const vk::VkPhysicalDeviceRobustness2FeaturesKHR&							Context::getRobustness2F
 const vk::VkPhysicalDevicePresentMeteringFeaturesNV&						Context::getPresentMeteringFeaturesNV						(void) const { return m_device->getPresentMeteringFeaturesNV();						}
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT&				Context::getFragmentDensityMapOffsetFeaturesEXT				(void) const { return m_device->getFragmentDensityMapOffsetFeaturesEXT();			}
 const vk::VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT&			Context::getZeroInitializeDeviceMemoryFeaturesEXT			(void) const { return m_device->getZeroInitializeDeviceMemoryFeaturesEXT();			}
+const vk::VkPhysicalDeviceUniformBufferUnsizedArrayFeaturesEXT&				Context::getUniformBufferUnsizedArrayFeaturesEXT			(void) const { return m_device->getUniformBufferUnsizedArrayFeaturesEXT();			}
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							Context::getProtectedMemoryFeatures							(void) const { return m_device->getProtectedMemoryFeatures();						}
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						Context::getShaderDrawParametersFeatures					(void) const { return m_device->getShaderDrawParametersFeatures();					}

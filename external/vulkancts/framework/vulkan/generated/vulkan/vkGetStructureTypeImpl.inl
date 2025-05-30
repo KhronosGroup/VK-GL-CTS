@@ -5098,3 +5098,8 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceExternalComputeQueue
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_COMPUTE_QUEUE_PROPERTIES_NV;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceUniformBufferUnsizedArrayFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_UNSIZED_ARRAY_FEATURES_EXT;
+}
+

@@ -227,6 +227,7 @@ typedef std::variant<
     , VkPhysicalDevicePresentMeteringFeaturesNV
     , VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT
     , VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT
+    , VkPhysicalDeviceUniformBufferUnsizedArrayFeaturesEXT
     , VkPhysicalDeviceProtectedMemoryFeatures
     , VkPhysicalDeviceShaderDrawParametersFeatures
 > ImplementedFeaturesVariant;
