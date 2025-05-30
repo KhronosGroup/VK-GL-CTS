@@ -7291,6 +7291,13 @@ struct VkMultisampledRenderToSingleSampledInfoEXT
 	VkSampleCountFlagBits	rasterizationSamples;
 };
 
+struct VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		multisampledRenderToSwapchain;
+};
+
 struct VkPhysicalDevicePipelineProtectedAccessFeatures
 {
 	VkStructureType	sType;

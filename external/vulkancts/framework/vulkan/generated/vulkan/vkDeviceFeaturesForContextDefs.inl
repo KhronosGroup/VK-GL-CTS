@@ -211,6 +211,7 @@ const vk::VkPhysicalDeviceDepthClampZeroOneFeaturesKHR&						Context::getDepthCl
 const vk::VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT&				Context::getVertexAttributeRobustnessFeaturesEXT			(void) const { return m_device->getVertexAttributeRobustnessFeaturesEXT();			}
 const vk::VkPhysicalDeviceRobustness2FeaturesKHR&							Context::getRobustness2Features								(void) const { return m_device->getRobustness2Features();							}
 const vk::VkPhysicalDevicePresentMeteringFeaturesNV&						Context::getPresentMeteringFeaturesNV						(void) const { return m_device->getPresentMeteringFeaturesNV();						}
+const vk::VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT&			Context::getMultisampledRenderToSwapchainFeaturesEXT		(void) const { return m_device->getMultisampledRenderToSwapchainFeaturesEXT();		}
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT&				Context::getFragmentDensityMapOffsetFeaturesEXT				(void) const { return m_device->getFragmentDensityMapOffsetFeaturesEXT();			}
 const vk::VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT&			Context::getZeroInitializeDeviceMemoryFeaturesEXT			(void) const { return m_device->getZeroInitializeDeviceMemoryFeaturesEXT();			}
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							Context::getProtectedMemoryFeatures							(void) const { return m_device->getProtectedMemoryFeatures();						}

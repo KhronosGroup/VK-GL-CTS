@@ -2539,6 +2539,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_SET_PRESENT_CONFIG_NV:												return "VK_STRUCTURE_TYPE_SET_PRESENT_CONFIG_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_METERING_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_METERING_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTISAMPLED_RENDER_TO_SWAPCHAIN_FEATURES_EXT:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTISAMPLED_RENDER_TO_SWAPCHAIN_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_RENDERING_END_INFO_EXT:												return "VK_STRUCTURE_TYPE_RENDERING_END_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_DEVICE_MEMORY_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_DEVICE_MEMORY_FEATURES_EXT";
 		default:																					return nullptr;
@@ -4673,10 +4674,11 @@ tcu::Format::Bitfield<32> getSwapchainCreateFlagsKHRStr (VkSwapchainCreateFlagsK
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR,	"VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR"),
-		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR,						"VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR"),
-		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR,				"VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR"),
-		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_EXT,	"VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_EXT"),
+		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR,			"VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR,								"VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR"),
+		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR,						"VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_EXT,			"VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_EXT"),
+		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT,	"VK_SWAPCHAIN_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -15987,6 +15989,16 @@ std::ostream& operator<< (std::ostream& s, const VkMultisampledRenderToSingleSam
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmultisampledRenderToSingleSampledEnable = " << value.multisampledRenderToSingleSampledEnable << '\n';
 	s << "\trasterizationSamples = " << value.rasterizationSamples << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmultisampledRenderToSwapchain = " << value.multisampledRenderToSwapchain << '\n';
 	s << '}';
 	return s;
 }

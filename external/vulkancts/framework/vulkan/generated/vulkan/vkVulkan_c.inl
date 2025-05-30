@@ -3149,6 +3149,7 @@ typedef enum VkStructureType {
 #ifdef VK_ENABLE_BETA_EXTENSIONS
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_METERING_FEATURES_NV = 1000613001,
 #endif
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTISAMPLED_RENDER_TO_SWAPCHAIN_FEATURES_EXT = 1000616000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_EXT = 1000425000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_EXT = 1000425001,
     VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_EXT = 1000425002,
@@ -10566,6 +10567,7 @@ typedef enum VkSwapchainCreateFlagBitsKHR {
     VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR = 0x00000002,
     VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR = 0x00000004,
     VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_EXT = 0x00000008,
+    VK_SWAPCHAIN_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT = 0x00000020,
     VK_SWAPCHAIN_CREATE_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
 } VkSwapchainCreateFlagBitsKHR;
 typedef VkFlags VkSwapchainCreateFlagsKHR;
@@ -23518,6 +23520,18 @@ typedef struct VkPhysicalDevicePresentMeteringFeaturesNV {
     void*              pNext;
     VkBool32           presentMetering;
 } VkPhysicalDevicePresentMeteringFeaturesNV;
+
+
+
+// VK_EXT_multisampled_render_to_swapchain is a preprocessor guard. Do not pass it to API calls.
+#define VK_EXT_multisampled_render_to_swapchain 1
+#define VK_EXT_MULTISAMPLED_RENDER_TO_SWAPCHAIN_SPEC_VERSION 1
+#define VK_EXT_MULTISAMPLED_RENDER_TO_SWAPCHAIN_EXTENSION_NAME "VK_EXT_multisampled_render_to_swapchain"
+typedef struct VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           multisampledRenderToSwapchain;
+} VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT;
 
 
 

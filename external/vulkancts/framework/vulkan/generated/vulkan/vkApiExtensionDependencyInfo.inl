@@ -3868,6 +3868,18 @@ bool check_VK_KHR_robustness2(const tcu::UVec2& v, const ExtPropVect& vIEP, cons
 	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
+bool check_VK_EXT_multisampled_render_to_swapchain(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_multisampled_render_to_swapchain"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_swapchain+VK_EXT_multisampled_render_to_single_sampled
+	return isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vDEP, "VK_EXT_multisampled_render_to_single_sampled");
+}
+
 bool check_VK_EXT_fragment_density_map_offset(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -4173,6 +4185,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_KHR_depth_clamp_zero_one",							&check_VK_KHR_depth_clamp_zero_one),
 	std::make_pair("VK_EXT_vertex_attribute_robustness",					&check_VK_EXT_vertex_attribute_robustness),
 	std::make_pair("VK_KHR_robustness2",									&check_VK_KHR_robustness2),
+	std::make_pair("VK_EXT_multisampled_render_to_swapchain",				&check_VK_EXT_multisampled_render_to_swapchain),
 	std::make_pair("VK_EXT_fragment_density_map_offset",					&check_VK_EXT_fragment_density_map_offset),
 	std::make_pair("VK_EXT_zero_initialize_device_memory",					&check_VK_EXT_zero_initialize_device_memory),
 };
@@ -4589,6 +4602,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_vertex_attribute_robustness"),
 	std::make_tuple(1, 0, "VK_KHR_robustness2"),
 	std::make_tuple(1, 0, "VK_NV_present_metering"),
+	std::make_tuple(1, 0, "VK_EXT_multisampled_render_to_swapchain"),
 	std::make_tuple(1, 0, "VK_EXT_fragment_density_map_offset"),
 	std::make_tuple(1, 0, "VK_EXT_zero_initialize_device_memory"),
 };

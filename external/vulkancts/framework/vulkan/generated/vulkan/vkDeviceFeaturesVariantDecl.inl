@@ -225,6 +225,7 @@ typedef std::variant<
     , VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT
     , VkPhysicalDeviceRobustness2FeaturesKHR
     , VkPhysicalDevicePresentMeteringFeaturesNV
+    , VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT
     , VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT
     , VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT
     , VkPhysicalDeviceProtectedMemoryFeatures
