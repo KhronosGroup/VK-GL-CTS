@@ -12275,6 +12275,8 @@ dEQP-VK.ray_tracing_pipeline.misc.shaderRecordScalar_3
 dEQP-VK.ray_tracing_pipeline.misc.shaderRecordScalar_4
 dEQP-VK.ray_tracing_pipeline.misc.shaderRecordScalar_5
 dEQP-VK.ray_tracing_pipeline.misc.shaderRecordScalar_6
+dEQP-VK.ray_tracing_pipeline.misc.update_empty_bottom
+dEQP-VK.ray_tracing_pipeline.misc.update_empty_top
 dEQP-VK.ray_tracing_pipeline.non_uniform_args.chit_1_types_0
 dEQP-VK.ray_tracing_pipeline.non_uniform_args.chit_2_types_0
 dEQP-VK.ray_tracing_pipeline.non_uniform_args.chit_2_types_1
