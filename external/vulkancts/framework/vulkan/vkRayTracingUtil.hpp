@@ -139,13 +139,38 @@ public:
     {
         return m_geometryType == VK_GEOMETRY_TYPE_TRIANGLES_KHR;
     }
+    inline bool isSpheresType(void) const
+    {
+        return m_geometryType == VK_GEOMETRY_TYPE_SPHERES_NV ||
+               m_geometryType == VK_GEOMETRY_TYPE_LINEAR_SWEPT_SPHERES_NV;
+    }
+    inline bool isLSSpheresType(void) const
+    {
+        return m_geometryType == VK_GEOMETRY_TYPE_LINEAR_SWEPT_SPHERES_NV;
+    }
     inline VkFormat getVertexFormat(void) const
     {
         return m_vertexFormat;
     }
+    inline VkFormat getRadiusFormat(void) const
+    {
+        return m_radiusFormat;
+    }
     inline VkIndexType getIndexType(void) const
     {
         return m_indexType;
+    }
+    inline VkRayTracingLssIndexingModeNV getIndexingMode(void) const
+    {
+        return m_indexingMode;
+    }
+    inline bool useEndcaps(void) const
+    {
+        return m_useEndcaps;
+    }
+    inline bool doBLASCopy(void) const
+    {
+        return m_doBLASCopy;
     }
     inline bool usesIndices(void) const
     {
@@ -158,6 +183,22 @@ public:
     inline void setGeometryFlags(const VkGeometryFlagsKHR geometryFlags)
     {
         m_geometryFlags = geometryFlags;
+    }
+    inline void setRadiusFormat(const VkFormat radiusFormat)
+    {
+        m_radiusFormat = radiusFormat;
+    }
+    inline void setIndexingMode(const VkRayTracingLssIndexingModeNV indexingMode)
+    {
+        m_indexingMode = indexingMode;
+    }
+    inline void setEndcaps(const bool useEndcaps)
+    {
+        m_useEndcaps = useEndcaps;
+    }
+    inline void setDoBLASCopy(const bool doBLASCopy)
+    {
+        m_doBLASCopy = doBLASCopy;
     }
     inline VkAccelerationStructureTrianglesOpacityMicromapEXT &getOpacityMicromap(void)
     {
@@ -179,23 +220,35 @@ public:
     virtual size_t getVertexByteSize(void) const                          = 0;
     virtual size_t getVertexMinAlign(void) const                          = 0;
     virtual uint32_t getIndexCount(void) const                            = 0;
+    virtual uint32_t getRadiusCount(void) const                           = 0;
     virtual const uint8_t *getIndexPointer(void) const                    = 0;
+    virtual const float *getRadiusPointer(void) const                     = 0;
+    virtual const deFloat16 *getRadiusPointer16(void) const               = 0;
     virtual VkDeviceSize getIndexStride(void) const                       = 0;
+    virtual VkDeviceSize getRadiusStride(void) const                      = 0;
     virtual size_t getIndexByteSize(void) const                           = 0;
+    virtual size_t getRadiusByteSize(void) const                          = 0;
     virtual const uint8_t *getTransformPointer(void) const                = 0;
     virtual size_t getTransformByteSize(void) const                       = 0;
     virtual uint32_t getPrimitiveCount(void) const                        = 0;
     virtual void addVertex(const tcu::Vec3 &vertex)                       = 0;
     virtual void addIndex(const uint32_t &index)                          = 0;
     virtual void setTransformMatrix(VkTransformMatrixKHR transformMatrix) = 0;
+    virtual void addRadius(const float &radius)                           = 0;
+    virtual void addRadius16(void)                                        = 0;
+    virtual void setRadiusSize(const size_t radiusSize)                   = 0;
 
 private:
     VkGeometryTypeKHR m_geometryType;
     VkFormat m_vertexFormat;
+    VkFormat m_radiusFormat;
     VkIndexType m_indexType;
     VkGeometryFlagsKHR m_geometryFlags;
     bool m_hasOpacityMicromap;
     VkAccelerationStructureTrianglesOpacityMicromapEXT m_opacityGeometryMicromap;
+    VkRayTracingLssIndexingModeNV m_indexingMode;
+    bool m_useEndcaps;
+    bool m_doBLASCopy;
 };
 
 template <typename T>
@@ -486,12 +539,20 @@ public:
     size_t getVertexByteSize(void) const override;
     size_t getVertexMinAlign(void) const override;
     uint32_t getIndexCount(void) const override;
+    uint32_t getRadiusCount(void) const override;
     const uint8_t *getIndexPointer(void) const override;
     VkDeviceSize getIndexStride(void) const override;
+    VkDeviceSize getRadiusStride(void) const override;
+    const float *getRadiusPointer(void) const override;
+    const deFloat16 *getRadiusPointer16(void) const override;
     size_t getIndexByteSize(void) const override;
+    size_t getRadiusByteSize(void) const override;
     const uint8_t *getTransformPointer(void) const override;
     size_t getTransformByteSize(void) const override;
     uint32_t getPrimitiveCount(void) const override;
+    void addRadius(const float &radius) override;
+    void addRadius16(void) override;
+    void setRadiusSize(const size_t radiusSize) override;
 
     void addVertex(const tcu::Vec3 &vertex) override;
     void addIndex(const uint32_t &index) override;
@@ -530,6 +591,7 @@ private:
     {
         size_t trianglesBlockSize;
         size_t aabbsBlockSize;
+        size_t spheresBlockSize;
     };
 
     const uint32_t m_paddingBlocks;
@@ -538,7 +600,11 @@ private:
     std::vector<uint8_t> m_vertices;               // Vertices are stored as byte blocks.
     std::vector<I> m_indices;                      // Indices are stored natively.
     de::MovePtr<VkTransformMatrixKHR> m_transform; // Transform matrix is stored natively.
-    BlockSize m_blockSize;                         // For m_vertices.
+    BlockSize m_blockSize;
+    std::vector<float> m_radius;
+    std::vector<deFloat16> m_radius16; // For m_radius.
+    std::vector<float> m_sphere_vertices;
+    size_t kRadiusSize; // For m_vertices.
 
     // Data sizes.
     static constexpr size_t kVertexSize      = sizeof(V);
@@ -574,7 +640,7 @@ RaytracedGeometry<V, I>::RaytracedGeometry(VkGeometryTypeKHR geometryType, const
 template <typename V, typename I>
 uint32_t RaytracedGeometry<V, I>::getVertexCount(void) const
 {
-    return (isTrianglesType() ? static_cast<uint32_t>(m_vertexCount) : 0u);
+    return ((isTrianglesType() || isSpheresType()) ? static_cast<uint32_t>(m_vertexCount) : 0u);
 }
 
 template <typename V, typename I>
@@ -587,13 +653,13 @@ const uint8_t *RaytracedGeometry<V, I>::getVertexPointer(void) const
 template <typename V, typename I>
 VkDeviceSize RaytracedGeometry<V, I>::getVertexStride(void) const
 {
-    return ((!isTrianglesType()) ? 0ull : static_cast<VkDeviceSize>(getBlockSize()));
+    return ((!isTrianglesType() && !isSpheresType()) ? 0ull : static_cast<VkDeviceSize>(getBlockSize()));
 }
 
 template <typename V, typename I>
 VkDeviceSize RaytracedGeometry<V, I>::getAABBStride(void) const
 {
-    return (isTrianglesType() ? 0ull : static_cast<VkDeviceSize>(getBlockSize()));
+    return ((isTrianglesType() || isSpheresType()) ? 0ull : static_cast<VkDeviceSize>(getBlockSize()));
 }
 
 template <typename V, typename I>
@@ -611,7 +677,13 @@ size_t RaytracedGeometry<V, I>::getVertexMinAlign(void) const
 template <typename V, typename I>
 uint32_t RaytracedGeometry<V, I>::getIndexCount(void) const
 {
-    return static_cast<uint32_t>(isTrianglesType() ? m_indices.size() : 0);
+    return static_cast<uint32_t>((isTrianglesType() || isSpheresType()) ? m_indices.size() : 0);
+}
+
+template <typename V, typename I>
+uint32_t RaytracedGeometry<V, I>::getRadiusCount(void) const
+{
+    return static_cast<uint32_t>(isSpheresType() ? m_radius.size() : 0);
 }
 
 template <typename V, typename I>
@@ -625,9 +697,44 @@ const uint8_t *RaytracedGeometry<V, I>::getIndexPointer(void) const
 }
 
 template <typename V, typename I>
+const float *RaytracedGeometry<V, I>::getRadiusPointer(void) const
+{
+    const auto radiusCount = getRadiusCount();
+    DE_UNREF(radiusCount); // For release builds.
+    DE_ASSERT(radiusCount > 0u);
+    return reinterpret_cast<const float *>(m_radius.data());
+}
+
+template <typename V, typename I>
+const deFloat16 *RaytracedGeometry<V, I>::getRadiusPointer16(void) const
+{
+    const auto radiusCount = getRadiusCount();
+    DE_UNREF(radiusCount); // For release builds.
+    DE_ASSERT(radiusCount > 0u);
+
+    return reinterpret_cast<const deFloat16 *>(m_radius16.data());
+}
+
+template <typename V, typename I>
+void RaytracedGeometry<V, I>::addRadius16(void)
+{
+
+    for (size_t i = 0; i < m_radius.size(); ++i)
+    {
+        m_radius16.push_back(static_cast<deFloat16>(deFloat32To16(m_radius[i])));
+    }
+}
+
+template <typename V, typename I>
 VkDeviceSize RaytracedGeometry<V, I>::getIndexStride(void) const
 {
     return static_cast<VkDeviceSize>(kIndexSize);
+}
+
+template <typename V, typename I>
+VkDeviceSize RaytracedGeometry<V, I>::getRadiusStride(void) const
+{
+    return static_cast<VkDeviceSize>(kRadiusSize);
 }
 
 template <typename V, typename I>
@@ -637,6 +744,15 @@ size_t RaytracedGeometry<V, I>::getIndexByteSize(void) const
     DE_ASSERT(indexCount > 0u);
 
     return (indexCount * kIndexSize);
+}
+
+template <typename V, typename I>
+size_t RaytracedGeometry<V, I>::getRadiusByteSize(void) const
+{
+    const auto radiusCount = getRadiusCount();
+    DE_ASSERT(radiusCount > 0u);
+
+    return (radiusCount * kRadiusSize);
 }
 
 template <typename V, typename I>
@@ -654,8 +770,23 @@ size_t RaytracedGeometry<V, I>::getTransformByteSize(void) const
 template <typename V, typename I>
 uint32_t RaytracedGeometry<V, I>::getPrimitiveCount(void) const
 {
-    return static_cast<uint32_t>(isTrianglesType() ? (usesIndices() ? m_indices.size() / 3 : m_vertexCount / 3) :
-                                                     (m_vertexCount / 2));
+    if (isTrianglesType())
+    {
+        return static_cast<uint32_t>(usesIndices() ? m_indices.size() / 3 : m_vertexCount / 3);
+    }
+    if (isSpheresType())
+    {
+        if (isLSSpheresType())
+        {
+            return static_cast<uint32_t>(usesIndices() ?
+                                             ((getIndexingMode() == VK_RAY_TRACING_LSS_INDEXING_MODE_LIST_NV) ?
+                                                  m_indices.size() / 2 :
+                                                  m_indices.size()) :
+                                             m_vertexCount / 2);
+        }
+        return static_cast<uint32_t>(usesIndices() ? m_indices.size() : m_vertexCount);
+    }
+    return static_cast<uint32_t>(m_vertexCount / 2);
 }
 
 template <typename V, typename I>
@@ -673,6 +804,11 @@ void RaytracedGeometry<V, I>::addNativeVertex(const V &vertex)
     if (isTrianglesType())
     {
         // Reserve new block, copy vertex at the beginning of the new block.
+        m_vertices.resize(oldSize + blockSize, uint8_t{0});
+        deMemcpy(&m_vertices[oldSize], &vertex, kVertexSize);
+    }
+    else if (isSpheresType())
+    {
         m_vertices.resize(oldSize + blockSize, uint8_t{0});
         deMemcpy(&m_vertices[oldSize], &vertex, kVertexSize);
     }
@@ -712,6 +848,19 @@ void RaytracedGeometry<V, I>::addIndex(const uint32_t &index)
 }
 
 template <typename V, typename I>
+void RaytracedGeometry<V, I>::setRadiusSize(const size_t radiusSize)
+{
+    kRadiusSize = radiusSize;
+}
+
+template <typename V, typename I>
+void RaytracedGeometry<V, I>::addRadius(const float &radius)
+{
+
+    m_radius.push_back(radius);
+}
+
+template <typename V, typename I>
 void RaytracedGeometry<V, I>::setTransformMatrix(VkTransformMatrixKHR transformMatrix)
 {
     m_transform = de::MovePtr<VkTransformMatrixKHR>(new VkTransformMatrixKHR(transformMatrix));
@@ -729,7 +878,8 @@ void RaytracedGeometry<V, I>::checkGeometryType() const
 {
     const auto geometryType = getGeometryType();
     DE_UNREF(geometryType); // For release builds.
-    DE_ASSERT(geometryType == VK_GEOMETRY_TYPE_TRIANGLES_KHR || geometryType == VK_GEOMETRY_TYPE_AABBS_KHR);
+    DE_ASSERT(geometryType == VK_GEOMETRY_TYPE_TRIANGLES_KHR || geometryType == VK_GEOMETRY_TYPE_AABBS_KHR ||
+              geometryType == VK_GEOMETRY_TYPE_SPHERES_NV || geometryType == VK_GEOMETRY_TYPE_LINEAR_SWEPT_SPHERES_NV);
 }
 
 template <typename V, typename I>
@@ -737,6 +887,8 @@ void RaytracedGeometry<V, I>::calcBlockSize()
 {
     if (isTrianglesType())
         m_blockSize.trianglesBlockSize = kVertexSize * static_cast<size_t>(1u + m_paddingBlocks);
+    else if (isSpheresType())
+        m_blockSize.spheresBlockSize = kVertexSize * static_cast<size_t>(1u + m_paddingBlocks);
     else
         m_blockSize.aabbsBlockSize = 2 * kVertexSize + m_paddingBlocks * kAABBPadBaseSize;
 }
@@ -744,7 +896,12 @@ void RaytracedGeometry<V, I>::calcBlockSize()
 template <typename V, typename I>
 size_t RaytracedGeometry<V, I>::getBlockSize() const
 {
-    return (isTrianglesType() ? m_blockSize.trianglesBlockSize : m_blockSize.aabbsBlockSize);
+    if (isTrianglesType())
+        return m_blockSize.trianglesBlockSize;
+    else if (isSpheresType())
+        return m_blockSize.spheresBlockSize;
+    else
+        return m_blockSize.aabbsBlockSize;
 }
 
 de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry(VkGeometryTypeKHR geometryType, VkFormat vertexFormat,
@@ -877,6 +1034,11 @@ public:
     virtual void addGeometry(
         const std::vector<tcu::Vec3> &geometryData, const bool triangles, const VkGeometryFlagsKHR geometryFlags = 0u,
         const VkAccelerationStructureTrianglesOpacityMicromapEXT *opacityGeometryMicromap = nullptr);
+    virtual void addSphereGeometry(const std::vector<tcu::Vec3> &geometryData, const std::vector<float> &radiusData,
+                                   const std::vector<uint32_t> &indexData, const bool linear,
+                                   const VkIndexType indexType, const VkRayTracingLssIndexingModeNV indexingMode,
+                                   const bool useEndcaps, const bool doBLASCopy, const VkFormat vertexFormat,
+                                   const VkFormat radiusFormat, const VkGeometryFlagsKHR geometryFlags = 0u);
 
     virtual void setBuildType(const VkAccelerationStructureBuildTypeKHR buildType)                         = 0;
     virtual VkAccelerationStructureBuildTypeKHR getBuildType() const                                       = 0;
@@ -935,6 +1097,7 @@ public:
     virtual void setVertexBufferAddressOffset(int32_t vertexBufferOffset)       = 0;
     virtual void setIndexBufferAddressOffset(int32_t indexBufferOffset)         = 0;
     virtual void setTransformBufferAddressOffset(int32_t transformBufferOffset) = 0;
+    virtual void setRadiusBufferAddressOffset(int32_t radiusBufferOffset)       = 0;
 
 protected:
     std::vector<de::SharedPtr<RaytracedGeometryBase>> m_geometriesData;
@@ -1018,7 +1181,7 @@ public:
     size_t getAllocationCount() const;
     size_t getAllocationCount(const DeviceInterface &vk, const VkDevice device, const VkDeviceSize maxBufferSize) const;
     auto getAllocationSizes(const DeviceInterface &vk, // (strBuff, scratchBuff, vertBuff, indexBuff, transformBuff)
-                            const VkDevice device) const -> tcu::Vector<VkDeviceSize, 5>;
+                            const VkDevice device) const -> tcu::Vector<VkDeviceSize, 6>;
 
 protected:
     uint32_t m_batchStructCount; // default is 4
@@ -1033,6 +1196,7 @@ protected:
     VkDeviceSize m_verticesSize;
     VkDeviceSize m_indicesSize;
     VkDeviceSize m_transformsSize;
+    VkDeviceSize m_radiusSize;
 
 protected:
     struct Impl;
