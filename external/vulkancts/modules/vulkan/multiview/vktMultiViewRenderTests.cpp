@@ -142,6 +142,11 @@ struct TestParameters
                 (TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY == viewIndex) ||
                 (TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY == viewIndex));
     }
+
+    bool isPointSize(void) const
+    {
+        return (TEST_TYPE_POINT_SIZE == viewIndex);
+    }
 };
 
 const int TEST_POINT_SIZE_SMALL = 2;
@@ -1612,7 +1617,7 @@ MovePtr<tcu::Texture2DArray> MultiViewRenderTestInstance::imageData(void) const
                             referenceFrame->getLevel(0).setPixel(color, x, y, layerNdx);
                 }
 
-                if (TEST_TYPE_POINT_SIZE == m_parameters.viewIndex)
+                if (m_parameters.isPointSize())
                 {
                     const uint32_t vertexPerPrimitive = 1u;
                     const uint32_t unusedQuarterNdx   = 0u;
@@ -4473,7 +4478,7 @@ private:
             TEST_TYPE_NESTED_CMD_BUFFER == m_parameters.viewIndex)
             return new MultiViewSecondaryCommandBufferTestInstance(context, m_parameters);
 
-        if (TEST_TYPE_POINT_SIZE == m_parameters.viewIndex)
+        if (m_parameters.isPointSize())
             return new MultiViewPointSizeTestInstance(context, m_parameters);
 
         if (TEST_TYPE_MULTISAMPLE == m_parameters.viewIndex)
@@ -4661,7 +4666,7 @@ private:
                    << "}\n";
             programCollection.glslSources.add("vertex") << glu::VertexSource(source.str());
         }
-        else if (TEST_TYPE_POINT_SIZE == m_parameters.viewIndex)
+        else if (m_parameters.isPointSize())
         {
             std::ostringstream source;
             source << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
@@ -4853,7 +4858,8 @@ private:
 
     std::string getRequiredCapabilitiesId() const
     {
-        return typeid(MultiViewRenderTestsCase).name();
+        const std::string suffix = (m_parameters.isPointSize() ? "-PointSize" : "");
+        return typeid(MultiViewRenderTestsCase).name() + suffix;
     }
 
     void initDeviceCapabilities(DevCaps &caps);
@@ -4881,6 +4887,9 @@ void MultiViewRenderTestsCase::initDeviceCapabilities(DevCaps &caps)
     caps.addFeature(&VkPhysicalDeviceNestedCommandBufferFeaturesEXT::nestedCommandBufferRendering);
     caps.addFeature(&VkPhysicalDeviceNestedCommandBufferFeaturesEXT::nestedCommandBuffer);
 #endif // CTS_USES_VULKANSC
+
+    if (m_parameters.isPointSize())
+        caps.addFeature(&VkPhysicalDeviceFeatures::largePoints);
 }
 
 } // namespace
