@@ -452,6 +452,10 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
     // The m_defaultContextManager was introduced for compatibility with existing code.
     m_contextManager = m_defaultContextManager;
     m_contextManager = m_defaultContextManager->findCustomManager(vktCase, m_defaultContextManager);
+    // ContextManager acts as a Vulkan instance with a physical device.
+    // The currently running test can use the information contained in
+    // it for the time when the logical device has not been created.
+    m_contextManager->setContextManager(m_contextManager, vktCase);
 
     tcu::TestLog &log                           = testCase->getTestContext().getLog();
     const uint32_t usedVulkanVersion            = getUsedApiVersion(m_contextManager);

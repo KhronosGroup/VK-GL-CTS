@@ -144,6 +144,7 @@ namespace vkt
 class TestCase;
 class Context;
 class ContextManager;
+class TestCaseExecutor;
 
 // The DevCaps class encapsulates the requirements for creating a new device.
 // A key attribute is the DevCaps::id field, which the framework relies on to
@@ -483,6 +484,7 @@ class ContextManager
     std::vector<Item> m_contexts;
     std::deque<de::SharedPtr<ContextManager>> m_customManagers;
 
+    friend class TestCaseExecutor;
     typedef std::tuple<int, int, int> Det_;
     ContextManager(const vk::PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine,
                    de::SharedPtr<vk::ResourceInterface> resourceInterface, int maxCustomDevices, const InstCaps &,
@@ -491,6 +493,7 @@ class ContextManager
                    de::SharedPtr<vk::ResourceInterface> resourceInterface, int maxCustomDevices, const InstCaps &icaps);
     void keepMaxCustomDeviceCount();
     void print(tcu::TestLog &log, const vk::VkDeviceCreateInfo &createInfo) const;
+    void setContextManager(de::SharedPtr<const ContextManager> cm, vkt::TestCase *testCase);
 
 public:
     const std::string id;

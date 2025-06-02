@@ -484,7 +484,7 @@ int findQueueFamilyIndexWithCapsNoThrow(const InstanceInterface &vkInstance, VkP
 }
 
 uint32_t findQueueFamilyIndexWithCaps(const InstanceInterface &vkInstance, VkPhysicalDevice physicalDevice,
-                                      VkQueueFlags requiredCaps, VkQueueFlags excludedCaps)
+                                      VkQueueFlags requiredCaps, VkQueueFlags excludedCaps, uint32_t *availableCount)
 {
     const vector<VkQueueFamilyProperties> queueProps =
         getPhysicalDeviceQueueFamilyProperties(vkInstance, physicalDevice);
@@ -493,10 +493,19 @@ uint32_t findQueueFamilyIndexWithCaps(const InstanceInterface &vkInstance, VkPhy
     {
         uint32_t queueFlags = queueProps[queueNdx].queueFlags;
         if ((queueFlags & requiredCaps) == requiredCaps && !(queueFlags & excludedCaps))
+        {
+            if (availableCount)
+                *availableCount = queueProps[queueNdx].queueCount;
             return (uint32_t)queueNdx;
+        }
     }
 
-    TCU_THROW(NotSupportedError, "No matching queue found");
+    std::ostringstream os;
+    os << "No matching queue found: " << __func__ << '(';
+    os << "requiredCaps=0x" << std::hex << uint32_t(requiredCaps);
+    os << ", excludedCaps=0x" << std::hex << uint32_t(excludedCaps) << ')';
+    os.flush();
+    TCU_THROW(NotSupportedError, os.str());
 }
 
 vk::VkPhysicalDeviceProperties getPhysicalDeviceProperties(de::SharedPtr<ContextManager> mgr)
@@ -1848,6 +1857,16 @@ void TestCase::initInstanceCapabilities(InstCaps &caps)
     TCU_THROW(EnforceDefaultInstance,
               "Default implementation of TestCase::initInstanceCapabilities()."
               "If the test provides getInstanceCapabilities() then it must provide initInstanceCapabilities() as well");
+}
+
+void TestCase::setContextManager(de::SharedPtr<const ContextManager> cm)
+{
+    m_contextManager = cm;
+}
+
+de::SharedPtr<const ContextManager> TestCase::getContextManager() const
+{
+    return m_contextManager;
 }
 
 TestInstance *TestCase::createInstance(Context &) const
