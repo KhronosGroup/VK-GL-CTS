@@ -11110,8 +11110,8 @@ void CooperativeMatrixInteractionTestCase::checkSupport(Context &context) const
 
     if (!checkMatrixSupport(instance, physicalDevice, m_params.matType, dataType))
         TCU_THROW(NotSupportedError,
-                  std::string("Cooperative matrix not supported for requested params: \n\tmatrix type - ") +
-                      toString(m_params.matType) + "\n\tdata type   - " + toString(dataType) + "\n");
+                  std::string("Cooperative matrix not supported for requested params: matrix_type=") +
+                      toString(m_params.matType) + ", data_type=" + toString(dataType));
 }
 
 void CooperativeMatrixInteractionTestCase::initPrograms(vk::SourceCollections &programCollection) const
