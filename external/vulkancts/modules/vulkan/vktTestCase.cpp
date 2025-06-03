@@ -971,14 +971,15 @@ namespace
 {
 // Allocator utilities
 
-vk::Allocator *createAllocator(DefaultDevice *device)
+vk::Allocator *createAllocator(DefaultDevice *device,
+                               const typename SimpleAllocator::OptionalOffsetParams &offsetParams = tcu::Nothing)
 {
     const auto &vki             = device->getInstanceInterface();
     const auto physicalDevice   = device->getPhysicalDevice();
     const auto memoryProperties = vk::getPhysicalDeviceMemoryProperties(vki, physicalDevice);
 
     // \todo [2015-07-24 jarkko] support allocator selection/configuration from command line (or compile time)
-    return new SimpleAllocator(device->getDeviceInterface(), device->getDevice(), memoryProperties);
+    return new SimpleAllocator(device->getDeviceInterface(), device->getDevice(), memoryProperties, offsetParams);
 }
 
 } // namespace
@@ -1014,7 +1015,7 @@ Context::Context(tcu::TestContext &testCtx, const vk::PlatformInterface &platfor
     , m_deviceRuntimeData(pRuntimeData)
     , m_device(new DefaultDevice(m_platformInterface, testCtx.getCommandLine(), contextManager, suggestedDevice,
                                  deviceID, pDeviceExtensions))
-    , m_allocator(createAllocator(m_device.get()))
+    , m_allocator(createAllocator(m_device.get(), pRuntimeData->getAllocatorCreateParams()))
     , m_resultSetOnValidation(false)
 {
 }
