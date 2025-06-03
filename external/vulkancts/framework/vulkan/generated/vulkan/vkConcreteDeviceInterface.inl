@@ -530,7 +530,7 @@ virtual VkResult			getMemoryMetalHandleEXT									(VkDevice device, const VkMem
 virtual VkResult			getMemoryMetalHandlePropertiesEXT						(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHandle, VkMemoryMetalHandlePropertiesEXT* pMemoryMetalHandleProperties) const;
 virtual VkResult			convertCooperativeVectorMatrixNV						(VkDevice device, const VkConvertCooperativeVectorMatrixInfoNV* pInfo) const;
 virtual void				cmdConvertCooperativeVectorMatrixNV						(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkConvertCooperativeVectorMatrixInfoNV* pInfos) const;
-virtual void				cmdDispatchTileQCOM										(VkCommandBuffer commandBuffer) const;
+virtual void				cmdDispatchTileQCOM										(VkCommandBuffer commandBuffer, const VkDispatchTileInfoQCOM* pDispatchTileInfo) const;
 virtual void				cmdBeginPerTileExecutionQCOM							(VkCommandBuffer commandBuffer, const VkPerTileBeginInfoQCOM* pPerTileBeginInfo) const;
 virtual void				cmdEndPerTileExecutionQCOM								(VkCommandBuffer commandBuffer, const VkPerTileEndInfoQCOM* pPerTileEndInfo) const;
 virtual VkResult			createExternalComputeQueueNV							(VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkExternalComputeQueueNV* pExternalQueue) const;

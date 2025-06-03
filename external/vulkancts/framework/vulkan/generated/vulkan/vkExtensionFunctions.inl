@@ -1716,6 +1716,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_ARM_format_pack")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_robustness2")
 	{
 		return;
@@ -3991,6 +3995,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_ARM_format_pack")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_robustness2")
 	{
 		return;
@@ -4457,6 +4465,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_external_memory_metal",
 	"VK_KHR_depth_clamp_zero_one",
 	"VK_EXT_vertex_attribute_robustness",
+	"VK_ARM_format_pack",
 	"VK_KHR_robustness2",
 	"VK_NV_present_metering",
 	"VK_EXT_fragment_density_map_offset",

@@ -2768,9 +2768,9 @@ void DeviceDriver::cmdConvertCooperativeVectorMatrixNV (VkCommandBuffer commandB
     m_vk.cmdConvertCooperativeVectorMatrixNV(commandBuffer, infoCount, pInfos);
 }
 
-void DeviceDriver::cmdDispatchTileQCOM (VkCommandBuffer commandBuffer) const
+void DeviceDriver::cmdDispatchTileQCOM (VkCommandBuffer commandBuffer, const VkDispatchTileInfoQCOM* pDispatchTileInfo) const
 {
-    m_vk.cmdDispatchTileQCOM(commandBuffer);
+    m_vk.cmdDispatchTileQCOM(commandBuffer, pDispatchTileInfo);
 }
 
 void DeviceDriver::cmdBeginPerTileExecutionQCOM (VkCommandBuffer commandBuffer, const VkPerTileBeginInfoQCOM* pPerTileBeginInfo) const

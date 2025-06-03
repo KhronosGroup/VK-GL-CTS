@@ -209,6 +209,7 @@ const vk::VkPhysicalDeviceCooperativeMatrix2FeaturesNV&						getCooperativeMatri
 const vk::VkPhysicalDevicePipelineOpacityMicromapFeaturesARM&				getPipelineOpacityMicromapFeaturesARM				(void) const;
 const vk::VkPhysicalDeviceDepthClampZeroOneFeaturesKHR&						getDepthClampZeroOneFeatures						(void) const;
 const vk::VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT&				getVertexAttributeRobustnessFeaturesEXT				(void) const;
+const vk::VkPhysicalDeviceFormatPackFeaturesARM&							getFormatPackFeaturesARM							(void) const;
 const vk::VkPhysicalDeviceRobustness2FeaturesKHR&							getRobustness2Features								(void) const;
 const vk::VkPhysicalDevicePresentMeteringFeaturesNV&						getPresentMeteringFeaturesNV						(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT&				getFragmentDensityMapOffsetFeaturesEXT				(void) const;

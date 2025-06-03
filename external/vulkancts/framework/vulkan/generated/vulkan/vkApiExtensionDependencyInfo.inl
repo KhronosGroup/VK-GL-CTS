@@ -4587,6 +4587,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_external_memory_metal"),
 	std::make_tuple(1, 0, "VK_KHR_depth_clamp_zero_one"),
 	std::make_tuple(1, 0, "VK_EXT_vertex_attribute_robustness"),
+	std::make_tuple(1, 0, "VK_ARM_format_pack"),
 	std::make_tuple(1, 0, "VK_KHR_robustness2"),
 	std::make_tuple(1, 0, "VK_NV_present_metering"),
 	std::make_tuple(1, 0, "VK_EXT_fragment_density_map_offset"),

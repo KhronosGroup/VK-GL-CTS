@@ -209,6 +209,7 @@ const vk::VkPhysicalDeviceCooperativeMatrix2FeaturesNV&						Context::getCoopera
 const vk::VkPhysicalDevicePipelineOpacityMicromapFeaturesARM&				Context::getPipelineOpacityMicromapFeaturesARM				(void) const { return m_device->getPipelineOpacityMicromapFeaturesARM();			}
 const vk::VkPhysicalDeviceDepthClampZeroOneFeaturesKHR&						Context::getDepthClampZeroOneFeatures						(void) const { return m_device->getDepthClampZeroOneFeatures();						}
 const vk::VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT&				Context::getVertexAttributeRobustnessFeaturesEXT			(void) const { return m_device->getVertexAttributeRobustnessFeaturesEXT();			}
+const vk::VkPhysicalDeviceFormatPackFeaturesARM&							Context::getFormatPackFeaturesARM							(void) const { return m_device->getFormatPackFeaturesARM();							}
 const vk::VkPhysicalDeviceRobustness2FeaturesKHR&							Context::getRobustness2Features								(void) const { return m_device->getRobustness2Features();							}
 const vk::VkPhysicalDevicePresentMeteringFeaturesNV&						Context::getPresentMeteringFeaturesNV						(void) const { return m_device->getPresentMeteringFeaturesNV();						}
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT&				Context::getFragmentDensityMapOffsetFeaturesEXT				(void) const { return m_device->getFragmentDensityMapOffsetFeaturesEXT();			}

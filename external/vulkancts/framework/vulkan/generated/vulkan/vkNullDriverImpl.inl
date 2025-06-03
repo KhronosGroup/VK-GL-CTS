@@ -4439,9 +4439,10 @@ VKAPI_ATTR void VKAPI_CALL cmdConvertCooperativeVectorMatrixNV (VkCommandBuffer 
 	DE_UNREF(pInfos);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDispatchTileQCOM (VkCommandBuffer commandBuffer)
+VKAPI_ATTR void VKAPI_CALL cmdDispatchTileQCOM (VkCommandBuffer commandBuffer, const VkDispatchTileInfoQCOM* pDispatchTileInfo)
 {
 	DE_UNREF(commandBuffer);
+	DE_UNREF(pDispatchTileInfo);
 }
 
 VKAPI_ATTR void VKAPI_CALL cmdBeginPerTileExecutionQCOM (VkCommandBuffer commandBuffer, const VkPerTileBeginInfoQCOM* pPerTileBeginInfo)

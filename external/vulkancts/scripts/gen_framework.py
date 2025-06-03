@@ -191,16 +191,16 @@ def printAttributesToFile(obj, file, indent=0):
         else:
             file.write(f"{indent_str}{repr(obj)}\n")
 
-# Converts the dependecies expression into an Abstract Syntax Tree that uses boolean operators
+# Converts the dependencies expression into an Abstract Syntax Tree that uses boolean operators
 def parseDependsEpression(string):
     try:
         # Parse the input string into an abstract syntax tree (AST)
-        tree = ast.parse(string.replace('+', ' and ').replace(',', ' or '), mode='eval')
+        tree = ast.parse(string.replace('+', ' and ').replace(',', ' or ').replace('::', '__'), mode='eval')
         expression = tree.body
         return expression
     except SyntaxError as e:
-        print(f"Syntax error in the input string: {e}")
-        return None
+        print(f"Syntax error in the input string: {e} \"" + string + "\"")
+        sys.exit(-1)
 
 # Checks the dependencies AST against the passed extensions
 def checkDependencyAST(node, extensions):
