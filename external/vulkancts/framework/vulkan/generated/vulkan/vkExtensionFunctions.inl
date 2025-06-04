@@ -2156,7 +2156,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		functions.push_back("vkCmdPushDescriptorSetKHR");
 		// Dependencies: VK_VERSION_1_1,VK_KHR_descriptor_update_template
-		if (checkVersion(1, 1, apiVersion) || (checkVersion(1, 1, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_descriptor_update_template"))) {
+		if ((checkVersion(1, 1, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_descriptor_update_template"))) {
 			functions.push_back("vkCmdPushDescriptorSetWithTemplateKHR");
 		}
 		return;
@@ -2592,7 +2592,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		functions.push_back("vkCmdWriteBufferMarkerAMD");
 		// Dependencies: VK_VERSION_1_3,VK_KHR_synchronization2
-		if (checkVersion(1, 3, apiVersion) || (checkVersion(1, 3, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_synchronization2"))) {
+		if ((checkVersion(1, 3, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_synchronization2"))) {
 			functions.push_back("vkCmdWriteBufferMarker2AMD");
 		}
 		return;
@@ -2671,7 +2671,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdDrawMeshTasksNV");
 		functions.push_back("vkCmdDrawMeshTasksIndirectNV");
 		// Dependencies: VK_KHR_draw_indirect_count,VK_VERSION_1_2
-		if ((checkVersion(1, 2, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_draw_indirect_count"))) {
+		if ((extensionIsSupported(vDEP, "VK_KHR_draw_indirect_count") || checkVersion(1, 2, apiVersion))) {
 			functions.push_back("vkCmdDrawMeshTasksIndirectCountNV");
 		}
 		return;
@@ -2695,7 +2695,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdSetCheckpointNV");
 		functions.push_back("vkGetQueueCheckpointDataNV");
 		// Dependencies: VK_VERSION_1_3,VK_KHR_synchronization2
-		if (checkVersion(1, 3, apiVersion) || (checkVersion(1, 3, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_synchronization2"))) {
+		if ((checkVersion(1, 3, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_synchronization2"))) {
 			functions.push_back("vkGetQueueCheckpointData2NV");
 		}
 		return;
@@ -2871,7 +2871,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkAcquireFullScreenExclusiveModeEXT");
 		functions.push_back("vkReleaseFullScreenExclusiveModeEXT");
 		// Dependencies: VK_KHR_device_group,VK_VERSION_1_1
-		if ((checkVersion(1, 1, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_device_group"))) {
+		if ((extensionIsSupported(vDEP, "VK_KHR_device_group") || checkVersion(1, 1, apiVersion))) {
 			functions.push_back("vkGetDeviceGroupSurfacePresentModes2EXT");
 		}
 		return;
@@ -3115,7 +3115,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkGetImageViewOpaqueCaptureDescriptorDataEXT");
 		functions.push_back("vkGetSamplerOpaqueCaptureDescriptorDataEXT");
 		// Dependencies: VK_KHR_acceleration_structure,VK_NV_ray_tracing
-		if (extensionIsSupported(vDEP, "VK_KHR_acceleration_structure") || extensionIsSupported(vDEP, "VK_NV_ray_tracing")) {
+		if ((extensionIsSupported(vDEP, "VK_KHR_acceleration_structure") || extensionIsSupported(vDEP, "VK_NV_ray_tracing"))) {
 			functions.push_back("vkGetAccelerationStructureOpaqueCaptureDescriptorDataEXT");
 		}
 		return;
@@ -3154,7 +3154,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdDrawMeshTasksEXT");
 		functions.push_back("vkCmdDrawMeshTasksIndirectEXT");
 		// Dependencies: VK_KHR_draw_indirect_count,VK_VERSION_1_2
-		if ((checkVersion(1, 2, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_draw_indirect_count"))) {
+		if ((extensionIsSupported(vDEP, "VK_KHR_draw_indirect_count") || checkVersion(1, 2, apiVersion))) {
 			functions.push_back("vkCmdDrawMeshTasksIndirectCountEXT");
 		}
 		return;
@@ -3508,7 +3508,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdSetColorBlendEquationEXT");
 		functions.push_back("vkCmdSetColorWriteMaskEXT");
 		// Dependencies: VK_KHR_maintenance2,VK_VERSION_1_1
-		if ((checkVersion(1, 1, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_maintenance2"))) {
+		if ((extensionIsSupported(vDEP, "VK_KHR_maintenance2") || checkVersion(1, 1, apiVersion))) {
 			functions.push_back("vkCmdSetTessellationDomainOriginEXT");
 		}
 		// Dependencies: VK_EXT_transform_feedback

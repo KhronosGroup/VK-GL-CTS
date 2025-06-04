@@ -195,6 +195,49 @@ def printAttributesToFile(obj, file, indent=0):
         else:
             file.write(f"{indent_str}{repr(obj)}\n")
 
+def transformSingleDependsConditionToCpp(depPart, api, checkVersionString, checkExtensionString, extension, depends):
+    ret = None
+    if 'VK_VERSION' in depPart:
+        # when dependency is vulkan version then replace it with proper condition
+        ret = checkVersionString % (depPart[-3], depPart[-1])
+    else:
+        # when dependency is extension check if it was promoted
+        for dExt in api.extensions:
+            if depPart == dExt.name:
+                depExtVector = 'vDEP' if dExt.type == 'device' else 'vIEP'
+                isSupportedCheck = checkExtensionString % (depExtVector, depPart)
+                ret = isSupportedCheck
+                # This check is just heuristics. In theory we should check if the promotion is actually checked properly
+                # in the dependency
+                if dExt.promotedto is not None and dExt.promotedto not in depends:
+                     p = dExt.promotedto
+                     # check if dependency was promoted to vulkan version or other extension
+                     if 'VK_VERSION' in p:
+                         ret = f'({checkVersionString % (p[-3], p[-1])} || {isSupportedCheck})'
+                     else:
+                         ret = f'({checkExtensionString % (depExtVector, depPart)} || {isSupportedCheck})'
+        # for SC when extension was not found try checking also not supported
+        # extensions and see if this extension is part of core
+        if ret is None and api.apiName == "vulkansc":
+            for dExt in api.notSupportedExtensions:
+                if depPart == dExt.name:
+                    p = dExt.promotedto
+                    if p is None:
+                        break
+                    if int(p[-1]) > 2:
+                        break
+                    ret = "true"
+        if ret is None:
+            ret = "false /* UNSUPPORTED CONDITION: " + depPart + "*/"
+        if ret is None:
+            assert False, f"{depPart} not found: {extension} : {depends}"
+    return ret
+
+def transformDependsToCondition(depends, api, checkVersionString, checkExtensionString, extension):
+    tree = parseDependsEpression(depends)
+    condition = generateCppDependencyAST(tree, api, checkVersionString, checkExtensionString, extension, depends)
+    return condition
+
 # Converts the dependencies expression into an Abstract Syntax Tree that uses boolean operators
 def parseDependsEpression(string):
     try:
@@ -205,6 +248,28 @@ def parseDependsEpression(string):
     except SyntaxError as e:
         print(f"Syntax error in the input string: {e} \"" + string + "\"")
         sys.exit(-1)
+
+def generateCppDependencyAST(node, api, checkVersionString, checkExtensionString, extension, depends):
+    if isinstance(node, ast.BoolOp):
+        parts = [
+            generateCppDependencyAST(v, api, checkVersionString, checkExtensionString, extension, depends)
+            for v in node.values
+        ]
+        op = "&&" if isinstance(node.op, ast.And) else "||"
+        # Parenthesize each part, then join with the operator, and wrap the whole
+        joined = f" {op} ".join(f"{p}" for p in parts)
+        return f"({joined})"
+
+    elif isinstance(node, ast.Name):
+        return transformSingleDependsConditionToCpp(
+            node.id, api, checkVersionString, checkExtensionString, extension, depends
+        )
+
+    elif isinstance(node, ast.Constant):
+        return node.value
+
+    else:
+        raise NotImplementedError(f"Unsupported AST node: {node!r}")
 
 # Checks the dependencies AST against the passed extensions
 def checkDependencyAST(node, extensions):
@@ -2703,7 +2768,7 @@ def writeExtensionFunctions (api, filename):
                 condition = None
                 if requirement.depends is not None:
                     try:
-                        condition = transformDependsToCondition(requirement.depends, api, 'checkVersion(%s, %s, apiVersion)', 'extensionIsSupported(%s, "%s")')
+                        condition = transformDependsToCondition(requirement.depends, api, 'checkVersion(%s, %s, apiVersion)', 'extensionIsSupported(%s, "%s")', ext.name)
                     except Exception as e:
                         if api.apiName != "vulkansc":
                             raise e
@@ -4075,58 +4140,6 @@ def writeExtensionList(api, filename, extensionType):
     stream.append('};\n')
     writeInlFile(filename, INL_HEADER, stream)
 
-def transformDependsToCondition(depends, api, checkVersionString, checkExtensionString):
-    depList = re.split(r'(\W+)', depends)
-    for idx, depPart in enumerate(depList):
-        if ',' in depPart:
-            depList[idx] = depList[idx].replace(',', ' || ')
-        elif '+' in depPart:
-            depList[idx] = depList[idx].replace('+', ' && ')
-        elif 'VK_' in depPart:
-            if 'VK_VERSION' in depPart:
-                if idx > 0 and ' || ' in depList[idx-1]:
-                    # some vk.xml entries include "promoted to" version preceded by logical OR operator in the extension "depends" attribute
-                    # script don't rely on this optional information and will find "promoted to" versions for all dependencies of all extensions in the below code
-                    # accordingly the one from vk.xml is ignored to avoid redundant isCompatible() checks
-                    depList[idx-1] = depList[idx-1].replace(' || ', '')
-                    depList[idx] = ''
-                    continue
-                # when dependency is vulkan version then replace it with proper condition
-                depList[idx] = checkVersionString % (depPart[-3], depPart[-1])
-            else:
-                # when dependency is extension check if it was promoted
-                extNotFound = True
-                for dExt in api.extensions:
-                    if depPart == dExt.name:
-                        depExtVector = 'vDEP' if dExt.type == 'device' else 'vIEP'
-                        isSupportedCheck = checkExtensionString % (depExtVector, depPart)
-                        if dExt.promotedto is not None:
-                            p = dExt.promotedto
-                            # check if dependency was promoted to vulkan version or other extension
-                            if 'VK_VERSION' in p:
-                                depList[idx] = f'({checkVersionString % (p[-3], p[-1])} || {isSupportedCheck})'
-                            else:
-                                depList[idx] = f'({checkExtensionString % (depExtVector, depPart)} || {isSupportedCheck})'
-                        else:
-                            depList[idx] = isSupportedCheck
-                        extNotFound = False
-                        break
-                # for SC when extension was not found try checking also not supported
-                # extensions and see if this extension is part of core
-                if extNotFound and api.apiName == "vulkansc":
-                    for dExt in api.notSupportedExtensions:
-                        if depPart == dExt.name:
-                            p = dExt.promotedto
-                            if p is None:
-                                break
-                            if int(p[-1]) > 2:
-                                break
-                            extNotFound = False
-                            depList[idx] = "true"
-                if extNotFound:
-                    assert False, f"{depPart} from dependencies ({depends}) not found"
-    return ''.join(depList)
-
 def writeApiExtensionDependencyInfo(api, filename):
 
     def genHelperFunctions():
@@ -4180,7 +4193,7 @@ def writeApiExtensionDependencyInfo(api, filename):
             yield f'\n\tif (!isSupported({extVector}, "{ext.name}"))'
             yield '\t\treturn true;\n'
             # replace dependent extensions/versions with proper conditions
-            finalCondition = transformDependsToCondition(ext.depends, api, 'isCompatible(%s, %s, v)', 'isSupported(%s, "%s")')
+            finalCondition = transformDependsToCondition(ext.depends, api, 'isCompatible(%s, %s, v)', 'isSupported(%s, "%s")', ext.name)
             yield f'\t// depends attribute in xml: {ext.depends}'
             yield f'\treturn {finalCondition};'
             yield '}\n'
