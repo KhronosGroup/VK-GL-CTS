@@ -3871,6 +3871,7 @@ def writeMandatoryFeatures(api, filename):
     varVariants = {} # Some variables are going to be declared only for specific variants.
 
     for structName, extensions in apiStructs:
+        stream.append('\t// ' + structName + ' for [' + ', '.join(extensions) + ']\n')
         # The variable name will be the structure name without the Vk prefix and starting in lowercase.
         newVar = structName[2].lower() + structName[3:]
 
@@ -3983,7 +3984,11 @@ def writeMandatoryFeatures(api, filename):
         else:
             stream.extend([''])
 
+    last_extension = None
     for extension, requirements, mandatory_variant in extData:
+        if last_extension != extension:
+            stream.append('\t// ' + extension + '\n')
+            last_extension = extension
         metaCondition = ''
         if mandatory_variant != '':
             metaCondition = metaCondition + ' || defined(CTS_USES_' + mandatory_variant[0].upper() + ')'
