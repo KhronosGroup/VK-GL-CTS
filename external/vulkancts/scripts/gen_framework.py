@@ -1314,6 +1314,9 @@ class API:
                 core = f'0.{major}.{minor}.0'
                 if "vulkan" in mandatory_variants and major == 1 and minor <= 2:
                     mandatory_variants = []
+            else:
+                if "vulkansc" not in mandatory_variants:
+                    mandatory_variants = []
             for requirement in ext.requirementsList:
                 featureStructName = None
                 featureStruct = None
@@ -4071,7 +4074,7 @@ def transformDependsToCondition(depends, api, checkVersionString, checkExtension
                 if idx > 0 and ' || ' in depList[idx-1]:
                     # some vk.xml entries include "promoted to" version preceded by logical OR operator in the extension "depends" attribute
                     # script don't rely on this optional information and will find "promoted to" versions for all dependencies of all extensions in the below code
-                    # accordingly the one from vk.xml is ignored to avoid redundant isCompatibile() checks
+                    # accordingly the one from vk.xml is ignored to avoid redundant isCompatible() checks
                     depList[idx-1] = depList[idx-1].replace(' || ', '')
                     depList[idx] = ''
                     continue
@@ -4118,7 +4121,7 @@ def writeApiExtensionDependencyInfo(api, filename):
         yield 'using ExtPropVect = std::vector<vk::VkExtensionProperties>;'
         yield 'using IsSupportedFun = bool (*)(const tcu::UVec2&, const ExtPropVect&, const ExtPropVect&);'
         yield 'using DependencyCheckVect = std::vector<std::pair<const char*, IsSupportedFun> >;\n'
-        yield 'bool isCompatibile(uint32_t major, uint32_t minor, const tcu::UVec2& testedApiVersion)'
+        yield 'bool isCompatible(uint32_t major, uint32_t minor, const tcu::UVec2& testedApiVersion)'
         yield '{'
         yield '\t// return true when tested api version is greater'
         yield '\t// or equal to version represented by two uints'
@@ -4154,7 +4157,7 @@ def writeApiExtensionDependencyInfo(api, filename):
             # check if extension was promoted; for SC we need to check vulkan version as sc10 is based on vk12
             if ext.promotedto is not None and 'VK_VERSION' in ext.promotedto:
                 p = ext.promotedto
-                yield f'\tif (isCompatibile({p[-3]}, {p[-1]}, v))'
+                yield f'\tif (isCompatible({p[-3]}, {p[-1]}, v))'
                 yield '\t\treturn true;\n'
             else:
                 yield '\tDE_UNREF(v);'
@@ -4164,7 +4167,7 @@ def writeApiExtensionDependencyInfo(api, filename):
             yield f'\n\tif (!isSupported({extVector}, "{ext.name}"))'
             yield '\t\treturn true;\n'
             # replace dependent extensions/versions with proper conditions
-            finalCondition = transformDependsToCondition(ext.depends, api, 'isCompatibile(%s, %s, v)', 'isSupported(%s, "%s")')
+            finalCondition = transformDependsToCondition(ext.depends, api, 'isCompatible(%s, %s, v)', 'isSupported(%s, "%s")')
             yield f'\t// depends attribute in xml: {ext.depends}'
             yield f'\treturn {finalCondition};'
             yield '}\n'

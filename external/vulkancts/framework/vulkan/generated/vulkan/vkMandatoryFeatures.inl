@@ -167,7 +167,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
-#if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceCooperativeMatrixFeaturesKHR physicalDeviceCooperativeMatrixFeaturesKHR;
 	deMemset(&physicalDeviceCooperativeMatrixFeaturesKHR, 0, sizeof(physicalDeviceCooperativeMatrixFeaturesKHR));
 
@@ -177,7 +176,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceCooperativeMatrixFeaturesKHR;
 		nextPtr  = &physicalDeviceCooperativeMatrixFeaturesKHR.pNext;
 	}
-#endif // defined(CTS_USES_VULKAN)
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceCooperativeVectorFeaturesNV physicalDeviceCooperativeVectorFeaturesNV;
@@ -917,7 +915,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderAtomicInt64Features.pNext;
 	}
 
-#if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceShaderBfloat16FeaturesKHR physicalDeviceShaderBfloat16FeaturesKHR;
 	deMemset(&physicalDeviceShaderBfloat16FeaturesKHR, 0, sizeof(physicalDeviceShaderBfloat16FeaturesKHR));
 
@@ -927,7 +924,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceShaderBfloat16FeaturesKHR;
 		nextPtr  = &physicalDeviceShaderBfloat16FeaturesKHR.pNext;
 	}
-#endif // defined(CTS_USES_VULKAN)
 
 	vk::VkPhysicalDeviceShaderClockFeaturesKHR physicalDeviceShaderClockFeaturesKHR;
 	deMemset(&physicalDeviceShaderClockFeaturesKHR, 0, sizeof(physicalDeviceShaderClockFeaturesKHR));
@@ -1249,7 +1245,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceVertexInputDynamicStateFeaturesEXT.pNext;
 	}
 
-#if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceVideoEncodeAV1FeaturesKHR physicalDeviceVideoEncodeAV1FeaturesKHR;
 	deMemset(&physicalDeviceVideoEncodeAV1FeaturesKHR, 0, sizeof(physicalDeviceVideoEncodeAV1FeaturesKHR));
 
@@ -1259,9 +1254,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceVideoEncodeAV1FeaturesKHR;
 		nextPtr  = &physicalDeviceVideoEncodeAV1FeaturesKHR.pNext;
 	}
-#endif // defined(CTS_USES_VULKAN)
 
-#if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR physicalDeviceVideoEncodeQuantizationMapFeaturesKHR;
 	deMemset(&physicalDeviceVideoEncodeQuantizationMapFeaturesKHR, 0, sizeof(physicalDeviceVideoEncodeQuantizationMapFeaturesKHR));
 
@@ -1271,7 +1264,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceVideoEncodeQuantizationMapFeaturesKHR;
 		nextPtr  = &physicalDeviceVideoEncodeQuantizationMapFeaturesKHR.pNext;
 	}
-#endif // defined(CTS_USES_VULKAN)
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceVulkan11Features physicalDeviceVulkan11Features;
@@ -2453,7 +2445,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-#if defined(CTS_USES_VULKAN)
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_cooperative_matrix")) )
 	{
 		if ( physicalDeviceCooperativeMatrixFeaturesKHR.cooperativeMatrix == VK_FALSE )
@@ -2462,7 +2453,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 			result = false;
 		}
 	}
-#endif // defined(CTS_USES_VULKAN)
 
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_depth_clamp_zero_one")) )
 	{
@@ -2729,7 +2719,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-#if defined(CTS_USES_VULKAN)
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_bfloat16")) )
 	{
 		if ( ( physicalDeviceShaderBfloat16FeaturesKHR.shaderBFloat16Type == VK_FALSE ) && ( physicalDeviceShaderBfloat16FeaturesKHR.shaderBFloat16CooperativeMatrix == VK_FALSE || physicalDeviceShaderBfloat16FeaturesKHR.shaderBFloat16DotProduct == VK_FALSE ) )
@@ -2738,7 +2727,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 			result = false;
 		}
 	}
-#endif // defined(CTS_USES_VULKAN)
 
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_clock")) )
 	{
@@ -2908,7 +2896,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-#if defined(CTS_USES_VULKAN)
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_video_encode_av1")) )
 	{
 		if ( physicalDeviceVideoEncodeAV1FeaturesKHR.videoEncodeAV1 == VK_FALSE )
@@ -2917,9 +2904,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 			result = false;
 		}
 	}
-#endif // defined(CTS_USES_VULKAN)
 
-#if defined(CTS_USES_VULKAN)
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_video_encode_quantization_map")) )
 	{
 		if ( physicalDeviceVideoEncodeQuantizationMapFeaturesKHR.videoEncodeQuantizationMap == VK_FALSE )
@@ -2928,7 +2913,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 			result = false;
 		}
 	}
-#endif // defined(CTS_USES_VULKAN)
 
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_vulkan_memory_model")) )
 	{
