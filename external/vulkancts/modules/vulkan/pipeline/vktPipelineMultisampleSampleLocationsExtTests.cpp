@@ -1341,6 +1341,13 @@ void checkSupportVerifyTests(Context &context, const TestParams params)
                                           params.pipelineConstructionType);
 }
 
+void checkSupportVerifyTestsPrimID(Context &context, const TestParams params)
+{
+    // Some tests use gl_PrimitiveID from the fragment shader, which requires the Geometry capability.
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+    checkSupportVerifyTests(context, params);
+}
+
 std::string declareSampleDataSSBO(void)
 {
     std::ostringstream str;
@@ -1869,7 +1876,7 @@ public:
 template <typename Test, typename ProgramsFunc>
 void addCases(tcu::TestCaseGroup *group, const VkSampleCountFlagBits numSamples,
               PipelineConstructionType pipelineConstructionType, bool useFragmentShadingRate, bool useStdLocations,
-              const ProgramsFunc initPrograms)
+              const ProgramsFunc initPrograms, bool usesPrimitiveID)
 {
     TestParams params;
     deMemset(&params, 0, sizeof(params));
@@ -1897,24 +1904,26 @@ void addCases(tcu::TestCaseGroup *group, const VkSampleCountFlagBits numSamples,
         testOpts.push_back(TestOptions{"", (baseFlags | TEST_OPTION_VARIABLE_SAMPLE_LOCATIONS_BIT)});
     testOpts.push_back(TestOptions{"_invariable", baseFlags});
 
+    const auto supportCheck = (usesPrimitiveID ? checkSupportVerifyTestsPrimID : checkSupportVerifyTests);
+
     for (const auto &options : testOpts)
     {
         params.options = options.testFlags;
 
-        addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + options.testSuffix).c_str(),
-                                              checkSupportVerifyTests, initPrograms, params);
+        addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + options.testSuffix).c_str(), supportCheck,
+                                              initPrograms, params);
 
         if (!useStdLocations)
         {
             params.options |= TEST_OPTION_DYNAMIC_STATE_BIT;
             addInstanceTestCaseWithPrograms<Test>(group,
                                                   (getString(numSamples) + "_dynamic" + options.testSuffix).c_str(),
-                                                  checkSupportVerifyTests, initPrograms, params);
+                                                  supportCheck, initPrograms, params);
 
             params.options |= TEST_OPTION_CLOSELY_PACKED_BIT;
             addInstanceTestCaseWithPrograms<Test>(group,
                                                   (getString(numSamples) + "_packed" + options.testSuffix).c_str(),
-                                                  checkSupportVerifyTests, initPrograms, params);
+                                                  supportCheck, initPrograms, params);
         }
     }
 }
@@ -3423,9 +3432,11 @@ void createTestsInGroup(tcu::TestCaseGroup *rootGroup, GroupParams groupParams)
              pLoopNumSamples < DE_ARRAY_END(sampleCountRange); ++pLoopNumSamples)
         {
             addCases<VerifyLocationTest>(groupLocation.get(), *pLoopNumSamples, pipelineConstructionType,
-                                         useFragmentShadingRate, useStdLocations, addProgramsVerifyLocationGeometry);
+                                         useFragmentShadingRate, useStdLocations, addProgramsVerifyLocationGeometry,
+                                         true);
             addCases<VerifyInterpolationTest>(groupInterpolation.get(), *pLoopNumSamples, pipelineConstructionType,
-                                              useFragmentShadingRate, useStdLocations, addProgramsVerifyInterpolation);
+                                              useFragmentShadingRate, useStdLocations, addProgramsVerifyInterpolation,
+                                              false);
         }
 
         rootGroup->addChild(groupLocation.release());
