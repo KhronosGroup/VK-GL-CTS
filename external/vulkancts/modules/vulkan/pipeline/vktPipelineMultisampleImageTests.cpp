@@ -46,6 +46,7 @@
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
 
+#include <cmath>
 #include <string>
 
 namespace vkt
