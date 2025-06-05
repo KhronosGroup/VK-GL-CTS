@@ -3029,11 +3029,12 @@ de::MovePtr<VkVideoEncodeRateControlLayerInfoKHR> getVideoEncodeRateControlLayer
     const VkVideoEncodeRateControlLayerInfoKHR videoEncodeRateControlLayerInfo = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_LAYER_INFO_KHR, //  VkStructureType sType;
         pNext,                                                      //  const void* pNext;
-        50000,                                                      //  uint64_t averageBitrate;
-        static_cast<uint64_t>(
-            rateControlMode == VK_VIDEO_ENCODE_RATE_CONTROL_MODE_CBR_BIT_KHR ? 50000 : 75000), //  uint64_t maxBitrate;
-        frameRateNumerator, //  uint32_t frameRateNumerator;
-        1,                  //  uint32_t frameRateDenominator;
+        100000,                                                     //  uint64_t averageBitrate;
+        static_cast<uint64_t>(rateControlMode == VK_VIDEO_ENCODE_RATE_CONTROL_MODE_CBR_BIT_KHR ?
+                                  100000 :
+                                  150000), //  uint64_t maxBitrate;
+        frameRateNumerator,                //  uint32_t frameRateNumerator;
+        1,                                 //  uint32_t frameRateDenominator;
     };
 
     return de::MovePtr<VkVideoEncodeRateControlLayerInfoKHR>(
