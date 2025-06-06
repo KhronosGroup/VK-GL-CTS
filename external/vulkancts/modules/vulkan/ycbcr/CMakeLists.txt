@@ -32,6 +32,8 @@ set(DEQP_VK_YCBCR_SRCS
 	vktYCbCrStorageImageWriteTests.hpp
 	vktYCbCrImageOffsetTests.cpp
 	vktYCbCrImageOffsetTests.hpp
+	vktYCbCrRenderAttachmentTests.cpp
+ 	vktYCbCrRenderAttachmentTests.hpp
 	)
 
 PCH(DEQP_VK_YCBCR_UTIL_SRCS ../pch.cpp)
