@@ -29,6 +29,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <fstream>
 #include <string>
 #include <algorithm>
@@ -253,6 +254,8 @@ struct DpbModeDef
 struct IntraRefreshDef
 {
     enum IntraRefreshMode mode;
+    bool isEmptyRegion;
+    bool isMidway;
     const char *subName;
 };
 
@@ -720,6 +723,10 @@ void VideoTestCase::validateCapabilities(Context &context) const
 
         if ((m_intraRefreshCapabilities->intraRefreshModes & m_requirements.intraRefreshMode) == 0)
             throw tcu::NotSupportedError("Required intra-refresh mode not supported");
+
+        // Midway tests require maxIntraRefreshCycleDuration >= 4
+        if (m_definition.intraRefresh.isMidway && m_intraRefreshCapabilities->maxIntraRefreshCycleDuration < 4)
+            throw tcu::NotSupportedError("Midway tests require maxIntraRefreshCycleDuration >= 4");
     }
 }
 
@@ -732,6 +739,14 @@ VideoTestCase *createVideoTestCase(tcu::TestContext &testCtx, const char *testna
 
 uint32_t VideoTestCase::computeIntraRefreshCycleDuration() const
 {
+    // For empty-region tests, always use maxIntraRefreshCycleDuration
+    if (m_definition.intraRefresh.isEmptyRegion)
+        return m_intraRefreshCapabilities->maxIntraRefreshCycleDuration;
+
+    // For midway tests, use a fixed cycle duration of 4 (as per test spec)
+    if (m_definition.intraRefresh.isMidway)
+        return 4;
+
     VkExtent2D minCodingBlockSize;
     if (m_av1Capabilities->superblockSizes & VK_VIDEO_ENCODE_AV1_SUPERBLOCK_SIZE_64_BIT_KHR)
         minCodingBlockSize = {64, 64};
@@ -893,8 +908,8 @@ void VideoTestCase::buildEncoderParams(std::vector<std::string> &params) const
 
     if (m_definition.intraRefresh.mode != IR_OFF)
     {
-        uint32_t intraRefreshCycleDuration = 0;
-        intraRefreshCycleDuration          = computeIntraRefreshCycleDuration();
+        const uint32_t intraRefreshCycleDuration = computeIntraRefreshCycleDuration();
+
         DE_ASSERT(intraRefreshCycleDuration > 0);
 
         switch (m_definition.intraRefresh.mode)
@@ -921,6 +936,16 @@ void VideoTestCase::buildEncoderParams(std::vector<std::string> &params) const
 
         params.push_back("--intraRefreshCycleDuration");
         params.push_back(std::to_string(intraRefreshCycleDuration));
+
+        // Add midway parameter if this is a midway test
+        if (m_definition.intraRefresh.isMidway)
+        {
+            // For midway tests, set the restart index to 2 (restart after 2 frames of the 4-frame cycle)
+            const uint32_t intraRefreshMidwayIndex = 2;
+
+            params.push_back("--testIntraRefreshMidway");
+            params.push_back(std::to_string(intraRefreshMidwayIndex));
+        }
     }
 }
 
@@ -953,15 +978,63 @@ bool validateTestDefinition(const TestDefinition &testDef)
     if (testDef.quantization.qIndex != QINDEX_NONE && testDef.rateControl.rc != RC_DISABLED)
         return false;
 
-    // The nested combination of tests should be performed only with 720x780
+    // Checks specific to intra-refresh tests
+    if (testDef.intraRefresh.mode != IR_OFF)
+    {
+        // Intra-refresh tests should only be performed with 352x288 resolution
+        if (testDef.frameSize.width != 352 || testDef.frameSize.height != 288)
+            return false;
+
+        // Intra-refresh tests should not combine the rest of parameters
+        if (testDef.ordering.order != ORDERED || testDef.resolutionChange.resolutionChange != RESOLUTION_NO_CHANGE ||
+            testDef.quantization.qIndex != QINDEX_NONE || testDef.superblock.superblock != SUPERBLOCK_64x64 ||
+            testDef.rateControl.rc != RC_DEFAULT || testDef.loopFilter.lf != LF_OFF ||
+            testDef.loopRestore.lr != LR_OFF || testDef.cdef.cdef != CDEF_OFF)
+        {
+            return false;
+        }
+
+        // Intra-refresh is only supported with P frames, not with B frames
+        if (testDef.gop.gop != GOP_I_P)
+            return false;
+
+        // Empty-region tests should only have 2 frames (IDR + P), use i_p_empty_region GOP, and no tiling
+        if (testDef.intraRefresh.isEmptyRegion &&
+            (testDef.gop.frameCount != 2 || strcmp(testDef.gop.subName, "i_p_empty_region") != 0 ||
+             testDef.tiling.tiling != TILING_1_TILE))
+        {
+            return false;
+        }
+
+        // Only empty-region intra-refresh tests should use the empty-region GOP
+        if (!testDef.intraRefresh.isEmptyRegion && strcmp(testDef.gop.subName, "i_p_empty_region") == 0)
+            return false;
+
+        // Midway tests should have 7 frames (1 IDR + 6 P) and use i_p_midway GOP
+        if (testDef.intraRefresh.isMidway &&
+            (testDef.gop.frameCount != 7 || strcmp(testDef.gop.subName, "i_p_midway") != 0))
+        {
+            return false;
+        }
+
+        // Only midway intra-refresh tests should use the midway GOP
+        if (!testDef.intraRefresh.isMidway && strcmp(testDef.gop.subName, "i_p_midway") == 0)
+            return false;
+
+        return true;
+    }
+
+    // The nested combination of tests should be performed only with 720x480
     if (testDef.frameSize.width != 720 && testDef.frameSize.height != 480 &&
         (testDef.ordering.order != ORDERED || testDef.resolutionChange.resolutionChange != RESOLUTION_NO_CHANGE ||
          testDef.quantization.qIndex != QINDEX_NONE || testDef.superblock.superblock != SUPERBLOCK_64x64 ||
          testDef.rateControl.rc != RC_DEFAULT || testDef.loopFilter.lf != LF_OFF || testDef.loopRestore.lr != LR_OFF ||
-         testDef.cdef.cdef != CDEF_OFF || testDef.dpbMode.mode != DPB_MODE_SEPARATE))
+         testDef.cdef.cdef != CDEF_OFF))
+    {
         return false;
+    }
 
-    // Test only GOP_I_P_B in the case of resolution different from 720x780
+    // Test only GOP_I_P_B in the case of resolution different from 720x480
     if (testDef.frameSize.width != 720 && testDef.frameSize.height != 480 && (testDef.gop.gop != GOP_I_P_B))
         return false;
 
@@ -970,9 +1043,12 @@ bool validateTestDefinition(const TestDefinition &testDef)
     if (testDef.frameSize.width == 7680 && testDef.frameSize.height == 4320 && (testDef.tiling.tiling == TILING_1x2))
         return false;
 
-    // Intra-refresh is only supported with P frames, not with B frames
-    if (testDef.intraRefresh.mode != IR_OFF && testDef.gop.gop != GOP_I_P)
+    // Non-intra-refresh tests should not use intra-refresh midway or empty region GOPs
+    if (testDef.intraRefresh.mode == IR_OFF &&
+        (strcmp(testDef.gop.subName, "i_p_midway") == 0 || strcmp(testDef.gop.subName, "i_p_empty_region") == 0))
+    {
         return false;
+    }
 
     return true;
 }
@@ -1176,6 +1252,8 @@ static const std::vector<GOPDef> gopTests = {
     {15, GOP_I_P, true, 15, 0, "i_p_open"},
     {15, GOP_I_P_B, false, 13, 3, "i_p_b3_13"},
     {15, GOP_IDR_P_B, false, 13, 3, "idr_p_b3_13"},
+    {2, GOP_I_P, false, 2, 0, "i_p_empty_region"}, // Special GOP for empty-region tests
+    {7, GOP_I_P, false, 2, 0, "i_p_midway"},       // Special GOP for midway tests (1 IDR + 6 P frames)
 };
 
 static const std::vector<OrderingDef> orderingTests = {
@@ -1233,11 +1311,18 @@ static const std::vector<DpbModeDef> dpbModeTests = {
 };
 
 static const std::vector<IntraRefreshDef> intraRefreshTests = {
-    {IR_OFF, ""},
-    {IR_PICTURE_PARTITION, "intra_refresh_picture_partition"},
-    {IR_ROW_BASED, "intra_refresh_row_based"},
-    {IR_COLUMN_BASED, "intra_refresh_column_based"},
-    {IR_ANY_BLOCK_BASED, "intra_refresh_any_block_based"},
+    {IR_OFF, false, false, ""},
+    {IR_PICTURE_PARTITION, false, false, "intra_refresh_picture_partition"},
+    {IR_ROW_BASED, false, false, "intra_refresh_row_based"},
+    {IR_COLUMN_BASED, false, false, "intra_refresh_column_based"},
+    {IR_ANY_BLOCK_BASED, false, false, "intra_refresh_any_block_based"},
+    {IR_ROW_BASED, true, false, "intra_refresh_row_based_empty_region"},
+    {IR_COLUMN_BASED, true, false, "intra_refresh_column_based_empty_region"},
+    {IR_ANY_BLOCK_BASED, true, false, "intra_refresh_any_block_based_empty_region"},
+    {IR_PICTURE_PARTITION, false, true, "intra_refresh_picture_partition_midway"},
+    {IR_ROW_BASED, false, true, "intra_refresh_row_based_midway"},
+    {IR_COLUMN_BASED, false, true, "intra_refresh_column_based_midway"},
+    {IR_ANY_BLOCK_BASED, false, true, "intra_refresh_any_block_based_midway"},
 };
 
 tcu::TestCaseGroup *createVideoEncodeTestsAV1(tcu::TestContext &testCtx)
