@@ -604,6 +604,17 @@ inline VkPerformanceCounterResultKHR makePerformanceCounterResultKHR (int32_t in
 	return res;
 }
 
+inline VkPerformanceValueDataINTEL makePerformanceValueDataINTEL (uint32_t value32, uint64_t value64, float valueFloat, VkBool32 valueBool, const char* valueString)
+{
+	VkPerformanceValueDataINTEL res;
+	res.value32		= value32;
+	res.value64		= value64;
+	res.valueFloat	= valueFloat;
+	res.valueBool	= valueBool;
+	res.valueString	= valueString;
+	return res;
+}
+
 inline VkPhysicalDeviceDataGraphProcessingEngineARM makePhysicalDeviceDataGraphProcessingEngineARM (VkPhysicalDeviceDataGraphProcessingEngineTypeARM type, VkBool32 isForeign)
 {
 	VkPhysicalDeviceDataGraphProcessingEngineARM res;

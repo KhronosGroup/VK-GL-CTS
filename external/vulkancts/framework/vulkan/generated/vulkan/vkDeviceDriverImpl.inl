@@ -1705,6 +1705,51 @@ VkResult DeviceDriver::getPastPresentationTimingEXT (VkDevice device, const VkPa
     return m_vk.getPastPresentationTimingEXT(device, pPastPresentationTimingInfo, pPastPresentationTimingProperties);
 }
 
+VkResult DeviceDriver::initializePerformanceApiINTEL (VkDevice device, const VkInitializePerformanceApiInfoINTEL* pInitializeInfo) const
+{
+    return m_vk.initializePerformanceApiINTEL(device, pInitializeInfo);
+}
+
+void DeviceDriver::uninitializePerformanceApiINTEL (VkDevice device) const
+{
+    m_vk.uninitializePerformanceApiINTEL(device);
+}
+
+VkResult DeviceDriver::cmdSetPerformanceMarkerINTEL (VkCommandBuffer commandBuffer, const VkPerformanceMarkerInfoINTEL* pMarkerInfo) const
+{
+    return m_vk.cmdSetPerformanceMarkerINTEL(commandBuffer, pMarkerInfo);
+}
+
+VkResult DeviceDriver::cmdSetPerformanceStreamMarkerINTEL (VkCommandBuffer commandBuffer, const VkPerformanceStreamMarkerInfoINTEL* pMarkerInfo) const
+{
+    return m_vk.cmdSetPerformanceStreamMarkerINTEL(commandBuffer, pMarkerInfo);
+}
+
+VkResult DeviceDriver::cmdSetPerformanceOverrideINTEL (VkCommandBuffer commandBuffer, const VkPerformanceOverrideInfoINTEL* pOverrideInfo) const
+{
+    return m_vk.cmdSetPerformanceOverrideINTEL(commandBuffer, pOverrideInfo);
+}
+
+VkResult DeviceDriver::acquirePerformanceConfigurationINTEL (VkDevice device, const VkPerformanceConfigurationAcquireInfoINTEL* pAcquireInfo, VkPerformanceConfigurationINTEL* pConfiguration) const
+{
+    return m_vk.acquirePerformanceConfigurationINTEL(device, pAcquireInfo, pConfiguration);
+}
+
+VkResult DeviceDriver::releasePerformanceConfigurationINTEL (VkDevice device, VkPerformanceConfigurationINTEL configuration) const
+{
+    return m_vk.releasePerformanceConfigurationINTEL(device, configuration);
+}
+
+VkResult DeviceDriver::queueSetPerformanceConfigurationINTEL (VkQueue queue, VkPerformanceConfigurationINTEL configuration) const
+{
+    return m_vk.queueSetPerformanceConfigurationINTEL(queue, configuration);
+}
+
+VkResult DeviceDriver::getPerformanceParameterINTEL (VkDevice device, VkPerformanceParameterTypeINTEL parameter, VkPerformanceValueINTEL* pValue) const
+{
+    return m_vk.getPerformanceParameterINTEL(device, parameter, pValue);
+}
+
 VkResult DeviceDriver::acquireFullScreenExclusiveModeEXT (VkDevice device, VkSwapchainKHR swapchain) const
 {
     return m_vk.acquireFullScreenExclusiveModeEXT(device, swapchain);
@@ -2270,6 +2315,31 @@ VkResult DeviceDriver::convertCooperativeVectorMatrixNV (VkDevice device, const 
 void DeviceDriver::cmdConvertCooperativeVectorMatrixNV (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkConvertCooperativeVectorMatrixInfoNV* pInfos) const
 {
     m_vk.cmdConvertCooperativeVectorMatrixNV(commandBuffer, infoCount, pInfos);
+}
+
+VkResult DeviceDriver::setLatencySleepModeNV (VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepModeInfoNV* pSleepModeInfo) const
+{
+    return m_vk.setLatencySleepModeNV(device, swapchain, pSleepModeInfo);
+}
+
+VkResult DeviceDriver::latencySleepNV (VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepInfoNV* pSleepInfo) const
+{
+    return m_vk.latencySleepNV(device, swapchain, pSleepInfo);
+}
+
+void DeviceDriver::setLatencyMarkerNV (VkDevice device, VkSwapchainKHR swapchain, const VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo) const
+{
+    m_vk.setLatencyMarkerNV(device, swapchain, pLatencyMarkerInfo);
+}
+
+void DeviceDriver::getLatencyTimingsNV (VkDevice device, VkSwapchainKHR swapchain, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo) const
+{
+    m_vk.getLatencyTimingsNV(device, swapchain, pLatencyMarkerInfo);
+}
+
+void DeviceDriver::queueNotifyOutOfBandNV (VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo) const
+{
+    m_vk.queueNotifyOutOfBandNV(queue, pQueueTypeInfo);
 }
 
 VkResult DeviceDriver::createDataGraphPipelinesARM (VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkDataGraphPipelineCreateInfoARM* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const

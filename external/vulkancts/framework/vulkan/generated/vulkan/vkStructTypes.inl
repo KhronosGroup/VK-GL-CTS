@@ -3429,13 +3429,6 @@ struct VkGeometryNV
 	VkGeometryFlagsKHR	flags;
 };
 
-struct VkGraphicsPipelineLibraryCreateInfoEXT
-{
-	VkStructureType						sType;
-	const void*							pNext;
-	VkGraphicsPipelineLibraryFlagsEXT	flags;
-};
-
 struct VkAccelerationStructureInfoNV
 {
 	VkStructureType						sType;
@@ -3445,6 +3438,13 @@ struct VkAccelerationStructureInfoNV
 	uint32_t							instanceCount;
 	uint32_t							geometryCount;
 	const VkGeometryNV*					pGeometries;
+};
+
+struct VkGraphicsPipelineLibraryCreateInfoEXT
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkGraphicsPipelineLibraryFlagsEXT	flags;
 };
 
 struct VkAccelerationStructureCreateInfoNV
@@ -3941,6 +3941,13 @@ struct VkIndirectExecutionSetShaderLayoutInfoEXT
 	const VkDescriptorSetLayout*	pSetLayouts;
 };
 
+struct VkInitializePerformanceApiInfoINTEL
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	void*			pUserData;
+};
+
 struct VkInputAttachmentAspectReference
 {
 	uint32_t			subpass;
@@ -3958,6 +3965,66 @@ struct VkInstanceCreateInfo
 	const char* const*			ppEnabledLayerNames;
 	uint32_t					enabledExtensionCount;
 	const char* const*			ppEnabledExtensionNames;
+};
+
+struct VkLatencySleepInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkSemaphore		signalSemaphore;
+	uint64_t		value;
+};
+
+struct VkLatencySleepModeInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		lowLatencyMode;
+	VkBool32		lowLatencyBoost;
+	uint32_t		minimumIntervalUs;
+};
+
+struct VkLatencySubmissionPresentIdNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint64_t		presentID;
+};
+
+struct VkLatencySurfaceCapabilitiesNV
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	uint32_t			presentModeCount;
+	VkPresentModeKHR*	pPresentModes;
+};
+
+struct VkLatencyTimingsFrameReportNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint64_t		presentID;
+	uint64_t		inputSampleTimeUs;
+	uint64_t		simStartTimeUs;
+	uint64_t		simEndTimeUs;
+	uint64_t		renderSubmitStartTimeUs;
+	uint64_t		renderSubmitEndTimeUs;
+	uint64_t		presentStartTimeUs;
+	uint64_t		presentEndTimeUs;
+	uint64_t		driverStartTimeUs;
+	uint64_t		driverEndTimeUs;
+	uint64_t		osRenderQueueStartTimeUs;
+	uint64_t		osRenderQueueEndTimeUs;
+	uint64_t		gpuRenderStartTimeUs;
+	uint64_t		gpuRenderEndTimeUs;
+};
+
+struct VkGetLatencyMarkerInfoNV
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	uint32_t						timingCount;
+	VkLatencyTimingsFrameReportNV*	pTimings;
 };
 
 struct VkLayerProperties
@@ -4609,6 +4676,13 @@ struct VkCopyMemoryToImageInfo
 	const VkMemoryToImageCopy*	pRegions;
 };
 
+struct VkOutOfBandQueueTypeInfoNV
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkOutOfBandQueueTypeNV	queueType;
+};
+
 struct VkPastPresentationTimingGOOGLE
 {
 	uint32_t	presentID;
@@ -4624,6 +4698,13 @@ struct VkPastPresentationTimingInfoEXT
 	const void*							pNext;
 	VkPastPresentationTimingFlagsEXT	flags;
 	VkSwapchainKHR						swapchain;
+};
+
+struct VkPerformanceConfigurationAcquireInfoINTEL
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkPerformanceConfigurationTypeINTEL	type;
 };
 
 struct VkPerformanceCounterARM
@@ -4671,11 +4752,49 @@ union VkPerformanceCounterResultKHR
 	double		float64;
 };
 
+struct VkPerformanceMarkerInfoINTEL
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint64_t		marker;
+};
+
+struct VkPerformanceOverrideInfoINTEL
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkPerformanceOverrideTypeINTEL	type;
+	VkBool32						enable;
+	uint64_t						parameter;
+};
+
 struct VkPerformanceQuerySubmitInfoKHR
 {
 	VkStructureType	sType;
 	const void*		pNext;
 	uint32_t		counterPassIndex;
+};
+
+struct VkPerformanceStreamMarkerInfoINTEL
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		marker;
+};
+
+union VkPerformanceValueDataINTEL
+{
+	uint32_t	value32;
+	uint64_t	value64;
+	float		valueFloat;
+	VkBool32	valueBool;
+	const char*	valueString;
+};
+
+struct VkPerformanceValueINTEL
+{
+	VkPerformanceValueTypeINTEL	type;
+	VkPerformanceValueDataINTEL	data;
 };
 
 struct VkPhysicalDevice16BitStorageFeatures
@@ -5905,6 +6024,13 @@ struct VkPhysicalDeviceInlineUniformBlockProperties
 	uint32_t		maxPerStageDescriptorUpdateAfterBindInlineUniformBlocks;
 	uint32_t		maxDescriptorSetInlineUniformBlocks;
 	uint32_t		maxDescriptorSetUpdateAfterBindInlineUniformBlocks;
+};
+
+struct VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		internallySynchronizedQueues;
 };
 
 struct VkPhysicalDeviceInvocationMaskFeaturesHUAWEI
@@ -8515,6 +8641,13 @@ struct VkQueryPoolPerformanceCreateInfoKHR
 	const uint32_t*	pCounterIndices;
 };
 
+struct VkQueryPoolPerformanceQueryCreateInfoINTEL
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkQueryPoolSamplingModeINTEL	performanceCountersSampling;
+};
+
 struct VkQueryPoolVideoEncodeFeedbackCreateInfoKHR
 {
 	VkStructureType					sType;
@@ -9139,6 +9272,14 @@ struct VkSetDescriptorBufferOffsetsInfoEXT
 	uint32_t			setCount;
 	const uint32_t*		pBufferIndices;
 	const VkDeviceSize*	pOffsets;
+};
+
+struct VkSetLatencyMarkerInfoNV
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	uint64_t			presentID;
+	VkLatencyMarkerNV	marker;
 };
 
 struct VkSetStateFlagsIndirectCommandNV
@@ -9791,6 +9932,13 @@ struct VkSwapchainCreateInfoKHR
 	VkPresentModeKHR				presentMode;
 	VkBool32						clipped;
 	VkSwapchainKHR					oldSwapchain;
+};
+
+struct VkSwapchainLatencyCreateInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		latencyModeEnable;
 };
 
 struct VkSwapchainPresentFenceInfoKHR
@@ -12013,6 +12161,9 @@ typedef VkPushDescriptorSetInfo VkPushDescriptorSetInfoKHR;
 
 
 typedef VkPushDescriptorSetWithTemplateInfo VkPushDescriptorSetWithTemplateInfoKHR;
+
+
+typedef VkQueryPoolPerformanceQueryCreateInfoINTEL VkQueryPoolCreateInfoINTEL;
 
 
 typedef VkQueueFamilyGlobalPriorityProperties VkQueueFamilyGlobalPriorityPropertiesEXT;
