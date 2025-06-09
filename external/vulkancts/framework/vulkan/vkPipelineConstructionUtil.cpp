@@ -518,9 +518,19 @@ RenderPassWrapper::SubpassDependency::SubpassDependency(const VkSubpassDependenc
 }
 #endif // CTS_USES_VULKANSC
 
-RenderPassWrapper::RenderPassWrapper(PipelineConstructionType pipelineConstructionType, const DeviceInterface &vk,
-                                     VkDevice device, const VkRenderPassCreateInfo *pCreateInfo)
-    : m_isDynamicRendering(vk::isConstructionTypeShaderObject(pipelineConstructionType))
+#ifndef CTS_USES_VULKANSC
+RenderPassWrapper::RenderPassWrapper(const DeviceInterface &vk, VkDevice device,
+                                     const VkRenderPassCreateInfo *pCreateInfo,
+                                     const VkAttachmentFeedbackLoopInfoEXT *attachmentFeedbackLoopInfo)
+    : RenderPassWrapper(vk, device, pCreateInfo, true)
+{
+    m_attachmentFeedbackLoopInfo = *attachmentFeedbackLoopInfo;
+}
+#endif
+
+RenderPassWrapper::RenderPassWrapper(const DeviceInterface &vk, VkDevice device,
+                                     const VkRenderPassCreateInfo *pCreateInfo, bool dynamicRendering)
+    : m_isDynamicRendering(dynamicRendering)
     , m_renderPassPtr()
     , m_renderPass(VK_NULL_HANDLE)
 #ifndef CTS_USES_VULKANSC
@@ -656,6 +666,12 @@ RenderPassWrapper::RenderPassWrapper(PipelineConstructionType pipelineConstructi
             m_dependencies.emplace_back(pCreateInfo->pDependencies[depIdx]);
 #endif
     }
+}
+
+RenderPassWrapper::RenderPassWrapper(PipelineConstructionType pipelineConstructionType, const DeviceInterface &vk,
+                                     VkDevice device, const VkRenderPassCreateInfo *pCreateInfo)
+    : RenderPassWrapper(vk, device, pCreateInfo, isConstructionTypeShaderObject(pipelineConstructionType))
+{
 }
 
 RenderPassWrapper::RenderPassWrapper(PipelineConstructionType pipelineConstructionType, const DeviceInterface &vk,
@@ -924,6 +940,7 @@ RenderPassWrapper::RenderPassWrapper(RenderPassWrapper &&rhs) noexcept
     , m_renderPass(rhs.m_renderPass)
     , m_framebuffer(rhs.m_framebuffer)
 #ifndef CTS_USES_VULKANSC
+    , m_attachmentFeedbackLoopInfo(rhs.m_attachmentFeedbackLoopInfo)
     , m_subpasses(std::move(rhs.m_subpasses))
     , m_dependencies(std::move(rhs.m_dependencies))
     , m_attachments(std::move(rhs.m_attachments))
@@ -947,18 +964,19 @@ RenderPassWrapper &RenderPassWrapper::operator=(RenderPassWrapper &&rhs) noexcep
     m_renderPass         = rhs.m_renderPass;
     m_framebuffer        = rhs.m_framebuffer;
 #ifndef CTS_USES_VULKANSC
-    m_subpasses               = std::move(rhs.m_subpasses);
-    m_dependencies            = std::move(rhs.m_dependencies);
-    m_attachments             = std::move(rhs.m_attachments);
-    m_images                  = std::move(rhs.m_images);
-    m_imageViews              = std::move(rhs.m_imageViews);
-    m_clearValues             = std::move(rhs.m_clearValues);
-    m_layouts                 = std::move(rhs.m_layouts);
-    m_activeSubpass           = rhs.m_activeSubpass;
-    m_renderingInfo           = rhs.m_renderingInfo;
-    m_layers                  = rhs.m_layers;
-    m_viewMasks               = std::move(rhs.m_viewMasks);
-    m_secondaryCommandBuffers = rhs.m_secondaryCommandBuffers;
+    m_attachmentFeedbackLoopInfo = rhs.m_attachmentFeedbackLoopInfo;
+    m_subpasses                  = std::move(rhs.m_subpasses);
+    m_dependencies               = std::move(rhs.m_dependencies);
+    m_attachments                = std::move(rhs.m_attachments);
+    m_images                     = std::move(rhs.m_images);
+    m_imageViews                 = std::move(rhs.m_imageViews);
+    m_clearValues                = std::move(rhs.m_clearValues);
+    m_layouts                    = std::move(rhs.m_layouts);
+    m_activeSubpass              = rhs.m_activeSubpass;
+    m_renderingInfo              = rhs.m_renderingInfo;
+    m_layers                     = rhs.m_layers;
+    m_viewMasks                  = std::move(rhs.m_viewMasks);
+    m_secondaryCommandBuffers    = rhs.m_secondaryCommandBuffers;
 #endif
     return *this;
 }
@@ -1515,7 +1533,9 @@ void RenderPassWrapper::beginRendering(const DeviceInterface &vk, const VkComman
         colorAttachment       = vk::initVulkanStructure();
         if (subpass.m_colorAttachments[i].index == VK_ATTACHMENT_UNUSED)
             continue;
-        colorAttachment        = subpass.m_colorAttachments[i].attachmentInfo;
+        colorAttachment = subpass.m_colorAttachments[i].attachmentInfo;
+        if (m_attachmentFeedbackLoopInfo.sType == VK_STRUCTURE_TYPE_ATTACHMENT_FEEDBACK_LOOP_INFO_EXT)
+            colorAttachment.pNext = &m_attachmentFeedbackLoopInfo;
         colorAttachment.loadOp = vk::VK_ATTACHMENT_LOAD_OP_LOAD;
         if (!subpass.m_resolveAttachments.empty() && subpass.m_resolveAttachments[i].index != VK_ATTACHMENT_UNUSED)
         {

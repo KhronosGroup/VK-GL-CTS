@@ -4615,15 +4615,15 @@ void copyBufferToImage(const DeviceInterface &vk, const VkCommandBuffer &cmdBuff
         bufferSize                               // VkDeviceSize size;
     };
 
-    VkImageLayout copyLayout =
-        (destImageLayout == VK_IMAGE_LAYOUT_GENERAL) ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    const VkImageLayout transferLayout =
+        destImageLayout == VK_IMAGE_LAYOUT_GENERAL ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
     const VkImageMemoryBarrier preImageBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
                                                   nullptr,                                // const void* pNext;
                                                   0u,                           // VkAccessFlags srcAccessMask;
                                                   VK_ACCESS_TRANSFER_WRITE_BIT, // VkAccessFlags dstAccessMask;
                                                   VK_IMAGE_LAYOUT_UNDEFINED,    // VkImageLayout oldLayout;
-                                                  copyLayout,                   // VkImageLayout newLayout;
+                                                  transferLayout,               // VkImageLayout newLayout;
                                                   VK_QUEUE_FAMILY_IGNORED,      // uint32_t srcQueueFamilyIndex;
                                                   VK_QUEUE_FAMILY_IGNORED,      // uint32_t dstQueueFamilyIndex;
                                                   destImage,                    // VkImage image;
@@ -4636,21 +4636,15 @@ void copyBufferToImage(const DeviceInterface &vk, const VkCommandBuffer &cmdBuff
                                                       arrayLayers       // uint32_t arraySize;
                                                   }};
 
-    const VkMemoryBarrier memoryBarrier = {
-        VK_STRUCTURE_TYPE_MEMORY_BARRIER, // VkStructureType sType;
-        nullptr,                          // const void* pNext;
-        VK_ACCESS_TRANSFER_WRITE_BIT,     // VkAccessFlags srcAccessMask;
-        destImageDstAccessMask            // VkAccessFlags dstAccessMask;
-    };
     const VkImageMemoryBarrier postImageBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
                                                    nullptr,                                // const void* pNext;
-                                                   VK_ACCESS_TRANSFER_WRITE_BIT,         // VkAccessFlags srcAccessMask;
-                                                   destImageDstAccessMask,               // VkAccessFlags dstAccessMask;
-                                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // VkImageLayout oldLayout;
-                                                   destImageLayout,                      // VkImageLayout newLayout;
-                                                   VK_QUEUE_FAMILY_IGNORED, // uint32_t srcQueueFamilyIndex;
-                                                   VK_QUEUE_FAMILY_IGNORED, // uint32_t dstQueueFamilyIndex;
-                                                   destImage,               // VkImage image;
+                                                   VK_ACCESS_TRANSFER_WRITE_BIT, // VkAccessFlags srcAccessMask;
+                                                   destImageDstAccessMask,       // VkAccessFlags dstAccessMask;
+                                                   transferLayout,               // VkImageLayout oldLayout;
+                                                   destImageLayout,              // VkImageLayout newLayout;
+                                                   VK_QUEUE_FAMILY_IGNORED,      // uint32_t srcQueueFamilyIndex;
+                                                   VK_QUEUE_FAMILY_IGNORED,      // uint32_t dstQueueFamilyIndex;
+                                                   destImage,                    // VkImage image;
                                                    {
                                                        // VkImageSubresourceRange subresourceRange;
                                                        imageAspectFlags, // VkImageAspectFlags aspect;
@@ -4663,11 +4657,10 @@ void copyBufferToImage(const DeviceInterface &vk, const VkCommandBuffer &cmdBuff
     // Copy buffer to image
     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
                           0, nullptr, 1, &preBufferBarrier, 1, &preImageBarrier);
-    vk.cmdCopyBufferToImage(cmdBuffer, buffer, destImage, copyLayout, (uint32_t)copyRegions.size(), copyRegions.data());
-    bool useMemoryBarrier = destImageLayout == VK_IMAGE_LAYOUT_GENERAL;
-    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, destImageDstStageFlags, (VkDependencyFlags)0,
-                          useMemoryBarrier ? 1 : 0, &memoryBarrier, 0, nullptr, useMemoryBarrier ? 0 : 1,
-                          &postImageBarrier);
+    vk.cmdCopyBufferToImage(cmdBuffer, buffer, destImage, transferLayout, (uint32_t)copyRegions.size(),
+                            copyRegions.data());
+    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, destImageDstStageFlags, (VkDependencyFlags)0, 0,
+                          nullptr, 0, nullptr, 1, &postImageBarrier);
 }
 
 void copyBufferToImage(const DeviceInterface &vk, VkDevice device, VkQueue queue, uint32_t queueFamilyIndex,
@@ -4738,8 +4731,8 @@ void copyImageToBuffer(const DeviceInterface &vk, VkCommandBuffer cmdBuffer, VkI
                        VkImageAspectFlags barrierAspect, VkImageAspectFlags copyAspect,
                        VkPipelineStageFlags srcStageMask)
 {
-    VkImageLayout copyLayout =
-        (oldLayout == VK_IMAGE_LAYOUT_GENERAL) ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    const VkImageLayout transferLayout =
+        oldLayout == VK_IMAGE_LAYOUT_GENERAL ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
     const VkImageMemoryBarrier imageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,                        // VkStructureType sType;
@@ -4747,7 +4740,7 @@ void copyImageToBuffer(const DeviceInterface &vk, VkCommandBuffer cmdBuffer, VkI
         srcAccessMask,                                                 // VkAccessFlags srcAccessMask;
         VK_ACCESS_TRANSFER_READ_BIT,                                   // VkAccessFlags dstAccessMask;
         oldLayout,                                                     // VkImageLayout oldLayout;
-        copyLayout,                                                    // VkImageLayout newLayout;
+        transferLayout,                                                // VkImageLayout newLayout;
         VK_QUEUE_FAMILY_IGNORED,                                       // uint32_t srcQueueFamilyIndex;
         VK_QUEUE_FAMILY_IGNORED,                                       // uint32_t destQueueFamilyIndex;
         image,                                                         // VkImage image;
@@ -4773,7 +4766,7 @@ void copyImageToBuffer(const DeviceInterface &vk, VkCommandBuffer cmdBuffer, VkI
         makeExtent3D(size.x(), size.y(), 1u) // VkExtent3D imageExtent;
     };
 
-    vk.cmdCopyImageToBuffer(cmdBuffer, image, copyLayout, buffer, 1u, &region);
+    vk.cmdCopyImageToBuffer(cmdBuffer, image, transferLayout, buffer, 1u, &region);
 
     const VkBufferMemoryBarrier bufferBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
@@ -5364,7 +5357,7 @@ vk::VkImageSubresourceLayers makeDefaultImageSubresourceLayers()
 
 ImageWithBuffer::ImageWithBuffer(const DeviceInterface &vkd, const VkDevice device, Allocator &alloc,
                                  vk::VkExtent3D extent, vk::VkFormat imageFormat, vk::VkImageUsageFlags usage,
-                                 vk::VkImageType imageType, vk::VkImageSubresourceRange srr, uint32_t arrayLayers,
+                                 vk::VkImageType imageType, vk::VkImageSubresourceRange ssr, uint32_t arrayLayers,
                                  vk::VkSampleCountFlagBits samples, vk::VkImageTiling tiling, uint32_t mipLevels,
                                  vk::VkSharingMode sharingMode)
 {
@@ -5375,7 +5368,7 @@ ImageWithBuffer::ImageWithBuffer(const DeviceInterface &vkd, const VkDevice devi
     DE_ASSERT(mipLevels > 0 && arrayLayers > 0);
 
     // Color attachment.
-    const VkImageCreateInfo imageCreateInfo = {
+    const VkImageCreateInfo colorAttachmentCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
         nullptr,                             // const void* pNext;
         0u,                                  // VkImageCreateFlags flags;
@@ -5393,7 +5386,7 @@ ImageWithBuffer::ImageWithBuffer(const DeviceInterface &vkd, const VkDevice devi
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
     image = std::unique_ptr<ImageWithMemory>(
-        new ImageWithMemory(vkd, device, alloc, imageCreateInfo, MemoryRequirement::Any));
+        new ImageWithMemory(vkd, device, alloc, colorAttachmentCreateInfo, MemoryRequirement::Any));
 
     VkImageViewType viewType;
     switch (imageType)
@@ -5413,19 +5406,10 @@ ImageWithBuffer::ImageWithBuffer(const DeviceInterface &vkd, const VkDevice devi
     }
 
     // Color attachment view.
-    imageView = makeImageView(vkd, device, (*image).get(), viewType, imageFormat, srr);
+    imageView = makeImageView(vkd, device, (*image).get(), viewType, imageFormat, ssr);
 
     // Verification buffer.
-    tcu::TextureFormat tcuFormat;
-    if (srr.aspectMask == static_cast<VkImageAspectFlags>(VK_IMAGE_ASPECT_COLOR_BIT))
-        tcuFormat = mapVkFormat(imageFormat);
-    else if (srr.aspectMask == static_cast<VkImageAspectFlags>(VK_IMAGE_ASPECT_DEPTH_BIT))
-        tcuFormat = getDepthCopyFormat(imageFormat);
-    else if (srr.aspectMask == static_cast<VkImageAspectFlags>(VK_IMAGE_ASPECT_STENCIL_BIT))
-        tcuFormat = getStencilCopyFormat(imageFormat);
-    else
-        DE_ASSERT(false);
-
+    const auto tcuFormat = mapVkFormat(imageFormat);
     const auto verificationBufferSize =
         tcuFormat.getPixelSize() * extent.width * extent.height * arrayLayers * extent.depth;
     const auto verificationBufferCreateInfo =

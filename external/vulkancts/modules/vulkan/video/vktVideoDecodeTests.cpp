@@ -575,16 +575,18 @@ struct InterleavingDecodeTestParams
 class TestDefinition
 {
 public:
-    static MovePtr<TestDefinition> create(DecodeTestParam params, uint32_t baseSeed, bool layeredDpb)
+    static MovePtr<TestDefinition> create(DecodeTestParam params, uint32_t baseSeed, bool layeredDpb,
+                                          bool generalLayout)
     {
-        return MovePtr<TestDefinition>(new TestDefinition(params, baseSeed, layeredDpb));
+        return MovePtr<TestDefinition>(new TestDefinition(params, baseSeed, layeredDpb, generalLayout));
     }
 
-    TestDefinition(DecodeTestParam params, uint32_t baseSeed, bool layeredDpb)
+    TestDefinition(DecodeTestParam params, uint32_t baseSeed, bool layeredDpb, bool generalLayout)
         : m_params(params)
         , m_info(clipInfo(params.stream.clip))
         , m_hash(baseSeed)
         , m_isLayeredDpb(layeredDpb)
+        , m_generalLayout(generalLayout)
     {
         for (const auto &profile : m_info->sessionProfiles)
         {
@@ -645,6 +647,11 @@ public:
         else
             oss << "_separated_dpb";
 
+        if (usesGeneralLayout())
+            oss << "_general_layout";
+        else
+            oss << "_video_layout";
+
         return oss.str();
     }
 
@@ -661,6 +668,11 @@ public:
     bool isLayered() const
     {
         return m_isLayeredDpb;
+    }
+
+    bool usesGeneralLayout() const
+    {
+        return m_generalLayout;
     }
 
     int getParamaterUpdateHackRequirement() const
@@ -719,6 +731,7 @@ private:
     const ClipInfo *m_info{};
     uint32_t m_hash{};
     bool m_isLayeredDpb{};
+    bool m_generalLayout{};
     std::vector<VkVideoCoreProfile> m_profiles;
     // The 1-based count of parameter set updates after which to force
     // a parameter object release.  This is required due to the design
@@ -1277,20 +1290,29 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
             openTemporaryFile(oss.str(), &debug_OutputFileHandle);
         }
 
-        DownloadedFrame downloadedFrame = getDecodedImage(m_deviceContext,
-                                                          (hasSeparateOutputImages || intraOnlyDecodingNoSetupRef) ?
-                                                              VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR :
-                                                              VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR,
-                                                          frame);
+        VkImageLayout downloadedFrameLayout;
+        if (m_testDefinition->usesGeneralLayout())
+            downloadedFrameLayout = VK_IMAGE_LAYOUT_GENERAL;
+        else
+            downloadedFrameLayout = (hasSeparateOutputImages || intraOnlyDecodingNoSetupRef) ?
+                                        VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR :
+                                        VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR;
+
+        DownloadedFrame downloadedFrame = getDecodedImage(m_deviceContext, downloadedFrameLayout, frame);
 
         DownloadedFrame downloadedFrameWithoutFilmGrain;
         if (processorWithoutFilmGrain)
         {
+            VkImageLayout downloadedFrameWithoutFilmGrainLayout;
+            if (m_testDefinition->usesGeneralLayout())
+                downloadedFrameWithoutFilmGrainLayout = VK_IMAGE_LAYOUT_GENERAL;
+            else
+                downloadedFrameWithoutFilmGrainLayout = !processor->m_decoder->dpbAndOutputCoincide() ?
+                                                            VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR :
+                                                            VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR;
+
             downloadedFrameWithoutFilmGrain =
-                getDecodedImage(m_deviceContext,
-                                !processor->m_decoder->dpbAndOutputCoincide() ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR :
-                                                                                VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR,
-                                frameWithoutFilmgGrain);
+                getDecodedImage(m_deviceContext, downloadedFrameWithoutFilmGrainLayout, frameWithoutFilmgGrain);
         }
 
         if (debug_WriteOutFramesToSingleFile || debug_WriteOutFramesToSeparateFiles)
@@ -1470,10 +1492,14 @@ tcu::TestStatus InterleavingDecodeTestInstance::iterate(void)
                           << "dstImageView " << frame.outputImageView->GetImageView() << std::endl;
             }
 
-            DownloadedFrame downloadedFrame = getDecodedImage(
-                m_deviceContext,
-                hasSeparateOutputImages ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR : VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR,
-                frame);
+            VkImageLayout downloadedFrameLayout;
+            if (m_testDefinitions[i]->usesGeneralLayout())
+                downloadedFrameLayout = VK_IMAGE_LAYOUT_GENERAL;
+            else
+                downloadedFrameLayout = hasSeparateOutputImages ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR :
+                                                                  VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR;
+
+            DownloadedFrame downloadedFrame = getDecodedImage(m_deviceContext, downloadedFrameLayout, frame);
 
             std::string expectedChecksum = checksumForClipFrame(test->getClipInfo(), frameNumber);
             std::string actualChecksum   = downloadedFrame.checksum();
@@ -1713,6 +1739,15 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
     default:
         TCU_FAIL("Unsupported codec type");
     }
+
+    if (m_testDefinition->usesGeneralLayout() == VK_IMAGE_LAYOUT_GENERAL)
+    {
+        context.requireDeviceFunctionality("VK_KHR_unified_image_layouts");
+        if (!context.getUnifiedImageLayoutsFeatures().unifiedImageLayoutsVideo)
+        {
+            TCU_THROW(NotSupportedError, "unifiedImageLayoutsVideo");
+        }
+    }
 }
 
 void InterleavingDecodeTestCase::checkSupport(Context &context) const
@@ -1743,6 +1778,15 @@ void InterleavingDecodeTestCase::checkSupport(Context &context) const
     default:
         TCU_THROW(InternalError, "Unknown interleaving test type");
     }
+
+    if (m_testDefinitions[0]->usesGeneralLayout() == VK_IMAGE_LAYOUT_GENERAL)
+    {
+        context.requireDeviceFunctionality("VK_KHR_unified_image_layouts");
+        if (!context.getUnifiedImageLayoutsFeatures().unifiedImageLayoutsVideo)
+        {
+            TCU_THROW(NotSupportedError, "unifiedImageLayoutsVideo");
+        }
+    }
 }
 
 } // namespace
@@ -1757,41 +1801,44 @@ tcu::TestCaseGroup *createVideoDecodeTests(tcu::TestContext &testCtx)
 
     for (bool layeredDpb : {true, false})
     {
-        for (const auto &decodeTest : g_DecodeTests)
+        for (bool generalLayout : {true, false})
         {
-            auto defn                  = TestDefinition::create(decodeTest, baseSeed, layeredDpb);
-            const std::string testName = defn->getTestName();
-            uint32_t rngSeed           = baseSeed ^ deStringHash(testName.c_str());
-            defn->updateHash(rngSeed);
+            for (const auto &decodeTest : g_DecodeTests)
+            {
+                auto defn                  = TestDefinition::create(decodeTest, baseSeed, layeredDpb, generalLayout);
+                const std::string testName = defn->getTestName();
+                uint32_t rngSeed           = baseSeed ^ deStringHash(testName.c_str());
+                defn->updateHash(rngSeed);
 
-            auto testCodec = getTestCodec(decodeTest.type);
-            if (testCodec == TEST_CODEC_H264)
-                h264Group->addChild(new VideoDecodeTestCase(testCtx, testName.c_str(), defn));
-            else if (testCodec == TEST_CODEC_H265)
-                h265Group->addChild(new VideoDecodeTestCase(testCtx, testName.c_str(), defn));
-            else
-                av1Group->addChild(new VideoDecodeTestCase(testCtx, testName.c_str(), defn));
-        }
-        for (const auto &interleavingTest : g_InterleavingTests)
-        {
-            std::vector<MovePtr<TestDefinition>> defns;
-            DecodeTestParam streamA{interleavingTest.type, interleavingTest.streamA};
-            DecodeTestParam streamB{interleavingTest.type, interleavingTest.streamB};
-            auto defnA                 = TestDefinition::create(streamA, baseSeed, layeredDpb);
-            auto defnB                 = TestDefinition::create(streamB, baseSeed, layeredDpb);
-            const std::string testName = defnA->getTestName();
-            defns.push_back(std::move(defnA));
-            defns.push_back(std::move(defnB));
+                auto testCodec = getTestCodec(decodeTest.type);
+                if (testCodec == TEST_CODEC_H264)
+                    h264Group->addChild(new VideoDecodeTestCase(testCtx, testName.c_str(), defn));
+                else if (testCodec == TEST_CODEC_H265)
+                    h265Group->addChild(new VideoDecodeTestCase(testCtx, testName.c_str(), defn));
+                else
+                    av1Group->addChild(new VideoDecodeTestCase(testCtx, testName.c_str(), defn));
+            }
+            for (const auto &interleavingTest : g_InterleavingTests)
+            {
+                std::vector<MovePtr<TestDefinition>> defns;
+                DecodeTestParam streamA{interleavingTest.type, interleavingTest.streamA};
+                DecodeTestParam streamB{interleavingTest.type, interleavingTest.streamB};
+                auto defnA                 = TestDefinition::create(streamA, baseSeed, layeredDpb, generalLayout);
+                auto defnB                 = TestDefinition::create(streamB, baseSeed, layeredDpb, generalLayout);
+                const std::string testName = defnA->getTestName();
+                defns.push_back(std::move(defnA));
+                defns.push_back(std::move(defnB));
 
-            auto testCodec = getTestCodec(interleavingTest.type);
-            if (testCodec == TEST_CODEC_H264)
-                h264Group->addChild(new InterleavingDecodeTestCase(testCtx, testName.c_str(), std::move(defns)));
-            else if (testCodec == TEST_CODEC_H265)
-                h265Group->addChild(new InterleavingDecodeTestCase(testCtx, testName.c_str(), std::move(defns)));
-            else
-                av1Group->addChild(new InterleavingDecodeTestCase(testCtx, testName.c_str(), std::move(defns)));
-        }
-    } // layered true / false
+                auto testCodec = getTestCodec(interleavingTest.type);
+                if (testCodec == TEST_CODEC_H264)
+                    h264Group->addChild(new InterleavingDecodeTestCase(testCtx, testName.c_str(), std::move(defns)));
+                else if (testCodec == TEST_CODEC_H265)
+                    h265Group->addChild(new InterleavingDecodeTestCase(testCtx, testName.c_str(), std::move(defns)));
+                else
+                    av1Group->addChild(new InterleavingDecodeTestCase(testCtx, testName.c_str(), std::move(defns)));
+            }
+        } // general_layout true / false
+    }     // layered true / false
 
     group->addChild(h264Group.release());
     group->addChild(h265Group.release());
