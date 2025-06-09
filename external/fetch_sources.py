@@ -155,7 +155,9 @@ class SourcePackage (Source):
         tmpPath = os.path.join(EXTERNAL_DIR, ".extract-tmp-%s" % self.baseDir)
         dstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
 
-        if self.filename.endswith(".zip"):
+        isZipFile = self.filename.endswith(".zip")
+
+        if isZipFile:
             archive = zipfile.ZipFile(srcPath)
         else:
             archive = tarfile.open(srcPath)
@@ -165,7 +167,10 @@ class SourcePackage (Source):
 
         os.mkdir(tmpPath)
 
-        archive.extractall(tmpPath)
+        if (not isZipFile) and sys.version_info >= (3, 13):
+            archive.extractall(tmpPath, filter='data') # Safe extraction of tar file data.
+        else:
+            archive.extractall(tmpPath)
         archive.close()
 
         extractedEntries = os.listdir(tmpPath)
