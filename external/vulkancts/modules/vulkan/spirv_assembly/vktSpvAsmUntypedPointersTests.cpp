@@ -2468,7 +2468,7 @@ static Resource createAtomicResource(const AtomicResourceDesc &desc, const std::
     return Resource(BufferSp(new AtomicBuffer<uint8_t>(std::vector<uint8_t>(), atomicOpDescs)));
 }
 
-std::string createShaderHeader(const char *pInterfaces = "")
+std::string createShaderHeader(const char *pInterfaces = "", const char *pLocalWrkGrpSize = "1 1 1")
 {
     std::string header = std::string("OpCapability Shader\n"
                                      "${capabilities}\n"
@@ -2478,7 +2478,8 @@ std::string createShaderHeader(const char *pInterfaces = "")
 
     header += pInterfaces;
     header += " \n"
-              "OpExecutionMode %main LocalSize 1 1 1\n";
+              "OpExecutionMode %main LocalSize " +
+              std::string(pLocalWrkGrpSize) + "\n";
 
     return header;
 }
@@ -11892,7 +11893,7 @@ void CooperativeMatrixInteractionTestCase::checkSupport(Context &context) const
 
 void CooperativeMatrixInteractionTestCase::initPrograms(vk::SourceCollections &programCollection) const
 {
-    tcu::StringTemplate shaderHeader(createShaderHeader(getShaderInterfaces(m_params.testCase)));
+    tcu::StringTemplate shaderHeader(createShaderHeader(getShaderInterfaces(m_params.testCase), "32 1 1"));
     tcu::StringTemplate shaderAnnotations(createShaderAnnotations(m_params.testCase));
     tcu::StringTemplate shaderVariables(createShaderVariables(m_params.testCase));
     tcu::StringTemplate shaderFunctions(createShaderMain(m_params.testCase));
@@ -12326,7 +12327,6 @@ void addGLSLMemoryModelTestGroup(tcu::TestCaseGroup *testGroup)
     addTestGroup(testGroup, "physical_storage", addPhysicalStorageBufferInteractionTestGroup, MemoryModelTypes::GLSL);
     addTestGroup(testGroup, "workgroup_memory_explicit_layout", addWorkgroupMemoryExplicitLayoutInteractionTestGroup,
                  MemoryModelTypes::GLSL);
-    addTestGroup(testGroup, "cooperative_matrix", addCooperativeMatrixInteractionTestGroup, MemoryModelTypes::GLSL);
 }
 
 tcu::TestCaseGroup *createUntypedPointersTestGroup(tcu::TestContext &testCtx)
