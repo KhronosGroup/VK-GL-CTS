@@ -61,6 +61,8 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
             createSynchronizationTests(testCtx, "decode_h265", VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR));
         syncGroup->addChild(
             createSynchronizationTests(testCtx, "decode_av1", VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR));
+        syncGroup->addChild(
+            createSynchronizationTests(testCtx, "decode_vp9", VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR));
 
         group->addChild(syncGroup.release());
     }
@@ -80,6 +82,8 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
             createSynchronization2Tests(testCtx, "decode_h265", VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR));
         syncGroup->addChild(
             createSynchronization2Tests(testCtx, "decode_av1", VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR));
+        syncGroup->addChild(
+            createSynchronization2Tests(testCtx, "decode_vp9", VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR));
 
         group->addChild(syncGroup.release());
     }

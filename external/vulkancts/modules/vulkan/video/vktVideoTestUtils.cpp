@@ -124,6 +124,8 @@ static const VkExtensionProperties EXTENSION_PROPERTIES_H265_ENCODE = makeExtens
     VK_STD_VULKAN_VIDEO_CODEC_H265_ENCODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_H265_ENCODE_SPEC_VERSION);
 static const VkExtensionProperties EXTENSION_PROPERTIES_AV1_DECODE = makeExtensionProperties(
     VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_SPEC_VERSION);
+static const VkExtensionProperties EXTENSION_PROPERTIES_VP9_DECODE = makeExtensionProperties(
+    VK_STD_VULKAN_VIDEO_CODEC_VP9_DECODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_VP9_DECODE_SPEC_VERSION);
 
 VkDeviceSize getBufferSize(VkFormat format, uint32_t width, uint32_t height)
 {
@@ -787,6 +789,8 @@ const VkExtensionProperties *getVideoExtensionProperties(const VkVideoCodecOpera
         return &EXTENSION_PROPERTIES_H265_DECODE;
     case VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR:
         return &EXTENSION_PROPERTIES_AV1_DECODE;
+    case VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR:
+        return &EXTENSION_PROPERTIES_VP9_DECODE;
     default:
         TCU_THROW(InternalError, "Unkown codec operation");
     }
@@ -1095,6 +1099,17 @@ VkVideoDecodeAV1ProfileInfoKHR getProfileOperationAV1Decode(StdVideoAV1Profile s
         nullptr,
         stdProfile,
         filmgrainSupport,
+    };
+
+    return videoProfileOperation;
+}
+
+VkVideoDecodeVP9ProfileInfoKHR getProfileOperationVP9Decode(StdVideoVP9Profile stdProfile)
+{
+    const VkVideoDecodeVP9ProfileInfoKHR videoProfileOperation = {
+        VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_PROFILE_INFO_KHR,
+        nullptr,
+        stdProfile,
     };
 
     return videoProfileOperation;
@@ -2520,6 +2535,8 @@ const char *codecToName(VkVideoCodecOperationFlagBitsKHR codec)
         return "decode h.265";
     case VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR:
         return "decode av1";
+    case VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR:
+        return "decode vp9";
     case VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR:
         return "encode h.264";
     case VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR:
@@ -2543,6 +2560,7 @@ VkResult getVideoCapabilities(DeviceContext &devCtx, const VkVideoCoreProfile &v
     VkVideoDecodeH264CapabilitiesKHR *pH264DecodeCapabilities{};
     VkVideoDecodeH265CapabilitiesKHR *pH265DecodeCapabilities{};
     VkVideoDecodeAV1CapabilitiesKHR *pAV1DecodeCapabilities{};
+    VkVideoDecodeVP9CapabilitiesKHR *pVP9DecodeCapabilities{};
 
     VkVideoEncodeCapabilitiesKHR *pVideoEncodeCapabilities{};
     VkVideoEncodeH264CapabilitiesKHR *pH264EncodeCapabilities{};
@@ -2569,6 +2587,12 @@ VkResult getVideoCapabilities(DeviceContext &devCtx, const VkVideoCoreProfile &v
         pAV1DecodeCapabilities = (VkVideoDecodeAV1CapabilitiesKHR *)pVideoDecodeCapabilities->pNext;
         DE_ASSERT(pAV1DecodeCapabilities->sType == VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_CAPABILITIES_KHR);
     }
+    else if (videoProfile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR)
+    {
+        DE_ASSERT(pVideoDecodeCapabilities->sType == VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR);
+        pVP9DecodeCapabilities = (VkVideoDecodeVP9CapabilitiesKHR *)pVideoDecodeCapabilities->pNext;
+        DE_ASSERT(pVP9DecodeCapabilities->sType == VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_CAPABILITIES_KHR);
+    }
     else if (videoProfile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR)
     {
         DE_ASSERT(pVideoEncodeCapabilities->sType == VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR);
@@ -2591,6 +2615,8 @@ VkResult getVideoCapabilities(DeviceContext &devCtx, const VkVideoCoreProfile &v
     DE_UNREF(pVideoDecodeCapabilities);
     DE_UNREF(pH264DecodeCapabilities);
     DE_UNREF(pH265DecodeCapabilities);
+    DE_UNREF(pAV1DecodeCapabilities);
+    DE_UNREF(pVP9DecodeCapabilities);
     DE_UNREF(pVideoEncodeCapabilities);
     DE_UNREF(pH264EncodeCapabilities);
     DE_UNREF(pH265EncodeCapabilities);
@@ -2681,6 +2707,22 @@ VkResult getVideoCapabilities(DeviceContext &devCtx, const VkVideoCoreProfile &v
             return VK_ERROR_INCOMPATIBLE_DRIVER;
         }
     }
+    else if (videoProfile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR)
+    {
+        if (videoLoggingEnabled())
+        {
+            std::cout << "\t"
+                      << "maxLevel: " << pVP9DecodeCapabilities->maxLevel << std::endl;
+        }
+        if ((strncmp(pVideoCapabilities->stdHeaderVersion.extensionName,
+                     VK_STD_VULKAN_VIDEO_CODEC_VP9_DECODE_EXTENSION_NAME,
+                     sizeof(pVideoCapabilities->stdHeaderVersion.extensionName) - 1U) ||
+             (pVideoCapabilities->stdHeaderVersion.specVersion != VK_STD_VULKAN_VIDEO_CODEC_VP9_DECODE_SPEC_VERSION)))
+        {
+            DE_ASSERT(false && "Unsupported VP9 extension specification");
+            return VK_ERROR_INCOMPATIBLE_DRIVER;
+        }
+    }
     else
     {
         DE_ASSERT(false && "Unsupported codec extension");
@@ -2711,6 +2753,9 @@ VkResult getVideoDecodeCapabilities(DeviceContext &devCtx, const VkVideoCoreProf
     VkVideoDecodeAV1CapabilitiesKHR av1Capabilities{};
     av1Capabilities.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_CAPABILITIES_KHR;
 
+    VkVideoDecodeVP9CapabilitiesKHR vp9Capabilities{};
+    vp9Capabilities.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_CAPABILITIES_KHR;
+
     if (videoCodec == VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR)
     {
         videoDecodeCapabilities.pNext = &h264Capabilities;
@@ -2722,6 +2767,10 @@ VkResult getVideoDecodeCapabilities(DeviceContext &devCtx, const VkVideoCoreProf
     else if (videoCodec == VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR)
     {
         videoDecodeCapabilities.pNext = &av1Capabilities;
+    }
+    else if (videoCodec == VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR)
+    {
+        videoDecodeCapabilities.pNext = &vp9Capabilities;
     }
     else
     {

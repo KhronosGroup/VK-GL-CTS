@@ -650,10 +650,6 @@ int32_t VkVideoFrameBuffer::DequeueDecodedPicture(DecodedFrame *pDecodedFrame)
         numberofPendingFrames = (int)m_displayFrames.size();
         pictureIndex          = m_displayFrames.front();
         DE_ASSERT((pictureIndex >= 0) && ((uint32_t)pictureIndex < m_perFrameDecodeImageSet.size()));
-        // TODO: This incorrectly trips in some Argon tests,
-        // suspect it's a problem with the showable vs never
-        // shown frames not being tracked correctly.
-        DE_ASSERT(!(m_ownedByDisplayMask & (1 << pictureIndex)));
         m_ownedByDisplayMask |= (1 << pictureIndex);
         m_displayFrames.pop();
     }

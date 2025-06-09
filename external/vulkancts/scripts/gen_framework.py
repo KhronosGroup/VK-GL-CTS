@@ -2482,6 +2482,10 @@ def writeTypeUtil (api, filename):
             "StdVideoEncodeAV1OperatingPointInfoFlags",
             "StdVideoEncodeAV1PictureInfoFlags",
             "StdVideoEncodeAV1ReferenceInfoFlags",
+            "StdVideoVP9ColorConfigFlags",
+            "StdVideoVP9LoopFilterFlags",
+            "StdVideoVP9SegmentationFlags",
+            "StdVideoDecodeVP9PictureInfoFlags",
             "VkClusterAccelerationStructureGeometryIndexAndGeometryFlagsNV",
             "VkClusterAccelerationStructureBuildTriangleClusterInfoNV",
         ])
