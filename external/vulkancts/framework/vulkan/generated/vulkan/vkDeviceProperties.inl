@@ -232,6 +232,7 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceMaintenance7PropertiesKHR>(
 template<> void initPropertyFromBlob<VkPhysicalDeviceLayeredApiPropertiesListKHR>(VkPhysicalDeviceLayeredApiPropertiesListKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceLayeredApiPropertiesKHR>(VkPhysicalDeviceLayeredApiPropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceLayeredApiVulkanPropertiesKHR>(VkPhysicalDeviceLayeredApiVulkanPropertiesKHR&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceMaintenance9PropertiesKHR>(VkPhysicalDeviceMaintenance9PropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceExternalMemoryHostPropertiesEXT>(VkPhysicalDeviceExternalMemoryHostPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceConservativeRasterizationPropertiesEXT>(VkPhysicalDeviceConservativeRasterizationPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceShaderCorePropertiesAMD>(VkPhysicalDeviceShaderCorePropertiesAMD&, const AllPropertiesBlobs&) {}
@@ -304,6 +305,8 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceCooperativeMatrix2Propertie
 template<> void initPropertyFromBlob<VkPhysicalDeviceCooperativeVectorPropertiesNV>(VkPhysicalDeviceCooperativeVectorPropertiesNV&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceTileShadingPropertiesQCOM>(VkPhysicalDeviceTileShadingPropertiesQCOM&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceExternalComputeQueuePropertiesNV>(VkPhysicalDeviceExternalComputeQueuePropertiesNV&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceTensorPropertiesARM>(VkPhysicalDeviceTensorPropertiesARM&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceDescriptorBufferTensorPropertiesARM>(VkPhysicalDeviceDescriptorBufferTensorPropertiesARM&, const AllPropertiesBlobs&) {}
 
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceTransformFeedbackPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_PROPERTIES_EXT, VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME, VK_EXT_TRANSFORM_FEEDBACK_SPEC_VERSION}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMultiviewProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES_KHR, VK_KHR_MULTIVIEW_EXTENSION_NAME, VK_KHR_MULTIVIEW_SPEC_VERSION}; }
@@ -372,6 +375,7 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMemoryDecompressionProp
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceImageProcessingPropertiesQCOM>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_PROPERTIES_QCOM, VK_QCOM_IMAGE_PROCESSING_EXTENSION_NAME, VK_QCOM_IMAGE_PROCESSING_SPEC_VERSION}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceNestedCommandBufferPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_NESTED_COMMAND_BUFFER_PROPERTIES_EXT, VK_EXT_NESTED_COMMAND_BUFFER_EXTENSION_NAME, VK_EXT_NESTED_COMMAND_BUFFER_SPEC_VERSION}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceExtendedDynamicState3PropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_3_PROPERTIES_EXT, VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME, VK_EXT_EXTENDED_DYNAMIC_STATE_3_SPEC_VERSION}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceTensorPropertiesARM>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TENSOR_PROPERTIES_ARM, VK_ARM_TENSORS_EXTENSION_NAME, VK_ARM_TENSORS_SPEC_VERSION}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT, VK_EXT_SHADER_MODULE_IDENTIFIER_EXTENSION_NAME, VK_EXT_SHADER_MODULE_IDENTIFIER_SPEC_VERSION}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceOpticalFlowPropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPTICAL_FLOW_PROPERTIES_NV, VK_NV_OPTICAL_FLOW_EXTENSION_NAME, VK_NV_OPTICAL_FLOW_SPEC_VERSION}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceExternalFormatResolvePropertiesANDROID>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FORMAT_RESOLVE_PROPERTIES_ANDROID, VK_ANDROID_EXTERNAL_FORMAT_RESOLVE_EXTENSION_NAME, VK_ANDROID_EXTERNAL_FORMAT_RESOLVE_SPEC_VERSION}; }
@@ -397,6 +401,7 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceClusterAccelerationStru
 template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePartitionedAccelerationStructurePropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PARTITIONED_ACCELERATION_STRUCTURE_PROPERTIES_NV, VK_NV_PARTITIONED_ACCELERATION_STRUCTURE_EXTENSION_NAME, VK_NV_PARTITIONED_ACCELERATION_STRUCTURE_SPEC_VERSION}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_PROPERTIES_EXT, VK_EXT_DEVICE_GENERATED_COMMANDS_EXTENSION_NAME, VK_EXT_DEVICE_GENERATED_COMMANDS_SPEC_VERSION}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceImageAlignmentControlPropertiesMESA>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA, VK_MESA_IMAGE_ALIGNMENT_CONTROL_EXTENSION_NAME, VK_MESA_IMAGE_ALIGNMENT_CONTROL_SPEC_VERSION}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMaintenance9PropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_9_PROPERTIES_KHR, VK_KHR_MAINTENANCE_9_EXTENSION_NAME, VK_KHR_MAINTENANCE_9_SPEC_VERSION}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceCooperativeMatrix2PropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_PROPERTIES_NV, VK_NV_COOPERATIVE_MATRIX_2_EXTENSION_NAME, VK_NV_COOPERATIVE_MATRIX_2_SPEC_VERSION}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceRobustness2PropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_PROPERTIES_KHR, VK_KHR_ROBUSTNESS_2_EXTENSION_NAME, VK_KHR_ROBUSTNESS_2_SPEC_VERSION}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_EXT, VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET_EXTENSION_NAME, VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET_SPEC_VERSION}; }
@@ -473,6 +478,7 @@ static const PropertyStructCreationData propertyStructCreationArray[] =
 	{ createPropertyStructWrapper<VkPhysicalDeviceImageProcessingPropertiesQCOM>, VK_QCOM_IMAGE_PROCESSING_EXTENSION_NAME, VK_QCOM_IMAGE_PROCESSING_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceNestedCommandBufferPropertiesEXT>, VK_EXT_NESTED_COMMAND_BUFFER_EXTENSION_NAME, VK_EXT_NESTED_COMMAND_BUFFER_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceExtendedDynamicState3PropertiesEXT>, VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME, VK_EXT_EXTENDED_DYNAMIC_STATE_3_SPEC_VERSION },
+	{ createPropertyStructWrapper<VkPhysicalDeviceTensorPropertiesARM>, VK_ARM_TENSORS_EXTENSION_NAME, VK_ARM_TENSORS_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT>, VK_EXT_SHADER_MODULE_IDENTIFIER_EXTENSION_NAME, VK_EXT_SHADER_MODULE_IDENTIFIER_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceOpticalFlowPropertiesNV>, VK_NV_OPTICAL_FLOW_EXTENSION_NAME, VK_NV_OPTICAL_FLOW_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceExternalFormatResolvePropertiesANDROID>, VK_ANDROID_EXTERNAL_FORMAT_RESOLVE_EXTENSION_NAME, VK_ANDROID_EXTERNAL_FORMAT_RESOLVE_SPEC_VERSION },
@@ -498,6 +504,7 @@ static const PropertyStructCreationData propertyStructCreationArray[] =
 	{ createPropertyStructWrapper<VkPhysicalDevicePartitionedAccelerationStructurePropertiesNV>, VK_NV_PARTITIONED_ACCELERATION_STRUCTURE_EXTENSION_NAME, VK_NV_PARTITIONED_ACCELERATION_STRUCTURE_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT>, VK_EXT_DEVICE_GENERATED_COMMANDS_EXTENSION_NAME, VK_EXT_DEVICE_GENERATED_COMMANDS_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceImageAlignmentControlPropertiesMESA>, VK_MESA_IMAGE_ALIGNMENT_CONTROL_EXTENSION_NAME, VK_MESA_IMAGE_ALIGNMENT_CONTROL_SPEC_VERSION },
+	{ createPropertyStructWrapper<VkPhysicalDeviceMaintenance9PropertiesKHR>, VK_KHR_MAINTENANCE_9_EXTENSION_NAME, VK_KHR_MAINTENANCE_9_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceCooperativeMatrix2PropertiesNV>, VK_NV_COOPERATIVE_MATRIX_2_EXTENSION_NAME, VK_NV_COOPERATIVE_MATRIX_2_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceRobustness2PropertiesKHR>, VK_KHR_ROBUSTNESS_2_EXTENSION_NAME, VK_KHR_ROBUSTNESS_2_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT>, VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET_EXTENSION_NAME, VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET_SPEC_VERSION },
@@ -512,6 +519,7 @@ const std::string getPreviousPropertyExtName (const std::string &name)
 		{ "VK_KHR_compute_shader_derivatives", "VK_NV_compute_shader_derivatives" },
 		{ "VK_KHR_vertex_attribute_divisor", "VK_EXT_vertex_attribute_divisor" },
 		{ "VK_KHR_line_rasterization", "VK_EXT_line_rasterization" },
+		{ "VK_KHR_maintenance9", "VK_EXT_vertex_attribute_robustness" },
 		{ "VK_KHR_robustness2", "VK_EXT_robustness2" },
 		{ "VK_EXT_fragment_density_map_offset", "VK_QCOM_fragment_density_map_offset" }
 	};

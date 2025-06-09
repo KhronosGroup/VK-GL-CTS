@@ -633,6 +633,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetAccelerationStructureOpaqueCaptur
 typedef VKAPI_ATTR void					(VKAPI_CALL* SetDeviceMemoryPriorityEXTFunc)										(VkDevice device, VkDeviceMemory memory, float priority);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AcquireDrmDisplayEXTFunc)												(VkPhysicalDevice physicalDevice, int32_t drmFd, VkDisplayKHR display);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDrmDisplayEXTFunc)													(VkPhysicalDevice physicalDevice, int32_t drmFd, uint32_t connectorId, VkDisplayKHR* display);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* WaitForPresent2KHRFunc)												(VkDevice device, VkSwapchainKHR swapchain, const VkPresentWait2InfoKHR* pPresentWait2Info);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* WaitForPresentKHRFunc)													(VkDevice device, VkSwapchainKHR swapchain, uint64_t presentId, uint64_t timeout);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateBufferCollectionFUCHSIAFunc)										(VkDevice device, const VkBufferCollectionCreateInfoFUCHSIA* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBufferCollectionFUCHSIA* pCollection);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetBufferCollectionBufferConstraintsFUCHSIAFunc)						(VkDevice device, VkBufferCollectionFUCHSIA collection, const VkBufferConstraintsInfoFUCHSIA* pBufferConstraintsInfo);
@@ -735,3 +736,14 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndPerTileExecutionQCOMFunc)								
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateExternalComputeQueueNVFunc)										(VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkExternalComputeQueueNV* pExternalQueue);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyExternalComputeQueueNVFunc)										(VkDevice device, VkExternalComputeQueueNV externalQueue, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetExternalComputeQueueDataNVFunc)										(VkExternalComputeQueueNV externalQueue, VkExternalComputeQueueDataParamsNV* params, void* pData);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateTensorARMFunc)													(VkDevice device, const VkTensorCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkTensorARM* pTensor);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyTensorARMFunc)													(VkDevice device, VkTensorARM tensor, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateTensorViewARMFunc)												(VkDevice device, const VkTensorViewCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkTensorViewARM* pView);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyTensorViewARMFunc)												(VkDevice device, VkTensorViewARM tensorView, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetTensorMemoryRequirementsARMFunc)									(VkDevice device, const VkTensorMemoryRequirementsInfoARM* pInfo, VkMemoryRequirements2* pMemoryRequirements);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* BindTensorMemoryARMFunc)												(VkDevice device, uint32_t bindInfoCount, const VkBindTensorMemoryInfoARM* pBindInfos);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetDeviceTensorMemoryRequirementsARMFunc)								(VkDevice device, const VkDeviceTensorMemoryRequirementsARM* pInfo, VkMemoryRequirements2* pMemoryRequirements);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyTensorARMFunc)													(VkCommandBuffer commandBuffer,  const VkCopyTensorInfoARM* pCopyTensorInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetTensorOpaqueCaptureDescriptorDataARMFunc)							(VkDevice device, const VkTensorCaptureDescriptorDataInfoARM* pInfo, void* pData);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetTensorViewOpaqueCaptureDescriptorDataARMFunc)						(VkDevice device, const VkTensorViewCaptureDescriptorDataInfoARM* pInfo, void* pData);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceExternalTensorPropertiesARMFunc)						(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalTensorInfoARM* pExternalTensorInfo, VkExternalTensorPropertiesARM* pExternalTensorProperties);

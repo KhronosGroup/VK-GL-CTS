@@ -451,6 +451,7 @@ virtual VkResult			getImageViewOpaqueCaptureDescriptorDataEXT				(VkDevice devic
 virtual VkResult			getSamplerOpaqueCaptureDescriptorDataEXT				(VkDevice device, const VkSamplerCaptureDescriptorDataInfoEXT* pInfo, void* pData) const;
 virtual VkResult			getAccelerationStructureOpaqueCaptureDescriptorDataEXT	(VkDevice device, const VkAccelerationStructureCaptureDescriptorDataInfoEXT* pInfo, void* pData) const;
 virtual void				setDeviceMemoryPriorityEXT								(VkDevice device, VkDeviceMemory memory, float priority) const;
+virtual VkResult			waitForPresent2KHR										(VkDevice device, VkSwapchainKHR swapchain, const VkPresentWait2InfoKHR* pPresentWait2Info) const;
 virtual VkResult			waitForPresentKHR										(VkDevice device, VkSwapchainKHR swapchain, uint64_t presentId, uint64_t timeout) const;
 virtual VkResult			createBufferCollectionFUCHSIA							(VkDevice device, const VkBufferCollectionCreateInfoFUCHSIA* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBufferCollectionFUCHSIA* pCollection) const;
 virtual VkResult			setBufferCollectionBufferConstraintsFUCHSIA				(VkDevice device, VkBufferCollectionFUCHSIA collection, const VkBufferConstraintsInfoFUCHSIA* pBufferConstraintsInfo) const;
@@ -535,3 +536,13 @@ virtual void				cmdBeginPerTileExecutionQCOM							(VkCommandBuffer commandBuffe
 virtual void				cmdEndPerTileExecutionQCOM								(VkCommandBuffer commandBuffer, const VkPerTileEndInfoQCOM* pPerTileEndInfo) const;
 virtual VkResult			createExternalComputeQueueNV							(VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkExternalComputeQueueNV* pExternalQueue) const;
 virtual void				destroyExternalComputeQueueNV							(VkDevice device, VkExternalComputeQueueNV externalQueue, const VkAllocationCallbacks* pAllocator) const;
+virtual VkResult			createTensorARM											(VkDevice device, const VkTensorCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkTensorARM* pTensor) const;
+virtual void				destroyTensorARM										(VkDevice device, VkTensorARM tensor, const VkAllocationCallbacks* pAllocator) const;
+virtual VkResult			createTensorViewARM										(VkDevice device, const VkTensorViewCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkTensorViewARM* pView) const;
+virtual void				destroyTensorViewARM									(VkDevice device, VkTensorViewARM tensorView, const VkAllocationCallbacks* pAllocator) const;
+virtual void				getTensorMemoryRequirementsARM							(VkDevice device, const VkTensorMemoryRequirementsInfoARM* pInfo, VkMemoryRequirements2* pMemoryRequirements) const;
+virtual VkResult			bindTensorMemoryARM										(VkDevice device, uint32_t bindInfoCount, const VkBindTensorMemoryInfoARM* pBindInfos) const;
+virtual void				getDeviceTensorMemoryRequirementsARM					(VkDevice device, const VkDeviceTensorMemoryRequirementsARM* pInfo, VkMemoryRequirements2* pMemoryRequirements) const;
+virtual void				cmdCopyTensorARM										(VkCommandBuffer commandBuffer,  const VkCopyTensorInfoARM* pCopyTensorInfo) const;
+virtual VkResult			getTensorOpaqueCaptureDescriptorDataARM					(VkDevice device, const VkTensorCaptureDescriptorDataInfoARM* pInfo, void* pData) const;
+virtual VkResult			getTensorViewOpaqueCaptureDescriptorDataARM				(VkDevice device, const VkTensorViewCaptureDescriptorDataInfoARM* pInfo, void* pData) const;

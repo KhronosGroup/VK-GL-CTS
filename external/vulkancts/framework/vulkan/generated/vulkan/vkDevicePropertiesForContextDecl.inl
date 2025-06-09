@@ -70,6 +70,7 @@ const vk::VkPhysicalDeviceMemoryDecompressionPropertiesNV&				getMemoryDecompres
 const vk::VkPhysicalDeviceImageProcessingPropertiesQCOM&				getImageProcessingPropertiesQCOM				(void) const;
 const vk::VkPhysicalDeviceNestedCommandBufferPropertiesEXT&				getNestedCommandBufferPropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceExtendedDynamicState3PropertiesEXT&			getExtendedDynamicState3PropertiesEXT			(void) const;
+const vk::VkPhysicalDeviceTensorPropertiesARM&							getTensorPropertiesARM							(void) const;
 const vk::VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&			getShaderModuleIdentifierPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceOpticalFlowPropertiesNV&						getOpticalFlowProperties						(void) const;
 const vk::VkPhysicalDeviceExternalFormatResolvePropertiesANDROID&		getExternalFormatResolvePropertiesANDROID		(void) const;
@@ -95,6 +96,7 @@ const vk::VkPhysicalDeviceClusterAccelerationStructurePropertiesNV&		getClusterA
 const vk::VkPhysicalDevicePartitionedAccelerationStructurePropertiesNV&	getPartitionedAccelerationStructurePropertiesNV	(void) const;
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT&			getDeviceGeneratedCommandsPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceImageAlignmentControlPropertiesMESA&			getImageAlignmentControlPropertiesMESA			(void) const;
+const vk::VkPhysicalDeviceMaintenance9PropertiesKHR&					getMaintenance9Properties						(void) const;
 const vk::VkPhysicalDeviceCooperativeMatrix2PropertiesNV&				getCooperativeMatrix2PropertiesNV				(void) const;
 const vk::VkPhysicalDeviceRobustness2PropertiesKHR&						getRobustness2Properties						(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT&		getFragmentDensityMapOffsetPropertiesEXT		(void) const;

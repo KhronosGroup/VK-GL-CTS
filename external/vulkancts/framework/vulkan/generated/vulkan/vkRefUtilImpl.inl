@@ -258,6 +258,18 @@ void Deleter<VkExternalComputeQueueNV>::operator() (VkExternalComputeQueueNV obj
 	m_deviceIface->destroyExternalComputeQueueNV(m_device, obj, m_allocator);
 }
 
+template<>
+void Deleter<VkTensorARM>::operator() (VkTensorARM obj) const
+{
+	m_deviceIface->destroyTensorARM(m_device, obj, m_allocator);
+}
+
+template<>
+void Deleter<VkTensorViewARM>::operator() (VkTensorViewARM obj) const
+{
+	m_deviceIface->destroyTensorViewARM(m_device, obj, m_allocator);
+}
+
 } // refdetails
 
 Move<VkInstance> createInstance (const PlatformInterface& vk, const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
@@ -671,5 +683,19 @@ Move<VkExternalComputeQueueNV> createExternalComputeQueueNV (const DeviceInterfa
 	VkExternalComputeQueueNV object = VK_NULL_HANDLE;
 	VK_CHECK(vk.createExternalComputeQueueNV(device, pCreateInfo, pAllocator, &object));
 	return Move<VkExternalComputeQueueNV>(check<VkExternalComputeQueueNV>(object), Deleter<VkExternalComputeQueueNV>(vk, device, pAllocator));
+}
+
+Move<VkTensorARM> createTensorARM (const DeviceInterface& vk, VkDevice device, const VkTensorCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkTensorARM object = VK_NULL_HANDLE;
+	VK_CHECK(vk.createTensorARM(device, pCreateInfo, pAllocator, &object));
+	return Move<VkTensorARM>(check<VkTensorARM>(object), Deleter<VkTensorARM>(vk, device, pAllocator));
+}
+
+Move<VkTensorViewARM> createTensorViewARM (const DeviceInterface& vk, VkDevice device, const VkTensorViewCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkTensorViewARM object = VK_NULL_HANDLE;
+	VK_CHECK(vk.createTensorViewARM(device, pCreateInfo, pAllocator, &object));
+	return Move<VkTensorViewARM>(check<VkTensorViewARM>(object), Deleter<VkTensorViewARM>(vk, device, pAllocator));
 }
 

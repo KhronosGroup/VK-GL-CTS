@@ -147,6 +147,7 @@ const vk::VkPhysicalDeviceImageProcessingFeaturesQCOM&						getImageProcessingFe
 const vk::VkPhysicalDeviceNestedCommandBufferFeaturesEXT&					getNestedCommandBufferFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceExtendedDynamicState3FeaturesEXT&					getExtendedDynamicState3FeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT&					getSubpassMergeFeedbackFeaturesEXT					(void) const;
+const vk::VkPhysicalDeviceTensorFeaturesARM&								getTensorFeaturesARM								(void) const;
 const vk::VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT&				getShaderModuleIdentifierFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT&	getRasterizationOrderAttachmentAccessFeaturesEXT	(void) const;
 const vk::VkPhysicalDeviceOpticalFlowFeaturesNV&							getOpticalFlowFeatures								(void) const;
@@ -155,6 +156,8 @@ const vk::VkPhysicalDevicePipelineProtectedAccessFeatures&					getPipelineProtec
 const vk::VkPhysicalDeviceExternalFormatResolveFeaturesANDROID&				getExternalFormatResolveFeaturesANDROID				(void) const;
 const vk::VkPhysicalDeviceMaintenance5Features&								getMaintenance5Features								(void) const;
 const vk::VkPhysicalDeviceAntiLagFeaturesAMD&								getAntiLagFeaturesAMD								(void) const;
+const vk::VkPhysicalDevicePresentId2FeaturesKHR&							getPresentId2Features								(void) const;
+const vk::VkPhysicalDevicePresentWait2FeaturesKHR&							getPresentWait2Features								(void) const;
 const vk::VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR&				getRayTracingPositionFetchFeatures					(void) const;
 const vk::VkPhysicalDeviceShaderObjectFeaturesEXT&							getShaderObjectFeaturesEXT							(void) const;
 const vk::VkPhysicalDevicePipelineBinaryFeaturesKHR&						getPipelineBinaryFeatures							(void) const;
@@ -173,6 +176,7 @@ const vk::VkPhysicalDeviceCooperativeMatrixFeaturesKHR&						getCooperativeMatri
 const vk::VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM&			getMultiviewPerViewRenderAreasFeaturesQCOM			(void) const;
 const vk::VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR&				getComputeShaderDerivativesFeatures					(void) const;
 const vk::VkPhysicalDeviceVideoEncodeAV1FeaturesKHR&						getVideoEncodeAV1Features							(void) const;
+const vk::VkPhysicalDeviceVideoDecodeVP9FeaturesKHR&						getVideoDecodeVP9Features							(void) const;
 const vk::VkPhysicalDeviceVideoMaintenance1FeaturesKHR&						getVideoMaintenance1Features						(void) const;
 const vk::VkPhysicalDevicePerStageDescriptorSetFeaturesNV&					getPerStageDescriptorSetFeaturesNV					(void) const;
 const vk::VkPhysicalDeviceImageProcessing2FeaturesQCOM&						getImageProcessing2FeaturesQCOM						(void) const;
@@ -181,6 +185,7 @@ const vk::VkPhysicalDeviceYcbcrDegammaFeaturesQCOM&							getYcbcrDegammaFeature
 const vk::VkPhysicalDeviceCubicClampFeaturesQCOM&							getCubicClampFeaturesQCOM							(void) const;
 const vk::VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT&	getAttachmentFeedbackLoopDynamicStateFeaturesEXT	(void) const;
 const vk::VkPhysicalDeviceVertexAttributeDivisorFeatures&					getVertexAttributeDivisorFeatures					(void) const;
+const vk::VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR&					getUnifiedImageLayoutsFeatures						(void) const;
 const vk::VkPhysicalDeviceShaderFloatControls2Features&						getShaderFloatControls2Features						(void) const;
 const vk::VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&			getExternalMemoryScreenBufferFeaturesQNX			(void) const;
 const vk::VkPhysicalDeviceIndexTypeUint8Features&							getIndexTypeUint8Features							(void) const;
@@ -196,6 +201,7 @@ const vk::VkPhysicalDeviceCommandBufferInheritanceFeaturesNV&				getCommandBuffe
 const vk::VkPhysicalDeviceMaintenance7FeaturesKHR&							getMaintenance7Features								(void) const;
 const vk::VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV&				getShaderAtomicFloat16VectorFeaturesNV				(void) const;
 const vk::VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT&			getShaderReplicatedCompositesFeaturesEXT			(void) const;
+const vk::VkPhysicalDeviceShaderFloat8FeaturesEXT&							getShaderFloat8FeaturesEXT							(void) const;
 const vk::VkPhysicalDeviceRayTracingValidationFeaturesNV&					getRayTracingValidationFeaturesNV					(void) const;
 const vk::VkPhysicalDeviceClusterAccelerationStructureFeaturesNV&			getClusterAccelerationStructureFeaturesNV			(void) const;
 const vk::VkPhysicalDevicePartitionedAccelerationStructureFeaturesNV&		getPartitionedAccelerationStructureFeaturesNV		(void) const;
@@ -203,12 +209,12 @@ const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT&				getDeviceGenera
 const vk::VkPhysicalDeviceMaintenance8FeaturesKHR&							getMaintenance8Features								(void) const;
 const vk::VkPhysicalDeviceImageAlignmentControlFeaturesMESA&				getImageAlignmentControlFeaturesMESA				(void) const;
 const vk::VkPhysicalDeviceDepthClampControlFeaturesEXT&						getDepthClampControlFeaturesEXT						(void) const;
+const vk::VkPhysicalDeviceMaintenance9FeaturesKHR&							getMaintenance9Features								(void) const;
 const vk::VkPhysicalDeviceVideoMaintenance2FeaturesKHR&						getVideoMaintenance2Features						(void) const;
 const vk::VkPhysicalDeviceHdrVividFeaturesHUAWEI&							getHdrVividFeaturesHUAWEI							(void) const;
 const vk::VkPhysicalDeviceCooperativeMatrix2FeaturesNV&						getCooperativeMatrix2FeaturesNV						(void) const;
 const vk::VkPhysicalDevicePipelineOpacityMicromapFeaturesARM&				getPipelineOpacityMicromapFeaturesARM				(void) const;
 const vk::VkPhysicalDeviceDepthClampZeroOneFeaturesKHR&						getDepthClampZeroOneFeatures						(void) const;
-const vk::VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT&				getVertexAttributeRobustnessFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceFormatPackFeaturesARM&							getFormatPackFeaturesARM							(void) const;
 const vk::VkPhysicalDeviceRobustness2FeaturesKHR&							getRobustness2Features								(void) const;
 const vk::VkPhysicalDevicePresentMeteringFeaturesNV&						getPresentMeteringFeaturesNV						(void) const;

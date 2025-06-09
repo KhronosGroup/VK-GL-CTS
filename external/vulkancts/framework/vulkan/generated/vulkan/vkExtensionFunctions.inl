@@ -1427,6 +1427,11 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_ARM_tensors")
+	{
+		functions.push_back("vkGetPhysicalDeviceExternalTensorPropertiesARM");
+		return;
+	}
 	if (extName == "VK_EXT_shader_module_identifier")
 	{
 		return;
@@ -1457,6 +1462,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_AMD_anti_lag")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_present_id2")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_present_wait2")
 	{
 		return;
 	}
@@ -1546,6 +1559,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_video_decode_vp9")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_video_maintenance1")
 	{
 		return;
@@ -1579,6 +1596,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_KHR_load_store_op_none")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_unified_image_layouts")
 	{
 		return;
 	}
@@ -1659,6 +1680,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_float8")
+	{
+		return;
+	}
 	if (extName == "VK_NV_ray_tracing_validation")
 	{
 		return;
@@ -1684,6 +1709,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_EXT_depth_clamp_control")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_maintenance9")
 	{
 		return;
 	}
@@ -1761,6 +1790,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "vulkan_video_codec_h265std_encode")
+	{
+		return;
+	}
+	if (extName == "vulkan_video_codec_vp9std")
+	{
+		return;
+	}
+	if (extName == "vulkan_video_codec_vp9std_decode")
 	{
 		return;
 	}
@@ -3549,6 +3586,23 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_ARM_tensors")
+	{
+		functions.push_back("vkCreateTensorARM");
+		functions.push_back("vkDestroyTensorARM");
+		functions.push_back("vkCreateTensorViewARM");
+		functions.push_back("vkDestroyTensorViewARM");
+		functions.push_back("vkGetTensorMemoryRequirementsARM");
+		functions.push_back("vkBindTensorMemoryARM");
+		functions.push_back("vkGetDeviceTensorMemoryRequirementsARM");
+		functions.push_back("vkCmdCopyTensorARM");
+		// Dependencies: VK_EXT_descriptor_buffer
+		if (extensionIsSupported(vDEP, "VK_EXT_descriptor_buffer")) {
+			functions.push_back("vkGetTensorOpaqueCaptureDescriptorDataARM");
+			functions.push_back("vkGetTensorViewOpaqueCaptureDescriptorDataARM");
+		}
+		return;
+	}
 	if (extName == "VK_EXT_shader_module_identifier")
 	{
 		functions.push_back("vkGetShaderModuleIdentifierEXT");
@@ -3590,6 +3644,15 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	if (extName == "VK_AMD_anti_lag")
 	{
 		functions.push_back("vkAntiLagUpdateAMD");
+		return;
+	}
+	if (extName == "VK_KHR_present_id2")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_present_wait2")
+	{
+		functions.push_back("vkWaitForPresent2KHR");
 		return;
 	}
 	if (extName == "VK_KHR_ray_tracing_position_fetch")
@@ -3792,6 +3855,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_video_decode_vp9")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_video_maintenance1")
 	{
 		return;
@@ -3826,6 +3893,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_KHR_load_store_op_none")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_unified_image_layouts")
 	{
 		return;
 	}
@@ -3923,6 +3994,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_float8")
+	{
+		return;
+	}
 	if (extName == "VK_NV_ray_tracing_validation")
 	{
 		return;
@@ -3963,6 +4038,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	if (extName == "VK_EXT_depth_clamp_control")
 	{
 		functions.push_back("vkCmdSetDepthClampRangeEXT");
+		return;
+	}
+	if (extName == "VK_KHR_maintenance9")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_video_maintenance2")
@@ -4041,6 +4120,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "vulkan_video_codec_h265std_encode")
+	{
+		return;
+	}
+	if (extName == "vulkan_video_codec_vp9std")
+	{
+		return;
+	}
+	if (extName == "vulkan_video_codec_vp9std_decode")
 	{
 		return;
 	}
@@ -4396,6 +4483,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_external_memory_acquire_unmodified",
 	"VK_EXT_extended_dynamic_state3",
 	"VK_EXT_subpass_merge_feedback",
+	"VK_ARM_tensors",
 	"VK_EXT_shader_module_identifier",
 	"VK_EXT_rasterization_order_attachment_access",
 	"VK_NV_optical_flow",
@@ -4404,6 +4492,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_ANDROID_external_format_resolve",
 	"VK_KHR_maintenance5",
 	"VK_AMD_anti_lag",
+	"VK_KHR_present_id2",
+	"VK_KHR_present_wait2",
 	"VK_KHR_ray_tracing_position_fetch",
 	"VK_EXT_shader_object",
 	"VK_KHR_pipeline_binary",
@@ -4424,6 +4514,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_compute_shader_derivatives",
 	"VK_KHR_video_decode_av1",
 	"VK_KHR_video_encode_av1",
+	"VK_KHR_video_decode_vp9",
 	"VK_KHR_video_maintenance1",
 	"VK_NV_per_stage_descriptor_set",
 	"VK_QCOM_image_processing2",
@@ -4433,6 +4524,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_attachment_feedback_loop_dynamic_state",
 	"VK_KHR_vertex_attribute_divisor",
 	"VK_KHR_load_store_op_none",
+	"VK_KHR_unified_image_layouts",
 	"VK_KHR_shader_float_controls2",
 	"VK_QNX_external_memory_screen_buffer",
 	"VK_MSFT_layered_driver",
@@ -4451,6 +4543,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_maintenance7",
 	"VK_NV_shader_atomic_float16_vector",
 	"VK_EXT_shader_replicated_composites",
+	"VK_EXT_shader_float8",
 	"VK_NV_ray_tracing_validation",
 	"VK_NV_cluster_acceleration_structure",
 	"VK_NV_partitioned_acceleration_structure",
@@ -4458,6 +4551,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_maintenance8",
 	"VK_MESA_image_alignment_control",
 	"VK_EXT_depth_clamp_control",
+	"VK_KHR_maintenance9",
 	"VK_KHR_video_maintenance2",
 	"VK_HUAWEI_hdr_vivid",
 	"VK_NV_cooperative_matrix2",
