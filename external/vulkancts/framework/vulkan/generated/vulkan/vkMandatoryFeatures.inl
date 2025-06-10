@@ -1169,6 +1169,18 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderFloat16Int8Features.pNext;
 	}
 
+	// VkPhysicalDeviceShaderFloat8FeaturesEXT for [VK_EXT_shader_float8]
+
+	vk::VkPhysicalDeviceShaderFloat8FeaturesEXT physicalDeviceShaderFloat8FeaturesEXT;
+	deMemset(&physicalDeviceShaderFloat8FeaturesEXT, 0, sizeof(physicalDeviceShaderFloat8FeaturesEXT));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_float8"))
+	{
+		physicalDeviceShaderFloat8FeaturesEXT.sType = getStructureType<VkPhysicalDeviceShaderFloat8FeaturesEXT>();
+		*nextPtr = &physicalDeviceShaderFloat8FeaturesEXT;
+		nextPtr  = &physicalDeviceShaderFloat8FeaturesEXT.pNext;
+	}
+
 	// VkPhysicalDeviceShaderFloatControls2FeaturesKHR for [VK_KHR_shader_float_controls2]
 
 	vk::VkPhysicalDeviceShaderFloatControls2FeaturesKHR physicalDeviceShaderFloatControls2FeaturesKHR;
@@ -2515,6 +2527,15 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceShaderDemoteToHelperInvocationFeaturesEXT.shaderDemoteToHelperInvocation == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderDemoteToHelperInvocation not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_float8")) )
+	{
+		if ( physicalDeviceShaderFloat8FeaturesEXT.shaderFloat8 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderFloat8 not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
