@@ -626,6 +626,7 @@ struct StateTestParams
     vk::VkCullModeFlagBits cullMode;
     bool stencilTestEnable;
     bool depthTestEnable;
+    bool depthWriteEnable;
     bool depthBiasEnable;
     bool depthBoundsTestEnable;
     bool logicOpEnable;
@@ -656,6 +657,7 @@ struct StateTestParams
         cullMode                              = vk::VK_CULL_MODE_NONE;
         stencilTestEnable                     = false;
         depthTestEnable                       = false;
+        depthWriteEnable                      = false;
         depthBiasEnable                       = false;
         depthBoundsTestEnable                 = false;
         logicOpEnable                         = false;
@@ -1006,16 +1008,7 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
         viewport.maxDepth = 0.5f;
     if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT))
         vk.cmdSetViewportWithCount(cmdBuffer, 1u, &viewport);
-    vk::VkRect2D scissor = {
-        {
-            0,
-            0,
-        },
-        {
-            32,
-            32,
-        },
-    };
+    vk::VkRect2D scissor = {{0, 0}, {32, 32}};
     if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT))
         vk.cmdSetScissorWithCount(cmdBuffer, 1u, &scissor);
     if (!m_params.rasterizerDiscardEnable && m_params.lines &&
@@ -1050,8 +1043,9 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
         vk.cmdSetDepthCompareOp(cmdBuffer, vk::VK_COMPARE_OP_LESS);
     if (!m_params.rasterizerDiscardEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE))
         vk.cmdSetDepthTestEnable(cmdBuffer, m_params.depthTestEnable ? VK_TRUE : VK_FALSE);
-    if (!m_params.rasterizerDiscardEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE))
-        vk.cmdSetDepthWriteEnable(cmdBuffer, VK_TRUE);
+    if (!m_params.rasterizerDiscardEnable && (m_params.depthTestEnable || m_params.depthWriteEnable) &&
+        hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE))
+        vk.cmdSetDepthWriteEnable(cmdBuffer, m_params.depthWriteEnable);
     if (!m_params.rasterizerDiscardEnable &&
         (m_params.cullMode != vk::VK_CULL_MODE_NONE && m_params.cullMode != vk::VK_CULL_MODE_FRONT_AND_BACK) &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_FRONT_FACE))
@@ -1139,7 +1133,10 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_MODE_EXT))
         vk.cmdSetDiscardRectangleModeEXT(cmdBuffer, vk::VK_DISCARD_RECTANGLE_MODE_EXCLUSIVE_EXT);
     if (m_params.discardRectanglesEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT))
-        vk.cmdSetDiscardRectangleEXT(cmdBuffer, 0u, 1u, &scissor);
+    {
+        for (uint32_t i = 0u; i < m_context.getDiscardRectanglePropertiesEXT().maxDiscardRectangles; ++i)
+            vk.cmdSetDiscardRectangleEXT(cmdBuffer, i, 1u, &scissor);
+    }
     if (!m_params.rasterizerDiscardEnable && m_params.conservativeRasterization &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_CONSERVATIVE_RASTERIZATION_MODE_EXT))
         vk.cmdSetConservativeRasterizationModeEXT(cmdBuffer,
@@ -1170,7 +1167,7 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
         vk.cmdSetSampleLocationsEXT(cmdBuffer, &sampleLocationsInfo);
     if (m_params.provokingVertex && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_PROVOKING_VERTEX_MODE_EXT))
         vk.cmdSetProvokingVertexModeEXT(cmdBuffer, vk::VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT);
-    if ((!m_params.rasterizerDiscardEnable && m_params.lineRasterization && m_params.lines))
+    if (!m_params.rasterizerDiscardEnable && m_params.lineRasterization && m_params.lines && !m_params.meshShader)
     {
         if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_RASTERIZATION_MODE_EXT))
             vk.cmdSetLineRasterizationModeEXT(cmdBuffer, vk::VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT);
@@ -1259,6 +1256,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
 
     const bool taskSupported = m_context.getMeshShaderFeaturesEXT().taskShader;
     const bool meshSupported = m_context.getMeshShaderFeaturesEXT().meshShader;
+    const bool secondDraw    = !m_params.depthClamp && !m_params.depthClip;
 
     const vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
@@ -1325,21 +1323,32 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
 
     const vk::Unique<vk::VkDescriptorPool> descriptorPool(
         vk::DescriptorPoolBuilder()
-            .addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-            .build(vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+            .addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2u)
+            .build(vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 2u));
 
     const vk::VkDeviceSize bufferSizeBytes = sizeof(uint32_t) * 8;
-    const vk::Unique<vk::VkDescriptorSet> descriptorSet(
+    const vk::Unique<vk::VkDescriptorSet> descriptorSet1(
         makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
-    const vk::BufferWithMemory outputBuffer(
+    const vk::Unique<vk::VkDescriptorSet> descriptorSet2(
+        makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+    const vk::BufferWithMemory outputBuffer1(
+        vk, device, alloc, vk::makeBufferCreateInfo(bufferSizeBytes, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+        vk::MemoryRequirement::HostVisible);
+    const vk::BufferWithMemory outputBuffer2(
         vk, device, alloc, vk::makeBufferCreateInfo(bufferSizeBytes, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
         vk::MemoryRequirement::HostVisible);
 
-    const vk::VkDescriptorBufferInfo descriptorInfo =
-        vk::makeDescriptorBufferInfo(*outputBuffer, 0ull, bufferSizeBytes);
+    const vk::VkDescriptorBufferInfo descriptorInfo1 =
+        vk::makeDescriptorBufferInfo(*outputBuffer1, 0ull, bufferSizeBytes);
+    const vk::VkDescriptorBufferInfo descriptorInfo2 =
+        vk::makeDescriptorBufferInfo(*outputBuffer2, 0ull, bufferSizeBytes);
     vk::DescriptorSetUpdateBuilder()
-        .writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
-                     vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo)
+        .writeSingle(*descriptorSet1, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
+                     vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo1)
+        .update(vk, device);
+    vk::DescriptorSetUpdateBuilder()
+        .writeSingle(*descriptorSet2, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
+                     vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo2)
         .update(vk, device);
 
     const auto pipelineLayout = makePipelineLayout(vk, device, *descriptorSetLayout);
@@ -1419,7 +1428,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
             m_params.depthClamp,                            // VkBool32 depthClampEnable;
             m_params.rasterizerDiscardEnable,               // VkBool32 rasterizerDiscardEnable;
             vk::VK_POLYGON_MODE_FILL,                       // VkPolygonMode polygonMode;
-            m_params.cullMode,                              // VkCullModeFlags cullMode;
+            (vk::VkCullModeFlags)m_params.cullMode,         // VkCullModeFlags cullMode;
             vk::VK_FRONT_FACE_CLOCKWISE,                    // VkFrontFace frontFace;
             m_params.depthBiasEnable ? VK_TRUE : VK_FALSE,  // VkBool32 depthBiasEnable;
             0.0f,                                           // float depthBiasConstantFactor;
@@ -1457,7 +1466,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
             nullptr,                                        // const void*                              pNext
             (vk::VkPipelineDepthStencilStateCreateFlags)0u, // VkPipelineDepthStencilStateCreateFlags   flags
             m_params.depthTestEnable ? VK_TRUE : VK_FALSE,  // VkBool32                                 depthTestEnable
-            VK_TRUE,                                        // VkBool32                                 depthWriteEnable
+            m_params.depthWriteEnable,                      // VkBool32                                 depthWriteEnable
             vk::VK_COMPARE_OP_LESS,                         // VkCompareOp                              depthCompareOp
             m_params.depthBoundsTestEnable ? VK_TRUE :
                                              VK_FALSE, // VkBool32                                 depthBoundsTestEnable
@@ -1510,16 +1519,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
         vk::VkViewport viewport = {
             0, 0, 32, 32, 0.0f, 1.0f,
         };
-        vk::VkRect2D scissor = {
-            {
-                0,
-                0,
-            },
-            {
-                32,
-                32,
-            },
-        };
+        vk::VkRect2D scissor = {{0, 0}, {32, 32}};
 
         const auto &edsFeatures          = m_context.getExtendedDynamicStateFeaturesEXT();
         uint32_t viewportAndScissorCount = edsFeatures.extendedDynamicState ? 0u : 1u;
@@ -1630,7 +1630,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
     vk::beginCommandBuffer(vk, *cmdBuffer);
 
     vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0, 1,
-                             &descriptorSet.get(), 0, nullptr);
+                             &descriptorSet1.get(), 0, nullptr);
 
     vk::VkImageMemoryBarrier preImageBarrier = vk::makeImageMemoryBarrier(
         vk::VK_ACCESS_NONE, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
@@ -1683,7 +1683,6 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
         vk.cmdBeginTransformFeedbackEXT(*cmdBuffer, 0, 0u, nullptr, nullptr);
     }
 
-    bool secondDraw = !m_params.depthClamp && !m_params.depthClip;
     if (m_params.meshShader)
     {
         if (secondDraw)
@@ -1695,7 +1694,11 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
     {
         vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
         if (secondDraw)
+        {
+            vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0, 1,
+                                     &descriptorSet2.get(), 0, nullptr);
             vk.cmdDraw(*cmdBuffer, 4, 1, 0, 1);
+        }
     }
     if (m_params.geometryStreams)
         vk.cmdEndTransformFeedbackEXT(*cmdBuffer, 0, 0u, nullptr, nullptr);
@@ -1715,9 +1718,15 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
                           (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u, &postDepthImageBarrier);
 
     vk::VkBufferMemoryBarrier bufferBarrier = vk::makeBufferMemoryBarrier(
-        vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, *outputBuffer, 0u, bufferSizeBytes);
+        vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, *outputBuffer1, 0u, bufferSizeBytes);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
                           (vk::VkDependencyFlags)0u, 0u, nullptr, 1u, &bufferBarrier, 0u, nullptr);
+    if (secondDraw)
+    {
+        bufferBarrier.buffer = *outputBuffer2;
+        vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
+                              (vk::VkDependencyFlags)0u, 0u, nullptr, 1u, &bufferBarrier, 0u, nullptr);
+    }
 
     if (m_params.geometryStreams)
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,
@@ -1739,7 +1748,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
     tcu::Vec4 whiteColor  = tcu::Vec4(0.75f);
     tcu::Vec4 blackColor  = tcu::Vec4(0.0f);
 
-    const vk::Allocation &outputBufferAllocation = outputBuffer.getAllocation();
+    const vk::Allocation &outputBufferAllocation = outputBuffer1.getAllocation();
     invalidateAlloc(vk, device, outputBufferAllocation);
 
     const uint32_t *bufferPtr = static_cast<uint32_t *>(outputBufferAllocation.getHostPtr());
@@ -1858,13 +1867,13 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
         const auto depthBuffer =
             readDepthAttachment(vk, device, queue, queueFamilyIndex, alloc, **depthImage, depthStencilAttachmentFormat,
                                 tcu::UVec2(width, height), vk::VK_IMAGE_LAYOUT_GENERAL);
-        const auto depthAccess   = depthBuffer->getAccess();
-        const auto stencilBuffer = readStencilAttachment(vk, device, queue, queueFamilyIndex, alloc, **depthImage,
-                                                         depthStencilAttachmentFormat, tcu::UVec2(width, height),
-                                                         vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        const auto depthAccess = depthBuffer->getAccess();
+        const auto stencilBuffer =
+            readStencilAttachment(vk, device, queue, queueFamilyIndex, alloc, **depthImage,
+                                  depthStencilAttachmentFormat, tcu::UVec2(width, height), vk::VK_IMAGE_LAYOUT_GENERAL);
         const auto stencilAccess = stencilBuffer->getAccess();
-        const float depthEpsilon = 0.02f;
 
+        const float depthEpsilon = 0.02f;
         for (int32_t j = 0; j < height; ++j)
         {
             for (int32_t i = 0; i < width; ++i)
@@ -1874,7 +1883,8 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
                 bool inside       = isInsidePrimitive(i, j, width, height);
                 if (m_params.conservativeRasterization && m_params.conservativeRasterizationOverestimate && !inside)
                     continue;
-                if (inside && !m_params.depthBoundsTestEnable && !m_params.discardRectanglesEnable &&
+                if (inside && ((m_params.depthTestEnable && m_params.depthWriteEnable) || m_params.stencilTestEnable) &&
+                    !m_params.depthBoundsTestEnable && !m_params.discardRectanglesEnable &&
                     ((m_params.cullMode != vk::VK_CULL_MODE_FRONT_AND_BACK && m_params.cullMode != culled) ||
                      m_params.lines))
                 {
@@ -3142,6 +3152,7 @@ tcu::TestCaseGroup *createShaderObjectMiscTests(tcu::TestContext &testCtx)
     const struct
     {
         bool depthTestEnable;
+        bool depthWriteEnable;
         bool depthBounds;
         bool depthBoundsTestEnable;
         bool depthClamp;
@@ -3150,13 +3161,14 @@ tcu::TestCaseGroup *createShaderObjectMiscTests(tcu::TestContext &testCtx)
         bool depthBiasEnable;
         const char *name;
     } depthTests[]{
-        {false, false, false, false, false, false, false, "none"},
-        {true, true, false, false, false, false, false, "bounds_disabled"},
-        {true, true, true, false, false, false, false, "bounds_enabled"},
-        {true, false, false, true, false, false, false, "clamp"},
-        {true, false, false, false, true, false, false, "clip"},
-        {true, false, false, false, false, true, false, "clip_control"},
-        {true, false, false, false, false, false, true, "bias"},
+        {false, false, false, false, false, false, false, false, "none"},
+        {true, true, true, false, false, false, false, false, "bounds_disabled"},
+        {true, true, true, true, false, false, false, false, "bounds_enabled"},
+        {true, true, false, false, true, false, false, false, "clamp"},
+        {true, true, false, false, false, true, false, false, "clip"},
+        {true, true, false, false, false, false, true, false, "clip_control"},
+        {true, true, false, false, false, false, false, true, "bias"},
+        {false, true, false, false, false, false, false, false, "test_disabled_write_enabled"},
     };
 
     const struct
@@ -3430,6 +3442,15 @@ tcu::TestCaseGroup *createShaderObjectMiscTests(tcu::TestContext &testCtx)
                 params.stippledLineEnable = linesTest.stippledLineEnable;
                 params.lineRasterization  = linesTest.lineRasterization;
                 linesGroup->addChild(new ShaderObjectStateCase(testCtx, linesTest.name, params));
+
+                params.rasterizerDiscardEnable            = true;
+                const std::string rasterizer_discard_name = std::string(linesTest.name) + "_rasterizer_discard";
+                linesGroup->addChild(new ShaderObjectStateCase(testCtx, rasterizer_discard_name.c_str(), params));
+
+                params.discardRectanglesEnable  = false;
+                params.lines                    = false;
+                const std::string topology_name = std::string(linesTest.name) + "_topology_triangles";
+                linesGroup->addChild(new ShaderObjectStateCase(testCtx, topology_name.c_str(), params));
             }
             shadersGroup->addChild(linesGroup.release());
             params.reset();

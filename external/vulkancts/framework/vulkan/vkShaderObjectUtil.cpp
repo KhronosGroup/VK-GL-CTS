@@ -29,8 +29,8 @@ namespace vk
 {
 
 #ifndef CTS_USES_VULKANSC
-inline Move<VkShaderEXT> createShader(const DeviceInterface &vk, VkDevice device,
-                                      const vk::VkShaderCreateInfoEXT &shaderCreateInfo)
+Move<VkShaderEXT> createShader(const DeviceInterface &vk, VkDevice device,
+                               const vk::VkShaderCreateInfoEXT &shaderCreateInfo)
 {
     VkShaderEXT object;
     VK_CHECK(vk.createShadersEXT(device, 1u, &shaderCreateInfo, nullptr, &object));

@@ -217,8 +217,9 @@ tcu::TestStatus MipmapSparseResidencyInstance::iterate(void)
 
             DE_ASSERT((imageMemoryRequirements.size % imageMemoryRequirements.alignment) == 0);
 
-            const uint32_t memoryType = findMatchingMemoryType(instance, getPhysicalDevice(secondDeviceID),
-                                                               imageMemoryRequirements, MemoryRequirement::Any);
+            const auto devMemProps    = getPhysicalDeviceMemoryProperties(instance, getPhysicalDevice(secondDeviceID));
+            const uint32_t memoryType = selectBestMemoryType(devMemProps, imageMemoryRequirements.memoryTypeBits,
+                                                             MemoryRequirement::Any, tcu::just(HostIntent::NONE));
 
             if (memoryType == NO_MATCH_FOUND)
                 return tcu::TestStatus::fail("No matching memory type found");
@@ -457,7 +458,7 @@ tcu::TestStatus MipmapSparseResidencyInstance::iterate(void)
             makeBufferCreateInfo(imageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
         const Unique<VkBuffer> inputBuffer(createBuffer(deviceInterface, getDevice(), &inputBufferCreateInfo));
         const de::UniquePtr<Allocation> inputBufferAlloc(
-            bindBuffer(deviceInterface, getDevice(), getAllocator(), *inputBuffer, MemoryRequirement::HostVisible));
+            bindBuffer(deviceInterface, getDevice(), getAllocator(), *inputBuffer, HostIntent::W));
 
         std::vector<uint8_t> referenceData(imageSizeInBytes);
 
@@ -532,7 +533,7 @@ tcu::TestStatus MipmapSparseResidencyInstance::iterate(void)
             makeBufferCreateInfo(imageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
         const Unique<VkBuffer> outputBuffer(createBuffer(deviceInterface, getDevice(), &outputBufferCreateInfo));
         const de::UniquePtr<Allocation> outputBufferAlloc(
-            bindBuffer(deviceInterface, getDevice(), getAllocator(), *outputBuffer, MemoryRequirement::HostVisible));
+            bindBuffer(deviceInterface, getDevice(), getAllocator(), *outputBuffer, HostIntent::R));
 
         deviceInterface.cmdCopyImageToBuffer(*commandBuffer, *imageSparse, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                              *outputBuffer, static_cast<uint32_t>(bufferImageCopy.size()),

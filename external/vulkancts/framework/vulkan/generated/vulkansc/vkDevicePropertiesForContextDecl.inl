@@ -13,7 +13,7 @@ const vk::VkPhysicalDevicePCIBusInfoPropertiesEXT&					getPCIBusInfoPropertiesEX
 const vk::VkPhysicalDeviceSubgroupSizeControlProperties&			getSubgroupSizeControlProperties			(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			getFragmentShadingRateProperties			(void) const;
 const vk::VkPhysicalDeviceTexelBufferAlignmentProperties&			getTexelBufferAlignmentProperties			(void) const;
-const vk::VkPhysicalDeviceRobustness2PropertiesEXT&					getRobustness2PropertiesEXT					(void) const;
+const vk::VkPhysicalDeviceRobustness2PropertiesKHR&					getRobustness2Properties					(void) const;
 const vk::VkPhysicalDeviceCustomBorderColorPropertiesEXT&			getCustomBorderColorPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceVertexAttributeDivisorProperties&			getVertexAttributeDivisorProperties			(void) const;
 const vk::VkPhysicalDeviceLineRasterizationProperties&				getLineRasterizationProperties				(void) const;

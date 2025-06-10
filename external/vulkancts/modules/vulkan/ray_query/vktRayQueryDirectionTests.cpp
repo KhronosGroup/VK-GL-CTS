@@ -354,13 +354,16 @@ tcu::TestStatus DirectionTestInstance::iterate(void)
     auto topLevelAS    = makeTopLevelAccelerationStructure();
     auto bottomLevelAS = makeBottomLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     const bool isTriangles = (m_params.geometryType == VK_GEOMETRY_TYPE_TRIANGLES_KHR);
     const VkGeometryInstanceFlagsKHR instanceFlags =
         (isTriangles ? VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR : 0);
 
     bottomLevelAS->addGeometry(m_params.spaceObjects.geometry, isTriangles,
                                VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
-    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     de::SharedPtr<BottomLevelAccelerationStructure> blasSharedPtr(bottomLevelAS.release());
     topLevelAS->setUseArrayOfPointers(m_params.useArraysOfPointers);
@@ -370,7 +373,7 @@ tcu::TestStatus DirectionTestInstance::iterate(void)
         const auto &initialMatrix = (m_params.updateMatrixAfterBuild ? identityMatrix3x4 : transformMatrix);
         topLevelAS->addInstance(blasSharedPtr, initialMatrix, 0, 0xFFu, 0u, instanceFlags);
     }
-    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
     if (m_params.updateMatrixAfterBuild)
         topLevelAS->updateInstanceMatrix(vkd, device, 0u, transformMatrix);
 

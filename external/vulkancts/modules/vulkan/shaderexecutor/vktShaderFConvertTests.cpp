@@ -37,6 +37,7 @@
 #include "tcuFloat.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
+#include "tcuStringTemplate.hpp"
 
 #include <vector>
 #include <iterator>
@@ -47,10 +48,10 @@
 #include <string>
 #include <limits>
 #include <cassert>
+#include <type_traits>
+#include <optional>
 
-namespace vkt
-{
-namespace shaderexecutor
+namespace vkt::shaderexecutor
 {
 
 namespace
@@ -64,41 +65,82 @@ constexpr size_t kArrayAlignment                        = 16;              // By
 constexpr size_t kEffectiveLength[kMaxVectorLength + 1] = {0, 1, 2, 4, 4}; // Effective length of a vector of size i.
 constexpr size_t kGCFNumFloats = 12; // Greatest Common Factor of the number of floats in a test.
 
+//#define SIMULATE_BRAIN_FLOAT16
+#ifdef SIMULATE_BRAIN_FLOAT16
+struct SimulateBrainFloat16 : tcu::Float16
+{
+    SimulateBrainFloat16()
+    {
+    }
+    SimulateBrainFloat16(const tcu::Float16 &other) : tcu::Float16(other)
+    {
+    }
+};
+using BFloat16 = SimulateBrainFloat16;
+#else
+using BFloat16 = tcu::BrainFloat16;
+#endif
+
+constexpr bool isBFloat16SameBrainFloat16 = std::is_same_v<BFloat16, tcu::BrainFloat16>;
+
 // Get a random normal number.
 // Works for implementations of tcu::Float as T.
 template <class T>
 T getRandomNormal(de::Random &rnd)
 {
-    static constexpr typename T::StorageType kLeadingMantissaBit =
-        (static_cast<typename T::StorageType>(1) << T::MANTISSA_BITS);
-    static constexpr int kSignValues[] = {-1, 1};
+    if constexpr (std::is_same_v<T, int32_t>)
+    {
+        return rnd.getInt32();
+    }
+    else if constexpr (std::is_same_v<T, uint32_t>)
+    {
+        return rnd.getUint32();
+    }
+    else
+    {
+        static constexpr typename T::StorageType kLeadingMantissaBit =
+            (static_cast<typename T::StorageType>(1) << T::MANTISSA_BITS);
+        static constexpr int kSignValues[] = {-1, 1};
 
-    int signBit  = rnd.getInt(0, 1);
-    int exponent = rnd.getInt(1 - T::EXPONENT_BIAS, T::EXPONENT_BIAS + 1);
-    typename T::StorageType mantissa =
-        static_cast<typename T::StorageType>(rnd.getUint64() & static_cast<uint64_t>(kLeadingMantissaBit - 1));
+        int signBit  = rnd.getInt(0, 1);
+        int exponent = rnd.getInt(1 - T::EXPONENT_BIAS, T::EXPONENT_BIAS + 1);
+        typename T::StorageType mantissa =
+            static_cast<typename T::StorageType>(rnd.getUint64() & static_cast<uint64_t>(kLeadingMantissaBit - 1));
 
-    // Construct number.
-    return T::construct(kSignValues[signBit], exponent, (kLeadingMantissaBit | mantissa));
+        // Construct number.
+        return T::construct(kSignValues[signBit], exponent, (kLeadingMantissaBit | mantissa));
+    }
 }
 
 // Get a list of hand-picked interesting samples for tcu::Float class T.
 template <class T>
 const std::vector<T> &interestingSamples()
 {
-    static const std::vector<T> samples = {
-        T::zero(-1),
-        T::zero(1),
-        //T::inf                (-1),
-        //T::inf                ( 1),
-        //T::nan                (  ),
-        T::largestNormal(-1),
-        T::largestNormal(1),
-        T::smallestNormal(-1),
-        T::smallestNormal(1),
-    };
+    if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t>)
+    {
+        static const std::vector<T> samples{
+            0,                             //
+            0,                             //
+            std::numeric_limits<T>::max(), //
+            std::numeric_limits<T>::max(), //
+            std::numeric_limits<T>::min(), //
+            std::numeric_limits<T>::min(), //
+        };
 
-    return samples;
+        return samples;
+    }
+    else
+    {
+        static const std::vector<T> samples{
+            T::zero(-1),           //
+            T::zero(1),            //
+            T::largestNormal(-1),  //
+            T::largestNormal(1),   //
+            T::smallestNormal(-1), //
+            T::smallestNormal(1),  //
+        };
+        return samples;
+    }
 }
 
 // Get some random interesting numbers.
@@ -145,7 +187,7 @@ std::vector<T2> convertVector(const std::vector<T1> &orig)
     std::vector<T2> result;
     result.reserve(orig.size());
 
-    std::transform(begin(orig), end(orig), std::back_inserter(result), [](T1 f) { return T2::convert(f); });
+    std::transform(begin(orig), end(orig), std::back_inserter(result), [](const T1 &f) { return T2::convert(f); });
 
     return result;
 }
@@ -153,31 +195,51 @@ std::vector<T2> convertVector(const std::vector<T1> &orig)
 // Get converted normal values for other tcu::Float types smaller than T, which should be exact conversions when converting back to
 // those types.
 template <class T>
-std::vector<T> getOtherNormals(de::Random &rnd);
-
-template <>
-std::vector<tcu::Float16> getOtherNormals<tcu::Float16>(de::Random &)
+std::vector<T> getOtherNormals(de::Random &)
 {
-    // Nothing below tcu::Float16.
-    return std::vector<tcu::Float16>();
+    return {};
 }
+
+#ifndef CTS_USES_VULKANSC
+template <>
+std::vector<BFloat16> getOtherNormals(de::Random &)
+{
+    // This specialization must exist for the code to be correctly compiled.
+    return {};
+}
+#endif
 
 template <>
 std::vector<tcu::Float32> getOtherNormals<tcu::Float32>(de::Random &rnd)
 {
-    // The ones from tcu::Float16.
-    return convertVector<tcu::Float16, tcu::Float32>(getRandomNormals<tcu::Float16>(rnd));
+    // The ones from tcu::Float16 and BrainFloat16
+    auto v1 = convertVector<tcu::Float16, tcu::Float32>(getRandomNormals<tcu::Float16>(rnd));
+#ifndef CTS_USES_VULKANSC
+    const auto v2 = convertVector<BFloat16, tcu::Float32>(getRandomNormals<BFloat16>(rnd));
+#else
+    const std::vector<tcu::Float32> v2;
+#endif
+
+    v1.reserve(v1.size() + v2.size());
+    std::copy(v2.begin(), v2.end(), std::back_inserter(v1));
+    return v1;
 }
 
 template <>
 std::vector<tcu::Float64> getOtherNormals<tcu::Float64>(de::Random &rnd)
 {
-    // The ones from both tcu::Float16 and tcu::Float64.
-    auto v1 = convertVector<tcu::Float16, tcu::Float64>(getRandomNormals<tcu::Float16>(rnd));
-    auto v2 = convertVector<tcu::Float32, tcu::Float64>(getRandomNormals<tcu::Float32>(rnd));
+    // The ones from BrainFloat16, tcu::Float16 and tcu::Float32.
+    auto v1       = convertVector<tcu::Float16, tcu::Float64>(getRandomNormals<tcu::Float16>(rnd));
+    const auto v2 = convertVector<tcu::Float32, tcu::Float64>(getRandomNormals<tcu::Float32>(rnd));
+#ifndef CTS_USES_VULKANSC
+    const auto v3 = convertVector<BFloat16, tcu::Float64>(getRandomNormals<BFloat16>(rnd));
+#else
+    const std::vector<tcu::Float64> v3;
+#endif
 
-    v1.reserve(v1.size() + v2.size());
-    std::copy(begin(v2), end(v2), std::back_inserter(v1));
+    v1.reserve(v1.size() + v2.size() + v3.size());
+    std::copy(v2.begin(), v2.end(), std::back_inserter(v1));
+    std::copy(v3.begin(), v3.end(), std::back_inserter(v1));
     return v1;
 }
 
@@ -219,19 +281,11 @@ public:
         return instance;
     }
 
-    const std::vector<tcu::Float16> &getInputValues16() const
+    template <class X>
+    const std::vector<X> &getValues() const
     {
-        return m_values16;
-    }
-
-    const std::vector<tcu::Float32> &getInputValues32() const
-    {
-        return m_values32;
-    }
-
-    const std::vector<tcu::Float64> &getInputValues64() const
-    {
-        return m_values64;
+        DE_ASSERT(false);
+        return {};
     }
 
 private:
@@ -240,6 +294,9 @@ private:
         , m_values16(getInputValues<tcu::Float16>(m_rnd))
         , m_values32(getInputValues<tcu::Float32>(m_rnd))
         , m_values64(getInputValues<tcu::Float64>(m_rnd))
+        , m_bFloatValues(getInputValues<BFloat16>(m_rnd))
+        , m_int32Values(getInputValues<int32_t>(m_rnd))
+        , m_uint32Values(getInputValues<uint32_t>(m_rnd))
     {
     }
 
@@ -251,36 +308,105 @@ private:
     std::vector<tcu::Float16> m_values16;
     std::vector<tcu::Float32> m_values32;
     std::vector<tcu::Float64> m_values64;
+    std::vector<BFloat16> m_bFloatValues;
+    std::vector<int32_t> m_int32Values;
+    std::vector<uint32_t> m_uint32Values;
 };
 
+template <>
+const std::vector<tcu::Float16> &InputGenerator::getValues() const
+{
+    return m_values16;
+}
+
+template <>
+const std::vector<tcu::Float32> &InputGenerator::getValues() const
+{
+    return m_values32;
+}
+
+template <>
+const std::vector<tcu::Float64> &InputGenerator::getValues() const
+{
+    return m_values64;
+}
+
+template <>
+const std::vector<BFloat16> &InputGenerator::getValues() const
+{
+    return m_bFloatValues;
+}
+
+template <>
+const std::vector<int32_t> &InputGenerator::getValues() const
+{
+    return m_int32Values;
+}
+
+template <>
+const std::vector<uint32_t> &InputGenerator::getValues() const
+{
+    return m_uint32Values;
+}
+
 // Check single result is as expected.
-// Works for implementations of tcu::Float as T1 and T2.
 template <class T1, class T2>
 bool validConversion(const T1 &orig, const T2 &result)
 {
-    const T2 acceptedResults[] = {T2::convert(orig, tcu::ROUND_DOWNWARD), T2::convert(orig, tcu::ROUND_UPWARD)};
-    bool valid                 = false;
+    std::vector<T2> acceptedResults;
+    if constexpr (std::is_same_v<T1, int32_t> || std::is_same_v<T1, uint32_t>)
+    {
+        acceptedResults = {T2::convert(tcu::Float64(double(orig)), tcu::ROUND_DOWNWARD),
+                           T2::convert(tcu::Float64(double(orig)), tcu::ROUND_UPWARD)};
+    }
+    else if constexpr (std::is_same_v<T2, int32_t> || std::is_same_v<T2, uint32_t>)
+    {
+        // convert a NaN value to an (u)int is implementation - defined
+        if (orig.isNaN())
+            return true;
 
+        auto dOrigin    = orig.asDouble();
+        acceptedResults = {(T2)dOrigin};
+
+        const auto minValue = std::numeric_limits<T2>::min();
+        const auto maxValue = std::numeric_limits<T2>::max();
+        if (dOrigin < double(minValue))
+            acceptedResults.push_back(minValue);
+        else if (dOrigin > double(maxValue))
+            acceptedResults.push_back(maxValue);
+    }
+    else
+        acceptedResults = {T2::convert(orig, tcu::ROUND_DOWNWARD), T2::convert(orig, tcu::ROUND_UPWARD)};
+
+    bool valid = false;
     for (const auto &validResult : acceptedResults)
     {
-        if (validResult.isNaN() && result.isNaN())
-            valid = true;
-        else if (validResult.isInf() && result.isInf())
-            valid = true;
-        else if (validResult.isZero() && result.isZero())
-            valid = true;
-        else if (validResult.isDenorm() && (result.isDenorm() || result.isZero()))
-            valid = true;
-        else if (validResult.bits() == result.bits()) // Exact conversion, up or down.
-            valid = true;
+        if constexpr (std::is_scalar_v<T2>) // result is int or uint
+        {
+            if (validResult == result)
+                valid = true;
+        }
+        else // result is Float<...>
+        {
+            if (validResult.isNaN() && result.isNaN())
+                valid = true;
+            else if (validResult.isInf() && result.isInf())
+                valid = true;
+            else if (validResult.isZero() && result.isZero())
+                valid = true;
+            else if (validResult.isDenorm() && (result.isDenorm() || result.isZero()))
+                valid = true;
+            else if (validResult.bits() == result.bits()) // Exact conversion, up or down.
+                valid = true;
+        }
     }
 
     return valid;
 }
 
 // Check results vector is as expected.
-template <class T1, class T2>
-bool validConversion(const std::vector<T1> &orig, const std::vector<T2> &converted, tcu::TestLog &log)
+template <class TIn, class TOut>
+bool validConversion(const std::vector<TIn> &orig, const std::vector<TOut> &converted, tcu::TestLog &log)
 {
     DE_ASSERT(orig.size() == converted.size());
 
@@ -288,16 +414,48 @@ bool validConversion(const std::vector<T1> &orig, const std::vector<T2> &convert
 
     for (size_t i = 0; i < orig.size(); ++i)
     {
-        const bool valid = validConversion(orig[i], converted[i]);
+        bool valid = false;
+
+        // dont generate conversion function when both input and output are int formats
+        if constexpr (!((std::is_same_v<TIn, int32_t> || std::is_same_v<TIn, uint32_t>)&&(
+                          std::is_same_v<TOut, int32_t> || std::is_same_v<TOut, uint32_t>)))
+        {
+            valid = validConversion(orig[i], converted[i]);
+        }
 
         {
-            const double origD = orig[i].asDouble();
-            const double convD = converted[i].asDouble();
-
             std::ostringstream msg;
-            msg << "[" << i << "] " << std::setprecision(std::numeric_limits<double>::digits10 + 2) << std::scientific
-                << origD << " converted to " << convD << ": " << (valid ? "OK" : "FAILURE");
+            msg << "[" << i << "] " << std::setprecision(std::numeric_limits<double>::digits10 + 2) << std::scientific;
 
+            if constexpr (std::is_same_v<TIn, BFloat16>)
+            {
+                msg << orig[i].asFloat();
+            }
+            else if constexpr (std::is_same_v<TIn, int32_t> || std::is_same_v<TIn, uint32_t>)
+            {
+                msg << orig[i];
+            }
+            else
+            {
+                msg << orig[i].asDouble();
+            }
+
+            msg << " converted to ";
+
+            if constexpr (std::is_same_v<TOut, BFloat16>)
+            {
+                msg << double(converted[i].asFloat());
+            }
+            else if constexpr (std::is_same_v<TOut, int32_t> || std::is_same_v<TOut, uint32_t>)
+            {
+                msg << converted[i];
+            }
+            else
+            {
+                msg << converted[i].asDouble();
+            }
+
+            msg << (valid ? " OK" : " FAILURE");
             log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
         }
 
@@ -306,6 +464,15 @@ bool validConversion(const std::vector<T1> &orig, const std::vector<T2> &convert
     }
 
     return allValid;
+}
+
+template <class T>
+static size_t getElementSize()
+{
+    if constexpr (std::is_same<T, int32_t>() || std::is_same<T, uint32_t>())
+        return sizeof(T);
+    else
+        return sizeof(typename T::StorageType);
 }
 
 // Helps calculate buffer sizes and other parameters for the given number of values and vector length using a given floating point
@@ -327,7 +494,7 @@ struct BufferSizeInfo
         info.vectorLength = vectorLength_;
         info.totalVectors = numValues_ / vectorLength_;
 
-        const size_t elementSize     = sizeof(typename T::StorageType);
+        const size_t elementSize     = getElementSize<T>();
         const size_t effectiveLength = kEffectiveLength[vectorLength_];
         const size_t vectorSize      = elementSize * effectiveLength;
         const size_t extraBytes      = vectorSize % kArrayAlignment;
@@ -348,7 +515,7 @@ struct BufferSizeInfo
 // Pack an array of tcu::Float values into a buffer to be read from a shader, as if it was an array of vectors with each vector
 // having size vectorLength (e.g. 3 for a vec3). Note: assumes std140.
 template <class T>
-std::vector<uint8_t> packFloats(const std::vector<T> &values, size_t vectorLength)
+std::vector<uint8_t> packData(const std::vector<T> &values, size_t vectorLength)
 {
     BufferSizeInfo sizeInfo = BufferSizeInfo::calculate<T>(values.size(), vectorLength);
 
@@ -366,12 +533,12 @@ std::vector<uint8_t> packFloats(const std::vector<T> &values, size_t vectorLengt
 // Unpack an array of vectors into an array of values, undoing what packFloats would do.
 // expectedNumValues is used for verification.
 template <class T>
-std::vector<T> unpackFloats(const std::vector<uint8_t> &memory, size_t vectorLength, size_t expectedNumValues)
+std::vector<T> unpackData(const std::vector<uint8_t> &memory, size_t vectorLength, size_t expectedNumValues)
 {
     DE_ASSERT(vectorLength >= kMinVectorLength && vectorLength <= kMaxVectorLength);
 
     const size_t effectiveLength = kEffectiveLength[vectorLength];
-    const size_t elementSize     = sizeof(typename T::StorageType);
+    const size_t elementSize     = getElementSize<T>();
     const size_t vectorSize      = elementSize * effectiveLength;
     const size_t extraBytes      = vectorSize % kArrayAlignment;
     const size_t vectorBlockSize = vectorSize + ((extraBytes == 0) ? 0 : (kArrayAlignment - extraBytes));
@@ -395,46 +562,182 @@ std::vector<T> unpackFloats(const std::vector<uint8_t> &memory, size_t vectorLen
     return values;
 }
 
-enum FloatType
+enum DataType
 {
     FLOAT_TYPE_16_BITS = 0,
     FLOAT_TYPE_32_BITS,
     FLOAT_TYPE_64_BITS,
-    FLOAT_TYPE_MAX_ENUM,
+
+    BRAIN_FLOAT_16_BITS,
+
+    SIGNED_INT_TYPE_32_BITS,
+    UNSIGNED_INT_TYPE_32_BITS,
+
+    DATA_TYPE_MAX_ENUM
 };
 
-static const char *const kFloatNames[FLOAT_TYPE_MAX_ENUM] = {
-    "f16",
-    "f32",
-    "f64",
+template <class>
+inline constexpr DataType DataTypeToEnum = DATA_TYPE_MAX_ENUM;
+template <>
+[[maybe_unused]] inline constexpr DataType DataTypeToEnum<BFloat16> = BRAIN_FLOAT_16_BITS;
+template <>
+inline constexpr DataType DataTypeToEnum<tcu::Float16> = FLOAT_TYPE_16_BITS;
+template <>
+inline constexpr DataType DataTypeToEnum<tcu::Float32> = FLOAT_TYPE_32_BITS;
+template <>
+inline constexpr DataType DataTypeToEnum<tcu::Float64> = FLOAT_TYPE_64_BITS;
+template <>
+inline constexpr DataType DataTypeToEnum<int32_t> = SIGNED_INT_TYPE_32_BITS;
+template <>
+inline constexpr DataType DataTypeToEnum<uint32_t> = UNSIGNED_INT_TYPE_32_BITS;
+
+static std::string getDataTypeName(DataType dt)
+{
+    static std::map<DataType, std::string> typeMap{
+        {FLOAT_TYPE_16_BITS, "f16"},   {FLOAT_TYPE_32_BITS, "f32"},      {FLOAT_TYPE_64_BITS, "f64"},
+        {BRAIN_FLOAT_16_BITS, "bf16"}, {SIGNED_INT_TYPE_32_BITS, "i32"}, {UNSIGNED_INT_TYPE_32_BITS, "u32"}};
+    return typeMap.at(dt);
 };
 
-static const char *const kGLSLTypes[][kMaxVectorLength + 1] = {
-    {nullptr, "float16_t", "f16vec2", "f16vec3", "f16vec4"},
-    {nullptr, "float", "vec2", "vec3", "vec4"},
-    {nullptr, "double", "dvec2", "dvec3", "dvec4"},
-};
+template <class, uint32_t>
+std::bad_typeid vtn;
+template <>
+[[maybe_unused]] constexpr const char *vtn<BFloat16, 4> = isBFloat16SameBrainFloat16 ? "bf16vec4" : "f16vec4";
+template <>
+[[maybe_unused]] constexpr const char *vtn<BFloat16, 3> = isBFloat16SameBrainFloat16 ? "bf16vec3" : "f16vec3";
+template <>
+[[maybe_unused]] constexpr const char *vtn<BFloat16, 2> = isBFloat16SameBrainFloat16 ? "bf16vec2" : "f16vec2";
+template <>
+[[maybe_unused]] constexpr const char *vtn<BFloat16, 1> = isBFloat16SameBrainFloat16 ? "bfloat16_t" : "float16_t";
 
 struct TestParams
 {
-    FloatType from;
-    FloatType to;
+    static constexpr const char *kGLSLTypes[][kMaxVectorLength + 1] = {
+        {nullptr, "float16_t", "f16vec2", "f16vec3", "f16vec4"},
+        {nullptr, "float", "vec2", "vec3", "vec4"},
+        {nullptr, "double", "dvec2", "dvec3", "dvec4"},
+        {nullptr, vtn<BFloat16, 1>, vtn<BFloat16, 2>, vtn<BFloat16, 3>, vtn<BFloat16, 4>},
+        {nullptr, "int", "ivec2", "ivec3", "ivec4"},
+        {nullptr, "uint", "uvec2", "uvec3", "uvec4"},
+    };
+
+    DataType from;
+    DataType to;
     size_t vectorLength;
+
+    void validate() const
+    {
+        DE_ASSERT(from != to);
+        DE_ASSERT(from >= 0 && from < DATA_TYPE_MAX_ENUM);
+        DE_ASSERT(vectorLength >= kMinVectorLength && vectorLength <= kMaxVectorLength);
+    }
 
     std::string getInputTypeStr() const
     {
-        DE_ASSERT(from >= 0 && from < FLOAT_TYPE_MAX_ENUM);
-        DE_ASSERT(vectorLength >= kMinVectorLength && vectorLength <= kMaxVectorLength);
+        validate();
         return kGLSLTypes[from][vectorLength];
     }
 
     std::string getOutputTypeStr() const
     {
-        DE_ASSERT(to >= 0 && to < FLOAT_TYPE_MAX_ENUM);
-        DE_ASSERT(vectorLength >= kMinVectorLength && vectorLength <= kMaxVectorLength);
+        validate();
         return kGLSLTypes[to][vectorLength];
     }
+
+    bool usesBFloat16() const
+    {
+#ifdef CTS_USES_VULKANSC
+        return false;
+#else
+        return (from == BRAIN_FLOAT_16_BITS) || (to == BRAIN_FLOAT_16_BITS);
+#endif
+    }
+
+    bool usesFloat16Types() const
+    {
+        bool ok = (from == FLOAT_TYPE_16_BITS) || (to == FLOAT_TYPE_16_BITS);
+#ifndef CTS_USES_VULKANSC
+        ok |= usesBFloat16();
+#endif
+        return ok;
+    }
+
+    static bool isConversionDoable(DataType from, DataType to)
+    {
+        DE_UNREF(from);
+        DE_UNREF(to);
+        return true;
+    }
 };
+
+template <class TIn, class Tuple, std::size_t... Is>
+void verifyConversionTo(const std::vector<TIn> &inputValues, //
+                        DataType outType,                    //
+                        const std::vector<uint8_t> &memory,  //
+                        size_t vectorLength,                 //
+                        size_t expectedNumValues,            //
+                        tcu::TestLog &testLog,               //
+                        const Tuple &,                       //
+                        std::index_sequence<Is...>)
+{
+    (...,
+     [&]
+     {
+         using TOut = std::tuple_element_t<Is, Tuple>;
+         if (DataTypeToEnum<TOut> == outType)
+         {
+             const auto outputValues = unpackData<TOut>(memory, vectorLength, expectedNumValues);
+             const bool conversionOk = validConversion(inputValues, outputValues, testLog);
+             throw std::optional(conversionOk);
+         }
+     }());
+    throw std::nullopt;
+}
+
+template <class Tuple, std::size_t... Is>
+void verifyConversionFrom(DataType inType,                    //
+                          DataType outType,                   //
+                          const std::vector<uint8_t> &memory, //
+                          size_t vectorLength,                //
+                          size_t expectedNumValues,           //
+                          tcu::TestLog &testLog,              //
+                          const Tuple &t,                     //
+                          std::index_sequence<Is...>)
+{
+    (...,
+     [&]
+     {
+         using TIn = std::tuple_element_t<Is, Tuple>;
+         if (DataTypeToEnum<TIn> == inType)
+         {
+             const auto &inputValues = InputGenerator::getInstance().getValues<TIn>();
+             verifyConversionTo(inputValues, outType, memory, vectorLength, expectedNumValues, testLog, t,
+                                std::index_sequence<Is...>{});
+         }
+     }());
+    throw std::nullopt;
+}
+
+template <class... U>
+std::optional<bool> verifyConversion(DataType fromType,                  //
+                                     DataType toType,                    //
+                                     const std::tuple<U...> available,   //
+                                     const std::vector<uint8_t> &memory, //
+                                     size_t vectorLength,                //
+                                     size_t expectedNumValues,           //
+                                     tcu::TestLog &log)
+{
+    try
+    {
+        verifyConversionFrom(fromType, toType, memory, vectorLength, expectedNumValues, log, available,
+                             std::index_sequence_for<U...>{});
+    }
+    catch (const std::optional<bool> &result)
+    {
+        return result;
+    }
+    return std::nullopt;
+}
 
 class FConvertTestInstance : public TestInstance
 {
@@ -481,14 +784,25 @@ void FConvertTestCase::initPrograms(vk::SourceCollections &programCollection) co
     size_t numValues = 0;
     switch (m_params.from)
     {
+#ifndef CTS_USES_VULKANSC
+    case BRAIN_FLOAT_16_BITS:
+        numValues = inputGenerator.getValues<BFloat16>().size();
+        break;
+#endif
     case FLOAT_TYPE_16_BITS:
-        numValues = inputGenerator.getInputValues16().size();
+        numValues = inputGenerator.getValues<tcu::Float16>().size();
         break;
     case FLOAT_TYPE_32_BITS:
-        numValues = inputGenerator.getInputValues32().size();
+        numValues = inputGenerator.getValues<tcu::Float32>().size();
         break;
     case FLOAT_TYPE_64_BITS:
-        numValues = inputGenerator.getInputValues64().size();
+        numValues = inputGenerator.getValues<tcu::Float64>().size();
+        break;
+    case SIGNED_INT_TYPE_32_BITS:
+        numValues = inputGenerator.getValues<int32_t>().size();
+        break;
+    case UNSIGNED_INT_TYPE_32_BITS:
+        numValues = inputGenerator.getValues<uint32_t>().size();
         break;
     default:
         DE_ASSERT(false);
@@ -497,26 +811,33 @@ void FConvertTestCase::initPrograms(vk::SourceCollections &programCollection) co
 
     const size_t arraySize = numValues / m_params.vectorLength;
 
-    std::ostringstream shader;
+    std::ostringstream glslShader;
 
-    shader
-        << "#version 450 core\n"
-        << ((m_params.from == FLOAT_TYPE_16_BITS || m_params.to == FLOAT_TYPE_16_BITS) ?
-                "#extension GL_EXT_shader_16bit_storage: require\n" // This is needed to use 16-bit float types in buffers.
-                "#extension GL_EXT_shader_explicit_arithmetic_types: require\n" // This is needed for some conversions.
-                :
-                "")
-        << "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-        << "layout(set = 0, binding = 0, std140) buffer issbodef { " << inputType << " val[" << arraySize
-        << "]; } issbo;\n"
-        << "layout(set = 0, binding = 1, std140) buffer ossbodef { " << outputType << " val[" << arraySize
-        << "]; } ossbo;\n"
-        << "void main()\n"
-        << "{\n"
-        << "    ossbo.val[gl_WorkGroupID.x] = " << outputType << "(issbo.val[gl_WorkGroupID.x]);\n"
-        << "}\n";
+    auto s = [&](const auto &...x) -> void
+    {
+        ((glslShader << x), ...);
+        glslShader << std::endl;
+    };
 
-    programCollection.glslSources.add("comp") << glu::ComputeSource(shader.str());
+    s("#version 450 core");
+    if (m_params.usesFloat16Types())
+    {
+        s("#extension GL_EXT_shader_16bit_storage: require"); // This is needed to use 16-bit float types in buffers.
+        s("#extension GL_EXT_shader_explicit_arithmetic_types: require"); // This is needed for some conversions.
+    }
+    if (m_params.usesBFloat16())
+    {
+        s("#extension GL_EXT_bfloat16: require"); // This is needed for bfloat16 type.
+    }
+    s("layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;");
+    s("layout(set = 0, binding = 0, std140) buffer issbodef { ", inputType, " val[", arraySize, "]; } issbo;");
+    s("layout(set = 0, binding = 1, std140) buffer ossbodef { ", outputType, " val[", arraySize, "]; } ossbo;");
+    s("void main()");
+    s("{");
+    s("    ossbo.val[gl_WorkGroupID.x] = ", outputType, "(issbo.val[gl_WorkGroupID.x]);");
+    s("}");
+
+    programCollection.glslSources.add("comp") << glu::ComputeSource(glslShader.str());
 }
 
 void FConvertTestCase::checkSupport(Context &context) const
@@ -540,6 +861,20 @@ void FConvertTestCase::checkSupport(Context &context) const
         if (!storage16.storageBuffer16BitAccess)
             TCU_THROW(NotSupportedError, "16-bit floats not supported for storage buffers");
     }
+
+    if (m_params.usesBFloat16())
+    {
+#ifdef CTS_USES_VULKANSC
+        TCU_THROW(NotSupportedError, "VK_KHR_shader_bfloat16 not available in VulkanSC");
+#else
+        if constexpr (isBFloat16SameBrainFloat16)
+        {
+            auto &bfeatures16 = context.getShaderBfloat16Features();
+            if (!bfeatures16.shaderBFloat16Type)
+                TCU_THROW(NotSupportedError, VK_KHR_SHADER_BFLOAT16_EXTENSION_NAME " not supported by device");
+        }
+#endif
+    }
 }
 
 tcu::TestStatus FConvertTestInstance::iterate(void)
@@ -548,30 +883,53 @@ tcu::TestStatus FConvertTestInstance::iterate(void)
     BufferSizeInfo outputBufferSizeInfo;
     std::vector<uint8_t> inputMemory;
 
-    assert(m_params.from == FLOAT_TYPE_16_BITS || m_params.from == FLOAT_TYPE_32_BITS ||
-           m_params.from == FLOAT_TYPE_64_BITS);
+    m_params.validate();
 
     if (m_params.from == FLOAT_TYPE_16_BITS)
     {
-        auto &inputValues   = InputGenerator::getInstance().getInputValues16();
+        auto &inputValues   = InputGenerator::getInstance().getValues<tcu::Float16>();
         inputBufferSizeInfo = BufferSizeInfo::calculate<tcu::Float16>(inputValues.size(), m_params.vectorLength);
-        inputMemory         = packFloats(inputValues, m_params.vectorLength);
+        inputMemory         = packData(inputValues, m_params.vectorLength);
     }
     else if (m_params.from == FLOAT_TYPE_32_BITS)
     {
-        auto &inputValues   = InputGenerator::getInstance().getInputValues32();
+        auto &inputValues   = InputGenerator::getInstance().getValues<tcu::Float32>();
         inputBufferSizeInfo = BufferSizeInfo::calculate<tcu::Float32>(inputValues.size(), m_params.vectorLength);
-        inputMemory         = packFloats(inputValues, m_params.vectorLength);
+        inputMemory         = packData(inputValues, m_params.vectorLength);
     }
-    else
+    else if (m_params.from == BRAIN_FLOAT_16_BITS)
     {
-        auto &inputValues   = InputGenerator::getInstance().getInputValues64();
+        auto &inputValues   = InputGenerator::getInstance().getValues<BFloat16>();
+        inputBufferSizeInfo = BufferSizeInfo::calculate<BFloat16>(inputValues.size(), m_params.vectorLength);
+        inputMemory         = packData(inputValues, m_params.vectorLength);
+    }
+    else if (m_params.from == FLOAT_TYPE_64_BITS)
+    {
+        auto &inputValues   = InputGenerator::getInstance().getValues<tcu::Float64>();
         inputBufferSizeInfo = BufferSizeInfo::calculate<tcu::Float64>(inputValues.size(), m_params.vectorLength);
-        inputMemory         = packFloats(inputValues, m_params.vectorLength);
+        inputMemory         = packData(inputValues, m_params.vectorLength);
+    }
+    else if (m_params.from == SIGNED_INT_TYPE_32_BITS)
+    {
+        auto &inputValues   = InputGenerator::getInstance().getValues<int32_t>();
+        inputBufferSizeInfo = BufferSizeInfo::calculate<int32_t>(inputValues.size(), m_params.vectorLength);
+        inputMemory         = packData(inputValues, m_params.vectorLength);
+    }
+    else //if (m_params.from == UNSIGNED_INT_TYPE_32_BITS)
+    {
+        auto &inputValues   = InputGenerator::getInstance().getValues<uint32_t>();
+        inputBufferSizeInfo = BufferSizeInfo::calculate<uint32_t>(inputValues.size(), m_params.vectorLength);
+        inputMemory         = packData(inputValues, m_params.vectorLength);
     }
 
     switch (m_params.to)
     {
+#ifndef CTS_USES_VULKANSC
+    case BRAIN_FLOAT_16_BITS:
+        outputBufferSizeInfo =
+            BufferSizeInfo::calculate<BFloat16>(inputBufferSizeInfo.numValues, m_params.vectorLength);
+        break;
+#endif
     case FLOAT_TYPE_16_BITS:
         outputBufferSizeInfo =
             BufferSizeInfo::calculate<tcu::Float16>(inputBufferSizeInfo.numValues, m_params.vectorLength);
@@ -583,6 +941,13 @@ tcu::TestStatus FConvertTestInstance::iterate(void)
     case FLOAT_TYPE_64_BITS:
         outputBufferSizeInfo =
             BufferSizeInfo::calculate<tcu::Float64>(inputBufferSizeInfo.numValues, m_params.vectorLength);
+        break;
+    case SIGNED_INT_TYPE_32_BITS:
+        outputBufferSizeInfo = BufferSizeInfo::calculate<int32_t>(inputBufferSizeInfo.numValues, m_params.vectorLength);
+        break;
+    case UNSIGNED_INT_TYPE_32_BITS:
+        outputBufferSizeInfo =
+            BufferSizeInfo::calculate<uint32_t>(inputBufferSizeInfo.numValues, m_params.vectorLength);
         break;
     default:
         assert(false);
@@ -801,97 +1166,24 @@ tcu::TestStatus FConvertTestInstance::iterate(void)
     }
 
     // Unpack and verify output data.
-    auto &testLog     = m_context.getTestContext().getLog();
-    bool conversionOk = false;
-    switch (m_params.to)
+    auto &testLog = m_context.getTestContext().getLog();
+
+#ifdef CTS_USES_VULKANSC
+    const std::tuple<tcu::Float16, tcu::Float32, tcu::Float64, int32_t, uint32_t>
+#else
+    const std::tuple<tcu::Float16, tcu::Float32, tcu::Float64, BFloat16, int32_t, uint32_t>
+#endif
+        availableTypes;
+
+    const std::optional<bool> res = verifyConversion(m_params.from, m_params.to, availableTypes, outputMemory,
+                                                     m_params.vectorLength, inputBufferSizeInfo.numValues, testLog);
+    if (false == res.has_value())
     {
-    case FLOAT_TYPE_16_BITS:
-    {
-        auto outputValues =
-            unpackFloats<tcu::Float16>(outputMemory, m_params.vectorLength, inputBufferSizeInfo.numValues);
-        switch (m_params.from)
-        {
-        case FLOAT_TYPE_32_BITS:
-        {
-            auto &inputValues = InputGenerator::getInstance().getInputValues32();
-            conversionOk      = validConversion(inputValues, outputValues, testLog);
-        }
-        break;
-
-        case FLOAT_TYPE_64_BITS:
-        {
-            auto &inputValues = InputGenerator::getInstance().getInputValues64();
-            conversionOk      = validConversion(inputValues, outputValues, testLog);
-        }
-        break;
-
-        default:
-            DE_ASSERT(false);
-            break;
-        }
-    }
-    break;
-
-    case FLOAT_TYPE_32_BITS:
-    {
-        auto outputValues =
-            unpackFloats<tcu::Float32>(outputMemory, m_params.vectorLength, inputBufferSizeInfo.numValues);
-        switch (m_params.from)
-        {
-        case FLOAT_TYPE_16_BITS:
-        {
-            auto &inputValues = InputGenerator::getInstance().getInputValues16();
-            conversionOk      = validConversion(inputValues, outputValues, testLog);
-        }
-        break;
-
-        case FLOAT_TYPE_64_BITS:
-        {
-            auto &inputValues = InputGenerator::getInstance().getInputValues64();
-            conversionOk      = validConversion(inputValues, outputValues, testLog);
-        }
-        break;
-
-        default:
-            DE_ASSERT(false);
-            break;
-        }
-    }
-    break;
-
-    case FLOAT_TYPE_64_BITS:
-    {
-        auto outputValues =
-            unpackFloats<tcu::Float64>(outputMemory, m_params.vectorLength, inputBufferSizeInfo.numValues);
-        switch (m_params.from)
-        {
-        case FLOAT_TYPE_16_BITS:
-        {
-            auto &inputValues = InputGenerator::getInstance().getInputValues16();
-            conversionOk      = validConversion(inputValues, outputValues, testLog);
-        }
-        break;
-
-        case FLOAT_TYPE_32_BITS:
-        {
-            auto &inputValues = InputGenerator::getInstance().getInputValues32();
-            conversionOk      = validConversion(inputValues, outputValues, testLog);
-        }
-        break;
-
-        default:
-            DE_ASSERT(false);
-            break;
-        }
-    }
-    break;
-
-    default:
-        DE_ASSERT(false);
-        break;
+        // this should never happen
+        TCU_THROW(NotSupportedError, "No types to perform test");
     }
 
-    return (conversionOk ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Fail"));
+    return (*res ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Fail"));
 }
 
 } // namespace
@@ -900,28 +1192,56 @@ tcu::TestCaseGroup *createPrecisionFconvertGroup(tcu::TestContext &testCtx)
 {
     tcu::TestCaseGroup *newGroup = new tcu::TestCaseGroup(testCtx, "precision_fconvert");
 
-    for (int i = 0; i < FLOAT_TYPE_MAX_ENUM; ++i)
-        for (int j = 0; j < FLOAT_TYPE_MAX_ENUM; ++j)
+    const DataType floatTypes[]{
+#ifdef CTS_USES_VULKANSC
+        FLOAT_TYPE_16_BITS, FLOAT_TYPE_32_BITS, FLOAT_TYPE_64_BITS
+#else
+        BRAIN_FLOAT_16_BITS, FLOAT_TYPE_16_BITS, FLOAT_TYPE_32_BITS, FLOAT_TYPE_64_BITS
+#endif
+    };
+
+    for (const DataType from : floatTypes)
+        for (const DataType to : floatTypes)
             for (size_t k = kMinVectorLength; k <= kMaxVectorLength; ++k)
             {
                 // No actual conversion if the types are the same.
-                if (i == j)
+                if (from == to)
                     continue;
 
-                TestParams params = {
-                    static_cast<FloatType>(i),
-                    static_cast<FloatType>(j),
-                    k,
-                };
+                // Skip unimplemened conversion.
+                if (false == TestParams::isConversionDoable(from, to))
+                {
+                    continue;
+                }
+
+                TestParams params{from, to, k};
 
                 std::string testName =
-                    std::string() + kFloatNames[i] + "_to_" + kFloatNames[j] + "_size_" + std::to_string(k);
+                    getDataTypeName(from) + "_to_" + getDataTypeName(to) + "_size_" + std::to_string(k);
 
                 newGroup->addChild(new FConvertTestCase(testCtx, testName, params));
             }
 
+    // test scalar int to/from float conversions
+    for (const DataType f : floatTypes)
+    {
+        for (const DataType i : {SIGNED_INT_TYPE_32_BITS, UNSIGNED_INT_TYPE_32_BITS})
+        {
+            for (size_t k = kMinVectorLength; k <= kMaxVectorLength; ++k)
+            {
+                std::string intName   = getDataTypeName(i);
+                std::string floatName = getDataTypeName(f);
+                std::string sizeName  = std::string("_size_") + std::to_string(k);
+                std::string testName  = floatName + "_to_" + intName + sizeName;
+                newGroup->addChild(new FConvertTestCase(testCtx, testName, {f, i, k}));
+
+                testName = intName + "_to_" + floatName + sizeName;
+                newGroup->addChild(new FConvertTestCase(testCtx, testName, {i, f, k}));
+            }
+        }
+    }
+
     return newGroup;
 }
 
-} // namespace shaderexecutor
-} // namespace vkt
+} // namespace vkt::shaderexecutor

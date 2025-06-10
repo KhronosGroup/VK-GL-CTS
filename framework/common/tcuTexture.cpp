@@ -859,7 +859,8 @@ bool isValid(TextureFormat format)
                format.order == TextureFormat::ARGB || format.order == TextureFormat::ABGR;
 
     case TextureFormat::UNORM_SHORT_1555:
-        return format.order == TextureFormat::ARGB || format.order == TextureFormat::ABGR;
+        return format.order == TextureFormat::ARGB || format.order == TextureFormat::ABGR ||
+               format.order == TextureFormat::BGRA;
 
     case TextureFormat::UNORM_INT_101010:
         return format.order == TextureFormat::RGB;

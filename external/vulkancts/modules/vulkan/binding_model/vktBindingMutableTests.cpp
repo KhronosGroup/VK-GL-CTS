@@ -596,17 +596,20 @@ AccelerationStructureData makeDefaultAccelerationStructure(const DeviceInterface
     data.tlas = makeTopLevelAccelerationStructure();
     data.blas = makeBottomLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     VkGeometryInstanceFlagsKHR instanceFlags = 0u;
     if (triangles)
         instanceFlags |= VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
 
     data.blas->addGeometry(vertices, triangles, VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
-    data.blas->createAndBuild(vkd, device, cmdBuffer, alloc);
+    data.blas->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     de::SharedPtr<BottomLevelAccelerationStructure> blasSharedPtr(data.blas.release());
     data.tlas->setInstanceCount(1u);
     data.tlas->addInstance(blasSharedPtr, identityMatrix3x4, 0u, 0xFFu, 0u, instanceFlags);
-    data.tlas->createAndBuild(vkd, device, cmdBuffer, alloc);
+    data.tlas->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     return data;
 }

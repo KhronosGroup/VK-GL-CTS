@@ -243,9 +243,9 @@ FillWholeBufferTestInstance::FillWholeBufferTestInstance(Context &context, const
 
     m_cmdPool   = createCommandPool(vk, m_device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, m_queueFamilyIndex);
     m_cmdBuffer = allocateCommandBuffer(vk, m_device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-    testParams.bufferAllocator->createTestBuffer(vk, m_device, m_queueFamilyIndex, m_params.dstSize,
-                                                 VK_BUFFER_USAGE_TRANSFER_DST_BIT, context, *m_allocator, m_destination,
-                                                 MemoryRequirement::HostVisible, m_destinationBufferAlloc);
+    testParams.bufferAllocator->createTestBuffer(vk, m_device, m_params.dstSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                                 context, *m_allocator, m_destination, MemoryRequirement::HostVisible,
+                                                 m_destinationBufferAlloc);
 }
 
 tcu::TestStatus FillWholeBufferTestInstance::iterate(void)
@@ -455,9 +455,9 @@ FillBufferTestInstance::FillBufferTestInstance(Context &context, TestParams test
     // Create command buffer
     m_cmdBuffer = allocateCommandBuffer(vk, m_device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-    testParams.bufferAllocator->createTestBuffer(vk, m_device, m_queueFamilyIndex, m_params.dstSize,
-                                                 VK_BUFFER_USAGE_TRANSFER_DST_BIT, context, *m_allocator, m_destination,
-                                                 MemoryRequirement::HostVisible, m_destinationBufferAlloc);
+    testParams.bufferAllocator->createTestBuffer(vk, m_device, m_params.dstSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                                 context, *m_allocator, m_destination, MemoryRequirement::HostVisible,
+                                                 m_destinationBufferAlloc);
 }
 
 tcu::TestStatus FillBufferTestInstance::iterate(void)

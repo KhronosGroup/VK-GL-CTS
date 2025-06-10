@@ -94,3 +94,4 @@ virtual VkResult	getPhysicalDeviceOpticalFlowImageFormatsNV							(VkPhysicalDev
 virtual VkResult	getPhysicalDeviceCooperativeMatrixPropertiesKHR						(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesKHR* pProperties) const = 0;
 virtual VkResult	getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV	(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixFlexibleDimensionsPropertiesNV* pProperties) const = 0;
 virtual VkResult	getPhysicalDeviceCooperativeVectorPropertiesNV						(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeVectorPropertiesNV* pProperties) const = 0;
+virtual void		getPhysicalDeviceExternalTensorPropertiesARM						(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalTensorInfoARM* pExternalTensorInfo, VkExternalTensorPropertiesARM* pExternalTensorProperties) const = 0;

@@ -121,6 +121,7 @@ void createChildren(tcu::TestCaseGroup *group, PipelineConstructionType pipeline
     group->addChild(createImage2DViewOf3DTests(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
     group->addChild(createLogicOpTests(testCtx, pipelineConstructionType));
+    group->addChild(createLogicOpInapplicableFormatsTests(testCtx, pipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
     group->addChild(createPushConstantTests(testCtx, pipelineConstructionType));
     group->addChild(createPushDescriptorTests(testCtx, pipelineConstructionType));

@@ -466,6 +466,7 @@ virtual void				destroyCudaFunctionNV									(VkDevice device, VkCudaFunctionNV
 virtual void				cmdCudaLaunchKernelNV									(VkCommandBuffer commandBuffer, const VkCudaLaunchInfoNV* pLaunchInfo) const;
 virtual void				cmdBeginRendering										(VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo) const;
 virtual void				cmdEndRendering											(VkCommandBuffer commandBuffer) const;
+virtual void				cmdEndRendering2EXT										(VkCommandBuffer commandBuffer, const VkRenderingEndInfoEXT* pRenderingEndInfo) const;
 virtual void				getDescriptorSetLayoutHostMappingInfoVALVE				(VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping) const;
 virtual void				getDescriptorSetHostMappingVALVE						(VkDevice device, VkDescriptorSet descriptorSet, void** ppData) const;
 virtual VkResult			createMicromapEXT										(VkDevice device, const VkMicromapCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkMicromapEXT* pMicromap) const;
@@ -487,6 +488,7 @@ virtual void				getShaderModuleCreateInfoIdentifierEXT					(VkDevice device, con
 virtual void				getImageSubresourceLayout2								(VkDevice device, VkImage image, const VkImageSubresource2* pSubresource, VkSubresourceLayout2* pLayout) const;
 virtual VkResult			getPipelinePropertiesEXT								(VkDevice device, const VkPipelineInfoEXT* pPipelineInfo, VkBaseOutStructure* pPipelineProperties) const;
 virtual void				exportMetalObjectsEXT									(VkDevice device, VkExportMetalObjectsInfoEXT* pMetalObjectsInfo) const;
+virtual void				cmdBindTileMemoryQCOM									(VkCommandBuffer commandBuffer, const VkTileMemoryBindInfoQCOM* pTileMemoryBindInfo) const;
 virtual VkResult			getFramebufferTilePropertiesQCOM						(VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties) const;
 virtual VkResult			getDynamicRenderingTilePropertiesQCOM					(VkDevice device, const VkRenderingInfo* pRenderingInfo, VkTilePropertiesQCOM* pProperties) const;
 virtual VkResult			createOpticalFlowSessionNV								(VkDevice device, const VkOpticalFlowSessionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkOpticalFlowSessionNV* pSession) const;
@@ -529,3 +531,18 @@ virtual VkResult			getMemoryMetalHandleEXT									(VkDevice device, const VkMem
 virtual VkResult			getMemoryMetalHandlePropertiesEXT						(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHandle, VkMemoryMetalHandlePropertiesEXT* pMemoryMetalHandleProperties) const;
 virtual VkResult			convertCooperativeVectorMatrixNV						(VkDevice device, const VkConvertCooperativeVectorMatrixInfoNV* pInfo) const;
 virtual void				cmdConvertCooperativeVectorMatrixNV						(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkConvertCooperativeVectorMatrixInfoNV* pInfos) const;
+virtual void				cmdDispatchTileQCOM										(VkCommandBuffer commandBuffer, const VkDispatchTileInfoQCOM* pDispatchTileInfo) const;
+virtual void				cmdBeginPerTileExecutionQCOM							(VkCommandBuffer commandBuffer, const VkPerTileBeginInfoQCOM* pPerTileBeginInfo) const;
+virtual void				cmdEndPerTileExecutionQCOM								(VkCommandBuffer commandBuffer, const VkPerTileEndInfoQCOM* pPerTileEndInfo) const;
+virtual VkResult			createExternalComputeQueueNV							(VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkExternalComputeQueueNV* pExternalQueue) const;
+virtual void				destroyExternalComputeQueueNV							(VkDevice device, VkExternalComputeQueueNV externalQueue, const VkAllocationCallbacks* pAllocator) const;
+virtual VkResult			createTensorARM											(VkDevice device, const VkTensorCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkTensorARM* pTensor) const;
+virtual void				destroyTensorARM										(VkDevice device, VkTensorARM tensor, const VkAllocationCallbacks* pAllocator) const;
+virtual VkResult			createTensorViewARM										(VkDevice device, const VkTensorViewCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkTensorViewARM* pView) const;
+virtual void				destroyTensorViewARM									(VkDevice device, VkTensorViewARM tensorView, const VkAllocationCallbacks* pAllocator) const;
+virtual void				getTensorMemoryRequirementsARM							(VkDevice device, const VkTensorMemoryRequirementsInfoARM* pInfo, VkMemoryRequirements2* pMemoryRequirements) const;
+virtual VkResult			bindTensorMemoryARM										(VkDevice device, uint32_t bindInfoCount, const VkBindTensorMemoryInfoARM* pBindInfos) const;
+virtual void				getDeviceTensorMemoryRequirementsARM					(VkDevice device, const VkDeviceTensorMemoryRequirementsARM* pInfo, VkMemoryRequirements2* pMemoryRequirements) const;
+virtual void				cmdCopyTensorARM										(VkCommandBuffer commandBuffer,  const VkCopyTensorInfoARM* pCopyTensorInfo) const;
+virtual VkResult			getTensorOpaqueCaptureDescriptorDataARM					(VkDevice device, const VkTensorCaptureDescriptorDataInfoARM* pInfo, void* pData) const;
+virtual VkResult			getTensorViewOpaqueCaptureDescriptorDataARM				(VkDevice device, const VkTensorViewCaptureDescriptorDataInfoARM* pInfo, void* pData) const;

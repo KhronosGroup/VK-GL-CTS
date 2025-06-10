@@ -1003,6 +1003,9 @@ tcu::TestStatus RayTracingInstance::iterate(void)
     std::vector<BottomLevelASParams> blasParams;
     std::vector<BLASPtr> blas;
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     blasParams.reserve(kBLASCount);
     blas.reserve(kBLASCount);
 
@@ -1010,7 +1013,7 @@ tcu::TestStatus RayTracingInstance::iterate(void)
     {
         blasParams.emplace_back(rnd);
         blas.emplace_back(makeBottomLevelASWithParams(blasParams.back()));
-        blas.back()->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator);
+        blas.back()->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator, bufferProps);
     }
 
     // Top level acceleration structure using instances of the previous BLASes.
@@ -1027,7 +1030,7 @@ tcu::TestStatus RayTracingInstance::iterate(void)
         }
 
     auto topLevelAS = makeTopLevelASWithParams(blas, cellParams);
-    topLevelAS->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator);
+    topLevelAS->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator, bufferProps);
 
     // Input and output buffer.
     std::vector<CellOutput> cellOutputs(cellCount);

@@ -124,6 +124,11 @@ struct MiscTestParams
             return taskCount.get();
         return meshCount;
     }
+
+    bool taskOnly() const
+    {
+        return (needsTaskShader() && meshCount == tcu::UVec3(0u, 0u, 0u));
+    }
 };
 
 using ParamsPtr = std::unique_ptr<MiscTestParams>;
@@ -270,7 +275,9 @@ tcu::TestStatus MeshShaderMiscInstance::iterate()
     const auto imageFormat = getOutputFormat();
     const auto tcuFormat   = mapVkFormat(imageFormat);
     const auto imageExtent = makeExtent3D(m_params->width, m_params->height, 1u);
-    const auto imageUsage  = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const auto imageUsage =
+        (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT);
+    const bool taskOnly = m_params->taskOnly();
 
     const VkImageCreateInfo colorBufferInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
@@ -306,8 +313,36 @@ tcu::TestStatus MeshShaderMiscInstance::iterate()
     auto &verificationBufferAlloc = verificationBuffer.getAllocation();
     void *verificationBufferData  = verificationBufferAlloc.getHostPtr();
 
+    // Descriptor set layout.
+    Move<VkDescriptorSetLayout> setLayout;
+    if (taskOnly)
+    {
+        DescriptorSetLayoutBuilder setLayoutBuilder;
+        setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_TASK_BIT_EXT);
+        setLayout = setLayoutBuilder.build(vkd, device);
+    }
+
+    // Create and update descriptor set.
+    Move<VkDescriptorPool> descriptorPool;
+    Move<VkDescriptorSet> descriptorSet;
+
+    if (taskOnly)
+    {
+        DescriptorPoolBuilder descriptorPoolBuilder;
+        descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+        descriptorPool =
+            descriptorPoolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+        descriptorSet = makeDescriptorSet(vkd, device, descriptorPool.get(), setLayout.get());
+
+        DescriptorSetUpdateBuilder updateBuilder;
+        const auto storageImageInfo = makeDescriptorImageInfo(VK_NULL_HANDLE, colorView.get(), VK_IMAGE_LAYOUT_GENERAL);
+        updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u),
+                                  VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &storageImageInfo);
+        updateBuilder.update(vkd, device);
+    }
+
     // Pipeline layout.
-    const auto pipelineLayout = makePipelineLayout(vkd, device);
+    const auto pipelineLayout = makePipelineLayout(vkd, device, setLayout.get());
 
     // Shader modules.
     const auto &binaries = m_context.getBinaryCollection();
@@ -321,11 +356,12 @@ tcu::TestStatus MeshShaderMiscInstance::iterate()
         taskShader = createShaderModule(vkd, device, binaries.get("task"));
 
     // Render pass.
-    const auto renderPass = makeRenderPass(vkd, device, imageFormat);
+    const auto renderPass = makeRenderPass(vkd, device, (taskOnly ? VK_FORMAT_UNDEFINED : imageFormat));
 
     // Framebuffer.
     const auto framebuffer =
-        makeFramebuffer(vkd, device, renderPass.get(), colorView.get(), imageExtent.width, imageExtent.height);
+        makeFramebuffer(vkd, device, *renderPass, (taskOnly ? 0u : 1u), (taskOnly ? nullptr : &colorView.get()),
+                        imageExtent.width, imageExtent.height);
 
     // Viewport and scissor.
     const std::vector<VkViewport> viewports(1u, makeViewport(imageExtent));
@@ -370,25 +406,43 @@ tcu::TestStatus MeshShaderMiscInstance::iterate()
     // Run pipeline.
     const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 0.0f);
     const auto drawCount = m_params->drawCount();
+    if (taskOnly)
+    {
+        // We will use the image as a storage image and we need to move it to the general layout.
+        const auto srcStage  = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        const auto dstStage  = VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT;
+        const auto srcAccess = 0u;
+        const auto dstAccess = VK_ACCESS_SHADER_WRITE_BIT;
+        const auto barrier   = makeImageMemoryBarrier(srcAccess, dstAccess, VK_IMAGE_LAYOUT_UNDEFINED,
+                                                      VK_IMAGE_LAYOUT_GENERAL, colorImage.get(), colorSRR);
+        cmdPipelineImageMemoryBarrier(vkd, cmdBuffer, srcStage, dstStage, &barrier);
+    }
     beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u), clearColor);
     vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+    if (taskOnly)
+    {
+        vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u,
+                                  &descriptorSet.get(), 0u, nullptr);
+    }
     vkd.cmdDrawMeshTasksEXT(cmdBuffer, drawCount.x(), drawCount.y(), drawCount.z());
     endRenderPass(vkd, cmdBuffer);
 
     // Copy color buffer to verification buffer.
-    const auto colorAccess   = (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT);
+    const auto colorAccess =
+        (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
     const auto transferRead  = VK_ACCESS_TRANSFER_READ_BIT;
     const auto transferWrite = VK_ACCESS_TRANSFER_WRITE_BIT;
     const auto hostRead      = VK_ACCESS_HOST_READ_BIT;
 
-    const auto preCopyBarrier =
-        makeImageMemoryBarrier(colorAccess, transferRead, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorImage.get(), colorSRR);
+    const auto preCopyLayout  = (taskOnly ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    const auto preCopyBarrier = makeImageMemoryBarrier(
+        colorAccess, transferRead, preCopyLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorImage.get(), colorSRR);
     const auto postCopyBarrier = makeMemoryBarrier(transferWrite, hostRead);
     const auto copyRegion      = makeBufferImageCopy(imageExtent, colorSRL);
 
-    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
-                           0u, nullptr, 0u, nullptr, 1u, &preCopyBarrier);
+    const auto writeStages = (VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT);
+    vkd.cmdPipelineBarrier(cmdBuffer, writeStages, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
+                           &preCopyBarrier);
     vkd.cmdCopyImageToBuffer(cmdBuffer, colorImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                              verificationBuffer.get(), 1u, &copyRegion);
     vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u,
@@ -1213,6 +1267,7 @@ void LargeWorkGroupCase::initPrograms(vk::SourceCollections &programCollection) 
     const auto totalInvocations =
         params->localInvocations.x() * params->localInvocations.y() * params->localInvocations.z();
     const auto useTaskShader  = params->needsTaskShader();
+    const bool taskOnly       = params->taskOnly();
     uint32_t taskMultiplier   = 1u;
     const auto &meshCount     = params->meshCount;
     const auto meshMultiplier = meshCount.x() * meshCount.y() * meshCount.z();
@@ -1251,17 +1306,23 @@ void LargeWorkGroupCase::initPrograms(vk::SourceCollections &programCollection) 
              << "\n"
              << localSizeStr << "\n"
              << taskDataStr << "\n"
+             << (taskOnly ? "layout(binding = 0, rgba8) writeonly uniform highp image2D u_dstImg;\n" : "")
              << "void main () {\n"
              << "    const uint workGroupIndex = gl_NumWorkGroups.x * gl_NumWorkGroups.y * gl_WorkGroupID.z + "
                 "gl_NumWorkGroups.x * gl_WorkGroupID.y + gl_WorkGroupID.x;\n"
-             << "    td.parentTask[gl_LocalInvocationIndex] = workGroupIndex;\n"
-             << "    EmitMeshTasksEXT(" << meshCount.x() << ", " << meshCount.y() << ", " << meshCount.z() << ");\n"
+             << "    td.parentTask[gl_LocalInvocationIndex] = workGroupIndex;\n";
+        if (taskOnly)
+        {
+            task << "    imageStore(u_dstImg, ivec2(mod(workGroupIndex, " << params->width << "u), workGroupIndex / "
+                 << params->width << "u), vec4(0.0, 0.0, 1.0, 1.0));\n ";
+        }
+        task << "   EmitMeshTasksEXT(" << meshCount.x() << ", " << meshCount.y() << ", " << meshCount.z() << ");\n"
              << "}\n";
         programCollection.glslSources.add("task") << glu::TaskSource(task.str()) << buildOptions;
     }
 
     // Needed for the code below to work.
-    DE_ASSERT(params->width * params->height == taskMultiplier * meshMultiplier * totalInvocations);
+    DE_ASSERT(params->width * params->height == taskMultiplier * std::max(meshMultiplier, 1u) * totalInvocations);
     DE_UNREF(taskMultiplier); // For release builds.
 
     // Emit one point per framebuffer pixel. The number of jobs (params->localInvocations in each mesh shader work group, multiplied
@@ -5642,6 +5703,99 @@ tcu::TestStatus RebindSetsInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+// Test that emits multiple constant outputs, one for each vertex, in the same mesh shader invocation.
+// The outputs should be interpolated in the result instead of being passed as flat to the frag shader.
+class MultipleOutputsVertsCase : public MeshShaderMiscCase
+{
+public:
+    MultipleOutputsVertsCase(tcu::TestContext &testCtx, const std::string &name, ParamsPtr params)
+        : MeshShaderMiscCase(testCtx, name, std::move(params))
+    {
+        const auto drawCount = m_params->drawCount();
+        DE_ASSERT(drawCount.x() == 1u && drawCount.y() == 1u && drawCount.z() == 1u);
+        DE_UNREF(drawCount); // For release builds.
+    }
+    virtual ~MultipleOutputsVertsCase(void) = default;
+
+    TestInstance *createInstance(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+};
+
+class MultipleOutputsVertsInstance : public MeshShaderMiscInstance
+{
+public:
+    MultipleOutputsVertsInstance(Context &context, const MiscTestParams *params)
+        : MeshShaderMiscInstance(context, params)
+    {
+    }
+
+    void generateReferenceLevel() override;
+};
+
+TestInstance *MultipleOutputsVertsCase::createInstance(Context &context) const
+{
+    return new MultipleOutputsVertsInstance(context, m_params.get());
+}
+
+void MultipleOutputsVertsCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    std::ostringstream mesh;
+    mesh << "#version 460\n"
+         << "#extension GL_EXT_mesh_shader : require\n"
+         << "\n"
+         << "layout (local_size_x=1) in;\n"
+         << "layout (max_vertices=3, max_primitives=1) out;\n"
+         << "layout (triangles) out;\n"
+         << "\n"
+         << "layout (location=0) out vec4 color[];\n"
+         << "\n"
+         << "void main()\n"
+         << "{\n"
+         << "    SetMeshOutputsEXT(3, 1);\n"
+         << "\n"
+         << "    color[0] = vec4(0.0, 0.0, 0.0, 1.0);\n"
+         << "    color[1] = vec4(0.0, 0.0, 1.0, 1.0);\n"
+         << "    color[2] = vec4(1.0, 0.0, 0.0, 1.0);\n"
+         << "\n"
+         << "    gl_MeshVerticesEXT[0].gl_Position = vec4(-1.0, -1.0, 0.0, 1.0);\n"
+         << "    gl_MeshVerticesEXT[1].gl_Position = vec4(-1.0,  3.0, 0.0, 1.0);\n"
+         << "    gl_MeshVerticesEXT[2].gl_Position = vec4( 3.0, -1.0, 0.0, 1.0);\n"
+         << "\n"
+         << "    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0, 1, 2);\n"
+         << "}\n";
+    const auto buildOptions = getMinMeshEXTBuildOptions(programCollection.usedVulkanVersion);
+    programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << buildOptions;
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) in vec4 inColor;\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main() {\n"
+         << "    outColor = inColor;\n"
+         << "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+void MultipleOutputsVertsInstance::generateReferenceLevel()
+{
+    const tcu::UVec3 uExtent(m_params->width, m_params->height, 1u);
+    const auto extent    = uExtent.asInt();
+    const auto fExtent   = uExtent.asFloat();
+    const auto tcuFormat = mapVkFormat(getOutputFormat());
+
+    m_referenceLevel.reset(new tcu::TextureLevel(tcuFormat, extent.x(), extent.y(), extent.z()));
+    tcu::PixelBufferAccess reference = m_referenceLevel->getAccess();
+
+    for (int y = 0; y < extent.y(); ++y)
+        for (int x = 0; x < extent.x(); ++x)
+        {
+            // We halve the red and green values because value 1.0 is at coordinate 3.0 for both.
+            const float red  = (static_cast<float>(x) + 0.5f) / fExtent.x() * 0.5f;
+            const float blue = (static_cast<float>(y) + 0.5f) / fExtent.y() * 0.5f;
+            reference.setPixel(tcu::Vec4(red, 0.0f, blue, 1.0f), x, y);
+        }
+}
+
 } // anonymous namespace
 
 tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
@@ -5763,7 +5917,7 @@ tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
 
             LargeWorkGroupParamsPtr lwgParamsPtr(new LargeWorkGroupParams(
                 /*taskCount*/ tcu::just(taskCount),
-                /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                /*meshCount*/ tcu::UVec3(0u, 0u, 0u),
                 /*width*/ 2040u,
                 /*height*/ 2056u,
                 /*localInvocations*/ tcu::UVec3(1u, 1u, 1u)));
@@ -5832,7 +5986,9 @@ tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
             if (extraWrites)
                 continue;
 
-            for (const auto primType : types)
+            // Workaround. See VK-GL-CTS issue: https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/5589
+            // and GCC issue https://gcc.gnu.org/bugzilla/show_bug.cgi?id=118924
+            for (const auto &primType : types)
             {
                 std::unique_ptr<NoPrimitivesParams> params(new NoPrimitivesParams(
                     /*taskCount*/ (extraWrites ? tcu::just(tcu::UVec3(1u, 1u, 1u)) : tcu::Nothing),
@@ -6087,6 +6243,16 @@ tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
             /*height*/ 8u));
 
         miscTests->addChild(new RebindSetsCase(testCtx, "rebind_sets", std::move(paramsPtr)));
+    }
+
+    {
+        ParamsPtr paramsPtr(new MiscTestParams(
+            /*taskCount*/ tcu::Nothing,
+            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+            /*width*/ 8u,
+            /*height*/ 8u));
+
+        miscTests->addChild(new MultipleOutputsVertsCase(testCtx, "multiple_outputs_vertices", std::move(paramsPtr)));
     }
 
     return miscTests.release();

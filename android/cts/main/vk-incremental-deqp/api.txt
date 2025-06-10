@@ -54,7 +54,6 @@ dEQP-VK.api.info.get_physical_device_properties2.features.protected_memory_featu
 dEQP-VK.api.info.get_physical_device_properties2.features.provoking_vertex_features_ext
 dEQP-VK.api.info.get_physical_device_properties2.features.ray_query_features_khr
 dEQP-VK.api.info.get_physical_device_properties2.features.ray_tracing_pipeline_features_khr
-dEQP-VK.api.info.get_physical_device_properties2.features.robustness2_features_ext
 dEQP-VK.api.info.get_physical_device_properties2.features.sampler_ycbcr_conversion_features
 dEQP-VK.api.info.get_physical_device_properties2.features.scalar_block_layout_features
 dEQP-VK.api.info.get_physical_device_properties2.features.separate_depth_stencil_layouts_features

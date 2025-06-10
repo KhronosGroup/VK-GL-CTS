@@ -49,6 +49,8 @@ template<> inline VkObjectType	getObjectType<VkCuFunctionNVX>					(void) { retur
 template<> inline VkObjectType	getObjectType<VkOpticalFlowSessionNV>			(void) { return VK_OBJECT_TYPE_OPTICAL_FLOW_SESSION_NV;			}
 template<> inline VkObjectType	getObjectType<VkMicromapEXT>					(void) { return VK_OBJECT_TYPE_MICROMAP_EXT;					}
 template<> inline VkObjectType	getObjectType<VkShaderEXT>						(void) { return VK_OBJECT_TYPE_SHADER_EXT;						}
+template<> inline VkObjectType	getObjectType<VkTensorARM>						(void) { return VK_OBJECT_TYPE_TENSOR_ARM;						}
+template<> inline VkObjectType	getObjectType<VkTensorViewARM>					(void) { return VK_OBJECT_TYPE_TENSOR_VIEW_ARM;					}
 template<> inline VkObjectType	getObjectType<VkDisplayKHR>						(void) { return VK_OBJECT_TYPE_DISPLAY_KHR;						}
 template<> inline VkObjectType	getObjectType<VkDisplayModeKHR>					(void) { return VK_OBJECT_TYPE_DISPLAY_MODE_KHR;				}
 template<> inline VkObjectType	getObjectType<VkSurfaceKHR>						(void) { return VK_OBJECT_TYPE_SURFACE_KHR;						}
@@ -59,4 +61,5 @@ template<> inline VkObjectType	getObjectType<VkVideoSessionKHR>				(void) { retu
 template<> inline VkObjectType	getObjectType<VkVideoSessionParametersKHR>		(void) { return VK_OBJECT_TYPE_VIDEO_SESSION_PARAMETERS_KHR;	}
 template<> inline VkObjectType	getObjectType<VkCudaModuleNV>					(void) { return VK_OBJECT_TYPE_CUDA_MODULE_NV;					}
 template<> inline VkObjectType	getObjectType<VkCudaFunctionNV>					(void) { return VK_OBJECT_TYPE_CUDA_FUNCTION_NV;				}
+template<> inline VkObjectType	getObjectType<VkExternalComputeQueueNV>			(void) { return VK_OBJECT_TYPE_EXTERNAL_COMPUTE_QUEUE_NV;		}
 }

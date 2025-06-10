@@ -25,6 +25,7 @@
 #include "vktTessellationMiscDrawTests.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktTessellationUtil.hpp"
+#include "vktAmberTestCase.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuImageIO.hpp"
@@ -2078,6 +2079,17 @@ tcu::TestCaseGroup *createMiscDrawTests(tcu::TestContext &testCtx)
                     }
             }
         }
+
+#ifndef CTS_USES_VULKANSC
+    {
+        const auto testName = std::string("tess_factor_barrier_bug");
+        const auto dataDir  = "tessellation";
+        const std::vector<std::string> requirements{"Features.tessellationShader",
+                                                    "Features.vertexPipelineStoresAndAtomics"};
+        group->addChild(
+            cts_amber::createAmberTestCase(testCtx, testName.c_str(), dataDir, testName + ".amber", requirements));
+    }
+#endif // CTS_USES_VULKANSC
 
     return group.release();
 }

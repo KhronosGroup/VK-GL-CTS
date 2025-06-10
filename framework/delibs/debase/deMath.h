@@ -69,6 +69,13 @@ static inline uint32_t deFloatBitsToUint32(float x)
     return bits;
 }
 
+static inline float deUint32BitsToFloat(uint32_t x)
+{
+    float bits;
+    deMemcpy((void *)&bits, (void *)&x, 4);
+    return bits;
+}
+
 static inline uint64_t deDoubleBitsToUint64(double x)
 {
     uint64_t bits;

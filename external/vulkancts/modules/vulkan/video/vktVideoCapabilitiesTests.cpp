@@ -56,6 +56,8 @@ enum TestType
     TEST_TYPE_H265_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY, // Test case 4b iteration 2
     TEST_TYPE_AV1_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY,
     TEST_TYPE_AV1_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY,
+    TEST_TYPE_VP9_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY,
+    TEST_TYPE_VP9_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY,
     TEST_TYPE_AV1_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY,
     TEST_TYPE_AV1_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY,
     TEST_TYPE_H264_DECODE_CAPABILITIES_QUERY, // Test case 5a
@@ -64,6 +66,7 @@ enum TestType
     TEST_TYPE_H265_ENCODE_CAPABILITIES_QUERY, // Test case 5d
     TEST_TYPE_AV1_DECODE_CAPABILITIES_QUERY,
     TEST_TYPE_AV1_ENCODE_CAPABILITIES_QUERY,
+    TEST_TYPE_VP9_DECODE_CAPABILITIES_QUERY,
     TEST_TYPE_LAST
 };
 
@@ -218,6 +221,10 @@ VideoFormatPropertiesQueryTestInstance<ProfileOperation>::VideoFormatPropertiesQ
     case TEST_TYPE_AV1_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
         m_videoCodecOperation = VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR;
         break;
+    case TEST_TYPE_VP9_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
+    case TEST_TYPE_VP9_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
+        m_videoCodecOperation = VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR;
+        break;
     case TEST_TYPE_AV1_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY:
     case TEST_TYPE_AV1_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
         m_videoCodecOperation = VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR;
@@ -254,9 +261,11 @@ VideoFormatPropertiesQueryTestInstance<ProfileOperation>::VideoFormatPropertiesQ
         m_imageUsageFlags = VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR;
         break;
     case TEST_TYPE_AV1_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
+    case TEST_TYPE_VP9_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
         m_imageUsageFlags = VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR;
         break;
     case TEST_TYPE_AV1_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
+    case TEST_TYPE_VP9_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
         m_imageUsageFlags = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR;
         break;
     case TEST_TYPE_AV1_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY:
@@ -309,6 +318,13 @@ VkVideoDecodeAV1ProfileInfoKHR VideoFormatPropertiesQueryTestInstance<
     VkVideoDecodeAV1ProfileInfoKHR>::getProfileOperation()
 {
     return getProfileOperationAV1Decode();
+}
+
+template <>
+VkVideoDecodeVP9ProfileInfoKHR VideoFormatPropertiesQueryTestInstance<
+    VkVideoDecodeVP9ProfileInfoKHR>::getProfileOperation()
+{
+    return getProfileOperationVP9Decode();
 }
 
 template <>
@@ -447,6 +463,8 @@ typedef VideoFormatPropertiesQueryTestInstance<VkVideoEncodeH265ProfileInfoKHR>
     VideoFormatPropertiesQueryH265EncodeTestInstance;
 typedef VideoFormatPropertiesQueryTestInstance<VkVideoDecodeAV1ProfileInfoKHR>
     VideoFormatPropertiesQueryAV1DecodeTestInstance;
+typedef VideoFormatPropertiesQueryTestInstance<VkVideoDecodeVP9ProfileInfoKHR>
+    VideoFormatPropertiesQueryVP9DecodeTestInstance;
 typedef VideoFormatPropertiesQueryTestInstance<VkVideoEncodeAV1ProfileInfoKHR>
     VideoFormatPropertiesQueryAV1EncodeTestInstance;
 
@@ -999,6 +1017,96 @@ void VideoCapabilitiesQueryAV1DecodeTestInstance::validateVideoCapabilitiesExt(
     VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxLevel);
 }
 
+class VideoCapabilitiesQueryVP9DecodeTestInstance : public VideoCapabilitiesQueryTestInstance
+{
+public:
+    VideoCapabilitiesQueryVP9DecodeTestInstance(Context &context, const CaseDef &data);
+    virtual ~VideoCapabilitiesQueryVP9DecodeTestInstance(void);
+    tcu::TestStatus iterate(void);
+
+protected:
+    void validateVideoCapabilitiesExt(const VkVideoDecodeVP9CapabilitiesKHR &videoCapabilitiesKHR,
+                                      const VkVideoDecodeVP9CapabilitiesKHR &videoCapabilitiesKHRSecond);
+};
+
+VideoCapabilitiesQueryVP9DecodeTestInstance::VideoCapabilitiesQueryVP9DecodeTestInstance(Context &context,
+                                                                                         const CaseDef &data)
+    : VideoCapabilitiesQueryTestInstance(context, data)
+{
+}
+
+VideoCapabilitiesQueryVP9DecodeTestInstance::~VideoCapabilitiesQueryVP9DecodeTestInstance(void)
+{
+}
+
+tcu::TestStatus VideoCapabilitiesQueryVP9DecodeTestInstance::iterate(void)
+{
+    const InstanceInterface &vk                                = m_context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice                      = m_context.getPhysicalDevice();
+    const VkVideoCodecOperationFlagBitsKHR videoCodecOperation = VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR;
+    VkVideoDecodeVP9ProfileInfoKHR videoProfileOperation       = {
+        VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_PROFILE_INFO_KHR, //  VkStructureType sType;
+        nullptr,                                             //  const void* pNext;
+        STD_VIDEO_VP9_PROFILE_0,                             //  StdVideoAV1ProfileIdc stdProfileIdc;
+    };
+    VkVideoProfileInfoKHR videoProfile = {
+        VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR, //  VkStructureType sType;
+        (void *)&videoProfileOperation,           //  void* pNext;
+        videoCodecOperation,                      //  VkVideoCodecOperationFlagBitsKHR videoCodecOperation;
+        VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,  //  VkVideoChromaSubsamplingFlagsKHR chromaSubsampling;
+        VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,   //  VkVideoComponentBitDepthFlagsKHR lumaBitDepth;
+        VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,   //  VkVideoComponentBitDepthFlagsKHR chromaBitDepth;
+    };
+    VkVideoDecodeVP9CapabilitiesKHR videoDecodeVP9Capabilities[2];
+    VkVideoDecodeCapabilitiesKHR videoDecodeCapabilities[2];
+    VkVideoCapabilitiesKHR videoCapabilites[2];
+
+    for (size_t ndx = 0; ndx < DE_LENGTH_OF_ARRAY(videoCapabilites); ++ndx)
+    {
+        const uint8_t filling = (ndx == 0) ? 0x00 : 0xFF;
+
+        deMemset(&videoCapabilites[ndx], filling, sizeof(videoCapabilites[ndx]));
+        deMemset(&videoDecodeCapabilities[ndx], filling, sizeof(videoDecodeCapabilities[ndx]));
+        deMemset(&videoDecodeVP9Capabilities[ndx], filling, sizeof(videoDecodeVP9Capabilities[ndx]));
+
+        videoCapabilites[ndx].sType           = VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR;
+        videoCapabilites[ndx].pNext           = &videoDecodeCapabilities[ndx];
+        videoDecodeCapabilities[ndx].sType    = VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR;
+        videoDecodeCapabilities[ndx].pNext    = &videoDecodeVP9Capabilities[ndx];
+        videoDecodeVP9Capabilities[ndx].sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_CAPABILITIES_KHR;
+        videoDecodeVP9Capabilities[ndx].pNext = nullptr;
+
+        VkResult result =
+            vk.getPhysicalDeviceVideoCapabilitiesKHR(physicalDevice, &videoProfile, &videoCapabilites[ndx]);
+
+        if (result != VK_SUCCESS)
+        {
+            ostringstream failMsg;
+
+            failMsg << "Failed query call to vkGetPhysicalDeviceVideoCapabilitiesKHR with " << result
+                    << " at iteration " << ndx;
+
+            return tcu::TestStatus::fail(failMsg.str());
+        }
+    }
+
+    validateVideoCapabilities(videoCapabilites[0], videoCapabilites[1]);
+    validateExtensionProperties(videoCapabilites[0].stdHeaderVersion,
+                                *getVideoExtensionProperties(videoCodecOperation));
+    validateVideoDecodeCapabilities(videoDecodeCapabilities[0], videoDecodeCapabilities[1]);
+    validateVideoCapabilitiesExt(videoDecodeVP9Capabilities[0], videoDecodeVP9Capabilities[1]);
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+void VideoCapabilitiesQueryVP9DecodeTestInstance::validateVideoCapabilitiesExt(
+    const VkVideoDecodeVP9CapabilitiesKHR &videoCapabilitiesKHR,
+    const VkVideoDecodeVP9CapabilitiesKHR &videoCapabilitiesKHRSecond)
+{
+    VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, sType);
+    VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxLevel);
+}
+
 class VideoCapabilitiesQueryAV1EncodeTestInstance : public VideoCapabilitiesQueryTestInstance
 {
 public:
@@ -1028,7 +1136,7 @@ tcu::TestStatus VideoCapabilitiesQueryAV1EncodeTestInstance::iterate(void)
     const VkVideoCodecOperationFlagBitsKHR videoCodecOperation = VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR;
     const VkVideoEncodeAV1ProfileInfoKHR videoProfileOperation = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_PROFILE_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                             //  const void* pNext;
+        nullptr,                                             //  const void* pNext;
         STD_VIDEO_AV1_PROFILE_MAIN,                          //  StdVideoAV1ProfileIdc stdProfileIdc;
     };
     const VkVideoProfileInfoKHR videoProfile = {
@@ -1056,7 +1164,7 @@ tcu::TestStatus VideoCapabilitiesQueryAV1EncodeTestInstance::iterate(void)
         videoEncodeCapabilities[ndx].sType    = VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR;
         videoEncodeCapabilities[ndx].pNext    = &videoEncodeAV1Capabilities[ndx];
         videoEncodeAV1Capabilities[ndx].sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_CAPABILITIES_KHR;
-        videoEncodeAV1Capabilities[ndx].pNext = DE_NULL;
+        videoEncodeAV1Capabilities[ndx].pNext = nullptr;
 
         VkResult result =
             vk.getPhysicalDeviceVideoCapabilitiesKHR(physicalDevice, &videoProfile, &videoCapabilites[ndx]);
@@ -1320,6 +1428,10 @@ void VideoCapabilitiesQueryTestCase::checkSupport(Context &context) const
     case TEST_TYPE_AV1_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
         context.requireDeviceFunctionality("VK_KHR_video_decode_av1");
         break;
+    case TEST_TYPE_VP9_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
+    case TEST_TYPE_VP9_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
+        context.requireDeviceFunctionality("VK_KHR_video_decode_vp9");
+        break;
     case TEST_TYPE_AV1_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY:
     case TEST_TYPE_AV1_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
         context.requireDeviceFunctionality("VK_KHR_video_encode_av1");
@@ -1338,6 +1450,9 @@ void VideoCapabilitiesQueryTestCase::checkSupport(Context &context) const
         break;
     case TEST_TYPE_AV1_DECODE_CAPABILITIES_QUERY:
         context.requireDeviceFunctionality("VK_KHR_video_decode_av1");
+        break;
+    case TEST_TYPE_VP9_DECODE_CAPABILITIES_QUERY:
+        context.requireDeviceFunctionality("VK_KHR_video_decode_vp9");
         break;
     case TEST_TYPE_AV1_ENCODE_CAPABILITIES_QUERY:
         context.requireDeviceFunctionality("VK_KHR_video_encode_av1");
@@ -1373,6 +1488,10 @@ TestInstance *VideoCapabilitiesQueryTestCase::createInstance(Context &context) c
         return new VideoFormatPropertiesQueryAV1DecodeTestInstance(context, m_caseDef);
     case TEST_TYPE_AV1_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
         return new VideoFormatPropertiesQueryAV1DecodeTestInstance(context, m_caseDef);
+    case TEST_TYPE_VP9_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
+        return new VideoFormatPropertiesQueryVP9DecodeTestInstance(context, m_caseDef);
+    case TEST_TYPE_VP9_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
+        return new VideoFormatPropertiesQueryVP9DecodeTestInstance(context, m_caseDef);
     case TEST_TYPE_AV1_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY:
         return new VideoFormatPropertiesQueryAV1EncodeTestInstance(context, m_caseDef);
     case TEST_TYPE_AV1_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
@@ -1389,6 +1508,8 @@ TestInstance *VideoCapabilitiesQueryTestCase::createInstance(Context &context) c
         return new VideoCapabilitiesQueryAV1DecodeTestInstance(context, m_caseDef);
     case TEST_TYPE_AV1_ENCODE_CAPABILITIES_QUERY:
         return new VideoCapabilitiesQueryAV1EncodeTestInstance(context, m_caseDef);
+    case TEST_TYPE_VP9_DECODE_CAPABILITIES_QUERY:
+        return new VideoCapabilitiesQueryVP9DecodeTestInstance(context, m_caseDef);
     default:
         TCU_THROW(NotSupportedError, "Unknown TestType");
     }
@@ -1424,6 +1545,10 @@ const char *getTestName(const TestType testType)
         return "av1_encode_src_video_format_support_query";
     case TEST_TYPE_AV1_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
         return "av1_encode_dpb_video_format_support_query";
+    case TEST_TYPE_VP9_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
+        return "vp9_decode_dst_video_format_support_query";
+    case TEST_TYPE_VP9_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
+        return "vp9_decode_dpb_video_format_support_query";
     case TEST_TYPE_H264_DECODE_CAPABILITIES_QUERY:
         return "h264_decode_capabilities_query";
     case TEST_TYPE_H264_ENCODE_CAPABILITIES_QUERY:
@@ -1436,6 +1561,8 @@ const char *getTestName(const TestType testType)
         return "av1_decode_capabilities_query";
     case TEST_TYPE_AV1_ENCODE_CAPABILITIES_QUERY:
         return "av1_encode_capabilities_query";
+    case TEST_TYPE_VP9_DECODE_CAPABILITIES_QUERY:
+        return "vp9_decode_capabilities_query";
     default:
         TCU_THROW(NotSupportedError, "Unknown TestType");
     }
@@ -1448,6 +1575,7 @@ struct CodecCaps
     VkVideoDecodeH264CapabilitiesKHR h264Dec;
     VkVideoDecodeH265CapabilitiesKHR h265Dec;
     VkVideoDecodeAV1CapabilitiesKHR av1Dec;
+    VkVideoDecodeVP9CapabilitiesKHR vp9Dec;
 
     VkVideoEncodeH264CapabilitiesKHR h264Enc;
     VkVideoEncodeH265CapabilitiesKHR h265Enc;
@@ -1459,6 +1587,7 @@ struct VideoProfile
     VkVideoDecodeH264ProfileInfoKHR h264Dec;
     VkVideoDecodeH265ProfileInfoKHR h265Dec;
     VkVideoDecodeAV1ProfileInfoKHR av1Dec;
+    VkVideoDecodeVP9ProfileInfoKHR vp9Dec;
 
     VkVideoEncodeH264ProfileInfoKHR h264Enc;
     VkVideoEncodeH265ProfileInfoKHR h265Enc;
@@ -1473,6 +1602,7 @@ struct TestParams
         VkVideoDecodeH264ProfileInfoKHR h264Dec;
         VkVideoDecodeH265ProfileInfoKHR h265Dec;
         VkVideoDecodeAV1ProfileInfoKHR av1Dec;
+        VkVideoDecodeVP9ProfileInfoKHR vp9Dec;
 
         VkVideoEncodeH264ProfileInfoKHR h264Enc;
         VkVideoEncodeH265ProfileInfoKHR h265Enc;
@@ -1500,7 +1630,8 @@ struct TestParams
     {
         return (profile.videoCodecOperation == VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR ||
                 profile.videoCodecOperation == VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR ||
-                profile.videoCodecOperation == VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR);
+                profile.videoCodecOperation == VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR ||
+                profile.videoCodecOperation == VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR);
     }
 };
 
@@ -1517,6 +1648,9 @@ std::string getTestName(const TestParams &params)
         break;
     case VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR:
         ss << "decode_av1";
+        break;
+    case VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR:
+        ss << "decode_vp9";
         break;
     case VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR:
         ss << "encode_h264";
@@ -1665,6 +1799,9 @@ void checkSupport(Context &context, de::SharedPtr<TestParams> params)
     case VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR:
         context.requireDeviceFunctionality("VK_KHR_video_decode_av1");
         break;
+    case VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR:
+        context.requireDeviceFunctionality("VK_KHR_video_decode_vp9");
+        break;
     case VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR:
         context.requireDeviceFunctionality("VK_KHR_video_encode_h264");
         break;
@@ -1685,6 +1822,32 @@ static std::unordered_map<VkImageUsageFlagBits, VkFormatFeatureFlagBits> kUsageT
     {VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR, VK_FORMAT_FEATURE_VIDEO_ENCODE_INPUT_BIT_KHR},
     {VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR, VK_FORMAT_FEATURE_VIDEO_ENCODE_DPB_BIT_KHR},
 };
+
+std::vector<uint64_t> getDrmFormatModifier(Context &context, de::SharedPtr<TestParams> params)
+{
+    const InstanceInterface &vki = context.getInstanceInterface();
+    const VkPhysicalDevice phys  = context.getPhysicalDevice();
+    //uint64_t drmModifier = -1;
+    std::vector<uint64_t> drmModifiers;
+
+    VkDrmFormatModifierPropertiesList2EXT drmFormatProperties = initVulkanStructure();
+    VkFormatProperties2 formatProperties2                     = initVulkanStructure(&drmFormatProperties);
+    vki.getPhysicalDeviceFormatProperties2(phys, params->format, &formatProperties2);
+
+    for (uint32_t i = 0; i < drmFormatProperties.drmFormatModifierCount; i++)
+    {
+        std::vector<VkDrmFormatModifierProperties2EXT> drmFormatModifiers;
+        drmFormatModifiers.resize(drmFormatProperties.drmFormatModifierCount);
+        drmFormatProperties.pDrmFormatModifierProperties = drmFormatModifiers.data();
+        vki.getPhysicalDeviceFormatProperties2(phys, params->format, &formatProperties2);
+
+        const VkDrmFormatModifierProperties2EXT drmFormatModifierProperties =
+            drmFormatProperties.pDrmFormatModifierProperties[i];
+        drmModifiers.push_back(drmFormatModifierProperties.drmFormatModifier);
+    }
+
+    return drmModifiers;
+}
 
 tcu::TestStatus test(Context &context, de::SharedPtr<TestParams> params)
 {
@@ -1711,23 +1874,52 @@ tcu::TestStatus test(Context &context, de::SharedPtr<TestParams> params)
         {
             foundMatchingFormat = true;
 
-            VkPhysicalDeviceImageFormatInfo2 imageFormatInfo2 = initVulkanStructure(&params->profileList);
-            imageFormatInfo2.format                           = formatProperty.format;
-            imageFormatInfo2.type                             = formatProperty.imageType;
-            imageFormatInfo2.tiling                           = formatProperty.imageTiling;
-            imageFormatInfo2.usage                            = formatProperty.imageUsageFlags;
-            imageFormatInfo2.flags                            = formatProperty.imageCreateFlags;
-            VkImageFormatProperties2 imageFormatProperties2   = initVulkanStructure();
-            VkResult r = vki.getPhysicalDeviceImageFormatProperties2(phys, &imageFormatInfo2, &imageFormatProperties2);
-            if (r != VK_SUCCESS)
-                return tcu::TestStatus::fail("inconsistent return values from getPhysicalDeviceImageFormatProperties2 "
-                                             "and getPhysicalDeviceVideoFormatPropertiesKHR");
-            if (formatProperty.imageTiling == VK_IMAGE_TILING_LINEAR &&
-                (formatProperties2.formatProperties.linearTilingFeatures & features) == 0)
-                return tcu::TestStatus::fail("bad linear features");
-            if (formatProperty.imageTiling == VK_IMAGE_TILING_OPTIMAL &&
-                (formatProperties2.formatProperties.optimalTilingFeatures & features) == 0)
-                return tcu::TestStatus::fail("bad optimal features");
+            uint32_t nCnt = 1;
+            std::vector<uint64_t> drmModifiers;
+
+            if (formatProperty.imageTiling == VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT)
+            {
+                drmModifiers = getDrmFormatModifier(context, params);
+                nCnt         = (uint32_t)drmModifiers.size();
+
+                if (nCnt == 0)
+                    continue;
+            }
+
+            for (uint32_t i = 0; i < nCnt; i++)
+            {
+                VkPhysicalDeviceImageDrmFormatModifierInfoEXT imageFormatModifierInfo = initVulkanStructure();
+                VkImageFormatListCreateInfo imageFormatListInfo                       = initVulkanStructure();
+                imageFormatListInfo.viewFormatCount                                   = 1;
+                imageFormatListInfo.pViewFormats                                      = &formatProperty.format;
+
+                if (drmModifiers.size() > 0)
+                {
+                    imageFormatModifierInfo.drmFormatModifier = drmModifiers[i];
+                    imageFormatListInfo.pNext                 = &imageFormatModifierInfo;
+                    params->profileList.pNext                 = &imageFormatListInfo;
+                }
+
+                VkPhysicalDeviceImageFormatInfo2 imageFormatInfo2 = initVulkanStructure(&params->profileList);
+                imageFormatInfo2.format                           = formatProperty.format;
+                imageFormatInfo2.type                             = formatProperty.imageType;
+                imageFormatInfo2.tiling                           = formatProperty.imageTiling;
+                imageFormatInfo2.usage                            = formatProperty.imageUsageFlags;
+                imageFormatInfo2.flags                            = formatProperty.imageCreateFlags;
+                VkImageFormatProperties2 imageFormatProperties2   = initVulkanStructure();
+                VkResult r =
+                    vki.getPhysicalDeviceImageFormatProperties2(phys, &imageFormatInfo2, &imageFormatProperties2);
+                if (r != VK_SUCCESS)
+                    return tcu::TestStatus::fail(
+                        "inconsistent return values from getPhysicalDeviceImageFormatProperties2 "
+                        "and getPhysicalDeviceVideoFormatPropertiesKHR");
+                if (formatProperty.imageTiling == VK_IMAGE_TILING_LINEAR &&
+                    (formatProperties2.formatProperties.linearTilingFeatures & features) == 0)
+                    return tcu::TestStatus::fail("bad linear features");
+                if (formatProperty.imageTiling == VK_IMAGE_TILING_OPTIMAL &&
+                    (formatProperties2.formatProperties.optimalTilingFeatures & features) == 0)
+                    return tcu::TestStatus::fail("bad optimal features");
+            }
         }
     }
 
@@ -1765,8 +1957,9 @@ tcu::TestCaseGroup *createVideoFormatsTests(tcu::TestContext &testCtx)
 
     std::vector<VkVideoCodecOperationFlagBitsKHR> codecs = {
         VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR, VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR,
-        VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR,  VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR,
-        VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR, VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR};
+        VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR,  VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR,
+        VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR, VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR,
+        VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR};
 
     std::vector<VkFormat> formats = {
         VK_FORMAT_R8_UNORM,
@@ -1917,6 +2110,17 @@ tcu::TestCaseGroup *createVideoFormatsTests(tcu::TestContext &testCtx)
 
                             params->codecCaps.av1Dec  = initVulkanStructure();
                             params->decodeCaps        = initVulkanStructure(&params->codecCaps.av1Dec);
+                            params->selectedCodecCaps = (VkBaseInStructure *)&params->decodeCaps;
+
+                            break;
+                        case VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR:
+                            params->codecProfile.vp9Dec            = initVulkanStructure();
+                            params->codecProfile.vp9Dec.stdProfile = STD_VIDEO_VP9_PROFILE_0;
+
+                            params->profile = initVulkanStructure(&params->codecProfile.vp9Dec);
+
+                            params->codecCaps.vp9Dec  = initVulkanStructure();
+                            params->decodeCaps        = initVulkanStructure(&params->codecCaps.vp9Dec);
                             params->selectedCodecCaps = (VkBaseInStructure *)&params->decodeCaps;
 
                             break;

@@ -1020,7 +1020,8 @@ void createIncrementalPresentTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type 
     } presentModes[] = {{vk::VK_PRESENT_MODE_IMMEDIATE_KHR, "immediate"},
                         {vk::VK_PRESENT_MODE_MAILBOX_KHR, "mailbox"},
                         {vk::VK_PRESENT_MODE_FIFO_KHR, "fifo"},
-                        {vk::VK_PRESENT_MODE_FIFO_RELAXED_KHR, "fifo_relaxed"}};
+                        {vk::VK_PRESENT_MODE_FIFO_RELAXED_KHR, "fifo_relaxed"},
+                        {vk::VK_PRESENT_MODE_FIFO_LATEST_READY_EXT, "fifo_latest_ready"}};
     const struct
     {
         vk::VkSurfaceTransformFlagsKHR transform;

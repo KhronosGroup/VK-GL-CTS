@@ -44,6 +44,8 @@ DEFAULT_OUTPUT_DIR = { "" : os.path.join(os.path.dirname(__file__), "..", "frame
                        "SC" : os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkansc") }
 
 EXTENSIONS_TO_READ_FROM_XML_NOT_JSON = """
+VK_KHR_cooperative_matrix
+VK_KHR_shader_bfloat16
 VK_KHR_video_encode_av1
 VK_KHR_video_encode_quantization_map
 """.split()
@@ -189,16 +191,16 @@ def printAttributesToFile(obj, file, indent=0):
         else:
             file.write(f"{indent_str}{repr(obj)}\n")
 
-# Converts the dependecies expression into an Abstract Syntax Tree that uses boolean operators
+# Converts the dependencies expression into an Abstract Syntax Tree that uses boolean operators
 def parseDependsEpression(string):
     try:
         # Parse the input string into an abstract syntax tree (AST)
-        tree = ast.parse(string.replace('+', ' and ').replace(',', ' or '), mode='eval')
+        tree = ast.parse(string.replace('+', ' and ').replace(',', ' or ').replace('::', '__'), mode='eval')
         expression = tree.body
         return expression
     except SyntaxError as e:
-        print(f"Syntax error in the input string: {e}")
-        return None
+        print(f"Syntax error in the input string: {e} \"" + string + "\"")
+        sys.exit(-1)
 
 # Checks the dependencies AST against the passed extensions
 def checkDependencyAST(node, extensions):
@@ -368,7 +370,7 @@ class FeatureEnumerator:
 
 class FeatureRequirement:
     def __init__ (self, operation, comment, enumList, typeList, commandList, featureList):
-        self.operation = operation      # "require" or "remove"
+        self.operation = operation      # "require" or "remove"; "deprecate" should be filtered out
         self.comment = comment
         self.enumList = enumList        # list of FeatureEnumerator objects
         self.typeList = typeList        # list of strings, each representing required structure name
@@ -690,6 +692,10 @@ class API:
             typeList = []
             featureList = []
             commandList = []
+            # skip any feature blocks that are tagged deprecate - they are deprecating things from other
+            # features, and if add them here - lots of other handling gets confused
+            if requirementGroup.tag == "deprecate":
+                continue
             for requirement in requirementGroup:
                 requirementName = requirement.get("name")
                 if requirement.tag == "enum":
@@ -1307,6 +1313,9 @@ class API:
                 minor = int(p[-1])
                 core = f'0.{major}.{minor}.0'
                 if "vulkan" in mandatory_variants and major == 1 and minor <= 2:
+                    mandatory_variants = []
+            else:
+                if "vulkansc" not in mandatory_variants:
                     mandatory_variants = []
             for requirement in ext.requirementsList:
                 featureStructName = None
@@ -2473,6 +2482,10 @@ def writeTypeUtil (api, filename):
             "StdVideoEncodeAV1OperatingPointInfoFlags",
             "StdVideoEncodeAV1PictureInfoFlags",
             "StdVideoEncodeAV1ReferenceInfoFlags",
+            "StdVideoVP9ColorConfigFlags",
+            "StdVideoVP9LoopFilterFlags",
+            "StdVideoVP9SegmentationFlags",
+            "StdVideoDecodeVP9PictureInfoFlags",
             "VkClusterAccelerationStructureGeometryIndexAndGeometryFlagsNV",
             "VkClusterAccelerationStructureBuildTriangleClusterInfoNV",
         ])
@@ -2481,6 +2494,12 @@ def writeTypeUtil (api, filename):
         def hasArrayMember (type):
             for member in type.members:
                 if len(member.arraySizeList) > 0:
+                    return True
+            return False
+
+        def hasBitField (type):
+            for member in type.members:
+                if member.fieldWidth:
                     return True
             return False
 
@@ -2496,7 +2515,8 @@ def writeTypeUtil (api, filename):
         type.members[0].type != "VkStructureType" and \
         not type.name in QUERY_RESULT_TYPES and \
         not hasArrayMember(type) and \
-        not hasCompositeMember(type)
+        not hasCompositeMember(type) and \
+        not hasBitField(type)
 
     def gen ():
         for type in api.compositeTypes:
@@ -3191,6 +3211,112 @@ def constructPromotionCheckerFunString(defs, FeatureOrProperty):
              "\t\treturn {};\n"
              "\treturn it->second;\n}")
 
+def writeFeaturesVariant(dfDefs, filename):
+    types = []
+
+    extendVariant = \
+        "template<class Variant, class... Types> struct extend_variant;\n" \
+        "template<class... X, class... Types>\n" \
+        "    struct extend_variant<std::variant<X...>, Types...> {\n" \
+        "        typedef std::variant<X..., Types...> type;\n" \
+        "};"
+
+    variantIndex = \
+        "template <class X, class Variant> struct variant_index;\n" \
+        "template <class X, class... Types> struct variant_index<X, std::variant<X, Types...>>\n" \
+        "    : std::integral_constant<std::size_t, 0> { };\n" \
+        "template <class X, class Y, class... Types> struct variant_index<X, std::variant<Y, Types...>>\n" \
+        "    : std::integral_constant<std::size_t, 1 + variant_index<X, std::variant<Types...>>::value> { };\n" \
+        "template <class X> struct variant_index<X, std::variant<>> : std::integral_constant<std::size_t, 0> { };\n" \
+        "template <typename X, typename Variant>\n" \
+        "    constexpr std::size_t variant_index_v = variant_index<X, Variant>::value;"
+
+    feature2sType = []
+    f2st0 = "template <> inline constexpr VkStructureType feature2sType<VkPhysicalDeviceFeatures> = VK_STRUCTURE_TYPE_MAX_ENUM;"
+    f2st1 = "template <> inline constexpr VkStructureType feature2sType<VkPhysicalDeviceFeatures2> = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;\n" \
+            "template <> inline constexpr VkStructureType feature2sType<VkPhysicalDeviceVulkan11Features> = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;"
+    f2st2 = "template <> inline constexpr VkStructureType feature2sType<VkPhysicalDeviceVulkan12Features> = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;"
+    f2st3 = "#if defined(VK_API_VERSION_1_3) && !defined(CTS_USES_VULKANSC)\n" \
+            "template <> inline constexpr VkStructureType feature2sType<VkPhysicalDeviceVulkan13Features> = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;\n" \
+            "#endif"
+    f2st4 = "#if defined(VK_API_VERSION_1_4) && !defined(CTS_USES_VULKANSC)\n" \
+            "template <> inline constexpr VkStructureType feature2sType<VkPhysicalDeviceVulkan14Features> = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES;\n" \
+            "#endif"
+    f2stsc10 = "#ifdef CTS_USES_VULKANSC\n" \
+               "template <> inline constexpr VkStructureType feature2sType<VkFaultCallbackInfo> = VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO;\n" \
+               "template <> inline constexpr VkStructureType feature2sType<VkPhysicalDeviceVulkanSC10Features> = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES;\n" \
+               "template <> inline constexpr VkStructureType feature2sType<VkDeviceObjectReservationCreateInfo> = VK_STRUCTURE_TYPE_DEVICE_OBJECT_RESERVATION_CREATE_INFO;\n" \
+               "#endif"
+
+    feature2sType.append("template <class> VkStructureType feature2sType;")
+    feature2sType.append(f2st0)
+    feature2sType.append(f2st1)
+    feature2sType.append(f2st2)
+    feature2sType.append(f2st3)
+    feature2sType.append(f2st4)
+    feature2sType.append(f2stsc10)
+
+    getFeatureSType = \
+        "template <class X> VkStructureType getFeatureSType() {\n" \
+        "if constexpr (variant_index_v<X, ImplementedFeaturesVariant> < std::variant_size_v<ImplementedFeaturesVariant>)\n" \
+        "    return vk::makeFeatureDesc<X>().sType;\n" \
+        "else\n" \
+        "    return feature2sType<X>;\n" \
+        "}"
+
+    hasPnextOfVoidPtr = \
+        "template<class, class = void>\n" \
+        "    struct hasPnextOfVoidPtr : std::false_type {};\n" \
+        "template<class X>\n" \
+        "    struct hasPnextOfVoidPtr<X, std::void_t<decltype(std::declval<X>().pNext)>>\n" \
+        "        : std::integral_constant<bool,\n" \
+        "              std::is_same<decltype(std::declval<X>().pNext), void*>::value ||\n" \
+        "              std::is_same<decltype(std::declval<X>().pNext), const void*>::value> {};"
+
+    implementedVariantBegin = "typedef std::variant<"
+    for idx, (sType, sVerSuffix, sExtSuffix, extStruct, _, extNameDef, specVersionDef) in enumerate(dfDefs):
+        types.append("    {0}{1}".format((", " if idx else ""), extStruct))
+    implementedVariantEnd = "> ImplementedFeaturesVariant;"
+    v10 = "    VkPhysicalDeviceFeatures"
+    v11 = "#ifdef VK_API_VERSION_1_1\n" \
+          "    , VkPhysicalDeviceFeatures2\n" \
+          "    , VkPhysicalDeviceVulkan11Features\n" \
+          "#endif"
+    v12 = "#ifdef VK_API_VERSION_1_2\n" \
+          "    , VkPhysicalDeviceVulkan12Features\n" \
+          "#endif"
+    v13 = "#if defined(VK_API_VERSION_1_3) && !defined(CTS_USES_VULKANSC)\n" \
+          "    , VkPhysicalDeviceVulkan13Features\n" \
+          "#endif"
+    v14 = "#if defined(VK_API_VERSION_1_4) && !defined(CTS_USES_VULKANSC)\n" \
+          "    , VkPhysicalDeviceVulkan14Features\n" \
+          "#endif"
+    vsc10 = "#ifdef CTS_USES_VULKANSC\n" \
+            "    , VkFaultCallbackInfo\n" \
+            "    , VkPhysicalDeviceVulkanSC10Features\n" \
+            "    , VkDeviceObjectReservationCreateInfo\n" \
+            "#endif"
+    fullVariant = []
+    fullVariant.append("typedef typename extend_variant<ImplementedFeaturesVariant,")
+    fullVariant.append(v10)
+    fullVariant.append(v11)
+    fullVariant.append(v12)
+    fullVariant.append(v13)
+    fullVariant.append(v14)
+    fullVariant.append(vsc10)
+    fullVariant.append(">::type FullFeaturesVariant;")
+    stream = []
+    stream.append(extendVariant)
+    stream.append(variantIndex)
+    stream.append(implementedVariantBegin)
+    stream.extend(types)
+    stream.append(implementedVariantEnd)
+    stream.extend(fullVariant)
+    stream.extend(feature2sType)
+    stream.append(getFeatureSType)
+    stream.append(hasPnextOfVoidPtr)
+    writeInlFile(filename, INL_HEADER, stream)
+
 def writeDeviceFeatures(api, dfDefs, filename):
     # find VkPhysicalDeviceVulkan[1-9][0-9]Features blob structurs
     # and construct dictionary with all of their attributes
@@ -3263,9 +3389,11 @@ def writeDeviceFeatures(api, dfDefs, filename):
     # construct function that will check for which vk version structure sType is part of blob
     blobChecker = "uint32_t getBlobFeaturesVersion (VkStructureType sType)\n{\n" \
                   "\tconst std::map<VkStructureType, uint32_t> sTypeBlobMap {\n"
+    blobCheckerMap = "static const std::map<VkStructureType, uint32_t> sTypeBlobMap\n" \
+                     "{\n"
     # iterate over blobs with list of structures
     for blobName in sorted(blobStructs.keys()):
-        blobChecker += "\t\t// Vulkan{0}\n".format(blobName)
+        blobCheckerMap += "\t// Vulkan{0}\n".format(blobName)
         # iterate over all feature structures in current blob
         structuresList = list(blobStructs[blobName])
         structuresList = sorted(structuresList, key=lambda s: s.name)
@@ -3284,16 +3412,30 @@ def writeDeviceFeatures(api, dfDefs, filename):
             sSuffix = structDef.verSuffix + structDef.extSuffix
             sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_FEATURES{1}".format(sType, sSuffix)
             tabs = "\t" * int((88 - len(sTypeName)) / 4)
-            blobChecker += "\t\t{{ {0},{1}VK_API_VERSION_{2}_{3} }},\n".format(sTypeName, tabs, blobName[0], blobName[1])
-    blobChecker += "\t};\n\n" \
+            blobCheckerMap += "\t{{ {0},{1}VK_API_VERSION_{2}_{3} }},\n".format(sTypeName, tabs, blobName[0], blobName[1])
+    blobCheckerMap += "};\n"
+
+    blobChecker = "uint32_t getBlobFeaturesVersion (VkStructureType sType)\n{\n" \
                    "\tauto it = sTypeBlobMap.find(sType);\n" \
                    "\tif(it == sTypeBlobMap.end())\n" \
                    "\t\treturn 0;\n" \
                    "\treturn it->second;\n" \
                    "}\n"
+    blobExpander = "std::set<VkStructureType> getVersionBlobFeatureList (uint32_t version)\n" \
+                   "{\n" \
+                   "\tstd::set<VkStructureType> features;\n" \
+                   "\tfor (const std::pair<const VkStructureType, uint32_t> &item : sTypeBlobMap)\n" \
+                   "\t{\n" \
+                   "\t\tif (item.second == version)\n" \
+                   "\t\t\tfeatures.insert(item.first);\n" \
+                   "\t}\n" \
+                   "\treturn features;\n" \
+                   "}\n"
+
     # combine all definition lists
     stream = [
     '#include "vkDeviceFeatures.hpp"\n',
+    "#include <set>\n",
     'namespace vk\n{']
     stream.extend(extensionDefines)
     stream.append('')
@@ -3308,8 +3450,10 @@ def writeDeviceFeatures(api, dfDefs, filename):
     stream.append('};\n')
     stream.append(constructPromotionCheckerFunString(dfDefs, "Feature"))
     stream.append('')
+    stream.append(blobCheckerMap)
     stream.append(blobChecker)
-    stream.append('} // vk')
+    stream.append(blobExpander)
+    stream.append('} // vk\n')
     writeInlFile(filename, INL_HEADER, stream)
 
 def writeDeviceFeatureTest(api, filename):
@@ -3731,6 +3875,7 @@ def writeMandatoryFeatures(api, filename):
     varVariants = {} # Some variables are going to be declared only for specific variants.
 
     for structName, extensions in apiStructs:
+        stream.append('\t// ' + structName + ' for [' + ', '.join(extensions) + ']\n')
         # The variable name will be the structure name without the Vk prefix and starting in lowercase.
         newVar = structName[2].lower() + structName[3:]
 
@@ -3819,7 +3964,14 @@ def writeMandatoryFeatures(api, filename):
             for i, feature in enumerate(v[1]):
                 if i != 0:
                     condition = condition + ' && '
-                condition = condition + '( ' + structName + '.' + feature + ' == VK_FALSE )'
+                    # Here we do the "or"
+                features2 = feature.split(',')
+                condition2 = ""
+                for i2, feature2 in enumerate(features2):
+                    if i2 != 0:
+                        condition2 = condition2 + ' || '
+                    condition2 = condition2 + structName + '.' + feature2 + ' == VK_FALSE'
+                condition = condition + '( ' + condition2 + ' )'
             condition = condition + ' )'
             stream.append('\t\t' + condition)
         featureSet = " or ".join(v[1])
@@ -3836,7 +3988,11 @@ def writeMandatoryFeatures(api, filename):
         else:
             stream.extend([''])
 
+    last_extension = None
     for extension, requirements, mandatory_variant in extData:
+        if last_extension != extension:
+            stream.append('\t// ' + extension + '\n')
+            last_extension = extension
         metaCondition = ''
         if mandatory_variant != '':
             metaCondition = metaCondition + ' || defined(CTS_USES_' + mandatory_variant[0].upper() + ')'
@@ -3927,7 +4083,7 @@ def transformDependsToCondition(depends, api, checkVersionString, checkExtension
                 if idx > 0 and ' || ' in depList[idx-1]:
                     # some vk.xml entries include "promoted to" version preceded by logical OR operator in the extension "depends" attribute
                     # script don't rely on this optional information and will find "promoted to" versions for all dependencies of all extensions in the below code
-                    # accordingly the one from vk.xml is ignored to avoid redundant isCompatibile() checks
+                    # accordingly the one from vk.xml is ignored to avoid redundant isCompatible() checks
                     depList[idx-1] = depList[idx-1].replace(' || ', '')
                     depList[idx] = ''
                     continue
@@ -3974,7 +4130,7 @@ def writeApiExtensionDependencyInfo(api, filename):
         yield 'using ExtPropVect = std::vector<vk::VkExtensionProperties>;'
         yield 'using IsSupportedFun = bool (*)(const tcu::UVec2&, const ExtPropVect&, const ExtPropVect&);'
         yield 'using DependencyCheckVect = std::vector<std::pair<const char*, IsSupportedFun> >;\n'
-        yield 'bool isCompatibile(uint32_t major, uint32_t minor, const tcu::UVec2& testedApiVersion)'
+        yield 'bool isCompatible(uint32_t major, uint32_t minor, const tcu::UVec2& testedApiVersion)'
         yield '{'
         yield '\t// return true when tested api version is greater'
         yield '\t// or equal to version represented by two uints'
@@ -4010,7 +4166,7 @@ def writeApiExtensionDependencyInfo(api, filename):
             # check if extension was promoted; for SC we need to check vulkan version as sc10 is based on vk12
             if ext.promotedto is not None and 'VK_VERSION' in ext.promotedto:
                 p = ext.promotedto
-                yield f'\tif (isCompatibile({p[-3]}, {p[-1]}, v))'
+                yield f'\tif (isCompatible({p[-3]}, {p[-1]}, v))'
                 yield '\t\treturn true;\n'
             else:
                 yield '\tDE_UNREF(v);'
@@ -4020,7 +4176,7 @@ def writeApiExtensionDependencyInfo(api, filename):
             yield f'\n\tif (!isSupported({extVector}, "{ext.name}"))'
             yield '\t\treturn true;\n'
             # replace dependent extensions/versions with proper conditions
-            finalCondition = transformDependsToCondition(ext.depends, api, 'isCompatibile(%s, %s, v)', 'isSupported(%s, "%s")')
+            finalCondition = transformDependsToCondition(ext.depends, api, 'isCompatible(%s, %s, v)', 'isSupported(%s, "%s")')
             yield f'\t// depends attribute in xml: {ext.depends}'
             yield f'\treturn {finalCondition};'
             yield '}\n'
@@ -4037,7 +4193,10 @@ def writeApiExtensionDependencyInfo(api, filename):
         yield 'static const std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>\treleasedApiVersions[]\t='
         yield '{'
         for f in reversed(api.features):
-            apiVariant = '0' if f.api == 'vulkan' else '1'
+            apis = f.api.split(',')
+            if not api.apiName in apis:
+                continue;
+            apiVariant = '0' if api.apiName == 'vulkan' else '1'
             major, minor = f.number.split('.')
             version = (int(apiVariant) << 29) | (int(major) << 22) | (int(minor) << 12)
             yield '\tstd::make_tuple({}, {}, {}, {}),'.format(version, apiVariant, major, minor)
@@ -4480,12 +4639,14 @@ def writeConformanceVersions(api, filename):
             remote_url = line.split()[1]
             break
     listOfTags = os.popen("git ls-remote -t %s" % (remote_url)).read()
-    pattern = r"vulkan-cts-(\d).(\d).(\d).(\d)"
+    pattern = r"vulkan-cts-(\d+).(\d+).(\d+).(\d+)"
     if args.api == 'SC':
-        pattern = r"vulkansc-cts-(\d).(\d).(\d).(\d)"
+        pattern = r"vulkansc-cts-(\d+).(\d+).(\d+).(\d+)"
     matches = re.findall(pattern, listOfTags, re.M)
+    matches = sorted([tuple(map(int, tup)) for tup in matches])
     if len(matches) == 0:
         return
+
     # read all text files in doc folder and find withdrawn cts versions (branches)
     withdrawnBranches = set()
     today = datetime.date.today()
@@ -4501,6 +4662,7 @@ def writeConformanceVersions(api, filename):
             if today > datetime.date(int(match[1]), int(match[2]), int(match[3])):
                 # get names of withdrawn branches
                 branchMatches = re.findall(pattern, fileContent, re.M)
+                branchMatches = [tuple(map(int, tup)) for tup in branchMatches]
                 for v in branchMatches:
                     withdrawnBranches.add((v[0], v[1], v[2], v[3]))
     # define helper function that will be used to add entries for both vk and sc
@@ -4564,6 +4726,7 @@ if __name__ == "__main__":
 
     dfd = generateDeviceFeaturesOrPropertiesDefs(api, 'Features')
     writeDeviceFeatures                         (api, dfd, os.path.join(outputPath, "vkDeviceFeatures.inl"))
+    writeFeaturesVariant                        (dfd, os.path.join(outputPath, "vkDeviceFeaturesVariantDecl.inl"))
     writeDeviceFeaturesDefaultDeviceDefs        (dfd, os.path.join(outputPath, "vkDeviceFeaturesForDefaultDeviceDefs.inl"))
     writeDeviceFeaturesContextDecl              (dfd, os.path.join(outputPath, "vkDeviceFeaturesForContextDecl.inl"))
     writeDeviceFeaturesContextDefs              (dfd, os.path.join(outputPath, "vkDeviceFeaturesForContextDefs.inl"))
@@ -4613,7 +4776,7 @@ if __name__ == "__main__":
     writeApiExtensionDependencyInfo             (api, os.path.join(outputPath, "vkApiExtensionDependencyInfo.inl"))
     writeEntryPointValidation                   (api, os.path.join(outputPath, "vkEntryPointValidation.inl"))
     writeGetDeviceProcAddr                      (api, os.path.join(outputPath, "vkGetDeviceProcAddr.inl"))
-    #writeConformanceVersions                    (api, os.path.join(outputPath, "vkKnownConformanceVersions.inl"))
+    writeConformanceVersions                    (api, os.path.join(outputPath, "vkKnownConformanceVersions.inl"))
     if args.api=='SC':
         writeFuncPtrInterfaceSCImpl(api, os.path.join(outputPath, "vkDeviceDriverSCImpl.inl"), deviceFuncs, "DeviceDriverSC")
     else:

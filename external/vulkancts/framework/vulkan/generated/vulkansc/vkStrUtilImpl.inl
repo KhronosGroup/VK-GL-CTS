@@ -211,6 +211,15 @@ tcu::Format::Bitfield<32> getFramebufferCreateFlagsStr (VkFramebufferCreateFlags
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+tcu::Format::Bitfield<32> getQueryPoolCreateFlagsStr (VkQueryPoolCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(0, "0")
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getRenderPassCreateFlagsStr (VkRenderPassCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -2268,7 +2277,7 @@ tcu::Format::Bitfield<32> getHostImageCopyFlagsStr (VkHostImageCopyFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_HOST_IMAGE_COPY_MEMCPY,	"VK_HOST_IMAGE_COPY_MEMCPY"),
+		tcu::Format::BitDesc(VK_HOST_IMAGE_COPY_MEMCPY_BIT,	"VK_HOST_IMAGE_COPY_MEMCPY_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2883,11 +2892,6 @@ const char* getDriverIdName (VkDriverId value)
 	}
 }
 
-tcu::Format::Bitfield<32> getQueryPoolCreateFlagsStr (VkQueryPoolCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
 tcu::Format::Bitfield<32> getPipelineDepthStencilStateCreateFlagsStr (VkPipelineDepthStencilStateCreateFlags value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
@@ -3066,6 +3070,21 @@ tcu::Format::Bitfield<32> getIndirectCommandsInputModeFlagsEXTStr (VkIndirectCom
 tcu::Format::Bitfield<32> getDirectDriverLoadingFlagsLUNARGStr (VkDirectDriverLoadingFlagsLUNARG value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<64> getTensorCreateFlagsARMStr (VkTensorCreateFlagsARM value)
+{
+	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<64> getTensorUsageFlagsARMStr (VkTensorUsageFlagsARM value)
+{
+	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<64> getTensorViewCreateFlagsARMStr (VkTensorViewCreateFlagsARM value)
+{
+	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getDisplayModeCreateFlagsKHRStr (VkDisplayModeCreateFlagsKHR value)
@@ -3319,6 +3338,11 @@ tcu::Format::Bitfield<32> getPresentGravityFlagsEXTStr (VkPresentGravityFlagsEXT
 }
 
 tcu::Format::Bitfield<32> getShaderCreateFlagsEXTStr (VkShaderCreateFlagsEXT value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getTileShadingRenderPassFlagsQCOMStr (VkTileShadingRenderPassFlagsQCOM value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
@@ -8281,9 +8305,9 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineOfflineCreateInfo& va
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRobustness2FeaturesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRobustness2FeaturesKHR& value)
 {
-	s << "VkPhysicalDeviceRobustness2FeaturesEXT = {\n";
+	s << "VkPhysicalDeviceRobustness2FeaturesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\trobustBufferAccess2 = " << value.robustBufferAccess2 << '\n';
@@ -8293,9 +8317,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRobustness2Feat
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRobustness2PropertiesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRobustness2PropertiesKHR& value)
 {
-	s << "VkPhysicalDeviceRobustness2PropertiesEXT = {\n";
+	s << "VkPhysicalDeviceRobustness2PropertiesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\trobustStorageBufferAccessSizeAlignment = " << value.robustStorageBufferAccessSizeAlignment << '\n';

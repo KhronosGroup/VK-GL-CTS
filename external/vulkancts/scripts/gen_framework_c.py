@@ -42,6 +42,8 @@ VULKAN_H = { "" : [    os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vul
                                 os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vulkan_video_codec_av1std.h"),
                                 os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vulkan_video_codec_av1std_decode.h"),
                                 os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vulkan_video_codec_av1std_encode.h"),
+                                os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vulkan_video_codec_vp9std.h"),
+                                os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vulkan_video_codec_vp9std_decode.h"),
                                 os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vulkan", "vulkan_core.h") ],
                         "SC" : [ os.path.join(os.path.dirname(__file__), "src", "vulkan_sc_core.h") ] }
 DEFAULT_OUTPUT_DIR = { "" : os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkan"),
@@ -138,6 +140,8 @@ if __name__ == "__main__":
         'vulkan_video_codec_av1std.h',
         'vulkan_video_codec_av1std_decode.h',
         'vulkan_video_codec_av1std_encode.h',
+        'vulkan_video_codec_vp9std.h',
+        'vulkan_video_codec_vp9std_decode.h',
     ]
     for target in videoTargets:
         execute([pythonExecutable, "../scripts/genvk.py", "-registry", "video.xml", "-o", videoDir, target])

@@ -102,6 +102,9 @@ public:
     static const MemoryRequirement NonLocal;
     static const MemoryRequirement DeviceAddress;
     static const MemoryRequirement DeviceAddressCaptureReplay;
+#ifndef CTS_USES_VULKANSC
+    static const MemoryRequirement ZeroInitialize;
+#endif // CTS_USES_VULKANSC
 
     inline MemoryRequirement operator|(MemoryRequirement requirement) const
     {
@@ -136,7 +139,16 @@ private:
         FLAG_NON_LOCAL                     = 1u << 6u,
         FLAG_DEVICE_ADDRESS                = 1u << 7u,
         FLAG_DEVICE_ADDRESS_CAPTURE_REPLAY = 1u << 8u,
+        FLAG_ZERO_INITIALIZE               = 1u << 9u,
     };
+};
+
+enum class HostIntent
+{
+    NONE = 0,
+    R    = 1, // Reading data from the host.
+    W    = 2, // Writing data from the host.
+    RW   = 3, // Reading and writing from the host.
 };
 
 //! Memory allocator interface
@@ -151,8 +163,10 @@ public:
     }
 
     virtual de::MovePtr<Allocation> allocate(const VkMemoryAllocateInfo &allocInfo, VkDeviceSize alignment) = 0;
-    virtual de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memRequirements,
-                                             MemoryRequirement requirement)                                 = 0;
+    virtual de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memRequirements, MemoryRequirement requirement,
+                                             uint64_t memoryOpaqueCaptureAddr = 0u)                         = 0;
+    virtual de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memReqs, HostIntent intent,
+                                             VkMemoryAllocateFlags allocFlags = 0u)                         = 0;
 };
 
 //! Allocator that backs every allocation with its own VkDeviceMemory
@@ -169,10 +183,16 @@ public:
     SimpleAllocator(const DeviceInterface &vk, VkDevice device, const VkPhysicalDeviceMemoryProperties &deviceMemProps,
                     const OptionalOffsetParams &offsetParams = tcu::Nothing);
 
-    de::MovePtr<Allocation> allocate(const VkMemoryAllocateInfo &allocInfo, VkDeviceSize alignment);
-    de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memRequirements, MemoryRequirement requirement);
+    de::MovePtr<Allocation> allocate(const VkMemoryAllocateInfo &allocInfo, VkDeviceSize alignment) override;
+    de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memRequirements, MemoryRequirement requirement,
+                                     uint64_t memoryOpaqueCaptureAddr = 0u) override;
+    de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memReqs, HostIntent intent,
+                                     VkMemoryAllocateFlags allocFlags = 0u) override;
 
 private:
+    de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memRequirements, MemoryRequirement requirement,
+                                     const tcu::Maybe<HostIntent> &hostIntent, uint64_t memoryOpaqueCaptureAddr = 0u);
+
     const DeviceInterface &m_vk;
     const VkDevice m_device;
     const VkPhysicalDeviceMemoryProperties m_memProps;
@@ -199,6 +219,8 @@ void invalidateMappedMemoryRange(const DeviceInterface &vkd, VkDevice device, Vk
 
 uint32_t selectMatchingMemoryType(const VkPhysicalDeviceMemoryProperties &deviceMemProps, uint32_t allowedMemTypeBits,
                                   MemoryRequirement requirement);
+uint32_t selectBestMemoryType(const VkPhysicalDeviceMemoryProperties &deviceMemProps, uint32_t allowedMemTypeBits,
+                              MemoryRequirement requirement, const tcu::Maybe<HostIntent> &hostIntent);
 uint32_t getCompatibleMemoryTypes(const VkPhysicalDeviceMemoryProperties &deviceMemProps,
                                   MemoryRequirement requirement);
 #ifdef CTS_USES_VULKANSC
@@ -212,8 +234,16 @@ void bindImagePlanesMemory(const vk::DeviceInterface &vkd, const vk::VkDevice de
 de::MovePtr<Allocation> bindImage(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
                                   const VkImage image, const MemoryRequirement requirement);
 
+de::MovePtr<Allocation> bindImage(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
+                                  const VkImage image, const HostIntent hostIntent,
+                                  const VkMemoryAllocateFlags memAllocFlags = 0u);
+
 de::MovePtr<Allocation> bindBuffer(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
                                    const VkBuffer buffer, const MemoryRequirement requirement);
+
+de::MovePtr<Allocation> bindBuffer(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
+                                   const VkBuffer buffer, const HostIntent hostIntent,
+                                   const VkMemoryAllocateFlags memAllocFlags = 0u);
 
 void zeroBuffer(const DeviceInterface &vk, const VkDevice device, const Allocation &alloc, const VkDeviceSize size);
 

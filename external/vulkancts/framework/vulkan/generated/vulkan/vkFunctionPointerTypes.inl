@@ -650,6 +650,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginRenderingFunc)													(VkC
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginRenderingKHRFunc)												(VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRenderingFunc)													(VkCommandBuffer commandBuffer);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRenderingKHRFunc)												(VkCommandBuffer commandBuffer);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRendering2EXTFunc)												(VkCommandBuffer commandBuffer, const VkRenderingEndInfoEXT* pRenderingEndInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetDescriptorSetLayoutHostMappingInfoVALVEFunc)						(VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetDescriptorSetHostMappingVALVEFunc)									(VkDevice device, VkDescriptorSet descriptorSet, void** ppData);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateMicromapEXTFunc)													(VkDevice device, const VkMicromapCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkMicromapEXT* pMicromap);
@@ -673,6 +674,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* GetImageSubresourceLayout2KHRFunc)					
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetImageSubresourceLayout2EXTFunc)										(VkDevice device, VkImage image, const VkImageSubresource2* pSubresource, VkSubresourceLayout2* pLayout);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPipelinePropertiesEXTFunc)											(VkDevice device, const VkPipelineInfoEXT* pPipelineInfo, VkBaseOutStructure* pPipelineProperties);
 typedef VKAPI_ATTR void					(VKAPI_CALL* ExportMetalObjectsEXTFunc)												(VkDevice device, VkExportMetalObjectsInfoEXT* pMetalObjectsInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindTileMemoryQCOMFunc)												(VkCommandBuffer commandBuffer, const VkTileMemoryBindInfoQCOM* pTileMemoryBindInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetFramebufferTilePropertiesQCOMFunc)									(VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDynamicRenderingTilePropertiesQCOMFunc)								(VkDevice device, const VkRenderingInfo* pRenderingInfo, VkTilePropertiesQCOM* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceOpticalFlowImageFormatsNVFunc)						(VkPhysicalDevice physicalDevice, const VkOpticalFlowImageFormatInfoNV* pOpticalFlowImageFormatInfo, uint32_t* pFormatCount, VkOpticalFlowImageFormatPropertiesNV* pImageFormatProperties);
@@ -728,3 +730,20 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryMetalHandlePropertiesEXTFun
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCooperativeVectorPropertiesNVFunc)					(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeVectorPropertiesNV* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ConvertCooperativeVectorMatrixNVFunc)									(VkDevice device, const VkConvertCooperativeVectorMatrixInfoNV* pInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdConvertCooperativeVectorMatrixNVFunc)								(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkConvertCooperativeVectorMatrixInfoNV* pInfos);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDispatchTileQCOMFunc)												(VkCommandBuffer commandBuffer, const VkDispatchTileInfoQCOM* pDispatchTileInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginPerTileExecutionQCOMFunc)										(VkCommandBuffer commandBuffer, const VkPerTileBeginInfoQCOM* pPerTileBeginInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndPerTileExecutionQCOMFunc)										(VkCommandBuffer commandBuffer, const VkPerTileEndInfoQCOM* pPerTileEndInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateExternalComputeQueueNVFunc)										(VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkExternalComputeQueueNV* pExternalQueue);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyExternalComputeQueueNVFunc)										(VkDevice device, VkExternalComputeQueueNV externalQueue, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetExternalComputeQueueDataNVFunc)										(VkExternalComputeQueueNV externalQueue, VkExternalComputeQueueDataParamsNV* params, void* pData);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateTensorARMFunc)													(VkDevice device, const VkTensorCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkTensorARM* pTensor);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyTensorARMFunc)													(VkDevice device, VkTensorARM tensor, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateTensorViewARMFunc)												(VkDevice device, const VkTensorViewCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkTensorViewARM* pView);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyTensorViewARMFunc)												(VkDevice device, VkTensorViewARM tensorView, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetTensorMemoryRequirementsARMFunc)									(VkDevice device, const VkTensorMemoryRequirementsInfoARM* pInfo, VkMemoryRequirements2* pMemoryRequirements);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* BindTensorMemoryARMFunc)												(VkDevice device, uint32_t bindInfoCount, const VkBindTensorMemoryInfoARM* pBindInfos);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetDeviceTensorMemoryRequirementsARMFunc)								(VkDevice device, const VkDeviceTensorMemoryRequirementsARM* pInfo, VkMemoryRequirements2* pMemoryRequirements);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyTensorARMFunc)													(VkCommandBuffer commandBuffer,  const VkCopyTensorInfoARM* pCopyTensorInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetTensorOpaqueCaptureDescriptorDataARMFunc)							(VkDevice device, const VkTensorCaptureDescriptorDataInfoARM* pInfo, void* pData);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetTensorViewOpaqueCaptureDescriptorDataARMFunc)						(VkDevice device, const VkTensorViewCaptureDescriptorDataInfoARM* pInfo, void* pData);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceExternalTensorPropertiesARMFunc)						(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalTensorInfoARM* pExternalTensorInfo, VkExternalTensorPropertiesARM* pExternalTensorProperties);
