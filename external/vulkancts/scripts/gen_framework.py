@@ -46,6 +46,7 @@ DEFAULT_OUTPUT_DIR = { "" : os.path.join(os.path.dirname(__file__), "..", "frame
 EXTENSIONS_TO_READ_FROM_XML_NOT_JSON = """
 VK_KHR_cooperative_matrix
 VK_KHR_shader_bfloat16
+VK_KHR_unified_image_layouts
 VK_KHR_video_encode_av1
 VK_KHR_video_encode_quantization_map
 """.split()

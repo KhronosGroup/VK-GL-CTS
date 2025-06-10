@@ -1429,6 +1429,18 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR for [VK_KHR_unified_image_layouts]
+
+	vk::VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR physicalDeviceUnifiedImageLayoutsFeaturesKHR;
+	deMemset(&physicalDeviceUnifiedImageLayoutsFeaturesKHR, 0, sizeof(physicalDeviceUnifiedImageLayoutsFeaturesKHR));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_unified_image_layouts"))
+	{
+		physicalDeviceUnifiedImageLayoutsFeaturesKHR.sType = getStructureType<VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR>();
+		*nextPtr = &physicalDeviceUnifiedImageLayoutsFeaturesKHR;
+		nextPtr  = &physicalDeviceUnifiedImageLayoutsFeaturesKHR.pNext;
+	}
+
 	// VkPhysicalDeviceUniformBufferStandardLayoutFeatures for [VK_KHR_uniform_buffer_standard_layout]
 
 	vk::VkPhysicalDeviceUniformBufferStandardLayoutFeatures physicalDeviceUniformBufferStandardLayoutFeatures;
@@ -3115,6 +3127,15 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 #endif // defined(CTS_USES_VULKAN)
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_unified_image_layouts")) )
+	{
+		if ( physicalDeviceUnifiedImageLayoutsFeaturesKHR.unifiedImageLayouts == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature unifiedImageLayouts not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
 
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_uniform_buffer_standard_layout")) )
 	{

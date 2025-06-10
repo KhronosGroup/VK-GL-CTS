@@ -97,6 +97,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_swapchain_mutable_format",
 	"VK_KHR_synchronization2",
 	"VK_KHR_timeline_semaphore",
+	"VK_KHR_unified_image_layouts",
 	"VK_KHR_uniform_buffer_standard_layout",
 	"VK_KHR_variable_pointers",
 	"VK_KHR_vertex_attribute_divisor",
