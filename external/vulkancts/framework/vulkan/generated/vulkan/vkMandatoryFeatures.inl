@@ -1489,6 +1489,18 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceVertexInputDynamicStateFeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDeviceVideoDecodeVP9FeaturesKHR for [VK_KHR_video_decode_vp9]
+
+	vk::VkPhysicalDeviceVideoDecodeVP9FeaturesKHR physicalDeviceVideoDecodeVP9FeaturesKHR;
+	deMemset(&physicalDeviceVideoDecodeVP9FeaturesKHR, 0, sizeof(physicalDeviceVideoDecodeVP9FeaturesKHR));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_video_decode_vp9"))
+	{
+		physicalDeviceVideoDecodeVP9FeaturesKHR.sType = getStructureType<VkPhysicalDeviceVideoDecodeVP9FeaturesKHR>();
+		*nextPtr = &physicalDeviceVideoDecodeVP9FeaturesKHR;
+		nextPtr  = &physicalDeviceVideoDecodeVP9FeaturesKHR.pNext;
+	}
+
 	// VkPhysicalDeviceVideoEncodeAV1FeaturesKHR for [VK_KHR_video_encode_av1]
 
 	vk::VkPhysicalDeviceVideoEncodeAV1FeaturesKHR physicalDeviceVideoEncodeAV1FeaturesKHR;
@@ -3169,6 +3181,15 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceVertexAttributeDivisorFeaturesKHR.vertexAttributeInstanceRateDivisor == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature vertexAttributeInstanceRateDivisor not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_video_decode_vp9")) )
+	{
+		if ( physicalDeviceVideoDecodeVP9FeaturesKHR.videoDecodeVP9 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature videoDecodeVP9 not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

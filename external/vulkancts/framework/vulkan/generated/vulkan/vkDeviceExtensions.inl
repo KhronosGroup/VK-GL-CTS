@@ -105,6 +105,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_video_decode_h264",
 	"VK_KHR_video_decode_h265",
 	"VK_KHR_video_decode_queue",
+	"VK_KHR_video_decode_vp9",
 	"VK_KHR_video_encode_av1",
 	"VK_KHR_video_encode_h264",
 	"VK_KHR_video_encode_h265",
