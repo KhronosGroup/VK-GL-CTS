@@ -1418,6 +1418,9 @@ de::MovePtr<StdVideoH265ShortTermRefPicSet> getStdVideoH265ShortTermRefPicSet(St
     {
     case STD_VIDEO_H265_PICTURE_TYPE_P:
         strps.num_negative_pics = 1;
+        // For where frameIdx == 3, 6, 9, 12 in the h265.i_p_b_13 test, need to set 2.
+        if (consecutiveBFrameCount)
+            strps.delta_poc_s0_minus1[0] = (frameIdxMod == 0) ? 2 : 0;
         break;
 
     case STD_VIDEO_H265_PICTURE_TYPE_B:
