@@ -361,12 +361,10 @@ PACKAGES = [
     # integration, this fork contains the small fixes needed for use
     # by the CTS.
     GitRepo(
-        "https://gitlab.khronos.org/vulkan/vulkan_video_sample_av1_develop.git",
-        "git@gitlab.khronos.org:vulkan/vulkan_video_sample_av1_develop.git",
-        "e83f26f413fbb075bc90a234263dda5f03348d6d",
+        "https://github.com/Igalia/vk_video_samples.git",
+        "git@github.com:Igalia/vk_video_samples.git",
+        "435807a3f875d83aa00f5b4b0702dc156ba3ffa9",
         "nvidia-video-samples"),
-    # NOTE: Temporary vk_video_samples repo and branch where AV1
-    # encoder library is being developed by NVidia.
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Video-Samples.git",
         "git@github.com:KhronosGroup/Vulkan-Video-Samples.git",
