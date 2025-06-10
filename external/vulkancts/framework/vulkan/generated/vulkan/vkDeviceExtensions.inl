@@ -54,6 +54,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_maintenance6",
 	"VK_KHR_maintenance7",
 	"VK_KHR_maintenance8",
+	"VK_KHR_maintenance9",
 	"VK_KHR_map_memory2",
 	"VK_KHR_multiview",
 	"VK_KHR_performance_query",

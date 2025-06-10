@@ -679,6 +679,18 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceMaintenance8FeaturesKHR.pNext;
 	}
 
+	// VkPhysicalDeviceMaintenance9FeaturesKHR for [VK_KHR_maintenance9, VK_EXT_vertex_attribute_robustness]
+
+	vk::VkPhysicalDeviceMaintenance9FeaturesKHR physicalDeviceMaintenance9FeaturesKHR;
+	deMemset(&physicalDeviceMaintenance9FeaturesKHR, 0, sizeof(physicalDeviceMaintenance9FeaturesKHR));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_maintenance9", "VK_EXT_vertex_attribute_robustness"))
+	{
+		physicalDeviceMaintenance9FeaturesKHR.sType = getStructureType<VkPhysicalDeviceMaintenance9FeaturesKHR>();
+		*nextPtr = &physicalDeviceMaintenance9FeaturesKHR;
+		nextPtr  = &physicalDeviceMaintenance9FeaturesKHR.pNext;
+	}
+
 	// VkPhysicalDeviceMemoryPriorityFeaturesEXT for [VK_EXT_memory_priority]
 
 	vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT physicalDeviceMemoryPriorityFeaturesEXT;
@@ -2856,6 +2868,15 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceMaintenance8FeaturesKHR.maintenance8 == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature maintenance8 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_maintenance9")) )
+	{
+		if ( physicalDeviceMaintenance9FeaturesKHR.maintenance9 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature maintenance9 not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
