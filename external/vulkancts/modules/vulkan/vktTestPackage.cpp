@@ -381,9 +381,9 @@ TestCaseExecutor::TestCaseExecutor(tcu::TestContext &testCtx)
     // The created copy of m_defaultInstCaps will then be passed to the findCustomManager() function,
     // which creates a new instance based on the result of the TestCase::getInstanceCapabilitiesId() method.
     const InstCaps defaultInstCaps(m_library->getPlatformInterface(), testCtx.getCommandLine(), InstCaps::DefInstId,
-                                   nullptr, false);
+                                   nullptr, nullptr, false);
     m_defaultInstCaps = SharedPtr(new InstCaps(m_library->getPlatformInterface(), testCtx.getCommandLine(),
-                                               InstCaps::DefInstId, &defaultInstCaps, false));
+                                               InstCaps::DefInstId, nullptr, &defaultInstCaps, false));
     const int maxCustomDevices =
         std::clamp(testCtx.getCommandLine().getMaxCustomDevices(), 1, std::numeric_limits<int>::max());
     m_defaultContextManager = ContextManager::create(m_library->getPlatformInterface(), testCtx.getCommandLine(),

@@ -791,7 +791,7 @@ vector<const char *> removeCoreExtensions(const uint32_t apiVersion, const vecto
 } // namespace
 
 InstCaps::InstCaps(const PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine, const std::string &id_,
-                   const InstCaps *hint, bool dontCreateDefaultDeviceFlag)
+                   vkt::TestCase *testCase, const InstCaps *hint, bool dontCreateDefaultDeviceFlag)
 #ifndef CTS_USES_VULKANSC
     : maximumFrameworkVulkanVersion(VK_API_MAX_FRAMEWORK_VERSION)
 #else
@@ -814,14 +814,15 @@ InstCaps::InstCaps(const PlatformInterface &vkPlatform, const tcu::CommandLine &
     , m_destroyAllDevices({false, false})
     , m_dontCreateDefaultDevice(dontCreateDefaultDeviceFlag)
     , m_shouldRemoveInstanceOnTestExit(false)
+    , m_testCase(testCase)
 {
 }
 
 // "Define the ContextManager constructor, placed here as a workaround for an older Fedora version
 // where the compiler fails to locate function implementations unless they reside in the same file.
 ContextManager::ContextManager(const PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine,
-                               [[maybe_unused]] de::SharedPtr<vk::ResourceInterface> resourceInterface,
-                               int maxCustomDevices, const InstCaps &icaps, ContextManager::Det_)
+                               de::SharedPtr<vk::ResourceInterface> resourceInterface, int maxCustomDevices,
+                               const InstCaps &icaps, ContextManager::Det_)
     : m_maximumFrameworkVulkanVersion(icaps.maximumFrameworkVulkanVersion)
     , m_platformInterface(vkPlatform)
     , m_commandLine(commandLine)
@@ -852,7 +853,8 @@ ContextManager::ContextManager(const PlatformInterface &vkPlatform, const tcu::C
                                                                 *m_instance) :
                                 DebugReportCallbackPtr())
 #endif
-    , m_physicalDevice(chooseDevice(*m_instanceInterface, *m_instance, m_commandLine))
+    , m_physicalDevice(icaps.selectDevice(*m_instanceInterface, *m_instance, commandLine,
+                                          chooseDevice(*m_instanceInterface, *m_instance, m_commandLine)))
     , m_deviceVersion(getPhysicalDeviceProperties(*m_instanceInterface, m_physicalDevice).apiVersion)
     , m_maxCustomDevices(maxCustomDevices)
     , m_deviceExtensions(addCoreDeviceExtensions(
@@ -1892,6 +1894,11 @@ void TestCase::initDeviceCapabilities(DevCaps &caps)
 std::string TestCase::getInstanceCapabilitiesId() const
 {
     return InstCaps::DefInstId;
+}
+
+VkPhysicalDevice TestCase::selectPhysicalDevice(const InstanceInterface &, VkInstance, const tcu::CommandLine &)
+{
+    return VK_NULL_HANDLE;
 }
 
 void TestCase::initInstanceCapabilities(InstCaps &caps)

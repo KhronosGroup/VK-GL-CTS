@@ -255,6 +255,14 @@ public:
     // the capabilities defined in initInstanceCapabilities.
     virtual std::string getInstanceCapabilitiesId() const;
 
+    // Allows to select a physical device other than '--deqp-vk-device-id'.
+    // Override this method if the test needs a different physical device.
+    // This is called after the instance is created but before the logical
+    // device is created. Note that the ContextManager class is not fully
+    // instantiated in the body of this method.
+    virtual vk::VkPhysicalDevice selectPhysicalDevice(const vk::InstanceInterface &, vk::VkInstance,
+                                                      const tcu::CommandLine &);
+
     // Override this function if test requires new custom instance.
     // Requirements for the new instance should be recorded to InstCaps.
     virtual void initInstanceCapabilities(InstCaps &caps);

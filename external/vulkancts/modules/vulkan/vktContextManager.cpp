@@ -596,7 +596,7 @@ void ContextManager::keepMaxCustomDeviceCount()
 }
 
 InstCaps::InstCaps(const PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine)
-    : InstCaps(vkPlatform, commandLine, InstCaps::DefInstId)
+    : InstCaps(vkPlatform, commandLine, InstCaps::DefInstId, nullptr)
 {
 }
 
@@ -650,6 +650,13 @@ std::pair<bool, bool> InstCaps::getDestroyAllDevices() const
     return m_destroyAllDevices;
 }
 
+vk::VkPhysicalDevice InstCaps::selectDevice(const InstanceInterface &vki, VkInstance instance,
+                                            const tcu::CommandLine &cmdLine, VkPhysicalDevice suggestedDevice) const
+{
+    const VkPhysicalDevice dev = m_testCase ? m_testCase->selectPhysicalDevice(vki, instance, cmdLine) : VK_NULL_HANDLE;
+    return (dev != VK_NULL_HANDLE) ? dev : suggestedDevice;
+}
+
 de::SharedPtr<ContextManager> ContextManager::findCustomManager(vkt::TestCase *testCase,
                                                                 de::SharedPtr<ContextManager> defaultContextManager,
                                                                 const InstCaps *hintCaps)
@@ -668,7 +675,7 @@ de::SharedPtr<ContextManager> ContextManager::findCustomManager(vkt::TestCase *t
         de::SharedPtr<ResourceInterface> resourceInterface = defaultContextManager->getResourceInterface();
         const int maxCustomDevices                         = defaultContextManager->getMaxCustomDevices();
 
-        InstCaps icaps(platformInterface, commandLine, instCapsId, hintCaps);
+        InstCaps icaps(platformInterface, commandLine, instCapsId, testCase, hintCaps);
         testCase->initInstanceCapabilities(icaps);
         de::SharedPtr<ContextManager> customContextManager =
             ContextManager::create(platformInterface, commandLine, resourceInterface, maxCustomDevices, icaps);

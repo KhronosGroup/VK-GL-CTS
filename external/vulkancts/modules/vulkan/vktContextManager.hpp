@@ -492,12 +492,13 @@ public:
 
 struct InstCaps
 {
+    friend class ContextManager;
     // Creates InstCaps class with id=DefInstId. This default behavior mostly used in existing code.
     InstCaps(const vk::PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine);
     // Creates InstCaps class with id=id_ parameter. This allows the ContextManager class to distinguish
     // whether the test needs a different instance than the default one.
     InstCaps(const vk::PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine, const std::string &id_,
-             const InstCaps *hint = nullptr, bool dontCreateDefaultDeviceFlag = true);
+             vkt::TestCase *testCase, const InstCaps *hint = nullptr, bool dontCreateDefaultDeviceFlag = true);
 
     // All fields below are initialized in the same way as in the default instance.
     const uint32_t maximumFrameworkVulkanVersion;
@@ -542,6 +543,12 @@ private:
     std::pair<bool, bool> m_destroyAllDevices;
     bool m_dontCreateDefaultDevice;
     bool m_shouldRemoveInstanceOnTestExit;
+    vk::VkPhysicalDevice selectDevice(    //
+        const vk::InstanceInterface &vki, //
+        vk::VkInstance instance,          //
+        const tcu::CommandLine &cmdLine,  //
+        vk::VkPhysicalDevice suggestedDevice) const;
+    vkt::TestCase *m_testCase;
 };
 
 typedef vk::DevFeaturesAndPropertiesImpl<void> DevFeaturesAndProperties;
