@@ -216,10 +216,11 @@ void RayQueryStressCase::initPrograms(vk::SourceCollections &programCollection) 
                "       else if (rayQueryGetIntersectionTypeEXT(rayQuery, false) == "
                "gl_RayQueryCandidateIntersectionAABBEXT)\n"
                "       {\n"
-               "           float t = rayQueryGetIntersectionPrimitiveIndexEXT(rayQuery, false) - index + 0.5f;\n"
-               "           if (t > 0 && t < rayQueryGetIntersectionTEXT(rayQuery, true))"
+               /* each AABB is positioned starting at 'z == primitiveId' */
+               "           float t = rayQueryGetIntersectionPrimitiveIndexEXT(rayQuery, false) - ray.pos.z;\n"
+               "           if (t >= ray.tmin && t < rayQueryGetIntersectionTEXT(rayQuery, true))\n"
                "           {\n"
-               "                rayQueryGenerateIntersectionEXT(rayQuery, t);\n"
+               "               rayQueryGenerateIntersectionEXT(rayQuery, t);\n"
                "           }\n"
                "       }\n"
                "   }\n"
@@ -331,12 +332,13 @@ tcu::TestStatus RayQueryStressInstance::iterate(void)
     {
         tcu::Vec2 center;
 
-        float x = p1[0] * cosAlfa - p1[1] * sinAlfa;
-        float y = p1[0] * sinAlfa + p1[1] * cosAlfa;
-        p1      = tcu::Vec2(x, y);
-        x       = p2[0] * cosAlfa - p2[1] * sinAlfa;
-        y       = p2[0] * sinAlfa + p2[1] * cosAlfa;
-        p2      = tcu::Vec2(x, y);
+        float x    = p1[0] * cosAlfa - p1[1] * sinAlfa;
+        float y    = p1[0] * sinAlfa + p1[1] * cosAlfa;
+        p1         = tcu::Vec2(x, y);
+        x          = p2[0] * cosAlfa - p2[1] * sinAlfa;
+        y          = p2[0] * sinAlfa + p2[1] * cosAlfa;
+        p2         = tcu::Vec2(x, y);
+        float tmin = 0.0f;
 
         if (m_stressParams.testType == TestType::TRIANGLES)
         {
@@ -375,11 +377,11 @@ tcu::TestStatus RayQueryStressInstance::iterate(void)
             instance1[idx * 2]     = v0;
             instance1[idx * 2 + 1] = v1;
 
-            expectedResults[idx] = ResultData(static_cast<float>(idx), 0.5f, 0, 0);
+            expectedResults[idx] = ResultData(static_cast<float>(idx), tmin, 0, 0);
         }
 
         m_rayQueryParams.rays[idx] =
-            Ray{tcu::Vec3(center[0], center[1], z - epsilon), 0.0f, tcu::Vec3(0.0f, 0.0f, 1.0f), MAX_T_VALUE};
+            Ray{tcu::Vec3(center[0], center[1], z - epsilon), tmin, tcu::Vec3(0.0f, 0.0f, 1.0f), MAX_T_VALUE};
 
         z += incrZ;
     }

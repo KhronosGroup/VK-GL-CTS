@@ -4603,7 +4603,7 @@ void generateRayQueryShaders(SourceCollections &programCollection, RayQueryTestP
                     "hitAttributeEXT uvec4 hitValue;\n"
                     "void main()\n"
                     "{\n"
-                    "  reportIntersectionEXT(0.5f, 0);\n"
+                    "  reportIntersectionEXT(gl_RayTminEXT, 0);\n"
                     "}\n";
 
     std::stringstream rtChit;
@@ -5079,7 +5079,7 @@ void generateRayQueryShaders(SourceCollections &programCollection, RayQueryTestP
                          "  hitValue.y = y;\n"
                          "  hitValue.z = z;\n"
                          "  hitValue.w = w;\n"
-                         "  reportIntersectionEXT(0.5f, 0);\n"
+                         "  reportIntersectionEXT(gl_RayTminEXT, 0);\n"
                          "}\n";
 
                 programCollection.glslSources.add("isect_1", &buildOptions)
