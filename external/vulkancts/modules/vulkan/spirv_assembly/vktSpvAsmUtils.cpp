@@ -222,6 +222,16 @@ bool isMaintenance8FeaturesSupported(const Context &context, const vk::VkPhysica
 
     return true;
 }
+
+bool isMaintenance9FeaturesSupported(const Context &context, const vk::VkPhysicalDeviceMaintenance9FeaturesKHR &toCheck,
+                                     const char **missingFeature)
+{
+    const VkPhysicalDeviceMaintenance9FeaturesKHR &extensionFeatures = context.getMaintenance9Features();
+
+    IS_AVAIL("Maintenance9.", maintenance9);
+
+    return true;
+}
 #endif // CTS_USES_VULKANSC
 
 #undef IS_AVAIL
@@ -331,6 +341,9 @@ bool isVulkanFeaturesSupported(const Context &context, const VulkanFeatures &req
         return false;
 
     if (!isMaintenance8FeaturesSupported(context, requested.extMaintenance8, missingFeature))
+        return false;
+
+    if (!isMaintenance9FeaturesSupported(context, requested.maint9Features, missingFeature))
         return false;
 #endif // CTS_USES_VULKANSC
 

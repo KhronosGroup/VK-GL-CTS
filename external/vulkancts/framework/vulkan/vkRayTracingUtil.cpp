@@ -4111,7 +4111,7 @@ uint32_t RayTracingPipeline::getFullShaderGroupCount(void)
 Move<VkPipeline> RayTracingPipeline::createPipelineKHR(const DeviceInterface &vk, const VkDevice device,
                                                        const VkPipelineLayout pipelineLayout,
                                                        const std::vector<VkPipeline> &pipelineLibraries,
-                                                       const VkPipelineCache pipelineCache)
+                                                       const VkPipelineCache pipelineCache, const void *pNext)
 {
     for (size_t groupNdx = 0; groupNdx < m_shadersGroupCreateInfos.size(); ++groupNdx)
         DE_ASSERT(m_shadersGroupCreateInfos[groupNdx].sType ==
@@ -4149,7 +4149,7 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR(const DeviceInterface &vk
 
     VkRayTracingPipelineCreateInfoKHR pipelineCreateInfo{
         VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR, //  VkStructureType sType;
-        nullptr,                                                //  const void* pNext;
+        pNext,                                                  //  const void* pNext;
         m_pipelineCreateFlags,                                  //  VkPipelineCreateFlags flags;
         de::sizeU32(m_shaderCreateInfos),                       //  uint32_t stageCount;
         de::dataOrNull(m_shaderCreateInfos),                    //  const VkPipelineShaderStageCreateInfo* pStages;
@@ -4207,9 +4207,9 @@ Move<VkPipeline> RayTracingPipeline::createPipeline(
 Move<VkPipeline> RayTracingPipeline::createPipeline(const DeviceInterface &vk, const VkDevice device,
                                                     const VkPipelineLayout pipelineLayout,
                                                     const std::vector<VkPipeline> &pipelineLibraries,
-                                                    const VkPipelineCache pipelineCache)
+                                                    const VkPipelineCache pipelineCache, const void *pNext)
 {
-    return createPipelineKHR(vk, device, pipelineLayout, pipelineLibraries, pipelineCache);
+    return createPipelineKHR(vk, device, pipelineLayout, pipelineLibraries, pipelineCache, pNext);
 }
 
 std::vector<de::SharedPtr<Move<VkPipeline>>> RayTracingPipeline::createPipelineWithLibraries(
