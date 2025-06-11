@@ -76,8 +76,10 @@ Move<VkInstance> createDefaultInstance(const PlatformInterface &vkPlatform, uint
     {
         actualExtensions.push_back("VK_KHR_portability_enumeration");
     }
-
 #endif // CTS_USES_VULKANSC
+
+    if (isExtensionStructSupported(availableExtensions, RequiredExtension(VK_KHR_SURFACE_EXTENSION_NAME)))
+        actualExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 
     vector<const char *> layerNamePtrs(enabledLayers.size());
     vector<const char *> extensionNamePtrs(actualExtensions.size());
