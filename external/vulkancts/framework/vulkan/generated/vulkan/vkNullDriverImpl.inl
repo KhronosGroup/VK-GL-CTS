@@ -4292,6 +4292,40 @@ VKAPI_ATTR void VKAPI_CALL cmdBindShadersEXT (VkCommandBuffer commandBuffer, uin
 	DE_UNREF(pShaders);
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL setSwapchainPresentTimingQueueSizeEXT (VkDevice device, VkSwapchainKHR swapchain, uint32_t size)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(size);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getSwapchainTimingPropertiesEXT (VkDevice device, VkSwapchainKHR swapchain, VkSwapchainTimingPropertiesEXT* pSwapchainTimingProperties, uint64_t* pSwapchainTimingPropertiesCounter)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pSwapchainTimingProperties);
+	DE_UNREF(pSwapchainTimingPropertiesCounter);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getSwapchainTimeDomainPropertiesEXT (VkDevice device, VkSwapchainKHR swapchain, VkSwapchainTimeDomainPropertiesEXT* pSwapchainTimeDomainProperties, uint64_t* pTimeDomainsCounter)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pSwapchainTimeDomainProperties);
+	DE_UNREF(pTimeDomainsCounter);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPastPresentationTimingEXT (VkDevice device, const VkPastPresentationTimingInfoEXT* pPastPresentationTimingInfo, VkPastPresentationTimingPropertiesEXT* pPastPresentationTimingProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(pPastPresentationTimingInfo);
+	DE_UNREF(pPastPresentationTimingProperties);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getScreenBufferPropertiesQNX (VkDevice device, const struct _screen_buffer* buffer, VkScreenBufferPropertiesQNX* pProperties)
 {
 	DE_UNREF(device);
@@ -5249,6 +5283,10 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkDestroyShaderEXT,											destroyShaderEXT),
 	VK_NULL_FUNC_ENTRY(vkGetShaderBinaryDataEXT,									getShaderBinaryDataEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdBindShadersEXT,											cmdBindShadersEXT),
+	VK_NULL_FUNC_ENTRY(vkSetSwapchainPresentTimingQueueSizeEXT,						setSwapchainPresentTimingQueueSizeEXT),
+	VK_NULL_FUNC_ENTRY(vkGetSwapchainTimingPropertiesEXT,							getSwapchainTimingPropertiesEXT),
+	VK_NULL_FUNC_ENTRY(vkGetSwapchainTimeDomainPropertiesEXT,						getSwapchainTimeDomainPropertiesEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPastPresentationTimingEXT,								getPastPresentationTimingEXT),
 	VK_NULL_FUNC_ENTRY(vkGetScreenBufferPropertiesQNX,								getScreenBufferPropertiesQNX),
 	VK_NULL_FUNC_ENTRY(vkGetExecutionGraphPipelineScratchSizeAMDX,					getExecutionGraphPipelineScratchSizeAMDX),
 	VK_NULL_FUNC_ENTRY(vkGetExecutionGraphPipelineNodeIndexAMDX,					getExecutionGraphPipelineNodeIndexAMDX),

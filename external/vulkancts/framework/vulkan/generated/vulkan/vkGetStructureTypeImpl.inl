@@ -988,6 +988,56 @@ template<> VkStructureType getStructureType<VkPhysicalDevicePresentWait2Features
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_2_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevicePresentTimingFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_TIMING_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPresentTimingSurfaceCapabilitiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PRESENT_TIMING_SURFACE_CAPABILITIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkSwapchainTimingPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SWAPCHAIN_TIMING_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkSwapchainTimeDomainPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SWAPCHAIN_TIME_DOMAIN_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPastPresentationTimingInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PAST_PRESENTATION_TIMING_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPastPresentationTimingPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PAST_PRESENTATION_TIMING_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPastPresentationTimingEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PAST_PRESENTATION_TIMING_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPresentTimingsInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PRESENT_TIMINGS_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPresentTimingInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PRESENT_TIMING_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkSwapchainCalibratedTimestampInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SWAPCHAIN_CALIBRATED_TIMESTAMP_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkHdrMetadataEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_HDR_METADATA_EXT;

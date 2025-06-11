@@ -2807,6 +2807,107 @@ struct VkPhysicalDevicePresentWait2FeaturesKHR
 	VkBool32		presentWait2;
 };
 
+struct VkPhysicalDevicePresentTimingFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		presentTiming;
+	VkBool32		presentAtAbsoluteTime;
+	VkBool32		presentAtRelativeTime;
+};
+
+struct VkPresentTimingSurfaceCapabilitiesEXT
+{
+	VkStructureType			sType;
+	void*					pNext;
+	VkBool32				presentTimingSupported;
+	VkBool32				presentAtAbsoluteTimeSupported;
+	VkBool32				presentAtRelativeTimeSupported;
+	VkPresentStageFlagsEXT	presentStageQueries;
+};
+
+struct VkSwapchainTimingPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint64_t		refreshDuration;
+	uint64_t		refreshInterval;
+};
+
+struct VkSwapchainTimeDomainPropertiesEXT
+{
+	VkStructureType		sType;
+	void*				pNext;
+	uint32_t			timeDomainCount;
+	VkTimeDomainKHR*	pTimeDomains;
+	uint64_t*			pTimeDomainIds;
+};
+
+struct VkPresentStageTimeEXT
+{
+	VkPresentStageFlagsEXT	stage;
+	uint64_t				time;
+};
+
+struct VkPastPresentationTimingInfoEXT
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkPastPresentationTimingFlagsEXT	flags;
+	VkSwapchainKHR						swapchain;
+};
+
+struct VkPastPresentationTimingEXT
+{
+	VkStructureType			sType;
+	void*					pNext;
+	uint64_t				presentId;
+	uint64_t				targetTime;
+	uint32_t				presentStageCount;
+	VkPresentStageTimeEXT*	pPresentStages;
+	VkTimeDomainKHR			timeDomain;
+	uint64_t				timeDomainId;
+	VkBool32				reportComplete;
+};
+
+struct VkPastPresentationTimingPropertiesEXT
+{
+	VkStructureType					sType;
+	void*							pNext;
+	uint64_t						timingPropertiesCounter;
+	uint64_t						timeDomainsCounter;
+	uint32_t						presentationTimingCount;
+	VkPastPresentationTimingEXT*	pPresentationTimings;
+};
+
+struct VkPresentTimingInfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkPresentTimingInfoFlagsEXT	flags;
+	uint64_t					targetTime;
+	uint64_t					timeDomainId;
+	VkPresentStageFlagsEXT		presentStageQueries;
+	VkPresentStageFlagsEXT		targetTimeDomainPresentStage;
+};
+
+struct VkPresentTimingsInfoEXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	uint32_t						swapchainCount;
+	const VkPresentTimingInfoEXT*	pTimingInfos;
+};
+
+struct VkSwapchainCalibratedTimestampInfoEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkSwapchainKHR			swapchain;
+	VkPresentStageFlagsEXT	presentStage;
+	uint64_t				timeDomainId;
+};
+
 struct VkHdrMetadataEXT
 {
 	VkStructureType	sType;

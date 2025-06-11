@@ -565,6 +565,14 @@ inline VkXYColorEXT makeXYColorEXT (float x, float y)
 	return res;
 }
 
+inline VkPresentStageTimeEXT makePresentStageTimeEXT (VkPresentStageFlagsEXT stage, uint64_t time)
+{
+	VkPresentStageTimeEXT res;
+	res.stage	= stage;
+	res.time	= time;
+	return res;
+}
+
 inline VkRefreshCycleDurationGOOGLE makeRefreshCycleDurationGOOGLE (uint64_t refreshDuration)
 {
 	VkRefreshCycleDurationGOOGLE res;

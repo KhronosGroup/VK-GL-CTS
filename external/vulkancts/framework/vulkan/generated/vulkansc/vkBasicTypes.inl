@@ -3410,6 +3410,12 @@ typedef uint64_t VkPhysicalDeviceSchedulingControlsFlagsARM;
 
 typedef uint32_t VkSurfaceCreateFlagsOHOS;
 
+typedef uint32_t VkPresentStageFlagsEXT;
+
+typedef uint32_t VkPastPresentationTimingFlagsEXT;
+
+typedef uint32_t VkPresentTimingInfoFlagsEXT;
+
 typedef uint32_t VkVideoCodecOperationFlagsKHR;
 
 typedef uint32_t VkVideoCapabilityFlagsKHR;

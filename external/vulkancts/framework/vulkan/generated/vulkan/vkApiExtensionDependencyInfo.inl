@@ -1594,6 +1594,18 @@ bool check_VK_KHR_timeline_semaphore(const tcu::UVec2& v, const ExtPropVect& vIE
 	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
+bool check_VK_EXT_present_timing(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_present_timing"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_swapchain+VK_KHR_present_id2+VK_KHR_get_surface_capabilities2+VK_KHR_calibrated_timestamps
+	return (isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vDEP, "VK_KHR_present_id2") && isSupported(vIEP, "VK_KHR_get_surface_capabilities2") && isSupported(vDEP, "VK_KHR_calibrated_timestamps"));
+}
+
 bool check_VK_INTEL_shader_integer_functions2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -4157,6 +4169,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_NV_scissor_exclusive",								&check_VK_NV_scissor_exclusive),
 	std::make_pair("VK_NV_device_diagnostic_checkpoints",					&check_VK_NV_device_diagnostic_checkpoints),
 	std::make_pair("VK_KHR_timeline_semaphore",								&check_VK_KHR_timeline_semaphore),
+	std::make_pair("VK_EXT_present_timing",									&check_VK_EXT_present_timing),
 	std::make_pair("VK_INTEL_shader_integer_functions2",					&check_VK_INTEL_shader_integer_functions2),
 	std::make_pair("VK_KHR_vulkan_memory_model",							&check_VK_KHR_vulkan_memory_model),
 	std::make_pair("VK_EXT_pci_bus_info",									&check_VK_EXT_pci_bus_info),
@@ -4540,6 +4553,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_NV_scissor_exclusive"),
 	std::make_tuple(1, 0, "VK_NV_device_diagnostic_checkpoints"),
 	std::make_tuple(1, 0, "VK_KHR_timeline_semaphore"),
+	std::make_tuple(1, 0, "VK_EXT_present_timing"),
 	std::make_tuple(1, 0, "VK_INTEL_shader_integer_functions2"),
 	std::make_tuple(1, 0, "VK_INTEL_performance_query"),
 	std::make_tuple(1, 0, "VK_KHR_vulkan_memory_model"),

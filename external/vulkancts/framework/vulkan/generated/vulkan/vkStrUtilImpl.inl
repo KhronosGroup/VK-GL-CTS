@@ -1439,6 +1439,7 @@ const char* getResultName (VkResult value)
 		case VK_ERROR_INVALID_VIDEO_STD_PARAMETERS_KHR:				return "VK_ERROR_INVALID_VIDEO_STD_PARAMETERS_KHR";
 		case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS:				return "VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS";
 		case VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT:			return "VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT";
+		case VK_ERROR_PRESENT_TIMING_QUEUE_FULL_EXT:				return "VK_ERROR_PRESENT_TIMING_QUEUE_FULL_EXT";
 		case VK_ERROR_NOT_PERMITTED:								return "VK_ERROR_NOT_PERMITTED";
 		case VK_ERROR_FRAGMENTATION:								return "VK_ERROR_FRAGMENTATION";
 		case VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT:	return "VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT";
@@ -1990,6 +1991,16 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO:											return "VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO";
 		case VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO:														return "VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO";
 		case VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO:													return "VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_TIMING_FEATURES_EXT:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_TIMING_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_SWAPCHAIN_TIMING_PROPERTIES_EXT:											return "VK_STRUCTURE_TYPE_SWAPCHAIN_TIMING_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_SWAPCHAIN_TIME_DOMAIN_PROPERTIES_EXT:									return "VK_STRUCTURE_TYPE_SWAPCHAIN_TIME_DOMAIN_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_PRESENT_TIMINGS_INFO_EXT:												return "VK_STRUCTURE_TYPE_PRESENT_TIMINGS_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PRESENT_TIMING_INFO_EXT:													return "VK_STRUCTURE_TYPE_PRESENT_TIMING_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PAST_PRESENTATION_TIMING_INFO_EXT:										return "VK_STRUCTURE_TYPE_PAST_PRESENTATION_TIMING_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PAST_PRESENTATION_TIMING_PROPERTIES_EXT:									return "VK_STRUCTURE_TYPE_PAST_PRESENTATION_TIMING_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_PAST_PRESENTATION_TIMING_EXT:											return "VK_STRUCTURE_TYPE_PAST_PRESENTATION_TIMING_EXT";
+		case VK_STRUCTURE_TYPE_PRESENT_TIMING_SURFACE_CAPABILITIES_EXT:									return "VK_STRUCTURE_TYPE_PRESENT_TIMING_SURFACE_CAPABILITIES_EXT";
+		case VK_STRUCTURE_TYPE_SWAPCHAIN_CALIBRATED_TIMESTAMP_INFO_EXT:									return "VK_STRUCTURE_TYPE_SWAPCHAIN_CALIBRATED_TIMESTAMP_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_FUNCTIONS_2_FEATURES_INTEL:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_FUNCTIONS_2_FEATURES_INTEL";
 		case VK_STRUCTURE_TYPE_QUERY_POOL_PERFORMANCE_QUERY_CREATE_INFO_INTEL:							return "VK_STRUCTURE_TYPE_QUERY_POOL_PERFORMANCE_QUERY_CREATE_INFO_INTEL";
 		case VK_STRUCTURE_TYPE_INITIALIZE_PERFORMANCE_API_INFO_INTEL:									return "VK_STRUCTURE_TYPE_INITIALIZE_PERFORMANCE_API_INFO_INTEL";
@@ -3121,6 +3132,8 @@ const char* getTimeDomainKHRName (VkTimeDomainKHR value)
 		case VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR:			return "VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR";
 		case VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_KHR:		return "VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_KHR";
 		case VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR:	return "VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR";
+		case VK_TIME_DOMAIN_PRESENT_STAGE_LOCAL_EXT:		return "VK_TIME_DOMAIN_PRESENT_STAGE_LOCAL_EXT";
+		case VK_TIME_DOMAIN_SWAPCHAIN_LOCAL_EXT:			return "VK_TIME_DOMAIN_SWAPCHAIN_LOCAL_EXT";
 		default:											return nullptr;
 	}
 }
@@ -4912,6 +4925,7 @@ tcu::Format::Bitfield<32> getSwapchainCreateFlagsKHRStr (VkSwapchainCreateFlagsK
 		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_KHR,	"VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_KHR"),
 		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_PRESENT_ID_2_BIT_KHR,					"VK_SWAPCHAIN_CREATE_PRESENT_ID_2_BIT_KHR"),
 		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_PRESENT_WAIT_2_BIT_KHR,				"VK_SWAPCHAIN_CREATE_PRESENT_WAIT_2_BIT_KHR"),
+		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_PRESENT_TIMING_BIT_EXT,				"VK_SWAPCHAIN_CREATE_PRESENT_TIMING_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -5257,6 +5271,38 @@ tcu::Format::Bitfield<32> getMemoryUnmapFlagsStr (VkMemoryUnmapFlags value)
 	static const tcu::Format::BitDesc s_desc[] =
 	{
 		tcu::Format::BitDesc(VK_MEMORY_UNMAP_RESERVE_BIT_EXT,	"VK_MEMORY_UNMAP_RESERVE_BIT_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getPresentStageFlagsEXTStr (VkPresentStageFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_PRESENT_STAGE_QUEUE_OPERATIONS_END_BIT_EXT,			"VK_PRESENT_STAGE_QUEUE_OPERATIONS_END_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PRESENT_STAGE_REQUEST_DEQUEUED_BIT_EXT,				"VK_PRESENT_STAGE_REQUEST_DEQUEUED_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PRESENT_STAGE_IMAGE_FIRST_PIXEL_OUT_BIT_EXT,		"VK_PRESENT_STAGE_IMAGE_FIRST_PIXEL_OUT_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PRESENT_STAGE_IMAGE_FIRST_PIXEL_VISIBLE_BIT_EXT,	"VK_PRESENT_STAGE_IMAGE_FIRST_PIXEL_VISIBLE_BIT_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getPastPresentationTimingFlagsEXTStr (VkPastPresentationTimingFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_PAST_PRESENTATION_TIMING_ALLOW_PARTIAL_RESULTS_BIT_EXT,			"VK_PAST_PRESENTATION_TIMING_ALLOW_PARTIAL_RESULTS_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PAST_PRESENTATION_TIMING_ALLOW_OUT_OF_ORDER_RESULTS_BIT_EXT,	"VK_PAST_PRESENTATION_TIMING_ALLOW_OUT_OF_ORDER_RESULTS_BIT_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getPresentTimingInfoFlagsEXTStr (VkPresentTimingInfoFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_PRESENT_TIMING_INFO_PRESENT_AT_RELATIVE_TIME_BIT_EXT,			"VK_PRESENT_TIMING_INFO_PRESENT_AT_RELATIVE_TIME_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PRESENT_TIMING_INFO_PRESENT_AT_NEAREST_REFRESH_CYCLE_BIT_EXT,	"VK_PRESENT_TIMING_INFO_PRESENT_AT_NEAREST_REFRESH_CYCLE_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -10423,6 +10469,140 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePresentWait2Fea
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpresentWait2 = " << value.presentWait2 << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePresentTimingFeaturesEXT& value)
+{
+	s << "VkPhysicalDevicePresentTimingFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpresentTiming = " << value.presentTiming << '\n';
+	s << "\tpresentAtAbsoluteTime = " << value.presentAtAbsoluteTime << '\n';
+	s << "\tpresentAtRelativeTime = " << value.presentAtRelativeTime << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPresentTimingSurfaceCapabilitiesEXT& value)
+{
+	s << "VkPresentTimingSurfaceCapabilitiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpresentTimingSupported = " << value.presentTimingSupported << '\n';
+	s << "\tpresentAtAbsoluteTimeSupported = " << value.presentAtAbsoluteTimeSupported << '\n';
+	s << "\tpresentAtRelativeTimeSupported = " << value.presentAtRelativeTimeSupported << '\n';
+	s << "\tpresentStageQueries = " << getPresentStageFlagsEXTStr(value.presentStageQueries) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSwapchainTimingPropertiesEXT& value)
+{
+	s << "VkSwapchainTimingPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trefreshDuration = " << value.refreshDuration << '\n';
+	s << "\trefreshInterval = " << value.refreshInterval << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSwapchainTimeDomainPropertiesEXT& value)
+{
+	s << "VkSwapchainTimeDomainPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttimeDomainCount = " << value.timeDomainCount << '\n';
+	s << "\tpTimeDomains = " << value.pTimeDomains << '\n';
+	s << "\tpTimeDomainIds = " << value.pTimeDomainIds << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPresentStageTimeEXT& value)
+{
+	s << "VkPresentStageTimeEXT = {\n";
+	s << "\tstage = " << getPresentStageFlagsEXTStr(value.stage) << '\n';
+	s << "\ttime = " << value.time << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPastPresentationTimingInfoEXT& value)
+{
+	s << "VkPastPresentationTimingInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getPastPresentationTimingFlagsEXTStr(value.flags) << '\n';
+	s << "\tswapchain = " << value.swapchain << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPastPresentationTimingPropertiesEXT& value)
+{
+	s << "VkPastPresentationTimingPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttimingPropertiesCounter = " << value.timingPropertiesCounter << '\n';
+	s << "\ttimeDomainsCounter = " << value.timeDomainsCounter << '\n';
+	s << "\tpresentationTimingCount = " << value.presentationTimingCount << '\n';
+	s << "\tpPresentationTimings = " << value.pPresentationTimings << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPastPresentationTimingEXT& value)
+{
+	s << "VkPastPresentationTimingEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpresentId = " << value.presentId << '\n';
+	s << "\ttargetTime = " << value.targetTime << '\n';
+	s << "\tpresentStageCount = " << value.presentStageCount << '\n';
+	s << "\tpPresentStages = " << value.pPresentStages << '\n';
+	s << "\ttimeDomain = " << value.timeDomain << '\n';
+	s << "\ttimeDomainId = " << value.timeDomainId << '\n';
+	s << "\treportComplete = " << value.reportComplete << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPresentTimingsInfoEXT& value)
+{
+	s << "VkPresentTimingsInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tswapchainCount = " << value.swapchainCount << '\n';
+	s << "\tpTimingInfos = " << value.pTimingInfos << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPresentTimingInfoEXT& value)
+{
+	s << "VkPresentTimingInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getPresentTimingInfoFlagsEXTStr(value.flags) << '\n';
+	s << "\ttargetTime = " << value.targetTime << '\n';
+	s << "\ttimeDomainId = " << value.timeDomainId << '\n';
+	s << "\tpresentStageQueries = " << getPresentStageFlagsEXTStr(value.presentStageQueries) << '\n';
+	s << "\ttargetTimeDomainPresentStage = " << getPresentStageFlagsEXTStr(value.targetTimeDomainPresentStage) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSwapchainCalibratedTimestampInfoEXT& value)
+{
+	s << "VkSwapchainCalibratedTimestampInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tswapchain = " << value.swapchain << '\n';
+	s << "\tpresentStage = " << getPresentStageFlagsEXTStr(value.presentStage) << '\n';
+	s << "\ttimeDomainId = " << value.timeDomainId << '\n';
 	s << '}';
 	return s;
 }

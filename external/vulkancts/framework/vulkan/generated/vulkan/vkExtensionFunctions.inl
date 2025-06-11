@@ -780,6 +780,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_present_timing")
+	{
+		return;
+	}
 	if (extName == "VK_INTEL_shader_integer_functions2")
 	{
 		return;
@@ -2750,6 +2754,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkSignalSemaphoreKHR");
 		return;
 	}
+	if (extName == "VK_EXT_present_timing")
+	{
+		functions.push_back("vkSetSwapchainPresentTimingQueueSizeEXT");
+		functions.push_back("vkGetSwapchainTimingPropertiesEXT");
+		functions.push_back("vkGetSwapchainTimeDomainPropertiesEXT");
+		functions.push_back("vkGetPastPresentationTimingEXT");
+		return;
+	}
 	if (extName == "VK_INTEL_shader_integer_functions2")
 	{
 		return;
@@ -4431,6 +4443,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_scissor_exclusive",
 	"VK_NV_device_diagnostic_checkpoints",
 	"VK_KHR_timeline_semaphore",
+	"VK_EXT_present_timing",
 	"VK_INTEL_shader_integer_functions2",
 	"VK_INTEL_performance_query",
 	"VK_KHR_vulkan_memory_model",

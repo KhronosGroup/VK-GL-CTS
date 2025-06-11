@@ -40,6 +40,7 @@ const vk::VkPhysicalDeviceMeshShaderFeaturesNV&								Context::getMeshShaderFea
 const vk::VkPhysicalDeviceShaderImageFootprintFeaturesNV&					Context::getShaderImageFootprintFeatures					(void) const { return m_device->getShaderImageFootprintFeatures();					}
 const vk::VkPhysicalDeviceExclusiveScissorFeaturesNV&						Context::getExclusiveScissorFeatures						(void) const { return m_device->getExclusiveScissorFeatures();						}
 const vk::VkPhysicalDeviceTimelineSemaphoreFeatures&						Context::getTimelineSemaphoreFeatures						(void) const { return m_device->getTimelineSemaphoreFeatures();						}
+const vk::VkPhysicalDevicePresentTimingFeaturesEXT&							Context::getPresentTimingFeaturesEXT						(void) const { return m_device->getPresentTimingFeaturesEXT();						}
 const vk::VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL&				Context::getShaderIntegerFunctions2FeaturesINTEL			(void) const { return m_device->getShaderIntegerFunctions2FeaturesINTEL();			}
 const vk::VkPhysicalDeviceVulkanMemoryModelFeatures&						Context::getVulkanMemoryModelFeatures						(void) const { return m_device->getVulkanMemoryModelFeatures();						}
 const vk::VkPhysicalDeviceShaderTerminateInvocationFeatures&				Context::getShaderTerminateInvocationFeatures				(void) const { return m_device->getShaderTerminateInvocationFeatures();				}

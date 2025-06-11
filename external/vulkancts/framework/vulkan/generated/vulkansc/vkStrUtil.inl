@@ -406,6 +406,9 @@ tcu::Format::Bitfield<32>	getShaderCreateFlagsEXTStr									(VkShaderCreateFlag
 tcu::Format::Bitfield<32>	getTileShadingRenderPassFlagsQCOMStr						(VkTileShadingRenderPassFlagsQCOM value);
 tcu::Format::Bitfield<64>	getPhysicalDeviceSchedulingControlsFlagsARMStr				(VkPhysicalDeviceSchedulingControlsFlagsARM value);
 tcu::Format::Bitfield<32>	getSurfaceCreateFlagsOHOSStr								(VkSurfaceCreateFlagsOHOS value);
+tcu::Format::Bitfield<32>	getPresentStageFlagsEXTStr									(VkPresentStageFlagsEXT value);
+tcu::Format::Bitfield<32>	getPastPresentationTimingFlagsEXTStr						(VkPastPresentationTimingFlagsEXT value);
+tcu::Format::Bitfield<32>	getPresentTimingInfoFlagsEXTStr								(VkPresentTimingInfoFlagsEXT value);
 tcu::Format::Bitfield<32>	getVideoCodecOperationFlagsKHRStr							(VkVideoCodecOperationFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoCapabilityFlagsKHRStr								(VkVideoCapabilityFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoSessionCreateFlagsKHRStr							(VkVideoSessionCreateFlagsKHR value);

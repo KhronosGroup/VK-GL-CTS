@@ -3408,6 +3408,21 @@ tcu::Format::Bitfield<32> getSurfaceCreateFlagsOHOSStr (VkSurfaceCreateFlagsOHOS
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
+tcu::Format::Bitfield<32> getPresentStageFlagsEXTStr (VkPresentStageFlagsEXT value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getPastPresentationTimingFlagsEXTStr (VkPastPresentationTimingFlagsEXT value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getPresentTimingInfoFlagsEXTStr (VkPresentTimingInfoFlagsEXT value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
 tcu::Format::Bitfield<32> getVideoCodecOperationFlagsKHRStr (VkVideoCodecOperationFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);

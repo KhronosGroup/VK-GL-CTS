@@ -697,6 +697,10 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateShadersEXTFunc)														(
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyShaderEXTFunc)														(VkDevice device, VkShaderEXT shader, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetShaderBinaryDataEXTFunc)												(VkDevice device, VkShaderEXT shader, size_t* pDataSize, void* pData);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindShadersEXTFunc)														(VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetSwapchainPresentTimingQueueSizeEXTFunc)									(VkDevice device, VkSwapchainKHR swapchain, uint32_t size);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSwapchainTimingPropertiesEXTFunc)										(VkDevice device, VkSwapchainKHR swapchain, VkSwapchainTimingPropertiesEXT* pSwapchainTimingProperties, uint64_t* pSwapchainTimingPropertiesCounter);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSwapchainTimeDomainPropertiesEXTFunc)									(VkDevice device, VkSwapchainKHR swapchain, VkSwapchainTimeDomainPropertiesEXT* pSwapchainTimeDomainProperties, uint64_t* pTimeDomainsCounter);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPastPresentationTimingEXTFunc)											(VkDevice device, const VkPastPresentationTimingInfoEXT* pPastPresentationTimingInfo, VkPastPresentationTimingPropertiesEXT* pPastPresentationTimingProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetScreenBufferPropertiesQNXFunc)											(VkDevice device, const struct _screen_buffer* buffer, VkScreenBufferPropertiesQNX* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCooperativeMatrixPropertiesKHRFunc)						(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesKHR* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetExecutionGraphPipelineScratchSizeAMDXFunc)								(VkDevice device, VkPipeline executionGraph, VkExecutionGraphPipelineScratchSizeAMDX* pSizeInfo);

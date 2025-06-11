@@ -40,6 +40,7 @@ const vk::VkPhysicalDeviceMeshShaderFeaturesNV&								getMeshShaderFeatures				
 const vk::VkPhysicalDeviceShaderImageFootprintFeaturesNV&					getShaderImageFootprintFeatures						(void) const;
 const vk::VkPhysicalDeviceExclusiveScissorFeaturesNV&						getExclusiveScissorFeatures							(void) const;
 const vk::VkPhysicalDeviceTimelineSemaphoreFeatures&						getTimelineSemaphoreFeatures						(void) const;
+const vk::VkPhysicalDevicePresentTimingFeaturesEXT&							getPresentTimingFeaturesEXT							(void) const;
 const vk::VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL&				getShaderIntegerFunctions2FeaturesINTEL				(void) const;
 const vk::VkPhysicalDeviceVulkanMemoryModelFeatures&						getVulkanMemoryModelFeatures						(void) const;
 const vk::VkPhysicalDeviceShaderTerminateInvocationFeatures&				getShaderTerminateInvocationFeatures				(void) const;

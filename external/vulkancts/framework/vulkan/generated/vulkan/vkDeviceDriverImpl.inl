@@ -2640,6 +2640,26 @@ void DeviceDriver::cmdBindShadersEXT (VkCommandBuffer commandBuffer, uint32_t st
     m_vk.cmdBindShadersEXT(commandBuffer, stageCount, pStages, pShaders);
 }
 
+VkResult DeviceDriver::setSwapchainPresentTimingQueueSizeEXT (VkDevice device, VkSwapchainKHR swapchain, uint32_t size) const
+{
+    return m_vk.setSwapchainPresentTimingQueueSizeEXT(device, swapchain, size);
+}
+
+VkResult DeviceDriver::getSwapchainTimingPropertiesEXT (VkDevice device, VkSwapchainKHR swapchain, VkSwapchainTimingPropertiesEXT* pSwapchainTimingProperties, uint64_t* pSwapchainTimingPropertiesCounter) const
+{
+    return m_vk.getSwapchainTimingPropertiesEXT(device, swapchain, pSwapchainTimingProperties, pSwapchainTimingPropertiesCounter);
+}
+
+VkResult DeviceDriver::getSwapchainTimeDomainPropertiesEXT (VkDevice device, VkSwapchainKHR swapchain, VkSwapchainTimeDomainPropertiesEXT* pSwapchainTimeDomainProperties, uint64_t* pTimeDomainsCounter) const
+{
+    return m_vk.getSwapchainTimeDomainPropertiesEXT(device, swapchain, pSwapchainTimeDomainProperties, pTimeDomainsCounter);
+}
+
+VkResult DeviceDriver::getPastPresentationTimingEXT (VkDevice device, const VkPastPresentationTimingInfoEXT* pPastPresentationTimingInfo, VkPastPresentationTimingPropertiesEXT* pPastPresentationTimingProperties) const
+{
+    return m_vk.getPastPresentationTimingEXT(device, pPastPresentationTimingInfo, pPastPresentationTimingProperties);
+}
+
 VkResult DeviceDriver::getScreenBufferPropertiesQNX (VkDevice device, const struct _screen_buffer* buffer, VkScreenBufferPropertiesQNX* pProperties) const
 {
     return m_vk.getScreenBufferPropertiesQNX(device, buffer, pProperties);
